@@ -1,0 +1,130 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/architecture-finding-resolution-audit.json",
+  "summary": {
+    "registered_findings": 15,
+    "admitted_findings": 13,
+    "duplicate_findings": 2,
+    "active_blockers_pre": 13,
+    "active_blockers_post": 5,
+    "active_architecture_defects_pre": 8,
+    "active_architecture_defects_post": 0,
+    "active_non_architecture_blockers_pre": 5,
+    "active_non_architecture_blockers_post": 5,
+    "remediation_status": "VERIFIED_COMPLETE"
+  },
+  "remediated_targets": [
+    {
+      "finding_id": "FND-ARCH-001",
+      "title": "TypedHash domain separation enforced across internal and external hash comparisons.",
+      "initial_lifecycle_status": "OPEN",
+      "final_lifecycle_status": "VERIFIED_RESOLVED",
+      "initial_blocking": true,
+      "final_blocking": false,
+      "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-001:v1",
+      "verification_evidence": "urn:arx:evidence:verification:fnd-arch-001:v1",
+      "root_cause_remediated": true,
+      "causal_proof_established": true
+    },
+    {
+      "finding_id": "FND-ARCH-004",
+      "title": "RPO=0 contradiction resolved: synchronous dual-region commit protocol specified for governance events while bulk evidence CRR is isolated.",
+      "initial_lifecycle_status": "OPEN",
+      "final_lifecycle_status": "VERIFIED_RESOLVED",
+      "initial_blocking": true,
+      "final_blocking": false,
+      "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-004:v1",
+      "verification_evidence": "urn:arx:evidence:verification:fnd-arch-004:v1",
+      "root_cause_remediated": true,
+      "causal_proof_established": true
+    },
+    {
+      "finding_id": "FND-ARCH-007",
+      "title": "Gate-3 authorization lifecycle state machine implemented with recoverable crash state and expired lease reclaiming.",
+      "initial_lifecycle_status": "OPEN",
+      "final_lifecycle_status": "VERIFIED_RESOLVED",
+      "initial_blocking": true,
+      "final_blocking": false,
+      "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-007:v1",
+      "verification_evidence": "urn:arx:evidence:verification:fnd-arch-007:v1",
+      "root_cause_remediated": true,
+      "causal_proof_established": true
+    },
+    {
+      "finding_id": "FND-ARCH-008",
+      "title": "Transient contention disambiguated from terminal semantic quarantine via Gate3ContentionError vs EvidenceSemanticQuarantineError.",
+      "initial_lifecycle_status": "OPEN",
+      "final_lifecycle_status": "VERIFIED_RESOLVED",
+      "initial_blocking": true,
+      "final_blocking": false,
+      "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-008:v1",
+      "verification_evidence": "urn:arx:evidence:verification:fnd-arch-008:v1",
+      "root_cause_remediated": true,
+      "causal_proof_established": true
+    },
+    {
+      "finding_id": "FND-ARCH-010",
+      "title": "Stale fencing token classified as normal safe STALE_WRITER_REJECTED without placing system in terminal hold.",
+      "initial_lifecycle_status": "OPEN",
+      "final_lifecycle_status": "VERIFIED_RESOLVED",
+      "initial_blocking": true,
+      "final_blocking": false,
+      "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-010:v1",
+      "verification_evidence": "urn:arx:evidence:verification:fnd-arch-010:v1",
+      "root_cause_remediated": true,
+      "causal_proof_established": true
+    },
+    {
+      "finding_id": "FND-ARCH-011",
+      "title": "Pre-arm admission predicate and denominator increment condition unified via AuthoritativeDenominatorAdmissionPredicate with 11-case equivalence proof.",
+      "initial_lifecycle_status": "OPEN",
+      "final_lifecycle_status": "VERIFIED_RESOLVED",
+      "initial_blocking": true,
+      "final_blocking": false,
+      "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-011:v1",
+      "verification_evidence": "urn:arx:evidence:verification:fnd-arch-011:v1",
+      "root_cause_remediated": true,
+      "causal_proof_established": true
+    },
+    {
+      "finding_id": "FND-ARCH-012",
+      "title": "Git commit SHA truncation resolved: full 40-character hex identity enforced across Genesis and canonical contracts; DisplayShortSha isolated.",
+      "initial_lifecycle_status": "OPEN",
+      "final_lifecycle_status": "VERIFIED_RESOLVED",
+      "initial_blocking": true,
+      "final_blocking": false,
+      "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-012:v1",
+      "verification_evidence": "urn:arx:evidence:verification:fnd-arch-012:v1",
+      "root_cause_remediated": true,
+      "causal_proof_established": true
+    },
+    {
+      "finding_id": "FND-ARCH-014",
+      "title": "Transaction log established as authoritative primary with verify_log_consensus_coherence anti-entropy and ConsensusLogDivergenceError fail-closed trigger.",
+      "initial_lifecycle_status": "OPEN",
+      "final_lifecycle_status": "VERIFIED_RESOLVED",
+      "initial_blocking": true,
+      "final_blocking": false,
+      "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-014:v1",
+      "verification_evidence": "urn:arx:evidence:verification:fnd-arch-014:v1",
+      "root_cause_remediated": true,
+      "causal_proof_established": true
+    }
+  ],
+  "preserved_non_architecture_blockers": [
+    "FND-ARCH-002",
+    "FND-ARCH-003",
+    "FND-ARCH-005",
+    "FND-ARCH-006",
+    "FND-ARCH-009"
+  ],
+  "preserved_duplicates": [
+    {
+      "finding_id": "FND-ARCH-013",
+      "duplicate_of": "FND-ARCH-007"
+    },
+    {
+      "finding_id": "FND-ARCH-015",
+      "duplicate_of": "FND-ARCH-011"
+    }
+  ]
+}

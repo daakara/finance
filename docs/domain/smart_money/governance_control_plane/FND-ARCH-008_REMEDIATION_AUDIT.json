@@ -1,0 +1,33 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/per-finding-remediation-audit.json",
+  "finding_id": "FND-ARCH-008",
+  "rationale": "Transient contention disambiguated from terminal semantic quarantine via Gate3ContentionError vs EvidenceSemanticQuarantineError.",
+  "lifecycle_transition": {
+    "from": "OPEN",
+    "to": "VERIFIED_RESOLVED"
+  },
+  "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-008:v1",
+  "verification_evidence": "urn:arx:evidence:verification:fnd-arch-008:v1",
+  "tests_verified": [
+    {
+      "finding_id": "FND-ARCH-008",
+      "test_files": [
+        "tests/test_smart_money_architecture_remediation.py"
+      ],
+      "test_ids": [
+        "test_fnd_arch_008_contention_classified_as_retryable_positive"
+      ],
+      "negative_controls": [
+        "test_fnd_arch_008_quarantine_not_triggered_by_contention"
+      ],
+      "mutation_controls": [
+        "test_fnd_arch_008_semantic_failure_quarantined"
+      ],
+      "expected_invariants": [
+        "Gate3ContentionError distinct from EvidenceSemanticQuarantineError"
+      ]
+    }
+  ],
+  "causal_proof": "CONFIRMED",
+  "verdict": "PASS"
+}

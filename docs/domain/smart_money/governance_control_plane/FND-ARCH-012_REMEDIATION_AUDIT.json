@@ -1,0 +1,33 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/per-finding-remediation-audit.json",
+  "finding_id": "FND-ARCH-012",
+  "rationale": "Git commit SHA truncation resolved: full 40-character hex identity enforced across Genesis and canonical contracts; DisplayShortSha isolated.",
+  "lifecycle_transition": {
+    "from": "OPEN",
+    "to": "VERIFIED_RESOLVED"
+  },
+  "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-012:v1",
+  "verification_evidence": "urn:arx:evidence:verification:fnd-arch-012:v1",
+  "tests_verified": [
+    {
+      "finding_id": "FND-ARCH-012",
+      "test_files": [
+        "tests/test_smart_money_architecture_remediation.py"
+      ],
+      "test_ids": [
+        "test_fnd_arch_012_full_git_oid_positive"
+      ],
+      "negative_controls": [
+        "test_fnd_arch_012_truncation_negative_control"
+      ],
+      "mutation_controls": [
+        "test_fnd_arch_012_display_short_sha_rejection"
+      ],
+      "expected_invariants": [
+        "ValueError on any non-40-character hex git commit OID in authoritative contracts"
+      ]
+    }
+  ],
+  "causal_proof": "CONFIRMED",
+  "verdict": "PASS"
+}

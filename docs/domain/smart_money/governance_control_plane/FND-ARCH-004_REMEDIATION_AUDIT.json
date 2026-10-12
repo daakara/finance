@@ -1,0 +1,33 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/per-finding-remediation-audit.json",
+  "finding_id": "FND-ARCH-004",
+  "rationale": "RPO=0 contradiction resolved: synchronous dual-region commit protocol specified for governance events while bulk evidence CRR is isolated.",
+  "lifecycle_transition": {
+    "from": "OPEN",
+    "to": "VERIFIED_RESOLVED"
+  },
+  "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-004:v1",
+  "verification_evidence": "urn:arx:evidence:verification:fnd-arch-004:v1",
+  "tests_verified": [
+    {
+      "finding_id": "FND-ARCH-004",
+      "test_files": [
+        "tests/test_smart_money_architecture_remediation.py"
+      ],
+      "test_ids": [
+        "test_fnd_arch_004_synchronous_commit_rpo_positive"
+      ],
+      "negative_controls": [
+        "test_fnd_arch_004_async_only_commit_rejected"
+      ],
+      "mutation_controls": [
+        "test_fnd_arch_004_operational_boundary_not_established"
+      ],
+      "expected_invariants": [
+        "RPO=0 synchronous dual-region commit protocol; async CRR isolated"
+      ]
+    }
+  ],
+  "causal_proof": "CONFIRMED",
+  "verdict": "PASS"
+}

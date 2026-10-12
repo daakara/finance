@@ -1,0 +1,156 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/architecture-remediation-test-matrix.json",
+  "summary": {
+    "architecture_targets_with_test_coverage": 8,
+    "targets_without_negative_control": 0,
+    "total_focused_tests": 24,
+    "focused_tests_passed": 24,
+    "focused_tests_failed": 0
+  },
+  "matrix": [
+    {
+      "finding_id": "FND-ARCH-001",
+      "test_files": [
+        "tests/test_smart_money_architecture_remediation.py"
+      ],
+      "test_ids": [
+        "test_fnd_arch_001_domain_separation_positive"
+      ],
+      "negative_controls": [
+        "test_fnd_arch_001_domain_separation_negative_control"
+      ],
+      "mutation_controls": [
+        "test_fnd_arch_001_bypass_failure"
+      ],
+      "expected_invariants": [
+        "CrossDomainHashComparisonError on untyped/cross-domain comparison"
+      ]
+    },
+    {
+      "finding_id": "FND-ARCH-012",
+      "test_files": [
+        "tests/test_smart_money_architecture_remediation.py"
+      ],
+      "test_ids": [
+        "test_fnd_arch_012_full_git_oid_positive"
+      ],
+      "negative_controls": [
+        "test_fnd_arch_012_truncation_negative_control"
+      ],
+      "mutation_controls": [
+        "test_fnd_arch_012_display_short_sha_rejection"
+      ],
+      "expected_invariants": [
+        "ValueError on any non-40-character hex git commit OID in authoritative contracts"
+      ]
+    },
+    {
+      "finding_id": "FND-ARCH-011",
+      "test_files": [
+        "tests/test_smart_money_architecture_remediation.py"
+      ],
+      "test_ids": [
+        "test_fnd_arch_011_predicate_equivalence_positive"
+      ],
+      "negative_controls": [
+        "test_fnd_arch_011_predicate_divergence_negative_control"
+      ],
+      "mutation_controls": [
+        "test_fnd_arch_011_runtime_denominator_zero"
+      ],
+      "expected_invariants": [
+        "11-case truth table exact predicate equivalence; denominator remains 0"
+      ]
+    },
+    {
+      "finding_id": "FND-ARCH-014",
+      "test_files": [
+        "tests/test_smart_money_architecture_remediation.py"
+      ],
+      "test_ids": [
+        "test_fnd_arch_014_log_consensus_coherence_positive"
+      ],
+      "negative_controls": [
+        "test_fnd_arch_014_divergence_negative_control"
+      ],
+      "mutation_controls": [
+        "test_fnd_arch_014_undetected_divergence_prevention"
+      ],
+      "expected_invariants": [
+        "ConsensusLogDivergenceError on log gap or hash break; fail-closed"
+      ]
+    },
+    {
+      "finding_id": "FND-ARCH-004",
+      "test_files": [
+        "tests/test_smart_money_architecture_remediation.py"
+      ],
+      "test_ids": [
+        "test_fnd_arch_004_synchronous_commit_rpo_positive"
+      ],
+      "negative_controls": [
+        "test_fnd_arch_004_async_only_commit_rejected"
+      ],
+      "mutation_controls": [
+        "test_fnd_arch_004_operational_boundary_not_established"
+      ],
+      "expected_invariants": [
+        "RPO=0 synchronous dual-region commit protocol; async CRR isolated"
+      ]
+    },
+    {
+      "finding_id": "FND-ARCH-007",
+      "test_files": [
+        "tests/test_smart_money_architecture_remediation.py"
+      ],
+      "test_ids": [
+        "test_fnd_arch_007_claim_commit_lifecycle_positive"
+      ],
+      "negative_controls": [
+        "test_fnd_arch_007_crash_recovery_expired_lease_negative_control"
+      ],
+      "mutation_controls": [
+        "test_fnd_arch_007_committed_claim_cannot_be_reclaimed"
+      ],
+      "expected_invariants": [
+        "Gate3ClaimState lifecycle state machine; expired lease reclaiming"
+      ]
+    },
+    {
+      "finding_id": "FND-ARCH-008",
+      "test_files": [
+        "tests/test_smart_money_architecture_remediation.py"
+      ],
+      "test_ids": [
+        "test_fnd_arch_008_contention_classified_as_retryable_positive"
+      ],
+      "negative_controls": [
+        "test_fnd_arch_008_quarantine_not_triggered_by_contention"
+      ],
+      "mutation_controls": [
+        "test_fnd_arch_008_semantic_failure_quarantined"
+      ],
+      "expected_invariants": [
+        "Gate3ContentionError distinct from EvidenceSemanticQuarantineError"
+      ]
+    },
+    {
+      "finding_id": "FND-ARCH-010",
+      "test_files": [
+        "tests/test_smart_money_architecture_remediation.py"
+      ],
+      "test_ids": [
+        "test_fnd_arch_010_stale_fence_rejected_positive"
+      ],
+      "negative_controls": [
+        "test_fnd_arch_010_no_false_terminal_hold_negative_control"
+      ],
+      "mutation_controls": [
+        "test_fnd_arch_010_active_writer_continues"
+      ],
+      "expected_invariants": [
+        "StaleFencingTokenError yields STALE_WRITER_REJECTED without false terminal hold"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/smart-money-architecture-remediation-closure-manifest.json",
+  "source_freeze_sha": "28d66d943644613225abbd89a3be19867e1c33cd",
+  "source_tree_oid": "738084f2004416bbea20de24d549ba492199ffcd",
+  "pre_architecture_target_hash": "944fe894d3de5c739d5add12e6a3fad28d686919736c363698b97977f8818285",
+  "post_architecture_target_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "finding_identity_registry_hash": "dfbe45012e6a25b163beb93acce1f6ad62167c73da5c4ab2613aeefec39ce937",
+  "finding_admission_registry_hash": "9d9ccc323db2575473f4afe32e30ea191726f7edc8d6870a93bec2d9dc5772fc",
+  "active_blocker_set_hash": "d50ac2dea79ceec67a884dbcc30956a37498aad1b69a7ecbae94b7ef0796bc92",
+  "dependency_dag_hash": "20cc2159748ce49a1ff96a0c8e2f4ba678786d918b84b2cf6320b3f0e2b425db",
+  "test_matrix_hash": "eed63a7ed9ef757fcb015c9c03db8d4d86b9f4d235bfc9764a7451102c4c1103",
+  "causal_ablation_hash": "4f779d11fbecb39b535eb2a22256a5f0fba3c928ac0159e0eec2a5a484e6d335",
+  "full_regression_hash": "e8be21cb588e789872a49be04569e05b3fb2548401a31ea3cb2c628be06b9ae5",
+  "canonical_recomputation_hash": "c88959909388701803587850113af67d59d3339a6e05502d3c5e612e71c46c58",
+  "closure_decision_hash": "3e7a16ed1fa9cf52038dc13e6efdae9c37bbb6c5f6207ddcbafc306f898beaeb",
+  "candidate004_raw_sha256": "297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90",
+  "active_architecture_defect_count": 0,
+  "active_non_architecture_blocker_count": 5,
+  "architecture_closure_status": "CLOSED",
+  "global_provisioning_readiness": "BLOCKED",
+  "provisioning_authorization_status": "NOT_ISSUABLE",
+  "final_verdict": "PASS"
+}
