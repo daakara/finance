@@ -39,6 +39,10 @@ class Finding:
     derived_blocks: List[str]
     reclassified_layer: str = "ARCHITECTURE_DEFECT"
     defect_class: str = "GENERIC_DEFECT"
+    assertion_status: str = "ASSERTED"
+    admission_status: str = "ADMITTED"  # ASSERTED_PENDING_REVIEW | ADMITTED | DUPLICATE | SUPERSEDED | REJECTED
+    duplicate_of: Optional[str] = None
+    superseded_by: Optional[str] = None
     architecture_contract_complete: bool = False
     implementation_present: bool = False
     external_evidence_required: bool = False
@@ -51,6 +55,15 @@ class Finding:
     waiver_expires_at: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
+        d = asdict(self)
+        d["lifecycle_status"] = self.lifecycle_status.value
+        d.pop("assertion_status", None)
+        d.pop("admission_status", None)
+        d.pop("duplicate_of", None)
+        d.pop("superseded_by", None)
+        return d
+
+    def to_admission_dict(self) -> Dict[str, Any]:
         d = asdict(self)
         d["lifecycle_status"] = self.lifecycle_status.value
         return d
@@ -88,6 +101,10 @@ class Finding:
                 "domain_scope": self.domain_scope,
                 "defect_layer": self.defect_layer,
             },
+            "assertion_status": self.assertion_status,
+            "admission_status": self.admission_status,
+            "duplicate_of": self.duplicate_of,
+            "superseded_by": self.superseded_by,
             "current_status": self.lifecycle_status.value,
             "current_scope": "PROVISIONING" if "PROVISIONING" in self.derived_blocks else "GENERAL",
             "evidence_refs": self.evidence_refs,
@@ -96,6 +113,9 @@ class Finding:
 
     @property
     def is_blocking(self) -> bool:
+        # Only admitted findings can block
+        if self.admission_status != "ADMITTED":
+            return False
         if self.lifecycle_status in [
             FindingStatus.VERIFIED_RESOLVED,
             FindingStatus.DISPROVED,
@@ -105,6 +125,7 @@ class Finding:
             # If waived and not expired, non-blocking
             return False
         return self.severity in ["CRITICAL", "HIGH", "BLOCKING"]
+
 
     @property
     def blocks(self) -> Dict[str, bool]:
@@ -134,6 +155,10 @@ FINDING_ORIGINAL_SUBJECTS: Dict[str, str] = {
     "FND-ARCH-009": "Transient evidence-fetch/server failures were over-classified as terminal failures.",
     "FND-ARCH-010": "Stale fencing-token rejection was over-classified as a system terminal hold rather than normal stale-writer rejection.",
     "FND-ARCH-011": "Stored and derived denominator predicates were not proven logically equivalent.",
+    "FND-ARCH-012": "Git commit SHA truncation in Genesis Manifest.",
+    "FND-ARCH-013": "Gate-3 lease-expiry recovery behavior.",
+    "FND-ARCH-014": "Transaction-log divergence from consensus.",
+    "FND-ARCH-015": "Candidate-freeze predicate coupling with denominator evaluation oracle.",
 }
 
 FINDING_DOMAIN_SCOPES: Dict[str, str] = {
@@ -148,6 +173,10 @@ FINDING_DOMAIN_SCOPES: Dict[str, str] = {
     "FND-ARCH-009": "OBSERVATION_ENGINE",
     "FND-ARCH-010": "LEDGER_CONSENSUS",
     "FND-ARCH-011": "DENOMINATOR",
+    "FND-ARCH-012": "ROOT_OF_TRUST",
+    "FND-ARCH-013": "GATE3_AUTHORITY",
+    "FND-ARCH-014": "LEDGER_CONSENSUS",
+    "FND-ARCH-015": "DENOMINATOR",
 }
 
 
@@ -378,6 +407,126 @@ def get_canonical_known_architecture_findings() -> List[Finding]:
             resolution_criteria="Align pre-arm admission predicate mathematically with denominator increment condition in passive capture contract.",
         ),
     ]
+
+
+def get_additional_registered_findings() -> List[Finding]:
+    """
+    Returns the additional registered findings FND-ARCH-012 through FND-ARCH-015
+    with their formal admission dispositions.
+    """
+    return [
+        Finding(
+            finding_id="FND-ARCH-012",
+            title="git commit sha truncation",
+            severity="CRITICAL",
+            lifecycle_status=FindingStatus.OPEN,
+            evidence_status="CONFIRMED_VULNERABILITY",
+            owner="urn:arx:identity:security-officer-alpha:v1",
+            resolution_authority="urn:arx:authority:bootstrap-council:v1",
+            verification_authority="urn:arx:identity:independent-auditor-delta:v1",
+            derived_blocks=["PROVISIONING", "THEOREM_A"],
+            reclassified_layer="ARCHITECTURE_DEFECT",
+            defect_class="SHA_TRUNCATION_RISK",
+            assertion_status="ASSERTED",
+            admission_status="ADMITTED",
+            architecture_contract_complete=False,
+            implementation_present=True,
+            external_evidence_required=False,
+            qualification_required=True,
+            classification_rationale="Git commit SHA truncation in Genesis Manifest introduces hash collision and ambiguity risk.",
+            evidence_refs=["urn:arx:evidence:audit:git-sha-truncation:001"],
+            resolution_criteria="Ensure all git commit SHAs in Genesis Manifest and root contracts are full 40-character hexadecimal strings.",
+        ),
+        Finding(
+            finding_id="FND-ARCH-013",
+            title="gate-3 lease expiry recovery behavior",
+            severity="HIGH",
+            lifecycle_status=FindingStatus.OPEN,
+            evidence_status="DUPLICATE_ASSERTION",
+            owner="urn:arx:identity:architecture-lead-charlie:v1",
+            resolution_authority="urn:arx:authority:bootstrap-council:v1",
+            verification_authority="urn:arx:identity:independent-auditor-delta:v1",
+            derived_blocks=["PROVISIONING", "THEOREM_B", "THEOREM_C"],
+            reclassified_layer="ARCHITECTURE_DEFECT",
+            defect_class="CRASH_RECOVERY_AMBIGUITY",
+            assertion_status="ASSERTED",
+            admission_status="DUPLICATE",
+            duplicate_of="FND-ARCH-007",
+            architecture_contract_complete=False,
+            implementation_present=False,
+            external_evidence_required=False,
+            qualification_required=True,
+            classification_rationale="Duplicate of FND-ARCH-007 (claimed-but-uncommitted Gate3 recovery semantics).",
+            evidence_refs=["urn:arx:evidence:audit:lease-expiry-recovery:001"],
+            resolution_criteria="Resolved via FND-ARCH-007 resolution.",
+        ),
+        Finding(
+            finding_id="FND-ARCH-014",
+            title="transaction log divergence from consensus",
+            severity="CRITICAL",
+            lifecycle_status=FindingStatus.OPEN,
+            evidence_status="CONFIRMED_VULNERABILITY",
+            owner="urn:arx:identity:architecture-lead-charlie:v1",
+            resolution_authority="urn:arx:authority:bootstrap-council:v1",
+            verification_authority="urn:arx:identity:independent-auditor-delta:v1",
+            derived_blocks=["PROVISIONING", "THEOREM_C"],
+            reclassified_layer="ARCHITECTURE_DEFECT",
+            defect_class="REPLICATION_DIVERGENCE",
+            assertion_status="ASSERTED",
+            admission_status="ADMITTED",
+            architecture_contract_complete=False,
+            implementation_present=False,
+            external_evidence_required=False,
+            qualification_required=True,
+            classification_rationale="Transaction log divergence from consensus during partition recovery represents an unresolved architecture defect.",
+            evidence_refs=["urn:arx:evidence:audit:transaction-log-divergence:001"],
+            resolution_criteria="Formalize consensus log reconciliation and verify anti-entropy repair protocol.",
+        ),
+        Finding(
+            finding_id="FND-ARCH-015",
+            title="candidate-freeze predicate coupling with denominator evaluation oracle",
+            severity="HIGH",
+            lifecycle_status=FindingStatus.OPEN,
+            evidence_status="DUPLICATE_ASSERTION",
+            owner="urn:arx:identity:architecture-lead-charlie:v1",
+            resolution_authority="urn:arx:authority:bootstrap-council:v1",
+            verification_authority="urn:arx:identity:independent-auditor-delta:v1",
+            derived_blocks=["PROVISIONING", "NATURAL_PRE_ARM"],
+            reclassified_layer="ARCHITECTURE_DEFECT",
+            defect_class="SEMANTIC_INVARIANT_MISALIGNMENT",
+            assertion_status="ASSERTED",
+            admission_status="DUPLICATE",
+            duplicate_of="FND-ARCH-011",
+            architecture_contract_complete=False,
+            implementation_present=False,
+            external_evidence_required=False,
+            qualification_required=True,
+            classification_rationale="Duplicate of FND-ARCH-011 (denominator predicate alignment).",
+            evidence_refs=["urn:arx:evidence:audit:predicate-coupling:001"],
+            resolution_criteria="Resolved via FND-ARCH-011 resolution.",
+        ),
+    ]
+
+
+def get_all_registered_findings() -> List[Finding]:
+    """
+    Returns all 15 registered findings across the universe (FND-ARCH-001 through FND-ARCH-015).
+    """
+    return get_canonical_known_architecture_findings() + get_additional_registered_findings()
+
+
+def get_canonical_admitted_findings() -> List[Finding]:
+    """
+    Returns only admitted findings (13 items, excluding duplicates/rejected).
+    """
+    return [f for f in get_all_registered_findings() if f.admission_status == "ADMITTED"]
+
+
+def create_canonical_finding_registry() -> "FindingRegistry":
+    """
+    Factory creating a FindingRegistry populated with all 15 registered findings.
+    """
+    return FindingRegistry(get_all_registered_findings())
 
 
 class FindingRegistry:

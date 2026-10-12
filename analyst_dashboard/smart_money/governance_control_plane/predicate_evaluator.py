@@ -29,6 +29,111 @@ PREDICATE_RESULT_FALSE = "FALSE"
 PREDICATE_RESULT_UNKNOWN = "UNKNOWN"
 PREDICATE_RESULT_CONFLICT = "CONFLICT"
 
+LOGIC_SEMANTICS_VERSION = "ARX-LOGIC-SEMANTICS-V1"
+
+# Frozen, single-valued 4x4 truth tables (zero undefined, zero multivalued cells)
+OR_TABLE: Dict[Tuple[str, str], str] = {
+    ("TRUE", "TRUE"): "TRUE",
+    ("TRUE", "FALSE"): "TRUE",
+    ("TRUE", "UNKNOWN"): "TRUE",
+    ("TRUE", "CONFLICT"): "TRUE",
+    ("FALSE", "TRUE"): "TRUE",
+    ("FALSE", "FALSE"): "FALSE",
+    ("FALSE", "UNKNOWN"): "UNKNOWN",
+    ("FALSE", "CONFLICT"): "CONFLICT",
+    ("UNKNOWN", "TRUE"): "TRUE",
+    ("UNKNOWN", "FALSE"): "UNKNOWN",
+    ("UNKNOWN", "UNKNOWN"): "UNKNOWN",
+    ("UNKNOWN", "CONFLICT"): "CONFLICT",
+    ("CONFLICT", "TRUE"): "TRUE",
+    ("CONFLICT", "FALSE"): "CONFLICT",
+    ("CONFLICT", "UNKNOWN"): "CONFLICT",
+    ("CONFLICT", "CONFLICT"): "CONFLICT",
+}
+
+AND_TABLE: Dict[Tuple[str, str], str] = {
+    ("TRUE", "TRUE"): "TRUE",
+    ("TRUE", "FALSE"): "FALSE",
+    ("TRUE", "UNKNOWN"): "UNKNOWN",
+    ("TRUE", "CONFLICT"): "CONFLICT",
+    ("FALSE", "TRUE"): "FALSE",
+    ("FALSE", "FALSE"): "FALSE",
+    ("FALSE", "UNKNOWN"): "FALSE",
+    ("FALSE", "CONFLICT"): "FALSE",
+    ("UNKNOWN", "TRUE"): "UNKNOWN",
+    ("UNKNOWN", "FALSE"): "FALSE",
+    ("UNKNOWN", "UNKNOWN"): "UNKNOWN",
+    ("UNKNOWN", "CONFLICT"): "CONFLICT",
+    ("CONFLICT", "TRUE"): "CONFLICT",
+    ("CONFLICT", "FALSE"): "FALSE",
+    ("CONFLICT", "UNKNOWN"): "CONFLICT",
+    ("CONFLICT", "CONFLICT"): "CONFLICT",
+}
+
+NOT_TABLE: Dict[str, str] = {
+    "TRUE": "FALSE",
+    "FALSE": "TRUE",
+    "UNKNOWN": "UNKNOWN",
+    "CONFLICT": "CONFLICT",
+}
+
+
+def compute_logic_semantics_hash(
+    or_table: Optional[Dict[Tuple[str, str], str]] = None,
+    and_table: Optional[Dict[Tuple[str, str], str]] = None,
+    not_table: Optional[Dict[str, str]] = None,
+    version: str = LOGIC_SEMANTICS_VERSION,
+) -> str:
+    """Computes SHA-256 hash over serialized total logic algebra."""
+    t_or = or_table or OR_TABLE
+    t_and = and_table or AND_TABLE
+    t_not = not_table or NOT_TABLE
+
+    or_serial = {f"{k[0]}|{k[1]}": v for k, v in sorted(t_or.items())}
+    and_serial = {f"{k[0]}|{k[1]}": v for k, v in sorted(t_and.items())}
+    return sha256_canonical({
+        "version": version,
+        "or_table": or_serial,
+        "and_table": and_serial,
+        "not_table": domain_normalize(t_not),
+    })
+
+
+class SelfAssertedAuthorityRejectedError(Exception):
+    """Raised when a PredicateFact attempts to assert AUTHORITATIVE without backing from a CanonicalEvidenceManifest."""
+    pass
+
+
+@dataclass
+class ProofCertificate:
+    predicate_id: str
+    result: str
+    proof_type: str  # DIRECT | SHORT_CIRCUIT | COMPOSITE
+    decisive_ast_nodes: List[Dict[str, Any]]
+    decisive_fact_ids: List[str]
+    participating_evidence_ids: List[str]
+    predicate_authority: str
+    predicate_validity: str
+    proof_hash: Optional[str] = None
+
+    def __post_init__(self):
+        if not self.proof_hash:
+            data = {
+                "predicate_id": self.predicate_id,
+                "result": self.result,
+                "proof_type": self.proof_type,
+                "decisive_ast_nodes": self.decisive_ast_nodes,
+                "decisive_fact_ids": sorted(self.decisive_fact_ids),
+                "participating_evidence_ids": sorted(self.participating_evidence_ids),
+                "predicate_authority": self.predicate_authority,
+                "predicate_validity": self.predicate_validity,
+            }
+            self.proof_hash = sha256_canonical(data)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
 UNKNOWN_REASONS = {
     "MISSING_FACT",
     "FACT_NOT_ESTABLISHED",
@@ -53,18 +158,20 @@ PROVENANCE_PRECEDENCE = {
 }
 
 
+
 @dataclass
 class PredicateFact:
     fact_id: str
     value: Any
-    value_type: str
-    provenance: Dict[str, Any]
-    validity: str
-    establishment: str
-    observed_at: str
+    value_type: str = "string"
+    provenance: Dict[str, Any] = field(default_factory=dict)
+    validity: str = "CURRENT"
+    establishment: str = "ESTABLISHED"
+    observed_at: str = "2026-10-12T00:00:00Z"
     valid_from: Optional[str] = None
     valid_until: Optional[str] = None
     fact_schema_version: str = "v1"
+    source_evidence_id: Optional[str] = None
     canonical_hash: Optional[str] = None
 
     def __post_init__(self):
@@ -83,6 +190,8 @@ class PredicateFact:
                 data["valid_from"] = self.valid_from
             if self.valid_until:
                 data["valid_until"] = self.valid_until
+            if self.source_evidence_id:
+                data["source_evidence_id"] = self.source_evidence_id
             self.canonical_hash = sha256_canonical(data)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -93,6 +202,7 @@ class FactContext:
     """
     Frozen canonical fact context for predicate evaluation.
     Enforces source precedence, conflict detection, and no unbound runtime reads.
+    Resolves authority strictly against CanonicalEvidenceManifest if provided.
     """
 
     def __init__(
@@ -100,17 +210,44 @@ class FactContext:
         facts: Optional[List[PredicateFact]] = None,
         capabilities: Optional[Set[str]] = None,
         evaluation_time: Optional[str] = None,
+        evidence_manifest: Optional[Any] = None,
+        strict_authoritative_check: bool = False,
     ):
         self._facts: Dict[str, PredicateFact] = {}
         self._conflicts: Dict[str, List[PredicateFact]] = {}
         self.capabilities: Set[str] = set(capabilities) if capabilities else set()
         self.evaluation_time: str = evaluation_time or "2026-10-12T07:30:00Z"
+        self.evidence_manifest = evidence_manifest
+        self.strict_authoritative_check = strict_authoritative_check
 
         if facts:
             for fact in facts:
                 self.add_fact(fact)
 
     def add_fact(self, fact: PredicateFact) -> None:
+        # Resolve authority against manifest if provided or strict check enabled
+        ev_id = fact.source_evidence_id or fact.provenance.get("evidence_id")
+        if self.evidence_manifest and hasattr(self.evidence_manifest, "records"):
+            rec_map = {r.evidence_id: r for r in self.evidence_manifest.records}
+            if ev_id and ev_id in rec_map:
+                rec = rec_map[ev_id]
+                fact.provenance["provenance_class"] = rec.provenance_class
+                fact.provenance["authority_class"] = rec.authority_class
+                fact.validity = rec.validity
+            else:
+                fact.provenance["authority_class"] = "NON_AUTHORITATIVE"
+                if self.strict_authoritative_check and fact.provenance.get("authority_class") == "AUTHORITATIVE":
+                    raise SelfAssertedAuthorityRejectedError(
+                        f"Fact '{fact.fact_id}' self-asserted authority without backing in CanonicalEvidenceManifest."
+                    )
+        elif self.strict_authoritative_check:
+            # Manifest required for authoritative assertions
+            if fact.provenance.get("authority_class") == "AUTHORITATIVE":
+                raise SelfAssertedAuthorityRejectedError(
+                    f"Fact '{fact.fact_id}' self-asserted authority_class='AUTHORITATIVE' without backing evidence manifest. "
+                    f"Self-asserted authority is strictly prohibited (PREDICATE_FACT_SELF_ASSERTED_AUTHORITY_ACCEPTED == 0)."
+                )
+
         fact_id = fact.fact_id
         if fact_id not in self._facts:
             self._facts[fact_id] = fact
@@ -172,6 +309,8 @@ class PredicateEvaluation:
     predicate_authority: str = "AUTHORITATIVE"  # AUTHORITATIVE or NON_AUTHORITATIVE
     predicate_validity: str = "CURRENT"  # CURRENT, STALE, REVOKED
     fact_participation: Dict[str, List[str]] = field(default_factory=dict)
+    proof_certificate: Optional[ProofCertificate] = None
+    logic_semantics_hash: str = field(default_factory=compute_logic_semantics_hash)
     evaluation_hash: Optional[str] = None
 
     def __post_init__(self):
@@ -188,11 +327,16 @@ class PredicateEvaluation:
                 "predicate_authority": self.predicate_authority,
                 "predicate_validity": self.predicate_validity,
                 "fact_participation": self.fact_participation,
+                "proof_certificate": self.proof_certificate.to_dict() if self.proof_certificate else None,
+                "logic_semantics_hash": self.logic_semantics_hash,
             }
             self.evaluation_hash = sha256_canonical(data)
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        d = asdict(self)
+        if self.proof_certificate:
+            d["proof_certificate"] = self.proof_certificate.to_dict()
+        return d
 
 
 class PredicateEvaluator:
@@ -270,6 +414,23 @@ class PredicateEvaluator:
         evaluated_inputs_list = [f.to_dict() for f in evaluated_facts.values()]
         decisive_inputs_list = [f.to_dict() for f in decisive_facts.values()]
 
+        # Generate Proof Certificate
+        participating_evidence = sorted(list({
+            str(f.provenance.get("evidence_id"))
+            for f in decisive_facts.values()
+            if f.provenance.get("evidence_id")
+        }))
+        proof_cert = ProofCertificate(
+            predicate_id=predicate.predicate_id,
+            result=result,
+            proof_type="SHORT_CIRCUIT" if len(decisive_set) == 1 else "COMPOSITE",
+            decisive_ast_nodes=[{"strategy": self.strategy}],
+            decisive_fact_ids=decisive,
+            participating_evidence_ids=participating_evidence,
+            predicate_authority=predicate_authority,
+            predicate_validity=predicate_validity,
+        )
+
         return PredicateEvaluation(
             predicate_id=predicate.predicate_id,
             version=predicate.predicate_version,
@@ -282,7 +443,10 @@ class PredicateEvaluator:
             predicate_authority=predicate_authority,
             predicate_validity=predicate_validity,
             fact_participation=fact_participation,
+            proof_certificate=proof_cert,
+            logic_semantics_hash=compute_logic_semantics_hash(),
         )
+
 
     def _eval_node(
         self,

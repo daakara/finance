@@ -19,12 +19,33 @@ from .ledger import (
     RollbackDetectedException,
     SecondGenesisProhibitedException,
 )
-from .finding_registry import FindingRegistry, Finding, FindingStatus
+from .finding_registry import (
+    FindingRegistry,
+    Finding,
+    FindingStatus,
+    get_canonical_known_architecture_findings,
+    get_additional_registered_findings,
+    get_all_registered_findings,
+    get_canonical_admitted_findings,
+    create_canonical_finding_registry,
+)
 from .evidence_inventory import EvidenceInventory, ZeroFindingAttestation
+from .evidence_manifest import (
+    EvidenceRecord,
+    CanonicalEvidenceManifest,
+    CanonicalClaim,
+    ClaimRegistry,
+    build_canonical_evidence_manifest,
+    validate_canonical_evidence_record,
+    EvidenceIntegrityError,
+    SyntheticEvidenceContaminationError,
+    PlaceholderHashError,
+)
 from .decision_engine import (
     GovernanceDecisionEngine,
     ReferenceDecisionEngine,
     DecisionSnapshot,
+    verify_legacy_dag_parity,
 )
 from .authorization import (
     AuthorizationManager,
@@ -34,6 +55,8 @@ from .authorization import (
     AuthorizationExpiredException,
     AuthorizationConsumedException,
     OutOfScopeActionException,
+    ProvisioningBlockedException,
+    StaleDecisionException,
 )
 
 from .bootstrap_authority import (
@@ -101,6 +124,13 @@ from .predicate_evaluator import (
     FactContext,
     PredicateEvaluation,
     PredicateEvaluator,
+    ProofCertificate,
+    compute_logic_semantics_hash,
+    LOGIC_SEMANTICS_VERSION,
+    OR_TABLE,
+    AND_TABLE,
+    NOT_TABLE,
+    SelfAssertedAuthorityRejectedError,
     PREDICATE_RESULT_TRUE,
     PREDICATE_RESULT_FALSE,
     PREDICATE_RESULT_UNKNOWN,
@@ -164,6 +194,8 @@ __all__ = [
     "AuthorizationExpiredException",
     "AuthorizationConsumedException",
     "OutOfScopeActionException",
+    "ProvisioningBlockedException",
+    "StaleDecisionException",
     "BootstrapState",
     "BootstrapAuthorization",
     "BootstrapAuthorityManager",

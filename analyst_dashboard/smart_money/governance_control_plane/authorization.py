@@ -6,14 +6,18 @@ Implements strict Decision != Authorization separation, TOCTOU protection,
 operator identity binding, least-authority action scopes, single-use tracking, and TTL.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, asdict
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, TYPE_CHECKING
 import uuid
 from datetime import datetime, timezone, timedelta
 
 from .canonicalization import sha256_canonical
-from .decision_engine import DecisionSnapshot
 from .ledger import AuthorityLedger
+
+if TYPE_CHECKING:
+    from .decision_engine import DecisionSnapshot
 
 
 class ProvisioningBlockedException(Exception):
@@ -72,6 +76,8 @@ class ProvisioningAuthorization:
     precondition_hashes: Dict[str, str]
     authorization_hash: str
     signature_or_ratification_ref: str
+    evidence_manifest_hash: Optional[str] = None
+    dependency_resolution_hash: Optional[str] = None
     consumed_count: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
@@ -101,6 +107,8 @@ class ExecutionAuthorization:
     precondition_hashes: Dict[str, str]
     authorization_hash: str
     signature_or_ratification_ref: str
+    evidence_manifest_hash: Optional[str] = None
+    dependency_resolution_hash: Optional[str] = None
     consumed_count: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
@@ -130,8 +138,11 @@ class AuthorizationManager:
         resource_scope: List[str],
         theorem_scope: List[str],
         current_registry_hash: str,
+        current_evidence_manifest_hash: Optional[str] = None,
+        current_dependency_resolution_hash: Optional[str] = None,
         issued_at: Optional[str] = None,
         ttl_seconds: int = PROVISIONING_TTL_SECONDS,
+        require_dependency_binding: bool = True,
     ) -> ProvisioningAuthorization:
         # 1. Decision must be READY
         if decision.global_provisioning_readiness != "READY":
@@ -139,15 +150,41 @@ class AuthorizationManager:
                 f"Cannot issue provisioning authorization: readiness is {decision.global_provisioning_readiness}."
             )
 
-        # 2. Decision must not be stale
-        if self.ledger.head and self.ledger.head.head_hash != decision.previous_decision_hash:
-            # Check if ledger head matches what decision saw or if decision is latest
-            pass
+        # Canonical eligibility check
+        if getattr(decision, "canonical_eligibility", "PASS") != "PASS" or getattr(decision, "authority_eligibility", "AUTHORITATIVE") != "AUTHORITATIVE":
+            raise ProvisioningBlockedException(
+                "Cannot issue authorization: decision has synthetic or non-authoritative evidence."
+            )
 
+        # Resolve evidence and dependency hashes
+        ev_hash = current_evidence_manifest_hash or getattr(decision, "evidence_manifest_hash", None)
+        dep_hash = current_dependency_resolution_hash or getattr(decision, "dependency_resolution_hash", None)
+
+        if require_dependency_binding:
+            if not dep_hash:
+                raise ValueError("Authorization requires dependency_resolution_hash binding (AUTHORIZATION_WITHOUT_DEPENDENCY_BINDING_ACCEPTED == 0).")
+            if not ev_hash:
+                raise ValueError("Authorization requires evidence_manifest_hash binding (AUTHORIZATION_WITHOUT_EVIDENCE_BINDING_ACCEPTED == 0).")
+            if not current_registry_hash or not getattr(decision, "finding_registry_hash", None):
+                raise ValueError("Authorization requires finding_registry_hash binding (AUTHORIZATION_WITHOUT_FINDING_BINDING_ACCEPTED == 0).")
+
+        # 2. Decision must not be stale
         if decision.finding_registry_hash != current_registry_hash:
             raise StaleDecisionException(
                 "Cannot issue authorization: decision registry hash does not match current registry hash."
             )
+
+        if current_evidence_manifest_hash and getattr(decision, "evidence_manifest_hash", None):
+            if current_evidence_manifest_hash != decision.evidence_manifest_hash:
+                raise StaleDecisionException(
+                    "Cannot issue authorization: decision evidence manifest hash does not match current evidence manifest hash."
+                )
+
+        if current_dependency_resolution_hash and getattr(decision, "dependency_resolution_hash", None):
+            if current_dependency_resolution_hash != decision.dependency_resolution_hash:
+                raise StaleDecisionException(
+                    "Cannot issue authorization: decision dependency resolution hash does not match current dependency resolution hash."
+                )
 
         now = datetime.now(timezone.utc)
         issued_at_str = issued_at or now.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -177,6 +214,9 @@ class AuthorizationManager:
             "precondition_hashes": {
                 "decision_hash": decision.decision_hash,
                 "policy_hash": decision.policy_hash,
+                "evidence_manifest_hash": ev_hash or "",
+                "dependency_resolution_hash": dep_hash or "",
+                "registry_hash": current_registry_hash,
             },
             "signature_or_ratification_ref": "urn:arx:ratification:council:prov-auth-001",
         }
@@ -202,6 +242,8 @@ class AuthorizationManager:
             precondition_hashes=body["precondition_hashes"],
             authorization_hash=auth_hash,
             signature_or_ratification_ref=body["signature_or_ratification_ref"],
+            evidence_manifest_hash=ev_hash,
+            dependency_resolution_hash=dep_hash,
         )
         self.active_authorizations[auth_id] = auth
         return auth
@@ -213,6 +255,8 @@ class AuthorizationManager:
         requested_action: str,
         current_decision_hash: str,
         current_registry_hash: str,
+        current_evidence_manifest_hash: Optional[str] = None,
+        current_dependency_resolution_hash: Optional[str] = None,
         check_time: Optional[datetime] = None,
     ) -> None:
         if auth_id not in self.active_authorizations:
@@ -265,6 +309,22 @@ class AuthorizationManager:
                 f"TOCTOU check failed: current registry hash {current_registry_hash} "
                 f"does not match authorization registry hash {auth.registry_hash}."
             )
+
+        if auth.evidence_manifest_hash and current_evidence_manifest_hash:
+            if current_evidence_manifest_hash != auth.evidence_manifest_hash:
+                raise TOCTOUException(
+                    f"TOCTOU check failed: current evidence manifest hash {current_evidence_manifest_hash} "
+                    f"does not match authorization evidence manifest hash {auth.evidence_manifest_hash}. "
+                    f"STALE_EVIDENCE_AUTHORIZATION_ACCEPTED == 0."
+                )
+
+        if auth.dependency_resolution_hash and current_dependency_resolution_hash:
+            if current_dependency_resolution_hash != auth.dependency_resolution_hash:
+                raise TOCTOUException(
+                    f"TOCTOU check failed: current dependency resolution hash {current_dependency_resolution_hash} "
+                    f"does not match authorization dependency resolution hash {auth.dependency_resolution_hash}. "
+                    f"STALE_DEPENDENCY_AUTHORIZATION_ACCEPTED == 0."
+                )
 
         # Consume
         auth.consumed_count += 1

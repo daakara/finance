@@ -136,12 +136,17 @@ class DependencyGraph:
                     queue.append(nxt)
         return visited
 
-    def validate_graph(self, predicates: Optional[Dict[str, PredicateDefinition]] = None) -> None:
+    def validate_graph(
+        self,
+        predicates: Optional[Dict[str, PredicateDefinition]] = None,
+        claim_registry: Optional[Any] = None,
+    ) -> None:
         """
         Validates the DAG against:
         - Structural cycles (PREDICATE_DEPENDENCY_CYCLES == 0)
         - Target reference cycles (TARGET_REFERENCE_CYCLES == 0)
         - Self-disabling guard references (GUARD_SELF_DISABLING_REFERENCES == 0)
+        - Semantic claim-fact alias self-disabling references
         """
         # 1. Structural Cycle Detection (Tarjan's or DFS)
         visited = {}  # 0: unvisited, 1: visiting, 2: visited
@@ -180,13 +185,19 @@ class DependencyGraph:
                                     f"Guard on edge {edge.dependency_id} circularly references target or descendant '{fact_ref}'"
                                 )
 
-                        # Check Self-Disabling Guard: guard references source claim itself
-                        # Pattern: guarded claim absence makes predicate False, causing requirement to disable itself
-                        if edge.source_claim_id in referenced_facts:
-                            raise SelfDisablingGuardError(
-                                f"Guard on edge {edge.dependency_id} references guarded source claim '{edge.source_claim_id}'. "
-                                f"Self-disabling guards are strictly prohibited (GUARD_SELF_DISABLING_REFERENCES == 0)."
-                            )
+                        # Check Self-Disabling Guard: guard references source claim itself or semantically bound aliases
+                        bound_facts = {edge.source_claim_id}
+                        if claim_registry and hasattr(claim_registry, "get_facts_for_claim"):
+                            bound_facts.update(claim_registry.get_facts_for_claim(edge.source_claim_id))
+
+                        for fact_ref in referenced_facts:
+                            if fact_ref in bound_facts:
+                                raise SelfDisablingGuardError(
+                                    f"Guard on edge {edge.dependency_id} references guarded source claim '{edge.source_claim_id}' "
+                                    f"(or bound semantic alias '{fact_ref}'). "
+                                    f"Self-disabling guards are strictly prohibited (GUARD_SELF_DISABLING_REFERENCES == 0)."
+                                )
+
 
     def compute_blast_radius(self, unresolved_target_ids: Set[str]) -> Tuple[Set[str], Set[str]]:
         """

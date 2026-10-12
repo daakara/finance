@@ -1,0 +1,88 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/canonical-decision-input-bindings.json",
+  "gate": "SMART_MONEY_CANONICAL_DECISION_INTEGRATION_AND_EVIDENCE_PARITY_REPAIR_V1",
+  "binding_semantics": {
+    "version": "1.0.0",
+    "description": "Cryptographic 4-root binding model enforcing single decision authority and TOCTOU protection across evidence, findings, DAG resolution, and decisions."
+  },
+  "roots": {
+    "decision_hash": {
+      "algorithm": "sha256",
+      "canonicalization": "JCS_RFC8785",
+      "description": "Cryptographic digest of the complete canonical DecisionSnapshot payload."
+    },
+    "evidence_manifest_hash": {
+      "algorithm": "sha256",
+      "canonicalization": "JCS_RFC8785",
+      "description": "Cryptographic digest of the CanonicalEvidenceManifest containing only authoritative, non-synthetic, non-placeholder records."
+    },
+    "finding_registry_hash": {
+      "algorithm": "sha256",
+      "canonicalization": "JCS_RFC8785",
+      "canonical_admitted_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "description": "Cryptographic digest of the canonical admitted finding population (13 admitted out of 15 registered findings)."
+    },
+    "dependency_resolution_hash": {
+      "algorithm": "sha256",
+      "canonicalization": "JCS_RFC8785",
+      "description": "Cryptographic digest of the resolved dependency set computed from compiled policy and authoritative fact context."
+    }
+  },
+  "policy_and_logic_bindings": {
+    "dsl_version": "ARX-PREDICATE-DSL-V1",
+    "logic_semantics_version": "ARX-PARTIAL-LOGIC-4X4-V1",
+    "logic_semantics_hash": "217465cfe477f3d2939e1948a81e5c1fd648094a788e671b51e85c8d0ec13e7c",
+    "evaluation_strategy": "CANONICAL_AST_ORDER",
+    "partial_logic_properties": {
+      "undefined_cells": 0,
+      "multivalued_cells": 0,
+      "states": ["TRUE", "FALSE", "UNKNOWN", "CONFLICT"]
+    }
+  },
+  "claim_fact_semantic_bindings": {
+    "registry_status": "PRESENT",
+    "bindings": {
+      "CLAIM-GOVERNANCE-ROOT": [
+        "governance_root_established",
+        "governance_root_status"
+      ],
+      "CLAIM-EXTERNAL-LEDGER": [
+        "external_ledger_established",
+        "external_ledger_status"
+      ],
+      "CLAIM-EXTERNAL-WITNESS": [
+        "external_witness_established",
+        "external_witness_status"
+      ],
+      "CLAIM-CANDIDATE-FREEZE": [
+        "candidate_freeze_hash_valid",
+        "candidate_freeze_status"
+      ],
+      "CLAIM-DENOMINATOR-ALIGNMENT": [
+        "natural_denominator_value",
+        "denominator_alignment_status"
+      ]
+    },
+    "self_disabling_guard_prevention": {
+      "enforced": true,
+      "rule": "Guard on dependency edge cannot reference guarded source claim or any semantically bound fact alias",
+      "undetected_cases": 0
+    }
+  },
+  "decision_input_consistency_invariants": {
+    "distinct_evidence_manifests_used_in_one_decision": 1,
+    "distinct_finding_registries_used_in_one_decision": 1,
+    "distinct_dependency_policies_used_in_one_decision": 1,
+    "distinct_predicate_contexts_used_in_one_decision": 1
+  },
+  "authorization_verification_protocol": {
+    "required_bound_roots": [
+      "decision_hash",
+      "evidence_manifest_hash",
+      "finding_registry_hash",
+      "dependency_resolution_hash"
+    ],
+    "execution_time_verification": "TOCTOU re-verification against authoritative ledger state",
+    "stale_decision_behavior": "FAIL_CLOSED"
+  }
+}

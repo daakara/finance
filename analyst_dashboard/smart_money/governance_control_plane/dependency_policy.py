@@ -35,7 +35,6 @@ from .dependency_graph import (
     GuardedObligation,
     DependencyGraphError,
 )
-from .authorization import TOCTOUException
 
 
 class DependencyPolicyError(Exception):
@@ -453,6 +452,7 @@ def verify_authorization_dependency_binding(
     Fails closed if the resolution hash changed.
     """
     if auth_dependency_resolution_hash != current_dependency_resolution_hash:
+        from .authorization import TOCTOUException
         raise TOCTOUException(
             f"Dependency resolution hash changed between authorization and execution: "
             f"authorized={auth_dependency_resolution_hash[:16]}... vs "
