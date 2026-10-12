@@ -1,0 +1,210 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/blocker-ablation-report.json",
+  "version": "1.0.0",
+  "evaluated_at": "2026-10-12T11:50:22Z",
+  "summary": {
+    "active_blocker_count": 13,
+    "ablation_cases_executed": 13,
+    "ablation_cases_passed": 13,
+    "ablation_cases_failed": 0,
+    "parity_confirmed": true
+  },
+  "invariants": {
+    "ACTIVE_BLOCKER_COUNT": 13,
+    "ABLATION_CASES_EXECUTED": 13,
+    "ABLATION_CASES_PASSED": 13,
+    "ABLATION_CASES_FAILED": 0,
+    "PRECOMPUTED_ABLATION_REPORT_USED_AS_EXECUTION_PROOF": 0
+  },
+  "ablation_results": [
+    {
+      "finding_id": "FND-ARCH-001",
+      "restored_subject": "Candidate 004 freeze-file SHA-256 was conflated with Candidate 004 semantic-closure hash.",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_A",
+        "THEOREM_B"
+      ],
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "ablation_verdict": "PASS"
+    },
+    {
+      "finding_id": "FND-ARCH-002",
+      "restored_subject": "Genesis release provenance was unsupported or not derived from authoritative evidence.",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_A"
+      ],
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "ablation_verdict": "PASS"
+    },
+    {
+      "finding_id": "FND-ARCH-003",
+      "restored_subject": "Timestamp-authority provenance was claimed without adequate authoritative evidence.",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_B",
+        "THEOREM_D"
+      ],
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "ablation_verdict": "PASS"
+    },
+    {
+      "finding_id": "FND-ARCH-004",
+      "restored_subject": "Zero-event RPO requirement conflicted with asynchronous replication semantics.",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_C"
+      ],
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "ablation_verdict": "PASS"
+    },
+    {
+      "finding_id": "FND-ARCH-005",
+      "restored_subject": "Evidence-custody contract conflated provider-specific storage semantics.",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_D"
+      ],
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "ablation_verdict": "PASS"
+    },
+    {
+      "finding_id": "FND-ARCH-006",
+      "restored_subject": "OIDC identity binding was insufficiently scoped or incomplete.",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_B"
+      ],
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "ablation_verdict": "PASS"
+    },
+    {
+      "finding_id": "FND-ARCH-007",
+      "restored_subject": "Claimed-but-uncommitted Gate3 state lacked complete durable recovery semantics.",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_B",
+        "THEOREM_C"
+      ],
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "ablation_verdict": "PASS"
+    },
+    {
+      "finding_id": "FND-ARCH-008",
+      "restored_subject": "Gate3 claim contention was incorrectly mapped to semantic evidence quarantine.",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_C"
+      ],
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "ablation_verdict": "PASS"
+    },
+    {
+      "finding_id": "FND-ARCH-009",
+      "restored_subject": "Transient evidence-fetch/server failures were over-classified as terminal failures.",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_D"
+      ],
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "ablation_verdict": "PASS"
+    },
+    {
+      "finding_id": "FND-ARCH-010",
+      "restored_subject": "Stale fencing-token rejection was over-classified as a system terminal hold rather than normal stale-writer rejection.",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_C"
+      ],
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "ablation_verdict": "PASS"
+    },
+    {
+      "finding_id": "FND-ARCH-011",
+      "restored_subject": "Stored and derived denominator predicates were not proven logically equivalent.",
+      "isolated_blocks": [
+        "NATURAL_PRE_ARM",
+        "PROVISIONING"
+      ],
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "ablation_verdict": "PASS"
+    },
+    {
+      "finding_id": "FND-ARCH-012",
+      "restored_subject": "Git commit SHA truncation in Genesis Manifest.",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_A"
+      ],
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "ablation_verdict": "PASS"
+    },
+    {
+      "finding_id": "FND-ARCH-014",
+      "restored_subject": "Transaction-log divergence from consensus.",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_C"
+      ],
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "ablation_verdict": "PASS"
+    }
+  ],
+  "verified_source_freeze_sha": "18af98ab49be5ac0df958697af161ff487d1bd84",
+  "generator": "tools/generate_smart_money_governance_attestation.py",
+  "generator_hash": "8ff553932ac5d478e87fe88bb9790e90f43297c136bfe16bd8f8d527e7decd48",
+  "verdict": "PASS"
+}

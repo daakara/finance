@@ -1,0 +1,18 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/decision-invalidation-binding-audit.json",
+  "verified_source_freeze_sha": "18af98ab49be5ac0df958697af161ff487d1bd84",
+  "source_tree_oid": "6096500c691a96497aeced7a2d29310f171e8d30",
+  "generated_at": "2026-10-12T11:50:22Z",
+  "generator": "tools/generate_smart_money_governance_attestation.py",
+  "generator_hash": "8ff553932ac5d478e87fe88bb9790e90f43297c136bfe16bd8f8d527e7decd48",
+  "input_hashes": {
+    "invalidation_registry_hash": "116aa41bbfaeb6568a3a64f47f5a1e11c62bc42325c5bf49e2db744260bcb9f0"
+  },
+  "verdict": "PASS",
+  "summary": {
+    "decision_invalidation_binding": "PASS_BY_TRANSITIVE_SOURCE_BINDING",
+    "invalidation_state_changed_without_context_root_change": 0,
+    "binding_chain": "decision_context -> source_freeze_sha -> git_tree -> DECISION_INVALIDATION_REGISTRY.json",
+    "invalidated_decisions_tracked": 3
+  }
+}

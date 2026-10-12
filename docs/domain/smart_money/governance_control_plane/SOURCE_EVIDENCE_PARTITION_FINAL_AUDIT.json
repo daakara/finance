@@ -1,0 +1,66 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/source-evidence-partition-audit.json",
+  "verified_source_freeze_sha": "18af98ab49be5ac0df958697af161ff487d1bd84",
+  "source_tree_oid": "6096500c691a96497aeced7a2d29310f171e8d30",
+  "generated_at": "2026-10-12T11:50:22Z",
+  "generator": "tools/generate_smart_money_governance_attestation.py",
+  "generator_hash": "8ff553932ac5d478e87fe88bb9790e90f43297c136bfe16bd8f8d527e7decd48",
+  "input_hashes": {
+    "partition_contract_hash": "2c5277de9e035b075a2af69d587b6c290555a967d4613434b106e4faa702be0d"
+  },
+  "verdict": "PASS",
+  "summary": {
+    "total_governed_artifacts": 22,
+    "source_artifacts": 11,
+    "evidence_artifacts": 11,
+    "verification_outputs_remaining_in_new_source_freeze": 0,
+    "runtime_depends_on_verification_report": 0,
+    "verification_report_used_as_canonical_source_input": 0
+  },
+  "disputed_artifacts_audit": [
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/BLOCKER_ABLATION_REPORT.json",
+      "old_classification": "SOURCE_CONTAMINATED_VERIFICATION_EVIDENCE",
+      "final_classification": "EVIDENCE_AUTHORITY_ONLY",
+      "runtime_consumer": "NONE",
+      "canonical_consumer": "NONE",
+      "generated_from": "fresh_execution",
+      "belongs_in_source": false,
+      "belongs_in_evidence": true,
+      "reason": "Verification outputs must be generated after source freeze and sealed in evidence authority."
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/DECISION_CANONICAL_VALIDITY_AUDIT.json",
+      "old_classification": "SOURCE_CONTAMINATED_VERIFICATION_EVIDENCE",
+      "final_classification": "EVIDENCE_AUTHORITY_ONLY",
+      "runtime_consumer": "NONE",
+      "canonical_consumer": "NONE",
+      "generated_from": "fresh_execution",
+      "belongs_in_source": false,
+      "belongs_in_evidence": true,
+      "reason": "Verification outputs must be generated after source freeze and sealed in evidence authority."
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/FINDING_ADJUDICATION_REPORT.json",
+      "old_classification": "SOURCE_CONTAMINATED_VERIFICATION_EVIDENCE",
+      "final_classification": "EVIDENCE_AUTHORITY_ONLY",
+      "runtime_consumer": "NONE",
+      "canonical_consumer": "NONE",
+      "generated_from": "fresh_execution",
+      "belongs_in_source": false,
+      "belongs_in_evidence": true,
+      "reason": "Verification outputs must be generated after source freeze and sealed in evidence authority."
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/FOREIGN_FINDING_ASSERTION_AUDIT.json",
+      "old_classification": "SOURCE_CONTAMINATED_VERIFICATION_EVIDENCE",
+      "final_classification": "EVIDENCE_AUTHORITY_ONLY",
+      "runtime_consumer": "NONE",
+      "canonical_consumer": "NONE",
+      "generated_from": "fresh_execution",
+      "belongs_in_source": false,
+      "belongs_in_evidence": true,
+      "reason": "Verification outputs must be generated after source freeze and sealed in evidence authority."
+    }
+  ]
+}

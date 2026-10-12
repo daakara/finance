@@ -1,0 +1,24 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/finding-source-of-truth-parity-audit.json",
+  "verified_source_freeze_sha": "18af98ab49be5ac0df958697af161ff487d1bd84",
+  "generated_at": "2026-10-12T11:50:22Z",
+  "generator": "tools/generate_smart_money_governance_attestation.py",
+  "generator_hash": "8ff553932ac5d478e87fe88bb9790e90f43297c136bfe16bd8f8d527e7decd48",
+  "input_hashes": {
+    "baseline_hash": "7fc9efbcca6356c2bbb3b2ab1c00a05f4fe2da650101a35e7093f07c265f432e",
+    "registry_json_hash": "db7549ed5ad6271fb0fe072b6343374a92533e9ce423996f4364c80904fe2647"
+  },
+  "verdict": "PASS",
+  "summary": {
+    "canonical_finding_identity_source_count": 1,
+    "canonical_finding_identity_authority": "analyst_dashboard/smart_money/governance_control_plane/finding_registry.py",
+    "finding_identity_representation_parity": "PASS",
+    "total_findings_evaluated": 15,
+    "mismatches_found": 0
+  },
+  "representations_checked": [
+    "analyst_dashboard/smart_money/governance_control_plane/finding_registry.py",
+    "docs/domain/smart_money/governance_control_plane/HISTORICAL_FINDING_IDENTITY_BASELINE.json",
+    "docs/domain/smart_money/governance_control_plane/FINDING_IDENTITY_REGISTRY.json"
+  ]
+}
