@@ -1,0 +1,25 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/sequence-4-provenance-contract-audit.json",
+  "audit_id": "urn:arx:audit:sequence-4-provenance-contract:2026-10-12",
+  "generated_at": "2026-10-12T20:20:32Z",
+  "provenance_field_contract": {
+    "derivation_engine_hash": {
+      "authority": "GovernanceDecisionEngine.compute_engine_hash().",
+      "meaning": "Deterministic canonical JSON SHA-256 digest of engine version, engine class name, and engine source SHA."
+    },
+    "derivation_engine_source_sha": {
+      "authority": "Engine metadata constant ENGINE_SOURCE_SHA.",
+      "meaning": "Git commit SHA of the governance engine implementation executing canonical derivation."
+    },
+    "source_freeze_sha": {
+      "authority": "Repository Git commit database verified via git cat-file.",
+      "expected_relationship_to_git_source": "Must be an existing commit reachable in repository history.",
+      "meaning": "Authoritative Git commit SHA identifying the frozen implementation source against which the canonical governance decision was evaluated."
+    },
+    "source_tree_oid": {
+      "authority": "git rev-parse '<commit>^{tree}'.",
+      "meaning": "Git tree object ID identifying the exact filesystem state corresponding to source_freeze_sha."
+    }
+  },
+  "verdict": "VERIFIED"
+}

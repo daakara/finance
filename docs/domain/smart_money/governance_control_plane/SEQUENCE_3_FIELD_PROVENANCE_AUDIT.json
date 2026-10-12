@@ -1,0 +1,46 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/sequence-3-field-provenance-audit.json",
+  "audit_id": "urn:arx:audit:sequence-3-field-provenance:2026-10-12",
+  "field_provenance_trace": {
+    "decision_context_hash": {
+      "matches": true,
+      "recomputed_value": "52ba3e67d8aa20cc12b205e2ea3162fd88a40975c7b33608ffa97e5c6d1782c3",
+      "source_context": "Stale pre-FND-ARCH-016 context hash",
+      "stored_value": "52ba3e67d8aa20cc12b205e2ea3162fd88a40975c7b33608ffa97e5c6d1782c3"
+    },
+    "dependency_policy_hash": {
+      "matches": true,
+      "recomputed_value": "d82e9fb9970a4040c9291d23ed019b89848f1f97a3c57a3375c34971ab40b7df",
+      "source_context": "Compiled canonical dependency policy",
+      "stored_value": "d82e9fb9970a4040c9291d23ed019b89848f1f97a3c57a3375c34971ab40b7df"
+    },
+    "dependency_resolution_hash": {
+      "matches": true,
+      "recomputed_value": "2f9ebea3adfb038953c84c7a42f09286a68d32dbd4af8f5b4fbda3391c2d7714",
+      "source_context": "Predecessor dependency resolution result",
+      "stored_value": "2f9ebea3adfb038953c84c7a42f09286a68d32dbd4af8f5b4fbda3391c2d7714"
+    },
+    "evidence_manifest_hash": {
+      "matches": true,
+      "recomputed_value": "3b8d91c7a4f91048e27c19a48910482019482019482019482019482019482019",
+      "source_context": "Synthetic test fixture (3b8d91c7...) rather than live evidence manifest (652af9d2...)",
+      "stored_value": "3b8d91c7a4f91048e27c19a48910482019482019482019482019482019482019",
+      "synthetic_fixture_identified": true
+    },
+    "finding_registry_hash": {
+      "matches": true,
+      "recomputed_value": "f2f6fdd2a92ec882abd6f7524261cbe6269c5ed8201f9ab3ca3ecd1ff499a10e",
+      "source_context": "Predecessor 15-finding registry (prior to FND-ARCH-016 admission)",
+      "stored_value": "f2f6fdd2a92ec882abd6f7524261cbe6269c5ed8201f9ab3ca3ecd1ff499a10e"
+    },
+    "source_freeze_sha": {
+      "matches": false,
+      "note": "Altered during state migration serialization in commit 3c93b8f",
+      "original_derivation_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+      "serialized_mutation_sha": "4aa35839dc0f5d2496d4a13c80e6c72cdee53eda",
+      "stored_value": "4aa35839dc0f5d2496d4a13c80e6c72cdee53eda"
+    }
+  },
+  "generated_at": "2026-10-12T20:20:32Z",
+  "verdict": "FAIL_STORED_SERIALIZATION_MUTATION"
+}

@@ -1,0 +1,190 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/canonical-finding-identity-reconciliation-audit.json",
+  "audit_id": "urn:arx:audit:canonical-finding-identity-reconciliation:2026-10-12",
+  "canonical_duplicates": [
+    {
+      "duplicate_of": "FND-ARCH-007",
+      "finding_id": "FND-ARCH-013",
+      "original_subject": "Missing state machine recovery transition handler for Gate-3 validation timeout"
+    },
+    {
+      "duplicate_of": "FND-ARCH-011",
+      "finding_id": "FND-ARCH-015",
+      "original_subject": "WAL sequence gap replay vulnerability across distributed partitions"
+    }
+  ],
+  "duplicate_conflict_resolution": {
+    "fnd_arch_014_status": "ADMITTED_VERIFIED_RESOLVED",
+    "fnd_arch_014_subject": "Transaction-log divergence from consensus state in multi-region ledger replication",
+    "resolution": "FND-ARCH-014 is an ADMITTED finding with distinct defect subject. Prior report mislabeling FND-ARCH-014 as duplicate was a reporting defect; canonical registry correctly maintains FND-ARCH-013 as the first duplicate."
+  },
+  "findings": [
+    {
+      "admission_status": "ADMITTED",
+      "derived_blocks": [],
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-001",
+      "lifecycle_status": "VERIFIED_RESOLVED",
+      "original_subject": "Candidate 004 freeze-file SHA-256 was conflated with Candidate 004 semantic-closure hash."
+    },
+    {
+      "admission_status": "ADMITTED",
+      "derived_blocks": [
+        "PROVISIONING",
+        "THEOREM_A"
+      ],
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-002",
+      "lifecycle_status": "OPEN",
+      "original_subject": "Genesis release provenance was unsupported or not derived from authoritative evidence."
+    },
+    {
+      "admission_status": "ADMITTED",
+      "derived_blocks": [
+        "PROVISIONING",
+        "THEOREM_B",
+        "THEOREM_D"
+      ],
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-003",
+      "lifecycle_status": "OPEN",
+      "original_subject": "Timestamp-authority provenance was claimed without adequate authoritative evidence."
+    },
+    {
+      "admission_status": "ADMITTED",
+      "derived_blocks": [],
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-004",
+      "lifecycle_status": "VERIFIED_RESOLVED",
+      "original_subject": "Zero-event RPO requirement conflicted with asynchronous replication semantics."
+    },
+    {
+      "admission_status": "ADMITTED",
+      "derived_blocks": [
+        "PROVISIONING",
+        "THEOREM_D"
+      ],
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-005",
+      "lifecycle_status": "OPEN",
+      "original_subject": "Evidence-custody contract conflated provider-specific storage semantics."
+    },
+    {
+      "admission_status": "ADMITTED",
+      "derived_blocks": [
+        "PROVISIONING",
+        "THEOREM_B"
+      ],
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-006",
+      "lifecycle_status": "OPEN",
+      "original_subject": "OIDC identity binding was insufficiently scoped or incomplete."
+    },
+    {
+      "admission_status": "ADMITTED",
+      "derived_blocks": [],
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-007",
+      "lifecycle_status": "VERIFIED_RESOLVED",
+      "original_subject": "Claimed-but-uncommitted Gate3 state lacked complete durable recovery semantics."
+    },
+    {
+      "admission_status": "ADMITTED",
+      "derived_blocks": [],
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-008",
+      "lifecycle_status": "VERIFIED_RESOLVED",
+      "original_subject": "Gate3 claim contention was incorrectly mapped to semantic evidence quarantine."
+    },
+    {
+      "admission_status": "ADMITTED",
+      "derived_blocks": [
+        "PROVISIONING",
+        "THEOREM_D"
+      ],
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-009",
+      "lifecycle_status": "OPEN",
+      "original_subject": "Transient evidence-fetch/server failures were over-classified as terminal failures."
+    },
+    {
+      "admission_status": "ADMITTED",
+      "derived_blocks": [],
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-010",
+      "lifecycle_status": "VERIFIED_RESOLVED",
+      "original_subject": "Stale fencing-token rejection was over-classified as a system terminal hold rather than normal stale-writer rejection."
+    },
+    {
+      "admission_status": "ADMITTED",
+      "derived_blocks": [],
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-011",
+      "lifecycle_status": "VERIFIED_RESOLVED",
+      "original_subject": "Stored and derived denominator predicates were not proven logically equivalent."
+    },
+    {
+      "admission_status": "ADMITTED",
+      "derived_blocks": [],
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-012",
+      "lifecycle_status": "VERIFIED_RESOLVED",
+      "original_subject": "Git commit SHA truncation in Genesis Manifest."
+    },
+    {
+      "admission_status": "DUPLICATE",
+      "derived_blocks": [
+        "PROVISIONING",
+        "THEOREM_B",
+        "THEOREM_C"
+      ],
+      "duplicate_of": "FND-ARCH-007",
+      "finding_id": "FND-ARCH-013",
+      "lifecycle_status": "OPEN",
+      "original_subject": "Gate-3 lease-expiry recovery behavior."
+    },
+    {
+      "admission_status": "ADMITTED",
+      "derived_blocks": [],
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-014",
+      "lifecycle_status": "VERIFIED_RESOLVED",
+      "original_subject": "Transaction-log divergence from consensus."
+    },
+    {
+      "admission_status": "DUPLICATE",
+      "derived_blocks": [
+        "NATURAL_PRE_ARM",
+        "PROVISIONING"
+      ],
+      "duplicate_of": "FND-ARCH-011",
+      "finding_id": "FND-ARCH-015",
+      "lifecycle_status": "OPEN",
+      "original_subject": "Candidate-freeze predicate coupling with denominator evaluation oracle."
+    },
+    {
+      "admission_status": "ADMITTED",
+      "derived_blocks": [],
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-016",
+      "lifecycle_status": "VERIFIED_RESOLVED",
+      "original_subject": "Canonical decision chain permits unauthorized predecessor lineage at the authoritative commit boundary."
+    }
+  ],
+  "generated_at": "2026-10-12T20:20:32Z",
+  "population_summary": {
+    "active_architecture_defects": 0,
+    "active_non_architecture_blockers": 5,
+    "admitted_findings": 14,
+    "duplicate_findings": 2,
+    "registered_findings": 16
+  },
+  "recomputed_hashes": {
+    "active_blocker_set_hash": "d50ac2dea79ceec67a884dbcc30956a37498aad1b69a7ecbae94b7ef0796bc92",
+    "finding_admission_registry_hash": "d01e06a62f80c252f93ae31b22325d490f71305fa2252de802481a25db0c84fc",
+    "finding_identity_registry_hash": "2bb17c69221d9e977f1475c1985d0ff5467c8808e5f0dc12694df6e7eec6d1ef",
+    "finding_registry_hash": "c845d823008b5b6f92dc6b7643cb03107d9d664f7f357f3534b234c39f44513c"
+  },
+  "sequence_4_registry_hash_match": true,
+  "verdict": "PASS"
+}

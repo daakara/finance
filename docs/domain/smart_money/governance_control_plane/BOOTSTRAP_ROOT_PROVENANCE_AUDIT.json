@@ -1,0 +1,20 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/bootstrap-root-provenance-audit.json",
+  "audit_id": "urn:arx:audit:bootstrap-root-provenance:2026-10-12",
+  "bootstrap_input_validation": "PASS",
+  "bootstrap_root_provenance": "PASS",
+  "generated_at": "2026-10-12T20:20:32Z",
+  "historical_root_verification": {
+    "artifact_commit": "457896f",
+    "artifact_exists": true,
+    "artifact_path": "docs/domain/smart_money/governance_control_plane/FINDING_CLAIM_SEMANTICS_ADMISSION_CLOSURE_MANIFEST.json",
+    "git_object_exists": true,
+    "hash_match": true,
+    "recomputed_decision_hash": "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c",
+    "sequence_2_record_present": true,
+    "source_freeze_exists": true,
+    "source_freeze_sha": "38fbec379a0fc7788ab11ac4f566e445a7b4802d",
+    "stored_decision_hash": "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c"
+  },
+  "verdict": "PASS"
+}

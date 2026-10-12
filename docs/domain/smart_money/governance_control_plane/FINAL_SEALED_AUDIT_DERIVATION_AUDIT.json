@@ -1,0 +1,15 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/final-sealed-audit-derivation-audit.json",
+  "audit_id": "urn:arx:audit:final-sealed-audit-derivation:2026-10-12",
+  "final_sealed_audit_derivation": {
+    "compared_programmatically": true,
+    "hardcoded_observed_values": false,
+    "loaded_from_authoritative_state": true,
+    "recomputed_from_canonical_context": true,
+    "verdict": "PASS"
+  },
+  "generated_at": "2026-10-12T20:20:32Z",
+  "inspected_sealed_artifact": "docs/domain/smart_money/governance_control_plane/SEQUENCE_3_CONTEXT_BINDING_AUDIT.json",
+  "sealed_commit": "031779eba2dd0e1ef6da55cecf48b963a875a1b0",
+  "verdict": "PASS"
+}
