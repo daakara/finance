@@ -67,6 +67,8 @@ from .decision_engine import (
     WriterLockAcquisitionError,
     CandidateContextStaleError,
     CanonicalDecisionWriterLock,
+    verify_historical_root_provenance,
+    HISTORICAL_ADMISSION_MANIFEST_PATH,
 )
 from .authorization import (
     AuthorizationManager,
@@ -350,6 +352,8 @@ __all__ = [
     "DuplicateWithoutCanonicalTargetError",
     "DuplicateSelfReferenceError",
     "DuplicateCycleError",
+    "verify_historical_root_provenance",
+    "HISTORICAL_ADMISSION_MANIFEST_PATH",
 ]
 
 

@@ -583,3 +583,81 @@ def test_case_17_sequence_4_canonical_transition(temp_authority):
     assert uniqueness["current_count"] == 1
     assert uniqueness["current_decision_hashes"] == [rec4["decision_hash"]]
 
+
+def test_case_18_stale_matching_expected_attack_rejected(temp_authority):
+    """Case 18: Stale candidate with matching caller-supplied expected_context_hash is rejected fail-closed (Sections 15-18)."""
+    auth, _ = temp_authority
+    # Commit sequence 3 first
+    snap3 = _make_candidate_snapshot(
+        sequence=3,
+        decision_context_hash="52ba3e67d8aa20cc12b205e2ea3162fd88a40975c7b33608ffa97e5c6d1782c3",
+    )
+    rec3 = auth.commit_canonical_decision(snap3)
+    assert rec3["decision_sequence"] == 3
+
+    # Attacker attempts to commit sequence 4 using stale context hash (52ba3e67...),
+    # self-attesting expected_context_hash = 52ba3e67... to match candidate
+    stale_context_hash = "52ba3e67d8aa20cc12b205e2ea3162fd88a40975c7b33608ffa97e5c6d1782c3"
+    authoritative_final_hash = "b162123b3315b0b17ed6de4a14bcb701684dbd2d53ec596cd16cda160c45b6f4"
+
+    # Preconditions:
+    # 1. Candidate hash matches caller-supplied expected hash
+    # 2. Candidate hash does NOT match authoritative context hash
+    snap4_stale = _make_candidate_snapshot(
+        sequence=4,
+        previous_decision_hash=rec3["decision_hash"],
+        decision_context_hash=stale_context_hash,
+    )
+    assert snap4_stale.decision_context_hash == stale_context_hash
+    assert stale_context_hash != authoritative_final_hash
+
+    # Attempt commit: Must be rejected with CandidateContextStaleError despite matching caller-supplied expected hash
+    with pytest.raises(CandidateContextStaleError) as exc_info:
+        auth.commit_canonical_decision(snap4_stale, expected_context_hash=stale_context_hash)
+    assert "CANDIDATE_CONTEXT_STALE" in str(exc_info.value)
+
+    # Authority head remains sequence 3; sequence 4 was not committed
+    assert auth.head["decision_sequence"] == 3
+    assert auth.head["decision_hash"] == rec3["decision_hash"]
+
+
+def test_case_19_historical_root_provenance_verified(tmp_path):
+    """Case 19: Bootstrap authority traces to sealed historical manifest and Git object DB (Sections 19-22)."""
+    from analyst_dashboard.smart_money.governance_control_plane.decision_engine import (
+        verify_historical_root_provenance,
+        HISTORICAL_ADMISSION_MANIFEST_PATH,
+    )
+
+    # Positive control: sealed historical root artifact verifies cleanly against Git object DB
+    root_info = verify_historical_root_provenance()
+    assert root_info["verified"] is True
+    assert root_info["sequence"] == 2
+    assert root_info["decision_hash"] == "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c"
+    assert root_info["source_freeze_sha"] == "38fbec379a0fc7788ab11ac4f566e445a7b4802d"
+
+    # Negative control 1: missing manifest path fails closed
+    missing_path = str(tmp_path / "NONEXISTENT_MANIFEST.json")
+    with pytest.raises(DecisionBootstrapError) as exc_1:
+        verify_historical_root_provenance(manifest_path=missing_path)
+    assert "HISTORICAL_ROOT_ARTIFACT_NOT_FOUND" in str(exc_1.value)
+
+    # Negative control 2: manifest with corrupted / non-existent Git commit fails closed
+    corrupt_manifest_path = str(tmp_path / "CORRUPT_MANIFEST.json")
+    corrupt_data = {
+        "governance_epoch": {
+            "epoch": "epoch-gov-002",
+            "successor_sequence": 2,
+            "successor_decision_id": "urn:arx:decision:epoch-gov-002:2:fa3df68578c4",
+            "successor_decision_hash": "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c",
+        },
+        "source_freeze": {"commit_sha": "0000000000000000000000000000000000000000"},
+        "decision_context": {"decision_context_hash": "cad190ce404bdd814a9c923d1349ab8a9b2a5469956ac265b231d9ebef43fd7e"},
+    }
+    with open(corrupt_manifest_path, "w", encoding="utf-8") as f:
+        json.dump(corrupt_data, f)
+
+    with pytest.raises(DecisionBootstrapError) as exc_2:
+        verify_historical_root_provenance(manifest_path=corrupt_manifest_path)
+    assert "HISTORICAL_ROOT_GIT_OBJECT_MISSING" in str(exc_2.value)
+
+
