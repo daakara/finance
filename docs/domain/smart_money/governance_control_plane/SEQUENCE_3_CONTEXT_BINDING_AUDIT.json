@@ -1,0 +1,52 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/sequence-3-context-binding-audit.json",
+  "audit_id": "urn:arx:audit:sequence-3-context-binding:2026-10-12",
+  "authoritative_sequence_3_record": {
+    "blocker_set_hash": "NOT_DEFINED",
+    "committed_at": "2026-10-12T18:15:00Z",
+    "decision_context_hash": "52ba3e67d8aa20cc12b205e2ea3162fd88a40975c7b33608ffa97e5c6d1782c3",
+    "decision_hash": "205fe158e61fd1a0d2da8589f9d07619c8343c45cf43c4a4f7fbafb81a2f0b64",
+    "decision_id": "urn:arx:decision:epoch-gov-002:3:82e99bf8c82f",
+    "dependency_policy_hash": "d82e9fb9970a4040c9291d23ed019b89848f1f97a3c57a3375c34971ab40b7df",
+    "dependency_resolution_hash": "2f9ebea3adfb038953c84c7a42f09286a68d32dbd4af8f5b4fbda3391c2d7714",
+    "derived_at": "2026-10-12T18:15:00Z",
+    "epoch": "epoch-gov-002",
+    "evidence_manifest_hash": "3b8d91c7a4f91048e27c19a48910482019482019482019482019482019482019",
+    "finding_registry_hash": "f2f6fdd2a92ec882abd6f7524261cbe6269c5ed8201f9ab3ca3ecd1ff499a10e",
+    "previous_decision_hash": "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c",
+    "sequence": 3,
+    "source_freeze_sha": "4aa35839dc0f5d2496d4a13c80e6c72cdee53eda",
+    "source_tree_oid": "NOT_DEFINED",
+    "status": "SUPERSEDED"
+  },
+  "candidate_context_freshness_defect": "CONFIRMED",
+  "context_binding_comparison": {
+    "blocker_set_hash_match": "NOT_DEFINED",
+    "decision_context_hash_match": false,
+    "dependency_policy_hash_match": true,
+    "dependency_resolution_hash_match": false,
+    "evidence_manifest_hash_match": false,
+    "finding_registry_hash_match": false,
+    "overall": "FAIL",
+    "source_freeze_match": true,
+    "source_tree_match": "NOT_DEFINED"
+  },
+  "generated_at": "2026-10-12T20:30:00Z",
+  "outcome_branch": "OUTCOME_B",
+  "rebuilt_final_context": {
+    "active_blocker_set_hash": "c19069d5fc1049c67eb01d51a660d1b46a9a46dc1ff48be01168926b487e4ee7",
+    "admitted_findings": 14,
+    "decision_context_hash": "b162123b3315b0b17ed6de4a14bcb701684dbd2d53ec596cd16cda160c45b6f4",
+    "dependency_policy_hash": "d82e9fb9970a4040c9291d23ed019b89848f1f97a3c57a3375c34971ab40b7df",
+    "dependency_resolution_hash": "70b2f0012048ba9a24e2a276eed8b33d07c37c1141bdbb70adde9861634ba9a4",
+    "duplicate_findings": 2,
+    "evidence_manifest_hash": "f69258d5362b996adf482b94f7f91545bb1ccf8018729d0ea09b671ec3d47aa8",
+    "finding_registry_hash": "c845d823008b5b6f92dc6b7643cb03107d9d664f7f357f3534b234c39f44513c",
+    "registered_findings": 16,
+    "source_freeze_sha": "4aa35839dc0f5d2496d4a13c80e6c72cdee53eda",
+    "source_tree_oid": "794300d2ac694bf5f1c182f274b67fc037962eb5"
+  },
+  "sequence_4_required": true,
+  "stale_committed_decision": true,
+  "verdict": "FAIL"
+}

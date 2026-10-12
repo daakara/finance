@@ -1,0 +1,38 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/canonical-decision-hash-domain-audit.json",
+  "audit_id": "urn:arx:audit:canonical-decision-hash-domain:2026-10-12",
+  "decision_context_hash_subdomain": [
+    "contract_set_hash",
+    "dependency_policy_hash",
+    "dependency_resolution_hash",
+    "evidence_manifest_hash",
+    "finding_registry_hash",
+    "source_freeze_sha",
+    "source_tree_oid",
+    "theorem_state_hash"
+  ],
+  "decision_hash_domain": [
+    "architecture_closure_status",
+    "decision_context_hash",
+    "decision_sequence",
+    "dependency_policy_hash",
+    "dependency_resolution_hash",
+    "derived_at",
+    "evidence_inventory_hash",
+    "finding_registry_hash",
+    "global_provisioning_readiness",
+    "governance_epoch",
+    "previous_decision_hash",
+    "provisioning_authorization_status",
+    "source_freeze_sha"
+  ],
+  "decision_id_domain": [
+    "governance_epoch",
+    "decision_sequence",
+    "decision_hash_prefix_12"
+  ],
+  "excluded_material_canonical_context_fields": [],
+  "generated_at": "2026-10-12T20:30:00Z",
+  "hash_domain_coverage": "COMPLETE",
+  "verdict": "PASS"
+}

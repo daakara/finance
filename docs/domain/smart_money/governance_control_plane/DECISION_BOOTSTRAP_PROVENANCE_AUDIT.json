@@ -1,0 +1,20 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/decision-bootstrap-provenance-audit.json",
+  "audit_id": "urn:arx:audit:decision-bootstrap-provenance:2026-10-12",
+  "bootstrap_authority": {
+    "arbitrary_seed_allowed": false,
+    "bootstrap_function": "CanonicalDecisionCommitAuthority.bootstrap_historical_records",
+    "hash_recomputed": true,
+    "historical_decision_hash": "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c",
+    "historical_decision_id": "urn:arx:decision:epoch-gov-002:2:fa3df68578c4",
+    "historical_epoch": "epoch-gov-002",
+    "historical_sequence": 2,
+    "invalidation_state_verified": true,
+    "signature_or_integrity_validation": "APPROVED_RECORD_MATCH_AND_HASH_VERIFICATION",
+    "source_artifact": "analyst_dashboard/smart_money/governance_control_plane/decision_engine.py",
+    "source_authority": "APPROVED_HISTORICAL_DECISION_RECORDS & DECISION_INVALIDATION_REGISTRY.json",
+    "source_freeze_verified": true
+  },
+  "generated_at": "2026-10-12T20:30:00Z",
+  "verdict": "PASS"
+}

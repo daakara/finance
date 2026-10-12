@@ -1,0 +1,20 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/decision-bootstrap-negative-control-audit.json",
+  "audit_id": "urn:arx:audit:decision-bootstrap-negative-controls:2026-10-12",
+  "bootstrap_idempotence": {
+    "history_rewritten": false,
+    "rebootstrap_behavior": "DETERMINISTIC_NOOP",
+    "verdict": "PASS"
+  },
+  "error_type": "DecisionBootstrapError",
+  "generated_at": "2026-10-12T20:30:00Z",
+  "negative_controls": {
+    "fabricated_decision_id": "REJECTED",
+    "historical_record_not_present_in_approved_source": "REJECTED",
+    "mutated_historical_decision_body": "REJECTED",
+    "wrong_epoch": "REJECTED",
+    "wrong_historical_decision_hash": "REJECTED",
+    "wrong_sequence": "REJECTED"
+  },
+  "verdict": "PASS"
+}

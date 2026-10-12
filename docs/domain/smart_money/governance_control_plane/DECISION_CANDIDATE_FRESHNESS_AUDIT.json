@@ -1,0 +1,21 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/decision-candidate-freshness-audit.json",
+  "audit_id": "urn:arx:audit:decision-candidate-freshness:2026-10-12",
+  "candidate_freshness_authority": {
+    "authoritative_target": "authoritative_context_hash",
+    "boundary": "CanonicalDecisionCommitAuthority.commit_canonical_decision",
+    "enforced": true,
+    "error_type": "CandidateContextStaleError",
+    "fail_closed": true
+  },
+  "generated_at": "2026-10-12T20:30:00Z",
+  "stale_candidate_negative_control": {
+    "commitment_attempt": "commit_canonical_decision",
+    "error_raised": "CandidateContextStaleError",
+    "result": "REJECTED",
+    "stale_context_hash_supplied": true,
+    "valid_predecessor_supplied": true,
+    "verdict": "PASS"
+  },
+  "verdict": "PASS"
+}

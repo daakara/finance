@@ -1,0 +1,88 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/decision-hash-domain-mutation-audit.json",
+  "audit_id": "urn:arx:audit:decision-hash-domain-mutation:2026-10-12",
+  "generated_at": "2026-10-12T20:30:00Z",
+  "mutations": [
+    {
+      "contractually_identity_material": true,
+      "field": "source_freeze_sha",
+      "mutation_changes_decision_hash": true,
+      "mutation_changes_decision_id": true,
+      "verdict": "PASS"
+    },
+    {
+      "contractually_identity_material": true,
+      "field": "source_tree_oid",
+      "mutation_changes_decision_hash": true,
+      "mutation_changes_decision_id": true,
+      "verdict": "PASS"
+    },
+    {
+      "contractually_identity_material": true,
+      "field": "finding_registry_hash",
+      "mutation_changes_decision_hash": true,
+      "mutation_changes_decision_id": true,
+      "verdict": "PASS"
+    },
+    {
+      "contractually_identity_material": true,
+      "field": "active_blocker_set_hash",
+      "mutation_changes_decision_hash": true,
+      "mutation_changes_decision_id": true,
+      "verdict": "PASS"
+    },
+    {
+      "contractually_identity_material": true,
+      "field": "dependency_policy_hash",
+      "mutation_changes_decision_hash": true,
+      "mutation_changes_decision_id": true,
+      "verdict": "PASS"
+    },
+    {
+      "contractually_identity_material": true,
+      "field": "dependency_resolution_hash",
+      "mutation_changes_decision_hash": true,
+      "mutation_changes_decision_id": true,
+      "verdict": "PASS"
+    },
+    {
+      "contractually_identity_material": true,
+      "field": "evidence_manifest_hash",
+      "mutation_changes_decision_hash": true,
+      "mutation_changes_decision_id": true,
+      "verdict": "PASS"
+    },
+    {
+      "contractually_identity_material": true,
+      "field": "decision_context_hash",
+      "mutation_changes_decision_hash": true,
+      "mutation_changes_decision_id": true,
+      "verdict": "PASS"
+    },
+    {
+      "contractually_identity_material": true,
+      "field": "epoch",
+      "mutation_changes_decision_hash": true,
+      "mutation_changes_decision_id": true,
+      "verdict": "PASS"
+    },
+    {
+      "contractually_identity_material": true,
+      "field": "sequence",
+      "mutation_changes_decision_hash": true,
+      "mutation_changes_decision_id": true,
+      "verdict": "PASS"
+    },
+    {
+      "contractually_identity_material": true,
+      "field": "previous_decision_hash",
+      "mutation_changes_decision_hash": true,
+      "mutation_changes_decision_id": true,
+      "verdict": "PASS"
+    }
+  ],
+  "total_dimensions_failed": 0,
+  "total_dimensions_passed": 11,
+  "total_dimensions_tested": 11,
+  "verdict": "PASS"
+}
