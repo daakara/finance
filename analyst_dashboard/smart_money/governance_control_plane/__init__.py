@@ -69,6 +69,11 @@ from .decision_engine import (
     CanonicalDecisionWriterLock,
     verify_historical_root_provenance,
     HISTORICAL_ADMISSION_MANIFEST_PATH,
+    CanonicalChainMigrationManager,
+    MigrationError,
+    MigrationValidationError,
+    MigrationPayloadConflictError,
+    LegacyChainQuarantinedError,
 )
 from .authorization import (
     AuthorizationManager,
@@ -354,6 +359,11 @@ __all__ = [
     "DuplicateCycleError",
     "verify_historical_root_provenance",
     "HISTORICAL_ADMISSION_MANIFEST_PATH",
+    "CanonicalChainMigrationManager",
+    "MigrationError",
+    "MigrationValidationError",
+    "MigrationPayloadConflictError",
+    "LegacyChainQuarantinedError",
 ]
 
 

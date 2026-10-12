@@ -3,10 +3,10 @@
   "version": "2.0.0",
   "updated_at": "2026-10-12T12:00:00Z",
   "summary": {
-    "total_mappings": 13,
-    "blocking_count": 13,
+    "total_mappings": 15,
+    "blocking_count": 15,
     "duplicate_count": 2,
-    "architecture_blocking_count": 8,
+    "architecture_blocking_count": 10,
     "non_architecture_blocking_count": 5
   },
   "invariants": {
@@ -316,6 +316,50 @@
       "expected_blocks": [],
       "blocking_effect": "NON_BLOCKING",
       "duplicate_of": "FND-ARCH-011"
+    },
+    {
+      "finding_id": "FND-ARCH-016",
+      "restored_subject": "Canonical decision chain permits unauthorized predecessor lineage at the authoritative commit boundary.",
+      "defect_layer": "ARCHITECTURE_DEFECT",
+      "claim_ids": [
+        "CLAIM-GOVERNANCE-ROOT",
+        "CLAIM-GOVERNANCE-POLICY"
+      ],
+      "dependency_paths": [
+        "dependency:governance:commit_authority"
+      ],
+      "affected_outputs": [
+        "PROVISIONING",
+        "DECISION_AUTHORITY"
+      ],
+      "expected_blocks": [
+        "PROVISIONING",
+        "DECISION_AUTHORITY"
+      ],
+      "blocking_effect": "BLOCKING"
+    },
+    {
+      "finding_id": "FND-ARCH-017",
+      "restored_subject": "Canonical committed decision history permitted identity-material mutation without regeneration of canonical decision identity.",
+      "defect_layer": "ARCHITECTURE_DEFECT",
+      "claim_ids": [
+        "CLAIM-GOVERNANCE-ROOT",
+        "CLAIM-GOVERNANCE-POLICY"
+      ],
+      "dependency_paths": [
+        "dependency:governance:historical_chain_integrity"
+      ],
+      "affected_outputs": [
+        "PROVISIONING",
+        "DECISION_AUTHORITY",
+        "CANONICAL_RECONCILIATION"
+      ],
+      "expected_blocks": [
+        "PROVISIONING",
+        "DECISION_AUTHORITY",
+        "CANONICAL_RECONCILIATION"
+      ],
+      "blocking_effect": "BLOCKING"
     }
   ]
 }

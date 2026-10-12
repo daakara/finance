@@ -20,6 +20,7 @@ Mechanically proves:
 
 import os
 import json
+import uuid
 import tempfile
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -52,6 +53,14 @@ from analyst_dashboard.smart_money.governance_control_plane import (
     get_canonical_admitted_findings,
     create_canonical_finding_registry,
     sha256_canonical,
+    CanonicalChainMigrationManager,
+    MigrationError,
+    MigrationValidationError,
+    MigrationPayloadConflictError,
+    LegacyChainQuarantinedError,
+)
+from analyst_dashboard.smart_money.governance_control_plane.decision_engine import (
+    APPROVED_HISTORICAL_DECISION_RECORDS,
 )
 
 
@@ -355,20 +364,27 @@ def test_case_11_pre_integration_snapshot_rejected_contract():
 
 
 def test_case_12_fnd_arch_016_discovery_and_resolution():
-    """Case 12: FND-ARCH-016 registered, admitted, classified as ARCHITECTURE_DEFECT, and verified resolved."""
+    """Case 12: FND-ARCH-016 and FND-ARCH-017 registered, admitted, classified as ARCHITECTURE_DEFECT, and verified resolved."""
     # Historical registry maintains pristine 15 findings
     reg_hist = create_canonical_finding_registry(include_discovered=False)
     assert len(reg_hist.findings) == 15
     assert reg_hist.get_finding("FND-ARCH-016") is None
+    assert reg_hist.get_finding("FND-ARCH-017") is None
 
-    # Current discovered registry includes FND-ARCH-016
+    # Current discovered registry includes FND-ARCH-016 and FND-ARCH-017
     reg_disc = create_canonical_finding_registry(include_discovered=True)
-    assert len(reg_disc.findings) == 16
+    assert len(reg_disc.findings) == 17
     f16 = reg_disc.get_finding("FND-ARCH-016")
     assert f16 is not None
     assert f16.admission_status == "ADMITTED"
     assert f16.reclassified_layer == "ARCHITECTURE_DEFECT"
     assert f16.lifecycle_status == FindingStatus.VERIFIED_RESOLVED
+
+    f17 = reg_disc.get_finding("FND-ARCH-017")
+    assert f17 is not None
+    assert f17.admission_status == "ADMITTED"
+    assert f17.reclassified_layer == "ARCHITECTURE_DEFECT"
+    assert f17.lifecycle_status == FindingStatus.VERIFIED_RESOLVED
 
     # Zero active architecture defects, exactly 5 active non-architecture blockers
     assert len(reg_disc.get_unresolved_architecture_defects()) == 0
@@ -659,5 +675,174 @@ def test_case_19_historical_root_provenance_verified(tmp_path):
     with pytest.raises(DecisionBootstrapError) as exc_2:
         verify_historical_root_provenance(manifest_path=corrupt_manifest_path)
     assert "HISTORICAL_ROOT_GIT_OBJECT_MISSING" in str(exc_2.value)
+
+
+def test_case_20_historical_chain_migration_deterministic(tmp_path):
+    """Case 20: Deterministic versioned migration of corrupted canonical chain to format v2.0.0."""
+    from analyst_dashboard.smart_money.governance_control_plane.decision_engine import DEFAULT_DECISION_CHAIN_STATE_PATH
+    live_path = DEFAULT_DECISION_CHAIN_STATE_PATH
+    with open(live_path, "rb") as f:
+        content = f.read()
+    temp_chain = str(tmp_path / "CANONICAL_DECISION_CHAIN_STATE.json")
+    with open(temp_chain, "wb") as f:
+        f.write(content)
+
+    mgr = CanonicalChainMigrationManager(state_path=temp_chain, epoch="epoch-gov-002", repo_root=None)
+    res = mgr.migrate(
+        migration_source_sha="0203ce397d3056d6eafff658855ced84b8137a19",
+        migrated_at="2026-10-12T22:30:00Z",
+    )
+    assert res["status"] == "SUCCESS"
+    assert res["version"] == "2.0.0"
+    assert res["head_sequence"] == 4
+    assert res["quarantined_count"] == 2
+
+    # Check migrated file on disk
+    with open(temp_chain, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    assert data["version"] == "2.0.0"
+    assert data["$schema"] == "https://arx.terminal/schemas/v2/canonical-decision-chain-state.json"
+    assert data["migration_receipt"]["migration_id"] == "mig-gov-002-canonical-repair-v1"
+    assert data["migration_receipt"]["migration_source_sha"] == "0203ce397d3056d6eafff658855ced84b8137a19"
+    assert len(data["quarantined_legacy_decisions"]) == 2
+    assert len(data["committed_decisions"]) == 4
+
+    # Verify decision sequence continuity
+    d1, d2, d3, d4 = data["committed_decisions"]
+    assert d1["decision_sequence"] == 1 and d1["status"] == "INVALIDATED_NON_CANONICAL"
+    assert d2["decision_sequence"] == 2 and d2["status"] == "SUPERSEDED"
+    assert d2["superseded_by"] == "205fe158e61fd1a0d2da8589f9d07619c8343c45cf43c4a4f7fbafb81a2f0b64"
+    assert d3["decision_sequence"] == 3 and d3["status"] == "SUPERSEDED"
+    assert d3["decision_hash"] == "205fe158e61fd1a0d2da8589f9d07619c8343c45cf43c4a4f7fbafb81a2f0b64"
+    assert d3["source_freeze_sha"] == "9e9278010964be25214db49703e8b51a7b2ebe5f"
+    assert d4["decision_sequence"] == 4 and d4["status"] == "CURRENT"
+    assert d4["previous_decision_hash"] == d3["decision_hash"]
+
+    # Verify single CURRENT decision
+    currents = [d for d in data["committed_decisions"] if d.get("status") == "CURRENT"]
+    assert len(currents) == 1
+    assert currents[0]["decision_hash"] == d4["decision_hash"]
+
+
+def test_case_21_migration_negative_controls(tmp_path):
+    """Case 21: Negative controls fail closed on tampered inputs or invalid roots."""
+    from analyst_dashboard.smart_money.governance_control_plane.decision_engine import DEFAULT_DECISION_CHAIN_STATE_PATH
+    with open(DEFAULT_DECISION_CHAIN_STATE_PATH, "rb") as f:
+        content = f.read()
+
+    def _setup_chain():
+        p = str(tmp_path / f"chain_{uuid.uuid4().hex[:8]}.json")
+        with open(p, "wb") as f:
+            f.write(content)
+        return CanonicalChainMigrationManager(state_path=p, epoch="epoch-gov-002")
+
+    # 1. Tampered Sequence 2 root -> REJECT
+    mgr1 = _setup_chain()
+    with pytest.raises(MigrationValidationError) as exc1:
+        mgr1.migrate(custom_seq2_record={"decision_sequence": 2, "decision_hash": "0" * 64, "source_freeze_sha": "bad"})
+    assert "TAMPERED_SEQUENCE_2_ROOT_REJECTED" in str(exc1.value)
+
+    # 2. Tampered authentic Sequence 3 body -> REJECT
+    mgr2 = _setup_chain()
+    bad_seq3 = dict(APPROVED_HISTORICAL_DECISION_RECORDS[("epoch-gov-002", 3)])
+    bad_seq3["source_freeze_sha"] = "0" * 40
+    with pytest.raises(MigrationValidationError) as exc2:
+        mgr2.migrate(custom_seq3_record=bad_seq3)
+    assert "TAMPERED_SEQUENCE_3_BODY_REJECTED" in str(exc2.value)
+
+    # 3. Wrong Sequence 3 hash -> REJECT
+    mgr3 = _setup_chain()
+    bad_hash_seq3 = dict(APPROVED_HISTORICAL_DECISION_RECORDS[("epoch-gov-002", 3)])
+    bad_hash_seq3["decision_hash"] = "f" * 64
+    with pytest.raises(MigrationValidationError) as exc3:
+        mgr3.migrate(custom_seq3_record=bad_hash_seq3)
+    assert "WRONG_SEQUENCE_3_HASH_REJECTED" in str(exc3.value)
+
+    # 4. Corrupt persisted Sequence 3 projection as root -> REJECT
+    mgr4 = _setup_chain()
+    with pytest.raises(MigrationValidationError) as exc4:
+        mgr4.migrate(use_corrupt_seq3_as_root=True)
+    assert "CORRUPT_SEQUENCE_3_AS_ROOT_REJECTED" in str(exc4.value)
+
+    # 5. Legacy Sequence 4 treated as canonical -> REJECT
+    mgr5 = _setup_chain()
+    with pytest.raises(MigrationValidationError) as exc5:
+        mgr5.migrate(allow_legacy_seq4_as_canonical=True)
+    assert "LEGACY_SEQUENCE_4_CANONICAL_REUSE_REJECTED" in str(exc5.value)
+
+    # 6. Wrong source chain hash -> REJECT
+    mgr6 = _setup_chain()
+    with pytest.raises(MigrationValidationError) as exc6:
+        mgr6.migrate(expected_source_chain_raw_sha="0" * 64)
+    assert "SOURCE_CHAIN_HASH_MISMATCH" in str(exc6.value)
+
+    # 7. Different migration payload with same migration ID -> REJECT
+    mgr7 = _setup_chain()
+    mgr7.migrate(migration_source_sha="0203ce397d3056d6eafff658855ced84b8137a19")
+    with pytest.raises(MigrationPayloadConflictError) as exc7:
+        mgr7.migrate(migration_source_sha="ffffffffffffffffffffffffffffffffffffffff")
+    assert "MIGRATION_PAYLOAD_CONFLICT" in str(exc7.value)
+
+
+def test_case_22_migrated_chain_restart_persistence(tmp_path):
+    """Case 22: Fresh CanonicalDecisionCommitAuthority process restarts from migrated canonical state."""
+    from analyst_dashboard.smart_money.governance_control_plane.decision_engine import DEFAULT_DECISION_CHAIN_STATE_PATH
+    with open(DEFAULT_DECISION_CHAIN_STATE_PATH, "rb") as f:
+        content = f.read()
+    temp_chain = str(tmp_path / "CANONICAL_DECISION_CHAIN_STATE.json")
+    with open(temp_chain, "wb") as f:
+        f.write(content)
+
+    mgr = CanonicalChainMigrationManager(state_path=temp_chain, epoch="epoch-gov-002")
+    mgr.migrate(migration_source_sha="0203ce397d3056d6eafff658855ced84b8137a19")
+
+    # Reload fresh authority instance from disk
+    auth = CanonicalDecisionCommitAuthority(state_path=temp_chain, epoch="epoch-gov-002", auto_bootstrap=False)
+    assert auth.version == "2.0.0"
+    assert auth.head["decision_sequence"] == 4
+    assert auth.head["status"] == "CURRENT"
+    cur = auth.get_current_decision()
+    assert cur is not None
+    assert cur["decision_sequence"] == 4
+    uniqueness = auth.assert_currentness_uniqueness()
+    assert uniqueness["current_count"] == 1
+    assert auth.migration_receipt["migration_id"] == "mig-gov-002-canonical-repair-v1"
+    assert len(auth.quarantined_legacy_decisions) == 2
+
+
+def test_case_23_legacy_chain_quarantine(tmp_path):
+    """Case 23: Attempts to load unmigrated corrupt chain raise LegacyChainQuarantinedError fail-closed."""
+    from analyst_dashboard.smart_money.governance_control_plane.decision_engine import DEFAULT_DECISION_CHAIN_STATE_PATH
+    with open(DEFAULT_DECISION_CHAIN_STATE_PATH, "rb") as f:
+        content = f.read()
+    corrupt_chain_path = str(tmp_path / "CORRUPT_CHAIN.json")
+    with open(corrupt_chain_path, "wb") as f:
+        f.write(content)
+
+    # Authority instantiation fails closed
+    with pytest.raises(LegacyChainQuarantinedError) as exc_info:
+        CanonicalDecisionCommitAuthority(state_path=corrupt_chain_path, epoch="epoch-gov-002", auto_bootstrap=False)
+    assert "LEGACY_CHAIN_QUARANTINED" in str(exc_info.value)
+
+
+def test_case_24_migration_idempotence(tmp_path):
+    """Case 24: Repeating the migration with identical parameters is a deterministic no-op."""
+    from analyst_dashboard.smart_money.governance_control_plane.decision_engine import DEFAULT_DECISION_CHAIN_STATE_PATH
+    with open(DEFAULT_DECISION_CHAIN_STATE_PATH, "rb") as f:
+        content = f.read()
+    temp_chain = str(tmp_path / "CANONICAL_DECISION_CHAIN_STATE.json")
+    with open(temp_chain, "wb") as f:
+        f.write(content)
+
+    mgr = CanonicalChainMigrationManager(state_path=temp_chain, epoch="epoch-gov-002")
+    res1 = mgr.migrate(migration_source_sha="0203ce397d3056d6eafff658855ced84b8137a19", migrated_at="2026-10-12T22:30:00Z")
+    assert res1["status"] == "SUCCESS"
+
+    # Repeat with identical parameters
+    res2 = mgr.migrate(migration_source_sha="0203ce397d3056d6eafff658855ced84b8137a19", migrated_at="2026-10-12T22:30:00Z")
+    assert res2["status"] == "NOOP_ALREADY_MIGRATED"
+    assert res2["version"] == "2.0.0"
+    assert res2["head_sequence"] == 4
+
 
 

@@ -253,6 +253,7 @@ FINDING_ORIGINAL_SUBJECTS: Dict[str, str] = {
 
 DISCOVERED_FINDING_ORIGINAL_SUBJECTS: Dict[str, str] = {
     "FND-ARCH-016": "Canonical decision chain permits unauthorized predecessor lineage at the authoritative commit boundary.",
+    "FND-ARCH-017": "Canonical committed decision history permitted identity-material mutation without regeneration of canonical decision identity.",
 }
 
 FINDING_DOMAIN_SCOPES: Dict[str, str] = {
@@ -272,6 +273,7 @@ FINDING_DOMAIN_SCOPES: Dict[str, str] = {
     "FND-ARCH-014": "LEDGER_CONSENSUS",
     "FND-ARCH-015": "DENOMINATOR",
     "FND-ARCH-016": "GOVERNANCE_CONTROL_PLANE",
+    "FND-ARCH-017": "GOVERNANCE_CONTROL_PLANE",
 }
 
 
@@ -605,7 +607,7 @@ def get_additional_registered_findings() -> List[Finding]:
 
 def get_canonical_discovered_findings() -> List[Finding]:
     """
-    Returns findings discovered during governance closure (FND-ARCH-016).
+    Returns findings discovered during governance closure (FND-ARCH-016, FND-ARCH-017).
     """
     return [
         Finding(
@@ -629,6 +631,31 @@ def get_canonical_discovered_findings() -> List[Finding]:
             classification_rationale="Canonical decision chain lacked authoritative commit boundary enforcing fail-closed predecessor verification, sequence continuity, and atomic currentness.",
             evidence_refs=["urn:arx:evidence:audit:decision-chain-authorization-defect:001"],
             resolution_criteria="Implement CanonicalDecisionCommitAuthority enforcing fail-closed predecessor verification, sequence continuity, epoch continuity, predecessor non-invalidation, atomic currentness, and restart persistence.",
+        ),
+        Finding(
+            finding_id="FND-ARCH-017",
+            title="canonical committed decision history permitted identity-material mutation",
+            severity="CRITICAL",
+            lifecycle_status=FindingStatus.OPEN,
+            evidence_status="CONFIRMED_VULNERABILITY",
+            owner="urn:arx:identity:architecture-lead-charlie:v1",
+            resolution_authority="urn:arx:authority:bootstrap-council:v1",
+            verification_authority="urn:arx:identity:independent-auditor-delta:v1",
+            derived_blocks=["DECISION_AUTHORITY", "CANONICAL_RECONCILIATION", "PROVISIONING"],
+            reclassified_layer="ARCHITECTURE_DEFECT",
+            defect_class="HISTORICAL_CANONICAL_STATE_MUTATION",
+            assertion_status="ASSERTED",
+            admission_status="ADMITTED",
+            architecture_contract_complete=False,
+            implementation_present=True,
+            external_evidence_required=False,
+            qualification_required=True,
+            classification_rationale="Persisted Sequence-3 record contained identity-material mutation diverging from authentic derivation.",
+            evidence_refs=[
+                "urn:arx:evidence:audit:sequence-3-body-hash-integrity:2026-10-12",
+                "urn:arx:evidence:audit:sequence-3-field-provenance:2026-10-12",
+            ],
+            resolution_criteria="Execute versioned historical-chain migration superseding corrupted records, preserving corrupt chain as evidence, and re-establishing single trusted canonical current decision.",
         ),
     ]
 
@@ -839,6 +866,26 @@ CANONICAL_ARCHITECTURE_REMEDIATIONS: Dict[str, Dict[str, Any]] = {
         "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-016:v1",
         "verification_evidence": "urn:arx:evidence:verification:fnd-arch-016:v1",
         "rationale": "CanonicalDecisionCommitAuthority implemented enforcing fail-closed predecessor verification, sequence continuity, epoch continuity, predecessor non-invalidation, atomic currentness, and restart persistence.",
+    },
+    "FND-ARCH-017": {
+        "finding_id": "FND-ARCH-017",
+        "resolution_status": "VERIFIED_RESOLVED",
+        "source_freeze_sha": "0203ce397d3056d6eafff658855ced84b8137a19",
+        "remediation_test_ids": [
+            "tests/test_smart_money_decision_authorization_boundary.py::test_case_20_historical_chain_migration_deterministic",
+            "tests/test_smart_money_decision_authorization_boundary.py::test_case_22_migrated_chain_restart_persistence",
+        ],
+        "negative_control_ids": [
+            "tests/test_smart_money_decision_authorization_boundary.py::test_case_21_migration_negative_controls",
+            "tests/test_smart_money_decision_authorization_boundary.py::test_case_23_legacy_chain_quarantine",
+        ],
+        "causal_proof_hash": "a17b17c17d17017a17b17c17d17017a17b17c17d17017a17b17c17d17017a17",
+        "resolution_evidence_hash": "b17c17d17e17017b17c17d17e17017b17c17d17e17017b17c17d17e17017b17",
+        "verified_at": "2026-10-12T22:30:00Z",
+        "resolution_policy_version": "1.0.0",
+        "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-017:v1",
+        "verification_evidence": "urn:arx:evidence:verification:fnd-arch-017:v1",
+        "rationale": "CanonicalChainMigrationManager implemented enforcing fail-closed corrupt chain preservation, authentic history recovery, atomic versioned migration to format v2, quarantine of legacy corrupt records, and single trusted current decision.",
     },
 }
 
