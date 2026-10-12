@@ -16,6 +16,7 @@ import json
 import hashlib
 import uuid
 import subprocess
+import tempfile
 from datetime import datetime, timezone
 from typing import Dict, Any, List
 
@@ -334,122 +335,95 @@ def main():
     raw_corrupt_bytes = open(os.path.join(GOVERNANCE_DIR, "PRE_MIGRATION_CORRUPT_CHAIN_RAW.json"), "rb").read()
 
     negative_results = []
-    # Test 1: Tampered Sequence 2
-    temp_path_1 = os.path.join(REPO_ROOT, f"temp_neg_1_{uuid.uuid4().hex[:6]}.json")
-    try:
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        # Test 1: Tampered Sequence 2
+        temp_path_1 = os.path.join(tmp_dir, "temp_neg_1.json")
         with open(temp_path_1, "wb") as f:
             f.write(raw_corrupt_bytes)
         m = CanonicalChainMigrationManager(state_path=temp_path_1)
         try:
-            m.migrate(custom_seq2_record={"decision_sequence": 2, "decision_hash": "0" * 64, "source_freeze_sha": "bad"})
+            m.migrate(custom_seq2_record={"decision_sequence": 2, "decision_hash": "0" * 64, "source_freeze_sha": "bad"}, preserve_evidence=False)
             res1 = "FAIL_NOT_REJECTED"
         except MigrationValidationError:
             res1 = "PASS_REJECTED"
         negative_results.append({"control": "tampered_sequence_2_root", "result": res1})
-    finally:
-        if os.path.exists(temp_path_1):
-            os.remove(temp_path_1)
 
-    # Test 2: Tampered Sequence 3 body
-    temp_path_2 = os.path.join(REPO_ROOT, f"temp_neg_2_{uuid.uuid4().hex[:6]}.json")
-    try:
+        # Test 2: Tampered Sequence 3 body
+        temp_path_2 = os.path.join(tmp_dir, "temp_neg_2.json")
         with open(temp_path_2, "wb") as f:
             f.write(raw_corrupt_bytes)
         m = CanonicalChainMigrationManager(state_path=temp_path_2)
         bad_seq3 = dict(APPROVED_HISTORICAL_DECISION_RECORDS[("epoch-gov-002", 3)])
         bad_seq3["source_freeze_sha"] = "0" * 40
         try:
-            m.migrate(custom_seq3_record=bad_seq3)
+            m.migrate(custom_seq3_record=bad_seq3, preserve_evidence=False)
             res2 = "FAIL_NOT_REJECTED"
         except MigrationValidationError:
             res2 = "PASS_REJECTED"
         negative_results.append({"control": "tampered_authentic_sequence_3_body", "result": res2})
-    finally:
-        if os.path.exists(temp_path_2):
-            os.remove(temp_path_2)
 
-    # Test 3: Wrong Sequence 3 hash
-    temp_path_3 = os.path.join(REPO_ROOT, f"temp_neg_3_{uuid.uuid4().hex[:6]}.json")
-    try:
+        # Test 3: Wrong Sequence 3 hash
+        temp_path_3 = os.path.join(tmp_dir, "temp_neg_3.json")
         with open(temp_path_3, "wb") as f:
             f.write(raw_corrupt_bytes)
         m = CanonicalChainMigrationManager(state_path=temp_path_3)
         bad_h_seq3 = dict(APPROVED_HISTORICAL_DECISION_RECORDS[("epoch-gov-002", 3)])
         bad_h_seq3["decision_hash"] = "e" * 64
         try:
-            m.migrate(custom_seq3_record=bad_h_seq3)
+            m.migrate(custom_seq3_record=bad_h_seq3, preserve_evidence=False)
             res3 = "FAIL_NOT_REJECTED"
         except MigrationValidationError:
             res3 = "PASS_REJECTED"
         negative_results.append({"control": "wrong_sequence_3_hash", "result": res3})
-    finally:
-        if os.path.exists(temp_path_3):
-            os.remove(temp_path_3)
 
-    # Test 4: Corrupt Sequence 3 as root
-    temp_path_4 = os.path.join(REPO_ROOT, f"temp_neg_4_{uuid.uuid4().hex[:6]}.json")
-    try:
+        # Test 4: Corrupt Sequence 3 as root
+        temp_path_4 = os.path.join(tmp_dir, "temp_neg_4.json")
         with open(temp_path_4, "wb") as f:
             f.write(raw_corrupt_bytes)
         m = CanonicalChainMigrationManager(state_path=temp_path_4)
         try:
-            m.migrate(use_corrupt_seq3_as_root=True)
+            m.migrate(use_corrupt_seq3_as_root=True, preserve_evidence=False)
             res4 = "FAIL_NOT_REJECTED"
         except MigrationValidationError:
             res4 = "PASS_REJECTED"
         negative_results.append({"control": "corrupt_sequence_3_projection_as_root", "result": res4})
-    finally:
-        if os.path.exists(temp_path_4):
-            os.remove(temp_path_4)
 
-    # Test 5: Legacy Sequence 4 reuse
-    temp_path_5 = os.path.join(REPO_ROOT, f"temp_neg_5_{uuid.uuid4().hex[:6]}.json")
-    try:
+        # Test 5: Legacy Sequence 4 reuse
+        temp_path_5 = os.path.join(tmp_dir, "temp_neg_5.json")
         with open(temp_path_5, "wb") as f:
             f.write(raw_corrupt_bytes)
         m = CanonicalChainMigrationManager(state_path=temp_path_5)
         try:
-            m.migrate(allow_legacy_seq4_as_canonical=True)
+            m.migrate(allow_legacy_seq4_as_canonical=True, preserve_evidence=False)
             res5 = "FAIL_NOT_REJECTED"
         except MigrationValidationError:
             res5 = "PASS_REJECTED"
         negative_results.append({"control": "legacy_sequence_4_canonical_reuse", "result": res5})
-    finally:
-        if os.path.exists(temp_path_5):
-            os.remove(temp_path_5)
 
-    # Test 6: Wrong source chain hash
-    temp_path_6 = os.path.join(REPO_ROOT, f"temp_neg_6_{uuid.uuid4().hex[:6]}.json")
-    try:
+        # Test 6: Wrong source chain hash
+        temp_path_6 = os.path.join(tmp_dir, "temp_neg_6.json")
         with open(temp_path_6, "wb") as f:
             f.write(raw_corrupt_bytes)
         m = CanonicalChainMigrationManager(state_path=temp_path_6)
         try:
-            m.migrate(expected_source_chain_raw_sha="0" * 64)
+            m.migrate(expected_source_chain_raw_sha="0" * 64, preserve_evidence=False)
             res6 = "FAIL_NOT_REJECTED"
         except MigrationValidationError:
             res6 = "PASS_REJECTED"
         negative_results.append({"control": "wrong_source_chain_hash", "result": res6})
-    finally:
-        if os.path.exists(temp_path_6):
-            os.remove(temp_path_6)
 
-    # Test 7: Conflict on duplicate migration ID
-    temp_path_7 = os.path.join(REPO_ROOT, f"temp_neg_7_{uuid.uuid4().hex[:6]}.json")
-    try:
+        # Test 7: Conflict on duplicate migration ID
+        temp_path_7 = os.path.join(tmp_dir, "temp_neg_7.json")
         with open(temp_path_7, "wb") as f:
             f.write(raw_corrupt_bytes)
         m = CanonicalChainMigrationManager(state_path=temp_path_7)
-        m.migrate(migration_source_sha=MIGRATION_SOURCE_SHA)
+        m.migrate(migration_source_sha=MIGRATION_SOURCE_SHA, preserve_evidence=False)
         try:
-            m.migrate(migration_source_sha="0000000000000000000000000000000000000000")
+            m.migrate(migration_source_sha="0000000000000000000000000000000000000000", preserve_evidence=False)
             res7 = "FAIL_NOT_REJECTED"
         except MigrationPayloadConflictError:
             res7 = "PASS_REJECTED"
         negative_results.append({"control": "conflicting_payload_same_migration_id", "result": res7})
-    finally:
-        if os.path.exists(temp_path_7):
-            os.remove(temp_path_7)
 
     neg_audit = {
         "$schema": "https://arx.terminal/schemas/v1/historical-chain-migration-negative-controls.json",
