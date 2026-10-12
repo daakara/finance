@@ -1,0 +1,22 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/migration-regression-audit.json",
+  "artifact_type": "MIGRATION_REGRESSION_AUDIT",
+  "boundary_suite_passed": 24,
+  "executed_suites_count": 17,
+  "lineage": {
+    "generated_at_utc": "2026-10-12T21:15:15Z",
+    "generator_path": "scripts/generate_chain_migration_evidence.py",
+    "generator_sha256": "98658eb74aafd87771326262cb31d4c4f1ea25c0e632843171e68d8e9fc0ff5f",
+    "git_head": "e41cc6d729a2af1fab6cdaace764af8e1739f87f",
+    "invocation": "python scripts/generate_chain_migration_evidence.py",
+    "source_sha": "3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11"
+  },
+  "manifest_path": "docs/domain/smart_money/governance_control_plane/GOVERNANCE_REGRESSION_SUITE_MANIFEST.json",
+  "manifest_suites_passed": 496,
+  "required_suites_count": 16,
+  "required_suites_not_run": 0,
+  "total_tests_failed": 0,
+  "total_tests_passed": 520,
+  "total_tests_skipped": 0,
+  "verdict": "PASS"
+}

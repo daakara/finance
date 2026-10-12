@@ -1,0 +1,31 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/authentic-sequence-3-reconstruction-audit.json",
+  "artifact_type": "AUTHENTIC_SEQUENCE_3_RECONSTRUCTION_AUDIT",
+  "decision_id": "urn:arx:decision:epoch-gov-002:3:82e99bf8c82f",
+  "lineage": {
+    "generated_at_utc": "2026-10-12T21:15:15Z",
+    "generator_path": "scripts/generate_chain_migration_evidence.py",
+    "generator_sha256": "98658eb74aafd87771326262cb31d4c4f1ea25c0e632843171e68d8e9fc0ff5f",
+    "git_head": "e41cc6d729a2af1fab6cdaace764af8e1739f87f",
+    "invocation": "python scripts/generate_chain_migration_evidence.py",
+    "source_sha": "3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11"
+  },
+  "match": true,
+  "recomputed_decision_hash": "205fe158e61fd1a0d2da8589f9d07619c8343c45cf43c4a4f7fbafb81a2f0b64",
+  "reconstruction_inputs": {
+    "decision_context_hash": "52ba3e67d8aa20cc12b205e2ea3162fd88a40975c7b33608ffa97e5c6d1782c3",
+    "decision_sequence": 3,
+    "dependency_policy_hash": "d82e9fb9970a4040c9291d23ed019b89848f1f97a3c57a3375c34971ab40b7df",
+    "dependency_resolution_hash": "2f9ebea3adfb038953c84c7a42f09286a68d32dbd4af8f5b4fbda3391c2d7714",
+    "derived_at": "2026-10-12T16:03:25Z",
+    "evidence_manifest_hash": "652af9d2ccfdb4b685ba71498377366eb9fd52df554b31ffbe370b3370dcd514",
+    "finding_registry_hash": "f2f6fdd2a92ec882abd6f7524261cbe6269c5ed8201f9ab3ca3ecd1ff499a10e",
+    "governance_epoch": "epoch-gov-002",
+    "include_discovered_findings": false,
+    "previous_decision_hash": "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c",
+    "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+    "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01"
+  },
+  "reproduction_verdict": "PASS",
+  "stored_decision_hash": "205fe158e61fd1a0d2da8589f9d07619c8343c45cf43c4a4f7fbafb81a2f0b64"
+}

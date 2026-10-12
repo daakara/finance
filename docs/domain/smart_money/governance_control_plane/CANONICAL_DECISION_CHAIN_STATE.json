@@ -1,5 +1,5 @@
 {
-  "$schema": "https://arx.terminal/schemas/v1/canonical-decision-chain-state.json",
+  "$schema": "https://arx.terminal/schemas/v2/canonical-decision-chain-state.json",
   "active_epoch": "epoch-gov-002",
   "committed_decisions": [
     {
@@ -23,58 +23,119 @@
       "source_freeze_sha": "38fbec379a0fc7788ab11ac4f566e445a7b4802d",
       "source_tree_oid": "4a92a5d39931caa879bcbe3cb8a9ca1624ff76e8",
       "status": "SUPERSEDED",
-      "superseded_at": "2026-10-12T18:15:00Z",
+      "superseded_at": "2026-10-12T16:03:25Z",
       "superseded_by": "205fe158e61fd1a0d2da8589f9d07619c8343c45cf43c4a4f7fbafb81a2f0b64"
     },
     {
-      "architecture_closure_status": "CLOSED",
-      "committed_at": "2026-10-12T18:15:00Z",
+      "committed_at": "2026-10-12T16:03:25Z",
       "decision_context_hash": "52ba3e67d8aa20cc12b205e2ea3162fd88a40975c7b33608ffa97e5c6d1782c3",
       "decision_hash": "205fe158e61fd1a0d2da8589f9d07619c8343c45cf43c4a4f7fbafb81a2f0b64",
       "decision_id": "urn:arx:decision:epoch-gov-002:3:82e99bf8c82f",
       "decision_sequence": 3,
       "dependency_policy_hash": "d82e9fb9970a4040c9291d23ed019b89848f1f97a3c57a3375c34971ab40b7df",
       "dependency_resolution_hash": "2f9ebea3adfb038953c84c7a42f09286a68d32dbd4af8f5b4fbda3391c2d7714",
-      "derived_at": "2026-10-12T18:15:00Z",
-      "evidence_manifest_hash": "3b8d91c7a4f91048e27c19a48910482019482019482019482019482019482019",
+      "derived_at": "2026-10-12T16:03:25Z",
+      "evidence_manifest_hash": "652af9d2ccfdb4b685ba71498377366eb9fd52df554b31ffbe370b3370dcd514",
       "finding_registry_hash": "f2f6fdd2a92ec882abd6f7524261cbe6269c5ed8201f9ab3ca3ecd1ff499a10e",
-      "global_provisioning_readiness": "BLOCKED",
       "governance_epoch": "epoch-gov-002",
       "previous_decision_hash": "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c",
-      "provisioning_authorization_status": "NOT_ISSUABLE",
-      "source_freeze_sha": "4aa35839dc0f5d2496d4a13c80e6c72cdee53eda",
+      "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+      "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
       "status": "SUPERSEDED",
-      "superseded_at": "2026-10-12T18:15:00Z",
-      "superseded_by": "be701fe0d0a56836c9c9cf4f541037e6ae325f4312d36401528665418e8ae62d"
+      "superseded_at": "2026-10-12T21:08:32Z",
+      "superseded_by": "174cecf6e3aef1e8ab2e46d8137faa1b72d282d2aa0a0c2b868abdab38500c07"
     },
     {
       "architecture_closure_status": "CLOSED",
-      "committed_at": "2026-10-12T18:15:00Z",
+      "committed_at": "2026-10-12T21:08:32Z",
       "decision_context_hash": "b162123b3315b0b17ed6de4a14bcb701684dbd2d53ec596cd16cda160c45b6f4",
-      "decision_hash": "be701fe0d0a56836c9c9cf4f541037e6ae325f4312d36401528665418e8ae62d",
-      "decision_id": "urn:arx:decision:epoch-gov-002:4:58cea4ca4b41",
+      "decision_hash": "174cecf6e3aef1e8ab2e46d8137faa1b72d282d2aa0a0c2b868abdab38500c07",
+      "decision_id": "urn:arx:decision:epoch-gov-002:4:4371c653837c",
       "decision_sequence": 4,
       "dependency_policy_hash": "d82e9fb9970a4040c9291d23ed019b89848f1f97a3c57a3375c34971ab40b7df",
       "dependency_resolution_hash": "70b2f0012048ba9a24e2a276eed8b33d07c37c1141bdbb70adde9861634ba9a4",
-      "derived_at": "2026-10-12T18:15:00Z",
+      "derived_at": "2026-10-12T21:08:32Z",
       "evidence_manifest_hash": "f69258d5362b996adf482b94f7f91545bb1ccf8018729d0ea09b671ec3d47aa8",
-      "finding_registry_hash": "c845d823008b5b6f92dc6b7643cb03107d9d664f7f357f3534b234c39f44513c",
+      "finding_registry_hash": "487b27cc7f9431468c123801748463ae099dfab46c43904a3d5d927227a0cf94",
       "global_provisioning_readiness": "BLOCKED",
       "governance_epoch": "epoch-gov-002",
       "previous_decision_hash": "205fe158e61fd1a0d2da8589f9d07619c8343c45cf43c4a4f7fbafb81a2f0b64",
       "provisioning_authorization_status": "NOT_ISSUABLE",
-      "source_freeze_sha": "4aa35839dc0f5d2496d4a13c80e6c72cdee53eda",
+      "remediation_status": "NONE_OR_VERIFIED_COMPLETE",
+      "source_freeze_sha": "3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11",
       "status": "CURRENT"
     }
   ],
-  "current_decision_hash": "be701fe0d0a56836c9c9cf4f541037e6ae325f4312d36401528665418e8ae62d",
-  "current_decision_id": "urn:arx:decision:epoch-gov-002:4:58cea4ca4b41",
-  "head_decision_hash": "be701fe0d0a56836c9c9cf4f541037e6ae325f4312d36401528665418e8ae62d",
+  "current_decision_hash": "174cecf6e3aef1e8ab2e46d8137faa1b72d282d2aa0a0c2b868abdab38500c07",
+  "current_decision_id": "urn:arx:decision:epoch-gov-002:4:4371c653837c",
+  "head_decision_hash": "174cecf6e3aef1e8ab2e46d8137faa1b72d282d2aa0a0c2b868abdab38500c07",
   "head_sequence": 4,
   "invalidated_hashes": [
     "2563e663a7717bbb411229ea0bbab3ad0da58d3ff8a100bce14099132e096254",
     "3dc851a90e213da557a79027fc4b3a07287713bc84d88effcf92dadd0b539e41",
     "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f"
   ],
-  "version": "1.0.0"
+  "migration_receipt": {
+    "migrated_at": "2026-10-12T21:08:32Z",
+    "migration_finding_id": "FND-ARCH-017",
+    "migration_id": "mig-gov-002-canonical-repair-v1",
+    "migration_reason": "FND-ARCH-017: Canonical committed decision history permitted identity-material mutation without regeneration of canonical decision identity",
+    "migration_source_sha": "3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11",
+    "migration_version": "2.0.0",
+    "source_chain_head_decision_hash": "be701fe0d0a56836c9c9cf4f541037e6ae325f4312d36401528665418e8ae62d",
+    "source_chain_head_sequence": 4,
+    "source_chain_payload_hash": "32b0ccef51135e5eb24157ab341efba7bfb18a8f8a61b98f2514e1f1ebf534e2",
+    "source_chain_raw_sha256": "ffaa7f272eef226c86f001a9c58e09ebd8c3388715e1e177e35d19887c53352b"
+  },
+  "quarantined_legacy_decisions": [
+    {
+      "original_decision_hash": "205fe158e61fd1a0d2da8589f9d07619c8343c45cf43c4a4f7fbafb81a2f0b64",
+      "persisted_mutated_record": {
+        "architecture_closure_status": "CLOSED",
+        "committed_at": "2026-10-12T18:15:00Z",
+        "decision_context_hash": "52ba3e67d8aa20cc12b205e2ea3162fd88a40975c7b33608ffa97e5c6d1782c3",
+        "decision_hash": "205fe158e61fd1a0d2da8589f9d07619c8343c45cf43c4a4f7fbafb81a2f0b64",
+        "decision_id": "urn:arx:decision:epoch-gov-002:3:82e99bf8c82f",
+        "decision_sequence": 3,
+        "dependency_policy_hash": "d82e9fb9970a4040c9291d23ed019b89848f1f97a3c57a3375c34971ab40b7df",
+        "dependency_resolution_hash": "2f9ebea3adfb038953c84c7a42f09286a68d32dbd4af8f5b4fbda3391c2d7714",
+        "derived_at": "2026-10-12T18:15:00Z",
+        "evidence_manifest_hash": "3b8d91c7a4f91048e27c19a48910482019482019482019482019482019482019",
+        "finding_registry_hash": "f2f6fdd2a92ec882abd6f7524261cbe6269c5ed8201f9ab3ca3ecd1ff499a10e",
+        "global_provisioning_readiness": "BLOCKED",
+        "governance_epoch": "epoch-gov-002",
+        "previous_decision_hash": "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "source_freeze_sha": "4aa35839dc0f5d2496d4a13c80e6c72cdee53eda",
+        "status": "SUPERSEDED",
+        "superseded_at": "2026-10-12T18:15:00Z",
+        "superseded_by": "be701fe0d0a56836c9c9cf4f541037e6ae325f4312d36401528665418e8ae62d"
+      },
+      "quarantine_reason": "IDENTITY_MATERIAL_HISTORICAL_MUTATION"
+    },
+    {
+      "original_decision_hash": "be701fe0d0a56836c9c9cf4f541037e6ae325f4312d36401528665418e8ae62d",
+      "persisted_mutated_record": {
+        "architecture_closure_status": "CLOSED",
+        "committed_at": "2026-10-12T18:15:00Z",
+        "decision_context_hash": "b162123b3315b0b17ed6de4a14bcb701684dbd2d53ec596cd16cda160c45b6f4",
+        "decision_hash": "be701fe0d0a56836c9c9cf4f541037e6ae325f4312d36401528665418e8ae62d",
+        "decision_id": "urn:arx:decision:epoch-gov-002:4:58cea4ca4b41",
+        "decision_sequence": 4,
+        "dependency_policy_hash": "d82e9fb9970a4040c9291d23ed019b89848f1f97a3c57a3375c34971ab40b7df",
+        "dependency_resolution_hash": "70b2f0012048ba9a24e2a276eed8b33d07c37c1141bdbb70adde9861634ba9a4",
+        "derived_at": "2026-10-12T18:15:00Z",
+        "evidence_manifest_hash": "f69258d5362b996adf482b94f7f91545bb1ccf8018729d0ea09b671ec3d47aa8",
+        "finding_registry_hash": "c845d823008b5b6f92dc6b7643cb03107d9d664f7f357f3534b234c39f44513c",
+        "global_provisioning_readiness": "BLOCKED",
+        "governance_epoch": "epoch-gov-002",
+        "previous_decision_hash": "205fe158e61fd1a0d2da8589f9d07619c8343c45cf43c4a4f7fbafb81a2f0b64",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "source_freeze_sha": "4aa35839dc0f5d2496d4a13c80e6c72cdee53eda",
+        "status": "CURRENT"
+      },
+      "quarantine_reason": "PREDECESSOR_CHAIN_CONTAMINATED"
+    }
+  ],
+  "version": "2.0.0"
 }

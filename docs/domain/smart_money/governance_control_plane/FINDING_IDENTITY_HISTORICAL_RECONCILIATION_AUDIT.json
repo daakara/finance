@@ -1,0 +1,138 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/finding-identity-historical-reconciliation-audit.json",
+  "artifact_type": "FINDING_IDENTITY_HISTORICAL_RECONCILIATION_AUDIT",
+  "finding_identity_immutability": "PASS",
+  "historical_matches": [
+    {
+      "admission_status": "ADMITTED",
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-001",
+      "identity_match": true,
+      "subject": "Candidate 004 freeze-file SHA-256 was conflated with Candidate 004 semantic-closure hash.",
+      "subject_match": true
+    },
+    {
+      "admission_status": "ADMITTED",
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-002",
+      "identity_match": true,
+      "subject": "Genesis release provenance was unsupported or not derived from authoritative evidence.",
+      "subject_match": true
+    },
+    {
+      "admission_status": "ADMITTED",
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-003",
+      "identity_match": true,
+      "subject": "Timestamp-authority provenance was claimed without adequate authoritative evidence.",
+      "subject_match": true
+    },
+    {
+      "admission_status": "ADMITTED",
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-004",
+      "identity_match": true,
+      "subject": "Zero-event RPO requirement conflicted with asynchronous replication semantics.",
+      "subject_match": true
+    },
+    {
+      "admission_status": "ADMITTED",
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-005",
+      "identity_match": true,
+      "subject": "Evidence-custody contract conflated provider-specific storage semantics.",
+      "subject_match": true
+    },
+    {
+      "admission_status": "ADMITTED",
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-006",
+      "identity_match": true,
+      "subject": "OIDC identity binding was insufficiently scoped or incomplete.",
+      "subject_match": true
+    },
+    {
+      "admission_status": "ADMITTED",
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-007",
+      "identity_match": true,
+      "subject": "Claimed-but-uncommitted Gate3 state lacked complete durable recovery semantics.",
+      "subject_match": true
+    },
+    {
+      "admission_status": "ADMITTED",
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-008",
+      "identity_match": true,
+      "subject": "Gate3 claim contention was incorrectly mapped to semantic evidence quarantine.",
+      "subject_match": true
+    },
+    {
+      "admission_status": "ADMITTED",
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-009",
+      "identity_match": true,
+      "subject": "Transient evidence-fetch/server failures were over-classified as terminal failures.",
+      "subject_match": true
+    },
+    {
+      "admission_status": "ADMITTED",
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-010",
+      "identity_match": true,
+      "subject": "Stale fencing-token rejection was over-classified as a system terminal hold rather than normal stale-writer rejection.",
+      "subject_match": true
+    },
+    {
+      "admission_status": "ADMITTED",
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-011",
+      "identity_match": true,
+      "subject": "Stored and derived denominator predicates were not proven logically equivalent.",
+      "subject_match": true
+    },
+    {
+      "admission_status": "ADMITTED",
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-012",
+      "identity_match": true,
+      "subject": "Git commit SHA truncation in Genesis Manifest.",
+      "subject_match": true
+    },
+    {
+      "admission_status": "DUPLICATE",
+      "duplicate_of": "FND-ARCH-007",
+      "finding_id": "FND-ARCH-013",
+      "identity_match": true,
+      "subject": "Gate-3 lease-expiry recovery behavior.",
+      "subject_match": true
+    },
+    {
+      "admission_status": "ADMITTED",
+      "duplicate_of": null,
+      "finding_id": "FND-ARCH-014",
+      "identity_match": true,
+      "subject": "Transaction-log divergence from consensus.",
+      "subject_match": true
+    },
+    {
+      "admission_status": "DUPLICATE",
+      "duplicate_of": "FND-ARCH-011",
+      "finding_id": "FND-ARCH-015",
+      "identity_match": true,
+      "subject": "Candidate-freeze predicate coupling with denominator evaluation oracle.",
+      "subject_match": true
+    }
+  ],
+  "historical_seal_commit": "38fbec379a0fc7788ab11ac4f566e445a7b4802d",
+  "lineage": {
+    "generated_at_utc": "2026-10-12T21:15:15Z",
+    "generator_path": "scripts/generate_chain_migration_evidence.py",
+    "generator_sha256": "98658eb74aafd87771326262cb31d4c4f1ea25c0e632843171e68d8e9fc0ff5f",
+    "git_head": "e41cc6d729a2af1fab6cdaace764af8e1739f87f",
+    "invocation": "python scripts/generate_chain_migration_evidence.py",
+    "source_sha": "3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11"
+  },
+  "registry_drift": "DISPROVED",
+  "verified_findings_count": 15
+}
