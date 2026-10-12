@@ -1,0 +1,134 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/canonical-claim-derivation-policy.json",
+  "policy_id": "urn:arx:policy:claim-derivation:v1",
+  "policy_version": "1.0.0",
+  "description": "Governed Claim Derivation Policy defining deterministic rules for deriving canonical claims from repository and external evidence.",
+  "rules": [
+    {
+      "derivation_id": "deriv-claim-gov-root",
+      "derivation_version": "1.0.0",
+      "output_claim_id": "CLAIM-GOVERNANCE-ROOT",
+      "claim_class": "GOVERNANCE_ROOT",
+      "input_evidence_ids": ["ev-gov-genesis", "ev-root-identity"],
+      "input_claim_ids": [],
+      "transformation": {
+        "function_id": "verify_governance_root_evidence",
+        "function_version": "1.0.0"
+      },
+      "conflict_policy": "FAIL_CLOSED_CONFLICT",
+      "absence_policy": "REQUIRE_AUTHORITATIVE_BASIS_OR_UNKNOWN"
+    },
+    {
+      "derivation_id": "deriv-claim-cand-freeze",
+      "derivation_version": "1.0.0",
+      "output_claim_id": "CLAIM-CANDIDATE004-FREEZE-FILE-IDENTITY",
+      "claim_class": "CANDIDATE_FREEZE_IDENTITY",
+      "input_evidence_ids": ["ev-repo-candidate004-freeze"],
+      "input_claim_ids": [],
+      "transformation": {
+        "function_id": "verify_candidate004_freeze_digest",
+        "function_version": "1.0.0"
+      },
+      "conflict_policy": "FAIL_CLOSED_CONFLICT",
+      "absence_policy": "REQUIRE_AUTHORITATIVE_BASIS_OR_UNKNOWN"
+    },
+    {
+      "derivation_id": "deriv-claim-cand-semantic",
+      "derivation_version": "1.0.0",
+      "output_claim_id": "CLAIM-CANDIDATE004-SEMANTIC-CLOSURE-IDENTITY",
+      "claim_class": "CANDIDATE_SEMANTIC_CLOSURE",
+      "input_evidence_ids": ["ev-repo-candidate004-freeze"],
+      "input_claim_ids": ["CLAIM-CANDIDATE004-FREEZE-FILE-IDENTITY"],
+      "transformation": {
+        "function_id": "derive_candidate004_semantic_closure",
+        "function_version": "1.0.0"
+      },
+      "conflict_policy": "FAIL_CLOSED_CONFLICT",
+      "absence_policy": "REQUIRE_AUTHORITATIVE_BASIS_OR_UNKNOWN"
+    },
+    {
+      "derivation_id": "deriv-claim-ext-ledger",
+      "derivation_version": "1.0.0",
+      "output_claim_id": "CLAIM-EXTERNAL-LEDGER",
+      "claim_class": "EXTERNAL_LEDGER",
+      "input_evidence_ids": ["ev-ext-ledger-state"],
+      "input_claim_ids": [],
+      "transformation": {
+        "function_id": "verify_external_ledger_status",
+        "function_version": "1.0.0"
+      },
+      "conflict_policy": "FAIL_CLOSED_CONFLICT",
+      "absence_policy": "REQUIRE_AUTHORITATIVE_BASIS_OR_UNKNOWN"
+    },
+    {
+      "derivation_id": "deriv-claim-ext-witness",
+      "derivation_version": "1.0.0",
+      "output_claim_id": "CLAIM-EXTERNAL-WITNESS",
+      "claim_class": "EXTERNAL_WITNESS",
+      "input_evidence_ids": ["ev-ext-witness-state"],
+      "input_claim_ids": [],
+      "transformation": {
+        "function_id": "verify_external_witness_status",
+        "function_version": "1.0.0"
+      },
+      "conflict_policy": "FAIL_CLOSED_CONFLICT",
+      "absence_policy": "REQUIRE_AUTHORITATIVE_BASIS_OR_UNKNOWN"
+    },
+    {
+      "derivation_id": "deriv-claim-finding-blockers",
+      "derivation_version": "1.0.0",
+      "output_claim_id": "CLAIM-FINDING-BLOCKERS",
+      "claim_class": "FINDING_BLOCKERS",
+      "input_evidence_ids": ["ev-finding-admission-registry"],
+      "input_claim_ids": [],
+      "transformation": {
+        "function_id": "compute_active_blocker_population",
+        "function_version": "1.0.0"
+      },
+      "conflict_policy": "FAIL_CLOSED_CONFLICT",
+      "absence_policy": "REQUIRE_AUTHORITATIVE_BASIS_OR_UNKNOWN"
+    },
+    {
+      "derivation_id": "deriv-claim-denom-alignment",
+      "derivation_version": "1.0.0",
+      "output_claim_id": "CLAIM-DENOMINATOR-ALIGNMENT",
+      "claim_class": "DENOMINATOR_ALIGNMENT",
+      "input_evidence_ids": ["ev-natural-denominator-ledger"],
+      "input_claim_ids": [],
+      "transformation": {
+        "function_id": "verify_natural_denominator_alignment",
+        "function_version": "1.0.0"
+      },
+      "conflict_policy": "FAIL_CLOSED_CONFLICT",
+      "absence_policy": "REQUIRE_AUTHORITATIVE_BASIS_OR_UNKNOWN"
+    },
+    {
+      "derivation_id": "deriv-claim-gov-policy",
+      "derivation_version": "1.0.0",
+      "output_claim_id": "CLAIM-GOVERNANCE-POLICY",
+      "claim_class": "GOVERNANCE_POLICY",
+      "input_evidence_ids": ["ev-gov-policy-ratification"],
+      "input_claim_ids": [],
+      "transformation": {
+        "function_id": "verify_governance_policy_ratification",
+        "function_version": "1.0.0"
+      },
+      "conflict_policy": "FAIL_CLOSED_CONFLICT",
+      "absence_policy": "REQUIRE_AUTHORITATIVE_BASIS_OR_UNKNOWN"
+    },
+    {
+      "derivation_id": "deriv-claim-release-prov",
+      "derivation_version": "1.0.0",
+      "output_claim_id": "CLAIM-RELEASE-PROVENANCE",
+      "claim_class": "RELEASE_PROVENANCE",
+      "input_evidence_ids": ["ev-source-freeze-commit"],
+      "input_claim_ids": [],
+      "transformation": {
+        "function_id": "verify_source_commit_provenance",
+        "function_version": "1.0.0"
+      },
+      "conflict_policy": "FAIL_CLOSED_CONFLICT",
+      "absence_policy": "REQUIRE_AUTHORITATIVE_BASIS_OR_UNKNOWN"
+    }
+  ]
+}

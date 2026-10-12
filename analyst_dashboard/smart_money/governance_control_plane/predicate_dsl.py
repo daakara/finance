@@ -61,8 +61,11 @@ class TypeCompatibilityError(PredicateDSLError):
 def _check_forbidden_strings(val: Any) -> None:
     if isinstance(val, str):
         val_lower = val.lower()
+        if "__" in val_lower:
+            raise ArbitraryCodeExecutionForbiddenError(f"Arbitrary code execution or system access forbidden: '{val}'")
+        tokens = set(re.findall(r"[a-zA-Z0-9]+", val_lower))
         for forbidden in FORBIDDEN_IDENTIFIERS:
-            if forbidden in val_lower:
+            if forbidden in tokens:
                 if forbidden in ["datetime", "time"]:
                     raise UnboundRuntimeReadForbiddenError(f"Wall-clock runtime read forbidden: '{val}'")
                 if forbidden in ["http", "socket", "urllib", "requests"]:

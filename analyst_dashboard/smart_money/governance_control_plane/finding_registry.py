@@ -14,6 +14,26 @@ import hashlib
 from .canonicalization import sha256_canonical, domain_normalize
 
 
+class FindingRegistryError(Exception):
+    """Base exception for finding registry operations."""
+    pass
+
+
+class DuplicateWithoutCanonicalTargetError(FindingRegistryError):
+    """Raised when duplicate_of references a non-existent finding."""
+    pass
+
+
+class DuplicateSelfReferenceError(FindingRegistryError):
+    """Raised when a finding references itself as a duplicate."""
+    pass
+
+
+class DuplicateCycleError(FindingRegistryError):
+    """Raised when duplicate_of references form a cycle."""
+    pass
+
+
 class FindingStatus(str, Enum):
     OPEN = "OPEN"
     ACTIVE = "ACTIVE"
@@ -24,6 +44,22 @@ class FindingStatus(str, Enum):
     DISPROVED = "DISPROVED"
     CONTESTED = "CONTESTED"
     STALE = "STALE"
+
+
+@dataclass
+class FindingAdjudication:
+    adjudication_id: str
+    finding_id: str
+    prior_admission_status: str
+    new_admission_status: str
+    outcome: str  # ADMIT, REJECT, DUPLICATE, SUPERSEDE
+    rationale: str
+    evidence_refs: List[str] = field(default_factory=list)
+    duplicate_of: Optional[str] = None
+    authority: Dict[str, Any] = field(default_factory=lambda: {
+        "authority_type": "LOCAL_GOVERNANCE_REFERENCE",
+        "authority_status": "NON_OPERATIONAL",
+    })
 
 
 @dataclass
@@ -549,6 +585,29 @@ class FindingRegistry:
         return self._findings.get(finding_id)
 
     def add_finding(self, finding: Finding) -> None:
+        if finding.admission_status == "DUPLICATE":
+            if not finding.duplicate_of:
+                raise DuplicateWithoutCanonicalTargetError(
+                    f"Finding '{finding.finding_id}' has admission_status DUPLICATE but duplicate_of is None."
+                )
+            if finding.duplicate_of == finding.finding_id:
+                raise DuplicateSelfReferenceError(
+                    f"Finding '{finding.finding_id}' cannot be marked as a duplicate of itself."
+                )
+            if finding.duplicate_of not in self._findings:
+                raise DuplicateWithoutCanonicalTargetError(
+                    f"Target '{finding.duplicate_of}' does not exist in canonical finding registry."
+                )
+            visited = {finding.finding_id}
+            curr = finding.duplicate_of
+            while curr:
+                if curr in visited:
+                    raise DuplicateCycleError(f"Duplicate cycle detected involving finding '{curr}'.")
+                visited.add(curr)
+                if curr in self._findings:
+                    curr = self._findings[curr].duplicate_of
+                else:
+                    break
         self._findings[finding.finding_id] = finding
 
     def update_status(self, finding_id: str, new_status: FindingStatus) -> None:
@@ -558,6 +617,76 @@ class FindingRegistry:
     def compute_registry_hash(self) -> str:
         findings_payload = [f.to_dict() for f in self.findings]
         return sha256_canonical(findings_payload)
+
+    def compute_identity_registry_hash(self) -> str:
+        payload = [
+            {
+                "finding_id": f.finding_id,
+                "original_subject": f.original_subject,
+                "domain_scope": f.domain_scope,
+                "defect_layer": f.defect_layer,
+            }
+            for f in self.findings
+        ]
+        return sha256_canonical(payload)
+
+    def compute_admission_registry_hash(self) -> str:
+        payload = [
+            {
+                "finding_id": f.finding_id,
+                "assertion_status": f.assertion_status,
+                "admission_status": f.admission_status,
+                "lifecycle_status": f.lifecycle_status.value,
+                "duplicate_of": f.duplicate_of,
+                "superseded_by": f.superseded_by,
+            }
+            for f in self.findings
+        ]
+        return sha256_canonical(payload)
+
+    def compute_active_blocker_set_hash(self) -> str:
+        payload = [
+            {
+                "finding_id": f.finding_id,
+                "lifecycle_status": f.lifecycle_status.value,
+                "severity": f.severity,
+                "derived_blocks": sorted(f.derived_blocks),
+            }
+            for f in self.get_active_blockers()
+        ]
+        return sha256_canonical(payload)
+
+    def apply_adjudication(self, adj: FindingAdjudication) -> None:
+        finding = self._findings.get(adj.finding_id)
+        if not finding:
+            raise KeyError(f"Finding '{adj.finding_id}' not found in registry.")
+
+        if adj.outcome == "DUPLICATE":
+            if not adj.duplicate_of:
+                raise DuplicateWithoutCanonicalTargetError(
+                    f"Adjudication for '{adj.finding_id}' has outcome DUPLICATE but duplicate_of is None."
+                )
+            if adj.duplicate_of not in self._findings:
+                raise DuplicateWithoutCanonicalTargetError(
+                    f"Target '{adj.duplicate_of}' does not exist in canonical finding registry."
+                )
+            if adj.duplicate_of == adj.finding_id:
+                raise DuplicateSelfReferenceError(
+                    f"Finding '{adj.finding_id}' cannot be marked as a duplicate of itself."
+                )
+            visited = {adj.finding_id}
+            curr = adj.duplicate_of
+            while curr:
+                if curr in visited:
+                    raise DuplicateCycleError(f"Duplicate cycle detected involving finding '{curr}'.")
+                visited.add(curr)
+                if curr in self._findings:
+                    curr = self._findings[curr].duplicate_of
+                else:
+                    break
+
+        finding.admission_status = adj.new_admission_status
+        finding.duplicate_of = adj.duplicate_of
 
     def get_active_blockers(self) -> List[Finding]:
         return [f for f in self.findings if f.is_blocking]

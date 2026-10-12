@@ -1,0 +1,243 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/canonical-dependency-policy.json",
+  "policy_id": "urn:arx:policy:dependencies:canonical:v1",
+  "policy_version": "1.0.0",
+  "description": "Repository-bound canonical dependency policy defining the complete governance decision DAG.",
+  "declared_facts": [
+    "fact_governance_root_status",
+    "fact_candidate_freeze_valid",
+    "fact_candidate_semantic_closure_valid",
+    "fact_ext_ledger_status",
+    "fact_ext_witness_status",
+    "fact_active_blockers_count",
+    "fact_denominator_alignment_status",
+    "fact_gov_policy_status",
+    "fact_release_provenance_status"
+  ],
+  "nodes": [
+    {"node_id": "CLAIM-RELEASE-PROVENANCE", "node_type": "CLAIM"},
+    {"node_id": "CLAIM-CANDIDATE004-FREEZE-FILE-IDENTITY", "node_type": "CLAIM"},
+    {"node_id": "CLAIM-CANDIDATE004-SEMANTIC-CLOSURE-IDENTITY", "node_type": "CLAIM"},
+    {"node_id": "CLAIM-GOVERNANCE-ROOT", "node_type": "CLAIM"},
+    {"node_id": "CLAIM-GOVERNANCE-POLICY", "node_type": "CLAIM"},
+    {"node_id": "CLAIM-EXTERNAL-LEDGER", "node_type": "CLAIM"},
+    {"node_id": "CLAIM-EXTERNAL-WITNESS", "node_type": "CLAIM"},
+    {"node_id": "CLAIM-DENOMINATOR-ALIGNMENT", "node_type": "CLAIM"},
+    {"node_id": "CLAIM-FINDING-BLOCKERS", "node_type": "CLAIM"},
+    {"node_id": "THEOREM_A", "node_type": "OUTPUT"},
+    {"node_id": "THEOREM_B", "node_type": "OUTPUT"},
+    {"node_id": "THEOREM_C", "node_type": "OUTPUT"},
+    {"node_id": "THEOREM_D", "node_type": "OUTPUT"},
+    {"node_id": "THEOREM_E", "node_type": "OUTPUT"},
+    {"node_id": "ARCHITECTURE_CLOSURE_STATUS", "node_type": "OUTPUT"},
+    {"node_id": "REMEDIATION_STATUS", "node_type": "OUTPUT"},
+    {"node_id": "GLOBAL_PROVISIONING_READINESS", "node_type": "OUTPUT"},
+    {"node_id": "PROVISIONING_AUTHORIZATION_STATUS", "node_type": "OUTPUT"},
+    {"node_id": "RUNTIME_ACTION", "node_type": "OUTPUT"}
+  ],
+  "predicates": [
+    {
+      "predicate_id": "pred_release_provenance_verified",
+      "predicate_version": "1.0.0",
+      "expression": {"eq": {"left": {"fact": "fact_release_provenance_status"}, "right": {"literal": "VERIFIED"}}}
+    },
+    {
+      "predicate_id": "pred_candidate_freeze_valid",
+      "predicate_version": "1.0.0",
+      "expression": {"eq": {"left": {"fact": "fact_candidate_freeze_valid"}, "right": {"literal": "ESTABLISHED"}}}
+    },
+    {
+      "predicate_id": "pred_candidate_semantic_closure_valid",
+      "predicate_version": "1.0.0",
+      "expression": {"eq": {"left": {"fact": "fact_candidate_semantic_closure_valid"}, "right": {"literal": "ESTABLISHED"}}}
+    },
+    {
+      "predicate_id": "pred_gov_root_established",
+      "predicate_version": "1.0.0",
+      "expression": {"eq": {"left": {"fact": "fact_governance_root_status"}, "right": {"literal": "ESTABLISHED"}}}
+    },
+    {
+      "predicate_id": "pred_gov_policy_ratified",
+      "predicate_version": "1.0.0",
+      "expression": {"eq": {"left": {"fact": "fact_gov_policy_status"}, "right": {"literal": "RATIFIED"}}}
+    },
+    {
+      "predicate_id": "pred_ext_ledger_established",
+      "predicate_version": "1.0.0",
+      "expression": {"eq": {"left": {"fact": "fact_ext_ledger_status"}, "right": {"literal": "ESTABLISHED"}}}
+    },
+    {
+      "predicate_id": "pred_ext_witness_established",
+      "predicate_version": "1.0.0",
+      "expression": {"eq": {"left": {"fact": "fact_ext_witness_status"}, "right": {"literal": "ESTABLISHED"}}}
+    },
+    {
+      "predicate_id": "pred_denom_aligned",
+      "predicate_version": "1.0.0",
+      "expression": {"eq": {"left": {"fact": "fact_denominator_alignment_status"}, "right": {"literal": "ALIGNED"}}}
+    },
+    {
+      "predicate_id": "pred_zero_active_blockers",
+      "predicate_version": "1.0.0",
+      "expression": {"eq": {"left": {"fact": "fact_active_blockers_count"}, "right": {"literal": "ZERO"}}}
+    }
+  ],
+  "edges": [
+    {
+      "dependency_id": "dep_release_to_theorem_a",
+      "dependency_version": "1.0.0",
+      "source_claim_id": "CLAIM-RELEASE-PROVENANCE",
+      "target_output_id": "THEOREM_A",
+      "declared_requirement": "CONDITIONAL",
+      "predicate_ref": {"predicate_id": "pred_release_provenance_verified", "predicate_version": "1.0.0"},
+      "when_true": {"effective_requirement": "MANDATORY"},
+      "when_false": {"effective_requirement": "IRRELEVANT"},
+      "when_unknown": {"effective_requirement": "UNRESOLVED"},
+      "when_conflict": {"effective_requirement": "UNRESOLVED"},
+      "target_safety_class": "AUTHORIZATION_CRITICAL"
+    },
+    {
+      "dependency_id": "dep_freeze_to_theorem_a",
+      "dependency_version": "1.0.0",
+      "source_claim_id": "CLAIM-CANDIDATE004-FREEZE-FILE-IDENTITY",
+      "target_output_id": "THEOREM_A",
+      "declared_requirement": "CONDITIONAL",
+      "predicate_ref": {"predicate_id": "pred_candidate_freeze_valid", "predicate_version": "1.0.0"},
+      "when_true": {"effective_requirement": "MANDATORY"},
+      "when_false": {"effective_requirement": "IRRELEVANT"},
+      "when_unknown": {"effective_requirement": "UNRESOLVED"},
+      "when_conflict": {"effective_requirement": "UNRESOLVED"},
+      "target_safety_class": "AUTHORIZATION_CRITICAL"
+    },
+    {
+      "dependency_id": "dep_gov_root_to_theorem_b",
+      "dependency_version": "1.0.0",
+      "source_claim_id": "CLAIM-GOVERNANCE-ROOT",
+      "target_output_id": "THEOREM_B",
+      "declared_requirement": "CONDITIONAL",
+      "predicate_ref": {"predicate_id": "pred_gov_root_established", "predicate_version": "1.0.0"},
+      "when_true": {"effective_requirement": "MANDATORY"},
+      "when_false": {"effective_requirement": "IRRELEVANT"},
+      "when_unknown": {"effective_requirement": "UNRESOLVED"},
+      "when_conflict": {"effective_requirement": "UNRESOLVED"},
+      "target_safety_class": "AUTHORIZATION_CRITICAL"
+    },
+    {
+      "dependency_id": "dep_gov_policy_to_theorem_b",
+      "dependency_version": "1.0.0",
+      "source_claim_id": "CLAIM-GOVERNANCE-POLICY",
+      "target_output_id": "THEOREM_B",
+      "declared_requirement": "CONDITIONAL",
+      "predicate_ref": {"predicate_id": "pred_gov_policy_ratified", "predicate_version": "1.0.0"},
+      "when_true": {"effective_requirement": "MANDATORY"},
+      "when_false": {"effective_requirement": "IRRELEVANT"},
+      "when_unknown": {"effective_requirement": "UNRESOLVED"},
+      "when_conflict": {"effective_requirement": "UNRESOLVED"},
+      "target_safety_class": "AUTHORIZATION_CRITICAL"
+    },
+    {
+      "dependency_id": "dep_ext_ledger_to_theorem_c",
+      "dependency_version": "1.0.0",
+      "source_claim_id": "CLAIM-EXTERNAL-LEDGER",
+      "target_output_id": "THEOREM_C",
+      "declared_requirement": "CONDITIONAL",
+      "predicate_ref": {"predicate_id": "pred_ext_ledger_established", "predicate_version": "1.0.0"},
+      "when_true": {"effective_requirement": "MANDATORY"},
+      "when_false": {"effective_requirement": "IRRELEVANT"},
+      "when_unknown": {"effective_requirement": "UNRESOLVED"},
+      "when_conflict": {"effective_requirement": "UNRESOLVED"},
+      "target_safety_class": "AUTHORIZATION_CRITICAL"
+    },
+    {
+      "dependency_id": "dep_ext_witness_to_theorem_d",
+      "dependency_version": "1.0.0",
+      "source_claim_id": "CLAIM-EXTERNAL-WITNESS",
+      "target_output_id": "THEOREM_D",
+      "declared_requirement": "CONDITIONAL",
+      "predicate_ref": {"predicate_id": "pred_ext_witness_established", "predicate_version": "1.0.0"},
+      "when_true": {"effective_requirement": "MANDATORY"},
+      "when_false": {"effective_requirement": "IRRELEVANT"},
+      "when_unknown": {"effective_requirement": "UNRESOLVED"},
+      "when_conflict": {"effective_requirement": "UNRESOLVED"},
+      "target_safety_class": "AUTHORIZATION_CRITICAL"
+    },
+    {
+      "dependency_id": "dep_denom_to_theorem_e",
+      "dependency_version": "1.0.0",
+      "source_claim_id": "CLAIM-DENOMINATOR-ALIGNMENT",
+      "target_output_id": "THEOREM_E",
+      "declared_requirement": "CONDITIONAL",
+      "predicate_ref": {"predicate_id": "pred_denom_aligned", "predicate_version": "1.0.0"},
+      "when_true": {"effective_requirement": "MANDATORY"},
+      "when_false": {"effective_requirement": "IRRELEVANT"},
+      "when_unknown": {"effective_requirement": "UNRESOLVED"},
+      "when_conflict": {"effective_requirement": "UNRESOLVED"},
+      "target_safety_class": "SAFETY_CRITICAL"
+    },
+    {
+      "dependency_id": "dep_blockers_to_arch",
+      "dependency_version": "1.0.0",
+      "source_claim_id": "CLAIM-FINDING-BLOCKERS",
+      "target_output_id": "ARCHITECTURE_CLOSURE_STATUS",
+      "declared_requirement": "CONDITIONAL",
+      "predicate_ref": {"predicate_id": "pred_zero_active_blockers", "predicate_version": "1.0.0"},
+      "when_true": {"effective_requirement": "MANDATORY"},
+      "when_false": {"effective_requirement": "IRRELEVANT"},
+      "when_unknown": {"effective_requirement": "UNRESOLVED"},
+      "when_conflict": {"effective_requirement": "UNRESOLVED"},
+      "target_safety_class": "AUTHORIZATION_CRITICAL"
+    },
+    {
+      "dependency_id": "dep_blockers_to_rem",
+      "dependency_version": "1.0.0",
+      "source_claim_id": "CLAIM-FINDING-BLOCKERS",
+      "target_output_id": "REMEDIATION_STATUS",
+      "declared_requirement": "CONDITIONAL",
+      "predicate_ref": {"predicate_id": "pred_zero_active_blockers", "predicate_version": "1.0.0"},
+      "when_true": {"effective_requirement": "MANDATORY"},
+      "when_false": {"effective_requirement": "IRRELEVANT"},
+      "when_unknown": {"effective_requirement": "UNRESOLVED"},
+      "when_conflict": {"effective_requirement": "UNRESOLVED"},
+      "target_safety_class": "AUTHORIZATION_CRITICAL"
+    },
+    {
+      "dependency_id": "dep_blockers_to_global_readiness",
+      "dependency_version": "1.0.0",
+      "source_claim_id": "CLAIM-FINDING-BLOCKERS",
+      "target_output_id": "GLOBAL_PROVISIONING_READINESS",
+      "declared_requirement": "CONDITIONAL",
+      "predicate_ref": {"predicate_id": "pred_zero_active_blockers", "predicate_version": "1.0.0"},
+      "when_true": {"effective_requirement": "MANDATORY"},
+      "when_false": {"effective_requirement": "IRRELEVANT"},
+      "when_unknown": {"effective_requirement": "UNRESOLVED"},
+      "when_conflict": {"effective_requirement": "UNRESOLVED"},
+      "target_safety_class": "SAFETY_CRITICAL"
+    },
+    {
+      "dependency_id": "dep_blockers_to_auth_status",
+      "dependency_version": "1.0.0",
+      "source_claim_id": "CLAIM-FINDING-BLOCKERS",
+      "target_output_id": "PROVISIONING_AUTHORIZATION_STATUS",
+      "declared_requirement": "CONDITIONAL",
+      "predicate_ref": {"predicate_id": "pred_zero_active_blockers", "predicate_version": "1.0.0"},
+      "when_true": {"effective_requirement": "MANDATORY"},
+      "when_false": {"effective_requirement": "IRRELEVANT"},
+      "when_unknown": {"effective_requirement": "UNRESOLVED"},
+      "when_conflict": {"effective_requirement": "UNRESOLVED"},
+      "target_safety_class": "SAFETY_CRITICAL"
+    },
+    {
+      "dependency_id": "dep_cand_semantic_to_action",
+      "dependency_version": "1.0.0",
+      "source_claim_id": "CLAIM-CANDIDATE004-SEMANTIC-CLOSURE-IDENTITY",
+      "target_output_id": "RUNTIME_ACTION",
+      "declared_requirement": "CONDITIONAL",
+      "predicate_ref": {"predicate_id": "pred_candidate_semantic_closure_valid", "predicate_version": "1.0.0"},
+      "when_true": {"effective_requirement": "MANDATORY"},
+      "when_false": {"effective_requirement": "IRRELEVANT"},
+      "when_unknown": {"effective_requirement": "UNRESOLVED"},
+      "when_conflict": {"effective_requirement": "UNRESOLVED"},
+      "target_safety_class": "AUTHORIZATION_CRITICAL"
+    }
+  ]
+}

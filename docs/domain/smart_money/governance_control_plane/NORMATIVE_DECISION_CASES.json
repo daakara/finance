@@ -1,0 +1,93 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/normative-decision-cases.json",
+  "version": "1.0.0",
+  "description": "Normative decision oracle cases defining ground-truth outcomes derived from ratified governance contracts.",
+  "cases": [
+    {
+      "case_id": "CURRENT_PRELIVE_BASELINE",
+      "description": "Current baseline state: admitted open architecture defects, unprovisioned external authorities",
+      "expected": {
+        "architecture_closure_status": "OPEN",
+        "remediation_status": "REQUIRED",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "BLOCKED",
+          "B": "BLOCKED",
+          "C": "BLOCKED",
+          "D": "BLOCKED",
+          "E": "BLOCKED"
+        }
+      }
+    },
+    {
+      "case_id": "ALL_DEFECTS_RESOLVED_EXTERNAL_PROVISIONED",
+      "description": "Hypothetical future state: all architecture defects verified resolved, all external authorities provisioned and established",
+      "expected": {
+        "architecture_closure_status": "CLOSED",
+        "remediation_status": "NONE_OR_VERIFIED_COMPLETE",
+        "global_provisioning_readiness": "READY",
+        "provisioning_authorization_status": "ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "READY",
+          "B": "READY",
+          "C": "READY",
+          "D": "READY",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "DEFECTS_RESOLVED_BUT_WITNESS_NOT_ESTABLISHED",
+      "description": "Zero architecture defects but Theorem D external witness NOT_ESTABLISHED",
+      "expected": {
+        "architecture_closure_status": "CLOSED",
+        "remediation_status": "NONE_OR_VERIFIED_COMPLETE",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "READY",
+          "B": "READY",
+          "C": "READY",
+          "D": "BLOCKED",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "DEFECTS_RESOLVED_BUT_LEDGER_CONFLICT",
+      "description": "Zero architecture defects but Theorem C external ledger state CONFLICT",
+      "expected": {
+        "architecture_closure_status": "CLOSED",
+        "remediation_status": "NONE_OR_VERIFIED_COMPLETE",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "READY",
+          "B": "READY",
+          "C": "BLOCKED",
+          "D": "READY",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "SINGLE_OPEN_ARCH_DEFECT_FND_001",
+      "description": "Only FND-ARCH-001 open (Hash Canonicalization Ambiguity), all others resolved",
+      "expected": {
+        "architecture_closure_status": "OPEN",
+        "remediation_status": "REQUIRED",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "B": "BLOCKED"
+        }
+      }
+    }
+  ]
+}

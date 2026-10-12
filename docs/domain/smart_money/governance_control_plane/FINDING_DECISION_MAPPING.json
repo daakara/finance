@@ -1,0 +1,84 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/finding-decision-mapping.json",
+  "version": "1.0.0",
+  "mappings": [
+    {
+      "finding_id": "FND-ARCH-001",
+      "claim_ids": ["CLAIM-GOVERNANCE-ROOT"],
+      "dependency_paths": ["CLAIM-GOVERNANCE-ROOT -> THEOREM_B -> GLOBAL_PROVISIONING_READINESS"],
+      "expected_blocks": ["THEOREM_B", "GLOBAL_PROVISIONING_READINESS", "ARCHITECTURE_CLOSURE_STATUS"]
+    },
+    {
+      "finding_id": "FND-ARCH-002",
+      "claim_ids": ["CLAIM-EXTERNAL-WITNESS"],
+      "dependency_paths": ["CLAIM-EXTERNAL-WITNESS -> THEOREM_D -> GLOBAL_PROVISIONING_READINESS"],
+      "expected_blocks": ["THEOREM_D", "GLOBAL_PROVISIONING_READINESS"]
+    },
+    {
+      "finding_id": "FND-ARCH-003",
+      "claim_ids": ["CLAIM-EXTERNAL-LEDGER"],
+      "dependency_paths": ["CLAIM-EXTERNAL-LEDGER -> THEOREM_C -> GLOBAL_PROVISIONING_READINESS"],
+      "expected_blocks": ["THEOREM_C", "GLOBAL_PROVISIONING_READINESS"]
+    },
+    {
+      "finding_id": "FND-ARCH-004",
+      "claim_ids": ["CLAIM-EXTERNAL-LEDGER"],
+      "dependency_paths": ["CLAIM-EXTERNAL-LEDGER -> THEOREM_C -> GLOBAL_PROVISIONING_READINESS"],
+      "expected_blocks": ["THEOREM_C", "GLOBAL_PROVISIONING_READINESS", "ARCHITECTURE_CLOSURE_STATUS"]
+    },
+    {
+      "finding_id": "FND-ARCH-005",
+      "claim_ids": ["CLAIM-EXTERNAL-LEDGER"],
+      "dependency_paths": ["CLAIM-EXTERNAL-LEDGER -> THEOREM_C -> GLOBAL_PROVISIONING_READINESS"],
+      "expected_blocks": ["THEOREM_C", "GLOBAL_PROVISIONING_READINESS"]
+    },
+    {
+      "finding_id": "FND-ARCH-006",
+      "claim_ids": ["CLAIM-RELEASE-PROVENANCE"],
+      "dependency_paths": ["CLAIM-RELEASE-PROVENANCE -> THEOREM_A -> GLOBAL_PROVISIONING_READINESS"],
+      "expected_blocks": ["THEOREM_A", "GLOBAL_PROVISIONING_READINESS"]
+    },
+    {
+      "finding_id": "FND-ARCH-007",
+      "claim_ids": ["CLAIM-EXTERNAL-LEDGER"],
+      "dependency_paths": ["CLAIM-EXTERNAL-LEDGER -> THEOREM_C -> GLOBAL_PROVISIONING_READINESS"],
+      "expected_blocks": ["THEOREM_C", "GLOBAL_PROVISIONING_READINESS", "ARCHITECTURE_CLOSURE_STATUS"]
+    },
+    {
+      "finding_id": "FND-ARCH-008",
+      "claim_ids": ["CLAIM-GOVERNANCE-ROOT"],
+      "dependency_paths": ["CLAIM-GOVERNANCE-ROOT -> THEOREM_B -> GLOBAL_PROVISIONING_READINESS"],
+      "expected_blocks": ["THEOREM_B", "GLOBAL_PROVISIONING_READINESS", "ARCHITECTURE_CLOSURE_STATUS"]
+    },
+    {
+      "finding_id": "FND-ARCH-009",
+      "claim_ids": ["CLAIM-GOVERNANCE-POLICY"],
+      "dependency_paths": ["CLAIM-GOVERNANCE-POLICY -> THEOREM_B -> GLOBAL_PROVISIONING_READINESS"],
+      "expected_blocks": ["THEOREM_B", "GLOBAL_PROVISIONING_READINESS"]
+    },
+    {
+      "finding_id": "FND-ARCH-010",
+      "claim_ids": ["CLAIM-EXTERNAL-LEDGER"],
+      "dependency_paths": ["CLAIM-EXTERNAL-LEDGER -> THEOREM_C -> GLOBAL_PROVISIONING_READINESS"],
+      "expected_blocks": ["THEOREM_C", "GLOBAL_PROVISIONING_READINESS", "ARCHITECTURE_CLOSURE_STATUS"]
+    },
+    {
+      "finding_id": "FND-ARCH-011",
+      "claim_ids": ["CLAIM-DENOMINATOR-ALIGNMENT"],
+      "dependency_paths": ["CLAIM-DENOMINATOR-ALIGNMENT -> THEOREM_E -> GLOBAL_PROVISIONING_READINESS"],
+      "expected_blocks": ["THEOREM_E", "GLOBAL_PROVISIONING_READINESS", "ARCHITECTURE_CLOSURE_STATUS"]
+    },
+    {
+      "finding_id": "FND-ARCH-012",
+      "claim_ids": ["CLAIM-RELEASE-PROVENANCE"],
+      "dependency_paths": ["CLAIM-RELEASE-PROVENANCE -> THEOREM_A -> GLOBAL_PROVISIONING_READINESS"],
+      "expected_blocks": ["THEOREM_A", "GLOBAL_PROVISIONING_READINESS", "ARCHITECTURE_CLOSURE_STATUS"]
+    },
+    {
+      "finding_id": "FND-ARCH-014",
+      "claim_ids": ["CLAIM-EXTERNAL-LEDGER"],
+      "dependency_paths": ["CLAIM-EXTERNAL-LEDGER -> THEOREM_C -> GLOBAL_PROVISIONING_READINESS"],
+      "expected_blocks": ["THEOREM_C", "GLOBAL_PROVISIONING_READINESS", "ARCHITECTURE_CLOSURE_STATUS"]
+    }
+  ]
+}

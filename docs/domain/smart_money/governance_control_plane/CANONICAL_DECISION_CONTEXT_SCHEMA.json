@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CanonicalDecisionContextSchema",
+  "description": "Schema for immutable CanonicalDecisionContext binding all upstream governance roots",
+  "type": "object",
+  "required": [
+    "context_version",
+    "source_freeze",
+    "evaluation_clock",
+    "evidence",
+    "claims",
+    "findings",
+    "dependencies",
+    "evaluator",
+    "candidate",
+    "decision_context_hash"
+  ],
+  "properties": {
+    "context_version": {
+      "type": "string",
+      "enum": ["1.0.0", "v1"]
+    },
+    "source_freeze": {
+      "type": "object",
+      "required": ["commit_sha", "tree_hash"],
+      "properties": {
+        "commit_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "tree_hash": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+      }
+    },
+    "evaluation_clock": {
+      "type": "object",
+      "required": ["observed_at", "clock_source", "authority_scope", "maximum_skew_seconds"],
+      "properties": {
+        "observed_at": { "type": "string", "format": "date-time" },
+        "clock_source": { "type": "string" },
+        "authority_scope": { "type": "string" },
+        "maximum_skew_seconds": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["manifest_hash"],
+      "properties": {
+        "manifest_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "claims": {
+      "type": "object",
+      "required": ["claim_derivation_policy_hash", "claim_registry_hash"],
+      "properties": {
+        "claim_derivation_policy_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "claim_registry_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "findings": {
+      "type": "object",
+      "required": ["identity_registry_hash", "admission_registry_hash", "active_blocker_set_hash"],
+      "properties": {
+        "identity_registry_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "admission_registry_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "active_blocker_set_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "required": [
+        "dependency_policy_hash",
+        "predicate_set_hash",
+        "predicate_context_hash",
+        "dependency_resolution_hash"
+      ],
+      "properties": {
+        "dependency_policy_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "predicate_set_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "predicate_context_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "dependency_resolution_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "evaluator": {
+      "type": "object",
+      "required": ["evaluator_bundle_hash"],
+      "properties": {
+        "evaluator_bundle_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "required": ["freeze_file_sha256", "semantic_closure_hash"],
+      "properties": {
+        "freeze_file_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "semantic_closure_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "decision_context_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "additionalProperties": false
+}

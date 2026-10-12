@@ -46,6 +46,10 @@ from .decision_engine import (
     ReferenceDecisionEngine,
     DecisionSnapshot,
     verify_legacy_dag_parity,
+    validate_canonical_decision_snapshot,
+    PreIntegrationSnapshotRejectedError,
+    DuplicateDecisionSequenceError,
+    INVALIDATED_PRE_INTEGRATION_DECISION_HASHES,
 )
 from .authorization import (
     AuthorizationManager,
@@ -57,6 +61,43 @@ from .authorization import (
     OutOfScopeActionException,
     ProvisioningBlockedException,
     StaleDecisionException,
+    PreIntegrationAuthorizationError,
+)
+from .claim_derivation import (
+    ClaimDerivationEngine,
+    CanonicalDerivedClaim,
+    StateBasis,
+    EmptyClaimRegistryError,
+    AuthoritativeStateBasisMissingError,
+    ClaimPolicySchemaError,
+)
+from .fact_derivation import (
+    FactDerivationEngine,
+    SelfAssertedFactAuthorityError,
+    FactWithoutClaimBindingError,
+)
+from .canonical_context import (
+    CanonicalDecisionContext,
+    CanonicalDecisionContextBuilder,
+    SourceFreezeVerificationError,
+    RepositoryEvidenceRecomputationError,
+    FutureDatedRecordError,
+    DAGIncompletenessError,
+    CallerConstructedCanonicalContextRejectedError,
+)
+from .finding_registry import (
+    FindingRegistry,
+    Finding,
+    FindingStatus,
+    FindingAdjudication,
+    get_canonical_known_architecture_findings,
+    get_additional_registered_findings,
+    get_all_registered_findings,
+    get_canonical_admitted_findings,
+    create_canonical_finding_registry,
+    DuplicateWithoutCanonicalTargetError,
+    DuplicateSelfReferenceError,
+    DuplicateCycleError,
 )
 
 from .bootstrap_authority import (
@@ -266,6 +307,32 @@ __all__ = [
     "DependencyPolicyError",
     "PolicyCompilationError",
     "UnauthorizedPredicateWeakeningException",
+    # Canonical Input Authority & Decision-Chain Closure Subsystem
+    "ClaimDerivationEngine",
+    "CanonicalDerivedClaim",
+    "StateBasis",
+    "EmptyClaimRegistryError",
+    "AuthoritativeStateBasisMissingError",
+    "ClaimPolicySchemaError",
+    "FactDerivationEngine",
+    "SelfAssertedFactAuthorityError",
+    "FactWithoutClaimBindingError",
+    "CanonicalDecisionContext",
+    "CanonicalDecisionContextBuilder",
+    "SourceFreezeVerificationError",
+    "RepositoryEvidenceRecomputationError",
+    "FutureDatedRecordError",
+    "DAGIncompletenessError",
+    "CallerConstructedCanonicalContextRejectedError",
+    "PreIntegrationSnapshotRejectedError",
+    "DuplicateDecisionSequenceError",
+    "validate_canonical_decision_snapshot",
+    "INVALIDATED_PRE_INTEGRATION_DECISION_HASHES",
+    "PreIntegrationAuthorizationError",
+    "FindingAdjudication",
+    "DuplicateWithoutCanonicalTargetError",
+    "DuplicateSelfReferenceError",
+    "DuplicateCycleError",
 ]
 
 

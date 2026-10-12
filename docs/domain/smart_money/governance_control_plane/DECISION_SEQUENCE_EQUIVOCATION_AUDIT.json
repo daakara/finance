@@ -1,0 +1,41 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/decision-sequence-equivocation-audit.json",
+  "audit_id": "urn:arx:audit:decision-equivocation:2026-10-12",
+  "audited_at": "2026-10-12T10:00:00Z",
+  "equivocation_detected": true,
+  "observed_conflicting_slots": [
+    {
+      "epoch": "epoch-gov-001",
+      "sequence": 1,
+      "decision_hash": "3dc851a90e213da557a79027fc4b3a07287713bc84d88effcf92dadd0b539e41",
+      "manifest_source": "GOVERNANCE_BOOTSTRAP_CLOSURE_MANIFEST.json / GOVERNANCE_RECONCILIATION_CLOSURE_MANIFEST.json",
+      "derivation_epoch_type": "BOOTSTRAP_PRE_INTEGRATION"
+    },
+    {
+      "epoch": "epoch-gov-001",
+      "sequence": 1,
+      "decision_hash": "2563e663a7717bbb411229ea0bbab3ad0da58d3ff8a100bce14099132e096254",
+      "manifest_source": "CANONICAL_DECISION_INTEGRATION_CLOSURE_MANIFEST.json",
+      "derivation_epoch_type": "CANONICAL_DECISION_INTEGRATION_V1"
+    }
+  ],
+  "root_cause_analysis": "The pre-integration bootstrap and reconciliation gates committed decision sequence 1 in epoch-gov-001 with an early legacy imperative payload. Later, canonical decision integration evaluated a new declarative DAG payload also designated as epoch-gov-001 sequence 1 without formally incrementing epoch or invalidating the contaminated predecessor slot.",
+  "formal_remediation": {
+    "action": "EPOCH_TRANSITION_AND_INVALIDATION",
+    "predecessor_epoch": "epoch-gov-001",
+    "predecessor_status": "INVALIDATED_NON_CANONICAL",
+    "invalidation_reasons": [
+      "SYNTHETIC_EVIDENCE_CONTAMINATION",
+      "CANONICAL_INPUT_AUTHORITY_REPAIR",
+      "SEQUENCE_1_EQUIVOCATION_COLLISION"
+    ],
+    "successor_epoch": "epoch-gov-002",
+    "successor_initial_sequence": 1,
+    "historical_preservation": "Predecessor artifacts remain permanently recorded in ledger history; slot reuse in epoch-gov-001 is prohibited; all pre-integration snapshots and authorizations are rendered unexercisable."
+  },
+  "invalidation_invariants": {
+    "pre_integration_snapshot_accepted_as_current_canonical": 0,
+    "pre_integration_authorization_exercisable": 0,
+    "duplicate_decision_sequence_with_different_hash": 0
+  }
+}

@@ -29,6 +29,24 @@ ENGINE_SOURCE_SHA = "ab32ec91bff0dce73a35938af73e1af8d43e5c68"
 
 RUNTIME_ACTIONS = ["NONE", "HALT_NEW_ADMISSIONS", "TERMINAL_HOLD", "INCIDENT_RESPONSE"]
 
+INVALIDATED_PRE_INTEGRATION_DECISION_HASHES = {
+    "3dc851a90e213da557a79027fc4b3a07287713bc84d88effcf92dadd0b539e41",
+    "2563e663a7717bbb411229ea0bbab3ad0da58d3ff8a100bce14099132e096254",
+}
+
+
+class PreIntegrationSnapshotRejectedError(Exception):
+    """Raised when an invalidated pre-integration snapshot is supplied as current canonical."""
+    pass
+
+
+class DuplicateDecisionSequenceError(Exception):
+    """Raised when an attempt is made to evaluate/commit a conflicting decision with an already-used sequence."""
+    pass
+
+
+from .canonical_context import CallerConstructedCanonicalContextRejectedError
+
 
 def compute_canonical_contract_set_hash() -> str:
     """Computes SHA-256 hash over canonical list of contract documents."""
@@ -101,8 +119,23 @@ class DecisionSnapshot:
     is_canonical: bool = False
     canonical_eligibility: str = "PASS"
     authority_eligibility: str = "AUTHORITATIVE"
+    decision_context_hash: Optional[str] = None
+    finding_identity_registry_hash: Optional[str] = None
+    finding_admission_registry_hash: Optional[str] = None
+    active_blocker_set_hash: Optional[str] = None
+    evaluator_bundle_hash: Optional[str] = None
+    candidate_freeze_file_sha256: Optional[str] = None
+    candidate_semantic_closure_hash: Optional[str] = None
+    canonical_status: str = "CANONICAL"
 
     def __post_init__(self):
+        if self.decision_hash in INVALIDATED_PRE_INTEGRATION_DECISION_HASHES:
+            self.canonical_status = "INVALIDATED_NON_CANONICAL"
+        if self.canonical_status == "INVALIDATED_NON_CANONICAL" and self.decision_validity == "CURRENT":
+            raise PreIntegrationSnapshotRejectedError(
+                "PRE_INTEGRATION_SNAPSHOT_ACCEPTED_AS_CURRENT_CANONICAL == 0: "
+                "Invalidated pre-integration snapshot cannot have decision_validity == 'CURRENT'."
+            )
         if self.is_canonical:
             if not self.dependency_resolution_hash:
                 raise ValueError(
@@ -119,9 +152,49 @@ class DecisionSnapshot:
                     "Canonical DecisionSnapshot requires finding_registry_hash. "
                     "DECISION_SNAPSHOT_WITHOUT_FINDING_BINDING_ACCEPTED == 0."
                 )
+            if self.governance_epoch == "epoch-gov-002":
+                if not self.decision_context_hash:
+                    raise ValueError(
+                        "Canonical DecisionSnapshot in epoch-gov-002 requires decision_context_hash."
+                    )
+                if not self.finding_identity_registry_hash:
+                    raise ValueError(
+                        "Canonical DecisionSnapshot in epoch-gov-002 requires finding_identity_registry_hash."
+                    )
+                if not self.finding_admission_registry_hash:
+                    raise ValueError(
+                        "Canonical DecisionSnapshot in epoch-gov-002 requires finding_admission_registry_hash."
+                    )
+                if not self.active_blocker_set_hash:
+                    raise ValueError(
+                        "Canonical DecisionSnapshot in epoch-gov-002 requires active_blocker_set_hash."
+                    )
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
+
+
+def validate_canonical_decision_snapshot(snapshot: DecisionSnapshot, current_epoch: str = "epoch-gov-002") -> bool:
+    """Validates that a DecisionSnapshot satisfies all canonical requirements for the active governance epoch."""
+    if snapshot.decision_hash in INVALIDATED_PRE_INTEGRATION_DECISION_HASHES:
+        raise PreIntegrationSnapshotRejectedError(
+            "PRE_INTEGRATION_SNAPSHOT_ACCEPTED_AS_CURRENT_CANONICAL == 0: Pre-integration snapshot is invalidated."
+        )
+    if snapshot.canonical_status == "INVALIDATED_NON_CANONICAL":
+        raise PreIntegrationSnapshotRejectedError(
+            "PRE_INTEGRATION_SNAPSHOT_ACCEPTED_AS_CURRENT_CANONICAL == 0: Snapshot is marked INVALIDATED_NON_CANONICAL."
+        )
+    if current_epoch == "epoch-gov-002" and snapshot.governance_epoch == "epoch-gov-001":
+        raise PreIntegrationSnapshotRejectedError(
+            "PRE_INTEGRATION_SNAPSHOT_ACCEPTED_AS_CURRENT_CANONICAL == 0: Predecessor epoch-gov-001 snapshot cannot be accepted as current canonical in epoch-gov-002."
+        )
+    if not snapshot.is_canonical:
+        raise ValueError("Snapshot is not marked is_canonical == True.")
+    if snapshot.canonical_eligibility != "PASS":
+        raise ValueError(f"Canonical eligibility is {snapshot.canonical_eligibility}, expected PASS.")
+    if snapshot.authority_eligibility != "AUTHORITATIVE":
+        raise ValueError(f"Authority eligibility is {snapshot.authority_eligibility}, expected AUTHORITATIVE.")
+    return True
 
 
 class GovernanceDecisionEngine:
@@ -135,12 +208,25 @@ class GovernanceDecisionEngine:
         policy_hash: str = "6d01ff68128ccd5d4300e90c0decad10166f7afc1c1f32a666af1c738da78905",
         policy_ratification_hash: str = "8a9f0e1d2c3b4a596877869504132435465768798091a2b3c4d5e6f7a8b9c0d1",
         epoch: str = "epoch-gov-001",
+        allow_caller_canonical_inputs: Optional[bool] = None,
+        enforce_sequence_uniqueness: bool = False,
     ):
         self.policy_hash = policy_hash
         self.policy_ratification_hash = policy_ratification_hash
         self.epoch = epoch
         self.version = ENGINE_VERSION
         self.source_sha = ENGINE_SOURCE_SHA
+        if allow_caller_canonical_inputs is None:
+            self.allow_caller_canonical_inputs = (epoch == "epoch-gov-001")
+        else:
+            self.allow_caller_canonical_inputs = allow_caller_canonical_inputs
+        self.enforce_sequence_uniqueness = enforce_sequence_uniqueness
+        self._registered_committed_decisions: Dict[tuple, str] = {}
+        self._committed_decisions: Dict[tuple, str] = {}
+
+    def register_committed_decision(self, epoch: str, sequence: int, decision_hash: str) -> None:
+        """Explicitly registers an authoritative decision hash into the engine's anti-equivocation ledger."""
+        self._registered_committed_decisions[(epoch, sequence)] = decision_hash
 
     def compute_engine_hash(self) -> str:
         metadata = {
@@ -189,7 +275,12 @@ class GovernanceDecisionEngine:
                     theorem_readiness["D"] = "BLOCKED"
 
         # 2. Evaluate Evidence Completeness
-        evidence_complete = evidence_inventory.is_complete()
+        if hasattr(evidence_inventory, "is_complete"):
+            evidence_complete = evidence_inventory.is_complete()
+        elif hasattr(evidence_inventory, "summary"):
+            evidence_complete = evidence_inventory.summary.get("not_established", 0) == 0
+        else:
+            evidence_complete = False
 
         # 3. Derive Gate Statuses (Section 13 & 25 Reclassification Rule)
         # Architecture closure is blocked ONLY IF unresolved architecture-level semantic defects exist
@@ -211,7 +302,12 @@ class GovernanceDecisionEngine:
 
         engine_hash = self.compute_engine_hash()
         finding_hash = finding_registry.compute_registry_hash()
-        evidence_hash = evidence_inventory.compute_inventory_hash()
+        if hasattr(evidence_inventory, "compute_inventory_hash"):
+            evidence_hash = evidence_inventory.compute_inventory_hash()
+        elif hasattr(evidence_inventory, "manifest_hash"):
+            evidence_hash = evidence_inventory.manifest_hash
+        else:
+            evidence_hash = "0" * 64
 
         if not decision_id:
             det_seed = {
@@ -253,6 +349,20 @@ class GovernanceDecisionEngine:
         }
         dec_hash = sha256_canonical(body)
 
+        # Check sequence anti-equivocation
+        seq_key = (self.epoch, sequence)
+        if seq_key in self._registered_committed_decisions:
+            if self._registered_committed_decisions[seq_key] != dec_hash:
+                raise DuplicateDecisionSequenceError(
+                    f"DUPLICATE_DECISION_SEQUENCE_WITH_DIFFERENT_HASH == 0: Sequence {sequence} in {self.epoch} already committed with different hash {self._registered_committed_decisions[seq_key]}."
+                )
+        if self.enforce_sequence_uniqueness:
+            if seq_key in self._committed_decisions and self._committed_decisions[seq_key] != dec_hash:
+                raise DuplicateDecisionSequenceError(
+                    f"DUPLICATE_DECISION_SEQUENCE_WITH_DIFFERENT_HASH == 0: Sequence {sequence} in {self.epoch} already committed with different hash."
+                )
+            self._committed_decisions[seq_key] = dec_hash
+
         return DecisionSnapshot(
             decision_id=decision_id,
             governance_epoch=self.epoch,
@@ -288,11 +398,13 @@ class GovernanceDecisionEngine:
 
     def evaluate_canonical(
         self,
-        finding_registry: FindingRegistry,
-        evidence_manifest: CanonicalEvidenceManifest,
-        claim_registry: ClaimRegistry,
-        compiled_dependency_policy: CompiledDependencyPolicy,
-        fact_context: FactContext,
+        context: Optional[Any] = None,
+        *,
+        finding_registry: Optional[FindingRegistry] = None,
+        evidence_manifest: Optional[CanonicalEvidenceManifest] = None,
+        claim_registry: Optional[ClaimRegistry] = None,
+        compiled_dependency_policy: Optional[CompiledDependencyPolicy] = None,
+        fact_context: Optional[FactContext] = None,
         sequence: int = 1,
         previous_decision_hash: str = "0" * 64,
         source_freeze_sha: Optional[str] = None,
@@ -301,6 +413,55 @@ class GovernanceDecisionEngine:
         derived_at: Optional[str] = None,
         decision_id: Optional[str] = None,
     ) -> DecisionSnapshot:
+        """
+        Authoritative Canonical Decision Derivation (Sections 14, 15, 16, 35).
+        Consumes: Canonical Evidence -> Claims -> Context -> Policy DAG -> Admitted Findings.
+        """
+        if context is not None:
+            # Mechanically verify context hash
+            context_dict = context.to_dict()
+            ctx_body = {k: v for k, v in context_dict.items() if k != "decision_context_hash"}
+            if sha256_canonical(ctx_body) != context.decision_context_hash:
+                raise CallerConstructedCanonicalContextRejectedError(
+                    "CALLER_CONSTRUCTED_CANONICAL_CONTEXT_ACCEPTED == 0: Canonical context hash does not match canonical recomputation."
+                )
+
+            finding_registry = context.finding_registry
+            evidence_manifest = context.evidence_manifest
+            claim_registry = ClaimRegistry(claims=list(context.derived_claims.values()))
+            compiled_dependency_policy = context.compiled_dependency_policy
+            fact_context = context.fact_context
+            source_freeze_sha = context.source_freeze_sha
+            decision_context_hash = context.context_hash
+            finding_identity_registry_hash = context.finding_identity_registry_hash
+            finding_admission_registry_hash = context.finding_admission_registry_hash
+            active_blocker_set_hash = context.active_blocker_set_hash
+            evaluator_bundle_hash = context.evaluator_bundle_hash
+            candidate_freeze_file_sha256 = context.candidate_freeze_file_sha256
+            candidate_semantic_closure_hash = context.candidate_semantic_closure_hash
+            dep_res = context.dependency_resolution
+        else:
+            if not self.allow_caller_canonical_inputs:
+                raise CallerConstructedCanonicalContextRejectedError(
+                    "CALLER_CONSTRUCTED_CANONICAL_CONTEXT_ACCEPTED == 0: "
+                    "evaluate_canonical requires an authoritative CanonicalDecisionContext."
+                )
+            if (
+                finding_registry is None
+                or evidence_manifest is None
+                or claim_registry is None
+                or compiled_dependency_policy is None
+                or fact_context is None
+            ):
+                raise ValueError("All canonical inputs must be provided when evaluate_canonical is called without context.")
+            decision_context_hash = None
+            finding_identity_registry_hash = finding_registry.compute_identity_registry_hash() if hasattr(finding_registry, "compute_identity_registry_hash") else None
+            finding_admission_registry_hash = finding_registry.compute_admission_registry_hash() if hasattr(finding_registry, "compute_admission_registry_hash") else None
+            active_blocker_set_hash = finding_registry.compute_active_blocker_set_hash() if hasattr(finding_registry, "compute_active_blocker_set_hash") else None
+            evaluator_bundle_hash = None
+            candidate_freeze_file_sha256 = None
+            candidate_semantic_closure_hash = None
+            dep_res = resolve_dependencies(compiled_dependency_policy, fact_context)
         """
         Authoritative Canonical Decision Derivation (Sections 14, 15, 16, 35).
         Consumes: Canonical Evidence -> Claims -> Context -> Policy DAG -> Admitted Findings.
@@ -411,6 +572,8 @@ class GovernanceDecisionEngine:
                 "dependency_policy_hash": dep_pol_hash,
                 "dependency_resolution_hash": dep_res_hash,
             }
+            if decision_context_hash:
+                det_seed["decision_context_hash"] = decision_context_hash
             det_suffix = sha256_canonical(det_seed)[:12]
             decision_id = f"urn:arx:decision:{self.epoch}:{sequence}:{det_suffix}"
 
@@ -447,7 +610,30 @@ class GovernanceDecisionEngine:
             "canonical_eligibility": canonical_eligibility,
             "authority_eligibility": authority_eligibility,
         }
+        if decision_context_hash:
+            canonical_body["decision_context_hash"] = decision_context_hash
+            canonical_body["finding_identity_registry_hash"] = finding_identity_registry_hash
+            canonical_body["finding_admission_registry_hash"] = finding_admission_registry_hash
+            canonical_body["active_blocker_set_hash"] = active_blocker_set_hash
+            canonical_body["evaluator_bundle_hash"] = evaluator_bundle_hash
+            canonical_body["candidate_freeze_file_sha256"] = candidate_freeze_file_sha256
+            canonical_body["candidate_semantic_closure_hash"] = candidate_semantic_closure_hash
+
         dec_hash = sha256_canonical(canonical_body)
+
+        # Check sequence anti-equivocation
+        seq_key = (self.epoch, sequence)
+        if seq_key in self._registered_committed_decisions:
+            if self._registered_committed_decisions[seq_key] != dec_hash:
+                raise DuplicateDecisionSequenceError(
+                    f"DUPLICATE_DECISION_SEQUENCE_WITH_DIFFERENT_HASH == 0: Sequence {sequence} in {self.epoch} already committed with different hash {self._registered_committed_decisions[seq_key]}."
+                )
+        if self.enforce_sequence_uniqueness:
+            if seq_key in self._committed_decisions and self._committed_decisions[seq_key] != dec_hash:
+                raise DuplicateDecisionSequenceError(
+                    f"DUPLICATE_DECISION_SEQUENCE_WITH_DIFFERENT_HASH == 0: Sequence {sequence} in {self.epoch} already committed with different hash."
+                )
+            self._committed_decisions[seq_key] = dec_hash
 
         return DecisionSnapshot(
             decision_id=decision_id,
@@ -484,6 +670,13 @@ class GovernanceDecisionEngine:
             is_canonical=True,
             canonical_eligibility=canonical_eligibility,
             authority_eligibility=authority_eligibility,
+            decision_context_hash=decision_context_hash,
+            finding_identity_registry_hash=finding_identity_registry_hash,
+            finding_admission_registry_hash=finding_admission_registry_hash,
+            active_blocker_set_hash=active_blocker_set_hash,
+            evaluator_bundle_hash=evaluator_bundle_hash,
+            candidate_freeze_file_sha256=candidate_freeze_file_sha256,
+            candidate_semantic_closure_hash=candidate_semantic_closure_hash,
         )
 
 
@@ -587,7 +780,12 @@ class ReferenceDecisionEngine:
             if f.reclassified_layer == "ARCHITECTURE_DEFECT"
             and f.lifecycle_status not in [FindingStatus.VERIFIED_RESOLVED, FindingStatus.DISPROVED]
         ]
-        ev_complete = evidence_inventory.is_complete()
+        if hasattr(evidence_inventory, "is_complete"):
+            ev_complete = evidence_inventory.is_complete()
+        elif hasattr(evidence_inventory, "summary"):
+            ev_complete = evidence_inventory.summary.get("not_established", 0) == 0
+        else:
+            ev_complete = False
 
         arch_blocked = len(arch_defects) > 0
         prov_blocked = bool(blockers) or not ev_complete

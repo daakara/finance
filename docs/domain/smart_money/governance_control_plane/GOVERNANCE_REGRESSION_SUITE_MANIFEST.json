@@ -1,0 +1,28 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/governance-regression-suite-manifest.json",
+  "version": "1.0.0",
+  "manifest_id": "urn:arx:manifest:governance-regression-suites:v1",
+  "required_test_files": [
+    "tests/test_smart_money_api.py",
+    "tests/test_smart_money_conditional_dependency_authority.py",
+    "tests/test_smart_money_distributed_authority_substrate.py",
+    "tests/test_smart_money_final_natural_authority_chain_closure.py",
+    "tests/test_smart_money_governance_bootstrap_authority.py",
+    "tests/test_smart_money_governance_control_plane_authority.py",
+    "tests/test_smart_money_governance_reconciliation_freeze.py",
+    "tests/test_smart_money_legislative.py",
+    "tests/test_external_authority_architecture_contract_closure.py",
+    "tests/test_sprint_3_candidate_004_epoch_and_migration.py",
+    "tests/test_canonical_decision_context.py",
+    "tests/test_governance_decision_engine_policy.py",
+    "tests/test_smart_money_canonical_decision_integration.py",
+    "tests/test_smart_money_canonical_input_authority.py"
+  ],
+  "retired_test_files": [],
+  "replacement_test_files": {},
+  "retirement_rationale": {},
+  "integrity_assertions": {
+    "required_governance_suites_not_run": 0,
+    "unexplained_retired_suites": 0
+  }
+}

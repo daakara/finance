@@ -15,6 +15,7 @@ from datetime import datetime, timezone, timedelta
 
 from .canonicalization import sha256_canonical
 from .ledger import AuthorityLedger
+from .decision_engine import INVALIDATED_PRE_INTEGRATION_DECISION_HASHES
 
 if TYPE_CHECKING:
     from .decision_engine import DecisionSnapshot
@@ -55,6 +56,11 @@ class AuthorizationConsumedException(Exception):
     pass
 
 
+class PreIntegrationAuthorizationError(Exception):
+    """Raised when an attempt is made to issue or exercise an authorization for an invalidated pre-integration decision."""
+    pass
+
+
 @dataclass
 class ProvisioningAuthorization:
     authorization_id: str
@@ -79,6 +85,12 @@ class ProvisioningAuthorization:
     evidence_manifest_hash: Optional[str] = None
     dependency_resolution_hash: Optional[str] = None
     consumed_count: int = 0
+    decision_context_hash: Optional[str] = None
+    finding_identity_registry_hash: Optional[str] = None
+    finding_admission_registry_hash: Optional[str] = None
+    active_blocker_set_hash: Optional[str] = None
+    claim_registry_hash: Optional[str] = None
+    canonical_status: str = "CANONICAL"
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
@@ -110,6 +122,12 @@ class ExecutionAuthorization:
     evidence_manifest_hash: Optional[str] = None
     dependency_resolution_hash: Optional[str] = None
     consumed_count: int = 0
+    decision_context_hash: Optional[str] = None
+    finding_identity_registry_hash: Optional[str] = None
+    finding_admission_registry_hash: Optional[str] = None
+    active_blocker_set_hash: Optional[str] = None
+    claim_registry_hash: Optional[str] = None
+    canonical_status: str = "CANONICAL"
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
@@ -126,8 +144,9 @@ class AuthorizationManager:
     PROVISIONING_TTL_SECONDS = 3600
     EXECUTION_TTL_SECONDS = 900
 
-    def __init__(self, ledger: AuthorityLedger):
+    def __init__(self, ledger: AuthorityLedger, current_epoch: Optional[str] = None):
         self.ledger = ledger
+        self.current_epoch = current_epoch or getattr(ledger, "epoch", "epoch-gov-001")
         self.active_authorizations: Dict[str, Any] = {}
 
     def issue_provisioning_authorization(
@@ -140,10 +159,29 @@ class AuthorizationManager:
         current_registry_hash: str,
         current_evidence_manifest_hash: Optional[str] = None,
         current_dependency_resolution_hash: Optional[str] = None,
+        current_decision_context_hash: Optional[str] = None,
+        current_finding_identity_registry_hash: Optional[str] = None,
+        current_finding_admission_registry_hash: Optional[str] = None,
+        current_active_blocker_set_hash: Optional[str] = None,
+        current_claim_registry_hash: Optional[str] = None,
         issued_at: Optional[str] = None,
         ttl_seconds: int = PROVISIONING_TTL_SECONDS,
         require_dependency_binding: bool = True,
     ) -> ProvisioningAuthorization:
+        # Pre-integration check
+        if decision.decision_hash in INVALIDATED_PRE_INTEGRATION_DECISION_HASHES:
+            raise PreIntegrationAuthorizationError(
+                "Cannot issue authorization: decision hash matches invalidated pre-integration snapshot (PRE_INTEGRATION_AUTHORIZATION_EXERCISABLE == 0)."
+            )
+        if getattr(decision, "canonical_status", "CANONICAL") == "INVALIDATED_NON_CANONICAL":
+            raise PreIntegrationAuthorizationError(
+                "Cannot issue authorization: decision is marked INVALIDATED_NON_CANONICAL (PRE_INTEGRATION_AUTHORIZATION_EXERCISABLE == 0)."
+            )
+        if self.current_epoch == "epoch-gov-002" and decision.governance_epoch == "epoch-gov-001":
+            raise PreIntegrationAuthorizationError(
+                "Cannot issue authorization: epoch-gov-001 decisions cannot be authorized in epoch-gov-002 (PRE_INTEGRATION_AUTHORIZATION_EXERCISABLE == 0)."
+            )
+
         # 1. Decision must be READY
         if decision.global_provisioning_readiness != "READY":
             raise ProvisioningBlockedException(
@@ -186,6 +224,38 @@ class AuthorizationManager:
                     "Cannot issue authorization: decision dependency resolution hash does not match current dependency resolution hash."
                 )
 
+        ctx_hash = current_decision_context_hash or getattr(decision, "decision_context_hash", None)
+        id_reg_hash = current_finding_identity_registry_hash or getattr(decision, "finding_identity_registry_hash", None)
+        adm_reg_hash = current_finding_admission_registry_hash or getattr(decision, "finding_admission_registry_hash", None)
+        blk_set_hash = current_active_blocker_set_hash or getattr(decision, "active_blocker_set_hash", None)
+        clm_reg_hash = current_claim_registry_hash or getattr(decision, "claim_registry_hash", None)
+
+        if current_decision_context_hash and getattr(decision, "decision_context_hash", None):
+            if current_decision_context_hash != decision.decision_context_hash:
+                raise StaleDecisionException(
+                    "Cannot issue authorization: decision context hash does not match current decision context hash."
+                )
+        if current_finding_identity_registry_hash and getattr(decision, "finding_identity_registry_hash", None):
+            if current_finding_identity_registry_hash != decision.finding_identity_registry_hash:
+                raise StaleDecisionException(
+                    "Cannot issue authorization: decision finding identity hash does not match current finding identity hash."
+                )
+        if current_finding_admission_registry_hash and getattr(decision, "finding_admission_registry_hash", None):
+            if current_finding_admission_registry_hash != decision.finding_admission_registry_hash:
+                raise StaleDecisionException(
+                    "Cannot issue authorization: decision finding admission hash does not match current finding admission hash."
+                )
+        if current_active_blocker_set_hash and getattr(decision, "active_blocker_set_hash", None):
+            if current_active_blocker_set_hash != decision.active_blocker_set_hash:
+                raise StaleDecisionException(
+                    "Cannot issue authorization: decision active blocker set hash does not match current active blocker set hash."
+                )
+        if current_claim_registry_hash and getattr(decision, "claim_registry_hash", None):
+            if current_claim_registry_hash != decision.claim_registry_hash:
+                raise StaleDecisionException(
+                    "Cannot issue authorization: decision claim registry hash does not match current claim registry hash."
+                )
+
         now = datetime.now(timezone.utc)
         issued_at_str = issued_at or now.strftime("%Y-%m-%dT%H:%M:%SZ")
         expires_at_dt = now + timedelta(seconds=ttl_seconds)
@@ -217,6 +287,11 @@ class AuthorizationManager:
                 "evidence_manifest_hash": ev_hash or "",
                 "dependency_resolution_hash": dep_hash or "",
                 "registry_hash": current_registry_hash,
+                "decision_context_hash": ctx_hash or "",
+                "finding_identity_registry_hash": id_reg_hash or "",
+                "finding_admission_registry_hash": adm_reg_hash or "",
+                "active_blocker_set_hash": blk_set_hash or "",
+                "claim_registry_hash": clm_reg_hash or "",
             },
             "signature_or_ratification_ref": "urn:arx:ratification:council:prov-auth-001",
         }
@@ -244,6 +319,12 @@ class AuthorizationManager:
             signature_or_ratification_ref=body["signature_or_ratification_ref"],
             evidence_manifest_hash=ev_hash,
             dependency_resolution_hash=dep_hash,
+            decision_context_hash=ctx_hash,
+            finding_identity_registry_hash=id_reg_hash,
+            finding_admission_registry_hash=adm_reg_hash,
+            active_blocker_set_hash=blk_set_hash,
+            claim_registry_hash=clm_reg_hash,
+            canonical_status=getattr(decision, "canonical_status", "CANONICAL"),
         )
         self.active_authorizations[auth_id] = auth
         return auth
@@ -257,12 +338,31 @@ class AuthorizationManager:
         current_registry_hash: str,
         current_evidence_manifest_hash: Optional[str] = None,
         current_dependency_resolution_hash: Optional[str] = None,
+        current_decision_context_hash: Optional[str] = None,
+        current_finding_identity_registry_hash: Optional[str] = None,
+        current_finding_admission_registry_hash: Optional[str] = None,
+        current_active_blocker_set_hash: Optional[str] = None,
+        current_claim_registry_hash: Optional[str] = None,
         check_time: Optional[datetime] = None,
     ) -> None:
         if auth_id not in self.active_authorizations:
             raise OutOfScopeActionException(f"Authorization {auth_id} not found.")
 
         auth = self.active_authorizations[auth_id]
+
+        # Check pre-integration invalidation
+        if auth.decision_hash in INVALIDATED_PRE_INTEGRATION_DECISION_HASHES:
+            raise PreIntegrationAuthorizationError(
+                f"Cannot exercise authorization {auth_id}: bound to invalidated pre-integration decision (PRE_INTEGRATION_AUTHORIZATION_EXERCISABLE == 0)."
+            )
+        if getattr(auth, "canonical_status", "CANONICAL") == "INVALIDATED_NON_CANONICAL":
+            raise PreIntegrationAuthorizationError(
+                f"Cannot exercise authorization {auth_id}: marked INVALIDATED_NON_CANONICAL (PRE_INTEGRATION_AUTHORIZATION_EXERCISABLE == 0)."
+            )
+        if self.current_epoch == "epoch-gov-002" and auth.governance_epoch == "epoch-gov-001":
+            raise PreIntegrationAuthorizationError(
+                f"Cannot exercise authorization {auth_id}: epoch-gov-001 authorization cannot be exercised in epoch-gov-002 (PRE_INTEGRATION_AUTHORIZATION_EXERCISABLE == 0)."
+            )
 
         # 1. Check consumption
         if auth.consumed_count >= auth.max_uses:
@@ -326,5 +426,41 @@ class AuthorizationManager:
                     f"STALE_DEPENDENCY_AUTHORIZATION_ACCEPTED == 0."
                 )
 
+        if auth.decision_context_hash and current_decision_context_hash:
+            if current_decision_context_hash != auth.decision_context_hash:
+                raise TOCTOUException(
+                    f"TOCTOU check failed: current decision context hash {current_decision_context_hash} "
+                    f"does not match authorization decision context hash {auth.decision_context_hash}."
+                )
+
+        if auth.finding_identity_registry_hash and current_finding_identity_registry_hash:
+            if current_finding_identity_registry_hash != auth.finding_identity_registry_hash:
+                raise TOCTOUException(
+                    f"TOCTOU check failed: current finding identity registry hash {current_finding_identity_registry_hash} "
+                    f"does not match authorization finding identity registry hash {auth.finding_identity_registry_hash}."
+                )
+
+        if auth.finding_admission_registry_hash and current_finding_admission_registry_hash:
+            if current_finding_admission_registry_hash != auth.finding_admission_registry_hash:
+                raise TOCTOUException(
+                    f"TOCTOU check failed: current finding admission registry hash {current_finding_admission_registry_hash} "
+                    f"does not match authorization finding admission registry hash {auth.finding_admission_registry_hash}."
+                )
+
+        if auth.active_blocker_set_hash and current_active_blocker_set_hash:
+            if current_active_blocker_set_hash != auth.active_blocker_set_hash:
+                raise TOCTOUException(
+                    f"TOCTOU check failed: current active blocker set hash {current_active_blocker_set_hash} "
+                    f"does not match authorization active blocker set hash {auth.active_blocker_set_hash}."
+                )
+
+        if auth.claim_registry_hash and current_claim_registry_hash:
+            if current_claim_registry_hash != auth.claim_registry_hash:
+                raise TOCTOUException(
+                    f"TOCTOU check failed: current claim registry hash {current_claim_registry_hash} "
+                    f"does not match authorization claim registry hash {auth.claim_registry_hash}."
+                )
+
         # Consume
         auth.consumed_count += 1
+
