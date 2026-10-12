@@ -1,5 +1,6 @@
 {
   "$schema": "https://arx.terminal/schemas/v1/artifact-authority-partition.json",
+  "schema_id": "https://arx.terminal/schemas/v1/artifact-authority-partition.json",
   "contract_id": "urn:arx:contract:artifact-authority-partition:v1",
   "version": "1.0.0",
   "partition_rules": {

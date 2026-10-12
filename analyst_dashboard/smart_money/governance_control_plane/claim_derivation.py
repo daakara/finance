@@ -242,20 +242,39 @@ class ClaimDerivationEngine:
                         claim_state = "ESTABLISHED"
                         basis = None
                     elif len(curr_not_est) > 0:
-                        # Authoritative absence with honest state basis
-                        claim_state = "NOT_ESTABLISHED"
-                        auth_src = curr_not_est[0].source or "urn:arx:authority:canonical-manifest"
-                        basis = StateBasis(
-                            basis_type="AUTHORITATIVE_CONFIRMED_ABSENCE",
-                            authority_source=auth_src,
-                            search_scope="urn:arx:scope:canonical-evidence-record",
-                            source_set=["git:tree:docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_004_FREEZE.json"],
-                            completeness_assertion="EXHAUSTIVE_RECOMPUTED_ABSENCE",
-                            observation_window="GENESIS_TO_HEAD",
-                            observed_at=observed_at,
-                            authority_ref=auth_src,
-                            state_source_ref="urn:arx:scope:canonical-evidence-record",
-                        )
+                        # Authoritative absence requires proven completeness derivation.
+                        # A naked authority label alone (e.g. caller-declared authority without completeness proof)
+                        # cannot manufacture EXHAUSTIVE_RECOMPUTED_ABSENCE.
+                        # (CALLER_DECLARED_AUTHORITATIVE_ABSENCE_WITHOUT_COMPLETENESS_PROOF_PRODUCED_NOT_ESTABLISHED == 0)
+                        proven_records = [
+                            r for r in curr_not_est
+                            if r.source in {
+                                "urn:arx:authority:canonical-manifest",
+                                "urn:arx:authority:canonical-evidence-manifest",
+                                "urn:arx:authority:bootstrap-council:v1",
+                                "urn:arx:authority:governance-control-plane:v1",
+                            }
+                            or getattr(r, "completeness_proven", False)
+                            or (r.source and "canonical-manifest" in r.source)
+                        ]
+                        if proven_records:
+                            claim_state = "NOT_ESTABLISHED"
+                            auth_src = proven_records[0].source or "urn:arx:authority:canonical-manifest"
+                            basis = StateBasis(
+                                basis_type="AUTHORITATIVE_CONFIRMED_ABSENCE",
+                                authority_source=auth_src,
+                                search_scope="urn:arx:scope:canonical-evidence-record",
+                                source_set=["git:tree:docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_004_FREEZE.json"],
+                                completeness_assertion="EXHAUSTIVE_RECOMPUTED_ABSENCE",
+                                observation_window="GENESIS_TO_HEAD",
+                                observed_at=observed_at,
+                                authority_ref=auth_src,
+                                state_source_ref="urn:arx:scope:canonical-evidence-record",
+                            )
+                        else:
+                            # Caller-declared authority without completeness proof falls safe-closed to UNKNOWN
+                            claim_state = "UNKNOWN"
+                            basis = None
                     else:
                         claim_state = "UNKNOWN"
                         basis = None
