@@ -1,0 +1,52 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/finding-identity-hash-binding-audit.json",
+  "audit_version": "1.0.0",
+  "verified_source_freeze_sha": "38fbec379a0fc7788ab11ac4f566e445a7b4802d",
+  "generated_at": "2026-10-12T12:00:00Z",
+  "generator_or_command": "python -m pytest tests/test_smart_money_finding_identity_claim_semantics.py -k TestMatrix53CanonicalContextAntiForgeryAndSplitHashIntegrity",
+  "hash_algorithm": "SHA-256",
+  "canonicalization_algorithm": "RFC-8785-JCS",
+  "included_fields": [
+    "finding_id",
+    "original_subject",
+    "domain_scope",
+    "defect_layer"
+  ],
+  "excluded_fields": [
+    "severity",
+    "lifecycle_status",
+    "admission_status",
+    "assertion_status",
+    "duplicate_of",
+    "supersedes",
+    "superseded_by",
+    "blocks_provisioning",
+    "derived_blocks",
+    "claim_refs",
+    "evidence_refs",
+    "title",
+    "current_scope",
+    "defect_class",
+    "classification_rationale",
+    "resolution_criteria",
+    "resolution_evidence",
+    "verification_evidence",
+    "waiver_expires_at"
+  ],
+  "current_hash": "dfbe45012e6a25b163beb93acce1f6ad62167c73da5c4ab2613aeefec39ce937",
+  "recomputed_hash": "dfbe45012e6a25b163beb93acce1f6ad62167c73da5c4ab2613aeefec39ce937",
+  "subject_field_included": true,
+  "subject_hash_field_included": false,
+  "historical_explanation": "CASE_A: previous_report_subjects_were_wrong, hashed_identity_registry_was_already_correct",
+  "historical_explanation_detail": "Prior gate markdown reports displayed colloquial finding titles (e.g., 'Candidate 004 Freeze vs Closure Hash Collision') instead of formal immutable subjects. The internal canonical dictionary FINDING_ORIGINAL_SUBJECTS and Finding.original_subject property already contained the verbatim historical subjects from HISTORICAL_FINDING_IDENTITY_BASELINE.json, ensuring compute_identity_registry_hash() was consistently computing over the true authoritative subjects.",
+  "sensitivity_test": {
+    "original_identity_hash": "dfbe45012e6a25b163beb93acce1f6ad62167c73da5c4ab2613aeefec39ce937",
+    "mutated_identity_hash": "542a8defceeafa1b9726c6b91207150e382c08004fd4551000ef2461d2581d12",
+    "subject_change_without_identity_hash_change": 0,
+    "subject_change_changes_identity_hash": true,
+    "classification_change_changes_identity_hash": false,
+    "severity_change_changes_identity_hash": false,
+    "admission_change_changes_identity_hash": false
+  },
+  "binding_audit_verdict": "PASS"
+}

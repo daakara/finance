@@ -1,0 +1,78 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/foreign-finding-terminology-audit.json",
+  "audit_version": "1.0.0",
+  "verified_source_freeze_sha": "38fbec379a0fc7788ab11ac4f566e445a7b4802d",
+  "generated_at": "2026-10-12T12:00:00Z",
+  "generator_or_command": "python scripts/audit_foreign_finding_terminology.py",
+  "total_foreign_subjects_audited": 10,
+  "unsupported_finding_mislabeled_as_disproved": 0,
+  "summary": {
+    "REJECTED_UNSUPPORTED": 7,
+    "NOT_APPLICABLE": 1,
+    "DISPROVED": 2,
+    "EVIDENCED": 0
+  },
+  "terminology_adjustments": [
+    {
+      "subject": "Floating Point Determinism Loss",
+      "previous_classification": "DISPROVED",
+      "final_classification": "REJECTED_UNSUPPORTED",
+      "evidence_basis": "Zero supporting code, models, or empirical findings in repository; unsubstantiated foreign claim with no evidence provided."
+    },
+    {
+      "subject": "Memory State Asymmetry",
+      "previous_classification": "DISPROVED",
+      "final_classification": "REJECTED_UNSUPPORTED",
+      "evidence_basis": "Zero occurrences or specifications in governance control plane; unsubstantiated foreign assertion."
+    },
+    {
+      "subject": "Dynamic Import Execution",
+      "previous_classification": "DISPROVED",
+      "final_classification": "REJECTED_UNSUPPORTED",
+      "evidence_basis": "Zero dynamic import invocations in governance modules; unsubstantiated assertion."
+    },
+    {
+      "subject": "Prototype Pollution Vector",
+      "previous_classification": "DISPROVED",
+      "final_classification": "NOT_APPLICABLE",
+      "evidence_basis": "JavaScript prototype semantics are fundamentally non-applicable to Python runtime and modules."
+    },
+    {
+      "subject": "Circular Module Dependency",
+      "previous_classification": "DISPROVED",
+      "final_classification": "DISPROVED",
+      "evidence_basis": "Mechanically disproved by successful static import graph verification and clean execution of full test suite with 0 circular import exceptions."
+    },
+    {
+      "subject": "Unbounded Queue Memory Exhaustion",
+      "previous_classification": "DISPROVED",
+      "final_classification": "REJECTED_UNSUPPORTED",
+      "evidence_basis": "Zero queue structures in governance control plane; unsupported assertion."
+    },
+    {
+      "subject": "Error Serialization Leak",
+      "previous_classification": "DISPROVED",
+      "final_classification": "REJECTED_UNSUPPORTED",
+      "evidence_basis": "No error serialization leak observed or substantiated; exception types are statically typed and sanitized."
+    },
+    {
+      "subject": "Unsigned Payload Ingestion",
+      "previous_classification": "DISPROVED",
+      "final_classification": "REJECTED_UNSUPPORTED",
+      "evidence_basis": "Unsupported assertion; all canonical contexts require cryptographic SHA256 context hashing."
+    },
+    {
+      "subject": "Epoch State Sequence Desync",
+      "previous_classification": "DISPROVED",
+      "final_classification": "DISPROVED",
+      "evidence_basis": "Mechanically disproved by sequence anti-equivocation enforcement (test_46_reused_sequence_slot_rejected passing)."
+    },
+    {
+      "subject": "Unauthenticated Decision Replay",
+      "previous_classification": "DISPROVED",
+      "final_classification": "DISPROVED",
+      "evidence_basis": "Mechanically disproved by cryptographic TOCTOU token binding and context root hashing preventing replay (test_51_caller_constructed_forged_context_rejected passing)."
+    }
+  ],
+  "terminology_audit_verdict": "PASS"
+}
