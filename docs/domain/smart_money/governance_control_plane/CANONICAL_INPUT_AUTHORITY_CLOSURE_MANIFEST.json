@@ -1,0 +1,94 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/canonical-input-authority-closure-manifest.json",
+  "gate": "SMART_MONEY_CANONICAL_INPUT_AUTHORITY_REGISTRY_COMPLETENESS_AND_DECISION_CHAIN_CLOSURE_V1",
+  "source_freeze_sha": "929dcbc65885a47da701dba319a1d273362a2881",
+  "baseline_source_freeze_sha": "20582b5d38488f5164c971bc1393d48d7f5eb6ca",
+  "baseline_evidence_seal_sha": "7d877c524ba859918e115561a2ccba12e95bc3e1",
+  "origin_main_reference": "bab9776b8013646b634871c49b52e61e4234d36b",
+  "remote_push_executed": false,
+  "final_worktree_clean": true,
+  "candidate004": {
+    "freeze_file_sha256": "297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90",
+    "semantic_closure_hash": "53b6372349cfdb1046a4ddbd678f628bba28c7778cef2fe381e02f9097f7a9e6",
+    "diff": 0
+  },
+  "canonical_context_authority": {
+    "caller_constructed_canonical_context_accepted": 0,
+    "caller_supplied_canonical_fact_context_accepted": 0,
+    "caller_supplied_canonical_dependency_policy_accepted": 0,
+    "caller_supplied_canonical_finding_registry_accepted": 0,
+    "caller_supplied_canonical_content_hash_accepted": 0,
+    "repository_evidence_without_blob_recomputation": 0
+  },
+  "claim_and_fact_derivation": {
+    "claim_without_derivation_policy_accepted": 0,
+    "empty_claim_registry_accepted_for_canonical_decision": 0,
+    "unknown_state_laundered_as_not_established": 0,
+    "self_asserted_fact_authority_accepted": 0,
+    "claim_derivation_policy_hash": "695b029afe7c41efad838659205003c83262c6673ee9ca1d91b8badef290c21c",
+    "evidence_manifest_hash": "d42b5ca58d91bef79db0fe13057b9d51072a9eca71bc767e73512f47f13d4707",
+    "claim_registry_hash": "8ced3d7056b486ffd3c858010c72991cab01c7d275b3177f3e0d6cb6da492c11",
+    "fact_context_hash": "51884814be02fbd9d53a15f184b3ebdc4afe3b23836ff0ecbd552b1cda1d5e36"
+  },
+  "finding_registry": {
+    "registered_findings_count": 15,
+    "admitted_findings_count": 13,
+    "duplicate_findings_count": 2,
+    "active_blockers_count": 12,
+    "finding_identity_registry_hash": "dfbe45012e6a25b163beb93acce1f6ad62167c73da5c4ab2613aeefec39ce937",
+    "finding_admission_registry_hash": "4334368524600fca87473eb944053295cab255be8a7ace827cf1c275029497de",
+    "active_blocker_set_hash": "c4aee0f115a8e33206a6cf7dc79645aa8cd976733b3b432b323c87a16669e821"
+  },
+  "dependency_dag_and_policy": {
+    "canonical_dependency_policy_repository_bound": true,
+    "dependency_policy_hash": "d82e9fb9970a4040c9291d23ed019b89848f1f97a3c57a3375c34971ab40b7df",
+    "dependency_resolution_hash": "f46ec15ec2dd3817b5fba8ac7536ee6719634a4c36a88d063ea9f313ed6c8784",
+    "admitted_open_findings_without_decision_mapping": 0,
+    "active_blockers_without_dependency_path": 0,
+    "mandatory_claims_without_output_path": 0,
+    "required_outputs_without_derivation_path": 0
+  },
+  "canonical_decision_chain": {
+    "epoch": "epoch-gov-002",
+    "sequence": 1,
+    "decision_id": "urn:arx:decision:epoch-gov-002:1:c70c304cc779",
+    "decision_hash": "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f",
+    "decision_context_hash": "24cf132da7951a5638584a8b0bd60928a6598be8bf8b82b30c363bda1cde8d44",
+    "evaluator_bundle_hash": "e6b07ac7fe65bb8c4716c7f678201f12e9127f0cd530d3cc953fa57f97c0a854",
+    "pre_integration_snapshot_accepted_as_current_canonical": 0,
+    "pre_integration_authorization_exercisable": 0,
+    "duplicate_decision_sequence_with_different_hash": 0
+  },
+  "authorization": {
+    "provisioning_authorization_status": "NOT_ISSUABLE",
+    "unbound_authorization_accepted": 0,
+    "stale_dependency_authorization_accepted": 0,
+    "stale_evidence_authorization_accepted": 0,
+    "stale_finding_registry_authorization_accepted": 0
+  },
+  "legacy_dag_causal_parity": {
+    "parity_pass": true,
+    "mismatches": 0,
+    "verdict": "EXACT_CAUSAL_PARITY_CONFIRMED"
+  },
+  "regression_baseline": {
+    "baseline_suite_count": 13,
+    "current_suite_count": 14,
+    "baseline_test_nodes": 300,
+    "current_test_nodes": 368,
+    "unexplained_deleted_tests": 0,
+    "unexplained_weakened_tests": 0
+  },
+  "governance_state": {
+    "architecture_closure_status": "OPEN",
+    "remediation_status": "REQUIRED",
+    "global_provisioning_readiness": "BLOCKED",
+    "provisioning_authorization_status": "NOT_ISSUABLE",
+    "runtime_action": "NONE",
+    "natural_denominator": 0,
+    "natural_observer_arming": "NOT_AUTHORIZED",
+    "production_readiness": "NOT_AUTHORIZED",
+    "model_tuning": "FROZEN",
+    "learning_claim": "NOT_AUTHORIZED"
+  }
+}

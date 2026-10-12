@@ -1,0 +1,26 @@
+{
+  "": "https://arx.terminal/schemas/v1/regression-two-sha-comparison.json",
+  "gate": "SMART_MONEY_CANONICAL_INPUT_AUTHORITY_REGISTRY_COMPLETENESS_AND_DECISION_CHAIN_CLOSURE_V1",
+  "baseline_sha": "7d877c524ba859918e115561a2ccba12e95bc3e1",
+  "new_source_freeze_sha": "929dcbc65885a47da701dba319a1d273362a2881",
+  "comparison_timestamp": "2026-10-12T09:00:14Z",
+  "baseline_metrics": {
+    "suite_count": 13,
+    "passed_tests": 300,
+    "failed_tests": 0,
+    "skipped_tests": 0
+  },
+  "current_metrics": {
+    "suite_count": 14,
+    "passed_tests": 368,
+    "failed_tests": 0,
+    "skipped_tests": 0
+  },
+  "delta": {
+    "suites_added": 1,
+    "tests_added": 68,
+    "unexplained_deleted_tests": 0,
+    "unexplained_weakened_tests": 0
+  },
+  "status": "PASS"
+}
