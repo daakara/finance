@@ -680,8 +680,10 @@ def test_case_19_historical_root_provenance_verified(tmp_path):
 def test_case_20_historical_chain_migration_deterministic(tmp_path):
     """Case 20: Deterministic versioned migration of corrupted canonical chain to format v2.0.0."""
     from analyst_dashboard.smart_money.governance_control_plane.decision_engine import DEFAULT_DECISION_CHAIN_STATE_PATH
-    live_path = DEFAULT_DECISION_CHAIN_STATE_PATH
-    with open(live_path, "rb") as f:
+    corrupt_chain_fixture = os.path.join(
+        os.path.dirname(DEFAULT_DECISION_CHAIN_STATE_PATH), "PRE_MIGRATION_CORRUPT_CHAIN_RAW.json"
+    )
+    with open(corrupt_chain_fixture, "rb") as f:
         content = f.read()
     temp_chain = str(tmp_path / "CANONICAL_DECISION_CHAIN_STATE.json")
     with open(temp_chain, "wb") as f:
@@ -689,7 +691,7 @@ def test_case_20_historical_chain_migration_deterministic(tmp_path):
 
     mgr = CanonicalChainMigrationManager(state_path=temp_chain, epoch="epoch-gov-002", repo_root=None)
     res = mgr.migrate(
-        migration_source_sha="0203ce397d3056d6eafff658855ced84b8137a19",
+        migration_source_sha="3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11",
         migrated_at="2026-10-12T22:30:00Z",
     )
     assert res["status"] == "SUCCESS"
@@ -703,7 +705,7 @@ def test_case_20_historical_chain_migration_deterministic(tmp_path):
     assert data["version"] == "2.0.0"
     assert data["$schema"] == "https://arx.terminal/schemas/v2/canonical-decision-chain-state.json"
     assert data["migration_receipt"]["migration_id"] == "mig-gov-002-canonical-repair-v1"
-    assert data["migration_receipt"]["migration_source_sha"] == "0203ce397d3056d6eafff658855ced84b8137a19"
+    assert data["migration_receipt"]["migration_source_sha"] == "3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11"
     assert len(data["quarantined_legacy_decisions"]) == 2
     assert len(data["committed_decisions"]) == 4
 
@@ -727,7 +729,10 @@ def test_case_20_historical_chain_migration_deterministic(tmp_path):
 def test_case_21_migration_negative_controls(tmp_path):
     """Case 21: Negative controls fail closed on tampered inputs or invalid roots."""
     from analyst_dashboard.smart_money.governance_control_plane.decision_engine import DEFAULT_DECISION_CHAIN_STATE_PATH
-    with open(DEFAULT_DECISION_CHAIN_STATE_PATH, "rb") as f:
+    corrupt_chain_fixture = os.path.join(
+        os.path.dirname(DEFAULT_DECISION_CHAIN_STATE_PATH), "PRE_MIGRATION_CORRUPT_CHAIN_RAW.json"
+    )
+    with open(corrupt_chain_fixture, "rb") as f:
         content = f.read()
 
     def _setup_chain():
@@ -778,7 +783,7 @@ def test_case_21_migration_negative_controls(tmp_path):
 
     # 7. Different migration payload with same migration ID -> REJECT
     mgr7 = _setup_chain()
-    mgr7.migrate(migration_source_sha="0203ce397d3056d6eafff658855ced84b8137a19")
+    mgr7.migrate(migration_source_sha="3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11")
     with pytest.raises(MigrationPayloadConflictError) as exc7:
         mgr7.migrate(migration_source_sha="ffffffffffffffffffffffffffffffffffffffff")
     assert "MIGRATION_PAYLOAD_CONFLICT" in str(exc7.value)
@@ -787,14 +792,17 @@ def test_case_21_migration_negative_controls(tmp_path):
 def test_case_22_migrated_chain_restart_persistence(tmp_path):
     """Case 22: Fresh CanonicalDecisionCommitAuthority process restarts from migrated canonical state."""
     from analyst_dashboard.smart_money.governance_control_plane.decision_engine import DEFAULT_DECISION_CHAIN_STATE_PATH
-    with open(DEFAULT_DECISION_CHAIN_STATE_PATH, "rb") as f:
+    corrupt_chain_fixture = os.path.join(
+        os.path.dirname(DEFAULT_DECISION_CHAIN_STATE_PATH), "PRE_MIGRATION_CORRUPT_CHAIN_RAW.json"
+    )
+    with open(corrupt_chain_fixture, "rb") as f:
         content = f.read()
     temp_chain = str(tmp_path / "CANONICAL_DECISION_CHAIN_STATE.json")
     with open(temp_chain, "wb") as f:
         f.write(content)
 
     mgr = CanonicalChainMigrationManager(state_path=temp_chain, epoch="epoch-gov-002")
-    mgr.migrate(migration_source_sha="0203ce397d3056d6eafff658855ced84b8137a19")
+    mgr.migrate(migration_source_sha="3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11")
 
     # Reload fresh authority instance from disk
     auth = CanonicalDecisionCommitAuthority(state_path=temp_chain, epoch="epoch-gov-002", auto_bootstrap=False)
@@ -813,7 +821,10 @@ def test_case_22_migrated_chain_restart_persistence(tmp_path):
 def test_case_23_legacy_chain_quarantine(tmp_path):
     """Case 23: Attempts to load unmigrated corrupt chain raise LegacyChainQuarantinedError fail-closed."""
     from analyst_dashboard.smart_money.governance_control_plane.decision_engine import DEFAULT_DECISION_CHAIN_STATE_PATH
-    with open(DEFAULT_DECISION_CHAIN_STATE_PATH, "rb") as f:
+    corrupt_chain_fixture = os.path.join(
+        os.path.dirname(DEFAULT_DECISION_CHAIN_STATE_PATH), "PRE_MIGRATION_CORRUPT_CHAIN_RAW.json"
+    )
+    with open(corrupt_chain_fixture, "rb") as f:
         content = f.read()
     corrupt_chain_path = str(tmp_path / "CORRUPT_CHAIN.json")
     with open(corrupt_chain_path, "wb") as f:
@@ -828,18 +839,21 @@ def test_case_23_legacy_chain_quarantine(tmp_path):
 def test_case_24_migration_idempotence(tmp_path):
     """Case 24: Repeating the migration with identical parameters is a deterministic no-op."""
     from analyst_dashboard.smart_money.governance_control_plane.decision_engine import DEFAULT_DECISION_CHAIN_STATE_PATH
-    with open(DEFAULT_DECISION_CHAIN_STATE_PATH, "rb") as f:
+    corrupt_chain_fixture = os.path.join(
+        os.path.dirname(DEFAULT_DECISION_CHAIN_STATE_PATH), "PRE_MIGRATION_CORRUPT_CHAIN_RAW.json"
+    )
+    with open(corrupt_chain_fixture, "rb") as f:
         content = f.read()
     temp_chain = str(tmp_path / "CANONICAL_DECISION_CHAIN_STATE.json")
     with open(temp_chain, "wb") as f:
         f.write(content)
 
     mgr = CanonicalChainMigrationManager(state_path=temp_chain, epoch="epoch-gov-002")
-    res1 = mgr.migrate(migration_source_sha="0203ce397d3056d6eafff658855ced84b8137a19", migrated_at="2026-10-12T22:30:00Z")
+    res1 = mgr.migrate(migration_source_sha="3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11", migrated_at="2026-10-12T22:30:00Z")
     assert res1["status"] == "SUCCESS"
 
     # Repeat with identical parameters
-    res2 = mgr.migrate(migration_source_sha="0203ce397d3056d6eafff658855ced84b8137a19", migrated_at="2026-10-12T22:30:00Z")
+    res2 = mgr.migrate(migration_source_sha="3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11", migrated_at="2026-10-12T22:30:00Z")
     assert res2["status"] == "NOOP_ALREADY_MIGRATED"
     assert res2["version"] == "2.0.0"
     assert res2["head_sequence"] == 4
