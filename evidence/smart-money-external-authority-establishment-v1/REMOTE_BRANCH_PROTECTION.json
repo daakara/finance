@@ -1,0 +1,21 @@
+{
+  "blocker_detail": "Remote default branch main has no branch protection rulesets or classic branch protection enabled on GitHub.",
+  "enforce_admins": "NOT_ENFORCED",
+  "evaluation": "BLOCKED",
+  "prevent_deletions": "NOT_ENFORCED",
+  "prevent_force_pushes": "NOT_ENFORCED",
+  "protection_api_endpoint": "https://api.github.com/repos/daakara/finance/branches/main/protection",
+  "protection_api_message": "Branch not protected",
+  "protection_api_status": 404,
+  "remote_main_protected": "NO",
+  "required_pull_request_reviews": "NOT_ENFORCED",
+  "required_status_checks": "NOT_ENFORCED",
+  "rulesets_api_endpoint": "https://api.github.com/repos/daakara/finance/rulesets",
+  "rulesets_api_status": 200,
+  "rulesets_configured": [],
+  "rulesets_count": 0,
+  "schema_version": "REMOTE_BRANCH_PROTECTION_V1",
+  "signed_commits_required": "NOT_ENFORCED",
+  "target_branch": "main",
+  "target_repository": "daakara/finance"
+}

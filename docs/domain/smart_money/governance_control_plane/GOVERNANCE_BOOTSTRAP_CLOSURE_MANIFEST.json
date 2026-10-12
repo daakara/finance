@@ -1,0 +1,82 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/governance-bootstrap-closure-manifest.json",
+  "gate": "SMART_MONEY_GOVERNANCE_BOOTSTRAP_AUTHORITY_AND_GENESIS_CLOSURE_V1",
+  "contract_closure": "PASS",
+  "reference_implementation": "PASS",
+  "repository_binding": "PASS",
+  "root_model": {
+    "design_status": "PASS",
+    "operator_ratification_status": "PENDING_OPERATOR_RATIFICATION",
+    "credential_binding_status": "NOT_ESTABLISHED",
+    "operational_status": "NOT_ESTABLISHED"
+  },
+  "bootstrap": {
+    "contract_status": "PASS",
+    "ratification_status": "PENDING_OPERATOR_RATIFICATION",
+    "operational_status": "NOT_ESTABLISHED",
+    "single_use_proven": true,
+    "replay_rejected": true,
+    "extinguishment_proven": true
+  },
+  "genesis": {
+    "contract_status": "PASS",
+    "ceremony_readiness": "PASS",
+    "external_event_status": "NOT_ESTABLISHED",
+    "external_witness_status": "NOT_ESTABLISHED"
+  },
+  "ledger": {
+    "contract_status": "PASS",
+    "local_reference_status": "PASS",
+    "external_provisioning_status": "NOT_PROVISIONED",
+    "external_qualification_status": "NOT_RUN"
+  },
+  "witness": {
+    "independence_contract": "PASS",
+    "external_status": "NOT_PROVISIONED"
+  },
+  "normal_authority": {
+    "activation_contract": "PASS",
+    "operational_status": "NOT_ESTABLISHED"
+  },
+  "snapshot": {
+    "source_sha": "ab32ec91bff0dce73a35938af73e1af8d43e5c68",
+    "engine_hash": "cfe33343699b893c28ec328a6e33b5359af845f7657db734db8762d1e6d67dbb",
+    "policy_hash": "6d01ff68128ccd5d4300e90c0decad10166f7afc1c1f32a666af1c738da78905",
+    "registry_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+    "evidence_hash": "01099eb4eb7c7b97605783ed581f22bfbcd2296f1611294f9eba7663a02d27e4",
+    "contract_set_hash": "946cadbb551f5457ba314f45b1f80bc6ec8f1ddd8ab4a16ff5daefe8e2dbc72e",
+    "theorem_state_hash": "2e11806c63c88b085b1a80bacb173be2cd26c45fff39aa6c42823837da154af9",
+    "decision_hash": "3dc851a90e213da557a79027fc4b3a07287713bc84d88effcf92dadd0b539e41",
+    "all_hashes_recomputed": true,
+    "placeholder_hashes": 0
+  },
+  "finding_registry": {
+    "total": 11,
+    "open": 11,
+    "verified_resolved": 0,
+    "disproved": 0,
+    "architecture_defects": 6,
+    "policy_defects": 1,
+    "provider_selection_prerequisites": 2,
+    "implementation_prerequisites": 1,
+    "external_evidence_gaps": 1,
+    "qualification_prerequisites": 0,
+    "documentation_defects": 0
+  },
+  "architecture_closure_status": "OPEN",
+  "remediation_status": "REQUIRED",
+  "global_provisioning_readiness": "BLOCKED",
+  "provisioning_authorization_status": "NOT_ISSUABLE",
+  "runtime_action": "NONE",
+  "governance_rpo_requirement": "0_EVENTS",
+  "governance_rpo_operationally_verified": false,
+  "governance_rto_requirement": "LT_900_SECONDS",
+  "governance_rto_operationally_verified": false,
+  "candidate004_diff": 0,
+  "natural_denominator": 0,
+  "natural_observer_arming": "NOT_AUTHORIZED",
+  "production_readiness": "NOT_AUTHORIZED",
+  "unresolved_design_questions": 0,
+  "illegal_state_combinations": 0,
+  "unsupported_pass_claims": 0
+}

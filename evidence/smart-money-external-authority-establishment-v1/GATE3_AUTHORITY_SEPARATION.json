@@ -1,0 +1,40 @@
+{
+  "b1_independent_issuer_identity": {
+    "external_environment_provisioned": "NO",
+    "external_iam_role_provisioned": "NO",
+    "logical_identity": "urn:arx:authority:sec-gate3-issuer:v1",
+    "observed_github_environments": [
+      "tranquil-radiance / production"
+    ]
+  },
+  "b2_consumer_cannot_mint": {
+    "consumer_workflow": "daakara/finance/.github/workflows/smart_money_rooting.yml@refs/heads/main",
+    "external_iam_boundary_enforced": "BLOCKED",
+    "gate3_self_authorization": "REJECTED",
+    "local_substrate_enforcement": "PASS",
+    "rationale": "No physical cloud IAM/OIDC separation prevents runner from minting without external KMS/OIDC isolation."
+  },
+  "b3_durable_authorization_delivery": {
+    "external_authority_store": "NOT_PROVISIONED",
+    "gate3_durable_delivery": "BLOCKED",
+    "rejected_storage_types": [
+      "git_repository_files",
+      "local_filesystem",
+      "ephemeral_github_cache"
+    ]
+  },
+  "b4_single_use_semantics": {
+    "duplicate_consumption": "REJECTED",
+    "external_live_exercise": "NOT_RUN",
+    "gate3_replay": "REJECTED",
+    "gate3_superseded_authorization_accepted": "NO",
+    "local_substrate_tested": "PASS"
+  },
+  "b5_cryptographic_verification": {
+    "external_trust_root": "NOT_ESTABLISHED",
+    "r1_crypto_verify": "NOT_RUN"
+  },
+  "schema_version": "THEOREM_B_AUTHORIZATION_AUTHORITY_V1",
+  "theorem": "B_AUTHORIZATION_AUTHORITY",
+  "verdict": "BLOCKED"
+}

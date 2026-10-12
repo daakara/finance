@@ -1,0 +1,19 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/governance-genesis-manifest.json",
+  "manifest_id": "urn:arx:manifest:governance-genesis:epoch-gov-001",
+  "governance_epoch": "epoch-gov-001",
+  "genesis_sequence": 0,
+  "genesis_authority_id": "urn:arx:root:governance-control-plane:v1",
+  "genesis_policy_hash": "6d01ff68128ccd5d4300e90c0decad10166f7afc1c1f32a666af1c738da78905",
+  "genesis_policy_source": "NEWLY_RATIFIED_BOOTSTRAP_VALUE",
+  "genesis_finding_registry_hash": "DERIVED_FROM_EXISTING_EVIDENCE",
+  "genesis_finding_registry_source": "DERIVED_FROM_EXISTING_EVIDENCE",
+  "genesis_evidence_inventory_hash": "DERIVED_FROM_EXISTING_EVIDENCE",
+  "genesis_evidence_inventory_source": "DERIVED_FROM_EXISTING_EVIDENCE",
+  "genesis_decision_hash": "DERIVED_FROM_EXISTING_EVIDENCE",
+  "genesis_decision_source": "DERIVED_FROM_EXISTING_EVIDENCE",
+  "ratification_record_id": "urn:arx:ratification:epoch-gov-001:genesis",
+  "ratification_authority": "urn:arx:authority:bootstrap-council:v1",
+  "external_witness": "urn:rekor:witness:governance:genesis-001",
+  "second_governance_genesis": "PROHIBITED"
+}
