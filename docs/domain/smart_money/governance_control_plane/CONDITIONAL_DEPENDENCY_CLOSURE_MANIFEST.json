@@ -3,7 +3,7 @@
   "gate": "SMART_MONEY_CONDITIONAL_DEPENDENCY_PREDICATE_AUTHORITY_CLOSURE_V1",
   "repository": {
     "pre_gate_sha": "3df70abc37def3c02ebc163f21f4d8584a2ec9e6",
-    "closure_sha": "PENDING_COMMIT",
+    "closure_sha": "1492ace1f26b7330fafc3252b1c8da86b2a803b6",
     "origin_main_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
     "remote_push_executed": false,
     "final_worktree_clean": true
