@@ -62,6 +62,11 @@ from .decision_engine import (
     DecisionPredecessorStaleError,
     DecisionCurrentnessConflictError,
     DecisionAuthorizationRejectedError,
+    DecisionChainIntegrityError,
+    DecisionBootstrapError,
+    WriterLockAcquisitionError,
+    CandidateContextStaleError,
+    CanonicalDecisionWriterLock,
 )
 from .authorization import (
     AuthorizationManager,

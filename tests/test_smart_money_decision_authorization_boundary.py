@@ -41,6 +41,11 @@ from analyst_dashboard.smart_money.governance_control_plane import (
     DecisionPredecessorStaleError,
     DecisionCurrentnessConflictError,
     DecisionAuthorizationRejectedError,
+    DecisionChainIntegrityError,
+    DecisionBootstrapError,
+    WriterLockAcquisitionError,
+    CandidateContextStaleError,
+    CanonicalDecisionWriterLock,
     FindingRegistry,
     FindingStatus,
     get_all_registered_findings,
@@ -369,3 +374,212 @@ def test_case_12_fnd_arch_016_discovery_and_resolution():
     assert len(reg_disc.get_unresolved_architecture_defects()) == 0
     assert len(reg_disc.get_active_non_architecture_blockers()) == 5
     assert len(reg_disc.get_active_blockers()) == 5
+
+
+def test_case_13_logical_append_only_mutation_controls(tmp_path):
+    """Case 13: Logical append-only semantics enforce fail-closed rejection of historical mutation, deletion, reordering, and truncation."""
+    state_file = str(tmp_path / "CANONICAL_DECISION_CHAIN_STATE.json")
+    auth = CanonicalDecisionCommitAuthority(epoch="epoch-gov-002", state_path=state_file, auto_bootstrap=True)
+    assert auth.head["decision_sequence"] == 2
+
+    # 1. Mutate historical decision hash on disk
+    with open(state_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    data["committed_decisions"][1]["previous_decision_hash"] = "deadbeef" * 8
+    with open(state_file, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+
+    with pytest.raises(DecisionChainIntegrityError) as exc_info:
+        CanonicalDecisionCommitAuthority(epoch="epoch-gov-002", state_path=state_file, auto_bootstrap=False)
+    assert "LOGICAL_APPEND_ONLY_VIOLATION" in str(exc_info.value)
+
+    # 2. Delete historical sequence (gap created)
+    with open(state_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    data["committed_decisions"] = [data["committed_decisions"][1]]  # sequence 2 only, sequence 1 missing
+    with open(state_file, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+    with pytest.raises(DecisionChainIntegrityError):
+        CanonicalDecisionCommitAuthority(epoch="epoch-gov-002", state_path=state_file, auto_bootstrap=False)
+
+    # 3. Reorder sequence history
+    data["committed_decisions"] = [
+        {"decision_sequence": 2, "decision_hash": "b" * 64, "previous_decision_hash": "a" * 64},
+        {"decision_sequence": 1, "decision_hash": "a" * 64, "previous_decision_hash": "0" * 64},
+    ]
+    with open(state_file, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+    with pytest.raises(DecisionChainIntegrityError):
+        CanonicalDecisionCommitAuthority(epoch="epoch-gov-002", state_path=state_file, auto_bootstrap=False)
+
+
+def test_case_14_bootstrap_provenance_and_negative_controls(tmp_path):
+    """Case 14: Bootstrap authority verifies provenance against approved authority and rejects arbitrary seeds."""
+    state_file = str(tmp_path / "CHAIN_STATE.json")
+    auth = CanonicalDecisionCommitAuthority(epoch="epoch-gov-002", state_path=state_file, auto_bootstrap=False)
+
+    # Negative control 1: Wrong historical hash
+    with pytest.raises(DecisionBootstrapError):
+        auth.bootstrap_historical_records([{
+            "governance_epoch": "epoch-gov-002",
+            "decision_sequence": 1,
+            "decision_id": "urn:arx:decision:epoch-gov-002:1:c3277609a97c",
+            "decision_hash": "deadbeef" * 8,
+            "previous_decision_hash": "0" * 64,
+        }])
+
+    # Negative control 2: Wrong sequence
+    with pytest.raises(DecisionBootstrapError):
+        auth.bootstrap_historical_records([{
+            "governance_epoch": "epoch-gov-002",
+            "decision_sequence": 99,
+            "decision_id": "urn:arx:decision:epoch-gov-002:1:c3277609a97c",
+            "decision_hash": "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f",
+            "previous_decision_hash": "0" * 64,
+        }])
+
+    # Negative control 3: Wrong epoch
+    with pytest.raises(DecisionBootstrapError):
+        auth.bootstrap_historical_records([{
+            "governance_epoch": "epoch-gov-999",
+            "decision_sequence": 1,
+            "decision_id": "urn:arx:decision:epoch-gov-002:1:c3277609a97c",
+            "decision_hash": "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f",
+            "previous_decision_hash": "0" * 64,
+        }])
+
+    # Negative control 4: Fabricated decision ID
+    with pytest.raises(DecisionBootstrapError):
+        auth.bootstrap_historical_records([{
+            "governance_epoch": "epoch-gov-002",
+            "decision_sequence": 1,
+            "decision_id": "urn:arx:decision:epoch-gov-002:1:fake_fabricated_id",
+            "decision_hash": "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f",
+            "previous_decision_hash": "0" * 64,
+        }])
+
+    # Negative control 5: Mutated body
+    with pytest.raises(DecisionBootstrapError):
+        auth.bootstrap_historical_records([{
+            "governance_epoch": "epoch-gov-002",
+            "decision_sequence": 1,
+            "decision_id": "urn:arx:decision:epoch-gov-002:1:c3277609a97c",
+            "decision_hash": "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f",
+            "previous_decision_hash": "1" * 64,
+        }])
+
+    # Positive: Valid approved bootstrap
+    auth.bootstrap_historical_records([
+        {
+            "governance_epoch": "epoch-gov-002",
+            "decision_sequence": 1,
+            "decision_id": "urn:arx:decision:epoch-gov-002:1:c3277609a97c",
+            "decision_hash": "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f",
+            "previous_decision_hash": "0" * 64,
+            "status": "INVALIDATED_NON_CANONICAL",
+            "committed_at": "2026-10-12T10:00:00Z",
+            "invalidation_reason": "MUTATED_FINDING_IDENTITY_AND_CLAIM_LATTICE_CONTAMINATION",
+        },
+        {
+            "governance_epoch": "epoch-gov-002",
+            "decision_sequence": 2,
+            "decision_id": "urn:arx:decision:epoch-gov-002:2:fa3df68578c4",
+            "decision_hash": "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c",
+            "previous_decision_hash": "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f",
+            "source_freeze_sha": "38fbec379a0fc7788ab11ac4f566e445a7b4802d",
+            "source_tree_oid": "4a92a5d39931caa879bcbe3cb8a9ca1624ff76e8",
+            "decision_context_hash": "cad190ce404bdd814a9c923d1349ab8a9b2a5469956ac265b231d9ebef43fd7e",
+            "status": "CURRENT",
+            "committed_at": "2026-10-12T10:35:00Z",
+        },
+    ])
+    assert auth.head["decision_sequence"] == 2
+
+    # Idempotence: re-bootstrapping with identical records is a deterministic no-op
+    auth.bootstrap_historical_records([
+        {"governance_epoch": "epoch-gov-002", "decision_sequence": 1, "decision_hash": "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f"},
+    ])
+
+    # Idempotence violation: attempting to bootstrap conflicting record raises DecisionBootstrapError
+    with pytest.raises(DecisionBootstrapError):
+        auth.bootstrap_historical_records([
+            {"governance_epoch": "epoch-gov-002", "decision_sequence": 1, "decision_hash": "newhash" * 8},
+        ])
+
+
+def test_case_15_writer_model_and_cross_process_single_writer(tmp_path):
+    """Case 15: Cross-process writer lock enforces single-writer guarantee fail-closed."""
+    state_file = str(tmp_path / "LOCK_TEST_STATE.json")
+    auth_1 = CanonicalDecisionCommitAuthority(epoch="epoch-gov-002", state_path=state_file, auto_bootstrap=True)
+
+    # Acquire lock with writer 1
+    with auth_1._file_lock:
+        # Create second authority instance competing for the same lock
+        auth_2 = CanonicalDecisionCommitAuthority(epoch="epoch-gov-002", state_path=state_file, auto_bootstrap=False)
+        auth_2._file_lock.timeout = 0.2
+        # Writer 2 attempt to acquire lock must fail closed with WriterLockAcquisitionError
+        with pytest.raises(WriterLockAcquisitionError):
+            with auth_2._file_lock:
+                pass
+
+
+def test_case_16_candidate_context_freshness_negative_control(temp_authority):
+    """Case 16: Candidate with stale context hash is rejected fail-closed against authoritative context."""
+    auth, _ = temp_authority
+    authoritative_hash = "b162123b3315b0b17ed6de4a14bcb701684dbd2d53ec596cd16cda160c45b6f4"
+    auth.authoritative_context_hash = authoritative_hash
+
+    # Candidate with stale context hash
+    stale_cand = _make_candidate_snapshot(
+        sequence=3,
+        decision_context_hash="52ba3e67d8aa20cc12b205e2ea3162fd88a40975c7b33608ffa97e5c6d1782c3",
+    )
+    with pytest.raises(CandidateContextStaleError) as exc_info:
+        auth.commit_canonical_decision(stale_cand)
+    assert "CANDIDATE_CONTEXT_STALE" in str(exc_info.value)
+
+    # Candidate with matching fresh context hash succeeds
+    fresh_cand = _make_candidate_snapshot(
+        sequence=3,
+        decision_context_hash=authoritative_hash,
+    )
+    rec = auth.commit_canonical_decision(fresh_cand)
+    assert rec["decision_sequence"] == 3
+    assert rec["status"] == "CURRENT"
+
+
+def test_case_17_sequence_4_canonical_transition(temp_authority):
+    """Case 17: Canonical transition from sequence 3 (SUPERSEDED) to sequence 4 (CURRENT) binding final context."""
+    auth, _ = temp_authority
+    # Commit sequence 3 first
+    snap3 = _make_candidate_snapshot(
+        sequence=3,
+        decision_context_hash="52ba3e67d8aa20cc12b205e2ea3162fd88a40975c7b33608ffa97e5c6d1782c3",
+    )
+    rec3 = auth.commit_canonical_decision(snap3)
+    assert rec3["decision_sequence"] == 3
+    assert rec3["status"] == "CURRENT"
+
+    # Commit sequence 4 with rebuilt final context binding
+    final_context_hash = "b162123b3315b0b17ed6de4a14bcb701684dbd2d53ec596cd16cda160c45b6f4"
+    snap4 = _make_candidate_snapshot(
+        sequence=4,
+        previous_decision_hash=rec3["decision_hash"],
+        decision_context_hash=final_context_hash,
+        source_freeze_sha="4aa35839dc0f5d2496d4a13c80e6c72cdee53eda",
+    )
+    rec4 = auth.commit_canonical_decision(snap4, expected_context_hash=final_context_hash)
+    assert rec4["decision_sequence"] == 4
+    assert rec4["status"] == "CURRENT"
+    assert rec4["previous_decision_hash"] == rec3["decision_hash"]
+
+    # Verify sequence 3 transitioned to SUPERSEDED
+    seq3_reloaded = auth._committed_decisions[rec3["decision_hash"]]
+    assert seq3_reloaded["status"] == "SUPERSEDED"
+    assert seq3_reloaded["superseded_by"] == rec4["decision_hash"]
+
+    # Exactly 1 CURRENT decision exists
+    uniqueness = auth.assert_currentness_uniqueness()
+    assert uniqueness["current_count"] == 1
+    assert uniqueness["current_decision_hashes"] == [rec4["decision_hash"]]
+

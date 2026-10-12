@@ -13,6 +13,8 @@ import uuid
 import os
 import json
 import threading
+import time
+import contextlib
 from datetime import datetime, timezone
 
 from .canonicalization import sha256_canonical, ARX_GOV_NORMALIZE_VERSION, JCS_VERSION
@@ -91,6 +93,26 @@ class DecisionAuthorizationRejectedError(DecisionChainError):
 
 class ReusedInvalidatedSequenceSlotError(DecisionChainError):
     """Raised when an attempt is made to evaluate a decision in an already invalidated sequence slot."""
+    pass
+
+
+class DecisionChainIntegrityError(DecisionChainError):
+    """Raised when canonical chain history is mutated, deleted, reordered, truncated, or predecessor links are broken."""
+    pass
+
+
+class DecisionBootstrapError(DecisionChainError):
+    """Raised when historical bootstrap fails validation (arbitrary seed, wrong hash, wrong sequence, mutated body, or non-idempotent re-initialization)."""
+    pass
+
+
+class WriterLockAcquisitionError(DecisionChainError):
+    """Raised when another writer holds the exclusive write lock on canonical decision state."""
+    pass
+
+
+class CandidateContextStaleError(DecisionChainError):
+    """Raised when candidate decision was built from an obsolete or mismatched canonical context."""
     pass
 
 
@@ -260,12 +282,118 @@ DEFAULT_DECISION_CHAIN_STATE_PATH = os.path.normpath(
     )
 )
 
+STALE_PRE_REMEDIATION_CONTEXT_HASHES: Set[str] = {
+    "52ba3e67d8aa20cc12b205e2ea3162fd88a40975c7b33608ffa97e5c6d1782c3",
+}
+
+APPROVED_HISTORICAL_DECISION_RECORDS: Dict[Tuple[str, int], Dict[str, Any]] = {
+    ("epoch-gov-002", 1): {
+        "decision_id": "urn:arx:decision:epoch-gov-002:1:c3277609a97c",
+        "decision_hash": "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f",
+        "governance_epoch": "epoch-gov-002",
+        "decision_sequence": 1,
+        "previous_decision_hash": "0" * 64,
+        "status": "INVALIDATED_NON_CANONICAL",
+        "committed_at": "2026-10-12T10:00:00Z",
+        "invalidation_reason": "MUTATED_FINDING_IDENTITY_AND_CLAIM_LATTICE_CONTAMINATION",
+    },
+    ("epoch-gov-002", 2): {
+        "decision_id": "urn:arx:decision:epoch-gov-002:2:fa3df68578c4",
+        "decision_hash": "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c",
+        "governance_epoch": "epoch-gov-002",
+        "decision_sequence": 2,
+        "previous_decision_hash": "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f",
+        "source_freeze_sha": "38fbec379a0fc7788ab11ac4f566e445a7b4802d",
+        "source_tree_oid": "4a92a5d39931caa879bcbe3cb8a9ca1624ff76e8",
+        "decision_context_hash": "cad190ce404bdd814a9c923d1349ab8a9b2a5469956ac265b231d9ebef43fd7e",
+        "status": "CURRENT",
+        "committed_at": "2026-10-12T10:35:00Z",
+    },
+}
+
+
+class CanonicalDecisionWriterLock:
+    """
+    Exclusive cross-process writer lock for CanonicalDecisionCommitAuthority (Section 19-22).
+    Uses platform-native file locking (msvcrt on Windows, fcntl on POSIX).
+    """
+
+    def __init__(self, lock_path: str, timeout: float = 5.0):
+        self.lock_path = lock_path
+        self.timeout = timeout
+        self._fd: Optional[int] = None
+        self._locked = False
+        self._lock_count = 0
+
+    def acquire(self, blocking: bool = True) -> bool:
+        if self._locked:
+            self._lock_count += 1
+            return True
+        start_time = time.time()
+        os.makedirs(os.path.dirname(os.path.abspath(self.lock_path)), exist_ok=True)
+        while True:
+            try:
+                self._fd = os.open(self.lock_path, os.O_CREAT | os.O_RDWR)
+                if os.name == "nt":
+                    import msvcrt
+                    msvcrt.locking(self._fd, msvcrt.LK_NBLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(self._fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                self._locked = True
+                self._lock_count = 1
+                return True
+            except (OSError, IOError, BlockingIOError, PermissionError):
+                if self._fd is not None:
+                    try:
+                        os.close(self._fd)
+                    except Exception:
+                        pass
+                    self._fd = None
+                if not blocking or (time.time() - start_time) >= self.timeout:
+                    return False
+                time.sleep(0.05)
+
+    def release(self) -> None:
+        if not self._locked:
+            return
+        self._lock_count -= 1
+        if self._lock_count > 0:
+            return
+        if self._fd is not None:
+            try:
+                if os.name == "nt":
+                    import msvcrt
+                    msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(self._fd, fcntl.LOCK_UN)
+            except Exception:
+                pass
+            try:
+                os.close(self._fd)
+            except Exception:
+                pass
+            self._fd = None
+            self._locked = False
+
+    def __enter__(self):
+        if not self.acquire(blocking=True):
+            raise WriterLockAcquisitionError(
+                f"WRITER_LOCK_ACQUISITION_TIMEOUT == 0: Failed to acquire exclusive writer lock on {self.lock_path} within {self.timeout}s."
+            )
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.release()
+
 
 class CanonicalDecisionCommitAuthority:
     """
     Authoritative Decision Chain & Commit Boundary Subsystem.
     Enforces fail-closed predecessor verification, sequence continuity, epoch continuity,
-    predecessor non-invalidation, anti-equivocation, atomic currentness, and durable restart persistence.
+    predecessor non-invalidation, anti-equivocation, atomic currentness, candidate freshness,
+    logical append-only history integrity, single-writer locking, and durable restart persistence.
     """
 
     def __init__(
@@ -273,10 +401,16 @@ class CanonicalDecisionCommitAuthority:
         epoch: str = "epoch-gov-002",
         state_path: Optional[str] = None,
         auto_bootstrap: bool = True,
+        enforce_writer_lock: bool = True,
+        authoritative_context_hash: Optional[str] = None,
     ):
         self.epoch = epoch
         self.state_path = state_path or DEFAULT_DECISION_CHAIN_STATE_PATH
-        self._lock = threading.Lock()
+        self.lock_path = (self.state_path + ".lock") if self.state_path else None
+        self.enforce_writer_lock = enforce_writer_lock
+        self.authoritative_context_hash = authoritative_context_hash
+        self._lock = threading.RLock()
+        self._file_lock = CanonicalDecisionWriterLock(self.lock_path) if self.lock_path else None
         self._committed_decisions: Dict[str, Dict[str, Any]] = {}
         self._sequence_index: Dict[Tuple[str, int], Dict[str, Any]] = {}
         self._invalidated_hashes: Set[str] = set(INVALIDATED_PRE_INTEGRATION_DECISION_HASHES)
@@ -289,49 +423,93 @@ class CanonicalDecisionCommitAuthority:
         elif auto_bootstrap:
             self._bootstrap_historical_chain()
 
+    def bootstrap_historical_records(self, records: List[Dict[str, Any]]) -> None:
+        """
+        Authoritative Historical Decision Bootstrap Boundary (Sections 16-18).
+        Validates historical records against approved historical authority.
+        Fails closed on wrong decision hash, wrong sequence, wrong epoch,
+        fabricated ID, mutated body, or records not present in approved source.
+        Enforces idempotence (rejects rewriting already initialized history).
+        """
+        with self._lock:
+            # Check idempotence
+            if self._committed_decisions:
+                all_match = True
+                for rec in records:
+                    h = rec.get("decision_hash")
+                    if h not in self._committed_decisions:
+                        all_match = False
+                        break
+                if all_match and len(records) <= len(self._committed_decisions):
+                    return  # Deterministic no-op
+                raise DecisionBootstrapError(
+                    "BOOTSTRAP_IDEMPOTENCE_VIOLATION: Authority is already initialized. Cannot re-bootstrap or rewrite historical chain."
+                )
+
+            # Validate each record against approved authority
+            for rec in records:
+                ep = rec.get("governance_epoch")
+                sq = rec.get("decision_sequence")
+                key = (ep, sq)
+                if key not in APPROVED_HISTORICAL_DECISION_RECORDS:
+                    raise DecisionBootstrapError(
+                        f"HISTORICAL_RECORD_NOT_IN_APPROVED_SOURCE: Record ({ep}, {sq}) is not in approved historical authority."
+                    )
+                approved = APPROVED_HISTORICAL_DECISION_RECORDS[key]
+                if rec.get("decision_hash") != approved["decision_hash"]:
+                    raise DecisionBootstrapError(
+                        f"WRONG_HISTORICAL_DECISION_HASH: Provided hash '{rec.get('decision_hash')}' != approved '{approved['decision_hash']}'."
+                    )
+                if rec.get("decision_id") != approved["decision_id"]:
+                    raise DecisionBootstrapError(
+                        f"FABRICATED_DECISION_ID: Provided ID '{rec.get('decision_id')}' != approved '{approved['decision_id']}'."
+                    )
+                if rec.get("previous_decision_hash") != approved["previous_decision_hash"]:
+                    raise DecisionBootstrapError(
+                        f"MUTATED_HISTORICAL_BODY: Provided previous_decision_hash '{rec.get('previous_decision_hash')}' != approved '{approved['previous_decision_hash']}'."
+                    )
+                for fld in ["source_freeze_sha", "source_tree_oid", "decision_context_hash"]:
+                    if fld in approved and rec.get(fld) != approved[fld]:
+                        raise DecisionBootstrapError(
+                            f"MUTATED_HISTORICAL_BODY: Field '{fld}' mutated in historical record."
+                        )
+
+            # Apply records
+            for rec in records:
+                h = rec["decision_hash"]
+                ep = rec["governance_epoch"]
+                sq = rec["decision_sequence"]
+                self._committed_decisions[h] = dict(rec)
+                self._sequence_index[(ep, sq)] = self._committed_decisions[h]
+                if rec.get("status") == "INVALIDATED_NON_CANONICAL":
+                    self._invalidated_hashes.add(h)
+                elif rec.get("status") in ["CURRENT", "SUPERSEDED"]:
+                    if rec.get("status") == "CURRENT":
+                        self._head = self._committed_decisions[h]
+                        self._current_decision_id = rec["decision_id"]
+                        self._current_decision_hash = h
+
+            if not self._head and records:
+                non_inval = [r for r in records if r.get("status") != "INVALIDATED_NON_CANONICAL"]
+                if non_inval:
+                    highest = max(non_inval, key=lambda r: r.get("decision_sequence", 0))
+                    self._head = self._committed_decisions[highest["decision_hash"]]
+                    self._current_decision_id = highest["decision_id"]
+                    self._current_decision_hash = highest["decision_hash"]
+
+            if self.state_path:
+                try:
+                    self._save_state()
+                except Exception:
+                    pass
+
     def _bootstrap_historical_chain(self) -> None:
-        """Initializes authoritative chain with known historical records."""
-        # Historical sequence 1 (invalidated in epoch-gov-002)
-        seq1_hash = "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f"
-        seq1_rec = {
-            "decision_id": "urn:arx:decision:epoch-gov-002:1:c3277609a97c",
-            "decision_hash": seq1_hash,
-            "governance_epoch": "epoch-gov-002",
-            "decision_sequence": 1,
-            "previous_decision_hash": "0" * 64,
-            "status": "INVALIDATED_NON_CANONICAL",
-            "committed_at": "2026-10-12T10:00:00Z",
-            "invalidation_reason": "MUTATED_FINDING_IDENTITY_AND_CLAIM_LATTICE_CONTAMINATION",
-        }
-        self._committed_decisions[seq1_hash] = seq1_rec
-        self._sequence_index[("epoch-gov-002", 1)] = seq1_rec
-        self._invalidated_hashes.add(seq1_hash)
-
-        # Historical sequence 2 (authoritative predecessor for sequence 3)
-        seq2_hash = "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c"
-        seq2_rec = {
-            "decision_id": "urn:arx:decision:epoch-gov-002:2:fa3df68578c4",
-            "decision_hash": seq2_hash,
-            "governance_epoch": "epoch-gov-002",
-            "decision_sequence": 2,
-            "previous_decision_hash": seq1_hash,
-            "source_freeze_sha": "38fbec379a0fc7788ab11ac4f566e445a7b4802d",
-            "source_tree_oid": "4a92a5d39931caa879bcbe3cb8a9ca1624ff76e8",
-            "decision_context_hash": "cad190ce404bdd814a9c923d1349ab8a9b2a5469956ac265b231d9ebef43fd7e",
-            "status": "CURRENT",
-            "committed_at": "2026-10-12T10:35:00Z",
-        }
-        self._committed_decisions[seq2_hash] = seq2_rec
-        self._sequence_index[("epoch-gov-002", 2)] = seq2_rec
-        self._head = seq2_rec
-        self._current_decision_id = seq2_rec["decision_id"]
-        self._current_decision_hash = seq2_hash
-
-        if self.state_path:
-            try:
-                self._save_state()
-            except Exception:
-                pass
+        """Initializes authoritative chain with approved historical records."""
+        approved_list = [
+            APPROVED_HISTORICAL_DECISION_RECORDS[("epoch-gov-002", 1)],
+            APPROVED_HISTORICAL_DECISION_RECORDS[("epoch-gov-002", 2)],
+        ]
+        self.bootstrap_historical_records(approved_list)
 
     def _save_state(self) -> None:
         """Persists chain state atomically to disk."""
@@ -359,18 +537,67 @@ class CanonicalDecisionCommitAuthority:
             json.dump(data, f, indent=2, sort_keys=True)
         os.replace(tmp_path, self.state_path)
 
+    def _validate_chain_integrity(self, decisions: List[Dict[str, Any]]) -> None:
+        """
+        Validates logical append-only integrity of committed decisions list (Section 15):
+        - Strictly monotonically increasing sequence numbers without gaps
+        - Valid predecessor hash chain linkage
+        - No duplicate sequences or mutated records
+        """
+        if not decisions:
+            return
+
+        for idx, rec in enumerate(decisions):
+            expected_seq = idx + 1
+            seq = rec.get("decision_sequence")
+            if seq != expected_seq:
+                raise DecisionChainIntegrityError(
+                    f"LOGICAL_APPEND_ONLY_VIOLATION: Sequence continuity broken. Found sequence {seq} at position {idx}, expected {expected_seq} (REORDER_OR_TRUNCATE_REJECTED)."
+                )
+            if idx > 0:
+                prev_rec = decisions[idx - 1]
+                expected_prev_hash = prev_rec.get("decision_hash")
+                actual_prev_hash = rec.get("previous_decision_hash")
+                if actual_prev_hash != expected_prev_hash:
+                    raise DecisionChainIntegrityError(
+                        f"LOGICAL_APPEND_ONLY_VIOLATION: Predecessor hash continuity broken at sequence {seq}. "
+                        f"Found previous_decision_hash '{actual_prev_hash}', expected '{expected_prev_hash}' (MUTATE_HISTORICAL_RECORD_REJECTED)."
+                    )
+
+        # Check against existing committed decisions: no mutation, deletion, or truncation of history
+        if self._committed_decisions:
+            for old_hash, old_rec in self._committed_decisions.items():
+                matching = [r for r in decisions if r.get("decision_hash") == old_hash]
+                if not matching:
+                    raise DecisionChainIntegrityError(
+                        f"LOGICAL_APPEND_ONLY_VIOLATION: Historical decision '{old_hash}' was deleted or truncated (DELETE_HISTORICAL_RECORD_REJECTED)."
+                    )
+                new_rec = matching[0]
+                if new_rec.get("decision_sequence") != old_rec.get("decision_sequence"):
+                    raise DecisionChainIntegrityError(
+                        f"LOGICAL_APPEND_ONLY_VIOLATION: Historical decision '{old_hash}' sequence was altered."
+                    )
+                if new_rec.get("previous_decision_hash") != old_rec.get("previous_decision_hash"):
+                    raise DecisionChainIntegrityError(
+                        f"LOGICAL_APPEND_ONLY_VIOLATION: Historical decision '{old_hash}' predecessor link was altered."
+                    )
+
     def reload(self) -> None:
-        """Reloads durable chain state from state_path."""
+        """Reloads durable chain state from state_path with fail-closed integrity verification."""
         with self._lock:
             if not self.state_path or not os.path.exists(self.state_path):
                 return
             with open(self.state_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
+
+            committed_list = data.get("committed_decisions", [])
+            self._validate_chain_integrity(committed_list)
+
             self.epoch = data.get("active_epoch", self.epoch)
             self._invalidated_hashes = set(data.get("invalidated_hashes", []))
             self._committed_decisions.clear()
             self._sequence_index.clear()
-            for rec in data.get("committed_decisions", []):
+            for rec in committed_list:
                 h = rec["decision_hash"]
                 ep = rec["governance_epoch"]
                 sq = rec["decision_sequence"]
@@ -466,9 +693,15 @@ class CanonicalDecisionCommitAuthority:
                 f"DECISION_PREDECESSOR_INVALIDATED: Predecessor hash '{snapshot.previous_decision_hash}' is invalidated."
             )
 
+        # 4. Candidate context freshness check (Sections 24, 25)
+        if self.authoritative_context_hash is not None and snapshot.decision_context_hash != self.authoritative_context_hash:
+            raise CandidateContextStaleError(
+                f"CANDIDATE_CONTEXT_STALE: Candidate context hash '{snapshot.decision_context_hash}' != authoritative context hash '{self.authoritative_context_hash}'."
+            )
+
         seq = snapshot.decision_sequence
 
-        # 4. Anti-equivocation on sequence slot
+        # 5. Anti-equivocation on sequence slot
         slot_key = (snapshot.governance_epoch, seq)
         if slot_key in self._sequence_index:
             existing = self._sequence_index[slot_key]
@@ -477,7 +710,7 @@ class CanonicalDecisionCommitAuthority:
                     f"DUPLICATE_DECISION_SEQUENCE_WITH_DIFFERENT_HASH == 0: Sequence {seq} in {self.epoch} already committed with different hash {existing['decision_hash']}."
                 )
 
-        # 5. Authoritative Head / Predecessor lookup
+        # 6. Authoritative Head / Predecessor lookup
         if self._head is not None:
             expected_seq = self._head["decision_sequence"] + 1
             if seq != expected_seq:
@@ -510,84 +743,103 @@ class CanonicalDecisionCommitAuthority:
                     f"DECISION_PREDECESSOR_MISMATCH: Genesis decision requires previous_decision_hash == '0'*64."
                 )
 
-    def commit_canonical_decision(self, snapshot: DecisionSnapshot) -> Dict[str, Any]:
+    def commit_canonical_decision(
+        self,
+        snapshot: DecisionSnapshot,
+        expected_context_hash: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
         Authoritative Canonical Decision Commit Boundary.
-        Validates structure & lineage, atomically supersedes previous CURRENT,
-        marks new decision CURRENT, asserts exactly 1 CURRENT decision, and persists state.
+        Validates structure & lineage, candidate freshness, cross-process lock,
+        atomically supersedes previous CURRENT, marks new decision CURRENT,
+        asserts exactly 1 CURRENT decision, and persists state.
         """
         with self._lock:
-            # 1. Epoch continuity check first
-            if snapshot.governance_epoch != self.epoch:
-                raise DecisionEpochMismatchError(
-                    f"DECISION_EPOCH_MISMATCH: Candidate epoch '{snapshot.governance_epoch}' != active epoch '{self.epoch}'."
-                )
+            lock_ctx = self._file_lock if (self.enforce_writer_lock and self._file_lock) else contextlib.nullcontext()
+            with lock_ctx:
+                # Reload under lock to catch any concurrent cross-process commits
+                if self.state_path and os.path.exists(self.state_path):
+                    self.reload()
 
-            # 2. Check for idempotent re-commit or anti-equivocation on existing slot
-            slot_key = (snapshot.governance_epoch, snapshot.decision_sequence)
-            if slot_key in self._sequence_index:
-                existing = self._sequence_index[slot_key]
-                if existing["decision_hash"] == snapshot.decision_hash:
-                    return existing
-                else:
-                    raise DuplicateDecisionSequenceError(
-                        f"DUPLICATE_DECISION_SEQUENCE_WITH_DIFFERENT_HASH == 0: Sequence {snapshot.decision_sequence} in {self.epoch} already committed with different hash {existing['decision_hash']}."
+                # Candidate context freshness check (Sections 24, 25)
+                target_context_hash = expected_context_hash or self.authoritative_context_hash
+                if target_context_hash is not None:
+                    if snapshot.decision_context_hash != target_context_hash:
+                        raise CandidateContextStaleError(
+                            f"CANDIDATE_CONTEXT_STALE: Candidate context hash '{snapshot.decision_context_hash}' != authoritative context hash '{target_context_hash}'."
+                        )
+
+                # 1. Epoch continuity check first
+                if snapshot.governance_epoch != self.epoch:
+                    raise DecisionEpochMismatchError(
+                        f"DECISION_EPOCH_MISMATCH: Candidate epoch '{snapshot.governance_epoch}' != active epoch '{self.epoch}'."
                     )
 
-            # 3. Structural validation
-            validate_canonical_decision_snapshot(snapshot, self.epoch)
+                # 2. Check for idempotent re-commit or anti-equivocation on existing slot
+                slot_key = (snapshot.governance_epoch, snapshot.decision_sequence)
+                if slot_key in self._sequence_index:
+                    existing = self._sequence_index[slot_key]
+                    if existing["decision_hash"] == snapshot.decision_hash:
+                        return existing
+                    else:
+                        raise DuplicateDecisionSequenceError(
+                            f"DUPLICATE_DECISION_SEQUENCE_WITH_DIFFERENT_HASH == 0: Sequence {snapshot.decision_sequence} in {self.epoch} already committed with different hash {existing['decision_hash']}."
+                        )
 
-            # 4. Lineage validation
-            self.validate_lineage(snapshot)
+                # 3. Structural validation
+                validate_canonical_decision_snapshot(snapshot, self.epoch)
 
-            # 4. Atomic Transition
-            if self._head is not None and self._head.get("status") == "CURRENT":
-                self._head["status"] = "SUPERSEDED"
-                self._head["superseded_at"] = snapshot.derived_at
-                self._head["superseded_by"] = snapshot.decision_hash
+                # 4. Lineage validation
+                self.validate_lineage(snapshot)
 
-            new_record = {
-                "decision_id": snapshot.decision_id,
-                "decision_hash": snapshot.decision_hash,
-                "governance_epoch": snapshot.governance_epoch,
-                "decision_sequence": snapshot.decision_sequence,
-                "previous_decision_hash": snapshot.previous_decision_hash,
-                "source_freeze_sha": snapshot.source_freeze_sha,
-                "decision_context_hash": snapshot.decision_context_hash,
-                "finding_registry_hash": snapshot.finding_registry_hash,
-                "evidence_manifest_hash": snapshot.evidence_inventory_hash,
-                "dependency_policy_hash": snapshot.dependency_policy_hash,
-                "dependency_resolution_hash": snapshot.dependency_resolution_hash,
-                "status": "CURRENT",
-                "architecture_closure_status": snapshot.architecture_closure_status,
-                "global_provisioning_readiness": snapshot.global_provisioning_readiness,
-                "provisioning_authorization_status": snapshot.provisioning_authorization_status,
-                "derived_at": snapshot.derived_at,
-                "committed_at": snapshot.derived_at,
-            }
+                # 5. Atomic Transition
+                if self._head is not None and self._head.get("status") == "CURRENT":
+                    self._head["status"] = "SUPERSEDED"
+                    self._head["superseded_at"] = snapshot.derived_at
+                    self._head["superseded_by"] = snapshot.decision_hash
 
-            self._committed_decisions[snapshot.decision_hash] = new_record
-            self._sequence_index[slot_key] = new_record
-            self._head = new_record
-            self._current_decision_id = snapshot.decision_id
-            self._current_decision_hash = snapshot.decision_hash
+                new_record = {
+                    "decision_id": snapshot.decision_id,
+                    "decision_hash": snapshot.decision_hash,
+                    "governance_epoch": snapshot.governance_epoch,
+                    "decision_sequence": snapshot.decision_sequence,
+                    "previous_decision_hash": snapshot.previous_decision_hash,
+                    "source_freeze_sha": snapshot.source_freeze_sha,
+                    "decision_context_hash": snapshot.decision_context_hash,
+                    "finding_registry_hash": snapshot.finding_registry_hash,
+                    "evidence_manifest_hash": snapshot.evidence_inventory_hash,
+                    "dependency_policy_hash": snapshot.dependency_policy_hash,
+                    "dependency_resolution_hash": snapshot.dependency_resolution_hash,
+                    "status": "CURRENT",
+                    "architecture_closure_status": snapshot.architecture_closure_status,
+                    "global_provisioning_readiness": snapshot.global_provisioning_readiness,
+                    "provisioning_authorization_status": snapshot.provisioning_authorization_status,
+                    "derived_at": snapshot.derived_at,
+                    "committed_at": snapshot.derived_at,
+                }
 
-            # 5. Invariant check: Exactly 1 CURRENT decision in active epoch
-            currents = [
-                r for r in self._committed_decisions.values()
-                if r.get("governance_epoch") == self.epoch and r.get("status") == "CURRENT"
-            ]
-            if len(currents) != 1:
-                if self._head:
-                    self._head["status"] = "FAILED"
-                raise DecisionCurrentnessConflictError(
-                    f"ATOMIC_CURRENTNESS_VIOLATION: Expected exactly 1 CURRENT decision for {self.epoch}, found {len(currents)}."
-                )
+                self._committed_decisions[snapshot.decision_hash] = new_record
+                self._sequence_index[slot_key] = new_record
+                self._head = new_record
+                self._current_decision_id = snapshot.decision_id
+                self._current_decision_hash = snapshot.decision_hash
 
-            # 6. Durable persistence
-            self._save_state()
+                # 6. Invariant check: Exactly 1 CURRENT decision in active epoch
+                currents = [
+                    r for r in self._committed_decisions.values()
+                    if r.get("governance_epoch") == self.epoch and r.get("status") == "CURRENT"
+                ]
+                if len(currents) != 1:
+                    if self._head:
+                        self._head["status"] = "FAILED"
+                    raise DecisionCurrentnessConflictError(
+                        f"ATOMIC_CURRENTNESS_VIOLATION: Expected exactly 1 CURRENT decision for {self.epoch}, found {len(currents)}."
+                    )
 
-            return new_record
+                # 7. Durable persistence
+                self._save_state()
+
+                return new_record
 
 
 class GovernanceDecisionEngine:
