@@ -8,8 +8,11 @@ Includes Primary Engine and Independent Reference Evaluator.
 """
 
 from dataclasses import dataclass, asdict
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Set, Tuple
 import uuid
+import os
+import json
+import threading
 from datetime import datetime, timezone
 
 from .canonicalization import sha256_canonical, ARX_GOV_NORMALIZE_VERSION, JCS_VERSION
@@ -41,12 +44,52 @@ class PreIntegrationSnapshotRejectedError(Exception):
     pass
 
 
-class DuplicateDecisionSequenceError(Exception):
+class DecisionChainError(Exception):
+    """Base exception for canonical decision chain authorization and commitment failures."""
+    pass
+
+
+class DuplicateDecisionSequenceError(DecisionChainError):
     """Raised when an attempt is made to evaluate/commit a conflicting decision with an already-used sequence."""
     pass
 
 
-class ReusedInvalidatedSequenceSlotError(Exception):
+class DecisionPredecessorMismatchError(DecisionChainError):
+    """Raised when supplied previous_decision_hash does not match authoritative predecessor hash."""
+    pass
+
+
+class DecisionSequenceContinuityError(DecisionChainError):
+    """Raised when candidate sequence is not exactly predecessor sequence + 1."""
+    pass
+
+
+class DecisionEpochMismatchError(DecisionChainError):
+    """Raised when candidate epoch does not match authoritative active epoch or predecessor epoch."""
+    pass
+
+
+class DecisionPredecessorInvalidatedError(DecisionChainError):
+    """Raised when predecessor decision is listed in invalidation registry."""
+    pass
+
+
+class DecisionPredecessorStaleError(DecisionChainError):
+    """Raised when predecessor decision is stale or already superseded."""
+    pass
+
+
+class DecisionCurrentnessConflictError(DecisionChainError):
+    """Raised when an operation would violate atomic currentness (creating 0 or multiple CURRENT decisions)."""
+    pass
+
+
+class DecisionAuthorizationRejectedError(DecisionChainError):
+    """Raised when a candidate decision fails canonical authorization requirements before commitment."""
+    pass
+
+
+class ReusedInvalidatedSequenceSlotError(DecisionChainError):
     """Raised when an attempt is made to evaluate a decision in an already invalidated sequence slot."""
     pass
 
@@ -203,6 +246,350 @@ def validate_canonical_decision_snapshot(snapshot: DecisionSnapshot, current_epo
     return True
 
 
+DEFAULT_DECISION_CHAIN_STATE_PATH = os.path.normpath(
+    os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..",
+        "..",
+        "..",
+        "docs",
+        "domain",
+        "smart_money",
+        "governance_control_plane",
+        "CANONICAL_DECISION_CHAIN_STATE.json",
+    )
+)
+
+
+class CanonicalDecisionCommitAuthority:
+    """
+    Authoritative Decision Chain & Commit Boundary Subsystem.
+    Enforces fail-closed predecessor verification, sequence continuity, epoch continuity,
+    predecessor non-invalidation, anti-equivocation, atomic currentness, and durable restart persistence.
+    """
+
+    def __init__(
+        self,
+        epoch: str = "epoch-gov-002",
+        state_path: Optional[str] = None,
+        auto_bootstrap: bool = True,
+    ):
+        self.epoch = epoch
+        self.state_path = state_path or DEFAULT_DECISION_CHAIN_STATE_PATH
+        self._lock = threading.Lock()
+        self._committed_decisions: Dict[str, Dict[str, Any]] = {}
+        self._sequence_index: Dict[Tuple[str, int], Dict[str, Any]] = {}
+        self._invalidated_hashes: Set[str] = set(INVALIDATED_PRE_INTEGRATION_DECISION_HASHES)
+        self._head: Optional[Dict[str, Any]] = None
+        self._current_decision_id: Optional[str] = None
+        self._current_decision_hash: Optional[str] = None
+
+        if self.state_path and os.path.exists(self.state_path):
+            self.reload()
+        elif auto_bootstrap:
+            self._bootstrap_historical_chain()
+
+    def _bootstrap_historical_chain(self) -> None:
+        """Initializes authoritative chain with known historical records."""
+        # Historical sequence 1 (invalidated in epoch-gov-002)
+        seq1_hash = "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f"
+        seq1_rec = {
+            "decision_id": "urn:arx:decision:epoch-gov-002:1:c3277609a97c",
+            "decision_hash": seq1_hash,
+            "governance_epoch": "epoch-gov-002",
+            "decision_sequence": 1,
+            "previous_decision_hash": "0" * 64,
+            "status": "INVALIDATED_NON_CANONICAL",
+            "committed_at": "2026-10-12T10:00:00Z",
+            "invalidation_reason": "MUTATED_FINDING_IDENTITY_AND_CLAIM_LATTICE_CONTAMINATION",
+        }
+        self._committed_decisions[seq1_hash] = seq1_rec
+        self._sequence_index[("epoch-gov-002", 1)] = seq1_rec
+        self._invalidated_hashes.add(seq1_hash)
+
+        # Historical sequence 2 (authoritative predecessor for sequence 3)
+        seq2_hash = "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c"
+        seq2_rec = {
+            "decision_id": "urn:arx:decision:epoch-gov-002:2:fa3df68578c4",
+            "decision_hash": seq2_hash,
+            "governance_epoch": "epoch-gov-002",
+            "decision_sequence": 2,
+            "previous_decision_hash": seq1_hash,
+            "source_freeze_sha": "38fbec379a0fc7788ab11ac4f566e445a7b4802d",
+            "source_tree_oid": "4a92a5d39931caa879bcbe3cb8a9ca1624ff76e8",
+            "decision_context_hash": "cad190ce404bdd814a9c923d1349ab8a9b2a5469956ac265b231d9ebef43fd7e",
+            "status": "CURRENT",
+            "committed_at": "2026-10-12T10:35:00Z",
+        }
+        self._committed_decisions[seq2_hash] = seq2_rec
+        self._sequence_index[("epoch-gov-002", 2)] = seq2_rec
+        self._head = seq2_rec
+        self._current_decision_id = seq2_rec["decision_id"]
+        self._current_decision_hash = seq2_hash
+
+        if self.state_path:
+            try:
+                self._save_state()
+            except Exception:
+                pass
+
+    def _save_state(self) -> None:
+        """Persists chain state atomically to disk."""
+        if not self.state_path:
+            return
+        os.makedirs(os.path.dirname(os.path.abspath(self.state_path)), exist_ok=True)
+        data = {
+            "$schema": "https://arx.terminal/schemas/v1/canonical-decision-chain-state.json",
+            "version": "1.0.0",
+            "active_epoch": self.epoch,
+            "head_sequence": self._head["decision_sequence"] if self._head else 0,
+            "head_decision_hash": self._head["decision_hash"] if self._head else None,
+            "current_decision_id": self._current_decision_id,
+            "current_decision_hash": self._current_decision_hash,
+            "invalidated_hashes": sorted(list(self._invalidated_hashes)),
+            "committed_decisions": [
+                rec for rec in sorted(
+                    self._committed_decisions.values(),
+                    key=lambda r: (r.get("governance_epoch", ""), r.get("decision_sequence", 0))
+                )
+            ],
+        }
+        tmp_path = self.state_path + f".tmp.{os.getpid()}"
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, sort_keys=True)
+        os.replace(tmp_path, self.state_path)
+
+    def reload(self) -> None:
+        """Reloads durable chain state from state_path."""
+        with self._lock:
+            if not self.state_path or not os.path.exists(self.state_path):
+                return
+            with open(self.state_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            self.epoch = data.get("active_epoch", self.epoch)
+            self._invalidated_hashes = set(data.get("invalidated_hashes", []))
+            self._committed_decisions.clear()
+            self._sequence_index.clear()
+            for rec in data.get("committed_decisions", []):
+                h = rec["decision_hash"]
+                ep = rec["governance_epoch"]
+                sq = rec["decision_sequence"]
+                self._committed_decisions[h] = rec
+                self._sequence_index[(ep, sq)] = rec
+                if rec.get("status") == "CURRENT":
+                    self._current_decision_id = rec["decision_id"]
+                    self._current_decision_hash = h
+            head_hash = data.get("head_decision_hash")
+            if head_hash and head_hash in self._committed_decisions:
+                self._head = self._committed_decisions[head_hash]
+            elif self._current_decision_hash and self._current_decision_hash in self._committed_decisions:
+                self._head = self._committed_decisions[self._current_decision_hash]
+
+    @property
+    def head(self) -> Optional[Dict[str, Any]]:
+        with self._lock:
+            return self._head
+
+    def lookup_predecessor(self, epoch: str, sequence: int) -> Optional[Dict[str, Any]]:
+        """Looks up authoritative predecessor for candidate sequence."""
+        if sequence <= 1:
+            return None
+        return self._sequence_index.get((epoch, sequence - 1))
+
+    def get_current_decisions(self, epoch: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Returns all decisions with status CURRENT for the epoch."""
+        ep = epoch or self.epoch
+        with self._lock:
+            return [
+                rec for rec in self._committed_decisions.values()
+                if rec.get("governance_epoch") == ep and rec.get("status") == "CURRENT"
+            ]
+
+    def get_current_decision(self, epoch: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Returns the single CURRENT decision for epoch; asserts exactly 1."""
+        currents = self.get_current_decisions(epoch)
+        if len(currents) > 1:
+            raise DecisionCurrentnessConflictError(
+                f"MULTIPLE_CURRENT_DECISIONS_CONFLICT == 0: Found {len(currents)} conflicting CURRENT decisions in {epoch or self.epoch}."
+            )
+        return currents[0] if currents else None
+
+    def assert_currentness_uniqueness(self, epoch: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Mechanically queries and asserts currentness uniqueness for epoch.
+        Returns: current_count, current_decision_ids, current_decision_hashes.
+        Raises DecisionCurrentnessConflictError if count != 1.
+        """
+        ep = epoch or self.epoch
+        currents = self.get_current_decisions(ep)
+        res = {
+            "epoch": ep,
+            "current_count": len(currents),
+            "current_decision_ids": [c["decision_id"] for c in currents],
+            "current_decision_hashes": [c["decision_hash"] for c in currents],
+        }
+        if len(currents) != 1:
+            raise DecisionCurrentnessConflictError(
+                f"CURRENTNESS_UNIQUENESS_VIOLATION: Expected exactly 1 CURRENT decision for {ep}, found {len(currents)}."
+            )
+        return res
+
+    def register_decision_raw(self, record: Dict[str, Any]) -> None:
+        """Raw registration for state manipulation / negative testing."""
+        with self._lock:
+            h = record["decision_hash"]
+            self._committed_decisions[h] = record
+            ep = record.get("governance_epoch", self.epoch)
+            sq = record.get("decision_sequence", 0)
+            self._sequence_index[(ep, sq)] = record
+
+    def validate_lineage(self, snapshot: DecisionSnapshot) -> None:
+        """
+        Validates candidate snapshot lineage against authoritative chain state.
+        Fails closed with specific error types.
+        """
+        # 1. Epoch continuity
+        if snapshot.governance_epoch != self.epoch:
+            raise DecisionEpochMismatchError(
+                f"DECISION_EPOCH_MISMATCH: Candidate epoch '{snapshot.governance_epoch}' != active epoch '{self.epoch}'."
+            )
+
+        # 2. Invalidation check on candidate itself
+        if snapshot.decision_hash in self._invalidated_hashes:
+            raise DecisionPredecessorInvalidatedError(
+                f"DECISION_INVALIDATED: Candidate hash '{snapshot.decision_hash}' is invalidated."
+            )
+
+        # 3. Invalidation check on supplied previous decision hash
+        if snapshot.previous_decision_hash in self._invalidated_hashes:
+            raise DecisionPredecessorInvalidatedError(
+                f"DECISION_PREDECESSOR_INVALIDATED: Predecessor hash '{snapshot.previous_decision_hash}' is invalidated."
+            )
+
+        seq = snapshot.decision_sequence
+
+        # 4. Anti-equivocation on sequence slot
+        slot_key = (snapshot.governance_epoch, seq)
+        if slot_key in self._sequence_index:
+            existing = self._sequence_index[slot_key]
+            if existing["decision_hash"] != snapshot.decision_hash:
+                raise DuplicateDecisionSequenceError(
+                    f"DUPLICATE_DECISION_SEQUENCE_WITH_DIFFERENT_HASH == 0: Sequence {seq} in {self.epoch} already committed with different hash {existing['decision_hash']}."
+                )
+
+        # 5. Authoritative Head / Predecessor lookup
+        if self._head is not None:
+            expected_seq = self._head["decision_sequence"] + 1
+            if seq != expected_seq:
+                raise DecisionSequenceContinuityError(
+                    f"DECISION_SEQUENCE_CONTINUITY_ERROR: Requested sequence {seq} != expected next sequence {expected_seq}."
+                )
+            if snapshot.previous_decision_hash != self._head["decision_hash"]:
+                # Check if it was an older superseded decision
+                if snapshot.previous_decision_hash in self._committed_decisions:
+                    old_rec = self._committed_decisions[snapshot.previous_decision_hash]
+                    if old_rec.get("status") == "SUPERSEDED":
+                        raise DecisionPredecessorStaleError(
+                            f"DECISION_PREDECESSOR_STALE: Predecessor '{snapshot.previous_decision_hash}' is SUPERSEDED."
+                        )
+                raise DecisionPredecessorMismatchError(
+                    f"DECISION_PREDECESSOR_MISMATCH: Supplied predecessor '{snapshot.previous_decision_hash}' != authoritative head '{self._head['decision_hash']}'."
+                )
+            if self._head.get("status") not in ["CURRENT", "COMMITTED"]:
+                raise DecisionPredecessorStaleError(
+                    f"DECISION_PREDECESSOR_STALE: Chain head '{self._head['decision_hash']}' status is '{self._head.get('status')}', not CURRENT."
+                )
+        else:
+            # Genesis sequence
+            if seq != 1:
+                raise DecisionSequenceContinuityError(
+                    f"DECISION_SEQUENCE_CONTINUITY_ERROR: Sequence {seq} requested on empty chain, expected sequence 1."
+                )
+            if snapshot.previous_decision_hash != "0" * 64:
+                raise DecisionPredecessorMismatchError(
+                    f"DECISION_PREDECESSOR_MISMATCH: Genesis decision requires previous_decision_hash == '0'*64."
+                )
+
+    def commit_canonical_decision(self, snapshot: DecisionSnapshot) -> Dict[str, Any]:
+        """
+        Authoritative Canonical Decision Commit Boundary.
+        Validates structure & lineage, atomically supersedes previous CURRENT,
+        marks new decision CURRENT, asserts exactly 1 CURRENT decision, and persists state.
+        """
+        with self._lock:
+            # 1. Epoch continuity check first
+            if snapshot.governance_epoch != self.epoch:
+                raise DecisionEpochMismatchError(
+                    f"DECISION_EPOCH_MISMATCH: Candidate epoch '{snapshot.governance_epoch}' != active epoch '{self.epoch}'."
+                )
+
+            # 2. Check for idempotent re-commit or anti-equivocation on existing slot
+            slot_key = (snapshot.governance_epoch, snapshot.decision_sequence)
+            if slot_key in self._sequence_index:
+                existing = self._sequence_index[slot_key]
+                if existing["decision_hash"] == snapshot.decision_hash:
+                    return existing
+                else:
+                    raise DuplicateDecisionSequenceError(
+                        f"DUPLICATE_DECISION_SEQUENCE_WITH_DIFFERENT_HASH == 0: Sequence {snapshot.decision_sequence} in {self.epoch} already committed with different hash {existing['decision_hash']}."
+                    )
+
+            # 3. Structural validation
+            validate_canonical_decision_snapshot(snapshot, self.epoch)
+
+            # 4. Lineage validation
+            self.validate_lineage(snapshot)
+
+            # 4. Atomic Transition
+            if self._head is not None and self._head.get("status") == "CURRENT":
+                self._head["status"] = "SUPERSEDED"
+                self._head["superseded_at"] = snapshot.derived_at
+                self._head["superseded_by"] = snapshot.decision_hash
+
+            new_record = {
+                "decision_id": snapshot.decision_id,
+                "decision_hash": snapshot.decision_hash,
+                "governance_epoch": snapshot.governance_epoch,
+                "decision_sequence": snapshot.decision_sequence,
+                "previous_decision_hash": snapshot.previous_decision_hash,
+                "source_freeze_sha": snapshot.source_freeze_sha,
+                "decision_context_hash": snapshot.decision_context_hash,
+                "finding_registry_hash": snapshot.finding_registry_hash,
+                "evidence_manifest_hash": snapshot.evidence_inventory_hash,
+                "dependency_policy_hash": snapshot.dependency_policy_hash,
+                "dependency_resolution_hash": snapshot.dependency_resolution_hash,
+                "status": "CURRENT",
+                "architecture_closure_status": snapshot.architecture_closure_status,
+                "global_provisioning_readiness": snapshot.global_provisioning_readiness,
+                "provisioning_authorization_status": snapshot.provisioning_authorization_status,
+                "derived_at": snapshot.derived_at,
+                "committed_at": snapshot.derived_at,
+            }
+
+            self._committed_decisions[snapshot.decision_hash] = new_record
+            self._sequence_index[slot_key] = new_record
+            self._head = new_record
+            self._current_decision_id = snapshot.decision_id
+            self._current_decision_hash = snapshot.decision_hash
+
+            # 5. Invariant check: Exactly 1 CURRENT decision in active epoch
+            currents = [
+                r for r in self._committed_decisions.values()
+                if r.get("governance_epoch") == self.epoch and r.get("status") == "CURRENT"
+            ]
+            if len(currents) != 1:
+                if self._head:
+                    self._head["status"] = "FAILED"
+                raise DecisionCurrentnessConflictError(
+                    f"ATOMIC_CURRENTNESS_VIOLATION: Expected exactly 1 CURRENT decision for {self.epoch}, found {len(currents)}."
+                )
+
+            # 6. Durable persistence
+            self._save_state()
+
+            return new_record
+
+
 class GovernanceDecisionEngine:
     """
     Primary Deterministic Decision Engine.
@@ -216,6 +603,7 @@ class GovernanceDecisionEngine:
         epoch: str = "epoch-gov-001",
         allow_caller_canonical_inputs: Optional[bool] = None,
         enforce_sequence_uniqueness: bool = False,
+        commit_authority: Optional[CanonicalDecisionCommitAuthority] = None,
     ):
         self.policy_hash = policy_hash
         self.policy_ratification_hash = policy_ratification_hash
@@ -227,9 +615,19 @@ class GovernanceDecisionEngine:
         else:
             self.allow_caller_canonical_inputs = allow_caller_canonical_inputs
         self.enforce_sequence_uniqueness = enforce_sequence_uniqueness
+        self._commit_authority = commit_authority
         self._registered_committed_decisions: Dict[tuple, str] = {}
         self._committed_decisions: Dict[tuple, str] = {}
         self._invalidated_slots: Set[tuple] = set()
+
+    def commit_canonical_decision(
+        self,
+        snapshot: DecisionSnapshot,
+        authority: Optional[CanonicalDecisionCommitAuthority] = None,
+    ) -> Dict[str, Any]:
+        """Delegates decision commitment to the authoritative CanonicalDecisionCommitAuthority."""
+        auth = authority or self._commit_authority or CanonicalDecisionCommitAuthority(epoch=self.epoch)
+        return auth.commit_canonical_decision(snapshot)
 
     def invalidate_sequence_slot(self, epoch: str, sequence: int) -> None:
         """Formally marks a sequence slot in an epoch as invalidated, forbidding reuse."""

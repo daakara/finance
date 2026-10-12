@@ -25,10 +25,12 @@ from .finding_registry import (
     FindingStatus,
     get_canonical_known_architecture_findings,
     get_additional_registered_findings,
+    get_canonical_discovered_findings,
     get_all_registered_findings,
     get_canonical_admitted_findings,
     create_canonical_finding_registry,
     create_historical_finding_registry,
+    DISCOVERED_FINDING_ORIGINAL_SUBJECTS,
 )
 from .evidence_inventory import EvidenceInventory, ZeroFindingAttestation
 from .evidence_manifest import (
@@ -51,6 +53,15 @@ from .decision_engine import (
     PreIntegrationSnapshotRejectedError,
     DuplicateDecisionSequenceError,
     INVALIDATED_PRE_INTEGRATION_DECISION_HASHES,
+    CanonicalDecisionCommitAuthority,
+    DecisionChainError,
+    DecisionPredecessorMismatchError,
+    DecisionSequenceContinuityError,
+    DecisionEpochMismatchError,
+    DecisionPredecessorInvalidatedError,
+    DecisionPredecessorStaleError,
+    DecisionCurrentnessConflictError,
+    DecisionAuthorizationRejectedError,
 )
 from .authorization import (
     AuthorizationManager,
