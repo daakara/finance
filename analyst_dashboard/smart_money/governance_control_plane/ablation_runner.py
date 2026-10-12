@@ -8,6 +8,7 @@ and that resolving it in isolation clears its specific blocking effect.
 Produces machine-readable execution report without reading precomputed files.
 """
 
+import copy
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 
@@ -57,7 +58,7 @@ def execute_fresh_blocker_ablation(
     for target in active_blockers:
         target_id = target.finding_id
         # Step 1: Create an isolated fixture copy of finding registry
-        fixture_registry = create_canonical_finding_registry()
+        fixture_registry = copy.deepcopy(finding_registry)
 
         # Step 2: Resolve all other active blockers
         for f in fixture_registry.findings:

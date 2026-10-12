@@ -34,6 +34,21 @@ from analyst_dashboard.smart_money.public_availability.transactional_state_backe
     ConsensusLogDivergenceError,
     authoritative_denominator_admission_predicate,
     DuplicateGate3ClaimError,
+    CommittedClaimImmutableError,
+    Gate3LeaseExpiredError,
+    GlobalRollbackError,
+)
+from analyst_dashboard.smart_money.governance_control_plane.finding_registry import (
+    create_canonical_finding_registry,
+    create_historical_finding_registry,
+    FindingStatus,
+    CANONICAL_ARCHITECTURE_REMEDIATIONS,
+)
+from analyst_dashboard.smart_money.governance_control_plane.decision_engine import (
+    GovernanceDecisionEngine,
+)
+from analyst_dashboard.smart_money.governance_control_plane.evidence_inventory import (
+    EvidenceInventory,
 )
 
 
@@ -441,3 +456,307 @@ def test_fnd_arch_010_active_writer_continues(temp_db):
     )
     assert ok is True
     assert res["status"] == "ADMISSION_COMMITTED"
+
+
+# ==============================================================================
+# CANONICAL PROMOTION (Hard Blocker A)
+# ==============================================================================
+
+def test_default_canonical_registry_is_current_remediated_state():
+    """Default create_canonical_finding_registry() derives the live current post-remediation state."""
+    reg = create_canonical_finding_registry()
+    assert len(reg.findings) == 15
+    assert len(reg.get_unresolved_architecture_defects()) == 0
+    assert len(reg.get_active_non_architecture_blockers()) == 5
+    assert len(reg.get_active_blockers()) == 5
+
+
+def test_historical_registry_remains_reconstructable():
+    """Explicit historical constructor derives the pristine pre-remediation baseline."""
+    reg = create_historical_finding_registry(as_of_source_freeze="7f7201f4f8516c319564b1476962fd3e24df9838")
+    assert len(reg.findings) == 15
+    assert len(reg.get_unresolved_architecture_defects()) == 8
+    assert len(reg.get_active_non_architecture_blockers()) == 5
+    assert len(reg.get_active_blockers()) == 13
+
+    # Identity registry hash is identical across historical and canonical
+    reg_current = create_canonical_finding_registry()
+    assert reg.compute_identity_registry_hash() == reg_current.compute_identity_registry_hash()
+
+
+def test_default_decision_derives_closed_architecture():
+    """Default canonical decision derives architecture_closure_status == CLOSED."""
+    reg = create_canonical_finding_registry()
+    engine = GovernanceDecisionEngine()
+    inventory = EvidenceInventory()
+    decision = engine.evaluate(reg, inventory)
+    assert decision.architecture_closure_status == "CLOSED"
+    assert decision.remediation_status == "NONE_OR_VERIFIED_COMPLETE"
+
+
+def test_default_decision_preserves_five_non_arch_blockers():
+    """Default canonical decision preserves global_provisioning_readiness == BLOCKED due to 5 non-arch blockers."""
+    reg = create_canonical_finding_registry()
+    engine = GovernanceDecisionEngine()
+    inventory = EvidenceInventory()
+    decision = engine.evaluate(reg, inventory)
+    assert decision.global_provisioning_readiness == "BLOCKED"
+    non_arch_ids = {f.finding_id for f in reg.get_active_non_architecture_blockers()}
+    assert non_arch_ids == {"FND-ARCH-002", "FND-ARCH-003", "FND-ARCH-005", "FND-ARCH-006", "FND-ARCH-009"}
+
+
+# ==============================================================================
+# GATE-3 ADVERSARIAL CASES & IMMUTABILITY (Hard Blockers B & C)
+# ==============================================================================
+
+def test_gate3_live_owner_can_commit(temp_db):
+    """Case A: Run A claims, lease is alive, Run A commits -> PASS."""
+    backend = TransactionalStateBackend(temp_db)
+    gen, token = backend.initialize_epoch("7f7201f4f8516c319564b1476962fd3e24df9838")
+    ok, gen2, tok2, _ = backend.claim_authorization_cas("auth-case-a", "run-A", gen, token, lease_timeout_seconds=300)
+    assert ok is True
+    committed = backend.commit_claim_atomic("auth-case-a", "run-A")
+    assert committed is True
+
+    # Check committed_at_utc column populated
+    with backend._get_connection() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT claim_state, committed_at_utc, lease_expires_at_utc FROM consumed_gate3_claims WHERE authorization_id = 'auth-case-a'")
+        st, com_at, l_exp = cur.fetchone()
+        assert st == Gate3ClaimState.COMMITTED.value
+        assert com_at is not None
+        assert l_exp is None
+
+
+def test_gate3_expired_owner_cannot_commit_before_recovery(temp_db):
+    """Case B: Run A claims, lease expires, Run A tries to commit before recovery -> REJECT."""
+    backend = TransactionalStateBackend(temp_db)
+    gen, token = backend.initialize_epoch("7f7201f4f8516c319564b1476962fd3e24df9838")
+    ok, gen2, tok2, _ = backend.claim_authorization_cas("auth-case-b", "run-A", gen, token, lease_timeout_seconds=-10)
+    assert ok is True
+
+    with pytest.raises(Gate3LeaseExpiredError):
+        backend.commit_claim_atomic("auth-case-b", "run-A")
+
+
+def test_gate3_expired_owner_cannot_commit_after_recovery(temp_db):
+    """Case C: Run A claims, lease expires, recover_expired_claims() runs, Run A tries to commit -> REJECT."""
+    backend = TransactionalStateBackend(temp_db)
+    gen, token = backend.initialize_epoch("7f7201f4f8516c319564b1476962fd3e24df9838")
+    ok, gen2, tok2, _ = backend.claim_authorization_cas("auth-case-c", "run-A", gen, token, lease_timeout_seconds=-10)
+    assert ok is True
+
+    recovered = backend.recover_expired_claims()
+    assert recovered == 1
+
+    with pytest.raises((Gate3LeaseExpiredError, RuntimeError)):
+        backend.commit_claim_atomic("auth-case-c", "run-A")
+
+
+def test_gate3_old_owner_cannot_commit_after_reclaim(temp_db):
+    """Case D: Run A expires, Run B reclaims, Run A tries commit -> REJECT."""
+    backend = TransactionalStateBackend(temp_db)
+    gen, token = backend.initialize_epoch("7f7201f4f8516c319564b1476962fd3e24df9838")
+    ok1, gen2, tok2, _ = backend.claim_authorization_cas("auth-case-d", "run-A", gen, token, lease_timeout_seconds=-10)
+    assert ok1 is True
+
+    ok2, gen3, tok3, _ = backend.claim_authorization_cas("auth-case-d", "run-B", gen2, tok2, lease_timeout_seconds=300)
+    assert ok2 is True
+
+    with pytest.raises((StaleFencingTokenError, Gate3LeaseExpiredError)):
+        backend.commit_claim_atomic("auth-case-d", "run-A")
+
+
+def test_gate3_new_owner_can_commit(temp_db):
+    """Case E: Run B validly reclaims, Run B commits before lease expiry -> PASS."""
+    backend = TransactionalStateBackend(temp_db)
+    gen, token = backend.initialize_epoch("7f7201f4f8516c319564b1476962fd3e24df9838")
+    ok1, gen2, tok2, _ = backend.claim_authorization_cas("auth-case-e", "run-A", gen, token, lease_timeout_seconds=-10)
+    assert ok1 is True
+
+    ok2, gen3, tok3, _ = backend.claim_authorization_cas("auth-case-e", "run-B", gen2, tok2, lease_timeout_seconds=300)
+    assert ok2 is True
+
+    committed = backend.commit_claim_atomic("auth-case-e", "run-B")
+    assert committed is True
+
+
+def test_gate3_committed_claim_cannot_rollback(temp_db):
+    """Hard Blocker C: A committed claim cannot be rolled back (COMMITTED_TO_ABORTED_RELEASED == 0)."""
+    backend = TransactionalStateBackend(temp_db)
+    gen, token = backend.initialize_epoch("7f7201f4f8516c319564b1476962fd3e24df9838")
+    _, gen2, tok2, _ = backend.claim_authorization_cas("auth-c1", "run-1", gen, token, lease_timeout_seconds=300)
+    backend.commit_claim_atomic("auth-c1", "run-1")
+
+    with pytest.raises(CommittedClaimImmutableError):
+        backend.rollback_claim("auth-c1", "run-1")
+
+
+def test_gate3_committed_claim_cannot_recover(temp_db):
+    """Hard Blocker C: recover_expired_claims() never mutates a committed claim (COMMITTED_TO_LEASE_EXPIRED_RECOVERABLE == 0)."""
+    backend = TransactionalStateBackend(temp_db)
+    gen, token = backend.initialize_epoch("7f7201f4f8516c319564b1476962fd3e24df9838")
+    _, gen2, tok2, _ = backend.claim_authorization_cas("auth-c2", "run-1", gen, token, lease_timeout_seconds=300)
+    backend.commit_claim_atomic("auth-c2", "run-1")
+
+    recovered = backend.recover_expired_claims()
+    assert recovered == 0
+
+    with backend._get_connection() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT claim_state FROM consumed_gate3_claims WHERE authorization_id = 'auth-c2'")
+        assert cur.fetchone()[0] == Gate3ClaimState.COMMITTED.value
+
+
+def test_gate3_committed_claim_cannot_reclaim(temp_db):
+    """Hard Blocker C: Once committed, another runner cannot reclaim the authorization (COMMITTED_TO_CLAIMED_PENDING_COMMIT == 0)."""
+    backend = TransactionalStateBackend(temp_db)
+    gen, token = backend.initialize_epoch("7f7201f4f8516c319564b1476962fd3e24df9838")
+    _, gen2, tok2, _ = backend.claim_authorization_cas("auth-c3", "run-1", gen, token, lease_timeout_seconds=300)
+    backend.commit_claim_atomic("auth-c3", "run-1")
+
+    with pytest.raises(DuplicateGate3ClaimError):
+        backend.claim_authorization_cas("auth-c3", "run-2", gen2, tok2, lease_timeout_seconds=300)
+
+
+def test_gate3_abort_only_allowed_from_pending(temp_db):
+    """Rollback/abort is permitted only when claim is in CLAIMED_PENDING_COMMIT."""
+    backend = TransactionalStateBackend(temp_db)
+    gen, token = backend.initialize_epoch("7f7201f4f8516c319564b1476962fd3e24df9838")
+    _, gen2, tok2, _ = backend.claim_authorization_cas("auth-c4", "run-1", gen, token, lease_timeout_seconds=300)
+    rolled_back = backend.rollback_claim("auth-c4", "run-1")
+    assert rolled_back is True
+
+    # Second rollback attempt on already aborted claim raises RuntimeError
+    with pytest.raises(RuntimeError):
+        backend.rollback_claim("auth-c4", "run-1")
+
+
+# ==============================================================================
+# WAL / CONSENSUS COHERENCE (Hard Blocker D)
+# ==============================================================================
+
+def test_consensus_ahead_of_log_rejected(temp_db):
+    """Hard Blocker D: Checkpoint sequence ahead of WAL max sequence is strictly rejected."""
+    backend = TransactionalStateBackend(temp_db)
+    gen, token = backend.initialize_epoch("7f7201f4f8516c319564b1476962fd3e24df9838")
+
+    # WAL has 1 entry
+    backend.append_transaction_log({"event": "ev-1"})
+
+    # Checkpoint 5 is ahead of WAL sequence 1
+    with pytest.raises(ConsensusLogDivergenceError):
+        backend.verify_log_consensus_coherence(checkpoint_sequence=5, checkpoint_hash="hash-ahead")
+
+    with pytest.raises(ConsensusLogDivergenceError):
+        backend.verify_and_commit_checkpoint(checkpoint_sequence=5, checkpoint_hash="hash-ahead", generation=gen, fencing_token=token)
+
+
+def test_empty_log_checkpoint_rejected(temp_db):
+    """Hard Blocker D: Checkpoint on an empty transaction log is strictly rejected."""
+    backend = TransactionalStateBackend(temp_db)
+    gen, token = backend.initialize_epoch("7f7201f4f8516c319564b1476962fd3e24df9838")
+
+    with pytest.raises(ConsensusLogDivergenceError):
+        backend.verify_log_consensus_coherence(checkpoint_sequence=1, checkpoint_hash="dummy-hash")
+
+    with pytest.raises(ConsensusLogDivergenceError):
+        backend.verify_and_commit_checkpoint(checkpoint_sequence=1, checkpoint_hash="dummy-hash", generation=gen, fencing_token=token)
+
+
+def test_log_gap_rejected(temp_db):
+    """Hard Blocker D: Checkpoint targeting a missing sequence row in WAL is rejected."""
+    backend = TransactionalStateBackend(temp_db)
+    gen, token = backend.initialize_epoch("7f7201f4f8516c319564b1476962fd3e24df9838")
+    seq1, hash1 = backend.append_transaction_log({"event": "ev-1"})
+    seq2, hash2 = backend.append_transaction_log({"event": "ev-2"})
+
+    # Checkpoint 3 does not exist
+    with pytest.raises(ConsensusLogDivergenceError):
+        backend.verify_log_consensus_coherence(checkpoint_sequence=3, checkpoint_hash="missing-hash")
+
+
+def test_wrong_hash_rejected(temp_db):
+    """Hard Blocker D: Checkpoint targeting existing sequence but with mismatched hash is rejected."""
+    backend = TransactionalStateBackend(temp_db)
+    gen, token = backend.initialize_epoch("7f7201f4f8516c319564b1476962fd3e24df9838")
+    seq1, hash1 = backend.append_transaction_log({"event": "ev-1"})
+
+    with pytest.raises(ConsensusLogDivergenceError):
+        backend.verify_log_consensus_coherence(checkpoint_sequence=seq1, checkpoint_hash="wrong-hash-00000000000000000000000000000000000000000000000000000000")
+
+    with pytest.raises(ConsensusLogDivergenceError):
+        backend.verify_and_commit_checkpoint(checkpoint_sequence=seq1, checkpoint_hash="wrong-hash-00000000000000000000000000000000000000000000000000000000", generation=gen, fencing_token=token)
+
+
+def test_exact_log_match_accepted(temp_db):
+    """Hard Blocker D: Exact matching WAL sequence and hash succeeds and updates checkpoint head."""
+    backend = TransactionalStateBackend(temp_db)
+    gen, token = backend.initialize_epoch("7f7201f4f8516c319564b1476962fd3e24df9838")
+    seq1, hash1 = backend.append_transaction_log({"event": "ev-1"})
+
+    assert backend.verify_log_consensus_coherence(seq1, hash1) is True
+    ok, msg = backend.verify_and_commit_checkpoint(seq1, hash1, generation=gen, fencing_token=token)
+    assert ok is True
+    assert msg == "CHECKPOINT_HEAD_UPDATED"
+
+    state = backend.get_authoritative_state()
+    assert state["latest_checkpoint_sequence"] == seq1
+    assert state["latest_checkpoint_hash"] == hash1
+
+
+def test_failed_checkpoint_does_not_mutate_authoritative_state(temp_db):
+    """Hard Blocker D: Failed checkpoint verification rolls back without mutating epoch state."""
+    backend = TransactionalStateBackend(temp_db)
+    gen, token = backend.initialize_epoch("7f7201f4f8516c319564b1476962fd3e24df9838")
+    seq1, hash1 = backend.append_transaction_log({"event": "ev-1"})
+    backend.verify_and_commit_checkpoint(seq1, hash1, generation=gen, fencing_token=token)
+
+    init_state = backend.get_authoritative_state()
+    assert init_state["latest_checkpoint_sequence"] == seq1
+
+    # Attempt invalid checkpoint (missing from WAL)
+    try:
+        backend.verify_and_commit_checkpoint(seq1 + 10, "fake-hash", generation=gen, fencing_token=token)
+    except ConsensusLogDivergenceError:
+        pass
+
+    after_state = backend.get_authoritative_state()
+    assert after_state["latest_checkpoint_sequence"] == init_state["latest_checkpoint_sequence"]
+    assert after_state["latest_checkpoint_hash"] == init_state["latest_checkpoint_hash"]
+
+
+# ==============================================================================
+# RESOLUTION EVIDENCE NEGATIVE CONTROL (Section 24)
+# ==============================================================================
+
+def test_resolution_evidence_negative_control_reopens_architecture_closure():
+    """Section 24: Removing/invalidating resolution evidence for an architecture defect reopens architecture closure."""
+    engine = GovernanceDecisionEngine()
+    inventory = EvidenceInventory()
+
+    # 1. Baseline: valid evidence -> CLOSED
+    reg_valid = create_canonical_finding_registry()
+    dec_valid = engine.evaluate(reg_valid, inventory)
+    assert dec_valid.architecture_closure_status == "CLOSED"
+    assert len(reg_valid.get_unresolved_architecture_defects()) == 0
+
+    # 2. Invalidate evidence for FND-ARCH-001 by stripping causal_proof_hash
+    tampered_evidence = dict(CANONICAL_ARCHITECTURE_REMEDIATIONS)
+    tampered_fnd1 = dict(tampered_evidence["FND-ARCH-001"])
+    tampered_fnd1["causal_proof_hash"] = ""  # Invalid evidence
+    tampered_evidence["FND-ARCH-001"] = tampered_fnd1
+
+    reg_invalid = create_canonical_finding_registry(evidence_overrides=tampered_evidence)
+    assert len(reg_invalid.get_unresolved_architecture_defects()) == 1
+    assert reg_invalid.get_unresolved_architecture_defects()[0].finding_id == "FND-ARCH-001"
+
+    dec_reopened = engine.evaluate(reg_invalid, inventory)
+    assert dec_reopened.architecture_closure_status == "OPEN"
+    assert dec_reopened.remediation_status == "REQUIRED"
+
+    # 3. Restore valid evidence -> CLOSED again
+    reg_restored = create_canonical_finding_registry()
+    dec_restored = engine.evaluate(reg_restored, inventory)
+    assert dec_restored.architecture_closure_status == "CLOSED"
+

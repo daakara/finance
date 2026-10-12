@@ -47,6 +47,7 @@ from analyst_dashboard.smart_money.governance_control_plane import (
     get_all_registered_findings,
     get_canonical_admitted_findings,
     create_canonical_finding_registry,
+    create_historical_finding_registry,
     DuplicateWithoutCanonicalTargetError,
     DuplicateSelfReferenceError,
     DuplicateCycleError,
@@ -105,7 +106,7 @@ def canonical_builder():
 
 @pytest.fixture
 def canonical_context(canonical_builder):
-    return canonical_builder.build()
+    return canonical_builder.build(finding_registry=create_historical_finding_registry())
 
 
 # =============================================================================
@@ -460,7 +461,7 @@ class TestMatrix59FindingsAuthority:
 
     def test_30_lifecycle_mutation_preserves_identity_hash(self):
         """30. Resolving a finding alters admission and blocker hashes but NOT identity hash"""
-        reg = create_canonical_finding_registry()
+        reg = create_historical_finding_registry()
         initial_id_hash = reg.compute_identity_registry_hash()
         initial_adm_hash = reg.compute_admission_registry_hash()
         initial_blk_hash = reg.compute_active_blocker_set_hash()
@@ -576,7 +577,7 @@ class TestMatrix59FindingsAuthority:
 
     def test_35_duplicate_findings_excluded_from_blockers(self):
         """35. Only ADMITTED findings enter blocker set; DUPLICATE findings do not double count"""
-        reg = create_canonical_finding_registry()
+        reg = create_historical_finding_registry()
         blockers = reg.get_active_blockers()
         assert len(blockers) == 13
         duplicate_ids = {f.finding_id for f in reg.findings if f.admission_status == "DUPLICATE"}
@@ -674,7 +675,7 @@ class TestMatrix61BlockerAblation:
 
     def test_43_ablating_fnd_arch_001_leaves_theorems_blocked(self, canonical_builder):
         """43. Resolving FND-ARCH-001 leaves remaining blockers active"""
-        reg = create_canonical_finding_registry()
+        reg = create_historical_finding_registry()
         f1 = reg.get_finding("FND-ARCH-001")
         f1.lifecycle_status = FindingStatus.VERIFIED_RESOLVED
 
@@ -686,7 +687,7 @@ class TestMatrix61BlockerAblation:
 
     def test_44_ablating_all_theorem_a_blockers(self, canonical_builder):
         """44. Resolving Theorem A blockers leaves Theorems B–E blocked"""
-        reg = create_canonical_finding_registry()
+        reg = create_historical_finding_registry()
         for fid in ["FND-ARCH-001", "FND-ARCH-002"]:
             reg.get_finding(fid).lifecycle_status = FindingStatus.VERIFIED_RESOLVED
 
@@ -699,7 +700,7 @@ class TestMatrix61BlockerAblation:
 
     def test_45_monotone_dependency_resolution(self):
         """45. Monotonicity: resolving findings never increases active blocker count"""
-        reg = create_canonical_finding_registry()
+        reg = create_historical_finding_registry()
         count_0 = len(reg.get_active_blockers())
         reg.get_finding("FND-ARCH-003").lifecycle_status = FindingStatus.VERIFIED_RESOLVED
         count_1 = len(reg.get_active_blockers())
@@ -707,7 +708,7 @@ class TestMatrix61BlockerAblation:
 
     def test_46_resolved_finding_drops_from_blocker_hash(self):
         """46. Resolved finding drops out of active_blocker_set_hash"""
-        reg = create_canonical_finding_registry()
+        reg = create_historical_finding_registry()
         h0 = reg.compute_active_blocker_set_hash()
         reg.get_finding("FND-ARCH-004").lifecycle_status = FindingStatus.VERIFIED_RESOLVED
         h1 = reg.compute_active_blocker_set_hash()
@@ -715,7 +716,7 @@ class TestMatrix61BlockerAblation:
 
     def test_47_waived_finding_drops_from_active_blockers(self):
         """47. Waived finding drops out of active blockers if within validity"""
-        reg = create_canonical_finding_registry()
+        reg = create_historical_finding_registry()
         f = reg.get_finding("FND-ARCH-005")
         f.lifecycle_status = FindingStatus.WAIVED
         assert f not in reg.get_active_blockers()

@@ -90,6 +90,22 @@ class GlobalRollbackError(RuntimeError):
     pass
 
 
+class CommittedClaimImmutableError(RuntimeError):
+    """
+    FND-ARCH-007 / Hard Blocker C: Raised when attempting to mutate, rollback, reclaim,
+    or re-transition a claim that has reached terminal COMMITTED state.
+    """
+    pass
+
+
+class Gate3LeaseExpiredError(RuntimeError):
+    """
+    FND-ARCH-007 / Hard Blocker B: Raised when a runner attempts to commit an authorization
+    after its lease has expired, even if recovery has not yet run.
+    """
+    pass
+
+
 class Gate3ClaimState(str, Enum):
     """
     FND-ARCH-007: Lifecycle states for Gate-3 authorizations.
@@ -171,7 +187,8 @@ class TransactionalStateBackend:
                     claimed_at_utc TEXT NOT NULL,
                     receipt_sha256 TEXT NOT NULL,
                     claim_state TEXT NOT NULL DEFAULT 'COMMITTED',
-                    lease_expires_at_utc TEXT
+                    lease_expires_at_utc TEXT,
+                    committed_at_utc TEXT
                 );
             """)
             conn.execute("""
@@ -199,7 +216,7 @@ class TransactionalStateBackend:
                     created_at_utc TEXT NOT NULL
                 );
             """)
-            # Check if claim_state column exists in consumed_gate3_claims for backwards compat
+            # Check if columns exist in consumed_gate3_claims for backwards compat
             cur = conn.cursor()
             cur.execute("PRAGMA table_info(consumed_gate3_claims);")
             columns = [c[1] for c in cur.fetchall()]
@@ -207,6 +224,8 @@ class TransactionalStateBackend:
                 conn.execute("ALTER TABLE consumed_gate3_claims ADD COLUMN claim_state TEXT NOT NULL DEFAULT 'COMMITTED';")
             if "lease_expires_at_utc" not in columns:
                 conn.execute("ALTER TABLE consumed_gate3_claims ADD COLUMN lease_expires_at_utc TEXT;")
+            if "committed_at_utc" not in columns:
+                conn.execute("ALTER TABLE consumed_gate3_claims ADD COLUMN committed_at_utc TEXT;")
 
     def initialize_epoch(self, initial_commit_sha: str) -> Tuple[int, str]:
         """Initializes pristine epoch if not already initialized."""
@@ -376,7 +395,82 @@ class TransactionalStateBackend:
 
     def commit_claim_atomic(self, authorization_id: str, run_id: str) -> bool:
         """
-        FND-ARCH-007: Atomically transitions a claimed authorization from CLAIMED_PENDING_COMMIT to COMMITTED.
+        FND-ARCH-007 / Hard Blocker B & C: Atomically transitions a claimed authorization
+        from CLAIMED_PENDING_COMMIT to COMMITTED via atomic CAS.
+        Requires valid current ownership, CLAIMED_PENDING_COMMIT state, and active unexpired lease.
+        """
+        with self._lock, self._get_connection() as conn:
+            conn.execute("BEGIN IMMEDIATE;")
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT claim_state, claiming_run_id, lease_expires_at_utc FROM consumed_gate3_claims WHERE authorization_id = ?",
+                (authorization_id,)
+            )
+            row = cur.fetchone()
+            if not row:
+                conn.execute("ROLLBACK;")
+                return False
+
+            ex_state, ex_run_id, ex_lease_exp = row
+            if ex_state == Gate3ClaimState.COMMITTED.value:
+                conn.execute("ROLLBACK;")
+                raise CommittedClaimImmutableError(
+                    f"COMMITTED_CLAIM_IMMUTABLE: Authorization {authorization_id} is already in terminal COMMITTED state."
+                )
+            if ex_run_id != run_id:
+                conn.execute("ROLLBACK;")
+                raise StaleFencingTokenError(f"Run {run_id} does not own claim on {authorization_id} (owned by {ex_run_id})")
+
+            now_dt = datetime.now(timezone.utc)
+            now_utc = now_dt.isoformat()
+
+            if ex_lease_exp:
+                try:
+                    exp_dt = datetime.fromisoformat(ex_lease_exp.replace("Z", "+00:00"))
+                    if now_dt >= exp_dt:
+                        conn.execute("ROLLBACK;")
+                        raise Gate3LeaseExpiredError(
+                            f"Lease on authorization {authorization_id} expired at {ex_lease_exp} (current time {now_utc}). Expired owner cannot commit."
+                        )
+                except (ValueError, TypeError):
+                    pass
+
+            if ex_state != Gate3ClaimState.CLAIMED_PENDING_COMMIT.value:
+                conn.execute("ROLLBACK;")
+                raise RuntimeError(
+                    f"Illegal claim state transition: cannot transition from {ex_state} to COMMITTED."
+                )
+
+            # Atomic CAS update: exactly matches run_id, CLAIMED_PENDING_COMMIT, and unexpired lease
+            cur.execute("""
+                UPDATE consumed_gate3_claims
+                SET claim_state = ?, lease_expires_at_utc = NULL, committed_at_utc = ?
+                WHERE authorization_id = ?
+                  AND claiming_run_id = ?
+                  AND claim_state = ?
+                  AND lease_expires_at_utc IS NOT NULL
+                  AND lease_expires_at_utc > ?
+            """, (
+                Gate3ClaimState.COMMITTED.value,
+                now_utc,
+                authorization_id,
+                run_id,
+                Gate3ClaimState.CLAIMED_PENDING_COMMIT.value,
+                now_utc,
+            ))
+            if cur.rowcount != 1:
+                conn.execute("ROLLBACK;")
+                raise Gate3LeaseExpiredError(
+                    f"Atomic CAS commit failed for authorization {authorization_id}: lease expired or state changed concurrently."
+                )
+            conn.execute("COMMIT;")
+            return True
+
+    def rollback_claim(self, authorization_id: str, run_id: str) -> bool:
+        """
+        FND-ARCH-007 / Hard Blocker C: Releases or aborts an in-flight claim, allowing safe recovery.
+        Atomically requires claim_state == CLAIMED_PENDING_COMMIT and valid current owner.
+        A committed claim cannot be rolled back (raises CommittedClaimImmutableError).
         """
         with self._lock, self._get_connection() as conn:
             conn.execute("BEGIN IMMEDIATE;")
@@ -389,46 +483,41 @@ class TransactionalStateBackend:
             if not row:
                 conn.execute("ROLLBACK;")
                 return False
-            if row[1] != run_id:
-                conn.execute("ROLLBACK;")
-                raise StaleFencingTokenError(f"Run {run_id} does not own claim on {authorization_id}")
 
-            now_utc = datetime.now(timezone.utc).isoformat()
+            ex_state, ex_run_id = row
+            if ex_state == Gate3ClaimState.COMMITTED.value:
+                conn.execute("ROLLBACK;")
+                raise CommittedClaimImmutableError(
+                    f"COMMITTED_CLAIM_IMMUTABLE: Authorization {authorization_id} is in terminal COMMITTED state and cannot be rolled back."
+                )
+            if ex_run_id != run_id:
+                conn.execute("ROLLBACK;")
+                raise StaleFencingTokenError(f"Run {run_id} does not own claim on {authorization_id} (owned by {ex_run_id})")
+
+            if ex_state != Gate3ClaimState.CLAIMED_PENDING_COMMIT.value:
+                conn.execute("ROLLBACK;")
+                raise RuntimeError(
+                    f"Illegal claim state transition: cannot abort/rollback claim in state {ex_state}."
+                )
+
             cur.execute("""
                 UPDATE consumed_gate3_claims
                 SET claim_state = ?, lease_expires_at_utc = NULL
                 WHERE authorization_id = ?
-            """, (Gate3ClaimState.COMMITTED.value, authorization_id))
-            conn.execute("COMMIT;")
-            return True
-
-    def rollback_claim(self, authorization_id: str, run_id: str) -> bool:
-        """
-        FND-ARCH-007: Releases or aborts an in-flight claim, allowing safe recovery.
-        """
-        with self._lock, self._get_connection() as conn:
-            conn.execute("BEGIN IMMEDIATE;")
-            cur = conn.cursor()
-            cur.execute(
-                "SELECT claim_state, claiming_run_id FROM consumed_gate3_claims WHERE authorization_id = ?",
-                (authorization_id,)
-            )
-            row = cur.fetchone()
-            if not row or row[1] != run_id:
+                  AND claiming_run_id = ?
+                  AND claim_state = ?
+            """, (Gate3ClaimState.ABORTED_RELEASED.value, authorization_id, run_id, Gate3ClaimState.CLAIMED_PENDING_COMMIT.value))
+            if cur.rowcount != 1:
                 conn.execute("ROLLBACK;")
                 return False
-
-            cur.execute("""
-                UPDATE consumed_gate3_claims
-                SET claim_state = ?, lease_expires_at_utc = NULL
-                WHERE authorization_id = ?
-            """, (Gate3ClaimState.ABORTED_RELEASED.value, authorization_id))
             conn.execute("COMMIT;")
             return True
 
     def recover_expired_claims(self) -> int:
         """
         FND-ARCH-007: Reclaims orphaned claims from crashed runners whose leases have expired.
+        Only transitions claims from CLAIMED_PENDING_COMMIT to LEASE_EXPIRED_RECOVERABLE.
+        Terminal states (COMMITTED) are strictly invariant and never modified.
         """
         with self._lock, self._get_connection() as conn:
             conn.execute("BEGIN IMMEDIATE;")
@@ -473,22 +562,17 @@ class TransactionalStateBackend:
 
     def verify_log_consensus_coherence(self, checkpoint_sequence: int, checkpoint_hash: str) -> bool:
         """
-        FND-ARCH-014: Verifies consensus checkpoint coherence against authoritative transaction log.
-        Fails closed with ConsensusLogDivergenceError if hashes diverge.
+        FND-ARCH-014 / Hard Blocker D: Verifies consensus checkpoint coherence against authoritative transaction log.
+        Fails closed with ConsensusLogDivergenceError if hashes diverge or if checkpoint has no matching WAL entry.
         """
         with self._lock, self._get_connection() as conn:
             cur = conn.cursor()
             cur.execute("SELECT entry_hash FROM transaction_log WHERE log_sequence = ?", (checkpoint_sequence,))
             row = cur.fetchone()
             if not row:
-                # If transaction log has no entries at this sequence, cannot verify divergence unless log is non-empty
-                cur.execute("SELECT MAX(log_sequence) FROM transaction_log;")
-                max_seq = cur.fetchone()[0] or 0
-                if max_seq >= checkpoint_sequence:
-                    raise ConsensusLogDivergenceError(
-                        f"Log missing entry at checkpoint sequence {checkpoint_sequence} (max log seq: {max_seq})"
-                    )
-                return True
+                raise ConsensusLogDivergenceError(
+                    f"MISSING_WAL_ROW_FAIL_CLOSED: No authoritative WAL entry exists for checkpoint sequence {checkpoint_sequence}! Fails closed."
+                )
 
             log_entry_hash = row[0]
             if log_entry_hash != checkpoint_hash:
@@ -639,13 +723,18 @@ class TransactionalStateBackend:
                     f"Rollback rejected: Attempted checkpoint sequence {checkpoint_sequence} <= authoritative latest sequence {latest_seq}."
                 )
 
-            # Check log coherence (FND-ARCH-014)
+            # Check log coherence (FND-ARCH-014 / Hard Blocker D)
             cur.execute("SELECT entry_hash FROM transaction_log WHERE log_sequence = ?", (checkpoint_sequence,))
             log_row = cur.fetchone()
-            if log_row and log_row[0] != checkpoint_hash:
+            if not log_row:
                 conn.execute("ROLLBACK;")
                 raise ConsensusLogDivergenceError(
-                    f"UNDETECTED_LOG_CONSENSUS_DIVERGENCE == 0: Checkpoint {checkpoint_sequence} hash {checkpoint_hash} does not match transaction log hash {log_row[0]}."
+                    f"MISSING_WAL_ROW_FAIL_CLOSED: Checkpoint sequence {checkpoint_sequence} has no matching WAL entry in transaction log. Fails closed."
+                )
+            if log_row[0] != checkpoint_hash:
+                conn.execute("ROLLBACK;")
+                raise ConsensusLogDivergenceError(
+                    f"UNDETECTED_LOG_CONSENSUS_DIVERGENCE == 0: Checkpoint {checkpoint_sequence} hash {checkpoint_hash} does not match transaction log hash {log_row[0]}. Fails closed."
                 )
 
             now_utc = datetime.now(timezone.utc).isoformat()

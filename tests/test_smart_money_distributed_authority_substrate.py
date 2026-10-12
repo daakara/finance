@@ -275,18 +275,20 @@ class TestDistributedAuthoritySubstrate:
         backend = TransactionalStateBackend(db_path)
         gen, token = backend.initialize_epoch("GENESIS_COMMIT")
 
-        # Commit checkpoint 1
+        # Append WAL entry and commit checkpoint 1
+        seq1, h1 = backend.append_transaction_log({"checkpoint": 1})
         backend.verify_and_commit_checkpoint(
-            checkpoint_sequence=1,
-            checkpoint_hash="HASH_CHK_1",
+            checkpoint_sequence=seq1,
+            checkpoint_hash=h1,
             generation=gen,
             fencing_token=token,
         )
 
-        # Commit checkpoint 2
+        # Append WAL entry and commit checkpoint 2
+        seq2, h2 = backend.append_transaction_log({"checkpoint": 2})
         backend.verify_and_commit_checkpoint(
-            checkpoint_sequence=2,
-            checkpoint_hash="HASH_CHK_2",
+            checkpoint_sequence=seq2,
+            checkpoint_hash=h2,
             generation=gen,
             fencing_token=token,
         )
@@ -294,8 +296,8 @@ class TestDistributedAuthoritySubstrate:
         # Attempt to commit checkpoint 1 (rollback/fork) -> GlobalRollbackError
         with pytest.raises(GlobalRollbackError) as exc_info:
             backend.verify_and_commit_checkpoint(
-                checkpoint_sequence=1,
-                checkpoint_hash="HASH_CHK_1",
+                checkpoint_sequence=seq1,
+                checkpoint_hash=h1,
                 generation=gen,
                 fencing_token=token,
             )

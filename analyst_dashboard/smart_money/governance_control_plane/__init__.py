@@ -28,6 +28,7 @@ from .finding_registry import (
     get_all_registered_findings,
     get_canonical_admitted_findings,
     create_canonical_finding_registry,
+    create_historical_finding_registry,
 )
 from .evidence_inventory import EvidenceInventory, ZeroFindingAttestation
 from .evidence_manifest import (

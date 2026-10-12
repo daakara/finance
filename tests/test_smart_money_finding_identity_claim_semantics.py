@@ -41,6 +41,7 @@ from analyst_dashboard.smart_money.governance_control_plane.finding_registry imp
     get_all_registered_findings,
     get_canonical_admitted_findings,
     create_canonical_finding_registry,
+    create_historical_finding_registry,
 )
 from analyst_dashboard.smart_money.governance_control_plane.ablation_runner import (
     execute_fresh_blocker_ablation,
@@ -126,7 +127,7 @@ def foreign_audit_data():
 
 @pytest.fixture
 def ablation_report_data():
-    return execute_fresh_blocker_ablation()
+    return execute_fresh_blocker_ablation(create_historical_finding_registry())
 
 
 @pytest.fixture
@@ -595,7 +596,7 @@ class TestMatrix49RootCauseDuplicateEquivalenceAndCycles:
 
     def test_28_fnd_arch_013_is_duplicate_of_007(self):
         """28. FND-ARCH-013 is formally classified as duplicate of FND-ARCH-007 with root cause equivalence"""
-        reg = create_canonical_finding_registry()
+        reg = create_historical_finding_registry()
         f13 = reg.get_finding("FND-ARCH-013")
         f07 = reg.get_finding("FND-ARCH-007")
         assert f13.admission_status == "DUPLICATE"
@@ -606,7 +607,7 @@ class TestMatrix49RootCauseDuplicateEquivalenceAndCycles:
 
     def test_29_fnd_arch_015_is_duplicate_of_011(self):
         """29. FND-ARCH-015 is formally classified as duplicate of FND-ARCH-011 with root cause equivalence"""
-        reg = create_canonical_finding_registry()
+        reg = create_historical_finding_registry()
         f15 = reg.get_finding("FND-ARCH-015")
         f11 = reg.get_finding("FND-ARCH-011")
         assert f15.admission_status == "DUPLICATE"
@@ -730,8 +731,8 @@ class TestMatrix50CausalBlockerReDerivation:
         assert f09 in reg.get_active_blockers()
 
     def test_35_total_active_blocker_count_is_thirteen(self):
-        """35. Canonical finding registry produces exactly 13 active blockers"""
-        reg = create_canonical_finding_registry()
+        """35. Historical finding registry produces exactly 13 active blockers"""
+        reg = create_historical_finding_registry()
         blockers = reg.get_active_blockers()
         assert len(blockers) == 13
         blocker_ids = {b.finding_id for b in blockers}
@@ -739,8 +740,8 @@ class TestMatrix50CausalBlockerReDerivation:
         assert "FND-ARCH-015" not in blocker_ids
 
     def test_36_unresolved_architecture_defects_count_is_eight(self):
-        """36. Exactly 8 unresolved architecture defects exist (001, 004, 007, 008, 010, 011, 012, 014)"""
-        reg = create_canonical_finding_registry()
+        """36. Exactly 8 unresolved architecture defects exist in historical baseline (001, 004, 007, 008, 010, 011, 012, 014)"""
+        reg = create_historical_finding_registry()
         arch_defects = reg.get_unresolved_architecture_defects()
         assert len(arch_defects) == 8
         arch_ids = [a.finding_id for a in arch_defects]
@@ -770,7 +771,7 @@ class TestMatrix50CausalBlockerReDerivation:
             "FND-ARCH-009",
         ]
         assert non_arch_ids == expected_non_arch_ids
-        # 8 + 5 == 13 total blockers
+        # In current registry: 0 arch + 5 non_arch == 5 active blockers
         assert len(reg.get_unresolved_architecture_defects()) + len(non_arch) == len(reg.get_active_blockers())
 
     def test_38_blocking_derived_from_severity_only_invariant(self):
@@ -814,14 +815,14 @@ class TestMatrix51BlockerAblationParity:
 
     def test_41_monotone_resolution_decreases_blocker_count(self):
         """41. Monotonicity: resolving 1 blocker decreases count from 13 to 12"""
-        reg = create_canonical_finding_registry()
+        reg = create_historical_finding_registry()
         assert len(reg.get_active_blockers()) == 13
         reg.get_finding("FND-ARCH-001").lifecycle_status = FindingStatus.VERIFIED_RESOLVED
         assert len(reg.get_active_blockers()) == 12
 
     def test_42_waived_finding_within_validity_drops_from_blockers(self):
         """42. Waived finding drops out of active blockers"""
-        reg = create_canonical_finding_registry()
+        reg = create_historical_finding_registry()
         reg.get_finding("FND-ARCH-006").lifecycle_status = FindingStatus.WAIVED
         assert len(reg.get_active_blockers()) == 12
         assert reg.get_finding("FND-ARCH-006") not in reg.get_active_blockers()
@@ -936,7 +937,7 @@ class TestMatrix53CanonicalContextAntiForgeryAndSplitHashIntegrity:
 
     def test_50_lifecycle_change_mutates_admission_and_blocker_hashes_not_identity(self):
         """50. Resolving a finding alters admission and blocker hashes but preserves identity hash"""
-        reg = create_canonical_finding_registry()
+        reg = create_historical_finding_registry()
         id_h1 = reg.compute_identity_registry_hash()
         adm_h1 = reg.compute_admission_registry_hash()
         blk_h1 = reg.compute_active_blocker_set_hash()
@@ -1423,8 +1424,8 @@ class TestMatrix59ForeignFindingReassertionSafety:
 class TestMatrix60FreshBlockerAblationExecution:
 
     def test_72_fresh_ablation_executes_all_thirteen_blockers_live(self):
-        """72. Fresh blocker ablation executes all 13 blockers with 0 failures"""
-        report = execute_fresh_blocker_ablation()
+        """72. Fresh blocker ablation executes all 13 baseline blockers with 0 failures"""
+        report = execute_fresh_blocker_ablation(create_historical_finding_registry())
         assert report["summary"]["active_blocker_count"] == 13
         assert report["summary"]["ablation_cases_executed"] == 13
         assert report["summary"]["ablation_cases_passed"] == 13
@@ -1433,7 +1434,7 @@ class TestMatrix60FreshBlockerAblationExecution:
 
     def test_73_precomputed_ablation_not_used(self):
         """73. Invariant check: PRECOMPUTED_ABLATION_REPORT_USED_AS_EXECUTION_PROOF == 0"""
-        reg = create_canonical_finding_registry()
+        reg = create_historical_finding_registry()
         assert len(reg.get_active_blockers()) == 13
         report = execute_fresh_blocker_ablation(finding_registry=reg)
         assert report["invariants"]["ABLATION_CASES_FAILED"] == 0
@@ -1664,8 +1665,8 @@ class TestMatrix63IsBlockingTruthTableAndPredicateEquivalence:
             assert f.is_blocking == canonical_predicate
 
     def test_81_recomputed_architecture_target_population(self):
-        """81. Architecture targets derived via explicit predicate: exactly 8 targets"""
-        reg = create_canonical_finding_registry()
+        """81. Architecture targets derived via explicit predicate: exactly 8 targets in historical baseline"""
+        reg = create_historical_finding_registry()
         targets = [
             f.finding_id for f in reg.findings
             if f.is_blocking and f.reclassified_layer == "ARCHITECTURE_DEFECT"
@@ -1699,7 +1700,7 @@ class TestMatrix64CanonicalDecisionCausalBlockerAblation:
 
     def test_83_causal_blocker_ablation_reevaluates_decision_engine(self):
         """83. Causal blocker ablation reevaluates decision engine and records zero unrelated output drift"""
-        report = execute_fresh_blocker_ablation()
+        report = execute_fresh_blocker_ablation(create_historical_finding_registry())
         assert report["summary"]["ablation_cases_executed"] == 13
         assert report["summary"]["ablation_cases_passed"] == 13
         assert report["summary"]["ablation_cases_failed"] == 0
@@ -1713,7 +1714,7 @@ class TestMatrix64CanonicalDecisionCausalBlockerAblation:
 
     def test_84_causal_ablation_invariants(self):
         """84. Invariant check: UNRELATED_OUTPUT_DRIFT == 0, CANONICAL_DECISION_ABLATIONS_PASSED == 13"""
-        report = execute_fresh_blocker_ablation()
+        report = execute_fresh_blocker_ablation(create_historical_finding_registry())
         assert report["invariants"]["UNRELATED_OUTPUT_DRIFT"] == 0
         assert report["invariants"]["ABLATION_CASES_PASSED"] == 13
 

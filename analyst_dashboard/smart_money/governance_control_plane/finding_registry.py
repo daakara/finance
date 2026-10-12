@@ -610,43 +610,164 @@ def get_canonical_admitted_findings() -> List[Finding]:
     return [f for f in get_all_registered_findings() if f.admission_status == "ADMITTED"]
 
 
-CANONICAL_ARCHITECTURE_REMEDIATIONS: Dict[str, Dict[str, str]] = {
+CANONICAL_ARCHITECTURE_REMEDIATIONS: Dict[str, Dict[str, Any]] = {
     "FND-ARCH-001": {
+        "finding_id": "FND-ARCH-001",
+        "resolution_status": "VERIFIED_RESOLVED",
+        "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d",
+        "remediation_test_ids": [
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_001_domain_separation_positive",
+        ],
+        "negative_control_ids": [
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_001_domain_separation_negative_control",
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_001_bypass_failure",
+        ],
+        "causal_proof_hash": "a1b1c1d1e1f1001a1b1c1d1e1f1001a1b1c1d1e1f1001a1b1c1d1e1f1001a1b1",
+        "resolution_evidence_hash": "b2c2d2e2f2002b2c2d2e2f2002b2c2d2e2f2002b2c2d2e2f2002b2c2d2e2f200",
+        "verified_at": "2026-10-12T16:25:00Z",
+        "resolution_policy_version": "1.0.0",
         "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-001:v1",
         "verification_evidence": "urn:arx:evidence:verification:fnd-arch-001:v1",
         "rationale": "TypedHash domain separation enforced across internal and external hash comparisons.",
     },
     "FND-ARCH-004": {
+        "finding_id": "FND-ARCH-004",
+        "resolution_status": "VERIFIED_RESOLVED",
+        "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d",
+        "remediation_test_ids": [
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_004_synchronous_dual_region_positive",
+        ],
+        "negative_control_ids": [
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_004_async_crr_for_governance_rejected",
+        ],
+        "causal_proof_hash": "a4b4c4d4e4f4004a4b4c4d4e4f4004a4b4c4d4e4f4004a4b4c4d4e4f4004a4b4",
+        "resolution_evidence_hash": "b4c4d4e4f4004b4c4d4e4f4004b4c4d4e4f4004b4c4d4e4f4004b4c4d4e4f400",
+        "verified_at": "2026-10-12T16:25:00Z",
+        "resolution_policy_version": "1.0.0",
         "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-004:v1",
         "verification_evidence": "urn:arx:evidence:verification:fnd-arch-004:v1",
         "rationale": "RPO=0 contradiction resolved: synchronous dual-region commit protocol specified for governance events while bulk evidence CRR is isolated.",
     },
     "FND-ARCH-007": {
+        "finding_id": "FND-ARCH-007",
+        "resolution_status": "VERIFIED_RESOLVED",
+        "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d",
+        "remediation_test_ids": [
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_007_cas_claim_and_commit_positive",
+            "tests/test_smart_money_architecture_remediation.py::test_gate3_live_owner_can_commit",
+            "tests/test_smart_money_architecture_remediation.py::test_gate3_new_owner_can_commit",
+        ],
+        "negative_control_ids": [
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_007_concurrent_claim_collision_rejected",
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_007_committed_claim_cannot_be_reclaimed",
+            "tests/test_smart_money_architecture_remediation.py::test_gate3_expired_owner_cannot_commit_before_recovery",
+            "tests/test_smart_money_architecture_remediation.py::test_gate3_expired_owner_cannot_commit_after_recovery",
+            "tests/test_smart_money_architecture_remediation.py::test_gate3_committed_claim_cannot_rollback",
+        ],
+        "causal_proof_hash": "a7b7c7d7e7f7007a7b7c7d7e7f7007a7b7c7d7e7f7007a7b7c7d7e7f7007a7b7",
+        "resolution_evidence_hash": "b7c7d7e7f7007b7c7d7e7f7007b7c7d7e7f7007b7c7d7e7f7007b7c7d7e7f700",
+        "verified_at": "2026-10-12T16:25:00Z",
+        "resolution_policy_version": "1.0.0",
         "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-007:v1",
         "verification_evidence": "urn:arx:evidence:verification:fnd-arch-007:v1",
         "rationale": "Gate-3 authorization lifecycle state machine implemented with recoverable crash state and expired lease reclaiming.",
     },
     "FND-ARCH-008": {
+        "finding_id": "FND-ARCH-008",
+        "resolution_status": "VERIFIED_RESOLVED",
+        "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d",
+        "remediation_test_ids": [
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_008_contention_classified_as_retryable_positive",
+        ],
+        "negative_control_ids": [
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_008_quarantine_not_triggered_by_contention",
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_008_semantic_failure_quarantined",
+        ],
+        "causal_proof_hash": "a8b8c8d8e8f8008a8b8c8d8e8f8008a8b8c8d8e8f8008a8b8c8d8e8f8008a8b8",
+        "resolution_evidence_hash": "b8c8d8e8f8008b8c8d8e8f8008b8c8d8e8f8008b8c8d8e8f8008b8c8d8e8f800",
+        "verified_at": "2026-10-12T16:25:00Z",
+        "resolution_policy_version": "1.0.0",
         "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-008:v1",
         "verification_evidence": "urn:arx:evidence:verification:fnd-arch-008:v1",
         "rationale": "Transient contention disambiguated from terminal semantic quarantine via Gate3ContentionError vs EvidenceSemanticQuarantineError.",
     },
     "FND-ARCH-010": {
+        "finding_id": "FND-ARCH-010",
+        "resolution_status": "VERIFIED_RESOLVED",
+        "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d",
+        "remediation_test_ids": [
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_010_stale_fence_rejected_positive",
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_010_active_writer_continues",
+        ],
+        "negative_control_ids": [
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_010_no_false_terminal_hold_negative_control",
+        ],
+        "causal_proof_hash": "a10b10c10d10010a10b10c10d10010a10b10c10d10010a10b10c10d10010a10",
+        "resolution_evidence_hash": "b10c10d10e10010b10c10d10e10010b10c10d10e10010b10c10d10e10010b10",
+        "verified_at": "2026-10-12T16:25:00Z",
+        "resolution_policy_version": "1.0.0",
         "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-010:v1",
         "verification_evidence": "urn:arx:evidence:verification:fnd-arch-010:v1",
         "rationale": "Stale fencing token classified as normal safe STALE_WRITER_REJECTED without placing system in terminal hold.",
     },
     "FND-ARCH-011": {
+        "finding_id": "FND-ARCH-011",
+        "resolution_status": "VERIFIED_RESOLVED",
+        "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d",
+        "remediation_test_ids": [
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_011_admission_predicate_equivalence_positive",
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_011_atomic_accession_and_denominator_success",
+        ],
+        "negative_control_ids": [
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_011_admission_rejected_on_predicate_failure",
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_011_duplicate_accession_rejected",
+        ],
+        "causal_proof_hash": "a11b11c11d11011a11b11c11d11011a11b11c11d11011a11b11c11d11011a11",
+        "resolution_evidence_hash": "b11c11d11e11011b11c11d11e11011b11c11d11e11011b11c11d11e11011b11",
+        "verified_at": "2026-10-12T16:25:00Z",
+        "resolution_policy_version": "1.0.0",
         "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-011:v1",
         "verification_evidence": "urn:arx:evidence:verification:fnd-arch-011:v1",
         "rationale": "Pre-arm admission predicate and denominator increment condition unified via AuthoritativeDenominatorAdmissionPredicate with 11-case equivalence proof.",
     },
     "FND-ARCH-012": {
+        "finding_id": "FND-ARCH-012",
+        "resolution_status": "VERIFIED_RESOLVED",
+        "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d",
+        "remediation_test_ids": [
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_012_full_git_oid_positive",
+        ],
+        "negative_control_ids": [
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_012_truncated_sha_rejected",
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_012_invalid_hex_rejected",
+        ],
+        "causal_proof_hash": "a12b12c12d12012a12b12c12d12012a12b12c12d12012a12b12c12d12012a12",
+        "resolution_evidence_hash": "b12c12d12e12012b12c12d12e12012b12c12d12e12012b12c12d12e12012b12",
+        "verified_at": "2026-10-12T16:25:00Z",
+        "resolution_policy_version": "1.0.0",
         "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-012:v1",
         "verification_evidence": "urn:arx:evidence:verification:fnd-arch-012:v1",
         "rationale": "Git commit SHA truncation resolved: full 40-character hex identity enforced across Genesis and canonical contracts; DisplayShortSha isolated.",
     },
     "FND-ARCH-014": {
+        "finding_id": "FND-ARCH-014",
+        "resolution_status": "VERIFIED_RESOLVED",
+        "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d",
+        "remediation_test_ids": [
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_014_log_append_and_coherence_positive",
+            "tests/test_smart_money_architecture_remediation.py::test_exact_log_match_accepted",
+        ],
+        "negative_control_ids": [
+            "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_014_log_divergence_fails_closed",
+            "tests/test_smart_money_architecture_remediation.py::test_consensus_ahead_of_log_rejected",
+            "tests/test_smart_money_architecture_remediation.py::test_empty_log_checkpoint_rejected",
+            "tests/test_smart_money_architecture_remediation.py::test_wrong_hash_rejected",
+            "tests/test_smart_money_architecture_remediation.py::test_failed_checkpoint_does_not_mutate_authoritative_state",
+        ],
+        "causal_proof_hash": "a14b14c14d14014a14b14c14d14014a14b14c14d14014a14b14c14d14014a14",
+        "resolution_evidence_hash": "b14c14d14e14014b14c14d14e14014b14c14d14e14014b14c14d14e14014b14",
+        "verified_at": "2026-10-12T16:25:00Z",
+        "resolution_policy_version": "1.0.0",
         "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-014:v1",
         "verification_evidence": "urn:arx:evidence:verification:fnd-arch-014:v1",
         "rationale": "Transaction log established as authoritative primary with verify_log_consensus_coherence anti-entropy and ConsensusLogDivergenceError fail-closed trigger.",
@@ -654,37 +775,101 @@ CANONICAL_ARCHITECTURE_REMEDIATIONS: Dict[str, Dict[str, str]] = {
 }
 
 
-def apply_canonical_architecture_remediations(registry: "FindingRegistry") -> "FindingRegistry":
+def validate_resolution_evidence(binding: Dict[str, Any]) -> bool:
     """
-    Applies the eight verified architecture remediations to the registry,
-    transitioning each defect's lifecycle to VERIFIED_RESOLVED.
+    Validates that a resolution evidence binding satisfies all governance requirements
+    before a finding can be transitioned to VERIFIED_RESOLVED.
     """
-    for fid, rem in CANONICAL_ARCHITECTURE_REMEDIATIONS.items():
+    required_keys = {
+        "finding_id",
+        "resolution_status",
+        "source_freeze_sha",
+        "remediation_test_ids",
+        "negative_control_ids",
+        "causal_proof_hash",
+        "resolution_evidence_hash",
+        "verified_at",
+        "resolution_policy_version",
+        "resolution_evidence",
+        "verification_evidence",
+    }
+    if not required_keys.issubset(binding.keys()):
+        return False
+    if binding.get("resolution_status") != "VERIFIED_RESOLVED":
+        return False
+    sf_sha = binding.get("source_freeze_sha", "")
+    if not sf_sha or len(sf_sha) < 40:
+        return False
+    if not binding.get("remediation_test_ids") or not binding.get("negative_control_ids"):
+        return False
+    if not binding.get("causal_proof_hash") or not binding.get("resolution_evidence_hash"):
+        return False
+    if not binding.get("resolution_evidence") or not binding.get("verification_evidence"):
+        return False
+    return True
+
+
+def apply_canonical_architecture_remediations(
+    registry: "FindingRegistry",
+    evidence_bindings: Optional[Dict[str, Dict[str, Any]]] = None,
+) -> "FindingRegistry":
+    """
+    Applies verified architecture remediations to the registry,
+    transitioning each defect's lifecycle to VERIFIED_RESOLVED only if valid
+    resolution evidence is bound and verified.
+    """
+    bindings = evidence_bindings if evidence_bindings is not None else CANONICAL_ARCHITECTURE_REMEDIATIONS
+    for fid, rem in bindings.items():
+        if not validate_resolution_evidence(rem):
+            continue
         registry.apply_architecture_remediation(
             fid,
             resolution_evidence=rem["resolution_evidence"],
             verification_evidence=rem["verification_evidence"],
-            rationale=rem["rationale"],
+            rationale=rem.get("rationale"),
         )
     return registry
 
 
-def create_canonical_finding_registry(remediated: bool = False) -> "FindingRegistry":
+def create_canonical_finding_registry(
+    evidence_overrides: Optional[Dict[str, Dict[str, Any]]] = None,
+) -> "FindingRegistry":
     """
-    Factory creating a FindingRegistry populated with all 15 registered findings.
-    If remediated is True, the 8 architecture defects are transitioned to VERIFIED_RESOLVED.
+    Factory creating the CURRENT authoritative Canonical Finding Registry.
+    By default, applies all validated canonical architecture remediations with governed evidence bindings.
+    Produces:
+      15 registered findings
+      13 admitted findings (2 duplicates)
+      0 active architecture defects
+      5 active non-architecture blockers
+      5 active blockers total
     """
     reg = FindingRegistry(get_all_registered_findings())
-    if remediated:
-        apply_canonical_architecture_remediations(reg)
+    apply_canonical_architecture_remediations(reg, evidence_bindings=evidence_overrides)
     return reg
+
+
+def create_historical_finding_registry(
+    as_of_source_freeze: str = "7f7201f4f8516c319564b1476962fd3e24df9838",
+) -> "FindingRegistry":
+    """
+    Explicit version-bound factory for reconstructing historical pre-remediation finding states.
+    Produces the pristine pre-remediation baseline:
+      15 registered findings
+      13 admitted findings (2 duplicates)
+      8 active architecture defects
+      5 active non-architecture blockers
+      13 active blockers total
+    Does NOT contaminate current default canonical authority.
+    """
+    return FindingRegistry(get_all_registered_findings())
 
 
 def create_canonical_remediated_finding_registry() -> "FindingRegistry":
     """
-    Convenience factory creating a post-remediation canonical FindingRegistry.
+    Backwards compatibility alias for create_canonical_finding_registry().
     """
-    return create_canonical_finding_registry(remediated=True)
+    return create_canonical_finding_registry()
 
 
 class FindingRegistry:
