@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arx.terminal/schemas/v1/conditional-dependency-schema.json",
+  "title": "GuardedObligationSchema",
+  "type": "object",
+  "required": [
+    "dependency_id",
+    "dependency_version",
+    "source_claim_id",
+    "target_output_id",
+    "declared_requirement",
+    "predicate_ref",
+    "when_true",
+    "when_false",
+    "when_unknown",
+    "when_conflict",
+    "target_safety_class",
+    "unknown_behavior",
+    "conflict_behavior",
+    "rationale",
+    "dependency_hash"
+  ],
+  "properties": {
+    "dependency_id": {
+      "type": "string",
+      "pattern": "^urn:arx:dep:[a-z0-9_-]+:[a-z0-9_.-]+$"
+    },
+    "dependency_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "source_claim_id": {
+      "type": "string"
+    },
+    "target_output_id": {
+      "type": "string"
+    },
+    "declared_requirement": {
+      "type": "string",
+      "enum": ["CONDITIONAL", "MANDATORY", "OPTIONAL", "IRRELEVANT"]
+    },
+    "predicate_ref": {
+      "type": "object",
+      "required": ["predicate_id", "predicate_version", "predicate_hash"],
+      "properties": {
+        "predicate_id": { "type": "string" },
+        "predicate_version": { "type": "string" },
+        "predicate_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "when_true": {
+      "type": "object",
+      "required": ["effective_requirement"],
+      "properties": {
+        "effective_requirement": { "type": "string", "enum": ["MANDATORY"] }
+      },
+      "additionalProperties": false
+    },
+    "when_false": {
+      "type": "object",
+      "required": ["effective_requirement"],
+      "properties": {
+        "effective_requirement": { "type": "string", "enum": ["IRRELEVANT"] }
+      },
+      "additionalProperties": false
+    },
+    "when_unknown": {
+      "type": "object",
+      "required": ["effective_requirement"],
+      "properties": {
+        "effective_requirement": { "type": "string", "enum": ["UNRESOLVED"] }
+      },
+      "additionalProperties": false
+    },
+    "when_conflict": {
+      "type": "object",
+      "required": ["effective_requirement"],
+      "properties": {
+        "effective_requirement": { "type": "string", "enum": ["UNRESOLVED"] }
+      },
+      "additionalProperties": false
+    },
+    "target_safety_class": {
+      "type": "string",
+      "enum": [
+        "AUTHORIZATION_CRITICAL",
+        "SAFETY_CRITICAL",
+        "GOVERNANCE_CRITICAL",
+        "INFORMATIONAL"
+      ]
+    },
+    "unknown_behavior": {
+      "type": "string",
+      "enum": ["BLOCK_TARGET", "MARK_UNRESOLVED", "MARK_UNKNOWN"]
+    },
+    "conflict_behavior": {
+      "type": "string",
+      "enum": ["BLOCK_TARGET", "MARK_UNRESOLVED", "MARK_CONFLICT"]
+    },
+    "rationale": {
+      "type": "string"
+    },
+    "dependency_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "additionalProperties": false
+}

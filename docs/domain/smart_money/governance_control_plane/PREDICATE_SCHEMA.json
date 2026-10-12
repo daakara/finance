@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arx.terminal/schemas/v1/predicate-schema.json",
+  "title": "PredicateDefinitionSchema",
+  "type": "object",
+  "required": [
+    "predicate_id",
+    "predicate_version",
+    "expression",
+    "fact_schema_refs",
+    "operator_semantics_version",
+    "evaluation_strategy",
+    "predicate_hash"
+  ],
+  "properties": {
+    "predicate_id": {
+      "type": "string",
+      "pattern": "^urn:arx:predicate:[a-z0-9_-]+:[a-z0-9_.-]+$"
+    },
+    "predicate_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "expression": {
+      "type": "object",
+      "description": "Normalized AST expression compliant with ARX-PREDICATE-DSL-V1"
+    },
+    "fact_schema_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "operator_semantics_version": {
+      "type": "string",
+      "enum": ["ARX-PREDICATE-DSL-V1"]
+    },
+    "evaluation_strategy": {
+      "type": "string",
+      "enum": ["CANONICAL_AST_ORDER"]
+    },
+    "predicate_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "additionalProperties": false
+}
