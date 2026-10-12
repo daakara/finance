@@ -1,0 +1,16 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/reconciliation-specific-diff-audit.json",
+  "audit_id": "urn:arx:audit:reconciliation-specific-diff:2026-10-12",
+  "generated_at": "2026-10-12T16:03:25Z",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "predecessor_repair_evidence_seal_sha": "30f50d877970293c08955c62baf52d645ebec0d2",
+  "previous_reconciliation_evidence_seal_sha": "810de62ef5abf286797a71f3dc3c0dd818c3c3ff",
+  "source_reconciliation_change_required": false,
+  "diff_isolation": {
+    "predecessor_seal_to_current": "git diff 30f50d877970293c08955c62baf52d645ebec0d2..HEAD --name-status",
+    "source_freeze_to_current": "git diff 9e9278010964be25214db49703e8b51a7b2ebe5f..HEAD --name-status",
+    "source_files_modified": 0,
+    "governance_evidence_files_only": true
+  },
+  "verdict": "PASS"
+}

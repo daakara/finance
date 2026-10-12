@@ -1,0 +1,261 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/resolution-source-lineage-audit-v2.json",
+  "audit_id": "urn:arx:audit:resolution-source-lineage-v2:2026-10-12",
+  "generated_at": "2026-10-12T16:03:25Z",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "git_object_role_map": {
+    "098e221e011ae94e155e96b82e6c0c74cab99e2d": {
+      "commit_exists": true,
+      "tree_oid": "bee3b5eed5c680d184a4f21cca0a443aaf31aac6",
+      "governance_role": "PREDECESSOR_EVIDENCE_SEAL"
+    },
+    "28d66d943644613225abbd89a3be19867e1c33cd": {
+      "commit_exists": true,
+      "tree_oid": "738084f2004416bbea20de24d549ba492199ffcd",
+      "governance_role": "IMPLEMENTATION_SOURCE_FREEZE"
+    },
+    "9e9278010964be25214db49703e8b51a7b2ebe5f": {
+      "commit_exists": true,
+      "tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+      "governance_role": "RECONCILIATION_SOURCE_FREEZE"
+    },
+    "30f50d877970293c08955c62baf52d645ebec0d2": {
+      "commit_exists": true,
+      "tree_oid": "daa7f9b4dcb24fd5257ba7007906de199470ce00",
+      "governance_role": "PREDECESSOR_REPAIR_EVIDENCE_SEAL"
+    },
+    "810de62ef5abf286797a71f3dc3c0dd818c3c3ff": {
+      "commit_exists": true,
+      "tree_oid": "c3d70c08af56c88f42d5f10f024b482d32a933ad",
+      "governance_role": "PREVIOUS_RECONCILIATION_EVIDENCE_SEAL"
+    }
+  },
+  "findings_lineage_proofs": {
+    "FND-ARCH-001": {
+      "finding_id": "FND-ARCH-001",
+      "resolution_record": {
+        "lifecycle_status": "VERIFIED_RESOLVED",
+        "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-001:v1",
+        "verification_evidence": "urn:arx:evidence:verification:fnd-arch-001:v1",
+        "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d"
+      },
+      "source_binding": {
+        "git_object_exists": true,
+        "object_role": "PREDECESSOR_EVIDENCE_SEAL",
+        "expected_role": "PREDECESSOR_EVIDENCE_SEAL",
+        "role_match": true,
+        "tree_oid": "bee3b5eed5c680d184a4f21cca0a443aaf31aac6",
+        "expected_tree_oid_if_defined": "bee3b5eed5c680d184a4f21cca0a443aaf31aac6"
+      },
+      "chronology": {
+        "source_precedes_verification": true,
+        "verification_precedes_resolution_evidence": true,
+        "resolution_evidence_precedes_or_equals_lifecycle_transition": true
+      },
+      "integrity": {
+        "resolution_evidence_hash_matches": true,
+        "verification_evidence_hash_matches": true,
+        "causal_proof_hash_matches_if_defined": true
+      },
+      "verdict": "PASS"
+    },
+    "FND-ARCH-004": {
+      "finding_id": "FND-ARCH-004",
+      "resolution_record": {
+        "lifecycle_status": "VERIFIED_RESOLVED",
+        "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-004:v1",
+        "verification_evidence": "urn:arx:evidence:verification:fnd-arch-004:v1",
+        "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d"
+      },
+      "source_binding": {
+        "git_object_exists": true,
+        "object_role": "PREDECESSOR_EVIDENCE_SEAL",
+        "expected_role": "PREDECESSOR_EVIDENCE_SEAL",
+        "role_match": true,
+        "tree_oid": "bee3b5eed5c680d184a4f21cca0a443aaf31aac6",
+        "expected_tree_oid_if_defined": "bee3b5eed5c680d184a4f21cca0a443aaf31aac6"
+      },
+      "chronology": {
+        "source_precedes_verification": true,
+        "verification_precedes_resolution_evidence": true,
+        "resolution_evidence_precedes_or_equals_lifecycle_transition": true
+      },
+      "integrity": {
+        "resolution_evidence_hash_matches": true,
+        "verification_evidence_hash_matches": true,
+        "causal_proof_hash_matches_if_defined": true
+      },
+      "verdict": "PASS"
+    },
+    "FND-ARCH-007": {
+      "finding_id": "FND-ARCH-007",
+      "resolution_record": {
+        "lifecycle_status": "VERIFIED_RESOLVED",
+        "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-007:v1",
+        "verification_evidence": "urn:arx:evidence:verification:fnd-arch-007:v1",
+        "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d"
+      },
+      "source_binding": {
+        "git_object_exists": true,
+        "object_role": "PREDECESSOR_EVIDENCE_SEAL",
+        "expected_role": "PREDECESSOR_EVIDENCE_SEAL",
+        "role_match": true,
+        "tree_oid": "bee3b5eed5c680d184a4f21cca0a443aaf31aac6",
+        "expected_tree_oid_if_defined": "bee3b5eed5c680d184a4f21cca0a443aaf31aac6"
+      },
+      "chronology": {
+        "source_precedes_verification": true,
+        "verification_precedes_resolution_evidence": true,
+        "resolution_evidence_precedes_or_equals_lifecycle_transition": true
+      },
+      "integrity": {
+        "resolution_evidence_hash_matches": true,
+        "verification_evidence_hash_matches": true,
+        "causal_proof_hash_matches_if_defined": true
+      },
+      "verdict": "PASS"
+    },
+    "FND-ARCH-008": {
+      "finding_id": "FND-ARCH-008",
+      "resolution_record": {
+        "lifecycle_status": "VERIFIED_RESOLVED",
+        "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-008:v1",
+        "verification_evidence": "urn:arx:evidence:verification:fnd-arch-008:v1",
+        "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d"
+      },
+      "source_binding": {
+        "git_object_exists": true,
+        "object_role": "PREDECESSOR_EVIDENCE_SEAL",
+        "expected_role": "PREDECESSOR_EVIDENCE_SEAL",
+        "role_match": true,
+        "tree_oid": "bee3b5eed5c680d184a4f21cca0a443aaf31aac6",
+        "expected_tree_oid_if_defined": "bee3b5eed5c680d184a4f21cca0a443aaf31aac6"
+      },
+      "chronology": {
+        "source_precedes_verification": true,
+        "verification_precedes_resolution_evidence": true,
+        "resolution_evidence_precedes_or_equals_lifecycle_transition": true
+      },
+      "integrity": {
+        "resolution_evidence_hash_matches": true,
+        "verification_evidence_hash_matches": true,
+        "causal_proof_hash_matches_if_defined": true
+      },
+      "verdict": "PASS"
+    },
+    "FND-ARCH-010": {
+      "finding_id": "FND-ARCH-010",
+      "resolution_record": {
+        "lifecycle_status": "VERIFIED_RESOLVED",
+        "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-010:v1",
+        "verification_evidence": "urn:arx:evidence:verification:fnd-arch-010:v1",
+        "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d"
+      },
+      "source_binding": {
+        "git_object_exists": true,
+        "object_role": "PREDECESSOR_EVIDENCE_SEAL",
+        "expected_role": "PREDECESSOR_EVIDENCE_SEAL",
+        "role_match": true,
+        "tree_oid": "bee3b5eed5c680d184a4f21cca0a443aaf31aac6",
+        "expected_tree_oid_if_defined": "bee3b5eed5c680d184a4f21cca0a443aaf31aac6"
+      },
+      "chronology": {
+        "source_precedes_verification": true,
+        "verification_precedes_resolution_evidence": true,
+        "resolution_evidence_precedes_or_equals_lifecycle_transition": true
+      },
+      "integrity": {
+        "resolution_evidence_hash_matches": true,
+        "verification_evidence_hash_matches": true,
+        "causal_proof_hash_matches_if_defined": true
+      },
+      "verdict": "PASS"
+    },
+    "FND-ARCH-011": {
+      "finding_id": "FND-ARCH-011",
+      "resolution_record": {
+        "lifecycle_status": "VERIFIED_RESOLVED",
+        "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-011:v1",
+        "verification_evidence": "urn:arx:evidence:verification:fnd-arch-011:v1",
+        "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d"
+      },
+      "source_binding": {
+        "git_object_exists": true,
+        "object_role": "PREDECESSOR_EVIDENCE_SEAL",
+        "expected_role": "PREDECESSOR_EVIDENCE_SEAL",
+        "role_match": true,
+        "tree_oid": "bee3b5eed5c680d184a4f21cca0a443aaf31aac6",
+        "expected_tree_oid_if_defined": "bee3b5eed5c680d184a4f21cca0a443aaf31aac6"
+      },
+      "chronology": {
+        "source_precedes_verification": true,
+        "verification_precedes_resolution_evidence": true,
+        "resolution_evidence_precedes_or_equals_lifecycle_transition": true
+      },
+      "integrity": {
+        "resolution_evidence_hash_matches": true,
+        "verification_evidence_hash_matches": true,
+        "causal_proof_hash_matches_if_defined": true
+      },
+      "verdict": "PASS"
+    },
+    "FND-ARCH-012": {
+      "finding_id": "FND-ARCH-012",
+      "resolution_record": {
+        "lifecycle_status": "VERIFIED_RESOLVED",
+        "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-012:v1",
+        "verification_evidence": "urn:arx:evidence:verification:fnd-arch-012:v1",
+        "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d"
+      },
+      "source_binding": {
+        "git_object_exists": true,
+        "object_role": "PREDECESSOR_EVIDENCE_SEAL",
+        "expected_role": "PREDECESSOR_EVIDENCE_SEAL",
+        "role_match": true,
+        "tree_oid": "bee3b5eed5c680d184a4f21cca0a443aaf31aac6",
+        "expected_tree_oid_if_defined": "bee3b5eed5c680d184a4f21cca0a443aaf31aac6"
+      },
+      "chronology": {
+        "source_precedes_verification": true,
+        "verification_precedes_resolution_evidence": true,
+        "resolution_evidence_precedes_or_equals_lifecycle_transition": true
+      },
+      "integrity": {
+        "resolution_evidence_hash_matches": true,
+        "verification_evidence_hash_matches": true,
+        "causal_proof_hash_matches_if_defined": true
+      },
+      "verdict": "PASS"
+    },
+    "FND-ARCH-014": {
+      "finding_id": "FND-ARCH-014",
+      "resolution_record": {
+        "lifecycle_status": "VERIFIED_RESOLVED",
+        "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-014:v1",
+        "verification_evidence": "urn:arx:evidence:verification:fnd-arch-014:v1",
+        "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d"
+      },
+      "source_binding": {
+        "git_object_exists": true,
+        "object_role": "PREDECESSOR_EVIDENCE_SEAL",
+        "expected_role": "PREDECESSOR_EVIDENCE_SEAL",
+        "role_match": true,
+        "tree_oid": "bee3b5eed5c680d184a4f21cca0a443aaf31aac6",
+        "expected_tree_oid_if_defined": "bee3b5eed5c680d184a4f21cca0a443aaf31aac6"
+      },
+      "chronology": {
+        "source_precedes_verification": true,
+        "verification_precedes_resolution_evidence": true,
+        "resolution_evidence_precedes_or_equals_lifecycle_transition": true
+      },
+      "integrity": {
+        "resolution_evidence_hash_matches": true,
+        "verification_evidence_hash_matches": true,
+        "causal_proof_hash_matches_if_defined": true
+      },
+      "verdict": "PASS"
+    }
+  },
+  "verdict": "PASS"
+}
