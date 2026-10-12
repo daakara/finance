@@ -1,0 +1,81 @@
+{
+  "": "https://arx.terminal/schemas/v1/hash-domain-registry.json",
+  "version": "1.0.0",
+  "description": "Cryptographic domain typing registry ensuring strict hash domain separation across ARX Terminal governance.",
+  "domains": {
+    "RAW_FILE_BYTES": {
+      "domain_id": "RAW_FILE_BYTES",
+      "algorithm": "SHA-256",
+      "length_hex": 64,
+      "description": "Direct unparsed cryptographic digest of file contents on disk (e.g. CANDIDATE_GENERATION_004_FREEZE.json)",
+      "canonical_examples": [
+        "297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90"
+      ],
+      "comparable_with": [
+        "RAW_FILE_BYTES"
+      ]
+    },
+    "CANONICAL_SEMANTIC_CLOSURE": {
+      "domain_id": "CANONICAL_SEMANTIC_CLOSURE",
+      "algorithm": "SHA-256",
+      "length_hex": 64,
+      "description": "Normalized deterministic closure digest of the semantic candidate graph under RFC 8785 JCS",
+      "canonical_examples": [
+        "53b6372349cfdb1046a4ddbd678f628bba28c7778cef2fe381e02f9097f7a9e6"
+      ],
+      "comparable_with": [
+        "CANONICAL_SEMANTIC_CLOSURE"
+      ]
+    },
+    "GIT_COMMIT_OID": {
+      "domain_id": "GIT_COMMIT_OID",
+      "algorithm": "SHA-1",
+      "length_hex": 40,
+      "description": "Full 40-character lowercase hexadecimal Git commit object identifier",
+      "canonical_examples": [
+        "7f7201f4f8516c319564b1476962fd3e24df9838",
+        "bab9776b8013646b634871c49b52e61e4234d36b"
+      ],
+      "comparable_with": [
+        "GIT_COMMIT_OID"
+      ]
+    },
+    "GIT_TREE_OID": {
+      "domain_id": "GIT_TREE_OID",
+      "algorithm": "SHA-1",
+      "length_hex": 40,
+      "description": "Full 40-character lowercase hexadecimal Git tree object identifier",
+      "canonical_examples": [
+        "d76945db010ac45128313b516de5d0ea198a9bab"
+      ],
+      "comparable_with": [
+        "GIT_TREE_OID"
+      ]
+    },
+    "GIT_BLOB_OID": {
+      "domain_id": "GIT_BLOB_OID",
+      "algorithm": "SHA-1",
+      "length_hex": 40,
+      "description": "Full 40-character lowercase hexadecimal Git blob object identifier",
+      "canonical_examples": [],
+      "comparable_with": [
+        "GIT_BLOB_OID"
+      ]
+    },
+    "CANONICALIZED_GOVERNANCE_OBJECT": {
+      "domain_id": "CANONICALIZED_GOVERNANCE_OBJECT",
+      "algorithm": "SHA-256",
+      "length_hex": 64,
+      "description": "Normalized deterministic SHA-256 digest of in-memory governance dictionaries",
+      "canonical_examples": [],
+      "comparable_with": [
+        "CANONICALIZED_GOVERNANCE_OBJECT"
+      ]
+    }
+  },
+  "cross_domain_comparison_policy": "STRICT_REJECT",
+  "invariants": {
+    "CROSS_DOMAIN_HASH_IMPLICIT_EQUIVALENCE": 0,
+    "UNTYPED_CANONICAL_HASH_IDENTIFIERS": 0
+  }
+}

@@ -6,11 +6,43 @@ Implements the non-collapsible identity status hierarchy, 3-of-4 root quorum,
 prohibition on automatic quorum downgrade, and quorum recovery lineage.
 """
 
+import re
 from dataclasses import dataclass, asdict
 from enum import Enum
 from typing import List, Dict, Any, Optional
 
 from .canonicalization import sha256_canonical
+
+
+def validate_git_oid(oid: str) -> str:
+    """
+    Validates that a Git object identifier is an unabbreviated 40-character hexadecimal string.
+    Truncation, short display SHAs, and prefix representations are strictly prohibited in canonical contexts.
+    """
+    if not isinstance(oid, str):
+        raise ValueError(f"Git OID must be str, got {type(oid).__name__}")
+    clean = oid.strip().lower()
+    if not re.match(r"^[0-9a-f]{40}$", clean):
+        raise ValueError(
+            f"CANONICAL_GIT_COMMIT_IDENTITY_TRUNCATED == 0: Git OID must be full 40-character hexadecimal string, got '{clean}'."
+        )
+    return clean
+
+
+@dataclass(frozen=True)
+class DisplayShortSha:
+    """
+    Explicitly non-authoritative short SHA for UI and logging display only.
+    Strictly forbidden from being used as a canonical authority identifier.
+    """
+    display_value: str
+    is_canonical_identity: bool = False
+
+    def __post_init__(self):
+        if self.is_canonical_identity:
+            raise ValueError(
+                "DISPLAY_SHA_USED_AS_AUTHORITY_IDENTITY == 0: Display short SHA cannot be used as canonical identity."
+            )
 
 
 class IdentityStatus(str, Enum):

@@ -51,6 +51,7 @@ from .predicate_evaluator import (
     DSL_VERSION,
     compute_logic_semantics_hash,
 )
+from .root_identity import validate_git_oid
 
 
 EXPECTED_CANDIDATE004_FREEZE_HASH = "297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90"
@@ -217,6 +218,8 @@ class CanonicalDecisionContextBuilder:
 
     def verify_source_freeze(self) -> str:
         """Verifies commit exists and returns tree hash."""
+        # 0. Strict 40-character Git commit identity validation
+        validate_git_oid(self.source_freeze_sha)
         # 1. Commit existence
         self._run_git(["cat-file", "-e", f"{self.source_freeze_sha}^{{commit}}"])
         # 2. Tree hash

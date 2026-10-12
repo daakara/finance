@@ -1,0 +1,37 @@
+{
+  "finding_id": "FND-ARCH-004",
+  "immutable_subject": "Zero-event RPO requirement conflicted with asynchronous replication semantics.",
+  "observed_failure": "Evidence custody contract claimed RPO=0 while specifying asynchronous cross-region replication with permissible lag up to 900 seconds, introducing potential loss of acknowledged governance records on primary failure.",
+  "affected_components": [
+    "docs/domain/smart_money/external_authority/EVIDENCE_CUSTODY_AND_RETENTION_CONTRACT.md",
+    "docs/domain/smart_money/governance_control_plane/GOVERNANCE_DR_AND_EPOCH_TRANSITION_PROTOCOL.md",
+    "analyst_dashboard/smart_money/public_availability/transactional_state_backend.py"
+  ],
+  "canonical_invariant_violated": "ZERO_COMMITTED_EVENT_LOSS_COHERENCE: An acknowledged governance transaction must never be lost upon failover; RPO=0 requires synchronous dual-region durable write acknowledgment prior to caller return.",
+  "root_cause": "Contractual conflation between asynchronous replication latency SLAs and synchronous durability guarantees required for zero committed event loss.",
+  "contributing_causes": [
+    "Ambiguity between cloud storage replication policies and application-level transaction commit guarantees",
+    "Lack of explicit dual-region sync commit specification in DR protocol"
+  ],
+  "existing_behavior": "EVIDENCE_CUSTODY_AND_RETENTION_CONTRACT.md claims RPO=0 but references asynchronous replication with lag up to 900 seconds.",
+  "required_behavior": "Contract and DR protocol mandate synchronous dual-region durable write acknowledgment for governance-critical transactions before commit acknowledgment, while marking external operational guarantee as NOT_ESTABLISHED pending infrastructure provisioning.",
+  "implementation_scope": [
+    "Update EVIDENCE_CUSTODY_AND_RETENTION_CONTRACT.md with synchronous dual-region write specification",
+    "Update GOVERNANCE_DR_AND_EPOCH_TRANSITION_PROTOCOL.md with zero-loss failover protocol"
+  ],
+  "contracts_affected": [
+    "docs/domain/smart_money/external_authority/EVIDENCE_CUSTODY_AND_RETENTION_CONTRACT.md",
+    "docs/domain/smart_money/governance_control_plane/GOVERNANCE_DR_AND_EPOCH_TRANSITION_PROTOCOL.md"
+  ],
+  "schemas_affected": [],
+  "policies_affected": [],
+  "tests_affected": [
+    "tests/test_smart_money_architecture_remediation.py"
+  ],
+  "non_target_findings_touched": [],
+  "cross_layer_dependency": false,
+  "planned_fix": "Amend custody contract and DR protocol to mandate synchronous dual-region commit before acknowledgment for RPO=0.",
+  "planned_negative_control": "Simulate failover with asynchronous unacknowledged writes; verify commit acknowledgment is blocked until synchronous dual-write confirmation.",
+  "planned_causal_ablation": "Permit asynchronous commit acknowledgement; verify test detects RPO violation.",
+  "status": "ANALYZED_PENDING_IMPLEMENTATION"
+}

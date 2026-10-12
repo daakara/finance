@@ -1,0 +1,32 @@
+{
+  "finding_id": "FND-ARCH-007",
+  "immutable_subject": "Claimed-but-uncommitted Gate3 state lacked complete durable recovery semantics.",
+  "observed_failure": "A crashed runner in Gate3 left claims in consumed_gate3_claims permanently without a durable state machine to distinguish in-flight from committed claims, leading to permanently lost claims or potential double-admission.",
+  "affected_components": [
+    "analyst_dashboard/smart_money/public_availability/transactional_state_backend.py"
+  ],
+  "canonical_invariant_violated": "DURABLE_CRASH_RECOVERY_WITHOUT_DOUBLE_ADMISSION: All Gate3 claims must transition through a deterministic state machine with lease expiry and crash recovery without inflating natural denominator or dropping valid claims.",
+  "root_cause": "consumed_gate3_claims was implemented as a set of strings with no lifecycle states, lease timeouts, or rollback mechanism.",
+  "contributing_causes": [
+    "Simplified in-memory representation during early prototyping",
+    "Absence of claim state machine definition"
+  ],
+  "existing_behavior": "Claim ID added to consumed_gate3_claims upon evaluation; crash before commit leaves claim permanently consumed and unrecoverable.",
+  "required_behavior": "Gate3 claims must follow UNCLAIMED -> CLAIMED_PENDING_COMMIT -> COMMITTED, with LEASE_EXPIRED_RECOVERABLE and ABORTED_RELEASED handling.",
+  "implementation_scope": [
+    "Implement Gate3ClaimState enum and Gate3ClaimRecord in transactional_state_backend.py",
+    "Add claim_gate3_atomic, commit_gate3_atomic, and recover_expired_claims methods"
+  ],
+  "contracts_affected": [],
+  "schemas_affected": [],
+  "policies_affected": [],
+  "tests_affected": [
+    "tests/test_smart_money_architecture_remediation.py"
+  ],
+  "non_target_findings_touched": [],
+  "cross_layer_dependency": false,
+  "planned_fix": "Implement stateful Gate3 claim tracking with lease expiration and atomic commit/rollback.",
+  "planned_negative_control": "Simulate runner crash during CLAIMED_PENDING_COMMIT; verify expired claim is recoverable and cannot be double-committed.",
+  "planned_causal_ablation": "Disable lease expiration recovery; verify claim remains permanently stuck.",
+  "status": "ANALYZED_PENDING_IMPLEMENTATION"
+}

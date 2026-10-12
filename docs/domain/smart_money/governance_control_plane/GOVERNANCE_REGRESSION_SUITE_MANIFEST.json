@@ -19,7 +19,8 @@
     "tests/test_governance_decision_engine_policy.py",
     "tests/test_smart_money_canonical_decision_integration.py",
     "tests/test_smart_money_canonical_input_authority.py",
-    "tests/test_smart_money_finding_identity_claim_semantics.py"
+    "tests/test_smart_money_finding_identity_claim_semantics.py",
+    "tests/test_smart_money_architecture_remediation.py"
   ],
   "retired_test_files": [],
   "replacement_test_files": {},

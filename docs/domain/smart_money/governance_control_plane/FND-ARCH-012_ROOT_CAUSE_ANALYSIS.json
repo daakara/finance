@@ -1,0 +1,37 @@
+{
+  "finding_id": "FND-ARCH-012",
+  "immutable_subject": "Git commit SHA truncation in Genesis Manifest.",
+  "observed_failure": "Genesis Manifest and root provenance records accepted or rendered short (7 or 12 character) Git commit hashes as canonical object identities.",
+  "affected_components": [
+    "analyst_dashboard/smart_money/governance_control_plane/root_identity.py",
+    "analyst_dashboard/smart_money/governance_control_plane/canonical_context.py",
+    "docs/domain/smart_money/governance_control_plane/GOVERNANCE_GENESIS_MANIFEST.json"
+  ],
+  "canonical_invariant_violated": "FULL_GIT_OID_IDENTITY_ENFORCEMENT: Canonical Git object identifiers in genesis and governance authority contracts must be exactly 40 lowercase hexadecimal characters.",
+  "root_cause": "Permissive regex in hash validation allowed truncated Git SHAs, and display strings were reused in identity positions.",
+  "contributing_causes": [
+    "DisplayShortSha formatting conflated with canonical OID storage"
+  ],
+  "existing_behavior": "Short Git SHAs accepted without error in certain manifest contexts.",
+  "required_behavior": "validate_git_oid strictly requires ^[0-9a-f]{40}$; short SHAs allowed only with DisplayShortSha non-authoritative type.",
+  "implementation_scope": [
+    "Enforce validate_git_oid in root_identity.py and canonical_context.py",
+    "Verify all Git OIDs in GOVERNANCE_GENESIS_MANIFEST.json are 40 hex chars"
+  ],
+  "contracts_affected": [
+    "docs/domain/smart_money/governance_control_plane/GOVERNANCE_ROOT_OF_TRUST.md"
+  ],
+  "schemas_affected": [],
+  "policies_affected": [
+    "docs/domain/smart_money/governance_control_plane/GOVERNANCE_GENESIS_MANIFEST.json"
+  ],
+  "tests_affected": [
+    "tests/test_smart_money_architecture_remediation.py"
+  ],
+  "non_target_findings_touched": [],
+  "cross_layer_dependency": false,
+  "planned_fix": "Implement strict 40-character hex validation for all canonical Git commit and tree OIDs.",
+  "planned_negative_control": "Attempt to supply a 7-character short SHA to validate_git_oid; verify ValueError is raised.",
+  "planned_causal_ablation": "Permit 7-character prefix; verify test fails 40-character full identity invariant.",
+  "status": "ANALYZED_PENDING_IMPLEMENTATION"
+}

@@ -610,11 +610,81 @@ def get_canonical_admitted_findings() -> List[Finding]:
     return [f for f in get_all_registered_findings() if f.admission_status == "ADMITTED"]
 
 
-def create_canonical_finding_registry() -> "FindingRegistry":
+CANONICAL_ARCHITECTURE_REMEDIATIONS: Dict[str, Dict[str, str]] = {
+    "FND-ARCH-001": {
+        "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-001:v1",
+        "verification_evidence": "urn:arx:evidence:verification:fnd-arch-001:v1",
+        "rationale": "TypedHash domain separation enforced across internal and external hash comparisons.",
+    },
+    "FND-ARCH-004": {
+        "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-004:v1",
+        "verification_evidence": "urn:arx:evidence:verification:fnd-arch-004:v1",
+        "rationale": "RPO=0 contradiction resolved: synchronous dual-region commit protocol specified for governance events while bulk evidence CRR is isolated.",
+    },
+    "FND-ARCH-007": {
+        "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-007:v1",
+        "verification_evidence": "urn:arx:evidence:verification:fnd-arch-007:v1",
+        "rationale": "Gate-3 authorization lifecycle state machine implemented with recoverable crash state and expired lease reclaiming.",
+    },
+    "FND-ARCH-008": {
+        "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-008:v1",
+        "verification_evidence": "urn:arx:evidence:verification:fnd-arch-008:v1",
+        "rationale": "Transient contention disambiguated from terminal semantic quarantine via Gate3ContentionError vs EvidenceSemanticQuarantineError.",
+    },
+    "FND-ARCH-010": {
+        "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-010:v1",
+        "verification_evidence": "urn:arx:evidence:verification:fnd-arch-010:v1",
+        "rationale": "Stale fencing token classified as normal safe STALE_WRITER_REJECTED without placing system in terminal hold.",
+    },
+    "FND-ARCH-011": {
+        "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-011:v1",
+        "verification_evidence": "urn:arx:evidence:verification:fnd-arch-011:v1",
+        "rationale": "Pre-arm admission predicate and denominator increment condition unified via AuthoritativeDenominatorAdmissionPredicate with 11-case equivalence proof.",
+    },
+    "FND-ARCH-012": {
+        "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-012:v1",
+        "verification_evidence": "urn:arx:evidence:verification:fnd-arch-012:v1",
+        "rationale": "Git commit SHA truncation resolved: full 40-character hex identity enforced across Genesis and canonical contracts; DisplayShortSha isolated.",
+    },
+    "FND-ARCH-014": {
+        "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-014:v1",
+        "verification_evidence": "urn:arx:evidence:verification:fnd-arch-014:v1",
+        "rationale": "Transaction log established as authoritative primary with verify_log_consensus_coherence anti-entropy and ConsensusLogDivergenceError fail-closed trigger.",
+    },
+}
+
+
+def apply_canonical_architecture_remediations(registry: "FindingRegistry") -> "FindingRegistry":
+    """
+    Applies the eight verified architecture remediations to the registry,
+    transitioning each defect's lifecycle to VERIFIED_RESOLVED.
+    """
+    for fid, rem in CANONICAL_ARCHITECTURE_REMEDIATIONS.items():
+        registry.apply_architecture_remediation(
+            fid,
+            resolution_evidence=rem["resolution_evidence"],
+            verification_evidence=rem["verification_evidence"],
+            rationale=rem["rationale"],
+        )
+    return registry
+
+
+def create_canonical_finding_registry(remediated: bool = False) -> "FindingRegistry":
     """
     Factory creating a FindingRegistry populated with all 15 registered findings.
+    If remediated is True, the 8 architecture defects are transitioned to VERIFIED_RESOLVED.
     """
-    return FindingRegistry(get_all_registered_findings())
+    reg = FindingRegistry(get_all_registered_findings())
+    if remediated:
+        apply_canonical_architecture_remediations(reg)
+    return reg
+
+
+def create_canonical_remediated_finding_registry() -> "FindingRegistry":
+    """
+    Convenience factory creating a post-remediation canonical FindingRegistry.
+    """
+    return create_canonical_finding_registry(remediated=True)
 
 
 class FindingRegistry:
@@ -812,3 +882,28 @@ class FindingRegistry:
             "verified_resolved": verified_resolved,
             "disproved": disproved,
         }
+
+    def apply_architecture_remediation(
+        self,
+        finding_id: str,
+        resolution_evidence: str,
+        verification_evidence: str,
+        rationale: Optional[str] = None,
+    ) -> None:
+        """
+        Transition an architecture defect to VERIFIED_RESOLVED following verified remediation.
+        """
+        if finding_id not in self._findings:
+            raise KeyError(f"Finding '{finding_id}' not found in registry.")
+        f = self._findings[finding_id]
+        if f.reclassified_layer != "ARCHITECTURE_DEFECT":
+            raise ValueError(f"Finding '{finding_id}' is not an architecture defect (layer={f.reclassified_layer}).")
+        f.lifecycle_status = FindingStatus.VERIFIED_RESOLVED
+        f.evidence_status = "VERIFIED_REMEDIATED"
+        f.derived_blocks = []
+        f.architecture_contract_complete = True
+        f.implementation_present = True
+        f.resolution_evidence = resolution_evidence
+        f.verification_evidence = verification_evidence
+        if rationale:
+            f.classification_rationale = rationale

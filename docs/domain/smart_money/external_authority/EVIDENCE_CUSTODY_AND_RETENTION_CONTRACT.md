@@ -202,7 +202,8 @@ REGION_FAILURE_POLICY: CROSS_REGION_REPLICATION_WITH_FAILOVER
 BACKUP_VALIDATION_FREQUENCY: WEEKLY_AUTOMATED_DRILL
 ```
 
-#### 7.1 Cross-Region Replication Topology
-- **Primary Region**: Production primary region hosts active WORM bucket and transactional state tables.
-- **Secondary Region**: Asynchronous cross-region replication (CRR) duplicates compliance-locked objects within $\le 900$ seconds.
+#### 7.1 Cross-Region Replication Topology & Synchronous Commit Architecture
+- **Committed Transaction Durability (RPO = 0)**: To guarantee zero committed data loss (RPO = 0), all governance-critical transactions, epoch transitions, and ledger accession events require synchronous dual-region durable write acknowledgment before acknowledgment is returned to callers. An event is never committed on the basis of asynchronous replication alone.
+- **Bulk Evidence & Secondary Replication**: Asynchronous cross-region replication (CRR) applies strictly to non-critical bulk evidence artifacts, secondary raw logs, and compliance-locked WORM archive bundles within $\le 900$ seconds SLA.
 - **Failover Contract**: In the event of primary cloud region failure, the secondary region becomes read-authoritative. State cannot resume writing without a formal recovery quorum certificate (`RECOVERY_APPROVER`).
+- **Operational Status Boundary**: The architectural guarantee of zero-event RPO via synchronous commit protocol is proven and enforced by design. The physical multi-region cloud infrastructure operational guarantee remains `NOT_ESTABLISHED` pending formal provider provisioning and qualification.
