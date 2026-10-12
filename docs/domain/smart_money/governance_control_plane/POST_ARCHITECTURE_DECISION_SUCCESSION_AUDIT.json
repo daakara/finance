@@ -1,0 +1,30 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/post-architecture-decision-succession-audit.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T18:00:00Z",
+  "previous_decision": {
+    "decision_id": "urn:arx:decision:epoch-gov-002:1:08bbd59f5cab",
+    "decision_hash": "db8639cf39d5c1a2ed166bce7db0c402181276006bb24f19033af1cb7425df3c",
+    "decision_sequence": 1,
+    "decision_status": "SUPERSEDED",
+    "architecture_closure_status": "OPEN",
+    "global_provisioning_readiness": "BLOCKED"
+  },
+  "post_architecture_decision": {
+    "decision_id": "urn:arx:decision:epoch-gov-002:2:c3950449d3ff",
+    "decision_hash": "68e8b8334a9acc270bb4a7c462c8874993df77282a194005e18fcee3729bb810",
+    "decision_sequence": 2,
+    "decision_status": "CURRENT",
+    "previous_decision_hash": "db8639cf39d5c1a2ed166bce7db0c402181276006bb24f19033af1cb7425df3c",
+    "architecture_closure_status": "CLOSED",
+    "global_provisioning_readiness": "BLOCKED"
+  },
+  "invariants": {
+    "predecessor_link_valid": true,
+    "current_decision_unique": true,
+    "old_decision_invalidated": true,
+    "simultaneous_current_conflicting_decisions": 0
+  },
+  "verdict": "PASS"
+}

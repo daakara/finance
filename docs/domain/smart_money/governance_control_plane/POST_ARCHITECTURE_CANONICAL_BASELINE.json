@@ -1,0 +1,76 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/post-architecture-canonical-baseline.json",
+  "baseline_id": "urn:arx:baseline:smart-money:post-architecture:v1",
+  "generated_at": "2026-10-12T18:00:00Z",
+  "source": {
+    "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+    "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01"
+  },
+  "candidate": {
+    "candidate_id": "CANDIDATE_GENERATION_004",
+    "raw_sha256": "297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90"
+  },
+  "findings": {
+    "registered": 15,
+    "admitted": 13,
+    "duplicates": 2,
+    "verified_resolved_architecture": 8,
+    "active_architecture": 0,
+    "active_non_architecture": 5,
+    "active_blockers": 5,
+    "active_blocker_ids": [
+      "FND-ARCH-002",
+      "FND-ARCH-003",
+      "FND-ARCH-005",
+      "FND-ARCH-006",
+      "FND-ARCH-009"
+    ]
+  },
+  "hashes": {
+    "finding_identity_hash": "dfbe45012e6a25b163beb93acce1f6ad62167c73da5c4ab2613aeefec39ce937",
+    "finding_admission_hash": "9d9ccc323db2575473f4afe32e30ea191726f7edc8d6870a93bec2d9dc5772fc",
+    "finding_lifecycle_hash": "NOT_CURRENTLY_DEFINED",
+    "active_blocker_set_hash": "d50ac2dea79ceec67a884dbcc30956a37498aad1b69a7ecbae94b7ef0796bc92",
+    "canonical_registry_hash": "f2f6fdd2a92ec882abd6f7524261cbe6269c5ed8201f9ab3ca3ecd1ff499a10e",
+    "historical_registry_hash": "86a872975635db53e419c7a21cb3ec0544460d2dfb638dbae2d1381d1ed10c24",
+    "evidence_inventory_hash": "652af9d2ccfdb4b685ba71498377366eb9fd52df554b31ffbe370b3370dcd514",
+    "dependency_graph_hash": "d82e9fb9970a4040c9291d23ed019b89848f1f97a3c57a3375c34971ab40b7df",
+    "dependency_state_hash": "2f9ebea3adfb038953c84c7a42f09286a68d32dbd4af8f5b4fbda3391c2d7714",
+    "theorem_state_hash": "2e11806c63c88b085b1a80bacb173be2cd26c45fff39aa6c42823837da154af9",
+    "canonical_context_hash": "52ba3e67d8aa20cc12b205e2ea3162fd88a40975c7b33608ffa97e5c6d1782c3",
+    "decision_hash": "68e8b8334a9acc270bb4a7c462c8874993df77282a194005e18fcee3729bb810"
+  },
+  "decision": {
+    "architecture_closure_status": "CLOSED",
+    "global_provisioning_readiness": "BLOCKED",
+    "provisioning_authorization_status": "NOT_ISSUABLE",
+    "runtime_action": "NONE"
+  },
+  "observation": {
+    "natural_denominator": 0,
+    "observer_arming": "NOT_AUTHORIZED",
+    "authorization": "NOT_AUTHORIZED"
+  },
+  "empirical": {
+    "production_readiness": "NOT_AUTHORIZED",
+    "model_tuning": "FROZEN",
+    "learning_claim": "NOT_AUTHORIZED"
+  },
+  "decision_succession": {
+    "previous_decision_id": "urn:arx:decision:epoch-gov-002:1:08bbd59f5cab",
+    "previous_decision_hash": "db8639cf39d5c1a2ed166bce7db0c402181276006bb24f19033af1cb7425df3c",
+    "previous_status": "SUPERSEDED",
+    "current_decision_id": "urn:arx:decision:epoch-gov-002:2:c3950449d3ff",
+    "current_decision_hash": "68e8b8334a9acc270bb4a7c462c8874993df77282a194005e18fcee3729bb810",
+    "current_status": "CURRENT"
+  },
+  "resolution_lineage": {
+    "architecture_resolution_source_hash": "1deae3cddd2f0d7140b64acaee871bdc396fbf2d5bb6cd4305591d032463cc18"
+  },
+  "dependency_reconciliation": {
+    "graph_version": "1.0.0",
+    "graph_hash": "d82e9fb9970a4040c9291d23ed019b89848f1f97a3c57a3375c34971ab40b7df",
+    "evaluation_hash": "2f9ebea3adfb038953c84c7a42f09286a68d32dbd4af8f5b4fbda3391c2d7714"
+  },
+  "verdict": "ESTABLISHED"
+}

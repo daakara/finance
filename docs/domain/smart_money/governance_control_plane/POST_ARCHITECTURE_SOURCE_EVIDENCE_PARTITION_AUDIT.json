@@ -1,0 +1,9 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/post-architecture-source-evidence-partition-audit.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T18:00:00Z",
+  "evidence_authority_files_in_source": 0,
+  "unclassified_source_files": 0,
+  "verdict": "PASS"
+}
