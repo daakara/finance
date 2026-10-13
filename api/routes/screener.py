@@ -25,7 +25,14 @@ from analyst_dashboard.data.market_evidence import (
 )
 from analyst_dashboard.analyzers.scanner_contract import CANONICAL_VCP_UNIVERSE, RADAR_SCOPE_LABEL
 from analyst_dashboard.analyzers.scanner_runner import VCPScannerRunner, SmartMoneyScannerRunner
+from analyst_dashboard.smart_money.storage import (
+    get_smart_money_scanner_runner,
+    get_smart_money_storage_backend,
+    get_smart_money_repository,
+)
 
+from datetime import datetime
+import hashlib
 import hmac
 
 def get_operator_token() -> str:
@@ -52,7 +59,7 @@ confluence_engine = ConfluenceEngine()
 smart_money_engine = SmartMoneyEngine()
 market_db = MarketDatabaseEngine()
 vcp_scanner_runner = VCPScannerRunner(market_db=market_db, confluence_engine=confluence_engine)
-smart_money_scanner_runner = SmartMoneyScannerRunner()
+smart_money_scanner_runner = get_smart_money_scanner_runner()
 
 
 # Authentic Multi-Sector Dual-Horizon Universes (60 Total Quality Assets)
@@ -233,7 +240,8 @@ def run_screener_get(
     vcp_matched_symbols = {r["symbol"] for r in vcp_snapshot.get("results", []) if "symbol" in r}
 
     # Retrieve active Smart Money scanner snapshot for authentic category qualification
-    sm_snapshot = smart_money_scanner_runner.get_active_or_latest_snapshot()
+    sm_runner = get_smart_money_scanner_runner()
+    sm_snapshot = sm_runner.get_active_or_latest_snapshot()
     sm_matched_symbols = (
         {r["symbol"] for r in sm_snapshot.get("results", []) if "symbol" in r}
         if sm_snapshot.get("status") == "AVAILABLE"
@@ -594,11 +602,13 @@ def get_vcp_snapshot():
 @router.get("/smart-money/snapshot")
 def get_smart_money_snapshot():
     """Retrieve status envelope for Smart Money scanner (Section 9 & 18; returns active snapshot or PIPELINE_PENDING)."""
-    return smart_money_scanner_runner.get_active_or_latest_snapshot()
+    runner = get_smart_money_scanner_runner()
+    return runner.get_active_or_latest_snapshot()
 
 
 @router.post("/smart-money/scan")
 def trigger_smart_money_scan(
+    response: Response = None,
     x_operator_token: Optional[str] = Header(None, alias="X-Operator-Token"),
     x_operator_request_id: Optional[str] = Header(None, alias="X-Operator-Request-Id"),
     as_of_watermark: Optional[str] = None,
@@ -607,14 +617,37 @@ def trigger_smart_money_scan(
     """
     Operator-only trigger for Smart Money Form 4 market-wide scan (Gate B5 & B6).
     Rejects public unauthenticated requests. Enforces distributed lease & idempotency.
+    In PostgreSQL profile: Enqueues an asynchronous run request in sm_run_requests (HTTP 202).
+    In SQLite profile: Executes local synchronous scan.
     """
     if not verify_operator_token(x_operator_token):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="PUBLIC_MARKET_WIDE_SCAN_FORBIDDEN: Operator authorization required to trigger market-wide scanner.",
         )
+
+    if get_smart_money_storage_backend() == "postgres":
+        repo = get_smart_money_repository()
+        subject_hash = hashlib.sha256(
+            f"{as_of_watermark}:{universe_build_id}:{x_operator_request_id}".encode("utf-8")
+        ).hexdigest()
+        req_id = repo.create_run_request(
+            request_type="MARKET_WIDE_FORM4_SCAN",
+            subject_hash=subject_hash,
+        )
+        if response is not None and hasattr(response, "status_code"):
+            response.status_code = status.HTTP_202_ACCEPTED
+        return {
+            "status": "ACCEPTED",
+            "request_id": req_id,
+            "request_type": "MARKET_WIDE_FORM4_SCAN",
+            "submitted_at": datetime.utcnow().isoformat() + "Z",
+            "mode": "ASYNCHRONOUS_QUEUE",
+        }
+
+    runner = get_smart_money_scanner_runner()
     try:
-        return smart_money_scanner_runner.execute_market_wide_scan(
+        return runner.execute_market_wide_scan(
             as_of_watermark=as_of_watermark,
             universe_build_id=universe_build_id,
             operator_request_id=x_operator_request_id,

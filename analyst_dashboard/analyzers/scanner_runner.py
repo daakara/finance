@@ -584,33 +584,49 @@ class SmartMoneyScannerRunner:
 
     def __init__(
         self,
-        snapshot_store: Optional[ScannerSnapshotStore] = None,
+        snapshot_store: Optional[Any] = None,
         form4_scanner: Optional[Any] = None,
         coordinator: Optional[DurableRunCoordinator] = None,
         coordination_store: Optional[CoordinationStore] = None,
         lease_policy: Optional[LeasePolicy] = None,
+        backend: Optional[str] = None,
     ):
-        self.snapshot_store = snapshot_store or ScannerSnapshotStore()
-        if form4_scanner is not None:
+        from analyst_dashboard.smart_money.storage.config import get_storage_backend
+        self.backend = backend or get_storage_backend()
+
+        if self.backend == "postgres":
+            if snapshot_store is not None:
+                self.snapshot_store = snapshot_store
+            else:
+                from analyst_dashboard.smart_money.storage.factory import get_smart_money_repository
+                self.snapshot_store = get_smart_money_repository()
             self.form4_scanner = form4_scanner
-        else:
-            from analyst_dashboard.smart_money.form4_scanner import SmartMoneyForm4Scanner
-            self.form4_scanner = SmartMoneyForm4Scanner()
-
-        coord_db_path = getattr(self.snapshot_store, "db_path", None)
-        if coordination_store:
             self.coordination_store = coordination_store
-        elif coord_db_path:
-            self.coordination_store = CoordinationStore(db_path=coord_db_path)
+            self.coordinator = coordinator
+            self.lease_policy = lease_policy
         else:
-            self.coordination_store = CoordinationStore()
+            self.snapshot_store = snapshot_store or ScannerSnapshotStore()
+            if form4_scanner is not None:
+                self.form4_scanner = form4_scanner
+            else:
+                from analyst_dashboard.smart_money.form4_scanner import SmartMoneyForm4Scanner
+                self.form4_scanner = SmartMoneyForm4Scanner()
 
-        self.lease_policy = lease_policy or PRODUCTION_LEASE_POLICY
-        self.coordinator = coordinator or DurableRunCoordinator(
-            resource_key=RESOURCE_KEY_SMART_MONEY_PIPELINE,
-            db_path=self.coordination_store.db_path,
-            policy=self.lease_policy,
-        )
+            coord_db_path = getattr(self.snapshot_store, "db_path", None)
+            if coordination_store:
+                self.coordination_store = coordination_store
+            elif coord_db_path:
+                self.coordination_store = CoordinationStore(db_path=coord_db_path)
+            else:
+                self.coordination_store = CoordinationStore()
+
+            self.lease_policy = lease_policy or PRODUCTION_LEASE_POLICY
+            self.coordinator = coordinator or DurableRunCoordinator(
+                resource_key=RESOURCE_KEY_SMART_MONEY_PIPELINE,
+                db_path=self.coordination_store.db_path,
+                policy=self.lease_policy,
+            )
+
         self._scan_lock = threading.Lock()
         self._cached_active_snapshot: Optional[Dict[str, Any]] = None
 
@@ -722,6 +738,12 @@ class SmartMoneyScannerRunner:
         Retrieves the latest verified, published snapshot from ScannerSnapshotStore.
         If no published snapshot is present, returns fail-closed PIPELINE_PENDING envelope.
         """
+        if self.backend == "postgres":
+            persisted = self.snapshot_store.get_latest_active_snapshot("SMART_MONEY")
+            if persisted is not None:
+                return self._to_envelope(persisted)
+            return self.get_status_envelope()
+
         if self._cached_active_snapshot is not None:
             return self._to_envelope(self._cached_active_snapshot)
 
@@ -747,6 +769,12 @@ class SmartMoneyScannerRunner:
         Persists completed snapshot into ScannerSnapshotStore atomically.
         Enforces receipt-driven certification before advancing active published pointer.
         """
+        if self.backend == "postgres" and self.coordinator is None:
+            raise RuntimeError(
+                "POSTGRES_DIRECT_SCAN_UNSUPPORTED: In PostgreSQL profile, market-wide scans "
+                "must be submitted via sm_run_requests asynchronous queue to ensure dedicated worker execution."
+            )
+
         acquired_thread_lock = False
         if not bypass_thread_lock:
             if not self._scan_lock.acquire(blocking=False):

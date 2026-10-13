@@ -418,9 +418,9 @@ class PostgresSmartMoneyRepository:
                 snapshot["universe_id"],
                 snapshot["universe_size"],
                 matched_val,
-                Json(snapshot.get("results", [])),
-                Json(snapshot.get("provenance", {})),
-                Json(snapshot.get("freshness", {})),
+                Json(snapshot.get("results") if "results" in snapshot else snapshot.get("results_json", [])),
+                Json(snapshot.get("provenance") if "provenance" in snapshot else snapshot.get("provenance_json", {})),
+                Json(snapshot.get("freshness") if "freshness" in snapshot else snapshot.get("freshness_json", {})),
                 decision,
             ))
 
@@ -461,6 +461,10 @@ class PostgresSmartMoneyRepository:
         else:
             with transaction(dsn=self.dsn) as cur:
                 return _exec(cur)
+
+    def save_snapshot(self, snapshot: Dict[str, Any], conn: Optional[PgConnection] = None) -> str:
+        """Compatibility alias for publish_scanner_snapshot_atomic adhering to snapshot store contract."""
+        return self.publish_scanner_snapshot_atomic(snapshot, conn=conn)
 
     def get_latest_active_snapshot(self, scan_type: str = "SMART_MONEY", conn: Optional[PgConnection] = None) -> Optional[Dict[str, Any]]:
         """
@@ -597,7 +601,9 @@ class PostgresSmartMoneyRepository:
                 SET status = 'RUNNING', claimed_at = NOW(), claimed_by = %s
                 WHERE request_id = %s;
             """, (worker_id, row["request_id"]))
-            return dict(row)
+            res = dict(row)
+            res["request_id"] = str(res["request_id"])
+            return res
 
         if conn is not None:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -606,17 +612,45 @@ class PostgresSmartMoneyRepository:
             with transaction(dsn=self.dsn) as cur:
                 return _exec(cur)
 
-    def complete_run_request(self, request_id: str, result_generation_id: str, conn: Optional[PgConnection] = None) -> None:
+    def complete_run_request(
+        self,
+        request_id: str,
+        result_generation_id: Optional[str] = None,
+        status: str = "COMPLETED",
+        conn: Optional[PgConnection] = None,
+    ) -> None:
         """Marks a claimed run request as completed."""
         query = """
             UPDATE sm_run_requests
-            SET status = 'COMPLETED', completed_at = NOW(), result_generation_id = %s
+            SET status = %s, completed_at = NOW(), result_generation_id = %s
             WHERE request_id = %s;
         """
 
         if conn is not None:
             with conn.cursor() as cur:
-                cur.execute(query, (result_generation_id, request_id))
+                cur.execute(query, (status, result_generation_id, request_id))
         else:
             with transaction(dsn=self.dsn) as cur:
-                cur.execute(query, (result_generation_id, request_id))
+                cur.execute(query, (status, result_generation_id, request_id))
+
+    def get_run_request(self, request_id: str, conn: Optional[PgConnection] = None) -> Optional[Dict[str, Any]]:
+        """Retrieves a run request by its ID."""
+        query = "SELECT * FROM sm_run_requests WHERE request_id = %s;"
+
+        def _exec(cur):
+            cur.execute(query, (request_id,))
+            row = cur.fetchone()
+            if not row:
+                return None
+            res = dict(row)
+            res["request_id"] = str(res["request_id"])
+            return res
+
+        if conn is not None:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                return _exec(cur)
+        else:
+            with get_connection(dsn=self.dsn) as c:
+                with c.cursor(cursor_factory=RealDictCursor) as cur:
+                    return _exec(cur)
+

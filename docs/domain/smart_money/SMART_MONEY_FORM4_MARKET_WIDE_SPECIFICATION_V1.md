@@ -238,3 +238,39 @@ Under fail-closed governance:
 
 > **GOVERNANCE ASSERTION**: `POSTGRES IMPLEMENTED ≠ PRODUCTION DEPLOYED`. Implementation and local verification of PostgreSQL topology do not constitute production authorization.
 
+---
+
+## 7. Canonical Runtime Integration & Migration Protocol V1
+
+### 7.1 Unified Storage Factory
+All application entry points (API endpoints, scan triggers, CLI utilities) interact with the persistence tier via the canonical storage factory (`analyst_dashboard/smart_money/storage/factory.py`):
+- `get_smart_money_storage_backend() -> str`: Detects configured backend (`postgres` vs `sqlite`).
+- `get_smart_money_repository() -> PostgresSmartMoneyRepository`: Returns the authoritative PostgreSQL repository when `backend == "postgres"`.
+- `get_smart_money_scanner_runner() -> SmartMoneyScannerRunner`: Returns the unified scanner runner wired to the appropriate backend. In PostgreSQL mode, zero SQLite connection files are initialized or opened.
+
+### 7.2 Strict Production Profile Fail-Closed Enforcement
+- If `ARX_STORAGE_BACKEND=postgres` or `ARX_ENVIRONMENT=production`, storage configuration strictly requires a valid, reachable PostgreSQL connection URL (`SMART_MONEY_DATABASE_URL` or `DATABASE_URL`).
+- Silent fallback to SQLite under a production or PostgreSQL profile is strictly prohibited and raises `ValueError` immediately upon initialization.
+- Ephemeral SQLite is permitted exclusively for local development and non-production testing environments (`ARX_ENVIRONMENT=development` or `test`).
+
+### 7.3 Pinned PostgreSQL Major-Version Architecture
+The production target database engine is pinned across the codebase and configuration:
+- `SMART_MONEY_POSTGRES_MAJOR = 16`
+- `PRODUCTION_TARGET_POSTGRES_MAJOR = 16`
+- `RAILWAY_POSTGRES_IMAGE_TARGET = "postgres:16-alpine"`
+Railway provisioning must use the pinned PostgreSQL 16 Alpine container target.
+
+### 7.4 Operator Asynchronous Run Request Queue
+Under PostgreSQL topology:
+- Web API endpoints (`POST /api/screener/smart-money/scan`) do not execute synchronous long-running scanner passes in the HTTP request cycle.
+- The web API enqueues a run request in `sm_run_requests` with status `PENDING` and returns HTTP `202 Accepted` along with the assigned `request_id`.
+- The background ingestion worker claims pending requests using `SELECT ... FOR UPDATE SKIP LOCKED`, preventing race conditions across multiple worker replicas.
+- The web API serves cached active snapshots from `scanner_active_snapshots` and `scanner_snapshots` with zero live computation.
+
+### 7.5 Fail-Closed Migration Conflict Protocol
+During database migration from legacy SQLite to authoritative PostgreSQL:
+- The migrator (`SmartMoneySqliteMigrator`) checks incoming filings against existing records in `form4_raw_filings`.
+- If an existing record matches the `accession_number` but has a conflicting `content_hash`, the migrator halts immediately, rolls back the PostgreSQL transaction, records a conflict manifest (`status = "SOURCE_INTEGRITY_CONFLICT"`), and raises `SourceIntegrityConflictError`.
+- If an existing record matches both `accession_number` and `content_hash`, it is treated as an idempotent no-op (`ON CONFLICT DO NOTHING`).
+
+

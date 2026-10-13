@@ -12,7 +12,12 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 SMART_MONEY_POSTGRES_SCHEMA_VERSION = "SMART_MONEY_POSTGRES_SCHEMA_V1"
+
+# Explicitly pinned PostgreSQL major version (Option A — Pin 16)
+SMART_MONEY_POSTGRES_MAJOR = 16
 POSTGRES_MAJOR_VERSION_SUPPORTED = 16
+PRODUCTION_TARGET_POSTGRES_MAJOR = 16
+RAILWAY_POSTGRES_IMAGE_TARGET = "postgres:16-alpine"
 
 # Canonical role identifiers
 ROLE_WEB = "smart_money_web"
@@ -46,10 +51,43 @@ def get_database_role() -> str:
 def get_storage_backend() -> str:
     """
     Determines whether the subsystem is operating against PostgreSQL or local SQLite.
+    Follows ARX_STORAGE_BACKEND with strict fail-closed validation.
     In production environments, SQLite is strictly disallowed.
     """
+    configured_backend = os.environ.get("ARX_STORAGE_BACKEND", "").strip().lower()
+    env = os.environ.get("ARX_ENVIRONMENT", "").strip().lower()
     db_url = get_database_url()
-    if db_url and (db_url.startswith("postgres://") or db_url.startswith("postgresql://")):
+    has_valid_pg_url = bool(db_url and (db_url.startswith("postgres://") or db_url.startswith("postgresql://")))
+
+    if configured_backend == "postgres":
+        if not has_valid_pg_url:
+            raise RuntimeError(
+                "POSTGRES_STORAGE_BACKEND_CONFIGURATION_VIOLATION: "
+                "ARX_STORAGE_BACKEND is set to 'postgres', but SMART_MONEY_DATABASE_URL "
+                "is missing or invalid. Ephemeral SQLite fallback is strictly prohibited."
+            )
+        return "postgres"
+
+    if configured_backend == "sqlite":
+        if env == "production":
+            raise RuntimeError(
+                "PRODUCTION_STORAGE_CONFIGURATION_VIOLATION: "
+                "ARX_STORAGE_BACKEND='sqlite' is strictly prohibited in production environment."
+            )
+        return "sqlite"
+
+    # If ARX_STORAGE_BACKEND is not explicitly set:
+    if env == "production":
+        if not has_valid_pg_url:
+            raise RuntimeError(
+                "PRODUCTION_STORAGE_CONFIGURATION_VIOLATION: "
+                "SMART_MONEY_DATABASE_URL is strictly required in production environment. "
+                "Ephemeral SQLite fallback is strictly prohibited."
+            )
+        return "postgres"
+
+    # Default for local non-production development
+    if has_valid_pg_url:
         return "postgres"
     return "sqlite"
 
@@ -62,9 +100,15 @@ def validate_storage_configuration() -> None:
     3. Invalid role raises ValueError.
     """
     env = os.environ.get("ARX_ENVIRONMENT", "").strip().lower()
+    backend = get_storage_backend()
     db_url = get_database_url()
 
     if env == "production":
+        if backend != "postgres":
+            raise RuntimeError(
+                "PRODUCTION_STORAGE_CONFIGURATION_VIOLATION: "
+                "Production environment requires PostgreSQL backend."
+            )
         if not db_url:
             raise RuntimeError(
                 "PRODUCTION_STORAGE_CONFIGURATION_VIOLATION: "

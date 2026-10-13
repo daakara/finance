@@ -34,6 +34,13 @@ def compute_file_sha256(filepath: str) -> str:
     return sha.hexdigest()
 
 
+class SourceIntegrityConflictError(RuntimeError):
+    """Raised when an existing record has a conflicting hash with incoming migration data."""
+    def __init__(self, message: str, conflicts: Optional[List[Dict[str, Any]]] = None):
+        super().__init__(message)
+        self.conflicts = conflicts or []
+
+
 class SmartMoneySqliteMigrator:
     """Deterministic, idempotent migrator from SQLite to PostgreSQL."""
 
@@ -46,6 +53,7 @@ class SmartMoneySqliteMigrator:
         self.sqlite_db_path = sqlite_db_path
         self.pg_dsn = pg_dsn
         self.release_sha = release_sha
+        self.last_manifest: Optional[Dict[str, Any]] = None
 
     def run_migration(self) -> Dict[str, Any]:
         """
@@ -118,10 +126,37 @@ class SmartMoneySqliteMigrator:
                 "source_counts": source_counts,
                 "target_counts": target_counts,
                 "release_sha": self.release_sha,
+                "conflict_count": 0,
+                "conflicting_accessions": [],
                 "status": "SUCCESS",
             }
+            self.last_manifest = manifest
             logger.info(f"Migration completed successfully: {json.dumps(manifest, indent=2)}")
             return manifest
+
+        except SourceIntegrityConflictError as e:
+            pg_conn.rollback()
+            completed_at = datetime.utcnow().isoformat() + "Z"
+            manifest = {
+                "migration_id": migration_id,
+                "source_database_path": self.sqlite_db_path,
+                "source_database_hash": source_hash,
+                "source_schema_version": "SQLITE_SMART_MONEY_V2",
+                "target_schema_version": "SMART_MONEY_POSTGRES_SCHEMA_V1",
+                "started_at": started_at,
+                "completed_at": completed_at,
+                "source_counts": source_counts,
+                "target_counts": target_counts,
+                "release_sha": self.release_sha,
+                "conflict_count": len(e.conflicts),
+                "conflicting_accessions": [c["accession_number"] for c in e.conflicts],
+                "conflicts_detail": e.conflicts,
+                "status": "SOURCE_INTEGRITY_CONFLICT",
+                "error": str(e),
+            }
+            self.last_manifest = manifest
+            logger.error(f"Migration aborted due to integrity conflict: {e}")
+            raise
 
         finally:
             sqlite_conn.close()
@@ -138,7 +173,21 @@ class SmartMoneySqliteMigrator:
         s_cur = sqlite_conn.cursor()
         s_cur.execute("SELECT * FROM form4_raw_filings;")
         rows = s_cur.fetchall()
+        conflicting_accessions = []
         for r in rows:
+            acc = r["accession_number"]
+            src_hash = r["content_hash"]
+            pg_cur.execute("SELECT content_hash FROM form4_raw_filings WHERE accession_number = %s;", (acc,))
+            existing = pg_cur.fetchone()
+            if existing:
+                if existing["content_hash"] != src_hash:
+                    conflicting_accessions.append({
+                        "accession_number": acc,
+                        "existing_hash": existing["content_hash"],
+                        "incoming_hash": src_hash,
+                    })
+                continue
+
             pg_cur.execute("""
                 INSERT INTO form4_raw_filings (
                     accession_number, cik, ticker, company_name, filing_date,
@@ -156,6 +205,12 @@ class SmartMoneySqliteMigrator:
                 r["content_hash"],
                 r["source_url"],
             ))
+        if conflicting_accessions:
+            raise SourceIntegrityConflictError(
+                f"SOURCE_INTEGRITY_CONFLICT: Found {len(conflicting_accessions)} accession(s) with conflicting content hash: "
+                f"{[c['accession_number'] for c in conflicting_accessions]}",
+                conflicts=conflicting_accessions,
+            )
         pg_cur.execute("SELECT COUNT(*) AS cnt FROM form4_raw_filings;")
         return len(rows), pg_cur.fetchone()["cnt"]
 
