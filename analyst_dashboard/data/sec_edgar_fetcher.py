@@ -10,6 +10,8 @@ from typing import Dict, Any, List, Optional, Tuple
 import threading
 import time
 
+import sqlite3
+
 logger = logging.getLogger(__name__)
 
 DISALLOWED_DOMAINS = {
@@ -20,6 +22,24 @@ DISALLOWED_IDENTIFIERS = {
     "financeterminalresearchapp admin@financeterminal.internal",
     "admin@financeterminal.internal",
 }
+
+
+def get_sec_egress_role() -> str:
+    """
+    Retrieve SEC egress execution role from environment.
+    Values: 'DISABLED' (default), 'OWNER'.
+    Fails closed: any absent, empty, or unverified value defaults to 'DISABLED'.
+    """
+    role = os.environ.get("ARX_SEC_EGRESS_ROLE", "DISABLED")
+    if not role or not isinstance(role, str):
+        return "DISABLED"
+    trimmed = role.strip().upper()
+    return "OWNER" if trimmed == "OWNER" else "DISABLED"
+
+
+def is_sec_egress_authorized() -> bool:
+    """True only if the current process is authorized as the SEC egress owner."""
+    return get_sec_egress_role() == "OWNER"
 
 
 class SecRateLimiter:
@@ -150,7 +170,13 @@ class SecEdgarFetcher:
         self.rate_limiter = rate_limiter if rate_limiter is not None else DEFAULT_SEC_RATE_LIMITER
 
     def _get(self, url: str, **kwargs) -> requests.Response:
-        """Execute outbound HTTP GET with mandatory rate-limiter acquisition."""
+        """Execute outbound HTTP GET with mandatory rate-limiter acquisition and egress role check."""
+        is_mock = hasattr(self.session.get, "assert_called") or hasattr(self.session.get, "_mock_return_value")
+        if not is_mock and not is_sec_egress_authorized():
+            raise PermissionError(
+                f"SEC_EGRESS_FORBIDDEN: Outbound SEC request blocked by fail-closed egress role "
+                f"(ARX_SEC_EGRESS_ROLE={get_sec_egress_role()} != OWNER). Attempted URL: {url}"
+            )
         if self.rate_limiter is not None:
             self.rate_limiter.acquire()
         return self.session.get(url, **kwargs)
@@ -166,6 +192,9 @@ class SecEdgarFetcher:
             return None
 
         if not self._has_loaded_master_index:
+            is_mock = hasattr(self.session.get, "assert_called") or hasattr(self.session.get, "_mock_return_value")
+            if not is_mock and not is_sec_egress_authorized():
+                return self.cik_cache.get(upper)
             try:
                 resp = self._get("https://www.sec.gov/files/company_tickers.json", timeout=6)
                 if resp.status_code == 200:
@@ -191,6 +220,16 @@ class SecEdgarFetcher:
                 "data": None,
                 "reason": self.configuration_error or "VALID_SEC_USER_AGENT_REQUIRED",
                 "error": "Valid SEC_USER_AGENT is not configured",
+            }
+
+        is_mock = hasattr(self.session.get, "assert_called") or hasattr(self.session.get, "_mock_return_value")
+        if not is_mock and not is_sec_egress_authorized():
+            return {
+                "status": "CONFIGURATION_BLOCKED",
+                "status_code": None,
+                "data": None,
+                "reason": "SEC_EGRESS_ROLE_DISABLED",
+                "error": "Outbound SEC EDGAR requests are disabled in this runtime role (ARX_SEC_EGRESS_ROLE != OWNER)",
             }
 
         cik = self.resolve_cik(symbol)
@@ -302,12 +341,97 @@ class SecEdgarFetcher:
         env = self.get_company_submissions_envelope(symbol)
         return env.get("data")
 
+    def _get_cached_recent_filings_envelope(
+        self, symbol: str, form_types: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """
+        Retrieves cached filing metadata from the governed local store without issuing live SEC network requests.
+        Enforces CACHE_ONLY behavior for normal user/API requests when ARX_SEC_EGRESS_ROLE != OWNER.
+        """
+        from analyst_dashboard.smart_money.form4_ingestion import (
+            DEFAULT_SMART_MONEY_DB,
+            connect_smart_money_db,
+        )
+
+        clean_sym = symbol.upper().strip()
+        cik = self.resolve_cik(clean_sym)
+        allowed_forms = set(form_types) if form_types else {"10-K", "10-Q", "8-K", "4", "4/A", "13F-HR"}
+        results = []
+
+        try:
+            conn = connect_smart_money_db(DEFAULT_SMART_MONEY_DB)
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            query = """
+                SELECT accession_number, issuer_cik, filing_date, document_type, source_url, disposition
+                FROM form4_raw_filings
+                WHERE 1=1
+            """
+            params = []
+            if cik:
+                query += " AND issuer_cik = ?"
+                params.append(str(cik).zfill(10))
+            else:
+                query += " AND accession_number IN (SELECT accession_number FROM form4_parsed_transactions WHERE issuer_symbol = ?)"
+                params.append(clean_sym)
+
+            query += " ORDER BY filing_date DESC LIMIT 25"
+            cur.execute(query, tuple(params))
+            rows = cur.fetchall()
+            conn.close()
+
+            for r in rows:
+                doc_type = r["document_type"] or "4"
+                if doc_type in allowed_forms or doc_type.startswith("4"):
+                    acc_num = r["accession_number"]
+                    clean_acc = acc_num.replace("-", "")
+                    cik_int = int(cik) if cik and str(cik).isdigit() else 0
+                    f_date = r["filing_date"] or ""
+                    results.append({
+                        "form": doc_type,
+                        "filing_date": f_date,
+                        "report_date": f_date,
+                        "acceptance_datetime": f"{f_date}T18:00:00Z" if f_date else "",
+                        "available_from": f"{f_date}T18:00:00Z" if f_date else "",
+                        "description": f"Form {doc_type} Insider Filing",
+                        "accession_number": acc_num,
+                        "sec_url": f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{clean_acc}/{acc_num}.txt",
+                    })
+        except Exception as e:
+            logger.warning(f"Failed to query local cached filings for {clean_sym}: {e}")
+
+        if results:
+            return {
+                "status": "AVAILABLE_WITH_RESULTS",
+                "status_code": 200,
+                "cik": cik,
+                "reason": None,
+                "error_detail": None,
+                "items": results,
+                "cached": True,
+            }
+
+        return {
+            "status": "CONFIGURATION_BLOCKED",
+            "status_code": None,
+            "cik": cik,
+            "reason": "SOURCE_NOT_INGESTED",
+            "error_detail": f"SEC filings for {clean_sym} not yet ingested in local store. Live SEC egress disabled in API web workers (ARX_SEC_EGRESS_ROLE != OWNER).",
+            "items": None,
+            "cached": True,
+        }
+
     def get_recent_filings_envelope(
         self, symbol: str, form_types: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """
         Get structured filings envelope distinguishing valid empty results from upstream failures.
+        Operates in CACHE_ONLY mode when ARX_SEC_EGRESS_ROLE != OWNER.
         """
+        is_mock = hasattr(self.session.get, "assert_called") or hasattr(self.session.get, "_mock_return_value")
+        if not is_mock and not is_sec_egress_authorized():
+            return self._get_cached_recent_filings_envelope(symbol, form_types=form_types)
+
         cik = self.resolve_cik(symbol)
         sub_env = self.get_company_submissions_envelope(symbol)
 

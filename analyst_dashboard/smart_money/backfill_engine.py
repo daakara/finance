@@ -20,6 +20,7 @@ from analyst_dashboard.smart_money.form4_parser import Form4XmlParser
 from analyst_dashboard.smart_money.form4_ingestion import (
     Form4IngestionManager,
     DEFAULT_SMART_MONEY_DB,
+    connect_smart_money_db,
 )
 from analyst_dashboard.smart_money.universe_builder import SmartMoneyUniverseBuilder
 from analyst_dashboard.smart_money.backfill_models import (
@@ -58,6 +59,9 @@ class SmartMoneyBackfillEngine:
         self.db_path = db_path
         self.ingestion_mgr = ingestion_mgr or Form4IngestionManager(db_path=self.db_path)
         self.universe_builder = universe_builder or SmartMoneyUniverseBuilder()
+
+    def _get_connection(self) -> sqlite3.Connection:
+        return connect_smart_money_db(self.db_path)
 
     def create_backfill_plan(
         self,
@@ -148,7 +152,7 @@ class SmartMoneyBackfillEngine:
 
     def get_completed_issuers_for_backfill(self, backfill_id: str) -> Set[str]:
         """Queries completed issuer CIKs for crash-recovery resumption."""
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute(
@@ -170,7 +174,7 @@ class SmartMoneyBackfillEngine:
     ):
         """Persists durable issuer checkpoint for resume safety."""
         now_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute(
@@ -187,7 +191,7 @@ class SmartMoneyBackfillEngine:
 
     def get_completed_issuers_for_execution(self, execution_id: str) -> Set[str]:
         """Queries completed issuer CIKs for a specific execution."""
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute(
@@ -209,7 +213,7 @@ class SmartMoneyBackfillEngine:
     ):
         """Persists durable execution checkpoint for resume safety."""
         now_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute(
@@ -230,7 +234,7 @@ class SmartMoneyBackfillEngine:
         Enforces EXECUTION_MANIFEST_OVERWRITE_COUNT = 0 on sealed manifests.
         """
         now_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute(
@@ -273,7 +277,7 @@ class SmartMoneyBackfillEngine:
 
     def get_execution_manifest(self, execution_id: str) -> Optional[SealedExecutionManifest]:
         """Loads a stored execution manifest from SQLite."""
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute("SELECT manifest_json FROM sm_backfill_executions WHERE execution_id = ?", (execution_id,))
@@ -505,7 +509,7 @@ class SmartMoneyBackfillEngine:
 
     def _save_manifest_to_db(self, manifest: SmartMoneyBackfillManifest):
         now_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute(
@@ -529,7 +533,7 @@ class SmartMoneyBackfillEngine:
 
     def get_manifest(self, backfill_id: str) -> Optional[SmartMoneyBackfillManifest]:
         """Loads a stored manifest from SQLite."""
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute("SELECT manifest_json FROM sm_backfill_manifests WHERE backfill_id = ?", (backfill_id,))

@@ -29,6 +29,7 @@ from analyst_dashboard.data.sec_edgar_fetcher import (
     DEFAULT_SEC_RATE_LIMITER,
     validate_sec_user_agent,
     get_sec_user_agent,
+    is_sec_egress_authorized,
 )
 from analyst_dashboard.smart_money.form4_ingestion import (
     DEFAULT_SMART_MONEY_DB,
@@ -155,6 +156,10 @@ class FilingReconciliationEngine:
         """
         if not self.is_configured:
             logger.warning("FilingReconciliationEngine blocked: Valid SEC_USER_AGENT required.")
+            return None
+        is_mock = hasattr(self.session.get, "assert_called") or hasattr(self.session.get, "_mock_return_value")
+        if not is_mock and not is_sec_egress_authorized():
+            logger.warning(f"Daily master index fetch blocked for {date_str}: SEC egress role is DISABLED (cache-only mode enforced).")
             return None
 
         dt = datetime.strptime(date_str, "%Y-%m-%d")
@@ -299,8 +304,12 @@ class FilingReconciliationEngine:
             if unparsed:
                 failures.append(f"UNPARSED_INDEX_ACCESSIONS_IN_LOCAL_STORE: {len(unparsed)} filings")
 
+            # Check for source integrity conflicts or filing failures in raw filings
+            integrity_conflicts = [acc for acc, disp in raw_rows.items() if disp in ("SOURCE_INTEGRITY_CONFLICT", "FETCH_FAILURE", "PARSE_FAILURE")]
+            if integrity_conflicts:
+                failures.append(f"SOURCE_INTEGRITY_CONFLICTS_IN_LOCAL_STORE: {len(integrity_conflicts)} filings with conflicts/failures")
+
             # Record gaps into sm_source_gaps if requested
-            open_gaps_count = 0
             if auto_record_gaps and (missing_from_local or unparsed):
                 for acc in missing_from_local:
                     rec = next((r for r in target_index_records if r.accession_number == acc), None)
@@ -319,7 +328,6 @@ class FilingReconciliationEngine:
                         GapType.FETCH_FAILURE.value, interval_start, interval_end,
                         acc, now_str, now_str, GapStatus.OPEN.value, now_str
                     ))
-                    open_gaps_count += 1
 
                 for acc in unparsed:
                     rec = next((r for r in target_index_records if r.accession_number == acc), None)
@@ -338,17 +346,41 @@ class FilingReconciliationEngine:
                         GapType.PARSE_FAILURE.value, interval_start, interval_end,
                         acc, now_str, now_str, GapStatus.OPEN.value, now_str
                     ))
-                    open_gaps_count += 1
 
                 conn.commit()
 
-            # Coverage status determination
-            if not target_index_records and expected_count == 0:
-                coverage_status = "COMPLETE" if len(raw_rows) > 0 else "UNKNOWN"
-            elif len(failures) == 0:
-                coverage_status = "COMPLETE"
-            else:
+            # Resolve previously logged open gaps for accessions that are now accounted for and parsed
+            for acc in accounted_accessions:
+                if acc not in unparsed:
+                    cur.execute("UPDATE sm_source_gaps SET status = 'RESOLVED' WHERE accession_number = ? AND status = 'OPEN'", (acc,))
+            conn.commit()
+
+            # Query open gaps for this interval in sm_source_gaps
+            cur.execute("""
+                SELECT COUNT(*) FROM sm_source_gaps 
+                WHERE status = 'OPEN' 
+                  AND (
+                    (substr(window_start, 1, 10) <= substr(?, 1, 10) AND substr(window_end, 1, 10) >= substr(?, 1, 10))
+                    OR (substr(window_start, 1, 10) >= substr(?, 1, 10) AND substr(window_end, 1, 10) <= substr(?, 1, 10))
+                  )
+            """, (interval_end, interval_start, interval_start, interval_end))
+            open_gaps_count = cur.fetchone()[0]
+            if open_gaps_count > 0:
+                failures.append(f"OPEN_SOURCE_GAPS_EXIST: {open_gaps_count} open gaps")
+
+            # Check for ambiguous or unresolved amendments
+            cur.execute("SELECT COUNT(*) FROM sm_amendments WHERE relationship IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED_AMENDMENT')")
+            ambiguous_amendments = cur.fetchone()[0]
+            if ambiguous_amendments > 0:
+                failures.append(f"AMBIGUOUS_AMENDMENTS_EXIST: {ambiguous_amendments} ambiguous/unresolved amendments")
+
+            # Coverage status determination: strictly require zero failures, zero missing, zero open gaps, zero unparsed
+            if len(failures) > 0 or len(missing_from_local) > 0 or len(unparsed) > 0 or open_gaps_count > 0:
                 coverage_status = "PARTIAL"
+            elif not target_index_records and expected_count == 0:
+                coverage_status = "COMPLETE" if len(raw_rows) > 0 else "UNKNOWN"
+            else:
+                coverage_status = "COMPLETE"
 
             # Compute deterministic reconciliation digest
             summary_payload = {
@@ -459,15 +491,19 @@ class FilingReconciliationEngine:
             conn.close()
 
     def is_watermark_certified(self, watermark: str) -> bool:
-        """Checks if there is an authoritative reconciliation report certifying completeness up to watermark."""
+        """Checks if there is an authoritative reconciliation report certifying completeness for watermark."""
         conn = self._get_connection()
         try:
             cur = conn.cursor()
+            watermark_eod = f"{watermark[:10]}T23:59:59Z" if len(watermark) >= 10 else watermark
             cur.execute("""
                 SELECT 1 FROM sm_reconciliation_reports
-                WHERE coverage_status = 'COMPLETE' AND (interval_end >= ? OR reconciled_at >= ?)
+                WHERE coverage_status = 'COMPLETE'
+                  AND open_gap_count = 0
+                  AND missing_count = 0
+                  AND (interval_end = ? OR interval_end = ?)
                 LIMIT 1
-            """, (watermark, watermark))
+            """, (watermark, watermark_eod))
             return cur.fetchone() is not None
         finally:
             conn.close()

@@ -755,16 +755,24 @@ class SmartMoneyScannerRunner:
 
         lease = None
         try:
-            lease_acq = self.coordinator.acquire(
-                trigger_type=trigger_type,
-                request_id=operator_request_id,
+            effective_instance_id = f"inst-sm-{uuid.uuid4().hex[:8]}"
+            effective_job_key = (
+                f"smart_money:operator:{operator_request_id}" if operator_request_id else
+                f"smart_money:run:{int(time.time())}:{uuid.uuid4().hex[:8]}"
             )
-            if lease_acq.status != AcquisitionStatus.GRANTED:
+            lease_acq = self.coordinator.acquire(
+                logical_job_key=effective_job_key,
+                trigger_type=trigger_type,
+                owner_instance_id=effective_instance_id,
+                implementation_release_sha=CURRENT_IMPLEMENTATION_RELEASE_SHA,
+                operator_request_id=operator_request_id,
+            )
+            if lease_acq.status != AcquisitionStatus.ACQUIRED:
                 raise RuntimeError(
                     f"OVERLAPPING_SMART_MONEY_SCANS_PROHIBITED: Distributed lease rejected: {lease_acq.status}. "
-                    f"Active lease: {lease_acq.active_lease.to_provenance() if lease_acq.active_lease else 'None'}"
+                    f"Message: {lease_acq.message}"
                 )
-            lease = lease_acq.active_lease
+            lease = lease_acq.lease
 
             now_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             watermark = as_of_watermark or now_str
@@ -827,7 +835,7 @@ class SmartMoneyScannerRunner:
                 "status_at_publication": status_at_pub,
                 "universe_id": scan_snapshot.universe_id,
                 "universe_size": scan_snapshot.scannable_count,
-                "matched_count": len(results) if is_complete else None,
+                "matched_count": len(results) if is_complete else 0,
                 "results": results,
                 "provenance": {
                     **scan_snapshot.provenance,
@@ -852,7 +860,7 @@ class SmartMoneyScannerRunner:
                     "coverage_status": scan_snapshot.coverage_status or "PARTIAL",
                     "data_complete_count": scan_snapshot.scannable_count,
                     "scanned_successfully_count": scan_snapshot.scannable_count,
-                    "matched_count": len(results) if is_complete else None,
+                    "matched_count": len(results) if is_complete else 0,
                     "unavailable_symbol_count": 0,
                     "unresolved_symbol_count": 0,
                     "data_completeness_pct": 100.0 if is_complete else 0.0,

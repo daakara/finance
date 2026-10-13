@@ -1,6 +1,7 @@
 # ARX Terminal — Smart Money Form 4 Market-Wide Pipeline Specification (V1)
 
-**Release Candidate Lineage**: Candidate 002 (`arx/smart-money-form4-market-wide-rc-v2`)  
+**Release Candidate Lineage**: Candidate 003 (`arx/smart-money-form4-market-wide-rc-v3`)  
+**Candidate 002 Baseline**: `714d47271c6dae9f92b52ce11570de2f13d8fd42` (immutable audit evidence)  
 **Parent / Baseline**: `0b644698f46d14dd454425cb842b08e59b8dafcb`  
 **Frozen RC Ancestor**: `9d0bbcf21673fd6a3428a6674713dd244ec948bc` (mechanically merged)  
 **Governance State**: Fail-Closed Pre-Release (`PRODUCTION_DEPLOYMENT_AUTHORIZED: false`)
@@ -132,6 +133,24 @@ RADAR READ-ONLY SERVING LAYER (`/api/screener`, `/api/screener/smart-money/snaps
 - User-Agent compliance: Enforces declared format `<Entity/AppName> <AdminContact@domain.com>`.
 - Concurrency & Coordination: `DurableRunCoordinator` with distributed SQLite lease prevents overlapping scans (`RESOURCE_KEY_SMART_MONEY_PIPELINE`).
 - SQLite Configuration: All Smart Money database access routed through `connect_smart_money_db(db_path)` applying `WAL`, `busy_timeout = 5000ms`, `synchronous = NORMAL`.
+
+### Candidate 003 Operational Remediations:
+1. **Single SEC Egress Owner (`ARX_SEC_EGRESS_ROLE`)**:
+   - `ARX_SEC_EGRESS_ROLE=DISABLED` by default on all web API replicas.
+   - Web API endpoints (`/sec-filings/{symbol}`, submissions) are strictly cache-only. Cache miss returns `status = CONFIGURATION_BLOCKED`, `items = null` with explicit error detail, performing ZERO outbound HTTP calls.
+   - Only dedicated worker processes with `ARX_SEC_EGRESS_ROLE=OWNER` may initiate outbound SEC requests.
+2. **Point-in-Time Effective Form 4 Evidence & Amendment Resolution**:
+   - Resolved amendment chains supersede prior accessions point-in-time: at watermark $W$, accession $A$ is excluded if an amending filing $B$ was publicly available at or before $W$.
+   - Ambiguous amendments (`AMENDMENT_TARGET_AMBIGUOUS`) are excluded from effective transaction sets, excluded from gross purchase value, and disqualify the issuer from Radar qualification under `AMENDMENT_UNRESOLVED`.
+3. **Material Gap Certification Gating**:
+   - `sm_reconciliation_reports` strictly prohibits `coverage_status = COMPLETE` if any material gaps (`MISSING_ACCESSION`, `FETCH_FAILURE`, `PARSE_FAILURE`), source integrity conflicts (`SOURCE_INTEGRITY_CONFLICT`), open gaps in `sm_source_gaps`, or ambiguous amendments exist.
+4. **Exact Certification Receipt Binding**:
+   - Radar scanning as of watermark $W$ verifies that a reconciliation report explicitly binds $W$ (or $W$'s day interval) with `coverage_status = COMPLETE`, `open_gap_count = 0`, and `missing_count = 0`. Future or unrelated receipts cannot certify prior un-reconciled intervals.
+5. **Operator Token Constant-Time Verification**:
+   - Removed hardcoded fallback `"arx-operator-secret-v1"`.
+   - `verify_operator_token` requires non-empty `ARX_OPERATOR_TOKEN` and executes constant-time `hmac.compare_digest` verification.
+6. **Unified SQLite Connection Policy**:
+   - All Smart Money modules use `connect_smart_money_db(db_path)` enforcing WAL mode, 5000ms busy timeout, and NORMAL synchronous persistence.
 
 ---
 

@@ -26,7 +26,24 @@ from analyst_dashboard.data.market_evidence import (
 from analyst_dashboard.analyzers.scanner_contract import CANONICAL_VCP_UNIVERSE, RADAR_SCOPE_LABEL
 from analyst_dashboard.analyzers.scanner_runner import VCPScannerRunner, SmartMoneyScannerRunner
 
-OPERATOR_TOKEN: str = os.getenv("ARX_OPERATOR_TOKEN", "arx-operator-secret-v1")
+import hmac
+
+def get_operator_token() -> str:
+    """Returns the configured operator authorization token. Fails closed (empty string) if unset."""
+    return os.getenv("ARX_OPERATOR_TOKEN", "").strip()
+
+OPERATOR_TOKEN: str = get_operator_token()
+
+
+def verify_operator_token(candidate_token: Optional[str]) -> bool:
+    """
+    Constant-time comparison against configured ARX_OPERATOR_TOKEN.
+    Fails closed if ARX_OPERATOR_TOKEN is unset, empty, or candidate does not match.
+    """
+    expected = get_operator_token() or OPERATOR_TOKEN
+    if not expected or not candidate_token:
+        return False
+    return hmac.compare_digest(candidate_token.strip().encode("utf-8"), expected.encode("utf-8"))
 
 router = APIRouter()
 screener = HiddenGemsScreener()
@@ -591,7 +608,7 @@ def trigger_smart_money_scan(
     Operator-only trigger for Smart Money Form 4 market-wide scan (Gate B5 & B6).
     Rejects public unauthenticated requests. Enforces distributed lease & idempotency.
     """
-    if not x_operator_token or x_operator_token != OPERATOR_TOKEN:
+    if not verify_operator_token(x_operator_token):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="PUBLIC_MARKET_WIDE_SCAN_FORBIDDEN: Operator authorization required to trigger market-wide scanner.",
@@ -622,7 +639,7 @@ def trigger_vcp_scan(
     Operator-only trigger for Minervini VCP market-wide scan (Section 16).
     Rejects public unauthenticated requests. Enforces distributed lease & idempotency.
     """
-    if not x_operator_token or x_operator_token != OPERATOR_TOKEN:
+    if not verify_operator_token(x_operator_token):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="PUBLIC_MARKET_WIDE_SCAN_FORBIDDEN: Operator authorization required to trigger market-wide scanner.",

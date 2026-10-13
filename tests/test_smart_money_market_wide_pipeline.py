@@ -56,6 +56,7 @@ from api.routes.screener import (
     get_radar_capabilities,
     RADAR_CAPABILITY_CONTRACT,
 )
+from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher
 
 
 # =============================================================================
@@ -982,3 +983,336 @@ def test_remediation_git_custody_and_ancestry():
         text=True,
     )
     assert unrelated_status.stdout.strip() == "", "Unrelated 120-asset changes must not be modified."
+
+
+# =============================================================================
+# CANDIDATE 003 ADVERSARIAL REMEDIATION VERIFICATION SUITE
+# =============================================================================
+
+def test_adversarial_sec_egress_role_disabled_enforces_cache_only(monkeypatch):
+    """
+    Blocker A: When ARX_SEC_EGRESS_ROLE=DISABLED (the web replica default),
+    SecEdgarFetcher is strictly cache-only: live outbound fetches raise PermissionError
+    and endpoint returns CONFIGURATION_BLOCKED with items: None (null).
+    """
+    monkeypatch.setenv("ARX_SEC_EGRESS_ROLE", "DISABLED")
+    fetcher = SecEdgarFetcher()
+    
+    # 1. Unmocked direct fetch raises PermissionError
+    with pytest.raises(PermissionError, match="SEC_EGRESS_FORBIDDEN"):
+        fetcher._get("https://data.sec.gov/submissions/CIK0001045810.json")
+
+    # 2. Cache-only envelope on cache miss returns CONFIGURATION_BLOCKED with items: None
+    env = fetcher.get_recent_filings_envelope("TESTSYM")
+    assert env["status"] == "CONFIGURATION_BLOCKED"
+    assert env["items"] is None
+    assert "disabled" in (env.get("error_detail") or env.get("message") or "").lower()
+
+    # 3. FastAPI endpoint returns HTTP 200 with CONFIGURATION_BLOCKED and items: None
+    from fastapi.testclient import TestClient
+    from api.main import app
+    client = TestClient(app)
+    resp = client.get("/api/v1/smart-money/sec-filings/TESTSYM")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "CONFIGURATION_BLOCKED"
+    assert data["items"] is None
+    assert "disabled" in data["message"].lower()
+
+
+def test_adversarial_amendment_superseding_point_in_time(tmp_path):
+    """
+    Blocker B: Amendment chains replace prior accessions point-in-time.
+    If Filing B amends Filing A at T2, then at W < T2, Filing A is effective.
+    At W >= T2, Filing B is effective and Filing A is superseded (NOT additive A+B).
+    """
+    db_file = str(tmp_path / "amendment_test.db")
+    ingestion = Form4IngestionManager(db_path=db_file)
+    conn = ingestion._get_connection()
+    cur = conn.cursor()
+
+    t1_time = "2026-10-10T12:00:00Z"
+    t2_time = "2026-10-12T12:00:00Z"
+
+    # Insert Filing A (original: 1000 shares @ $50 = $50,000)
+    cur.execute("""
+        INSERT INTO form4_raw_filings (accession_number, issuer_cik, issuer_symbol, filing_date, acceptance_datetime, document_type, raw_content, source_content_hash, disposition)
+        VALUES ('0001-26-000001', '0001045810', 'TEST', '2026-10-10', '2026-10-10T12:00:00Z', '4', '<xml>A</xml>', 'hashA', 'PARSED')
+    """)
+    cur.execute("""
+        INSERT INTO sm_source_availability_ledger (accession_number, issuer_cik, public_availability_at, first_fetched_at, source_hash, form_type, normalization_version)
+        VALUES ('0001-26-000001', '0001045810', '2026-10-10T12:00:00Z', '2026-10-10T12:00:00Z', 'hashA', '4', '1.0.0')
+    """)
+    cur.execute("""
+        INSERT INTO form4_parsed_transactions (
+            record_key, accession_number, issuer_cik, issuer_symbol, issuer_name, reporting_owner_cik, reporting_owner_name,
+            is_officer, officer_title, is_director, is_ten_percent_owner, filing_date, transaction_date, transaction_code,
+            signal_type, shares, price_per_share, total_value_usd, acquired_disposed, ownership_nature, is_derivative,
+            is_open_market_purchase_evidence, is_positive_buying_conviction, acceptance_datetime, public_availability_at,
+            source_fetch_time, content_hash, parsed_at
+        ) VALUES (
+            'REC-001', '0001-26-000001', '0001045810', 'TEST', 'Test Corp', '000999', 'Insider One',
+            1, 'CEO', 0, 0, '2026-10-10', '2026-10-09', 'P',
+            'OPEN_MARKET_PURCHASE', 1000.0, 50.0, 50000.0, 'A', 'D', 0,
+            1, 1, '2026-10-10T12:00:00Z', '2026-10-10T12:00:00Z',
+            '2026-10-10T12:00:00Z', 'hashA', '2026-10-10T12:00:00Z'
+        )
+    """)
+
+    # Insert Filing B (amendment: 2000 shares @ $50 = $100,000)
+    cur.execute("""
+        INSERT INTO form4_raw_filings (accession_number, issuer_cik, issuer_symbol, filing_date, acceptance_datetime, document_type, raw_content, source_content_hash, disposition)
+        VALUES ('0001-26-000002', '0001045810', 'TEST', '2026-10-12', '2026-10-12T12:00:00Z', '4/A', '<xml>B</xml>', 'hashB', 'PARSED')
+    """)
+    cur.execute("""
+        INSERT INTO sm_source_availability_ledger (accession_number, issuer_cik, public_availability_at, first_fetched_at, source_hash, form_type, normalization_version)
+        VALUES ('0001-26-000002', '0001045810', '2026-10-12T12:00:00Z', '2026-10-12T12:00:00Z', 'hashB', '4/A', '1.0.0')
+    """)
+    cur.execute("""
+        INSERT INTO form4_parsed_transactions (
+            record_key, accession_number, issuer_cik, issuer_symbol, issuer_name, reporting_owner_cik, reporting_owner_name,
+            is_officer, officer_title, is_director, is_ten_percent_owner, filing_date, transaction_date, transaction_code,
+            signal_type, shares, price_per_share, total_value_usd, acquired_disposed, ownership_nature, is_derivative,
+            is_open_market_purchase_evidence, is_positive_buying_conviction, acceptance_datetime, public_availability_at,
+            source_fetch_time, content_hash, parsed_at
+        ) VALUES (
+            'REC-002', '0001-26-000002', '0001045810', 'TEST', 'Test Corp', '000999', 'Insider One',
+            1, 'CEO', 0, 0, '2026-10-12', '2026-10-09', 'P',
+            'OPEN_MARKET_PURCHASE', 2000.0, 50.0, 100000.0, 'A', 'D', 0,
+            1, 1, '2026-10-12T12:00:00Z', '2026-10-12T12:00:00Z',
+            '2026-10-12T12:00:00Z', 'hashB', '2026-10-12T12:00:00Z'
+        )
+    """)
+    # Record amendment relationship: Filing B amends Filing A
+    cur.execute("""
+        INSERT INTO sm_amendments (accession_number, amended_accession_number, relationship, detected_at)
+        VALUES ('0001-26-000002', '0001-26-000001', 'EXPLICIT_XML_AMENDMENT', '2026-10-12T12:00:00Z')
+    """)
+    conn.commit()
+    conn.close()
+
+    # Point-in-time check at W1 (before B was available)
+    w1 = "2026-10-11T00:00:00Z"
+    txs_w1 = ingestion.get_transactions_as_of(w1, symbol="TEST")
+    assert len(txs_w1) == 1
+    assert txs_w1[0].accession_number == "0001-26-000001"
+    assert txs_w1[0].shares == 1000.0
+    assert txs_w1[0].total_value_usd == 50000.0
+
+    # Point-in-time check at W2 (after B was available)
+    # Filing A MUST be superseded and excluded; ONLY Filing B should be returned!
+    w2 = "2026-10-13T00:00:00Z"
+    txs_w2 = ingestion.get_transactions_as_of(w2, symbol="TEST")
+    assert len(txs_w2) == 1
+    assert txs_w2[0].accession_number == "0001-26-000002"
+    assert txs_w2[0].shares == 2000.0
+    assert txs_w2[0].total_value_usd == 100000.0
+
+
+def test_adversarial_ambiguous_amendment_disqualification(tmp_path):
+    """
+    Blocker B: Ambiguous amendments (AMENDMENT_TARGET_AMBIGUOUS) are excluded from scoring
+    and disqualify the issuer from Radar qualification under AMENDMENT_UNRESOLVED.
+    """
+    db_file = str(tmp_path / "ambig_test.db")
+    ingestion = Form4IngestionManager(db_path=db_file)
+    scanner = SmartMoneyForm4Scanner(ingestion_mgr=ingestion)
+    conn = ingestion._get_connection()
+    cur = conn.cursor()
+
+    t_time = "2026-10-10T12:00:00Z"
+
+    # Insert valid Form 4
+    cur.execute("""
+        INSERT INTO form4_raw_filings (accession_number, issuer_cik, issuer_symbol, filing_date, acceptance_datetime, document_type, raw_content, source_content_hash, disposition)
+        VALUES ('0001-26-000010', '0001045810', 'AMBIG', '2026-10-10', '2026-10-10T12:00:00Z', '4', '<xml>1</xml>', 'h1', 'PARSED')
+    """)
+    cur.execute("""
+        INSERT INTO sm_source_availability_ledger (accession_number, issuer_cik, public_availability_at, first_fetched_at, source_hash, form_type, normalization_version)
+        VALUES ('0001-26-000010', '0001045810', '2026-10-10T12:00:00Z', '2026-10-10T12:00:00Z', 'h1', '4', '1.0.0')
+    """)
+    cur.execute("""
+        INSERT INTO form4_parsed_transactions (
+            record_key, accession_number, issuer_cik, issuer_symbol, issuer_name, reporting_owner_cik, reporting_owner_name,
+            is_officer, officer_title, is_director, is_ten_percent_owner, filing_date, transaction_date, transaction_code,
+            signal_type, shares, price_per_share, total_value_usd, acquired_disposed, ownership_nature, is_derivative,
+            is_open_market_purchase_evidence, is_positive_buying_conviction, acceptance_datetime, public_availability_at,
+            source_fetch_time, content_hash, parsed_at
+        ) VALUES (
+            'REC-010', '0001-26-000010', '0001045810', 'AMBIG', 'Ambig Corp', '000888', 'Insider Two',
+            1, 'CEO', 0, 0, '2026-10-10', '2026-10-09', 'P',
+            'OPEN_MARKET_PURCHASE', 1000.0, 50.0, 50000.0, 'A', 'D', 0,
+            1, 1, '2026-10-10T12:00:00Z', '2026-10-10T12:00:00Z',
+            '2026-10-10T12:00:00Z', 'h1', '2026-10-10T12:00:00Z'
+        )
+    """)
+
+    # Insert Ambiguous Form 4/A
+    cur.execute("""
+        INSERT INTO form4_raw_filings (accession_number, issuer_cik, issuer_symbol, filing_date, acceptance_datetime, document_type, raw_content, source_content_hash, disposition)
+        VALUES ('0001-26-000011', '0001045810', 'AMBIG', '2026-10-11', '2026-10-11T12:00:00Z', '4/A', '<xml>2</xml>', 'h2', 'PARSED')
+    """)
+    cur.execute("""
+        INSERT INTO sm_source_availability_ledger (accession_number, issuer_cik, public_availability_at, first_fetched_at, source_hash, form_type, normalization_version)
+        VALUES ('0001-26-000011', '0001045810', '2026-10-11T12:00:00Z', '2026-10-11T12:00:00Z', 'h2', '4/A', '1.0.0')
+    """)
+    cur.execute("""
+        INSERT INTO sm_amendments (accession_number, amended_accession_number, relationship, detected_at)
+        VALUES ('0001-26-000011', NULL, 'AMENDMENT_TARGET_AMBIGUOUS', '2026-10-11T12:00:00Z')
+    """)
+    conn.commit()
+    conn.close()
+
+    w = "2026-10-12T00:00:00Z"
+
+    # 1. Ambiguous symbol is identified
+    ambig_symbols = ingestion.get_ambiguous_amendment_symbols_as_of(w, ["AMBIG"])
+    assert "AMBIG" in ambig_symbols
+
+    # 2. Scanning evaluates issuer with has_ambiguous_amendment=True
+    state = scanner.evaluate_issuer_transactions(
+        symbol="AMBIG",
+        transactions=ingestion.get_transactions_as_of(w, symbol="AMBIG"),
+        lookback_days=30,
+        now_date="2026-10-12",
+        has_ambiguous_amendment=True,
+    )
+    assert state.qualifies_for_radar is False
+    assert any("AMENDMENT_UNRESOLVED" in r for r in state.conviction_reasons)
+
+
+def test_adversarial_material_gaps_block_reconciliation_certification(tmp_path):
+    """
+    Blocker C: Reconciliation engine strictly prohibits coverage_status=COMPLETE
+    if any source integrity conflict, open gap, or ambiguous amendment exists.
+    """
+    db_file = str(tmp_path / "recon_gaps_test.db")
+    ingestion = Form4IngestionManager(db_path=db_file)
+    recon = FilingReconciliationEngine(db_path=db_file)
+    conn = recon._get_connection()
+    cur = conn.cursor()
+
+    # 1. Test SOURCE_INTEGRITY_CONFLICT blocks COMPLETE
+    cur.execute("""
+        INSERT INTO form4_raw_filings (accession_number, issuer_cik, issuer_symbol, filing_date, acceptance_datetime, document_type, raw_content, source_content_hash, disposition)
+        VALUES ('0001-26-000050', '0001045810', 'CONFLICT', '2026-10-10', '2026-10-10T12:00:00Z', '4', '<xml></xml>', 'h50', 'SOURCE_INTEGRITY_CONFLICT')
+    """)
+    conn.commit()
+    conn.close()
+
+    rep1 = recon.reconcile_interval(
+        index_records=[],
+        interval_start="2026-10-10T00:00:00Z",
+        interval_end="2026-10-10T23:59:59Z",
+    )
+    assert rep1.coverage_status == "PARTIAL"
+    assert any("SOURCE_INTEGRITY_CONFLICTS" in f for f in rep1.failure_reasons)
+
+    # Clean up conflict
+    conn = recon._get_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE form4_raw_filings SET disposition = 'PARSED' WHERE accession_number = '0001-26-000050'")
+    conn.commit()
+    conn.close()
+
+    # 2. Test OPEN source gap blocks COMPLETE
+    conn = recon._get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO sm_source_gaps (gap_id, incremental_cycle_id, partition_id, issuer_cik, universe_build_id, gap_type, window_start, window_end, accession_number, first_detected_at, last_attempted_at, attempt_count, status, source_event_time)
+        VALUES ('GAP-TEST-1', 'C-1', 'PART-1', '0001045810', 'UB-1', 'FETCH_FAILURE', '2026-10-10', '2026-10-10', '0001-26-000051', '2026-10-10', '2026-10-10', 1, 'OPEN', '2026-10-10')
+    """)
+    conn.commit()
+    conn.close()
+
+    rep2 = recon.reconcile_interval(
+        index_records=[],
+        interval_start="2026-10-10T00:00:00Z",
+        interval_end="2026-10-10T23:59:59Z",
+    )
+    assert rep2.coverage_status == "PARTIAL"
+    assert rep2.open_gap_count == 1
+    assert any("OPEN_SOURCE_GAPS_EXIST" in f for f in rep2.failure_reasons)
+
+
+def test_adversarial_exact_receipt_binding(tmp_path):
+    """
+    Blocker D: Radar scan requires exact interval receipt binding.
+    A future or unrelated later receipt cannot falsely certify an un-reconciled prior watermark.
+    """
+    db_file = str(tmp_path / "receipt_binding_test.db")
+    ingestion = Form4IngestionManager(db_path=db_file)
+    recon = FilingReconciliationEngine(db_path=db_file)
+    scanner = SmartMoneyForm4Scanner(ingestion_mgr=ingestion)
+    conn = recon._get_connection()
+    cur = conn.cursor()
+
+    # Create a complete receipt for Oct 14 only
+    cur.execute("""
+        INSERT INTO sm_reconciliation_reports (
+            reconciliation_id, reconciled_at, interval_start, interval_end, expected_index_count,
+            accounted_local_count, missing_count, open_gap_count, coverage_status,
+            failure_reasons_json, reconciliation_hash, report_json
+        ) VALUES (
+            'RECON-OCT14', '2026-10-14T23:59:59Z', '2026-10-14T00:00:00Z', '2026-10-14T23:59:59Z',
+            10, 10, 0, 0, 'COMPLETE', '[]', 'hash14', '{}'
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+    # Querying for Oct 10 watermark MUST NOT be certified by Oct 14 receipt!
+    assert recon.is_watermark_certified("2026-10-10T12:00:00Z") is False
+
+    snap = scanner.scan_issuers_as_of(
+        as_of_watermark="2026-10-10T12:00:00Z",
+        symbols=["NVDA"],
+    )
+    assert snap.coverage_status == "PARTIAL"
+    assert snap.provenance["certified_complete"] is False
+
+    # Scanning at exact Oct 14 watermark succeeds
+    assert recon.is_watermark_certified("2026-10-14T23:59:59Z") is True
+    snap_ok = scanner.scan_issuers_as_of(
+        as_of_watermark="2026-10-14T23:59:59Z",
+        symbols=["NVDA"],
+    )
+    assert snap_ok.coverage_status == "COMPLETE"
+    assert snap_ok.provenance["certified_complete"] is True
+
+
+def test_adversarial_operator_token_constant_time(monkeypatch):
+    """
+    Operator Security: Verify operator trigger fails closed without configured ARX_OPERATOR_TOKEN
+    and performs constant-time comparison against expected token.
+    """
+    from fastapi.testclient import TestClient
+    from api.main import app
+    client = TestClient(app)
+
+    # 1. When ARX_OPERATOR_TOKEN is unset or empty, requests are forbidden even with old fallback
+    monkeypatch.setenv("ARX_OPERATOR_TOKEN", "")
+    resp = client.post(
+        "/api/v1/screener/smart-money/scan",
+        headers={"X-Operator-Token": "arx-operator-secret-v1"},
+    )
+    assert resp.status_code == 403
+
+    # 2. When configured, valid token succeeds and wrong token fails
+    valid_secret = "authentic-high-entropy-secret-xyz-789"
+    monkeypatch.setenv("ARX_OPERATOR_TOKEN", valid_secret)
+
+    # Wrong token
+    resp_wrong = client.post(
+        "/api/v1/screener/smart-money/scan",
+        headers={"X-Operator-Token": "wrong-secret-token"},
+    )
+    assert resp_wrong.status_code == 403
+
+    # Correct token
+    resp_ok = client.post(
+        "/api/v1/screener/smart-money/scan",
+        headers={"X-Operator-Token": valid_secret},
+    )
+    assert resp_ok.status_code in (200, 400, 409)  # Authorized!
+

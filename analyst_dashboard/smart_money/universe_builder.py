@@ -64,9 +64,13 @@ class SmartMoneyUniverseBuilder:
         self._sec_master_cache: Optional[Dict[str, Dict[str, Any]]] = None
         self._init_db()
 
+    def _get_connection(self) -> sqlite3.Connection:
+        from analyst_dashboard.smart_money.form4_ingestion import connect_smart_money_db
+        return connect_smart_money_db(self.db_path)
+
     def _init_db(self):
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute("""
@@ -503,7 +507,7 @@ class SmartMoneyUniverseBuilder:
         manifest: SmartMoneyUniverseBuildManifest,
         scannable_members: List[SmartMoneySecurity],
     ):
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             cursor = conn.cursor()
             members_data = [
@@ -544,7 +548,7 @@ class SmartMoneyUniverseBuilder:
             conn.close()
 
     def get_build_manifest(self, universe_build_id: str) -> Optional[SmartMoneyUniverseBuildManifest]:
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
@@ -558,7 +562,7 @@ class SmartMoneyUniverseBuilder:
             conn.close()
 
     def get_scannable_members(self, universe_build_id: str) -> List[Dict[str, Any]]:
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
@@ -571,7 +575,7 @@ class SmartMoneyUniverseBuilder:
             conn.close()
 
     def get_latest_build(self) -> Optional[SmartMoneyUniverseBuildManifest]:
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()

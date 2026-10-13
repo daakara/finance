@@ -147,7 +147,7 @@ def get_sec_filings(symbol: str, response: Response = None):
     elif status == "UPSTREAM_NOT_FOUND":
         message = f"SEC EDGAR Form 4 filings unavailable for {valid_sym}"
     elif status == "CONFIGURATION_BLOCKED":
-        message = f"SEC EDGAR request blocked: {envelope.get('reason')}"
+        message = envelope.get("error_detail") or f"SEC EDGAR request blocked: {envelope.get('reason')}"
     elif status == "STRUCTURALLY_INVALID":
         message = "SEC EDGAR API response payload was malformed or structurally invalid"
     elif status == "TRANSPORT_INCOMPLETE":
@@ -169,7 +169,7 @@ def get_sec_filings(symbol: str, response: Response = None):
         "items": items,
         "filings": items if items is not None else [],
         "count": len(items) if items is not None else 0,
-        "source": "SEC EDGAR API (Live)",
+        "source": "SEC EDGAR Form 4 Local Store (Cache-Only)" if envelope.get("cached") else "SEC EDGAR API (Live)",
         "message": message,
     }
 

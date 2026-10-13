@@ -11,6 +11,9 @@ import json
 import os
 import pytest
 
+# Ensure non-empty operator token is available for authorized test suites
+os.environ.setdefault("ARX_OPERATOR_TOKEN", "test-operator-auth-token-xyz")
+
 
 @pytest.fixture(scope="session", autouse=True)
 def seed_test_market_database():

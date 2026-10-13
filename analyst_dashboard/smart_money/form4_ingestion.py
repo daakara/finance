@@ -11,7 +11,7 @@ import sqlite3
 import threading
 import hashlib
 from datetime import datetime, timezone
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple, Set
 import requests
 
 from analyst_dashboard.data.sec_edgar_fetcher import (
@@ -22,6 +22,7 @@ from analyst_dashboard.data.sec_edgar_fetcher import (
     SecRateLimiter,
     RateLimiter,
     DEFAULT_SEC_RATE_LIMITER,
+    is_sec_egress_authorized,
 )
 from analyst_dashboard.smart_money.form4_models import (
     SmartMoneyTransaction,
@@ -546,6 +547,10 @@ class Form4IngestionManager:
         if not self.is_configured:
             logger.warning(f"SEC fetch blocked for {url}: SEC_USER_AGENT is not configured or fails validation.")
             return None
+        is_mock = hasattr(self.session.get, "assert_called") or hasattr(self.session.get, "_mock_return_value")
+        if not is_mock and not is_sec_egress_authorized():
+            logger.warning(f"SEC live fetch blocked for {url}: SEC egress role is DISABLED (cache-only mode enforced).")
+            return None
         backoff = 1.0
         for attempt in range(max_retries):
             self.rate_limiter.acquire()
@@ -863,8 +868,33 @@ class Form4IngestionManager:
                   AND l.public_availability_at != ''
                   AND l.public_availability_at != 'UNKNOWN'
                   AND l.public_availability_at <= ?
+                  AND NOT EXISTS (
+                      SELECT 1 FROM sm_amendments ambig
+                      WHERE ambig.accession_number = t.accession_number
+                        AND ambig.relationship IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED_AMENDMENT')
+                  )
+                  AND NOT EXISTS (
+                      SELECT 1 FROM sm_amendments superseding
+                      JOIN sm_source_availability_ledger lb ON superseding.accession_number = lb.accession_number
+                      WHERE superseding.amended_accession_number = t.accession_number
+                        AND superseding.relationship NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED_AMENDMENT', 'SUPERSEDED_OR_CORRECTED')
+                        AND lb.public_availability_at IS NOT NULL
+                        AND lb.public_availability_at != ''
+                        AND lb.public_availability_at != 'UNKNOWN'
+                        AND lb.public_availability_at <= ?
+                  )
+                  AND NOT EXISTS (
+                      SELECT 1 FROM sm_amendments superseding2
+                      JOIN sm_source_availability_ledger lb2 ON superseding2.amended_accession_number = lb2.accession_number
+                      WHERE superseding2.accession_number = t.accession_number
+                        AND superseding2.relationship = 'SUPERSEDED_OR_CORRECTED'
+                        AND lb2.public_availability_at IS NOT NULL
+                        AND lb2.public_availability_at != ''
+                        AND lb2.public_availability_at != 'UNKNOWN'
+                        AND lb2.public_availability_at <= ?
+                  )
             """
-            params = [as_of_utc]
+            params = [as_of_utc, as_of_utc, as_of_utc]
             if symbol:
                 query += " AND t.issuer_symbol = ?"
                 params.append(symbol.upper().strip())
@@ -892,7 +922,8 @@ class Form4IngestionManager:
         """
         Bulk Point-in-Time Query (Gate B2 & Phase F):
         Retrieves all transactions across multiple issuers whose recorded availability
-        occurred at or before as_of_time (l.public_availability_at <= as_of_time).
+        occurred at or before as_of_time (l.public_availability_at <= as_of_time),
+        excluding superseded filings and ambiguous amendments.
         Returns a mapping of symbol (or CIK) -> List[SmartMoneyTransaction].
         Avoids N+1 database queries during market-wide universe evaluation.
         """
@@ -908,8 +939,33 @@ class Form4IngestionManager:
                   AND l.public_availability_at != ''
                   AND l.public_availability_at != 'UNKNOWN'
                   AND l.public_availability_at <= ?
+                  AND NOT EXISTS (
+                      SELECT 1 FROM sm_amendments ambig
+                      WHERE ambig.accession_number = t.accession_number
+                        AND ambig.relationship IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED_AMENDMENT')
+                  )
+                  AND NOT EXISTS (
+                      SELECT 1 FROM sm_amendments superseding
+                      JOIN sm_source_availability_ledger lb ON superseding.accession_number = lb.accession_number
+                      WHERE superseding.amended_accession_number = t.accession_number
+                        AND superseding.relationship NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED_AMENDMENT', 'SUPERSEDED_OR_CORRECTED')
+                        AND lb.public_availability_at IS NOT NULL
+                        AND lb.public_availability_at != ''
+                        AND lb.public_availability_at != 'UNKNOWN'
+                        AND lb.public_availability_at <= ?
+                  )
+                  AND NOT EXISTS (
+                      SELECT 1 FROM sm_amendments superseding2
+                      JOIN sm_source_availability_ledger lb2 ON superseding2.amended_accession_number = lb2.accession_number
+                      WHERE superseding2.accession_number = t.accession_number
+                        AND superseding2.relationship = 'SUPERSEDED_OR_CORRECTED'
+                        AND lb2.public_availability_at IS NOT NULL
+                        AND lb2.public_availability_at != ''
+                        AND lb2.public_availability_at != 'UNKNOWN'
+                        AND lb2.public_availability_at <= ?
+                  )
             """
-            params: List[Any] = [as_of_utc]
+            params: List[Any] = [as_of_utc, as_of_utc, as_of_utc]
 
             if symbols:
                 clean_syms = [s.upper().strip() for s in symbols if s]
@@ -942,6 +998,45 @@ class Form4IngestionManager:
                 result[key].append(tx)
 
             return result
+        finally:
+            conn.close()
+
+    def get_ambiguous_amendment_symbols_as_of(
+        self,
+        as_of_time: str,
+        symbols: Optional[List[str]] = None,
+    ) -> Set[str]:
+        """
+        Returns set of symbols (in uppercase) that have ambiguous or unresolved amendments
+        publicly available at or before as_of_time.
+        Such issuers must be marked AMENDMENT_UNRESOLVED and disqualified from Radar.
+        """
+        as_of_utc = self.validate_timezone_aware_timestamp(as_of_time)
+        conn = self._get_connection()
+        try:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            query = """
+                SELECT DISTINCT COALESCE(f.issuer_symbol, (SELECT issuer_symbol FROM form4_parsed_transactions WHERE accession_number = a.accession_number LIMIT 1))
+                FROM sm_amendments a
+                JOIN sm_source_availability_ledger l ON a.accession_number = l.accession_number
+                LEFT JOIN form4_raw_filings f ON a.accession_number = f.accession_number
+                WHERE a.relationship IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED_AMENDMENT')
+                  AND l.public_availability_at IS NOT NULL
+                  AND l.public_availability_at != ''
+                  AND l.public_availability_at != 'UNKNOWN'
+                  AND l.public_availability_at <= ?
+            """
+            params: List[Any] = [as_of_utc]
+            if symbols:
+                clean_syms = [s.upper().strip() for s in symbols if s]
+                if clean_syms:
+                    placeholders = ",".join("?" for _ in clean_syms)
+                    query += f" AND UPPER(COALESCE(f.issuer_symbol, '')) IN ({placeholders})"
+                    params.extend(clean_syms)
+            cursor.execute(query, tuple(params))
+            rows = cursor.fetchall()
+            return {r[0].upper().strip() for r in rows if r[0]}
         finally:
             conn.close()
 

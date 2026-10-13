@@ -17,6 +17,7 @@ from datetime import datetime, timezone, timedelta
 from analyst_dashboard.smart_money.form4_ingestion import (
     Form4IngestionManager,
     DEFAULT_SMART_MONEY_DB,
+    connect_smart_money_db,
 )
 from analyst_dashboard.smart_money.universe_builder import (
     SmartMoneyUniverseBuilder,
@@ -69,7 +70,7 @@ class SmartMoneyIncrementalEngine:
         self.ingestion_mgr._init_db()
 
     def _get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
+        conn = connect_smart_money_db(self.db_path)
         conn.row_factory = sqlite3.Row
         return conn
 

@@ -45,6 +45,7 @@ class SmartMoneyForm4Scanner:
         transactions: List[SmartMoneyTransaction],
         lookback_days: int = 30,
         now_date: Optional[str] = None,
+        has_ambiguous_amendment: bool = False,
     ) -> SmartMoneyIssuerState:
         """
         Aggregates insider transactions for an issuer over lookback_days,
@@ -131,6 +132,9 @@ class SmartMoneyForm4Scanner:
 
         score = min(100.0, score)
         qualifies = (len(open_market_buys) > 0) and (gross_buy_val >= 25_000)
+        if has_ambiguous_amendment:
+            qualifies = False
+            reasons.append("DISQUALIFIED: Issuer has unresolved or ambiguous amendment (AMENDMENT_UNRESOLVED)")
 
         cik = transactions[0].issuer_cik if transactions else ""
         name = transactions[0].issuer_name if transactions else symbol
@@ -299,13 +303,16 @@ class SmartMoneyForm4Scanner:
             if not conn:
                 conn = connect_smart_money_db(self.ingestion_mgr.db_path)
             cur = conn.cursor()
+            as_of_eod = f"{as_of_watermark[:10]}T23:59:59Z" if len(as_of_watermark) >= 10 else as_of_watermark
             cur.execute("""
                 SELECT reconciliation_id, coverage_status, reconciled_at
                 FROM sm_reconciliation_reports
                 WHERE coverage_status = 'COMPLETE'
-                  AND (interval_end >= ? OR reconciled_at >= ?)
+                  AND open_gap_count = 0
+                  AND missing_count = 0
+                  AND (interval_end = ? OR interval_end = ?)
                 ORDER BY interval_end DESC LIMIT 1
-            """, (as_of_watermark, as_of_watermark))
+            """, (as_of_watermark, as_of_eod))
             row = cur.fetchone()
             if row:
                 coverage_status = "COMPLETE"
@@ -328,10 +335,23 @@ class SmartMoneyForm4Scanner:
             min_date=cutoff_str,
         )
 
+        ambiguous_symbols = self.ingestion_mgr.get_ambiguous_amendment_symbols_as_of(
+            as_of_time=as_of_watermark,
+            symbols=target_symbols,
+        )
+
         for sym in target_symbols:
-            txs = bulk_tx_map.get(sym.upper().strip(), [])
+            clean_s = sym.upper().strip()
+            txs = bulk_tx_map.get(clean_s, [])
             if txs:
-                state = self.evaluate_issuer_transactions(sym, txs, lookback_days=lookback_days, now_date=now_date)
+                has_ambig = clean_s in ambiguous_symbols
+                state = self.evaluate_issuer_transactions(
+                    sym,
+                    txs,
+                    lookback_days=lookback_days,
+                    now_date=now_date,
+                    has_ambiguous_amendment=has_ambig,
+                )
                 if state.qualifies_for_radar:
                     candidates.append({
                         "symbol": state.symbol,
