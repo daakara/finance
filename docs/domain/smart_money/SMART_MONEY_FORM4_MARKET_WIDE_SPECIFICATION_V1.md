@@ -184,3 +184,57 @@ Under fail-closed governance:
 - `HARDWARE_FIDO2_QUORUM_SATISFIED`: `false`
 - `VCP_GOVERNANCE_CHANGED`: `false`
 - `EXECUTION_LADDER_WORKSTREAM`: `PARKED`
+
+---
+
+## 6. Ratified PostgreSQL Production Architecture & Topology V1
+
+### Core Topology
+```text
+                    SEC EDGAR
+                        │
+                        ▼
+              SMART MONEY INGESTION
+             ARX_SEC_EGRESS_ROLE=OWNER
+                  single active owner
+                        │
+                        ▼
+                  POSTGRESQL
+              authoritative shared state
+                        ▲
+                        │
+            ┌───────────┴───────────┐
+            │                       │
+         WEB API                OTHER READERS
+   ARX_SEC_EGRESS_ROLE=DISABLED
+      least-privilege DB access
+```
+
+### Architectural Tenets
+1. **Authoritative Shared State**:
+   - PostgreSQL (v16+) replaces container-ephemeral SQLite for production deployments.
+   - Schema version: `SMART_MONEY_POSTGRES_SCHEMA_V1`.
+2. **Database Role & Privilege Separation**:
+   - `smart_money_web`: Least-privilege SELECT on public snapshots/transactions; INSERT into `sm_run_requests`. Strictly denied write access to raw filings, receipts, and snapshots.
+   - `smart_money_ingestion`: Operational write credentials for ingestion, reconciliation, and snapshotting. Denied DDL alterations.
+   - `smart_money_migration`: Dedicated migration identity for schema migrations.
+3. **Dedicated Ingestion Worker & Single SEC Egress Owner**:
+   - Single-replica background worker (`python -m analyst_dashboard.smart_money.worker`).
+   - Requires `ARX_SEC_EGRESS_ROLE=OWNER`.
+   - Acquires PostgreSQL session-level advisory lock `LOCK_SEC_EGRESS_OWNER` (`0x5345435F00000001`). If lock acquisition fails, worker fails closed immediately.
+4. **Append-Only Reconciliation Receipts**:
+   - Destructive `INSERT OR REPLACE` table `sm_reconciliation_reports` is superseded by immutable, versioned `sm_reconciliation_receipts`.
+   - Receipts are protected by database triggers rejecting `UPDATE` and `DELETE`. Corrections append new receipt records with `supersedes_receipt_id`.
+5. **Immutable Scanner Snapshots & Atomic Pointer Publication**:
+   - `scanner_snapshots` is append-only with database triggers rejecting `UPDATE` and `DELETE`.
+   - `matched_count` is nullable: set to `null` for quarantined/partial scans, and non-negative integer for complete scans.
+   - `scanner_active_snapshots` is updated in the same serializable publication transaction.
+6. **Operator Run Request Queue**:
+   - Web API submits run requests to `sm_run_requests` (`status = 'PENDING'`).
+   - Dedicated ingestion worker claims requests via `SELECT ... FOR UPDATE SKIP LOCKED` and publishes results.
+7. **Production Storage Durability & Backup Contract**:
+   - PostgreSQL production authorization requires explicit verification of persistent volumes, scheduled automated backups, and Point-In-Time Recovery (PITR).
+   - A verified restore drill must precede production activation.
+
+> **GOVERNANCE ASSERTION**: `POSTGRES IMPLEMENTED ≠ PRODUCTION DEPLOYED`. Implementation and local verification of PostgreSQL topology do not constitute production authorization.
+
