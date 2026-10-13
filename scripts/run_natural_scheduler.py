@@ -261,6 +261,18 @@ def main():
     parser.add_argument("--simulate-natural-candidate", action="store_true", help="TEST_ONLY simulation of natural candidate")
     args = parser.parse_args()
 
+    # Fail-closed guard for read-only research deployment profile
+    release_mode = os.environ.get("SMART_MONEY_RELEASE_MODE", "READ_ONLY_RESEARCH").upper()
+    autonomous_enabled = os.environ.get("AUTONOMOUS_ROOTING_ENABLED", "false").lower() in ["true", "1"]
+    if release_mode == "READ_ONLY_RESEARCH" or not autonomous_enabled:
+        if args.mode == "natural":
+            raise RuntimeError(
+                f"FAIL-CLOSED: Autonomous natural scheduler execution is disarmed. "
+                f"Current profile: SMART_MONEY_RELEASE_MODE='{release_mode}', "
+                f"AUTONOMOUS_ROOTING_ENABLED={autonomous_enabled}. "
+                "Natural rooting is prohibited in read-only research deployments."
+            )
+
     print("======================================================================")
     print("SMART MONEY GOVERNED NATURAL SCHEDULER EXECUTION")
     print("======================================================================")

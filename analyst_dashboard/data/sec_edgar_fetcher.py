@@ -28,9 +28,10 @@ class SecRateLimiter:
     Conforms to SEC Fair Access policy (max 10 req/sec) with conservative 5.0 req/sec ceiling.
     """
 
-    def __init__(self, max_per_second: float = 5.0):
-        self.max_per_second = max_per_second
-        self.interval = 1.0 / max_per_second if max_per_second > 0 else 0.0
+    def __init__(self, max_per_second: float = 5.0, max_rps: Optional[float] = None):
+        rps = max_rps if max_rps is not None else max_per_second
+        self.max_per_second = rps
+        self.interval = 1.0 / rps if rps > 0 else 0.0
         self.last_request_time = 0.0
         self._lock = threading.Lock()
 
@@ -44,7 +45,11 @@ class SecRateLimiter:
                 time.sleep(self.interval - elapsed)
             self.last_request_time = time.time()
 
+    def wait_for_slot(self):
+        self.acquire()
 
+
+RateLimiter = SecRateLimiter
 DEFAULT_SEC_RATE_LIMITER = SecRateLimiter(max_per_second=5.0)
 
 

@@ -9,6 +9,7 @@ import json
 import logging
 import sqlite3
 import threading
+import hashlib
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional, Tuple
 import requests
@@ -18,6 +19,9 @@ from analyst_dashboard.data.sec_edgar_fetcher import (
     SEC_USER_AGENT,
     validate_sec_user_agent,
     get_sec_user_agent,
+    SecRateLimiter,
+    RateLimiter,
+    DEFAULT_SEC_RATE_LIMITER,
 )
 from analyst_dashboard.smart_money.form4_models import (
     SmartMoneyTransaction,
@@ -35,21 +39,19 @@ DEFAULT_SMART_MONEY_DB = os.path.join(
 )
 
 
-class RateLimiter:
-    """Thread-safe rate limiter enforcing max requests per second."""
-
-    def __init__(self, max_per_second: float = 5.0):
-        self.interval = 1.0 / max_per_second
-        self.last_request_time = 0.0
-        self._lock = threading.Lock()
-
-    def acquire(self):
-        with self._lock:
-            now = time.time()
-            elapsed = now - self.last_request_time
-            if elapsed < self.interval:
-                time.sleep(self.interval - elapsed)
-            self.last_request_time = time.time()
+def connect_smart_money_db(db_path: str = DEFAULT_SMART_MONEY_DB) -> sqlite3.Connection:
+    """
+    Canonical SQLite connection factory for Smart Money subsystem (Gate B6 & Blocker C).
+    Enforces WAL journal mode, 5000ms busy timeout, and NORMAL synchronous mode on all connections.
+    """
+    db_dir = os.path.dirname(os.path.abspath(db_path))
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
+    conn = sqlite3.connect(db_path, timeout=10.0)
+    conn.execute("PRAGMA journal_mode = WAL;")
+    conn.execute("PRAGMA busy_timeout = 5000;")
+    conn.execute("PRAGMA synchronous = NORMAL;")
+    return conn
 
 
 class Form4IngestionManager:
@@ -73,8 +75,8 @@ class Form4IngestionManager:
         sec_fetcher: Optional[SecEdgarFetcher] = None,
     ):
         self.db_path = db_path
-        self.rate_limiter = rate_limiter or RateLimiter(max_per_second=5.0)
-        self.sec_fetcher = sec_fetcher or SecEdgarFetcher()
+        self.rate_limiter = rate_limiter or DEFAULT_SEC_RATE_LIMITER
+        self.sec_fetcher = sec_fetcher or SecEdgarFetcher(rate_limiter=self.rate_limiter)
         self.session = requests.Session()
         candidate_ua = get_sec_user_agent()
         self.is_configured, self.configuration_error = validate_sec_user_agent(candidate_ua)
@@ -87,12 +89,12 @@ class Form4IngestionManager:
         self._cache_hits = 0
         self._init_db()
 
+    def _get_connection(self) -> sqlite3.Connection:
+        return connect_smart_money_db(self.db_path)
+
     def _init_db(self):
         """Initializes local SQLite schema for raw filings, normalized transactions, ledger, and backfill checkpoints."""
-        db_dir = os.path.dirname(self.db_path)
-        if db_dir:
-            os.makedirs(db_dir, exist_ok=True)
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             cursor = conn.cursor()
             # Raw filings cache
@@ -569,7 +571,7 @@ class Form4IngestionManager:
         return None
 
     def get_cached_raw_filing(self, accession_number: str) -> Optional[Dict[str, Any]]:
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
@@ -604,7 +606,7 @@ class Form4IngestionManager:
 
     def save_raw_filing_and_transactions(self, filing: SmartMoneyFiling, source_url: str):
         now_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             cursor = conn.cursor()
             # 1. Accession duplicate / content hash integrity check
@@ -671,17 +673,37 @@ class Form4IngestionManager:
 
             # 4. Lineage / Amendment tracking
             if filing.is_amendment or filing.document_type in ["4/A", "4A"]:
-                cursor.execute(
-                    """
-                    SELECT accession_number FROM form4_raw_filings 
-                    WHERE issuer_cik = ? AND filing_date <= ? AND accession_number != ? AND document_type = '4'
-                    ORDER BY filing_date DESC LIMIT 1
-                    """,
-                    (filing.issuer_cik, filing.filing_date, filing.accession_number),
-                )
-                prior = cursor.fetchone()
-                prior_acc = prior[0] if prior else None
-                rel = "AMENDMENT" if prior_acc else "UNRESOLVED_AMENDMENT"
+                prior_acc = None
+                rel = "UNRESOLVED_AMENDMENT"
+
+                # Check if explicit target is provided in XML
+                if getattr(filing, "amended_accession_number", None):
+                    cand = filing.amended_accession_number
+                    cursor.execute("SELECT 1 FROM form4_raw_filings WHERE accession_number = ?", (cand,))
+                    if cursor.fetchone():
+                        prior_acc = cand
+                        rel = "EXPLICIT_XML_AMENDMENT"
+
+                # If still unresolved, look for unique candidate on same reporting period
+                if not prior_acc:
+                    cursor.execute(
+                        """
+                        SELECT accession_number FROM form4_raw_filings 
+                        WHERE issuer_cik = ? AND filing_date = ? AND accession_number != ? AND document_type = '4'
+                        """,
+                        (filing.issuer_cik, filing.filing_date, filing.accession_number),
+                    )
+                    candidates = [row[0] for row in cursor.fetchall()]
+                    if len(candidates) == 1:
+                        prior_acc = candidates[0]
+                        rel = "AMENDMENT_INFERRED_SINGLE_CANDIDATE"
+                    elif len(candidates) > 1:
+                        prior_acc = None
+                        rel = "AMENDMENT_TARGET_AMBIGUOUS"
+                    else:
+                        prior_acc = None
+                        rel = "UNRESOLVED_AMENDMENT"
+
                 cursor.execute(
                     """
                     INSERT OR REPLACE INTO sm_amendments
@@ -690,7 +712,7 @@ class Form4IngestionManager:
                     """,
                     (filing.accession_number, prior_acc, rel, now_str),
                 )
-                if prior_acc:
+                if prior_acc and rel != "AMENDMENT_TARGET_AMBIGUOUS":
                     cursor.execute(
                         """
                         INSERT OR REPLACE INTO sm_amendments
@@ -794,7 +816,7 @@ class Form4IngestionManager:
         min_date: Optional[str] = None,
     ) -> List[SmartMoneyTransaction]:
         """Queries normalized transactions from local SQLite cache."""
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
@@ -828,14 +850,9 @@ class Form4IngestionManager:
         Point-in-time query: Returns only transactions whose recorded availability
         occurred at or before as_of_time (l.public_availability_at <= as_of_time).
         Rejects naive datetimes.
-
-        Governance Note (Epoch 001):
-        Historical rows in sm_source_availability_ledger populate public_availability_at
-        from EDGAR acceptanceDateTime (acceptance lower bound). For strict certified
-        public knowledge time, prospective public observation evidence is required.
         """
         as_of_utc = self.validate_timezone_aware_timestamp(as_of_time)
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
         try:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
@@ -864,6 +881,69 @@ class Form4IngestionManager:
             conn.close()
 
         return [self._row_to_transaction(r) for r in rows]
+
+    def get_bulk_transactions_as_of(
+        self,
+        as_of_time: str,
+        symbols: Optional[List[str]] = None,
+        ciks: Optional[List[str]] = None,
+        min_date: Optional[str] = None,
+    ) -> Dict[str, List[SmartMoneyTransaction]]:
+        """
+        Bulk Point-in-Time Query (Gate B2 & Phase F):
+        Retrieves all transactions across multiple issuers whose recorded availability
+        occurred at or before as_of_time (l.public_availability_at <= as_of_time).
+        Returns a mapping of symbol (or CIK) -> List[SmartMoneyTransaction].
+        Avoids N+1 database queries during market-wide universe evaluation.
+        """
+        as_of_utc = self.validate_timezone_aware_timestamp(as_of_time)
+        conn = self._get_connection()
+        try:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            query = """
+                SELECT t.* FROM form4_parsed_transactions t
+                JOIN sm_source_availability_ledger l ON t.accession_number = l.accession_number
+                WHERE l.public_availability_at IS NOT NULL
+                  AND l.public_availability_at != ''
+                  AND l.public_availability_at != 'UNKNOWN'
+                  AND l.public_availability_at <= ?
+            """
+            params: List[Any] = [as_of_utc]
+
+            if symbols:
+                clean_syms = [s.upper().strip() for s in symbols if s]
+                if clean_syms:
+                    placeholders = ",".join("?" for _ in clean_syms)
+                    query += f" AND t.issuer_symbol IN ({placeholders})"
+                    params.extend(clean_syms)
+
+            if ciks:
+                clean_ciks = [str(c).zfill(10) for c in ciks if c]
+                if clean_ciks:
+                    placeholders = ",".join("?" for _ in clean_ciks)
+                    query += f" AND t.issuer_cik IN ({placeholders})"
+                    params.extend(clean_ciks)
+
+            if min_date:
+                query += " AND t.transaction_date >= ?"
+                params.append(min_date)
+
+            query += " ORDER BY t.transaction_date DESC, t.record_key ASC"
+            cursor.execute(query, tuple(params))
+            rows = cursor.fetchall()
+
+            result: Dict[str, List[SmartMoneyTransaction]] = {}
+            for r in rows:
+                tx = self._row_to_transaction(r)
+                key = tx.issuer_symbol if tx.issuer_symbol else tx.issuer_cik
+                if key not in result:
+                    result[key] = []
+                result[key].append(tx)
+
+            return result
+        finally:
+            conn.close()
 
     def get_company_submissions_by_cik(self, cik: str) -> Optional[Dict[str, Any]]:
         """Fetches submissions JSON directly by CIK with rate limiting."""
@@ -942,6 +1022,79 @@ class Form4IngestionManager:
 
         self.save_raw_filing_and_transactions(filing, source_url)
         return filing
+
+    def ingest_accession(
+        self,
+        accession_number: str,
+        issuer_cik: str,
+        filing_date: Optional[str] = None,
+        acceptance_datetime: Optional[str] = None,
+        raw_content: Optional[str] = None,
+        source_url: str = "https://data.sec.gov",
+        force_refresh: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Accession-first canonical ingestion primitive (Phase E).
+        Preserves idempotency, verifies content hash integrity, parses normalized transactions,
+        and records public availability and lineage.
+        """
+        if not accession_number:
+            raise ValueError("ACCESSION_NUMBER_REQUIRED")
+
+        # 1. If raw_content is provided directly (e.g. from tests or stream)
+        if raw_content:
+            incoming_hash = hashlib.sha256(raw_content.encode("utf-8")).hexdigest()
+            cached = self.get_cached_raw_filing(accession_number)
+            if cached and not force_refresh:
+                existing_hash = cached.get("source_content_hash")
+                if existing_hash and existing_hash != incoming_hash:
+                    raise RuntimeError(
+                        f"SOURCE_INTEGRITY_CONFLICT: Conflicting content for accession {accession_number}! "
+                        f"Existing hash: {existing_hash}, Incoming hash: {incoming_hash}"
+                    )
+                return {
+                    "status": "KNOWN_IDEMPOTENT_NOOP",
+                    "accession_number": accession_number,
+                    "content_hash": existing_hash,
+                }
+
+            fetch_time = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            filing = Form4XmlParser.parse_filing(
+                raw_content=raw_content,
+                accession_number=accession_number,
+                filing_date_hint=filing_date,
+                acceptance_datetime=acceptance_datetime,
+                source_url=source_url,
+                source_fetch_time=fetch_time,
+            )
+            self.save_raw_filing_and_transactions(filing, source_url)
+            return {
+                "status": "INGESTED_NEW",
+                "accession_number": accession_number,
+                "content_hash": filing.source_content_hash,
+                "transactions_count": len(filing.transactions),
+            }
+
+        # 2. Outbound retrieval by accession
+        filing = self.ingest_filing_by_accession(
+            cik=issuer_cik,
+            accession_number=accession_number,
+            filing_date=filing_date,
+            acceptance_dt=acceptance_datetime,
+            force_refresh=force_refresh,
+        )
+        if not filing:
+            return {
+                "status": "RETRIEVAL_FAILED",
+                "accession_number": accession_number,
+            }
+
+        return {
+            "status": "INGESTED_NEW" if filing.transactions else "INGESTED_NO_TRANSACTIONS",
+            "accession_number": accession_number,
+            "content_hash": filing.source_content_hash,
+            "transactions_count": len(filing.transactions),
+        }
 
     def ingest_issuer(
         self,

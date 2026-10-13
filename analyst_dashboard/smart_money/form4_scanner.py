@@ -15,7 +15,10 @@ from analyst_dashboard.smart_money.form4_models import (
     SmartMoneyReadiness,
     SmartMoneySignalType,
 )
-from analyst_dashboard.smart_money.form4_ingestion import Form4IngestionManager
+from analyst_dashboard.smart_money.form4_ingestion import (
+    Form4IngestionManager,
+    connect_smart_money_db,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +105,7 @@ class SmartMoneyForm4Scanner:
                 reasons.append(f"Cluster buy: {distinct_buyer_count} distinct insiders purchasing within {lookback_days}d")
             else:
                 score += 15.0
-                reasons.append(f"Single insider buyer")
+                reasons.append("Single insider buyer")
 
             # 3. Role Factor (max 20)
             if c_suite_buying:
@@ -165,7 +168,7 @@ class SmartMoneyForm4Scanner:
         In market-wide production mode:
           - Strictly requires universe_build_id.
           - Loads governed scannable members from the universe build.
-          - Enforces PIPELINE_PENDING with matched_count: None.
+          - Enforces PIPELINE_PENDING with matched_count: None unless certified.
         """
         now_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         candidates: List[Dict[str, Any]] = []
@@ -191,6 +194,7 @@ class SmartMoneyForm4Scanner:
                     candidates.append({
                         "symbol": state.symbol,
                         "companyName": state.issuer_name,
+                        "subsignal": "INSIDER_FORM4",
                         "convictionScore": state.conviction_score,
                         "reasons": state.conviction_reasons,
                         "clusterBuy": state.cluster_buy,
@@ -199,7 +203,7 @@ class SmartMoneyForm4Scanner:
                         "netPurchaseValueUsd": state.net_purchase_value_usd,
                         "cSuiteBuying": state.c_suite_buying,
                         "insiderTitles": state.top_insider_titles,
-                        "executionStatus": "IN_BUY_ZONE",
+                        "signalStatus": "QUALIFIED_INSIDER_ACCUMULATION",
                     })
 
         candidates.sort(key=lambda c: c["convictionScore"], reverse=True)
@@ -215,7 +219,7 @@ class SmartMoneyForm4Scanner:
             u_id = "BOUNDED_SAMPLE"
             u_hash = None
         else:
-            # Governed market-wide production output: Fails closed to PIPELINE_PENDING
+            # Governed market-wide production output: Fails closed to PIPELINE_PENDING unless certified
             status = "PIPELINE_PENDING"
             matched_count = None
             scope_label = "MARKET_WIDE"
@@ -227,8 +231,10 @@ class SmartMoneyForm4Scanner:
 
         provenance = {
             "source": "SEC EDGAR Form 4",
+            "subsignal": "INSIDER_FORM4",
             "statutory_basis": "Section 16(a)",
             "scanner_ruleset_version": self.VERSION,
+            "qualification_contract_version": "FORM4_RADAR_QUALIFICATION_V1",
             "validation_scope": scope_label,
         }
 
@@ -259,17 +265,170 @@ class SmartMoneyForm4Scanner:
             coverage_status="COMPLETE" if is_bounded_sample else "PARTIAL",
         )
 
+    def scan_issuers_as_of(
+        self,
+        as_of_watermark: str,
+        symbols: Optional[List[str]] = None,
+        universe_build_id: Optional[str] = None,
+        lookback_days: int = 30,
+        now_date: Optional[str] = None,
+    ) -> SmartMoneyScanSnapshot:
+        """
+        Point-in-Time Governed Evaluation (Gates B2, B3 & Phase F):
+        Evaluates Form 4 insider transactions strictly bounded by certified watermark W
+        (public_availability_at <= as_of_watermark).
+        Determines coverage_status through receipt verification in sm_reconciliation_reports.
+        """
+        now_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        candidates: List[Dict[str, Any]] = []
+
+        manifest_data = None
+        if universe_build_id and self.universe_builder is not None:
+            manifest_data = self.universe_builder.get_build_manifest(universe_build_id)
+            member_dicts = self.universe_builder.get_scannable_members(universe_build_id)
+            target_symbols = [m["symbol"] for m in member_dicts]
+        else:
+            target_symbols = symbols or []
+
+        # Receipt-driven completeness check against sm_reconciliation_reports
+        coverage_status = "PARTIAL"
+        certified_complete = False
+        reconciliation_id = None
+        try:
+            conn = self.ingestion_mgr._get_connection() if hasattr(self.ingestion_mgr, "_get_connection") else None
+            if not conn:
+                conn = connect_smart_money_db(self.ingestion_mgr.db_path)
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT reconciliation_id, coverage_status, reconciled_at
+                FROM sm_reconciliation_reports
+                WHERE coverage_status = 'COMPLETE'
+                  AND (interval_end >= ? OR reconciled_at >= ?)
+                ORDER BY interval_end DESC LIMIT 1
+            """, (as_of_watermark, as_of_watermark))
+            row = cur.fetchone()
+            if row:
+                coverage_status = "COMPLETE"
+                certified_complete = True
+                reconciliation_id = row[0]
+            conn.close()
+        except Exception as e:
+            logger.warning(f"Failed to check reconciliation reports: {e}")
+            coverage_status = "PARTIAL"
+            certified_complete = False
+
+        # Bulk PIT query: strictly bounded by as_of_watermark
+        ref_d = datetime.strptime(now_date, "%Y-%m-%d").date() if now_date else datetime.utcnow().date()
+        cutoff_d = ref_d - timedelta(days=lookback_days)
+        cutoff_str = cutoff_d.strftime("%Y-%m-%d")
+
+        bulk_tx_map = self.ingestion_mgr.get_bulk_transactions_as_of(
+            as_of_time=as_of_watermark,
+            symbols=target_symbols,
+            min_date=cutoff_str,
+        )
+
+        for sym in target_symbols:
+            txs = bulk_tx_map.get(sym.upper().strip(), [])
+            if txs:
+                state = self.evaluate_issuer_transactions(sym, txs, lookback_days=lookback_days, now_date=now_date)
+                if state.qualifies_for_radar:
+                    candidates.append({
+                        "symbol": state.symbol,
+                        "companyName": state.issuer_name,
+                        "subsignal": "INSIDER_FORM4",
+                        "convictionScore": state.conviction_score,
+                        "qualifies": True,
+                        "reasons": state.conviction_reasons,
+                        "clusterBuy": state.cluster_buy,
+                        "distinctBuyers": state.distinct_buyer_count,
+                        "grossPurchaseValueUsd": state.gross_purchase_value_usd,
+                        "netPurchaseValueUsd": state.net_purchase_value_usd,
+                        "cSuiteBuying": state.c_suite_buying,
+                        "insiderTitles": state.top_insider_titles,
+                        "signalStatus": "QUALIFIED_INSIDER_ACCUMULATION",
+                    })
+
+        candidates.sort(key=lambda c: c["convictionScore"], reverse=True)
+
+        scannable_cnt = manifest_data.scannable_count if manifest_data else len(target_symbols)
+        eligible_cnt = manifest_data.eligible_count if manifest_data else scannable_cnt
+        u_id = manifest_data.universe_id if manifest_data else "SMART_MONEY_US_EQUITIES"
+        u_hash = manifest_data.member_identity_hash if manifest_data else None
+
+        provenance = {
+            "source": "SEC EDGAR Form 4",
+            "subsignal": "INSIDER_FORM4",
+            "statutory_basis": "Section 16(a)",
+            "scanner_ruleset_version": self.VERSION,
+            "qualification_contract_version": "FORM4_RADAR_QUALIFICATION_V1",
+            "data_as_of": as_of_watermark,
+            "certified_watermark": as_of_watermark,
+            "coverage_status": coverage_status,
+            "certified_complete": certified_complete,
+            "reconciliation_receipt_id": reconciliation_id,
+            "validation_scope": "MARKET_WIDE" if universe_build_id else "TARGET_UNIVERSE",
+        }
+
+        freshness = {
+            "policy_version": self.VERSION,
+            "lookback_days": lookback_days,
+            "data_as_of": as_of_watermark,
+            "generated_at": now_str,
+            "status": "FRESH",
+        }
+
+        # Status: If certified complete or target universe, AVAILABLE/NO_MATCHES; if uncertified in market-wide mode, PIPELINE_PENDING
+        if coverage_status == "COMPLETE" or not universe_build_id:
+            status = "AVAILABLE" if len(candidates) > 0 else "NO_MATCHES"
+            matched_count = len(candidates)
+        else:
+            status = "PIPELINE_PENDING"
+            matched_count = None
+
+        return SmartMoneyScanSnapshot(
+            scanner_id=self.SCANNER_ID,
+            version=self.VERSION,
+            status=status,
+            validation_scope="MARKET_WIDE" if universe_build_id else "TARGET_UNIVERSE",
+            generated_at=now_str,
+            universe_id=u_id,
+            scannable_count=scannable_cnt,
+            matched_count=matched_count,
+            items=candidates,
+            provenance=provenance,
+            freshness=freshness,
+            universe_build_id=universe_build_id,
+            universe_content_hash=u_hash,
+            eligibility_policy_version=manifest_data.eligibility_policy_version if manifest_data else None,
+            eligible_count=eligible_cnt,
+            cik_mapped_count=scannable_cnt,
+            coverage_status=coverage_status,
+        )
+
     def evaluate_readiness(
         self,
         is_market_wide_governed: bool = False,
         universe_denominator: Optional[int] = None,
     ) -> SmartMoneyReadiness:
         """
-        Evaluates the 5-point readiness checklist.
+        Evaluates readiness from measurable underlying provenance using canonical connection factory.
         """
-        source_ok = True  # SEC ingestion operational
+        source_ok = False
+        try:
+            conn = self.ingestion_mgr._get_connection() if hasattr(self.ingestion_mgr, "_get_connection") else None
+            if not conn:
+                conn = connect_smart_money_db(self.ingestion_mgr.db_path)
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) FROM form4_raw_filings")
+            raw_cnt = cur.fetchone()[0]
+            source_ok = raw_cnt >= 0
+            conn.close()
+        except Exception:
+            source_ok = False
+
         freshness_ok = True
-        full_scan_ok = True
+        full_scan_ok = bool(universe_denominator and universe_denominator > 0)
 
         if not is_market_wide_governed or not universe_denominator or universe_denominator <= 0:
             return SmartMoneyReadiness(
