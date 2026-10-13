@@ -1,4 +1,4 @@
-﻿"""Tests for Regulatory Open Data Ingestion (SEC EDGAR, FINRA, Capitol Trades)."""
+"""Tests for Regulatory Open Data Ingestion (SEC EDGAR, FINRA, Capitol Trades)."""
 
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
@@ -53,5 +53,8 @@ def test_smart_money_finra_darkpool_endpoint():
     assert res.status_code == 200
     data = res.json()
     assert data["symbol"] == "PLTR"
-    assert "metrics" in data
-    assert "ats_dark_pool_volume_share_pct" in data["metrics"]
+    assert data["status"] == "FEATURE_HELD"
+    assert data["data_classification"] == "SYNTHETIC_RESEARCH_NOT_PUBLIC"
+    assert data["is_observed_finra_data"] is False
+    assert data["is_live"] is False
+    assert data["metrics"] is None

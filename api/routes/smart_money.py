@@ -128,30 +128,67 @@ def get_sec_filings(symbol: str, response: Response = None):
         response.headers["CDN-Cache-Control"] = "max-age=600, stale-while-revalidate=86400, stale-if-error=86400"
         response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=600, stale-while-revalidate=86400, stale-if-error=86400"
     valid_sym = _validate_symbol(symbol)
-    cik = sec_fetcher.resolve_cik(valid_sym)
-    filings = sec_fetcher.get_recent_filings(valid_sym) if cik else []
+    envelope = sec_fetcher.get_recent_filings_envelope(valid_sym)
+    status = envelope["status"]
+    is_available = status in ("AVAILABLE_WITH_RESULTS", "AVAILABLE_NO_RESULTS")
+    cik = envelope.get("cik")
+    items = envelope.get("items")
+
+    if status == "AVAILABLE_WITH_RESULTS":
+        message = "Official SEC EDGAR filings retrieved"
+    elif status == "AVAILABLE_NO_RESULTS":
+        message = "Official SEC EDGAR filings retrieved (0 filings match criteria)"
+    elif status == "UPSTREAM_RATE_LIMITED":
+        message = "SEC EDGAR API upstream rate limit exceeded (HTTP 429)"
+    elif status == "UPSTREAM_TIMEOUT":
+        message = "SEC EDGAR API connection timed out"
+    elif status == "UPSTREAM_SERVER_ERROR":
+        message = f"SEC EDGAR API upstream server error (HTTP {envelope.get('status_code')})"
+    elif status == "UPSTREAM_NOT_FOUND":
+        message = f"SEC EDGAR Form 4 filings unavailable for {valid_sym}"
+    elif status == "CONFIGURATION_BLOCKED":
+        message = f"SEC EDGAR request blocked: {envelope.get('reason')}"
+    elif status == "STRUCTURALLY_INVALID":
+        message = "SEC EDGAR API response payload was malformed or structurally invalid"
+    elif status == "TRANSPORT_INCOMPLETE":
+        message = "SEC EDGAR API transport failed or payload was incomplete"
+    else:
+        message = f"SEC EDGAR API request failed ({status})"
+
+    coverage = "Supported SEC Issuer" if cik else "Unsupported Issuer / Foreign FPI (Exempt from Form 4)"
+    is_supported = cik is not None
+
     return {
         "symbol": valid_sym,
-        "available": cik is not None,
+        "status": status,
+        "available": is_supported,
         "cik": cik,
-        "coverage": "Supported SEC Issuer" if cik else "Unsupported Issuer / Foreign FPI (Exempt from Form 4)",
-        "filings": filings,
-        "message": "Official SEC EDGAR filings retrieved" if cik else f"SEC EDGAR Form 4 filings unavailable for {valid_sym}",
+        "coverage": coverage,
+        "status_code": envelope.get("status_code"),
+        "reason": envelope.get("reason"),
+        "items": items,
+        "filings": items if items is not None else [],
+        "count": len(items) if items is not None else 0,
+        "source": "SEC EDGAR API (Live)",
+        "message": message,
     }
 
 
 @router.get("/finra-darkpool/{symbol}")
 def get_finra_darkpool(symbol: str, response: Response = None):
-    """Fetch official FINRA Alternative Trading System (ATS) dark pool shares & short volumes."""
+    """Retrieve FINRA dark-pool research status (Feature held in read-only MVP)."""
     if response is not None and hasattr(response, "headers"):
         response.headers["Cache-Control"] = "public, max-age=120, s-maxage=600, stale-while-revalidate=86400, stale-if-error=86400"
         response.headers["CDN-Cache-Control"] = "max-age=600, stale-while-revalidate=86400, stale-if-error=86400"
         response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=600, stale-while-revalidate=86400, stale-if-error=86400"
     valid_sym = _validate_symbol(symbol)
-    metrics = finra_fetcher.get_ats_metrics(valid_sym)
     return {
         "symbol": valid_sym,
-        "available": metrics is not None,
-        "metrics": metrics,
-        "message": None if metrics is not None else "FINRA ATS off-exchange transparency data is unavailable for this ticker.",
+        "status": "FEATURE_HELD",
+        "data_classification": "SYNTHETIC_RESEARCH_NOT_PUBLIC",
+        "is_live": False,
+        "is_observed_finra_data": False,
+        "available": False,
+        "metrics": None,
+        "message": "FINRA-style dark-pool research metrics are not included in the current read-only release.",
     }
