@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import {
   FredMacroData,
   SecForm4Trade,
+  SecFilingsResult,
   fetchFredMacroRegime,
   fetchSecForm4Insiders,
 } from "../lib/institutionalFeeds";
@@ -14,16 +15,43 @@ interface InstitutionalFeedsProps {
 
 export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsProps) {
   const [macro, setMacro] = useState<FredMacroData | null>(null);
-  const [insiders, setInsiders] = useState<SecForm4Trade[]>([]);
+  const [filingsResult, setFilingsResult] = useState<SecFilingsResult | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<"FRED_MACRO" | "SEC_FORM4">("FRED_MACRO");
 
   useEffect(() => {
+    setIsLoading(true);
     fetchFredMacroRegime().then(setMacro);
-    fetchSecForm4Insiders(activeSymbol).then(setInsiders);
+    fetchSecForm4Insiders(activeSymbol).then((res) => {
+      setFilingsResult(res);
+      setIsLoading(false);
+    });
   }, [activeSymbol]);
 
   const cleanSym = activeSymbol.toUpperCase().replace("-USD", "");
-  const matchedInsider = insiders.find((i) => i.ticker === cleanSym);
+  const trades: SecForm4Trade[] = filingsResult?.items ?? [];
+  const matchedInsider = trades.find((i) => i.ticker === cleanSym);
+
+  const getUnavailableCopy = (status?: string) => {
+    switch (status) {
+      case "UPSTREAM_RATE_LIMITED":
+        return "SEC EDGAR is temporarily rate-limiting requests. Filing data is unavailable right now.";
+      case "UPSTREAM_TIMEOUT":
+        return "SEC EDGAR did not respond in time. Filing data is temporarily unavailable.";
+      case "UPSTREAM_SERVER_ERROR":
+        return "SEC EDGAR is temporarily unavailable.";
+      case "UPSTREAM_NOT_FOUND":
+        return `SEC Form 4 filings are unavailable for ${cleanSym}.`;
+      case "STRUCTURALLY_INVALID":
+      case "TRANSPORT_INCOMPLETE":
+        return "SEC filing data could not be verified from the upstream response.";
+      case "CONFIGURATION_BLOCKED":
+        return "SEC filing integration is currently unavailable.";
+      case "UNKNOWN_FAIL_CLOSED":
+      default:
+        return "SEC EDGAR filing data is currently unavailable.";
+    }
+  };
 
   return (
     <div className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-mono">
@@ -117,75 +145,106 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
       {/* VIEW 2: SEC FORM 4 CORPORATE INSIDERS */}
       {activeTab === "SEC_FORM4" && (
         <div className="space-y-3">
-          {matchedInsider ? (
-            <div className="bg-emerald-950/30 border border-emerald-800/80 rounded-xl p-3.5 text-xs space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <span className="text-base">🟢</span>
-                  <strong className="text-emerald-300 font-bold text-sm">
-                    {matchedInsider.insiderName} ({matchedInsider.insiderRole})
-                  </strong>
-                </div>
-                <a
-                  href={matchedInsider.secEdgarUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[10px] font-bold text-cyan-400 hover:underline flex items-center gap-1"
-                >
-                  <span>SEC EDGAR Form 4</span>
-                  <span>↗</span>
-                </a>
+          {isLoading ? (
+            <div className="bg-[#090d14] p-4 rounded-lg text-xs text-slate-400 text-center animate-pulse border border-[#1b2434]">
+              Loading SEC EDGAR Form 4 corporate insider disclosures...
+            </div>
+          ) : filingsResult === null || filingsResult.items === null ? (
+            /* Unavailable / Indeterminate / Error State */
+            <div
+              role="alert"
+              data-testid="sec-unavailable-banner"
+              className="bg-amber-950/20 border border-amber-800/60 rounded-xl p-4 text-xs space-y-1.5"
+            >
+              <div className="flex items-center space-x-2 text-amber-400 font-bold">
+                <span>⚠️</span>
+                <span>SEC EDGAR Data Feed Unavailable</span>
               </div>
-              <p className="text-[11px] text-slate-200 font-sans">
-                Purchased <strong>{matchedInsider.sharesTraded.toLocaleString()} shares</strong> on the open market at <strong>${matchedInsider.pricePerShare.toFixed(2)}</strong> (Total: <strong>${(matchedInsider.totalValueUsd / 1000000).toFixed(2)}M USD</strong>).
+              <p className="text-slate-300 font-sans leading-relaxed">
+                {getUnavailableCopy(filingsResult?.status)}
+              </p>
+            </div>
+          ) : filingsResult.status === "AVAILABLE_NO_RESULTS" || trades.length === 0 ? (
+            /* Genuine Empty State */
+            <div
+              data-testid="sec-empty-banner"
+              className="bg-[#090d14] border border-[#1b2434] p-4 rounded-xl text-xs text-slate-400 text-center space-y-1"
+            >
+              <div className="text-slate-300 font-bold">No Qualifying Disclosures Found</div>
+              <p className="text-slate-500 font-sans text-[11px]">
+                No qualifying recent SEC Form 4 purchases were found for {cleanSym} in the last 30 days.
               </p>
             </div>
           ) : (
-            <div className="bg-[#090d14] p-3 rounded-lg text-xs text-slate-400 text-center">
-              No recent C-Suite open-market purchases filed on SEC EDGAR for {cleanSym} in the last 30 days.
-            </div>
-          )}
+            /* Populated Filings State */
+            <>
+              {matchedInsider && (
+                <div className="bg-emerald-950/30 border border-emerald-800/80 rounded-xl p-3.5 text-xs space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-base">🟢</span>
+                      <strong className="text-emerald-300 font-bold text-sm">
+                        {matchedInsider.insiderName} ({matchedInsider.insiderRole})
+                      </strong>
+                    </div>
+                    <a
+                      href={matchedInsider.secEdgarUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] font-bold text-cyan-400 hover:underline flex items-center gap-1"
+                    >
+                      <span>SEC EDGAR Form 4</span>
+                      <span>↗</span>
+                    </a>
+                  </div>
+                  <p className="text-[11px] text-slate-200 font-sans">
+                    Purchased <strong>{matchedInsider.sharesTraded.toLocaleString()} shares</strong> on the open market at <strong>${matchedInsider.pricePerShare.toFixed(2)}</strong> (Total: <strong>${(matchedInsider.totalValueUsd / 1000000).toFixed(2)}M USD</strong>).
+                  </p>
+                </div>
+              )}
 
-          <div className="overflow-x-auto pt-1">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#090d14] text-slate-400 text-[10px] uppercase border-b border-[#1b2434]">
-                <tr>
-                  <th className="py-2.5 px-3">Ticker</th>
-                  <th className="py-2.5 px-3">Executive / Role</th>
-                  <th className="py-2.5 px-3">Shares</th>
-                  <th className="py-2.5 px-3">Total ($)</th>
-                  <th className="py-2.5 px-3">Filing Date</th>
-                  <th className="py-2.5 px-3 text-right">EDGAR Source</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1b2434] tabular-nums">
-                {insiders.map((trade, idx) => (
-                  <tr key={idx} className="hover:bg-[#151e2d] transition-colors">
-                    <td className="py-2 px-3 font-bold text-cyan-400">{trade.ticker}</td>
-                    <td className="py-2 px-3 text-slate-200">
-                      <span className="font-semibold">{trade.insiderName}</span>
-                      <span className="text-[10px] text-slate-400 block font-normal">{trade.insiderRole}</span>
-                    </td>
-                    <td className="py-2 px-3 text-slate-300">{trade.sharesTraded.toLocaleString()}</td>
-                    <td className="py-2 px-3 text-emerald-400 font-bold">
-                      ${(trade.totalValueUsd / 1000000).toFixed(2)}M
-                    </td>
-                    <td className="py-2 px-3 text-slate-400 text-[11px]">{trade.filingDate}</td>
-                    <td className="py-2 px-3 text-right">
-                      <a
-                        href={trade.secEdgarUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 underline"
-                      >
-                        Form 4 ↗
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              <div className="overflow-x-auto pt-1">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#090d14] text-slate-400 text-[10px] uppercase border-b border-[#1b2434]">
+                    <tr>
+                      <th className="py-2.5 px-3">Ticker</th>
+                      <th className="py-2.5 px-3">Executive / Role</th>
+                      <th className="py-2.5 px-3">Shares</th>
+                      <th className="py-2.5 px-3">Total ($)</th>
+                      <th className="py-2.5 px-3">Filing Date</th>
+                      <th className="py-2.5 px-3 text-right">EDGAR Source</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1b2434] tabular-nums">
+                    {trades.map((trade, idx) => (
+                      <tr key={idx} className="hover:bg-[#151e2d] transition-colors">
+                        <td className="py-2 px-3 font-bold text-cyan-400">{trade.ticker}</td>
+                        <td className="py-2 px-3 text-slate-200">
+                          <span className="font-semibold">{trade.insiderName}</span>
+                          <span className="text-[10px] text-slate-400 block font-normal">{trade.insiderRole}</span>
+                        </td>
+                        <td className="py-2 px-3 text-slate-300">{trade.sharesTraded.toLocaleString()}</td>
+                        <td className="py-2 px-3 text-emerald-400 font-bold">
+                          ${(trade.totalValueUsd / 1000000).toFixed(2)}M
+                        </td>
+                        <td className="py-2 px-3 text-slate-400 text-[11px]">{trade.filingDate}</td>
+                        <td className="py-2 px-3 text-right">
+                          <a
+                            href={trade.secEdgarUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 underline"
+                          >
+                            Form 4 ↗
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

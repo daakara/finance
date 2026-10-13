@@ -7,6 +7,9 @@ import logging
 import requests
 from typing import Dict, Any, List, Optional, Tuple
 
+import threading
+import time
+
 logger = logging.getLogger(__name__)
 
 DISALLOWED_DOMAINS = {
@@ -17,6 +20,32 @@ DISALLOWED_IDENTIFIERS = {
     "financeterminalresearchapp admin@financeterminal.internal",
     "admin@financeterminal.internal",
 }
+
+
+class SecRateLimiter:
+    """
+    Thread-safe rate limiter enforcing max SEC requests per second process-globally.
+    Conforms to SEC Fair Access policy (max 10 req/sec) with conservative 5.0 req/sec ceiling.
+    """
+
+    def __init__(self, max_per_second: float = 5.0):
+        self.max_per_second = max_per_second
+        self.interval = 1.0 / max_per_second if max_per_second > 0 else 0.0
+        self.last_request_time = 0.0
+        self._lock = threading.Lock()
+
+    def acquire(self):
+        if self.interval <= 0:
+            return
+        with self._lock:
+            now = time.time()
+            elapsed = now - self.last_request_time
+            if elapsed < self.interval:
+                time.sleep(self.interval - elapsed)
+            self.last_request_time = time.time()
+
+
+DEFAULT_SEC_RATE_LIMITER = SecRateLimiter(max_per_second=5.0)
 
 
 def validate_sec_user_agent(user_agent: Optional[str]) -> Tuple[bool, str]:
@@ -100,7 +129,7 @@ class SecEdgarFetcher:
         "LULU": "0001397187",
     }
 
-    def __init__(self, user_agent: Optional[str] = None):
+    def __init__(self, user_agent: Optional[str] = None, rate_limiter: Optional[SecRateLimiter] = None):
         self.session = requests.Session()
         candidate_ua = user_agent or os.environ.get("SEC_USER_AGENT")
         self.is_configured, self.configuration_error = validate_sec_user_agent(candidate_ua)
@@ -113,6 +142,13 @@ class SecEdgarFetcher:
 
         self.cik_cache: Dict[str, str] = dict(self.CIK_MAP)
         self._has_loaded_master_index: bool = False
+        self.rate_limiter = rate_limiter if rate_limiter is not None else DEFAULT_SEC_RATE_LIMITER
+
+    def _get(self, url: str, **kwargs) -> requests.Response:
+        """Execute outbound HTTP GET with mandatory rate-limiter acquisition."""
+        if self.rate_limiter is not None:
+            self.rate_limiter.acquire()
+        return self.session.get(url, **kwargs)
 
     def resolve_cik(self, symbol: str) -> Optional[str]:
         """Resolve ticker to 10-digit CIK from local cache or SEC company_tickers index."""
@@ -126,7 +162,7 @@ class SecEdgarFetcher:
 
         if not self._has_loaded_master_index:
             try:
-                resp = self.session.get("https://www.sec.gov/files/company_tickers.json", timeout=6)
+                resp = self._get("https://www.sec.gov/files/company_tickers.json", timeout=6)
                 if resp.status_code == 200:
                     data = resp.json()
                     for item in data.values():
@@ -164,7 +200,7 @@ class SecEdgarFetcher:
 
         url = f"{self.BASE_URL}/submissions/CIK{cik}.json"
         try:
-            resp = self.session.get(url, timeout=5)
+            resp = self._get(url, timeout=5)
             if resp.status_code == 200:
                 try:
                     data = resp.json()
