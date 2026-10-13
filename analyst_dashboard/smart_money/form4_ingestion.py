@@ -13,7 +13,12 @@ from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional, Tuple
 import requests
 
-from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher, SEC_USER_AGENT
+from analyst_dashboard.data.sec_edgar_fetcher import (
+    SecEdgarFetcher,
+    SEC_USER_AGENT,
+    validate_sec_user_agent,
+    get_sec_user_agent,
+)
 from analyst_dashboard.smart_money.form4_models import (
     SmartMoneyTransaction,
     SmartMoneyFiling,
@@ -71,14 +76,22 @@ class Form4IngestionManager:
         self.rate_limiter = rate_limiter or RateLimiter(max_per_second=5.0)
         self.sec_fetcher = sec_fetcher or SecEdgarFetcher()
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": SEC_USER_AGENT})
+        candidate_ua = get_sec_user_agent()
+        self.is_configured, self.configuration_error = validate_sec_user_agent(candidate_ua)
+        self.user_agent = candidate_ua.strip() if self.is_configured and candidate_ua else None
+        if self.is_configured and self.user_agent:
+            self.session.headers.update({"User-Agent": self.user_agent})
+        else:
+            self.session.headers.pop("User-Agent", None)
         self._request_count = 0
         self._cache_hits = 0
         self._init_db()
 
     def _init_db(self):
         """Initializes local SQLite schema for raw filings, normalized transactions, ledger, and backfill checkpoints."""
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        db_dir = os.path.dirname(self.db_path)
+        if db_dir:
+            os.makedirs(db_dir, exist_ok=True)
         conn = sqlite3.connect(self.db_path)
         try:
             cursor = conn.cursor()
@@ -528,6 +541,9 @@ class Form4IngestionManager:
 
     def _fetch_url_with_retry(self, url: str, max_retries: int = 3) -> Optional[str]:
         """Fetches URL with rate limiting and exponential backoff on 429/5xx."""
+        if not self.is_configured:
+            logger.warning(f"SEC fetch blocked for {url}: SEC_USER_AGENT is not configured or fails validation.")
+            return None
         backoff = 1.0
         for attempt in range(max_retries):
             self.rate_limiter.acquire()

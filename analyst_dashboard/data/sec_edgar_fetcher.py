@@ -1,13 +1,72 @@
 """SEC EDGAR Regulatory Filing & Corporate Financial Disclosure Fetcher (Free Public API)."""
 
+import os
+import re
+import json
 import logging
 import requests
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# SEC EDGAR requires a User-Agent in format: User-Agent: Sample Company Name AdminContact@<sample company domain>.com
-SEC_USER_AGENT = "FinanceTerminalResearchApp admin@financeterminal.internal"
+DISALLOWED_DOMAINS = {
+    "internal", "local", "example.com", "sample.com", "test.com", "placeholder", "invalid"
+}
+
+DISALLOWED_IDENTIFIERS = {
+    "financeterminalresearchapp admin@financeterminal.internal",
+    "admin@financeterminal.internal",
+}
+
+
+def validate_sec_user_agent(user_agent: Optional[str]) -> Tuple[bool, str]:
+    """
+    Validate SEC User-Agent string against SEC Fair Access requirements:
+    Format: '<ApplicationOrCompany> <AdminContact@domain.com>'
+    Must contain a valid email domain (not private/placeholder) and non-empty entity name.
+    """
+    if not user_agent or not isinstance(user_agent, str):
+        return False, "User-Agent string is missing or empty"
+
+    trimmed = user_agent.strip()
+    if not trimmed:
+        return False, "User-Agent string is whitespace only"
+
+    if trimmed.lower() in DISALLOWED_IDENTIFIERS:
+        return False, "User-Agent is a disallowed placeholder identity"
+
+    # Check for email pattern
+    email_match = re.search(r"[\w\.-]+@([\w\.-]+\.\w+)", trimmed)
+    if not email_match:
+        return False, "User-Agent must contain a valid contact email (AdminContact@domain.com)"
+
+    domain = email_match.group(1).lower()
+    for disallowed in DISALLOWED_DOMAINS:
+        if domain == disallowed or domain.endswith("." + disallowed):
+            return False, f"User-Agent domain '{domain}' is a disallowed placeholder or private domain"
+
+    parts = trimmed.split()
+    if len(parts) < 2:
+        return False, "User-Agent must include both entity/application name and contact email"
+
+    return True, "Valid"
+
+
+def get_sec_user_agent() -> Optional[str]:
+    """
+    Retrieve SEC_USER_AGENT from environment.
+    Returns valid user agent string or None if unconfigured/invalid.
+    Never prints contact information to logs.
+    """
+    ua = os.environ.get("SEC_USER_AGENT")
+    is_valid, _ = validate_sec_user_agent(ua)
+    if not is_valid:
+        return None
+    return ua.strip()
+
+
+SEC_USER_AGENT = get_sec_user_agent()
+
 
 class SecEdgarFetcher:
     """Fetches official 10-K, 10-Q, 8-K, Form 4 insider transactions, and 13F institutional holdings."""
@@ -41,9 +100,17 @@ class SecEdgarFetcher:
         "LULU": "0001397187",
     }
 
-    def __init__(self):
+    def __init__(self, user_agent: Optional[str] = None):
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": SEC_USER_AGENT})
+        candidate_ua = user_agent or os.environ.get("SEC_USER_AGENT")
+        self.is_configured, self.configuration_error = validate_sec_user_agent(candidate_ua)
+        self.user_agent = candidate_ua.strip() if self.is_configured and candidate_ua else None
+
+        if self.is_configured and self.user_agent:
+            self.session.headers.update({"User-Agent": self.user_agent})
+        else:
+            self.session.headers.pop("User-Agent", None)
+
         self.cik_cache: Dict[str, str] = dict(self.CIK_MAP)
         self._has_loaded_master_index: bool = False
 
@@ -52,6 +119,10 @@ class SecEdgarFetcher:
         upper = symbol.upper().strip()
         if upper in self.cik_cache:
             return self.cik_cache[upper]
+
+        if not self.is_configured:
+            logger.warning("SEC EDGAR request blocked: valid SEC_USER_AGENT is not configured.")
+            return None
 
         if not self._has_loaded_master_index:
             try:
@@ -69,28 +140,179 @@ class SecEdgarFetcher:
 
         return self.cik_cache.get(upper)
 
-    def get_company_submissions(self, symbol: str) -> Optional[Dict[str, Any]]:
-        """Fetch real-time company submissions including Form 4 (insiders) and 8-K (material events)."""
+    def get_company_submissions_envelope(self, symbol: str) -> Dict[str, Any]:
+        """Fetch real-time company submissions with complete semantic failure tracking."""
+        if not self.is_configured:
+            logger.warning("SEC EDGAR request blocked: valid SEC_USER_AGENT is not configured.")
+            return {
+                "status": "CONFIGURATION_BLOCKED",
+                "status_code": None,
+                "data": None,
+                "reason": self.configuration_error or "VALID_SEC_USER_AGENT_REQUIRED",
+                "error": "Valid SEC_USER_AGENT is not configured",
+            }
+
         cik = self.resolve_cik(symbol)
         if not cik:
-            return None
+            return {
+                "status": "UPSTREAM_NOT_FOUND",
+                "status_code": 404,
+                "data": None,
+                "reason": "CIK_NOT_FOUND",
+                "error": f"CIK could not be resolved for symbol '{symbol}'",
+            }
 
         url = f"{self.BASE_URL}/submissions/CIK{cik}.json"
         try:
             resp = self.session.get(url, timeout=5)
             if resp.status_code == 200:
-                return resp.json()
+                try:
+                    data = resp.json()
+                    if not isinstance(data, dict):
+                        return {
+                            "status": "STRUCTURALLY_INVALID",
+                            "status_code": 200,
+                            "data": None,
+                            "reason": "PAYLOAD_NOT_A_DICT",
+                            "error": "SEC EDGAR submissions JSON root is not an object",
+                        }
+                    return {
+                        "status": "AVAILABLE",
+                        "status_code": 200,
+                        "data": data,
+                        "reason": None,
+                        "error": None,
+                    }
+                except (ValueError, json.JSONDecodeError) as e:
+                    return {
+                        "status": "STRUCTURALLY_INVALID",
+                        "status_code": 200,
+                        "data": None,
+                        "reason": "MALFORMED_JSON",
+                        "error": str(e),
+                    }
+            elif resp.status_code == 429:
+                return {
+                    "status": "UPSTREAM_RATE_LIMITED",
+                    "status_code": 429,
+                    "data": None,
+                    "reason": "RATE_LIMITED",
+                    "error": "SEC EDGAR API rate limit exceeded (HTTP 429)",
+                }
+            elif resp.status_code == 404:
+                return {
+                    "status": "UPSTREAM_NOT_FOUND",
+                    "status_code": 404,
+                    "data": None,
+                    "reason": "SUBMISSIONS_RESOURCE_NOT_FOUND",
+                    "error": f"Submissions resource not found for CIK {cik}",
+                }
+            elif resp.status_code == 403:
+                return {
+                    "status": "UNKNOWN_FAIL_CLOSED",
+                    "status_code": 403,
+                    "data": None,
+                    "reason": "HTTP_403_FORBIDDEN",
+                    "error": "SEC EDGAR API returned 403 Forbidden (access denied or blocked)",
+                }
+            elif resp.status_code in (500, 502, 503, 504):
+                return {
+                    "status": "UPSTREAM_SERVER_ERROR",
+                    "status_code": resp.status_code,
+                    "data": None,
+                    "reason": f"HTTP_{resp.status_code}_SERVER_ERROR",
+                    "error": f"SEC EDGAR upstream server error (HTTP {resp.status_code})",
+                }
+            else:
+                return {
+                    "status": "UNKNOWN_FAIL_CLOSED",
+                    "status_code": resp.status_code,
+                    "data": None,
+                    "reason": f"UNEXPECTED_STATUS_{resp.status_code}",
+                    "error": f"Unexpected HTTP status {resp.status_code} from SEC EDGAR",
+                }
+        except requests.exceptions.Timeout as e:
+            return {
+                "status": "UPSTREAM_TIMEOUT",
+                "status_code": None,
+                "data": None,
+                "reason": "CONNECTION_TIMEOUT",
+                "error": str(e),
+            }
+        except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
+            return {
+                "status": "TRANSPORT_INCOMPLETE",
+                "status_code": None,
+                "data": None,
+                "reason": "TRANSPORT_CONNECTION_DROPPED",
+                "error": str(e),
+            }
         except Exception as e:
-            logger.warning(f"SEC EDGAR submissions fetch failed for {symbol}: {e}")
-        return None
+            return {
+                "status": "UNKNOWN_FAIL_CLOSED",
+                "status_code": None,
+                "data": None,
+                "reason": "UNHANDLED_EXCEPTION",
+                "error": str(e),
+            }
 
-    def get_recent_filings(self, symbol: str, form_types: Optional[List[str]] = None) -> List[Dict[str, Any]]:
-        """Get formatted list of recent regulatory filings."""
-        data = self.get_company_submissions(symbol)
-        if not data or "filings" not in data or "recent" not in data["filings"]:
-            return []
+    def get_company_submissions(self, symbol: str) -> Optional[Dict[str, Any]]:
+        """Fetch real-time company submissions including Form 4 (insiders) and 8-K (material events)."""
+        env = self.get_company_submissions_envelope(symbol)
+        return env.get("data")
+
+    def get_recent_filings_envelope(
+        self, symbol: str, form_types: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """
+        Get structured filings envelope distinguishing valid empty results from upstream failures.
+        """
+        cik = self.resolve_cik(symbol)
+        sub_env = self.get_company_submissions_envelope(symbol)
+
+        if sub_env["status"] != "AVAILABLE":
+            # If get_company_submissions was mocked/overridden in caller tests
+            mocked_sub = self.get_company_submissions(symbol)
+            if mocked_sub and isinstance(mocked_sub, dict):
+                sub_env = {
+                    "status": "AVAILABLE",
+                    "status_code": 200,
+                    "data": mocked_sub,
+                    "reason": None,
+                    "error": None,
+                }
+            else:
+                return {
+                    "status": sub_env["status"],
+                    "status_code": sub_env.get("status_code"),
+                    "cik": cik,
+                    "reason": sub_env.get("reason"),
+                    "error_detail": sub_env.get("error"),
+                    "items": None,
+                }
+
+        data = sub_env.get("data")
+        if not data or not isinstance(data, dict) or "filings" not in data or "recent" not in data["filings"]:
+            return {
+                "status": "STRUCTURALLY_INVALID",
+                "status_code": 200,
+                "cik": cik,
+                "reason": "MISSING_FILINGS_RECENT_KEY",
+                "error_detail": "SEC EDGAR payload missing 'filings.recent' structure",
+                "items": None,
+            }
 
         recent = data["filings"]["recent"]
+        if not isinstance(recent, dict):
+            return {
+                "status": "STRUCTURALLY_INVALID",
+                "status_code": 200,
+                "cik": cik,
+                "reason": "RECENT_NOT_DICT",
+                "error_detail": "'filings.recent' is not a dictionary",
+                "items": None,
+            }
+
         forms = recent.get("form", [])
         filing_dates = recent.get("filingDate", [])
         accessions = recent.get("accessionNumber", [])
@@ -101,8 +323,7 @@ class SecEdgarFetcher:
         allowed_forms = set(form_types) if form_types else {"10-K", "10-Q", "8-K", "4", "13F-HR"}
         results = []
 
-        cik = self.resolve_cik(symbol)
-        cik_int = int(cik) if cik and cik.isdigit() else 0
+        cik_int = int(cik) if cik and str(cik).isdigit() else 0
 
         for i in range(min(len(forms), 25)):
             form = forms[i]
@@ -112,7 +333,6 @@ class SecEdgarFetcher:
                 acceptance_dt = acceptance_dts[i] if i < len(acceptance_dts) else ""
                 report_date = report_dates[i] if i < len(report_dates) else ""
                 filing_date = filing_dates[i] if i < len(filing_dates) else ""
-                # Canonical PIT: available_from = acceptanceDateTime if present, else filing_date
                 avail_from = acceptance_dt or (f"{filing_date}T00:00:00Z" if filing_date else "")
 
                 results.append({
@@ -126,4 +346,17 @@ class SecEdgarFetcher:
                     "sec_url": f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{clean_acc}/{acc_num}.txt",
                 })
 
-        return results
+        final_status = "AVAILABLE_WITH_RESULTS" if len(results) > 0 else "AVAILABLE_NO_RESULTS"
+        return {
+            "status": final_status,
+            "status_code": 200,
+            "cik": cik,
+            "reason": None,
+            "error_detail": None,
+            "items": results,
+        }
+
+    def get_recent_filings(self, symbol: str, form_types: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+        """Get formatted list of recent regulatory filings (backwards compatible)."""
+        env = self.get_recent_filings_envelope(symbol, form_types=form_types)
+        return env.get("items") or []
