@@ -12,6 +12,9 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 SMART_MONEY_POSTGRES_SCHEMA_VERSION = "SMART_MONEY_POSTGRES_SCHEMA_V1"
+SMART_MONEY_POSTGRES_SCHEMA_VERSION_V1 = "SMART_MONEY_POSTGRES_SCHEMA_V1"
+SMART_MONEY_POSTGRES_SCHEMA_VERSION_V2 = "SMART_MONEY_POSTGRES_SCHEMA_V2"
+ACTIVE_SCHEMA_VERSION = "SMART_MONEY_POSTGRES_SCHEMA_V2"
 
 # Explicitly pinned PostgreSQL major version (Option A — Pin 16)
 SMART_MONEY_POSTGRES_MAJOR = 16
@@ -23,7 +26,8 @@ RAILWAY_POSTGRES_IMAGE_TARGET = "postgres:16-alpine"
 ROLE_WEB = "smart_money_web"
 ROLE_INGESTION = "smart_money_ingestion"
 ROLE_MIGRATION = "smart_money_migration"
-VALID_ROLES = {ROLE_WEB, ROLE_INGESTION, ROLE_MIGRATION}
+ROLE_BACKUP = "smart_money_backup"
+VALID_ROLES = {ROLE_WEB, ROLE_INGESTION, ROLE_MIGRATION, ROLE_BACKUP}
 
 
 def get_database_url() -> Optional[str]:
@@ -45,6 +49,8 @@ def get_database_role() -> str:
         return ROLE_INGESTION
     if role in {"migration", ROLE_MIGRATION}:
         return ROLE_MIGRATION
+    if role in {"backup", ROLE_BACKUP}:
+        return ROLE_BACKUP
     return ROLE_WEB
 
 

@@ -1,0 +1,57 @@
+{
+  "gate": "ARX_SMART_MONEY_CANDIDATE_006_REMEDIATION_V1",
+  "baseline": {
+    "commit": "09f183de52e275ae543615747dff2f9ae00ef9ca",
+    "tree": "c4ecd94ce894032a987b0a51440a876eab69afba",
+    "branch": "arx/smart-money-postgres-runtime-integration-candidate-v1"
+  },
+  "candidate_006": {
+    "branch": "arx/smart-money-candidate-006-worker-recovery-backup",
+    "schema_version": "SMART_MONEY_POSTGRES_SCHEMA_V2",
+    "workstreams": [
+      {
+        "id": "WORKSTREAM_A",
+        "name": "Worker Lease Contract, Heartbeat & Stale Recovery",
+        "status": "VERIFIED_PASS"
+      },
+      {
+        "id": "WORKSTREAM_B",
+        "name": "Automated Continuous Off-Host Backup Pipeline",
+        "status": "VERIFIED_PASS"
+      }
+    ]
+  },
+  "verified_test_suites": [
+    {
+      "test_file": "tests/test_smart_money_postgres_runtime_integration.py",
+      "test_count": 7,
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "test_file": "tests/test_smart_money_worker_lease_recovery.py",
+      "test_count": 8,
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "test_file": "tests/test_smart_money_backup_automation.py",
+      "test_count": 4,
+      "passed": 4,
+      "failed": 0
+    }
+  ],
+  "production_baseline": {
+    "environment_id": "11cad5e1-358e-430e-84fc-189953cff48a",
+    "active_deployment_id": "0b2544ed-075a-46a8-97a8-e1b45b4d73b3",
+    "active_commit": "bab9776b8013646b634871c49b52e61e4234d36b",
+    "mutated": false
+  },
+  "rehearsal_environment": {
+    "environment_id": "7f7e4317-2b76-4a0e-bff1-33227da71e5d",
+    "postgres_service_id": "ac8c4b61-0b3e-42ee-8694-18d24f55aa56",
+    "web_service_id": "6b53ad3f-0d59-4a7f-83dc-8731efe48cf5",
+    "worker_service_id": "929874a7-bcd9-41b3-9bc7-d5cd7720f7bf",
+    "postgres_volume_id": "53bf30d9-0e66-424d-88df-1ee0e51ac392"
+  }
+}

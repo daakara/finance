@@ -236,19 +236,47 @@ CREATE TABLE IF NOT EXISTS sm_run_requests (
     claimed_at TIMESTAMPTZ,
     claimed_by VARCHAR(64),
     completed_at TIMESTAMPTZ,
-    result_generation_id VARCHAR(64)
+    result_generation_id VARCHAR(64),
+    lease_owner_id VARCHAR(64),
+    lease_token VARCHAR(64),
+    lease_expires_at TIMESTAMPTZ,
+    lease_heartbeat_at TIMESTAMPTZ,
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    max_attempts INTEGER NOT NULL DEFAULT 3,
+    next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_failure_code VARCHAR(64),
+    last_failure_at TIMESTAMPTZ
 );
 
 CREATE INDEX IF NOT EXISTS idx_run_requests_queue ON sm_run_requests(status, requested_at);
+CREATE INDEX IF NOT EXISTS idx_run_requests_eligible ON sm_run_requests(status, next_attempt_at, requested_at);
+CREATE INDEX IF NOT EXISTS idx_run_requests_stale_running ON sm_run_requests(status, lease_expires_at) WHERE status = 'RUNNING';
+"""
+
+SCHEMA_V2_MIGRATION_DDL = """
+-- Schema V2: Worker Request Lease Contract, Fencing & Stale Recovery
+ALTER TABLE sm_run_requests ADD COLUMN IF NOT EXISTS lease_owner_id VARCHAR(64);
+ALTER TABLE sm_run_requests ADD COLUMN IF NOT EXISTS lease_token VARCHAR(64);
+ALTER TABLE sm_run_requests ADD COLUMN IF NOT EXISTS lease_expires_at TIMESTAMPTZ;
+ALTER TABLE sm_run_requests ADD COLUMN IF NOT EXISTS lease_heartbeat_at TIMESTAMPTZ;
+ALTER TABLE sm_run_requests ADD COLUMN IF NOT EXISTS attempt_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE sm_run_requests ADD COLUMN IF NOT EXISTS max_attempts INTEGER NOT NULL DEFAULT 3;
+ALTER TABLE sm_run_requests ADD COLUMN IF NOT EXISTS next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE sm_run_requests ADD COLUMN IF NOT EXISTS last_failure_code VARCHAR(64);
+ALTER TABLE sm_run_requests ADD COLUMN IF NOT EXISTS last_failure_at TIMESTAMPTZ;
+
+CREATE INDEX IF NOT EXISTS idx_run_requests_eligible ON sm_run_requests(status, next_attempt_at, requested_at);
+CREATE INDEX IF NOT EXISTS idx_run_requests_stale_running ON sm_run_requests(status, lease_expires_at) WHERE status = 'RUNNING';
 """
 
 
-def initialize_postgres_schema(conn: PgConnection, release_sha: str = "b72ea23937cf6ed7b8c4b60096630767a7c4592b") -> None:
+def initialize_postgres_schema(conn: PgConnection, release_sha: str = "09f183de52e275ae543615747dff2f9ae00ef9ca") -> None:
     """
-    Applies the SMART_MONEY_POSTGRES_SCHEMA_V1 DDL script to the database.
-    Records migration execution in sm_schema_migrations.
+    Applies the SMART_MONEY_POSTGRES_SCHEMA_V1 and V2 DDL scripts to the database.
+    Records migration execution in sm_schema_migrations for each version.
     """
     with conn.cursor() as cur:
+        # 1. Base DDL
         cur.execute(SCHEMA_DDL)
         cur.execute(
             """
@@ -256,7 +284,17 @@ def initialize_postgres_schema(conn: PgConnection, release_sha: str = "b72ea2393
             VALUES (%s, %s)
             ON CONFLICT (version_id) DO UPDATE SET release_sha = EXCLUDED.release_sha;
             """,
-            (SMART_MONEY_POSTGRES_SCHEMA_VERSION, release_sha),
+            ("SMART_MONEY_POSTGRES_SCHEMA_V1", release_sha),
+        )
+        # 2. Additive V2 Migration
+        cur.execute(SCHEMA_V2_MIGRATION_DDL)
+        cur.execute(
+            """
+            INSERT INTO sm_schema_migrations (version_id, release_sha)
+            VALUES (%s, %s)
+            ON CONFLICT (version_id) DO UPDATE SET release_sha = EXCLUDED.release_sha;
+            """,
+            ("SMART_MONEY_POSTGRES_SCHEMA_V2", release_sha),
         )
     conn.commit()
-    logger.info(f"Initialized schema {SMART_MONEY_POSTGRES_SCHEMA_VERSION} successfully.")
+    logger.info("Initialized schemas SMART_MONEY_POSTGRES_SCHEMA_V1 and V2 successfully.")

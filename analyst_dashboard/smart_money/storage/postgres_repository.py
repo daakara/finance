@@ -8,6 +8,7 @@ and atomic active-pointer publication.
 
 import json
 import uuid
+import hashlib
 import logging
 from typing import Dict, Any, List, Optional, Set
 from psycopg2.extras import RealDictCursor, Json
@@ -16,6 +17,16 @@ from psycopg2.extensions import connection as PgConnection
 from analyst_dashboard.smart_money.storage.postgres_connection import get_connection, transaction
 
 logger = logging.getLogger(__name__)
+
+
+class StaleLeaseOwnershipLostError(RuntimeError):
+    """Raised when a worker attempts to heartbeat, complete, or publish with an expired or lost lease."""
+    pass
+
+
+class MaxAttemptsExceededError(RuntimeError):
+    """Raised when a run request has exceeded maximum retry attempts."""
+    pass
 
 
 class PostgresSmartMoneyRepository:
@@ -363,15 +374,18 @@ class PostgresSmartMoneyRepository:
     def publish_scanner_snapshot_atomic(
         self,
         snapshot: Dict[str, Any],
+        run_request_id: Optional[str] = None,
+        lease_token: Optional[str] = None,
         conn: Optional[PgConnection] = None,
     ) -> str:
         """
         Atomic Snapshot Publication Transaction (Section 16).
         In a single transaction:
-        1. Verifies publication decision == 'PUBLISH'.
+        1. If run_request_id and lease_token provided, verifies active lease ownership (fails closed if stale).
         2. Inserts immutable record into scanner_snapshots.
-        3. Updates/inserts active pointer in scanner_active_snapshots.
-        4. Emits audit event.
+        3. Updates/inserts active pointer in scanner_active_snapshots if decision == 'PUBLISH'.
+        4. Marks run_request as COMPLETED within the same atomic transaction if published.
+        5. Emits audit event.
         Rolls back entirely if any stage fails.
         """
         snapshot_id = snapshot["snapshot_id"]
@@ -385,6 +399,19 @@ class PostgresSmartMoneyRepository:
             matched_val = int(matched_cnt) if matched_cnt is not None else 0
 
         def _exec(cur):
+            # 0. Fencing check: verify active lease ownership
+            if run_request_id and lease_token:
+                cur.execute("""
+                    SELECT request_id FROM sm_run_requests
+                    WHERE request_id = %s AND lease_token = %s AND status = 'RUNNING'
+                    FOR UPDATE;
+                """, (run_request_id, lease_token))
+                if cur.fetchone() is None:
+                    raise StaleLeaseOwnershipLostError(
+                        f"STALE_LEASE_OWNERSHIP_LOST: Cannot publish snapshot {snapshot_id}. "
+                        f"Worker lost lease on request {run_request_id} (token={lease_token})."
+                    )
+
             # 1. Insert into scanner_snapshots
             cur.execute("""
                 INSERT INTO scanner_snapshots (
@@ -439,6 +466,16 @@ class PostgresSmartMoneyRepository:
                     snapshot_id,
                     snapshot.get("run_id", "ingestion_worker"),
                 ))
+
+                # If associated with a fenced run request, complete it atomically
+                if run_request_id and lease_token:
+                    cur.execute("""
+                        UPDATE sm_run_requests
+                        SET status = 'COMPLETED',
+                            completed_at = NOW(),
+                            result_generation_id = %s
+                        WHERE request_id = %s AND lease_token = %s;
+                    """, (snapshot_id, run_request_id, lease_token))
 
             # 3. Audit event
             cur.execute("""
@@ -560,18 +597,25 @@ class PostgresSmartMoneyRepository:
 
     # ── Run Requests (Web -> Worker Queue) ────────────────────────────────────
 
-    def create_run_request(self, request_type: str, subject_hash: str, conn: Optional[PgConnection] = None) -> str:
+    def create_run_request(
+        self,
+        request_type: str,
+        subject_hash: str,
+        max_attempts: int = 3,
+        conn: Optional[PgConnection] = None,
+    ) -> str:
         """Submits an immutable run request into the queue."""
         request_id = str(uuid.uuid4())
         query = """
             INSERT INTO sm_run_requests (
-                request_id, request_type, requested_by_subject_hash, status
-            ) VALUES (%s, %s, %s, 'PENDING')
+                request_id, request_type, requested_by_subject_hash, status,
+                max_attempts, next_attempt_at
+            ) VALUES (%s, %s, %s, 'PENDING', %s, NOW())
             RETURNING request_id;
         """
 
         def _exec(cur):
-            cur.execute(query, (request_id, request_type, subject_hash))
+            cur.execute(query, (request_id, request_type, subject_hash, max_attempts))
             return str(cur.fetchone()["request_id"])
 
         if conn is not None:
@@ -581,29 +625,193 @@ class PostgresSmartMoneyRepository:
             with transaction(dsn=self.dsn) as cur:
                 return _exec(cur)
 
-    def claim_next_run_request(self, worker_id: str, conn: Optional[PgConnection] = None) -> Optional[Dict[str, Any]]:
-        """Claims the oldest pending run request non-blockingly."""
-        query = """
-            SELECT * FROM sm_run_requests
-            WHERE status = 'PENDING'
+    def claim_next_run_request(
+        self,
+        worker_id: str,
+        lease_duration_sec: int = 60,
+        conn: Optional[PgConnection] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Atomically claims the oldest pending or retry-eligible run request non-blockingly.
+        Uses FOR UPDATE SKIP LOCKED to prevent race conditions across concurrent workers.
+        Establishes an atomic lease with a unique lease token, attempt counter, and expiry.
+        """
+        lease_token = f"tok-{uuid.uuid4().hex[:16]}"
+        query_select = """
+            SELECT request_id, status, attempt_count, max_attempts
+            FROM sm_run_requests
+            WHERE (
+                status IN ('PENDING', 'RETRY_ELIGIBLE')
+                AND next_attempt_at <= NOW()
+            )
+            AND attempt_count < max_attempts
             ORDER BY requested_at ASC
             FOR UPDATE SKIP LOCKED
             LIMIT 1;
         """
+        query_update = """
+            UPDATE sm_run_requests
+            SET status = 'RUNNING',
+                claimed_at = NOW(),
+                claimed_by = %s,
+                lease_owner_id = %s,
+                lease_token = %s,
+                lease_expires_at = NOW() + (%s * INTERVAL '1 second'),
+                lease_heartbeat_at = NOW(),
+                attempt_count = attempt_count + 1
+            WHERE request_id = %s
+            RETURNING request_id, request_type, requested_by_subject_hash, status,
+                      claimed_at, claimed_by, lease_owner_id, lease_token,
+                      lease_expires_at, lease_heartbeat_at, attempt_count, max_attempts;
+        """
 
         def _exec(cur):
-            cur.execute(query)
+            cur.execute(query_select)
             row = cur.fetchone()
             if not row:
                 return None
-            cur.execute("""
-                UPDATE sm_run_requests
-                SET status = 'RUNNING', claimed_at = NOW(), claimed_by = %s
-                WHERE request_id = %s;
-            """, (worker_id, row["request_id"]))
-            res = dict(row)
+            cur.execute(query_update, (worker_id, worker_id, lease_token, lease_duration_sec, row["request_id"]))
+            claimed_row = cur.fetchone()
+            res = dict(claimed_row)
             res["request_id"] = str(res["request_id"])
+            res["status"] = row["status"]
+            res["active_status"] = "RUNNING"
+            if res.get("lease_expires_at") and hasattr(res["lease_expires_at"], "isoformat"):
+                res["lease_expires_at"] = res["lease_expires_at"].isoformat()
+            if res.get("lease_heartbeat_at") and hasattr(res["lease_heartbeat_at"], "isoformat"):
+                res["lease_heartbeat_at"] = res["lease_heartbeat_at"].isoformat()
             return res
+
+        if conn is not None:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                return _exec(cur)
+        else:
+            with transaction(dsn=self.dsn) as cur:
+                return _exec(cur)
+
+    def heartbeat_run_request(
+        self,
+        request_id: str,
+        lease_token: str,
+        extension_sec: int = 60,
+        conn: Optional[PgConnection] = None,
+    ) -> bool:
+        """
+        Renews an active worker lease before expiration.
+        Conditional on request_id, lease_token, and status='RUNNING'.
+        Returns True if renewed, False if ownership lost or lease expired.
+        """
+        query = """
+            UPDATE sm_run_requests
+            SET lease_heartbeat_at = NOW(),
+                lease_expires_at = NOW() + (%s * INTERVAL '1 second')
+            WHERE request_id = %s
+              AND lease_token = %s
+              AND status = 'RUNNING'
+            RETURNING request_id;
+        """
+
+        def _exec(cur):
+            cur.execute(query, (extension_sec, request_id, lease_token))
+            return cur.fetchone() is not None
+
+        if conn is not None:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                return _exec(cur)
+        else:
+            with transaction(dsn=self.dsn) as cur:
+                return _exec(cur)
+
+    def recover_stale_run_requests(
+        self,
+        backoff_sec: int = 30,
+        conn: Optional[PgConnection] = None,
+    ) -> int:
+        """
+        Deterministic recovery mechanism for expired RUNNING requests (lease_expires_at < NOW()).
+        - If attempt_count >= max_attempts: Transitions to FAILED with terminal failure code.
+        - Else: Transitions to RETRY_ELIGIBLE with backoff.
+        Emits durable audit events into sm_audit_events.
+        """
+        query_find = """
+            SELECT request_id, attempt_count, max_attempts, lease_owner_id, lease_token
+            FROM sm_run_requests
+            WHERE status = 'RUNNING'
+              AND lease_expires_at < NOW()
+            ORDER BY lease_expires_at ASC
+            FOR UPDATE SKIP LOCKED;
+        """
+
+        def _exec(cur):
+            cur.execute(query_find)
+            stale_rows = cur.fetchall()
+            if not stale_rows:
+                return 0
+
+            recovered_count = 0
+            for row in stale_rows:
+                req_id = row["request_id"]
+                attempts = row["attempt_count"]
+                max_att = row["max_attempts"]
+                owner = row.get("lease_owner_id") or "unknown"
+                token = row.get("lease_token") or "unknown"
+
+                if attempts >= max_att:
+                    cur.execute("""
+                        UPDATE sm_run_requests
+                        SET status = 'FAILED',
+                            completed_at = NOW(),
+                            last_failure_code = 'LEASE_TIMEOUT_EXCEEDED_MAX_ATTEMPTS',
+                            last_failure_at = NOW()
+                        WHERE request_id = %s;
+                    """, (req_id,))
+                    cur.execute("""
+                        INSERT INTO sm_audit_events (
+                            event_id, event_type, subject_id, payload, event_hash
+                        ) VALUES (%s, %s, %s, %s, %s);
+                    """, (
+                        str(uuid.uuid4()),
+                        "RUN_REQUEST_FAILED_TERMINAL",
+                        str(req_id),
+                        Json({
+                            "attempts": attempts,
+                            "max_attempts": max_att,
+                            "lost_owner": owner,
+                            "lost_token": token,
+                            "reason": "LEASE_TIMEOUT_EXCEEDED_MAX_ATTEMPTS",
+                        }),
+                        hashlib.sha256(f"FAILED_{req_id}_{attempts}".encode()).hexdigest(),
+                    ))
+                else:
+                    cur.execute("""
+                        UPDATE sm_run_requests
+                        SET status = 'RETRY_ELIGIBLE',
+                            next_attempt_at = NOW() + (%s * INTERVAL '1 second'),
+                            last_failure_code = 'LEASE_EXPIRED_RECOVERED',
+                            last_failure_at = NOW(),
+                            lease_token = NULL,
+                            lease_owner_id = NULL
+                        WHERE request_id = %s;
+                    """, (backoff_sec, req_id))
+                    cur.execute("""
+                        INSERT INTO sm_audit_events (
+                            event_id, event_type, subject_id, payload, event_hash
+                        ) VALUES (%s, %s, %s, %s, %s);
+                    """, (
+                        str(uuid.uuid4()),
+                        "RUN_REQUEST_LEASE_RECOVERED",
+                        str(req_id),
+                        Json({
+                            "attempts": attempts,
+                            "max_attempts": max_att,
+                            "lost_owner": owner,
+                            "lost_token": token,
+                            "backoff_sec": backoff_sec,
+                        }),
+                        hashlib.sha256(f"RECOVERED_{req_id}_{attempts}".encode()).hexdigest(),
+                    ))
+                recovered_count += 1
+            return recovered_count
 
         if conn is not None:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -616,22 +824,56 @@ class PostgresSmartMoneyRepository:
         self,
         request_id: str,
         result_generation_id: Optional[str] = None,
+        lease_token: Optional[str] = None,
         status: str = "COMPLETED",
+        failure_code: Optional[str] = None,
         conn: Optional[PgConnection] = None,
     ) -> None:
-        """Marks a claimed run request as completed."""
-        query = """
-            UPDATE sm_run_requests
-            SET status = %s, completed_at = NOW(), result_generation_id = %s
-            WHERE request_id = %s;
         """
+        Marks a claimed run request as completed or failed.
+        If lease_token is provided, verifies that caller still owns the active lease.
+        Fails closed with StaleLeaseOwnershipLostError if ownership has been lost.
+        """
+        if lease_token is not None:
+            query = """
+                UPDATE sm_run_requests
+                SET status = %s,
+                    completed_at = NOW(),
+                    result_generation_id = %s,
+                    last_failure_code = %s,
+                    last_failure_at = CASE WHEN %s = 'FAILED' THEN NOW() ELSE last_failure_at END
+                WHERE request_id = %s
+                  AND lease_token = %s
+                  AND status = 'RUNNING'
+                RETURNING request_id;
+            """
+            params = (status, result_generation_id, failure_code, status, request_id, lease_token)
+        else:
+            query = """
+                UPDATE sm_run_requests
+                SET status = %s,
+                    completed_at = NOW(),
+                    result_generation_id = %s,
+                    last_failure_code = %s,
+                    last_failure_at = CASE WHEN %s = 'FAILED' THEN NOW() ELSE last_failure_at END
+                WHERE request_id = %s;
+            """
+            params = (status, result_generation_id, failure_code, status, request_id)
+
+        def _exec(cur):
+            cur.execute(query, params)
+            if lease_token is not None and cur.fetchone() is None:
+                raise StaleLeaseOwnershipLostError(
+                    f"STALE_LEASE_OWNERSHIP_LOST: Worker lost ownership of request {request_id} "
+                    f"(token={lease_token}). Completion rejected."
+                )
 
         if conn is not None:
-            with conn.cursor() as cur:
-                cur.execute(query, (status, result_generation_id, request_id))
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                _exec(cur)
         else:
             with transaction(dsn=self.dsn) as cur:
-                cur.execute(query, (status, result_generation_id, request_id))
+                _exec(cur)
 
     def get_run_request(self, request_id: str, conn: Optional[PgConnection] = None) -> Optional[Dict[str, Any]]:
         """Retrieves a run request by its ID."""

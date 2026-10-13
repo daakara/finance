@@ -30,7 +30,10 @@ from analyst_dashboard.smart_money.storage.postgres_coordination import (
     release_sec_owner_lock,
     LOCK_SEC_EGRESS_OWNER,
 )
-from analyst_dashboard.smart_money.storage.postgres_repository import PostgresSmartMoneyRepository
+from analyst_dashboard.smart_money.storage.postgres_repository import (
+    PostgresSmartMoneyRepository,
+    StaleLeaseOwnershipLostError,
+)
 from analyst_dashboard.data.sec_edgar_fetcher import get_sec_egress_role
 
 logger = logging.getLogger("smart_money.worker")
@@ -57,6 +60,10 @@ class SmartMoneyIngestionWorker:
         self.worker_id = f"worker-{os.getpid()}-{int(time.time())}"
         self._owner_conn = None
         self._running = False
+        self.lease_duration_sec = int(os.environ.get("SMART_MONEY_LEASE_DURATION_SEC", "60"))
+        self.heartbeat_interval_sec = int(os.environ.get("SMART_MONEY_HEARTBEAT_INTERVAL_SEC", "10"))
+        self.stale_recovery_interval_sec = int(os.environ.get("SMART_MONEY_STALE_RECOVERY_INTERVAL_SEC", "30"))
+        self._last_stale_recovery_at = 0.0
 
     def validate_preflight(self) -> None:
         """
@@ -117,20 +124,47 @@ class SmartMoneyIngestionWorker:
 
     def process_run_requests(self) -> int:
         """
-        Checks for pending operator run requests, claims them, and marks them completed.
+        Checks for pending operator run requests, claims them with atomic lease,
+        renews heartbeat, and marks them completed under lease fencing.
+        Periodically executes stale claim recovery to self-heal abandoned work.
         Returns the number of processed requests.
         """
-        claimed = self.repository.claim_next_run_request(self.worker_id)
+        now = time.time()
+        if now - self._last_stale_recovery_at >= self.stale_recovery_interval_sec:
+            try:
+                recovered = self.repository.recover_stale_run_requests()
+                self._last_stale_recovery_at = now
+                if recovered > 0:
+                    logger.info(f"Self-healed {recovered} stale run request(s).")
+            except Exception as e:
+                logger.warning(f"Error during periodic stale request recovery: {e}")
+
+        claimed = self.repository.claim_next_run_request(
+            self.worker_id, lease_duration_sec=self.lease_duration_sec
+        )
         if not claimed:
             return 0
 
         req_id = claimed["request_id"]
-        logger.info(f"Claimed operator run request: {req_id}")
-        # In this implementation candidate, we complete the claimed request with a deterministic ID
+        lease_token = claimed["lease_token"]
+        logger.info(f"Claimed operator run request: {req_id} (token={lease_token})")
+
+        # Heartbeat renewal during processing
+        self.repository.heartbeat_run_request(req_id, lease_token, extension_sec=self.lease_duration_sec)
+
         result_gen = f"gen-{req_id[:8]}"
-        self.repository.complete_run_request(req_id, result_gen)
-        logger.info(f"Completed operator run request: {req_id} -> {result_gen}")
-        return 1
+        try:
+            self.repository.complete_run_request(
+                req_id,
+                result_generation_id=result_gen,
+                lease_token=lease_token,
+                status="COMPLETED",
+            )
+            logger.info(f"Completed operator run request: {req_id} -> {result_gen}")
+            return 1
+        except StaleLeaseOwnershipLostError as e:
+            logger.warning(f"Lease lost for request {req_id} (stale worker fenced): {e}")
+            return 0
 
     def run_cycle(self) -> None:
         """Executes a single operational work cycle."""
@@ -148,6 +182,14 @@ class SmartMoneyIngestionWorker:
         self.validate_preflight()
         if not self.acquire_egress_authority():
             sys.exit(1)
+
+        # Startup recovery of abandoned/stale requests
+        try:
+            startup_recovered = self.repository.recover_stale_run_requests()
+            if startup_recovered > 0:
+                logger.info(f"Startup recovery: self-healed {startup_recovered} abandoned run request(s).")
+        except Exception as e:
+            logger.warning(f"Error during startup stale request recovery: {e}")
 
         self._running = True
 

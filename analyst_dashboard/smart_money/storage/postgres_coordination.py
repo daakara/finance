@@ -24,6 +24,7 @@ LOCK_DISCOVERY_RUN = _derive_lock_key("DISCOVERY_RUN")
 LOCK_RECONCILIATION_RUN = _derive_lock_key("RECONCILIATION_RUN")
 LOCK_INGESTION_RUN = _derive_lock_key("INGESTION_RUN")
 LOCK_SNAPSHOT_PUBLICATION = _derive_lock_key("SNAPSHOT_PUBLICATION")
+LOCK_BACKUP_EXECUTION = _derive_lock_key("BACKUP_EXECUTION")
 
 LOCK_NAMES = {
     LOCK_SEC_EGRESS_OWNER: "SEC_EGRESS_OWNER",
@@ -31,6 +32,7 @@ LOCK_NAMES = {
     LOCK_RECONCILIATION_RUN: "RECONCILIATION_RUN",
     LOCK_INGESTION_RUN: "INGESTION_RUN",
     LOCK_SNAPSHOT_PUBLICATION: "SNAPSHOT_PUBLICATION",
+    LOCK_BACKUP_EXECUTION: "BACKUP_EXECUTION",
 }
 
 
@@ -77,6 +79,21 @@ def release_sec_owner_lock(conn: PgConnection) -> bool:
     Releases the SEC Egress Owner lock.
     """
     return advisory_unlock(conn, LOCK_SEC_EGRESS_OWNER)
+
+
+def acquire_backup_lock(conn: PgConnection) -> bool:
+    """
+    Acquires the exclusive session-level backup lock to prevent concurrent backup executions.
+    """
+    return try_advisory_lock(conn, LOCK_BACKUP_EXECUTION)
+
+
+def release_backup_lock(conn: PgConnection) -> bool:
+    """
+    Releases the backup lock.
+    """
+    return advisory_unlock(conn, LOCK_BACKUP_EXECUTION)
+
 
 
 @contextmanager
