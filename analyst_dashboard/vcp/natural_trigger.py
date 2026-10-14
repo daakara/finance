@@ -34,7 +34,7 @@ NATURAL_PRODUCTION_TRIGGER_TYPE: str = "SCHEDULED_MARKET_WIDE_VCP_SCAN"
 TRIGGER_OWNER: str = "analyst_dashboard.vcp.natural_trigger:NaturalVCPTriggerService"
 TRIGGER_FREQUENCY_OR_EVENT: str = "DAILY_EOD_SCHEDULED_CADENCE"
 FAILURE_RETRY_POLICY: str = "FAIL_CLOSED_NO_SYNTHETIC_FALLBACK"
-IDEMPOTENCY_KEY_SOURCE: str = "vcp:scheduled:{scheduled_date}:{universe_build_id}"
+IDEMPOTENCY_KEY_SOURCE: str = "vcp:natural:{candidate_generation}:{scheduled_date}"
 ORIGIN_CLASSIFICATION: str = "NATURAL_PRODUCTION"
 
 # Pre-deploy trigger contract properties
@@ -118,6 +118,8 @@ class NaturalVCPTriggerService:
         delivery_attempt_id: Optional[str] = None,
         execution_attempt_id: Optional[str] = None,
         candidate_generation_id: str = CANDIDATE_004_GENERATION_ID,
+        allow_session_correction: bool = False,
+        operator_request_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Executes a genuine natural production market-wide VCP scan.
 
@@ -142,13 +144,19 @@ class NaturalVCPTriggerService:
 
         eff_job_id = scheduler_job_id or "job-vcp-daily-eod"
         eff_event_id = scheduler_event_id or f"evt-{today_str}-eod"
-        logical_trigger_id = f"vcp:scheduled:{today_str}:{effective_build_id}"
+
+        # Authoritative session-level idempotency key: invariant across universe build ID mutations.
+        # Guarantees at-most-once natural publication per candidate generation and exchange session date.
+        if allow_session_correction and operator_request_id:
+            logical_trigger_id = f"vcp:natural:{candidate_generation_id}:{today_str}:correction:{operator_request_id}"
+        else:
+            logical_trigger_id = f"vcp:natural:{candidate_generation_id}:{today_str}"
         logical_scan_run_id = f"run-vcp-sched-{today_str}-{eff_event_id}"
 
         logger.info(
             f"Executing scheduled natural production VCP scan: reason={reason}, "
             f"job_id={eff_job_id}, event_id={eff_event_id}, run_id={logical_scan_run_id}, "
-            f"candidate={CANDIDATE_004_GENERATION_ID}"
+            f"candidate={CANDIDATE_004_GENERATION_ID}, logical_job_key={logical_trigger_id}"
         )
 
         envelope = runner.execute_market_wide_scan(
@@ -166,7 +174,7 @@ class NaturalVCPTriggerService:
             startup_context=False,
             delivery_attempt_id=delivery_attempt_id,
             execution_attempt_id=execution_attempt_id,
-            operator_request_id=None,
+            operator_request_id=operator_request_id,
             candidate_generation_id=CANDIDATE_004_GENERATION_ID,
         )
 

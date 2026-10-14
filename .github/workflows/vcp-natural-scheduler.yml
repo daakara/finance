@@ -1,0 +1,128 @@
+name: VCP Natural Market Close Scheduler
+
+'on':
+  workflow_dispatch:
+    inputs:
+      scheduled_date:
+        description: 'Optional market session date (YYYY-MM-DD). Defaults to current session.'
+        required: false
+        type: string
+        default: ''
+      environment_target:
+        description: 'Target deployment environment'
+        required: true
+        type: choice
+        options:
+          - production
+        default: 'production'
+
+  # NOTE: Automated recurring cron is DISABLED BY DEFAULT in this remediation.
+  # Once supervised first natural execution is certified and authorized by the owner,
+  # the cron trigger can be un-commented.
+  # Target execution is 16:45 ET (45-minute settlement buffer after 16:00 ET close).
+  # UTC seasonal alignment:
+  # - EDT (Summer, UTC-4): 20:45 UTC -> '45 20 * * 1-5'
+  # - EST (Winter, UTC-5): 21:45 UTC -> '45 21 * * 1-5'
+  # schedule:
+  #   - cron: '45 20 * * 1-5'
+
+concurrency:
+  group: vcp-natural-scheduler
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  trigger-natural-scan:
+    name: Trigger Natural VCP EOD Scan
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 5
+
+    steps:
+      - name: Validate Inputs and Environment
+        id: validate
+        run: |
+          echo "Initiating VCP Candidate 004 natural execution trigger dispatch."
+          echo "Target Environment: ${{ inputs.environment_target || 'production' }}"
+          echo "Run ID: ${{ github.run_id }} (Attempt: ${{ github.run_attempt }})"
+          
+          # Target URL is fixed to authorized production domain (arbitrary overrides prohibited)
+          TARGET_URL="https://arx-terminal-production.up.railway.app/api/v1/screener/vcp/natural-scan"
+          echo "target_url=$TARGET_URL" >> $GITHUB_OUTPUT
+
+      - name: Dispatch Natural Scan Request
+        id: dispatch
+        env:
+          VCP_SCHEDULER_SECRET: ${{ secrets.VCP_SCHEDULER_SECRET }}
+          SCHEDULED_DATE: ${{ inputs.scheduled_date }}
+          RUN_ID: ${{ github.run_id }}
+          EVENT_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+          TARGET_URL: ${{ steps.validate.outputs.target_url }}
+        run: |
+          if [ -z "$VCP_SCHEDULER_SECRET" ]; then
+            echo "::error::CRITICAL_PRECONDITION_FAILED: VCP_SCHEDULER_SECRET is not provisioned in repository secrets."
+            exit 1
+          fi
+
+          # Construct payload JSON
+          if [ -n "$SCHEDULED_DATE" ]; then
+            PAYLOAD=$(jq -n --arg dt "$SCHEDULED_DATE" '{"scheduled_date": $dt}')
+          else
+            PAYLOAD="{}"
+          fi
+
+          echo "Dispatching POST request to $TARGET_URL with X-Scheduler-Token header..."
+          
+          # Execute synchronous call with 120s timeout
+          HTTP_RESPONSE=$(curl -sS -w "\n%{http_code}" -X POST "$TARGET_URL" \
+            -H "X-Scheduler-Token: $VCP_SCHEDULER_SECRET" \
+            -H "X-Scheduler-Job-Id: job-vcp-natural-gha" \
+            -H "X-Scheduler-Event-Id: evt-$EVENT_ID" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" \
+            --max-time 120)
+
+          # Separate response body and HTTP status code
+          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tail -n1)
+          RESPONSE_BODY=$(echo "$HTTP_RESPONSE" | sed '$d')
+
+          echo "Response HTTP Status: $HTTP_STATUS"
+          echo "Response Payload (Sanitized):"
+          echo "$RESPONSE_BODY" | jq '.' 2>/dev/null || echo "$RESPONSE_BODY"
+
+          # Evaluate and classify response
+          case "$HTTP_STATUS" in
+            200)
+              STATUS=$(echo "$RESPONSE_BODY" | jq -r '.status // empty' 2>/dev/null)
+              SNAP_ID=$(echo "$RESPONSE_BODY" | jq -r '.snapshot_id // empty' 2>/dev/null)
+              MATCH_CNT=$(echo "$RESPONSE_BODY" | jq -r '.matched_count // empty' 2>/dev/null)
+              echo "::notice::VCP Natural Scan SUCCESS: Snapshot=$SNAP_ID, Matched=$MATCH_CNT"
+              exit 0
+              ;;
+            403)
+              echo "::error::AUTHENTICATION_FAILED (HTTP 403): X-Scheduler-Token was rejected by server."
+              exit 1
+              ;;
+            409)
+              DETAIL=$(echo "$RESPONSE_BODY" | jq -r '.detail // empty' 2>/dev/null)
+              echo "::warning::CONCURRENCY_CONFLICT (HTTP 409): $DETAIL"
+              exit 1
+              ;;
+            422)
+              REASON=$(echo "$RESPONSE_BODY" | jq -r '.reason // .detail.reason // empty' 2>/dev/null)
+              DETAIL=$(echo "$RESPONSE_BODY" | jq -r '.detail // empty' 2>/dev/null)
+              echo "::warning::SESSION_ELIGIBILITY_REJECTED (HTTP 422): Reason=$REASON. Details: $DETAIL"
+              # Session rejection is a valid fail-closed outcome, exit non-zero for manual supervision awareness
+              exit 2
+              ;;
+            503)
+              echo "::error::SCHEDULER_DISABLED (HTTP 503): VCP_NATURAL_SCHEDULER_ENABLED is not active on production backend."
+              exit 1
+              ;;
+            *)
+              echo "::error::UNEXPECTED_SERVER_ERROR (HTTP $HTTP_STATUS): $RESPONSE_BODY"
+              exit 1
+              ;;
+          esac

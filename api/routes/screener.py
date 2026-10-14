@@ -654,12 +654,29 @@ def trigger_natural_vcp_scan(
         )
 
     from analyst_dashboard.vcp.natural_trigger import get_natural_vcp_trigger_service
-    trigger_svc = get_natural_vcp_trigger_service()
+    from analyst_dashboard.vcp.session_guard import evaluate_natural_session_eligibility
 
     req_date = payload.scheduled_date if payload else None
     req_build = payload.universe_build_id if payload else None
     eff_job = (payload.scheduler_job_id if payload and payload.scheduler_job_id else None) or x_scheduler_job_id
     eff_event = (payload.scheduler_event_id if payload and payload.scheduler_event_id else None) or x_scheduler_event_id
+
+    # Step 3: Server-side exchange-session eligibility & settlement window enforcement
+    eligibility = evaluate_natural_session_eligibility(session_date=req_date)
+    if not eligibility.is_eligible:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "status": "REJECTED",
+                "reason": eligibility.reason,
+                "session_date": eligibility.session_date,
+                "earliest_execution_utc": eligibility.earliest_execution_utc,
+                "latest_execution_utc": eligibility.latest_execution_utc,
+                "detail": eligibility.detail,
+            },
+        )
+
+    trigger_svc = get_natural_vcp_trigger_service()
 
     try:
         return trigger_svc.trigger_natural_scan(

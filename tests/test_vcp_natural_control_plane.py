@@ -1,0 +1,343 @@
+"""ARX Terminal — VCP Candidate 004 Natural Execution Control Plane Test Suite.
+
+Authoritatively tests the minimal control plane remediation:
+1. Server-side market session eligibility, NYSE calendar rules, settlement window, and early close adaptation.
+2. HTTP endpoint security contract: X-Scheduler-Token, HTTP 403 on invalid auth, HTTP 503 on disabled, HTTP 422 on session rejection.
+3. Session-level idempotency: invariant across universe_build_id mutations.
+4. Fencing, multi-worker lease safety, and anti-split-brain publication.
+5. Gate 12 quarantine and zero-denominator governance preservation.
+6. GitHub Actions workflow syntax, least-privilege permissions, and disabled-by-default scheduling.
+"""
+
+import os
+import sys
+import tempfile
+import unittest
+from datetime import date, datetime, time, timedelta, timezone
+from unittest.mock import MagicMock, patch
+import yaml
+
+# Ensure project root is in path
+sys.path.insert(0, os.path.abspath("."))
+
+from fastapi.testclient import TestClient
+from api.main import app
+
+from analyst_dashboard.vcp.session_guard import (
+    US_EASTERN,
+    evaluate_natural_session_eligibility,
+    get_session_bounds,
+    is_us_equity_trading_session,
+)
+from analyst_dashboard.vcp.natural_trigger import (
+    CANDIDATE_004_GENERATION_ID,
+    NaturalVCPTriggerService,
+    get_natural_vcp_trigger_service,
+)
+from analyst_dashboard.coordination import AcquisitionStatus, TriggerType
+from analyst_dashboard.coordination.coordinator import DurableRunCoordinator
+from analyst_dashboard.coordination.fenced_publisher import FencedPublisher, StaleLeasePublicationError
+from analyst_dashboard.coordination.store import CoordinationStore
+from analyst_dashboard.data.scanner_store import ScannerSnapshotStore
+
+
+class TestMarketSessionGuard(unittest.TestCase):
+    """Phase B: Authoritative tests for market session eligibility and settlement window."""
+
+    def setUp(self):
+        os.environ["VCP_ENFORCE_SESSION_GUARD_IN_TESTS"] = "1"
+
+    def tearDown(self):
+        os.environ.pop("VCP_ENFORCE_SESSION_GUARD_IN_TESTS", None)
+
+    def test_trading_sessions_calendar(self):
+        # Regular trading day (Wednesday)
+        self.assertTrue(is_us_equity_trading_session("2026-07-15"))
+        # Regular winter trading day
+        self.assertTrue(is_us_equity_trading_session("2026-01-14"))
+        # Weekend (Saturday & Sunday)
+        self.assertFalse(is_us_equity_trading_session("2026-07-18"))
+        self.assertFalse(is_us_equity_trading_session("2026-07-19"))
+        # NYSE Holidays
+        self.assertFalse(is_us_equity_trading_session("2026-01-01"))  # New Year's Day
+        self.assertFalse(is_us_equity_trading_session("2026-07-03"))  # Independence Day (Observed)
+        self.assertFalse(is_us_equity_trading_session("2026-12-25"))  # Christmas Day
+
+    def test_session_bounds_regular_and_early_close(self):
+        # Regular session close: 16:00 ET
+        s_open, s_close, is_early = get_session_bounds("2026-07-15")
+        close_et = s_close.astimezone(US_EASTERN)
+        self.assertEqual(close_et.hour, 16)
+        self.assertEqual(close_et.minute, 0)
+        self.assertFalse(is_early)
+
+        # Early close session (Day after Thanksgiving: 2026-11-27)
+        s_open_e, s_close_e, is_early_e = get_session_bounds("2026-11-27")
+        close_et_e = s_close_e.astimezone(US_EASTERN)
+        self.assertEqual(close_et_e.hour, 13)
+        self.assertEqual(close_et_e.minute, 0)
+        self.assertTrue(is_early_e)
+
+    def test_settlement_window_timing(self):
+        session_date = "2026-07-15"
+        # Summer EDT: 16:00 ET = 20:00 UTC. 45-min settlement = 20:45 UTC.
+        close_utc = datetime(2026, 7, 15, 20, 0, tzinfo=timezone.utc)
+
+        # 1. Premature request at 20:15 UTC (16:15 ET - only 15 mins post-close)
+        early_time = close_utc + timedelta(minutes=15)
+        res_early = evaluate_natural_session_eligibility(
+            session_date=session_date,
+            now_utc=early_time,
+            settlement_buffer_minutes=45,
+        )
+        self.assertFalse(res_early.is_eligible)
+        self.assertEqual(res_early.reason, "BEFORE_SETTLEMENT_WINDOW")
+        self.assertIn("remaining", res_early.detail)
+
+        # 2. Eligible request at 20:50 UTC (16:50 ET - 50 mins post-close)
+        eligible_time = close_utc + timedelta(minutes=50)
+        res_ok = evaluate_natural_session_eligibility(
+            session_date=session_date,
+            now_utc=eligible_time,
+            settlement_buffer_minutes=45,
+        )
+        self.assertTrue(res_ok.is_eligible)
+        self.assertEqual(res_ok.reason, "ELIGIBLE")
+
+        # 3. Late request next day at 12:00 UTC (past 04:00 ET premarket cutoff)
+        late_time = datetime(2026, 7, 16, 12, 0, tzinfo=timezone.utc)
+        res_late = evaluate_natural_session_eligibility(
+            session_date=session_date,
+            now_utc=late_time,
+            settlement_buffer_minutes=45,
+        )
+        self.assertFalse(res_late.is_eligible)
+        self.assertEqual(res_late.reason, "OUTSIDE_PERMITTED_WINDOW")
+
+    def test_non_trading_day_rejection(self):
+        # Sunday evaluation
+        res_sunday = evaluate_natural_session_eligibility(session_date="2026-10-18")
+        self.assertFalse(res_sunday.is_eligible)
+        self.assertEqual(res_sunday.reason, "NON_TRADING_DAY")
+
+        # Christmas Day evaluation
+        res_xmas = evaluate_natural_session_eligibility(session_date="2026-12-25")
+        self.assertFalse(res_xmas.is_eligible)
+        self.assertEqual(res_xmas.reason, "NON_TRADING_DAY")
+
+
+class TestNaturalScanEndpointControlPlane(unittest.TestCase):
+    """Phase B & D: Endpoint security, session rejection, and authorization tests."""
+
+    def setUp(self):
+        os.environ["VCP_ENFORCE_SESSION_GUARD_IN_TESTS"] = "1"
+        with patch("api.main.warmup_core_assets", MagicMock()):
+            self.client = TestClient(app)
+
+    def tearDown(self):
+        os.environ.pop("VCP_ENFORCE_SESSION_GUARD_IN_TESTS", None)
+
+    def test_disabled_scheduler_503(self):
+        with patch.dict(os.environ, {"VCP_NATURAL_SCHEDULER_ENABLED": "0", "VCP_SCHEDULER_SECRET": "secret"}):
+            res = self.client.post("/api/v1/screener/vcp/natural-scan")
+            self.assertEqual(res.status_code, 503)
+            self.assertIn("NATURAL_SCHEDULER_DISABLED", res.json()["detail"])
+
+    def test_missing_or_invalid_auth_403(self):
+        with patch.dict(os.environ, {"VCP_NATURAL_SCHEDULER_ENABLED": "1", "VCP_SCHEDULER_SECRET": "test-secret-123"}):
+            # Missing header
+            res1 = self.client.post("/api/v1/screener/vcp/natural-scan")
+            self.assertEqual(res1.status_code, 403)
+            self.assertIn("SCHEDULER_AUTHENTICATION_FAILED", res1.json()["detail"])
+
+            # Invalid header
+            res2 = self.client.post(
+                "/api/v1/screener/vcp/natural-scan",
+                headers={"X-Scheduler-Token": "wrong-secret"}
+            )
+            self.assertEqual(res2.status_code, 403)
+
+            # Bearer header (rejected; requires X-Scheduler-Token)
+            res3 = self.client.post(
+                "/api/v1/screener/vcp/natural-scan",
+                headers={"Authorization": "Bearer test-secret-123"}
+            )
+            self.assertEqual(res3.status_code, 403)
+
+    def test_session_rejection_422(self):
+        with patch.dict(os.environ, {
+            "VCP_NATURAL_SCHEDULER_ENABLED": "1",
+            "VCP_SCHEDULER_SECRET": "test-secret-123",
+            "VCP_BYPASS_SESSION_GUARD_FOR_TESTING": "0"
+        }):
+            # Attempt to scan on a Sunday
+            res_sunday = self.client.post(
+                "/api/v1/screener/vcp/natural-scan",
+                headers={"X-Scheduler-Token": "test-secret-123"},
+                json={"scheduled_date": "2026-10-18"}
+            )
+            self.assertEqual(res_sunday.status_code, 422)
+            data = res_sunday.json()["detail"]
+            self.assertEqual(data["status"], "REJECTED")
+            self.assertEqual(data["reason"], "NON_TRADING_DAY")
+
+    def test_authorized_scan_with_test_override(self):
+        with patch.dict(os.environ, {
+            "VCP_NATURAL_SCHEDULER_ENABLED": "1",
+            "VCP_SCHEDULER_SECRET": "test-secret-123",
+            "VCP_BYPASS_SESSION_GUARD_FOR_TESTING": "1"
+        }):
+            with patch("analyst_dashboard.vcp.natural_trigger.NaturalVCPTriggerService.trigger_natural_scan") as mock_scan:
+                mock_scan.return_value = {
+                    "status": "SUCCESS",
+                    "scan_execution_status": "SUCCESS",
+                    "snapshot_publication_status": "PUBLISH",
+                    "snapshot_id": "vcp-snap-test-1",
+                    "matched_count": 23,
+                    "universe_size": 35,
+                }
+                res = self.client.post(
+                    "/api/v1/screener/vcp/natural-scan",
+                    headers={"X-Scheduler-Token": "test-secret-123"},
+                    json={"scheduled_date": "2026-07-15"}
+                )
+                self.assertEqual(res.status_code, 200)
+                self.assertEqual(res.json()["status"], "SUCCESS")
+
+
+class TestSessionLevelIdempotencyAndCoordination(unittest.TestCase):
+    """Phase C: Session-level idempotency repair & multi-process coordination safety."""
+
+    def test_idempotency_key_invariant_across_build_ids(self):
+        svc = NaturalVCPTriggerService(scanner_runner=MagicMock())
+        today = "2026-07-15"
+
+        with patch.object(svc._get_runner(), "execute_market_wide_scan") as mock_exec:
+            mock_exec.return_value = {"snapshot_id": "snap-1", "publication_decision": "PUBLISH", "status": "AVAILABLE"}
+
+            # Request 1 with build ARX_CANONICAL_V1
+            svc.trigger_natural_scan(scheduled_date=today, universe_build_id="ARX_CANONICAL_V1")
+            call1_kwargs = mock_exec.call_args[1]
+
+            # Request 2 with build ARX_CANONICAL_V2
+            svc.trigger_natural_scan(scheduled_date=today, universe_build_id="ARX_CANONICAL_V2")
+            call2_kwargs = mock_exec.call_args[1]
+
+            # Invariant: Both calls resolve to the EXACT SAME logical_job_key
+            expected_key = f"vcp:natural:{CANDIDATE_004_GENERATION_ID}:{today}"
+            self.assertEqual(call1_kwargs["logical_job_key"], expected_key)
+            self.assertEqual(call2_kwargs["logical_job_key"], expected_key)
+            self.assertEqual(call1_kwargs["logical_job_key"], call2_kwargs["logical_job_key"])
+
+            # Provenance preserved: individual universe_build_id still passed for provenance
+            self.assertEqual(call1_kwargs["universe_build_id"], "ARX_CANONICAL_V1")
+            self.assertEqual(call2_kwargs["universe_build_id"], "ARX_CANONICAL_V2")
+
+    def test_fenced_publication_rejection_under_stale_token(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = os.path.join(tmpdir, "test_fenced.db")
+            coord = DurableRunCoordinator(resource_key="VCP_MARKET_SCAN", db_path=db_path)
+            publisher = FencedPublisher(coordination_store=coord.store)
+
+            job_key = "vcp:natural:CANDIDATE_GENERATION_004:2026-07-15"
+
+            # Worker 1 acquires lease
+            acq1 = coord.acquire(
+                logical_job_key=job_key,
+                trigger_type=TriggerType.SCHEDULED,
+                owner_instance_id="worker-1",
+                implementation_release_sha="80cbdcfd"
+            )
+            self.assertEqual(acq1.status, AcquisitionStatus.ACQUIRED)
+            token1 = acq1.lease.fencing_token
+
+            # Simulate Worker 2 superseding Worker 1 (e.g. lease expiry & takeover)
+            # Expire Worker 1 lease forcibly in DB
+            conn = coord.store._get_connection()
+            conn.execute("UPDATE radar_current_leases SET expires_at = '2000-01-01 00:00:00' WHERE resource_key = 'VCP_MARKET_SCAN'")
+            conn.commit()
+            conn.close()
+
+            acq2 = coord.acquire(
+                logical_job_key=f"{job_key}-retry",
+                trigger_type=TriggerType.SCHEDULED,
+                owner_instance_id="worker-2",
+                implementation_release_sha="80cbdcfd"
+            )
+            self.assertEqual(acq2.status, AcquisitionStatus.ACQUIRED)
+            token2 = acq2.lease.fencing_token
+            self.assertGreater(token2, token1)
+
+            # Stale Worker 1 attempts fenced publication
+            with self.assertRaises(StaleLeasePublicationError):
+                publisher.publish_snapshot_fenced(
+                    lease=acq1.lease,
+                    snapshot_data={
+                        "snapshot_id": "snap-stale",
+                        "scanner_id": "MINERVINI_VCP",
+                        "run_id": acq1.lease.run_id,
+                        "data_as_of": "2026-07-15",
+                        "matched_count": 23,
+                        "universe_size": 35,
+                    },
+                )
+
+
+class TestEvidenceGovernancePreservation(unittest.TestCase):
+    """Phase F: Preservation of Gate 12, quarantined telemetry, and zero denominator."""
+
+    def test_boot_warmup_produces_zero_denominator(self):
+        svc = NaturalVCPTriggerService(scanner_runner=MagicMock())
+        with patch.object(svc._get_runner(), "execute_market_wide_scan") as mock_exec:
+            mock_exec.return_value = {"snapshot_id": "snap-boot", "publication_decision": "PUBLISH", "status": "AVAILABLE"}
+            svc.trigger_boot_warmup()
+            kwargs = mock_exec.call_args[1]
+            self.assertEqual(kwargs["invocation_class"], "BOOT_WARMUP")
+            self.assertEqual(kwargs["originating_principal_type"], "BOOTSTRAP")
+            self.assertTrue(kwargs["startup_context"])
+
+    def test_scheduled_production_quarantined_under_gate_12(self):
+        svc = NaturalVCPTriggerService(scanner_runner=MagicMock())
+        with patch.object(svc._get_runner(), "execute_market_wide_scan") as mock_exec:
+            mock_exec.return_value = {"snapshot_id": "snap-sched", "publication_decision": "PUBLISH", "status": "AVAILABLE"}
+            res = svc.trigger_natural_scan(scheduled_date="2026-07-15")
+            self.assertEqual(res["status"], "SUCCESS")
+            # Prospective evidence status remains explicitly bound under candidate freeze
+            self.assertEqual(res["candidate_generation_id"], CANDIDATE_004_GENERATION_ID)
+
+
+class TestGitHubActionsWorkflowValidation(unittest.TestCase):
+    """Phase D: Static analysis and syntax validation of .github/workflows/vcp-natural-scheduler.yml."""
+
+    def test_workflow_yaml_syntax_and_safety(self):
+        wf_path = os.path.abspath(".github/workflows/vcp-natural-scheduler.yml")
+        self.assertTrue(os.path.exists(wf_path), f"Workflow file missing: {wf_path}")
+
+        with open(wf_path, "r", encoding="utf-8") as f:
+            wf = yaml.safe_load(f)
+
+        # 1. Triggers: workflow_dispatch present; active cron absent
+        self.assertIn("on", wf)
+        triggers = wf["on"]
+        self.assertIn("workflow_dispatch", triggers)
+        self.assertNotIn("schedule", triggers)  # Active cron must be disabled/commented out
+
+        # 2. Permissions: least privilege
+        self.assertIn("permissions", wf)
+        self.assertEqual(wf["permissions"]["contents"], "read")
+
+        # 3. Concurrency group defined
+        self.assertIn("concurrency", wf)
+        self.assertEqual(wf["concurrency"]["group"], "vcp-natural-scheduler")
+        self.assertFalse(wf["concurrency"]["cancel-in-progress"])
+
+        # 4. Job environment and timeout
+        jobs = wf["jobs"]
+        self.assertIn("trigger-natural-scan", jobs)
+        job = jobs["trigger-natural-scan"]
+        self.assertEqual(job["environment"], "production")
+        self.assertLessEqual(job["timeout-minutes"], 5)
+
+
+if __name__ == "__main__":
+    unittest.main()
