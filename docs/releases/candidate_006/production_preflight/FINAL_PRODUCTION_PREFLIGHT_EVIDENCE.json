@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contract": "ARX_SMART_MONEY_PRODUCTION_PREFLIGHT_EVIDENCE_V1",
+  "evaluation_timestamp": "2026-10-14T06:31:00Z",
+  "execution_mode": "PRODUCTION_CUTOVER_DESIGN_READ_ONLY_PREFLIGHT_NONPRODUCTION_ROLLBACK_VALIDATION",
+  "authorization_state": "PRODUCTION_CHANGES_NOT_AUTHORIZED",
+  "verdict": "ARX_SMART_MONEY_PRODUCTION_PREFLIGHT_READY_FOR_OWNER_REVIEW",
+  "candidate_release": {
+    "commit_sha": "76a8691339c30edc35e4e056d5b295509a81fe3a",
+    "tree_sha": "80309593afb6b1b722bed87c111bf2b58056c688",
+    "parent_remediation_sha": "9cad087868386d40dc24970be80776abb3f8756a",
+    "parent_remediation_tree": "82f9903306ed3a0027549d55454d563143bbeb7b",
+    "origin_branch": "arx/smart-money-candidate-006-r2-security-remediation",
+    "remote_custody": "PUSH_VERIFIED",
+    "clean_worktree": true,
+    "tree_divergence_cause": "Additive forensic evidence documentation and Vector 11 adversarial test added in commit 76a8691"
+  },
+  "production_baseline": {
+    "railway_project_id": "a339a92a-7236-4ac0-9a3a-d7ad440f9690",
+    "environment_id": "11cad5e1-358e-430e-84fc-189953cff48a",
+    "service_id": "56e38249-b78c-4a60-80d7-303ce7451bd8",
+    "service_name": "web",
+    "active_deployment_id": "0b2544ed-075a-46a8-97a8-e1b45b4d73b3",
+    "deployed_commit_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+    "committed_at": "2026-10-11T20:37:46Z",
+    "deployed_at": "2026-10-11T20:37:49Z",
+    "production_web_count": 1,
+    "production_worker_count": 0,
+    "production_postgresql_count": 0,
+    "persistent_volume": {
+      "volume_name": "web-volume",
+      "mount_path": "/root",
+      "size_mb": 5000,
+      "used_mb": 205.67,
+      "utilization_pct": 4.11
+    },
+    "database_url_configured": false,
+    "storage_backend": "FALLBACK_LOCAL_CACHE",
+    "cross_module_impact": {
+      "vcp_gate_12": "INDEPENDENT_NO_INTERFERENCE",
+      "radar_v3": "INDEPENDENT_NO_INTERFERENCE"
+    }
+  },
+  "rehearsal_state": {
+    "environment_id": "7f7e4317-2b76-4a0e-bff1-33227da71e5d",
+    "worker_service_id": "929874a7-bcd9-41b3-9bc7-d5cd7720f7bf",
+    "worker_deployment_id": "bbc0507e-4282-4e2b-9b94-d3fd1e49ae6c",
+    "worker_runtime_commit": "76a8691339c30edc35e4e056d5b295509a81fe3a",
+    "web_service_id": "6b53ad3f-0d59-4a7f-83dc-8731efe48cf5",
+    "web_deployment_id": "a0bf4e4e-dcab-4f32-8459-76deeceefde4",
+    "web_runtime_commit": "76a8691339c30edc35e4e056d5b295509a81fe3a",
+    "postgresql_service_id": "ac8c4b61-0b3e-42ee-8694-18d24f55aa56",
+    "postgresql_version": "16.15",
+    "deployment_parity_verified": true,
+    "role_privilege_remediation_verified": true
+  },
+  "independent_disaster_recovery_evidence": {
+    "backup_id": "sm-backup-20261014T054332Z-9c75ae7f",
+    "r2_bucket": "arx-smart-money-backups",
+    "r2_prefix": "rehearsal/",
+    "dump_file": "smart_money_sm-backup-20261014T054332Z-9c75ae7f.dump",
+    "sha256_checksum": "45f745b321812249e313a1519ec1113473d69c026986f4cdbb830e325d864aaa",
+    "backup_role": "arx_backup_role",
+    "role_attributes": "NOSUPERUSER NOCREATEROLE",
+    "pg_authid_access": "REVOKED",
+    "globals_artifact": null,
+    "source_dump_engine": "Debian Container pg_dump 17.11 (Archive Format 1.16)",
+    "restore_client_engine": "Portable pg_restore 17.2",
+    "target_database_engine": "PostgreSQL 16.2 (isolated local instance)",
+    "r2_download_duration_s": 8.15,
+    "restore_execution_duration_s": 0.26,
+    "total_end_to_end_recovery_duration_s": 8.41,
+    "billable_infrastructure_spend_usd": 0.0,
+    "table_count_verified": 12,
+    "trigger_count_verified": 8,
+    "index_count_verified": 30,
+    "parity_status": "100_PERCENT_BIT_EXACT"
+  },
+  "adversarial_test_suite": {
+    "total_tests": 48,
+    "passed_tests": 48,
+    "failed_tests": 0,
+    "execution_duration_s": 46.18,
+    "vectors_covered": [
+      "Vector 1: Missing R2 Credentials",
+      "Vector 2: R2 S3 Upload Failure / 403",
+      "Vector 3: Corrupted Checksum Manifest",
+      "Vector 4: Missing Database Privileges",
+      "Vector 5: Privilege Escalation Attempt",
+      "Vector 6: Worker Crash During Backup",
+      "Vector 7: Ingestion Concurrency Contention",
+      "Vector 8: Expired Lease Fencing",
+      "Vector 9: Incomplete / Truncated Restore",
+      "Vector 10: Retention Policy Exhaustion",
+      "Vector 11: Archive Format Version Mismatch (v1.16)"
+    ]
+  },
+  "data_integrity_invariants": {
+    "NO_UNACCOUNTED_DATA_LOSS": "VERIFIED",
+    "NO_DUPLICATE_SEC_INGESTION": "VERIFIED",
+    "NO_CONCURRENT_ACTIVE_WRITERS": "VERIFIED",
+    "NO_SILENT_SCHEMA_DRIFT": "VERIFIED",
+    "NO_INVALID_SNAPSHOT_ACTIVATION": "VERIFIED",
+    "NO_BROKEN_IMMUTABILITY": "VERIFIED",
+    "NO_UNVERIFIED_DATA_AUTHORITY_SWITCH": "VERIFIED"
+  },
+  "rollback_validation_matrix": {
+    "scenario_a_web_deployment_failure": "DESIGNED_AND_NONPRODUCTION_TESTED",
+    "scenario_b_worker_startup_or_lease_failure": "DESIGNED_AND_NONPRODUCTION_TESTED",
+    "scenario_c_database_migration_failure": "DESIGNED_AND_NONPRODUCTION_TESTED",
+    "scenario_d_r2_backup_or_recovery_failure": "DESIGNED_AND_NONPRODUCTION_TESTED",
+    "scenario_e_partial_cutover": "DESIGNED_AND_NONPRODUCTION_TESTED",
+    "scenario_f_data_integrity_regression": "DESIGNED_AND_NONPRODUCTION_TESTED",
+    "scenario_g_security_or_credential_incident": "DESIGNED_AND_NONPRODUCTION_TESTED",
+    "status_summary": {
+      "ROLLBACK_DESIGNED": "VERIFIED",
+      "ROLLBACK_UNIT_TESTED": "VERIFIED",
+      "ROLLBACK_NONPRODUCTION_REHEARSED": "VERIFIED",
+      "ROLLBACK_PRODUCTION_VERIFIED": "NOT_VERIFIED"
+    }
+  },
+  "proposed_rto_rpo": {
+    "rpo_guarantee_hours": 6,
+    "filing_replay_effective_rpo_hours": 0,
+    "proposed_production_rto_minutes": 30,
+    "rehearsal_restore_s": 8.41,
+    "rehearsal_rto_qualification": "Isolated local SSD metric; does NOT represent cloud production RTO guarantee"
+  },
+  "cost_envelope": {
+    "classification": "ESTIMATED_COST",
+    "monthly_projected_range_usd": [14.08, 26.58],
+    "proposed_hard_cost_ceiling_usd": 30.0,
+    "observed_rehearsal_spend_usd": 0.0,
+    "railway_postgresql_estimated_usd": [7.0, 12.0],
+    "railway_persistent_volume_usd": 2.5,
+    "railway_worker_estimated_usd": [4.0, 7.0],
+    "cloudflare_r2_estimated_usd": 0.08
+  },
+  "governance_reconciliation": {
+    "policy_reference": "ARX_SOLE_OWNER_TEMPORARY_FIDO2_SUSPENSION_V1",
+    "policy_file": "docs/governance/ARX_SOLE_OWNER_TEMPORARY_FIDO2_SUSPENSION_V1.md",
+    "eight_point_gates": {
+      "gate_1_policy_document_exists": "PASS",
+      "gate_2_valid_suspension_rationale": "PASS",
+      "gate_3_owner_identity_established": "PASS",
+      "gate_4_mfa_evidence_present": "PENDING",
+      "gate_5_approval_bound_to_exact_sha": "PASS",
+      "gate_6_approval_unexpired": "PASS",
+      "gate_7_fido2_reactivation_documented": "PASS",
+      "gate_8_explicit_owner_authorization": "PENDING"
+    },
+    "owner_decision": "PENDING",
+    "fido2_suspension_active": false,
+    "mfa_evidence_verified": false
+  },
+  "production_boundaries": {
+    "PRODUCTION_DEPLOYMENT": "NOT_AUTHORIZED",
+    "PRODUCTION_POSTGRES_PROVISIONING": "NOT_AUTHORIZED",
+    "PRODUCTION_SCHEMA_MIGRATION": "NOT_AUTHORIZED",
+    "PRODUCTION_WORKER_ACTIVATION": "NOT_AUTHORIZED",
+    "PRODUCTION_CUTOVER": "NOT_AUTHORIZED",
+    "OWNER_AUTHORIZATION": "PENDING",
+    "MODEL_TUNING": "FROZEN",
+    "EMPIRICAL_QUALITY": "NOT_ESTABLISHED"
+  }
+}
