@@ -1,7 +1,7 @@
-"""ARX Terminal — VCP Sprint 3 Natural Trigger Remediation Service (Candidate 003).
+"""ARX Terminal — VCP Sprint 3 Natural Trigger Remediation Service (Candidate 004).
 
 Provides an authoritative, backend-governed trigger mechanism for market-wide Radar VCP scans,
-satisfying Section 6, 7, 8, 9, 10, 11 of Sprint 3 Candidate 003 Succession Gate.
+satisfying Section 6, 7, 8, 9, 10, 11 of Sprint 3 Candidate 004 Succession Gate.
 
 GOVERNING INVARIANTS:
 1. BOOT WARMUP RECLASSIFICATION: Container boot and warmup calls are strictly classified as
@@ -16,6 +16,7 @@ GOVERNING INVARIANTS:
    invocation_class = MANUAL_OPERATOR, origin_class = ADMIN_FORCED.
 4. CALLER INTEGRITY: Callers and callers' HTTP headers cannot self-declare origin_class.
 5. REPLAY SEPARATION: Replay runs create distinct logical runs and do NOT enter natural denominator.
+6. CANDIDATE BINDING: Execution strictly bound to CANDIDATE_004_GENERATION_ID ("CANDIDATE_GENERATION_004").
 """
 
 from __future__ import annotations
@@ -24,6 +25,8 @@ import logging
 import time
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
+
+from analyst_dashboard.vcp.sprint_3_shadow_governance import CANDIDATE_004_GENERATION_ID
 
 logger = logging.getLogger("arx.vcp.natural_trigger")
 
@@ -75,6 +78,7 @@ class NaturalVCPTriggerService:
         - originating_principal_type: BOOTSTRAP
         - evidence_admission_eligible: False
         - natural_denominator_delta: 0
+        - candidate_generation_id: CANDIDATE_004_GENERATION_ID
         """
         from analyst_dashboard.coordination import TriggerType
 
@@ -86,7 +90,8 @@ class NaturalVCPTriggerService:
 
         logger.info(
             f"Executing container boot warmup scan: trigger_id={logical_trigger_id}, "
-            f"invocation_class=BOOT_WARMUP, origin_class=NON_EVIDENCE_BOOTSTRAP"
+            f"invocation_class=BOOT_WARMUP, origin_class=NON_EVIDENCE_BOOTSTRAP, "
+            f"candidate={CANDIDATE_004_GENERATION_ID}"
         )
 
         return runner.execute_market_wide_scan(
@@ -100,7 +105,7 @@ class NaturalVCPTriggerService:
             originating_principal_id="bootstrap:container-warmup",
             startup_context=True,
             scheduled_for=None,
-            candidate_generation_id="CANDIDATE_GENERATION_003",
+            candidate_generation_id=CANDIDATE_004_GENERATION_ID,
         )
 
     def trigger_natural_scan(
@@ -112,6 +117,7 @@ class NaturalVCPTriggerService:
         scheduler_event_id: Optional[str] = None,
         delivery_attempt_id: Optional[str] = None,
         execution_attempt_id: Optional[str] = None,
+        candidate_generation_id: str = CANDIDATE_004_GENERATION_ID,
     ) -> Dict[str, Any]:
         """Executes a genuine natural production market-wide VCP scan.
 
@@ -120,8 +126,14 @@ class NaturalVCPTriggerService:
         - origin_class: NATURAL_PRODUCTION
         - requires: scheduler_job_id AND scheduler_event_id
         - originating_principal_type: SCHEDULER
-        - candidate_generation_id: CANDIDATE_GENERATION_003
+        - candidate_generation_id: CANDIDATE_004_GENERATION_ID
+        - returns explicit scan, publication, and admission statuses
         """
+        if candidate_generation_id != CANDIDATE_004_GENERATION_ID:
+            raise ValueError(
+                f"CANDIDATE_GENERATION_MISMATCH: Authoritative natural trigger is bound to {CANDIDATE_004_GENERATION_ID}, got {candidate_generation_id}"
+            )
+
         from analyst_dashboard.coordination import TriggerType
 
         runner = self._get_runner()
@@ -135,10 +147,11 @@ class NaturalVCPTriggerService:
 
         logger.info(
             f"Executing scheduled natural production VCP scan: reason={reason}, "
-            f"job_id={eff_job_id}, event_id={eff_event_id}, run_id={logical_scan_run_id}"
+            f"job_id={eff_job_id}, event_id={eff_event_id}, run_id={logical_scan_run_id}, "
+            f"candidate={CANDIDATE_004_GENERATION_ID}"
         )
 
-        return runner.execute_market_wide_scan(
+        envelope = runner.execute_market_wide_scan(
             universe_build_id=effective_build_id,
             logical_job_key=logical_trigger_id,
             logical_trigger_id=logical_trigger_id,
@@ -154,8 +167,37 @@ class NaturalVCPTriggerService:
             delivery_attempt_id=delivery_attempt_id,
             execution_attempt_id=execution_attempt_id,
             operator_request_id=None,
-            candidate_generation_id="CANDIDATE_GENERATION_003",
+            candidate_generation_id=CANDIDATE_004_GENERATION_ID,
         )
+
+        pub_decision = envelope.get("publication_decision")
+        if hasattr(pub_decision, "value"):
+            pub_decision_val = pub_decision.value
+        else:
+            pub_decision_val = str(pub_decision) if pub_decision is not None else "PUBLISH"
+
+        is_published = (pub_decision_val == "PUBLISH" and envelope.get("status") in ("AVAILABLE", "ScannerStatus.AVAILABLE"))
+
+        return {
+            "status": "SUCCESS" if is_published else "FAILED",
+            "scan_execution_status": "SUCCESS" if envelope.get("snapshot_id") else "FAILED",
+            "snapshot_publication_status": pub_decision_val,
+            "natural_observation_status": "RECORDED" if envelope.get("snapshot_id") else "FAILED",
+            "prospective_admission_status": "ADMITTED" if is_published else "INELIGIBLE",
+            "candidate_generation_id": CANDIDATE_004_GENERATION_ID,
+            "logical_scan_run_id": logical_scan_run_id,
+            "logical_trigger_id": logical_trigger_id,
+            "scheduled_date": today_str,
+            "scheduler_job_id": eff_job_id,
+            "scheduler_event_id": eff_event_id,
+            "snapshot_id": envelope.get("snapshot_id"),
+            "matched_count": envelope.get("matched_count", 0),
+            "universe_size": envelope.get("universe_size", 0),
+            "results": envelope.get("results", []),
+            "freshness": envelope.get("freshness", {}),
+            "provenance": envelope.get("provenance", {}),
+            "envelope": envelope,
+        }
 
 
 _DEFAULT_NATURAL_TRIGGER_SERVICE: Optional[NaturalVCPTriggerService] = None

@@ -158,13 +158,32 @@ class ScannerSnapshotStore:
             cursor.execute("""
                 SELECT * FROM scanner_snapshots
                 WHERE scanner_id = ? AND publication_decision = 'PUBLISH'
-                ORDER BY created_at DESC
+                ORDER BY created_at DESC, rowid DESC
                 LIMIT 1
             """, (scanner_id,))
             row = cursor.fetchone()
             if not row:
                 return None
             return self._row_to_dict(row)
+        finally:
+            conn.close()
+
+    @retry_sqlite()
+    def get_latest_active_snapshot_id(self, scanner_id: str) -> Optional[str]:
+        """Retrieve only the snapshot_id of the latest verified, published snapshot for a scanner (indexed fast path)."""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT snapshot_id FROM scanner_snapshots
+                WHERE scanner_id = ? AND publication_decision = 'PUBLISH'
+                ORDER BY created_at DESC, rowid DESC
+                LIMIT 1
+            """, (scanner_id,))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            return row["snapshot_id"]
         finally:
             conn.close()
 

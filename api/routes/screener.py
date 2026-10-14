@@ -1,7 +1,7 @@
 import os
 from fastapi import APIRouter, Response, Header, HTTPException, status
 from pydantic import BaseModel
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 import time
 import pandas as pd
 from analyst_dashboard.analyzers.gem_screener import HiddenGemsScreener
@@ -27,6 +27,34 @@ from analyst_dashboard.analyzers.scanner_contract import CANONICAL_VCP_UNIVERSE,
 from analyst_dashboard.analyzers.scanner_runner import VCPScannerRunner, SmartMoneyScannerRunner
 
 OPERATOR_TOKEN: str = os.getenv("ARX_OPERATOR_TOKEN", "arx-operator-secret-v1")
+
+import hmac
+
+
+def is_vcp_natural_scheduler_enabled() -> bool:
+    """Check if natural VCP scheduler trigger is enabled via environment variable (default: disabled)."""
+    return os.getenv("VCP_NATURAL_SCHEDULER_ENABLED", "0").strip().lower() in ("1", "true", "yes", "enabled")
+
+
+def verify_scheduler_token(candidate_token: Optional[str]) -> bool:
+    """
+    Constant-time comparison against dedicated VCP_SCHEDULER_SECRET.
+    Strictly prohibits cross-domain credential fallback to telemetry or epoch-activation keys.
+    Fails closed if VCP_SCHEDULER_SECRET is unset, empty, or candidate does not match.
+    """
+    if not candidate_token:
+        return False
+    expected = os.getenv("VCP_SCHEDULER_SECRET", "").strip()
+    if not expected:
+        return False
+    return hmac.compare_digest(candidate_token.strip().encode("utf-8"), expected.encode("utf-8"))
+
+
+class VCPNaturalScanRequest(BaseModel):
+    scheduled_date: Optional[str] = None
+    universe_build_id: Optional[str] = None
+    scheduler_job_id: Optional[str] = None
+    scheduler_event_id: Optional[str] = None
 
 router = APIRouter()
 screener = HiddenGemsScreener()
@@ -88,6 +116,24 @@ VALUE_GARP_MODELS = {
     "Deep Value & Capital Return (Decelerating Comp Watch)",
     "Deep Value & Brand Mean-Reversion",
 }
+
+
+def get_radar_capabilities(vcp_snapshot: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    caps = dict(RADAR_CAPABILITY_CONTRACT)
+    if vcp_snapshot and vcp_snapshot.get("status") == "AVAILABLE":
+        freshness_info = vcp_snapshot.get("freshness", {})
+        caps["VCP"] = {
+            "status": "AVAILABLE",
+            "universeScreening": "AVAILABLE",
+            "singleAssetAnalysis": "AVAILABLE",
+            "matchedCount": vcp_snapshot.get("matched_count", 0),
+            "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
+            "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
+            "snapshotId": vcp_snapshot.get("snapshot_id"),
+            "freshnessStatus": freshness_info.get("status", "LIVE"),
+            "rationale": "Authentic Minervini Volatility Contraction Pattern universe screening active with deterministic publication integrity.",
+        }
+    return caps
 
 
 def derive_canonical_radar_categories(
@@ -524,7 +570,7 @@ def run_screener_get(
         "gemsFound": len(filtered),
         "activeFilter": filter_type,
         "userRole": user_role,
-        "capabilities": RADAR_CAPABILITY_CONTRACT,
+        "capabilities": get_radar_capabilities(vcp_snapshot=vcp_snapshot),
         "macroContextId": shared_macro_context_id,
         "macroDifficulty": shared_macro,
         "candidates": filtered,
@@ -566,6 +612,61 @@ def trigger_vcp_scan(
             universe_build_id=universe_build_id,
             operator_request_id=x_operator_request_id,
             logical_job_key=logical_job_key,
+        )
+    except RuntimeError as e:
+        if "OVERLAPPING_VCP_SCANS_PROHIBITED" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(e),
+            )
+        raise
+    except Exception as e:
+        if "FENCED_REJECTED" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(e),
+            )
+        raise
+
+
+@router.post("/vcp/natural-scan")
+def trigger_natural_vcp_scan(
+    payload: Optional[VCPNaturalScanRequest] = None,
+    x_scheduler_token: Optional[str] = Header(None, alias="X-Scheduler-Token"),
+    x_scheduler_job_id: Optional[str] = Header(None, alias="X-Scheduler-Job-Id"),
+    x_scheduler_event_id: Optional[str] = Header(None, alias="X-Scheduler-Event-Id"),
+):
+    """
+    Authoritative natural production trigger for Minervini VCP market-wide EOD scans.
+    Disabled by default: requires VCP_NATURAL_SCHEDULER_ENABLED=1.
+    Protected by constant-time X-Scheduler-Token authentication against dedicated VCP_SCHEDULER_SECRET.
+    Invokes NaturalVCPTriggerService with invocation_class=SCHEDULED_PRODUCTION and candidate_generation_id=CANDIDATE_GENERATION_004.
+    """
+    if not is_vcp_natural_scheduler_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="NATURAL_SCHEDULER_DISABLED: VCP natural scheduling entry point is disabled in current deployment.",
+        )
+    if not verify_scheduler_token(x_scheduler_token):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="SCHEDULER_AUTHENTICATION_FAILED: Valid X-Scheduler-Token required for natural trigger execution.",
+        )
+
+    from analyst_dashboard.vcp.natural_trigger import get_natural_vcp_trigger_service
+    trigger_svc = get_natural_vcp_trigger_service()
+
+    req_date = payload.scheduled_date if payload else None
+    req_build = payload.universe_build_id if payload else None
+    eff_job = (payload.scheduler_job_id if payload and payload.scheduler_job_id else None) or x_scheduler_job_id
+    eff_event = (payload.scheduler_event_id if payload and payload.scheduler_event_id else None) or x_scheduler_event_id
+
+    try:
+        return trigger_svc.trigger_natural_scan(
+            scheduled_date=req_date,
+            universe_build_id=req_build,
+            scheduler_job_id=eff_job,
+            scheduler_event_id=eff_event,
         )
     except RuntimeError as e:
         if "OVERLAPPING_VCP_SCANS_PROHIBITED" in str(e):

@@ -937,9 +937,37 @@ function RadarContent() {
               <span className="text-slate-400">
                 {filteredAssets.length} matches · 100% coverage
               </span>
+              {capabilities.VCP?.dataAsOf && (
+                <>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-slate-400">
+                    Data As Of: <strong className="text-slate-200">{capabilities.VCP.dataAsOf}</strong>
+                  </span>
+                </>
+              )}
             </div>
-            <div className="text-[11px] text-slate-500 font-mono">
-              Publication Integrity: Verified
+            <div className="flex items-center gap-2">
+              {(() => {
+                const asOfStr = capabilities.VCP?.dataAsOf;
+                if (!asOfStr) return null;
+                const asOfDate = new Date(asOfStr + 'T00:00:00Z');
+                const now = new Date();
+                const diffDays = Math.floor((now.getTime() - asOfDate.getTime()) / (1000 * 60 * 60 * 24));
+                if (diffDays > 3) {
+                  return (
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                      title={`VCP batch evaluation based on market data as of ${asOfStr}; live ticker quotes are updated real-time.`}
+                    >
+                      ⚠️ Prior Evaluation: {asOfStr} · Quotes Live
+                    </span>
+                  );
+                }
+                return null;
+              })()}
+              <div className="text-[11px] text-slate-500 font-mono">
+                Publication Integrity: Verified
+              </div>
             </div>
           </div>
         )}

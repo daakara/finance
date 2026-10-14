@@ -502,7 +502,9 @@ class VCPScannerRunner:
     def get_active_or_latest_snapshot(self) -> Dict[str, Any]:
         """Retrieve active in-memory snapshot or load latest from store, executing initial scan if store is empty."""
         if self._cached_active_snapshot is not None:
-            return self._to_envelope(self._cached_active_snapshot)
+            latest_id = self.snapshot_store.get_latest_active_snapshot_id("MINERVINI_VCP")
+            if latest_id is None or latest_id == self._cached_active_snapshot.get("snapshot_id"):
+                return self._to_envelope(self._cached_active_snapshot)
 
         persisted = self.snapshot_store.get_latest_active_snapshot("MINERVINI_VCP")
         if persisted is not None:
