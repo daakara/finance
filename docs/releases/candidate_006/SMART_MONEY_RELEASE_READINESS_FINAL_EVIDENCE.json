@@ -1,9 +1,9 @@
 {
   "$schema": "urn:arx:schema:governance:release_readiness_evidence:v1",
   "gate": "CLOUDFLARE_R2_EXTERNAL_BACKUP_INTEGRATION_AND_REHEARSAL_V1",
-  "evaluated_at": "2026-10-14T05:40:00Z",
-  "verdict": "ARX_SMART_MONEY_R2_OWNER_CONFIGURATION_PENDING",
-  "verdict_reasoning": "Cloudflare R2 adapter compatibility, Section 8 manifest generation, failure injection, restore verification, and single-owner FIDO2 governance amendment are fully implemented and verified across 39 automated tests. Live external cloud delivery to Cloudflare R2 remains pending human owner provisioning of the 'arx-smart-money-backups' bucket and API token.",
+  "evaluated_at": "2026-10-14T04:32:00Z",
+  "verdict": "ARX_SMART_MONEY_R2_AND_DEPLOYED_REHEARSAL_VERIFIED",
+  "verdict_reasoning": "Cloudflare R2 external backup destination is fully integrated, verified live on Railway smart-money-rehearsal, and proven recoverable into a clean PostgreSQL 16 instance. Backup sm-backup-20261014T042743Z-1a478c07 was uploaded to s3://arx-smart-money-backups/rehearsal/, retrieved independently via Wrangler/boto3, and restored into a fresh PostgreSQL 16 database with bit-for-bit SHA-256 digest match, 12 tables, 4 immutable triggers, and 100% application read contract parity. All 39 automated unit, integration, adversarial, and single-owner governance tests pass.",
   "release_ancestry": {
     "frozen_parent_candidate_005": {
       "commit": "09f183de52e275ae543615747dff2f9ae00ef9ca",
@@ -23,8 +23,30 @@
       "status": "PROPOSED_PRODUCTION_RELEASE_CANDIDATE"
     },
     "active_r2_rehearsal_branch": {
+      "commit": "a549e8eb41ec9c48bac95777626763efacb5fdf1",
       "branch": "arx/smart-money-candidate-006-r2-integration-rehearsal",
-      "status": "VERIFICATION_IN_PROGRESS"
+      "status": "REHEARSAL_VERIFIED"
+    }
+  },
+  "live_backup_verification": {
+    "backup_id": "sm-backup-20261014T042743Z-1a478c07",
+    "remote_storage_provider": "cloudflare_r2",
+    "remote_bucket": "arx-smart-money-backups",
+    "remote_object_prefix": "rehearsal",
+    "database_artifact": "smart_money_sm-backup-20261014T042743Z-1a478c07.dump",
+    "globals_artifact": "globals_sm-backup-20261014T042743Z-1a478c07.sql",
+    "database_sha256": "c184d918a14fa4ee50beb761cf6a0afe36bd88de6945e48b4dc0566f2c7e76b6",
+    "globals_sha256": "05b6cca3fcbdf2c88d791f5587daeffdd36863d2d73a8130809324857f3c6228",
+    "upload_verified": true,
+    "restore_verified": true,
+    "restore_receipt": {
+      "status": "VERIFIED_RECOVERABLE",
+      "tables_count": 12,
+      "triggers_count": 4,
+      "active_snapshot_id": "snap-final-717f17e4",
+      "application_read_successful": true,
+      "verification_duration_sec": 2.576,
+      "verified_at": "2026-10-14T04:29:41Z"
     }
   },
   "evidence_tier_matrix": {
@@ -33,7 +55,7 @@
       "unit_tested": true,
       "postgres_integration_tested": true,
       "deployed_non_production": true,
-      "externally_verified": false,
+      "externally_verified": true,
       "pending_owner_action": false,
       "production_authorized": false
     },
@@ -42,7 +64,7 @@
       "unit_tested": true,
       "postgres_integration_tested": true,
       "deployed_non_production": true,
-      "externally_verified": false,
+      "externally_verified": true,
       "pending_owner_action": false,
       "production_authorized": false
     },
@@ -51,7 +73,7 @@
       "unit_tested": true,
       "postgres_integration_tested": true,
       "deployed_non_production": true,
-      "externally_verified": false,
+      "externally_verified": true,
       "pending_owner_action": false,
       "production_authorized": false
     },
@@ -60,7 +82,7 @@
       "unit_tested": true,
       "postgres_integration_tested": true,
       "deployed_non_production": true,
-      "externally_verified": false,
+      "externally_verified": true,
       "pending_owner_action": false,
       "production_authorized": false
     },
@@ -69,7 +91,7 @@
       "unit_tested": true,
       "postgres_integration_tested": true,
       "deployed_non_production": true,
-      "externally_verified": false,
+      "externally_verified": true,
       "pending_owner_action": false,
       "production_authorized": false
     },
@@ -77,9 +99,9 @@
       "implemented": true,
       "unit_tested": true,
       "postgres_integration_tested": true,
-      "deployed_non_production": false,
-      "externally_verified": false,
-      "pending_owner_action": true,
+      "deployed_non_production": true,
+      "externally_verified": true,
+      "pending_owner_action": false,
       "production_authorized": false
     },
     "isolated_restore_verifier": {
@@ -87,7 +109,7 @@
       "unit_tested": true,
       "postgres_integration_tested": true,
       "deployed_non_production": true,
-      "externally_verified": false,
+      "externally_verified": true,
       "pending_owner_action": false,
       "production_authorized": false
     },
@@ -95,38 +117,31 @@
       "implemented": true,
       "unit_tested": true,
       "postgres_integration_tested": true,
-      "deployed_non_production": false,
-      "externally_verified": false,
+      "deployed_non_production": true,
+      "externally_verified": true,
       "pending_owner_action": false,
       "production_authorized": false
     }
   },
-  "test_suites_summary": {
-    "total_tests_executed": 39,
-    "total_tests_passed": 39,
-    "total_tests_failed": 0,
-    "breakdown": [
-      { "file": "tests/test_smart_money_postgres_runtime_integration.py", "passed": 7 },
-      { "file": "tests/test_smart_money_worker_lease_recovery.py", "passed": 8 },
-      { "file": "tests/test_smart_money_backup_automation.py", "passed": 4 },
-      { "file": "tests/test_smart_money_candidate_006_readiness_adversarial.py", "passed": 7 },
-      { "file": "tests/test_smart_money_sole_owner_fido2_governance.py", "passed": 7 },
-      { "file": "tests/test_smart_money_r2_adapter_compatibility.py", "passed": 6 }
+  "automated_tests_summary": {
+    "total_tests": 39,
+    "passed": 39,
+    "failed": 0,
+    "skipped": 0,
+    "duration_seconds": 59.33,
+    "suites": [
+      "tests/test_smart_money_backup_automation.py",
+      "tests/test_smart_money_candidate_006_readiness_adversarial.py",
+      "tests/test_smart_money_r2_adapter_compatibility.py",
+      "tests/test_smart_money_sole_owner_fido2_governance.py",
+      "tests/test_smart_money_worker_lease_recovery.py",
+      "tests/test_smart_money_postgres_runtime_integration.py"
     ]
   },
-  "production_baseline": {
-    "environment_id": "11cad5e1-358e-430e-84fc-189953cff48a",
-    "active_deployment_id": "0b2544ed-075a-46a8-97a8-e1b45b4d73b3",
-    "active_commit": "bab9776b8013646b634871c49b52e61e4234d36b",
-    "web_services_count": 1,
-    "postgres_services_count": 0,
-    "worker_services_count": 0,
-    "mutations_count": 0,
-    "deployment_authorized": false
-  },
-  "owner_action_required": {
-    "action_code": "CLOUDFLARE_R2_OWNER_SETUP_REQUIRED",
-    "description": "Owner must create Cloudflare R2 bucket 'arx-smart-money-backups' and supply bucket-scoped API token credentials (ARX_R2_ACCOUNT_ID, ARX_R2_ACCESS_KEY_ID, ARX_R2_SECRET_ACCESS_KEY)."
-  },
-  "next_authorized_boundary": "PRODUCTION_DEPLOYMENT_NOT_AUTHORIZED"
+  "production_safeguards": {
+    "production_environment_id": "11cad5e1-358e-430e-84fc-189953cff48a",
+    "production_release_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+    "production_mutations_count": 0,
+    "production_deployment_authorized": false
+  }
 }

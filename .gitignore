@@ -59,6 +59,9 @@ Thumbs.db
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# Cloudflare / Wrangler
+.wrangler/
+
 # Frontend Next.js build artifacts
 frontend/.next/
 frontend/out/

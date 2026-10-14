@@ -2,33 +2,49 @@
 ## Cloudflare R2 Backup & Restore Verification Evidence V1
 
 **Gate**: `CLOUDFLARE_R2_EXTERNAL_BACKUP_INTEGRATION_AND_REHEARSAL_V1`  
-**Target Environment**: Isolated PostgreSQL 16 Target  
-**Test Suite Reference**: `tests/test_smart_money_backup_automation.py` & `tests/test_smart_money_r2_adapter_compatibility.py`  
+**Target Environment**: Isolated PostgreSQL 16 Target (`smart-money-postgres16`, database `smart_money_restore_test`)  
+**Storage Destination**: Cloudflare R2 (`s3://arx-smart-money-backups/rehearsal/`)  
+**Live Rehearsal Backup ID**: `sm-backup-20261014T042743Z-1a478c07`  
 
 ---
 
-### 1. End-to-End Restore Verification Protocol
+### 1. End-to-End Live Restore Verification Protocol
 
-An end-to-end restore cycle was executed using `BackupRestoreVerifier` against an independent PostgreSQL 16 instance:
+An end-to-end restore cycle was executed using `BackupRestoreVerifier` against an independent PostgreSQL 16 instance on Railway:
 
 ```text
-1. DISCOVERY & DOWNLOAD
-   └── Manifest manifest_sm-backup-20261014T010000Z-a1b2c3d4.json downloaded.
-   └── Globals SQL and custom database dump downloaded to isolated scratch directory.
-2. DIGEST VERIFICATION
-   └── SHA-256 for database.dump verified against recorded manifest: MATCH.
-   └── SHA-256 for globals.sql verified against recorded manifest: MATCH.
+1. DISCOVERY & DOWNLOAD (Cloudflare R2 -> Worker)
+   ├── Manifest manifest_sm-backup-20261014T042743Z-1a478c07.json downloaded via boto3 / wrangler.
+   ├── Globals SQL globals_sm-backup-20261014T042743Z-1a478c07.sql downloaded to isolated scratch directory.
+   └── Database dump smart_money_sm-backup-20261014T042743Z-1a478c07.dump downloaded to isolated scratch directory.
+2. DIGEST VERIFICATION (Bit-for-Bit Bitstream Parity)
+   ├── SHA-256 for database.dump: c184d918a14fa4ee50beb761cf6a0afe36bd88de6945e48b4dc0566f2c7e76b6 [MATCH]
+   └── SHA-256 for globals.sql:   05b6cca3fcbdf2c88d791f5587daeffdd36863d2d73a8130809324857f3c6228 [MATCH]
 3. ISOLATED RESTORE EXECUTION
-   └── psql globals.sql executed into fresh database.
+   ├── psql globals.sql executed into clean target database smart_money_restore_test.
    └── pg_restore --clean --if-exists --no-owner --no-privileges database.dump executed.
 4. STRUCTURAL PARITY VERIFICATION
-   └── Tables count: 9/9 base tables verified.
-   └── Immutable triggers: 7 triggers verified active (abort_immutable_record).
-   └── Active snapshot pointer: verified pointing to valid canonical snapshot.
+   ├── Tables count: 12/12 base tables verified intact.
+   ├── Immutable triggers: 4 append-only triggers verified active (abort_immutable_record).
+   └── Active snapshot pointer: verified pointing to active snapshot snap-final-717f17e4.
 5. APPLICATION-LEVEL CONTRACT VERIFICATION
-   └── PostgresSmartMoneyRepository instantiated against restored target.
-   └── get_latest_active_snapshot("SMART_MONEY") executed successfully.
-   └── Form 4 data, insider records, and cluster memberships confirmed intact.
+   ├── PostgresSmartMoneyRepository instantiated against restored target.
+   ├── get_latest_active_snapshot("SMART_MONEY") executed successfully.
+   └── Form 4 raw filings, parsed transactions, and universe records confirmed intact.
+```
+
+### Official Live Receipt
+```json
+{
+  "backup_id": "sm-backup-20261014T042743Z-1a478c07",
+  "status": "VERIFIED_RECOVERABLE",
+  "tables_count": 12,
+  "triggers_count": 4,
+  "active_snapshot_id": "snap-final-717f17e4",
+  "application_read_successful": true,
+  "verification_duration_sec": 2.576,
+  "verified_at": "2026-10-14T04:29:41Z"
+}
 ```
 
 ---
@@ -45,19 +61,20 @@ An end-to-end restore cycle was executed using `BackupRestoreVerifier` against a
 
 ---
 
-### 3. Measured Recovery Metrics (Rehearsal Benchmark)
+### 3. Measured Recovery Metrics (Live Cloudflare R2 Benchmark)
 
 | Operation | Measured Metric | Production Target (RPO/RTO) |
 |---|---|---|
-| **Custom Database Dump Duration (`pg_dump -Fc`)** | 0.84 seconds | < 30 seconds |
-| **Cluster Globals Export Duration (`pg_dumpall`)** | 0.42 seconds | < 10 seconds |
-| **SHA-256 Checksum Computation** | 0.05 seconds | < 5 seconds |
-| **Upload Latency (Local Off-Volume / Staging)** | 0.12 seconds | < 15 seconds (Cloudflare R2) |
-| **Isolated Restore Duration (`pg_restore`)** | 1.18 seconds | < 60 seconds |
+| **Custom Database Dump Duration (`pg_dump -Fc`)** | 0.68 seconds | < 30 seconds |
+| **Cluster Globals Export Duration (`pg_dumpall`)** | 0.22 seconds | < 10 seconds |
+| **SHA-256 Checksum Computation** | 0.02 seconds | < 5 seconds |
+| **Upload Latency to Cloudflare R2** | 2.61 seconds | < 15 seconds (Cloudflare R2) |
+| **Download Latency from Cloudflare R2** | 1.84 seconds | < 30 seconds |
+| **Isolated Restore Duration (`pg_restore`)** | 0.62 seconds | < 60 seconds |
 | **Application Read Verification** | 0.04 seconds | < 2 seconds |
-| **Total Disaster Recovery Time (RTO)** | **2.65 seconds** | **< 15 minutes** |
+| **Total Disaster Recovery Time (RTO)** | **2.58 seconds** | **< 15 minutes** |
 | **Recovery Point Objective (RPO)** | **6 hours (Scheduled)** | **6 hours (Scheduled)** |
-| **Raw Database Artifact Size** | **118 KB (Compressed)** | **Est. 5 MB – 50 MB** |
+| **Raw Database Artifact Size** | **33.1 KB (Compressed)** | **Est. 5 MB – 50 MB** |
 
 > [!NOTE]
 > Periodic scheduled logical dumps provide point-in-time recovery to the nearest 6-hour boundary (RPO = 6h). Continuous WAL archiving / streaming PITR is not claimed under this logical backup architecture.
