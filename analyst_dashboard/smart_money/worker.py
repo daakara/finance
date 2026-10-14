@@ -230,10 +230,11 @@ class SmartMoneyIngestionWorker:
                     "requires explicit ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED=True ratification."
                 )
 
-    def acquire_egress_authority(self) -> bool:
+    def acquire_egress_authority(self, max_attempts: int = 5, retry_interval_sec: float = 2.0) -> bool:
         """
         Acquires dedicated PostgreSQL session-level advisory lock.
-        Fails closed if another worker holds the lock.
+        Permits short retry window for deployment handover (SIGTERM / container swap).
+        Fails closed if another worker holds the lock after retries.
         """
         import psycopg2
         self._owner_conn = psycopg2.connect(self.dsn)
@@ -241,20 +242,27 @@ class SmartMoneyIngestionWorker:
             cur.execute("SET TIME ZONE 'GMT';")
             cur.execute("SET application_name = %s;", (f"sm_worker_{self.worker_id}",))
 
-        acquired = acquire_sec_owner_lock(self._owner_conn)
-        if not acquired:
-            self.state = WorkerHealthState.OWNER_LOCK_LOST
-            logger.error(
-                "DUPLICATE_OWNER_REJECTED: Another worker currently holds SEC_EGRESS_OWNER lock. "
-                "Failing closed to prevent aggregate rate violation."
-            )
-            self._owner_conn.close()
-            self._owner_conn = None
-            return False
+        for attempt in range(1, max_attempts + 1):
+            acquired = acquire_sec_owner_lock(self._owner_conn)
+            if acquired:
+                self.state = WorkerHealthState.OWNER_LOCK_ACQUIRED
+                logger.info(f"Worker {self.worker_id} acquired exclusive SEC_EGRESS_OWNER advisory lock.")
+                return True
+            if attempt < max_attempts:
+                logger.warning(
+                    f"SEC_EGRESS_OWNER lock contention (attempt {attempt}/{max_attempts}). "
+                    f"Waiting {retry_interval_sec}s for outgoing worker handover..."
+                )
+                time.sleep(retry_interval_sec)
 
-        self.state = WorkerHealthState.OWNER_LOCK_ACQUIRED
-        logger.info(f"Worker {self.worker_id} acquired exclusive SEC_EGRESS_OWNER advisory lock.")
-        return True
+        self.state = WorkerHealthState.OWNER_LOCK_LOST
+        logger.error(
+            "DUPLICATE_OWNER_REJECTED: Another worker currently holds SEC_EGRESS_OWNER lock. "
+            "Failing closed to prevent aggregate rate violation."
+        )
+        self._owner_conn.close()
+        self._owner_conn = None
+        return False
 
     def release_egress_authority(self) -> None:
         """Releases session advisory lock on shutdown."""

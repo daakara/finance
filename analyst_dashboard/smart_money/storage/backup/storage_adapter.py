@@ -163,6 +163,7 @@ class LocalOffVolumeStorageAdapter(BackupStorageAdapter):
             "remote_filename": remote_filename,
             "size_bytes": os.path.getsize(target),
             "modified_at": datetime.utcfromtimestamp(os.path.getmtime(target)).isoformat() + "Z",
+            "sha256": compute_sha256(target),
             "destination": target,
         }
 

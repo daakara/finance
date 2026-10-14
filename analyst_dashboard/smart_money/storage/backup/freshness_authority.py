@@ -330,6 +330,21 @@ class BackupFreshnessAuthority:
                 manifest_metadata=manifest,
             )
 
+        remote_sha = dump_metadata.get("sha256")
+        if remote_sha and remote_sha != dump_sha:
+            return FreshnessEvaluationReceipt(
+                recovery_point_id=backup_id,
+                verified_at=now_iso,
+                backup_completed_at=completed_at_str,
+                backup_age_seconds=None,
+                freshness_threshold_seconds=self.policy.max_verified_age_seconds,
+                verification_source="REMOTE_STORAGE_AUDIT",
+                verification_status=BackupFreshnessState.UNVERIFIABLE.value,
+                reason_code=f"DUMP_SHA256_MISMATCH: remote_meta={remote_sha} expected={dump_sha}",
+                is_fresh=False,
+                manifest_metadata=manifest,
+            )
+
         # 8. Check timestamp format and future clock skew
         try:
             completed_clean = completed_at_str.replace("Z", "+00:00")
