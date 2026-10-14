@@ -1,0 +1,132 @@
+{
+  "$schema": "urn:arx:schema:governance:release_readiness_evidence:v1",
+  "gate": "CLOUDFLARE_R2_EXTERNAL_BACKUP_INTEGRATION_AND_REHEARSAL_V1",
+  "evaluated_at": "2026-10-14T05:40:00Z",
+  "verdict": "ARX_SMART_MONEY_R2_OWNER_CONFIGURATION_PENDING",
+  "verdict_reasoning": "Cloudflare R2 adapter compatibility, Section 8 manifest generation, failure injection, restore verification, and single-owner FIDO2 governance amendment are fully implemented and verified across 39 automated tests. Live external cloud delivery to Cloudflare R2 remains pending human owner provisioning of the 'arx-smart-money-backups' bucket and API token.",
+  "release_ancestry": {
+    "frozen_parent_candidate_005": {
+      "commit": "09f183de52e275ae543615747dff2f9ae00ef9ca",
+      "tree": "c4ecd94ce894032a987b0a51440a876eab69afba",
+      "status": "FROZEN_REFERENCE"
+    },
+    "candidate_006_reference": {
+      "commit": "da7f6ff52b8d79658e041f935424c0fa57f42984",
+      "tree": "288b164be323f61b3d45c5070e3f4bd6b7354e13",
+      "branch": "arx/smart-money-candidate-006-worker-recovery-backup",
+      "status": "IMMUTABLE_CANDIDATE_006"
+    },
+    "governance_amended_child": {
+      "commit": "c8cc1cda0be5a2a62816d3024b6499515e97101a",
+      "tree": "d65e57a5865d30479d1058c7dab50d3608e26e7b",
+      "branch": "arx/smart-money-candidate-006-governance-amendment",
+      "status": "PROPOSED_PRODUCTION_RELEASE_CANDIDATE"
+    },
+    "active_r2_rehearsal_branch": {
+      "branch": "arx/smart-money-candidate-006-r2-integration-rehearsal",
+      "status": "VERIFICATION_IN_PROGRESS"
+    }
+  },
+  "evidence_tier_matrix": {
+    "worker_lease_contract_v2": {
+      "implemented": true,
+      "unit_tested": true,
+      "postgres_integration_tested": true,
+      "deployed_non_production": true,
+      "externally_verified": false,
+      "pending_owner_action": false,
+      "production_authorized": false
+    },
+    "stale_worker_fencing": {
+      "implemented": true,
+      "unit_tested": true,
+      "postgres_integration_tested": true,
+      "deployed_non_production": true,
+      "externally_verified": false,
+      "pending_owner_action": false,
+      "production_authorized": false
+    },
+    "process_fault_injection_crash_recovery": {
+      "implemented": true,
+      "unit_tested": true,
+      "postgres_integration_tested": true,
+      "deployed_non_production": true,
+      "externally_verified": false,
+      "pending_owner_action": false,
+      "production_authorized": false
+    },
+    "sec_owner_advisory_lock": {
+      "implemented": true,
+      "unit_tested": true,
+      "postgres_integration_tested": true,
+      "deployed_non_production": true,
+      "externally_verified": false,
+      "pending_owner_action": false,
+      "production_authorized": false
+    },
+    "backup_engine_pg16": {
+      "implemented": true,
+      "unit_tested": true,
+      "postgres_integration_tested": true,
+      "deployed_non_production": true,
+      "externally_verified": false,
+      "pending_owner_action": false,
+      "production_authorized": false
+    },
+    "cloudflare_r2_adapter": {
+      "implemented": true,
+      "unit_tested": true,
+      "postgres_integration_tested": true,
+      "deployed_non_production": false,
+      "externally_verified": false,
+      "pending_owner_action": true,
+      "production_authorized": false
+    },
+    "isolated_restore_verifier": {
+      "implemented": true,
+      "unit_tested": true,
+      "postgres_integration_tested": true,
+      "deployed_non_production": true,
+      "externally_verified": false,
+      "pending_owner_action": false,
+      "production_authorized": false
+    },
+    "single_owner_fido2_governance": {
+      "implemented": true,
+      "unit_tested": true,
+      "postgres_integration_tested": true,
+      "deployed_non_production": false,
+      "externally_verified": false,
+      "pending_owner_action": false,
+      "production_authorized": false
+    }
+  },
+  "test_suites_summary": {
+    "total_tests_executed": 39,
+    "total_tests_passed": 39,
+    "total_tests_failed": 0,
+    "breakdown": [
+      { "file": "tests/test_smart_money_postgres_runtime_integration.py", "passed": 7 },
+      { "file": "tests/test_smart_money_worker_lease_recovery.py", "passed": 8 },
+      { "file": "tests/test_smart_money_backup_automation.py", "passed": 4 },
+      { "file": "tests/test_smart_money_candidate_006_readiness_adversarial.py", "passed": 7 },
+      { "file": "tests/test_smart_money_sole_owner_fido2_governance.py", "passed": 7 },
+      { "file": "tests/test_smart_money_r2_adapter_compatibility.py", "passed": 6 }
+    ]
+  },
+  "production_baseline": {
+    "environment_id": "11cad5e1-358e-430e-84fc-189953cff48a",
+    "active_deployment_id": "0b2544ed-075a-46a8-97a8-e1b45b4d73b3",
+    "active_commit": "bab9776b8013646b634871c49b52e61e4234d36b",
+    "web_services_count": 1,
+    "postgres_services_count": 0,
+    "worker_services_count": 0,
+    "mutations_count": 0,
+    "deployment_authorized": false
+  },
+  "owner_action_required": {
+    "action_code": "CLOUDFLARE_R2_OWNER_SETUP_REQUIRED",
+    "description": "Owner must create Cloudflare R2 bucket 'arx-smart-money-backups' and supply bucket-scoped API token credentials (ARX_R2_ACCOUNT_ID, ARX_R2_ACCESS_KEY_ID, ARX_R2_SECRET_ACCESS_KEY)."
+  },
+  "next_authorized_boundary": "PRODUCTION_DEPLOYMENT_NOT_AUTHORIZED"
+}

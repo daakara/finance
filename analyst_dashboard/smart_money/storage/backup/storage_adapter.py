@@ -262,25 +262,66 @@ class S3CompatibleStorageAdapter(BackupStorageAdapter):
 def get_backup_storage_adapter(override_dir: Optional[str] = None) -> BackupStorageAdapter:
     """
     Factory resolving the appropriate storage adapter.
-    If S3 configuration is present in environment, returns S3CompatibleStorageAdapter.
-    Otherwise, returns LocalOffVolumeStorageAdapter pointing to a dedicated storage location.
+    Supports Cloudflare R2 (ARX_BACKUP_PROVIDER=cloudflare_r2 or ARX_R2_* variables)
+    as well as generic S3-compatible providers.
+    Falls back safely to LocalOffVolumeStorageAdapter when remote credentials are absent.
     """
-    s3_bucket = os.environ.get("SMART_MONEY_BACKUP_S3_BUCKET")
-    if s3_bucket:
+    provider = os.environ.get("ARX_BACKUP_PROVIDER", "").strip().lower()
+
+    # Bucket resolution
+    bucket = (
+        os.environ.get("ARX_BACKUP_BUCKET")
+        or os.environ.get("SMART_MONEY_BACKUP_S3_BUCKET")
+    )
+
+    # Prefix resolution (default to 'rehearsal' for R2 rehearsal, 'smart_money_backups' for S3)
+    prefix = (
+        os.environ.get("ARX_BACKUP_PREFIX")
+        or os.environ.get("SMART_MONEY_BACKUP_S3_PREFIX")
+        or ("rehearsal" if provider == "cloudflare_r2" else "smart_money_backups")
+    )
+
+    # Cloudflare R2 specific resolution
+    r2_account_id = os.environ.get("ARX_R2_ACCOUNT_ID")
+    endpoint = (
+        os.environ.get("ARX_R2_ENDPOINT")
+        or (f"https://{r2_account_id}.r2.cloudflarestorage.com" if r2_account_id else None)
+        or os.environ.get("SMART_MONEY_BACKUP_S3_ENDPOINT")
+    )
+    access_key = (
+        os.environ.get("ARX_R2_ACCESS_KEY_ID")
+        or os.environ.get("SMART_MONEY_BACKUP_S3_ACCESS_KEY")
+    )
+    secret_key = (
+        os.environ.get("ARX_R2_SECRET_ACCESS_KEY")
+        or os.environ.get("SMART_MONEY_BACKUP_S3_SECRET_KEY")
+    )
+
+    is_r2 = bool(provider == "cloudflare_r2" or r2_account_id or (endpoint and "r2.cloudflarestorage.com" in endpoint))
+    provider_name = "cloudflare_r2" if is_r2 else "s3"
+    region = "auto" if is_r2 else os.environ.get("SMART_MONEY_BACKUP_S3_REGION", "us-west-2")
+
+    if bucket and endpoint and access_key and secret_key:
         try:
-            return S3CompatibleStorageAdapter(
-                bucket=s3_bucket,
-                prefix=os.environ.get("SMART_MONEY_BACKUP_S3_PREFIX", "smart_money_backups"),
-                endpoint_url=os.environ.get("SMART_MONEY_BACKUP_S3_ENDPOINT"),
-                access_key_id=os.environ.get("SMART_MONEY_BACKUP_S3_ACCESS_KEY"),
-                secret_access_key=os.environ.get("SMART_MONEY_BACKUP_S3_SECRET_KEY"),
-                region_name=os.environ.get("SMART_MONEY_BACKUP_S3_REGION", "us-west-2"),
+            adapter = S3CompatibleStorageAdapter(
+                bucket=bucket,
+                prefix=prefix,
+                endpoint_url=endpoint,
+                access_key_id=access_key,
+                secret_access_key=secret_key,
+                region_name=region,
             )
+            adapter.provider_name = provider_name
+            return adapter
         except Exception as e:
-            logger.warning(f"Could not initialize S3 adapter ({e}); falling back to local off-volume adapter.")
+            logger.warning(f"Could not initialize {provider_name} adapter ({e}); falling back to local off-volume adapter.")
 
     base_dir = override_dir or os.environ.get(
         "SMART_MONEY_BACKUP_DIR",
         os.path.join(os.path.expanduser("~"), ".arx_backups", "smart_money")
     )
-    return LocalOffVolumeStorageAdapter(base_directory=base_dir)
+    adapter = LocalOffVolumeStorageAdapter(base_directory=base_dir)
+    adapter.provider_name = "local_off_volume"
+    adapter.bucket = "local"
+    adapter.prefix = ""
+    return adapter
