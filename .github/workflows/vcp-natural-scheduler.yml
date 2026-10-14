@@ -43,13 +43,32 @@ jobs:
     steps:
       - name: Validate Inputs and Environment
         id: validate
+        env:
+          CONFIGURED_BASE_URL: ${{ vars.ARX_API_BASE_URL }}
         run: |
           echo "Initiating VCP Candidate 004 natural execution trigger dispatch."
           echo "Target Environment: ${{ inputs.environment_target || 'production' }}"
           echo "Run ID: ${{ github.run_id }} (Attempt: ${{ github.run_attempt }})"
           
-          # Target URL is fixed to authorized production domain (arbitrary overrides prohibited)
-          TARGET_URL="https://arx-terminal-production.up.railway.app/api/v1/screener/vcp/natural-scan"
+          # Target base URL: uses repository variable vars.ARX_API_BASE_URL if configured,
+          # otherwise defaults to authoritative live production domain web-production-e370b.up.railway.app.
+          # Prohibits arbitrary input overrides.
+          BASE_URL="${CONFIGURED_BASE_URL:-https://web-production-e370b.up.railway.app}"
+          # Remove any trailing slash
+          BASE_URL="${BASE_URL%/}"
+          
+          # Enforce https:// protocol
+          case "$BASE_URL" in
+            https://*)
+              ;;
+            *)
+              echo "::error::SECURITY_VIOLATION: ARX_API_BASE_URL must use https:// protocol. Got: $BASE_URL"
+              exit 1
+              ;;
+          esac
+          
+          TARGET_URL="${BASE_URL}/api/v1/screener/vcp/natural-scan"
+          echo "Configured production target URL: $TARGET_URL"
           echo "target_url=$TARGET_URL" >> $GITHUB_OUTPUT
 
       - name: Dispatch Natural Scan Request
@@ -95,10 +114,44 @@ jobs:
           # Evaluate and classify response
           case "$HTTP_STATUS" in
             200)
+              # Assert valid JSON structure
+              if ! echo "$RESPONSE_BODY" | jq empty 2>/dev/null; then
+                echo "::error::INVALID_PAYLOAD: HTTP 200 returned non-JSON body."
+                exit 1
+              fi
+
               STATUS=$(echo "$RESPONSE_BODY" | jq -r '.status // empty' 2>/dev/null)
               SNAP_ID=$(echo "$RESPONSE_BODY" | jq -r '.snapshot_id // empty' 2>/dev/null)
+              CANDIDATE_ID=$(echo "$RESPONSE_BODY" | jq -r '.candidate_generation_id // empty' 2>/dev/null)
+              PUB_STATUS=$(echo "$RESPONSE_BODY" | jq -r '.snapshot_publication_status // empty' 2>/dev/null)
               MATCH_CNT=$(echo "$RESPONSE_BODY" | jq -r '.matched_count // empty' 2>/dev/null)
-              echo "::notice::VCP Natural Scan SUCCESS: Snapshot=$SNAP_ID, Matched=$MATCH_CNT"
+              UNIV_SIZE=$(echo "$RESPONSE_BODY" | jq -r '.universe_size // empty' 2>/dev/null)
+
+              # Assert status is SUCCESS
+              if [ "$STATUS" != "SUCCESS" ]; then
+                echo "::error::EXECUTION_FAILED: Natural scan returned status='$STATUS' (expected SUCCESS)."
+                exit 1
+              fi
+
+              # Assert snapshot_id is non-empty
+              if [ -z "$SNAP_ID" ]; then
+                echo "::error::INVALID_PROVENANCE: Missing or empty snapshot_id in HTTP 200 response."
+                exit 1
+              fi
+
+              # Assert candidate generation matches Candidate 004
+              if [ "$CANDIDATE_ID" != "CANDIDATE_GENERATION_004" ]; then
+                echo "::error::CANDIDATE_MISMATCH: Expected CANDIDATE_GENERATION_004, got '$CANDIDATE_ID'."
+                exit 1
+              fi
+
+              # Assert publication status is PUBLISH
+              if [ "$PUB_STATUS" != "PUBLISH" ]; then
+                echo "::error::PUBLICATION_NOT_CONFIRMED: Expected snapshot_publication_status=PUBLISH, got '$PUB_STATUS'."
+                exit 1
+              fi
+
+              echo "::notice::VCP Natural Scan SUCCESS: Snapshot=$SNAP_ID, Candidate=$CANDIDATE_ID, Matched=$MATCH_CNT/$UNIV_SIZE, Publication=$PUB_STATUS"
               exit 0
               ;;
             403)

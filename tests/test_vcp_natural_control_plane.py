@@ -125,6 +125,69 @@ class TestMarketSessionGuard(unittest.TestCase):
         self.assertFalse(res_xmas.is_eligible)
         self.assertEqual(res_xmas.reason, "NON_TRADING_DAY")
 
+    def test_market_data_readiness_checks(self):
+        session_date = "2026-07-15"
+        close_utc = datetime(2026, 7, 15, 20, 0, tzinfo=timezone.utc)
+        eligible_time = close_utc + timedelta(minutes=50)
+        symbols = ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL"]
+
+        # 1. Authority unavailable when check_data_freshness=True and market_db is None
+        res_no_db = evaluate_natural_session_eligibility(
+            session_date=session_date,
+            now_utc=eligible_time,
+            check_data_freshness=True,
+            universe_symbols=symbols,
+            market_db=None,
+        )
+        self.assertFalse(res_no_db.is_eligible)
+        self.assertEqual(res_no_db.reason, "DATA_AUTHORITY_UNAVAILABLE")
+
+        # 2. Missing market data: zero symbols settled for target date
+        mock_db_empty = MagicMock()
+        mock_db_empty.get_latest_price.return_value = {"currentPrice": 100.0, "date": "2026-07-14"}  # prior day
+        res_empty = evaluate_natural_session_eligibility(
+            session_date=session_date,
+            now_utc=eligible_time,
+            check_data_freshness=True,
+            universe_symbols=symbols,
+            market_db=mock_db_empty,
+        )
+        self.assertFalse(res_empty.is_eligible)
+        self.assertEqual(res_empty.reason, "MISSING_MARKET_DATA")
+        self.assertEqual(res_empty.coverage_ratio, 0.0)
+
+        # 3. Incomplete coverage: 3 of 5 symbols settled (60% < 90%)
+        mock_db_partial = MagicMock()
+        def mock_price_partial(sym):
+            if sym in ("AAPL", "MSFT", "NVDA"):
+                return {"currentPrice": 100.0, "date": "2026-07-15"}
+            return {"currentPrice": 50.0, "date": "2026-07-14"}
+        mock_db_partial.get_latest_price.side_effect = mock_price_partial
+        res_partial = evaluate_natural_session_eligibility(
+            session_date=session_date,
+            now_utc=eligible_time,
+            check_data_freshness=True,
+            universe_symbols=symbols,
+            market_db=mock_db_partial,
+        )
+        self.assertFalse(res_partial.is_eligible)
+        self.assertEqual(res_partial.reason, "INCOMPLETE_UNIVERSE_COVERAGE")
+        self.assertEqual(res_partial.coverage_ratio, 0.6)
+
+        # 4. Sufficient coverage: 5 of 5 symbols settled (100% >= 90%)
+        mock_db_full = MagicMock()
+        mock_db_full.get_latest_price.return_value = {"currentPrice": 150.0, "date": "2026-07-15"}
+        res_full = evaluate_natural_session_eligibility(
+            session_date=session_date,
+            now_utc=eligible_time,
+            check_data_freshness=True,
+            universe_symbols=symbols,
+            market_db=mock_db_full,
+        )
+        self.assertTrue(res_full.is_eligible)
+        self.assertEqual(res_full.reason, "ELIGIBLE")
+        self.assertEqual(res_full.coverage_ratio, 1.0)
+
 
 class TestNaturalScanEndpointControlPlane(unittest.TestCase):
     """Phase B & D: Endpoint security, session rejection, and authorization tests."""
@@ -203,6 +266,58 @@ class TestNaturalScanEndpointControlPlane(unittest.TestCase):
                 )
                 self.assertEqual(res.status_code, 200)
                 self.assertEqual(res.json()["status"], "SUCCESS")
+
+    def test_route_data_readiness_enforcement(self):
+        with patch.dict(os.environ, {
+            "VCP_NATURAL_SCHEDULER_ENABLED": "1",
+            "VCP_SCHEDULER_SECRET": "test-secret-123",
+            "VCP_BYPASS_SESSION_GUARD_FOR_TESTING": "0",
+        }):
+            session_date = "2026-07-15"
+            close_utc = datetime(2026, 7, 15, 20, 0, tzinfo=timezone.utc)
+            eligible_time = close_utc + timedelta(minutes=50)
+
+            from analyst_dashboard.vcp import session_guard
+            orig_eval = session_guard.evaluate_natural_session_eligibility
+            def mock_eval_fn(*args, **kwargs):
+                kwargs["now_utc"] = eligible_time
+                return orig_eval(*args, **kwargs)
+
+            # Case A: Market DB returns 0 settled symbols for session_date -> HTTP 422 with MISSING_MARKET_DATA
+            with patch("analyst_dashboard.vcp.session_guard.evaluate_natural_session_eligibility", side_effect=mock_eval_fn):
+                with patch("api.routes.screener.vcp_scanner_runner.market_db") as mock_mdb:
+                    mock_mdb.get_latest_price.return_value = {"currentPrice": 100.0, "date": "2026-07-14"}
+                    res = self.client.post(
+                        "/api/v1/screener/vcp/natural-scan",
+                        headers={"X-Scheduler-Token": "test-secret-123"},
+                        json={"scheduled_date": session_date},
+                    )
+                    self.assertEqual(res.status_code, 422)
+                    data = res.json()["detail"]
+                    self.assertEqual(data["status"], "REJECTED")
+                    self.assertEqual(data["reason"], "MISSING_MARKET_DATA")
+                    self.assertEqual(data["coverage_ratio"], 0.0)
+
+            # Case B: Market DB returns 10 of 35 symbols -> HTTP 422 with INCOMPLETE_UNIVERSE_COVERAGE
+            with patch("analyst_dashboard.vcp.session_guard.evaluate_natural_session_eligibility", side_effect=mock_eval_fn):
+                with patch("api.routes.screener.vcp_scanner_runner.market_db") as mock_mdb:
+                    call_count = [0]
+                    def mock_price_partial(sym):
+                        call_count[0] += 1
+                        if call_count[0] <= 10:
+                            return {"currentPrice": 100.0, "date": session_date}
+                        return {"currentPrice": 100.0, "date": "2026-07-14"}
+                    mock_mdb.get_latest_price.side_effect = mock_price_partial
+                    res = self.client.post(
+                        "/api/v1/screener/vcp/natural-scan",
+                        headers={"X-Scheduler-Token": "test-secret-123"},
+                        json={"scheduled_date": session_date},
+                    )
+                    self.assertEqual(res.status_code, 422)
+                    data = res.json()["detail"]
+                    self.assertEqual(data["status"], "REJECTED")
+                    self.assertEqual(data["reason"], "INCOMPLETE_UNIVERSE_COVERAGE")
+                    self.assertLess(data["coverage_ratio"], 0.90)
 
 
 class TestSessionLevelIdempotencyAndCoordination(unittest.TestCase):
@@ -337,6 +452,24 @@ class TestGitHubActionsWorkflowValidation(unittest.TestCase):
         job = jobs["trigger-natural-scan"]
         self.assertEqual(job["environment"], "production")
         self.assertLessEqual(job["timeout-minutes"], 5)
+
+    def test_workflow_target_url_and_response_contract_validation(self):
+        wf_path = os.path.abspath(".github/workflows/vcp-natural-scheduler.yml")
+        with open(wf_path, "r", encoding="utf-8") as f:
+            wf_content = f.read()
+
+        # P1-02: Target URL verification
+        self.assertIn("web-production-e370b.up.railway.app", wf_content)
+        self.assertIn("vars.ARX_API_BASE_URL", wf_content)
+        self.assertIn("https://", wf_content)
+        self.assertNotIn("arx-terminal-production.up.railway.app", wf_content)
+
+        # P1-03: Response contract assertions
+        self.assertIn('STATUS=$(echo "$RESPONSE_BODY" | jq -r \'.status // empty\' 2>/dev/null)', wf_content)
+        self.assertIn('[ "$STATUS" != "SUCCESS" ]', wf_content)
+        self.assertIn('[ -z "$SNAP_ID" ]', wf_content)
+        self.assertIn('[ "$CANDIDATE_ID" != "CANDIDATE_GENERATION_004" ]', wf_content)
+        self.assertIn('[ "$PUB_STATUS" != "PUBLISH" ]', wf_content)
 
 
 if __name__ == "__main__":

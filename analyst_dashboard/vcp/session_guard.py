@@ -323,11 +323,26 @@ def evaluate_natural_session_eligibility(
 
     # 4. Optional Market Data Freshness & Completeness Check
     coverage_ratio = 1.0
-    if check_data_freshness and market_db is not None and universe_symbols:
+    if check_data_freshness:
+        if market_db is None or not universe_symbols:
+            return MarketSessionEligibilityResult(
+                is_eligible=False,
+                reason="DATA_AUTHORITY_UNAVAILABLE",
+                session_date=target_date_str,
+                session_close_utc=s_close_str,
+                earliest_execution_utc=earliest_str,
+                latest_execution_utc=latest_str,
+                is_early_close=is_early,
+                settlement_buffer_minutes=eff_buffer,
+                evaluated_at_utc=eval_ts_str,
+                coverage_ratio=0.0,
+                detail="Market database engine or universe symbols unavailable for data freshness verification.",
+            )
+
         available_count = 0
         for sym in universe_symbols:
             latest = market_db.get_latest_price(sym.strip().upper())
-            if latest and latest.get("currentPrice") and latest.get("date") == target_date_str:
+            if latest and latest.get("currentPrice") and str(latest.get("date", ""))[:10] == target_date_str:
                 available_count += 1
         
         total = len(universe_symbols)
