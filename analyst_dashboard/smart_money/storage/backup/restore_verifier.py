@@ -68,46 +68,49 @@ class BackupRestoreVerifier:
             with open(local_manifest, "r", encoding="utf-8") as f:
                 manifest = json.load(f)
 
-            # 2. Download globals and dump
-            globals_name = manifest["globals_filename"]
-            dump_name = manifest["dump_filename"]
+            # 2. Download dump (and globals if present)
+            globals_name = manifest.get("globals_filename") or manifest.get("globals_artifact")
+            dump_name = manifest.get("dump_filename") or manifest.get("database_artifact")
 
-            local_globals = os.path.join(tmp_dir, globals_name)
             local_dump = os.path.join(tmp_dir, dump_name)
-
-            self.storage_adapter.download_file(globals_name, local_globals)
             self.storage_adapter.download_file(dump_name, local_dump)
 
-            # Verify digests
-            dl_globals_sha = compute_sha256(local_globals)
             dl_dump_sha = compute_sha256(local_dump)
+            expected_dump_sha = manifest.get("artifact_sha256") or manifest.get("database_sha256")
+            if dl_dump_sha != expected_dump_sha:
+                raise ValueError(
+                    f"DIGEST_MISMATCH_DUMP: Expected {expected_dump_sha}, got {dl_dump_sha}"
+                )
 
-            if dl_globals_sha != manifest["globals_artifact_sha256"]:
-                raise ValueError(
-                    f"DIGEST_MISMATCH_GLOBALS: Expected {manifest['globals_artifact_sha256']}, got {dl_globals_sha}"
-                )
-            if dl_dump_sha != manifest["artifact_sha256"]:
-                raise ValueError(
-                    f"DIGEST_MISMATCH_DUMP: Expected {manifest['artifact_sha256']}, got {dl_dump_sha}"
-                )
+            local_globals = None
+            if globals_name:
+                local_globals = os.path.join(tmp_dir, globals_name)
+                self.storage_adapter.download_file(globals_name, local_globals)
+                dl_globals_sha = compute_sha256(local_globals)
+                expected_globals_sha = manifest.get("globals_artifact_sha256") or manifest.get("globals_sha256")
+                if dl_globals_sha != expected_globals_sha:
+                    raise ValueError(
+                        f"DIGEST_MISMATCH_GLOBALS: Expected {expected_globals_sha}, got {dl_globals_sha}"
+                    )
 
             env = os.environ.copy()
             if conn_info["password"]:
                 env["PGPASSWORD"] = conn_info["password"]
 
-            # 3. Restore Globals via psql
-            psql_bin = find_pg_binary("psql")
-            cmd_globals = [
-                psql_bin,
-                "-h", conn_info["host"],
-                "-p", conn_info["port"],
-                "-U", conn_info["user"],
-                "-d", conn_info["dbname"],
-                "-f", local_globals,
-            ]
-            proc_globals = subprocess.run(cmd_globals, env=env, capture_output=True, text=True)
-            if proc_globals.returncode != 0:
-                logger.warning(f"psql globals restore warnings: {proc_globals.stderr}")
+            # 3. Restore Globals via psql (only if present)
+            if local_globals:
+                psql_bin = find_pg_binary("psql")
+                cmd_globals = [
+                    psql_bin,
+                    "-h", conn_info["host"],
+                    "-p", conn_info["port"],
+                    "-U", conn_info["user"],
+                    "-d", conn_info["dbname"],
+                    "-f", local_globals,
+                ]
+                proc_globals = subprocess.run(cmd_globals, env=env, capture_output=True, text=True)
+                if proc_globals.returncode != 0:
+                    logger.warning(f"psql globals restore warnings: {proc_globals.stderr}")
 
             # 4. Restore Database via pg_restore
             pg_restore_bin = find_pg_binary("pg_restore")
@@ -161,6 +164,7 @@ class BackupRestoreVerifier:
                         "tables_count": table_count,
                         "triggers_count": trigger_count,
                         "active_snapshot_id": active_snap_id,
+                        "globals_restored": bool(local_globals),
                         "application_read_successful": bool(active_snap is not None),
                         "verification_duration_sec": round(time.time() - start_time, 3),
                         "verified_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

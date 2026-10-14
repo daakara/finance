@@ -50,7 +50,7 @@ class TestCloudflareR2ConfigurationResolution:
         assert adapter.is_external() is True
 
     def test_missing_credentials_fallback_to_local(self, monkeypatch):
-        # Clear all S3/R2 variables
+        # Clear all S3/R2 variables and provider
         for k in list(os.environ.keys()):
             if "BACKUP" in k or "R2" in k or "S3" in k:
                 monkeypatch.delenv(k, raising=False)
@@ -59,6 +59,26 @@ class TestCloudflareR2ConfigurationResolution:
         assert isinstance(adapter, LocalOffVolumeStorageAdapter)
         assert adapter.is_external() is False
         assert adapter.provider_name == "local_off_volume"
+
+    def test_r2_missing_credentials_fails_closed(self, monkeypatch):
+        monkeypatch.setenv("ARX_BACKUP_PROVIDER", "cloudflare_r2")
+        monkeypatch.delenv("ARX_BACKUP_BUCKET", raising=False)
+        monkeypatch.delenv("ARX_R2_ACCESS_KEY_ID", raising=False)
+        monkeypatch.delenv("ARX_R2_SECRET_ACCESS_KEY", raising=False)
+
+        with pytest.raises(ValueError) as exc_info:
+            get_backup_storage_adapter()
+        assert "EXTERNAL_BACKUP_CONFIG_ERROR" in str(exc_info.value)
+        assert "Fail-closed: silent fallback to local storage is strictly prohibited" in str(exc_info.value)
+
+    def test_external_mandatory_without_credentials_fails_closed(self, monkeypatch):
+        monkeypatch.setenv("ARX_BACKUP_EXTERNAL_MANDATORY", "true")
+        monkeypatch.delenv("ARX_BACKUP_BUCKET", raising=False)
+        monkeypatch.delenv("ARX_R2_ACCESS_KEY_ID", raising=False)
+
+        with pytest.raises(ValueError) as exc_info:
+            get_backup_storage_adapter()
+        assert "EXTERNAL_BACKUP_CONFIG_ERROR" in str(exc_info.value)
 
 
 class TestR2StorageOperationsMocked:
@@ -139,6 +159,26 @@ class TestR2StorageOperationsMocked:
             Bucket="arx-smart-money-backups",
             Key="rehearsal/manifest_backup1.json",
         )
+
+    def test_download_tampering_raises_ioerror(self, mock_s3_adapter, tmp_path):
+        dest_file = tmp_path / "downloaded.dump"
+
+        mock_client = MagicMock()
+        # Mock download_file writing corrupted bytes
+        def fake_download(bucket, key, path):
+            with open(path, "wb") as f:
+                f.write(b"CORRUPTED_BYTES_FROM_TAMPERED_NETWORK")
+        mock_client.download_file.side_effect = fake_download
+        # Mock head_object returning an expected sha for the original valid content
+        mock_client.head_object.return_value = {
+            "Metadata": {"sha256": "original_valid_sha256_that_does_not_match"}
+        }
+        mock_s3_adapter._s3_client = mock_client
+
+        with pytest.raises(IOError) as exc_info:
+            mock_s3_adapter.download_file("test.dump", str(dest_file))
+        assert "DOWNLOAD_CORRUPTION" in str(exc_info.value)
+        assert not os.path.exists(str(dest_file))
 
 
 class TestRetentionPruningProtection:

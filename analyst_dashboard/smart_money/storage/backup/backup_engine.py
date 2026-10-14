@@ -90,9 +90,17 @@ class SmartMoneyBackupEngine:
             "dbname": parsed.path.lstrip("/") or "postgres",
         }
 
-    def create_backup(self, custom_backup_id: Optional[str] = None) -> Dict[str, Any]:
+    def create_backup(
+        self,
+        custom_backup_id: Optional[str] = None,
+        include_globals: bool = False,
+    ) -> Dict[str, Any]:
         """
         Executes a complete, consistent backup cycle.
+        For routine scheduled backups, include_globals=False (pg_dump -Fc only),
+        which eliminates any superuser requirement and protects cluster credentials.
+        Cluster globals (pg_dumpall --globals-only) are reserved for exceptional
+        administrative exports when explicitly requested (include_globals=True).
         Returns the verified backup manifest.
         """
         started_at = datetime.utcnow().isoformat() + "Z"
@@ -111,12 +119,12 @@ class SmartMoneyBackupEngine:
             # Query database server version
             with lock_conn.cursor() as cur:
                 cur.execute("SHOW server_version;")
-                pg_version_str = cur.fetchone()[0]
+                pg_version_str = str(cur.fetchone()[0])
 
             # 2. Setup isolated temporary directory for raw capture
             with tempfile.TemporaryDirectory(prefix="arx_backup_tmp_") as tmp_dir:
-                globals_filename = f"globals_{backup_id}.sql"
-                globals_local_path = os.path.join(tmp_dir, globals_filename)
+                globals_filename = f"globals_{backup_id}.sql" if include_globals else None
+                globals_local_path = os.path.join(tmp_dir, globals_filename) if globals_filename else None
 
                 dump_filename = f"smart_money_{backup_id}.dump"
                 dump_local_path = os.path.join(tmp_dir, dump_filename)
@@ -129,22 +137,27 @@ class SmartMoneyBackupEngine:
                 if conn_info["password"]:
                     env["PGPASSWORD"] = conn_info["password"]
 
-                # 3. Capture Cluster Globals via pg_dumpall --globals-only
-                pg_dumpall_bin = find_pg_binary("pg_dumpall")
-                cmd_globals = [
-                    pg_dumpall_bin,
-                    "-h", conn_info["host"],
-                    "-p", conn_info["port"],
-                    "-U", conn_info["user"],
-                    "--globals-only",
-                    "-f", globals_local_path,
-                ]
-                proc_globals = subprocess.run(cmd_globals, env=env, capture_output=True, text=True)
-                if proc_globals.returncode != 0:
-                    raise RuntimeError(f"PG_DUMPALL_FAILED: {proc_globals.stderr}")
+                # 3. Capture Cluster Globals via pg_dumpall --globals-only (only if requested)
+                globals_sha = None
+                globals_size = 0
+                receipt_globals = None
+                if include_globals:
+                    pg_dumpall_bin = find_pg_binary("pg_dumpall")
+                    cmd_globals = [
+                        pg_dumpall_bin,
+                        "-h", conn_info["host"],
+                        "-p", conn_info["port"],
+                        "-U", conn_info["user"],
+                        "--globals-only",
+                        "-f", globals_local_path,
+                    ]
+                    proc_globals = subprocess.run(cmd_globals, env=env, capture_output=True, text=True)
+                    if proc_globals.returncode != 0:
+                        raise RuntimeError(f"PG_DUMPALL_FAILED: {proc_globals.stderr}")
 
-                globals_sha = compute_sha256(globals_local_path)
-                globals_size = os.path.getsize(globals_local_path)
+                    globals_sha = compute_sha256(globals_local_path)
+                    globals_size = os.path.getsize(globals_local_path)
+                    receipt_globals = self.storage_adapter.upload_file(globals_local_path, globals_filename)
 
                 # 4. Capture Database Custom Dump via pg_dump -Fc
                 pg_dump_bin = find_pg_binary("pg_dump")
@@ -166,11 +179,15 @@ class SmartMoneyBackupEngine:
                 dump_sha = compute_sha256(dump_local_path)
                 dump_size = os.path.getsize(dump_local_path)
 
-                # 5. Upload artifacts to storage adapter
-                receipt_globals = self.storage_adapter.upload_file(globals_local_path, globals_filename)
+                # 5. Upload database dump to storage adapter
                 receipt_dump = self.storage_adapter.upload_file(dump_local_path, dump_filename)
 
                 completed_at = datetime.utcnow().isoformat() + "Z"
+
+                # Verification check: dump must match, and globals (if included) must match
+                is_upload_verified = bool(receipt_dump.get("sha256") == dump_sha)
+                if include_globals and receipt_globals:
+                    is_upload_verified = bool(is_upload_verified and receipt_globals.get("sha256") == globals_sha)
 
                 # 6. Build Manifest
                 manifest = {
@@ -197,7 +214,8 @@ class SmartMoneyBackupEngine:
                     "storage_destination": self.storage_adapter.get_storage_destination(),
                     "dump_filename": dump_filename,
                     "globals_filename": globals_filename,
-                    "upload_verified": bool(receipt_dump.get("sha256") == dump_sha and receipt_globals.get("sha256") == globals_sha),
+                    "include_globals": include_globals,
+                    "upload_verified": is_upload_verified,
                     "restore_verified": False,
                     "is_external": self.storage_adapter.is_external(),
                     "restore_validation_status": "PENDING_VERIFICATION",
@@ -223,6 +241,7 @@ class SmartMoneyBackupEngine:
                             "dump_size": dump_size,
                             "dump_sha": dump_sha,
                             "globals_sha": globals_sha,
+                            "include_globals": include_globals,
                             "destination": manifest["storage_destination"],
                             "is_external": manifest["is_external"],
                         }),
@@ -230,7 +249,7 @@ class SmartMoneyBackupEngine:
                     ))
                 lock_conn.commit()
 
-                logger.info(f"Backup {backup_id} completed successfully (dump={dump_size} bytes, sha={dump_sha[:12]}...).")
+                logger.info(f"Backup {backup_id} completed successfully (dump={dump_size} bytes, sha={dump_sha[:12]}..., globals={include_globals}).")
                 return manifest
 
         finally:

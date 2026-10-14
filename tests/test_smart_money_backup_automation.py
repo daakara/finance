@@ -94,18 +94,38 @@ def storage_adapter(backup_dir):
 class TestBackupEngineExecution:
     """Verifies that the automated backup engine captures dumps and generates manifests."""
 
-    def test_create_backup_generates_verified_artifacts(self, pg_source_uri, storage_adapter):
+    def test_create_backup_generates_verified_artifacts_routine(self, pg_source_uri, storage_adapter):
+        """Routine scheduled backup (include_globals=False, unprivileged role capable)."""
         engine = SmartMoneyBackupEngine(dsn=pg_source_uri, storage_adapter=storage_adapter)
-        manifest = engine.create_backup()
+        manifest = engine.create_backup(include_globals=False)
 
         assert manifest["backup_id"].startswith("sm-backup-")
         assert manifest["upload_verified"] is True
+        assert manifest["include_globals"] is False
+        assert manifest["globals_artifact"] is None
+        assert manifest["globals_artifact_sha256"] is None
         assert manifest["schema_version"] == "SMART_MONEY_POSTGRES_SCHEMA_V2"
         assert manifest["artifact_size_bytes"] > 0
         assert len(manifest["artifact_sha256"]) == 64
-        assert len(manifest["globals_artifact_sha256"]) == 64
 
-        # Verify files exist in storage
+        # Verify files exist in storage (dump + manifest, no globals)
+        items = storage_adapter.list_backups()
+        filenames = [x["remote_filename"] for x in items]
+        assert manifest["dump_filename"] in filenames
+        assert f"manifest_{manifest['backup_id']}.json" in filenames
+
+    def test_create_backup_generates_verified_artifacts_with_globals(self, pg_source_uri, storage_adapter):
+        """Administrative backup (include_globals=True, exports cluster globals)."""
+        engine = SmartMoneyBackupEngine(dsn=pg_source_uri, storage_adapter=storage_adapter)
+        manifest = engine.create_backup(include_globals=True)
+
+        assert manifest["backup_id"].startswith("sm-backup-")
+        assert manifest["upload_verified"] is True
+        assert manifest["include_globals"] is True
+        assert manifest["globals_artifact"] is not None
+        assert len(manifest["globals_artifact_sha256"]) == 64
+        assert len(manifest["artifact_sha256"]) == 64
+
         items = storage_adapter.list_backups()
         filenames = [x["remote_filename"] for x in items]
         assert manifest["dump_filename"] in filenames

@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "evidence_id": "ARX_SMART_MONEY_CANDIDATE_006_SECURITY_REMEDIATION_EVIDENCE_V1",
+  "generated_at": "2026-10-14T07:21:00Z",
+  "execution_mode": "SECURITY_REMEDIATION_NONPRODUCTION_RECOVERY_VALIDATION_NO_PRODUCTION_MUTATION",
+  "git_lineage": {
+    "parent_rehearsal_commit": "dc6e5b79c8fb42e6c9029e79d2a4463afac016f4",
+    "parent_tree_sha": "0ffd2e60c32a636ca1eca58216fa952085fcb285",
+    "remediation_branch": "arx/smart-money-candidate-006-r2-security-remediation",
+    "status": "COMMITTED_AND_PUSHED"
+  },
+  "railway_topology": {
+    "project_id": "a339a92a-7236-4ac0-9a3a-d7ad440f9690",
+    "production_environment": {
+      "environment_id": "11cad5e1-358e-430e-84fc-189953cff48a",
+      "active_release_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+      "services_count": 1,
+      "services": ["web"],
+      "database_present": false,
+      "worker_present": false,
+      "mutation_status": "UNTOUCHED_NOT_AUTHORIZED"
+    },
+    "rehearsal_environment": {
+      "environment_id": "7f7e4317-2b76-4a0e-bff1-33227da71e5d",
+      "postgres_service_id": "ac8c4b61-0b3e-42ee-8694-18d24f55aa56",
+      "postgres_version": "16.15",
+      "postgres_volume_id": "53bf30d9-0e66-424d-88df-1ee0e51ac392",
+      "worker_service_id": "929874a7-bcd9-41b3-9bc7-d5cd7720f7bf",
+      "web_service_id": "6b53ad3f-0d59-4a7f-83dc-8731efe48cf5"
+    }
+  },
+  "postgres_role_security": {
+    "target_role": "smart_money_ingestion",
+    "rolsuper": false,
+    "rolcreaterole": false,
+    "rolcreatedb": false,
+    "pg_authid_access_permitted": false,
+    "credentials_rotated": true,
+    "rotation_algorithm": "CSPRNG_48_CHARS",
+    "affected_roles_rotated": [
+      "smart_money_ingestion",
+      "smart_money_web",
+      "smart_money_migration"
+    ],
+    "railway_env_vars_updated": [
+      "smart-money-worker-rehearsal",
+      "smart-money-web-rehearsal"
+    ],
+    "verification_query_result": "ERROR: permission denied for table pg_authid"
+  },
+  "backup_custody_cloudflare_r2": {
+    "provider": "cloudflare_r2",
+    "bucket_name": "arx-smart-money-backups",
+    "prefix": "rehearsal/",
+    "production_prefix_untouched": true,
+    "public_access_disabled": true,
+    "active_backup_manifest": "manifest_sm-backup-20261014T043528Z-5dd9c1c8.json",
+    "active_backup_dump": "smart_money_sm-backup-20261014T043528Z-5dd9c1c8.dump",
+    "dump_sha256": "4b68071853fc9f874c76aa5008034509bc9277f9c8da51280fcb16751240cbb8",
+    "globals_purged_from_r2": [
+      "rehearsal/globals_sm-backup-20261014T042743Z-1a478c07.sql",
+      "rehearsal/globals_sm-backup-20261014T043528Z-5dd9c1c8.sql"
+    ],
+    "fail_closed_adapter_verified": true,
+    "zero_silent_fallback_enforced": true
+  },
+  "scheduled_execution": {
+    "thread_name": "SmartMoneyBackupSchedulerThread",
+    "interval_seconds": 21600,
+    "cadence": "6_HOURS",
+    "retention_policy_days": 30,
+    "min_backups_floor": 10,
+    "final_recovery_point_protected": true,
+    "ssh_required": false,
+    "autonomous_container_execution": true
+  },
+  "independent_infrastructure_recovery": {
+    "status": "INDEPENDENT_INFRASTRUCTURE_RECOVERY_PENDING_OWNER_APPROVAL",
+    "blocker_reason": "pg_dump 16.15 custom archive version 1.16 requires PostgreSQL 16.15+ target. Local pgserver is version 16.2. Provisioning cloud PostgreSQL 16.15 incurs paid Railway infrastructure costs which requires explicit owner approval.",
+    "restore_script_ready": "docs/releases/candidate_006/bootstrap_cluster_roles.sql",
+    "rehearsal_restore_verified": true
+  },
+  "test_execution_summary": {
+    "total_tests_run": 47,
+    "total_tests_passed": 47,
+    "total_tests_failed": 0,
+    "suites": {
+      "test_smart_money_worker_lease_recovery.py": "8/8 PASS",
+      "test_smart_money_candidate_006_readiness_adversarial.py": "7/7 PASS",
+      "test_smart_money_backup_automation.py": "5/5 PASS",
+      "test_smart_money_r2_adapter_compatibility.py": "10/10 PASS",
+      "test_smart_money_backup_security_adversarial.py": "10/10 PASS",
+      "test_smart_money_sole_owner_fido2_governance.py": "7/7 PASS"
+    }
+  },
+  "governance_reconciliation": {
+    "normative_protocol": "ARX_SOLE_OWNER_TEMPORARY_FIDO2_SUSPENSION_V1",
+    "historical_fido2_status": "SUSPENDED_NOT_CLAIMED",
+    "historical_council_status": "SUPERSEDED",
+    "mfa_binding_required": true,
+    "exact_sha_binding_required": true,
+    "gate_12_intact": true
+  },
+  "verdict": "ARX_SMART_MONEY_SECURITY_REMEDIATED_INFRASTRUCTURE_PENDING",
+  "authorization_boundary": {
+    "production_deployment": "NOT_AUTHORIZED",
+    "production_database_provisioning": "NOT_AUTHORIZED",
+    "production_schema_migration": "NOT_AUTHORIZED",
+    "production_sec_ingestion_changes": "NOT_AUTHORIZED"
+  }
+}

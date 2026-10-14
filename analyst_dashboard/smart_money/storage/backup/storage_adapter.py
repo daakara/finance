@@ -230,6 +230,25 @@ class S3CompatibleStorageAdapter(BackupStorageAdapter):
         os.makedirs(os.path.dirname(os.path.abspath(local_dest_path)), exist_ok=True)
 
         s3.download_file(self.bucket, key, local_dest_path)
+
+        # Post-download verification
+        try:
+            head = s3.head_object(Bucket=self.bucket, Key=key)
+            expected_sha = head.get("Metadata", {}).get("sha256")
+            if expected_sha:
+                actual_sha = compute_sha256(local_dest_path)
+                if actual_sha != expected_sha:
+                    if os.path.exists(local_dest_path):
+                        os.remove(local_dest_path)
+                    raise IOError(
+                        f"DOWNLOAD_CORRUPTION: SHA-256 mismatch downloading {remote_filename} "
+                        f"(expected {expected_sha}, got {actual_sha})"
+                    )
+        except Exception as e:
+            if isinstance(e, IOError):
+                raise
+            logger.debug(f"Could not verify metadata SHA-256 for {remote_filename}: {e}")
+
         return local_dest_path
 
     def list_backups(self) -> List[Dict[str, Any]]:
@@ -264,9 +283,11 @@ def get_backup_storage_adapter(override_dir: Optional[str] = None) -> BackupStor
     Factory resolving the appropriate storage adapter.
     Supports Cloudflare R2 (ARX_BACKUP_PROVIDER=cloudflare_r2 or ARX_R2_* variables)
     as well as generic S3-compatible providers.
-    Falls back safely to LocalOffVolumeStorageAdapter when remote credentials are absent.
+    Enforces FAIL-CLOSED semantics when external custody is configured or mandatory:
+    silent fallback to local storage is strictly prohibited.
     """
     provider = os.environ.get("ARX_BACKUP_PROVIDER", "").strip().lower()
+    external_mandatory = os.environ.get("ARX_BACKUP_EXTERNAL_MANDATORY", "").strip().lower() in ("true", "1", "yes")
 
     # Bucket resolution
     bucket = (
@@ -301,7 +322,24 @@ def get_backup_storage_adapter(override_dir: Optional[str] = None) -> BackupStor
     provider_name = "cloudflare_r2" if is_r2 else "s3"
     region = "auto" if is_r2 else os.environ.get("SMART_MONEY_BACKUP_S3_REGION", "us-west-2")
 
-    if bucket and endpoint and access_key and secret_key:
+    # If external provider is requested or external custody is mandatory: FAIL-CLOSED
+    if provider in ("cloudflare_r2", "s3") or external_mandatory:
+        missing = []
+        if not bucket:
+            missing.append("bucket (ARX_BACKUP_BUCKET / SMART_MONEY_BACKUP_S3_BUCKET)")
+        if not endpoint:
+            missing.append("endpoint (ARX_R2_ENDPOINT / ARX_R2_ACCOUNT_ID / SMART_MONEY_BACKUP_S3_ENDPOINT)")
+        if not access_key:
+            missing.append("access_key (ARX_R2_ACCESS_KEY_ID / SMART_MONEY_BACKUP_S3_ACCESS_KEY)")
+        if not secret_key:
+            missing.append("secret_key (ARX_R2_SECRET_ACCESS_KEY / SMART_MONEY_BACKUP_S3_SECRET_KEY)")
+
+        if missing:
+            raise ValueError(
+                f"EXTERNAL_BACKUP_CONFIG_ERROR: Missing required {provider_name} configuration: {', '.join(missing)}. "
+                f"Fail-closed: silent fallback to local storage is strictly prohibited."
+            )
+
         try:
             adapter = S3CompatibleStorageAdapter(
                 bucket=bucket,
@@ -314,7 +352,14 @@ def get_backup_storage_adapter(override_dir: Optional[str] = None) -> BackupStor
             adapter.provider_name = provider_name
             return adapter
         except Exception as e:
-            logger.warning(f"Could not initialize {provider_name} adapter ({e}); falling back to local off-volume adapter.")
+            raise RuntimeError(
+                f"EXTERNAL_BACKUP_INIT_ERROR: Failed to initialize {provider_name} adapter ({e}). "
+                f"Fail-closed: silent fallback to local storage is strictly prohibited."
+            ) from e
+
+    # Only when provider is explicitly 'local' or empty and external is not mandatory
+    if provider and provider != "local":
+        raise ValueError(f"UNSUPPORTED_BACKUP_PROVIDER: Unknown backup provider '{provider}'")
 
     base_dir = override_dir or os.environ.get(
         "SMART_MONEY_BACKUP_DIR",

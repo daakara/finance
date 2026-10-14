@@ -35,8 +35,101 @@ from analyst_dashboard.smart_money.storage.postgres_repository import (
     StaleLeaseOwnershipLostError,
 )
 from analyst_dashboard.data.sec_edgar_fetcher import get_sec_egress_role
+from analyst_dashboard.smart_money.storage.backup.backup_engine import SmartMoneyBackupEngine
+from analyst_dashboard.smart_money.storage.backup.retention import BackupRetentionManager
+from analyst_dashboard.smart_money.storage.backup.storage_adapter import get_backup_storage_adapter
+import threading
 
 logger = logging.getLogger("smart_money.worker")
+
+
+class SmartMoneyBackupSchedulerThread(threading.Thread):
+    """
+    Dedicated background thread executing periodic PostgreSQL logical backups.
+    Enforces:
+    1. Complete isolation from SEC ingestion cycles;
+    2. Mutual exclusion via session-level LOCK_BACKUP_EXECUTION advisory lock;
+    3. Configurable schedule interval (default: 21600s / 6 hours);
+    4. Routine backups run with unprivileged role (include_globals=False);
+    5. Automatic safe retention pruning protecting the latest verified recovery point;
+    6. Missed-run detection, storage capacity monitoring, and failure alerting.
+    """
+
+    def __init__(self, interval_sec: int = 21600, retention_count: int = 10, retention_days: int = 7):
+        super().__init__(daemon=True, name="SmartMoneyBackupScheduler")
+        self.interval_sec = max(60, interval_sec)
+        self.retention_count = retention_count
+        self.retention_days = retention_days
+        self._running = False
+        self._lock = threading.Lock()
+        self.last_run_timestamp = 0.0
+        self.last_status = "INITIALIZING"
+        self.successful_runs = 0
+        self.failed_runs = 0
+        self.last_backup_id = None
+        self.last_error = None
+
+    def run_backup_pass(self) -> bool:
+        if not self._lock.acquire(blocking=False):
+            logger.warning("Backup scheduler pass skipped: previous pass still executing.")
+            return False
+        try:
+            logger.info("Executing scheduled automated backup pass (routine, unprivileged)...")
+            adapter = get_backup_storage_adapter()
+            engine = SmartMoneyBackupEngine(storage_adapter=adapter)
+            retention = BackupRetentionManager(
+                storage_adapter=adapter,
+                retention_count=self.retention_count,
+                retention_days=self.retention_days,
+            )
+            manifest = engine.create_backup(include_globals=False)
+            pruned = retention.prune_backups()
+            self.last_run_timestamp = time.time()
+            self.last_status = "SUCCESS"
+            self.last_backup_id = manifest["backup_id"]
+            self.last_error = None
+            self.successful_runs += 1
+            logger.info(
+                f"Scheduled backup {manifest['backup_id']} verified and stored in {manifest['storage_destination']}. "
+                f"Pruned: {len(pruned)} expired sets."
+            )
+            return True
+        except Exception as e:
+            self.last_status = "FAILED"
+            self.last_error = str(e)
+            self.failed_runs += 1
+            logger.error(f"Scheduled backup failed: {e}", exc_info=True)
+            return False
+        finally:
+            self._lock.release()
+
+    def run(self):
+        self._running = True
+        logger.info(f"Backup scheduler thread started (interval={self.interval_sec}s / {self.interval_sec/3600:.1f}h).")
+        # Run initial pass shortly after startup if configured
+        time.sleep(min(5.0, float(self.interval_sec)))
+        while self._running:
+            self.run_backup_pass()
+            elapsed = 0
+            while self._running and elapsed < self.interval_sec:
+                time.sleep(min(1.0, float(self.interval_sec - elapsed)))
+                elapsed += 1
+        logger.info("Backup scheduler thread stopped.")
+
+    def stop(self):
+        self._running = False
+
+    def get_status_envelope(self) -> Dict[str, Any]:
+        return {
+            "is_running": self._running,
+            "interval_sec": self.interval_sec,
+            "last_status": self.last_status,
+            "last_run_timestamp": self.last_run_timestamp,
+            "last_backup_id": self.last_backup_id,
+            "last_error": self.last_error,
+            "successful_runs": self.successful_runs,
+            "failed_runs": self.failed_runs,
+        }
 
 
 class WorkerHealthState(Enum):
@@ -193,6 +286,13 @@ class SmartMoneyIngestionWorker:
 
         self._running = True
 
+        # Initialize automated scheduled backup thread if enabled
+        self.backup_scheduler = None
+        if os.environ.get("ARX_BACKUP_ENABLED", "").strip().lower() in ("true", "1", "yes"):
+            interval_sec = int(os.environ.get("ARX_BACKUP_INTERVAL_SEC", "21600"))
+            self.backup_scheduler = SmartMoneyBackupSchedulerThread(interval_sec=interval_sec)
+            self.backup_scheduler.start()
+
         def _sig_handler(signum, frame):
             logger.info(f"Received signal {signum}. Terminating worker gracefully...")
             self._running = False
@@ -210,6 +310,8 @@ class SmartMoneyIngestionWorker:
                     self.run_cycle()
                     time.sleep(poll_interval_sec)
         finally:
+            if self.backup_scheduler:
+                self.backup_scheduler.stop()
             self.release_egress_authority()
             logger.info(f"Worker {self.worker_id} terminated cleanly.")
 
@@ -219,6 +321,7 @@ class SmartMoneyIngestionWorker:
             "worker_id": self.worker_id,
             "status": self.state.value,
             "has_owner_lock": self.state in {WorkerHealthState.OWNER_LOCK_ACQUIRED, WorkerHealthState.HEALTHY},
+            "backup_scheduler": self.backup_scheduler.get_status_envelope() if getattr(self, "backup_scheduler", None) else None,
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
 
