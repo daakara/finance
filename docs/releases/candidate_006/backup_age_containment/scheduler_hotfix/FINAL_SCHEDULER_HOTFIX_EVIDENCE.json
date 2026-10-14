@@ -1,0 +1,70 @@
+{
+  "contract": "ARX_SMART_MONEY_CANDIDATE_006_SCHEDULER_HOTFIX_V1",
+  "generated_at": "2026-10-14T10:10:00Z",
+  "repository": "daakara/finance",
+  "branch": "arx/smart-money-candidate-006-backup-age-containment",
+  "baseline_rehearsal_candidate_sha": "0dd2d8136e157672cdc5f9f645c4bb49f86a6bd0",
+  "baseline_rehearsal_tree_sha": "0261731880772e000e76bc1503086cce0fb39f05",
+  "rehearsal_environment_id": "7f7e4317-2b76-4a0e-bff1-33227da71e5d",
+  "rehearsal_worker_service_id": "929874a7-bcd9-41b3-9bc7-d5cd7720f7bf",
+  "rehearsal_web_service_id": "6b53ad3f-0d59-4a7f-83dc-8731efe48cf5",
+  "prior_rehearsal_verdict": "CANDIDATE_006_RAILWAY_REHEARSAL_CONDITIONAL",
+  "hotfix_verdict": "SCHEDULER_HOTFIX_LOCAL_VERIFIED",
+  "security_containment_triage": {
+    "exposure_vector": "Orchestration tool arguments in prior rehearsal transcript",
+    "git_exposure_audit": "CLEAN_ZERO_CREDENTIALS_COMMITTED",
+    "production_environment_sharing": "NEGATIVE_PRODUCTION_CONTAINS_ZERO_R2_VARIABLES",
+    "r2_unauthorized_operations_audit": "CLEAN_SIX_AUTHORIZED_REHEARSAL_OBJECTS_ONLY",
+    "rotation_status": "PLAN_PREPARED_AWAITING_OWNER_AUTHORIZATION"
+  },
+  "scheduler_defect_remediation": {
+    "file_modified": "analyst_dashboard/smart_money/worker.py",
+    "exception_resolved": "NameError: name 'get_backup_storage_adapter' is not defined",
+    "root_cause": "Missing import in worker.py import block; omitted from initial thread definition",
+    "changes_made": [
+      "Imported get_backup_storage_adapter and BackupStorageAdapter at line 38",
+      "Added optional storage_adapter parameter to SmartMoneyBackupSchedulerThread.__init__",
+      "Added 100ms responsive loop check for self._running in thread run loop"
+    ],
+    "ast_scope_audit": {
+      "undefined_names": 0,
+      "unresolved_annotations": 0,
+      "status": "AST_VALIDATED_CLEAN"
+    }
+  },
+  "test_verification": {
+    "new_test_suite": "tests/test_smart_money_backup_scheduler_lifecycle.py",
+    "scheduler_lifecycle_tests": {
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "duration_seconds": 1.97
+    },
+    "focused_containment_battery": {
+      "suites": 6,
+      "total": 73,
+      "passed": 73,
+      "failed": 0,
+      "duration_seconds": 12.88
+    },
+    "full_smart_money_battery": {
+      "total": 685,
+      "passed": 685,
+      "failed": 0,
+      "warnings": 1,
+      "duration_seconds": 106.44
+    }
+  },
+  "production_readiness_disproof": {
+    "silent_scheduler_failure_vulnerability": "CONFIRMED_WORKER_HEALTH_INDEPENDENT_UP_TO_12_HOURS",
+    "monitoring_gap": "Scheduler thread liveness and consecutive failures absent from /health",
+    "remediation_status": "MONITORING_HOOK_DESIGNED_READY_FOR_PRE_PRODUCTION_INTEGRATION",
+    "cloud_fault_injection_scope": "CONFIRMED_POINT_IN_TIME_GATE_EVALUATION_NOT_MULTI_DAY_SOAK"
+  },
+  "rehearsal_redeployment_readiness": {
+    "preflight_complete": true,
+    "redeployment_authorized": false,
+    "production_changes_authorized": false,
+    "action_required": "Owner authorization for Cloudflare R2 credential rotation and rehearsal redeployment"
+  }
+}

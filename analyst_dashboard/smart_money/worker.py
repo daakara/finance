@@ -37,6 +37,10 @@ from analyst_dashboard.smart_money.storage.postgres_repository import (
 from analyst_dashboard.data.sec_edgar_fetcher import get_sec_egress_role
 from analyst_dashboard.smart_money.storage.backup.backup_engine import SmartMoneyBackupEngine
 from analyst_dashboard.smart_money.storage.backup.retention import BackupRetentionManager
+from analyst_dashboard.smart_money.storage.backup.storage_adapter import (
+    get_backup_storage_adapter,
+    BackupStorageAdapter,
+)
 from analyst_dashboard.smart_money.storage.backup.freshness_authority import (
     BackupFreshnessAuthority,
     BackupFreshnessState,
@@ -72,12 +76,14 @@ class SmartMoneyBackupSchedulerThread(threading.Thread):
         retention_count: int = 10,
         retention_days: int = 7,
         containment_gate: Optional[BackupAgeContainmentGate] = None,
+        storage_adapter: Optional[BackupStorageAdapter] = None,
     ):
         super().__init__(daemon=True, name="SmartMoneyBackupScheduler")
         self.interval_sec = max(60, interval_sec)
         self.retention_count = retention_count
         self.retention_days = retention_days
         self.containment_gate = containment_gate
+        self.storage_adapter = storage_adapter
         self._running = False
         self._lock = threading.Lock()
         self.last_run_timestamp = 0.0
@@ -95,7 +101,7 @@ class SmartMoneyBackupSchedulerThread(threading.Thread):
             self.containment_gate.mark_backup_in_progress()
         try:
             logger.info("Executing scheduled automated backup pass (routine, unprivileged)...")
-            adapter = get_backup_storage_adapter()
+            adapter = self.storage_adapter or get_backup_storage_adapter()
             engine = SmartMoneyBackupEngine(storage_adapter=adapter)
             retention = BackupRetentionManager(
                 storage_adapter=adapter,
@@ -131,8 +137,12 @@ class SmartMoneyBackupSchedulerThread(threading.Thread):
     def run(self):
         self._running = True
         logger.info(f"Backup scheduler thread started (interval={self.interval_sec}s / {self.interval_sec/3600:.1f}h).")
-        # Run initial pass shortly after startup if configured
-        time.sleep(min(5.0, float(self.interval_sec)))
+        # Run initial pass shortly after startup if configured (responsive to stop)
+        elapsed_startup = 0.0
+        startup_wait = min(5.0, float(self.interval_sec))
+        while self._running and elapsed_startup < startup_wait:
+            time.sleep(0.1)
+            elapsed_startup += 0.1
         while self._running:
             self.run_backup_pass()
             elapsed = 0
