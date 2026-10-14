@@ -29,6 +29,7 @@ from analyst_dashboard.smart_money.storage.postgres_coordination import (
     acquire_sec_owner_lock,
     release_sec_owner_lock,
     LOCK_SEC_EGRESS_OWNER,
+    LOCK_BACKUP_EXECUTION,
 )
 from analyst_dashboard.smart_money.storage.postgres_repository import (
     PostgresSmartMoneyRepository,
@@ -77,6 +78,9 @@ class SmartMoneyBackupSchedulerThread(threading.Thread):
         retention_days: int = 7,
         containment_gate: Optional[BackupAgeContainmentGate] = None,
         storage_adapter: Optional[BackupStorageAdapter] = None,
+        warning_threshold_sec: Optional[float] = None,
+        critical_threshold_sec: Optional[float] = None,
+        max_execution_duration_sec: Optional[float] = None,
     ):
         super().__init__(daemon=True, name="SmartMoneyBackupScheduler")
         self.interval_sec = max(60, interval_sec)
@@ -84,12 +88,23 @@ class SmartMoneyBackupSchedulerThread(threading.Thread):
         self.retention_days = retention_days
         self.containment_gate = containment_gate
         self.storage_adapter = storage_adapter
+        self.warning_threshold_sec = warning_threshold_sec or float(os.environ.get("ARX_BACKUP_WARNING_AGE_SEC", "28800.0"))
+        self.critical_threshold_sec = critical_threshold_sec or float(os.environ.get("ARX_BACKUP_CRITICAL_AGE_SEC", "43200.0"))
+        self.max_execution_duration_sec = max_execution_duration_sec or float(os.environ.get("ARX_BACKUP_MAX_DURATION_SEC", "1800.0"))
         self._running = False
         self._lock = threading.Lock()
+        self.thread_started_at: Optional[float] = None
+        self.last_attempt_timestamp: Optional[float] = None
         self.last_run_timestamp = 0.0
+        self.last_successful_timestamp: Optional[float] = None
         self.last_status = "INITIALIZING"
         self.successful_runs = 0
         self.failed_runs = 0
+        self.consecutive_failures = 0
+        self.startup_completed = False
+        self.startup_error: Optional[str] = None
+        self.lock_held = False
+        self.lock_key = LOCK_BACKUP_EXECUTION
         self.last_backup_id = None
         self.last_error = None
 
@@ -97,6 +112,8 @@ class SmartMoneyBackupSchedulerThread(threading.Thread):
         if not self._lock.acquire(blocking=False):
             logger.warning("Backup scheduler pass skipped: previous pass still executing.")
             return False
+        self.lock_held = True
+        self.last_attempt_timestamp = time.time()
         if self.containment_gate:
             self.containment_gate.mark_backup_in_progress()
         try:
@@ -110,11 +127,15 @@ class SmartMoneyBackupSchedulerThread(threading.Thread):
             )
             manifest = engine.create_backup(include_globals=False)
             pruned = retention.prune_backups()
-            self.last_run_timestamp = time.time()
+            now = time.time()
+            self.last_run_timestamp = now
+            self.last_successful_timestamp = now
             self.last_status = "SUCCESS"
             self.last_backup_id = manifest["backup_id"]
             self.last_error = None
             self.successful_runs += 1
+            self.consecutive_failures = 0
+            self.startup_completed = True
             logger.info(
                 f"Scheduled backup {manifest['backup_id']} verified and stored in {manifest['storage_destination']}. "
                 f"Pruned: {len(pruned)} expired sets."
@@ -127,15 +148,20 @@ class SmartMoneyBackupSchedulerThread(threading.Thread):
             self.last_status = "FAILED"
             self.last_error = str(e)
             self.failed_runs += 1
+            self.consecutive_failures += 1
+            if not self.startup_completed:
+                self.startup_error = str(e)
             logger.error(f"Scheduled backup failed: {e}", exc_info=True)
             return False
         finally:
+            self.lock_held = False
             if self.containment_gate:
                 self.containment_gate.mark_backup_completed()
             self._lock.release()
 
     def run(self):
         self._running = True
+        self.thread_started_at = time.time()
         logger.info(f"Backup scheduler thread started (interval={self.interval_sec}s / {self.interval_sec/3600:.1f}h).")
         # Run initial pass shortly after startup if configured (responsive to stop)
         elapsed_startup = 0.0
@@ -155,15 +181,57 @@ class SmartMoneyBackupSchedulerThread(threading.Thread):
         self._running = False
 
     def get_status_envelope(self) -> Dict[str, Any]:
+        thread_alive = bool(self.is_alive())
+        is_running = bool(self._running)
+        is_alive_and_running = bool(thread_alive and is_running)
+        now = time.time()
+        age_since_last_success = (now - self.last_successful_timestamp) if self.last_successful_timestamp else None
+        is_stale_warning = bool(age_since_last_success and age_since_last_success >= self.warning_threshold_sec)
+        is_stale_critical = bool(age_since_last_success and age_since_last_success >= self.critical_threshold_sec)
+
+        pass_duration_sec = (now - self.last_attempt_timestamp) if (self.lock_held and self.last_attempt_timestamp) else 0.0
+        is_execution_overdue = bool(self.lock_held and pass_duration_sec > self.max_execution_duration_sec)
+
+        time_since_last_attempt = (now - self.last_attempt_timestamp) if self.last_attempt_timestamp else None
+        is_stalled = bool(
+            self.startup_completed
+            and thread_alive
+            and is_running
+            and not self.lock_held
+            and time_since_last_attempt
+            and (time_since_last_attempt > (self.interval_sec * 1.5))
+        )
+
         return {
-            "is_running": self._running,
+            "is_alive": is_alive_and_running,
+            "thread_alive": thread_alive,
+            "is_running": is_running,
+            "thread_running": is_running,
+            "thread_name": self.name,
+            "thread_started_at": self.thread_started_at,
             "interval_sec": self.interval_sec,
+            "warning_threshold_sec": self.warning_threshold_sec,
+            "critical_threshold_sec": self.critical_threshold_sec,
+            "max_execution_duration_sec": self.max_execution_duration_sec,
             "last_status": self.last_status,
+            "last_attempt_timestamp": self.last_attempt_timestamp,
             "last_run_timestamp": self.last_run_timestamp,
-            "last_backup_id": self.last_backup_id,
-            "last_error": self.last_error,
+            "last_successful_timestamp": self.last_successful_timestamp,
+            "age_since_last_success_sec": age_since_last_success,
+            "is_stale_warning": is_stale_warning,
+            "is_stale_critical": is_stale_critical,
+            "consecutive_failures": self.consecutive_failures,
             "successful_runs": self.successful_runs,
             "failed_runs": self.failed_runs,
+            "startup_completed": self.startup_completed,
+            "startup_error": self.startup_error,
+            "lock_held": self.lock_held,
+            "lock_key": self.lock_key,
+            "pass_duration_sec": pass_duration_sec,
+            "is_execution_overdue": is_execution_overdue,
+            "is_stalled": is_stalled,
+            "last_backup_id": self.last_backup_id,
+            "last_error": self.last_error,
         }
 
 
@@ -409,13 +477,80 @@ class SmartMoneyIngestionWorker:
             logger.info(f"Worker {self.worker_id} terminated cleanly.")
 
     def get_health_envelope(self) -> Dict[str, Any]:
-        """Returns machine-readable health envelope."""
+        """
+        Returns standardized machine-readable composite health envelope.
+        Differentiates worker process health from backup subsystem health.
+        Zero secrets or connection strings exposed.
+        """
+        scheduler_envelope = (
+            self.backup_scheduler.get_status_envelope()
+            if getattr(self, "backup_scheduler", None)
+            else None
+        )
+        containment_envelope = (
+            self.containment_gate.get_observability_envelope()
+            if getattr(self, "containment_gate", None)
+            else None
+        )
+
+        worker_subsystem_healthy = self.state in {
+            WorkerHealthState.OWNER_LOCK_ACQUIRED,
+            WorkerHealthState.HEALTHY,
+        }
+
+        degradation_reasons: List[str] = []
+        backup_subsystem_healthy = True
+
+        if getattr(self, "backup_scheduler", None) and scheduler_envelope:
+            is_running = scheduler_envelope.get("is_running", scheduler_envelope.get("thread_running", False))
+            is_alive = scheduler_envelope.get("is_alive", False)
+            if not is_alive and is_running:
+                backup_subsystem_healthy = False
+                degradation_reasons.append("SCHEDULER_THREAD_TERMINATED")
+            if scheduler_envelope.get("consecutive_failures", 0) > 0:
+                backup_subsystem_healthy = False
+                degradation_reasons.append(f"CONSECUTIVE_BACKUP_FAILURES_{scheduler_envelope.get('consecutive_failures')}")
+            if scheduler_envelope.get("startup_error"):
+                backup_subsystem_healthy = False
+                degradation_reasons.append("SCHEDULER_STARTUP_FAILED")
+            if scheduler_envelope.get("is_execution_overdue"):
+                backup_subsystem_healthy = False
+                degradation_reasons.append("BACKUP_EXECUTION_OVERDUE")
+            if scheduler_envelope.get("is_stalled"):
+                backup_subsystem_healthy = False
+                degradation_reasons.append("SCHEDULER_STALLED_NO_PROGRESS")
+            if scheduler_envelope.get("is_stale_warning"):
+                degradation_reasons.append("BACKUP_FRESHNESS_WARNING")
+
+        if containment_envelope:
+            crit_thresh = (
+                scheduler_envelope.get("critical_threshold_sec", 43200.0)
+                if scheduler_envelope
+                else 43200.0
+            )
+            age = containment_envelope.get("latest_verified_backup_age_seconds")
+            if age is not None and age >= crit_thresh:
+                backup_subsystem_healthy = False
+                degradation_reasons.append("BACKUP_FRESHNESS_CRITICAL")
+            if containment_envelope.get("current_state") == "INGESTION_SUSPENDED":
+                backup_subsystem_healthy = False
+                degradation_reasons.append("CONTAINMENT_GATE_SUSPENDED")
+
+        if not worker_subsystem_healthy:
+            degradation_reasons.append(f"WORKER_STATE_{self.state.value}")
+
+        overall_healthy = worker_subsystem_healthy and backup_subsystem_healthy
+
         return {
             "worker_id": self.worker_id,
             "status": self.state.value,
-            "has_owner_lock": self.state in {WorkerHealthState.OWNER_LOCK_ACQUIRED, WorkerHealthState.HEALTHY},
-            "backup_scheduler": self.backup_scheduler.get_status_envelope() if getattr(self, "backup_scheduler", None) else None,
-            "containment": self.containment_gate.get_observability_envelope(),
+            "overall_healthy": overall_healthy,
+            "worker_subsystem_healthy": worker_subsystem_healthy,
+            "backup_subsystem_healthy": backup_subsystem_healthy,
+            "has_owner_lock": worker_subsystem_healthy,
+            "degradation_reasons": degradation_reasons,
+            "backup_scheduler": scheduler_envelope,
+            "containment": containment_envelope,
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
 

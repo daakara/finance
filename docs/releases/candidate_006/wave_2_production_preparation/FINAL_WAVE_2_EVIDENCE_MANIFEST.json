@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "manifest_id": "MANIFEST-CANDIDATE-006-WAVE-2-20261014",
+  "generated_at": "2026-10-14T13:08:25Z",
+  "candidate": {
+    "name": "Candidate 006 — Smart Money Backup-Age Containment & Scheduler Observability",
+    "application_base_sha": "1cc9fa886d28908270df4794e64536d4cb1948e2",
+    "remote_head_sha": "1693e2c0f39cb1276e5d44b22673b0db89c5f8bf",
+    "branch": "arx/smart-money-candidate-006-backup-age-containment",
+    "repository": "daakara/finance"
+  },
+  "runtime_environment": {
+    "railway_project_id": "a339a92a-7236-4ac0-9a3a-d7ad440f9690",
+    "rehearsal_environment_id": "7f7e4317-2b76-4a0e-bff1-33227da71e5d",
+    "rehearsal_worker_deployment_id": "89d26e9b-ac0d-4b59-9c6b-549a46522d62",
+    "rehearsal_web_deployment_id": "3f699880-6818-473f-9c69-6f2e5b82f820"
+  },
+  "test_battery": {
+    "total_tests": 101,
+    "total_passed": 101,
+    "total_failed": 0,
+    "suites": [
+      {
+        "file": "tests/test_smart_money_backup_scheduler_lifecycle.py",
+        "tests": 14,
+        "passed": 14,
+        "failed": 0,
+        "execution_time_sec": 8.11
+      },
+      {
+        "file": "tests/test_smart_money_backup_containment_adversarial.py",
+        "tests": 19,
+        "passed": 19,
+        "failed": 0
+      },
+      {
+        "file": "tests/test_smart_money_backup_containment_fault_injection.py",
+        "tests": 16,
+        "passed": 16,
+        "failed": 0
+      },
+      {
+        "file": "tests/test_smart_money_backup_checksum_integrity_adversarial.py",
+        "tests": 12,
+        "passed": 12,
+        "failed": 0
+      },
+      {
+        "file": "tests/test_smart_money_backup_security_adversarial.py",
+        "tests": 12,
+        "passed": 12,
+        "failed": 0
+      },
+      {
+        "file": "tests/test_smart_money_backup_timestamp_authority_adversarial.py",
+        "tests": 12,
+        "passed": 12,
+        "failed": 0
+      },
+      {
+        "file": "tests/test_smart_money_backup_containment_postgres_integration.py",
+        "tests": 11,
+        "passed": 11,
+        "failed": 0
+      },
+      {
+        "file": "tests/test_smart_money_backup_automation.py",
+        "tests": 5,
+        "passed": 5,
+        "failed": 0,
+        "execution_time_sec": 357.61
+      }
+    ]
+  },
+  "workstreams": {
+    "workstream_a_scheduler_observability": {
+      "status": "COMPLETED_LOCAL",
+      "artifacts": [
+        "analyst_dashboard/smart_money/storage/backup/alerting.py",
+        "analyst_dashboard/smart_money/worker.py",
+        "docs/releases/candidate_006/wave_2_production_preparation/SCHEDULER_OBSERVABILITY_DESIGN_AND_IMPLEMENTATION.md",
+        "docs/releases/candidate_006/wave_2_production_preparation/SCHEDULER_LIFECYCLE_REGRESSION_EVIDENCE.md"
+      ]
+    },
+    "workstream_b_backup_recovery_validation": {
+      "status": "COMPLETED_ISOLATED",
+      "artifacts": [
+        "docs/releases/candidate_006/wave_2_production_preparation/BACKUP_RESTORE_VERIFICATION_REPORT.md"
+      ]
+    },
+    "workstream_c_sustained_scheduler_observation": {
+      "status": "NOT_YET_ESTABLISHED",
+      "artifacts": [
+        "docs/releases/candidate_006/wave_2_production_preparation/SUSTAINED_SCHEDULER_OBSERVATION_REPORT.md"
+      ]
+    },
+    "workstream_d_production_release_specification": {
+      "status": "COMPLETED_SPECIFICATION",
+      "artifacts": [
+        "docs/releases/candidate_006/wave_2_production_preparation/PRODUCTION_ARCHITECTURE_AND_COST_SPECIFICATION.md",
+        "docs/releases/candidate_006/wave_2_production_preparation/UPDATED_PRODUCTION_RELEASE_GATE_MATRIX.md"
+      ]
+    },
+    "workstream_e_credential_security_exception_register": {
+      "status": "EXCEPTION_RECORDED",
+      "artifacts": [
+        "docs/releases/candidate_006/wave_2_production_preparation/CREDENTIAL_SECURITY_EXCEPTION_REGISTER.md"
+      ]
+    }
+  },
+  "governance_verdicts": {
+    "engineering_verdict": "WAVE_2_LOCAL_VERIFIED",
+    "production_deployment": "NOT_AUTHORIZED",
+    "production_postgres_provisioning": "NOT_AUTHORIZED",
+    "production_worker_activation": "NOT_AUTHORIZED",
+    "production_cutover": "NOT_AUTHORIZED",
+    "credential_rotation": "DEFERRED_BY_OWNER",
+    "production_use_of_exposed_credential": "STRICTLY_PROHIBITED",
+    "model_tuning": "FROZEN",
+    "empirical_quality": "NOT_ESTABLISHED"
+  }
+}
