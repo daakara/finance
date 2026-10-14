@@ -75,6 +75,14 @@ class LocalOffVolumeStorageAdapter(BackupStorageAdapter):
     def __init__(self, base_directory: str):
         self.base_directory = os.path.abspath(base_directory)
         os.makedirs(self.base_directory, exist_ok=True)
+        self._custom_metadata: Dict[str, Dict[str, Any]] = {}
+
+    def set_custom_metadata(self, remote_filename: str, metadata: Optional[Dict[str, Any]]) -> None:
+        """Allows testing custom, absent, or corrupted remote object metadata."""
+        if metadata is None:
+            self._custom_metadata.pop(remote_filename, None)
+        else:
+            self._custom_metadata[remote_filename] = metadata
 
     def upload_file(self, local_path: str, remote_filename: str) -> Dict[str, Any]:
         if not os.path.exists(local_path):
@@ -159,6 +167,15 @@ class LocalOffVolumeStorageAdapter(BackupStorageAdapter):
         target = os.path.join(self.base_directory, remote_filename)
         if not os.path.exists(target):
             return None
+        if remote_filename in self._custom_metadata:
+            meta = dict(self._custom_metadata[remote_filename])
+            if "size_bytes" not in meta:
+                meta["size_bytes"] = os.path.getsize(target)
+            if "destination" not in meta:
+                meta["destination"] = target
+            if "remote_filename" not in meta:
+                meta["remote_filename"] = remote_filename
+            return meta
         return {
             "remote_filename": remote_filename,
             "size_bytes": os.path.getsize(target),

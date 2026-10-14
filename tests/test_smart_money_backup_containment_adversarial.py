@@ -574,3 +574,62 @@ class TestGovernanceAndCompatibilityVectors:
         """Vector 30: Zero mutation of Radar, VCP, macro, or trading analyzer logic."""
         import analyst_dashboard.analyzers.confluence_engine as ce
         assert hasattr(ce, "ConfluenceEngine")
+
+
+# ==============================================================================
+# SECTION E: SAFETY CONFIGURATION PARSING & FAIL-CLOSED BOUNDARIES
+# ==============================================================================
+
+class TestSafetyConfigurationParsing:
+
+    def test_negative_max_age_fails_closed(self, monkeypatch):
+        monkeypatch.setenv("ARX_BACKUP_MAX_VERIFIED_AGE_SEC", "-100")
+        with pytest.raises(ValueError) as exc:
+            BackupContainmentPolicy.from_environment()
+        assert "INVALID_SAFETY_CONFIG" in str(exc.value)
+
+    def test_zero_max_age_fails_closed(self, monkeypatch):
+        monkeypatch.setenv("ARX_BACKUP_MAX_VERIFIED_AGE_SEC", "0")
+        with pytest.raises(ValueError) as exc:
+            BackupContainmentPolicy.from_environment()
+        assert "INVALID_SAFETY_CONFIG" in str(exc.value)
+
+    def test_nan_or_inf_max_age_fails_closed(self, monkeypatch):
+        for val in ("nan", "NaN", "inf", "-inf", "Infinity"):
+            monkeypatch.setenv("ARX_BACKUP_MAX_VERIFIED_AGE_SEC", val)
+            with pytest.raises(ValueError) as exc:
+                BackupContainmentPolicy.from_environment()
+            assert "INVALID_SAFETY_CONFIG" in str(exc.value)
+
+    def test_malformed_max_age_fails_closed(self, monkeypatch):
+        monkeypatch.setenv("ARX_BACKUP_MAX_VERIFIED_AGE_SEC", "forty-two-thousand")
+        with pytest.raises(ValueError) as exc:
+            BackupContainmentPolicy.from_environment()
+        assert "INVALID_SAFETY_CONFIG" in str(exc.value)
+
+    def test_negative_timeout_fails_closed(self, monkeypatch):
+        monkeypatch.delenv("ARX_BACKUP_MAX_VERIFIED_AGE_SEC", raising=False)
+        monkeypatch.setenv("ARX_BACKUP_FRESHNESS_CHECK_TIMEOUT_SEC", "-5")
+        with pytest.raises(ValueError) as exc:
+            BackupContainmentPolicy.from_environment()
+        assert "INVALID_SAFETY_CONFIG" in str(exc.value)
+
+    def test_negative_recheck_interval_fails_closed(self, monkeypatch):
+        monkeypatch.delenv("ARX_BACKUP_FRESHNESS_CHECK_TIMEOUT_SEC", raising=False)
+        monkeypatch.setenv("ARX_BACKUP_FRESHNESS_RECHECK_INTERVAL_SEC", "-10")
+        with pytest.raises(ValueError) as exc:
+            BackupContainmentPolicy.from_environment()
+        assert "INVALID_SAFETY_CONFIG" in str(exc.value)
+
+    def test_valid_float_parsing_and_metadata_flag(self, monkeypatch):
+        monkeypatch.setenv("ARX_BACKUP_MAX_VERIFIED_AGE_SEC", "21600.5")
+        monkeypatch.setenv("ARX_BACKUP_FRESHNESS_CHECK_TIMEOUT_SEC", "15.0")
+        monkeypatch.setenv("ARX_BACKUP_FRESHNESS_RECHECK_INTERVAL_SEC", "0.0")  # Zero recheck is valid
+        monkeypatch.setenv("ARX_BACKUP_REQUIRE_REMOTE_CHECKSUM_METADATA", "false")
+
+        policy = BackupContainmentPolicy.from_environment()
+        assert policy.max_verified_age_seconds == 21600.5
+        assert policy.check_timeout_seconds == 15.0
+        assert policy.recheck_interval_seconds == 0.0
+        assert policy.require_remote_checksum_metadata is False
+
