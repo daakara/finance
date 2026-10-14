@@ -20,6 +20,8 @@ import tempfile
 import pytest
 from unittest.mock import MagicMock, patch
 
+from datetime import datetime, timezone, timedelta
+
 from analyst_dashboard.smart_money.storage.backup.storage_adapter import (
     get_backup_storage_adapter,
     S3CompatibleStorageAdapter,
@@ -33,8 +35,12 @@ from analyst_dashboard.smart_money.governance_control_plane.sole_owner_policy im
     SoleOwnerGovernanceValidator,
     SoleOwnerReleaseApproval,
     Fido2RequirementStatus,
+    ReleaseApprovalException,
+    ReleaseApprovalExpiredException,
     ReleaseApprovalMissingMfaException,
     ReleaseApprovalMismatchedShaException,
+    ReleaseApprovalMismatchedEnvironmentException,
+    ReleaseApprovalTechnicalPrerequisiteException,
 )
 
 
@@ -234,51 +240,151 @@ class TestRetentionAndGovernanceInvariants:
         assert len(pruned) == 0
         mock_adapter.delete_backup.assert_not_called()
 
-    def test_governance_authorization_bypass_prevention(self):
-        """Vector 9: Approval lacking verifiable MFA or authorization token is rejected."""
-        validator = SoleOwnerGovernanceValidator()
-        invalid_approval = SoleOwnerReleaseApproval(
-            approval_id="appr-bypass-001",
-            policy_id="ARX_SOLE_OWNER_TEMPORARY_FIDO2_SUSPENSION_V1",
-            owner_identity="david@arxterminal.com",
-            target_environment="production",
-            release_sha="c8cc1cda0be5a2a62816d3024b6499515e97101a",
-            approved_at="2026-10-14T05:00:00Z",
-            valid_until="2026-10-14T06:00:00Z",
-            account_mfa_verified=False,  # Unverified MFA must raise exception
-            technical_verification_passed=True,
-            security_verification_passed=True,
-            recovery_verification_passed=True,
-        )
-        with pytest.raises(ReleaseApprovalMissingMfaException):
-            validator.validate_release_authorization(
-                approval=invalid_approval,
-                target_sha="c8cc1cda0be5a2a62816d3024b6499515e97101a",
-                target_environment="production",
-            )
+    @pytest.fixture
+    def deterministic_clock(self):
+        """Injected deterministic clock for test evaluation: 2026-10-14 12:00:00 UTC."""
+        return datetime(2026, 10, 14, 12, 0, 0, tzinfo=timezone.utc)
 
-    def test_candidate_sha_mismatch_detection(self):
-        """Vector 10: Approval for commit A cannot be used to deploy commit B."""
-        validator = SoleOwnerGovernanceValidator()
-        valid_approval = SoleOwnerReleaseApproval(
-            approval_id="appr-valid-001",
+    @pytest.fixture
+    def sample_valid_approval(self, deterministic_clock):
+        """Deterministic valid unexpired release approval fixture."""
+        return SoleOwnerReleaseApproval(
+            approval_id="appr-deterministic-001",
             policy_id="ARX_SOLE_OWNER_TEMPORARY_FIDO2_SUSPENSION_V1",
             owner_identity="david@arxterminal.com",
             target_environment="production",
             release_sha="c8cc1cda0be5a2a62816d3024b6499515e97101a",
-            approved_at="2026-10-14T05:00:00Z",
-            valid_until="2026-10-14T09:00:00Z",
+            approved_at=(deterministic_clock - timedelta(hours=1)).isoformat(),
+            valid_until=(deterministic_clock + timedelta(hours=2)).isoformat(),
             account_mfa_verified=True,
             technical_verification_passed=True,
             security_verification_passed=True,
             recovery_verification_passed=True,
         )
-        # Attempt to deploy mismatched candidate SHA
+
+    def test_governance_authorization_bypass_prevention(self, deterministic_clock, sample_valid_approval):
+        """Vector 9: Approval lacking verifiable MFA is rejected (deterministic clock)."""
+        validator = SoleOwnerGovernanceValidator()
+        invalid_approval = SoleOwnerReleaseApproval(
+            **{**sample_valid_approval.to_dict(), "account_mfa_verified": False}
+        )
+        with pytest.raises(ReleaseApprovalMissingMfaException):
+            validator.validate_release_authorization(
+                approval=invalid_approval,
+                target_sha=invalid_approval.release_sha,
+                target_environment="production",
+                current_time=deterministic_clock,
+            )
+
+    def test_governance_authorization_valid_unexpired_with_mfa(self, deterministic_clock, sample_valid_approval):
+        """Sub-vector 9.1: Valid unexpired approval with valid MFA evidence succeeds deterministically."""
+        validator = SoleOwnerGovernanceValidator()
+        record = validator.validate_release_authorization(
+            approval=sample_valid_approval,
+            target_sha="c8cc1cda0be5a2a62816d3024b6499515e97101a",
+            target_environment="production",
+            current_time=deterministic_clock,
+        )
+        assert record["status"] == "APPROVED"
+        assert record["policy_id"] == "ARX_SOLE_OWNER_TEMPORARY_FIDO2_SUSPENSION_V1"
+        assert record["release_sha"] == "c8cc1cda0be5a2a62816d3024b6499515e97101a"
+        assert record["target_environment"] == "production"
+        assert record["audit_hash"] is not None
+
+    def test_governance_authorization_expired_approval(self, deterministic_clock, sample_valid_approval):
+        """Sub-vector 9.2: Expired approval is rejected deterministically."""
+        validator = SoleOwnerGovernanceValidator()
+        expired_approval = SoleOwnerReleaseApproval(
+            **{
+                **sample_valid_approval.to_dict(),
+                "approved_at": (deterministic_clock - timedelta(hours=5)).isoformat(),
+                "valid_until": (deterministic_clock - timedelta(minutes=1)).isoformat(),
+            }
+        )
+        with pytest.raises(ReleaseApprovalExpiredException):
+            validator.validate_release_authorization(
+                approval=expired_approval,
+                target_sha=expired_approval.release_sha,
+                target_environment="production",
+                current_time=deterministic_clock,
+            )
+
+    def test_governance_authorization_missing_mfa_evidence(self, deterministic_clock, sample_valid_approval):
+        """Sub-vector 9.3: Missing MFA evidence is rejected independently."""
+        validator = SoleOwnerGovernanceValidator()
+        no_mfa = SoleOwnerReleaseApproval(
+            **{**sample_valid_approval.to_dict(), "account_mfa_verified": False}
+        )
+        with pytest.raises(ReleaseApprovalMissingMfaException):
+            validator.validate_release_authorization(
+                approval=no_mfa,
+                target_sha=no_mfa.release_sha,
+                target_environment="production",
+                current_time=deterministic_clock,
+            )
+
+    def test_governance_authorization_invalid_mfa_evidence(self, deterministic_clock, sample_valid_approval):
+        """Sub-vector 9.4: When FIDO2 hardware MFA is active, missing/invalid assertion is rejected."""
+        validator = SoleOwnerGovernanceValidator(status=Fido2RequirementStatus.FIDO2_REQUIRED)
+        no_fido = SoleOwnerReleaseApproval(
+            **{**sample_valid_approval.to_dict(), "fido2_assertion": None}
+        )
+        with pytest.raises(ReleaseApprovalException) as exc_info:
+            validator.validate_release_authorization(
+                approval=no_fido,
+                target_sha=no_fido.release_sha,
+                target_environment="production",
+                current_time=deterministic_clock,
+            )
+        assert "FIDO2_ASSERTION_REQUIRED" in str(exc_info.value)
+
+    def test_governance_authorization_wrong_commit_sha(self, deterministic_clock, sample_valid_approval):
+        """Sub-vector 9.5: Approval bound to the wrong commit SHA is rejected."""
+        validator = SoleOwnerGovernanceValidator()
         with pytest.raises(ReleaseApprovalMismatchedShaException):
             validator.validate_release_authorization(
-                approval=valid_approval,
+                approval=sample_valid_approval,
+                target_sha="wrong_sha_0123456789abcdef0123456789abcdef01",
+                target_environment="production",
+                current_time=deterministic_clock,
+            )
+
+    def test_governance_authorization_outside_permitted_validity_window(self, deterministic_clock, sample_valid_approval):
+        """Sub-vector 9.6: Evaluation outside permitted validity window fails closed."""
+        validator = SoleOwnerGovernanceValidator()
+        future_eval_time = deterministic_clock + timedelta(hours=10)
+        with pytest.raises(ReleaseApprovalExpiredException):
+            validator.validate_release_authorization(
+                approval=sample_valid_approval,
+                target_sha=sample_valid_approval.release_sha,
+                target_environment="production",
+                current_time=future_eval_time,
+            )
+
+    def test_governance_authorization_missing_owner_or_policy_mismatch(self, deterministic_clock, sample_valid_approval):
+        """Sub-vector 9.7: Missing owner authorization policy is rejected."""
+        validator = SoleOwnerGovernanceValidator()
+        unauthorized_policy = SoleOwnerReleaseApproval(
+            **{**sample_valid_approval.to_dict(), "policy_id": "UNAUTHORIZED_ARX_BYPASS_POLICY"}
+        )
+        with pytest.raises(ReleaseApprovalException) as exc_info:
+            validator.validate_release_authorization(
+                approval=unauthorized_policy,
+                target_sha=unauthorized_policy.release_sha,
+                target_environment="production",
+                current_time=deterministic_clock,
+            )
+        assert "POLICY_MISMATCH" in str(exc_info.value)
+
+    def test_candidate_sha_mismatch_detection(self, deterministic_clock, sample_valid_approval):
+        """Vector 10: Approval for commit A cannot be used to deploy commit B."""
+        validator = SoleOwnerGovernanceValidator()
+        with pytest.raises(ReleaseApprovalMismatchedShaException):
+            validator.validate_release_authorization(
+                approval=sample_valid_approval,
                 target_sha="mismatched_sha_1234567890abcdef",
                 target_environment="production",
+                current_time=deterministic_clock,
             )
 
     def test_archive_custom_format_version_compatibility_verification(self, tmp_path):

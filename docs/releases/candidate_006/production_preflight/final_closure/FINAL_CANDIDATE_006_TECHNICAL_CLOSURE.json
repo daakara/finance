@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "document_id": "ARX-DOC-SM-C006-FINAL-TECHNICAL-CLOSURE-JSON-001",
+  "timestamp": "2026-10-14T09:35:00Z",
+  "candidate_identity": {
+    "application_commit_sha": "76a8691339c30edc35e4e056d5b295509a81fe3a",
+    "application_tree_sha": "80309593afb6b1b722bed87c111bf2b58056c688",
+    "active_git_branch": "arx/smart-money-candidate-006-r2-security-remediation",
+    "application_code_mutation_against_candidate_006": 0,
+    "application_code_parity_percentage": 100.0,
+    "rehearsal_environment_id": "7f7e4317-2b76-4a0e-bff1-33227da71e5d",
+    "rehearsal_worker_service_id": "c21d8ff8-e160-449e-b7ca-4b07fb880cb1",
+    "rehearsal_web_service_id": "4b63891d-0453-4dc7-a3a8-44445695029e",
+    "rehearsal_db_service_id": "e1d4b655-2260-4c57-ab13-fdf4be4dfae0"
+  },
+  "production_baseline": {
+    "project_id": "a339a92a-7236-4ac0-9a3a-d7ad440f9690",
+    "environment_id": "11cad5e1-358e-430e-84fc-189953cff48a",
+    "active_web_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+    "active_web_tree_sha": "13d14564baf94eceab215478280241668a9b1d71",
+    "dedicated_database_provisioned": false,
+    "production_mutations_executed": false
+  },
+  "test_execution_matrix": {
+    "deterministic_governance_testing": {
+      "clock_injection_mode": "DETERMINISTIC_FROZEN_TIME",
+      "frozen_timestamp": "2026-10-14T12:00:00Z",
+      "independent_vectors_tested": 7,
+      "independent_vectors_passed": 7
+    },
+    "six_real_test_suites": {
+      "tests_collected": 55,
+      "tests_passed": 55,
+      "tests_failed": 0,
+      "tests_skipped": 0,
+      "total_duration_seconds": 48.16,
+      "suites": [
+        {
+          "name": "test_smart_money_candidate_006_readiness_adversarial.py",
+          "passed": 7,
+          "failed": 0
+        },
+        {
+          "name": "test_smart_money_backup_security_adversarial.py",
+          "passed": 19,
+          "failed": 0
+        },
+        {
+          "name": "test_smart_money_backup_automation.py",
+          "passed": 5,
+          "failed": 0
+        },
+        {
+          "name": "test_smart_money_r2_adapter_compatibility.py",
+          "passed": 9,
+          "failed": 0
+        },
+        {
+          "name": "test_smart_money_sole_owner_fido2_governance.py",
+          "passed": 7,
+          "failed": 0
+        },
+        {
+          "name": "test_smart_money_worker_lease_recovery.py",
+          "passed": 8,
+          "failed": 0
+        }
+      ]
+    },
+    "extended_regression_suites": {
+      "tests_collected": 60,
+      "tests_passed": 60,
+      "tests_failed": 0,
+      "tests_skipped": 0,
+      "total_duration_seconds": 2.42
+    },
+    "grand_total_tests_passed": 115,
+    "grand_total_tests_failed": 0
+  },
+  "policy_a_backup_containment_evaluation": {
+    "policy_identifier": "Policy A — SUSPEND_INGESTION_WHEN_LAST_VERIFIED_BACKUP_AGE_EXCEEDS_12_HOURS",
+    "status": "PROPOSED_NOT_IMPLEMENTED",
+    "runtime_enforcement_mode": "FAIL_OPEN",
+    "automated_suspension_in_code": false,
+    "maximum_tolerated_backup_age": "UNCONSTRAINED",
+    "ingestion_suspension_latency": "INFINITE_NO_ENFORCEMENT",
+    "blast_radius_of_silent_backup_failure": "UNBOUNDED_RPO_GROWTH_IF_R2_DROPS_AND_PG_CORRUPTS",
+    "operational_safeguard_required": "EXTERNAL_UPTIME_ALERTING_OR_CODE_AMENDMENT"
+  },
+  "finops_and_storage_projection": {
+    "baseline_observed_dump_size_bytes": 33642,
+    "baseline_observed_manifest_size_bytes": 1024,
+    "daily_backup_cadence": 4,
+    "steady_state_retained_backups": 120,
+    "steady_state_initial_footprint_mib": 3.94,
+    "linear_growth_scenarios": {
+      "scenario_1_low_10mb_mo": {
+        "month_12_r2_storage_gb": 4.13,
+        "free_tier_exceeded_month": null,
+        "month_12_monthly_spend_usd": 17.50,
+        "year_1_cumulative_spend_usd": 210.00
+      },
+      "scenario_2_baseline_25mb_mo": {
+        "month_12_r2_storage_gb": 10.28,
+        "free_tier_exceeded_month": 12,
+        "free_tier_exceeded_calendar": "October 2027",
+        "month_12_monthly_spend_usd": 17.504,
+        "year_1_cumulative_spend_usd": 210.00
+      },
+      "scenario_3_aggressive_50mb_mo": {
+        "month_12_r2_storage_gb": 20.57,
+        "free_tier_exceeded_month": 6,
+        "free_tier_exceeded_calendar": "April 2027",
+        "month_12_monthly_spend_usd": 17.66,
+        "year_1_cumulative_spend_usd": 210.57
+      }
+    },
+    "railway_monthly_infrastructure_delta_usd": 17.50,
+    "owner_proposed_monthly_spending_cap_usd": 30.00,
+    "spending_cap_compliance_margin_pct": 41.6,
+    "finops_verdict": "FINOPS_BUDGET_VERIFIED_PASS"
+  },
+  "rollback_coverage_matrix": {
+    "scenarios_evaluated": ["A", "B", "C", "D", "E", "F", "G"],
+    "destructive_recovery_safeguards": {
+      "unhedged_drop_schema_public_cascade_permitted": false,
+      "isolated_point_in_time_restore_required": true,
+      "immutable_triggers_enforced": 4,
+      "advisory_lock_representation": "64_BIT_SPLIT_QUERY_CLASSID_93366790_OBJID_1926593531"
+    },
+    "scenarios_summary": {
+      "scenario_a_pre_cutover_abort": { "rto": "<= 1 min", "rpo": "0 sec", "data_loss": "0%" },
+      "scenario_b_post_cutover_worker_crashloop": { "rto": "<= 5 min", "rpo": "0 sec", "data_loss": "0%" },
+      "scenario_c_post_cutover_data_corruption": { "rto": "<= 15 min", "rpo": "<= 6 hr", "data_loss": "Filings post-backup" },
+      "scenario_d_secret_compromise": { "rto": "<= 10 min", "rpo": "0 sec", "data_loss": "0%" },
+      "scenario_e_cloudflare_r2_outage": { "rto": "Cloudflare SLA", "rpo": "0 sec (DB)", "data_loss": "0%" },
+      "scenario_f_partial_migration": { "rto": "<= 3 min", "rpo": "0 sec", "data_loss": "0%" },
+      "scenario_g_orphaned_lock_lease": { "rto": "<= 2 min", "rpo": "0 sec", "data_loss": "0%" }
+    },
+    "matrix_verdict": "ROLLBACK_COVERAGE_VERIFIED_PASS"
+  },
+  "overall_verdict": {
+    "technical_preflight_closure_status": "CANDIDATE_006_TECHNICAL_PREFLIGHT_CLOSED_PENDING_OWNER_AUTHORIZATION",
+    "production_deployment_authorized": false,
+    "production_mutations_executed": false,
+    "owner_approval_status": "PENDING_FORMAL_SUBMISSION"
+  }
+}
