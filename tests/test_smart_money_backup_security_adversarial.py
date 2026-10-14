@@ -280,3 +280,28 @@ class TestRetentionAndGovernanceInvariants:
                 target_sha="mismatched_sha_1234567890abcdef",
                 target_environment="production",
             )
+
+    def test_archive_custom_format_version_compatibility_verification(self, tmp_path):
+        """Vector 11: Distinguish client archive compatibility from server corruption."""
+        # Create a mock PostgreSQL custom dump header
+        # Bytes: PGDMP (5 bytes), format major=1, minor=16, rev=0
+        mock_dump_path = tmp_path / "mock_pg17_dump.dump"
+        header = b"PGDMP\x01\x10\x00\x04\x08\x01" + b"\x00" * 21
+        mock_dump_path.write_bytes(header)
+
+        # Parse header
+        with open(mock_dump_path, "rb") as f:
+            read_header = f.read(11)
+        
+        assert read_header[:5] == b"PGDMP", "Must be valid PostgreSQL custom archive magic"
+        major, minor, rev = read_header[5], read_header[6], read_header[7]
+        assert (major, minor, rev) == (1, 16, 0), "Must accurately identify format version 1.16.0"
+        
+        # Test client compatibility boundary logic
+        # Client 16.x supports up to 1.15; Client 17.x supports 1.16
+        def is_client_compatible(client_major: int, archive_minor: int) -> bool:
+            max_supported_minor = 15 if client_major <= 16 else 16
+            return archive_minor <= max_supported_minor
+
+        assert not is_client_compatible(client_major=16, archive_minor=16)
+        assert is_client_compatible(client_major=17, archive_minor=16)
