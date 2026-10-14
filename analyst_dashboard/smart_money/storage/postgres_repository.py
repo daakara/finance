@@ -32,17 +32,27 @@ class MaxAttemptsExceededError(RuntimeError):
 class PostgresSmartMoneyRepository:
     """Production-grade PostgreSQL repository implementing fail-closed Smart Money persistence."""
 
-    def __init__(self, dsn: Optional[str] = None):
+    def __init__(self, dsn: Optional[str] = None, containment_gate: Optional[Any] = None):
         self.dsn = dsn
+        self.containment_gate = containment_gate
 
     # ── Raw Filings & Idempotency ─────────────────────────────────────────────
 
-    def save_raw_filing(self, filing: Dict[str, Any], conn: Optional[PgConnection] = None) -> bool:
+    def save_raw_filing(
+        self,
+        filing: Dict[str, Any],
+        conn: Optional[PgConnection] = None,
+        containment_gate: Optional[Any] = None,
+    ) -> bool:
         """
         Persists a raw filing idempotently.
         If filing already exists with identical content hash, returns False (no-op).
         If filing already exists with conflicting content hash, raises SOURCE_INTEGRITY_CONFLICT.
+        Fails closed if backup age containment is breached.
         """
+        gate = containment_gate or self.containment_gate
+        if gate is not None:
+            gate.enforce_ingestion_gate()
         def _exec(cur):
             # Check existing
             cur.execute(
@@ -85,10 +95,19 @@ class PostgresSmartMoneyRepository:
 
     # ── Parsed Transactions ───────────────────────────────────────────────────
 
-    def save_parsed_transactions(self, transactions: List[Dict[str, Any]], conn: Optional[PgConnection] = None) -> int:
-        """Saves parsed transactions for an accession."""
+    def save_parsed_transactions(
+        self,
+        transactions: List[Dict[str, Any]],
+        conn: Optional[PgConnection] = None,
+        containment_gate: Optional[Any] = None,
+    ) -> int:
+        """Saves parsed transactions for an accession. Fails closed if containment is breached."""
         if not transactions:
             return 0
+
+        gate = containment_gate or self.containment_gate
+        if gate is not None:
+            gate.enforce_ingestion_gate()
 
         def _exec(cur):
             count = 0
@@ -377,10 +396,12 @@ class PostgresSmartMoneyRepository:
         run_request_id: Optional[str] = None,
         lease_token: Optional[str] = None,
         conn: Optional[PgConnection] = None,
+        containment_gate: Optional[Any] = None,
     ) -> str:
         """
         Atomic Snapshot Publication Transaction (Section 16).
         In a single transaction:
+        0. Enforces backup containment gate (fails closed if backup freshness breached).
         1. If run_request_id and lease_token provided, verifies active lease ownership (fails closed if stale).
         2. Inserts immutable record into scanner_snapshots.
         3. Updates/inserts active pointer in scanner_active_snapshots if decision == 'PUBLISH'.
@@ -388,6 +409,10 @@ class PostgresSmartMoneyRepository:
         5. Emits audit event.
         Rolls back entirely if any stage fails.
         """
+        gate = containment_gate or self.containment_gate
+        if gate is not None:
+            gate.enforce_snapshot_publication_gate()
+
         snapshot_id = snapshot["snapshot_id"]
         scan_type = snapshot.get("scanner_id", "SMART_MONEY")
         decision = snapshot.get("publication_decision", "PUBLISH")
@@ -499,9 +524,14 @@ class PostgresSmartMoneyRepository:
             with transaction(dsn=self.dsn) as cur:
                 return _exec(cur)
 
-    def save_snapshot(self, snapshot: Dict[str, Any], conn: Optional[PgConnection] = None) -> str:
+    def save_snapshot(
+        self,
+        snapshot: Dict[str, Any],
+        conn: Optional[PgConnection] = None,
+        containment_gate: Optional[Any] = None,
+    ) -> str:
         """Compatibility alias for publish_scanner_snapshot_atomic adhering to snapshot store contract."""
-        return self.publish_scanner_snapshot_atomic(snapshot, conn=conn)
+        return self.publish_scanner_snapshot_atomic(snapshot, conn=conn, containment_gate=containment_gate)
 
     def get_latest_active_snapshot(self, scan_type: str = "SMART_MONEY", conn: Optional[PgConnection] = None) -> Optional[Dict[str, Any]]:
         """

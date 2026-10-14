@@ -37,7 +37,17 @@ from analyst_dashboard.smart_money.storage.postgres_repository import (
 from analyst_dashboard.data.sec_edgar_fetcher import get_sec_egress_role
 from analyst_dashboard.smart_money.storage.backup.backup_engine import SmartMoneyBackupEngine
 from analyst_dashboard.smart_money.storage.backup.retention import BackupRetentionManager
-from analyst_dashboard.smart_money.storage.backup.storage_adapter import get_backup_storage_adapter
+from analyst_dashboard.smart_money.storage.backup.freshness_authority import (
+    BackupFreshnessAuthority,
+    BackupFreshnessState,
+    BackupContainmentPolicy,
+    FreshnessEvaluationReceipt,
+)
+from analyst_dashboard.smart_money.storage.backup.containment_gate import (
+    BackupAgeContainmentGate,
+    ContainmentState,
+    BackupAgeContainmentViolationException,
+)
 import threading
 
 logger = logging.getLogger("smart_money.worker")
@@ -52,14 +62,22 @@ class SmartMoneyBackupSchedulerThread(threading.Thread):
     3. Configurable schedule interval (default: 21600s / 6 hours);
     4. Routine backups run with unprivileged role (include_globals=False);
     5. Automatic safe retention pruning protecting the latest verified recovery point;
-    6. Missed-run detection, storage capacity monitoring, and failure alerting.
+    6. Missed-run detection, storage capacity monitoring, and failure alerting;
+    7. Instant containment gate recheck upon successful backup completion.
     """
 
-    def __init__(self, interval_sec: int = 21600, retention_count: int = 10, retention_days: int = 7):
+    def __init__(
+        self,
+        interval_sec: int = 21600,
+        retention_count: int = 10,
+        retention_days: int = 7,
+        containment_gate: Optional[BackupAgeContainmentGate] = None,
+    ):
         super().__init__(daemon=True, name="SmartMoneyBackupScheduler")
         self.interval_sec = max(60, interval_sec)
         self.retention_count = retention_count
         self.retention_days = retention_days
+        self.containment_gate = containment_gate
         self._running = False
         self._lock = threading.Lock()
         self.last_run_timestamp = 0.0
@@ -73,6 +91,8 @@ class SmartMoneyBackupSchedulerThread(threading.Thread):
         if not self._lock.acquire(blocking=False):
             logger.warning("Backup scheduler pass skipped: previous pass still executing.")
             return False
+        if self.containment_gate:
+            self.containment_gate.mark_backup_in_progress()
         try:
             logger.info("Executing scheduled automated backup pass (routine, unprivileged)...")
             adapter = get_backup_storage_adapter()
@@ -93,6 +113,9 @@ class SmartMoneyBackupSchedulerThread(threading.Thread):
                 f"Scheduled backup {manifest['backup_id']} verified and stored in {manifest['storage_destination']}. "
                 f"Pruned: {len(pruned)} expired sets."
             )
+            # Instantly recheck freshness to restore ingestion eligibility
+            if self.containment_gate:
+                self.containment_gate.check_ingestion_eligibility(force_refresh=True)
             return True
         except Exception as e:
             self.last_status = "FAILED"
@@ -101,6 +124,8 @@ class SmartMoneyBackupSchedulerThread(threading.Thread):
             logger.error(f"Scheduled backup failed: {e}", exc_info=True)
             return False
         finally:
+            if self.containment_gate:
+                self.containment_gate.mark_backup_completed()
             self._lock.release()
 
     def run(self):
@@ -146,9 +171,26 @@ class WorkerHealthState(Enum):
 class SmartMoneyIngestionWorker:
     """Dedicated single-active SEC egress worker backed by PostgreSQL."""
 
-    def __init__(self, dsn: Optional[str] = None):
+    def __init__(
+        self,
+        dsn: Optional[str] = None,
+        containment_gate: Optional[BackupAgeContainmentGate] = None,
+        containment_policy: Optional[BackupContainmentPolicy] = None,
+    ):
         self.dsn = dsn or get_database_url()
-        self.repository = PostgresSmartMoneyRepository(dsn=self.dsn)
+        self.containment_policy = containment_policy or BackupContainmentPolicy.from_environment()
+        self.freshness_authority = BackupFreshnessAuthority(
+            dsn=self.dsn,
+            policy=self.containment_policy,
+        )
+        self.containment_gate = containment_gate or BackupAgeContainmentGate(
+            freshness_authority=self.freshness_authority,
+            policy=self.containment_policy,
+        )
+        self.repository = PostgresSmartMoneyRepository(
+            dsn=self.dsn,
+            containment_gate=self.containment_gate,
+        )
         self.state = WorkerHealthState.STARTING
         self.worker_id = f"worker-{os.getpid()}-{int(time.time())}"
         self._owner_conn = None
@@ -163,6 +205,7 @@ class SmartMoneyIngestionWorker:
         Validates environment prerequisites before attempting lock or network operations:
         1. ARX_SEC_EGRESS_ROLE must equal 'OWNER'.
         2. Database configuration must be valid PostgreSQL.
+        3. Containment policy configuration authorization in production.
         """
         role = get_sec_egress_role()
         if role != "OWNER":
@@ -176,6 +219,16 @@ class SmartMoneyIngestionWorker:
         if not self.dsn:
             self.state = WorkerHealthState.FATAL
             raise RuntimeError("DATABASE_URL_REQUIRED: PostgreSQL connection string is required.")
+
+        # Containment authorization check in production environment
+        if self.containment_policy.enabled:
+            is_prod = os.environ.get("ARX_ENVIRONMENT", "").strip().lower() == "production"
+            if is_prod and not self.containment_policy.production_authorized:
+                self.state = WorkerHealthState.FATAL
+                raise RuntimeError(
+                    "UNAUTHORIZED_PRODUCTION_BACKUP_CONTAINMENT: Policy A activation in production "
+                    "requires explicit ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED=True ratification."
+                )
 
     def acquire_egress_authority(self) -> bool:
         """
@@ -220,6 +273,7 @@ class SmartMoneyIngestionWorker:
         Checks for pending operator run requests, claims them with atomic lease,
         renews heartbeat, and marks them completed under lease fencing.
         Periodically executes stale claim recovery to self-heal abandoned work.
+        Enforces backup freshness containment gate fail-closed.
         Returns the number of processed requests.
         """
         now = time.time()
@@ -231,6 +285,10 @@ class SmartMoneyIngestionWorker:
                     logger.info(f"Self-healed {recovered} stale run request(s).")
             except Exception as e:
                 logger.warning(f"Error during periodic stale request recovery: {e}")
+
+        # Gate check before claiming request
+        if not self.containment_gate.check_ingestion_eligibility():
+            return 0
 
         claimed = self.repository.claim_next_run_request(
             self.worker_id, lease_duration_sec=self.lease_duration_sec
@@ -244,6 +302,11 @@ class SmartMoneyIngestionWorker:
 
         # Heartbeat renewal during processing
         self.repository.heartbeat_run_request(req_id, lease_token, extension_sec=self.lease_duration_sec)
+
+        # Gate check before completing request (prevent in-flight threshold breach)
+        if not self.containment_gate.check_ingestion_eligibility():
+            logger.warning(f"Aborting completion of request {req_id}: backup became stale during execution.")
+            return 0
 
         result_gen = f"gen-{req_id[:8]}"
         try:
@@ -261,7 +324,16 @@ class SmartMoneyIngestionWorker:
 
     def run_cycle(self) -> None:
         """Executes a single operational work cycle."""
-        if self.state == WorkerHealthState.OWNER_LOCK_ACQUIRED:
+        # 1. Evaluate Backup Freshness Containment Gate
+        if not self.containment_gate.check_ingestion_eligibility():
+            self.state = WorkerHealthState.BLOCKED_DATA_INTEGRITY
+            logger.warning(
+                f"Work cycle suspended: Backup age containment gate closed "
+                f"(status={self.containment_gate.current_state.value}, reason={self.containment_gate.last_error_code})."
+            )
+            return
+
+        if self.state in (WorkerHealthState.OWNER_LOCK_ACQUIRED, WorkerHealthState.BLOCKED_DATA_INTEGRITY):
             self.state = WorkerHealthState.HEALTHY
 
         # Process any pending run requests
@@ -290,7 +362,10 @@ class SmartMoneyIngestionWorker:
         self.backup_scheduler = None
         if os.environ.get("ARX_BACKUP_ENABLED", "").strip().lower() in ("true", "1", "yes"):
             interval_sec = int(os.environ.get("ARX_BACKUP_INTERVAL_SEC", "21600"))
-            self.backup_scheduler = SmartMoneyBackupSchedulerThread(interval_sec=interval_sec)
+            self.backup_scheduler = SmartMoneyBackupSchedulerThread(
+                interval_sec=interval_sec,
+                containment_gate=self.containment_gate,
+            )
             self.backup_scheduler.start()
 
         def _sig_handler(signum, frame):
@@ -322,6 +397,7 @@ class SmartMoneyIngestionWorker:
             "status": self.state.value,
             "has_owner_lock": self.state in {WorkerHealthState.OWNER_LOCK_ACQUIRED, WorkerHealthState.HEALTHY},
             "backup_scheduler": self.backup_scheduler.get_status_envelope() if getattr(self, "backup_scheduler", None) else None,
+            "containment": self.containment_gate.get_observability_envelope(),
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
 

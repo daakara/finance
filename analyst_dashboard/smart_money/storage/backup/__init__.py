@@ -11,6 +11,18 @@ from analyst_dashboard.smart_money.storage.backup.storage_adapter import (
 from analyst_dashboard.smart_money.storage.backup.backup_engine import SmartMoneyBackupEngine
 from analyst_dashboard.smart_money.storage.backup.retention import BackupRetentionManager
 from analyst_dashboard.smart_money.storage.backup.restore_verifier import BackupRestoreVerifier
+from analyst_dashboard.smart_money.storage.backup.freshness_authority import (
+    BackupFreshnessAuthority,
+    BackupFreshnessState,
+    BackupContainmentPolicy,
+    FreshnessEvaluationReceipt,
+)
+from analyst_dashboard.smart_money.storage.backup.containment_gate import (
+    BackupAgeContainmentGate,
+    ContainmentState,
+    BackupAgeContainmentViolationException,
+    SnapshotPublicationBlockedContainmentException,
+)
 
 __all__ = [
     "BackupStorageAdapter",
@@ -20,4 +32,12 @@ __all__ = [
     "SmartMoneyBackupEngine",
     "BackupRetentionManager",
     "BackupRestoreVerifier",
+    "BackupFreshnessAuthority",
+    "BackupFreshnessState",
+    "BackupContainmentPolicy",
+    "FreshnessEvaluationReceipt",
+    "BackupAgeContainmentGate",
+    "ContainmentState",
+    "BackupAgeContainmentViolationException",
+    "SnapshotPublicationBlockedContainmentException",
 ]

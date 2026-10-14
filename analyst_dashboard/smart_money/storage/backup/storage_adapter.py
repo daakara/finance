@@ -60,6 +60,11 @@ class BackupStorageAdapter(ABC):
         """Returns True if the destination is external off-host cloud storage."""
         pass
 
+    @abstractmethod
+    def get_backup_metadata(self, remote_filename: str) -> Optional[Dict[str, Any]]:
+        """Returns metadata for remote artifact if present, else None."""
+        pass
+
 
 class LocalOffVolumeStorageAdapter(BackupStorageAdapter):
     """
@@ -149,6 +154,17 @@ class LocalOffVolumeStorageAdapter(BackupStorageAdapter):
 
     def is_external(self) -> bool:
         return False
+
+    def get_backup_metadata(self, remote_filename: str) -> Optional[Dict[str, Any]]:
+        target = os.path.join(self.base_directory, remote_filename)
+        if not os.path.exists(target):
+            return None
+        return {
+            "remote_filename": remote_filename,
+            "size_bytes": os.path.getsize(target),
+            "modified_at": datetime.utcfromtimestamp(os.path.getmtime(target)).isoformat() + "Z",
+            "destination": target,
+        }
 
 
 class S3CompatibleStorageAdapter(BackupStorageAdapter):
@@ -276,6 +292,21 @@ class S3CompatibleStorageAdapter(BackupStorageAdapter):
 
     def is_external(self) -> bool:
         return True
+
+    def get_backup_metadata(self, remote_filename: str) -> Optional[Dict[str, Any]]:
+        s3 = self._get_client()
+        key = self._key(remote_filename)
+        try:
+            head = s3.head_object(Bucket=self.bucket, Key=key)
+            return {
+                "remote_filename": remote_filename,
+                "size_bytes": head.get("ContentLength", 0),
+                "modified_at": head.get("LastModified").isoformat() if head.get("LastModified") else None,
+                "sha256": head.get("Metadata", {}).get("sha256"),
+                "destination": f"s3://{self.bucket}/{key}",
+            }
+        except Exception:
+            return None
 
 
 def get_backup_storage_adapter(override_dir: Optional[str] = None) -> BackupStorageAdapter:
