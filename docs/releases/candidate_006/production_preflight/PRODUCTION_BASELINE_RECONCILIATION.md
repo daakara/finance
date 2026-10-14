@@ -39,7 +39,7 @@ gitGraph
 | **Candidate 006 (R2 Deployed Rehearsal)**| `dc6e5b79c8fb42e6c9029e79d2a4463afac016f4` | `0ffd2e60c32a636ca1eca58216fa952085fcb285` | 2026-10-14T03:42:01Z | Direct Child of `c8cc1cd` | `OBSERVED` |
 | **Candidate 006 (Security Remediation)** | `9cad087868386d40dc24970be80776abb3f8756a` | `82f9903306ed3a0027549d55454d563143bbeb7b` | 2026-10-14T05:07:33Z | Direct Child of `dc6e5b7` | `OBSERVED` |
 | **Candidate 006 (Remediation Closure Head)**| `76a8691339c30edc35e4e056d5b295509a81fe3a` | `80309593afb6b1b722bed87c111bf2b58056c688` | 2026-10-14T05:37:37Z | Direct Child of `9cad087` (Current Rehearsal & Remote HEAD) | `OBSERVED` |
-| **Active Production Baseline** | `bab9776b8013646b634871c49b52e61e4234d36b` | `5e89694e9f7336cb474136979603f9c6d4baec1d` | 2026-10-11T20:37:46Z | Production Deployed Release (Untouched) | `OBSERVED` |
+| **Active Production Baseline** | `bab9776b8013646b634871c49b52e61e4234d36b` | `13d14564baf94eceab215478280241668a9b1d71` | 2026-10-11T20:37:46Z | Production Deployed Release (Untouched) [Errata: Corrected from preliminary 5e89694] | `OBSERVED` |
 
 ---
 

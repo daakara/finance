@@ -88,8 +88,8 @@ graph TD
 | **2. Suspension Rationale** | Valid operational reason for single-owner sprint. | **PASS** | Automated disaster recovery infrastructure bootstrap requires solo operational agility. |
 | **3. Owner Identity** | Primary owner identity established. | **PASS** | Authorized repository owner and Railway project owner reconciled. |
 | **4. MFA Evidence** | Cryptographic/time-based MFA assertion. | **PENDING** | To be provided upon formal submission of the cutover request. |
-| **5. Exact SHA Binding** | Approval must bind strictly to Candidate SHA. | **PASS** | Proposed decision record binds strictly to `76a8691339c30edc35e4e056d5b295509a81fe3a`. |
-| **6. Expiration Limit** | Approval window $\le 24\text{ hours}$. | **PASS** | Window strictly bounded to 24 hours post-signature. |
+| **5. Exact SHA Binding** | Approval must bind strictly to Candidate SHA. | **PENDING** | Decision template targets `76a8691339c30edc35e4e056d5b295509a81fe3a`, but approval event has not occurred. |
+| **6. Expiration Limit** | Approval window $\le 24\text{ hours}$. | **PENDING** | 24-hour validity clock commences upon signature; pending owner execution. |
 | **7. Reactivation Obligations**| Post-cutover FIDO2 reactivation commitment. | **PASS** | Mandatory task item in post-cutover Step 15 checklist. |
 | **8. Explicit Owner Authorization** | Actual owner approval decision recorded. | **PENDING** | **`OWNER_DECISION = PENDING`**. No approval has been granted. |
 

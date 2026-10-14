@@ -56,7 +56,7 @@ sequenceDiagram
 ### A. Nonproduction Rehearsal Metric
 In the isolated nonproduction rehearsal, a complete end-to-end disaster recovery test was performed:
 * **Backup ID**: `sm-backup-20261014T054332Z-9c75ae7f`
-* **Artifact Size**: 5,242,880 bytes (~5.0 MB compressed dump)
+* **Artifact Size**: 33,642 bytes (32.85 KiB) [Errata: Corrected from preliminary 5,242,880 byte round estimate]
 * **Cloudflare R2 Download**: 8.15 seconds
 * **`pg_restore` Execution Time**: **0.26 seconds**
 * **Total Recovery Duration**: **8.41 seconds**

@@ -51,7 +51,7 @@ graph TD
 * **ROLLBACK_SEQUENCE**:
   1. Execute `railway service stop --service smart-money-worker`.
   2. Query PostgreSQL to verify active lock released:
-     `SELECT count(*) FROM pg_locks WHERE objid = 401007311509093371;` (must return 0).
+     `SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND ((classid::bigint << 32) | (objid::bigint & 4294967295::bigint)) = 401007311509093371;` (must return 0) [Errata: Corrected from 32-bit objid query].
   3. Set worker environment variable `SMART_MONEY_INGESTION_ENABLED=false`.
   4. Web service continues serving existing database records in read-only mode.
 * **DATA_RECOVERY_REQUIREMENTS**: Zero data loss. Form 4 filings remain safely in SEC EDGAR and will be ingested upon restart.
@@ -67,10 +67,9 @@ graph TD
 * **MAXIMUM_ACCEPTABLE_RESPONSE_DELAY**: $\le 10\text{ minutes}$.
 * **CONTAINMENT**: Database transaction aborts automatically (`ROLLBACK`). Prevent worker or web from connecting to partial schema.
 * **ROLLBACK_SEQUENCE**:
-  1. For initial cutover: Drop public schema and recreate:
-     `DROP SCHEMA public CASCADE; CREATE SCHEMA public;`.
-  2. For future incremental migration: Execute verified down-migration SQL script or restore clean baseline backup from Cloudflare R2:
-     `python -m worker.backup.cli restore --backup-id <initial_baseline_id>`.
+  1. For initial cutover: Assert database contains zero records (`SELECT count(*) FROM form4_raw_filings`). If zero, clean DDL re-run is permitted. [Errata: DROP SCHEMA CASCADE eliminated as hazardous].
+  2. For populated or incremental database: Execute transaction rollback or restore clean baseline backup from Cloudflare R2:
+     `python -m worker.backup.cli restore --backup-id <latest_valid_r2_id> --target-env production`.
 * **DATA_RECOVERY_REQUIREMENTS**: In an initial cutover, database has no production history. For established production, restore from most recent verified R2 recovery point.
 * **VALIDATION**: Query `information_schema.tables` and assert exact expected table list.
 * **ESCALATION**: If PostgreSQL instance is wedged, reprovision a clean Railway PostgreSQL instance.
@@ -170,8 +169,8 @@ The rollback procedures and recovery tooling have been subjected to rigorous non
 | Standard Rollback Classification Gate | Verified Evaluation | Notes & Boundary Conditions |
 |---|---|---|
 | **`ROLLBACK_DESIGNED`** | **VERIFIED** | All 7 failure scenarios (A through G) designed with explicit runbooks. |
-| **`ROLLBACK_UNIT_TESTED`** | **VERIFIED** | 48/48 automated adversarial and unit tests passing (100%). |
-| **`ROLLBACK_NONPRODUCTION_REHEARSED`** | **VERIFIED** | End-to-end database restore, crash fencing, and secret rotation rehearsed. |
+| **`ROLLBACK_UNIT_TESTED`** | **PARTIALLY_ESTABLISHED** | Lease fencing and adapter fail-closed behaviors pass unit tests; full multi-service rollback orchestration is not unit tested. |
+| **`ROLLBACK_NONPRODUCTION_REHEARSED`** | **PARTIALLY_ESTABLISHED** | Isolated PostgreSQL restore was rehearsed (8.41s); full web/worker/database cutover rollback was not rehearsed end-to-end. |
 | **`ROLLBACK_PRODUCTION_VERIFIED`** | **NOT_VERIFIED** | Production execution is strictly prohibited prior to owner authorization. |
 
-**Rollback Readiness Verdict**: `VERIFIED_READY_FOR_OWNER_REVIEW`
+**Rollback Readiness Verdict**: `RECONCILED_READY_FOR_OWNER_REVIEW`

@@ -39,7 +39,7 @@ graph TD
 * **Service ID**: `56e38249-b78c-4a60-80d7-303ce7451bd8`
 * **Active Deployment ID**: `0b2544ed-075a-46a8-97a8-e1b45b4d73b3`
 * **Deployed Git Commit**: `bab9776b8013646b634871c49b52e61e4234d36b` (Committed `2026-10-11T20:37:46Z`, Deployed `2026-10-11T20:37:49Z`)
-* **Startup Command**: `uvicorn web.app:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2`
+* **Startup Command**: `uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2` [Errata: Corrected from preliminary web.app]
 * **Volume Attachment**: `web-volume` (`vol_01jhvf...`) mounted at `/root` (size: 5000 MB, current usage: 205.67 MB / 4.11%)
 * **PostgreSQL Service**: **NONE (0 instances)**
 * **Worker Service**: **NONE (0 instances)**
