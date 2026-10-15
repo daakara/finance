@@ -50,6 +50,7 @@ from analyst_dashboard.analyzers.scanner_runner import (
 from analyst_dashboard.data.scanner_store import ScannerSnapshotStore
 import api.routes.screener as screener_module
 
+pytestmark = pytest.mark.tier2b
 
 client = TestClient(app)
 
