@@ -220,6 +220,8 @@ class VCPScannerRunner:
             target_build_id = universe_build_id
             build_attestation = None
             if target_build_id:
+                if hasattr(self.universe_store, "get_universe_build"):
+                    build_attestation = self.universe_store.get_universe_build(target_build_id)
                 scannable_symbols = self.universe_store.get_scannable_membership(target_build_id)
             else:
                 latest_build = self.universe_store.get_latest_published_universe(UNIVERSE_ID)
@@ -230,18 +232,33 @@ class VCPScannerRunner:
                 else:
                     scannable_symbols = []
 
+            is_natural_scheduled = (
+                invocation_class == "SCHEDULED_PRODUCTION"
+                or trigger_type == TriggerType.SCHEDULED
+            )
+
             if universe_override is not None:
                 universe = universe_override
                 eligible_count = len(universe)
                 scannable_count = len(universe)
                 unavailable_count = 0
             elif scannable_symbols:
+                # For natural scheduled scan, enforce published build validity (INV-U02, INV-U08, INV-U09)
+                if is_natural_scheduled and build_attestation:
+                    if build_attestation.get("publication_decision") != "PUBLISH" or build_attestation.get("construction_status") != "COMPLETE":
+                        raise RuntimeError(
+                            f"UNPUBLISHED_UNIVERSE_BUILD: Build '{target_build_id}' has publication_decision='{build_attestation.get('publication_decision')}', construction_status='{build_attestation.get('construction_status')}'. Natural execution prohibited."
+                        )
                 universe = scannable_symbols
                 eligible_count = build_attestation["eligible_count"] if build_attestation else len(universe)
                 scannable_count = len(scannable_symbols)
                 unavailable_count = build_attestation["data_unavailable_count"] if build_attestation else 0
             else:
-                # Historical regression fixture fallback
+                # Historical regression fixture fallback ONLY for non-natural / bootstrap / test invocations (INV-U04)
+                if is_natural_scheduled:
+                    raise RuntimeError(
+                        f"NO_PUBLISHED_EXECUTABLE_UNIVERSE: Natural scheduled scan requires an authorized published universe build. Historical fixture fallback is prohibited for invocation_class='{invocation_class}'."
+                    )
                 universe = list(dict.fromkeys(CANONICAL_VCP_UNIVERSE))
                 eligible_count = len(universe)
                 scannable_count = len(universe)

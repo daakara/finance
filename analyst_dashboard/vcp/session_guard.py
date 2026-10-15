@@ -59,6 +59,9 @@ class MarketSessionEligibilityResult:
     evaluated_at_utc: str
     detail: str
     coverage_ratio: Optional[float] = None
+    universe_build_id: Optional[str] = None
+    scannable_symbols: Optional[List[str]] = None
+    membership_hash: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -221,6 +224,9 @@ def evaluate_natural_session_eligibility(
     check_data_freshness: bool = False,
     universe_symbols: Optional[List[str]] = None,
     market_db: Optional[Any] = None,
+    universe_build_id: Optional[str] = None,
+    universe_store: Optional[Any] = None,
+    candidate_generation_id: str = "CANDIDATE_GENERATION_004",
 ) -> MarketSessionEligibilityResult:
     """Authoritative gatekeeper for natural scheduled VCP scan execution.
 
@@ -370,8 +376,212 @@ def evaluate_natural_session_eligibility(
 
     # 4. Market Data Freshness, Parity & Full-Universe Completeness Check
     coverage_ratio = 1.0
+    resolved_build_id: Optional[str] = universe_build_id
+    resolved_scannable: Optional[List[str]] = universe_symbols
+    resolved_hash: Optional[str] = None
+
     if check_data_freshness:
-        if market_db is None or not universe_symbols:
+        # Resolve authoritative executable universe from UniverseStore when universe_store provided or universe_symbols is None
+        if universe_store is not None or universe_symbols is None:
+            if universe_store is None:
+                try:
+                    from analyst_dashboard.universe.store import UniverseStore
+                    universe_store = UniverseStore()
+                except Exception as e:
+                    return MarketSessionEligibilityResult(
+                        is_eligible=False,
+                        reason="DATA_AUTHORITY_UNAVAILABLE",
+                        session_date=target_date_str,
+                        session_close_utc=s_close_str,
+                        earliest_execution_utc=earliest_str,
+                        latest_execution_utc=latest_str,
+                        is_early_close=is_early,
+                        settlement_buffer_minutes=eff_buffer,
+                        evaluated_at_utc=eval_ts_str,
+                        coverage_ratio=0.0,
+                        detail=f"UniverseStore initialization failed: {e}",
+                    )
+
+            build = None
+            if universe_build_id:
+                build = universe_store.get_universe_build(universe_build_id) if hasattr(universe_store, "get_universe_build") else None
+                if not build:
+                    return MarketSessionEligibilityResult(
+                        is_eligible=False,
+                        reason="UNIVERSE_BUILD_NOT_FOUND",
+                        session_date=target_date_str,
+                        session_close_utc=s_close_str,
+                        earliest_execution_utc=earliest_str,
+                        latest_execution_utc=latest_str,
+                        is_early_close=is_early,
+                        settlement_buffer_minutes=eff_buffer,
+                        evaluated_at_utc=eval_ts_str,
+                        coverage_ratio=0.0,
+                        universe_build_id=universe_build_id,
+                        detail=f"Requested universe build '{universe_build_id}' was not found in UniverseStore.",
+                    )
+            else:
+                if hasattr(universe_store, "get_published_universe_for_session"):
+                    build = universe_store.get_published_universe_for_session(
+                        universe_id="ARX_US_EQUITIES",
+                        session_date=target_date_str,
+                        candidate_generation_id=candidate_generation_id,
+                    )
+                if not build:
+                    latest_build = universe_store.get_latest_published_universe("ARX_US_EQUITIES")
+                    if latest_build:
+                        build_as_of = str(latest_build.get("source_population_as_of", ""))[:10]
+                        if build_as_of and build_as_of != target_date_str:
+                            return MarketSessionEligibilityResult(
+                                is_eligible=False,
+                                reason="UNIVERSE_SESSION_MISMATCH",
+                                session_date=target_date_str,
+                                session_close_utc=s_close_str,
+                                earliest_execution_utc=earliest_str,
+                                latest_execution_utc=latest_str,
+                                is_early_close=is_early,
+                                settlement_buffer_minutes=eff_buffer,
+                                evaluated_at_utc=eval_ts_str,
+                                coverage_ratio=0.0,
+                                universe_build_id=latest_build.get("universe_build_id"),
+                                detail=f"Latest published universe build '{latest_build.get('universe_build_id')}' is for session {build_as_of}, does not match requested session {target_date_str}.",
+                            )
+                        build = latest_build
+
+            if not build:
+                return MarketSessionEligibilityResult(
+                    is_eligible=False,
+                    reason="NO_PUBLISHED_EXECUTABLE_UNIVERSE",
+                    session_date=target_date_str,
+                    session_close_utc=s_close_str,
+                    earliest_execution_utc=earliest_str,
+                    latest_execution_utc=latest_str,
+                    is_early_close=is_early,
+                    settlement_buffer_minutes=eff_buffer,
+                    evaluated_at_utc=eval_ts_str,
+                    coverage_ratio=0.0,
+                    detail="Natural execution requires an authorized published universe build. Historical fixture fallback is prohibited.",
+                )
+
+            # Check publication decision (INV-U02)
+            if build.get("publication_decision") != "PUBLISH":
+                return MarketSessionEligibilityResult(
+                    is_eligible=False,
+                    reason="UNPUBLISHED_UNIVERSE_BUILD",
+                    session_date=target_date_str,
+                    session_close_utc=s_close_str,
+                    earliest_execution_utc=earliest_str,
+                    latest_execution_utc=latest_str,
+                    is_early_close=is_early,
+                    settlement_buffer_minutes=eff_buffer,
+                    evaluated_at_utc=eval_ts_str,
+                    coverage_ratio=0.0,
+                    universe_build_id=build.get("universe_build_id"),
+                    detail=f"Universe build '{build.get('universe_build_id')}' has publication_decision='{build.get('publication_decision')}', required 'PUBLISH'.",
+                )
+
+            # Check construction status (INV-U02, INV-U09)
+            if build.get("construction_status") != "COMPLETE":
+                return MarketSessionEligibilityResult(
+                    is_eligible=False,
+                    reason="INCOMPLETE_UNIVERSE_BUILD",
+                    session_date=target_date_str,
+                    session_close_utc=s_close_str,
+                    earliest_execution_utc=earliest_str,
+                    latest_execution_utc=latest_str,
+                    is_early_close=is_early,
+                    settlement_buffer_minutes=eff_buffer,
+                    evaluated_at_utc=eval_ts_str,
+                    coverage_ratio=0.0,
+                    universe_build_id=build.get("universe_build_id"),
+                    detail=f"Universe build '{build.get('universe_build_id')}' has construction_status='{build.get('construction_status')}', required 'COMPLETE'.",
+                )
+
+            # Check session alignment (INV-U05)
+            build_as_of = str(build.get("source_population_as_of", ""))[:10]
+            if build_as_of and build_as_of != target_date_str:
+                return MarketSessionEligibilityResult(
+                    is_eligible=False,
+                    reason="UNIVERSE_SESSION_MISMATCH",
+                    session_date=target_date_str,
+                    session_close_utc=s_close_str,
+                    earliest_execution_utc=earliest_str,
+                    latest_execution_utc=latest_str,
+                    is_early_close=is_early,
+                    settlement_buffer_minutes=eff_buffer,
+                    evaluated_at_utc=eval_ts_str,
+                    coverage_ratio=0.0,
+                    universe_build_id=build.get("universe_build_id"),
+                    detail=f"Universe build '{build.get('universe_build_id')}' effective session {build_as_of} does not match target session {target_date_str}.",
+                )
+
+            # Check candidate generation (INV-U08)
+            rec_summary = {}
+            if build.get("reconciliation_summary_json"):
+                try:
+                    import json
+                    rec_summary = json.loads(build["reconciliation_summary_json"])
+                except Exception:
+                    pass
+            build_cand = rec_summary.get("candidate_generation_id")
+            if build_cand and build_cand != candidate_generation_id:
+                return MarketSessionEligibilityResult(
+                    is_eligible=False,
+                    reason="CANDIDATE_GENERATION_MISMATCH",
+                    session_date=target_date_str,
+                    session_close_utc=s_close_str,
+                    earliest_execution_utc=earliest_str,
+                    latest_execution_utc=latest_str,
+                    is_early_close=is_early,
+                    settlement_buffer_minutes=eff_buffer,
+                    evaluated_at_utc=eval_ts_str,
+                    coverage_ratio=0.0,
+                    universe_build_id=build.get("universe_build_id"),
+                    detail=f"Universe build candidate generation '{build_cand}' does not match '{candidate_generation_id}'.",
+                )
+
+            # Resolve scannable membership
+            resolved_build_id = build["universe_build_id"]
+            scannable = universe_store.get_scannable_membership(resolved_build_id)
+            if not scannable:
+                return MarketSessionEligibilityResult(
+                    is_eligible=False,
+                    reason="EMPTY_EXECUTABLE_UNIVERSE",
+                    session_date=target_date_str,
+                    session_close_utc=s_close_str,
+                    earliest_execution_utc=earliest_str,
+                    latest_execution_utc=latest_str,
+                    is_early_close=is_early,
+                    settlement_buffer_minutes=eff_buffer,
+                    evaluated_at_utc=eval_ts_str,
+                    coverage_ratio=0.0,
+                    universe_build_id=resolved_build_id,
+                    detail=f"Universe build '{resolved_build_id}' has zero scannable members in readiness ledger.",
+                )
+
+            # Verify scannable membership hash (INV-U09)
+            from analyst_dashboard.universe.contracts import compute_sha256
+            computed_scannable_hash = compute_sha256(scannable)
+            if build.get("scannable_membership_hash") and computed_scannable_hash != build.get("scannable_membership_hash"):
+                return MarketSessionEligibilityResult(
+                    is_eligible=False,
+                    reason="MEMBERSHIP_HASH_MISMATCH",
+                    session_date=target_date_str,
+                    session_close_utc=s_close_str,
+                    earliest_execution_utc=earliest_str,
+                    latest_execution_utc=latest_str,
+                    is_early_close=is_early,
+                    settlement_buffer_minutes=eff_buffer,
+                    evaluated_at_utc=eval_ts_str,
+                    coverage_ratio=0.0,
+                    universe_build_id=resolved_build_id,
+                    detail=f"Scannable membership hash mismatch: computed {computed_scannable_hash} != {build.get('scannable_membership_hash')}.",
+                )
+
+            resolved_scannable = scannable
+            resolved_hash = build.get("scannable_membership_hash") or computed_scannable_hash
+
+        if market_db is None or not resolved_scannable:
             return MarketSessionEligibilityResult(
                 is_eligible=False,
                 reason="DATA_AUTHORITY_UNAVAILABLE",
@@ -383,12 +593,15 @@ def evaluate_natural_session_eligibility(
                 settlement_buffer_minutes=eff_buffer,
                 evaluated_at_utc=eval_ts_str,
                 coverage_ratio=0.0,
+                universe_build_id=resolved_build_id,
+                scannable_symbols=resolved_scannable,
+                membership_hash=resolved_hash,
                 detail="Market database engine or universe symbols unavailable for data freshness verification.",
             )
 
         available_count = 0
         unready_reasons: Dict[str, str] = {}
-        for sym in universe_symbols:
+        for sym in resolved_scannable:
             clean_s = sym.strip().upper()
             try:
                 latest = market_db.get_latest_price(clean_s)
@@ -432,7 +645,7 @@ def evaluate_natural_session_eligibility(
 
             available_count += 1
         
-        total = len(universe_symbols)
+        total = len(resolved_scannable)
         coverage_ratio = available_count / total if total > 0 else 0.0
 
         if available_count == 0:
@@ -447,6 +660,9 @@ def evaluate_natural_session_eligibility(
                 settlement_buffer_minutes=eff_buffer,
                 evaluated_at_utc=eval_ts_str,
                 coverage_ratio=coverage_ratio,
+                universe_build_id=resolved_build_id,
+                scannable_symbols=resolved_scannable,
+                membership_hash=resolved_hash,
                 detail=f"Zero of {total} universe symbols meet scanner readiness criteria for session {target_date_str}.",
             )
 
@@ -464,6 +680,9 @@ def evaluate_natural_session_eligibility(
                 settlement_buffer_minutes=eff_buffer,
                 evaluated_at_utc=eval_ts_str,
                 coverage_ratio=coverage_ratio,
+                universe_build_id=resolved_build_id,
+                scannable_symbols=resolved_scannable,
+                membership_hash=resolved_hash,
                 detail=(
                     f"Incomplete universe readiness: {available_count}/{total} symbols ready "
                     f"({round(coverage_ratio*100, 1)}% < 100% full universe requirement). "
@@ -482,5 +701,8 @@ def evaluate_natural_session_eligibility(
         settlement_buffer_minutes=eff_buffer,
         evaluated_at_utc=eval_ts_str,
         coverage_ratio=coverage_ratio,
+        universe_build_id=resolved_build_id,
+        scannable_symbols=resolved_scannable,
+        membership_hash=resolved_hash,
         detail=f"Session {target_date_str} is open and settled for natural execution. Earliest was {earliest_str}.",
     )
