@@ -21,7 +21,6 @@ _MONITORING_ADAPTER: Optional[BackendMonitoringAdapter] = None
 
 def get_monitoring_adapter() -> Optional[BackendMonitoringAdapter]:
     """Returns the currently active monitoring adapter or None."""
-    global _MONITORING_ADAPTER
     return _MONITORING_ADAPTER
 
 

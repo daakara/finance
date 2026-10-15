@@ -15,6 +15,7 @@ import copy
 from typing import Any, Dict, List, Optional, Tuple
 
 from analyst_dashboard.vcp.case_compiler import VCPTemporalCasePackage
+from analyst_dashboard.vcp.temporal_contract import DailyOHLCVBar
 from analyst_dashboard.vcp.numeric_contract import VCPNumericContract
 from analyst_dashboard.vcp.predicate_registry import (
     ConformanceRole,
