@@ -1,4 +1,4 @@
-﻿"""Full-App Multi-Page Universality, Invariant & Cross-Route Test Suite."""
+"""Full-App Multi-Page Universality, Invariant & Cross-Route Test Suite."""
 
 import os
 import sys
@@ -15,7 +15,7 @@ from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 from analysis.portfolio import PortfolioMetrics
 
 import pytest
-pytestmark = pytest.mark.tier2a
+pytestmark = [pytest.mark.tier2a, pytest.mark.usefixtures("published_screener_universe")]
 
 
 try:
