@@ -218,10 +218,11 @@ def test_real_verifier_rejects_incorrect_manifest_version(monkeypatch):
     """Verify that real verifier rejects superseded manifest version substitution."""
     from analyst_dashboard.governance.experiment_ledger import ExperimentLedger
     v3_payload = ExperimentLedger.get_epoch4_v3_manifest()
-    monkeypatch.setattr(ExperimentLedger, "get_epoch4_v5_manifest", lambda: v3_payload)
+    monkeypatch.setattr(ExperimentLedger, "get_epoch4_v6_manifest", lambda: v3_payload)
 
     result = ExperimentLedger.verify_epoch4_manifest()
-    assert result.get("manifestVersion") != "5.0.0"
+    assert result.get("manifestVersion") != "6.0.0"
+    assert result["valid"] is False
 
 
 def test_real_verifier_rejects_unauthorized_successor_substitution():
@@ -238,12 +239,14 @@ def test_real_verifier_rejects_unauthorized_successor_substitution():
     assert v6["parentRuntimeSha"] == v5["observationGovernanceManifestHash"]
     assert v6["manifestVersion"] == "6.0.0"
     assert v6["parentManifest"] == "EPOCH_4_MANIFEST_V5.json"
+    assert v6["observationGovernanceManifestHash"] == "6ee4dc15892595f305d81d78829f1e614d6b30e8b09f45b3b8b8de45500561ca"
 
 
 def test_real_verifier_fails_closed_when_manifest_missing(monkeypatch):
     """Verify that missing manifest fails closed and does not pass silently."""
     from analyst_dashboard.governance.experiment_ledger import ExperimentLedger
     orig_getters = [
+        "get_epoch4_v6_manifest",
         "get_epoch4_v5_manifest",
         "get_epoch4_v4_manifest",
         "get_epoch4_v3_manifest",
@@ -254,6 +257,10 @@ def test_real_verifier_fails_closed_when_manifest_missing(monkeypatch):
     ]
     for name in orig_getters:
         monkeypatch.setattr(ExperimentLedger, name, lambda: None)
+
+    repo_root = os.path.dirname(os.path.dirname(__file__))
+    v6_path = os.path.join(repo_root, "EPOCH_4_MANIFEST_V6.json")
+    monkeypatch.setattr(os.path, "exists", lambda p: False if p == v6_path else os.path.exists(p))
 
     result = ExperimentLedger.verify_observation_governance_manifest()
     assert result["valid"] is False

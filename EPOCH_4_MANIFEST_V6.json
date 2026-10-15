@@ -7,9 +7,9 @@
   "epochStartAuthority": "PRODUCTION_ACTIVATION_RECORD",
   "observationGovernanceVersion": "6.0.0",
   "observationGovernanceIdentity": "MANIFEST_HASH",
-  "observationGovernanceManifestHash": "9aad33c1a010b57ba2553ee28c5ccb936c7b2176164027cfa9a40611f87662af",
-  "observationGovernanceArtifactIdentity": "9aad33c1a010b57ba2553ee28c5ccb936c7b2176164027cfa9a40611f87662af",
-  "observationGovernanceSha": "9aad33c1a010b57ba2553ee28c5ccb936c7b2176164027cfa9a40611f87662af",
+  "observationGovernanceManifestHash": "6ee4dc15892595f305d81d78829f1e614d6b30e8b09f45b3b8b8de45500561ca",
+  "observationGovernanceArtifactIdentity": "6ee4dc15892595f305d81d78829f1e614d6b30e8b09f45b3b8b8de45500561ca",
+  "observationGovernanceSha": "6ee4dc15892595f305d81d78829f1e614d6b30e8b09f45b3b8b8de45500561ca",
   "decisionEngineSha": "23cd1b20401f8fedd596da065ee16b04bc9cd5a2ab62bf4064830dbab05ccac3",
   "decisionEngineCompositeSha": "23cd1b20401f8fedd596da065ee16b04bc9cd5a2ab62bf4064830dbab05ccac3",
   "decisionEngineVersion": "2.5.0",
@@ -17,13 +17,13 @@
   "parentManifestVersion": "5.0.0",
   "parentRuntimeSha": "99bea6ebc9b4f31634ef994bd2630710d89555940a5e491e98e1285668ce04c5",
   "activationRule": "first deployed runtime containing V6 and passing current-manifest verification",
-  "authorizationRationale": "Formal non-circular manifest succession certifying Candidate 004 (commit 53219bf3e45bf5c66d41a2ae644747eaad10a4bb), updating api/routes/screener.py hash for VCP natural scan control plane and universe store wiring, while strictly preserving historical V2 through V5 manifest immutability.",
+  "authorizationRationale": "Formal non-circular manifest succession certifying Candidate 004 (commit 53219bf3e45bf5c66d41a2ae644747eaad10a4bb) and Gate 3H-R runtime verifier reconciliation, updating api/routes/screener.py and experiment_ledger.py hashes while strictly preserving historical V2 through V5 manifest immutability.",
   "driftReconciliationReferences": [
     "cbbce7ea08bb259a7fd5207b54cab5ae78bf0c3a",
     "53219bf3e45bf5c66d41a2ae644747eaad10a4bb"
   ],
-  "createdAtUtc": "2026-10-15T14:40:00Z",
-  "CREATED_AT_UTC": "2026-10-15T14:40:00Z",
+  "createdAtUtc": "2026-10-15T15:30:00Z",
+  "CREATED_AT_UTC": "2026-10-15T15:30:00Z",
   "supersedesRuntimeBoundary": "EPOCH_4_MANIFEST_V5.json",
   "SUPERSEDES_MANIFEST": "EPOCH_4_MANIFEST_V5.json",
   "certifiedSourceSnapshotCommitSha1": "53219bf3e45bf5c66d41a2ae644747eaad10a4bb",
@@ -38,7 +38,7 @@
       "sha256": "fd3cae6f682640b7182468dba053c0e97bcf9f1a73a2ca01ef5d6b81199dea93"
     },
     "analyst_dashboard/governance/experiment_ledger.py": {
-      "sha256": "233f996c6b9912ea918351935f2e275d206723780f8f8af23f54f7abf114af26"
+      "sha256": "13a0dd54dbf614c571e718446363f2d74f0951fa08da7eae83246f6c793d0ea3"
     },
     "analyst_dashboard/governance/governance_db.py": {
       "sha256": "aa11e7920c290d5acd65b3c93bc232e42d481f59b2a49800b9407ed4e9658c8f"

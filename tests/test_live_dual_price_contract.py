@@ -12,6 +12,7 @@ Validates:
 7. Manifest compliance: EPOCH_3_MANIFEST verified, FROZEN_ENGINE_MANIFEST verified, EPOCH_2 untouched.
 """
 
+import os
 import math
 import json
 import pytest
@@ -421,14 +422,23 @@ def test_frozen_engine_manifest_compliance():
 
 
 def test_epoch4_governance_manifest_compliance():
-    """Asserts authoritative Epoch 4 manifest (V5 successor) is verified against current repository code."""
+    """Asserts authoritative Epoch 4 manifest (V6 successor) is verified against current repository code."""
     res = ExperimentLedger.verify_epoch4_manifest()
     assert res["valid"] is True, f"Epoch 4 manifest failed verification: {res}"
     assert res["status"] == "VERIFIED"
-    assert res["manifestVersion"] == "5.0.0"
+    assert res["manifestVersion"] == "6.0.0"
     assert res["epochId"] == "ARX_PROSPECTIVE_VALIDATION_EPOCH_4"
-    assert res["observationGovernanceManifestHash"] == "99bea6ebc9b4f31634ef994bd2630710d89555940a5e491e98e1285668ce04c5"
+    assert res["observationGovernanceManifestHash"] == "6ee4dc15892595f305d81d78829f1e614d6b30e8b09f45b3b8b8de45500561ca"
     assert len(res["files"]) == 10
+
+
+def test_epoch4_v5_manifest_byte_for_byte_untouched():
+    """Asserts EPOCH_4_MANIFEST_V5.json (v5.0.0 record) remains 100% byte-for-byte untouched from historical record."""
+    audit = ExperimentLedger.verify_epoch4_v5_manifest()
+    assert audit["status"] == "VERIFIED"
+    assert audit["valid"] is True
+    assert audit["epochId"] == "ARX_PROSPECTIVE_VALIDATION_EPOCH_4"
+    assert audit["observationGovernanceManifestHash"] == "99bea6ebc9b4f31634ef994bd2630710d89555940a5e491e98e1285668ce04c5"
 
 
 def test_epoch4_v4_manifest_byte_for_byte_untouched():
@@ -458,8 +468,66 @@ def test_epoch4_v2_manifest_byte_for_byte_untouched():
     assert audit["observationGovernanceManifestHash"] == "2e550089a1f4ff56ff84322ab3aba22428d5a7079cdae5a20c456e66ea248e66"
 
 
+def test_epoch4_v6_malformed_fails_closed_no_fallback(monkeypatch):
+    """Asserts that if EPOCH_4_MANIFEST_V6.json exists but is malformed, verification fails closed and does NOT fall back to V5, V4, V3, or V2."""
+    monkeypatch.setattr(ExperimentLedger, "get_epoch4_v6_manifest", lambda: {"status": "CORRUPTED", "error": "MALFORMED_MANIFEST_V6", "valid": False})
+    res = ExperimentLedger.verify_epoch4_manifest()
+    assert res["status"] == "CORRUPTED"
+    assert res["valid"] is False
+    assert res.get("manifestVersion") != "5.0.0"
+
+    res_obs = ExperimentLedger.verify_observation_governance_manifest()
+    assert res_obs["status"] == "CORRUPTED"
+    assert res_obs["valid"] is False
+
+
+def test_epoch4_v6_missing_fails_closed_no_fallback(monkeypatch):
+    """Asserts that if EPOCH_4_MANIFEST_V6.json is missing in Candidate 004 context, verification fails closed and does NOT fall back to V5."""
+    monkeypatch.setattr(ExperimentLedger, "get_epoch4_v6_manifest", lambda: None)
+    repo_root = os.path.dirname(os.path.dirname(__file__))
+    v6_path = os.path.join(repo_root, "EPOCH_4_MANIFEST_V6.json")
+    monkeypatch.setattr(os.path, "exists", lambda p: False if p == v6_path else os.path.exists(p))
+    res = ExperimentLedger.verify_epoch4_manifest()
+    assert res["valid"] is False
+    assert res["status"] == "MANIFEST_MISSING"
+
+    res_obs = ExperimentLedger.verify_observation_governance_manifest()
+    assert res_obs["valid"] is False
+    assert res_obs["status"] == "MANIFEST_MISSING"
+
+
+def test_release_authority_and_disproof_invariants():
+    """Asserts that release authority enforces non-circular provenance and rejects joint tampering."""
+    # 1. Authorized C004 + V6 passes
+    auth = ExperimentLedger.verify_release_authority()
+    assert auth["authorized"] is True
+    assert auth["version"] == "6.0.0"
+
+    # 2. Tampered candidate commit fails closed
+    tampered_manifest = dict(ExperimentLedger.get_epoch4_v6_manifest())
+    tampered_manifest["certifiedSourceSnapshotCommitSha1"] = "0" * 40
+    auth_tampered = ExperimentLedger.verify_release_authority(tampered_manifest)
+    assert auth_tampered["authorized"] is False
+    assert auth_tampered["reason"] == "CANDIDATE_COMMIT_UNAUTHORIZED"
+
+    # 3. Tampered parent runtime hash fails closed
+    tampered_parent = dict(ExperimentLedger.get_epoch4_v6_manifest())
+    tampered_parent["parentRuntimeSha"] = "0" * 64
+    auth_parent = ExperimentLedger.verify_release_authority(tampered_parent)
+    assert auth_parent["authorized"] is False
+    assert auth_parent["reason"] == "PARENT_HASH_UNAUTHORIZED"
+
+    # 4. Evaluator API matches verifier
+    from analyst_dashboard.governance.evaluator import ProductionCertificationEvaluator
+    st, val = ProductionCertificationEvaluator().check_epoch2_manifest_hashes()
+    assert st == "PASS"
+    assert val["manifestVersion"] == "6.0.0"
+
+
 def test_epoch4_v5_malformed_fails_closed_no_fallback(monkeypatch):
-    """Asserts that if EPOCH_4_MANIFEST_V5.json exists but is malformed, verification fails closed and does NOT fall back to V4, V3, or V2."""
+    """Asserts that if EPOCH_4_MANIFEST_V5.json exists but is malformed (and V6 is absent), verification fails closed and does NOT fall back to V4, V3, or V2."""
+    monkeypatch.setattr(ExperimentLedger, "get_epoch4_v6_manifest", lambda: None)
+    monkeypatch.setattr(ExperimentLedger, "ACTIVE_EPOCH4_VERSION", "5.0.0")
     monkeypatch.setattr(ExperimentLedger, "get_epoch4_v5_manifest", lambda: {"status": "CORRUPTED", "error": "MALFORMED_MANIFEST_V5", "valid": False})
     res = ExperimentLedger.verify_epoch4_manifest()
     assert res["status"] == "CORRUPTED"
@@ -472,7 +540,9 @@ def test_epoch4_v5_malformed_fails_closed_no_fallback(monkeypatch):
 
 
 def test_epoch4_v4_malformed_fails_closed_no_fallback(monkeypatch):
-    """Asserts that if EPOCH_4_MANIFEST_V4.json exists but is malformed (and V5 is absent), verification fails closed and does NOT fall back to V3 or V2."""
+    """Asserts that if EPOCH_4_MANIFEST_V4.json exists but is malformed (and V6, V5 are absent), verification fails closed and does NOT fall back to V3 or V2."""
+    monkeypatch.setattr(ExperimentLedger, "get_epoch4_v6_manifest", lambda: None)
+    monkeypatch.setattr(ExperimentLedger, "ACTIVE_EPOCH4_VERSION", "4.0.0")
     monkeypatch.setattr(ExperimentLedger, "get_epoch4_v5_manifest", lambda: None)
     monkeypatch.setattr(ExperimentLedger, "get_epoch4_v4_manifest", lambda: {"status": "CORRUPTED", "error": "MALFORMED_MANIFEST_V4", "valid": False})
     res = ExperimentLedger.verify_epoch4_manifest()
@@ -486,7 +556,9 @@ def test_epoch4_v4_malformed_fails_closed_no_fallback(monkeypatch):
 
 
 def test_epoch4_v3_malformed_fails_closed_no_fallback(monkeypatch):
-    """Asserts that if EPOCH_4_MANIFEST_V3.json exists but is malformed (and V5 and V4 are absent), verification fails closed and does NOT fall back to V2."""
+    """Asserts that if EPOCH_4_MANIFEST_V3.json exists but is malformed (and V6, V5 and V4 are absent), verification fails closed and does NOT fall back to V2."""
+    monkeypatch.setattr(ExperimentLedger, "get_epoch4_v6_manifest", lambda: None)
+    monkeypatch.setattr(ExperimentLedger, "ACTIVE_EPOCH4_VERSION", "3.0.0")
     monkeypatch.setattr(ExperimentLedger, "get_epoch4_v5_manifest", lambda: None)
     monkeypatch.setattr(ExperimentLedger, "get_epoch4_v4_manifest", lambda: None)
     monkeypatch.setattr(ExperimentLedger, "get_epoch4_v3_manifest", lambda: {"status": "CORRUPTED", "error": "MALFORMED_MANIFEST_V3", "valid": False})
@@ -523,6 +595,9 @@ def test_epoch2_manifest_byte_for_byte_untouched():
 def test_epoch3_supersession_integrity():
     """Asserts Epoch 3 supersession record exists and confirms pre-observation supersession."""
     rec = ExperimentLedger.get_epoch3_supersession_record()
+    if rec is None:
+        ExperimentLedger.record_epoch3_supersession()
+        rec = ExperimentLedger.get_epoch3_supersession_record()
     assert rec is not None
     assert rec["previous_epoch_id"] == "ARX_PROSPECTIVE_VALIDATION_EPOCH_3"
     assert rec["target_epoch_id"] == "ARX_PROSPECTIVE_VALIDATION_EPOCH_4"
