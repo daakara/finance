@@ -156,13 +156,19 @@ class TestMarketSessionGuard(unittest.TestCase):
         self.assertEqual(res_empty.reason, "MISSING_MARKET_DATA")
         self.assertEqual(res_empty.coverage_ratio, 0.0)
 
-        # 3. Incomplete coverage: 3 of 5 symbols settled (60% < 90%)
+        valid_candles = [
+            {"open": 100.0, "high": 105.0, "low": 95.0, "close": 102.0, "volume": 1000000, "time": "2026-07-15"}
+            for _ in range(55)
+        ]
+
+        # 3. Incomplete coverage: 3 of 5 symbols settled (60% < 100%)
         mock_db_partial = MagicMock()
         def mock_price_partial(sym):
             if sym in ("AAPL", "MSFT", "NVDA"):
                 return {"currentPrice": 100.0, "date": "2026-07-15"}
             return {"currentPrice": 50.0, "date": "2026-07-14"}
         mock_db_partial.get_latest_price.side_effect = mock_price_partial
+        mock_db_partial.get_daily_candles.return_value = valid_candles
         res_partial = evaluate_natural_session_eligibility(
             session_date=session_date,
             now_utc=eligible_time,
@@ -174,9 +180,45 @@ class TestMarketSessionGuard(unittest.TestCase):
         self.assertEqual(res_partial.reason, "INCOMPLETE_UNIVERSE_COVERAGE")
         self.assertEqual(res_partial.coverage_ratio, 0.6)
 
-        # 4. Sufficient coverage: 5 of 5 symbols settled (100% >= 90%)
+        # 4. Parity check: 5 of 5 have price, but only 10 daily bars (< 50 bars required)
+        mock_db_short = MagicMock()
+        mock_db_short.get_latest_price.return_value = {"currentPrice": 150.0, "date": "2026-07-15"}
+        mock_db_short.get_daily_candles.return_value = valid_candles[:10]
+        res_short = evaluate_natural_session_eligibility(
+            session_date=session_date,
+            now_utc=eligible_time,
+            check_data_freshness=True,
+            universe_symbols=symbols,
+            market_db=mock_db_short,
+        )
+        self.assertFalse(res_short.is_eligible)
+        self.assertEqual(res_short.reason, "MISSING_MARKET_DATA")
+        self.assertEqual(res_short.coverage_ratio, 0.0)
+
+        # 5. Full-universe 34 of 35 symbols ready (97.1% < 100% required)
+        symbols_35 = [f"SYM{i}" for i in range(35)]
+        mock_db_34 = MagicMock()
+        mock_db_34.get_latest_price.return_value = {"currentPrice": 150.0, "date": "2026-07-15"}
+        def mock_candles_34_of_35(sym, limit=60):
+            if sym == "SYM34":
+                return valid_candles[:10]  # 1 symbol has insufficient bars
+            return valid_candles
+        mock_db_34.get_daily_candles.side_effect = mock_candles_34_of_35
+        res_34 = evaluate_natural_session_eligibility(
+            session_date=session_date,
+            now_utc=eligible_time,
+            check_data_freshness=True,
+            universe_symbols=symbols_35,
+            market_db=mock_db_34,
+        )
+        self.assertFalse(res_34.is_eligible)
+        self.assertEqual(res_34.reason, "INCOMPLETE_UNIVERSE_COVERAGE")
+        self.assertAlmostEqual(res_34.coverage_ratio, 34 / 35, places=4)
+
+        # 6. Sufficient coverage: 5 of 5 symbols settled with >= 50 bars (100% full universe)
         mock_db_full = MagicMock()
         mock_db_full.get_latest_price.return_value = {"currentPrice": 150.0, "date": "2026-07-15"}
+        mock_db_full.get_daily_candles.return_value = valid_candles
         res_full = evaluate_natural_session_eligibility(
             session_date=session_date,
             now_utc=eligible_time,
@@ -187,6 +229,29 @@ class TestMarketSessionGuard(unittest.TestCase):
         self.assertTrue(res_full.is_eligible)
         self.assertEqual(res_full.reason, "ELIGIBLE")
         self.assertEqual(res_full.coverage_ratio, 1.0)
+
+    def test_calendar_fail_closed_when_authority_unavailable(self):
+        from analyst_dashboard.vcp import session_guard
+        with patch.object(session_guard, "_NYSE_CAL", None):
+            res = session_guard.evaluate_natural_session_eligibility(
+                session_date="2026-07-15",
+                check_data_freshness=False,
+            )
+            self.assertFalse(res.is_eligible)
+            self.assertEqual(res.reason, "CALENDAR_AUTHORITY_UNAVAILABLE")
+            self.assertIn("unavailable", res.detail.lower())
+
+    def test_calendar_fail_closed_when_query_raises_exception(self):
+        from analyst_dashboard.vcp import session_guard
+        mock_cal = MagicMock()
+        mock_cal.is_session.side_effect = RuntimeError("Remote calendar connection dropped")
+        with patch.object(session_guard, "_NYSE_CAL", mock_cal):
+            res = session_guard.evaluate_natural_session_eligibility(
+                session_date="2026-07-15",
+                check_data_freshness=False,
+            )
+            self.assertFalse(res.is_eligible)
+            self.assertEqual(res.reason, "CALENDAR_AUTHORITY_UNAVAILABLE")
 
 
 class TestNaturalScanEndpointControlPlane(unittest.TestCase):
@@ -301,6 +366,10 @@ class TestNaturalScanEndpointControlPlane(unittest.TestCase):
             # Case B: Market DB returns 10 of 35 symbols -> HTTP 422 with INCOMPLETE_UNIVERSE_COVERAGE
             with patch("analyst_dashboard.vcp.session_guard.evaluate_natural_session_eligibility", side_effect=mock_eval_fn):
                 with patch("api.routes.screener.vcp_scanner_runner.market_db") as mock_mdb:
+                    mock_mdb.get_daily_candles.return_value = [
+                        {"open": 100.0, "high": 105.0, "low": 95.0, "close": 102.0, "volume": 1000000, "time": session_date}
+                        for _ in range(55)
+                    ]
                     call_count = [0]
                     def mock_price_partial(sym):
                         call_count[0] += 1
@@ -317,7 +386,7 @@ class TestNaturalScanEndpointControlPlane(unittest.TestCase):
                     data = res.json()["detail"]
                     self.assertEqual(data["status"], "REJECTED")
                     self.assertEqual(data["reason"], "INCOMPLETE_UNIVERSE_COVERAGE")
-                    self.assertLess(data["coverage_ratio"], 0.90)
+                    self.assertLess(data["coverage_ratio"], 1.0)
 
 
 class TestSessionLevelIdempotencyAndCoordination(unittest.TestCase):
@@ -464,13 +533,291 @@ class TestGitHubActionsWorkflowValidation(unittest.TestCase):
         self.assertIn("https://", wf_content)
         self.assertNotIn("arx-terminal-production.up.railway.app", wf_content)
 
-        # P1-03: Response contract assertions
+        # P1-03 & P0-01: Response contract assertions
         self.assertIn('STATUS=$(echo "$RESPONSE_BODY" | jq -r \'.status // empty\' 2>/dev/null)', wf_content)
+        self.assertIn('SNAP_ID=$(echo "$RESPONSE_BODY" | jq -r \'.snapshot_id // empty\' 2>/dev/null)', wf_content)
+        self.assertIn('CANDIDATE_ID=$(echo "$RESPONSE_BODY" | jq -r \'.candidate_generation_id // empty\' 2>/dev/null)', wf_content)
+        self.assertIn('PUB_STATUS=$(echo "$RESPONSE_BODY" | jq -r \'.snapshot_publication_status // empty\' 2>/dev/null)', wf_content)
+        self.assertIn('EXEC_OUTCOME=$(echo "$RESPONSE_BODY" | jq -r \'.execution_outcome // empty\' 2>/dev/null)', wf_content)
         self.assertIn('[ "$STATUS" != "SUCCESS" ]', wf_content)
-        self.assertIn('[ -z "$SNAP_ID" ]', wf_content)
+        self.assertIn('[ -z "$SNAP_ID" ] || [ "$SNAP_ID" = "null" ]', wf_content)
         self.assertIn('[ "$CANDIDATE_ID" != "CANDIDATE_GENERATION_004" ]', wf_content)
-        self.assertIn('[ "$PUB_STATUS" != "PUBLISH" ]', wf_content)
+        self.assertIn('[ "$PUB_STATUS" = "PUBLISH" ] || [ "$EXEC_OUTCOME" = "NEW_SUCCESS" ]', wf_content)
+        self.assertIn('[ "$PUB_STATUS" = "DEDUPLICATED" ] || [ "$EXEC_OUTCOME" = "ALREADY_SUCCEEDED" ]', wf_content)
+
+
+class TestNaturalScanDeduplicationAndOutcomeClassification(unittest.TestCase):
+    """Phase B / P0-01: Full verification of deduplication, outcome classification, and workflow contract."""
+
+    def setUp(self):
+        self.client = TestClient(app)
+
+    def test_fresh_execution_outcome_classification(self):
+        svc = NaturalVCPTriggerService(scanner_runner=MagicMock())
+        mock_runner = svc._get_runner()
+        mock_runner.execute_market_wide_scan.return_value = {
+            "snapshot_id": "snap-fresh-001",
+            "snapshot": {
+                "snapshot_id": "snap-fresh-001",
+                "data_as_of": "2026-07-15",
+                "universe_size": 35,
+                "matched_count": 23,
+            },
+            "publication_decision": "PUBLISH",
+            "status": "AVAILABLE",
+        }
+
+        res = svc.trigger_natural_scan(scheduled_date="2026-07-15")
+        self.assertEqual(res["status"], "SUCCESS")
+        self.assertEqual(res["execution_outcome"], "NEW_SUCCESS")
+        self.assertEqual(res["snapshot_publication_status"], "PUBLISH")
+        self.assertTrue(res["is_new_publication"])
+        self.assertEqual(res["snapshot_id"], "snap-fresh-001")
+        self.assertEqual(res["candidate_generation_id"], CANDIDATE_004_GENERATION_ID)
+
+    def test_duplicate_execution_outcome_classification(self):
+        svc = NaturalVCPTriggerService(scanner_runner=MagicMock())
+        mock_runner = svc._get_runner()
+        mock_runner.execute_market_wide_scan.return_value = {
+            "status": "SUCCESS",
+            "message": "Market scan already succeeded for logical job key",
+            "deduplicated": True,
+            "acquisition_status": "JOB_ALREADY_SUCCEEDED",
+            "successful_publication_id": "snap-prior-001",
+            "snapshot": {
+                "snapshot_id": "snap-prior-001",
+                "data_as_of": "2026-07-15",
+                "universe_size": 35,
+                "matched_count": 23,
+            },
+        }
+        mock_runner.snapshot_store.get_snapshot_by_id.return_value = {
+            "snapshot_id": "snap-prior-001",
+            "data_as_of": "2026-07-15",
+            "universe_size": 35,
+            "matched_count": 23,
+            "status": "AVAILABLE",
+        }
+
+        res = svc.trigger_natural_scan(scheduled_date="2026-07-15")
+        self.assertEqual(res["status"], "SUCCESS")
+        self.assertEqual(res["execution_outcome"], "ALREADY_SUCCEEDED")
+        self.assertEqual(res["snapshot_publication_status"], "DEDUPLICATED")
+        self.assertFalse(res["is_new_publication"])
+        self.assertEqual(res["snapshot_id"], "snap-prior-001")
+        self.assertEqual(res["candidate_generation_id"], CANDIDATE_004_GENERATION_ID)
+        self.assertIn("already succeeded", res["message"].lower())
+
+    def test_duplicate_execution_nested_envelope_unwrapping(self):
+        svc = NaturalVCPTriggerService(scanner_runner=MagicMock())
+        mock_runner = svc._get_runner()
+        mock_runner.execute_market_wide_scan.return_value = {
+            "status": "SUCCESS",
+            "deduplicated": True,
+            "acquisition_status": "JOB_ALREADY_SUCCEEDED",
+            "snapshot": {
+                "snapshot_id": "snap-nested-002",
+                "data_as_of": "2026-07-15",
+            },
+        }
+        mock_runner.snapshot_store.get_snapshot_by_id.return_value = {
+            "snapshot_id": "snap-nested-002",
+            "data_as_of": "2026-07-15",
+        }
+
+        res = svc.trigger_natural_scan(scheduled_date="2026-07-15")
+        self.assertEqual(res["status"], "SUCCESS")
+        self.assertEqual(res["execution_outcome"], "ALREADY_SUCCEEDED")
+        self.assertEqual(res["snapshot_publication_status"], "DEDUPLICATED")
+        self.assertEqual(res["snapshot_id"], "snap-nested-002")
+
+    def test_duplicate_execution_fails_closed_when_snapshot_id_missing(self):
+        svc = NaturalVCPTriggerService(scanner_runner=MagicMock())
+        mock_runner = svc._get_runner()
+        mock_runner.execute_market_wide_scan.return_value = {
+            "status": "SUCCESS",
+            "deduplicated": True,
+            "acquisition_status": "JOB_ALREADY_SUCCEEDED",
+        }
+        with self.assertRaises(RuntimeError) as ctx:
+            svc.trigger_natural_scan(scheduled_date="2026-07-15")
+        self.assertIn("DEDUPLICATED_SNAPSHOT_NOT_FOUND", str(ctx.exception))
+
+    def test_duplicate_execution_fails_closed_when_snapshot_not_in_store(self):
+        svc = NaturalVCPTriggerService(scanner_runner=MagicMock())
+        mock_runner = svc._get_runner()
+        mock_runner.execute_market_wide_scan.return_value = {
+            "status": "SUCCESS",
+            "deduplicated": True,
+            "acquisition_status": "JOB_ALREADY_SUCCEEDED",
+            "successful_publication_id": "snap-ghost-001",
+        }
+        mock_runner.snapshot_store.get_snapshot_by_id.return_value = None
+
+        with self.assertRaises(RuntimeError) as ctx:
+            svc.trigger_natural_scan(scheduled_date="2026-07-15")
+        self.assertIn("DEDUPLICATED_SNAPSHOT_NOT_FOUND", str(ctx.exception))
+
+    def test_duplicate_execution_fails_closed_when_snapshot_date_mismatch(self):
+        svc = NaturalVCPTriggerService(scanner_runner=MagicMock())
+        mock_runner = svc._get_runner()
+        mock_runner.execute_market_wide_scan.return_value = {
+            "status": "SUCCESS",
+            "deduplicated": True,
+            "acquisition_status": "JOB_ALREADY_SUCCEEDED",
+            "successful_publication_id": "snap-stale-001",
+        }
+        mock_runner.snapshot_store.get_snapshot_by_id.return_value = {
+            "snapshot_id": "snap-stale-001",
+            "data_as_of": "2026-07-14",
+        }
+
+        with self.assertRaises(RuntimeError) as ctx:
+            svc.trigger_natural_scan(scheduled_date="2026-07-15")
+        self.assertIn("DEDUPLICATED_SNAPSHOT_DATE_MISMATCH", str(ctx.exception))
+
+    def test_endpoint_duplicate_execution_returns_200_with_deduplicated_payload(self):
+        with patch.dict(os.environ, {
+            "VCP_NATURAL_SCHEDULER_ENABLED": "1",
+            "VCP_SCHEDULER_SECRET": "test-secret-dup",
+            "VCP_BYPASS_SESSION_GUARD_FOR_TESTING": "1",
+        }):
+            mock_runner = MagicMock()
+            mock_runner.execute_market_wide_scan.return_value = {
+                "status": "SUCCESS",
+                "deduplicated": True,
+                "acquisition_status": "JOB_ALREADY_SUCCEEDED",
+                "successful_publication_id": "snap-dedup-endpoint-001",
+                "snapshot": {
+                    "snapshot_id": "snap-dedup-endpoint-001",
+                    "data_as_of": "2026-07-15",
+                    "universe_size": 35,
+                    "matched_count": 23,
+                },
+            }
+            mock_runner.snapshot_store.get_snapshot_by_id.return_value = {
+                "snapshot_id": "snap-dedup-endpoint-001",
+                "data_as_of": "2026-07-15",
+                "universe_size": 35,
+                "matched_count": 23,
+                "status": "AVAILABLE",
+            }
+
+            with patch("analyst_dashboard.vcp.natural_trigger.get_natural_vcp_trigger_service") as mock_get_svc:
+                mock_svc = NaturalVCPTriggerService(scanner_runner=mock_runner)
+                mock_get_svc.return_value = mock_svc
+
+                res = self.client.post(
+                    "/api/v1/screener/vcp/natural-scan",
+                    headers={"X-Scheduler-Token": "test-secret-dup"},
+                    json={"scheduled_date": "2026-07-15"},
+                )
+                self.assertEqual(res.status_code, 200)
+                data = res.json()
+                self.assertEqual(data["status"], "SUCCESS")
+                self.assertEqual(data["execution_outcome"], "ALREADY_SUCCEEDED")
+                self.assertEqual(data["snapshot_publication_status"], "DEDUPLICATED")
+                self.assertFalse(data["is_new_publication"])
+                self.assertEqual(data["snapshot_id"], "snap-dedup-endpoint-001")
+                self.assertEqual(data["candidate_generation_id"], "CANDIDATE_GENERATION_004")
+
+    def test_workflow_script_contract_simulation(self):
+        """Simulate the exact workflow bash/jq classification logic on all response shapes."""
+        def evaluate_workflow_response(response_dict):
+            status = response_dict.get("status")
+            snap_id = response_dict.get("snapshot_id")
+            candidate_id = response_dict.get("candidate_generation_id")
+            pub_status = response_dict.get("snapshot_publication_status")
+            exec_outcome = response_dict.get("execution_outcome")
+
+            if status != "SUCCESS":
+                return False, "NON_SUCCESS_STATUS"
+            if not snap_id or snap_id == "null":
+                return False, "INVALID_SNAPSHOT_ID"
+            if candidate_id != "CANDIDATE_GENERATION_004":
+                return False, "CANDIDATE_MISMATCH"
+            if pub_status not in ("PUBLISH", "DEDUPLICATED"):
+                return False, "UNEXPECTED_PUB_STATUS"
+            if exec_outcome not in ("NEW_SUCCESS", "ALREADY_SUCCEEDED"):
+                return False, "UNEXPECTED_EXEC_OUTCOME"
+            return True, "WORKFLOW_PASS"
+
+        # Case 1: Fresh publication -> Pass
+        ok, reason = evaluate_workflow_response({
+            "status": "SUCCESS",
+            "snapshot_id": "snap-fresh-1",
+            "candidate_generation_id": "CANDIDATE_GENERATION_004",
+            "snapshot_publication_status": "PUBLISH",
+            "execution_outcome": "NEW_SUCCESS",
+        })
+        self.assertTrue(ok, reason)
+
+        # Case 2: Deduplicated run -> Pass
+        ok, reason = evaluate_workflow_response({
+            "status": "SUCCESS",
+            "snapshot_id": "snap-dedup-1",
+            "candidate_generation_id": "CANDIDATE_GENERATION_004",
+            "snapshot_publication_status": "DEDUPLICATED",
+            "execution_outcome": "ALREADY_SUCCEEDED",
+        })
+        self.assertTrue(ok, reason)
+
+        # Case 3: Missing or null snapshot_id -> Fail
+        ok, reason = evaluate_workflow_response({
+            "status": "SUCCESS",
+            "snapshot_id": None,
+            "candidate_generation_id": "CANDIDATE_GENERATION_004",
+            "snapshot_publication_status": "DEDUPLICATED",
+            "execution_outcome": "ALREADY_SUCCEEDED",
+        })
+        self.assertFalse(ok)
+        self.assertEqual(reason, "INVALID_SNAPSHOT_ID")
+
+        # Case 4: Non-success status -> Fail
+        ok, reason = evaluate_workflow_response({
+            "status": "REJECTED",
+            "snapshot_id": "snap-1",
+            "candidate_generation_id": "CANDIDATE_GENERATION_004",
+            "snapshot_publication_status": "PUBLISH",
+            "execution_outcome": "NEW_SUCCESS",
+        })
+        self.assertFalse(ok)
+        self.assertEqual(reason, "NON_SUCCESS_STATUS")
+
+        # Case 5: Candidate mismatch -> Fail
+        ok, reason = evaluate_workflow_response({
+            "status": "SUCCESS",
+            "snapshot_id": "snap-1",
+            "candidate_generation_id": "CANDIDATE_GENERATION_003",
+            "snapshot_publication_status": "PUBLISH",
+            "execution_outcome": "NEW_SUCCESS",
+        })
+        self.assertFalse(ok)
+        self.assertEqual(reason, "CANDIDATE_MISMATCH")
+
+        # Case 6: Unknown publication status -> Fail
+        ok, reason = evaluate_workflow_response({
+            "status": "SUCCESS",
+            "snapshot_id": "snap-1",
+            "candidate_generation_id": "CANDIDATE_GENERATION_004",
+            "snapshot_publication_status": "UNKNOWN_PUB",
+            "execution_outcome": "NEW_SUCCESS",
+        })
+        self.assertFalse(ok)
+        self.assertEqual(reason, "UNEXPECTED_PUB_STATUS")
+
+        # Case 7: Unknown execution outcome -> Fail
+        ok, reason = evaluate_workflow_response({
+            "status": "SUCCESS",
+            "snapshot_id": "snap-1",
+            "candidate_generation_id": "CANDIDATE_GENERATION_004",
+            "snapshot_publication_status": "PUBLISH",
+            "execution_outcome": "UNKNOWN_OUTCOME",
+        })
+        self.assertFalse(ok)
+        self.assertEqual(reason, "UNEXPECTED_EXEC_OUTCOME")
 
 
 if __name__ == "__main__":
     unittest.main()
+

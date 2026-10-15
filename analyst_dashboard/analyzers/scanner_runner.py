@@ -194,8 +194,15 @@ class VCPScannerRunner:
         if acq_result.status == AcquisitionStatus.JOB_ALREADY_SUCCEEDED:
             if acquired_thread_lock:
                 self._scan_lock.release()
-            logger.info(f"Logical job {effective_job_key} already succeeded. Returning active snapshot.")
-            return self.get_active_or_latest_snapshot()
+            pub_id = acq_result.existing_job.successful_publication_id if acq_result.existing_job else None
+            logger.info(f"Logical job {effective_job_key} already succeeded with publication {pub_id}. Returning active snapshot.")
+            cached = self.get_active_or_latest_snapshot()
+            if isinstance(cached, dict):
+                cached = dict(cached)
+                cached["deduplicated"] = True
+                cached["acquisition_status"] = "JOB_ALREADY_SUCCEEDED"
+                cached["successful_publication_id"] = pub_id
+            return cached
 
         if acq_result.status == AcquisitionStatus.ALREADY_RUNNING:
             if acquired_thread_lock:

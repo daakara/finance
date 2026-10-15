@@ -27,6 +27,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from analyst_dashboard.vcp.sprint_3_shadow_governance import CANDIDATE_004_GENERATION_ID
+from analyst_dashboard.analyzers.scanner_contract import CANONICAL_VCP_UNIVERSE
 
 logger = logging.getLogger("arx.vcp.natural_trigger")
 
@@ -178,33 +179,85 @@ class NaturalVCPTriggerService:
             candidate_generation_id=CANDIDATE_004_GENERATION_ID,
         )
 
-        pub_decision = envelope.get("publication_decision")
+        # Phase B: Authoritative response unwrap & durable reconciliation
+        if hasattr(envelope, "to_envelope"):
+            raw_env = envelope.to_envelope()
+            is_dedup = False
+            pub_id = getattr(envelope, "snapshot_id", None)
+        elif isinstance(envelope, dict):
+            raw_env = envelope
+            is_dedup = bool(envelope.get("deduplicated") or envelope.get("acquisition_status") == "JOB_ALREADY_SUCCEEDED")
+            pub_id = envelope.get("successful_publication_id")
+        else:
+            raw_env = {}
+            is_dedup = False
+            pub_id = None
+
+        snap_dict = raw_env.get("snapshot") if isinstance(raw_env.get("snapshot"), dict) else {}
+        snapshot_id = raw_env.get("snapshot_id") or snap_dict.get("snapshot_id") or pub_id
+        matched_count = raw_env.get("matched_count")
+        if matched_count is None:
+            matched_count = snap_dict.get("matched_count", 0)
+        universe_size = raw_env.get("universe_size")
+        if universe_size is None:
+            universe_size = snap_dict.get("universe_size", len(CANONICAL_VCP_UNIVERSE))
+
+        # Durable reconciliation for deduplicated execution (Phase B3)
+        if is_dedup:
+            if not snapshot_id:
+                raise RuntimeError(f"DURABLE_PROVENANCE_INCONSISTENCY / DEDUPLICATED_SNAPSHOT_NOT_FOUND: Deduplicated job {logical_trigger_id} has missing snapshot_id.")
+            persisted = runner.snapshot_store.get_snapshot_by_id(snapshot_id)
+            if not persisted:
+                raise RuntimeError(
+                    f"DURABLE_PROVENANCE_INCONSISTENCY / DEDUPLICATED_SNAPSHOT_NOT_FOUND: Snapshot {snapshot_id} referenced by duplicate job {logical_trigger_id} does not exist in store."
+                )
+            # Reconcile session date
+            persisted_date = str(persisted.get("data_as_of") or "")[:10]
+            if persisted_date and persisted_date != today_str:
+                raise RuntimeError(
+                    f"DURABLE_PROVENANCE_INCONSISTENCY / DEDUPLICATED_SNAPSHOT_DATE_MISMATCH: Snapshot {snapshot_id} session date '{persisted_date}' does not match requested session '{today_str}'."
+                )
+
+        pub_decision = raw_env.get("publication_decision") or snap_dict.get("publication_decision")
         if hasattr(pub_decision, "value"):
             pub_decision_val = pub_decision.value
         else:
-            pub_decision_val = str(pub_decision) if pub_decision is not None else "PUBLISH"
+            pub_decision_val = str(pub_decision) if pub_decision is not None else ("PUBLISH" if not is_dedup else "DEDUPLICATED")
 
-        is_published = (pub_decision_val == "PUBLISH" and envelope.get("status") in ("AVAILABLE", "ScannerStatus.AVAILABLE"))
+        is_published = (
+            (pub_decision_val in ("PUBLISH", "DEDUPLICATED"))
+            and (
+                raw_env.get("status") in ("AVAILABLE", "ScannerStatus.AVAILABLE", "SUCCESS")
+                or (is_dedup and bool(snapshot_id))
+            )
+            and bool(snapshot_id)
+        )
+
+        outcome_status = "ALREADY_SUCCEEDED" if is_dedup else "NEW_SUCCESS"
+        pub_status = "DEDUPLICATED" if is_dedup else pub_decision_val
 
         return {
             "status": "SUCCESS" if is_published else "FAILED",
-            "scan_execution_status": "SUCCESS" if envelope.get("snapshot_id") else "FAILED",
-            "snapshot_publication_status": pub_decision_val,
-            "natural_observation_status": "RECORDED" if envelope.get("snapshot_id") else "FAILED",
-            "prospective_admission_status": "ADMITTED" if is_published else "INELIGIBLE",
+            "message": raw_env.get("message", "Market scan completed successfully"),
+            "execution_outcome": outcome_status,
+            "scan_execution_status": "DEDUPLICATED" if is_dedup else ("SUCCESS" if snapshot_id else "FAILED"),
+            "snapshot_publication_status": pub_status,
+            "natural_observation_status": "DEDUPLICATED" if is_dedup else ("RECORDED" if snapshot_id else "FAILED"),
+            "prospective_admission_status": "INELIGIBLE" if is_dedup else ("ADMITTED" if is_published else "INELIGIBLE"),
+            "is_new_publication": not is_dedup,
             "candidate_generation_id": CANDIDATE_004_GENERATION_ID,
             "logical_scan_run_id": logical_scan_run_id,
             "logical_trigger_id": logical_trigger_id,
             "scheduled_date": today_str,
             "scheduler_job_id": eff_job_id,
             "scheduler_event_id": eff_event_id,
-            "snapshot_id": envelope.get("snapshot_id"),
-            "matched_count": envelope.get("matched_count", 0),
-            "universe_size": envelope.get("universe_size", 0),
-            "results": envelope.get("results", []),
-            "freshness": envelope.get("freshness", {}),
-            "provenance": envelope.get("provenance", {}),
-            "envelope": envelope,
+            "snapshot_id": snapshot_id,
+            "matched_count": matched_count,
+            "universe_size": universe_size,
+            "results": raw_env.get("results", []),
+            "freshness": raw_env.get("freshness", {}),
+            "provenance": raw_env.get("provenance", {}),
+            "envelope": raw_env,
         }
 
 

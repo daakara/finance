@@ -124,6 +124,7 @@ jobs:
               SNAP_ID=$(echo "$RESPONSE_BODY" | jq -r '.snapshot_id // empty' 2>/dev/null)
               CANDIDATE_ID=$(echo "$RESPONSE_BODY" | jq -r '.candidate_generation_id // empty' 2>/dev/null)
               PUB_STATUS=$(echo "$RESPONSE_BODY" | jq -r '.snapshot_publication_status // empty' 2>/dev/null)
+              EXEC_OUTCOME=$(echo "$RESPONSE_BODY" | jq -r '.execution_outcome // empty' 2>/dev/null)
               MATCH_CNT=$(echo "$RESPONSE_BODY" | jq -r '.matched_count // empty' 2>/dev/null)
               UNIV_SIZE=$(echo "$RESPONSE_BODY" | jq -r '.universe_size // empty' 2>/dev/null)
 
@@ -133,8 +134,8 @@ jobs:
                 exit 1
               fi
 
-              # Assert snapshot_id is non-empty
-              if [ -z "$SNAP_ID" ]; then
+              # Assert snapshot_id is non-empty and not null
+              if [ -z "$SNAP_ID" ] || [ "$SNAP_ID" = "null" ]; then
                 echo "::error::INVALID_PROVENANCE: Missing or empty snapshot_id in HTTP 200 response."
                 exit 1
               fi
@@ -145,14 +146,17 @@ jobs:
                 exit 1
               fi
 
-              # Assert publication status is PUBLISH
-              if [ "$PUB_STATUS" != "PUBLISH" ]; then
-                echo "::error::PUBLICATION_NOT_CONFIRMED: Expected snapshot_publication_status=PUBLISH, got '$PUB_STATUS'."
+              # Classify New Success vs Deduplicated Success (Phase B4)
+              if [ "$PUB_STATUS" = "PUBLISH" ] || [ "$EXEC_OUTCOME" = "NEW_SUCCESS" ]; then
+                echo "::notice::VCP Natural Scan NEW_SUCCESS: Published snapshot=$SNAP_ID, Candidate=$CANDIDATE_ID, Matched=$MATCH_CNT/$UNIV_SIZE, Publication=$PUB_STATUS"
+                exit 0
+              elif [ "$PUB_STATUS" = "DEDUPLICATED" ] || [ "$EXEC_OUTCOME" = "ALREADY_SUCCEEDED" ]; then
+                echo "::notice::VCP Natural Scan ALREADY_SUCCEEDED: Verified existing snapshot=$SNAP_ID, Candidate=$CANDIDATE_ID, Matched=$MATCH_CNT/$UNIV_SIZE. Deduplicated without re-publication."
+                exit 0
+              else
+                echo "::error::PUBLICATION_NOT_CONFIRMED: Unexpected snapshot_publication_status='$PUB_STATUS' (expected PUBLISH or DEDUPLICATED)."
                 exit 1
               fi
-
-              echo "::notice::VCP Natural Scan SUCCESS: Snapshot=$SNAP_ID, Candidate=$CANDIDATE_ID, Matched=$MATCH_CNT/$UNIV_SIZE, Publication=$PUB_STATUS"
-              exit 0
               ;;
             403)
               echo "::error::AUTHENTICATION_FAILED (HTTP 403): X-Scheduler-Token was rejected by server."
