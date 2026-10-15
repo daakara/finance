@@ -129,4 +129,5 @@ def test_boundary_corridor_state_transitions():
     assert mid_plan["execution_status"] == "IN_BUY_ZONE"
 
     above_plan = OptimalExecutionEngine.calculate_trade_levels(df, current_price=emax + 1.0, user_role="LONG_TERM")
-    assert above_plan["execution_status"] == "APPROACHING_TARGET"
+    assert above_plan["execution_status"] == "EXTENDED_ABOVE_BUY_ZONE"
+
