@@ -2047,7 +2047,7 @@ def verify_operational_readiness_bundle(spec_dict: Optional[Dict[str, Any]] = No
         raise ValueError(f"Invalid spec_id: {data.get('spec_id')}")
     if data.get("final_custodian_handoff_commit_sha") != FINAL_CUSTODIAN_HANDOFF_COMMIT_SHA:
         raise ValueError(f"Mismatched final_custodian_handoff_commit_sha: {data.get('final_custodian_handoff_commit_sha')}")
-    if data.get("effective_epoch_policy_hash") != EFFECTICE_EPOCH_002_POLICY_HASH if False else data.get("effective_epoch_policy_hash") != EFFECTIVE_EPOCH_002_POLICY_HASH:
+    if data.get("effective_epoch_policy_hash") != EFFECTIVE_EPOCH_002_POLICY_HASH:
         raise ValueError(f"Mismatched effective_epoch_policy_hash: {data.get('effective_epoch_policy_hash')}")
     if data.get("effective_cryptographic_contract_hash") != EFFECTIVE_CRYPTOGRAPHIC_CONTRACT_HASH:
         raise ValueError(f"Mismatched effective_cryptographic_contract_hash: {data.get('effective_cryptographic_contract_hash')}")
