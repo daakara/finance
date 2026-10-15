@@ -195,7 +195,7 @@ def main():
         "residual_35_cache_misses_start": 35,
         "residual_35_cache_misses_end": end_cache_misses,
         "residual_35_distribution": miss_outcomes,
-        "original_10_selected": f"{orig_selected} / {len(orig_10)}",
+        "original_10_selected": f"{orig_10_selected if 'orig_10_selected' in locals() else orig_selected} / {len(orig_10)}",
         "residual_16_selected": f"{res_16_selected} / {len(res_16)}",
         "fn_results": fn_results,
         "miss_results": miss_results,

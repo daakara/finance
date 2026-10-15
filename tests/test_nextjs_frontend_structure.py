@@ -214,7 +214,7 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         with open(entry_card_path, "r", encoding="utf-8") as f:
             entry_content = f.read()
         self.assertIn("finance:vernacular-change", entry_content)
-        self.assertIn("Conditional Trade Plan", entry_content)
+        self.assertIn("Safe Buy & Sell Plan", entry_content)
 
         with open(screener_path, "r", encoding="utf-8") as f:
             screener_content = f.read()

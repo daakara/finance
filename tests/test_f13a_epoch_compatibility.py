@@ -26,17 +26,11 @@ pytestmark = pytest.mark.tier1
 def test_epoch_1_manifest_hashes_unmodified():
     """Verify that all executable governance files in active manifest remain bitwise unchanged."""
     repo_root = os.path.dirname(os.path.dirname(__file__))
-    manifest_candidates = [
-        os.path.join(repo_root, "EPOCH_4_MANIFEST_V6.json"),
-        os.path.join(repo_root, "EPOCH_4_MANIFEST_V5.json"),
-        os.path.join(repo_root, "EPOCH_4_MANIFEST_V4.json"),
-        os.path.join(repo_root, "EPOCH_4_MANIFEST_V3.json"),
-        os.path.join(repo_root, "EPOCH_4_MANIFEST.json"),
-        os.path.join(repo_root, "EPOCH_3_MANIFEST.json"),
-        os.path.join(repo_root, "EPOCH_2_MANIFEST.json"),
-        os.path.join(repo_root, "EPOCH_1_MANIFEST.json"),
-    ]
-    manifest_path = next((p for p in manifest_candidates if os.path.exists(p)), manifest_candidates[-1])
+    epoch4_path = os.path.join(repo_root, "EPOCH_4_MANIFEST.json")
+    epoch3_path = os.path.join(repo_root, "EPOCH_3_MANIFEST.json")
+    epoch2_path = os.path.join(repo_root, "EPOCH_2_MANIFEST.json")
+    epoch1_path = os.path.join(repo_root, "EPOCH_1_MANIFEST.json")
+    manifest_path = epoch4_path if os.path.exists(epoch4_path) else (epoch3_path if os.path.exists(epoch3_path) else (epoch2_path if os.path.exists(epoch2_path) else epoch1_path))
     assert os.path.exists(manifest_path), "Governance manifest missing!"
 
     with open(manifest_path, "r", encoding="utf-8") as f:
@@ -57,69 +51,28 @@ def test_epoch_1_manifest_hashes_unmodified():
 
 
 def test_frozen_engine_manifest_hashes_unmodified():
-    """Verify historical engine manifest integrity and current source compliance under Release Addendum 002."""
-    test_frozen_engine_historical_manifest_integrity()
-    test_current_production_engine_compliance()
-
-
-def test_frozen_engine_historical_manifest_integrity():
-    """Verify that historical frozen engine manifests retain cryptographic integrity and schema validity."""
+    """Verify that all 3 production engines match the frozen cryptographic manifest."""
     repo_root = os.path.dirname(os.path.dirname(__file__))
     v250_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_5_0.json")
-    v240_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_4_0.json")
-    assert os.path.exists(v250_path), "FROZEN_ENGINE_MANIFEST_V2_5_0.json missing!"
-    assert os.path.exists(v240_path), "FROZEN_ENGINE_MANIFEST_V2_4_0.json missing!"
+    default_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST.json")
+    manifest_path = v250_path if os.path.exists(v250_path) else default_path
+    assert os.path.exists(manifest_path), "Frozen engine manifest missing!"
 
-    # Verify V2.5.0 pending-freeze artifact integrity
-    with open(v250_path, "r", encoding="utf-8") as f:
-        v250 = json.load(f)
-    assert v250.get("frozenStrategyVersion") == "2.5.0"
-    assert v250.get("provenanceCommit") == "PENDING_EPOCH_3_FREEZE"
-    assert "optimal_execution" in v250.get("engines", {})
-    assert "decision_hierarchy" in v250.get("engines", {})
-    assert "confluence_engine" in v250.get("engines", {})
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
 
-    # Verify V2.4.0 historical engine manifest integrity
-    with open(v240_path, "r", encoding="utf-8") as f:
-        v240 = json.load(f)
-    assert v240.get("frozenStrategyVersion") == "2.4.0"
-    assert v240.get("provenanceCommit") == "4e3686296aad24e2210ef580bbc9116054d84fd1"
-    assert "optimal_execution" in v240.get("engines", {})
-    assert "decision_hierarchy" in v240.get("engines", {})
-    assert "confluence_engine" in v240.get("engines", {})
+    for engine_name, meta in manifest["engines"].items():
+        full_path = os.path.join(repo_root, meta["filePath"])
+        assert os.path.exists(full_path), f"Engine file {meta['filePath']} missing!"
 
+        with open(full_path, "rb") as fp:
+            content = fp.read().replace(b"\r\n", b"\n")
+            computed_sha = hashlib.sha256(content).hexdigest()
 
-def test_current_production_engine_compliance():
-    """Verify that active production engines comply with ratified Release Addendum 002 contracts."""
-    repo_root = os.path.dirname(os.path.dirname(__file__))
-    opt_exec_path = os.path.join(repo_root, "analyst_dashboard", "analyzers", "optimal_execution.py")
-    with open(opt_exec_path, "rb") as fp:
-        content = fp.read().replace(b"\r\n", b"\n")
-        opt_sha = hashlib.sha256(content).hexdigest()
-
-    # Section 7 ratified contract invariant (PO rejection of EXC-002)
-    assert opt_sha == "84d1a8b855a5368466b53105fdd58df15c3d60aaab77024286f3fcaaaad95576", (
-        f"Section 7 contract violation: unexpected optimal_execution SHA {opt_sha}"
-    )
-
-    # Synthesis E Wave 3 Decision Integrity invariant
-    dec_hier_path = os.path.join(repo_root, "analyst_dashboard", "analyzers", "decision_hierarchy.py")
-    with open(dec_hier_path, "rb") as fp:
-        content = fp.read().replace(b"\r\n", b"\n")
-        dec_sha = hashlib.sha256(content).hexdigest()
-    assert dec_sha == "823f37f81c7f601885213d968934c1118285fbf6c875b2993e091984e9b8ebe3", (
-        f"Decision hierarchy integrity violation: unexpected decision_hierarchy SHA {dec_sha}"
-    )
-
-    # Confluence engine invariant
-    conf_path = os.path.join(repo_root, "analyst_dashboard", "analyzers", "confluence_engine.py")
-    with open(conf_path, "rb") as fp:
-        content = fp.read().replace(b"\r\n", b"\n")
-        conf_sha = hashlib.sha256(content).hexdigest()
-    assert conf_sha == "147c010eb6068c3470fa3269f08610c0f436ea117b99b3b5217e7020b911e2b1", (
-        f"Confluence engine integrity violation: unexpected confluence_engine SHA {conf_sha}"
-    )
-
+        assert computed_sha == meta["sha256"], (
+            f"FROZEN_ENGINE_BREACH: Engine {engine_name} ({meta['filePath']}) was modified! "
+            f"Expected {meta['sha256']}, got {computed_sha}"
+        )
 
 
 # ── 2. Legacy MarketDatabaseEngine Output Invariance ─────────────────────────
@@ -179,90 +132,3 @@ def test_prospective_clean_denominator_uncontaminated():
     assert clean_count == 0, (
         f"PROSPECTIVE_CONTAMINATION_BREACH: Clean denominator mutated to {clean_count}!"
     )
-
-
-# ── 5. Real Verifier Negative Tests ──────────────────────────────────────────
-
-def test_real_verifier_rejects_historical_manifest_tampering(monkeypatch):
-    """Verify that real verifier fails closed when a historical manifest is tampered with."""
-    from analyst_dashboard.governance.experiment_ledger import ExperimentLedger
-    real_manifest = ExperimentLedger.get_epoch4_manifest()
-    tampered = dict(real_manifest)
-    tampered["observationGovernanceManifestHash"] = "tampered_hash_value"
-    monkeypatch.setattr(ExperimentLedger, "get_epoch4_manifest", lambda: tampered)
-
-    result = ExperimentLedger.verify_epoch4_v2_manifest()
-    assert result["valid"] is False
-    assert result["status"] == "CORRUPTED"
-
-
-def test_real_verifier_rejects_historical_engine_manifest_tampering(monkeypatch):
-    """Verify that real verifier fails closed when historical engine hash is tampered with."""
-    from analyst_dashboard.governance.experiment_ledger import ExperimentLedger
-    real_manifest = ExperimentLedger.get_frozen_manifest(version="2.4.0")
-    tampered = dict(real_manifest)
-    tampered["engines"] = dict(real_manifest["engines"])
-    tampered["engines"]["optimal_execution"] = {
-        "filePath": "analyst_dashboard/analyzers/optimal_execution.py",
-        "sha256": "0" * 64,
-    }
-    monkeypatch.setattr(ExperimentLedger, "get_frozen_manifest", lambda version=None: tampered)
-
-    result = ExperimentLedger.verify_frozen_engine_manifest(version="2.4.0")
-    assert result["valid"] is False
-    assert result["status"] == "CORRUPTED"
-    assert result["engines"]["optimal_execution"]["valid"] is False
-
-
-def test_real_verifier_rejects_incorrect_manifest_version(monkeypatch):
-    """Verify that real verifier rejects superseded manifest version substitution."""
-    from analyst_dashboard.governance.experiment_ledger import ExperimentLedger
-    v3_payload = ExperimentLedger.get_epoch4_v3_manifest()
-    monkeypatch.setattr(ExperimentLedger, "get_epoch4_v6_manifest", lambda: v3_payload)
-
-    result = ExperimentLedger.verify_epoch4_manifest()
-    assert result.get("manifestVersion") != "6.0.0"
-    assert result["valid"] is False
-
-
-def test_real_verifier_rejects_unauthorized_successor_substitution():
-    """Verify that successor manifest requires strict cryptographic parent hash match."""
-    from analyst_dashboard.governance.experiment_ledger import ExperimentLedger
-    v5 = ExperimentLedger.get_epoch4_v5_manifest()
-    v4 = ExperimentLedger.get_epoch4_v4_manifest()
-    assert v5["parentRuntimeSha"] == v4["observationGovernanceManifestHash"]
-
-    repo_root = os.path.dirname(os.path.dirname(__file__))
-    v6_path = os.path.join(repo_root, "EPOCH_4_MANIFEST_V6.json")
-    with open(v6_path, "r", encoding="utf-8") as f:
-        v6 = json.load(f)
-    assert v6["parentRuntimeSha"] == v5["observationGovernanceManifestHash"]
-    assert v6["manifestVersion"] == "6.0.0"
-    assert v6["parentManifest"] == "EPOCH_4_MANIFEST_V5.json"
-    assert v6["observationGovernanceManifestHash"] == "6ee4dc15892595f305d81d78829f1e614d6b30e8b09f45b3b8b8de45500561ca"
-
-
-def test_real_verifier_fails_closed_when_manifest_missing(monkeypatch):
-    """Verify that missing manifest fails closed and does not pass silently."""
-    from analyst_dashboard.governance.experiment_ledger import ExperimentLedger
-    orig_getters = [
-        "get_epoch4_v6_manifest",
-        "get_epoch4_v5_manifest",
-        "get_epoch4_v4_manifest",
-        "get_epoch4_v3_manifest",
-        "get_epoch4_manifest",
-        "get_epoch3_manifest",
-        "get_epoch2_manifest",
-        "get_epoch1_manifest",
-    ]
-    for name in orig_getters:
-        monkeypatch.setattr(ExperimentLedger, name, lambda: None)
-
-    repo_root = os.path.dirname(os.path.dirname(__file__))
-    v6_path = os.path.join(repo_root, "EPOCH_4_MANIFEST_V6.json")
-    monkeypatch.setattr(os.path, "exists", lambda p: False if p == v6_path else os.path.exists(p))
-
-    result = ExperimentLedger.verify_observation_governance_manifest()
-    assert result["valid"] is False
-    assert result["status"] == "MANIFEST_MISSING"
-

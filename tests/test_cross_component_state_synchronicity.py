@@ -38,7 +38,7 @@ class TestCrossComponentStateSynchronicity(unittest.TestCase):
         self.assertNotIn("const isCatalystPassed = true;", content, "Check 4 cannot have hardcoded static true placeholder")
         self.assertNotIn("const isMacroPassed = true;", content, "Check 5 cannot have hardcoded static true placeholder")
         self.assertIn("STAGE 4 WAIT", content, "Check 2 must render Stage 4 Wait status when isStage4 is true")
-        self.assertIn("isDistributionTrap", content, "Check 3 must dynamically resolve distribution trap status")
+        self.assertIn("isDistributionTrapResolved", content, "Check 3 must dynamically resolve distribution trap status")
 
     def test_optimal_entry_exit_card_passes_stage4_to_modals(self):
         """Invariant: OptimalEntryExitCard must propagate isStage4 and boundary props to

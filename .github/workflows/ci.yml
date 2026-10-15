@@ -27,7 +27,7 @@ jobs:
     - name: Install test dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt pytest pytest-cov httpx starlette pyyaml pytest-asyncio
+        pip install -r requirements.txt pytest pytest-cov httpx starlette
 
     - name: Run Tier 1 Core Invariant Gate
       env:

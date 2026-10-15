@@ -39,13 +39,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Set, Tuple
 
 # Re-use frozen Wave 4 authority models verbatim (NO duplicate business logic)
 from .global_identifier_authority import normalize_isin, validate_isin
-from .global_identity_models import (
-    ETFInstrument,
-    ETFListing,
-    ETFShareClass,
-    InvalidIdentifierError,
-    UnsupportedJurisdictionError,
-)
+from .global_identity_models import ETFInstrument, ETFListing, ETFShareClass
 from .global_identity_resolver import AuthorityShareClassEntry
 from .ucits_acquisition_engine import (
     DeterministicMockTransportHandler,

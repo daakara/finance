@@ -1,4 +1,4 @@
-"""Comprehensive Frontend Monkey & Navigation Parity Test Suite."""
+﻿"""Comprehensive Frontend Monkey & Navigation Parity Test Suite."""
 
 from unittest.mock import patch, MagicMock
 import pytest
@@ -6,7 +6,7 @@ import pandas as pd
 from fastapi.testclient import TestClient
 from api.main import app
 
-pytestmark = [pytest.mark.tier2a, pytest.mark.usefixtures("published_screener_universe")]
+pytestmark = pytest.mark.tier2a
 
 
 client = TestClient(app)

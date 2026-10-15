@@ -12,7 +12,7 @@ import json
 import hashlib
 from pathlib import Path
 from collections import Counter
-from typing import Any, Dict, List, Set
+from typing import Dict, Any, List
 
 repo_root = Path(__file__).resolve().parent.parent.parent
 if str(repo_root) not in sys.path:

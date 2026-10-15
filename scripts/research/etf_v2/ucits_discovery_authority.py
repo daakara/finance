@@ -727,7 +727,7 @@ class UCITSDiscoveryAuthority:
         self,
         run_dir: Path,
         config: DiscoveryConfiguration,
-        custom_adapters: Optional[List[BaseDiscoveryAdapter]] = None,
+        custom_adapters: Optional[List[BaseSourceAdapter]] = None,
     ) -> Dict[str, Any]:
         """
         Replays discovery from preserved raw response files without network access.

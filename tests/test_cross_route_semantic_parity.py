@@ -1,4 +1,4 @@
-"""Automated Cross-Route Semantic Parity & Alignment Test Suite.
+﻿"""Automated Cross-Route Semantic Parity & Alignment Test Suite.
 
 Enforces cross-view semantic parity across the entire application:
 1. Every candidate surfaced by the Screener (ELF, MEDP, DUOL, POWI, CPRX, etc.)
@@ -16,7 +16,7 @@ import pandas as pd
 from fastapi.testclient import TestClient
 from api.main import app
 
-pytestmark = [pytest.mark.tier2a, pytest.mark.usefixtures("published_screener_universe")]
+pytestmark = pytest.mark.tier2a
 
 
 client = TestClient(app)

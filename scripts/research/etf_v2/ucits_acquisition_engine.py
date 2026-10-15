@@ -58,7 +58,6 @@ from .ucits_authority_adapter import (
 from .ucits_provenance_models import (
     AcquisitionTransportError,
     AUTHORIZED_DOCUMENT_CLASSES,
-    ETFSourceAuthorityError,
     InvalidSourceAuthorityError,
     ProvenanceConflictError,
     ProvenanceValidationError,

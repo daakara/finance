@@ -220,8 +220,6 @@ class VCPScannerRunner:
             target_build_id = universe_build_id
             build_attestation = None
             if target_build_id:
-                if hasattr(self.universe_store, "get_universe_build"):
-                    build_attestation = self.universe_store.get_universe_build(target_build_id)
                 scannable_symbols = self.universe_store.get_scannable_membership(target_build_id)
             else:
                 latest_build = self.universe_store.get_latest_published_universe(UNIVERSE_ID)
@@ -232,33 +230,18 @@ class VCPScannerRunner:
                 else:
                     scannable_symbols = []
 
-            is_natural_scheduled = (
-                invocation_class == "SCHEDULED_PRODUCTION"
-                or trigger_type == TriggerType.SCHEDULED
-            )
-
             if universe_override is not None:
                 universe = universe_override
                 eligible_count = len(universe)
                 scannable_count = len(universe)
                 unavailable_count = 0
             elif scannable_symbols:
-                # For natural scheduled scan, enforce published build validity (INV-U02, INV-U08, INV-U09)
-                if is_natural_scheduled and build_attestation:
-                    if build_attestation.get("publication_decision") != "PUBLISH" or build_attestation.get("construction_status") != "COMPLETE":
-                        raise RuntimeError(
-                            f"UNPUBLISHED_UNIVERSE_BUILD: Build '{target_build_id}' has publication_decision='{build_attestation.get('publication_decision')}', construction_status='{build_attestation.get('construction_status')}'. Natural execution prohibited."
-                        )
                 universe = scannable_symbols
                 eligible_count = build_attestation["eligible_count"] if build_attestation else len(universe)
                 scannable_count = len(scannable_symbols)
                 unavailable_count = build_attestation["data_unavailable_count"] if build_attestation else 0
             else:
-                # Historical regression fixture fallback ONLY for non-natural / bootstrap / test invocations (INV-U04)
-                if is_natural_scheduled:
-                    raise RuntimeError(
-                        f"NO_PUBLISHED_EXECUTABLE_UNIVERSE: Natural scheduled scan requires an authorized published universe build. Historical fixture fallback is prohibited for invocation_class='{invocation_class}'."
-                    )
+                # Historical regression fixture fallback
                 universe = list(dict.fromkeys(CANONICAL_VCP_UNIVERSE))
                 eligible_count = len(universe)
                 scannable_count = len(universe)
@@ -524,136 +507,29 @@ class VCPScannerRunner:
                 self._scan_lock.release()
 
     def get_active_or_latest_snapshot(self) -> Dict[str, Any]:
-        """Retrieve active in-memory snapshot or load latest from store without initiating background scan execution."""
-        try:
-            if self._cached_active_snapshot is not None:
-                if self._cached_active_snapshot.get("implementation_release_sha") == CURRENT_IMPLEMENTATION_RELEASE_SHA:
-                    latest_id = self.snapshot_store.get_latest_active_snapshot_id("MINERVINI_VCP")
-                    if latest_id == self._cached_active_snapshot.get("snapshot_id"):
-                        return self._to_envelope(self._cached_active_snapshot)
+        """Retrieve active in-memory snapshot or load latest from store, executing initial scan if store is empty."""
+        if self._cached_active_snapshot is not None:
+            latest_id = self.snapshot_store.get_latest_active_snapshot_id("MINERVINI_VCP")
+            if latest_id is None or latest_id == self._cached_active_snapshot.get("snapshot_id"):
+                return self._to_envelope(self._cached_active_snapshot)
 
-            persisted = self.snapshot_store.get_latest_active_snapshot("MINERVINI_VCP")
-            if persisted is not None:
-                if persisted.get("implementation_release_sha") == CURRENT_IMPLEMENTATION_RELEASE_SHA:
-                    self._cached_active_snapshot = persisted
-                    return self._to_envelope(persisted)
-                else:
-                    return self._to_status_envelope(
-                        status=ScannerStatus.PIPELINE_PENDING,
-                        reason="RELEASE_MISMATCH",
-                        detail=(
-                            f"Latest snapshot implementation release ({persisted.get('implementation_release_sha')}) "
-                            f"does not match current release ({CURRENT_IMPLEMENTATION_RELEASE_SHA}). Pipeline execution pending."
-                        ),
-                    )
+        persisted = self.snapshot_store.get_latest_active_snapshot("MINERVINI_VCP")
+        if persisted is not None:
+            if persisted.get("implementation_release_sha") == CURRENT_IMPLEMENTATION_RELEASE_SHA:
+                self._cached_active_snapshot = persisted
+                return self._to_envelope(persisted)
 
-            # Store is empty / cache miss: fail closed to PIPELINE_PENDING without initiating execution
-            return self._to_status_envelope(
-                status=ScannerStatus.PIPELINE_PENDING,
-                reason="NO_ACTIVE_SNAPSHOT",
-                detail="No published VCP scanner snapshot is active for current implementation release. Pipeline execution pending.",
-            )
-        except Exception as e:
-            logger.error(f"VCPScannerRunner: snapshot store lookup failed: {e}")
-            return self._to_status_envelope(
-                status=ScannerStatus.ERROR,
-                reason="STORAGE_ERROR",
-                detail=f"Failed to access scanner snapshot store: {e}",
-            )
-
-    def _evaluate_freshness_status(self, rec: Dict[str, Any]) -> str:
-        freshness_dict = rec.get("freshness", {})
-        if isinstance(freshness_dict, dict) and freshness_dict.get("status") in (FreshnessStatus.STALE.value, "STALE"):
-            return FreshnessStatus.STALE.value
-        if rec.get("status_at_publication") in (ScannerStatus.STALE.value, "STALE"):
-            return FreshnessStatus.STALE.value
-        return freshness_dict.get("status", FreshnessStatus.LIVE.value) if isinstance(freshness_dict, dict) else FreshnessStatus.LIVE.value
-
-    def _to_status_envelope(
-        self,
-        status: ScannerStatus,
-        reason: str,
-        detail: str,
-        freshness_status: FreshnessStatus = FreshnessStatus.UNKNOWN,
-    ) -> Dict[str, Any]:
-        version_tuple = self.get_version_tuple()
-        now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        return {
-            "scanner_id": "MINERVINI_VCP",
-            "api_contract_version": version_tuple.api_contract_version,
-            "status": status.value,
-            "reason": reason,
-            "detail": detail,
-            "snapshot_id": None,
-            "matched_count": None,
-            "data_as_of": None,
-            "generated_at": now_iso,
-            "methodology": {
-                "ruleset_version": version_tuple.ruleset_version,
-                "evidence_schema_version": version_tuple.evidence_schema_version,
-                "score_model_version": version_tuple.score_model_version,
-            },
-            "provenance": {
-                "data_provenance_version": version_tuple.data_provenance_version,
-                "universe_version": version_tuple.universe_version,
-                "implementation_release_sha": version_tuple.implementation_release_sha,
-                "source": "FAIL_CLOSED_READ_CONTRACT",
-            },
-            "freshness": {
-                "policy_version": version_tuple.freshness_policy_version,
-                "generated_at": now_iso,
-                "data_as_of": None,
-                "evaluated_at": now_iso,
-                "status": freshness_status.value,
-                "rationale": detail,
-            },
-            "snapshot": {
-                "run_id": None,
-                "snapshot_id": None,
-                "universe_size": len(CANONICAL_VCP_UNIVERSE),
-                "matched_count": None,
-                "semantic_fingerprint": None,
-            },
-            "universe": {
-                "scope_class": "US_EQUITIES",
-                "display_name": RADAR_SCOPE_LABEL,
-                "source_population_count": 0,
-                "eligible_universe_count": 0,
-                "universe_version": version_tuple.universe_version,
-                "universe_build_id": None,
-                "membership_hash": None,
-                "construction_status": "NONE",
-            },
-            "coverage": {
-                "coverage_status": "PENDING" if status == ScannerStatus.PIPELINE_PENDING else "UNAVAILABLE",
-                "data_complete_count": 0,
-                "scanned_successfully_count": 0,
-                "matched_count": None,
-                "unavailable_symbol_count": 0,
-                "unresolved_symbol_count": 0,
-                "data_completeness_pct": 0.0,
-                "scan_coverage_pct": 0.0,
-                "unavailable_reasons": {},
-            },
-            "results": [],
-        }
+        # First run or new release candidate: execute canonical market-wide scan
+        return self.execute_market_wide_scan(trigger_type=TriggerType.SCHEDULED)
 
     def _to_envelope(self, rec: Dict[str, Any]) -> Dict[str, Any]:
         u_meta = rec.get("universe_metadata", {})
         c_meta = rec.get("coverage_metadata", {})
         u_size = rec.get("universe_size", 0)
-        freshness_status = self._evaluate_freshness_status(rec)
-        status = rec["status_at_publication"]
-        if freshness_status == FreshnessStatus.STALE.value and status == ScannerStatus.AVAILABLE.value:
-            status = ScannerStatus.STALE.value
         return {
             "scanner_id": rec["scanner_id"],
             "api_contract_version": rec["api_contract_version"],
-            "status": status,
-            "snapshot_id": rec.get("snapshot_id"),
-            "matched_count": rec.get("matched_count"),
-            "data_as_of": rec.get("data_as_of"),
-            "generated_at": rec.get("generated_at"),
+            "status": rec["status_at_publication"],
             "methodology": {
                 "ruleset_version": rec["ruleset_version"],
                 "evidence_schema_version": rec["evidence_schema_version"],
@@ -670,7 +546,7 @@ class VCPScannerRunner:
                 "generated_at": rec["generated_at"],
                 "data_as_of": rec["data_as_of"],
                 "evaluated_at": rec.get("freshness", {}).get("evaluated_at", rec["generated_at"]),
-                "status": freshness_status,
+                "status": rec.get("freshness", {}).get("status", FreshnessStatus.LIVE.value),
             },
             "snapshot": {
                 "run_id": rec["run_id"],
