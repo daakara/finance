@@ -46,10 +46,10 @@ caf7c79 HEAD@{2}: reset: moving to HEAD
 
 | Check | Boundary Invariant | Verification Status | Operational Evidence & Guard |
 |:---|:---|:---:|:---|
-| **Check A** | **Surrogate Key & Security ID Non-Synthesis** | **PASSED** | Zero production primary keys, synthetic IDs, or `CIK_{cik}_{symbol}` surrogate keys are manufactured. Parsed rows preserve native source fields (`cik`, `ticker`, `Symbol`, `Exchange`, `CQS Symbol`). SEC EDGAR enforces fail-closed User-Agent contact validation per SEC Fair Access Policy. Package 2 (`S2-03`) remains the dedicated boundary for identity resolution. |
-| **Check B** | **OpenFIGI Association & Ambiguity Protection** | **PASSED** | Listing directory acquisition feeds are strictly decoupled from OpenFIGI network endpoints (`CANONICAL_SOURCES` contains zero OpenFIGI entries). Cross-source matching preserves OpenFIGI multi-match results as ambiguous (`is_ambiguous = True`) with zero automatic selection. 471 cross-feed venue conflicts are analyzed and documented as exchange taxonomy umbrella groupings (e.g. NYSE American categorized under parent NYSE in SEC EDGAR) rather than entity collisions. SEC parser distinguishes missing exchange attributes (168 rows) from syntax corruption (0 syntax errors). |
+| **Check A** | **Surrogate Key Non-Synthesis & User-Agent Boundaries** | **PASSED** | Zero production primary keys, synthetic IDs, or `CIK_{cik}_{symbol}` surrogate keys are manufactured. Parsed rows preserve native source fields (`cik`, `ticker`, `Symbol`, `Exchange`, `CQS Symbol`). SEC EDGAR enforces fail-closed User-Agent contact validation per SEC Fair Access Policy. *Clarification*: Email-format checking validates header syntax only; it does NOT verify contact ownership, mailbox deliverability, or authorized domain control. Package 2 (`S2-03`) remains the dedicated boundary for identity resolution. |
+| **Check B** | **OpenFIGI Decoupling & Conflict Taxonomy** | **PASSED** | Listing directory acquisition feeds are strictly decoupled from OpenFIGI network endpoints (`CANONICAL_SOURCES` contains zero OpenFIGI entries). Cross-source matching preserves OpenFIGI multi-match results as ambiguous (`is_ambiguous = True`) with zero automatic selection. 471 cross-feed venue conflicts are analyzed and documented as exchange taxonomy umbrella groupings (e.g. NYSE American categorized under parent NYSE in SEC EDGAR) rather than entity collisions. *Equivalence Protection*: Disagreements are NEVER cleared through unsupported equivalence mappings (particularly TXSE vs FINRA ADF / 'F'); original raw venue values are strictly preserved. SEC parser distinguishes missing exchange attributes (168 rows) from syntax corruption (0 syntax errors). |
 | **Check C** | **Source Completeness Accounting & Coverage Gates** | **PASSED** | System outputs explicitly state: `PRODUCTION_POPULATION_COMPLETENESS = NOT_ESTABLISHED` and `FULL_US_LISTED_ASSESSMENT = NOT_ESTABLISHED`. Directory presence is explicitly acknowledged as not proving active trading status, primary listing verification, or total market census. Accounting reports surface all 5 core coverage limitations and 4 unresolved policy decisions. |
-| **Check D** | **Read-Safety & Non-Triggering Guarantees** | **PASSED** | Pure on-demand, explicit invocation. Zero background daemons, zero cron jobs, zero Celery/worker tasks, zero API route decorators/listeners, and zero database writes. Package import causes zero network sockets or disk writes. Pre-request redirect scheme inspection halts with `TLS_ERROR` *before* issuing any HTTP request to an insecure target. Zero imports from `UniverseBuilder`, `UniverseStore`, or scanner engines. |
+| **Check D** | **Read-Safety & Transport Invariants** | **PASSED** | Pure on-demand, explicit invocation. Zero background daemons, zero cron jobs, zero Celery/worker tasks, zero API route decorators/listeners, and zero database writes. Pre-request redirect scheme inspection halts with `TLS_ERROR` *before* issuing any HTTP request to an insecure target. *Retry-After Deferral*: `Retry-After` handling NEVER retries earlier than requested; if the requested wait exceeds the execution wait budget (`config.max_retry_wait_seconds`), the fetcher stops and defers the source immediately without early retry. |
 | **Check E** | **Offline/Isolated Execution & Overwrite Protection** | **PASSED** | Offline replay via `offline_bytes` operates 100% network free. Filesystem persistence uses temporary file staging and atomic replace (`os.replace`) for individual files. Safe overwrite protection guarantees that failed or timed-out attempts route to isolated `quarantine/` logs and NEVER overwrite accepted historical artifacts. Strict path traversal sanitization prevents malicious or relative source IDs from escaping `base_dir`. |
 
 ---
@@ -59,7 +59,8 @@ caf7c79 HEAD@{2}: reset: moving to HEAD
 #### 4.1 Check A: Identity Non-Synthesis & SEC Fair Access Enforcement
 - **Non-Synthesis Invariant**: In `analyst_dashboard/universe/acquisition/models.py` and `analyst_dashboard/universe/adapters/models.py`, `ParsedSourceRow` records contain only raw values extracted directly from source payloads (`raw_values: dict[str, Any]`). No `security_id` or synthetic key is assigned.
 - **SEC Fair Access Invariant**: `ListingSourceFetcher.fetch()` inspects configured headers for SEC EDGAR sources. If the User-Agent does not declare an administrative contact email (`@`), the fetch fails closed immediately with `AcquisitionOutcome.FAILED`, preventing automated unauthenticated crawling.
-- **Automated Regression**: Verified by `test_check_a_surrogate_key_non_synthesis` and `test_sec_edgar_requires_explicit_contact_user_agent`.
+- **Contact Ownership Clarification**: Email-format checking validates header syntax only per SEC Fair Access Policy; it does NOT verify contact ownership, mailbox deliverability, or authorized domain control.
+- **Automated Regression**: Verified by `test_check_a_surrogate_key_non_synthesis`, `test_sec_edgar_requires_explicit_contact_user_agent`, and `test_user_agent_email_format_validation_does_not_verify_contact_ownership`.
 
 #### 4.2 Check B: OpenFIGI Decoupling & Conflict Taxonomy Analysis
 - **Decoupling Invariant**: `CANONICAL_SOURCES` in `config.py` contains only:
@@ -74,8 +75,9 @@ caf7c79 HEAD@{2}: reset: moving to HEAD
   - 44 CBOE vs BATS: Cboe BZX exchange securities ("CBOE" in SEC EDGAR vs "Z"/BATS in Nasdaq Trader).
   - 8 TXSE vs F: Texas Stock Exchange announcements vs FINRA ADF.
   These 471 observations reflect venue hierarchy taxonomy differences across publishers, not ticker collisions or corrupt records.
+- **Unsupported Equivalence Rejection**: Disagreements are NEVER cleared through unsupported equivalence mappings. Original raw venue values are preserved exactly (`sec_exchange='TXSE'`, `venue_exchange='F'`), and the conflict remains explicitly cataloged.
 - **Attribute vs Syntax Distinction**: The SEC EDGAR parser distinguishes rows that are structurally valid but missing the exchange attribute (168 rows, where exchange is null/empty) from structural syntax corruption (0 rows).
-- **Automated Regression**: Verified by `test_check_b_openfigi_isolation_and_multimatch_ambiguity_protection` and `test_sec_diagnostic_row_categorization`.
+- **Automated Regression**: Verified by `test_check_b_openfigi_isolation_and_multimatch_ambiguity_protection`, `test_sec_diagnostic_row_categorization`, and `test_venue_conflict_preserves_raw_values_without_unsupported_txse_equivalence`.
 
 #### 4.3 Check C: Completeness Truthfulness & Coverage Gates
 - **Accounting Invariant**: Every `SourceAccountingReport` generated by `ListingAcquisitionRunner` or `save_accounting_reports()` explicitly affirms:
@@ -94,7 +96,8 @@ caf7c79 HEAD@{2}: reset: moving to HEAD
 #### 4.4 Check D: Read-Safety & Pre-Request Redirect Inspection
 - **Read-Safety Invariant**: All acquisition modules are synchronous and callable on-demand. Zero background workers, crons, or web listeners exist. Zero imports of application database models or stores occur.
 - **Pre-Request TLS Inspection**: `ListingSourceFetcher.fetch()` inspects redirect location headers iteratively before issuing the redirected request. If a redirect targets an insecure `http://` URL while `enforce_https = True`, the fetcher terminates immediately with `AcquisitionOutcome.TLS_ERROR` *without* issuing any request to the insecure HTTP endpoint.
-- **Automated Regression**: Verified by `test_check_d_read_safety_and_non_triggering_guarantees`, `test_redirect_insecure_downgrade_detected`, and `test_architectural_boundary_invariants`.
+- **Retry-After Wait Budget Deferral**: `fetcher.py` parses integer seconds or RFC HTTP date from `Retry-After`. It NEVER retries earlier than requested. If the requested delay exceeds the execution wait budget (`config.max_retry_wait_seconds`), the source is stopped and deferred immediately with `HTTP_ERROR` without early retries.
+- **Automated Regression**: Verified by `test_check_d_read_safety_and_non_triggering_guarantees`, `test_redirect_insecure_downgrade_detected`, `test_retry_after_never_retries_earlier_than_requested_and_defers_when_budget_exceeded`, and `test_architectural_boundary_invariants`.
 
 #### 4.5 Check E: Offline Replay, Atomic Storage & Path Sanitization
 - **Offline Replay**: `ListingAcquisitionRunner.run()` accepts `offline_bytes: Mapping[str, bytes]`. When provided, network calls are completely bypassed, allowing 100% offline unit and integration testing.
@@ -107,10 +110,10 @@ caf7c79 HEAD@{2}: reset: moving to HEAD
 
 ### 5. Test Suite Verification Summary
 
-- **Acquisition & Boundary Suite (`tests/test_universe_listing_acquisition.py`)**: 22 tests passing.
+- **Acquisition & Boundary Suite (`tests/test_universe_listing_acquisition.py`)**: 25 tests passing.
 - **Offline Adapters Suite (`tests/test_universe_offline_adapters.py`)**: 34 tests passing.
 - **Universe Validator Suite (`tests/test_universe_validator.py`)**: 68 tests passing.
-- **Full Provenance & Data Gate (`tier2c`)**: **124 passed in 4.17s (0 failures, 0 regressions)**.
+- **Full Provenance & Data Gate (`tier2c`)**: **127 passed in 1.99s (0 failures, 0 regressions)**.
 
 ---
 

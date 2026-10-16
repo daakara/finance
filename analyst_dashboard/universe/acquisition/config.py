@@ -33,6 +33,7 @@ class SourceConfig:
     max_bytes: int = 25 * 1024 * 1024  # 25 MB default ceiling
     max_retries: int = 2
     retry_backoff_factor: float = 0.5
+    max_retry_wait_seconds: float = 10.0  # Execution wait budget ceiling for a single retry
     enforce_https: bool = True
     rate_limit_delay_seconds: float = 0.15  # Default spacing floor (respects SEC <= 10 req/s)
 

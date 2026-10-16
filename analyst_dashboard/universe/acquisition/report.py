@@ -95,6 +95,7 @@ def format_markdown_report(report: SourceAccountingReport) -> str:
             "> - **44 CBOE vs BATS**: Cboe BZX exchange securities ('CBOE' in SEC EDGAR vs 'Z'/BATS in Nasdaq Trader).",
             "> - **8 TXSE vs F**: Texas Stock Exchange pre-launch announcements vs FINRA ADF.",
             "> All 471 conflicts reflect exchange taxonomy granularity and umbrella groupings, not symbol collisions or corrupt data.",
+            "> Invariant: Original raw venue values are strictly preserved; disagreements are NEVER cleared through unsupported equivalence mappings (particularly TXSE vs FINRA ADF / 'F').",
         ])
 
     lines.extend([

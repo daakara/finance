@@ -15,6 +15,7 @@ Operational Constraints:
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 import hashlib
 import time
 from typing import Any, Tuple
@@ -32,6 +33,25 @@ def _utc_now_iso() -> str:
 
 def _compute_sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def _parse_retry_after(header_val: str | None) -> float | None:
+    """
+    Parses Retry-After header as integer seconds or RFC HTTP date.
+    Returns float delay in seconds, or None if missing or unparseable.
+    """
+    if not header_val:
+        return None
+    val = header_val.strip()
+    if val.isdigit():
+        return float(val)
+    try:
+        target_dt = parsedate_to_datetime(val)
+        now = datetime.now(timezone.utc)
+        diff = (target_dt - now).total_seconds()
+        return max(0.0, diff)
+    except Exception:
+        return None
 
 
 class ListingSourceFetcher:
@@ -66,6 +86,8 @@ class ListingSourceFetcher:
             return None, attempt
 
         # 2. Check source-specific User-Agent contact requirements (SEC Fair Access Policy)
+        # Note: Syntactic presence of an email address in User-Agent satisfies client-side format checks,
+        # but does NOT verify contact ownership, mailbox deliverability, or authorized domain control.
         if "sec" in config.source_id.lower():
             ua = (config.headers.get("User-Agent") or "").strip() if config.headers else ""
             if not ua or "@" not in ua:
@@ -73,7 +95,8 @@ class ListingSourceFetcher:
                 attempt.outcome = AcquisitionOutcome.FAILED
                 attempt.error_message = (
                     "SEC EDGAR acquisition requires an explicitly configured User-Agent with valid "
-                    "administrative contact information (e.g. 'AppName contact@domain.com') per SEC Fair Access Policy."
+                    "administrative contact information (e.g. 'AppName contact@domain.com') per SEC Fair Access Policy. "
+                    "Note: email-format check validates header syntax only and does not verify mailbox ownership."
                 )
                 return None, attempt
 
@@ -157,15 +180,46 @@ class ListingSourceFetcher:
 
                 # 3. HTTP Status Assessment
                 if resp.status_code == 429:
-                    retry_after = resp.headers.get("Retry-After")
-                    attempt.error_message = f"HTTP 429 Rate Limit Exceeded (Retry-After: {retry_after})"
+                    retry_after_hdr = resp.headers.get("Retry-After")
+                    attempt.http_status = 429
+                    requested_delay = _parse_retry_after(retry_after_hdr)
+
+                    if requested_delay is not None:
+                        # Invariant: Never retry earlier than requested by server
+                        effective_delay = requested_delay
+                    else:
+                        # Fallback to standard exponential backoff if header absent or unparseable
+                        effective_delay = config.retry_backoff_factor * (2 ** retries)
+
+                    # Enforce execution wait budget ceiling:
+                    # If required wait exceeds execution budget, stop/defer the source immediately.
+                    # We NEVER truncate/clamp the delay and retry early!
+                    if effective_delay > config.max_retry_wait_seconds:
+                        resp.close()
+                        attempt.retrieval_end_utc = _utc_now_iso()
+                        attempt.outcome = AcquisitionOutcome.HTTP_ERROR
+                        attempt.error_message = (
+                            f"HTTP 429 Rate Limit Exceeded: Retry-After delay ({effective_delay:.1f}s) "
+                            f"exceeds execution wait budget ({config.max_retry_wait_seconds:.1f}s); "
+                            "source deferred without early retry"
+                        )
+                        return None, attempt
+
+                    # Bounded retry count check
                     if retries < config.max_retries:
                         retries += 1
-                        delay = float(retry_after) if (retry_after and retry_after.isdigit()) else (config.retry_backoff_factor * (2 ** retries))
-                        time.sleep(min(delay, 5.0))  # Cap backoff delay to 5s in bounded execution
+                        resp.close()
+                        # Wait the full requested delay — NEVER earlier than requested
+                        time.sleep(effective_delay)
                         continue
+
+                    resp.close()
                     attempt.retrieval_end_utc = _utc_now_iso()
                     attempt.outcome = AcquisitionOutcome.HTTP_ERROR
+                    attempt.error_message = (
+                        f"HTTP 429 Rate Limit Exceeded: retries exhausted after {retries} attempts "
+                        f"(Retry-After: {retry_after_hdr})"
+                    )
                     return None, attempt
 
                 if resp.status_code >= 500:

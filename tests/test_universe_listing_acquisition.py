@@ -171,7 +171,8 @@ def test_rate_limit_response_429(tmp_path: Path):
     session.get.return_value = mock_429
 
     fetcher = ListingSourceFetcher(session=session)
-    raw_bytes, attempt = fetcher.fetch(config)
+    with patch("time.sleep"):
+        raw_bytes, attempt = fetcher.fetch(config)
 
     assert raw_bytes is None
     assert attempt.outcome == AcquisitionOutcome.HTTP_ERROR
@@ -636,4 +637,136 @@ def test_check_e_offline_replay_and_quarantine_integrity(tmp_path: Path):
     # Verify accepted artifact exists in base_dir
     raw_files = list(tmp_path.glob("*.json"))
     assert len(raw_files) >= 1
+
+
+def test_retry_after_never_retries_earlier_than_requested_and_defers_when_budget_exceeded():
+    """
+    Verifies that Retry-After handling never retries earlier than requested;
+    if the required wait exceeds the execution budget, the source is deferred immediately.
+    """
+    # Sub-case A: Retry-After exceeds execution wait budget -> immediate deferral without early retry
+    config_budget_exceeded = SourceConfig(
+        source_id="budget_exceeded",
+        url="https://example.com/429_slow",
+        max_retries=2,
+        max_retry_wait_seconds=5.0,  # 5-second execution budget
+    )
+    mock_429_slow = _build_mock_response(429, b"Rate Limited", {"Retry-After": "30"})
+
+    session_a = MagicMock(spec=requests.Session)
+    session_a.get.return_value = mock_429_slow
+
+    with patch("time.sleep") as mock_sleep:
+        fetcher = ListingSourceFetcher(session=session_a)
+        raw_bytes, attempt = fetcher.fetch(config_budget_exceeded)
+
+        assert raw_bytes is None
+        assert attempt.outcome == AcquisitionOutcome.HTTP_ERROR
+        assert "exceeds execution wait budget" in attempt.error_message
+        assert "without early retry" in attempt.error_message
+        # Invariant: Never retried earlier than requested; session.get called only once!
+        assert session_a.get.call_count == 1
+        mock_sleep.assert_not_called()
+
+    # Sub-case B: Retry-After within budget -> waits full requested delay (never earlier)
+    config_within_budget = SourceConfig(
+        source_id="within_budget",
+        url="https://example.com/429_fast",
+        max_retries=1,
+        max_retry_wait_seconds=10.0,
+        rate_limit_delay_seconds=0.0,
+    )
+    mock_429_fast = _build_mock_response(429, b"Rate Limited", {"Retry-After": "4"})
+
+    session_b = MagicMock(spec=requests.Session)
+    session_b.get.return_value = mock_429_fast
+
+    with patch("time.sleep") as mock_sleep:
+        fetcher = ListingSourceFetcher(session=session_b)
+        raw_bytes, attempt = fetcher.fetch(config_within_budget)
+
+        assert raw_bytes is None
+        assert attempt.outcome == AcquisitionOutcome.HTTP_ERROR
+        # Invariant: Slept exactly 4.0s (never clamped or earlier than requested!)
+        mock_sleep.assert_called_once_with(4.0)
+        assert session_b.get.call_count == 2
+
+
+def test_venue_conflict_preserves_raw_values_without_unsupported_txse_equivalence():
+    """
+    Confirms that cross-feed venue conflicts preserve original raw values and
+    do NOT clear disagreements through unsupported equivalence mappings (especially TXSE vs FINRA ADF / 'F').
+    """
+    from analyst_dashboard.universe.adapters.matching import match_sources_with_accounting
+    from analyst_dashboard.universe.adapters.models import ParsedSourceFile, ParsedSourceRow, SourceFeedType
+
+    sec_file = ParsedSourceFile(
+        feed_type=SourceFeedType.SEC_COMPANY_TICKERS_EXCHANGE,
+        source_identifier="sec_company_tickers_exchange",
+        content_sha256="sec_sha",
+        rows=[
+            ParsedSourceRow(
+                row_index=0,
+                raw_values={"symbol": "TXSETEST", "sec_exchange": "TXSE", "cik": 123456},
+                is_malformed=False,
+            )
+        ],
+        data_row_count=1,
+    )
+
+    dir_file = ParsedSourceFile(
+        feed_type=SourceFeedType.OTHER_LISTED_DIRECTORY,
+        source_identifier="other_listed_directory",
+        content_sha256="dir_sha",
+        rows=[
+            ParsedSourceRow(
+                row_index=0,
+                raw_values={"raw_symbol": "TXSETEST", "venue_exchange": "F"},
+                is_malformed=False,
+            )
+        ],
+        data_row_count=1,
+    )
+
+    candidates, accounting = match_sources_with_accounting(
+        sec_file=sec_file,
+        directory_files=[dir_file],
+    )
+
+    assert len(candidates) == 1
+    cand = candidates[0]
+
+    # Conflict must remain explicitly surfaced
+    assert any("VENUE_MISMATCH (SEC: TXSE vs Directory: F)" in c for c in cand.join_conflicts)
+    assert accounting.conflict_count == 1
+
+    # Invariant: Raw values preserved exactly without mutation or synthetic equivalence
+    assert cand.sec_row.raw_values["sec_exchange"] == "TXSE"
+    assert cand.directory_row.raw_values["venue_exchange"] == "F"
+
+
+
+def test_user_agent_email_format_validation_does_not_verify_contact_ownership():
+    """
+    Clarifies that User-Agent email-format validation checks header syntax only
+    per SEC Fair Access Policy and does NOT verify contact ownership, mailbox existence, or domain control.
+    """
+    # Valid syntax passes client-side pre-flight check without authenticating ownership
+    config = SourceConfig(
+        source_id="sec_company_tickers_exchange",
+        url="https://www.sec.gov/files/company_tickers_exchange.json",
+        headers={"User-Agent": "TestClient/1.0 unverified_mailbox@example.com"},
+    )
+    mock_resp = _build_mock_response(200, SYNTHETIC_SEC_JSON, {"Content-Type": "application/json"})
+
+    session = MagicMock(spec=requests.Session)
+    session.get.return_value = mock_resp
+
+    fetcher = ListingSourceFetcher(session=session)
+    raw_bytes, attempt = fetcher.fetch(config)
+
+    # Check passes client-side syntax validation without verifying mailbox ownership
+    assert attempt.outcome == AcquisitionOutcome.SUCCESS
+    assert session.get.call_count == 1
+
 

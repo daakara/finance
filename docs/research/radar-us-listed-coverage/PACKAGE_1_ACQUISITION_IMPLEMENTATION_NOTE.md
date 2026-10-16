@@ -50,7 +50,7 @@ Live network inspection and official documentation review established the follow
 - **Publisher & Endpoint**: US Securities and Exchange Commission (SEC) — `https://www.sec.gov/files/company_tickers_exchange.json`
 - **Format**: JSON with top-level `fields: ["cik", "name", "ticker", "exchange"]` and 2D array `data: [[320193, "Apple Inc.", "AAPL", "Nasdaq"], ...]`.
 - **Secure Transport**: HTTPS strictly enforced. Akamai edge blocks requests without a compliant User-Agent with HTTP 403.
-- **Access Requirements**: SEC Fair Access Policy mandates compliant User-Agent containing administrative contact. The acquisition client requires an explicitly configured contact User-Agent (containing `@`) and fails closed (`AcquisitionOutcome.FAILED`) if unconfigured. Default fallback: `ArxTerminal-Universe/1.0`.
+- **Access Requirements**: SEC Fair Access Policy mandates compliant User-Agent containing administrative contact. The acquisition client requires an explicitly configured contact User-Agent (containing `@`) and fails closed (`AcquisitionOutcome.FAILED`) if unconfigured. Default fallback: `ArxTerminal-Universe/1.0`. *Clarification*: Email-format checking validates header syntax only per SEC Fair Access Policy; it does NOT verify contact ownership, mailbox deliverability, or authorized domain control.
 - **Rate Limit Floor**: Maximum 10 requests per second.
 - **Timestamps**: No timestamp in body; HTTP `Last-Modified` captured in sidecar metadata (`Thu, 15 Oct 2026 13:39:20 GMT`).
 - **Observed Bounded Live Metrics & Diagnostics**:
@@ -130,7 +130,7 @@ data/raw_feeds/2026-10-16/
 ### 5. Verification Results & Test Selection
 
 #### 5.1 Unit Tests (Mocked Transport)
-- Test Suite: `tests/test_universe_listing_acquisition.py` (22 tests)
+- Test Suite: `tests/test_universe_listing_acquisition.py` (25 tests)
 - CI Gate: Marked `tier2c` (Provenance and Data Gate).
 - Scenarios Verified:
   1. Successful acquisition, exact raw-byte preservation, content SHA-256 calculation.
@@ -155,11 +155,14 @@ data/raw_feeds/2026-10-16/
   20. Check C (disclosure): Source completeness accounting truthfulness (`PRODUCTION_POPULATION_COMPLETENESS = NOT_ESTABLISHED`).
   21. Check D (invariants): Read-safety and non-triggering guarantees (zero background workers, crons, API route hooks, or DB writes).
   22. Check E (isolation): Offline replay and failure quarantine integrity.
+  23. Check D (rate limits): `Retry-After` handling never retries earlier than requested; if required wait exceeds execution budget (`max_retry_wait_seconds`), source is stopped and deferred immediately without early retry.
+  24. Check B (conflicts): Venue-conflict categorization preserves original raw values and does NOT clear disagreements through unsupported equivalence mappings (particularly TXSE vs FINRA ADF / 'F').
+  25. Check A (contact): User-Agent email-format validation confirms syntax only and does not verify contact ownership, deliverability, or domain control.
 
 #### 5.2 Full Provenance Gate Regressions
 - `pytest tests/test_universe_listing_acquisition.py tests/test_universe_offline_adapters.py tests/test_universe_validator.py`
-- Result: **124 passed in 7.12s (0 failures, 0 regressions)**:
-  - `tests/test_universe_listing_acquisition.py`: 22 passed
+- Result: **127 passed in 1.99s (0 failures, 0 regressions)**:
+  - `tests/test_universe_listing_acquisition.py`: 25 passed
   - `tests/test_universe_offline_adapters.py` + `tests/test_universe_validator.py`: 102 passed
 
 #### 5.3 Bounded Live Verification
@@ -186,6 +189,7 @@ data/raw_feeds/2026-10-16/
    - **44 CBOE vs BATS** (9.3%): Cboe BZX exchange securities ('CBOE' in SEC EDGAR vs 'Z'/BATS in Nasdaq Trader).
    - **8 TXSE vs F** (1.7%): Texas Stock Exchange announcements vs FINRA ADF.
    - All 471 conflicts reflect exchange taxonomy granularity and umbrella groupings, not symbol collisions or corrupted records.
+   - **Invariant**: Original raw venue values are strictly preserved in source records. The system does NOT apply synthetic or unsupported equivalence mappings (TXSE is never mapped to FINRA ADF / 'F' or vice versa); disagreements remain explicitly surfaced as un-cleared conflicts.
 
 ---
 
