@@ -200,3 +200,61 @@ This slice strictly adheres to the bounded authorization for Slice 1:
 - The existing 2% implementation tolerance ratio and its pass criteria are retained without modification.
 - No backend scoring, weights, stops, targets, or eligibility rules were altered.
 - PR merge and production deployment remain strictly unauthorized pending Product Owner release decision.
+
+---
+
+### 8. Evidence-Cleanup Addendum & Sprint 1 Closeout
+
+- **Attestation Date**: 2026-10-16
+- **Status**: Release Record Corrected, Reconciled, and Closed
+- **Workstream**: Workstream D (Decision Text Truthfulness, Canonical Authority Binding & Blocked-Action Consistency)
+
+#### 8.1 Pinned Release References & Merge Identity
+- **Repository**: `daakara/finance`
+- **Implementation Worktree**: `C:\Users\akara\Documents\Projects\finance-analysis-decision-consistency`
+- **Branch**: `fix/analysis-decision-consistency`
+- **Pull Request**: [daakara/finance#7](https://github.com/daakara/finance/pull/7)
+- **Pre-Integration Candidate SHA**: `f438fa3010a7e86f4e8b453b60af847f94cd2554`
+- **Updated Candidate SHA**: `62c43e11a11778e54fdc0d8f1343f03082385481`
+- **Merged Release Commit on `main`**: `11d6813500270788085989bde228190b5b6d3629`
+- **Merge Parent SHA**: `5f26f3fcf8a4fa3140401bb16a687ec86c53de0d`
+- **Merged Tree SHA**: `0bfb2f004fc36a4cf594cbd69fcdbff4f2385994`
+- **Main CI Run**: [Run #38919069761](https://github.com/daakara/finance/actions/runs/38919069761) (`SUCCESS`)
+- **Railway Deployment UUID**: `ea33ea7e-6c96-49a4-b704-364814acf500` (Status: `SUCCESS`, Created: `2026-10-16T14:50:46.212Z`)
+- **Cloudflare Pages Production URL**: `https://finance-xp8.pages.dev`
+- **Subsequent Served Production Release**: `31af2393d81504d24fffff4b10bcc9e0539e5a6d` (PR #8)
+  - Railway Deployment UUID: `ee6880c5-137a-4996-bcea-34d6ef2b57f0`
+  - Cloudflare Deployment UUID: `14e2192b-fdbd-4cb8-b193-346e8cf729fd`
+
+#### 8.2 Reconciled Findings & Evidence Qualifications
+
+##### Item 1: Live API State Observations vs. Rendered UI Acceptance
+- **Live API State Observations**: Live API conditions corresponding to States A/B were observed in live scanner and API payloads (including spot price exceeding accumulation corridor ceiling within 2% tolerance and pending trigger gates).
+- **Historical Live Rendered Acceptance**: `NOT_ESTABLISHED`. No live browser session on the production deployment was historically recorded or accepted as live rendered evidence.
+- **Controlled-Fixture Rendered Acceptance**: `VERIFIED`. Rendered acceptance was strictly established via controlled browser automation (`frontend/scripts/verify-slice1-states.mjs`) across 5 canonical scenarios (States A–E) at both Desktop (`1280x800`) and Mobile (`390x844`) viewports, producing 10 screenshot artifacts and deterministic acceptance summary `RENDERED_STATES_SUMMARY.json`.
+
+##### Item 2: Cloudflare Provider Deployment Identity
+- **Project Domain**: `https://finance-xp8.pages.dev` is the Cloudflare Pages canonical project domain, not a unique provider deployment identifier.
+- **Provider Deployment UUID**: `NOT_ESTABLISHED` for PR #7 merge release `11d6813500270788085989bde228190b5b6d3629` via read-only inspection.
+- **Subsequent Deployment UUID**: Pinned under PR #8 (`31af2393d81504d24fffff4b10bcc9e0539e5a6d`) as `14e2192b-fdbd-4cb8-b193-346e8cf729fd`.
+
+##### Item 3: Protected-Engine Verification & Release Attribution
+- **Observation Epoch Distinction**: `ARX_ETF_P2_NATURAL_OBSERVATION_EPOCH_001` is an empirical telemetry observation epoch identifier, not proof of frozen backend engine manifests.
+- **In-Container Manifest Verification**: `ExperimentLedger.verify_frozen_engine_manifest()` was executed live in-container on commit `31af2393d81504d24fffff4b10bcc9e0539e5a6d` (PR #8), confirming all 3 protected engines (`optimal_execution`, `confluence_engine`, and `decision_hierarchy`) are valid at manifest version `2.5.1` and strategy `2.5.0`.
+- **Source-Level Release Attribution**: Path-by-path tree comparison between PR #7 (`11d6813500270788085989bde228190b5b6d3629`) and PR #8 (`31af2393d81504d24fffff4b10bcc9e0539e5a6d`) verifies that backend engine files were 100% byte-identical, confirming protected-engine preservation without modification across both releases.
+
+##### Item 4: Declaration Corrections & Contract Qualification
+- **Percentage Notation Clarification**: Reaffirmed mathematical delta notation across all audit records: extended delta is `+0.75%` to `+0.78%` (or `+$2.53`), eliminating any combined currency/percentage typographic forms (`+$0.78%`).
+- **Tolerance Contract Qualification**: The 2% corridor tolerance window is explicitly classified as an *existing frontend implementation tolerance contract*. It is not ratified as a quantitative architectural decision record (ADR) or backend engine policy.
+- **Test Coverage Boundaries**: Passing the 18-case automated regression suite (`tests/corridorDecisionConsistency.test.ts`) verifies contract conformance for States A–E, spatial geometry, and string-coercion edge cases; it does not claim 100% application-wide test coverage.
+
+#### 8.3 Sprint 1 Closeout Attestation
+With these four evidence items resolved and reconciled against primary repository, CI, and deployment artifacts, Workstream D release-evidence cleanup is complete and the Sprint 1 record is closed.
+
+```ini
+D_IMPLEMENTATION_STATUS = COMPLETE
+D_RELEASE_STATUS = PRODUCTION_VERIFIED_CONTROLLED_FIXTURES_AND_SOURCE_PRESERVED
+D_RELEASE_RECORD_STATUS = CORRECTED_AND_CLOSED
+D_SPRINT_1_CLOSEOUT = COMPLETE
+```
+

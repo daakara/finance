@@ -1,0 +1,342 @@
+# ARX Terminal — Worktree D: Analysis UX & Calculation Backlog Handoff
+
+**Document ID**: `BACKLOG-HANDOFF-ARX-ANALYSIS-001`  
+**Classification**: Engineering Backlog Staging & Traceability Register  
+**Worktree**: `C:\Users\akara\Documents\Projects\finance-analysis-ux-audit`  
+**Baseline Mainline Commit**: `2eb032b2aec18ac4fea0f654eee8fb6c028466fe`  
+**Status Declarations**:  
+`BACKLOG_HANDOFF = PREPARED`  
+`AUTHORITATIVE_BACKLOG_UPDATE = PENDING_CONTROLLED_INTEGRATION`  
+**Governing Boundary**: Strictly staging handoff. `docs/planning/ENGINEERING_BACKLOG.md` was **NOT modified** under this research workstream.
+
+---
+
+## 1. Backlog Item Register Overview
+
+This handoff packages 8 prioritized engineering backlog items resulting from the forensic UX, decision consistency, and calculation audit of the Analysis page. Complete mathematical derivations, boundary condition evaluations, and surgical remediation contracts are specified in [`EVIDENCE_ADDENDUM.md`](file:///docs/research/analysis-ux-audit/EVIDENCE_ADDENDUM.md).
+
+| Item ID | Title | Proposed Priority | Category | Core Objective |
+
+| :--- | :--- | :--- | :--- | :--- |
+| **`UX-ANALYSIS-001`** | Canonical Decision-State Consistency | **P1 (High Impact)** | Defect Remediation / State Invariant | Unify corridor evaluation so top and bottom of page never provide contradictory verdicts. |
+| **`UX-ANALYSIS-002`** | Calculation and Score Provenance | **P1 (High Impact)** | Metrics & Calculation Transparency | Explicitly label calculation denominators for stops, targets, and blended multi-target R:R. |
+| **`UX-ANALYSIS-003`** | Data-Context and Freshness Clarity | **P1 (High Impact)** | Data Governance / UI Hygiene | Standardize data freshness, exchange timestamps, and live vs delayed vs demo badges. |
+| **`UX-ANALYSIS-004`** | Content Consolidation & Institutional Wording | **P2 (Standard)** | UX Architecture / Content Hygiene | Eliminate redundant setup text and replace informal slang with institutional terminology. |
+| **`UX-ANALYSIS-005`** | Ownership-Aware Analysis Flow | **P2 (Standard)** | Feature Enhancement / Portfolio Context | Upgrade "I Own It" flow to capture cost basis and provide basis-relative portfolio metrics. |
+| **`UX-RADAR-001`** | Actionability and Confluence Filters | **P2 (Standard)** | Scanner UX / Filter Architecture | Introduce canonical actionability status and confluence filters on the Radar screen. |
+| **`UX-ANALYSIS-006`** | Supporting-Evidence Redesign | **P2 (Standard)** | Data Visualization / Scorecard | Reconstruct 4-pillar scorecard with explicit 25% weightings and deconstructed feature scores. |
+| **`UX-MOBILE-001`** | Mobile Readability & Accessibility | **P2 (Standard)** | Accessibility / Responsive Design | Fix sticky bottom bar collisions, enlarge touch targets to 44px, and enforce ARIA attributes. |
+
+---
+
+## 2. Detailed Item Specifications
+
+---
+
+### `UX-ANALYSIS-001`: Canonical Decision-State Consistency
+- **Category**: Defect Remediation / State Invariant
+- **Proposed Priority**: **P1 (High Impact)**
+- **Priority Rationale**: Contradictory buy/wait signals on the same screen constitute an acute credibility hazard for an institutional financial terminal.
+- **Status**: `STAGED_FOR_IMPLEMENTATION`
+- **Assigned Sprint**: `SPRINT_UNASSIGNED`
+- **Owner**: `OWNER_UNASSIGNED`
+- **Confirmed Problem**:
+  - `StandardTerminalView.tsx` (via `decisionHierarchyUtils.ts:39-56`) marks a stock with spot $341.91 vs corridor $325.07–$339.38 as `UNMET` (*"Wait for low-volume pullback"*).
+  - Simultaneously, `OptimalEntryExitCard.tsx` (via `decisionReadiness.ts:99-108`) marks Gate 1 as `PASSED` (*"Price ($341.91) is positioned inside the institutional accumulation corridor"*) and provides an immediate scale-in hint (*"Scale in with 30% initial size"*).
+  - Cause: `decisionReadiness.ts` applies a `1.02x` buffer that evaluates to `PASSED` for prices up to +2% above corridor ceiling, but emits factually false text claiming price is "inside" the corridor.
+- **Evidence References**:
+  - `frontend/lib/decisionHierarchyUtils.ts:39-56`
+  - `frontend/lib/decisionReadiness.ts:99-108`
+  - `frontend/components/OptimalEntryExitCard.tsx:258-270`
+  - PO Screenshots: `IMG_8590`, `IMG_8592`
+- **Intended Outcome**:
+  - Single, authoritative evaluation of accumulation corridor status consumed by all components.
+  - Zero contradiction between header verdicts, gating checklists, and tactical hints.
+- **Explicit Scope**:
+  - Create a shared evaluator function `evaluateCorridorState(spotPrice, minPrice, maxPrice)` in `decisionHierarchyUtils.ts`.
+  - Refactor `decisionReadiness.ts` and `OptimalEntryExitCard.tsx` to consume this shared evaluator.
+  - Eliminate the branch claiming price is "inside" when $spot > maxPrice$.
+  - Ensure Gate 1 states are strictly typed: `INSIDE_CORRIDOR` | `EXTENDED_ABOVE` | `BELOW_CORRIDOR`.
+- **Exclusions**:
+  - Does NOT alter backend mathematical corridor boundaries generated by Python analyzers.
+  - Does NOT modify execution rules in `fail-close-governance.ts`.
+- **Acceptance Criteria**:
+  1. For AAPL ($341.91 vs $325.07–$339.38), both `StandardTerminalView` and `OptimalEntryExitCard` display status `EXTENDED_ABOVE` or `WAITING_PULLBACK`.
+  2. Gate 1 in `OptimalEntryExitCard` displays `PENDING PULLBACK` with exact delta `+$2.53 (+0.74%) above ceiling`.
+  3. Tactical hint `Near Zone Ceiling: Scale in 30%` is hidden when price exceeds corridor ceiling.
+  4. Automated unit tests verify corridor states for spot values: below min, exactly at min, mid-corridor, exactly at max, extended +1%, extended +5%.
+- **Dependencies & Safe Parallelism**:
+  - Can be implemented independently of backend changes. Safe to execute in parallel with `UX-ANALYSIS-002` and `UX-ANALYSIS-004`.
+
+---
+
+### `UX-ANALYSIS-002`: Calculation and Score Provenance
+- **Category**: Metrics & Calculation Transparency
+- **Proposed Priority**: **P1 (High Impact)**
+- **Priority Rationale**: Discrepant stop-loss percentages (-7.09% vs -7.80%) and unexplained R:R (2.35:1 vs 1.58:1) cause users to distrust core analytics.
+- **Status**: `STAGED_FOR_IMPLEMENTATION`
+- **Assigned Sprint**: `SPRINT_UNASSIGNED`
+- **Owner**: `OWNER_UNASSIGNED`
+- **Confirmed Problem**:
+  - Stop loss is displayed as `-7.09% from base` in `OptimalEntryExitCard` (denominator: planned entry $339.38) and `-7.8%` in narrative insights (denominator: safePrice $342.00).
+  - Risk/reward is displayed as `2.35:1` based on an uncommunicated 50/50 TP1/TP2 exit blending from planned entry, while immediate spot-to-TP1 arithmetic yields `1.58:1`.
+  - Target returns (`+13.12%`, `+20.20%`) are displayed directly beneath spot price but calculated from planned entry.
+- **Evidence References**:
+  - `analyst_dashboard/analyzers/optimal_execution.py:702, 751-756`
+  - `frontend/components/OptimalEntryExitCard.tsx:645, 685, 733`
+  - `frontend/lib/insightGenerator.ts:486, 539, 585`
+  - PO Screenshots: `IMG_8592`, `IMG_8594`, `IMG_8596`
+- **Intended Outcome**:
+  - Transparent, unambiguous labeling of all percentage and ratio denominators across the terminal.
+- **Explicit Scope**:
+  - Update `OptimalEntryExitCard.tsx` and `insightGenerator.ts` to explicitly state the calculation basis:
+    - Stop Loss: `-$24.06 (-7.09% from $339.38 planned entry)` AND `-$26.59 (-7.78% from $341.91 spot)`.
+    - Targets: `+$44.51 (+13.12% from entry)` AND `+$41.98 (+12.28% from spot)`.
+    - Risk/Reward: Add an information disclosure popover explaining the blended 50% TP1 / 50% TP2 exit formula and providing the secondary spot-to-TP1 ratio (1.58:1).
+- **Exclusions**:
+  - Does NOT alter backend formulas in `optimal_execution.py`.
+- **Acceptance Criteria**:
+  1. Every percentage metric on `OptimalEntryExitCard` displays its reference basis explicitly.
+  2. The `-7.8%` narrative string in `insightGenerator.ts` is reconciled to clearly reference the prior close or replaced with spot-relative distance.
+  3. Clicking or hovering the R:R metric opens a modal/tooltip detailing: `Blended TP1/TP2 Exit (2.35:1)` vs `Single TP1 Exit (1.58:1)`.
+- **Dependencies & Safe Parallelism**:
+  - Depends on `UX-ANALYSIS-001` for consistent entry values.
+
+---
+
+### `UX-ANALYSIS-003`: Data-Context and Freshness Clarity
+- **Category**: Data Governance / UI Hygiene
+- **Proposed Priority**: **P1 (High Impact)**
+- **Priority Rationale**: Essential for compliance and trader trust; users must know whether data is real-time, delayed, end-of-day, or synthetic demo data.
+- **Status**: `STAGED_FOR_IMPLEMENTATION`
+- **Assigned Sprint**: `SPRINT_UNASSIGNED`
+- **Owner**: `OWNER_UNASSIGNED`
+- **Confirmed Problem**:
+  - "LIVE" badge is rendered without exchange timestamp or latency indicator.
+  - No visual distinction when synthetic demonstration data or cached stale snapshots are active.
+- **Evidence References**:
+  - `frontend/components/StandardTerminalView.tsx:65-80`
+  - `frontend/components/AdaptiveTerminal.tsx:110`
+  - PO Screenshots: `IMG_8590`, `IMG_8591`
+- **Intended Outcome**:
+  - Institutional-grade data freshness banner displaying market session state, timestamp, and feed tier.
+- **Explicit Scope**:
+  - Create `DataFreshnessBadge.tsx` component displaying:
+    - Market Session: `PRE_MARKET` | `REGULAR_HOURS` | `AFTER_HOURS` | `CLOSED`.
+    - Feed Tier: `REAL_TIME` | `DELAYED_15M` | `END_OF_DAY` | `DEMO_SYNTHETIC`.
+    - Timestamp: `YYYY-MM-DD HH:mm:ss [TZ]`.
+  - Display clear warning banner when demonstration mode or stale cache is detected.
+- **Exclusions**:
+  - Does NOT involve purchasing new real-time market data API licenses under this task.
+- **Acceptance Criteria**:
+  1. Header renders exact quote timestamp and feed tier.
+  2. Stale or demo data displays a non-dismissible amber warning banner.
+- **Dependencies & Safe Parallelism**:
+  - Can be developed in parallel with all other UI workstreams.
+
+---
+
+### `UX-ANALYSIS-004`: Content Consolidation & Institutional Wording
+- **Category**: UX Architecture / Content Hygiene
+- **Proposed Priority**: **P2 (Standard)**
+- **Priority Rationale**: Removes visual clutter, eliminates 60% of redundant text, and establishes an institutional tone.
+- **Status**: `STAGED_FOR_IMPLEMENTATION`
+- **Assigned Sprint**: `SPRINT_UNASSIGNED`
+- **Owner**: `OWNER_UNASSIGNED`
+- **Confirmed Problem**:
+  - Repetitive paragraphs on accumulation corridors and volume drying up across multiple cards.
+  - Informal, colloquial wording: `"No recent big boss insider purchases"`, `"Rock-Solid balance sheet"`, `"Canonical Verdict"`.
+- **Evidence References**:
+  - `analyst_dashboard/analyzers/confluence_engine.py:107, 180`
+  - `frontend/lib/decisionHierarchyUtils.ts:110`
+  - `frontend/components/WeeklyConfluenceSpotlight.tsx:750, 810`
+  - PO Screenshots: `IMG_8590`, `IMG_8593`, `IMG_8595`, `IMG_8597`
+- **Intended Outcome**:
+  - Clean, institutional copy adhering to financial terminal standards.
+  - Setup rationale consolidated into a single authoritative section.
+- **Explicit Scope**:
+  - Replace colloquial strings in backend engine and frontend utilities with institutional terminology.
+  - Remove duplicate setup paragraphs from `OptimalEntryExitCard` and `WeeklyConfluenceSpotlight`.
+  - Rename `"Canonical Verdict"` to `"System Decision State"`.
+- **Exclusions**:
+  - Does NOT alter underlying mathematical scoring or engine outputs.
+- **Acceptance Criteria**:
+  1. Zero occurrences of "big boss", "rock-solid", or "canonical verdict" in the user interface.
+  2. Setup thesis is rendered once in the primary context card and referenced concisely elsewhere.
+- **Dependencies & Safe Parallelism**:
+  - Safe to execute in parallel with `UX-ANALYSIS-001` and `UX-ANALYSIS-002`.
+
+---
+
+### `UX-ANALYSIS-005`: Ownership-Aware Analysis Flow
+- **Category**: Feature Enhancement / Portfolio Context
+- **Proposed Priority**: **P2 (Standard)**
+- **Priority Rationale**: Moves the ownership toggle from a cosmetic text switch to a functional portfolio management tool.
+- **Status**: `STAGED_FOR_IMPLEMENTATION`
+- **Assigned Sprint**: `SPRINT_UNASSIGNED`
+- **Owner**: `OWNER_UNASSIGNED`
+- **Confirmed Problem**:
+  - Selecting "I Own It" merely toggles a URL query string without requesting cost basis or position size.
+  - Terminal continues to show theoretical entry advice rather than actual position risk and P&L.
+- **Evidence References**:
+  - `frontend/components/AdaptiveTerminal.tsx:203-240`
+  - PO Screenshot: `IMG_8596`
+- **Intended Outcome**:
+  - Seamless position entry flow that tailors analysis to an existing position when owned.
+- **Explicit Scope**:
+  - When "I Own It" is selected, present an inline prompt for:
+    - User Cost Basis ($)
+    - Position Size (Shares or Total $)
+    - Entry Date
+  - When basis is provided, display:
+    - Unrealized Gain/Loss ($ and %)
+    - Distance from Cost Basis to Structural Stop ($315.32)
+    - Trailing stop recommendations based on base structure
+  - Clarify that market structural levels ($315.32, $383.89) are asset-wide technical levels, not personalized exits.
+- **Exclusions**:
+  - Does NOT implement brokerage OAuth integrations or automated execution.
+- **Acceptance Criteria**:
+  1. User can enter cost basis and share quantity.
+  2. Terminal displays personalized P&L and risk alongside market structural levels.
+  3. Position data is stored locally in `localStorage` or session state, scoped strictly by symbol.
+- **Dependencies & Safe Parallelism**:
+  - Depends on `UX-ANALYSIS-001` and `UX-ANALYSIS-002`.
+
+---
+
+### `UX-RADAR-001`: Actionability and Confluence Filters for Radar
+- **Category**: Scanner UX / Filter Architecture
+- **Proposed Priority**: **P2 (Standard)**
+- **Priority Rationale**: Enhances scanner utility by allowing traders to filter setups by immediate execution readiness and multi-pillar strength.
+- **Status**: `STAGED_FOR_IMPLEMENTATION`
+- **Assigned Sprint**: `SPRINT_UNASSIGNED`
+- **Owner**: `OWNER_UNASSIGNED`
+- **Confirmed Problem**:
+  - Radar currently lacks granular filters for execution readiness (ready inside corridor vs waiting for pullback).
+  - Score $\ge 70$ is often conflated with immediate execution readiness.
+- **Evidence References**:
+  - `frontend/app/radar/page.tsx`
+  - `frontend/lib/decisionHierarchyUtils.ts:98`
+- **Intended Outcome**:
+  - Multi-dimensional filter bar on Radar screen separating setup quality from execution readiness.
+- **Explicit Scope**:
+  - Add **Actionability Filter**:
+    - `All Setups`
+    - `Ready to Execute (Inside Corridor)`
+    - `Conditional Wait (Pending Pullback)`
+    - `Invalidated (Below Stop)`
+  - Add **Confluence Filter**:
+    - Slider / Toggle for Confluence Score $\ge 70$.
+    - Pillar alignment filter (e.g. `≥3 Pillars Strong`).
+- **Exclusions**:
+  - Does NOT alter backend scanner filtering algorithms or create separate standalone pages.
+- **Acceptance Criteria**:
+  1. Radar filter bar includes "Actionability" dropdown and "Confluence $\ge 70$" toggle.
+  2. Filtering by "Ready to Execute" returns only assets where $Spot \in [EntryMin, EntryMax]$.
+  3. Filter selections serialize into URL search params for deep linking and saved views.
+- **Dependencies & Safe Parallelism**:
+  - Depends on `UX-ANALYSIS-001` for canonical actionability definitions.
+
+---
+
+### `UX-ANALYSIS-006`: Supporting-Evidence Redesign & Pillar Transparency
+- **Category**: Data Visualization / Scorecard
+- **Proposed Priority**: **P2 (Standard)**
+- **Priority Rationale**: Provides full institutional transparency into the 4-pillar confluence engine.
+- **Status**: `STAGED_FOR_IMPLEMENTATION`
+- **Assigned Sprint**: `SPRINT_UNASSIGNED`
+- **Owner**: `OWNER_UNASSIGNED`
+- **Confirmed Problem**:
+  - Users do not understand how the composite 76/100 score is derived.
+  - "3/4 Strong Alignment" badge lacks visual connection to the 4 underlying analytical pillars.
+- **Evidence References**:
+  - `analyst_dashboard/analyzers/confluence_engine.py:100-220`
+  - `frontend/components/WeeklyConfluenceSpotlight.tsx:940-980`
+  - PO Screenshots: `IMG_8595`, `IMG_8597`
+- **Intended Outcome**:
+  - Clean, deconstructed 4-pillar scorecard showing exact weighting (25% each) and sub-feature metrics.
+- **Explicit Scope**:
+  - Redesign confluence card to display:
+    - Composite Score: `76/100` (Institutional Gate: PASS)
+    - Pillar 1: Technical (25% weight) — `85/100` [PASS]
+    - Pillar 2: Fundamental (25% weight) — `80/100` [PASS]
+    - Pillar 3: Smart Money (25% weight) — `85/100` [PASS]
+    - Pillar 4: Macro (25% weight) — `55/100` [NEUTRAL]
+  - Add explanatory tooltip on 70 threshold clarifying it as an execution quality gate.
+- **Exclusions**:
+  - Does NOT alter the weights or formulas in `confluence_engine.py`.
+- **Acceptance Criteria**:
+  1. Confluence card displays all 4 pillars with their 25% weights and sub-scores.
+  2. Mathematical sum ($0.25 \times \sum P_i$) visibly matches the displayed 76/100 composite score.
+- **Dependencies & Safe Parallelism**:
+  - Safe to execute in parallel with `UX-ANALYSIS-001`.
+
+---
+
+### `UX-MOBILE-001`: Mobile Readability, Touch Targets & Viewport Layout
+- **Category**: Accessibility / Responsive Design
+- **Proposed Priority**: **P2 (Standard)**
+- **Priority Rationale**: Prevents inoperable UI elements on mobile devices and ensures baseline accessibility compliance.
+- **Status**: `STAGED_FOR_IMPLEMENTATION`
+- **Assigned Sprint**: `SPRINT_UNASSIGNED`
+- **Owner**: `OWNER_UNASSIGNED`
+- **Confirmed Problem**:
+  - Fixed bottom navigation bar covers interactive buttons on viewports $<768\text{px}$.
+  - Interactive disclosure toggles measure $<36\text{px}$ in height.
+  - Collapsible containers lack `aria-expanded` and `aria-controls` bindings.
+- **Evidence References**:
+  - `frontend/components/AdaptiveTerminal.tsx:350-420`
+  - `frontend/components/OptimalEntryExitCard.tsx`
+  - PO Screenshot: `IMG_8599`
+- **Intended Outcome**:
+  - Fully accessible, touch-friendly mobile terminal view with zero element clipping.
+- **Explicit Scope**:
+  - Add `pb-24` (or `pb-32`) bottom padding to the main scroll container to guarantee clearance above the fixed bottom navigation bar.
+  - Increase all interactive button heights to a minimum of `44px` on mobile viewports.
+  - Add `aria-expanded` and `aria-controls` to all accordion headers and modal triggers.
+- **Exclusions**:
+  - Does NOT redesign the desktop layout or modify desktop grid breakpoints.
+- **Acceptance Criteria**:
+  1. On mobile viewports (375px–430px width), all card buttons and disclosures are fully visible above the sticky bottom bar.
+  2. All touch targets measure at least $44\times 44\text{px}$.
+  3. Screen readers announce accordion expansion/collapse states accurately.
+- **Dependencies & Safe Parallelism**:
+  - Can be developed independently of calculation and state changes.
+
+---
+
+## 3. Safe Implementation Sequencing
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ STAGE 1: CORE INVARIANT REMEDIATION (Sprint N)           │
+│ - UX-ANALYSIS-001: Canonical Decision-State Consistency  │
+│ - UX-ANALYSIS-002: Calculation & Score Provenance        │
+│ Outcome: Eliminates contradictions & arithmetic confusion│
+└──────────────────────────┬───────────────────────────────┘
+                           │
+┌──────────────────────────▼───────────────────────────────┐
+│ STAGE 2: DATA HYGIENE & CONTENT REFINEMENT (Sprint N+1)  │
+│ - UX-ANALYSIS-003: Data-Context & Freshness Clarity      │
+│ - UX-ANALYSIS-004: Content Consolidation & Institutional │
+│ - UX-ANALYSIS-006: Supporting-Evidence 4-Pillar Redesign │
+│ Outcome: Clean, professional, institutional appearance   │
+└──────────────────────────┬───────────────────────────────┘
+                           │
+┌──────────────────────────▼───────────────────────────────┐
+│ STAGE 3: PORTFOLIO & ADVANCED WORKFLOWS (Sprint N+2)     │
+│ - UX-ANALYSIS-005: Ownership-Aware Analysis Flow         │
+│ - UX-RADAR-001: Actionability & Confluence Filters       │
+│ - UX-MOBILE-001: Mobile Readability & Touch Targets      │
+│ Outcome: Full mobile usability and cross-tool workflow   │
+└──────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 4. Governance Record
+
+- **Document Location**: `docs/research/analysis-ux-audit/BACKLOG_HANDOFF.md`
+- **Handoff State**: `BACKLOG_HANDOFF = PREPARED`
+- **Authoritative Register Status**: `AUTHORITATIVE_BACKLOG_UPDATE = PENDING_CONTROLLED_INTEGRATION`
+- **Engineering Backlog Integrity**: Verified that `docs/planning/ENGINEERING_BACKLOG.md` remains intact and unmodified.
