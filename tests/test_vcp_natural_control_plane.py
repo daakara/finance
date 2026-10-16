@@ -15,6 +15,7 @@ import tempfile
 import unittest
 from datetime import date, datetime, time, timedelta, timezone
 from unittest.mock import MagicMock, patch
+import pytest
 import yaml
 
 # Ensure project root is in path
@@ -22,6 +23,8 @@ sys.path.insert(0, os.path.abspath("."))
 
 from fastapi.testclient import TestClient
 from api.main import app
+
+pytestmark = pytest.mark.tier2b
 
 from analyst_dashboard.vcp.session_guard import (
     US_EASTERN,
@@ -343,6 +346,23 @@ class TestNaturalScanEndpointControlPlane(unittest.TestCase):
             eligible_time = close_utc + timedelta(minutes=50)
 
             from analyst_dashboard.vcp import session_guard
+            from analyst_dashboard.analyzers.scanner_contract import CANONICAL_VCP_UNIVERSE
+            from analyst_dashboard.universe.contracts import compute_sha256
+            mock_ustore = MagicMock()
+            fake_build = {
+                "universe_build_id": "univ-test-build-001",
+                "universe_id": "ARX_US_EQUITIES",
+                "publication_decision": "PUBLISH",
+                "construction_status": "COMPLETE",
+                "source_population_as_of": session_date,
+                "scannable_membership_hash": compute_sha256(CANONICAL_VCP_UNIVERSE),
+                "reconciliation_summary_json": '{"candidate_generation_id": "CANDIDATE_GENERATION_004"}',
+            }
+            mock_ustore.get_universe_build.return_value = fake_build
+            mock_ustore.get_published_universe_for_session.return_value = fake_build
+            mock_ustore.get_latest_published_universe.return_value = fake_build
+            mock_ustore.get_scannable_membership.return_value = list(CANONICAL_VCP_UNIVERSE)
+
             orig_eval = session_guard.evaluate_natural_session_eligibility
             def mock_eval_fn(*args, **kwargs):
                 kwargs["now_utc"] = eligible_time
@@ -350,43 +370,45 @@ class TestNaturalScanEndpointControlPlane(unittest.TestCase):
 
             # Case A: Market DB returns 0 settled symbols for session_date -> HTTP 422 with MISSING_MARKET_DATA
             with patch("analyst_dashboard.vcp.session_guard.evaluate_natural_session_eligibility", side_effect=mock_eval_fn):
-                with patch("api.routes.screener.vcp_scanner_runner.market_db") as mock_mdb:
-                    mock_mdb.get_latest_price.return_value = {"currentPrice": 100.0, "date": "2026-07-14"}
-                    res = self.client.post(
-                        "/api/v1/screener/vcp/natural-scan",
-                        headers={"X-Scheduler-Token": "test-secret-123"},
-                        json={"scheduled_date": session_date},
-                    )
-                    self.assertEqual(res.status_code, 422)
-                    data = res.json()["detail"]
-                    self.assertEqual(data["status"], "REJECTED")
-                    self.assertEqual(data["reason"], "MISSING_MARKET_DATA")
-                    self.assertEqual(data["coverage_ratio"], 0.0)
+                with patch("api.routes.screener.vcp_scanner_runner.universe_store", mock_ustore):
+                    with patch("api.routes.screener.vcp_scanner_runner.market_db") as mock_mdb:
+                        mock_mdb.get_latest_price.return_value = {"currentPrice": 100.0, "date": "2026-07-14"}
+                        res = self.client.post(
+                            "/api/v1/screener/vcp/natural-scan",
+                            headers={"X-Scheduler-Token": "test-secret-123"},
+                            json={"scheduled_date": session_date},
+                        )
+                        self.assertEqual(res.status_code, 422)
+                        data = res.json()["detail"]
+                        self.assertEqual(data["status"], "REJECTED")
+                        self.assertEqual(data["reason"], "MISSING_MARKET_DATA")
+                        self.assertEqual(data["coverage_ratio"], 0.0)
 
             # Case B: Market DB returns 10 of 35 symbols -> HTTP 422 with INCOMPLETE_UNIVERSE_COVERAGE
             with patch("analyst_dashboard.vcp.session_guard.evaluate_natural_session_eligibility", side_effect=mock_eval_fn):
-                with patch("api.routes.screener.vcp_scanner_runner.market_db") as mock_mdb:
-                    mock_mdb.get_daily_candles.return_value = [
-                        {"open": 100.0, "high": 105.0, "low": 95.0, "close": 102.0, "volume": 1000000, "time": session_date}
-                        for _ in range(55)
-                    ]
-                    call_count = [0]
-                    def mock_price_partial(sym):
-                        call_count[0] += 1
-                        if call_count[0] <= 10:
-                            return {"currentPrice": 100.0, "date": session_date}
-                        return {"currentPrice": 100.0, "date": "2026-07-14"}
-                    mock_mdb.get_latest_price.side_effect = mock_price_partial
-                    res = self.client.post(
-                        "/api/v1/screener/vcp/natural-scan",
-                        headers={"X-Scheduler-Token": "test-secret-123"},
-                        json={"scheduled_date": session_date},
-                    )
-                    self.assertEqual(res.status_code, 422)
-                    data = res.json()["detail"]
-                    self.assertEqual(data["status"], "REJECTED")
-                    self.assertEqual(data["reason"], "INCOMPLETE_UNIVERSE_COVERAGE")
-                    self.assertLess(data["coverage_ratio"], 1.0)
+                with patch("api.routes.screener.vcp_scanner_runner.universe_store", mock_ustore):
+                    with patch("api.routes.screener.vcp_scanner_runner.market_db") as mock_mdb:
+                        mock_mdb.get_daily_candles.return_value = [
+                            {"open": 100.0, "high": 105.0, "low": 95.0, "close": 102.0, "volume": 1000000, "time": session_date}
+                            for _ in range(55)
+                        ]
+                        call_count = [0]
+                        def mock_price_partial(sym):
+                            call_count[0] += 1
+                            if call_count[0] <= 10:
+                                return {"currentPrice": 100.0, "date": session_date}
+                            return {"currentPrice": 100.0, "date": "2026-07-14"}
+                        mock_mdb.get_latest_price.side_effect = mock_price_partial
+                        res = self.client.post(
+                            "/api/v1/screener/vcp/natural-scan",
+                            headers={"X-Scheduler-Token": "test-secret-123"},
+                            json={"scheduled_date": session_date},
+                        )
+                        self.assertEqual(res.status_code, 422)
+                        data = res.json()["detail"]
+                        self.assertEqual(data["status"], "REJECTED")
+                        self.assertEqual(data["reason"], "INCOMPLETE_UNIVERSE_COVERAGE")
+                        self.assertLess(data["coverage_ratio"], 1.0)
 
 
 class TestSessionLevelIdempotencyAndCoordination(unittest.TestCase):

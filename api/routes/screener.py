@@ -703,10 +703,14 @@ def trigger_natural_vcp_scan(
     eff_event = (payload.scheduler_event_id if payload and payload.scheduler_event_id else None) or x_scheduler_event_id
 
     # Step 3: Server-side exchange-session eligibility & settlement window enforcement
+    # Evaluates against authorized published executable universe (INV-U01, INV-U02, INV-U04)
+    universe_store = getattr(vcp_scanner_runner, "universe_store", None)
     eligibility = evaluate_natural_session_eligibility(
         session_date=req_date,
         check_data_freshness=True,
-        universe_symbols=CANONICAL_VCP_UNIVERSE,
+        universe_symbols=None,
+        universe_build_id=req_build,
+        universe_store=universe_store,
         market_db=vcp_scanner_runner.market_db,
     )
     if not eligibility.is_eligible:
@@ -728,7 +732,7 @@ def trigger_natural_vcp_scan(
     try:
         return trigger_svc.trigger_natural_scan(
             scheduled_date=req_date,
-            universe_build_id=req_build,
+            universe_build_id=eligibility.universe_build_id or req_build,
             scheduler_job_id=eff_job,
             scheduler_event_id=eff_event,
         )

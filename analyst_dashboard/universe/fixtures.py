@@ -89,6 +89,7 @@ def create_canonical_fixture_snapshot(snapshot_id: str = "fixture-snap-001") -> 
             asset_class=s.get("asset_class", "EQUITY"),
             listing_date=s.get("listing_date"),
             delisting_date=s.get("delisting_date"),
+            trading_suspension_date=s.get("trading_suspension_date"),
         )
         for s in CANONICAL_FIXTURE_SECURITIES
     ]

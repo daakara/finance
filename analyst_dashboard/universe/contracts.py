@@ -125,6 +125,7 @@ class SourceSecurity:
     asset_class: str = "EQUITY"
     listing_date: Optional[str] = None
     delisting_date: Optional[str] = None
+    trading_suspension_date: Optional[str] = None
 
     def normalize(self) -> SourceSecurity:
         """Deterministically trims and normalizes casing."""
@@ -140,6 +141,7 @@ class SourceSecurity:
             asset_class=self.asset_class.strip().upper(),
             listing_date=self.listing_date.strip() if self.listing_date else None,
             delisting_date=self.delisting_date.strip() if self.delisting_date else None,
+            trading_suspension_date=self.trading_suspension_date.strip() if self.trading_suspension_date else None,
         )
 
     def to_dict(self) -> Dict[str, Any]:
