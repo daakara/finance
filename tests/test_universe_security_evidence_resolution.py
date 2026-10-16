@@ -21,22 +21,22 @@ Marked tier2c (Provenance and Data Gate).
 from __future__ import annotations
 
 import pytest
-from typing import Any
 
 from analyst_dashboard.universe.adapters import (
     IdentityResolutionStatus,
     OpenFigiMatchStatus,
-    ParsedOpenFigiResult,
-    ParsedSourceFile,
-    ParsedSourceRow,
     ResolutionRecordStatus,
     SecurityEvidenceAccounting,
-    SecurityEvidenceResolutionOutcome,
     SecurityEvidenceResolver,
-    SourceFeedType,
     parse_nasdaq_trader_directory,
     parse_openfigi_response,
     parse_sec_company_tickers_exchange,
+)
+from analyst_dashboard.universe.builder import DeterministicUniverseBuilder
+from analyst_dashboard.universe.contracts import (
+    EligibilityDecision,
+    SourcePopulationSnapshot,
+    compute_sha256,
 )
 from analyst_dashboard.universe.validator import (
     EvidenceReference,
@@ -44,6 +44,7 @@ from analyst_dashboard.universe.validator import (
     ValidationIssueCode,
     ValidationRequirements,
     ValidationStatus,
+    to_source_security,
 )
 
 pytestmark = pytest.mark.tier2c
@@ -560,7 +561,6 @@ class TestBatchValidationAndIntegration:
             }
         }
         sec_map = {"AAPL": "SEC_US_AAPL_01"}
-        aapl_candidate_only = [c for c in outcome_unresolved.records if c.symbol == "AAPL"]
 
         # Build clean candidate alone
         clean_outcome = SecurityEvidenceResolver.resolve_from_source_files(
@@ -620,3 +620,474 @@ class TestBatchValidationAndIntegration:
 
         warn_rec = next(r for r in outcome.records if r.symbol == "WARN1")
         assert warn_rec.openfigi_match_status == OpenFigiMatchStatus.NO_MATCH
+
+
+class TestCheckAAndDAdversarialValidation:
+    """Adversarial tests for Check A (Caller Overlays) and Check D (Batch Admission & Conflict Preservation)."""
+
+    def test_valid_looking_overlay_on_ambiguous_record_fails_validation(self):
+        """
+        Adversarial test: Caller supplies a complete, valid-looking overlay on candidate 'MULTI'
+        which has OpenFIGI multi-match ambiguity.
+        Validation MUST fail closed; overlay cannot clear underlying source ambiguity.
+        """
+        figi_results = parse_openfigi_response(SYNTHETIC_OPENFIGI_RESPONSE, SYNTHETIC_OPENFIGI_REQUESTS)
+        overlay = {
+            "MULTI": {
+                "currency": "USD",
+                "country": "USA",
+                "primary_listing": True,
+                "listing_status": "ACTIVE",
+                "asset_class": "EQUITY",
+                "security_type": "Common Stock",
+                "exchange": "NASDAQ",
+                "listing_date": "2020-01-01",
+                "delisting_date": None,
+                "trading_suspension_date": None,
+            }
+        }
+        sec_map = {"MULTI": "SEC_MULTI_01"}
+
+        outcome = SecurityEvidenceResolver.resolve_from_source_files(
+            openfigi_results=figi_results,
+            caller_security_id_mapping=sec_map,
+            caller_field_evidence_overlay=overlay,
+        )
+
+        multi_rec = next(r for r in outcome.records if r.symbol == "MULTI")
+        assert multi_rec.record_status == ResolutionRecordStatus.AMBIGUOUS
+        assert "__source_conflict__" in multi_rec.raw_record
+
+        # Validate through UniverseInputValidator
+        reqs = ValidationRequirements()
+        val_res = UniverseInputValidator.validate_record(multi_rec.raw_record, reqs)
+        assert val_res.status == ValidationStatus.VALIDATION_FAILED
+        assert val_res.downstream_admission_permitted is False
+        assert any(i.issue_code == ValidationIssueCode.CONFLICTING_MAPPING for i in val_res.issues)
+
+    def test_valid_looking_overlay_on_venue_conflicted_record_fails_validation(self):
+        """
+        Adversarial test: Caller supplies an overlay on 'META' which has an unresolved venue conflict
+        (SEC reports NYSE vs Nasdaq Directory reports NASDAQ).
+        Overlay with exchange='NASDAQ' MUST NOT clear the conflict; validation fails closed.
+        """
+        sec_file = parse_sec_company_tickers_exchange(SYNTHETIC_SEC_PAYLOAD)
+        nasdaq_file = parse_nasdaq_trader_directory(SYNTHETIC_NASDAQ_LISTED_TEXT)
+        overlay = {
+            "META": {
+                "currency": "USD",
+                "country": "USA",
+                "primary_listing": True,
+                "listing_status": "ACTIVE",
+                "asset_class": "EQUITY",
+                "security_type": "Common Stock",
+                "exchange": "NASDAQ",
+                "listing_date": "2012-05-18",
+                "delisting_date": None,
+                "trading_suspension_date": None,
+            }
+        }
+        sec_map = {"META": "SEC_META_01"}
+
+        outcome = SecurityEvidenceResolver.resolve_from_source_files(
+            sec_file=sec_file,
+            directory_files=[nasdaq_file],
+            caller_security_id_mapping=sec_map,
+            caller_field_evidence_overlay=overlay,
+        )
+
+        meta_rec = next(r for r in outcome.records if r.symbol == "META")
+        assert meta_rec.record_status == ResolutionRecordStatus.CONFLICTED
+        assert "__source_conflict__" in meta_rec.raw_record
+
+        reqs = ValidationRequirements()
+        val_res = UniverseInputValidator.validate_record(meta_rec.raw_record, reqs)
+        assert val_res.status == ValidationStatus.VALIDATION_FAILED
+        assert val_res.downstream_admission_permitted is False
+        assert any(i.issue_code == ValidationIssueCode.CONFLICTING_MAPPING for i in val_res.issues)
+
+    def test_one_invalid_member_revokes_entire_batch_admission(self):
+        """
+        Atomic Batch Contract: A batch containing 1 valid member (AAPL) and 1 invalid member (GOOGL missing fields).
+        Batch validation fails, and AAPL's admission is strictly revoked.
+        """
+        sec_file = parse_sec_company_tickers_exchange({
+            "fields": ["cik", "name", "ticker", "exchange"],
+            "data": [
+                [320193, "Apple Inc.", "AAPL", "Nasdaq"],
+                [1652044, "Alphabet Inc.", "GOOGL", "Nasdaq"],
+            ],
+        })
+        nasdaq_file = parse_nasdaq_trader_directory(
+            "Symbol|Security Name|Market Category|Test Issue|Financial Status|Round Lot Size|ETF|NextShares\n"
+            "AAPL|Apple Inc. - Common Stock|Q|N|N|100|N|N\n"
+            "GOOGL|Alphabet Inc. - Class A Common Stock|Q|N|N|100|N|N\n"
+            "File Creation Time: 1016202612:00|||||||\n"
+        )
+        # Supply overlay ONLY for AAPL
+        overlay = {
+            "AAPL": {
+                "currency": "USD",
+                "country": "USA",
+                "primary_listing": True,
+                "listing_status": "ACTIVE",
+                "asset_class": "EQUITY",
+                "security_type": "Common Stock",
+                "listing_date": "1980-12-12",
+                "delisting_date": None,
+                "trading_suspension_date": None,
+            }
+        }
+        sec_map = {"AAPL": "SEC_AAPL_01"}  # GOOGL has no security_id mapping
+
+        outcome = SecurityEvidenceResolver.resolve_from_source_files(
+            sec_file=sec_file,
+            directory_files=[nasdaq_file],
+            caller_security_id_mapping=sec_map,
+            caller_field_evidence_overlay=overlay,
+        )
+
+        batch_res = outcome.validate_batch(ValidationRequirements())
+        assert batch_res.is_batch_valid is False
+        assert batch_res.failed_count > 0
+
+        # AAPL was individually valid, but batch revoked its admission
+        aapl_res = next(r for r in batch_res.records if r.raw_record.get("symbol") == "AAPL")
+        assert aapl_res.downstream_admission_permitted is False
+        assert aapl_res.validated_values is None
+        assert any(i.issue_code == ValidationIssueCode.BATCH_ADMISSION_BLOCKED for i in aapl_res.issues)
+
+        # to_source_securities must raise ValueError
+        with pytest.raises(ValueError, match="Cannot convert records from a failed batch"):
+            batch_res.to_source_securities()
+
+    def test_source_parse_failure_alongside_usable_rows_fails_batch(self):
+        """Malformed rows detected during parsing fail batch admission fail-closed."""
+        # Malformed SEC payload with usable row alongside malformed row
+        malformed_sec = {
+            "fields": ["cik", "name", "ticker", "exchange"],
+            "data": [
+                [320193, "Apple Inc.", "AAPL", "Nasdaq"],
+                [None, "Malformed Co", None, None],
+            ],
+        }
+        sec_file = parse_sec_company_tickers_exchange(malformed_sec)
+        assert sec_file.malformed_row_count == 1
+        assert sec_file.data_row_count == 1
+
+        outcome = SecurityEvidenceResolver.resolve_from_source_files(
+            sec_file=sec_file,
+        )
+
+        batch_res = outcome.validate_batch(ValidationRequirements())
+        assert batch_res.is_batch_valid is False
+        assert any("SOURCE_PARSE_FAILED" in i.message for i in batch_res.batch_issues)
+
+    def test_empty_batch_fails_closed(self):
+        """An empty input batch fails closed without downstream admission."""
+        outcome = SecurityEvidenceResolver.resolve_candidates(candidates=[])
+        assert outcome.total_candidates == 0
+
+        batch_res = outcome.validate_batch(ValidationRequirements())
+        assert batch_res.is_batch_valid is False
+        assert batch_res.total_input_count == 0
+        assert any(i.issue_code == ValidationIssueCode.BATCH_ADMISSION_BLOCKED for i in batch_res.batch_issues)
+
+    def test_caller_mapping_supplies_identity_leaves_required_evidence_absent(self):
+        """Supplying security_id mapping alone does not satisfy unevidenced required fields."""
+        sec_file = parse_sec_company_tickers_exchange(SYNTHETIC_SEC_PAYLOAD)
+        nasdaq_file = parse_nasdaq_trader_directory(SYNTHETIC_NASDAQ_LISTED_TEXT)
+
+        outcome = SecurityEvidenceResolver.resolve_from_source_files(
+            sec_file=sec_file,
+            directory_files=[nasdaq_file],
+            caller_security_id_mapping={"AAPL": "SEC_AAPL_01"},
+        )
+
+        aapl = next(r for r in outcome.records if r.symbol == "AAPL")
+        assert aapl.security_id == "SEC_AAPL_01"
+        assert aapl.record_status == ResolutionRecordStatus.UNRESOLVED
+
+        # Validation fails because currency, country, primary_listing are absent
+        batch_res = outcome.validate_batch(ValidationRequirements())
+        assert batch_res.is_batch_valid is False
+        aapl_res = next(r for r in batch_res.records if r.raw_record.get("symbol") == "AAPL")
+        missing_fields = {i.field_name for i in aapl_res.issues if i.issue_code == ValidationIssueCode.MISSING_REQUIRED_FIELD}
+        assert "currency" in missing_fields
+        assert "country" in missing_fields
+        assert "primary_listing" in missing_fields
+
+
+class TestCheckBUnknownDatesVsEvidencedAbsence:
+    """Verifies Check B invariants: unknown lifecycle dates vs evidenced event absence."""
+
+    def test_raw_directory_feeds_leave_lifecycle_dates_omitted(self):
+        """Raw directory feeds omit listing_date, delisting_date, and trading_suspension_date."""
+        sec_file = parse_sec_company_tickers_exchange(SYNTHETIC_SEC_PAYLOAD)
+        nasdaq_file = parse_nasdaq_trader_directory(SYNTHETIC_NASDAQ_LISTED_TEXT)
+
+        outcome = SecurityEvidenceResolver.resolve_from_source_files(
+            sec_file=sec_file,
+            directory_files=[nasdaq_file],
+        )
+
+        aapl = next(r for r in outcome.records if r.symbol == "AAPL")
+        assert "listing_date" not in aapl.raw_record
+        assert "delisting_date" not in aapl.raw_record
+        assert "trading_suspension_date" not in aapl.raw_record
+
+    def test_active_directory_presence_does_not_assert_no_event(self):
+        """
+        Presence in an active directory does NOT assert 'no delisting' or 'no suspension'.
+        Dates remain omitted, NOT defaulted to None.
+        """
+        nasdaq_file = parse_nasdaq_trader_directory(SYNTHETIC_NASDAQ_LISTED_TEXT)
+        outcome = SecurityEvidenceResolver.resolve_from_source_files(directory_files=[nasdaq_file])
+        aapl = next(r for r in outcome.records if r.symbol == "AAPL")
+
+        assert aapl.raw_record.get("delisting_date") is None
+        assert "delisting_date" not in aapl.raw_record
+
+    def test_nasdaq_financial_status_code_is_not_halt_evidence(self):
+        """
+        Nasdaq directory Financial Status code 'N' reflects listing compliance,
+        NOT real-time trading halt absence.
+        """
+        nasdaq_file = parse_nasdaq_trader_directory(SYNTHETIC_NASDAQ_LISTED_TEXT)
+        outcome = SecurityEvidenceResolver.resolve_from_source_files(directory_files=[nasdaq_file])
+        aapl = next(r for r in outcome.records if r.symbol == "AAPL")
+        assert "trading_suspension_date" not in aapl.raw_record
+
+    def test_explicit_none_accepted_only_under_validator_contract_and_evidence(self):
+        """
+        Explicit None for delisting_date is accepted only when caller asserts it under permitted_null_fields.
+        If omitted, to_source_security fails closed.
+        """
+        from analyst_dashboard.universe.validator import RecordValidationResult
+        rec_result = RecordValidationResult(
+            raw_record={"security_id": "SEC_1", "symbol": "AAPL"},
+            status=ValidationStatus.VALIDATION_PASSED,
+            validated_values={
+                "security_id": "SEC_1",
+                "symbol": "AAPL",
+                "exchange": "NASDAQ",
+                "security_type": "COMMON_STOCK",
+                "listing_status": "ACTIVE",
+                "currency": "USD",
+                "country": "USA",
+                "primary_listing": True,
+                "asset_class": "EQUITY",
+                "listing_date": "1980-12-12",
+                # delisting_date and trading_suspension_date omitted
+            },
+            downstream_admission_permitted=True,
+        )
+        with pytest.raises(ValueError, match="Cannot construct SourceSecurity without validated value for 'delisting_date'"):
+            to_source_security(rec_result)
+
+
+class TestCheckCClassificationAndDomicile:
+    """Verifies Check C invariants: multi-symbol issuer relationship and foreign issuer domicile."""
+
+    def test_multi_symbol_issuer_relationship_distinguished_from_share_class(self):
+        """
+        Shared CIK proves a multi-symbol issuer relationship.
+        It does NOT, by itself, prove distinct share classes.
+        """
+        sec_file = parse_sec_company_tickers_exchange(SYNTHETIC_SEC_PAYLOAD)
+        nasdaq_file = parse_nasdaq_trader_directory(SYNTHETIC_NASDAQ_LISTED_TEXT)
+
+        outcome = SecurityEvidenceResolver.resolve_from_source_files(
+            sec_file=sec_file,
+            directory_files=[nasdaq_file],
+        )
+
+        googl = next(r for r in outcome.records if r.symbol == "GOOGL")
+        goog = next(r for r in outcome.records if r.symbol == "GOOG")
+
+        assert googl.is_multi_symbol_issuer is True
+        assert goog.is_multi_symbol_issuer is True
+        assert googl.multi_symbol_issuer_symbols == ["GOOG", "GOOGL"]
+        assert goog.multi_symbol_issuer_symbols == ["GOOG", "GOOGL"]
+        assert outcome.accounting.multi_symbol_issuer_cik_count == 1
+        assert outcome.accounting.multi_symbol_issuer_symbol_count == 2
+
+    def test_foreign_issuer_domicile_unknown_without_country_evidence(self):
+        """
+        Foreign issuer indicator is None (unknown) without explicit country evidence.
+        It is NOT inferred to be domestic US from US exchange listing.
+        """
+        sec_file = parse_sec_company_tickers_exchange(SYNTHETIC_SEC_PAYLOAD)
+        nasdaq_file = parse_nasdaq_trader_directory(SYNTHETIC_NASDAQ_LISTED_TEXT)
+
+        outcome = SecurityEvidenceResolver.resolve_from_source_files(
+            sec_file=sec_file,
+            directory_files=[nasdaq_file],
+        )
+
+        aapl = next(r for r in outcome.records if r.symbol == "AAPL")
+        # In directory feeds without country evidence, domicile is unknown (None)
+        assert aapl.foreign_issuer_indicator is None
+
+        # When country overlay is provided, domicile is explicitly known
+        outcome_with_country = SecurityEvidenceResolver.resolve_from_source_files(
+            sec_file=sec_file,
+            directory_files=[nasdaq_file],
+            caller_field_evidence_overlay={"AAPL": {"country": "USA"}},
+        )
+        aapl_country = next(r for r in outcome_with_country.records if r.symbol == "AAPL")
+        assert aapl_country.foreign_issuer_indicator is False
+
+
+class TestCheckEIntegrationContractAndBuilderHandoff:
+    """Verifies Check E: executable contract test matching the Package 3 handoff example."""
+
+    def test_package_3_integration_contract_handoff(self):
+        """
+        Verifies every constructor and method in the Package 3 integration handoff:
+        Resolver -> ValidationRequirements -> validate_batch -> to_source_securities ->
+        SourcePopulationSnapshot -> DeterministicUniverseBuilder.evaluate_security_eligibility.
+        """
+        sec_file = parse_sec_company_tickers_exchange({
+            "fields": ["cik", "name", "ticker", "exchange"],
+            "data": [
+                [320193, "Apple Inc.", "AAPL", "Nasdaq"],
+                [1549575, "Alibaba Group Holding Ltd", "BABA", "NYSE"],
+            ],
+        })
+        nasdaq_file = parse_nasdaq_trader_directory(
+            "Symbol|Security Name|Market Category|Test Issue|Financial Status|Round Lot Size|ETF|NextShares\n"
+            "AAPL|Apple Inc. - Common Stock|Q|N|N|100|N|N\n"
+            "File Creation Time: 1016202612:00|||||||\n"
+        )
+        other_file = parse_nasdaq_trader_directory(
+            "ACT Symbol|Security Name|Exchange|CQS Symbol|ETF|Round Lot Size|Test Issue|NASDAQ Symbol\n"
+            "BABA|Alibaba Group Holding Limited American Depositary Shares|N|BABA|N|100|N|BABA\n"
+            "File Creation Time: 1016202612:00||||||\n"
+        )
+        figi_results = parse_openfigi_response(
+            [
+                {
+                    "data": [{
+                        "figi": "BBG000B9XRY4",
+                        "name": "APPLE INC",
+                        "ticker": "AAPL",
+                        "exchCode": "US",
+                        "compositeFIGI": "BBG000B9XRY4",
+                        "securityType": "Common Stock",
+                        "marketSector": "Equity",
+                        "shareClassFIGI": "BBG001S5N8V8",
+                        "securityType2": "Common Stock",
+                        "securityDescription": "AAPL",
+                    }]
+                },
+                {
+                    "data": [{
+                        "figi": "BBG006G24542",
+                        "name": "ALIBABA GROUP HOLDING-SP ADR",
+                        "ticker": "BABA",
+                        "exchCode": "US",
+                        "compositeFIGI": "BBG006G24542",
+                        "securityType": "Depositary Receipt",
+                        "marketSector": "Equity",
+                        "shareClassFIGI": "BBG006G24551",
+                        "securityType2": "Depositary Receipt",
+                        "securityDescription": "BABA",
+                    }]
+                },
+            ],
+            [
+                {"idType": "TICKER", "idValue": "AAPL", "exchCode": "US"},
+                {"idType": "TICKER", "idValue": "BABA", "exchCode": "US"},
+            ],
+        )
+
+        overlay = {
+            "AAPL": {
+                "currency": "USD",
+                "country": "USA",
+                "primary_listing": True,
+                "listing_status": "ACTIVE",
+                "asset_class": "EQUITY",
+                "security_type": "COMMON_STOCK",
+                "listing_date": "1980-12-12",
+                "delisting_date": None,
+                "trading_suspension_date": None,
+            },
+            "BABA": {
+                "exchange": "NYSE",
+                "currency": "USD",
+                "country": "CYM",
+                "primary_listing": True,
+                "listing_status": "ACTIVE",
+                "asset_class": "EQUITY",
+                "security_type": "DEPOSITARY_RECEIPT",
+                "listing_date": "2014-09-19",
+                "delisting_date": None,
+                "trading_suspension_date": None,
+            },
+        }
+        sec_map = {
+            "AAPL": "SEC_US_AAPL_01",
+            "BABA": "SEC_US_BABA_01",
+        }
+
+        # Step 1: Resolver invocation
+        outcome = SecurityEvidenceResolver.resolve_from_source_files(
+            sec_file=sec_file,
+            directory_files=[nasdaq_file, other_file],
+            openfigi_results=figi_results,
+            caller_security_id_mapping=sec_map,
+            caller_field_evidence_overlay=overlay,
+        )
+        assert outcome.total_candidates == 2
+
+        # Step 2: Batch validation
+        reqs = ValidationRequirements(
+            allowed_values={
+                "exchange": {"NASDAQ", "NYSE", "ARCA", "BATS"},
+                "asset_class": {"EQUITY"},
+            }
+        )
+        batch_val = outcome.validate_batch(requirements=reqs)
+        assert batch_val.is_batch_valid is True
+        assert batch_val.passed_count == 2
+
+        # Step 3: SourceSecurity conversion
+        source_securities = batch_val.to_source_securities()
+        assert len(source_securities) == 2
+
+        # Step 4: SourcePopulationSnapshot construction
+        snapshot = SourcePopulationSnapshot(
+            snapshot_id="POP_20261017",
+            source_authority="ARX_MULTI_FEED_EVIDENCE",
+            as_of="2026-10-17T00:00:00Z",
+            count=len(source_securities),
+            source_hash=compute_sha256([s.to_dict() for s in source_securities]),
+            securities=source_securities,
+        )
+        assert snapshot.count == 2
+        assert len(snapshot.source_hash) == 64
+
+        # Step 5: Builder eligibility evaluation (pure function, no DB)
+        eval_time = "2026-10-17T00:00:00Z"
+        aapl_sec = next(s for s in snapshot.securities if s.symbol == "AAPL")
+        aapl_row = DeterministicUniverseBuilder.evaluate_security_eligibility(
+            security=aapl_sec,
+            build_id="test-build-001",
+            observed_at=eval_time,
+        )
+        assert aapl_row.eligibility_decision == EligibilityDecision.ELIGIBLE
+        assert aapl_row.eligibility_reason_code == "PASSED"
+
+        baba_sec = next(s for s in snapshot.securities if s.symbol == "BABA")
+        baba_row = DeterministicUniverseBuilder.evaluate_security_eligibility(
+            security=baba_sec,
+            build_id="test-build-001",
+            observed_at=eval_time,
+        )
+        # BABA is an ADR (Depositary Receipt) -> Ineligible under canonical Rule R02
+        assert baba_row.eligibility_decision == EligibilityDecision.INELIGIBLE
+        assert baba_row.eligibility_reason_code == "INELIGIBLE_SECURITY_TYPE"
+        assert baba_row.rule_results["R02_SECURITY_TYPE"] is False
+

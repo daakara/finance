@@ -344,6 +344,16 @@ class UniverseInputValidator:
                     raw_value=ev,
                 ))
 
+        # Check for unadjudicated source conflicts or ambiguity passed from adapter/resolver
+        if "__source_conflict__" in raw_record and raw_record["__source_conflict__"]:
+            conf_val = raw_record["__source_conflict__"]
+            issues.append(FieldValidationIssue(
+                field_name="__source_conflict__",
+                issue_code=ValidationIssueCode.CONFLICTING_MAPPING,
+                message=f"Unadjudicated source conflict or ambiguity cannot be cleared by overlay: {conf_val}",
+                raw_value=conf_val,
+            ))
+
         # 2. Field-by-Field Structural & Value Checks
         # Evaluate all required fields
         for field_name in requirements.required_fields:
@@ -356,6 +366,8 @@ class UniverseInputValidator:
 
         # Evaluate each supplied attribute in raw_record
         for field_name, raw_val in raw_record.items():
+            if field_name.startswith("__"):
+                continue
             expected_type = requirements.type_expectations.get(field_name)
             is_permitted_null = field_name in requirements.permitted_null_fields
 
@@ -608,6 +620,23 @@ class UniverseInputValidator:
         record_results: List[RecordValidationResult] = []
         batch_issues: List[FieldValidationIssue] = []
 
+        # 0. Empty input batch guard
+        if not raw_records:
+            batch_issues.append(FieldValidationIssue(
+                field_name="__batch__",
+                issue_code=ValidationIssueCode.BATCH_ADMISSION_BLOCKED,
+                message="Empty input batch cannot produce a valid or certified universe.",
+            ))
+            return BatchValidationResult(
+                total_input_count=0,
+                passed_count=0,
+                failed_count=0,
+                unresolved_count=0,
+                records=[],
+                batch_issues=batch_issues,
+                is_batch_valid=False,
+            )
+
         # 1. Per-Record Validation
         for idx, raw_record in enumerate(raw_records):
             # Derive evidence lookup key using security_id or symbol
@@ -684,7 +713,8 @@ class UniverseInputValidator:
         failed_count = sum(1 for r in record_results if r.status == ValidationStatus.VALIDATION_FAILED)
         unresolved_count = sum(1 for r in record_results if r.status == ValidationStatus.VALIDATION_UNRESOLVED)
         is_batch_valid = (
-            failed_count == 0
+            len(raw_records) > 0
+            and failed_count == 0
             and unresolved_count == 0
             and len(batch_issues) == 0
             and len(raw_records) == passed_count

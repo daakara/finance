@@ -40,8 +40,10 @@ from typing import Any
 from ..validator import (
     BatchValidationResult,
     EvidenceReference,
+    FieldValidationIssue,
     TemporalEvaluationContext,
     UniverseInputValidator,
+    ValidationIssueCode,
     ValidationRequirements,
     ValidationStatus,
 )
@@ -60,7 +62,7 @@ from .models import (
 
 class IdentityResolutionStatus(str, Enum):
     """Classification status for instrument/security identity resolution."""
-    IDENTIFIED = "IDENTIFIED"           # Authoritative security_id supplied by caller/provider
+    IDENTIFIED = "IDENTIFIED"           # External caller-asserted security_id mapping (pass-through; not publisher-certified)
     UNRESOLVED = "UNRESOLVED"           # Production security_id uncertified; synthetic IDs avoided
     AMBIGUOUS = "AMBIGUOUS"             # Multi-match or unresolved collision prevents identity resolution
 
@@ -89,16 +91,18 @@ class ResolvedSecurityRecord:
     directory_exchange: str | None
     security_type: str | None
     is_etf: bool | None
-    is_multi_share_class: bool
+    is_multi_share_class: bool  # Qualified alias: shared CIK establishes multi-symbol issuer; share-class requires instrument evidence
     share_class_symbols: list[str]
     openfigi_match_status: OpenFigiMatchStatus | None
     figi_identifiers: dict[str, str | None]
-    foreign_issuer_indicator: bool
+    foreign_issuer_indicator: bool | None
     identity_status: IdentityResolutionStatus
     record_status: ResolutionRecordStatus
     resolution_issues: list[str]
     raw_record: dict[str, Any]
     evidence_references: list[EvidenceReference]
+    is_multi_symbol_issuer: bool = False
+    multi_symbol_issuer_symbols: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -114,6 +118,8 @@ class ResolvedSecurityRecord:
             "is_etf": self.is_etf,
             "is_multi_share_class": self.is_multi_share_class,
             "share_class_symbols": self.share_class_symbols,
+            "is_multi_symbol_issuer": self.is_multi_symbol_issuer,
+            "multi_symbol_issuer_symbols": self.multi_symbol_issuer_symbols,
             "openfigi_match_status": self.openfigi_match_status.value if self.openfigi_match_status else None,
             "figi_identifiers": self.figi_identifiers,
             "foreign_issuer_indicator": self.foreign_issuer_indicator,
@@ -147,6 +153,8 @@ class SecurityEvidenceAccounting:
     foreign_issuer_count: int
     missing_evidence_field_counts: dict[str, int]
     notes: list[str] = field(default_factory=list)
+    multi_symbol_issuer_cik_count: int = 0
+    multi_symbol_issuer_symbol_count: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -166,6 +174,7 @@ class SecurityEvidenceResolutionOutcome:
     ambiguous_records: list[ResolvedSecurityRecord]
     accounting: SecurityEvidenceAccounting
     field_certifications: dict[str, FieldCertificationStatus]
+    matching_accounting: SourceMatchingAccounting | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -176,6 +185,7 @@ class SecurityEvidenceResolutionOutcome:
             "ambiguous_count": len(self.ambiguous_records),
             "accounting": self.accounting.to_dict(),
             "field_certifications": {k: v.to_dict() for k, v in self.field_certifications.items()},
+            "matching_accounting": self.matching_accounting.to_dict() if self.matching_accounting else None,
         }
 
     def to_raw_records_and_evidence(self) -> tuple[list[dict[str, Any]], dict[str, list[EvidenceReference]]]:
@@ -195,17 +205,78 @@ class SecurityEvidenceResolutionOutcome:
         self,
         requirements: ValidationRequirements,
         temporal_context: TemporalEvaluationContext | None = None,
+        allow_incomplete_source_files: bool = False,
     ) -> BatchValidationResult:
         """
         Directly executes UniverseInputValidator.validate_batch over all resolved candidate records.
+        Propagates whole-batch admission requirements and source parsing constraints.
         """
+        # Guard against empty candidate set
+        if not self.records:
+            return UniverseInputValidator.validate_batch(
+                raw_records=[],
+                requirements=requirements,
+                temporal_context=temporal_context,
+                evidence_map={},
+            )
+
         raw_records, evidence_map = self.to_raw_records_and_evidence()
-        return UniverseInputValidator.validate_batch(
+        batch_res = UniverseInputValidator.validate_batch(
             raw_records=raw_records,
             requirements=requirements,
             temporal_context=temporal_context,
             evidence_map=evidence_map,
         )
+
+        # Propagate source matching accounting constraints if present
+        if self.matching_accounting:
+            extra_issues: list[FieldValidationIssue] = []
+            if self.matching_accounting.required_sources_present is False:
+                extra_issues.append(
+                    FieldValidationIssue(
+                        field_name="__batch__",
+                        issue_code=ValidationIssueCode.MISSING_REQUIRED_FIELD,
+                        message="REQUIRED_SOURCES_MISSING: Caller-required input source feeds were not all supplied.",
+                    )
+                )
+            if self.matching_accounting.required_coverage_established is False:
+                extra_issues.append(
+                    FieldValidationIssue(
+                        field_name="__batch__",
+                        issue_code=ValidationIssueCode.BATCH_ADMISSION_BLOCKED,
+                        message="REQUIRED_COVERAGE_NOT_MET: Supplied candidate count did not satisfy caller-required coverage threshold.",
+                    )
+                )
+            if self.matching_accounting.malformed_source_row_count > 0 and not allow_incomplete_source_files:
+                extra_issues.append(
+                    FieldValidationIssue(
+                        field_name="__batch__",
+                        issue_code=ValidationIssueCode.MALFORMED_VALUE,
+                        message=f"SOURCE_PARSE_FAILED: {self.matching_accounting.malformed_source_row_count} malformed rows detected across input sources.",
+                    )
+                )
+
+            if extra_issues:
+                # Demote batch fail-closed under atomic batch contract
+                all_issues = list(batch_res.batch_issues) + extra_issues
+                for r in batch_res.records:
+                    if r.status == ValidationStatus.VALIDATION_PASSED:
+                        r.status = ValidationStatus.VALIDATION_FAILED
+                        r.downstream_admission_permitted = False
+                        r.validated_values = None
+                        r.issues.extend(extra_issues)
+
+                return BatchValidationResult(
+                    total_input_count=batch_res.total_input_count,
+                    passed_count=0,
+                    failed_count=batch_res.total_input_count,
+                    unresolved_count=batch_res.unresolved_count,
+                    records=batch_res.records,
+                    batch_issues=all_issues,
+                    is_batch_valid=False,
+                )
+
+        return batch_res
 
 
 class SecurityEvidenceResolver:
@@ -308,18 +379,23 @@ class SecurityEvidenceResolver:
                     )
                 )
 
-            # Evaluate multi-share class structure
-            is_multi_share = False
-            share_classes: list[str] = [sym]
+            # Evaluate multi-symbol issuer structure (shared CIK)
+            # NOTE (Check C.A): Shared CIK establishes multi-symbol issuer relationship;
+            # distinct share classes require explicit instrument-level evidence.
+            is_multi_sym = False
+            symbols_under_cik: list[str] = [sym]
             if issuer_cik and issuer_cik in cik_to_symbols:
                 all_syms = sorted(list(set(cik_to_symbols[issuer_cik])))
                 if len(all_syms) > 1:
-                    is_multi_share = True
-                    share_classes = all_syms
+                    is_multi_sym = True
+                    symbols_under_cik = all_syms
                     issues.append(
-                        f"MULTI_SHARE_CLASS_CIK: Issuer CIK {issuer_cik} has {len(all_syms)} "
+                        f"MULTI_SYMBOL_ISSUER_CIK: Issuer CIK {issuer_cik} has {len(all_syms)} "
                         f"distinct listed securities: {all_syms}"
                     )
+
+            is_multi_share = is_multi_sym  # Kept as qualified alias for backwards compatibility
+            share_classes = symbols_under_cik
 
             # ── B. Directory observations ─────────────────────────────────────
             dir_exchange: str | None = None
@@ -397,15 +473,22 @@ class SecurityEvidenceResolver:
                     issues.append("OPENFIGI_NO_MATCH: No mapping returned for instrument.")
 
             # ── E. Foreign Issuer Retention & Classification ──────────────────
-            is_foreign = False
-            # Check company name for ADR/ADS/Foreign indicators
+            # NOTE (Check C.B): Domicile cannot be inferred from US exchange listing or
+            # positive pricing. Without explicit country evidence, domicile status is UNKNOWN (None).
+            # If explicit ADR / Depositary Receipt structure is observed, instrument structure is foreign ADR.
+            is_foreign: bool | None = None
             name_check = (company_name or "").upper()
             if any(ind in name_check for ind in cls._FOREIGN_NAME_INDICATORS):
                 is_foreign = True
             elif security_type and any(term in security_type.upper() for term in ("DEPOSITARY", "ADR", "GDR")):
                 is_foreign = True
+            # Check caller overlay for explicit country evidence if provided
+            if caller_field_evidence_overlay and sym in caller_field_evidence_overlay:
+                overlay_country = caller_field_evidence_overlay[sym].get("country")
+                if overlay_country:
+                    is_foreign = (str(overlay_country).strip().upper() != "USA")
 
-            if is_foreign:
+            if is_foreign is True:
                 foreign_issuer_cnt += 1
 
             # ── F. Identity Resolution Boundary ──────────────────────────────
@@ -446,6 +529,11 @@ class SecurityEvidenceResolver:
                 if figi_val:
                     raw_record[figi_k] = figi_val
 
+            # Preserve unadjudicated source conflicts or ambiguity in raw_record (Check A & D)
+            # An overlay cannot silently clear source ambiguity or venue conflicts
+            if is_venue_conflicted or c.is_ambiguous or (openfigi_status == OpenFigiMatchStatus.MULTI_MATCH):
+                raw_record["__source_conflict__"] = issues
+
             # Incorporate caller-supplied field evidence overlays if present
             if caller_field_evidence_overlay and sym in caller_field_evidence_overlay:
                 overlay = caller_field_evidence_overlay[sym]
@@ -463,6 +551,7 @@ class SecurityEvidenceResolver:
                 "sec_exchange": sec_exchange,
                 "directory_exchange": dir_exchange,
                 "is_multi_share_class": is_multi_share,
+                "is_multi_symbol_issuer": is_multi_sym,
                 "foreign_issuer_indicator": is_foreign,
                 "openfigi_status": openfigi_status.value if openfigi_status else None,
                 "conflicts": issues,
@@ -516,6 +605,8 @@ class SecurityEvidenceResolver:
                 is_etf=is_etf,
                 is_multi_share_class=is_multi_share,
                 share_class_symbols=share_classes,
+                is_multi_symbol_issuer=is_multi_sym,
+                multi_symbol_issuer_symbols=symbols_under_cik,
                 openfigi_match_status=openfigi_status,
                 figi_identifiers=figi_ids,
                 foreign_issuer_indicator=is_foreign,
@@ -537,9 +628,9 @@ class SecurityEvidenceResolver:
             else:
                 resolved_records[-1] = resolved_rec
 
-        # 2. Multi-share CIK accounting
-        multi_share_ciks = [cik for cik, syms in cik_to_symbols.items() if len(syms) > 1]
-        multi_share_symbols = sum(len(syms) for cik, syms in cik_to_symbols.items() if len(syms) > 1)
+        # 2. Multi-symbol issuer (shared CIK) accounting
+        multi_sym_ciks = [cik for cik, syms in cik_to_symbols.items() if len(syms) > 1]
+        multi_sym_symbols = sum(len(syms) for cik, syms in cik_to_symbols.items() if len(syms) > 1)
 
         accounting = SecurityEvidenceAccounting(
             total_candidates=len(records),
@@ -547,8 +638,10 @@ class SecurityEvidenceResolver:
             identity_resolved_count=identity_resolved_cnt,
             identity_unresolved_count=identity_unresolved_cnt,
             synthetic_identities_avoided_count=synthetic_avoided_cnt,
-            multi_share_class_cik_count=len(multi_share_ciks),
-            multi_share_class_symbol_count=multi_share_symbols,
+            multi_share_class_cik_count=len(multi_sym_ciks),
+            multi_share_class_symbol_count=multi_sym_symbols,
+            multi_symbol_issuer_cik_count=len(multi_sym_ciks),
+            multi_symbol_issuer_symbol_count=multi_sym_symbols,
             venue_concordant_count=venue_concordant_cnt,
             venue_conflicted_count=venue_conflicted_cnt,
             openfigi_single_match_count=openfigi_single_cnt,
@@ -573,6 +666,7 @@ class SecurityEvidenceResolver:
             ambiguous_records=ambiguous_records,
             accounting=accounting,
             field_certifications=field_certs,
+            matching_accounting=matching_accounting,
         )
 
     @classmethod
