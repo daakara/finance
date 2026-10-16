@@ -28,7 +28,7 @@ from analyst_dashboard.universe.validator import (
     to_source_security,
 )
 
-pytestmark = [pytest.mark.tier1, pytest.mark.tier2c]
+pytestmark = pytest.mark.tier2c
 
 
 # ── Fixtures & Helpers ────────────────────────────────────────────────────────
@@ -237,6 +237,42 @@ class TestStructuralValidation:
         issue_codes = [i.issue_code for i in result.issues]
         assert ValidationIssueCode.UNRECOGNIZED_VALUE in issue_codes
 
+    def test_optional_evidence_remains_optional_when_not_required(self):
+        """When require_evidence_reference=False, omitting evidence passes cleanly without issues."""
+        reqs = ValidationRequirements(require_evidence_reference=False)
+        raw = create_valid_raw_record()
+
+        result = UniverseInputValidator.validate_record(raw, reqs, evidence=None)
+
+        assert result.status == ValidationStatus.VALIDATION_PASSED
+        assert result.downstream_admission_permitted is True
+        assert len(result.issues) == 0
+
+    def test_required_evidence_fails_when_omitted(self):
+        """When require_evidence_reference=True, omitting evidence fails with MISSING_EVIDENCE_REFERENCE."""
+        reqs = ValidationRequirements(require_evidence_reference=True)
+        raw = create_valid_raw_record()
+
+        result = UniverseInputValidator.validate_record(raw, reqs, evidence=None)
+
+        assert result.status == ValidationStatus.VALIDATION_FAILED
+        assert result.downstream_admission_permitted is False
+        issue_codes = [i.issue_code for i in result.issues]
+        assert ValidationIssueCode.MISSING_EVIDENCE_REFERENCE in issue_codes
+
+    def test_malformed_evidence_reference_rejected(self):
+        """Malformed evidence reference (missing authority or identifier) fails validation."""
+        reqs = ValidationRequirements()
+        raw = create_valid_raw_record()
+        bad_ev = [EvidenceReference(source_authority="", source_identifier="")]
+
+        result = UniverseInputValidator.validate_record(raw, reqs, evidence=bad_ev)
+
+        assert result.status == ValidationStatus.VALIDATION_FAILED
+        assert result.downstream_admission_permitted is False
+        issue_codes = [i.issue_code for i in result.issues]
+        assert ValidationIssueCode.MALFORMED_EVIDENCE_REFERENCE in issue_codes
+
 
 class TestTemporalValidation:
     """Tests temporal syntax, ordering constraints, and point-in-time anti-lookahead checks."""
@@ -424,6 +460,67 @@ class TestBatchIdentityAndCollisionHandling:
         assert batch_result.passed_count == 2
         assert len(batch_result.batch_issues) == 0
 
+    def test_clean_record_in_rejected_batch_has_admission_blocked(self):
+        """
+        Under the atomic batch contract, if any record in a batch fails,
+        even clean records that are structurally valid in isolation have their
+        downstream admission blocked.
+        """
+        reqs = ValidationRequirements()
+        clean_rec = create_valid_raw_record()
+        clean_rec["security_id"] = "SEC_CLEAN_01"
+        clean_rec["symbol"] = "CLEAN"
+
+        failing_rec = create_valid_raw_record()
+        failing_rec["security_id"] = "SEC_FAIL_01"
+        failing_rec["symbol"] = "FAIL"
+        del failing_rec["currency"]  # Fails mandatory field check
+
+        batch_result = UniverseInputValidator.validate_batch([clean_rec, failing_rec], reqs)
+
+        assert batch_result.is_batch_valid is False
+        assert batch_result.failed_count == 1
+        assert batch_result.passed_count == 1
+
+        # Clean record was structurally valid in isolation, but batch admission is blocked
+        clean_res = batch_result.records[0]
+        assert clean_res.status == ValidationStatus.VALIDATION_PASSED
+        assert clean_res.downstream_admission_permitted is False
+        assert clean_res.validated_values is None
+        issue_codes = [i.issue_code for i in clean_res.issues]
+        assert ValidationIssueCode.BATCH_ADMISSION_BLOCKED in issue_codes
+
+        # Attempting conversion on clean record from rejected batch raises ValueError
+        with pytest.raises(ValueError, match="Cannot convert unvalidated or failed record"):
+            to_source_security(clean_res)
+
+        # Batch-level conversions also fail closed
+        with pytest.raises(ValueError, match="batch validation failed"):
+            batch_result.get_validated_records()
+
+        with pytest.raises(ValueError, match="Cannot convert records from a failed batch"):
+            batch_result.to_source_securities()
+
+    def test_batch_to_source_securities_converts_all_when_batch_valid(self):
+        """When batch validation passes, batch_result.to_source_securities() returns all SourceSecurity objects."""
+        reqs = ValidationRequirements()
+        rec1 = create_valid_raw_record()
+        rec1["security_id"] = "SEC_AAPL_01"
+        rec1["symbol"] = "AAPL"
+
+        rec2 = create_valid_raw_record()
+        rec2["security_id"] = "SEC_MSFT_01"
+        rec2["symbol"] = "MSFT"
+
+        batch_result = UniverseInputValidator.validate_batch([rec1, rec2], reqs)
+
+        assert batch_result.is_batch_valid is True
+        secs = batch_result.to_source_securities()
+        assert len(secs) == 2
+        assert all(isinstance(s, SourceSecurity) for s in secs)
+        assert secs[0].symbol == "AAPL"
+        assert secs[1].symbol == "MSFT"
+
 
 class TestBuilderAdmissionBoundaryAndGuards:
     """Verifies that unvalidated records cannot enter downstream admission or construct SourceSecurity."""
@@ -501,3 +598,56 @@ class TestBuilderAdmissionBoundaryAndGuards:
         assert result.status.value != "ELIGIBLE"
         # downstream_admission_permitted means only eligible for builder input consideration
         assert result.downstream_admission_permitted is True
+
+    @pytest.mark.parametrize("missing_temporal_field", [
+        "listing_date",
+        "delisting_date",
+        "trading_suspension_date",
+    ])
+    def test_to_source_security_rejects_missing_temporal_fields(self, missing_temporal_field: str):
+        """
+        Omitting any temporal event field from raw_record prevents conversion to SourceSecurity,
+        ensuring missing evidence cannot silently disappear into SourceSecurity defaults.
+        """
+        reqs = ValidationRequirements()
+        raw = create_valid_raw_record()
+        del raw[missing_temporal_field]
+
+        # Record passes structural validation (temporal event fields are not in required_fields)
+        result = UniverseInputValidator.validate_record(raw, reqs)
+        assert result.status == ValidationStatus.VALIDATION_PASSED
+
+        # But conversion to SourceSecurity is strictly rejected because the field was omitted
+        with pytest.raises(ValueError, match=f"without validated value for '{missing_temporal_field}'"):
+            to_source_security(result)
+
+    def test_to_source_security_preserves_explicit_null_event_dates(self):
+        """
+        Explicit null (None) for an event field represents 'no event' and is preserved
+        in SourceSecurity as None.
+        """
+        reqs = ValidationRequirements()
+        raw = create_valid_raw_record()
+        raw["delisting_date"] = None
+        raw["trading_suspension_date"] = None
+
+        result = UniverseInputValidator.validate_record(raw, reqs)
+        assert result.status == ValidationStatus.VALIDATION_PASSED
+
+        sec = to_source_security(result)
+        assert sec.delisting_date is None
+        assert sec.trading_suspension_date is None
+
+    def test_to_source_security_preserves_explicit_event_dates(self):
+        """Explicit valid event date strings are preserved in SourceSecurity."""
+        reqs = ValidationRequirements()
+        raw = create_valid_raw_record()
+        raw["delisting_date"] = "2026-10-14"
+        raw["trading_suspension_date"] = "2026-10-13"
+
+        result = UniverseInputValidator.validate_record(raw, reqs)
+        assert result.status == ValidationStatus.VALIDATION_PASSED
+
+        sec = to_source_security(result)
+        assert sec.delisting_date == "2026-10-14"
+        assert sec.trading_suspension_date == "2026-10-13"

@@ -76,6 +76,7 @@ class ValidationIssueCode(str, Enum):
     # Provenance / Evidence issues
     MALFORMED_EVIDENCE_REFERENCE = "MALFORMED_EVIDENCE_REFERENCE"
     MISSING_EVIDENCE_REFERENCE = "MISSING_EVIDENCE_REFERENCE"
+    BATCH_ADMISSION_BLOCKED = "BATCH_ADMISSION_BLOCKED"
 
 
 # ── Data Classes ─────────────────────────────────────────────────────────────
@@ -199,6 +200,7 @@ class RecordValidationResult:
     validated_values: Optional[Dict[str, Any]] = None
     evidence_references: List[EvidenceReference] = field(default_factory=list)
     downstream_admission_permitted: bool = False
+    requirements: Optional[ValidationRequirements] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -233,6 +235,19 @@ class BatchValidationResult:
                 f"{len(self.batch_issues)} batch-level issues)."
             )
         return [r.validated_values for r in self.records if r.validated_values is not None]
+
+    def to_source_securities(self) -> List[SourceSecurity]:
+        """
+        Converts all records in a completely validated batch to SourceSecurity instances.
+        Raises ValueError if batch validation failed.
+        """
+        if not self.is_batch_valid:
+            raise ValueError(
+                f"Cannot convert records from a failed batch to SourceSecurity. "
+                f"Batch validation failed ({self.failed_count} failed, "
+                f"{self.unresolved_count} unresolved, {len(self.batch_issues)} batch-level issues)."
+            )
+        return [to_source_security(r) for r in self.records]
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -565,6 +580,7 @@ class UniverseInputValidator:
                 validated_values=None,  # Never expose partial/failed values
                 evidence_references=evidence_list,
                 downstream_admission_permitted=False,
+                requirements=requirements,
             )
 
         return RecordValidationResult(
@@ -574,6 +590,7 @@ class UniverseInputValidator:
             validated_values=validated_values,
             evidence_references=evidence_list,
             downstream_admission_permitted=True,
+            requirements=requirements,
         )
 
     @classmethod
@@ -673,6 +690,21 @@ class UniverseInputValidator:
             and len(raw_records) == passed_count
         )
 
+        if not is_batch_valid:
+            # Atomic batch contract: if the batch fails, no constituent record may be admitted.
+            for r in record_results:
+                if r.status == ValidationStatus.VALIDATION_PASSED:
+                    r.downstream_admission_permitted = False
+                    r.issues.append(FieldValidationIssue(
+                        field_name="__batch__",
+                        issue_code=ValidationIssueCode.BATCH_ADMISSION_BLOCKED,
+                        message=(
+                            "Record is structurally valid, but batch validation failed. "
+                            "Admission prohibited under atomic batch contract."
+                        ),
+                    ))
+                    r.validated_values = None
+
         return BatchValidationResult(
             total_input_count=len(raw_records),
             passed_count=passed_count,
@@ -729,6 +761,20 @@ def to_source_security(record_result: RecordValidationResult) -> SourceSecurity:
                 f"Field '{f}' contains empty string; cannot construct SourceSecurity."
             )
 
+    # Temporal event fields must be explicitly validated (either date string or explicit None for 'no event')
+    temporal_event_fields = [
+        "listing_date",
+        "delisting_date",
+        "trading_suspension_date",
+    ]
+    for tf in temporal_event_fields:
+        if tf not in vals:
+            raise ValueError(
+                f"Cannot construct SourceSecurity without validated value for '{tf}'. "
+                f"Field was omitted from input record or outside validated requirements. "
+                f"Explicit null (None) required for absence of event."
+            )
+
     return SourceSecurity(
         security_id=str(vals["security_id"]),
         symbol=str(vals["symbol"]),
@@ -739,7 +785,7 @@ def to_source_security(record_result: RecordValidationResult) -> SourceSecurity:
         country=str(vals["country"]),
         primary_listing=bool(vals["primary_listing"]),
         asset_class=str(vals["asset_class"]),
-        listing_date=vals.get("listing_date"),
-        delisting_date=vals.get("delisting_date"),
-        trading_suspension_date=vals.get("trading_suspension_date"),
+        listing_date=vals["listing_date"],
+        delisting_date=vals["delisting_date"],
+        trading_suspension_date=vals["trading_suspension_date"],
     )
