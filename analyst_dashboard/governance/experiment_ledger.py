@@ -100,6 +100,35 @@ class ExperimentLedger:
     PREVIOUS_DECISION_ENGINE_VERSION = "2.4.0"
     VERSION_INCREMENT_REASON = "LIVE_MARKET_DECISION_INPUT_SEMANTICS"
 
+    # Current Production Authority Binding (Release Addendum 002)
+    CURRENT_RATIFIED_AUTHORITY = "RELEASE_ADDENDUM_002"
+    CURRENT_RATIFIED_COMMIT = "cd0922471767775636957df74406a2d5efb8f519"
+    CURRENT_AUTHORITY_MANIFEST = "FROZEN_ENGINE_MANIFEST_V2_5_1.json"
+    CURRENT_AUTHORITY_MANIFEST_DIGEST = "bb51df94f6d328a721089cea7d6004b4dcac1c2b1eeea55d763b5f8f6a58c5f0"
+
+    # Explicit Authority & Provenance Bindings for Engine Freeze Manifests
+    AUTHORITY_VERSION_BINDINGS = {
+        "2.5.1": {
+            "manifestFile": "FROZEN_ENGINE_MANIFEST_V2_5_1.json",
+            "provenanceCommit": "cd0922471767775636957df74406a2d5efb8f519",
+            "releaseAuthorityBinding": "RELEASE_ADDENDUM_002",
+            "ratifiedAuthorityRecord": "docs/releases/2026-10-09-execution-ladder-controlled-release-addendum-002.md",
+            "expectedDigest": "bb51df94f6d328a721089cea7d6004b4dcac1c2b1eeea55d763b5f8f6a58c5f0",
+        },
+        "2.5.0": {
+            "manifestFile": "FROZEN_ENGINE_MANIFEST_V2_5_0.json",
+            "provenanceCommit": "PENDING_EPOCH_3_FREEZE",
+            "releaseAuthorityBinding": None,
+            "expectedDigest": "80b35fd145627e11ccc39a7af5d69ec5f06a7d10d600a9e5494eb51d39255262",
+        },
+        "2.4.0": {
+            "manifestFile": "FROZEN_ENGINE_MANIFEST_V2_4_0.json",
+            "provenanceCommit": "4e3686296aad24e2210ef580bbc9116054d84fd1",
+            "releaseAuthorityBinding": None,
+            "expectedDigest": "6c2d31fbbe67bfbc3cfca7773b21385493acc5affba56d423718ae13168dd36a",
+        },
+    }
+
     # Historical Baseline Constants (Retained for provenance audit)
     FREEZE_DATE_THRESHOLD = "2026-09-04"
     FROZEN_ENGINE_COMMIT = "4e36862"
@@ -110,34 +139,47 @@ class ExperimentLedger:
     )
 
     @classmethod
-    def get_frozen_manifest(cls, version: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        """Loads the cryptographic engine freeze manifest for the specified version (default 2.5.0, fallback 2.4.0)."""
-        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        target_version = version or cls.ARX_DECISION_ENGINE_VERSION
-        if target_version == "2.5.0":
-            candidates = ["FROZEN_ENGINE_MANIFEST_V2_5_0.json", "FROZEN_ENGINE_MANIFEST.json"]
+    def get_frozen_manifest(cls, version: Optional[str] = None, repo_root: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Loads the cryptographic engine freeze manifest enforcing explicit version authority bindings."""
+        if repo_root is None:
+            repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        if version is None or version in ["2.5.1", "CURRENT", "ACTIVE"]:
+            binding = cls.AUTHORITY_VERSION_BINDINGS.get("2.5.1")
         else:
-            candidates = ["FROZEN_ENGINE_MANIFEST_V2_4_0.json", "FROZEN_ENGINE_MANIFEST.json"]
+            binding = cls.AUTHORITY_VERSION_BINDINGS.get(version)
 
-        for cand in candidates:
-            manifest_path = os.path.join(repo_root, cand)
-            if os.path.exists(manifest_path):
-                try:
-                    with open(manifest_path, "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                        if version is None or data.get("frozenStrategyVersion") == target_version:
-                            return data
-                except Exception:
-                    continue
-        return None
+        if not binding:
+            return None
+
+        manifest_path = os.path.join(repo_root, binding["manifestFile"])
+        if not os.path.exists(manifest_path):
+            return None
+
+        try:
+            with open(manifest_path, "rb") as f:
+                content = f.read().replace(b"\r\n", b"\n")
+            computed_digest = hashlib.sha256(content).hexdigest()
+            if binding.get("expectedDigest") and computed_digest != binding["expectedDigest"]:
+                return None
+
+            data = json.loads(content.decode("utf-8"))
+            if data.get("provenanceCommit") != binding["provenanceCommit"]:
+                return None
+            if binding.get("releaseAuthorityBinding") and data.get("releaseAuthorityBinding") != binding["releaseAuthorityBinding"]:
+                return None
+
+            return data
+        except Exception:
+            return None
 
     @classmethod
-    def verify_frozen_engine_manifest(cls, version: Optional[str] = None) -> Dict[str, Any]:
+    def verify_frozen_engine_manifest(cls, version: Optional[str] = None, repo_root: Optional[str] = None) -> Dict[str, Any]:
         """Verifies repository engines against the relevant version's freeze manifest."""
-        manifest = cls.get_frozen_manifest(version)
+        manifest = cls.get_frozen_manifest(version, repo_root=repo_root)
         if not manifest:
             return {"status": "MANIFEST_MISSING", "valid": False}
-        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        if repo_root is None:
+            repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         engine_results = {}
         all_valid = True
         for engine_name, meta in manifest.get("engines", {}).items():
@@ -2344,6 +2386,7 @@ class ExperimentLedger:
         ledger_path: Optional[str] = None,
         cohort_filter: Optional[str] = None,
         epoch_id: Optional[str] = None,
+        repo_root: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Evaluate performance against Phase 25/26 Model Governance criteria with Cohort Contamination Firewall."""
         ledger = cls.load_ledger(ledger_path)
@@ -2416,8 +2459,8 @@ class ExperimentLedger:
                 firewall_warning = None
 
         # Verify Frozen Engine Manifest Integrity
-        manifest_audit = cls.verify_frozen_engine_manifest()
-        if manifest_audit.get("status") == "CORRUPTED":
+        manifest_audit = cls.verify_frozen_engine_manifest(repo_root=repo_root)
+        if manifest_audit.get("status") == "CORRUPTED" or not manifest_audit.get("valid", True):
             clean_eval_eligible = False
             firewall_status = "PRODUCTION_ENGINE_MUTATION_DETECTED"
             firewall_warning = "CRITICAL: Production engine SHA-256 manifest mismatch. Clean prospective evaluation revoked."
