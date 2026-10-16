@@ -8,8 +8,13 @@ import AlertTriggerModal from "./AlertTriggerModal";
 import PreFlightChecklistModal from "./PreFlightChecklistModal";
 import TradeExecutionStepper from "./TradeExecutionStepper";
 import { addPortfolioPosition } from "../lib/portfolio";
-import { resolveDecisionReadiness } from "../lib/decisionReadiness";
+import {
+  resolveDecisionReadiness,
+  resolveTacticalExecutionHint,
+  validateCanonicalActionable,
+} from "../lib/decisionReadiness";
 import { resolvePresentationState } from "../lib/decisionPresentation";
+import { evaluateCorridorLocation } from "../lib/corridorLocation";
 import DecisionReadinessCard from "./DecisionReadinessCard";
 
 interface OptimalEntryExitCardProps {
@@ -25,7 +30,7 @@ interface OptimalEntryExitCardProps {
   smartMoney?: any;
   macroRegime?: any;
   vix?: number | null;
-  isActionable?: boolean;
+  isActionable?: boolean | string | null;
   canSizeTrade?: boolean;
   decisionState?: string;
   decisionStateLabel?: string;
@@ -234,45 +239,27 @@ export default function OptimalEntryExitCard({
   const entryMin = Math.min(optimal_entry_min, optimal_entry_max);
   const entryMax = Math.max(optimal_entry_min, optimal_entry_max);
 
+  const corridorLoc = evaluateCorridorLocation(evalPrice, optimal_entry_min, optimal_entry_max, 0.02);
+
   // Authority for inZone: backend market_location / execution_status has priority
   const isBackendInZone = executionPlan.market_location === "IN_BUY_ZONE" ||
     executionPlan.execution_status === "IN_BUY_ZONE" ||
     executionPlan.execution_status === "READY_TO_BUY";
 
   // Presentation inZone uses evalPrice (live spot / eval_price), NEVER analysis reference price as live
-  const inZone = executionPlan.market_location !== undefined
-    ? isBackendInZone
-    : (evalPrice >= entryMin && evalPrice <= entryMax);
+  // An asset above ceiling or below floor is geometrically NEVER inZone
+  const isEvalPriceInCorridor = evalPrice >= entryMin && evalPrice <= entryMax;
+  const inZone = corridorLoc.isValid && corridorLoc.isInside && isEvalPriceInCorridor && (
+    executionPlan.market_location !== undefined
+      ? isBackendInZone
+      : true
+  );
 
   const zoneWidth = Math.max(0.01, entryMax - entryMin);
   const zonePositionPct = inZone ? ((evalPrice - entryMin) / zoneWidth) * 100 : 50;
   const isStopVisible = executionPlan.execution_stop_visible !== undefined && executionPlan.execution_stop_visible !== null
     ? Boolean(executionPlan.execution_stop_visible)
     : Boolean(isActionable || inZone);
-
-  // Tactical Execution Hint
-  let zoneTacticalHint: { label: string; advice: string; color: string } | null = null;
-  if (!isStage4 && inZone && risk_reward_ratio !== null && risk_reward_ratio >= 1.0) {
-    if (zonePositionPct > 65) {
-      zoneTacticalHint = {
-        label: "⚠️ Near Zone Ceiling",
-        advice: `Spot ($${evalPrice.toFixed(2)}) is near the upper bound of the buy zone. Scale in with 30% initial size or place limit orders near $${entryMin.toFixed(2)} to maximize asymmetric R:R.`,
-        color: "text-amber-300 border-amber-900/60 bg-amber-950/40",
-      };
-    } else if (zonePositionPct < 35) {
-      zoneTacticalHint = {
-        label: "🎯 Near Support Floor",
-        advice: `Spot ($${evalPrice.toFixed(2)}) is at the bottom of the accumulation corridor. Favorable asymmetric entry with tight invalidation floor.`,
-        color: "text-emerald-300 border-emerald-900/60 bg-emerald-950/40",
-      };
-    } else {
-      zoneTacticalHint = {
-        label: "✅ Mid-Zone Value Area",
-        advice: `Spot is comfortably centered within the accumulation corridor with favorable ${risk_reward_ratio}:1 R:R structure.`,
-        color: "text-cyan-300 border-cyan-900/60 bg-cyan-950/40",
-      };
-    }
-  }
 
   const hasSmartMoneyConfluence = Boolean(
     (smartMoney?.optionsFlow && smartMoney.optionsFlow.some((f: any) => f.sentiment === "Bullish" || f.type?.includes("CALL"))) ||
@@ -327,9 +314,14 @@ export default function OptimalEntryExitCard({
     setTimeout(() => setLogStatus(null), 3500);
   };
 
-  const isTriggerConfirmed = isActionable !== undefined
-    ? Boolean(isActionable)
-    : (executionPlan.execution_status === "IN_BUY_ZONE" || executionPlan.execution_status === "READY_TO_BUY");
+  const canonicalActionable = validateCanonicalActionable(isActionable);
+  const isTriggerConfirmed = (executionPlan as any).is_trigger_confirmed !== undefined
+    ? Boolean((executionPlan as any).is_trigger_confirmed)
+    : (executionPlan.execution_status === "READY_TO_BUY" || executionPlan.execution_status === "BREAKOUT_VOLUME_CONFIRMED")
+      ? true
+      : (executionPlan.execution_status === "IN_BUY_ZONE_AWAITING_TRIGGER" || executionPlan.execution_status === "ABOVE_CORRIDOR_AWAITING_PULLBACK")
+      ? false
+      : (isActionable !== undefined && isActionable !== null ? canonicalActionable : false);
 
   const readinessResult = resolveDecisionReadiness({
     currentPrice: evalPrice,
@@ -343,13 +335,29 @@ export default function OptimalEntryExitCard({
     stopLoss: stop_loss,
     takeProfit1: take_profit_1,
     vix: resolvedVix,
+    isActionable: canonicalActionable,
   });
 
   const presentation = resolvePresentationState({
     decisionState,
     decisionStateLabel,
     executionStatus: executionPlan.execution_status,
-    isActionable,
+    isActionable: canonicalActionable,
+    readinessResult,
+  });
+
+  // Tactical Execution Guidance (Slice 1: Truthful Corridor Text & Suppressed Contradictory Action Instructions)
+  const zoneTacticalHint = resolveTacticalExecutionHint({
+    evalPrice,
+    entryMin,
+    entryMax,
+    isStage4,
+    corridorLoc,
+    inZone,
+    zonePositionPct,
+    riskRewardRatio: risk_reward_ratio,
+    isActionable: canonicalActionable,
+    isTriggerConfirmed,
     readinessResult,
   });
 
@@ -366,7 +374,7 @@ export default function OptimalEntryExitCard({
           <div className="flex items-center space-x-2">
             <span
               className={`w-2.5 h-2.5 rounded-full ${
-                isActionable
+                canonicalActionable
                   ? "bg-emerald-400 animate-pulse"
                   : "bg-amber-400"
               }`}
@@ -388,18 +396,18 @@ export default function OptimalEntryExitCard({
             <span
               data-testid="current-action"
               className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold border ${
-                isActionable
+                canonicalActionable
                   ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
                   : "bg-amber-950/80 text-amber-300 border-amber-700/80"
               }`}
             >
-              {isActionable ? "CURRENT ACTION: Execute Setup" : "CURRENT ACTION: Wait"}
+              {canonicalActionable ? "CURRENT ACTION: Execute Setup" : "CURRENT ACTION: Wait"}
             </span>
             <span
               data-testid="plan-status"
               className="px-2 py-0.5 rounded text-xs font-mono bg-[#162030] text-slate-300 border border-[#243044]"
             >
-              Status: {decisionStateLabel || decisionState || (isActionable ? "CONFIRMED_TRIGGER" : "WAIT_FOR_TRIGGER")}
+              Status: {decisionStateLabel || decisionState || (canonicalActionable ? "CONFIRMED_TRIGGER" : "WAIT_FOR_TRIGGER")}
             </span>
           </div>
           <div className="hidden sm:flex flex-wrap items-center gap-2 mt-1.5 text-[11px] font-medium text-slate-400">
@@ -685,7 +693,7 @@ export default function OptimalEntryExitCard({
 
         {/* Tactical Relative Position Execution Badge */}
         {zoneTacticalHint && (
-          <div className={`p-2 rounded-lg border text-xs flex items-start gap-2 ${zoneTacticalHint.color}`}>
+          <div data-testid="tactical-execution-hint" className={`p-2 rounded-lg border text-xs flex items-start gap-2 ${zoneTacticalHint.color}`}>
             <span className="font-bold shrink-0">{zoneTacticalHint.label}:</span>
             <span className="text-xs leading-relaxed text-slate-200 font-sans">{zoneTacticalHint.advice}</span>
           </div>
@@ -825,7 +833,7 @@ export default function OptimalEntryExitCard({
         vix={resolvedVix}
         hasImminentEarnings={derivedHasImminentEarnings}
         isDistributionTrap={derivedIsDistributionTrap}
-        isActionable={isActionable}
+        isActionable={canonicalActionable}
         decisionState={decisionState}
       />
 
@@ -840,7 +848,7 @@ export default function OptimalEntryExitCard({
         isStage4={isStage4}
         adv20d={executionPlan.liquidity_defense?.adv_20d_usd}
         canSizeTrade={canSizeTrade}
-        isActionable={isActionable}
+        isActionable={canonicalActionable}
         decisionStateLabel={decisionStateLabel}
       />
 
