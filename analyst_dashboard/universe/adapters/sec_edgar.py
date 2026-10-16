@@ -221,8 +221,21 @@ def parse_sec_company_tickers_exchange(
         norm_exchange = str(raw_exchange).strip() if raw_exchange is not None else None
 
         # Validate mandatory values
-        if not norm_cik or not norm_ticker or not norm_exchange:
+        missing_attrs: list[str] = []
+        if not norm_cik:
+            missing_attrs.append("CIK")
+        if not norm_ticker:
+            missing_attrs.append("ticker")
+        if not norm_exchange:
+            missing_attrs.append("exchange")
+
+        if missing_attrs:
             malformed_count += 1
+            if len(missing_attrs) == 1 and missing_attrs[0] == "exchange":
+                reason = "Structurally valid row with missing exchange attribute (exchange is null/empty)"
+            else:
+                reason = f"Row contains missing or invalid attribute(s): {', '.join(missing_attrs)}"
+
             parsed_rows.append(
                 ParsedSourceRow(
                     row_index=row_idx,
@@ -233,7 +246,7 @@ def parse_sec_company_tickers_exchange(
                         "raw_exchange": raw_exchange,
                     },
                     is_malformed=True,
-                    malformed_reason="Row contains missing or invalid CIK, ticker, or exchange",
+                    malformed_reason=reason,
                 )
             )
             continue

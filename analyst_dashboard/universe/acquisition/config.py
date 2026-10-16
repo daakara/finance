@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from typing import Mapping
 
 
-DEFAULT_USER_AGENT = "ArxTerminal/1.0 (research@arxterminal.org)"
+DEFAULT_USER_AGENT = "ArxTerminal-Universe/1.0"
 
 
 @dataclass(frozen=True)
@@ -38,12 +38,13 @@ class SourceConfig:
 
 
 # Canonical production-source definitions (read-only, official endpoints)
+# Note: SEC EDGAR Fair Access Policy requires an explicitly supplied User-Agent declaring
+# the specific application and administrative contact email. No invented email is provided by default.
 CANONICAL_SOURCES: dict[str, SourceConfig] = {
     "sec_company_tickers_exchange": SourceConfig(
         source_id="sec_company_tickers_exchange",
         url="https://www.sec.gov/files/company_tickers_exchange.json",
         headers={
-            "User-Agent": DEFAULT_USER_AGENT,
             "Accept": "application/json",
             "Accept-Encoding": "gzip, deflate",
         },

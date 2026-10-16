@@ -32,14 +32,22 @@ class ArtifactStorage:
         self.quarantine_dir.mkdir(parents=True, exist_ok=True)
 
     def _determine_filename(self, source_id: str, content_type: str | None) -> str:
-        """Derives standard artifact filename based on source ID and MIME type."""
-        sid_lower = source_id.lower()
+        """
+        Derives standard artifact filename based on source ID and MIME type.
+        Enforces strict path traversal sanitization.
+        """
+        raw_name = Path(source_id).name
+        clean_id = "".join(c for c in raw_name if c.isalnum() or c in ("_", "-"))
+        if not clean_id:
+            clean_id = "unknown_source"
+
+        sid_lower = clean_id.lower()
         ct_lower = (content_type or "").lower()
         if "json" in ct_lower or "json" in sid_lower or "sec" in sid_lower:
             ext = ".json"
         else:
             ext = ".txt"
-        return f"{source_id}{ext}"
+        return f"{clean_id}{ext}"
 
     def save_artifact(
         self,
@@ -47,14 +55,23 @@ class ArtifactStorage:
         raw_bytes: bytes | None,
     ) -> AcquisitionAttempt:
         """
-        Saves raw bytes and metadata sidecar atomically.
+        Saves raw bytes and metadata sidecar atomically for individual files.
         Enforces the Overwrite Safety Invariant:
         If acquisition failed or bytes are None, does NOT overwrite any existing accepted artifact.
         Instead, stores failure metadata to the quarantine log.
+
+        Note: Provides atomic replacement of individual files via .tmp staging and replace();
+        does not constitute a multi-file transactional bundle.
         """
         filename = self._determine_filename(attempt.source_id, attempt.content_type)
-        target_path = self.base_dir / filename
-        meta_path = self.base_dir / f"{filename}.meta.json"
+        target_path = (self.base_dir / filename).resolve()
+        meta_path = (self.base_dir / f"{filename}.meta.json").resolve()
+
+        # Enforce boundary containment: target cannot write outside base_dir
+        if target_path.parent != self.base_dir:
+            attempt.outcome = AcquisitionOutcome.FAILED
+            attempt.error_message = f"Path traversal rejected: target '{target_path}' escapes base directory '{self.base_dir}'"
+            return attempt
 
         # 1. Handle Failed / Incomplete Attempts
         if attempt.outcome != AcquisitionOutcome.SUCCESS or raw_bytes is None:

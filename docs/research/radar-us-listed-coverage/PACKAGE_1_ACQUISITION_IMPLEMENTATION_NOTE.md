@@ -49,21 +49,24 @@ Live network inspection and official documentation review established the follow
 #### 3.1 SEC EDGAR Company Tickers & Exchange Master
 - **Publisher & Endpoint**: US Securities and Exchange Commission (SEC) — `https://www.sec.gov/files/company_tickers_exchange.json`
 - **Format**: JSON with top-level `fields: ["cik", "name", "ticker", "exchange"]` and 2D array `data: [[320193, "Apple Inc.", "AAPL", "Nasdaq"], ...]`.
-- **Secure Transport**: HTTPS strictly enforced. Akamai edge blocks insecure or missing User-Agent requests with HTTP 403.
-- **Access Requirements**: SEC Fair Access Policy mandates compliant User-Agent containing contact domain. Configured: `ArxTerminal/1.0 (research@arxterminal.org)`.
+- **Secure Transport**: HTTPS strictly enforced. Akamai edge blocks requests without a compliant User-Agent with HTTP 403.
+- **Access Requirements**: SEC Fair Access Policy mandates compliant User-Agent containing administrative contact. The acquisition client requires an explicitly configured contact User-Agent (containing `@`) and fails closed (`AcquisitionOutcome.FAILED`) if unconfigured. Default fallback: `ArxTerminal-Universe/1.0`.
 - **Rate Limit Floor**: Maximum 10 requests per second.
 - **Timestamps**: No timestamp in body; HTTP `Last-Modified` captured in sidecar metadata (`Thu, 15 Oct 2026 13:39:20 GMT`).
-- **Observed Bounded Live Metrics**:
+- **Observed Bounded Live Metrics & Diagnostics**:
   - Raw Byte Length: 523,925 bytes
   - Content SHA-256: `d04923d674c6d0084dc56e67efd9cb5756f965366affe9d3e18d38b379ffd45f`
-  - Total Data Observations: 10,276 records
-  - Malformed Rows: 168 rows (missing CIK, ticker, or exchange token). Correctly caught fail-closed: `Usable for Replay = False`.
+  - Total Data Rows: 10,444 records
+  - Structurally Parsed Rows: 10,444 (100% valid 4-element JSON array rows)
+  - Structurally Rejected Rows: 0 (zero row-width mismatches, syntax errors, or truncation)
+  - Missing Attribute Evidence Gaps: Exactly 168 rows where `exchange is None` (with 0 missing CIK and 0 missing ticker; e.g. INBT, SBE, NANO, SPNV, ATAC). Correctly isolated fail-closed with `is_malformed = True`, `malformed_reason = "Structurally valid row with missing exchange attribute (exchange is null/empty)"`.
+  - Usable for Replay: 10,276 records.
 
 #### 3.2 Nasdaq Trader Symbol Directory — NASDAQ Listed
 - **Publisher & Endpoint**: The Nasdaq Stock Market LLC — `https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt`
 - **Format**: 8 pipe-delimited columns with header row and trailer `File Creation Time: MMDDYYYYHH:MM|||||||`.
-- **Secure Transport**: HTTPS fully supported with valid certificate. HTTP endpoint redirects with 301 to HTTPS.
-- **Access Requirements**: Publicly accessible trading directory. Regenerated daily prior to market open (~03:00 ET).
+- **Secure Transport**: HTTPS fully supported with valid certificate. HTTP endpoint redirects with 301 to HTTPS (pre-request downgrade checks enforce target scheme is HTTPS before issuance).
+- **Access Requirements**: Publicly accessible trading directory. Regenerated daily on Nasdaq Trader publication cycle. Observed footer timestamp: `1016202614:01` (October 16, 2026 14:01 ET); no fixed 03:00 ET schedule should be assumed without formal Nasdaq SLA confirmation.
 - **Timestamps**: Extracted from footer metadata: `1016202614:01` (October 16, 2026 14:01 ET). HTTP `Last-Modified`: `Fri, 16 Oct 2026 18:01:41 GMT`.
 - **Observed Bounded Live Metrics**:
   - Raw Byte Length: 349,723 bytes
@@ -75,7 +78,7 @@ Live network inspection and official documentation review established the follow
 - **Publisher & Endpoint**: The Nasdaq Stock Market LLC — `https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt`
 - **Format**: 8 pipe-delimited columns (`ACT Symbol|Security Name|Exchange|CQS Symbol|ETF|Round Lot Size|Test Issue|NASDAQ Symbol`).
 - **Secure Transport**: HTTPS fully supported.
-- **Timestamps**: Footer `File Creation Time: 1016202614:01`.
+- **Timestamps**: Footer `File Creation Time: 1016202614:01`. HTTP `Last-Modified`: `Fri, 16 Oct 2026 18:01:41 GMT`.
 - **Observed Bounded Live Metrics**:
   - Raw Byte Length: 543,140 bytes
   - Content SHA-256: `a0cb851a772098d64830304bf7e7a7d1ca1cbd8421da20a6bfbec9a336243792`
@@ -127,14 +130,14 @@ data/raw_feeds/2026-10-16/
 ### 5. Verification Results & Test Selection
 
 #### 5.1 Unit Tests (Mocked Transport)
-- Test Suite: `tests/test_universe_listing_acquisition.py` (14 tests)
+- Test Suite: `tests/test_universe_listing_acquisition.py` (22 tests)
 - CI Gate: Marked `tier2c` (Provenance and Data Gate).
 - Scenarios Verified:
   1. Successful acquisition, exact raw-byte preservation, content SHA-256 calculation.
   2. Timeout and transient failure retries (bounded by `max_retries`).
   3. HTTP 429 rate-limit response and `Retry-After` backoff.
   4. TLS/SSL verification failure fails closed without insecure fallback.
-  5. Insecure redirect downgrade (HTTPS $\to$ HTTP) detected and blocked.
+  5. Insecure redirect downgrade (HTTPS $\to$ HTTP) detected and blocked **before** issuing request over network.
   6. Oversized response payload exceeding `max_bytes` aborted via streaming reader.
   7. HTML error body returned with HTTP 200 caught fail-closed during replay.
   8. Malformed source schema handled fail-closed.
@@ -144,14 +147,28 @@ data/raw_feeds/2026-10-16/
   12. Zero implicit network calls on module import.
   13. Zero builder, store, or scheduler side-effects.
   14. Dual machine-readable JSON and Markdown accounting report generation.
+  15. Check A (transport): SEC EDGAR acquisition fails closed when no administrative contact is declared in User-Agent.
+  16. Check E (path safety): Path traversal sanitization prevents directory escape outside base storage.
+  17. Check B (diagnostics): Categorization of structurally valid rows with missing exchange attributes distinguished from syntax corruption.
+  18. Check A (boundaries): Zero synthesis of surrogate keys or unapproved production security identifiers.
+  19. Check B (isolation): Directory acquisition decoupled from OpenFIGI; OpenFIGI multi-match ambiguity preserved without auto-selection.
+  20. Check C (disclosure): Source completeness accounting truthfulness (`PRODUCTION_POPULATION_COMPLETENESS = NOT_ESTABLISHED`).
+  21. Check D (invariants): Read-safety and non-triggering guarantees (zero background workers, crons, API route hooks, or DB writes).
+  22. Check E (isolation): Offline replay and failure quarantine integrity.
 
 #### 5.2 Full Provenance Gate Regressions
 - `pytest tests/test_universe_listing_acquisition.py tests/test_universe_offline_adapters.py tests/test_universe_validator.py`
-- Result: **116 passed in 2.82s (0 failures, 0 regressions)**.
+- Result: **124 passed in 7.12s (0 failures, 0 regressions)**:
+  - `tests/test_universe_listing_acquisition.py`: 22 passed
+  - `tests/test_universe_offline_adapters.py` + `tests/test_universe_validator.py`: 102 passed
 
 #### 5.3 Bounded Live Verification
 - Exactly one bounded live run performed via `scripts/research/acquire_listing_directories.py`.
-- Result: All 3 feeds successfully downloaded and replayed through offline parsers. Total observations: 23,584 data rows across feeds. Raw bytes archived outside git.
+- Result: All 3 feeds successfully downloaded and replayed through offline parsers.
+  - Total Observations Across Feeds: 23,584 raw data rows (10,444 SEC + 5,634 Nasdaq Listed + 7,674 Other Listed).
+  - Distinct Join Candidates: 16,448 normalized symbols (candidate join keys across feeds; NOT verified unique operating corporate stocks).
+  - Raw bytes archived locally outside git.
+- Note on Session Duration: Any ~20-minute elapsed interval noted during acquisition execution represents wall-clock session time, not tracked engineering labor or benchmark capacity.
 
 ---
 
@@ -162,6 +179,13 @@ data/raw_feeds/2026-10-16/
 3. **Allowed Venue $\neq$ Global Primary Listing**: Directory listing confirms venue quote eligibility, NOT global primary market.
 4. **Population Inclusion $\neq$ Strategy Eligibility**: A security may belong in the full US-listed denominator while being ineligible under VCP rules R01–R07.
 5. **No Synthetic Deduplication**: The sum of directory entries (23,584 rows) reflects separate venue lists; exact unique company stocks requires cross-source matching and OpenFIGI classification.
+6. **Normalized Join Candidates $\neq$ Unique Equities**: The 16,448 total candidate count represents distinct normalized-symbol keys across feeds, not confirmed corporate stocks.
+7. **Exchange Venue Conflicts (471 Total Observations)**:
+   - **275 NYSE vs AMEX** (58.4%): NYSE American securities grouped under parent 'NYSE' umbrella in SEC EDGAR.
+   - **144 NYSE vs ARCA** (30.6%): NYSE Arca securities grouped under parent 'NYSE' umbrella in SEC EDGAR.
+   - **44 CBOE vs BATS** (9.3%): Cboe BZX exchange securities ('CBOE' in SEC EDGAR vs 'Z'/BATS in Nasdaq Trader).
+   - **8 TXSE vs F** (1.7%): Texas Stock Exchange announcements vs FINRA ADF.
+   - All 471 conflicts reflect exchange taxonomy granularity and umbrella groupings, not symbol collisions or corrupted records.
 
 ---
 
@@ -178,6 +202,7 @@ The following policy questions remain explicitly unratified:
 ### 8. Smallest Next Implementation Dependency
 
 **Package 2: Security Identity & Evidence Resolution (`S2-03`)**:
-- Implement deterministic single-session bridging surrogate key (`CIK_{cik:010d}_{symbol}`).
-- Connect existing offline OpenFIGI parser (`openfigi.py`) to classify `securityType2` taxonomy.
-- Enforce that unmapped or ambiguous records remain explicitly cataloged as `IDENTITY_UNRESOLVED`.
+- **Identity Selection Status**: `UNRESOLVED / PENDING PRODUCT OWNER RATIFICATION`.
+- A permanent security master identity standard (Listing FIGI vs Composite FIGI vs internal surrogate identifier) has **NOT** been ratified. Single-session bridging surrogate keys (`CIK_{cik:010d}_{symbol}`) are unapproved as production identity.
+- Next package scope is strictly bounded to non-destructive offline identity classification via existing offline OpenFIGI parser (`openfigi.py` `securityType2` taxonomy) and cataloging unmapped/ambiguous records as `IDENTITY_UNRESOLVED`.
+- Zero live OpenFIGI network queries, API keys, or accounts are authorized.
