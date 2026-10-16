@@ -23,7 +23,7 @@ import os
 import sqlite3
 import tempfile
 import time
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from unittest.mock import MagicMock
 
 import pytest
@@ -114,6 +114,7 @@ def _seed_snapshot(
     status_at_publication: str = "AVAILABLE",
     freshness_status: str = "LIVE",
     matched_count: int = 12,
+    symbols: Optional[list] = None,
 ) -> Dict[str, Any]:
     now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     rec = {
@@ -134,8 +135,8 @@ def _seed_snapshot(
         "status_at_publication": status_at_publication,
         "universe_id": "ARX_CANONICAL_LONG_TERM_V1",
         "universe_size": len(CANONICAL_VCP_UNIVERSE),
-        "matched_count": matched_count,
-        "results": [{"symbol": f"TST{i}", "current_price": 100.0 + i} for i in range(matched_count)],
+        "matched_count": len(symbols) if symbols is not None else matched_count,
+        "results": [{"symbol": sym, "current_price": 100.0 + i} for i, sym in enumerate(symbols)] if symbols is not None else [{"symbol": f"TST{i}", "current_price": 100.0 + i} for i in range(matched_count)],
         "provenance": {"role": "PRICE_VOLUME_HISTORY"},
         "freshness": {"status": freshness_status, "data_as_of": "2026-10-15", "generated_at": now_iso},
         "publication_decision": decision,
@@ -219,8 +220,11 @@ def test_02_empty_storage_cache_miss(isolated_vcp_environment):
     run_data = resp_run.json()
     caps = run_data["capabilities"]
 
-    # Capabilities contract reflects base radar capabilities; no VCP matches qualified
-    assert caps["VCP"]["status"] in ("AVAILABLE", "PIPELINE_PENDING")
+    # Capabilities contract reflects dynamic runner state; no VCP matches qualified
+    assert caps["VCP"]["status"] == "PIPELINE_PENDING"
+    assert caps["VCP"]["universeScreening"] == "PIPELINE_PENDING"
+    assert caps["VCP"]["matchedCount"] is None
+    assert caps["VCP"]["reason"] == "NO_ACTIVE_SNAPSHOT"
     vcp_matches = [c for c in run_data.get("candidates", []) if "VCP" in c.get("categories", [])]
     assert len(vcp_matches) == 0, "No candidates can qualify as VCP without active snapshot"
 
@@ -267,7 +271,10 @@ def test_03_snapshot_release_mismatch(isolated_vcp_environment):
     resp_run = client.get("/api/v1/screener/run")
     assert resp_run.status_code == 200
     caps = resp_run.json()["capabilities"]
-    assert caps["VCP"]["status"] in ("AVAILABLE", "PIPELINE_PENDING")
+    assert caps["VCP"]["status"] == "PIPELINE_PENDING"
+    assert caps["VCP"]["universeScreening"] == "PIPELINE_PENDING"
+    assert caps["VCP"]["matchedCount"] is None
+    assert caps["VCP"]["reason"] == "RELEASE_MISMATCH"
     vcp_matches = [c for c in resp_run.json().get("candidates", []) if "VCP" in c.get("categories", [])]
     assert len(vcp_matches) == 0, "No candidates can qualify as VCP on release mismatch"
 
@@ -313,7 +320,10 @@ def test_04_stale_snapshot_policy(isolated_vcp_environment):
     resp_run = client.get("/api/v1/screener/run")
     assert resp_run.status_code == 200
     caps = resp_run.json()["capabilities"]
-    assert caps["VCP"]["status"] in ("AVAILABLE", "STALE")
+    assert caps["VCP"]["status"] == "AVAILABLE"
+    assert caps["VCP"]["universeScreening"] == "AVAILABLE"
+    assert caps["VCP"]["freshnessStatus"] == "STALE"
+    assert caps["VCP"]["matchedCount"] == 8
 
     # Spies: zero execution side effects
     assert env["scan_spy"].call_count == 0, "Stale snapshot must not initiate market scan"
@@ -357,7 +367,10 @@ def test_05_storage_failure(isolated_vcp_environment, monkeypatch):
     resp_run = client.get("/api/v1/screener/run")
     assert resp_run.status_code == 200
     caps = resp_run.json()["capabilities"]
-    assert caps["VCP"]["status"] in ("AVAILABLE", "ERROR")
+    assert caps["VCP"]["status"] == "ERROR"
+    assert caps["VCP"]["universeScreening"] == "ERROR"
+    assert caps["VCP"]["matchedCount"] is None
+    assert caps["VCP"]["reason"] == "STORAGE_ERROR"
     vcp_matches = [c for c in resp_run.json().get("candidates", []) if "VCP" in c.get("categories", [])]
     assert len(vcp_matches) == 0, "No candidates qualify as VCP on storage failure"
 
@@ -396,7 +409,8 @@ def test_06_repeated_reads(isolated_vcp_environment):
         resp = client.get("/api/v1/screener/run", headers=headers)
         assert resp.status_code == 200
         caps = resp.json()["capabilities"]
-        assert caps["VCP"]["status"] in ("AVAILABLE", "PIPELINE_PENDING")
+        assert caps["VCP"]["status"] == "PIPELINE_PENDING"
+        assert caps["VCP"]["universeScreening"] == "PIPELINE_PENDING"
 
     # Total across all 20 public reads: strictly 0
     assert env["scan_spy"].call_count == 0, "Repeated reads must never initiate scan"
@@ -404,3 +418,154 @@ def test_06_repeated_reads(isolated_vcp_environment):
     assert env["release_spy"].call_count == 0, "Repeated reads must never release lease"
     assert env["publish_spy"].call_count == 0, "Repeated reads must never publish"
     assert env["save_spy"].call_count == 0, "Repeated reads must never write to store"
+
+
+# ==============================================================================
+# Case 7: Complete Status-Propagation Matrix & Frontend Consumer Invariants
+# ==============================================================================
+
+def test_07_complete_status_propagation_matrix(isolated_vcp_environment, monkeypatch):
+    """
+    Complete Status-Propagation Matrix across both routes:
+    1. AVAILABLE with positive matches (>0).
+    2. AVAILABLE with genuinely zero matches (0).
+    3. PIPELINE_PENDING / NO_ACTIVE_SNAPSHOT.
+    4. PIPELINE_PENDING / RELEASE_MISMATCH.
+    5. ERROR / STORAGE_ERROR.
+    6. STALE snapshot.
+
+    Verifies frontend consumer badge and count invariants:
+    - Numerical zero permitted ONLY when universeScreening is AVAILABLE.
+    - PIPELINE_PENDING and ERROR render null count and "Universe Scanner Pending" badge.
+    - Zero scans, zero leases, zero writes across all matrix evaluations.
+    """
+    env = isolated_vcp_environment
+    client = env["client"]
+
+    def _eval_frontend_consumer(capabilities, candidates):
+        """Simulates frontend/app/radar/page.tsx:220-243 categoryMeta evaluation."""
+        is_available = capabilities.get("VCP", {}).get("universeScreening") == "AVAILABLE"
+        matching = [c for c in candidates if "VCP" in c.get("categories", [])]
+        if not is_available:
+            return {
+                "count": None,
+                "badge": "Universe Scanner Pending",
+                "status": capabilities.get("VCP", {}).get("status", "PIPELINE_PENDING"),
+            }
+        return {
+            "count": len(matching),
+            "badge": str(len(matching)),
+            "status": capabilities.get("VCP", {}).get("status", "AVAILABLE"),
+        }
+
+    # 1. PIPELINE_PENDING / NO_ACTIVE_SNAPSHOT (Empty store before seeding)
+    resp_run = client.get("/api/v1/screener/run")
+    assert resp_run.status_code == 200
+    data = resp_run.json()
+    assert data["capabilities"]["VCP"]["status"] == "PIPELINE_PENDING"
+    assert data["capabilities"]["VCP"]["universeScreening"] == "PIPELINE_PENDING"
+    assert data["capabilities"]["VCP"]["matchedCount"] is None
+    assert data["capabilities"]["VCP"]["reason"] == "NO_ACTIVE_SNAPSHOT"
+    ui = _eval_frontend_consumer(data["capabilities"], data.get("candidates", []))
+    assert ui["count"] is None
+    assert ui["badge"] == "Universe Scanner Pending"
+    assert ui["status"] == "PIPELINE_PENDING"
+
+    # 2. AVAILABLE with positive matches (3 matches in active candidate universe)
+    _seed_snapshot(env["store"], snapshot_id="snap-mat-pos", symbols=CANONICAL_VCP_UNIVERSE[:3])
+    env["runner"]._cached_active_snapshot = None
+    env["save_spy"].reset_mock()
+
+    resp_run = client.get("/api/v1/screener/run")
+    assert resp_run.status_code == 200
+    data = resp_run.json()
+    assert data["capabilities"]["VCP"]["status"] == "AVAILABLE"
+    assert data["capabilities"]["VCP"]["universeScreening"] == "AVAILABLE"
+    assert data["capabilities"]["VCP"]["matchedCount"] == 3
+    ui = _eval_frontend_consumer(data["capabilities"], data.get("candidates", []))
+    assert ui["count"] == 3
+    assert ui["badge"] == "3"
+    assert ui["status"] == "AVAILABLE"
+
+    # 3. AVAILABLE with genuinely zero matches (0 matches in active snapshot)
+    _seed_snapshot(env["store"], snapshot_id="snap-mat-zero", symbols=[])
+    env["runner"]._cached_active_snapshot = None
+    env["save_spy"].reset_mock()
+
+    resp_run = client.get("/api/v1/screener/run")
+    assert resp_run.status_code == 200
+    assert env["save_spy"].call_count == 0
+    data = resp_run.json()
+    assert data["capabilities"]["VCP"]["status"] == "AVAILABLE"
+    assert data["capabilities"]["VCP"]["universeScreening"] == "AVAILABLE"
+    assert data["capabilities"]["VCP"]["matchedCount"] == 0
+    ui = _eval_frontend_consumer(data["capabilities"], data.get("candidates", []))
+    assert ui["count"] == 0
+    assert ui["badge"] == "0"
+    assert ui["status"] == "AVAILABLE"
+
+    # 4. PIPELINE_PENDING / RELEASE_MISMATCH
+    _seed_snapshot(env["store"], snapshot_id="snap-mat-mismatch", release_sha="outdated-sha-999", matched_count=5)
+    env["runner"]._cached_active_snapshot = None
+    env["save_spy"].reset_mock()
+
+    resp_run = client.get("/api/v1/screener/run")
+    assert resp_run.status_code == 200
+    assert env["save_spy"].call_count == 0
+    data = resp_run.json()
+    assert data["capabilities"]["VCP"]["status"] == "PIPELINE_PENDING"
+    assert data["capabilities"]["VCP"]["universeScreening"] == "PIPELINE_PENDING"
+    assert data["capabilities"]["VCP"]["matchedCount"] is None
+    assert data["capabilities"]["VCP"]["reason"] == "RELEASE_MISMATCH"
+    ui = _eval_frontend_consumer(data["capabilities"], data.get("candidates", []))
+    assert ui["count"] is None
+    assert ui["badge"] == "Universe Scanner Pending"
+    assert ui["status"] == "PIPELINE_PENDING"
+
+    # 5. ERROR / STORAGE_ERROR
+    def _err(*a, **kw):
+        raise sqlite3.OperationalError("database is locked")
+    monkeypatch.setattr(env["runner"].snapshot_store, "get_latest_active_snapshot", _err)
+    monkeypatch.setattr(env["runner"].snapshot_store, "get_latest_active_snapshot_id", _err)
+    env["runner"]._cached_active_snapshot = None
+    env["save_spy"].reset_mock()
+
+    resp_run = client.get("/api/v1/screener/run")
+    assert resp_run.status_code == 200
+    assert env["save_spy"].call_count == 0
+    data = resp_run.json()
+    assert data["capabilities"]["VCP"]["status"] == "ERROR"
+    assert data["capabilities"]["VCP"]["universeScreening"] == "ERROR"
+    assert data["capabilities"]["VCP"]["matchedCount"] is None
+    assert data["capabilities"]["VCP"]["reason"] == "STORAGE_ERROR"
+    ui = _eval_frontend_consumer(data["capabilities"], data.get("candidates", []))
+    assert ui["count"] is None
+    assert ui["badge"] == "Universe Scanner Pending"
+    assert ui["status"] == "ERROR"
+
+    # 6. STALE snapshot
+    orig_get = env["store"].__class__.get_latest_active_snapshot.__get__(env["store"], env["store"].__class__)
+    orig_get_id = env["store"].__class__.get_latest_active_snapshot_id.__get__(env["store"], env["store"].__class__)
+    monkeypatch.setattr(env["runner"].snapshot_store, "get_latest_active_snapshot", orig_get)
+    monkeypatch.setattr(env["runner"].snapshot_store, "get_latest_active_snapshot_id", orig_get_id)
+    _seed_snapshot(env["store"], snapshot_id="snap-mat-stale", freshness_status="STALE", status_at_publication="STALE", symbols=CANONICAL_VCP_UNIVERSE[:2])
+    env["runner"]._cached_active_snapshot = None
+    env["save_spy"].reset_mock()
+
+    resp_run = client.get("/api/v1/screener/run")
+    assert resp_run.status_code == 200
+    data = resp_run.json()
+    assert data["capabilities"]["VCP"]["status"] == "AVAILABLE"
+    assert data["capabilities"]["VCP"]["universeScreening"] == "AVAILABLE"
+    assert data["capabilities"]["VCP"]["freshnessStatus"] == "STALE"
+    assert data["capabilities"]["VCP"]["matchedCount"] == 2
+    ui = _eval_frontend_consumer(data["capabilities"], data.get("candidates", []))
+    assert ui["count"] == 2
+    assert ui["badge"] == "2"
+
+    # Strictly 0 side effects across entire matrix evaluation
+    assert env["scan_spy"].call_count == 0
+    assert env["acquire_spy"].call_count == 0
+    assert env["release_spy"].call_count == 0
+    assert env["publish_spy"].call_count == 0
+    assert env["save_spy"].call_count == 0

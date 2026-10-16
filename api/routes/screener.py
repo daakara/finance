@@ -119,20 +119,61 @@ VALUE_GARP_MODELS = {
 
 
 def get_radar_capabilities(vcp_snapshot: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    caps = dict(RADAR_CAPABILITY_CONTRACT)
-    if vcp_snapshot and vcp_snapshot.get("status") == "AVAILABLE":
+    caps = {k: dict(v) for k, v in RADAR_CAPABILITY_CONTRACT.items()}
+    if vcp_snapshot:
+        snap_status = vcp_snapshot.get("status")
         freshness_info = vcp_snapshot.get("freshness", {})
-        caps["VCP"] = {
-            "status": "AVAILABLE",
-            "universeScreening": "AVAILABLE",
-            "singleAssetAnalysis": "AVAILABLE",
-            "matchedCount": vcp_snapshot.get("matched_count", 0),
-            "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
-            "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
-            "snapshotId": vcp_snapshot.get("snapshot_id"),
-            "freshnessStatus": freshness_info.get("status", "LIVE"),
-            "rationale": "Authentic Minervini Volatility Contraction Pattern universe screening active with deterministic publication integrity.",
-        }
+        if snap_status == "AVAILABLE":
+            caps["VCP"] = {
+                "status": "AVAILABLE",
+                "universeScreening": "AVAILABLE",
+                "singleAssetAnalysis": "AVAILABLE",
+                "matchedCount": vcp_snapshot.get("matched_count", 0),
+                "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
+                "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
+                "snapshotId": vcp_snapshot.get("snapshot_id"),
+                "freshnessStatus": freshness_info.get("status", "LIVE"),
+                "rationale": "Authentic Minervini Volatility Contraction Pattern universe screening active with deterministic publication integrity.",
+            }
+        elif snap_status == "PIPELINE_PENDING":
+            reason = vcp_snapshot.get("reason", "NO_ACTIVE_SNAPSHOT")
+            caps["VCP"] = {
+                "status": "PIPELINE_PENDING",
+                "universeScreening": "PIPELINE_PENDING",
+                "singleAssetAnalysis": "AVAILABLE",
+                "matchedCount": None,
+                "dataAsOf": None,
+                "generatedAt": None,
+                "snapshotId": None,
+                "freshnessStatus": "UNKNOWN",
+                "reason": reason,
+                "rationale": vcp_snapshot.get("detail", "VCP scanner snapshot pipeline pending publication."),
+            }
+        elif snap_status == "ERROR":
+            caps["VCP"] = {
+                "status": "ERROR",
+                "universeScreening": "ERROR",
+                "singleAssetAnalysis": "AVAILABLE",
+                "matchedCount": None,
+                "dataAsOf": None,
+                "generatedAt": None,
+                "snapshotId": None,
+                "freshnessStatus": "UNKNOWN",
+                "reason": vcp_snapshot.get("reason", "STORAGE_ERROR"),
+                "rationale": vcp_snapshot.get("detail", "VCP scanner snapshot store error."),
+            }
+        elif snap_status == "STALE":
+            caps["VCP"] = {
+                "status": "AVAILABLE",
+                "universeScreening": "AVAILABLE",
+                "singleAssetAnalysis": "AVAILABLE",
+                "matchedCount": vcp_snapshot.get("matched_count", 0),
+                "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
+                "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
+                "snapshotId": vcp_snapshot.get("snapshot_id"),
+                "freshnessStatus": "STALE",
+                "rationale": "VCP scanner snapshot is stale past freshness policy cutoff.",
+            }
     return caps
 
 
