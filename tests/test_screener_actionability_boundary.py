@@ -17,7 +17,7 @@ from api.routes.screener import run_screener_get
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngine, DecisionState
 
-pytestmark = pytest.mark.tier2b
+pytestmark = [pytest.mark.tier2b, pytest.mark.usefixtures("published_screener_universe")]
 
 
 def test_screener_authority_boundary_cases():

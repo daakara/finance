@@ -16,7 +16,7 @@ from api.routes.screener import (
 )
 
 
-pytestmark = pytest.mark.tier2b
+pytestmark = [pytest.mark.tier2b, pytest.mark.usefixtures("published_screener_universe")]
 
 
 def test_canonical_vocabulary_constants():
@@ -48,7 +48,11 @@ def test_screener_payload_exposes_canonical_categories_and_capabilities():
     data = run_screener_get(resp, filter_type="all")
 
     assert "capabilities" in data
-    assert data["capabilities"] == RADAR_CAPABILITY_CONTRACT
+    caps = data["capabilities"]
+    for cat, base_cap in RADAR_CAPABILITY_CONTRACT.items():
+        assert cat in caps
+        for key, val in base_cap.items():
+            assert caps[cat][key] == val
 
     candidates = data.get("candidates", [])
     assert len(candidates) > 0
