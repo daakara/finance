@@ -26,8 +26,8 @@
 - **Category**: Production Defect Remediation / Read-Safety Contract
 - **Priority**: **P0 (Immediate Delivery)**
 - **Priority Rationale**: Proactive elimination of latent scan-on-read execution, lease acquisition races, and potential unperformed scan states on cache miss or release mismatch. (Note: Proactive bounded defect remediation; does not imply an active production incident).
-- **Status**: `LOCAL_VERIFICATION_COMPLETE` (Ready for remote preflight)
-- **Release Target**: Next Release Candidate (Post-PR #3)
+- **Status**: `RELEASED_TO_PRODUCTION` (Deployed via PR #4, commit `787c1977b0071f2b31c4ad3d36a7f872147ad59e`)
+- **Release Target**: Release Candidate PR #4 (Completed)
 - **Assigned Sprint**: `SPRINT_UNASSIGNED` (Tracked via Release Target, not sprint allocation)
 - **Owner**: ARX Terminal Core Team
 - **Scope**:
@@ -49,34 +49,36 @@
   4. Missing snapshots return HTTP 200 with envelope `status: "PIPELINE_PENDING"`, `matched_count: null`.
   5. All 6 scenarios in `tests/test_vcp_inactive_read_safety.py` pass.
   6. Full Tier 1, Tier 2, and Tier 3 suites pass with zero regressions against PR #3 baseline.
-- **Next Step**:
-  - Push branch to remote and observe CI and non-production preview.
+- **Release Record**:
+  - Verified in production deployment on Railway (`6bdc3de9-39d6-4e4b-abb5-09e53dfb7445`) and Cloudflare Pages (`0b0fa048-51ab-4098-8c0d-4794ead8c854`).
 
 ---
 
 ### `BACKLOG-VCP-UNIVERSE-WIRING-002`: Candidate 004 Universe-Wiring Reintroduction
 - **Category**: Architecture / Domain Feature Reintroduction
 - **Priority**: **P1 (Follow-Up Delivery)**
-- **Status**: `HELD_PENDING_DEPENDENCY_REVIEW`
-- **Release Target**: Post-Read-Safety Release
+- **Status**: `LOCAL_IMPLEMENTATION_COMPLETE`
+- **Release Target**: Post-Read-Safety Release (Candidate 004 Universe Wiring)
 - **Assigned Sprint**: `SPRINT_UNASSIGNED`
-- **Owner**: `OWNER_UNASSIGNED`
+- **Owner**: ARX Terminal Core Team
 - **Scope**:
   - Re-evaluate and reintroduce the Candidate 004 universe, session, and publication wiring that was rolled back in Candidate 004 recovery (PR #2).
   - Explicit Note: The rollback of Candidate 004 was an operational containment revert driven by migration timing, lease races, and scan-on-read coupling; it does NOT constitute cancellation of the feature requirements.
   - Perform dependency analysis between universe lifecycle, session management, and runtime scanner execution.
-  - Ensure universe-wiring contracts remain decoupled from public GET request lifecycles.
+  - Ensure universe-wiring contracts remain decoupled from public GET request lifecycles (preserving PR #4 read safety).
   - Preserve all valid Candidate 004 domain models, historical migration units, and relational denominator integrity invariants.
 - **Dependencies**:
-  - Successful deployment, verification, and stabilization of `BACKLOG-VCP-READ-SAFETY-001`.
-  - Comprehensive review of session/universe lifecycle dependencies.
+  - Successful deployment, verification, and stabilization of `BACKLOG-VCP-READ-SAFETY-001` (Complete).
+  - Comprehensive review of session/universe lifecycle dependencies (Complete).
 - **Acceptance Criteria**:
   1. Complete decoupling between scanner runtime execution and API read pathways.
   2. Preserved relational natural denominator and epoch membership verification.
-  3. Migration scripts and DDL verified against isolated database environments.
-  4. Dedicated candidate freeze manifest and release package generated independently.
+  3. Authoritative 20-condition test suite (`tests/test_vcp_c004_universe_wiring.py`) passes locally.
+  4. Zero changes to frozen engines (`optimal_execution.py`, `confluence_engine.py`, `decision_hierarchy.py`) or historical manifests.
+  5. Isolated branch `fix/vcp-universe-wiring-reintroduction` verified against local test pyramid.
 - **Next Step**:
-  - Architecture and dependency review of Candidate 004 universe/session lifecycle.
+  - Await remote verification authorization and release planning.
+
 
 ---
 
