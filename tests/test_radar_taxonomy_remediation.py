@@ -49,10 +49,20 @@ def test_screener_payload_exposes_canonical_categories_and_capabilities():
 
     assert "capabilities" in data
     caps = data["capabilities"]
-    for cat, base_cap in RADAR_CAPABILITY_CONTRACT.items():
+    for cat in CANONICAL_RADAR_CATEGORIES:
         assert cat in caps
-        for key, val in base_cap.items():
+        assert "status" in caps[cat]
+        assert "universeScreening" in caps[cat]
+        assert "singleAssetAnalysis" in caps[cat]
+        assert "rationale" in caps[cat]
+
+    # VALUE_GARP and SMART_MONEY match static contract baseline
+    for cat in ["VALUE_GARP", "SMART_MONEY"]:
+        for key, val in RADAR_CAPABILITY_CONTRACT[cat].items():
             assert caps[cat][key] == val
+
+    # VCP capabilities reflect runtime snapshot state (AVAILABLE if active snapshot exists, PIPELINE_PENDING if none)
+    assert caps["VCP"]["universeScreening"] in ("AVAILABLE", "PIPELINE_PENDING")
 
     candidates = data.get("candidates", [])
     assert len(candidates) > 0
