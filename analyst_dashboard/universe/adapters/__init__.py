@@ -23,6 +23,14 @@ from .nasdaq_trader import (
     parse_nasdaq_trader_directory,
 )
 from .openfigi import parse_openfigi_response
+from .resolution import (
+    IdentityResolutionStatus,
+    ResolutionRecordStatus,
+    ResolvedSecurityRecord,
+    SecurityEvidenceAccounting,
+    SecurityEvidenceResolutionOutcome,
+    SecurityEvidenceResolver,
+)
 from .sec_edgar import (
     format_cik,
     parse_sec_company_tickers_exchange,
@@ -35,11 +43,17 @@ __all__ = [
     "AdapterValidationReport",
     "AdapterValidatorBridge",
     "FieldCertificationStatus",
+    "IdentityResolutionStatus",
     "MatchedUniverseCandidate",
     "OpenFigiMatchStatus",
     "ParsedOpenFigiResult",
     "ParsedSourceFile",
     "ParsedSourceRow",
+    "ResolutionRecordStatus",
+    "ResolvedSecurityRecord",
+    "SecurityEvidenceAccounting",
+    "SecurityEvidenceResolutionOutcome",
+    "SecurityEvidenceResolver",
     "SourceFeedType",
     "SourceMatchingAccounting",
     "format_cik",
