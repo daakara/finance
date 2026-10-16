@@ -130,7 +130,7 @@ export function evaluateCorridorLocation(
     entryMin: min,
     entryMax: max,
     description: isWithinTolerance
-      ? `Price ($${p.toFixed(2)}) is above the entry corridor ($${min.toFixed(2)}–$${max.toFixed(2)}). Existing extension tolerance applies.`
+      ? `Price ($${p.toFixed(2)}) is above the entry corridor ($${min.toFixed(2)}–$${max.toFixed(2)}). Existing implementation tolerance applies.`
       : `Price ($${p.toFixed(2)}) has extended >${Math.round(toleranceRatio * 100)}% past the accumulation corridor ($${min.toFixed(2)}–$${max.toFixed(2)}). Do not chase above resistance.`,
   };
 }

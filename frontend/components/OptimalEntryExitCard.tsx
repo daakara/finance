@@ -335,6 +335,7 @@ export default function OptimalEntryExitCard({
     stopLoss: stop_loss,
     takeProfit1: take_profit_1,
     vix: resolvedVix,
+    isActionable: canonicalActionable,
   });
 
   const presentation = resolvePresentationState({
@@ -373,7 +374,7 @@ export default function OptimalEntryExitCard({
           <div className="flex items-center space-x-2">
             <span
               className={`w-2.5 h-2.5 rounded-full ${
-                isActionable
+                canonicalActionable
                   ? "bg-emerald-400 animate-pulse"
                   : "bg-amber-400"
               }`}
@@ -395,18 +396,18 @@ export default function OptimalEntryExitCard({
             <span
               data-testid="current-action"
               className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold border ${
-                isActionable
+                canonicalActionable
                   ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
                   : "bg-amber-950/80 text-amber-300 border-amber-700/80"
               }`}
             >
-              {isActionable ? "CURRENT ACTION: Execute Setup" : "CURRENT ACTION: Wait"}
+              {canonicalActionable ? "CURRENT ACTION: Execute Setup" : "CURRENT ACTION: Wait"}
             </span>
             <span
               data-testid="plan-status"
               className="px-2 py-0.5 rounded text-xs font-mono bg-[#162030] text-slate-300 border border-[#243044]"
             >
-              Status: {decisionStateLabel || decisionState || (isActionable ? "CONFIRMED_TRIGGER" : "WAIT_FOR_TRIGGER")}
+              Status: {decisionStateLabel || decisionState || (canonicalActionable ? "CONFIRMED_TRIGGER" : "WAIT_FOR_TRIGGER")}
             </span>
           </div>
           <div className="hidden sm:flex flex-wrap items-center gap-2 mt-1.5 text-[11px] font-medium text-slate-400">

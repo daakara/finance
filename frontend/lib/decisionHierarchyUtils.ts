@@ -51,8 +51,8 @@ export function deriveUnmetConditions(insight: QuantitativeInsight): UnmetCondit
           conditions.push({
             id: "corridor",
             category: "CORRIDOR",
-            title: "Entry Corridor Clearance (Extension Tolerance Applied)",
-            description: `Spot ($${price.toFixed(2)}) is above corridor ceiling ($${corridorLoc.entryMax!.toFixed(2)}), but within approved 2% extension tolerance. Low-volume pullback preferred for optimal asymmetry, but corridor gate is cleared.`,
+            title: "Entry Corridor Clearance (Implementation Tolerance Applied)",
+            description: `Spot ($${price.toFixed(2)}) is above corridor ceiling ($${corridorLoc.entryMax!.toFixed(2)}), but within existing 2% implementation tolerance. Low-volume pullback preferred for optimal asymmetry, but corridor gate is cleared.`,
             status: "MET",
           });
         } else {

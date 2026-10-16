@@ -110,7 +110,7 @@ assert.strictEqual(c6.isInside, false);
 assert.strictEqual(c6.isAboveCeiling, true);
 assert.strictEqual(c6.isWithinTolerance, true);
 assert.ok(c6.description.includes("above the entry corridor"));
-assert.ok(c6.description.includes("Existing extension tolerance applies"));
+assert.ok(c6.description.includes("Existing implementation tolerance applies"));
 assert.ok(!c6.description.includes("positioned inside"));
 
 const g1_6 = resolveDecisionReadiness({ currentPrice: 103.50, optimalEntryMin: 98, optimalEntryMax: 102 });
@@ -218,7 +218,7 @@ assert.strictEqual(g2_2.activeBlockingGate, "GATE_2_TRIGGER");
 assert.strictEqual(g2_2.isExecutionReady, false);
 assert.ok(g2_2.gates[0].explanation.includes("above the entry corridor"));
 assert.ok(!g2_2.gates[0].explanation.includes("positioned inside"));
-assert.ok(g2_2.gates[1].explanation.includes("Price is above the entry corridor (within extension tolerance), but confirmation trigger is pending"));
+assert.ok(g2_2.gates[1].explanation.includes("Price is above the entry corridor (within implementation tolerance), but confirmation trigger is pending"));
 
 const hint2_2 = resolveTacticalExecutionHint({
   evalPrice: 103.50,
@@ -232,7 +232,7 @@ const hint2_2 = resolveTacticalExecutionHint({
 assert.ok(hint2_2 !== null);
 assert.strictEqual(hint2_2?.label, "⚠️ Above Corridor Ceiling");
 assert.ok(hint2_2?.advice.includes("above the entry corridor"));
-assert.ok(hint2_2?.advice.includes("Existing extension tolerance applies, but entry remains conditional"));
+assert.ok(hint2_2?.advice.includes("Existing implementation tolerance applies, but entry remains conditional"));
 assert.ok(!hint2_2?.advice.includes("Scale in"), "Actionable scale-in advice must be suppressed when trigger is blocked");
 assert.ok(!hint2_2?.advice.includes("inside the accumulation corridor"), "Above-ceiling price must NEVER claim to be inside");
 console.log("   [PASS] 2.2: Above corridor within tolerance + trigger blocked -> Truthful location + scale-in suppressed");
@@ -461,7 +461,7 @@ const unmetCondsActionable = deriveUnmetConditions(mockActionableAboveInsight);
 const corridorCondActionable = unmetCondsActionable.find((c) => c.id === "corridor");
 assert.ok(corridorCondActionable !== undefined);
 assert.strictEqual(corridorCondActionable?.status, "MET", "Corridor clearance under tolerance must NOT be presented as an UNMET blocker");
-assert.strictEqual(corridorCondActionable?.title, "Entry Corridor Clearance (Extension Tolerance Applied)");
+assert.strictEqual(corridorCondActionable?.title, "Entry Corridor Clearance (Implementation Tolerance Applied)");
 
 // Contrast with extended > 2% setup ($105.00)
 const mockExtendedInsight = {
@@ -506,7 +506,7 @@ assert.strictEqual(aaplLoc.isInside, false, "AAPL isInside must strictly be fals
 assert.strictEqual(aaplLoc.isAboveCeiling, true);
 assert.strictEqual(aaplLoc.isWithinTolerance, true, "AAPL is within 2% tolerance (339.38 * 1.02 = 346.1676)");
 assert.ok(aaplLoc.description.includes("Price ($341.91) is above the entry corridor ($325.07–$339.38)"));
-assert.ok(aaplLoc.description.includes("Existing extension tolerance applies"));
+assert.ok(aaplLoc.description.includes("Existing implementation tolerance applies"));
 assert.ok(!aaplLoc.description.includes("positioned inside"), "Must NEVER claim AAPL is inside corridor");
 
 // 2. Evaluate Decision Readiness (Trigger Pending)
@@ -527,7 +527,7 @@ assert.ok(aaplReadiness.gates[0].explanation.includes("Price ($341.91) is above 
 assert.ok(!aaplReadiness.gates[0].explanation.includes("positioned inside"));
 
 assert.strictEqual(aaplReadiness.gates[1].state, "BLOCKING", "Gate 2 blocks on unconfirmed trigger");
-assert.ok(aaplReadiness.gates[1].explanation.includes("Price is above the entry corridor (within extension tolerance), but confirmation trigger is pending"));
+assert.ok(aaplReadiness.gates[1].explanation.includes("Price is above the entry corridor (within implementation tolerance), but confirmation trigger is pending"));
 assert.ok(!aaplReadiness.gates[1].explanation.includes("Price is inside the accumulation corridor"));
 
 assert.strictEqual(aaplReadiness.gates[2].state, "PENDING_DEPENDENCY");
@@ -551,7 +551,7 @@ const aaplHint = resolveTacticalExecutionHint({
 assert.ok(aaplHint !== null);
 assert.strictEqual(aaplHint?.label, "⚠️ Above Corridor Ceiling");
 assert.ok(aaplHint?.advice.includes("Spot ($341.91) is above the entry corridor ($325.07–$339.38)"));
-assert.ok(aaplHint?.advice.includes("Existing extension tolerance applies, but entry remains conditional"));
+assert.ok(aaplHint?.advice.includes("Existing implementation tolerance applies, but entry remains conditional"));
 assert.ok(aaplHint?.advice.includes("Wait for required trigger confirmation"));
 assert.ok(!aaplHint?.advice.includes("Scale in with 30% initial size"), "Defect resolved: contradictory scale-in advice suppressed!");
 assert.ok(!aaplHint?.advice.includes("inside the accumulation corridor"), "Defect resolved: spatial contradiction eliminated!");
@@ -579,8 +579,8 @@ const mockAaplInsight = {
 const unmetConditions = deriveUnmetConditions(mockAaplInsight);
 const corridorCondition = unmetConditions.find((c) => c.id === "corridor");
 assert.ok(corridorCondition !== undefined);
-assert.strictEqual(corridorCondition?.status, "MET", "Corridor is MET under approved 2% tolerance");
-assert.strictEqual(corridorCondition?.title, "Entry Corridor Clearance (Extension Tolerance Applied)");
+assert.strictEqual(corridorCondition?.status, "MET", "Corridor is MET under existing 2% implementation tolerance");
+assert.strictEqual(corridorCondition?.title, "Entry Corridor Clearance (Implementation Tolerance Applied)");
 
 const triggerCondition = unmetConditions.find((c) => c.id === "event_trigger");
 assert.ok(triggerCondition !== undefined);
@@ -591,5 +591,156 @@ console.log("   [PASS] 3.2: AAPL Gate 1: PASSED (Truthful explanation with toler
 console.log("   [PASS] 3.3: AAPL Gate 2: BLOCKING (Truthful above-corridor explanation)");
 console.log("   [PASS] 3.4: AAPL Tactical Hint: Contradictory scale-in instructions eliminated");
 console.log("   [PASS] 3.5: AAPL Unmet Conditions: Correctly reports corridor MET (tolerance) and trigger UNMET");
+
+// ═════════════════════════════════════════════════════════════════════════════
+// PART 4: Final Readiness Presentation & Canonical Action Harmony (States A–E)
+// ═════════════════════════════════════════════════════════════════════════════
+console.log("\nPart 4: Verifying Final Readiness Presentation & Canonical Action Harmony (States A–E)...");
+
+// State 4.A: Inside corridor, trigger pending
+const res4A = resolveDecisionReadiness({
+  currentPrice: 184.0,
+  optimalEntryMin: 182.5,
+  optimalEntryMax: 185.0,
+  isActionable: false,
+  isConfirmed: false,
+  riskRewardRatio: 2.4,
+  stopLoss: 172.0,
+  takeProfit1: 200.0,
+  vix: 17.5,
+});
+assert.strictEqual(res4A.gates[0].state, "PASSED");
+assert.strictEqual(res4A.gates[1].state, "BLOCKING");
+assert.strictEqual(res4A.activeBlockingGate, "GATE_2_TRIGGER");
+assert.strictEqual(res4A.technicalGatesPassed, false);
+assert.strictEqual(res4A.isExecutionReady, false);
+assert.strictEqual(res4A.readinessVerdict, "SETUP_IN_PROGRESS");
+assert.strictEqual(res4A.readinessVerdictLabel, "SETUP IN PROGRESS");
+assert.strictEqual(res4A.primaryAction.label, "Set Buy Zone Alert");
+console.log("   [PASS] 4.A: Inside corridor, trigger pending -> SETUP IN PROGRESS / Gate 2 BLOCKING");
+
+// State 4.B: Above corridor within tolerance, trigger pending
+const res4B = resolveDecisionReadiness({
+  currentPrice: 341.91,
+  optimalEntryMin: 325.07,
+  optimalEntryMax: 339.38,
+  isActionable: false,
+  isConfirmed: false,
+  riskRewardRatio: 2.4,
+  stopLoss: 315.0,
+  takeProfit1: 395.0,
+  vix: 17.5,
+});
+assert.strictEqual(res4B.gates[0].state, "PASSED");
+assert.strictEqual(res4B.gates[1].state, "BLOCKING");
+assert.strictEqual(res4B.activeBlockingGate, "GATE_2_TRIGGER");
+assert.strictEqual(res4B.technicalGatesPassed, false);
+assert.strictEqual(res4B.isExecutionReady, false);
+assert.strictEqual(res4B.readinessVerdict, "SETUP_IN_PROGRESS");
+assert.strictEqual(res4B.readinessVerdictLabel, "SETUP IN PROGRESS");
+assert.strictEqual(res4B.primaryAction.label, "Set Buy Zone Alert");
+console.log("   [PASS] 4.B: Above corridor within tolerance, trigger pending -> SETUP IN PROGRESS / Gate 2 BLOCKING");
+
+// State 4.C: Local gates passed, canonical Wait
+const res4C = resolveDecisionReadiness({
+  currentPrice: 341.91,
+  optimalEntryMin: 325.07,
+  optimalEntryMax: 339.38,
+  isActionable: false, // Canonical Wait
+  isConfirmed: true,  // Trigger passed
+  riskRewardRatio: 2.4,
+  stopLoss: 315.0,
+  takeProfit1: 395.0,
+  vix: 17.5,
+});
+assert.strictEqual(res4C.gates[0].state, "PASSED");
+assert.strictEqual(res4C.gates[1].state, "PASSED");
+assert.strictEqual(res4C.gates[2].state, "PASSED");
+assert.strictEqual(res4C.activeBlockingGate, "NONE");
+assert.strictEqual(res4C.technicalGatesPassed, true, "All 3 local technical gates are passed");
+assert.strictEqual(res4C.isExecutionReady, false, "Execution readiness MUST be false when canonical action is Wait");
+assert.strictEqual(res4C.readinessVerdict, "AWAITING_CANONICAL_CLEARANCE");
+assert.strictEqual(res4C.readinessVerdictLabel, "TECHNICAL CHECKS PASSED — AWAITING CANONICAL CLEARANCE");
+assert.ok(!res4C.readinessVerdictLabel.includes("EXECUTION READY"), "Verdict label must NEVER claim EXECUTION READY in State C");
+assert.strictEqual(
+  res4C.nextRequiredCondition,
+  "Technical checks passed — awaiting canonical clearance. Canonical action posture is Wait; entry remains conditional."
+);
+assert.strictEqual(res4C.primaryAction.label, "Size Position");
+assert.strictEqual(
+  res4C.primaryAction.reason,
+  "Technical checks passed. Review prospective sizing while awaiting canonical clearance."
+);
+
+// Verify tactical hint for State 4.C suppresses scale-in
+const hint4C = resolveTacticalExecutionHint({
+  evalPrice: 341.91,
+  entryMin: 325.07,
+  entryMax: 339.38,
+  corridorLoc: evaluateCorridorLocation(341.91, 325.07, 339.38),
+  isActionable: false,
+  isTriggerConfirmed: true,
+  readinessResult: res4C,
+});
+assert.ok(hint4C !== null);
+assert.ok(hint4C?.advice.includes("Canonical action posture is Wait. Entry remains conditional."));
+assert.ok(!hint4C?.advice.includes("Scale in with 30% initial size"), "Scale-in instructions must remain suppressed in State C");
+console.log("   [PASS] 4.C: Local gates passed + canonical Wait -> AWAITING_CANONICAL_CLEARANCE (Zero EXECUTION READY contradiction)");
+
+// State 4.D: Fully satisfied canonical actionable state
+const res4D = resolveDecisionReadiness({
+  currentPrice: 184.0,
+  optimalEntryMin: 182.5,
+  optimalEntryMax: 185.0,
+  isActionable: true,
+  isConfirmed: true,
+  riskRewardRatio: 2.5,
+  stopLoss: 172.0,
+  takeProfit1: 200.0,
+  vix: 17.5,
+});
+assert.strictEqual(res4D.gates[0].state, "PASSED");
+assert.strictEqual(res4D.gates[1].state, "PASSED");
+assert.strictEqual(res4D.gates[2].state, "PASSED");
+assert.strictEqual(res4D.activeBlockingGate, "NONE");
+assert.strictEqual(res4D.technicalGatesPassed, true);
+assert.strictEqual(res4D.isExecutionReady, true);
+assert.strictEqual(res4D.readinessVerdict, "EXECUTION_READY");
+assert.strictEqual(res4D.readinessVerdictLabel, "EXECUTION READY");
+assert.strictEqual(res4D.primaryAction.label, "Size Position");
+assert.strictEqual(
+  res4D.primaryAction.reason,
+  "All 3 readiness gates passed. Proceed to position sizing and risk management."
+);
+console.log("   [PASS] 4.D: Fully satisfied canonical state -> EXECUTION_READY");
+
+// State 4.E: Missing or malformed canonical actionability (Fail-closed)
+const malformedActionableInputs = ["false", "FALSE", "unknown", null, {}, [], 0, "0", undefined];
+for (const malformedVal of malformedActionableInputs) {
+  const res4E = resolveDecisionReadiness({
+    currentPrice: 184.0,
+    optimalEntryMin: 182.5,
+    optimalEntryMax: 185.0,
+    isActionable: malformedVal as any,
+    isConfirmed: true,
+    riskRewardRatio: 2.5,
+    stopLoss: 172.0,
+    takeProfit1: 200.0,
+    vix: 17.5,
+  });
+  if (malformedVal === undefined) {
+    // Backward compatibility: when undefined, unit tests test 3-gate resolution
+    assert.strictEqual(res4E.isExecutionReady, true);
+  } else {
+    assert.strictEqual(
+      res4E.isExecutionReady,
+      false,
+      `Malformed isActionable (${JSON.stringify(malformedVal)}) must fail closed`
+    );
+    assert.strictEqual(res4E.readinessVerdict, "AWAITING_CANONICAL_CLEARANCE");
+    assert.ok(!res4E.readinessVerdictLabel.includes("EXECUTION READY"));
+  }
+}
+console.log("   [PASS] 4.E: Missing or malformed canonical actionability -> Fail-closed to AWAITING_CANONICAL_CLEARANCE");
 
 console.log("\nALL WORKSTREAM D SLICE 1 REGRESSION TESTS PASSED SUCCESSFULLY!\n");

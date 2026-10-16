@@ -229,10 +229,15 @@ const STATES = [
       decisionStateLabel: "Wait — Institutional Review",
     }),
     assertions: {
+      readinessBadge: "TECHNICAL CHECKS PASSED — AWAITING CANONICAL CLEARANCE",
+      readinessBadgeForbidden: "EXECUTION READY",
       currentAction: "CURRENT ACTION: Wait",
       gate1State: "PASSED",
       gate2State: "PASSED",
       gate3State: "PASSED",
+      nextConditionSnippet: "Technical checks passed — awaiting canonical clearance",
+      activeBlockerTag: "AWAITING CLEARANCE",
+      primaryCta: "Size Position",
       tacticalHintSnippet: "Canonical action posture is Wait",
       tacticalHintForbidden: "Scale in with 30% initial size",
     },
@@ -261,6 +266,35 @@ const STATES = [
       primaryCta: "Size Position",
       tacticalHintSnippet: "comfortably centered within the accumulation corridor",
       tacticalHintForbidden: "Wait for required trigger confirmation",
+    },
+  },
+  {
+    key: "E",
+    title: "State E: Missing/malformed canonical actionability (Fail-closed)",
+    symbol: "NVDA",
+    mock: buildMockResponse({
+      symbol: "NVDA",
+      currentPrice: 184.0,
+      entryMin: 182.5,
+      entryMax: 185.0,
+      isActionable: "false", // Malformed string "false"
+      canSizeTrade: false,
+      executionStatus: "READY_TO_BUY",
+      decisionState: "VALID_SETUP",
+      decisionStateLabel: "Valid Setup — Trigger Confirmed",
+    }),
+    assertions: {
+      readinessBadge: "TECHNICAL CHECKS PASSED — AWAITING CANONICAL CLEARANCE",
+      readinessBadgeForbidden: "EXECUTION READY",
+      currentAction: "CURRENT ACTION: Wait",
+      gate1State: "PASSED",
+      gate2State: "PASSED",
+      gate3State: "PASSED",
+      nextConditionSnippet: "Technical checks passed — awaiting canonical clearance",
+      activeBlockerTag: "AWAITING CLEARANCE",
+      primaryCta: "Size Position",
+      tacticalHintSnippet: "entry remains conditional",
+      tacticalHintForbidden: "Scale in with 30% initial size",
     },
   },
 ];
@@ -429,6 +463,7 @@ async function run() {
           const gate2Badge = document.querySelector('[data-testid="gate-badge-2"]')?.textContent?.trim() || "";
           const gate3Badge = document.querySelector('[data-testid="gate-badge-3"]')?.textContent?.trim() || "";
           const nextCondition = document.querySelector('[data-testid="next-condition-box"] p')?.textContent?.trim() || "";
+          const activeBlockerTag = document.querySelector('[data-testid="active-blocker-tag"]')?.textContent?.trim() || "";
           const primaryCta = document.querySelector('[data-testid="readiness-primary-cta"]')?.textContent?.trim() || "";
 
           // Extract tactical hint text
@@ -453,6 +488,7 @@ async function run() {
             gate2Badge,
             gate3Badge,
             nextCondition,
+            activeBlockerTag,
             primaryCta,
             tacticalHintText,
             maxScroll,
@@ -466,6 +502,7 @@ async function run() {
         console.log(`  Gate 2 (Trigger): ${extracted.gate2Badge}`);
         console.log(`  Gate 3 (Risk):    ${extracted.gate3Badge}`);
         console.log(`  Next Condition:   ${extracted.nextCondition}`);
+        console.log(`  Active Blocker:   ${extracted.activeBlockerTag}`);
         console.log(`  Primary CTA:      ${extracted.primaryCta}`);
         console.log(`  Tactical Hint:    ${extracted.tacticalHintText}`);
         console.log(`  Scroll Width:     ${extracted.maxScroll}px (Viewport: ${vp.width}px)`);
@@ -474,6 +511,11 @@ async function run() {
         if (state.assertions.readinessBadge) {
           if (!extracted.readinessBadge.includes(state.assertions.readinessBadge)) {
             throw new Error(`State ${state.key} [${vp.name}]: expected readiness badge to include "${state.assertions.readinessBadge}", got "${extracted.readinessBadge}"`);
+          }
+        }
+        if (state.assertions.readinessBadgeForbidden) {
+          if (extracted.readinessBadge.includes(state.assertions.readinessBadgeForbidden)) {
+            throw new Error(`State ${state.key} [${vp.name}]: readiness badge FORBIDDEN text found: "${state.assertions.readinessBadgeForbidden}" in "${extracted.readinessBadge}"`);
           }
         }
         if (state.assertions.currentAction) {
@@ -489,6 +531,16 @@ async function run() {
         if (state.assertions.gate2State) {
           if (!extracted.gate2Badge.includes(state.assertions.gate2State)) {
             throw new Error(`State ${state.key} [${vp.name}]: expected Gate 2 to be "${state.assertions.gate2State}", got "${extracted.gate2Badge}"`);
+          }
+        }
+        if (state.assertions.nextConditionSnippet) {
+          if (!extracted.nextCondition.includes(state.assertions.nextConditionSnippet)) {
+            throw new Error(`State ${state.key} [${vp.name}]: expected next condition to include "${state.assertions.nextConditionSnippet}", got "${extracted.nextCondition}"`);
+          }
+        }
+        if (state.assertions.activeBlockerTag) {
+          if (!extracted.activeBlockerTag.includes(state.assertions.activeBlockerTag)) {
+            throw new Error(`State ${state.key} [${vp.name}]: expected active blocker tag to include "${state.assertions.activeBlockerTag}", got "${extracted.activeBlockerTag}"`);
           }
         }
         if (state.assertions.primaryCta) {

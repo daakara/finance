@@ -39,8 +39,16 @@ export type ReadinessActionType =
   | "INSPECT_EVIDENCE"
   | "NONE";
 
+export type ReadinessVerdict =
+  | "EXECUTION_READY"
+  | "AWAITING_CANONICAL_CLEARANCE"
+  | "SETUP_IN_PROGRESS";
+
 export interface DecisionReadinessResult {
   isExecutionReady: boolean;
+  technicalGatesPassed: boolean;
+  readinessVerdict: ReadinessVerdict;
+  readinessVerdictLabel: string;
   activeBlockingGate: "GATE_1_LOCATION" | "GATE_2_TRIGGER" | "GATE_3_RISK_CLEARANCE" | "NONE";
   gates: [DecisionReadinessGate, DecisionReadinessGate, DecisionReadinessGate];
   nextRequiredCondition: string;
@@ -64,6 +72,7 @@ export interface DecisionReadinessInputs {
   stopLoss?: number | null;
   takeProfit1?: number | null;
   vix?: number | null;
+  isActionable?: boolean | string | null;
 }
 
 export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): DecisionReadinessResult {
@@ -112,7 +121,7 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
       gate1Explanation = corridorLocation.description;
     } else if (corridorLocation.spatialRelation === "ABOVE") {
       if (corridorLocation.isWithinTolerance) {
-        // Preserves existing 2% tolerance decision behavior while truthfully reporting location
+        // Preserves existing 2% implementation tolerance decision behavior while truthfully reporting location
         gate1State = "PASSED";
         gate1Explanation = corridorLocation.description;
       } else {
@@ -142,7 +151,7 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
     } else {
       gate2State = "BLOCKING";
       gate2Explanation = corridorLocation.isWithinTolerance
-        ? "Price is above the entry corridor (within extension tolerance), but confirmation trigger is pending. Awaiting volume expansion / pivot reclaim."
+        ? "Price is above the entry corridor (within implementation tolerance), but confirmation trigger is pending. Awaiting volume expansion / pivot reclaim."
         : "Price is inside the accumulation corridor, but confirmation trigger is pending. Awaiting volume expansion / pivot reclaim.";
     }
   }
@@ -187,8 +196,29 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
     activeBlockingGate = "GATE_3_RISK_CLEARANCE";
   }
 
-  const isExecutionReady =
+  const technicalGatesPassed =
     gate1State === "PASSED" && gate2State === "PASSED" && gate3State === "PASSED";
+
+  const isActionableProvided = inputs.isActionable !== undefined;
+  const canonicalActionable = isActionableProvided
+    ? validateCanonicalActionable(inputs.isActionable)
+    : true; // Backward compatibility with unit tests when isActionable is omitted
+
+  const isExecutionReady = technicalGatesPassed && canonicalActionable;
+
+  let readinessVerdict: ReadinessVerdict;
+  let readinessVerdictLabel: string;
+
+  if (isExecutionReady) {
+    readinessVerdict = "EXECUTION_READY";
+    readinessVerdictLabel = "EXECUTION READY";
+  } else if (technicalGatesPassed) {
+    readinessVerdict = "AWAITING_CANONICAL_CLEARANCE";
+    readinessVerdictLabel = "TECHNICAL CHECKS PASSED — AWAITING CANONICAL CLEARANCE";
+  } else {
+    readinessVerdict = "SETUP_IN_PROGRESS";
+    readinessVerdictLabel = "SETUP IN PROGRESS";
+  }
 
   // ── Next Required Condition ───────────────────────────────────────────────
   let nextRequiredCondition = "Setup is execution ready. Capital allocation cleared.";
@@ -210,6 +240,8 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
     } else {
       nextRequiredCondition = "Execution levels must offer at least a 2:1 prospective reward-to-risk asymmetry.";
     }
+  } else if (!isExecutionReady) {
+    nextRequiredCondition = "Technical checks passed — awaiting canonical clearance. Canonical action posture is Wait; entry remains conditional.";
   }
 
   // ── Protective Negative Guidance (CLAIM_SET ⊆ EVIDENCE_SET) ───────────────
@@ -242,6 +274,12 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
       label: "Size Position",
       actionType: "SIZE_POSITION",
       reason: "All 3 readiness gates passed. Proceed to position sizing and risk management.",
+    };
+  } else if (technicalGatesPassed) {
+    primaryAction = {
+      label: "Size Position",
+      actionType: "SIZE_POSITION",
+      reason: "Technical checks passed. Review prospective sizing while awaiting canonical clearance.",
     };
   } else if (activeBlockingGate === "GATE_1_LOCATION") {
     if (isStage4) {
@@ -285,9 +323,11 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
     };
   }
 
-
   return {
     isExecutionReady,
+    technicalGatesPassed,
+    readinessVerdict,
+    readinessVerdictLabel,
     activeBlockingGate,
     gates: [
       {
@@ -393,14 +433,14 @@ export function resolveTacticalExecutionHint(
         : "Canonical action posture is Wait. Entry remains conditional.";
       return {
         label: "⚠️ Above Corridor Ceiling",
-        advice: `Spot ($${evalPrice.toFixed(2)}) is above the entry corridor ($${min.toFixed(2)}–$${max.toFixed(2)}). Existing extension tolerance applies, but entry remains conditional. ${blockerReason}`,
+        advice: `Spot ($${evalPrice.toFixed(2)}) is above the entry corridor ($${min.toFixed(2)}–$${max.toFixed(2)}). Existing implementation tolerance applies, but entry remains conditional. ${blockerReason}`,
         color: "text-amber-300 border-amber-900/60 bg-amber-950/40",
       };
     } else {
       // Fully satisfied canonical state within tolerance
       return {
         label: "⚠️ Above Corridor Ceiling",
-        advice: `Spot ($${evalPrice.toFixed(2)}) is above the entry corridor ($${min.toFixed(2)}–$${max.toFixed(2)}). Existing extension tolerance applies. Scale in with 30% initial size or place limit orders near $${min.toFixed(2)} to maximize asymmetric R:R.`,
+        advice: `Spot ($${evalPrice.toFixed(2)}) is above the entry corridor ($${min.toFixed(2)}–$${max.toFixed(2)}). Existing implementation tolerance applies. Scale in with 30% initial size or place limit orders near $${min.toFixed(2)} to maximize asymmetric R:R.`,
         color: "text-amber-300 border-amber-900/60 bg-amber-950/40",
       };
     }
