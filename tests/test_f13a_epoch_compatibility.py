@@ -161,3 +161,97 @@ def test_prospective_clean_denominator_uncontaminated():
     assert clean_count == 0, (
         f"PROSPECTIVE_CONTAMINATION_BREACH: Clean denominator mutated to {clean_count}!"
     )
+
+
+# ── 5. Real Verifier Negative and Succession Tests ────────────────────────────
+
+def test_real_verifier_rejects_historical_manifest_tampering(monkeypatch):
+    """Verify that real verifier fails closed when a historical manifest is tampered with."""
+    from analyst_dashboard.governance.experiment_ledger import ExperimentLedger
+    real_manifest = ExperimentLedger.get_epoch4_manifest()
+    tampered = dict(real_manifest)
+    tampered["observationGovernanceManifestHash"] = "tampered_hash_value"
+    monkeypatch.setattr(ExperimentLedger, "get_epoch4_manifest", lambda *args, **kwargs: tampered)
+
+    result = ExperimentLedger.verify_epoch4_v2_manifest()
+    assert result["valid"] is False
+    assert result["status"] == "CORRUPTED"
+
+
+def test_real_verifier_rejects_historical_engine_manifest_tampering(monkeypatch):
+    """Verify that real verifier fails closed when historical engine hash is tampered with."""
+    from analyst_dashboard.governance.experiment_ledger import ExperimentLedger
+    real_manifest = ExperimentLedger.get_frozen_manifest(version="2.4.0")
+    tampered = dict(real_manifest)
+    tampered["engines"] = dict(real_manifest["engines"])
+    tampered["engines"]["optimal_execution"] = {
+        "filePath": "analyst_dashboard/analyzers/optimal_execution.py",
+        "sha256": "0" * 64,
+    }
+    monkeypatch.setattr(ExperimentLedger, "get_frozen_manifest", lambda *args, **kwargs: tampered)
+
+    result = ExperimentLedger.verify_frozen_engine_manifest(version="2.4.0")
+    assert result["valid"] is False
+    assert result["status"] == "CORRUPTED"
+    assert result["engines"]["optimal_execution"]["valid"] is False
+
+
+def test_real_verifier_rejects_incorrect_manifest_version(monkeypatch):
+    """Verify that real verifier rejects superseded manifest version substitution."""
+    from analyst_dashboard.governance.experiment_ledger import ExperimentLedger
+    v3_payload = ExperimentLedger.get_epoch4_v3_manifest()
+    monkeypatch.setattr(ExperimentLedger, "get_epoch4_v5_manifest", lambda *args, **kwargs: v3_payload)
+
+    result = ExperimentLedger.verify_epoch4_manifest()
+    assert result.get("manifestVersion") != "5.0.0"
+    assert result.get("manifestVersion") == "3.0.0"
+
+
+def test_real_verifier_rejects_unauthorized_successor_substitution():
+    """Verify that successor manifests require strict cryptographic parent hash and digest binding match."""
+    from analyst_dashboard.governance.experiment_ledger import ExperimentLedger
+    # 1. Observation governance lineage (Epoch 4 V5 -> V4)
+    v5 = ExperimentLedger.get_epoch4_v5_manifest()
+    v4 = ExperimentLedger.get_epoch4_v4_manifest()
+    assert v5["parentRuntimeSha"] == v4["observationGovernanceManifestHash"]
+
+    repo_root = os.path.dirname(os.path.dirname(__file__))
+    v5_path = os.path.join(repo_root, "EPOCH_4_MANIFEST_V5.json")
+    with open(v5_path, "r", encoding="utf-8") as f:
+        v5_disk = json.load(f)
+    assert v5_disk["parentRuntimeSha"] == v4["observationGovernanceManifestHash"]
+    assert v5_disk["manifestVersion"] == "5.0.0"
+    assert v5_disk["parentManifest"] == "EPOCH_4_MANIFEST_V4.json"
+    assert v5_disk["observationGovernanceManifestHash"] == "99bea6ebc9b4f31634ef994bd2630710d89555940a5e491e98e1285668ce04c5"
+
+    # 2. Frozen engine successor lineage (V2.5.1 supersedes V2.5.0 draft, rooted in Release Addendum 002)
+    v251 = ExperimentLedger.get_frozen_manifest()
+    assert v251["manifestVersion"] == "2.5.1"
+    assert v251["releaseAuthorityBinding"] == "RELEASE_ADDENDUM_002"
+    assert v251["supersedesManifest"] == "FROZEN_ENGINE_MANIFEST_V2_5_0.json"
+    assert v251["provenanceCommit"] == "cd0922471767775636957df74406a2d5efb8f519"
+
+
+def test_real_verifier_fails_closed_when_manifest_missing(monkeypatch):
+    """Verify that missing manifest fails closed and does not pass silently."""
+    from analyst_dashboard.governance.experiment_ledger import ExperimentLedger
+    orig_getters = [
+        "get_epoch4_v5_manifest",
+        "get_epoch4_v4_manifest",
+        "get_epoch4_v3_manifest",
+        "get_epoch4_manifest",
+        "get_epoch3_manifest",
+        "get_epoch2_manifest",
+        "get_epoch1_manifest",
+    ]
+    for name in orig_getters:
+        monkeypatch.setattr(ExperimentLedger, name, lambda *args, **kwargs: None)
+
+    repo_root = os.path.dirname(os.path.dirname(__file__))
+    v5_path = os.path.join(repo_root, "EPOCH_4_MANIFEST_V5.json")
+    monkeypatch.setattr(os.path, "exists", lambda p: False if p == v5_path else os.path.exists(p))
+
+    result = ExperimentLedger.verify_observation_governance_manifest()
+    assert result["valid"] is False
+    assert result["status"] == "MANIFEST_MISSING"
+

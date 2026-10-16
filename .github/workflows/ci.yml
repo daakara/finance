@@ -42,7 +42,7 @@ jobs:
         pytest tests/ -m "tier2a or tier2b or tier2c" -v
 
     - name: Run Tier 3 Pre-Flight Release Gate
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      if: github.base_ref == 'main' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
       env:
         PYTHONPATH: "."
       run: |
