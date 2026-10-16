@@ -15,6 +15,7 @@ import tempfile
 import unittest
 from datetime import date, datetime, time, timedelta, timezone
 from unittest.mock import MagicMock, patch
+import pytest
 import yaml
 
 # Ensure project root is in path
@@ -22,6 +23,8 @@ sys.path.insert(0, os.path.abspath("."))
 
 from fastapi.testclient import TestClient
 from api.main import app
+
+pytestmark = pytest.mark.tier2b
 
 from analyst_dashboard.vcp.session_guard import (
     US_EASTERN,
