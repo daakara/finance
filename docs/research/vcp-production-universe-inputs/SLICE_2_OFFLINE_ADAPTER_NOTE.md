@@ -88,8 +88,8 @@ Every field emitted by `AdapterValidatorBridge.build_candidate_raw_record()` is 
 | `symbol` | SEC `ticker` or Directory `Symbol`/`ACT Symbol` | Stripped, uppercase | `SEC_EDGAR` or `NASDAQ_TRADER` (`#row=idx`, file hash) | Required. Collision flagged if duplicate rows exist. |
 | `company_name` | SEC `name` or Directory `Security Name` | Stripped string | `SEC_EDGAR` or `NASDAQ_TRADER` (`#row=idx`, file hash) | Precedence: SEC name if present, else Directory. |
 | `exchange` | SEC `exchange` or Directory `Exchange` | Raw string (unmapped) | `SEC_EDGAR` or `NASDAQ_TRADER` (`#row=idx`, file hash) | Precedence: SEC exchange; venue mismatch flagged if discordant. |
-| `security_id` | OpenFIGI `figi` (single match only) | None | `OPENFIGI` (`#request=idx`, hash) | **Omitted if OpenFIGI absent or ambiguous.** Fails closed. Surrogate `CIK_{cik}_{symbol}` emitted only if explicitly caller-authorized. |
-| `security_type` | OpenFIGI `securityType2` | None | `OPENFIGI` (`#request=idx`, hash) | **Omitted in raw directory feeds.** `ETF=N` does NOT prove `COMMON_STOCK`. |
+| `security_id` | None (unresolved policy boundary) | None | None | **Omitted/Uncertified.** Production instrument identity scheme (Listing FIGI vs Composite FIGI vs Share Class FIGI vs CIK) is unresolved by policy. Surrogate `CIK_{cik}_{symbol}` generation is removed. Caller mapping is accepted strictly as an external policy boundary without primary source attestation. |
+| `security_type` | OpenFIGI `securityType2` (single unambiguous match only) | None | `OPENFIGI` (`#request=idx`, hash) | **Omitted in raw directory feeds and uncertified on ambiguous/unassociated mapping.** `ETF=N` does NOT prove `COMMON_STOCK`. |
 | `asset_class` | None | None | None | **Omitted.** Absent across all raw feeds. |
 | `listing_status` | None | None | None | **Omitted.** Directory presence does NOT imply `ACTIVE` or unsuspended. |
 | `currency` | None | None | None | **Omitted.** Prohibits USD inference from positive price or US exchange membership. |
@@ -112,9 +112,11 @@ Every field emitted by `AdapterValidatorBridge.build_candidate_raw_record()` is 
 `AdapterValidatorBridge.validate_candidates()` guarantees that invalid, incomplete, or ambiguous batches cannot produce a certified universe:
 
 1. **Empty Batch Rejection:** If `candidates` is empty (`len == 0`), validation immediately blocks admission with `is_batch_valid = False` and `batch_rejection_reason = "EMPTY_CANDIDATE_SET"`.
-2. **Source Parse Failure Propagation:** If `matching_accounting.malformed_source_row_count > 0` (and incomplete sources are not explicitly caller-allowed), the batch fails with `is_batch_valid = False` and `batch_rejection_reason = "SOURCE_PARSE_FAILED"`. A failed source parse cannot silently become a clean smaller batch.
-3. **Ambiguity & Collision Blocking:** If any candidate has `is_ambiguous = True` or unresolved collisions, the batch fails with `is_batch_valid = False` and `batch_rejection_reason = "UNRESOLVED_SOURCE_AMBIGUITY"`.
-4. **Whole-Batch Admission Semantics:** Enforces that if any candidate fails structural validation requirements or batch-level uniqueness checks, `is_batch_valid = False` is emitted for the entire batch.
+2. **Required Sources Enforcement:** If `matching_accounting.required_sources_present is False`, validation blocks admission with `is_batch_valid = False` and `batch_rejection_reason = "REQUIRED_SOURCES_MISSING"`.
+3. **Coverage Threshold Enforcement:** If `matching_accounting.required_coverage_established is False`, validation blocks admission with `is_batch_valid = False` and `batch_rejection_reason = "REQUIRED_COVERAGE_NOT_MET"`.
+4. **Source Parse Failure Propagation:** If `matching_accounting.malformed_source_row_count > 0` (and incomplete sources are not explicitly caller-allowed), the batch fails with `is_batch_valid = False` and `batch_rejection_reason = "SOURCE_PARSE_FAILED"`. A failed source parse cannot silently become a clean smaller batch.
+5. **Ambiguity & Collision Blocking:** If any candidate has `is_ambiguous = True` or unresolved collisions, the batch fails with `is_batch_valid = False` and `batch_rejection_reason = "UNRESOLVED_SOURCE_AMBIGUITY"`.
+6. **Whole-Batch Admission Semantics:** Enforces that if any candidate fails structural validation requirements or batch-level uniqueness checks, `is_batch_valid = False` is emitted for the entire batch.
 
 ---
 
@@ -124,10 +126,11 @@ To avoid conflating distinct stages of universe evaluation:
 
 | Concept | Definition & Scope | Governing Code |
 |---|---|---|
-| `PARSE_RESULT_USABLE_FOR_INSPECTION` | Asserts that raw input bytes conform to vendor file syntax without unhandled parse exceptions. Diagnostics and malformed rows are inspectable. | `analyst_dashboard/universe/adapters/` |
+| `PARSE_RESULT_USABLE_FOR_INSPECTION` | Asserts that raw input bytes conform to vendor file syntax without unhandled parse exceptions. Diagnostics and malformed rows are inspectable. Unassociated OpenFIGI responses without request context remain in this state. | `analyst_dashboard/universe/adapters/` |
 | `VALIDATION_PASSED_UNDER_SUPPLIED_REQUIREMENTS` | Asserts that input candidates satisfy explicit, caller-supplied structural and evidence requirements. | `analyst_dashboard/universe/validator.py` |
-| `SOURCE_POPULATION_COMPLETE` | Asserts that all required participating feeds are matched, zero source rows were malformed, and no collisions exist. | `SourceMatchingAccounting` |
-| `STRATEGY_ELIGIBLE` | Evaluates trading rules (liquidity, price floors, ADR exclusion). **Strictly unevaluated** in this task. | `analyst_dashboard/vcp/universe.py` (Frozen Engine) |
+| `SUPPLIED_OBSERVATIONS_ACCOUNTED` | Asserts that all supplied source inputs are parsed and accounted for with zero unhandled malformed rows or collisions. Does NOT establish full production population completeness. | `SourceMatchingAccounting` |
+| `PRODUCTION_POPULATION_COMPLETE` | Asserts full-market universe coverage. **Strictly unestablished**. Offline sample matching cannot establish full-market coverage without authoritative census denominator and live feed attestation. | Unestablished (`is_production_population_complete = False`) |
+| `STRATEGY_ELIGIBLE` | Evaluates trading rules (liquidity, price floors, ADR exclusion). **Strictly unevaluated** in this task. | `analyst_dashboard/vcp/universe.py` |
 
 ---
 
@@ -151,21 +154,24 @@ Verification was conducted directly against byte samples located in `scratch/vcp
 
 All tests are housed in `tests/test_universe_offline_adapters.py` under marker `pytest.mark.tier2c`.
 
-- **Unit Test Suite:** **30 passed in 1.02s** (100% pass rate).
+- **Unit Test Suite:** **34 passed in 0.94s** (100% pass rate).
   - SEC EDGAR parser: 10 tests (valid, zero-padding, malformed JSON, missing header, row width mismatch, submissions multi-ticker, strict non-inference, duplicate headers, invalid header types, derivative wrapper metadata).
   - Nasdaq Trader parser: 4 tests (nasdaqlisted, otherlisted, malformed line accounting, strict non-inference).
   - OpenFIGI parser: 4 tests (single/multi-match, missing response length mismatch, extra response length mismatch, distinct FIGI levels).
   - Bounded matching: 4 tests (SEC + directory match, venue mismatch conflict, matching completeness and accounting, shared CIK distinct securities).
   - Adapter-validator bridge: 7 tests (fail-closed validation, no silent defaults, synthetic passing fixture, empty candidate set blocking, malformed source row blocking, ambiguous candidate blocking, evidence reference hash and row tracking).
   - Saved sample replay: 1 test (5 real byte sample SHA-256 and count verification).
-- **Full Combined Regression Suite:** **126 passed in 7.31s**:
-  - `tests/test_universe_offline_adapters.py` (30 passed)
+  - Admission boundary & certification checks: 4 tests (surrogate key elimination and uncertified security_id, OpenFIGI extra response warning retention and unassociated non-admission, multi-match non-certification, completeness accounting and coverage-gate admission blocking).
+- **Full Combined Regression Suite:** **130 passed in 5.36s**:
+  - `tests/test_universe_offline_adapters.py` (34 passed)
   - `tests/test_universe_validator.py` (68 passed)
   - `tests/test_vcp_c004_universe_wiring.py` (28 passed)
 - **Linter & Formatting:** `python -m ruff check` $\to$ **All checks passed cleanly**.
 - **CI Marker Behavior:**
-  - `pytest -m tier1` $\to$ 0 selected, 30 deselected.
-  - `pytest -m tier2c` $\to$ 30 selected, 30 passed.
+  - `pytest -m tier1` $\to$ 0 selected, 34 deselected.
+  - `pytest -m tier2c` $\to$ 34 selected, 34 passed.
+- **CI Workflow Observation Note:**
+  - The phrase "Compile 98 Static SSG Routes" in CI logs is the static GitHub Actions step name defined in `.github/workflows/ci.yml` (line 124), not an empirical runtime measurement of static routes compiled for this PR.
 
 ---
 
@@ -174,8 +180,25 @@ All tests are housed in `tests/test_universe_offline_adapters.py` under marker `
 - **Workstream A (Control-Plane Universe Wiring):** Candidate 004 wiring release complete and evidence closed (PR #5 merged at `2eb032b`).
 - **Workstream B (Data.gov Source Discovery):** Discovery complete with recorded source limitations.
 - **Workstream C Slice 1 (Input Validation Core):** Merged to production baseline at `5f26f3f` (PR #6 squash merge).
-- **Workstream C Slice 2 (Offline Source Parsers & Bridge):** Implemented, reviewed, and locally verified in this workstream.
+- **Workstream C Slice 2 (Offline Source Parsers & Bridge):** Implemented, reviewed, and locally verified in this workstream (PR #8).
 - **Workstream D (Readiness Message Correction):** PR #7 authorized; completion report pending.
+
+**Admission Trust Boundaries:**
+1. **Identity Boundary:**
+   - Built-in surrogate `CIK_{cik}_{symbol}` generation is removed.
+   - Production instrument identity scheme remains unresolved by policy.
+   - Observed OpenFIGI levels (`figi`, `compositeFIGI`, `shareClassFIGI`) are preserved distinctly without automatically designating any as `security_id`.
+   - Generic caller-supplied mapping passes through strictly as an external policy boundary without claiming primary source attestation.
+2. **Association Boundary:**
+   - 1:1 request/response alignment is strictly maintained. Missing responses are retained as `ERROR`.
+   - Extra responses beyond request length record `WARNING`, have `selected_figi = None`, and cannot associate into candidate records for admission.
+   - Warning metadata cannot disappear before admission decisions.
+   - Ambiguous or unassociated mappings cannot produce certified identity or classification fields.
+3. **Completeness Boundary:**
+   - `SourceMatchingAccounting` strictly bounds completeness claims to supplied inputs.
+   - Full-market census denominator is never inferred from derivative sample metadata.
+   - Explicitly distinguishes: (a) inputs parsed, (b) supplied observations accounted for, (c) required sources present, (d) required coverage established, and (e) production population complete (`is_production_population_complete = False`).
+   - If caller coverage expectations or required sources are missing, validation fails closed.
 
 **Invariant Boundary Declarations:**
 ```

@@ -27,6 +27,7 @@ from .models import (
     AdapterValidationReport,
     FieldCertificationStatus,
     MatchedUniverseCandidate,
+    OpenFigiMatchStatus,
     SourceMatchingAccounting,
 )
 
@@ -41,11 +42,19 @@ class AdapterValidatorBridge:
     @staticmethod
     def build_candidate_raw_record(
         candidate: MatchedUniverseCandidate,
-        synthesize_surrogate_security_id: bool = False,
+        caller_security_id_mapping: dict[str, str] | None = None,
     ) -> tuple[dict[str, Any], list[EvidenceReference]]:
         """
         Extracts only actually observed source attributes from a candidate.
         Fields not present in primary source bytes are strictly omitted.
+
+        Identity Policy Boundary:
+        - Built-in surrogate-key generation (e.g. CIK_{cik}_{symbol}) is removed.
+        - Production instrument identity scheme remains unresolved by policy.
+        - OpenFIGI returns (figi, compositeFIGI, shareClassFIGI) are preserved distinctly
+          as observed external identifiers without automatically designating any as security_id.
+        - If caller provides caller_security_id_mapping, it is accepted as an external pass-through
+          and does NOT constitute certified primary source attestation.
         """
         raw: dict[str, Any] = {}
         evidences: list[EvidenceReference] = []
@@ -94,11 +103,19 @@ class AdapterValidatorBridge:
                 )
             )
 
-        # 3. OpenFIGI Observations
-        if candidate.figi_result and candidate.figi_result.matches:
+        # 3. OpenFIGI Observations (only single, unambiguous, associated matches populate fields)
+        if (
+            candidate.figi_result
+            and candidate.figi_result.matches
+            and candidate.figi_result.match_status == OpenFigiMatchStatus.SINGLE_MATCH
+            and not candidate.is_ambiguous
+            and not any("OPENFIGI_UNASSOCIATED" in c for c in candidate.join_conflicts)
+        ):
             match = candidate.figi_result.matches[0]
-            if candidate.figi_result.selected_figi:
-                raw["security_id"] = candidate.figi_result.selected_figi
+            # Preserve distinct FIGI levels without automatically designating security_id:
+            if match.get("figi"):
+                raw["figi"] = match.get("figi")
+            if match.get("listing_figi"):
                 raw["listing_figi"] = match.get("listing_figi")
             if match.get("composite_figi"):
                 raw["composite_figi"] = match.get("composite_figi")
@@ -118,9 +135,9 @@ class AdapterValidatorBridge:
                 )
             )
 
-        # 4. Surrogate security_id (only if explicitly authorized by caller)
-        if "security_id" not in raw and synthesize_surrogate_security_id and "issuer_cik" in raw and raw["symbol"]:
-            raw["security_id"] = f"CIK_{raw['issuer_cik']}_{raw['symbol']}"
+        # 4. Caller-supplied security_id mapping (external policy boundary)
+        if caller_security_id_mapping and candidate.join_key in caller_security_id_mapping:
+            raw["security_id"] = caller_security_id_mapping[candidate.join_key]
 
         # 5. Raw payload for full provenance retention
         raw["raw_payload"] = {
@@ -132,6 +149,7 @@ class AdapterValidatorBridge:
         }
 
         # CRITICAL INVARIANT: The following fields are NOT present in raw directory files:
+        # - security_id: production identity scheme unresolved; omitted unless mapped by caller
         # - currency: absent in SEC and Nasdaq directories (cannot be inferred from positive pricing)
         # - country: absent in directory files
         # - primary_listing: directory inclusion does not verify primary listing status
@@ -140,6 +158,7 @@ class AdapterValidatorBridge:
         # These are left OMITTED so UniverseInputValidator correctly fails closed.
 
         return raw, evidences
+
 
     @staticmethod
     def assess_field_certifications(
@@ -174,22 +193,21 @@ class AdapterValidatorBridge:
             ),
             "security_id": FieldCertificationStatus(
                 field_name="security_id",
-                is_certified=has_figi,
-                source_authorities=["OPENFIGI"] if has_figi else [],
+                is_certified=False,
+                source_authorities=[],
                 limitation_reason=(
-                    None
-                    if has_figi
-                    else "Neither SEC EDGAR nor Nasdaq directories provide a persistent instrument identifier."
+                    "Production instrument identity scheme (Listing FIGI vs Composite FIGI vs Share Class FIGI vs CIK) "
+                    "remains unresolved by policy; security_id is not certified by directory or raw OpenFIGI feeds."
                 ),
             ),
             "security_type": FieldCertificationStatus(
                 field_name="security_type",
-                is_certified=has_figi,
-                source_authorities=["OPENFIGI"] if has_figi else [],
+                is_certified=has_figi and not any(c.is_ambiguous for c in candidates),
+                source_authorities=["OPENFIGI"] if (has_figi and not any(c.is_ambiguous for c in candidates)) else [],
                 limitation_reason=(
                     None
-                    if has_figi
-                    else "Absent in primary directory feeds; ETF=N does not prove COMMON_STOCK."
+                    if (has_figi and not any(c.is_ambiguous for c in candidates))
+                    else "Absent in primary directory feeds or uncertified due to ambiguous/unassociated mapping; ETF=N does not prove COMMON_STOCK."
                 ),
             ),
             "currency": FieldCertificationStatus(
@@ -236,7 +254,7 @@ class AdapterValidatorBridge:
         candidates: list[MatchedUniverseCandidate],
         requirements: ValidationRequirements,
         temporal_context: TemporalEvaluationContext | None = None,
-        synthesize_surrogate_security_id: bool = False,
+        caller_security_id_mapping: dict[str, str] | None = None,
         matching_accounting: SourceMatchingAccounting | None = None,
         allow_ambiguous_candidates: bool = False,
         allow_incomplete_source_files: bool = False,
@@ -262,8 +280,12 @@ class AdapterValidatorBridge:
                 batch_rejection_reason="EMPTY_CANDIDATE_SET: Empty input candidate batch cannot produce a certified universe.",
             )
 
-        # 2. Check for source parsing failures (malformed source rows)
-        if matching_accounting and matching_accounting.malformed_source_row_count > 0 and not allow_incomplete_source_files:
+        # 2. Check for caller-specified coverage expectations and source parsing failures
+        if matching_accounting and matching_accounting.required_sources_present is False:
+            batch_rejection = "REQUIRED_SOURCES_MISSING: Caller-required input source feeds were not all supplied."
+        elif matching_accounting and matching_accounting.required_coverage_established is False:
+            batch_rejection = "REQUIRED_COVERAGE_NOT_MET: Supplied candidate count did not satisfy caller-required coverage threshold."
+        elif matching_accounting and matching_accounting.malformed_source_row_count > 0 and not allow_incomplete_source_files:
             batch_rejection = (
                 f"SOURCE_PARSE_FAILED: {matching_accounting.malformed_source_row_count} malformed rows detected across input sources."
             )
@@ -281,7 +303,7 @@ class AdapterValidatorBridge:
         for cand in candidates:
             rec, ev_list = cls.build_candidate_raw_record(
                 cand,
-                synthesize_surrogate_security_id=synthesize_surrogate_security_id,
+                caller_security_id_mapping=caller_security_id_mapping,
             )
             raw_records.append(rec)
             # Map evidence by symbol or security_id
@@ -311,3 +333,4 @@ class AdapterValidatorBridge:
             matching_accounting=matching_accounting,
             batch_rejection_reason=batch_rejection,
         )
+

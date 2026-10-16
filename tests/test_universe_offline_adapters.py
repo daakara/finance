@@ -21,6 +21,7 @@ from analyst_dashboard.universe.adapters import (
     AdapterValidatorBridge,
     MatchedUniverseCandidate,
     OpenFigiMatchStatus,
+    ParsedOpenFigiResult,
     ParsedSourceRow,
     SourceFeedType,
     SourceMatchingAccounting,
@@ -713,3 +714,172 @@ class TestSavedSampleReplay:
             assert sub_parsed.data_row_count == 4
             assert sub_parsed.metadata_fields["issuer_cik"] == "0001652044"
             assert {r.raw_values["symbol"] for r in sub_parsed.rows} == {"GOOGL", "GOOG", "GOOGM", "GOOGN"}
+
+
+# ── Admission Boundary & Policy Certification Tests ─────────────────────────
+
+class TestAdmissionBoundaryChecks:
+    """
+    Focused admission boundary checks covering Checks A, B, and C:
+    - Check A: Surrogate key elimination, uncertified security_id, caller mapping pass-through
+    - Check B: OpenFIGI request association, warning propagation, unassociated non-admission
+    - Check C: Bounded completeness semantics and coverage-gate admission blocking
+    """
+
+    def test_check_a_surrogate_key_removed_and_security_id_unassigned(self):
+        """
+        Check A: No built-in CIK_{cik}_{symbol} surrogate is generated.
+        OpenFIGI single match preserves distinct FIGI levels but leaves security_id omitted.
+        Field certification status for security_id remains uncertified.
+        """
+        sec = parse_sec_company_tickers_exchange(SYNTHETIC_SEC_JSON)
+        figi_reqs = [{"idType": "TICKER", "idValue": "AAPL", "exchCode": "US"}]
+        figi_resp = [{
+            "data": [{
+                "figi": "BBG000B9XRY4",
+                "ticker": "AAPL",
+                "compositeFIGI": "BBG000B9XRY4",
+                "shareClassFIGI": "BBG001S5N8V8",
+                "securityType2": "Common Stock",
+            }]
+        }]
+        figi = parse_openfigi_response(figi_resp, request_payload=figi_reqs)
+        candidates = match_sources(sec_file=sec, openfigi_results=figi)
+        aapl_cand = next(c for c in candidates if c.join_key == "AAPL")
+
+        # 1. build_candidate_raw_record without caller mapping leaves security_id strictly absent
+        raw, _evs = AdapterValidatorBridge.build_candidate_raw_record(aapl_cand)
+        assert "security_id" not in raw
+        assert raw["symbol"] == "AAPL"
+        assert raw["issuer_cik"] == "0000320193"
+        # Distinct FIGI levels preserved without auto-selecting security_id:
+        assert raw["figi"] == "BBG000B9XRY4"
+        assert raw["listing_figi"] == "BBG000B9XRY4"
+        assert raw["composite_figi"] == "BBG000B9XRY4"
+        assert raw["share_class_figi"] == "BBG001S5N8V8"
+        assert raw["security_type"] == "Common Stock"
+
+        # 2. Caller-supplied security_id mapping passes through as external boundary
+        raw_mapped, _ = AdapterValidatorBridge.build_candidate_raw_record(
+            aapl_cand,
+            caller_security_id_mapping={"AAPL": "CALLER_CHOSEN_ID_01"},
+        )
+        assert raw_mapped["security_id"] == "CALLER_CHOSEN_ID_01"
+
+        # 3. Field certification reports security_id as uncertified by source evidence
+        field_certs = AdapterValidatorBridge.assess_field_certifications(candidates)
+        assert field_certs["security_id"].is_certified is False
+        assert "unresolved by policy" in field_certs["security_id"].limitation_reason
+
+    def test_check_b_openfigi_association_and_warning_protection(self):
+        """
+        Check B:
+        - Extra responses beyond request length have selected_figi=None and WARNING status.
+        - OpenFIGI warning metadata propagates into candidate join_conflicts.
+        - Unassociated responses or ambiguous mappings do not populate security_type or FIGIs on raw record.
+        """
+        requests = [{"idType": "TICKER", "idValue": "AAPL", "exchCode": "US"}]
+        # 1 request, but 2 responses: 2nd response is extra and unassociated
+        response = [
+            {"data": [{"figi": "BBG000B9XRY4", "ticker": "AAPL", "securityType2": "Common Stock"}]},
+            {"data": [{"figi": "BBG000EXTRA", "ticker": "EXTRA", "securityType2": "Common Stock"}]},
+        ]
+        results = parse_openfigi_response(response, request_payload=requests)
+        assert len(results) == 2
+        extra_res = results[1]
+        assert extra_res.match_status == OpenFigiMatchStatus.WARNING
+        assert extra_res.selected_figi is None
+        assert "no corresponding request" in extra_res.warning_message
+
+        # Matching propagates unassociated response warning and flags ambiguity
+        candidates, _acct = match_sources_with_accounting(openfigi_results=results)
+        extra_cand = next(c for c in candidates if c.join_key == "EXTRA")
+        assert extra_cand.is_ambiguous is True
+        assert any("OPENFIGI_WARNING" in c for c in extra_cand.join_conflicts)
+        assert any("OPENFIGI_UNASSOCIATED" in c for c in extra_cand.join_conflicts)
+
+        # Bridge does not extract security_type or FIGIs for unassociated candidate
+        raw, evs = AdapterValidatorBridge.build_candidate_raw_record(extra_cand)
+        assert "security_type" not in raw
+        assert "listing_figi" not in raw
+        assert "figi" not in raw
+        assert len(evs) == 0
+
+    def test_check_b_multi_match_cannot_produce_certified_classification(self):
+        """
+        Check B: OpenFIGI multi-match cannot populate security_type or composite_figi from first match.
+        """
+        cand = MatchedUniverseCandidate(
+            join_key="MULTI",
+            figi_result=ParsedOpenFigiResult(
+                request_index=0,
+                request_payload={"idType": "TICKER", "idValue": "MULTI"},
+                match_status=OpenFigiMatchStatus.MULTI_MATCH,
+                matches=[
+                    {"figi": "BBG01", "securityType2": "Common Stock", "compositeFIGI": "COMP01"},
+                    {"figi": "BBG02", "securityType2": "Preferred Stock", "compositeFIGI": "COMP02"},
+                ],
+                selected_figi=None,
+            ),
+            is_ambiguous=True,
+            join_conflicts=["OPENFIGI_MULTI_MATCH_UNRESOLVED (2 matches returned)"],
+        )
+        raw, evs = AdapterValidatorBridge.build_candidate_raw_record(cand)
+        assert "security_type" not in raw
+        assert "figi" not in raw
+        assert "composite_figi" not in raw
+        assert len(evs) == 0
+
+    def test_check_c_source_completeness_accounting_and_coverage_gates(self):
+        """
+        Check C:
+        - SourceMatchingAccounting distinguishes inputs parsed, observations accounted for,
+          required sources present, required coverage established, and leaves production completeness False.
+        - Failure to supply required sources or meet expected coverage blocks batch admission.
+        """
+        sec = parse_sec_company_tickers_exchange(SYNTHETIC_SEC_JSON)
+        nasdaq = parse_nasdaq_trader_directory(SYNTHETIC_NASDAQ_LISTED_TEXT)
+
+        # 1. Matching with caller expectations
+        candidates, acct = match_sources_with_accounting(
+            sec_file=sec,
+            directory_files=[nasdaq],
+            required_sources=["SEC_EDGAR", "NASDAQ_TRADER"],
+            expected_minimum_coverage=3,
+        )
+        assert acct.inputs_parsed_count == 2
+        assert acct.total_candidates > 0
+        assert acct.required_sources_present is True
+        assert acct.required_coverage_established is True
+        assert acct.is_production_population_complete is False
+        assert any("cannot establish whole-market coverage" in note for note in acct.completeness_notes)
+
+        # 2. Missing required source blocks admission
+        _cands_missing, acct_missing = match_sources_with_accounting(
+            sec_file=sec,
+            required_sources=["SEC_EDGAR", "OPENFIGI"],  # OPENFIGI not supplied
+        )
+        assert acct_missing.required_sources_present is False
+        reqs = ValidationRequirements()
+        report_missing = AdapterValidatorBridge.validate_candidates(
+            candidates,
+            reqs,
+            matching_accounting=acct_missing,
+        )
+        assert report_missing.is_batch_valid is False
+        assert "REQUIRED_SOURCES_MISSING" in report_missing.batch_rejection_reason
+
+        # 3. Unmet coverage threshold blocks admission
+        _cands_low, acct_low = match_sources_with_accounting(
+            sec_file=sec,
+            expected_minimum_coverage=10000,  # Unrealistic high coverage requirement
+        )
+        assert acct_low.required_coverage_established is False
+        report_low = AdapterValidatorBridge.validate_candidates(
+            candidates,
+            reqs,
+            matching_accounting=acct_low,
+        )
+        assert report_low.is_batch_valid is False
+        assert "REQUIRED_COVERAGE_NOT_MET" in report_low.batch_rejection_reason
+

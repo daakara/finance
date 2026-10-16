@@ -159,6 +159,7 @@ def parse_openfigi_response(
             if not isinstance(match, dict):
                 continue
             clean_matches.append({
+                "figi": match.get("figi"),
                 "listing_figi": match.get("figi"),
                 "composite_figi": match.get("compositeFIGI"),
                 "share_class_figi": match.get("shareClassFIGI"),
@@ -171,9 +172,13 @@ def parse_openfigi_response(
                 "security_description": match.get("securityDescription"),
             })
 
-        if len(clean_matches) == 1:
+        if extra_warning:
+            # Extra response beyond request count has no request context: usable for inspection only
+            match_status = OpenFigiMatchStatus.WARNING
+            selected_figi = None
+        elif len(clean_matches) == 1:
             match_status = OpenFigiMatchStatus.SINGLE_MATCH
-            # In a single unambiguous match, the listing FIGI is unambiguous
+            # In a single unambiguous match, record selected listing FIGI
             selected_figi = clean_matches[0]["listing_figi"]
         elif len(clean_matches) > 1:
             match_status = OpenFigiMatchStatus.MULTI_MATCH
@@ -195,3 +200,4 @@ def parse_openfigi_response(
         )
 
     return parsed_results
+

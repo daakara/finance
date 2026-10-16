@@ -149,9 +149,10 @@ class MatchedUniverseCandidate:
 @dataclass
 class SourceMatchingAccounting:
     """
-    Source accounting across SEC, Directory, and OpenFIGI feeds.
-    Tracks complete source population, matched vs unmatched counts,
+    Source accounting across supplied SEC, Directory, and OpenFIGI feed observations.
+    Tracks accounting across supplied inputs, matched vs unmatched counts,
     and any malformed source rows.
+    Bounded strictly to supplied inputs; does NOT infer full-market census coverage.
     """
     total_candidates: int
     fully_matched_count: int      # both SEC and Directory present
@@ -162,6 +163,11 @@ class SourceMatchingAccounting:
     conflict_count: int           # candidate join_conflicts is non-empty
     malformed_source_row_count: int
     malformed_source_rows: list[ParsedSourceRow] = field(default_factory=list)
+    inputs_parsed_count: int = 0
+    required_sources_present: bool | None = None
+    required_coverage_established: bool | None = None
+    is_production_population_complete: bool = False
+    completeness_notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -173,7 +179,13 @@ class SourceMatchingAccounting:
             "ambiguous_count": self.ambiguous_count,
             "conflict_count": self.conflict_count,
             "malformed_source_row_count": self.malformed_source_row_count,
+            "inputs_parsed_count": self.inputs_parsed_count,
+            "required_sources_present": self.required_sources_present,
+            "required_coverage_established": self.required_coverage_established,
+            "is_production_population_complete": self.is_production_population_complete,
+            "completeness_notes": self.completeness_notes,
         }
+
 
 
 @dataclass(frozen=True)

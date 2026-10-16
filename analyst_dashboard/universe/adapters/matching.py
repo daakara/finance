@@ -51,11 +51,14 @@ def match_sources_with_accounting(
     directory_files: list[ParsedSourceFile] | None = None,
     openfigi_results: list[ParsedOpenFigiResult] | None = None,
     require_venue_match: bool = False,
+    required_sources: list[str] | None = None,
+    expected_minimum_coverage: int | None = None,
 ) -> tuple[list[MatchedUniverseCandidate], SourceMatchingAccounting]:
     """
     Performs bounded join across parsed SEC records, directory records, and OpenFIGI results.
     Explicitly surfaces conflicts, ambiguities, and unmatched records, and returns full
     accounting across all input source populations.
+    Bounded strictly to supplied inputs; does NOT infer full-market census coverage.
     """
     malformed_rows: list[ParsedSourceRow] = []
 
@@ -82,7 +85,7 @@ def match_sources_with_accounting(
                 if sym:
                     dir_by_sym.setdefault(sym, []).append((r, df.source_identifier, df.content_sha256))
 
-    # 3. Index OpenFIGI results by ticker
+    # 3. Index OpenFIGI results by ticker (grounded in request context when available)
     figi_by_sym: dict[str, list[ParsedOpenFigiResult]] = {}
     if openfigi_results:
         for res in openfigi_results:
@@ -138,13 +141,26 @@ def match_sources_with_accounting(
         figi_res = None
         if len(figi_list) == 1:
             figi_res = figi_list[0]
+            # Retain warning metadata so it cannot disappear before admission decisions
+            if figi_res.warning_message:
+                conflicts.append(f"OPENFIGI_WARNING ({figi_res.warning_message})")
+                if "no corresponding request" in figi_res.warning_message:
+                    is_ambiguous = True
+            if not figi_res.request_payload and figi_res.matches:
+                # Result parsed without request context: usable for inspection only
+                conflicts.append("OPENFIGI_UNASSOCIATED_RESPONSE (lacks request context; usable for inspection only)")
+                is_ambiguous = True
             if figi_res.match_status == OpenFigiMatchStatus.MULTI_MATCH:
                 is_ambiguous = True
                 conflicts.append(f"OPENFIGI_MULTI_MATCH_UNRESOLVED ({len(figi_res.matches)} matches returned)")
             elif figi_res.match_status == OpenFigiMatchStatus.NO_MATCH:
                 conflicts.append("OPENFIGI_NO_MATCH")
             elif figi_res.match_status == OpenFigiMatchStatus.ERROR:
+                is_ambiguous = True
                 conflicts.append(f"OPENFIGI_ERROR ({figi_res.error_message})")
+            elif figi_res.match_status == OpenFigiMatchStatus.WARNING:
+                is_ambiguous = True
+                conflicts.append(f"OPENFIGI_WARNING_STATUS ({figi_res.warning_message})")
         elif len(figi_list) > 1:
             is_ambiguous = True
             conflicts.append(f"ONE_TO_MANY_OPENFIGI_RESULTS ({len(figi_list)} results for symbol {sym})")
@@ -174,6 +190,40 @@ def match_sources_with_accounting(
     ambiguous_cnt = sum(1 for c in candidates if c.is_ambiguous)
     conflict_cnt = sum(1 for c in candidates if bool(c.join_conflicts))
 
+    inputs_parsed = (1 if sec_file else 0) + (len(directory_files) if directory_files else 0) + (1 if openfigi_results else 0)
+
+    # Required sources evaluation
+    available_sources = set()
+    if sec_file:
+        available_sources.add("SEC_EDGAR")
+    if directory_files:
+        available_sources.add("NASDAQ_TRADER")
+    if openfigi_results:
+        available_sources.add("OPENFIGI")
+
+    if required_sources is not None:
+        required_sources_present = all(s in available_sources for s in required_sources)
+    else:
+        required_sources_present = None
+
+    # Required coverage evaluation
+    if expected_minimum_coverage is not None:
+        required_coverage_established = len(candidates) >= expected_minimum_coverage
+    else:
+        required_coverage_established = None
+
+    completeness_notes: list[str] = [
+        "Matching accounts strictly for supplied observations across parsed input files.",
+        "Production population completeness is NOT established: offline sample matching cannot establish whole-market coverage.",
+    ]
+    if required_sources_present is False:
+        missing_srcs = [s for s in (required_sources or []) if s not in available_sources]
+        completeness_notes.append(f"Missing required sources: {missing_srcs}")
+    if required_coverage_established is False:
+        completeness_notes.append(
+            f"Candidate count ({len(candidates)}) is below expected coverage ({expected_minimum_coverage})."
+        )
+
     accounting = SourceMatchingAccounting(
         total_candidates=len(candidates),
         fully_matched_count=fully_matched,
@@ -184,6 +234,11 @@ def match_sources_with_accounting(
         conflict_count=conflict_cnt,
         malformed_source_row_count=len(malformed_rows),
         malformed_source_rows=malformed_rows,
+        inputs_parsed_count=inputs_parsed,
+        required_sources_present=required_sources_present,
+        required_coverage_established=required_coverage_established,
+        is_production_population_complete=False,
+        completeness_notes=completeness_notes,
     )
 
     return candidates, accounting
@@ -195,6 +250,8 @@ def match_sources(
     openfigi_results: list[ParsedOpenFigiResult] | None = None,
     require_venue_match: bool = False,
     return_accounting: bool = False,
+    required_sources: list[str] | None = None,
+    expected_minimum_coverage: int | None = None,
 ) -> list[MatchedUniverseCandidate] | tuple[list[MatchedUniverseCandidate], SourceMatchingAccounting]:
     """
     Backwards-compatible wrapper for source matching.
@@ -205,7 +262,10 @@ def match_sources(
         directory_files=directory_files,
         openfigi_results=openfigi_results,
         require_venue_match=require_venue_match,
+        required_sources=required_sources,
+        expected_minimum_coverage=expected_minimum_coverage,
     )
     if return_accounting:
         return candidates, accounting
     return candidates
+
