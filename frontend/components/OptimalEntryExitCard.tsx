@@ -11,6 +11,7 @@ import { addPortfolioPosition } from "../lib/portfolio";
 import {
   resolveDecisionReadiness,
   resolveTacticalExecutionHint,
+  validateCanonicalActionable,
 } from "../lib/decisionReadiness";
 import { resolvePresentationState } from "../lib/decisionPresentation";
 import { evaluateCorridorLocation } from "../lib/corridorLocation";
@@ -29,7 +30,7 @@ interface OptimalEntryExitCardProps {
   smartMoney?: any;
   macroRegime?: any;
   vix?: number | null;
-  isActionable?: boolean;
+  isActionable?: boolean | string | null;
   canSizeTrade?: boolean;
   decisionState?: string;
   decisionStateLabel?: string;
@@ -313,9 +314,14 @@ export default function OptimalEntryExitCard({
     setTimeout(() => setLogStatus(null), 3500);
   };
 
-  const isTriggerConfirmed = isActionable !== undefined
-    ? Boolean(isActionable)
-    : (executionPlan.execution_status === "IN_BUY_ZONE" || executionPlan.execution_status === "READY_TO_BUY");
+  const canonicalActionable = validateCanonicalActionable(isActionable);
+  const isTriggerConfirmed = (executionPlan as any).is_trigger_confirmed !== undefined
+    ? Boolean((executionPlan as any).is_trigger_confirmed)
+    : (executionPlan.execution_status === "READY_TO_BUY" || executionPlan.execution_status === "BREAKOUT_VOLUME_CONFIRMED")
+      ? true
+      : (executionPlan.execution_status === "IN_BUY_ZONE_AWAITING_TRIGGER" || executionPlan.execution_status === "ABOVE_CORRIDOR_AWAITING_PULLBACK")
+      ? false
+      : (isActionable !== undefined && isActionable !== null ? canonicalActionable : false);
 
   const readinessResult = resolveDecisionReadiness({
     currentPrice: evalPrice,
@@ -335,7 +341,7 @@ export default function OptimalEntryExitCard({
     decisionState,
     decisionStateLabel,
     executionStatus: executionPlan.execution_status,
-    isActionable,
+    isActionable: canonicalActionable,
     readinessResult,
   });
 
@@ -349,7 +355,7 @@ export default function OptimalEntryExitCard({
     inZone,
     zonePositionPct,
     riskRewardRatio: risk_reward_ratio,
-    isActionable,
+    isActionable: canonicalActionable,
     isTriggerConfirmed,
     readinessResult,
   });
@@ -686,7 +692,7 @@ export default function OptimalEntryExitCard({
 
         {/* Tactical Relative Position Execution Badge */}
         {zoneTacticalHint && (
-          <div className={`p-2 rounded-lg border text-xs flex items-start gap-2 ${zoneTacticalHint.color}`}>
+          <div data-testid="tactical-execution-hint" className={`p-2 rounded-lg border text-xs flex items-start gap-2 ${zoneTacticalHint.color}`}>
             <span className="font-bold shrink-0">{zoneTacticalHint.label}:</span>
             <span className="text-xs leading-relaxed text-slate-200 font-sans">{zoneTacticalHint.advice}</span>
           </div>
@@ -826,7 +832,7 @@ export default function OptimalEntryExitCard({
         vix={resolvedVix}
         hasImminentEarnings={derivedHasImminentEarnings}
         isDistributionTrap={derivedIsDistributionTrap}
-        isActionable={isActionable}
+        isActionable={canonicalActionable}
         decisionState={decisionState}
       />
 
@@ -841,7 +847,7 @@ export default function OptimalEntryExitCard({
         isStage4={isStage4}
         adv20d={executionPlan.liquidity_defense?.adv_20d_usd}
         canSizeTrade={canSizeTrade}
-        isActionable={isActionable}
+        isActionable={canonicalActionable}
         decisionStateLabel={decisionStateLabel}
       />
 

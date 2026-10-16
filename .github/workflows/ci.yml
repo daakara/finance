@@ -103,6 +103,10 @@ jobs:
       working-directory: frontend
       run: npm ci
 
+    - name: Run Frontend Architectural & Invariant Tests
+      working-directory: frontend
+      run: npm run test:arch
+
     - name: Compile 98 Static SSG Routes
       working-directory: frontend
       run: npm run build

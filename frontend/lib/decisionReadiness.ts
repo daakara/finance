@@ -324,7 +324,7 @@ export interface TacticalExecutionHintInputs {
   inZone?: boolean;
   zonePositionPct?: number;
   riskRewardRatio?: number | null;
-  isActionable?: boolean | null;
+  isActionable?: boolean | string | null;
   isTriggerConfirmed?: boolean | null;
   readinessResult: DecisionReadinessResult;
 }
@@ -333,6 +333,21 @@ export interface TacticalExecutionHint {
   label: string;
   advice: string;
   color: string;
+}
+
+/**
+ * Strict validator for canonical actionability.
+ * Fail-closed: Only boolean true or explicit normalized string "true" resolves to true.
+ * String "false", "0", null, undefined, objects, numbers, and malformed inputs
+ * strictly resolve to false, preventing boolean coercion leakage (e.g. Boolean("false") === true).
+ */
+export function validateCanonicalActionable(value: unknown): boolean {
+  if (value === true) return true;
+  if (value === false || value === null || value === undefined) return false;
+  if (typeof value === "string") {
+    return value.trim().toLowerCase() === "true";
+  }
+  return false;
 }
 
 /**
@@ -359,7 +374,7 @@ export function resolveTacticalExecutionHint(
     readinessResult,
   } = inputs;
 
-  const isActionSatisfied = Boolean(isActionable) && readinessResult.isExecutionReady;
+  const isActionSatisfied = validateCanonicalActionable(isActionable) && readinessResult.isExecutionReady;
 
   if (isStage4 || !corridorLoc.isValid || (riskRewardRatio != null && riskRewardRatio < 1.0)) {
     return null;
@@ -375,7 +390,7 @@ export function resolveTacticalExecutionHint(
         ? "Wait for required trigger confirmation."
         : readinessResult.activeBlockingGate !== "NONE"
         ? readinessResult.nextRequiredCondition
-        : "Wait for the required confirmation.";
+        : "Canonical action posture is Wait. Entry remains conditional.";
       return {
         label: "⚠️ Above Corridor Ceiling",
         advice: `Spot ($${evalPrice.toFixed(2)}) is above the entry corridor ($${min.toFixed(2)}–$${max.toFixed(2)}). Existing extension tolerance applies, but entry remains conditional. ${blockerReason}`,
@@ -398,7 +413,7 @@ export function resolveTacticalExecutionHint(
         ? "Wait for required trigger confirmation."
         : readinessResult.activeBlockingGate !== "NONE"
         ? readinessResult.nextRequiredCondition
-        : "Wait for the required confirmation.";
+        : "Canonical action posture is Wait. Entry remains conditional.";
       return {
         label: "⏳ Trigger Pending",
         advice: `Spot ($${evalPrice.toFixed(2)}) is inside the accumulation corridor, but entry remains conditional. ${blockerReason}`,

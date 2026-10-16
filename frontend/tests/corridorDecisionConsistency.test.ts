@@ -3,6 +3,7 @@ import {
   evaluateCorridorLocation,
   resolveDecisionReadiness,
   resolveTacticalExecutionHint,
+  validateCanonicalActionable,
 } from "../lib/decisionReadiness";
 import { resolvePresentationState } from "../lib/decisionPresentation";
 import { deriveUnmetConditions } from "../lib/decisionHierarchyUtils";
@@ -14,8 +15,8 @@ import { QuantitativeInsight } from "../types/insight";
  *
  * Verifies:
  * Part 1: Corridor Location & Geometry Invariants (9 cases)
- * Part 2: Decision Guidance & Blocked-Action Consistency (6 cases)
- * Part 3: LNTH Live Fixture Inversion Reproduction & Verification
+ * Part 2: Decision Guidance, Canonical Action Provenance & Blocked-Action Consistency (9 cases)
+ * Part 3: AAPL-Derived Synthetic Regression ($341.91 vs $325.07–$339.38)
  */
 
 console.log("Starting Workstream D Slice 1 Acceptance Suite...\n");
@@ -163,9 +164,9 @@ assert.ok(g1_9.gates[0].explanation.includes("inverted bounds"));
 console.log("   [PASS] 1.9: Inverted bounds (102 > 98) -> UNAVAILABLE / Fail-closed (Never fabricated)");
 
 // ═════════════════════════════════════════════════════════════════════════════
-// PART 2: Decision Guidance & Blocked-Action Consistency (6 Cases)
+// PART 2: Decision Guidance, Action Provenance & Blocked Consistency (9 Cases)
 // ═════════════════════════════════════════════════════════════════════════════
-console.log("\nPart 2: Verifying Decision Guidance & Blocked-Action Consistency (6 Cases)...");
+console.log("\nPart 2: Verifying Decision Guidance, Action Provenance & Consistency (9 Cases)...");
 
 // Case 2.1: Inside corridor + trigger blocked
 const g2_1 = resolveDecisionReadiness({
@@ -357,31 +358,162 @@ const hint2_6 = resolveTacticalExecutionHint({
 assert.strictEqual(hint2_6, null, "Tactical hints must be completely suppressed during Stage 4 breakdown");
 console.log("   [PASS] 2.6: Stage 4 distribution -> Gate 1 BLOCKING, downstream PENDING, tactical hints suppressed");
 
-// ═════════════════════════════════════════════════════════════════════════════
-// PART 3: LNTH Live Fixture Audit & Verification
-// ═════════════════════════════════════════════════════════════════════════════
-console.log("\nPart 3: Verifying LNTH Live Fixture Audit ($341.91 vs $325.07–$339.38)...");
+// Case 2.7: Canonical Action Validation & Boolean Coercion Immunity
+console.log("   Verifying Canonical Action Validation & Type Provenance...");
+assert.strictEqual(validateCanonicalActionable(true), true);
+assert.strictEqual(validateCanonicalActionable("true"), true);
+assert.strictEqual(validateCanonicalActionable("  TRUE  "), true);
+assert.strictEqual(validateCanonicalActionable(false), false);
+assert.strictEqual(validateCanonicalActionable("false"), false, 'String "false" must NEVER coerce to true');
+assert.strictEqual(validateCanonicalActionable("0"), false);
+assert.strictEqual(validateCanonicalActionable(0), false);
+assert.strictEqual(validateCanonicalActionable(1), false);
+assert.strictEqual(validateCanonicalActionable(null), false);
+assert.strictEqual(validateCanonicalActionable(undefined), false);
+assert.strictEqual(validateCanonicalActionable({}), false);
+assert.strictEqual(validateCanonicalActionable([]), false);
 
-const lnthPrice = 341.91;
-const lnthMin = 325.07;
-const lnthMax = 339.38;
+// Malformed string "false" passed to presentation resolver
+const presMalformed = resolvePresentationState({
+  decisionState: "ACTIONABLE_SETUP",
+  isActionable: "false" as any,
+});
+assert.strictEqual(presMalformed.actionabilityLabel, "NOT ACTIONABLE", 'Malformed "false" must yield NOT ACTIONABLE');
+
+// Malformed string "false" passed to tactical hint resolver
+const hintMalformed = resolveTacticalExecutionHint({
+  evalPrice: 100,
+  entryMin: 98,
+  entryMax: 102,
+  corridorLoc: evaluateCorridorLocation(100, 98, 102),
+  isActionable: "false" as any,
+  isTriggerConfirmed: true,
+  readinessResult: g2_5, // Gates all passed
+});
+assert.ok(!hintMalformed?.advice.includes("Scale in with 30% initial size"), 'Malformed "false" must suppress scale-in instructions');
+console.log("   [PASS] 2.7: Canonical Action Type Provenance: String coercion leakage eliminated, fail-closed enforced");
+
+// Case 2.8: Above corridor within tolerance + trigger satisfied + canonical Wait
+const g2_8 = resolveDecisionReadiness({
+  currentPrice: 103.50,
+  optimalEntryMin: 98,
+  optimalEntryMax: 102,
+  isConfirmed: true,
+  riskRewardRatio: 2.5,
+  stopLoss: 95,
+  takeProfit1: 112.5,
+  vix: 17.5,
+});
+assert.strictEqual(g2_8.isExecutionReady, true, "Local gates are all passed under extension tolerance");
+
+const hint2_8 = resolveTacticalExecutionHint({
+  evalPrice: 103.50,
+  entryMin: 98,
+  entryMax: 102,
+  corridorLoc: evaluateCorridorLocation(103.50, 98, 102),
+  isActionable: false, // Canonical Wait independently authoritative
+  isTriggerConfirmed: true,
+  readinessResult: g2_8,
+});
+assert.ok(hint2_8 !== null);
+assert.strictEqual(hint2_8?.label, "⚠️ Above Corridor Ceiling");
+assert.ok(hint2_8?.advice.includes("Canonical action posture is Wait. Entry remains conditional."));
+assert.ok(!hint2_8?.advice.includes("Scale in with 30% initial size"), "Canonical Wait overrides local gate pass; scale-in suppressed");
+console.log("   [PASS] 2.8: Above corridor in tolerance + trigger confirmed + canonical Wait -> Wait authoritative, scale-in suppressed");
+
+// Case 2.9: Above corridor within tolerance + trigger satisfied + canonical Actionable
+// Verifies no contradictory mandatory blocker exists simultaneously with immediate entry instructions
+const hint2_9 = resolveTacticalExecutionHint({
+  evalPrice: 103.50,
+  entryMin: 98,
+  entryMax: 102,
+  corridorLoc: evaluateCorridorLocation(103.50, 98, 102),
+  zonePositionPct: 75,
+  riskRewardRatio: 2.5,
+  isActionable: true, // Fully actionable
+  isTriggerConfirmed: true,
+  readinessResult: g2_8,
+});
+assert.ok(hint2_9 !== null);
+assert.strictEqual(hint2_9?.label, "⚠️ Above Corridor Ceiling");
+assert.ok(hint2_9?.advice.includes("Scale in with 30% initial size"));
+
+// Check unmet conditions checklist for this setup
+const mockActionableAboveInsight = {
+  symbol: "TEST",
+  price: 103.50,
+  setupScore: 85,
+  terminalState: {
+    isActionable: true,
+    overallEligibility: "ELIGIBLE",
+    headlineExplanation: "Breakout setup confirmed.",
+  },
+  standard: {
+    keyLevels: {
+      entryMin: 98,
+      entryMax: 102,
+      watchZone: "$98.00 – $102.00",
+      sma50: 92.0,
+    },
+  },
+} as unknown as QuantitativeInsight;
+const unmetCondsActionable = deriveUnmetConditions(mockActionableAboveInsight);
+const corridorCondActionable = unmetCondsActionable.find((c) => c.id === "corridor");
+assert.ok(corridorCondActionable !== undefined);
+assert.strictEqual(corridorCondActionable?.status, "MET", "Corridor clearance under tolerance must NOT be presented as an UNMET blocker");
+assert.strictEqual(corridorCondActionable?.title, "Entry Corridor Clearance (Extension Tolerance Applied)");
+
+// Contrast with extended > 2% setup ($105.00)
+const mockExtendedInsight = {
+  symbol: "TEST",
+  price: 105.00,
+  setupScore: 85,
+  terminalState: {
+    isActionable: false,
+    overallEligibility: "ELIGIBLE",
+  },
+  standard: {
+    keyLevels: {
+      entryMin: 98,
+      entryMax: 102,
+      watchZone: "$98.00 – $102.00",
+      sma50: 92.0,
+    },
+  },
+} as unknown as QuantitativeInsight;
+const unmetCondsExtended = deriveUnmetConditions(mockExtendedInsight);
+const corridorCondExtended = unmetCondsExtended.find((c) => c.id === "corridor");
+assert.ok(corridorCondExtended !== undefined);
+assert.strictEqual(corridorCondExtended?.status, "UNMET", "Truly extended > 2% price MUST be an UNMET mandatory blocker");
+assert.strictEqual(corridorCondExtended?.title, "Pullback into Accumulation Corridor");
+assert.ok(corridorCondExtended?.description.includes("Mandatory low-volume pullback required before entry"));
+console.log("   [PASS] 2.9: No contradictory mandatory blocker: Tolerance yields MET status, >2% extension yields UNMET blocker");
+
+// ═════════════════════════════════════════════════════════════════════════════
+// PART 3: AAPL-Derived Synthetic Regression ($341.91 vs $325.07–$339.38)
+// ═════════════════════════════════════════════════════════════════════════════
+console.log("\nPart 3: Verifying AAPL-Derived Synthetic Regression ($341.91 vs $325.07–$339.38)...");
+
+const aaplPrice = 341.91;
+const aaplMin = 325.07;
+const aaplMax = 339.38;
 
 // 1. Evaluate pure location
-const lnthLoc = evaluateCorridorLocation(lnthPrice, lnthMin, lnthMax, 0.02);
-assert.strictEqual(lnthLoc.isValid, true);
-assert.strictEqual(lnthLoc.spatialRelation, "ABOVE", "LNTH $341.91 is above ceiling $339.38");
-assert.strictEqual(lnthLoc.isInside, false, "LNTH isInside must strictly be false");
-assert.strictEqual(lnthLoc.isAboveCeiling, true);
-assert.strictEqual(lnthLoc.isWithinTolerance, true, "LNTH is within 2% tolerance (339.38 * 1.02 = 346.1676)");
-assert.ok(lnthLoc.description.includes("Price ($341.91) is above the entry corridor ($325.07–$339.38)"));
-assert.ok(lnthLoc.description.includes("Existing extension tolerance applies"));
-assert.ok(!lnthLoc.description.includes("positioned inside"), "Must NEVER claim LNTH is inside corridor");
+const aaplLoc = evaluateCorridorLocation(aaplPrice, aaplMin, aaplMax, 0.02);
+assert.strictEqual(aaplLoc.isValid, true);
+assert.strictEqual(aaplLoc.spatialRelation, "ABOVE", "AAPL $341.91 is above ceiling $339.38");
+assert.strictEqual(aaplLoc.isInside, false, "AAPL isInside must strictly be false");
+assert.strictEqual(aaplLoc.isAboveCeiling, true);
+assert.strictEqual(aaplLoc.isWithinTolerance, true, "AAPL is within 2% tolerance (339.38 * 1.02 = 346.1676)");
+assert.ok(aaplLoc.description.includes("Price ($341.91) is above the entry corridor ($325.07–$339.38)"));
+assert.ok(aaplLoc.description.includes("Existing extension tolerance applies"));
+assert.ok(!aaplLoc.description.includes("positioned inside"), "Must NEVER claim AAPL is inside corridor");
 
 // 2. Evaluate Decision Readiness (Trigger Pending)
-const lnthReadiness = resolveDecisionReadiness({
-  currentPrice: lnthPrice,
-  optimalEntryMin: lnthMin,
-  optimalEntryMax: lnthMax,
+const aaplReadiness = resolveDecisionReadiness({
+  currentPrice: aaplPrice,
+  optimalEntryMin: aaplMin,
+  optimalEntryMax: aaplMax,
   isConfirmed: false,
   candleCount: 100,
   riskRewardRatio: 2.4,
@@ -390,44 +522,44 @@ const lnthReadiness = resolveDecisionReadiness({
   vix: 18.2,
 });
 
-assert.strictEqual(lnthReadiness.gates[0].state, "PASSED", "Gate 1 preserves tolerance pass");
-assert.ok(lnthReadiness.gates[0].explanation.includes("Price ($341.91) is above the entry corridor ($325.07–$339.38)"));
-assert.ok(!lnthReadiness.gates[0].explanation.includes("positioned inside"));
+assert.strictEqual(aaplReadiness.gates[0].state, "PASSED", "Gate 1 preserves tolerance pass");
+assert.ok(aaplReadiness.gates[0].explanation.includes("Price ($341.91) is above the entry corridor ($325.07–$339.38)"));
+assert.ok(!aaplReadiness.gates[0].explanation.includes("positioned inside"));
 
-assert.strictEqual(lnthReadiness.gates[1].state, "BLOCKING", "Gate 2 blocks on unconfirmed trigger");
-assert.ok(lnthReadiness.gates[1].explanation.includes("Price is above the entry corridor (within extension tolerance), but confirmation trigger is pending"));
-assert.ok(!lnthReadiness.gates[1].explanation.includes("Price is inside the accumulation corridor"));
+assert.strictEqual(aaplReadiness.gates[1].state, "BLOCKING", "Gate 2 blocks on unconfirmed trigger");
+assert.ok(aaplReadiness.gates[1].explanation.includes("Price is above the entry corridor (within extension tolerance), but confirmation trigger is pending"));
+assert.ok(!aaplReadiness.gates[1].explanation.includes("Price is inside the accumulation corridor"));
 
-assert.strictEqual(lnthReadiness.gates[2].state, "PENDING_DEPENDENCY");
-assert.strictEqual(lnthReadiness.activeBlockingGate, "GATE_2_TRIGGER");
-assert.strictEqual(lnthReadiness.isExecutionReady, false);
+assert.strictEqual(aaplReadiness.gates[2].state, "PENDING_DEPENDENCY");
+assert.strictEqual(aaplReadiness.activeBlockingGate, "GATE_2_TRIGGER");
+assert.strictEqual(aaplReadiness.isExecutionReady, false);
 
 // 3. Evaluate Tactical Guidance (Contradiction Elimination)
-const lnthHint = resolveTacticalExecutionHint({
-  evalPrice: lnthPrice,
-  entryMin: lnthMin,
-  entryMax: lnthMax,
-  corridorLoc: lnthLoc,
+const aaplHint = resolveTacticalExecutionHint({
+  evalPrice: aaplPrice,
+  entryMin: aaplMin,
+  entryMax: aaplMax,
+  corridorLoc: aaplLoc,
   inZone: false,
   zonePositionPct: 50,
   riskRewardRatio: 2.4,
   isActionable: false,
   isTriggerConfirmed: false,
-  readinessResult: lnthReadiness,
+  readinessResult: aaplReadiness,
 });
 
-assert.ok(lnthHint !== null);
-assert.strictEqual(lnthHint?.label, "⚠️ Above Corridor Ceiling");
-assert.ok(lnthHint?.advice.includes("Spot ($341.91) is above the entry corridor ($325.07–$339.38)"));
-assert.ok(lnthHint?.advice.includes("Existing extension tolerance applies, but entry remains conditional"));
-assert.ok(lnthHint?.advice.includes("Wait for required trigger confirmation"));
-assert.ok(!lnthHint?.advice.includes("Scale in with 30% initial size"), "Defect resolved: contradictory scale-in advice suppressed!");
-assert.ok(!lnthHint?.advice.includes("inside the accumulation corridor"), "Defect resolved: spatial contradiction eliminated!");
+assert.ok(aaplHint !== null);
+assert.strictEqual(aaplHint?.label, "⚠️ Above Corridor Ceiling");
+assert.ok(aaplHint?.advice.includes("Spot ($341.91) is above the entry corridor ($325.07–$339.38)"));
+assert.ok(aaplHint?.advice.includes("Existing extension tolerance applies, but entry remains conditional"));
+assert.ok(aaplHint?.advice.includes("Wait for required trigger confirmation"));
+assert.ok(!aaplHint?.advice.includes("Scale in with 30% initial size"), "Defect resolved: contradictory scale-in advice suppressed!");
+assert.ok(!aaplHint?.advice.includes("inside the accumulation corridor"), "Defect resolved: spatial contradiction eliminated!");
 
 // 4. Evaluate Unmet Conditions
-const mockLnthInsight: QuantitativeInsight = {
-  symbol: "LNTH",
-  price: lnthPrice,
+const mockAaplInsight = {
+  symbol: "AAPL",
+  price: aaplPrice,
   setupScore: 82,
   terminalState: {
     isActionable: false,
@@ -436,25 +568,28 @@ const mockLnthInsight: QuantitativeInsight = {
   },
   standard: {
     keyLevels: {
-      entryMin: lnthMin,
-      entryMax: lnthMax,
+      entryMin: aaplMin,
+      entryMax: aaplMax,
       watchZone: "$325.07 – $339.38",
       sma50: 310.0,
     },
   },
-};
+} as unknown as QuantitativeInsight;
 
-const unmetConditions = deriveUnmetConditions(mockLnthInsight);
+const unmetConditions = deriveUnmetConditions(mockAaplInsight);
 const corridorCondition = unmetConditions.find((c) => c.id === "corridor");
 assert.ok(corridorCondition !== undefined);
-assert.strictEqual(corridorCondition?.status, "UNMET");
-assert.strictEqual(corridorCondition?.title, "Pullback into Accumulation Corridor");
-assert.ok(corridorCondition?.description.includes("extended above preferred entry corridor"));
+assert.strictEqual(corridorCondition?.status, "MET", "Corridor is MET under approved 2% tolerance");
+assert.strictEqual(corridorCondition?.title, "Entry Corridor Clearance (Extension Tolerance Applied)");
 
-console.log("   [PASS] 3.1: LNTH spatial classification: ABOVE / isInside=false");
-console.log("   [PASS] 3.2: LNTH Gate 1: PASSED (Truthful explanation with tolerance disclaimer)");
-console.log("   [PASS] 3.3: LNTH Gate 2: BLOCKING (Truthful above-corridor explanation)");
-console.log("   [PASS] 3.4: LNTH Tactical Hint: Contradictory scale-in instructions eliminated");
-console.log("   [PASS] 3.5: LNTH Unmet Conditions: Correctly reports UNMET pullback condition");
+const triggerCondition = unmetConditions.find((c) => c.id === "event_trigger");
+assert.ok(triggerCondition !== undefined);
+assert.strictEqual(triggerCondition?.status, "UNMET", "Trigger pending is the true active unmet condition");
 
-console.log("\nALL WORKSTREAM D SLICE 1 REGRESSION TESTS PASSED (100% SUCCESS)!\n");
+console.log("   [PASS] 3.1: AAPL spatial classification: ABOVE / isInside=false");
+console.log("   [PASS] 3.2: AAPL Gate 1: PASSED (Truthful explanation with tolerance disclaimer)");
+console.log("   [PASS] 3.3: AAPL Gate 2: BLOCKING (Truthful above-corridor explanation)");
+console.log("   [PASS] 3.4: AAPL Tactical Hint: Contradictory scale-in instructions eliminated");
+console.log("   [PASS] 3.5: AAPL Unmet Conditions: Correctly reports corridor MET (tolerance) and trigger UNMET");
+
+console.log("\nALL WORKSTREAM D SLICE 1 REGRESSION TESTS PASSED SUCCESSFULLY!\n");

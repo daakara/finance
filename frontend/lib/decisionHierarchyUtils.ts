@@ -1,5 +1,6 @@
 import { QuantitativeInsight } from "../types/insight";
 import { evaluateCorridorLocation } from "./corridorLocation";
+import { validateCanonicalActionable } from "./decisionReadiness";
 
 export interface UnmetConditionItem {
   id: string;
@@ -16,7 +17,7 @@ export interface UnmetConditionItem {
 export function deriveUnmetConditions(insight: QuantitativeInsight): UnmetConditionItem[] {
   const conditions: UnmetConditionItem[] = [];
   const kl = insight.standard?.keyLevels;
-  const isActionable = Boolean(insight.terminalState?.isActionable);
+  const isActionable = validateCanonicalActionable(insight.terminalState?.isActionable);
   const eligibility = insight.terminalState?.overallEligibility;
   const price = insight.price;
 
@@ -46,13 +47,23 @@ export function deriveUnmetConditions(insight: QuantitativeInsight): UnmetCondit
           status: "MET",
         });
       } else if (corridorLoc.spatialRelation === "ABOVE") {
-        conditions.push({
-          id: "corridor",
-          category: "CORRIDOR",
-          title: "Pullback into Accumulation Corridor",
-          description: `Price ($${price.toFixed(2)}) is extended above preferred entry corridor (${kl.watchZone || `$${corridorLoc.entryMin!.toFixed(2)} – $${corridorLoc.entryMax!.toFixed(2)}`}). Wait for low-volume pullback.`,
-          status: "UNMET",
-        });
+        if (corridorLoc.isWithinTolerance) {
+          conditions.push({
+            id: "corridor",
+            category: "CORRIDOR",
+            title: "Entry Corridor Clearance (Extension Tolerance Applied)",
+            description: `Spot ($${price.toFixed(2)}) is above corridor ceiling ($${corridorLoc.entryMax!.toFixed(2)}), but within approved 2% extension tolerance. Low-volume pullback preferred for optimal asymmetry, but corridor gate is cleared.`,
+            status: "MET",
+          });
+        } else {
+          conditions.push({
+            id: "corridor",
+            category: "CORRIDOR",
+            title: "Pullback into Accumulation Corridor",
+            description: `Price ($${price.toFixed(2)}) is extended >2% above preferred entry corridor (${kl.watchZone || `$${corridorLoc.entryMin!.toFixed(2)} – $${corridorLoc.entryMax!.toFixed(2)}`}). Mandatory low-volume pullback required before entry.`,
+            status: "UNMET",
+          });
+        }
       } else {
         conditions.push({
           id: "corridor",
@@ -67,7 +78,7 @@ export function deriveUnmetConditions(insight: QuantitativeInsight): UnmetCondit
         id: "corridor",
         category: "CORRIDOR",
         title: "Accumulation Corridor Unavailable",
-        description: corridorLoc.description || "Canonical execution corridor bounds are unavailable for this asset (insufficient trading history or unverified market data).",
+        description: "Canonical execution corridor bounds are unavailable for this asset (insufficient trading history or unverified market data).",
         status: "UNMET",
       });
     }
