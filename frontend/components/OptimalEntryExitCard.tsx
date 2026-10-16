@@ -8,8 +8,12 @@ import AlertTriggerModal from "./AlertTriggerModal";
 import PreFlightChecklistModal from "./PreFlightChecklistModal";
 import TradeExecutionStepper from "./TradeExecutionStepper";
 import { addPortfolioPosition } from "../lib/portfolio";
-import { resolveDecisionReadiness } from "../lib/decisionReadiness";
+import {
+  resolveDecisionReadiness,
+  resolveTacticalExecutionHint,
+} from "../lib/decisionReadiness";
 import { resolvePresentationState } from "../lib/decisionPresentation";
+import { evaluateCorridorLocation } from "../lib/corridorLocation";
 import DecisionReadinessCard from "./DecisionReadinessCard";
 
 interface OptimalEntryExitCardProps {
@@ -234,45 +238,27 @@ export default function OptimalEntryExitCard({
   const entryMin = Math.min(optimal_entry_min, optimal_entry_max);
   const entryMax = Math.max(optimal_entry_min, optimal_entry_max);
 
+  const corridorLoc = evaluateCorridorLocation(evalPrice, optimal_entry_min, optimal_entry_max, 0.02);
+
   // Authority for inZone: backend market_location / execution_status has priority
   const isBackendInZone = executionPlan.market_location === "IN_BUY_ZONE" ||
     executionPlan.execution_status === "IN_BUY_ZONE" ||
     executionPlan.execution_status === "READY_TO_BUY";
 
   // Presentation inZone uses evalPrice (live spot / eval_price), NEVER analysis reference price as live
-  const inZone = executionPlan.market_location !== undefined
-    ? isBackendInZone
-    : (evalPrice >= entryMin && evalPrice <= entryMax);
+  // An asset above ceiling or below floor is geometrically NEVER inZone
+  const isEvalPriceInCorridor = evalPrice >= entryMin && evalPrice <= entryMax;
+  const inZone = corridorLoc.isValid && corridorLoc.isInside && isEvalPriceInCorridor && (
+    executionPlan.market_location !== undefined
+      ? isBackendInZone
+      : true
+  );
 
   const zoneWidth = Math.max(0.01, entryMax - entryMin);
   const zonePositionPct = inZone ? ((evalPrice - entryMin) / zoneWidth) * 100 : 50;
   const isStopVisible = executionPlan.execution_stop_visible !== undefined && executionPlan.execution_stop_visible !== null
     ? Boolean(executionPlan.execution_stop_visible)
     : Boolean(isActionable || inZone);
-
-  // Tactical Execution Hint
-  let zoneTacticalHint: { label: string; advice: string; color: string } | null = null;
-  if (!isStage4 && inZone && risk_reward_ratio !== null && risk_reward_ratio >= 1.0) {
-    if (zonePositionPct > 65) {
-      zoneTacticalHint = {
-        label: "⚠️ Near Zone Ceiling",
-        advice: `Spot ($${evalPrice.toFixed(2)}) is near the upper bound of the buy zone. Scale in with 30% initial size or place limit orders near $${entryMin.toFixed(2)} to maximize asymmetric R:R.`,
-        color: "text-amber-300 border-amber-900/60 bg-amber-950/40",
-      };
-    } else if (zonePositionPct < 35) {
-      zoneTacticalHint = {
-        label: "🎯 Near Support Floor",
-        advice: `Spot ($${evalPrice.toFixed(2)}) is at the bottom of the accumulation corridor. Favorable asymmetric entry with tight invalidation floor.`,
-        color: "text-emerald-300 border-emerald-900/60 bg-emerald-950/40",
-      };
-    } else {
-      zoneTacticalHint = {
-        label: "✅ Mid-Zone Value Area",
-        advice: `Spot is comfortably centered within the accumulation corridor with favorable ${risk_reward_ratio}:1 R:R structure.`,
-        color: "text-cyan-300 border-cyan-900/60 bg-cyan-950/40",
-      };
-    }
-  }
 
   const hasSmartMoneyConfluence = Boolean(
     (smartMoney?.optionsFlow && smartMoney.optionsFlow.some((f: any) => f.sentiment === "Bullish" || f.type?.includes("CALL"))) ||
@@ -350,6 +336,21 @@ export default function OptimalEntryExitCard({
     decisionStateLabel,
     executionStatus: executionPlan.execution_status,
     isActionable,
+    readinessResult,
+  });
+
+  // Tactical Execution Guidance (Slice 1: Truthful Corridor Text & Suppressed Contradictory Action Instructions)
+  const zoneTacticalHint = resolveTacticalExecutionHint({
+    evalPrice,
+    entryMin,
+    entryMax,
+    isStage4,
+    corridorLoc,
+    inZone,
+    zonePositionPct,
+    riskRewardRatio: risk_reward_ratio,
+    isActionable,
+    isTriggerConfirmed,
     readinessResult,
   });
 

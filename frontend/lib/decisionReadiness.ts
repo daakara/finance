@@ -12,6 +12,15 @@
  * Downstream gates NEVER display as failed when upstream prerequisite gates are unmet.
  */
 
+import {
+  evaluateCorridorLocation,
+  CorridorLocationResult,
+  CorridorSpatialRelation,
+} from "./corridorLocation";
+
+export { evaluateCorridorLocation };
+export type { CorridorLocationResult, CorridorSpatialRelation };
+
 export type GateState = "PASSED" | "BLOCKING" | "PENDING_DEPENDENCY" | "UNAVAILABLE";
 
 export interface DecisionReadinessGate {
@@ -80,32 +89,43 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
     stagePhase?.toLowerCase().includes("markdown")
   );
 
+  // ── Pure Geometric Location Evaluation (Workstream D — Slice 1) ───────────
+  const corridorLocation = evaluateCorridorLocation(
+    currentPrice,
+    optimalEntryMin,
+    optimalEntryMax,
+    0.02
+  );
+
   // ── GATE 1: LOCATION / GEOMETRY ───────────────────────────────────────────
   let gate1State: GateState = "UNAVAILABLE";
   let gate1Explanation = "Optimal entry corridor uncalculated or candle history insufficient (< 50 sessions).";
 
-  const hasValidPrice = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0;
-  const hasValidMin = typeof optimalEntryMin === "number" && !isNaN(optimalEntryMin) && optimalEntryMin > 0;
-  const hasValidMax = typeof optimalEntryMax === "number" && !isNaN(optimalEntryMax) && optimalEntryMax > 0;
   const hasSufficientHistory = candleCount == null || candleCount >= 50;
 
-  if (hasValidPrice && hasValidMin && hasValidMax && hasSufficientHistory) {
-    const entryMin = Math.min(optimalEntryMin!, optimalEntryMax!);
-    const entryMax = Math.max(optimalEntryMin!, optimalEntryMax!);
-
+  if (corridorLocation.isValid && hasSufficientHistory) {
     if (isStage4) {
       gate1State = "BLOCKING";
       gate1Explanation = "Asset is in Stage 4 distribution. Structural base required before accumulation corridor applies.";
-    } else if (currentPrice! > entryMax * 1.02) {
+    } else if (corridorLocation.spatialRelation === "BELOW") {
       gate1State = "BLOCKING";
-      gate1Explanation = `Price ($${currentPrice!.toFixed(2)}) has extended >2% past the accumulation corridor ($${entryMin.toFixed(2)}–$${entryMax.toFixed(2)}). Do not chase above resistance.`;
-    } else if (currentPrice! < entryMin) {
-      gate1State = "BLOCKING";
-      gate1Explanation = `Price ($${currentPrice!.toFixed(2)}) is below the accumulation corridor ($${entryMin.toFixed(2)}–$${entryMax.toFixed(2)}). Awaiting base stabilization.`;
-    } else {
+      gate1Explanation = corridorLocation.description;
+    } else if (corridorLocation.spatialRelation === "ABOVE") {
+      if (corridorLocation.isWithinTolerance) {
+        // Preserves existing 2% tolerance decision behavior while truthfully reporting location
+        gate1State = "PASSED";
+        gate1Explanation = corridorLocation.description;
+      } else {
+        gate1State = "BLOCKING";
+        gate1Explanation = corridorLocation.description;
+      }
+    } else if (corridorLocation.spatialRelation === "INSIDE") {
       gate1State = "PASSED";
-      gate1Explanation = `Price ($${currentPrice!.toFixed(2)}) is positioned inside the institutional accumulation corridor ($${entryMin.toFixed(2)}–$${entryMax.toFixed(2)}).`;
+      gate1Explanation = corridorLocation.description;
     }
+  } else if (!corridorLocation.isValid && optimalEntryMin != null && optimalEntryMax != null && optimalEntryMin > optimalEntryMax) {
+    gate1State = "UNAVAILABLE";
+    gate1Explanation = corridorLocation.description;
   }
 
   // ── GATE 2: DYNAMIC TRIGGER ───────────────────────────────────────────────
@@ -121,7 +141,9 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
       gate2Explanation = "Breakout volume expansion or reversal confirmation candle verified.";
     } else {
       gate2State = "BLOCKING";
-      gate2Explanation = "Price is inside the accumulation corridor, but confirmation trigger is pending. Awaiting volume expansion / pivot reclaim.";
+      gate2Explanation = corridorLocation.isWithinTolerance
+        ? "Price is above the entry corridor (within extension tolerance), but confirmation trigger is pending. Awaiting volume expansion / pivot reclaim."
+        : "Price is inside the accumulation corridor, but confirmation trigger is pending. Awaiting volume expansion / pivot reclaim.";
     }
   }
 
@@ -173,8 +195,10 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
   if (activeBlockingGate === "GATE_1_LOCATION") {
     if (isStage4) {
       nextRequiredCondition = "Wait for structural floor formation and 50-day moving average breakout pivot reclaim.";
-    } else if (hasValidPrice && hasValidMax && currentPrice! > optimalEntryMax! * 1.02) {
+    } else if (corridorLocation.spatialRelation === "ABOVE") {
       nextRequiredCondition = "Wait for pullback into optimal accumulation corridor without chasing.";
+    } else if (!corridorLocation.isValid) {
+      nextRequiredCondition = "Corridor bounds must be verified before accumulation corridor applies.";
     } else {
       nextRequiredCondition = "Price must stabilize and enter the defined accumulation corridor.";
     }
@@ -190,12 +214,14 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
 
   // ── Protective Negative Guidance (CLAIM_SET ⊆ EVIDENCE_SET) ───────────────
   let negativeGuidance: string | null = null;
-  if (hasValidPrice && hasValidMax && currentPrice! > optimalEntryMax! * 1.02) {
+  if (corridorLocation.spatialRelation === "ABOVE" && !corridorLocation.isWithinTolerance) {
     negativeGuidance = "DO NOT CHASE: Price has extended past the accumulation corridor. Wait for a pullback to the buy zone.";
   } else if (isStage4) {
     negativeGuidance = "CAPITAL DEFENSE: Asset is in Stage 4 correction below 50-day SMA. Wait for base stabilization and pivot reclaim.";
   } else if (gate1State === "PASSED" && gate2State === "BLOCKING") {
-    negativeGuidance = "DO NOT PRE-EMPT: Price is in buy zone, but confirmation trigger is pending. Awaiting volume breakout candle.";
+    negativeGuidance = corridorLocation.isWithinTolerance
+      ? "DO NOT PRE-EMPT: Price is above the entry corridor (within extension tolerance), but confirmation trigger is pending. Awaiting volume breakout candle."
+      : "DO NOT PRE-EMPT: Price is in buy zone, but confirmation trigger is pending. Awaiting volume breakout candle.";
   } else if (typeof riskRewardRatio === "number" && !isNaN(riskRewardRatio) && riskRewardRatio > 0 && riskRewardRatio < 2.0) {
     negativeGuidance = `INADEQUATE ASYMMETRY: Prospective reward (${riskRewardRatio.toFixed(1)}:1) is below the 2:1 institutional floor. Do not allocate capital without favorable asymmetry.`;
   } else if (typeof vix === "number" && !isNaN(vix) && vix >= 26.0) {
@@ -224,11 +250,17 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
         actionType: "EXPLORE_RADAR",
         reason: "Asset in Stage 4 correction. Browse non-distressed alternatives on Radar.",
       };
-    } else if (hasValidPrice && hasValidMax && currentPrice! > optimalEntryMax! * 1.02) {
+    } else if (corridorLocation.spatialRelation === "ABOVE") {
       primaryAction = {
         label: "Set Pullback Alert",
         actionType: "SET_PULLBACK_ALERT",
         reason: "Price extended. Set browser alert for pullback into the accumulation corridor.",
+      };
+    } else if (!corridorLocation.isValid) {
+      primaryAction = {
+        label: "Explore Radar Setups",
+        actionType: "EXPLORE_RADAR",
+        reason: "Corridor bounds unavailable or invalid. Browse verified alternatives on Radar.",
       };
     } else {
       primaryAction = {
@@ -241,7 +273,9 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
     primaryAction = {
       label: "Set Buy Zone Alert",
       actionType: "SET_BUY_ZONE_ALERT",
-      reason: "Price is in accumulation corridor; monitor for volume breakout confirmation.",
+      reason: corridorLocation.isWithinTolerance
+        ? "Price is above entry corridor (within tolerance); monitor for volume breakout confirmation."
+        : "Price is in accumulation corridor; monitor for volume breakout confirmation.",
     };
   } else if (activeBlockingGate === "GATE_3_RISK_CLEARANCE") {
     primaryAction = {
@@ -250,6 +284,7 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
       reason: "Setup does not satisfy risk floor or macro volatility threshold. Seek higher asymmetry setups.",
     };
   }
+
 
   return {
     isExecutionReady,
@@ -279,3 +314,120 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
     primaryAction,
   };
 }
+
+export interface TacticalExecutionHintInputs {
+  evalPrice: number;
+  entryMin: number;
+  entryMax: number;
+  isStage4?: boolean;
+  corridorLoc: CorridorLocationResult;
+  inZone?: boolean;
+  zonePositionPct?: number;
+  riskRewardRatio?: number | null;
+  isActionable?: boolean | null;
+  isTriggerConfirmed?: boolean | null;
+  readinessResult: DecisionReadinessResult;
+}
+
+export interface TacticalExecutionHint {
+  label: string;
+  advice: string;
+  color: string;
+}
+
+/**
+ * Pure resolver for tactical execution hints in the conditional trade plan card.
+ * Enforces Slice 1 consistency:
+ * 1. Never describe an above-ceiling price as inside.
+ * 2. Suppress actionable scale-in / entry guidance when canonical action or required execution conditions are blocked, pending, or not satisfied.
+ * 3. Preserves 2% tolerance and positive hints when fully execution-ready.
+ */
+export function resolveTacticalExecutionHint(
+  inputs: TacticalExecutionHintInputs
+): TacticalExecutionHint | null {
+  const {
+    evalPrice,
+    entryMin,
+    entryMax,
+    isStage4 = false,
+    corridorLoc,
+    inZone = false,
+    zonePositionPct = 50,
+    riskRewardRatio,
+    isActionable,
+    isTriggerConfirmed,
+    readinessResult,
+  } = inputs;
+
+  const isActionSatisfied = Boolean(isActionable) && readinessResult.isExecutionReady;
+
+  if (isStage4 || !corridorLoc.isValid || (riskRewardRatio != null && riskRewardRatio < 1.0)) {
+    return null;
+  }
+
+  const min = corridorLoc.entryMin ?? entryMin;
+  const max = corridorLoc.entryMax ?? entryMax;
+
+  if (corridorLoc.spatialRelation === "ABOVE" && corridorLoc.isWithinTolerance) {
+    if (!isActionSatisfied) {
+      // Tolerated extension, but action is blocked / trigger pending / not satisfied
+      const blockerReason = isTriggerConfirmed === false
+        ? "Wait for required trigger confirmation."
+        : readinessResult.activeBlockingGate !== "NONE"
+        ? readinessResult.nextRequiredCondition
+        : "Wait for the required confirmation.";
+      return {
+        label: "⚠️ Above Corridor Ceiling",
+        advice: `Spot ($${evalPrice.toFixed(2)}) is above the entry corridor ($${min.toFixed(2)}–$${max.toFixed(2)}). Existing extension tolerance applies, but entry remains conditional. ${blockerReason}`,
+        color: "text-amber-300 border-amber-900/60 bg-amber-950/40",
+      };
+    } else {
+      // Fully satisfied canonical state within tolerance
+      return {
+        label: "⚠️ Above Corridor Ceiling",
+        advice: `Spot ($${evalPrice.toFixed(2)}) is above the entry corridor ($${min.toFixed(2)}–$${max.toFixed(2)}). Existing extension tolerance applies. Scale in with 30% initial size or place limit orders near $${min.toFixed(2)} to maximize asymmetric R:R.`,
+        color: "text-amber-300 border-amber-900/60 bg-amber-950/40",
+      };
+    }
+  }
+
+  if (corridorLoc.spatialRelation === "INSIDE" || (inZone && corridorLoc.spatialRelation !== "ABOVE")) {
+    if (!isActionSatisfied) {
+      // Inside corridor, but action is blocked / trigger pending / not satisfied
+      const blockerReason = isTriggerConfirmed === false
+        ? "Wait for required trigger confirmation."
+        : readinessResult.activeBlockingGate !== "NONE"
+        ? readinessResult.nextRequiredCondition
+        : "Wait for the required confirmation.";
+      return {
+        label: "⏳ Trigger Pending",
+        advice: `Spot ($${evalPrice.toFixed(2)}) is inside the accumulation corridor, but entry remains conditional. ${blockerReason}`,
+        color: "text-amber-300 border-amber-900/60 bg-amber-950/40",
+      };
+    } else {
+      // Fully satisfied canonical state inside corridor
+      if (zonePositionPct > 65) {
+        return {
+          label: "⚠️ Near Zone Ceiling",
+          advice: `Spot ($${evalPrice.toFixed(2)}) is near the upper bound of the buy zone. Scale in with 30% initial size or place limit orders near $${min.toFixed(2)} to maximize asymmetric R:R.`,
+          color: "text-amber-300 border-amber-900/60 bg-amber-950/40",
+        };
+      } else if (zonePositionPct < 35) {
+        return {
+          label: "🎯 Near Support Floor",
+          advice: `Spot ($${evalPrice.toFixed(2)}) is at the bottom of the accumulation corridor. Favorable asymmetric entry with tight invalidation floor.`,
+          color: "text-emerald-300 border-emerald-900/60 bg-emerald-950/40",
+        };
+      } else {
+        return {
+          label: "✅ Mid-Zone Value Area",
+          advice: `Spot is comfortably centered within the accumulation corridor with favorable ${riskRewardRatio}:1 R:R structure.`,
+          color: "text-cyan-300 border-cyan-900/60 bg-cyan-950/40",
+        };
+      }
+    }
+  }
+
+  return null;
+}
+

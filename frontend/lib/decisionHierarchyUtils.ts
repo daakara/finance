@@ -1,4 +1,5 @@
 import { QuantitativeInsight } from "../types/insight";
+import { evaluateCorridorLocation } from "./corridorLocation";
 
 export interface UnmetConditionItem {
   id: string;
@@ -33,25 +34,23 @@ export function deriveUnmetConditions(insight: QuantitativeInsight): UnmetCondit
       }
     }
 
-    if (lower != null && upper != null && !isNaN(lower) && !isNaN(upper) && lower > 0 && upper > 0) {
-      const canonicalLower = Math.min(lower, upper);
-      const canonicalUpper = Math.max(lower, upper);
-      const isInCorridor = price >= canonicalLower && price <= canonicalUpper;
+    const corridorLoc = evaluateCorridorLocation(price, lower, upper, 0.02);
 
-      if (isInCorridor) {
+    if (corridorLoc.isValid) {
+      if (corridorLoc.spatialRelation === "INSIDE") {
         conditions.push({
           id: "corridor",
           category: "CORRIDOR",
           title: "Price Inside Accumulation Corridor",
-          description: `Current spot ($${price.toFixed(2)}) is positioned within the preferred risk corridor (${kl.watchZone || `$${canonicalLower.toFixed(2)} – $${canonicalUpper.toFixed(2)}`}).`,
+          description: `Current spot ($${price.toFixed(2)}) is positioned within the preferred risk corridor (${kl.watchZone || `$${corridorLoc.entryMin!.toFixed(2)} – $${corridorLoc.entryMax!.toFixed(2)}`}).`,
           status: "MET",
         });
-      } else if (price > canonicalUpper) {
+      } else if (corridorLoc.spatialRelation === "ABOVE") {
         conditions.push({
           id: "corridor",
           category: "CORRIDOR",
           title: "Pullback into Accumulation Corridor",
-          description: `Price ($${price.toFixed(2)}) is extended above preferred entry corridor (${kl.watchZone || `$${canonicalLower.toFixed(2)} – $${canonicalUpper.toFixed(2)}`}). Wait for low-volume pullback.`,
+          description: `Price ($${price.toFixed(2)}) is extended above preferred entry corridor (${kl.watchZone || `$${corridorLoc.entryMin!.toFixed(2)} – $${corridorLoc.entryMax!.toFixed(2)}`}). Wait for low-volume pullback.`,
           status: "UNMET",
         });
       } else {
@@ -59,7 +58,7 @@ export function deriveUnmetConditions(insight: QuantitativeInsight): UnmetCondit
           id: "corridor",
           category: "CORRIDOR",
           title: "Reclaim Base Floor",
-          description: `Price ($${price.toFixed(2)}) is testing lower bounds below corridor (${kl.watchZone || `$${canonicalLower.toFixed(2)}`}). Requires stabilization before entry.`,
+          description: `Price ($${price.toFixed(2)}) is testing lower bounds below corridor (${kl.watchZone || `$${corridorLoc.entryMin!.toFixed(2)}`}). Requires stabilization before entry.`,
           status: "UNMET",
         });
       }
@@ -68,7 +67,7 @@ export function deriveUnmetConditions(insight: QuantitativeInsight): UnmetCondit
         id: "corridor",
         category: "CORRIDOR",
         title: "Accumulation Corridor Unavailable",
-        description: "Canonical execution corridor bounds are unavailable for this asset (insufficient trading history or unverified market data).",
+        description: corridorLoc.description || "Canonical execution corridor bounds are unavailable for this asset (insufficient trading history or unverified market data).",
         status: "UNMET",
       });
     }
