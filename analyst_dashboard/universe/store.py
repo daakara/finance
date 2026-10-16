@@ -344,34 +344,6 @@ class UniverseStore:
         finally:
             conn.close()
 
-    def get_universe_build(self, universe_build_id: str) -> Optional[Dict[str, Any]]:
-        """Retrieves universe build attestation record by universe_build_id."""
-        conn = self._get_connection()
-        try:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT * FROM universe_builds
-                WHERE universe_build_id = ?
-            """, (universe_build_id,))
-            row = cursor.fetchone()
-            return dict(row) if row else None
-        finally:
-            conn.close()
-
-    def get_eligible_membership(self, universe_build_id: str) -> List[str]:
-        """Returns sorted list of symbols marked ELIGIBLE for the universe build."""
-        conn = self._get_connection()
-        try:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT symbol FROM universe_eligibility_ledger
-                WHERE universe_build_id = ? AND eligibility_decision = 'ELIGIBLE'
-                ORDER BY symbol ASC
-            """, (universe_build_id,))
-            return [r[0] for r in cursor.fetchall()]
-        finally:
-            conn.close()
-
     def get_scannable_membership(self, universe_build_id: str) -> List[str]:
         """Returns sorted list of symbols marked DATA_READY for the universe build."""
         conn = self._get_connection()
@@ -383,61 +355,5 @@ class UniverseStore:
                 ORDER BY symbol ASC
             """, (universe_build_id,))
             return [r[0] for r in cursor.fetchall()]
-        finally:
-            conn.close()
-
-    def get_published_universe_for_session(
-        self,
-        universe_id: str = "ARX_US_EQUITIES",
-        session_date: Optional[str] = None,
-        candidate_generation_id: Optional[str] = None,
-    ) -> Optional[Dict[str, Any]]:
-        """Retrieves latest published and complete universe build matching session date and candidate generation."""
-        conn = self._get_connection()
-        try:
-            cursor = conn.cursor()
-            if session_date:
-                cursor.execute("""
-                    SELECT * FROM universe_builds
-                    WHERE universe_id = ? AND publication_decision = 'PUBLISH' AND construction_status = 'COMPLETE'
-                      AND source_population_as_of = ?
-                    ORDER BY rowid DESC LIMIT 1
-                """, (universe_id, session_date))
-                row = cursor.fetchone()
-                if row:
-                    build_dict = dict(row)
-                    if candidate_generation_id:
-                        rec_summary = {}
-                        if build_dict.get("reconciliation_summary_json"):
-                            try:
-                                rec_summary = json.loads(build_dict["reconciliation_summary_json"])
-                            except Exception:
-                                pass
-                        build_cand = rec_summary.get("candidate_generation_id")
-                        if build_cand and build_cand != candidate_generation_id:
-                            return None
-                    return build_dict
-
-            # Fallback to latest published build for the universe
-            cursor.execute("""
-                SELECT * FROM universe_builds
-                WHERE universe_id = ? AND publication_decision = 'PUBLISH' AND construction_status = 'COMPLETE'
-                ORDER BY rowid DESC LIMIT 1
-            """, (universe_id,))
-            row = cursor.fetchone()
-            if not row:
-                return None
-            build_dict = dict(row)
-            if candidate_generation_id:
-                rec_summary = {}
-                if build_dict.get("reconciliation_summary_json"):
-                    try:
-                        rec_summary = json.loads(build_dict["reconciliation_summary_json"])
-                    except Exception:
-                        pass
-                build_cand = rec_summary.get("candidate_generation_id")
-                if build_cand and build_cand != candidate_generation_id:
-                    return None
-            return build_dict
         finally:
             conn.close()
