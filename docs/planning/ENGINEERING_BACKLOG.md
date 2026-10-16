@@ -240,6 +240,6 @@
 
 ## 3. Governance & System Traceability
 
-- **Registration State**: Reconciled and staged locally in repository planning documentation under Product Owner directive.
+- **Registration State**: Reconciled and integrated on PR branch (`docs/sprint-1-closeout`), pending PR merge and Product Owner review.
 - **External Synchronization**: If enterprise planning (Jira, Linear, GitHub Projects) is authoritative, these records are marked `REGISTRATION_PENDING_EXTERNAL_UPDATE` pending external synchronization. Local files are not represented as autonomous mutations of external tracking systems.
 - **Precedence Hierarchy**: All registered items are subordinate to `docs/governance/ARX_DOMAIN_INVARIANT_REGISTRY.md` and `FROZEN_ENGINE_MANIFEST_V2_5_1.json`.

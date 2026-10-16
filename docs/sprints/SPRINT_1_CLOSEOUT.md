@@ -5,7 +5,7 @@
 **Governing Authorization**: Product Owner Directive — Final Documentation and Backlog Consolidation  
 **Date**: 2026-10-16T19:35:00+02:00  
 **Target Sprint**: Sprint 1  
-**Status**: `SPRINT_1_CLOSED` / `SCOPE_FROZEN`  
+**Status**: `SPRINT_1_SCOPE_FROZEN` / `DOCUMENTATION_SUBMITTED_FOR_REVIEW`  
 **Baseline Anchor**: Commit `31af2393d81504d24fffff4b10bcc9e0539e5a6d` (`origin/main` post-PR #8)  
 **Baseline Tree**: `dd4b1dfe4c0644cdc3c7aa0edfa87621b01b88e9`  
 
@@ -37,11 +37,14 @@ Every code release delivered under Sprint 1 has been verified against Git commit
 
 | Track / Capability | Branch / PR | Merged Commit SHA | Merged Tree SHA | CI & Production Deployment Status | Delivered Scope Summary |
 |---|---|---|---|---|---|
-| **Predecessor Foundation** | PR #4 | `787c1977b0071f2b31c4ad3d36a7f872147ad59e` | `c2174c86e24749f967ad7e06a382d5440be5a242` | Railway (`6bdc3de9`), Cloudflare (`0b0fa048`) — **SUCCESS** | **VCP Inactive Read-Safety Contract**: Proactively eliminated scan-on-read execution, lease races, and unperformed scan errors. |
+| **Predecessor Foundation** | PR #4 | `787c1977b0071f2b31c4ad3d36a7f872147ad59e` | `809c260d6f8ee53ed27b13183df44c79adefa2fd` | Railway (`6bdc3de9`), Cloudflare (`0b0fa048`) — **SUCCESS** | **VCP Inactive Read-Safety Contract**: Proactively eliminated scan-on-read execution, lease races, and unperformed scan errors. |
 | **Track A: Universe Wiring** | [PR #5](https://github.com/daakara/finance/pull/5) | `2eb032b2aec18ac4fea0f654eee8fb6c028466fe` | `483bee72e2f8df63adecf15891b6e0091d52a738` | Production Verified; Evidence Closed | **Candidate 004 Universe Wiring Reintroduction**: Decoupled universe and session wiring; preserved relational denominator and epoch membership. |
 | **Track C Slice 1: Validation Core** | [PR #6](https://github.com/daakara/finance/pull/6) | `5f26f3fcf8a4fa3140401bb16a687ec86c53de0d` | `04000d9516f1d2a1252caed51bc6b082d01484d1` | Merged to `main` — **SUCCESS** | **Policy-Independent Input Validation Core**: Strict fail-closed validator for raw universe input feeds (`analyst_dashboard/universe/`). Standalone core. |
 | **Track D Slice 1: Decision Consistency** | [PR #7](https://github.com/daakara/finance/pull/7) | `11d6813500270788085989bde228190b5b6d3629` | `0bfb2f004fc36a4cf594cbd69fcdbff4f2385994` | Railway (`ea33ea7e`), Cloudflare (`finance-xp8.pages.dev`) — **SUCCESS** | **Truthful Corridor Copy & Blocked-Action Consistency**: Eliminated spatial false claims, suppressed contradictory scale-in hints, 3-tier readiness. |
 | **Track C Slice 2: Offline Adapters** | [PR #8](https://github.com/daakara/finance/pull/8) | `31af2393d81504d24fffff4b10bcc9e0539e5a6d` | `dd4b1dfe4c0644cdc3c7aa0edfa87621b01b88e9` | Railway (`ee6880c5`), Cloudflare (`14e2192b`) — **SUCCESS** | **Offline Source Parsers & Validator Bridge**: Pure offline parsers for SEC EDGAR, Nasdaq Trader, and OpenFIGI feeds with boundary controls. |
+
+> [!NOTE]
+> **PR #4 Tree Identity Resolution**: An earlier draft cited an unresolvable object identifier (`c2174c86...`). Direct Git commit object inspection (`git show -s --format="%H %T" 787c1977b0071f2b31c4ad3d36a7f872147ad59e` and `git cat-file -p 787c1977b0071f2b31c4ad3d36a7f872147ad59e`) conclusively resolved the authoritative tree SHA as `809c260d6f8ee53ed27b13183df44c79adefa2fd`, aligning identically with `EVIDENCE_INDEX.md`.
 
 ---
 
@@ -142,16 +145,24 @@ The authoritative engineering backlog ([`docs/planning/ENGINEERING_BACKLOG.md`](
 ## 6. Sprint 1 Closeout Attestation
 
 ```ini
-SPRINT_1_DELIVERY_STATUS = COMPLETE
-SPRINT_1_SCOPE_STATUS = FROZEN_AND_CLOSED
-SPRINT_1_RECORD_STATUS = RECONCILED_AND_RATIFIED
-SPRINT_2_CARRYOVER_REGISTER = FORMALLY_STAGED
+SPRINT_1_WORKSTREAM_EXECUTION = COMPLETE_AS_REPORTED
+SPRINT_1_CLOSEOUT_DOCUMENTATION = SUBMITTED_FOR_REVIEW
+BACKLOG_RECONCILIATION = INTEGRATED_ON_PR_BRANCH
+MAINLINE_DOCUMENTATION_INTEGRATION = PENDING_PR_MERGE
+SPRINT_2_PLAN = PROPOSED_PENDING_PRIORITY_AND_CAPACITY
 ```
 
 ### Invariant & Boundary Affirmations
+- `PR_MERGE`: `NO`
 - `APPLICATION_CHANGES`: `NO` (strictly zero code changes outside documentation)
-- `NEW_DEPLOYMENTS`: `NO` (no new builds triggered or pushed)
-- `REMOTE_PUSH`: `NO` (strictly local documentation closeout)
-- `PRODUCTION_UNIVERSE_PUBLISHED`: `NO`
-- `RADAR_SCANNER_ACTIVATED`: `NO`
+- `PRODUCTION_ACCESS`: `NO`
+- `MANUAL_DEPLOYMENT`: `NO`
+- `UNIVERSE_BUILD`: `NO`
+- `UNIVERSE_PUBLICATION`: `NO`
+- `SCAN_EXECUTION`: `NO`
+- `SCHEDULER_ACTIVATION`: `NO`
+- `PROSPECTIVE_CAPTURE_ENABLEMENT`: `NO`
+- `MODEL_TUNING`: `FROZEN`
+- `EMPIRICAL_VALIDATION`: `NOT_ESTABLISHED`
+- `GATE12_ADVANCEMENT`: `NO`
 - `FROZEN_QUANT_ENGINES`: `UNTOUCHED` (Manifest 2.5.1 verified)
