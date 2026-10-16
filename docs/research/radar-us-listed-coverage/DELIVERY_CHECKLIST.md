@@ -80,6 +80,7 @@ Sprint 1 is closed to new scope. All implementation belongs to Sprint 2 or later
 
 #### `S2-02` — Comprehensive Listing Acquisition and Source Evidence
 - **Objective**: Automated, repeatable listing acquisition from primary sources.
+- **Status**: `PACKAGE_1_LOCAL_VERIFICATION_COMPLETE` (Listing acquisition worker, atomic raw storage, and offline parser replay verified under `tier2c`; complete market coverage remains unestablished).
 - **Acceptance Contract**:
   - Out-of-band acquisition worker for SEC EDGAR (`company_tickers_exchange.json`) and Nasdaq Trader (`nasdaqlisted.txt`, `otherlisted.txt`).
   - Preserves immutable raw source bytes and SHA-256 content hashes.
