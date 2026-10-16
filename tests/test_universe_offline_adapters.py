@@ -21,9 +21,12 @@ from analyst_dashboard.universe.adapters import (
     AdapterValidatorBridge,
     MatchedUniverseCandidate,
     OpenFigiMatchStatus,
+    ParsedSourceRow,
     SourceFeedType,
+    SourceMatchingAccounting,
     format_cik,
     match_sources,
+    match_sources_with_accounting,
     parse_nasdaq_trader_directory,
     parse_openfigi_response,
     parse_sec_company_tickers_exchange,
@@ -200,6 +203,48 @@ class TestSecEdgarParser:
             assert "is_common_stock" not in r.raw_values
             assert "primary_listing" not in r.raw_values
 
+    def test_duplicate_header_fields_fails_closed(self):
+        """Duplicate header fields must be rejected as malformed payload."""
+        bad_json = {
+            "fields": ["cik", "name", "ticker", "exchange", "cik"],
+            "data": [[320193, "Apple Inc.", "AAPL", "Nasdaq", 320193]],
+        }
+        parsed = parse_sec_company_tickers_exchange(bad_json)
+        assert parsed.malformed_row_count == 1
+        assert parsed.data_row_count == 0
+        assert parsed.rows[0].is_malformed is True
+        assert "Duplicate header field names detected" in parsed.rows[0].malformed_reason
+
+    def test_non_string_header_field_fails_closed(self):
+        """Empty or non-string header elements must be rejected as malformed payload."""
+        bad_json = {
+            "fields": ["cik", "name", "", "exchange"],
+            "data": [[320193, "Apple Inc.", "AAPL", "Nasdaq"]],
+        }
+        parsed = parse_sec_company_tickers_exchange(bad_json)
+        assert parsed.malformed_row_count == 1
+        assert parsed.data_row_count == 0
+        assert parsed.rows[0].is_malformed is True
+        assert "Header fields must be non-empty strings" in parsed.rows[0].malformed_reason
+
+    def test_derivative_sample_wrapper_metadata(self):
+        """
+        Confirms parser accepts derivative sample wrappers containing total_count/sample_count
+        while preserving them as metadata rather than publisher-attested schema fields.
+        """
+        derivative_json = {
+            "fields": ["cik", "name", "ticker", "exchange"],
+            "total_count": 10444,
+            "sample_count": 1,
+            "data": [[320193, "Apple Inc.", "AAPL", "Nasdaq"]],
+        }
+        parsed = parse_sec_company_tickers_exchange(derivative_json)
+        assert parsed.data_row_count == 1
+        assert parsed.malformed_row_count == 0
+        assert parsed.metadata_fields["total_count"] == 10444
+        assert parsed.metadata_fields["sample_count"] == 1
+        assert parsed.rows[0].raw_values["symbol"] == "AAPL"
+
 
 # ── Parser B: Nasdaq Trader Tests ─────────────────────────────────────────────
 
@@ -307,6 +352,66 @@ class TestOpenFigiParser:
         r3 = results[3]
         assert r3.match_status == OpenFigiMatchStatus.NO_MATCH
 
+    def test_openfigi_request_response_length_mismatch_missing_response(self):
+        """
+        When request payload has 3 items but response only returns 1 item,
+        the missing responses must not vanish silently through truncation.
+        """
+        requests = [
+            {"idType": "TICKER", "idValue": "AAPL", "exchCode": "US"},
+            {"idType": "TICKER", "idValue": "MSFT", "exchCode": "US"},
+            {"idType": "TICKER", "idValue": "NVDA", "exchCode": "US"},
+        ]
+        response = [{"data": [{"figi": "BBG000B9XRY4", "ticker": "AAPL"}]}]
+
+        results = parse_openfigi_response(response, request_payload=requests)
+        assert len(results) == 3
+
+        # Item 0 is parsed cleanly
+        assert results[0].request_index == 0
+        assert results[0].match_status == OpenFigiMatchStatus.SINGLE_MATCH
+
+        # Items 1 and 2 are captured as missing response errors
+        assert results[1].request_index == 1
+        assert results[1].match_status == OpenFigiMatchStatus.ERROR
+        assert "Missing response item for request index 1" in results[1].error_message
+        assert results[1].request_payload["idValue"] == "MSFT"
+
+        assert results[2].request_index == 2
+        assert results[2].match_status == OpenFigiMatchStatus.ERROR
+        assert "Missing response item for request index 2" in results[2].error_message
+        assert results[2].request_payload["idValue"] == "NVDA"
+
+    def test_openfigi_request_response_length_mismatch_extra_response(self):
+        """Extra response items beyond request payload must record warning message."""
+        requests = [{"idType": "TICKER", "idValue": "AAPL", "exchCode": "US"}]
+        response = [
+            {"data": [{"figi": "BBG000B9XRY4", "ticker": "AAPL"}]},
+            {"data": [{"figi": "BBG000EXTRA", "ticker": "EXTRA"}]},
+        ]
+        results = parse_openfigi_response(response, request_payload=requests)
+        assert len(results) == 2
+        assert results[1].request_index == 1
+        assert "has no corresponding request payload item" in results[1].warning_message
+
+    def test_distinct_figi_levels_preserved(self):
+        """Listing FIGI, Composite FIGI, and Share Class FIGI remain distinct."""
+        response = [{
+            "data": [{
+                "figi": "BBG000LISTING",
+                "compositeFIGI": "BBG000COMPOSITE",
+                "shareClassFIGI": "BBG000SHARECLASS",
+                "ticker": "TEST",
+            }]
+        }]
+        results = parse_openfigi_response(response)
+        assert len(results) == 1
+        m = results[0].matches[0]
+        assert m["listing_figi"] == "BBG000LISTING"
+        assert m["composite_figi"] == "BBG000COMPOSITE"
+        assert m["share_class_figi"] == "BBG000SHARECLASS"
+        assert m["listing_figi"] != m["composite_figi"] != m["share_class_figi"]
+
 
 # ── Bounded Matching Tests ────────────────────────────────────────────────────
 
@@ -354,6 +459,71 @@ class TestBoundedMatching:
         cand = candidates[0]
         assert cand.is_ambiguous is True
         assert any("VENUE_MISMATCH" in c for c in cand.join_conflicts)
+
+    def test_matching_completeness_and_accounting(self):
+        """
+        Reconciles full multi-source join with complete source accounting.
+        Ensures SEC-only, directory-only, FIGI-only, and malformed rows are all preserved.
+        """
+        sec_json = {
+            "fields": ["cik", "name", "ticker", "exchange"],
+            "data": [
+                [320193, "Apple Inc.", "AAPL", "Nasdaq"],
+                [999999, "Malformed SEC Corp", "MALF"],  # Row width mismatch -> malformed
+            ],
+        }
+        dir_text = (
+            "Symbol|Security Name|Market Category|Test Issue|Financial Status|Round Lot Size|ETF|NextShares\n"
+            "AAPL|Apple Inc.|Q|N|N|100|N|N\n"
+            "XYZ|XYZ Corp|Q|N|N|100|N|N\n"
+            "BAD|Missing columns|Q\n"  # Column width mismatch -> malformed
+            "File Creation Time: 1016202612:00|||||||\n"
+        )
+        figi_resp = [
+            {
+                "data": [{
+                    "figi": "BBG000FIGIONLY",
+                    "ticker": "FIGIONLY",
+                    "compositeFIGI": "BBG000FIGIONLY",
+                    "shareClassFIGI": "BBG000FIGIONLYSC",
+                }]
+            }
+        ]
+
+        sec = parse_sec_company_tickers_exchange(sec_json)
+        directory = parse_nasdaq_trader_directory(dir_text)
+        figi = parse_openfigi_response(figi_resp)
+
+        _candidates, acct = match_sources_with_accounting(
+            sec_file=sec,
+            directory_files=[directory],
+            openfigi_results=figi,
+        )
+
+        assert acct.total_candidates == 3  # AAPL, XYZ, FIGIONLY
+        assert acct.fully_matched_count == 1  # AAPL in both SEC and Directory
+        assert acct.sec_only_count == 0
+        assert acct.directory_only_count == 1  # XYZ in Directory only
+        assert acct.figi_only_count == 1  # FIGIONLY in OpenFIGI only
+        assert acct.malformed_source_row_count == 2  # 1 from SEC, 1 from Directory
+        assert len(acct.malformed_source_rows) == 2
+
+    def test_shared_cik_distinct_securities(self):
+        """Multiple share classes under one issuer CIK must remain distinct candidate records."""
+        sub_json = {
+            "cik": "0001652044",
+            "name": "Alphabet Inc.",
+            "tickers": ["GOOGL", "GOOG"],
+            "exchanges": ["Nasdaq", "Nasdaq"],
+        }
+        sub_file = parse_sec_submissions(sub_json)
+        candidates = match_sources(sec_file=sub_file)
+
+        assert len(candidates) == 2
+        symbols = {c.join_key for c in candidates}
+        assert symbols == {"GOOGL", "GOOG"}
+        for c in candidates:
+            assert c.sec_row.raw_values["issuer_cik"] == "0001652044"
 
 
 # ── Adapter-to-Validator Bridge Tests ─────────────────────────────────────────
@@ -429,6 +599,52 @@ class TestAdapterValidatorBridge:
         secs = batch_res.to_source_securities()
         assert len(secs) == 1
         assert secs[0].symbol == "SYNTH"
+
+    def test_empty_candidate_set_blocks_admission(self):
+        """Empty candidate input batch must block admission rather than claiming success."""
+        reqs = ValidationRequirements()
+        report = AdapterValidatorBridge.validate_candidates([], reqs)
+        assert report.is_batch_valid is False
+        assert report.total_candidates == 0
+        assert "EMPTY_CANDIDATE_SET" in report.batch_rejection_reason
+
+    def test_malformed_source_rows_block_admission(self):
+        """A failed source parse must not silently become a clean smaller batch."""
+        cand = MatchedUniverseCandidate(join_key="CLEAN")
+        acct = SourceMatchingAccounting(
+            total_candidates=1,
+            fully_matched_count=1,
+            sec_only_count=0,
+            directory_only_count=0,
+            figi_only_count=0,
+            ambiguous_count=0,
+            conflict_count=0,
+            malformed_source_row_count=3,
+            malformed_source_rows=[ParsedSourceRow(row_index=1, raw_values={}, is_malformed=True)],
+        )
+        reqs = ValidationRequirements()
+        report = AdapterValidatorBridge.validate_candidates([cand], reqs, matching_accounting=acct)
+        assert report.is_batch_valid is False
+        assert "SOURCE_PARSE_FAILED" in report.batch_rejection_reason
+
+    def test_ambiguous_candidate_blocks_admission(self):
+        """Unresolved multi-source collisions/ambiguities block batch admission."""
+        cand = MatchedUniverseCandidate(join_key="AMBIG", is_ambiguous=True, join_conflicts=["ONE_TO_MANY_SEC_RECORDS"])
+        reqs = ValidationRequirements()
+        report = AdapterValidatorBridge.validate_candidates([cand], reqs)
+        assert report.is_batch_valid is False
+        assert "UNRESOLVED_SOURCE_AMBIGUITY" in report.batch_rejection_reason
+
+    def test_evidence_reference_provenance_hash_and_row(self):
+        """Evidence references must capture source row index and input byte hash."""
+        sec = parse_sec_company_tickers_exchange(SYNTHETIC_SEC_JSON, source_identifier="sec_test.json")
+        cand = match_sources(sec_file=sec)[0]
+        _raw_rec, evs = AdapterValidatorBridge.build_candidate_raw_record(cand)
+        assert len(evs) == 1
+        ev = evs[0]
+        assert ev.source_authority == "SEC_EDGAR"
+        assert ev.source_identifier == "sec_test.json#row=0"
+        assert ev.source_hash == sec.content_sha256
 
 
 # ── Saved Sample Replay Tests (Real Bytes Verification) ───────────────────────

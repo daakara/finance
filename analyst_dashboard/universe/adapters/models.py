@@ -122,6 +122,12 @@ class MatchedUniverseCandidate:
     figi_result: ParsedOpenFigiResult | None = None
     join_conflicts: list[str] = field(default_factory=list)
     is_ambiguous: bool = False
+    sec_source_identifier: str | None = None
+    sec_content_hash: str | None = None
+    directory_source_identifier: str | None = None
+    directory_content_hash: str | None = None
+    figi_source_identifier: str | None = None
+    figi_content_hash: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -131,6 +137,42 @@ class MatchedUniverseCandidate:
             "has_figi": self.figi_result is not None,
             "join_conflicts": self.join_conflicts,
             "is_ambiguous": self.is_ambiguous,
+            "sec_source_identifier": self.sec_source_identifier,
+            "sec_content_hash": self.sec_content_hash,
+            "directory_source_identifier": self.directory_source_identifier,
+            "directory_content_hash": self.directory_content_hash,
+            "figi_source_identifier": self.figi_source_identifier,
+            "figi_content_hash": self.figi_content_hash,
+        }
+
+
+@dataclass
+class SourceMatchingAccounting:
+    """
+    Source accounting across SEC, Directory, and OpenFIGI feeds.
+    Tracks complete source population, matched vs unmatched counts,
+    and any malformed source rows.
+    """
+    total_candidates: int
+    fully_matched_count: int      # both SEC and Directory present
+    sec_only_count: int           # SEC present, Directory absent
+    directory_only_count: int     # Directory present, SEC absent
+    figi_only_count: int          # OpenFIGI present, SEC and Directory absent
+    ambiguous_count: int          # candidate is_ambiguous is True
+    conflict_count: int           # candidate join_conflicts is non-empty
+    malformed_source_row_count: int
+    malformed_source_rows: list[ParsedSourceRow] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "total_candidates": self.total_candidates,
+            "fully_matched_count": self.fully_matched_count,
+            "sec_only_count": self.sec_only_count,
+            "directory_only_count": self.directory_only_count,
+            "figi_only_count": self.figi_only_count,
+            "ambiguous_count": self.ambiguous_count,
+            "conflict_count": self.conflict_count,
+            "malformed_source_row_count": self.malformed_source_row_count,
         }
 
 
@@ -159,6 +201,8 @@ class AdapterValidationReport:
     field_certifications: dict[str, FieldCertificationStatus]
     raw_records: list[dict[str, Any]]
     batch_validation_result: Any | None = None
+    matching_accounting: SourceMatchingAccounting | None = None
+    batch_rejection_reason: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -166,6 +210,8 @@ class AdapterValidationReport:
             "validation_passed_count": self.validation_passed_count,
             "validation_failed_count": self.validation_failed_count,
             "is_batch_valid": self.is_batch_valid,
+            "batch_rejection_reason": self.batch_rejection_reason,
+            "matching_accounting": self.matching_accounting.to_dict() if self.matching_accounting else None,
             "field_certifications": {
                 k: v.to_dict() for k, v in self.field_certifications.items()
             },

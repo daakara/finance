@@ -79,8 +79,32 @@ def parse_openfigi_response(
 
     parsed_results: list[ParsedOpenFigiResult] = []
 
-    for req_idx, item in enumerate(res_list):
+    req_count = len(request_payload) if request_payload is not None else len(res_list)
+    max_idx = max(len(res_list), req_count)
+
+    for req_idx in range(max_idx):
         req_item = request_payload[req_idx] if request_payload and req_idx < len(request_payload) else {}
+
+        # Case 1: Missing response item (request was submitted, but response list was truncated)
+        if req_idx >= len(res_list):
+            parsed_results.append(
+                ParsedOpenFigiResult(
+                    request_index=req_idx,
+                    request_payload=req_item,
+                    match_status=OpenFigiMatchStatus.ERROR,
+                    error_message=f"Missing response item for request index {req_idx} (received {len(res_list)} responses for {req_count} requests)",
+                    matches=[],
+                    selected_figi=None,
+                )
+            )
+            continue
+
+        item = res_list[req_idx]
+
+        # Case 2: Extra response item beyond request count
+        extra_warning = None
+        if request_payload is not None and req_idx >= len(request_payload):
+            extra_warning = f"Response item at index {req_idx} has no corresponding request payload item (request payload count: {len(request_payload)})"
 
         if not isinstance(item, dict):
             parsed_results.append(
@@ -89,13 +113,17 @@ def parse_openfigi_response(
                     request_payload=req_item,
                     match_status=OpenFigiMatchStatus.ERROR,
                     error_message=f"Response item at index {req_idx} is not a dictionary: {type(item)}",
+                    warning_message=extra_warning,
                     matches=[],
+                    selected_figi=None,
                 )
             )
             continue
 
         error_msg = item.get("error")
         warning_msg = item.get("warning")
+        if extra_warning:
+            warning_msg = f"{warning_msg}; {extra_warning}" if warning_msg else extra_warning
         data_matches = item.get("data")
 
         if error_msg:
@@ -107,6 +135,7 @@ def parse_openfigi_response(
                     error_message=str(error_msg),
                     warning_message=str(warning_msg) if warning_msg else None,
                     matches=[],
+                    selected_figi=None,
                 )
             )
             continue
@@ -119,6 +148,7 @@ def parse_openfigi_response(
                     match_status=OpenFigiMatchStatus.NO_MATCH,
                     warning_message=str(warning_msg) if warning_msg else None,
                     matches=[],
+                    selected_figi=None,
                 )
             )
             continue
@@ -145,9 +175,12 @@ def parse_openfigi_response(
             match_status = OpenFigiMatchStatus.SINGLE_MATCH
             # In a single unambiguous match, the listing FIGI is unambiguous
             selected_figi = clean_matches[0]["listing_figi"]
-        else:
+        elif len(clean_matches) > 1:
             match_status = OpenFigiMatchStatus.MULTI_MATCH
             # INVARIANT: Do NOT select first match automatically
+            selected_figi = None
+        else:
+            match_status = OpenFigiMatchStatus.NO_MATCH
             selected_figi = None
 
         parsed_results.append(

@@ -1,5 +1,5 @@
 # ARX Terminal — Workstream C Implementation Note
-## Slice 2: Offline Source Parsing & Validator Integration
+## Slice 2: Offline Source Parsing & Validator Integration (Boundary Review & Verification)
 
 **Backlog Item:** `BACKLOG-VCP-PROD-UNIVERSE-003` (Slice 2)  
 **Date:** 2026-10-16  
@@ -7,7 +7,7 @@
 **Implementation Branch:** `feat/universe-offline-adapter-validation`  
 **Base Commit:** `5f26f3fcf8a4fa3140401bb16a687ec86c53de0d` (`origin/main`, PR #6 squash merge)  
 **Base Tree SHA:** `04000d9516f1d2a1252caed51bc6b082d01484d1`  
-**Status:** `OFFLINE_ADAPTER_VALIDATOR_INTEGRATION_IMPLEMENTED_LOCAL`  
+**Status:** `OFFLINE_ADAPTER_VALIDATOR_REMOTE_VERIFIED_INTEGRATION_PENDING`  
 
 ---
 
@@ -27,143 +27,170 @@ Slice 2 implements pure offline, in-memory parsers for external and venue univer
 
 ---
 
-### 2. Component Architecture & Interfaces
+### 2. Supported Input Schemas & Formats
 
-The offline adapter package is implemented under `analyst_dashboard/universe/adapters/`:
+The offline adapter package supports the following primary source schemas:
 
-```
-analyst_dashboard/universe/adapters/
-├── __init__.py           # Clean public interface exports
-├── models.py             # Strongly typed data models for raw observations, files, and reports
-├── sec_edgar.py          # Parsers for company_tickers_exchange.json and CIK submissions JSON
-├── nasdaq_trader.py      # Parser for nasdaqlisted.txt and otherlisted.txt directory text
-├── openfigi.py           # Parser for saved OpenFIGI request/response mapping pairs
-├── matching.py           # Bounded multi-source joiner and cross-feed conflict detector
-└── bridge.py             # Adapter-to-validator bridge with field certification diagnostics
-```
+1. **SEC EDGAR `company_tickers_exchange.json` (`sec_edgar.py`):**
+   - **Official Publisher Schema:** `{"fields": ["cik", "name", "ticker", "exchange"], "data": [[320193, "Apple Inc.", "AAPL", "Nasdaq"], ...]}`
+   - **Supported Header Validation:** Strict type enforcement (all header elements must be non-empty strings), duplicate header detection (`cik`, `exchange` duplicates rejected), and presence of mandatory column names (`cik`, `name`, `ticker`, `exchange`).
+   - **Row Integrity:** Formats CIK to canonical 10-digit zero-padded string (`0000320193`). Fails closed on row width mismatches or missing/null values, preserving row index and raw values in diagnostics.
+   - **Derivative Sample Provenance:** The saved scratch sample (`sec_exchange_sample.json`) contains `total_count: 10444` and `sample_count: 50`. These are recognized as local sample-preparation metadata, preserved in `metadata_fields`, and distinguished from publisher-attested schema fields. Content hashes establish byte identity of local samples, not publisher digital signatures.
 
-#### 2.1 Public Function Interfaces
+2. **SEC EDGAR `submissions/CIK{cik}.json` (`sec_edgar.py`):**
+   - **Publisher Schema:** JSON containing `cik`, `name`, `tickers` (array), `exchanges` (array), `sic`, `sicDescription`.
+   - **Multi-Ticker Invariant:** Associates multiple tickers (`GOOGL`, `GOOG`, `GOOGM`, `GOOGN`) to a shared issuer CIK `0001652044` without collapsing distinct instrument observations or manufacturing surrogate security keys.
 
-1. **SEC EDGAR Parser (`sec_edgar.py`):**
-   - `parse_sec_company_tickers_exchange(content, source_identifier, retrieved_at_utc) -> ParsedSourceFile`
-     - Validates top-level `fields` array and `data` matrix.
-     - Formats CIK to canonical 10-digit zero-padded string (`0000320193`).
-     - Detects row width mismatches and missing required attributes.
-   - `parse_sec_submissions(content, source_identifier, retrieved_at_utc) -> ParsedSourceFile`
-     - Parses SEC EDGAR submissions payload (`CIK{cik}.json`).
-     - Maps multiple ticker symbols to a single issuer CIK.
+3. **Nasdaq Trader Directories (`nasdaq_trader.py`):**
+   - **`nasdaqlisted.txt` (8 pipe-delimited columns):** `Symbol|Security Name|Market Category|Test Issue|Financial Status|Round Lot Size|ETF|NextShares`
+   - **`otherlisted.txt` (8 pipe-delimited columns):** `ACT Symbol|Security Name|Exchange|CQS Symbol|ETF|Round Lot Size|Test Issue|NASDAQ Symbol`
+   - **Structural Separation:** Distinguishes header row, data rows, and `File Creation Time:` footer row. Preserves footer creation time (`1016202603:03`) in metadata.
+   - **Raw vs Normalized Symbology:** Preserves raw symbol (e.g. `AAC.U`, `AAC=`) and normalized symbol (`AAC.U`) distinctly.
 
-2. **Nasdaq Trader Directory Parser (`nasdaq_trader.py`):**
-   - `parse_nasdaq_trader_directory(content, filename_hint, source_identifier, retrieved_at_utc) -> ParsedSourceFile`
-     - Supports both `nasdaqlisted.txt` (8 pipe-delimited columns) and `otherlisted.txt` (8 pipe-delimited columns).
-     - Separates header row, data rows, and `File Creation Time:` footer row.
-     - Preserves footer creation time string in metadata.
-     - Tracks distinct counts: `physical_line_count`, `metadata_row_count`, `data_row_count`, `malformed_row_count`, `unique_record_count`.
-     - Preserves raw symbols and normalized candidates separately.
-
-3. **OpenFIGI Response Parser (`openfigi.py`):**
-   - `parse_openfigi_response(response_content, request_payload, source_identifier, retrieved_at_utc) -> List[ParsedOpenFigiResult]`
-     - Correlates response items with request payloads.
-     - Distinguishes `SINGLE_MATCH`, `MULTI_MATCH`, `NO_MATCH`, and `ERROR`.
-     - Preserves `figi` (Listing FIGI), `compositeFIGI`, `shareClassFIGI`, `exchCode`, `securityType2`.
-     - Multi-match outcomes leave `selected_figi = None` without automatic selection.
-
-4. **Bounded Matching & Conflict Detection (`matching.py`):**
-   - `match_sources(sec_file, directory_files, openfigi_results, require_venue_match) -> List[MatchedUniverseCandidate]`
-     - Joins observations by symbol across participating feeds.
-     - Detects one-to-many symbol collisions.
-     - Detects cross-venue conflicts (e.g. SEC Nasdaq vs Directory NYSE).
-     - Keeps unmatched SEC records and unmatched directory records visible.
-
-5. **Adapter-to-Validator Bridge (`bridge.py`):**
-   - `AdapterValidatorBridge.build_candidate_raw_record(candidate, synthesize_surrogate_security_id) -> Tuple[Dict[str, Any], List[EvidenceReference]]`
-     - Extracts only empirically observed attributes; strictly omits unobserved fields.
-   - `AdapterValidatorBridge.assess_field_certifications(candidates) -> Dict[str, FieldCertificationStatus]`
-     - Emits field-by-field diagnostic matrix indicating which universe fields are supported by empirical evidence versus open policy gaps.
-   - `AdapterValidatorBridge.validate_candidates(candidates, requirements, temporal_context, synthesize_surrogate_security_id) -> AdapterValidationReport`
-     - Validates candidate batch through `UniverseInputValidator.validate_batch()`.
-     - Respects atomic whole-batch failure semantics.
+4. **OpenFIGI Mapping API (`openfigi.py`):**
+   - **Input Association:** Aligns response array items directly with caller-supplied `request_payload` dictionaries.
+   - **Length Mismatch Guard:** If response count differs from request count:
+     - Missing responses (truncated vendor response) are captured as discrete `ERROR` items with `request_index` and `request_payload` preserved.
+     - Extra responses beyond request length record descriptive warning metadata.
+   - **FIGI Level Separation:** Preserves `figi` (Listing FIGI), `compositeFIGI`, `shareClassFIGI`, `exchCode`, `securityType2` distinctly.
+   - **Ambiguity Guard:** On multi-match outcomes (`MULTI_MATCH`), `selected_figi` remains `None`. No automatic first-result selection is performed. Request filters are not represented as returned evidence.
 
 ---
 
-### 3. Saved-Sample Replay & Empirical Evidence Audit
+### 3. Multi-Source Joining & Source Population Accounting
 
-A bounded replay test was executed against actual saved scratch samples from field-gap research:
+Source matching (`matching.py`) performs a bounded join across participating feeds with complete accounting:
 
-| Sample File | Schema Type | Raw Bytes | SHA-256 Digest | Replay Outcome |
+- **Full Source Union:** Candidates are indexed across the union of all symbols: `set(SEC) | set(Directory) | set(OpenFIGI)`. Symbols appearing in only one feed are never silently dropped.
+- **Malformed Row Retention:** Malformed source rows across all input files are collected and preserved in `SourceMatchingAccounting.malformed_source_rows`.
+- **Collision & Ambiguity Detection:**
+  - One-to-many symbol collisions within SEC or Directory feeds.
+  - Venue cross-feed conflicts (e.g. SEC `Nasdaq` vs Directory `NYSE`).
+  - OpenFIGI multi-match ambiguities.
+- **Structured Accounting Container (`SourceMatchingAccounting`):**
+  - `total_candidates`: Total distinct symbols across all inputs.
+  - `fully_matched_count`: Candidates with both SEC and Directory observations.
+  - `sec_only_count`: Candidates present only in SEC EDGAR.
+  - `directory_only_count`: Candidates present only in Nasdaq Trader directory.
+  - `figi_only_count`: Candidates present only in OpenFIGI results.
+  - `ambiguous_count`: Candidates with unresolved collisions or ambiguities.
+  - `conflict_count`: Candidates with detected venue/data conflicts.
+  - `malformed_source_row_count`: Count of malformed rows across all input files.
+
+---
+
+### 4. Bridge Field Provenance & Evidence Mapping
+
+Every field emitted by `AdapterValidatorBridge.build_candidate_raw_record()` is traced to primary observed source bytes:
+
+| Field Name | Observed Source Feed & Column | Normalization / Extraction | Evidence Reference | Missing / Conflicting Behavior |
 |---|---|---|---|---|
-| `sec_exchange_sample.json` | SEC Exchange Master | 4,258 | `06fd1ce96a78eb4195f60e6ea158e5af40290d8816a06917dfe6a26401e70f94` | 50 data rows, 0 malformed, 50 unique CIKs/tickers |
-| `nasdaq_listed_sample.txt` | Nasdaq Directory | 2,685 | `02866c0ab25e1d6318565d4717d205d16f94d2bcde2c2fa73b6c2b0b7ec6eec9` | 43 data rows, 2 metadata rows (header + footer), 43 unique symbols, creation time `1016202603:03` |
-| `other_listed_sample.txt` | Otherlisted Directory | 2,930 | `bedca81527c7093fafc53adbb83389a59cc8fee9d579a47c02f03d5190ba28df` | 43 data rows, 2 metadata rows (header + footer), 43 unique symbols, creation time `1016202603:03` |
-| `openfigi_mapping_response.json` | OpenFIGI Mapping | 1,328 | `d197d627eb720a2df4bdbf05c881955a397d46976d5147ad1c5913fcd9edd6e0` | 5 items parsed: `AAPL` (single match, `BBG000B9XRY4`), `GOOGL`, `GOOG`, `SPY`, `O` |
-| `sec_submissions_cik0001652044.json` | SEC Submissions | 152,401 | `648cea84d824309b518807fd7e7fdb72d6855e12e8afa221d2caa047d5c9f2ca` | CIK `0001652044` (Alphabet Inc.) correctly associates 4 distinct tickers (`GOOGL`, `GOOG`, `GOOGM`, `GOOGN`) |
+| `symbol` | SEC `ticker` or Directory `Symbol`/`ACT Symbol` | Stripped, uppercase | `SEC_EDGAR` or `NASDAQ_TRADER` (`#row=idx`, file hash) | Required. Collision flagged if duplicate rows exist. |
+| `company_name` | SEC `name` or Directory `Security Name` | Stripped string | `SEC_EDGAR` or `NASDAQ_TRADER` (`#row=idx`, file hash) | Precedence: SEC name if present, else Directory. |
+| `exchange` | SEC `exchange` or Directory `Exchange` | Raw string (unmapped) | `SEC_EDGAR` or `NASDAQ_TRADER` (`#row=idx`, file hash) | Precedence: SEC exchange; venue mismatch flagged if discordant. |
+| `security_id` | OpenFIGI `figi` (single match only) | None | `OPENFIGI` (`#request=idx`, hash) | **Omitted if OpenFIGI absent or ambiguous.** Fails closed. Surrogate `CIK_{cik}_{symbol}` emitted only if explicitly caller-authorized. |
+| `security_type` | OpenFIGI `securityType2` | None | `OPENFIGI` (`#request=idx`, hash) | **Omitted in raw directory feeds.** `ETF=N` does NOT prove `COMMON_STOCK`. |
+| `asset_class` | None | None | None | **Omitted.** Absent across all raw feeds. |
+| `listing_status` | None | None | None | **Omitted.** Directory presence does NOT imply `ACTIVE` or unsuspended. |
+| `currency` | None | None | None | **Omitted.** Prohibits USD inference from positive price or US exchange membership. |
+| `country` | None | None | None | **Omitted.** Absent in directory feeds. |
+| `primary_listing` | None | None | None | **Omitted.** Directory membership does NOT resolve primary vs secondary/cross-listing. |
+| `listing_date` | None | None | None | **Omitted.** Historical point-in-time date absent in snapshot directory. |
+| `delisting_date` | None | None | None | **Omitted.** Historical delisting date absent in active directory snapshot. |
+| `trading_suspension_date` | None | None | None | **Omitted.** Real-time halt feed is not integrated into directory files. |
 
-#### Replay Overlap Limitation Note:
-- Overlap between the 50-row SEC mega-cap sample and the 43-row alphabetical directory head is exactly 1 ticker for Nasdaq (`AAPL`) and 1 ticker for Otherlisted (`ABBV`).
-- As established in research, this 96% non-overlap is an artifact of the truncated sample extraction methodology (mega-caps vs alphabetical start), not a reflection of full-market directory coverage.
-
----
-
-### 4. Field Certification Matrix & Evidence Gaps
-
-The adapter bridge surfaces the following field certification reality when passing primary source data to `UniverseInputValidator`:
-
-| Field Name | Empirical Evidence Status | Primary Source Authority | Evidence Gap / Policy Dependency |
-|---|---|---|---|
-| `symbol` | **CERTIFIED** | `SEC_EDGAR`, `NASDAQ_TRADER` | None. Ticker symbols consistent. |
-| `company_name` | **CERTIFIED** | `SEC_EDGAR`, `NASDAQ_TRADER` | Minor punctuation/capitalization differences. |
-| `exchange` | **CERTIFIED** | `SEC_EDGAR`, `NASDAQ_TRADER` | Requires canonical venue code translation (`Nasdaq` $\to$ `NASDAQ`, `N` $\to$ `NYSE`). |
-| `security_id` | **UNCERTIFIED** (in raw directories) | None (in SEC/Nasdaq); `OPENFIGI` (if attached) | Neither SEC nor Nasdaq directory provides a persistent instrument identifier. OpenFIGI provides Composite/Listing FIGI. |
-| `security_type` | **UNCERTIFIED** (in raw directories) | `OPENFIGI` (if attached) | Absent in directory feeds. `ETF == 'N'` does NOT prove `COMMON_STOCK`. OpenFIGI provides `securityType2`. |
-| `currency` | **UNCERTIFIED / ABSENT** | None | **CRITICAL GAP:** Absent across SEC and directory feeds. Positive pricing inference is strictly prohibited. |
-| `country` | **UNCERTIFIED / ABSENT** | None (in directories) | Absent in directory feeds. |
-| `primary_listing` | **UNCERTIFIED / ABSENT** | None | **CRITICAL GAP:** Directory membership does not prove primary listing vs secondary/cross-listing. |
-| `listing_date` | **UNCERTIFIED / ABSENT** | None | Absent in active snapshot feeds; requires historical corporate action data. |
-| `delisting_date` | **UNCERTIFIED / ABSENT** | None | Active directory snapshots do not provide point-in-time delisting history. |
-| `trading_suspension_date` | **UNCERTIFIED / ABSENT** | None | Real-time regulatory trading halt RSS feed is not integrated into directory files. |
-
-**Key Finding:** Because `currency`, `primary_listing`, and `security_id` are absent from primary directory feeds, real directory candidates submitted to standard validation requirements **FAIL CLOSED** with `ValidationStatus.VALIDATION_FAILED`. This is the intended fail-closed behavior, proving that uncertified records cannot silently slip into production universe pipelines.
+**Evidence Reference Provenance:**
+`EvidenceReference` instances populated by the bridge record:
+- `source_authority`: Authority tag (`SEC_EDGAR`, `NASDAQ_TRADER`, `OPENFIGI`).
+- `source_identifier`: Exact source file name and observation locator (e.g. `company_tickers_exchange.json#row=0`, `nasdaqlisted.txt#row=12`, `openfigi#request=2`).
+- `source_hash`: SHA-256 byte digest of the input file from which the row was parsed. (Establishes byte identity, not publisher digital signature).
 
 ---
 
-### 5. Validation vs. Eligibility vs. Publication Boundaries
+### 5. End-to-End Batch Safety & Admission Blocking
 
-| Concept | Scope & Definition | Authority |
+`AdapterValidatorBridge.validate_candidates()` guarantees that invalid, incomplete, or ambiguous batches cannot produce a certified universe:
+
+1. **Empty Batch Rejection:** If `candidates` is empty (`len == 0`), validation immediately blocks admission with `is_batch_valid = False` and `batch_rejection_reason = "EMPTY_CANDIDATE_SET"`.
+2. **Source Parse Failure Propagation:** If `matching_accounting.malformed_source_row_count > 0` (and incomplete sources are not explicitly caller-allowed), the batch fails with `is_batch_valid = False` and `batch_rejection_reason = "SOURCE_PARSE_FAILED"`. A failed source parse cannot silently become a clean smaller batch.
+3. **Ambiguity & Collision Blocking:** If any candidate has `is_ambiguous = True` or unresolved collisions, the batch fails with `is_batch_valid = False` and `batch_rejection_reason = "UNRESOLVED_SOURCE_AMBIGUITY"`.
+4. **Whole-Batch Admission Semantics:** Enforces that if any candidate fails structural validation requirements or batch-level uniqueness checks, `is_batch_valid = False` is emitted for the entire batch.
+
+---
+
+### 6. Review Classification Boundaries
+
+To avoid conflating distinct stages of universe evaluation:
+
+| Concept | Definition & Scope | Governing Code |
 |---|---|---|
-| **Parser Syntax Validation** | Asserts that raw input bytes conform to vendor/regulatory file structure (headers, delimiters, widths). | `analyst_dashboard/universe/adapters/` |
-| **Universe Input Validation** | Asserts that an input candidate satisfies explicit, caller-supplied structural and evidence requirements. | `analyst_dashboard/universe/validator.py` |
-| **Strategy Eligibility (R01–R07)** | Evaluates economic and structural trading criteria (liquidity, price floors, ADR exclusion). | `analyst_dashboard/vcp/universe.py` (Frozen Engine) |
-| **Production Publication** | Authorizes publishing an executable universe build to production runtime storage. | Product Owner / Gate 12 (Strictly Inactive) |
+| `PARSE_RESULT_USABLE_FOR_INSPECTION` | Asserts that raw input bytes conform to vendor file syntax without unhandled parse exceptions. Diagnostics and malformed rows are inspectable. | `analyst_dashboard/universe/adapters/` |
+| `VALIDATION_PASSED_UNDER_SUPPLIED_REQUIREMENTS` | Asserts that input candidates satisfy explicit, caller-supplied structural and evidence requirements. | `analyst_dashboard/universe/validator.py` |
+| `SOURCE_POPULATION_COMPLETE` | Asserts that all required participating feeds are matched, zero source rows were malformed, and no collisions exist. | `SourceMatchingAccounting` |
+| `STRATEGY_ELIGIBLE` | Evaluates trading rules (liquidity, price floors, ADR exclusion). **Strictly unevaluated** in this task. | `analyst_dashboard/vcp/universe.py` (Frozen Engine) |
 
 ---
 
-### 6. Test Suite & Marker Reconciliation
+### 7. Saved-Sample Replay Audit
 
-All new tests are housed in `tests/test_universe_offline_adapters.py` under marker:
-```python
-pytestmark = pytest.mark.tier2c  # Tier 2c: Provenance and Data Gate
-```
+Verification was conducted directly against byte samples located in `scratch/vcp_universe_qualification`:
 
-#### Test Execution Evidence:
-- `test_universe_offline_adapters.py`: **18 passed in 0.87s** (100% pass rate).
-- Full combined regression suite: **114 passed in 14.84s**:
-  - `tests/test_universe_offline_adapters.py` (18 passed)
+| Source Feed | Saved Sample File | SHA-256 Digest | Physical / Parsed Records | Validation & Gap Result |
+|---|---|---|---|---|
+| **SEC Exchange Directory** | `sec_exchange_sample.json` | `06fd1ce96a78eb4195f60e6ea158e5af40290d8816a06917dfe6a26401e70f94` | 50 data rows | Parsed 50 rows. 10-digit CIK preserved. Raw exchange preserved. Total/sample counts preserved as local derivative metadata. |
+| **Nasdaq Trader Listed** | `nasdaq_listed_sample.txt` | `02866c0ab25e1d6318565d4717d205d16f94d2bcde2c2fa73b6c2b0b7ec6eec9` | 45 rows (43 data, 2 meta) | Header/footer separated. Creation time `1016202603:03` captured. |
+| **Nasdaq Trader Other** | `other_listed_sample.txt` | `bedca81527c7093fafc53adbb83389a59cc8fee9d579a47c02f03d5190ba28df` | 45 rows (43 data, 2 meta) | Header/footer separated. Creation time `1016202603:03` captured. |
+| **OpenFIGI Mapping** | `openfigi_mapping_response.json` | `d197d627eb720a2df4bdbf05c881955a397d46976d5147ad1c5913fcd9edd6e0` | 5 items | `AAPL` single match (`BBG000B9XRY4`), `GOOGL`, `GOOG`, `SPY`, `O` distinct FIGI levels preserved. |
+| **SEC Submissions** | `sec_submissions_cik0001652044.json` | `648cea84d824309b518807fd7e7fdb72d6855e12e8afa221d2caa047d5c9f2ca` | 4 tickers | CIK `0001652044` (Alphabet Inc.) associates `GOOGL`, `GOOG`, `GOOGM`, `GOOGN` without conflation. |
+
+*Sample Overlap Limitation:* The 50-row SEC mega-cap sample and the 43-row alphabetical directory head share exactly 1 ticker for Nasdaq (`AAPL`) and 1 ticker for Otherlisted (`ABBV`). This 96% non-overlap is an artifact of sample truncation (mega-caps vs alphabetical start), not a reflection of full directory coverage.
+
+---
+
+### 8. Test Suite & Verification Evidence
+
+All tests are housed in `tests/test_universe_offline_adapters.py` under marker `pytest.mark.tier2c`.
+
+- **Unit Test Suite:** **30 passed in 1.02s** (100% pass rate).
+  - SEC EDGAR parser: 10 tests (valid, zero-padding, malformed JSON, missing header, row width mismatch, submissions multi-ticker, strict non-inference, duplicate headers, invalid header types, derivative wrapper metadata).
+  - Nasdaq Trader parser: 4 tests (nasdaqlisted, otherlisted, malformed line accounting, strict non-inference).
+  - OpenFIGI parser: 4 tests (single/multi-match, missing response length mismatch, extra response length mismatch, distinct FIGI levels).
+  - Bounded matching: 4 tests (SEC + directory match, venue mismatch conflict, matching completeness and accounting, shared CIK distinct securities).
+  - Adapter-validator bridge: 7 tests (fail-closed validation, no silent defaults, synthetic passing fixture, empty candidate set blocking, malformed source row blocking, ambiguous candidate blocking, evidence reference hash and row tracking).
+  - Saved sample replay: 1 test (5 real byte sample SHA-256 and count verification).
+- **Full Combined Regression Suite:** **126 passed in 7.31s**:
+  - `tests/test_universe_offline_adapters.py` (30 passed)
   - `tests/test_universe_validator.py` (68 passed)
   - `tests/test_vcp_c004_universe_wiring.py` (28 passed)
-- Linter verification: `python -m ruff check` $\to$ **All checks passed cleanly**.
-- CI Marker Selection:
-  - `pytest -m tier1` $\to$ 0 selected, 18 deselected.
-  - `pytest -m tier2c` $\to$ 18 selected, 18 passed. Selected once in CI by `-m "tier2a or tier2b or tier2c"`.
+- **Linter & Formatting:** `python -m ruff check` $\to$ **All checks passed cleanly**.
+- **CI Marker Behavior:**
+  - `pytest -m tier1` $\to$ 0 selected, 30 deselected.
+  - `pytest -m tier2c` $\to$ 30 selected, 30 passed.
 
 ---
 
-### 7. Next Smallest Integration Proposal (Slice 3)
+### 9. Workstream Status & Governance Ledger
 
-**Proposed Scope for Slice 3:**
-Author a bounded multi-feed normalization layer (`analyst_dashboard/universe/adapters/normalizer.py`) that applies explicit, Product-Owner-approved mapping rules to convert parsed observations from Slice 2 into normalized candidate models:
-1. Canonical venue code translation (`Nasdaq` $\to$ `NASDAQ`, `N` $\to$ `NYSE`, `P` $\to$ `ARCA`, `Z` $\to$ `BATS`).
-2. Explicit multi-source attribution merging (combining SEC issuer CIK + Directory trading flags + OpenFIGI taxonomy).
-3. Configurable surrogate security identifier generation (`CIK_{cik}_{symbol}`) pending formal identifier policy resolution.
-4. Retention of evidence gaps as unresolved fields without injecting unverified defaults.
+- **Workstream A (Control-Plane Universe Wiring):** Candidate 004 wiring release complete and evidence closed (PR #5 merged at `2eb032b`).
+- **Workstream B (Data.gov Source Discovery):** Discovery complete with recorded source limitations.
+- **Workstream C Slice 1 (Input Validation Core):** Merged to production baseline at `5f26f3f` (PR #6 squash merge).
+- **Workstream C Slice 2 (Offline Source Parsers & Bridge):** Implemented, reviewed, and locally verified in this workstream.
+- **Workstream D (Readiness Message Correction):** PR #7 authorized; completion report pending.
 
-*Note: This proposal remains subject to Product Owner review and authorization before any implementation begins.*
+**Invariant Boundary Declarations:**
+```
+PR_MERGE = NO
+PRODUCTION_DEPLOY = NO
+LIVE_SOURCE_ACQUISITION = NO
+PRODUCTION_ACCESS = NO
+PRODUCTION_INGESTION_INTEGRATION = NOT_IMPLEMENTED
+SOURCE_QUALIFICATION = NOT_ESTABLISHED
+UNIVERSE_BUILD = NO
+UNIVERSE_PUBLICATION = NO
+SCAN_EXECUTION = NO
+SCHEDULER_ACTIVATION = NO
+PROSPECTIVE_CAPTURE_ENABLEMENT = NO
+MODEL_TUNING = FROZEN
+EMPIRICAL_VALIDATION = NOT_ESTABLISHED
+GATE12_ADVANCEMENT = NO
+```

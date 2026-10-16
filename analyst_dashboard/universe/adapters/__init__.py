@@ -5,7 +5,7 @@ Offline Source Parsers and Adapter-to-Validator Bridge for ARX Terminal universe
 """
 
 from .bridge import AdapterValidatorBridge
-from .matching import match_sources
+from .matching import match_sources, match_sources_with_accounting
 from .models import (
     AdapterValidationReport,
     FieldCertificationStatus,
@@ -15,6 +15,7 @@ from .models import (
     ParsedSourceFile,
     ParsedSourceRow,
     SourceFeedType,
+    SourceMatchingAccounting,
 )
 from .nasdaq_trader import (
     NASDAQ_LISTED_HEADER,
@@ -40,8 +41,10 @@ __all__ = [
     "ParsedSourceFile",
     "ParsedSourceRow",
     "SourceFeedType",
+    "SourceMatchingAccounting",
     "format_cik",
     "match_sources",
+    "match_sources_with_accounting",
     "parse_nasdaq_trader_directory",
     "parse_openfigi_response",
     "parse_sec_company_tickers_exchange",

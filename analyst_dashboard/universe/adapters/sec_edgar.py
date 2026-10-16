@@ -115,10 +115,55 @@ def parse_sec_company_tickers_exchange(
             ],
         )
 
-    required_fields = {"cik", "name", "ticker", "exchange"}
+    for f in fields:
+        if not isinstance(f, str) or not f.strip():
+            return ParsedSourceFile(
+                feed_type=SourceFeedType.SEC_COMPANY_TICKERS_EXCHANGE,
+                source_identifier=source_identifier,
+                content_sha256=content_hash,
+                retrieved_at_utc=retrieved_at_utc,
+                physical_line_count=physical_lines,
+                metadata_row_count=1,
+                data_row_count=0,
+                malformed_row_count=len(data) if isinstance(data, list) else 1,
+                unique_record_count=0,
+                rows=[
+                    ParsedSourceRow(
+                        row_index=0,
+                        raw_values={"fields": fields},
+                        is_malformed=True,
+                        malformed_reason=f"Header fields must be non-empty strings, got: {fields!r}",
+                    )
+                ],
+            )
+
     field_lower = [str(f).strip().lower() for f in fields]
+
+    # Check for duplicate header fields
+    if len(field_lower) != len(set(field_lower)):
+        return ParsedSourceFile(
+            feed_type=SourceFeedType.SEC_COMPANY_TICKERS_EXCHANGE,
+            source_identifier=source_identifier,
+            content_sha256=content_hash,
+            retrieved_at_utc=retrieved_at_utc,
+            physical_line_count=physical_lines,
+            metadata_row_count=1,
+            data_row_count=0,
+            malformed_row_count=len(data) if isinstance(data, list) else 1,
+            unique_record_count=0,
+            rows=[
+                ParsedSourceRow(
+                    row_index=0,
+                    raw_values={"fields": fields},
+                    is_malformed=True,
+                    malformed_reason=f"Duplicate header field names detected in SEC payload: {fields!r}",
+                )
+            ],
+        )
+
     field_indices = {name: idx for idx, name in enumerate(field_lower)}
 
+    required_fields = {"cik", "name", "ticker", "exchange"}
     missing_cols = required_fields - set(field_lower)
     if missing_cols:
         return ParsedSourceFile(

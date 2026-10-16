@@ -27,6 +27,7 @@ from .models import (
     AdapterValidationReport,
     FieldCertificationStatus,
     MatchedUniverseCandidate,
+    SourceMatchingAccounting,
 )
 
 
@@ -61,10 +62,13 @@ class AdapterValidatorBridge:
             if "issuer_cik" in sec_vals:
                 raw["issuer_cik"] = sec_vals["issuer_cik"]
 
+            sec_id = candidate.sec_source_identifier or "company_tickers_exchange.json"
+            row_idx = candidate.sec_row.row_index
             evidences.append(
                 EvidenceReference(
                     source_authority="SEC_EDGAR",
-                    source_identifier="company_tickers_exchange.json",
+                    source_identifier=f"{sec_id}#row={row_idx}",
+                    source_hash=candidate.sec_content_hash,
                     is_external_attestation=True,
                 )
             )
@@ -79,10 +83,13 @@ class AdapterValidatorBridge:
             if "is_etf" in dir_vals:
                 raw["is_etf"] = dir_vals["is_etf"]
 
+            dir_src = candidate.directory_source_identifier or dir_vals.get("source_directory", "nasdaq_directory")
+            row_idx = candidate.directory_row.row_index
             evidences.append(
                 EvidenceReference(
                     source_authority="NASDAQ_TRADER",
-                    source_identifier=dir_vals.get("source_directory", "nasdaq_directory"),
+                    source_identifier=f"{dir_src}#row={row_idx}",
+                    source_hash=candidate.directory_content_hash,
                     is_external_attestation=True,
                 )
             )
@@ -100,10 +107,13 @@ class AdapterValidatorBridge:
             if match.get("security_type2"):
                 raw["security_type"] = match.get("security_type2")
 
+            figi_src = candidate.figi_source_identifier or "openfigi_mapping"
+            req_idx = candidate.figi_result.request_index
             evidences.append(
                 EvidenceReference(
                     source_authority="OPENFIGI",
-                    source_identifier="openfigi_mapping",
+                    source_identifier=f"{figi_src}#request={req_idx}",
+                    source_hash=candidate.figi_content_hash,
                     is_external_attestation=True,
                 )
             )
@@ -227,11 +237,44 @@ class AdapterValidatorBridge:
         requirements: ValidationRequirements,
         temporal_context: TemporalEvaluationContext | None = None,
         synthesize_surrogate_security_id: bool = False,
+        matching_accounting: SourceMatchingAccounting | None = None,
+        allow_ambiguous_candidates: bool = False,
+        allow_incomplete_source_files: bool = False,
     ) -> AdapterValidationReport:
         """
         Builds raw input records and validates the complete batch through UniverseInputValidator.
-        Returns full diagnostic report containing batch outcome and field certification matrix.
+        Returns full diagnostic report containing batch outcome, field certification matrix,
+        and end-to-end batch admission protection.
         """
+        field_certs = cls.assess_field_certifications(candidates)
+
+        # 1. Guard against empty candidate set: an empty batch cannot produce a certified universe
+        if not candidates:
+            return AdapterValidationReport(
+                total_candidates=0,
+                validation_passed_count=0,
+                validation_failed_count=0,
+                is_batch_valid=False,
+                field_certifications=field_certs,
+                raw_records=[],
+                batch_validation_result=None,
+                matching_accounting=matching_accounting,
+                batch_rejection_reason="EMPTY_CANDIDATE_SET: Empty input candidate batch cannot produce a certified universe.",
+            )
+
+        # 2. Check for source parsing failures (malformed source rows)
+        if matching_accounting and matching_accounting.malformed_source_row_count > 0 and not allow_incomplete_source_files:
+            batch_rejection = (
+                f"SOURCE_PARSE_FAILED: {matching_accounting.malformed_source_row_count} malformed rows detected across input sources."
+            )
+        elif any(c.is_ambiguous for c in candidates) and not allow_ambiguous_candidates:
+            ambig_count = sum(1 for c in candidates if c.is_ambiguous)
+            batch_rejection = (
+                f"UNRESOLVED_SOURCE_AMBIGUITY: Batch contains {ambig_count} ambiguous candidate(s) with unresolvable collisions."
+            )
+        else:
+            batch_rejection = None
+
         raw_records: list[dict[str, Any]] = []
         evidence_map: dict[str, list[EvidenceReference]] = {}
 
@@ -253,14 +296,18 @@ class AdapterValidatorBridge:
             evidence_map=evidence_map,
         )
 
-        field_certs = cls.assess_field_certifications(candidates)
+        is_valid = batch_res.is_batch_valid and (batch_rejection is None)
+        if not batch_res.is_batch_valid and not batch_rejection:
+            batch_rejection = f"VALIDATION_REQUIREMENTS_VIOLATED: {batch_res.failed_count} candidate(s) failed validation requirements."
 
         return AdapterValidationReport(
             total_candidates=len(candidates),
             validation_passed_count=batch_res.passed_count,
             validation_failed_count=batch_res.failed_count,
-            is_batch_valid=batch_res.is_batch_valid,
+            is_batch_valid=is_valid,
             field_certifications=field_certs,
             raw_records=raw_records,
             batch_validation_result=batch_res,
+            matching_accounting=matching_accounting,
+            batch_rejection_reason=batch_rejection,
         )
