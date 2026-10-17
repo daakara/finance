@@ -9,7 +9,7 @@
 **Base Commit**: `93aa322d84fc1ad001402516a81d07f4d39d8e40` (`origin/main`, PR #12 squash merge)  
 **Decision Record Reference**: [`PACKAGE_4_QUALIFIED_POLICY_DECISION_RECORD.md`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-admission-mappings/docs/research/radar-us-listed-coverage/PACKAGE_4_QUALIFIED_POLICY_DECISION_RECORD.md)  
 **Date**: 2026-10-17  
-**Status**: `PACKAGE_5_ADMISSION_MAPPINGS = VERIFIED_LOCAL`  
+**Status**: `PACKAGE_5_ADMISSION_MAPPINGS = BOUNDARY_REVIEWED_AND_VERIFIED`  
 
 ---
 
@@ -34,6 +34,8 @@ In Package 4, analysis of archived listing feeds identified critical admission b
 │ - Explicit, attributable issuer/instrument binding                     │
 │ - Supports symbol changes without identity mutation                    │
 │ - Separates multi-symbol issuers (GOOG vs GOOGL)                       │
+│ - Contradictory dates & overlapping active mappings fail closed        │
+│ - Complete serialization/reload idempotency without ID regeneration    │
 └──────────────────────────────────┬─────────────────────────────────────┘
                                    │
                                    ▼
@@ -42,16 +44,17 @@ In Package 4, analysis of archived listing feeds identified critical admission b
 │ - listing_country vs country (incorporation/domicile)                  │
 │ - selected_us_assessment_listing vs global primary_listing             │
 │ - Attributable per-listing currency (blanket USD assertion REJECTED)   │
-│ - Documented venue normalization (A->AMEX, P->ARCA, Z->BATS, F->TXSE)  │
+│ - Documented venue normalization (A, P, Z, N, Q, V; F->TXSE provision) │
 │ - Substantive venue disagreements preserved fail-closed                │
 └──────────────────────────────────┬─────────────────────────────────────┘
                                    │
                                    ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │ Consumer-Specific Market Data Readiness                                │
-│ ConsumerReadinessEvaluator (lookbacks: 50, 60, 200, 252 bars)          │
-│ - Distinct states: NO_DATA, INSUFFICIENT_HISTORY, STALE, READY        │
-│ - Blanket 60-bar gate REJECTED                                         │
+│ ConsumerReadinessEvaluator (50, 60, 200, 252 bars)                     │
+│ - Distinct states: NO_DATA, INSUFFICIENT_HISTORY, STALE, READY,        │
+│   UNRESOLVED_ASSOCIATION                                               │
+│ - Blanket 60-bar gate REJECTED; query limits != admission gates        │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -77,123 +80,147 @@ Package 5 strictly implements the approved qualified policy choices recorded in 
 
 ---
 
-### 3. Architecture & Existing Component Reuse
+### 3. Architecture & Boundary Review Checks (Checks A–E)
 
-Package 5 builds directly upon the existing, verified foundation components:
+#### Check A — Identity Lifecycle
+- **Tier Separation**: `ListingLocator` is strictly ephemeral and time-bounded (`identity_tier="TIER_A_TIME_BOUNDED_LOCATOR"`, `proves_continuity=False`). It does not establish continuity or legal identity.
+- **Non-Certification Invariant**: `InternalSecurityRecord.certifies_continuity` is explicitly `False`. Issuing an internal ID records an internal entity without certifying its continuous existence across ticker reassignments.
+- **Symbol Reuse Guard**: When an issuer ceases using a symbol (association closed), a subsequent issuer registering the same symbol receives a completely distinct `internal_security_id` (`test_02`).
+- **Shared CIK Separation**: Multi-symbol issuers (e.g. Alphabet CIK 0001652044) issuing distinct classes (`GOOG` and `GOOGL`) receive distinct `internal_security_id` values (`test_04`).
+- **Effective-Date Boundary Semantics**:
+  - `effective_from`: Inclusive start date (`YYYY-MM-DD`).
+  - `effective_to`: Inclusive end date (`YYYY-MM-DD`), or `None` if currently active.
+  - Contradictory date ranges (`effective_to < effective_from`) fail closed immediately with `ValueError` during construction and in `close_association` (`test_13`).
+- **Overlapping Mapping Conflict Guard**: If an association is active on `as_of_date` for `(symbol, mic)` under a different CIK/identity, registering another security for that active window raises `ValueError` as an unresolved conflict (`test_14`).
+- **Explicit Alias Requirement**: Preserving identity across symbol changes (e.g. `FB` $\rightarrow$ `META`) requires passing `explicit_continuity_alias_id` (`test_03`).
+- **Idempotency & Serialization**:
+  - Re-registering identical inputs returns the existing record (`test_05`).
+  - `to_dict()` and `from_dict()` round-trip preserves all internal security IDs, associations, and CIK indices with zero ID regeneration (`test_15`).
 
-| Component | Path | Responsibility in Package 5 |
-|:---|:---|:---|
-| **Admission Mappings Core** | `analyst_dashboard/universe/admission_mapping.py` | New core module implementing Tier A locators, Tier B identity, semantic attributes, venue normalizer, triage heuristics, and consumer readiness evaluator. |
-| **Evidence Resolver** | `analyst_dashboard/universe/adapters/resolution.py` | `SecurityEvidenceResolver`. Resolves source observations and retains venue conflicts fail-closed. |
-| **Input Validator** | `analyst_dashboard/universe/validator.py` | `UniverseInputValidator`. Enforces structural completeness and atomic batch validity. |
-| **Domain Contracts** | `analyst_dashboard/universe/contracts.py` | `SourceSecurity`, `SourcePopulationSnapshot`. |
-| **Universe Builder** | `analyst_dashboard/universe/builder.py` | `DeterministicUniverseBuilder`. Evaluates Rules R01–R07. |
-| **Test Suite** | `tests/test_universe_admission_mappings.py` | Comprehensive test suite covering all 7 policy directions and dual verification paths. |
+#### Check B — Evidence Trust
+- **Audit Record Nature**: `AttributableFieldEvidence` captures field attribution without certifying claim truthfulness (`does_certify_claim=False`, `test_17`).
+- **Distinguishable Evidence Nature**: Distinguishes `DIRECT_PROVIDER_OBSERVATION`, `PROVENANCE_MAPPED`, `POLICY_DERIVED_ASSERTION`, `DIAGNOSTIC_TRIAGE_HINT`, and `UNVERIFIED_ASSERTION`.
+- **Conflict Retention**: Substantive venue conflicts (e.g. DDS with `TXSE` vs `F`, ACCS with `NYSE` vs `AMEX`) are retained and fail validation fail-closed (`test_12`).
+- **Overlay Protection**: Overlay evidence cannot silently override ambiguous observations (`test_universe_security_evidence_resolution.py`).
+- **Decoupled Field Semantics**: `ListingSemanticAttributes` maintains explicit `listing_country` and `selected_us_assessment_listing` without silently populating or mutating legacy `country` or `primary_listing` contracts (`test_06`).
+- **Whole-Batch Revocation**: If any member fails validation, whole-batch admission is revoked, zero `SourceSecurity` objects are converted, and `DeterministicUniverseBuilder` is strictly bypassed (`test_12`).
 
-#### Operational Boundaries & Invariants:
-- **Zero Database Mutations**: Pure in-memory models; no SQLite or `UniverseStore` writes.
-- **Zero Live Network Calls**: All models and tests operate exclusively offline.
-- **Zero Strategy Policy Changes**: Canonical rules R01–R07 remain unchanged.
-- **Zero Synthetic Defaulting**: `currency="USD"` and `country="USA"` defaults are strictly prohibited without attributable evidence.
-
----
-
-### 4. Implementation Details (`admission_mapping.py`)
-
-#### 4.1 Two-Tier Identity Model
-- **Tier A (`ListingLocator`)**: Represents an ephemeral observation of a ticker symbol on an exchange at a specific point in time, anchored to a source feed digest and row locator. Proves existence in that feed, but explicitly does NOT prove security continuity or issuer identity across time.
-- **Tier B (`InternalSecurityRecord` & `EffectiveDatedListingAssociation`)**: Represents a persistent internal security entity with attributable, effective-dated listing associations.
-- **`OfflineAdmissionMappingEngine`**: Provides idempotent internal identity registration, symbol reuse protection (different entity over time), symbol change alias tracking (continuity preserved across renames), and distinct identity preservation for multi-symbol issuers (e.g. Alphabet `GOOG` vs `GOOGL`).
-
-#### 4.2 Explicit Semantic Attributes
-- **`ListingSemanticAttributes`**: Explicitly captures:
-  - `listing_country`: Country of trading venue (e.g. `"USA"`).
-  - `country_of_incorporation`: Issuer legal domicile (e.g. `"CYM"` for Alibaba, `"TWN"` for TSMC, `"USA"` for Apple).
-  - `selected_us_assessment_listing`: Whether this specific US listing is selected for terminal assessment.
-  - `primary_listing`: Whether the listing is the global primary listing for the security.
-- **`AttributableFieldEvidence`**: Enforces attribution for every sensitive field (field name, value, source authority, publication date, evidence nature).
-
-#### 4.3 Supported Venue Normalization
-- **Documented Tape Codes**:
-  - `A` $\rightarrow$ `AMEX` (MIC: `XASE`, Tape: `TAPE_B`, Status: `DOCUMENTED_REPRESENTATIONAL`)
-  - `P` $\rightarrow$ `ARCA` (MIC: `ARCX`, Tape: `TAPE_B`, Status: `DOCUMENTED_REPRESENTATIONAL`)
-  - `Z` $\rightarrow$ `BATS` (MIC: `BATS`, Tape: `TAPE_B`, Status: `DOCUMENTED_REPRESENTATIONAL`)
-  - `N` $\rightarrow$ `NYSE` (MIC: `XNYS`, Tape: `TAPE_A`, Status: `DOCUMENTED_REPRESENTATIONAL`)
-  - `Q` $\rightarrow$ `NASDAQ` (MIC: `XNAS`, Tape: `TAPE_C`, Status: `DOCUMENTED_REPRESENTATIONAL`)
-  - `V` $\rightarrow$ `IEX` (MIC: `IEXG`, Tape: `TAPE_C`, Status: `DOCUMENTED_REPRESENTATIONAL`)
+#### Check C — Venue and Classification Boundaries
+- **Documented Venue Codes**:
+  - `A`: NYSE American (MIC: `XASE`, Tape: `TAPE_B`, Status: `DOCUMENTED_REPRESENTATIONAL`)
+  - `N`: New York Stock Exchange (MIC: `XNYS`, Tape: `TAPE_A`, Status: `DOCUMENTED_REPRESENTATIONAL`)
+  - `P`: NYSE Arca (MIC: `ARCX`, Tape: `TAPE_B`, Status: `DOCUMENTED_REPRESENTATIONAL`)
+  - `Z`: BATS Global Markets / Cboe BZX (MIC: `BATS`, Tape: `TAPE_B`, Status: `DOCUMENTED_REPRESENTATIONAL`)
+  - `V`: Investors Exchange (MIC: `IEXG`, Tape: `TAPE_B`, Status: `DOCUMENTED_REPRESENTATIONAL`)
+  - `Q`: NASDAQ Stock Market (MIC: `XNAS`, Tape: `TAPE_C`, Status: `DOCUMENTED_REPRESENTATIONAL`, `test_18`)
 - **Provisional Code**:
-  - `F` $\rightarrow$ `TXSE` (MIC: `TXSE`, Tape: `TAPE_B`, Status: `PROVISIONAL_UNRESOLVED`, `is_substantive_disagreement=True`).
-- **Reconciliation Logic**:
-  - Dual-source disagreements that match documented parent-operating relationships (e.g. SEC reports `NYSE`, Directory reports `A` for NYSE American) normalize cleanly without dispute.
-  - Substantive disagreements (e.g. `TXSE` vs `F`, or `NYSE` vs `NASDAQ`) preserve `is_substantive_disagreement=True` and fail validation.
+  - `F`: Texas Stock Exchange (MIC: `TXSE`, Tape: `TAPE_B`, Status: `PROVISIONAL_UNRESOLVED`, `is_substantive_disagreement=True`). Fails closed until operational trading confirmation.
+- **Publisher Documentation**: Documented against Nasdaq Trader Symbol Directory technical specifications (`Exchange` column for other-listed, directory specification for Nasdaq-listed).
+- **Mapping Versioning**: `VenueNormalizationResult.mapping_version` explicitly pinned to `"1.0.0"`.
+- **Classification Triage Limits**: Regex heuristics emit `DiagnosticTriageHint` only; `is_certified=False` and `requires_attributable_evidence=True`. Does NOT certify `COMMON_STOCK` and does NOT silently discard unknown securities (`test_09`).
 
-#### 4.4 Diagnostic Triage Engine
-- Inspects security names and symbols for diagnostic cues (`ETF`, `ADR`, `Warrant`, `Preferred`, `% Notes`).
-- Emits non-binding triage hints (`ClassificationTriageHint`).
-- Explicitly flags `is_certified=False` and `requires_attributable_evidence=True`. Does NOT certify common stock.
+#### Check D — Consumer Readiness
+Every configured lookback value across the codebase was audited against its actual implementation consumer:
 
-#### 4.5 Consumer Market Data Readiness Evaluator
-- Evaluates bar counts and timestamps against consumer-specified requirements:
-  - Daily Screener: 50 bars.
-  - Core Signal: 60 bars.
-  - Trend / MA: 200 bars.
-  - Annual Volatility: 252 bars.
-- Yields 5 distinct operational states:
-  1. `NO_DATA`: Zero candles available.
-  2. `INSUFFICIENT_HISTORY`: Candle count below consumer requirement.
-  3. `STALE_OBSERVATIONS`: Last candle older than permitted freshness threshold.
-  4. `INVALID_OHLCV`: Inverted prices, zero volume, or malformed intervals.
-  5. `CONSUMER_READY`: Complete history meeting consumer lookback and freshness.
+| Consumer | Implementation Reference | Actual Requirement | Diagnostic Treatment |
+|:---|:---|:---|:---|
+| **Intermediate Trend Screener** | `decision_hierarchy.py:152`, `decision_trace.py:93`, `scanner_runner.py:281` | **Minimum Valid-History Requirement**: 50 daily bars required for 50-day moving average and trend template validation. | If bars < 50 $\rightarrow$ `INSUFFICIENT_HISTORY`. Valid acceptance prerequisite for tactical trend screener. |
+| **Market DB Query Chunk** | `scanner_runner.py:280` (`limit=60`) | **Query Limit / Operational Chunk**: Database fetch buffer to retrieve recent bars. | Retrieval buffer ONLY; **NOT** an admission gate or valid-history requirement. |
+| **Trend Regime Analyzer** | `market_regime_analyzer.py:145` (`long_window=200`) | **Indicator Lookback**: 200 daily bars for 200-day moving average / Golden Cross / Death Cross regime detection. | Evaluated for long-term trend regimes; **NOT** a blanket admission gate for short-term screeners. |
+| **Annual Volatility Benchmark** | `volatility_forecaster.py:293`, `market_regime_analyzer.py:100` (`sqrt(252)`) | **Benchmark Sample Size / Annualization Constant**: 252 trading sessions per year used as volatility scalar. | Mathematical scalar / benchmark reference; **STRICTLY PROHIBITED** from acting as an admission gate. |
+
+- **State Differentiation**: Distinguishes `NO_DATA`, `INSUFFICIENT_HISTORY`, `STALE_OBSERVATIONS`, `INVALID_OHLCV`, and `UNRESOLVED_ASSOCIATION`.
+- **Identity Association Guard**: If `is_association_resolved=False`, returns `UNRESOLVED_ASSOCIATION` with `is_ready=False` regardless of bar count (`test_16`).
+- **Non-Implication**: Satisfying a consumer's minimum history lookback does NOT imply scanner execution or publication authorization.
+
+#### Check E — Test Inventory & Git Provenance
+1. **Reconciliation of Test Counts**:
+   Earlier reports showed an apparent contradiction between:
+   - Reported in summary: Acquisition: 22, Adapters: 30, Validator: 75
+   - Historical released counts: Acquisition: 25, Adapters: 34, Validator: 68
+   
+   **Root Cause Established**:
+   During background task execution (`task-12465`), pytest logs emitted percentage progress markers on stdout:
+   - `test_universe_listing_acquisition.py::test_partial_multi_source_acquisition PASSED [ 22%]`
+   - `test_universe_offline_adapters.py::TestSecEdgarParser::test_malformed_json_handling PASSED [ 30%]`
+   - `test_universe_validator.py::TestStructuralValidation::test_empty_or_whitespace_strings_rejected_on_mandatory_fields[] PASSED [ 75%]`
+   The previous report inadvertently transcribed the progress percentages (`[ 22%]`, `[ 30%]`, `[ 75%]`) into the summary table as test counts.
+   
+   **Evidenced Truth**:
+   Direct pytest item collection (`pytest --collect-only -q`) proves the actual stable test distribution:
+   - `test_universe_listing_acquisition.py`: **25 tests**
+   - `test_universe_offline_adapters.py`: **34 tests**
+   - `test_universe_validator.py`: **68 tests** (from 32 test functions, expanded via parameterization)
+   - `test_universe_security_evidence_resolution.py`: **28 tests**
+   - `test_universe_connected_integration.py`: **17 tests**
+   - `test_universe_admission_mappings.py`: **18 tests** (initial 12 + 6 adversarial review tests)
+   - **Total Universe Test Suite**: **190 tests** (100% passing).
+
+2. **Package 4 Decision Record Git Identity Reconciliation**:
+   In previous summaries, the commit SHA and tree for the Package 4 decision record contained a transcription error and repeated an earlier tree.
+   Direct inspection of the Git commit object reveals the true immutable record:
+   - **Actual Commit SHA**: `ccf84bcfb2415d8401bee65f40cf2c0c6ec48854` (transcribed as `ccf84bc0...` in earlier notes)
+   - **Actual Tree SHA**: `28babcfaea9eb0b62ada46f64b322a8ca53cd46c` (erroneously reported as `ca6a93da...` which belonged to parent commit `59d29aaf`)
+   - **Parent SHA**: `28064f4a2a5a5530e05e2a45ef8d9fbadf614d11`
+   - **Commit Subject**: `docs(universe): record qualified policy decisions and Product Owner directions (Package 4)`
 
 ---
 
-### 5. Verification Results
+### 4. Verification Results & Test Suite Breakdown
 
-#### 5.1 Test Suite Breakdown (`tests/test_universe_admission_mappings.py`)
+#### 4.1 Package 5 Focused Test Suite (`tests/test_universe_admission_mappings.py`)
 
-| Test Name | Focus | Outcome |
+| # | Test Name | Invariant Verified | Outcome |
+|:---|:---|:---|:---|
+| 1 | `test_01_listing_locator_is_ephemeral_and_proves_no_continuity` | Tier A `ListingLocator` is ephemeral and does not assert continuity | **PASSED** |
+| 2 | `test_02_symbol_reuse_does_not_inherit_identity` | Inactive symbol reuse across time creates distinct internal identities | **PASSED** |
+| 3 | `test_03_symbol_change_with_explicit_alias_preserves_continuity` | Explicit alias preserves entity continuity across ticker changes | **PASSED** |
+| 4 | `test_04_multi_symbol_issuer_distinct_identities` | Multi-symbol issuer (GOOG/GOOGL) receives distinct identities | **PASSED** |
+| 5 | `test_05_idempotent_registration_prevents_duplicate_proliferation` | Repeated registration of identical mapping is strictly idempotent | **PASSED** |
+| 6 | `test_06_explicit_semantics_no_automatic_silent_remapping` | `listing_country` and `selected_us` decoupled from legacy contracts | **PASSED** |
+| 7 | `test_07_documented_venue_normalization_expansions` | A, P, Z, N, V expansions and F provisional status | **PASSED** |
+| 8 | `test_08_reconcile_dual_source_venues` | Dual-source reconciliation and substantive disagreement preservation | **PASSED** |
+| 9 | `test_09_classification_triage_does_not_certify_common_stock` | Triage heuristics remain uncertified diagnostic hints | **PASSED** |
+| 10 | `test_10_consumer_readiness_distinct_states` | 50, 60, 200, 252 bar lookbacks and 5 distinct states | **PASSED** |
+| 11 | `test_11_synthetic_contract_path_passes_only_with_complete_evidence` | **Path A**: Fully evidenced synthetic batch passes validation & builds universe | **PASSED** |
+| 12 | `test_12_archived_source_path_fails_closed_without_fabricated_evidence` | **Path B**: Archived 7-candidate sample fails closed, builder strictly NOT_RUN | **PASSED** |
+| 13 | `test_13_effective_date_boundary_contradictory_fails_closed` | Contradictory effective date intervals (`effective_to < from`) fail closed | **PASSED** |
+| 14 | `test_14_overlapping_mapping_conflict_fails_closed` | Overlapping active mappings to different identities fail closed as conflicts | **PASSED** |
+| 15 | `test_15_engine_serialization_and_reload_preserves_identities` | Engine `to_dict` / `from_dict` preserves identities without regeneration | **PASSED** |
+| 16 | `test_16_consumer_readiness_unresolved_association_fails_closed` | Unresolved identity association strictly fails `is_ready=False` | **PASSED** |
+| 17 | `test_17_evidence_object_does_not_certify_claim` | Evidence existence does not certify truthfulness | **PASSED** |
+| 18 | `test_18_documented_venue_code_q_expansion` | Code Q normalizes to NASDAQ (Tape C) with mapping version | **PASSED** |
+
+**Package 5 Suite Result**: **18 passed in 1.10s**.
+
+#### 4.2 Full Universe Regression Suite Execution
+
+| Test File | Test Count | Status |
 |:---|:---|:---|
-| `test_01_listing_locator_is_ephemeral_and_proves_no_continuity` | Verifies `ListingLocator` is ephemeral and does not assert continuity | **PASSED** |
-| `test_02_symbol_reuse_does_not_inherit_identity` | Verifies symbol reuse across time creates distinct internal identities | **PASSED** |
-| `test_03_symbol_change_with_explicit_alias_preserves_continuity` | Verifies explicit alias preserves entity continuity | **PASSED** |
-| `test_04_multi_symbol_issuer_distinct_identities` | Verifies multi-symbol issuer (GOOG/GOOGL) gets distinct identities | **PASSED** |
-| `test_05_idempotent_registration_prevents_duplicate_proliferation` | Verifies repeated registration of same mapping is strictly idempotent | **PASSED** |
-| `test_06_explicit_semantics_no_automatic_silent_remapping` | Verifies `listing_country` and `selected_us_assessment_listing` separation | **PASSED** |
-| `test_07_documented_venue_normalization_expansions` | Verifies A, P, Z, N, Q, V expansions and F provisional status | **PASSED** |
-| `test_08_reconcile_dual_source_venues` | Verifies dual-source reconciliation and substantive disagreement preservation | **PASSED** |
-| `test_09_classification_triage_does_not_certify_common_stock` | Verifies triage heuristics remain uncertified hints | **PASSED** |
-| `test_10_consumer_readiness_distinct_states` | Verifies 50, 60, 200, 252 bar lookbacks and 5 distinct states | **PASSED** |
-| `test_11_synthetic_contract_path_passes_only_with_complete_evidence` | **Path A**: Fully evidenced synthetic batch passes validation & builds universe | **PASSED** |
-| `test_12_archived_source_path_fails_closed_without_fabricated_evidence` | **Path B**: Archived 7-candidate sample fails closed, builder strictly NOT_RUN | **PASSED** |
-
-**Total Suite Result**: **12 passed in 1.07s**.
-
-#### 5.2 Full Universe Regression Suite Execution
-A complete run of all universe test modules was conducted:
-- `test_universe_admission_mappings.py`: 12 passed
-- `test_universe_connected_integration.py`: 17 passed
-- `test_universe_listing_acquisition.py`: 22 passed
-- `test_universe_offline_adapters.py`: 30 passed
-- `test_universe_security_evidence_resolution.py`: 28 passed
-- `test_universe_validator.py`: 75 passed
-
-**Total Universe Suite Result**: **184 passed in 8.83s** (0 failures, 0 regressions).
+| `tests/test_universe_admission_mappings.py` | 18 | **PASSED** |
+| `tests/test_universe_connected_integration.py` | 17 | **PASSED** |
+| `tests/test_universe_listing_acquisition.py` | 25 | **PASSED** |
+| `tests/test_universe_offline_adapters.py` | 34 | **PASSED** |
+| `tests/test_universe_security_evidence_resolution.py` | 28 | **PASSED** |
+| `tests/test_universe_validator.py` | 68 | **PASSED** |
+| **Total Full Universe Test Suite** | **190** | **100% PASSED (8.97s)** |
 
 ---
 
-### 6. Dual Verification Path Accounting
+### 5. Dual Verification Path Accounting
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│ Path A: Synthetic Contract Path                                        │
+│ Path A: Synthetic Contract Path (test_11)                              │
 │ - Input: 2 fully evidenced synthetic records (AAPL, MSFT)              │
+│ - Evidence: Explicit attributes, ISO timestamps, explicit null dates   │
 │ - Validation: VALIDATION_PASSED (passed=2, failed=0, unresolved=0)     │
 │ - Conversion: 2 SourceSecurity instances constructed                   │
 │ - Builder Execution: COMPLETE (eligible=2, ineligible=0, unresolved=0) │
 └────────────────────────────────────────────────────────────────────────┘
 
 ┌────────────────────────────────────────────────────────────────────────┐
-│ Path B: Archived-Source Diagnostic Path (Real Feeds)                  │
+│ Path B: Archived-Source Diagnostic Path (test_12)                      │
 │ - Input: 7 canonical candidates (AAPL, GOOG, GOOGL, TSM, ACCS, DDS,   │
 │   AACIU) from 2026-10-16 SEC and Nasdaq Trader archives                │
 │ - Resolution: 7 candidates formed, 0 resolved to production ID         │
@@ -207,14 +234,21 @@ A complete run of all universe test modules was conducted:
 
 ---
 
-### 7. Remaining Admission Blockers & Smallest Next Step
-
-To achieve successful real-source admission for the agreed US-listed population without compromising fail-closed invariants, the following attributable evidence must be acquired:
+### 6. Remaining Admission Blockers & Operational Limits
 
 1. **Attributable Currency Evidence**: Per-listing currency evidence from an attributable market data provider or listing catalog.
 2. **Attributable Production Security Identity**: Linking Tier A ephemeral locators to verified, unique internal security identifiers (`security_id`).
 3. **Substantive Venue Adjudication**: Authoritative adjudication for remaining substantive venue disagreements (such as TXSE provisional codes and NYSE vs AMEX discrepancies).
 4. **Attributable Lifecycle Dates**: Point-in-time listing and delisting event dates, or explicit authoritative confirmation of event absence.
 
-**Smallest Next Step**:
-Proceed to remote boundary review and verification of Package 5 on `feat/sprint-2-admission-mappings`, opening a PR against `main` for Product Owner review.
+**Operational Boundaries**:
+- `PRODUCTION_IDENTITY_ADOPTION = NO`
+- `STRATEGY_RULE_CHANGES = NO`
+- `LIVE_PROVIDER_CALLS = NO`
+- `MARKET_DATA_BACKFILL = NO`
+- `UNIVERSE_STORE_WRITES = NO`
+- `UNIVERSE_PUBLICATION = NO`
+- `SCANNER_EXECUTION = NO`
+- `SCHEDULER_ACTIVATION = NO`
+- `EXPANDED_ASSET_IMPLEMENTATION = NO`
+- `GATE12_ADVANCEMENT = NO`

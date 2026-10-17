@@ -26,7 +26,9 @@ from analyst_dashboard.universe.admission_mapping import (
     AttributableFieldEvidence,
     ClassificationTriageEngine,
     ConsumerReadinessEvaluator,
+    EffectiveDatedListingAssociation,
     EvidenceNature,
+    InternalSecurityRecord,
     ListingLocator,
     ListingSemanticAttributes,
     MarketDataReadinessState,
@@ -470,3 +472,104 @@ class TestUniverseAdmissionMappings:
         # Verify that ACCS retains venue conflict (NYSE vs AMEX)
         accs_res = next(r for r in batch_val.records if r.raw_record.get("symbol") == "ACCS")
         assert any(iss.issue_code.value == "CONFLICTING_MAPPING" for iss in accs_res.issues)
+
+    # ── 8. Adversarial Boundary Review Tests (Checks A–D) ────────────────────
+
+    def test_13_effective_date_boundary_contradictory_fails_closed(self):
+        """Check A: Contradictory effective date intervals must fail closed immediately."""
+        # 1. Direct construction with effective_to < effective_from
+        with pytest.raises(ValueError, match="Contradictory date range"):
+            EffectiveDatedListingAssociation(
+                association_id="ASSOC_TEST",
+                internal_security_id="SEC_TEST",
+                symbol="XYZ",
+                operating_mic="XNAS",
+                effective_from="2025-01-01",
+                effective_to="2024-01-01",  # Prior to effective_from
+            )
+
+        # 2. close_association with effective_to < effective_from
+        engine = OfflineAdmissionMappingEngine()
+        sec, assoc = engine.register_security(
+            symbol="ABC", operating_mic="XNYS", as_of_date="2024-06-01", issuer_cik="0001234567"
+        )
+        with pytest.raises(ValueError, match="Contradictory date range"):
+            engine.close_association(assoc.association_id, effective_to="2023-12-31")
+
+    def test_14_overlapping_mapping_conflict_fails_closed(self):
+        """Check A: Overlapping active mappings to different identities remain conflicts."""
+        engine = OfflineAdmissionMappingEngine()
+
+        # Issuer A registers XYZ on XNAS in 2020 (active, open-ended)
+        sec_a, assoc_a = engine.register_security(
+            symbol="XYZ", operating_mic="XNAS", as_of_date="2020-01-01", issuer_cik="0000111111"
+        )
+
+        # Issuer B attempts to register same symbol on same venue in 2021 while A is still active
+        with pytest.raises(ValueError, match="Overlapping mapping conflict"):
+            engine.register_security(
+                symbol="XYZ", operating_mic="XNAS", as_of_date="2021-06-01", issuer_cik="0000222222"
+            )
+
+    def test_15_engine_serialization_and_reload_preserves_identities(self):
+        """Check A: Engine serialization and reload preserves all IDs without regeneration."""
+        engine = OfflineAdmissionMappingEngine()
+        sec1, assoc1 = engine.register_security(
+            symbol="AAPL", operating_mic="XNAS", as_of_date="2026-10-16", issuer_cik="0000320193"
+        )
+        sec2, assoc2 = engine.register_security(
+            symbol="MSFT", operating_mic="XNAS", as_of_date="2026-10-16", issuer_cik="0000789019"
+        )
+
+        # Serialize to dict and JSON round-trip
+        state_dict = engine.to_dict()
+        json_str = json.dumps(state_dict)
+        reloaded_dict = json.loads(json_str)
+
+        # Reload engine
+        reloaded_engine = OfflineAdmissionMappingEngine.from_dict(reloaded_dict)
+
+        # Verify idempotency and preservation of exact IDs
+        sec1_reload, assoc1_reload = reloaded_engine.register_security(
+            symbol="AAPL", operating_mic="XNAS", as_of_date="2026-10-16", issuer_cik="0000320193"
+        )
+        assert sec1_reload.internal_security_id == sec1.internal_security_id
+        assert assoc1_reload.association_id == assoc1.association_id
+        assert reloaded_engine.get_securities_for_cik("0000320193")[0].internal_security_id == sec1.internal_security_id
+
+    def test_16_consumer_readiness_unresolved_association_fails_closed(self):
+        """Check D: Unresolved symbol/listing association cannot become CONSUMER_READY."""
+        candles = [
+            {"time": "2026-10-16", "close": 150.0, "volume": 1000} for _ in range(60)
+        ]
+        eval_res = ConsumerReadinessEvaluator.evaluate_readiness(
+            symbol="XYZ",
+            candles=candles,
+            consumer_name="INTERMEDIATE_TREND_50",
+            is_association_resolved=False,
+        )
+        assert eval_res.is_ready is False
+        assert eval_res.readiness_state == MarketDataReadinessState.UNRESOLVED_ASSOCIATION
+        assert "unresolved" in eval_res.notes[0].lower()
+
+    def test_17_evidence_object_does_not_certify_claim(self):
+        """Check B: Existence of an evidence object does not certify a claim as truthful."""
+        ev = AttributableFieldEvidence(
+            field_name="currency",
+            asserted_value="USD",
+            evidence_nature=EvidenceNature.DIRECT_PROVIDER_OBSERVATION,
+            source_identifier="unverified_source:directory",
+            source_record_locator="row:42",
+        )
+        d = ev.to_dict()
+        assert d["does_certify_claim"] is False
+        assert d["mapping_version"] == "1.0.0"
+
+    def test_18_documented_venue_code_q_expansion(self):
+        """Check C: Documented code Q normalizes to NASDAQ with tape C and version."""
+        res_q = SupportedVenueNormalizer.normalize_directory_code("Q")
+        assert res_q.normalized_venue == "NASDAQ"
+        assert res_q.operating_mic == "XNAS"
+        assert res_q.dissemination_tape == "TAPE_C"
+        assert res_q.status == VenueNormalizationStatus.DOCUMENTED_REPRESENTATIONAL
+        assert res_q.mapping_version == "1.0.0"

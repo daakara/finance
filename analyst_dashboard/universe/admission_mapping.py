@@ -95,6 +95,7 @@ class InternalSecurityRecord:
     """
     Tier B: Governed internal security master entity.
     Identifies a distinct financial contract of an issuer.
+    Existence of this ID does NOT certify corporate continuity or external truthfulness.
     """
     internal_security_id: str
     issuer_cik: Optional[str]
@@ -103,6 +104,7 @@ class InternalSecurityRecord:
     created_at_utc: str
     status: str = "ACTIVE"  # ACTIVE, RETIRED, SUSPENDED
     continuity_basis: str = "INTERNAL_LEDGER_REGISTERED"
+    certifies_continuity: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -113,6 +115,11 @@ class EffectiveDatedListingAssociation:
     """
     Associates an internal security ID with an exchange listing over an effective date window.
     Protects against symbol reuse and unverified continuity across ticker changes.
+
+    Boundary Semantics:
+    - effective_from: Inclusive start date (YYYY-MM-DD).
+    - effective_to: Inclusive end date (YYYY-MM-DD), or None if currently active.
+    - Contradictory date ranges (effective_to < effective_from) fail closed immediately.
     """
     association_id: str
     internal_security_id: str
@@ -123,6 +130,13 @@ class EffectiveDatedListingAssociation:
     source_reference: str = ""
     is_disputed: bool = False
     dispute_reason: Optional[str] = None
+
+    def __post_init__(self):
+        if self.effective_to and self.effective_to < self.effective_from:
+            raise ValueError(
+                f"Contradictory date range: effective_to ({self.effective_to}) "
+                f"cannot be earlier than effective_from ({self.effective_from})."
+            )
 
     def is_active_on(self, target_date: str) -> bool:
         if self.effective_from > target_date:
@@ -151,7 +165,7 @@ class EvidenceNature(str, Enum):
 class AttributableFieldEvidence:
     """
     Immutable audit record for a single field's evidence attribution.
-    Enforces that existence of evidence does not imply truthfulness.
+    Enforces that existence of evidence does not imply truthfulness or certification.
     """
     field_name: str
     asserted_value: Any
@@ -162,6 +176,7 @@ class AttributableFieldEvidence:
     observation_timestamp_utc: Optional[str] = None
     transformation_rule: Optional[str] = None
     mapping_version: str = "1.0.0"
+    does_certify_claim: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -174,6 +189,7 @@ class AttributableFieldEvidence:
             "observation_timestamp_utc": self.observation_timestamp_utc,
             "transformation_rule": self.transformation_rule,
             "mapping_version": self.mapping_version,
+            "does_certify_claim": self.does_certify_claim,
         }
 
 
@@ -240,6 +256,7 @@ class VenueNormalizationResult:
     publisher_citation: str
     is_substantive_disagreement: bool = False
     disagreement_details: Optional[str] = None
+    mapping_version: str = "1.0.0"
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -252,6 +269,7 @@ class VenueNormalizationResult:
             "publisher_citation": self.publisher_citation,
             "is_substantive_disagreement": self.is_substantive_disagreement,
             "disagreement_details": self.disagreement_details,
+            "mapping_version": self.mapping_version,
         }
 
 
@@ -298,6 +316,13 @@ class SupportedVenueNormalizer:
             "tape": "TAPE_B",
             "name": "Investors Exchange",
             "citation": "Nasdaq Trader Symbol Directory: Exchange code 'V' = Investors Exchange (Tape B)",
+        },
+        "Q": {
+            "venue": "NASDAQ",
+            "mic": "XNAS",
+            "tape": "TAPE_C",
+            "name": "NASDAQ Stock Market",
+            "citation": "Nasdaq Trader Symbol Directory: Exchange code 'Q' = NASDAQ Global Select / Market (Tape C)",
         },
         # Code 'F': Texas Stock Exchange
         "F": {
@@ -564,13 +589,49 @@ class ConsumerReadinessEvaluation:
 class ConsumerReadinessEvaluator:
     """
     Evaluates market-data readiness per consumer without imposing blanket gates.
+    Distinguishes minimum valid-history requirements, query limits, indicator lookbacks,
+    and benchmark sample sizes.
     """
+
+    CONSUMER_ROLE_SPECS = {
+        "INTERMEDIATE_TREND_50": {
+            "required_bars": 50,
+            "role": "MINIMUM_VALID_HISTORY",
+            "description": "50-day moving average and trend template validation (decision_hierarchy.py:152)",
+            "is_acceptance_gate": True,
+        },
+        "RADAR_QUERY_CHUNK_60": {
+            "required_bars": 60,
+            "role": "QUERY_LIMIT",
+            "description": "Database query limit / chunk retrieval buffer (scanner_runner.py:280; operational buffer, not an admission gate)",
+            "is_acceptance_gate": False,
+        },
+        "STAGE2_LONG_TERM_TREND_200": {
+            "required_bars": 200,
+            "role": "INDICATOR_LOOKBACK",
+            "description": "200-day moving average and trend regime evaluation (market_regime_analyzer.py:145)",
+            "is_acceptance_gate": True,
+        },
+        "STAGE2_YEAR_RANGE_252": {
+            "required_bars": 252,
+            "role": "BENCHMARK_SAMPLE_SIZE",
+            "description": "52-week high/low range and annualization benchmark (volatility_forecaster.py:293, market_regime_analyzer.py:100; not an admission gate)",
+            "is_acceptance_gate": False,
+        },
+        "ANNUAL_BENCHMARK_252": {
+            "required_bars": 252,
+            "role": "BENCHMARK_SAMPLE_SIZE",
+            "description": "Annual trading days benchmark sample size / annualization factor",
+            "is_acceptance_gate": False,
+        },
+    }
 
     KNOWN_CONSUMERS = {
         "INTERMEDIATE_TREND_50": 50,       # 50-day moving average
         "RADAR_QUERY_CHUNK_60": 60,        # db_engine query limit (operational retrieval chunk)
         "STAGE2_LONG_TERM_TREND_200": 200, # 200-day moving average (Rule R05)
         "STAGE2_YEAR_RANGE_252": 252,      # 52-week high/low range (Rule R06)
+        "ANNUAL_BENCHMARK_252": 252,       # Annualized benchmark scalar
     }
 
     @classmethod
@@ -581,8 +642,21 @@ class ConsumerReadinessEvaluator:
         consumer_name: str = "STAGE2_LONG_TERM_TREND_200",
         required_bars: Optional[int] = None,
         evaluation_cutoff: Optional[str] = None,
+        is_association_resolved: bool = True,
     ) -> ConsumerReadinessEvaluation:
         req_bars = required_bars or cls.KNOWN_CONSUMERS.get(consumer_name, 200)
+
+        # Invariant: Unresolved symbol/listing association cannot become CONSUMER_READY
+        if not is_association_resolved:
+            return ConsumerReadinessEvaluation(
+                consumer_name=consumer_name,
+                required_lookback_bars=req_bars,
+                available_bars=len(candles) if candles else 0,
+                readiness_state=MarketDataReadinessState.UNRESOLVED_ASSOCIATION,
+                is_ready=False,
+                evaluation_cutoff=evaluation_cutoff,
+                notes=[f"Symbol '{symbol}' has unverified or unresolved security identity association."],
+            )
 
         if not candles:
             return ConsumerReadinessEvaluation(
@@ -700,6 +774,14 @@ class OfflineAdmissionMappingEngine:
                 # If CIK is provided and matches, return existing idempotent record
                 if clean_cik is None or sec_rec.issuer_cik == clean_cik:
                     return sec_rec, assoc
+                else:
+                    # Invariant: Overlapping active association for a distinct identity fails closed as conflict
+                    raise ValueError(
+                        f"Overlapping mapping conflict: Listing '{clean_sym}' on '{clean_mic}' is already "
+                        f"actively associated with distinct security '{sec_rec.internal_security_id}' "
+                        f"(CIK {sec_rec.issuer_cik}) on {as_of_date}. Cannot map to CIK {clean_cik} "
+                        f"without explicit corporate action or alias resolution."
+                    )
 
         # Check for explicit continuity alias (e.g. ticker change FB -> META)
         if explicit_continuity_alias_id and explicit_continuity_alias_id in self._security_registry:
@@ -761,6 +843,11 @@ class OfflineAdmissionMappingEngine:
     def close_association(self, association_id: str, effective_to: str) -> None:
         if association_id in self._association_ledger:
             old = self._association_ledger[association_id]
+            if effective_to < old.effective_from:
+                raise ValueError(
+                    f"Contradictory date range: effective_to ({effective_to}) cannot be earlier "
+                    f"than effective_from ({old.effective_from})."
+                )
             updated = EffectiveDatedListingAssociation(
                 association_id=old.association_id,
                 internal_security_id=old.internal_security_id,
@@ -773,3 +860,32 @@ class OfflineAdmissionMappingEngine:
                 dispute_reason=old.dispute_reason,
             )
             self._association_ledger[association_id] = updated
+            key = (old.symbol, old.operating_mic)
+            if key in self._active_listing_index:
+                self._active_listing_index[key] = [
+                    updated if a.association_id == association_id else a
+                    for a in self._active_listing_index[key]
+                ]
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes complete internal engine state for persistent checkpointing."""
+        return {
+            "security_registry": {k: v.to_dict() for k, v in self._security_registry.items()},
+            "association_ledger": {k: v.to_dict() for k, v in self._association_ledger.items()},
+            "cik_to_securities": {k: sorted(list(v)) for k, v in self._cik_to_securities.items()},
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> OfflineAdmissionMappingEngine:
+        """Reloads engine state preserving exact identity and associations without regenerating IDs."""
+        engine = cls()
+        for k, v in data.get("security_registry", {}).items():
+            engine._security_registry[k] = InternalSecurityRecord(**v)
+        for k, v in data.get("association_ledger", {}).items():
+            assoc = EffectiveDatedListingAssociation(**v)
+            engine._association_ledger[k] = assoc
+            key = (assoc.symbol, assoc.operating_mic)
+            engine._active_listing_index.setdefault(key, []).append(assoc)
+        for k, v in data.get("cik_to_securities", {}).items():
+            engine._cik_to_securities[k] = set(v)
+        return engine
