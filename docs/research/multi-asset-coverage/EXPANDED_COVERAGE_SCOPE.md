@@ -1,7 +1,7 @@
 # ARX Terminal — Expanded Asset Coverage Scoping Specification
 ## Multi-Asset Universe Architecture: Equities, US & German ETFs, and Cryptocurrency
 
-**Document ID**: `DOCS-RESEARCH-MULTI-ASSET-COVERAGE-001-REV5`  
+**Document ID**: `DOCS-RESEARCH-MULTI-ASSET-COVERAGE-001-REV6`  
 **Classification**: Architecture, Product Requirements & Delivery Scoping  
 **Branch**: `research/multi-asset-coverage-scope`  
 **Baseline Anchor**: `93aa322d84fc1ad001402516a81d07f4d39d8e40` (`origin/main` post-PR #12)  
@@ -74,7 +74,7 @@ The Product Owner has formally approved the initial delivery direction for Excha
 | **Equities Track** | Complete accounting of all US-listed stocks, exchange-listed ADRs, REITs, and BDCs. | Complete Equity Foundation (S2-04 through S2-10); retain full population denominator visibility. | Proposed classification filters for non-common corporate forms. | Dedicated fundamental models for REITs (FFO/AFFO) and BDCs (NII/NAV leverage); ADR Level I / OTC tracking. |
 | **ETF Track** | Coverage of US-listed ETFs and all German-listed ETFs, regardless of fund domicile. | **US**: US-listed ETFs.<br>**German**: XETRA (`XETR`) primary listings, retaining all evidenced listing currencies. | ETN/ETC classification policy (`DEC-EXP-02`); leveraged/inverse ETP policy (`DEC-EXP-03`). | Börse Frankfurt (`XFRA`) floor trading; regional German exchanges (Tradegate `XGAT`, Stuttgart `XSTU`, München `XMUN`); non-Xetra European listings. |
 | **Crypto Track** | Separately scoped coverage track for cryptocurrency. | None (Implementation strictly barred under current authorization). | Top 50 spot assets (`DEC-EXP-04`); Coinbase/Kraken (`DEC-EXP-05`); monthly hysteresis buffer (`DEC-EXP-06`); stablecoin policy (`DEC-EXP-07`); 00:00 UTC roll (`DEC-EXP-08`). | Long-tail tokens (>50), decentralized exchange (DEX) liquidity, perpetual swaps/futures, cross-currency pairs, automated on-chain ingestion. |
-| **Strategy Gating** | Coverage does not grant eligibility for stock Minervini VCP. | Enforce strict strategy boundaries: VCP for Operating Common Stock only; Factor Radar for ETFs. | Crypto Volatility & Momentum screening (`DEC-EXP-10`). | Expansion of VCP to ADRs or specialized vehicle types pending empirical validation. |
+| **Strategy Gating** | Coverage does not grant eligibility for stock Minervini VCP. | Preserve existing stock eligibility rules; coverage alone grants no strategy eligibility. | Proposed ETF Factor Radar and Crypto Volatility & Momentum assignment (`DEC-EXP-10`); no new strategy authorization. | Expansion of VCP to ADRs or specialized vehicle types pending empirical validation. |
 | **Currency / Pricing** | Support multi-asset pricing without currency contamination. | Retain explicit per-listing denomination; retain all supported currencies (EUR, USD, GBP, CHF). | Boundary `PriceQuote` container (`DEC-EXP-09`). | System-wide schema migration converting every numeric column in SQLite/DuckDB to `(amount, currency)` tuples. |
 
 #### 1.3 Core Operating Principles
@@ -143,7 +143,7 @@ Each existing repository capability across backend engines, data adapters, secur
 │   │ Real Estate Trusts (REITs)│     │ Business Dev Cos (BDCs)      │   │
 │   │ (~200–300 issues)         │     │ (~50–100 issues)             │   │
 │   │ Corporate: Common Shares  │     │ Corporate: Common Shares     │   │
-│   │ Strategy: VCP Unsupported │     │ Strategy: VCP Unsupported    │   │
+│   │ VCP policy: Proposed     │     │ VCP policy: Proposed        │   │
 │   └───────────────────────────┘     └──────────────────────────────┘   │
 │                                                                        │
 │   TOTAL ACCOUNTED DENOMINATOR: ~6,000–8,000 LISTED SECURITIES          │
@@ -168,9 +168,9 @@ The relationship between specialized equity subtypes (REITs, BDCs, ADRs) and tra
    - BDC is **not** an implemented enum in `SecurityType` (`analyst_dashboard/security_master/models.py`).
    - ADRs labeled `security_type == "ADR"` fail Rule R02 with implemented reason code `RULE_FAILURE: R02_SECURITY_TYPE`.
 4. **Empirical Validation**:
-   - The platform's VCP parameters, contraction thresholds, and staging rules have been empirically backtested and calibrated **specifically on operating common stocks**.
-   - Whether the technical VCP pattern exhibits predictive trading edge on REITs, BDCs, or ADRs has **not been empirically validated** within ARX Terminal.
-   - Therefore, evaluating these vehicles under stock VCP is an **unsupported strategy assessment due to lack of empirical validation and fundamental mismatch**, rather than a conceptual impossibility of calculating technical bars.
+   - **Empirical support not established by this specification**: No backtest or calibration artifact is cited here to establish predictive trading edge, including for operating common stocks. Implemented rules and passing software tests do not establish empirical strategy quality.
+   - Predictive trading edge on REITs, BDCs, or ADRs is likewise **not established by the evidence cited here**.
+   - Treating REITs or BDCs as unsupported for stock VCP is a **proposed policy treatment**, not a newly approved or implemented exclusion. Preserve existing rule behavior described above until separately authorized; technical calculability, fundamental suitability, policy eligibility, and empirical support remain distinct.
 
 ---
 
@@ -412,7 +412,7 @@ Delivery is strictly structured into three sequential phases adhering to the acc
 │   Phase 2: US & German ETF Integration (PO APPROVED INITIAL DIRECTION)│
 │   ├── Slice B1: US-Listed ETFs + Xetra German ETFs Ingestion Slice     │
 │   ├── Slice B2: European Exchange Calendar & Multi-Currency Engine     │
-│   └── Slice B3: ETF Factor Radar Scanner & Radar UI Integration        │
+│   └── Slice B3: Proposed ETF Strategy/UI Integration (DEC-EXP-10)        │
 │                                                                        │
 │   Phase 3: Cryptocurrency Foundation & Initial Universe (Separate)    │
 │   ├── Slice C1: 24/7 Continuous Session Guard & Spot Data Ingestion    │
@@ -475,9 +475,14 @@ To prevent overlapping dimensions from distorting accounting, Slice B1 enforces 
 - **Deduplication Unit**:
   - US Candidates: `(Symbol, Exchange)` listing line.
   - German Candidates: `(ShareClassISIN, OperatingMIC, Currency)` quote line.
-- **Accounting Equation (Cardinally Qualified)**:
-  If upstream directory rows expand into multiple listing lines (e.g. primary and secondary quotes, or multi-currency lines), the adapter cardinality is explicitly accounted for:
-  $$N_{\text{deduplicated\_candidate\_lines}} = N_{\text{source\_rows}} + N_{\text{multi\_line\_expansions}} - N_{\text{unparseable\_source\_rows}} - N_{\text{exact\_duplicate\_rows}}$$
+- **Accounting Equations (Units Explicit)**:
+  Every source row receives exactly one proposed row-level disposition: EMITTED_CANDIDATES, UNPARSEABLE, or NO_CANDIDATE. A parseable row with unresolved identity, currency, or classification emits a candidate for explicit downstream disposition rather than being silently discarded. Each zero-output row retains its source reference and reason.
+  $$N_{\text{source\_rows}} = N_{\text{rows\_emitting\_candidates}} + N_{\text{unparseable\_rows}} + N_{\text{no\_candidate\_rows}}$$
+  For source row $i$, let $k_i$ be the number of candidate listing-line occurrences emitted before cross-row deduplication (zero for a zero-output row):
+  $$N_{\text{expanded\_line\_occurrences}} = \sum_{i=1}^{N_{\text{source\_rows}}} k_i$$
+  $$N_{\text{deduplicated\_candidate\_lines}} = N_{\text{expanded\_line\_occurrences}} - N_{\text{duplicate\_line\_occurrences}}$$
+  Duplicate line occurrences count occurrences beyond the first for the same resolved listing key, including partial overlap between different expanded source rows. Do not subtract a source-row count from a listing-line count. Preserve all contributing provenance when merging duplicate observations; conflicting evidence remains visible. Candidates without enough evidence for a resolved listing key remain separately traceable to their source row and emitted occurrence, without inventing a security identity.
+  *Example*: Two rows each emit EUR and USD lines for the same share class and venue: 2 source rows, 4 expanded line occurrences, 2 duplicate line occurrences, and 2 deduplicated candidate lines.
 - **Entity Level Counting & Unknown Association Reporting**:
   - $N_{\text{resolved\_funds}}$: Count of distinct umbrella entities or investment trusts with confirmed legal identity (LEI or Series CIK).
   - $N_{\text{unresolved\_fund\_association}}$: Count of candidate share classes lacking an authoritative parent fund link.
@@ -553,7 +558,7 @@ The table below lists existing components proposed for reuse and the concrete co
 4. **Listing Currency Integrity**: Listing currency captured explicitly as an ISO string (`EUR`, `USD`, `GBP`, `CHF`) matching source evidence; no default currency injected.
 5. **Three-Way Accounting Verification**: Adapter outputs structured accounting records demonstrating exact closure across Reconciliations A, B, and C.
 6. **Failure & Policy Visibility**: Unresolved classifications, structural failures, and pending policy items are visibly exposed in structured test outputs.
-7. **Durable Unit Tests**: Regression test suite demonstrates offline replay reproducibility, failure handling, and entity count separation ($N_{\text{funds}} \le N_{\text{share\_classes}} \le N_{\text{listing\_lines}}$).
+7. **Durable Unit Tests**: Regression tests demonstrate offline replay reproducibility, failure handling, row-to-line cardinality, cross-row listing-line deduplication, and entity count separation. Assert $N_{\text{funds}} \le N_{\text{share\_classes}} \le N_{\text{listing\_lines}}$ only for a closed population with complete, resolved parent relationships and at least one represented listing per counted share class. Report unresolved fund associations and unresolved share-class identities separately; do not fabricate parents or identities to satisfy an inequality.
 
 ---
 
