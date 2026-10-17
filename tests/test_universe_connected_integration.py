@@ -27,11 +27,14 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
 import pytest
 
 from analyst_dashboard.universe.connected_integration import (
     IntegrationConfig,
+    IsolatedMarketDataStub,
     run_connected_integration,
 )
 
@@ -82,7 +85,7 @@ class TestConnectedOfflineIntegration:
         # Stage A
         assert res.stage_a_publisher_observations.status == "COMPLETED"
         assert res.stage_a_publisher_observations.all_hashes_verified is True
-        assert res.stage_a_publisher_observations.total_source_files == 3
+        assert res.stage_a_publisher_observations.total_source_files == 5
 
         # Stage B
         assert res.stage_b_parsed_observations.status == "COMPLETED"
@@ -258,6 +261,9 @@ class TestConnectedOfflineIntegration:
         with SOURCE_PARSE_FAILED unless allow_incomplete_source_files=True.
         """
         # Create a temporary SEC file with 1 malformed row
+        in_dir = os.path.join(temp_output_dir, "inputs_07")
+        out_dir = os.path.join(temp_output_dir, "outputs_07")
+        os.makedirs(in_dir, exist_ok=True)
         malformed_sec = {
             "fields": ["cik", "name", "ticker", "exchange"],
             "data": [
@@ -265,7 +271,7 @@ class TestConnectedOfflineIntegration:
                 [None, "Malformed Entity", None, None],
             ],
         }
-        malformed_path = os.path.join(temp_output_dir, "malformed_sec.json")
+        malformed_path = os.path.join(in_dir, "malformed_sec.json")
         with open(malformed_path, "w", encoding="utf-8") as fp:
             json.dump(malformed_sec, fp)
 
@@ -274,7 +280,7 @@ class TestConnectedOfflineIntegration:
             nasdaq_listed_path=SYN_NASDAQ_PATH,
             identity_mapping_path=SYN_ID_MAP_PATH,
             evidence_overlay_path=SYN_OVERLAY_PATH,
-            output_dir=temp_output_dir,
+            output_dir=out_dir,
             is_synthetic_fixture=True,
             allow_incomplete_source_files=False,
         )
@@ -290,6 +296,9 @@ class TestConnectedOfflineIntegration:
         """
         OpenFIGI multi-match results remain ambiguous and fail validation fail-closed.
         """
+        in_dir = os.path.join(temp_output_dir, "inputs_08")
+        out_dir = os.path.join(temp_output_dir, "outputs_08")
+        os.makedirs(in_dir, exist_ok=True)
         multi_figi_resp = [
             {
                 "data": [
@@ -300,8 +309,8 @@ class TestConnectedOfflineIntegration:
         ]
         multi_figi_req = [{"idType": "TICKER", "idValue": "AAPL", "exchCode": "US"}]
 
-        resp_p = os.path.join(temp_output_dir, "multi_figi_resp.json")
-        req_p = os.path.join(temp_output_dir, "multi_figi_req.json")
+        resp_p = os.path.join(in_dir, "multi_figi_resp.json")
+        req_p = os.path.join(in_dir, "multi_figi_req.json")
         with open(resp_p, "w", encoding="utf-8") as fp:
             json.dump(multi_figi_resp, fp)
         with open(req_p, "w", encoding="utf-8") as fp:
@@ -315,7 +324,7 @@ class TestConnectedOfflineIntegration:
             openfigi_request_path=req_p,
             identity_mapping_path=SYN_ID_MAP_PATH,
             evidence_overlay_path=SYN_OVERLAY_PATH,
-            output_dir=temp_output_dir,
+            output_dir=out_dir,
             is_synthetic_fixture=True,
         )
 
@@ -331,6 +340,9 @@ class TestConnectedOfflineIntegration:
         an overlay supplying an exchange does NOT clear the source conflict.
         Validation fails closed and builder is NOT_RUN.
         """
+        in_dir = os.path.join(temp_output_dir, "inputs_09")
+        out_dir = os.path.join(temp_output_dir, "outputs_09")
+        os.makedirs(in_dir, exist_ok=True)
         # Conflicted SEC file where AAPL is listed on NYSE in SEC but NASDAQ in directory
         conflicted_sec = {
             "fields": ["cik", "name", "ticker", "exchange"],
@@ -338,7 +350,7 @@ class TestConnectedOfflineIntegration:
                 [320193, "Apple Inc.", "AAPL", "NYSE"],  # Conflict with NASDAQ in directory
             ],
         }
-        sec_p = os.path.join(temp_output_dir, "conflicted_sec.json")
+        sec_p = os.path.join(in_dir, "conflicted_sec.json")
         with open(sec_p, "w", encoding="utf-8") as fp:
             json.dump(conflicted_sec, fp)
 
@@ -347,7 +359,7 @@ class TestConnectedOfflineIntegration:
             nasdaq_listed_path=SYN_NASDAQ_PATH,
             identity_mapping_path=SYN_ID_MAP_PATH,
             evidence_overlay_path=SYN_OVERLAY_PATH,
-            output_dir=temp_output_dir,
+            output_dir=out_dir,
             is_synthetic_fixture=True,
         )
 
@@ -361,14 +373,17 @@ class TestConnectedOfflineIntegration:
 
     def test_10_empty_population_fails_closed(self, temp_output_dir):
         """An empty population fails closed without downstream admission."""
+        in_dir = os.path.join(temp_output_dir, "inputs_10")
+        out_dir = os.path.join(temp_output_dir, "outputs_10")
+        os.makedirs(in_dir, exist_ok=True)
         empty_sec = {"fields": ["cik", "name", "ticker", "exchange"], "data": []}
-        empty_sec_p = os.path.join(temp_output_dir, "empty_sec.json")
+        empty_sec_p = os.path.join(in_dir, "empty_sec.json")
         with open(empty_sec_p, "w", encoding="utf-8") as fp:
             json.dump(empty_sec, fp)
 
         config = IntegrationConfig(
             sec_path=empty_sec_p,
-            output_dir=temp_output_dir,
+            output_dir=out_dir,
             is_synthetic_fixture=True,
         )
 
@@ -484,3 +499,157 @@ class TestConnectedOfflineIntegration:
         assert res1.stage_g_builder_evaluation.eligible_count == res2.stage_g_builder_evaluation.eligible_count
         assert res1.stage_g_builder_evaluation.ineligible_count == res2.stage_g_builder_evaluation.ineligible_count
         assert res1.stage_g_builder_evaluation.attestation_hash == res2.stage_g_builder_evaluation.attestation_hash
+
+    def test_14_market_data_isolation_and_stub_prohibition(self, temp_output_dir):
+        """
+        Check A: Synthetic market data stub is permitted only in fixture mode.
+        In archived mode, passing an IsolatedMarketDataStub raises ValueError, and
+        admitted batches without real market data fail closed with BLOCKED_MARKET_DATA_UNAVAILABLE.
+        """
+        # 1. In synthetic fixture mode, IsolatedMarketDataStub runs and provenance is recorded
+        cfg_fixture = IntegrationConfig(
+            sec_path=SYN_SEC_PATH,
+            nasdaq_listed_path=SYN_NASDAQ_PATH,
+            other_listed_path=SYN_OTHER_PATH,
+            identity_mapping_path=SYN_ID_MAP_PATH,
+            evidence_overlay_path=SYN_OVERLAY_PATH,
+            output_dir=os.path.join(temp_output_dir, "run_stub_fixture"),
+            is_synthetic_fixture=True,
+        )
+        res_fixture = run_connected_integration(cfg_fixture)
+        assert res_fixture.stage_g_builder_evaluation.status == "EVALUATED"
+        assert res_fixture.stage_g_builder_evaluation.market_data_provenance == "SYNTHETIC_STUB"
+
+        # 2. In archived mode, explicitly passing IsolatedMarketDataStub is strictly prohibited
+        stub = IsolatedMarketDataStub()
+        cfg_prohibited = IntegrationConfig(
+            sec_path=SYN_SEC_PATH,
+            nasdaq_listed_path=SYN_NASDAQ_PATH,
+            other_listed_path=SYN_OTHER_PATH,
+            output_dir=os.path.join(temp_output_dir, "run_stub_prohibited"),
+            is_synthetic_fixture=False,
+            market_data_provider=stub,
+        )
+        with pytest.raises(ValueError, match="PROHIBITED_SYNTHETIC_STUB"):
+            run_connected_integration(cfg_prohibited)
+
+        # 3. In archived mode, even if batch passes admission, missing market data blocks builder
+        cfg_admitted_no_mkt = IntegrationConfig(
+            sec_path=SYN_SEC_PATH,
+            nasdaq_listed_path=SYN_NASDAQ_PATH,
+            other_listed_path=SYN_OTHER_PATH,
+            identity_mapping_path=SYN_ID_MAP_PATH,
+            evidence_overlay_path=SYN_OVERLAY_PATH,
+            output_dir=os.path.join(temp_output_dir, "run_no_mkt"),
+            is_synthetic_fixture=False,
+            market_data_provider=None,
+        )
+        res_admitted = run_connected_integration(cfg_admitted_no_mkt)
+        assert res_admitted.stage_e_batch_validation.is_batch_valid is True
+        assert res_admitted.stage_f_admission_and_conversion.status == "ADMITTED"
+        assert res_admitted.stage_g_builder_evaluation.status == "BLOCKED_MARKET_DATA_UNAVAILABLE"
+        assert res_admitted.stage_g_builder_evaluation.market_data_provenance is None
+        assert res_admitted.overall_outcome == "ADMITTED_BUILDER_BLOCKED"
+
+    def test_15_cli_runner_and_exit_codes(self, temp_output_dir):
+        """
+        Check B: CLI runner enforces explicit exit codes and flags:
+        - Exit 0: Builder evaluated on admitted fixture batch.
+        - Exit 2: Fail-closed block when sources/batch are incomplete.
+        - Emits deprecation warning when legacy --allow-incomplete-source-files is used.
+        """
+        cli_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "scripts",
+            "diagnostics",
+            "universe_connected_integration.py",
+        )
+        out_0 = os.path.join(temp_output_dir, "cli_success")
+        proc_0 = subprocess.run(
+            [sys.executable, cli_path, "--fixture", "--output-dir", out_0],
+            capture_output=True,
+            text=True,
+        )
+        assert proc_0.returncode == 0
+        assert "Connected Offline Integration" in proc_0.stdout
+
+        # Running without complete evidence overlay fails closed with exit code 2
+        out_2 = os.path.join(temp_output_dir, "cli_blocked")
+        proc_2 = subprocess.run(
+            [
+                sys.executable,
+                cli_path,
+                "--sec-path", SYN_SEC_PATH,
+                "--diagnostic-inspect-incomplete-sources",
+                "--output-dir", out_2,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert proc_2.returncode == 2
+
+        # Check deprecation warning on --allow-incomplete-source-files
+        out_dep = os.path.join(temp_output_dir, "cli_deprecated")
+        proc_dep = subprocess.run(
+            [
+                sys.executable,
+                cli_path,
+                "--sec-path", SYN_SEC_PATH,
+                "--allow-incomplete-source-files",
+                "--output-dir", out_dep,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert "DEPRECATION WARNING: --allow-incomplete-source-files is deprecated" in proc_dep.stderr
+
+    def test_16_four_way_candidate_partition_closure(self, temp_output_dir):
+        """
+        Check C: Mathematical 4-way candidate venue reconciliation:
+        - total == dual_source + sec_only + directory_only
+        - dual_source == agreeing + conflicting
+        - no_detected_conflict == agreeing + sec_only + directory_only
+        """
+        cfg = IntegrationConfig(
+            sec_path=SYN_SEC_PATH,
+            nasdaq_listed_path=SYN_NASDAQ_PATH,
+            other_listed_path=SYN_OTHER_PATH,
+            output_dir=os.path.join(temp_output_dir, "partition_test"),
+            is_synthetic_fixture=True,
+        )
+        res = run_connected_integration(cfg)
+        sc = res.stage_c_candidate_matching
+        assert sc.total_candidates == sc.both_sources_matched_count + sc.sec_only_count + sc.directory_only_count
+        assert sc.both_sources_matched_count == sc.agreeing_venue_count + sc.venue_disagreement_count
+        assert sc.no_detected_conflict_count == sc.agreeing_venue_count + sc.sec_only_count + sc.directory_only_count
+        assert sc.total_candidates == 5
+        assert sc.agreeing_venue_count == 5
+        assert sc.venue_disagreement_count == 0
+
+    def test_17_output_directory_collision_prevention(self, temp_output_dir):
+        """
+        Check E: Output directory cannot collide with or contain input source paths.
+        """
+        # Case 1: output_dir is identical to a source file path
+        cfg_same_as_file = IntegrationConfig(
+            sec_path=SYN_SEC_PATH,
+            output_dir=SYN_SEC_PATH,
+            is_synthetic_fixture=True,
+        )
+        with pytest.raises(ValueError, match="OUTPUT_DIRECTORY_COLLISION"):
+            run_connected_integration(cfg_same_as_file)
+
+        # Case 2: output_dir contains the source file
+        source_dir = os.path.join(temp_output_dir, "colliding_source_dir")
+        os.makedirs(source_dir, exist_ok=True)
+        source_file = os.path.join(source_dir, "mock_source.json")
+        with open(source_file, "w") as fp:
+            fp.write("{}")
+
+        cfg_contains_file = IntegrationConfig(
+            sec_path=source_file,
+            output_dir=source_dir,
+            is_synthetic_fixture=True,
+        )
+        with pytest.raises(ValueError, match="OUTPUT_DIRECTORY_COLLISION"):
+            run_connected_integration(cfg_contains_file)

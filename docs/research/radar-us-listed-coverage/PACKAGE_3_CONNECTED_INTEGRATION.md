@@ -66,13 +66,13 @@ Sprint 2 Package 3 (`S2-04`) establishes the single, explicitly invoked offline 
 │ Stage G: Builder Evaluated│  │ Stage G: Builder Bypassed│
 │ - DeterministicUniverse-  │  │ - NOT_RUN (fail-closed) │
 │   Builder                 │  │ - Zero unevidenced      │
-│ - Rules R01-R08 evaluation│  │   evaluations           │
+│ - Rules R01–R07 evaluation│  │   evaluations           │
 │ - UniverseBuildAttestation│  └─────────────────────────┘
 └───────────────────────────┘
 ```
 
 The pipeline was executed and verified under two distinct, truthful execution modes:
-1. **Synthetic Fixture Path**: Uses a fully evidenced, self-contained 5-security fixture bundle (`AAPL`, `MSFT`, `GOOGL`, `GOOG`, `BABA`) to verify end-to-end integration mechanics through builder evaluation (`SUCCESS_BUILDER_EVALUATED`), producing 4 eligible common stocks, 1 ineligible foreign ADR, 0 unresolved candidates, and a deterministic attestation hash.
+1. **Synthetic Fixture Path**: Uses a fully evidenced, self-contained 5-security fixture bundle (`AAPL`, `MSFT`, `GOOGL`, `GOOG`, `BABA`) to verify end-to-end integration mechanics through builder evaluation (`SUCCESS_BUILDER_EVALUATED`), producing 4 eligible common stocks, 1 ineligible foreign ADR, 0 unresolved candidates, and a deterministic attestation hash. Synthetic price/volume data is strictly isolated via `IsolatedMarketDataStub` (`market_data_provenance="SYNTHETIC_STUB"`).
 2. **Archived Real-Source Path**: Uses actual acquired feeds from 2026-10-16 (SEC EDGAR, Nasdaq Listed, Other Listed) to truthfully demonstrate fail-closed admission blocking (`BLOCKED_VALIDATION_FAILED`), recording exactly 168 malformed SEC rows, 16,448 missing `security_id` attributes, 471 venue conflicts, and unevidenced currency/country/listing fields. Zero unevidenced records are admitted to the builder.
 
 ---
@@ -88,15 +88,16 @@ Package 3 introduces zero redundant parsers, models, or validation logic. It str
 | **Evidence Resolver** | `analyst_dashboard/universe/adapters/resolution.py` | `SecurityEvidenceResolver`. Resolves issuer vs instrument vs listing levels, enforces zero synthetic surrogate keys, disambiguates OpenFIGI responses, preserves venue conflicts, and accounts for foreign issuers. |
 | **Input Validator** | `analyst_dashboard/universe/validator.py` | `UniverseInputValidator`. Evaluates field constraints, structural invariants, and atomic batch validity (`is_batch_valid`). |
 | **Domain Contracts** | `analyst_dashboard/universe/contracts.py` | `SourceSecurity`, `SourcePopulationSnapshot`, `UniverseEligibilitySpec`, `EligibilityDecision`, `UniverseBuildAttestation`. Provides immutable data transfer contracts. |
-| **Universe Builder** | `analyst_dashboard/universe/builder.py` | `DeterministicUniverseBuilder`. Evaluates rules R01–R08, handles ADR security-type ineligibility (R02), and generates cryptographic attestation hashes. |
-| **Orchestration Engine** | `analyst_dashboard/universe/connected_integration.py` | New core orchestration module providing `IntegrationConfig`, Stages A–G execution, `IsolatedMarketDataStub` (ensuring zero database writes or side-effects), and report formatting. |
-| **Diagnostic CLI** | `scripts/diagnostics/universe_connected_integration.py` | New repository-tracked CLI entry point for running synthetic and archived real-source pipelines with diagnostic reporting. |
+| **Universe Builder** | `analyst_dashboard/universe/builder.py` | `DeterministicUniverseBuilder`. Evaluates canonical Rules R01–R07 (Active Listing, Security Type, Primary Listing, Operating Metrics, Price Floor, Liquidity Floor, Data Freshness; no synthetic R08), handles ADR security-type ineligibility (R02), and generates cryptographic attestation hashes. |
+| **Orchestration Engine** | `analyst_dashboard/universe/connected_integration.py` | Core orchestration module providing `IntegrationConfig`, Stages A–G execution, `IsolatedMarketDataStub` (strictly restricted to synthetic fixture runs), output collision guards, and report formatting. |
+| **Diagnostic CLI** | `scripts/diagnostics/universe_connected_integration.py` | Repository-tracked CLI entry point for running synthetic and archived real-source pipelines with diagnostic reporting and explicit exit code contracts. |
 
 #### Operational Boundaries & Invariants:
 - **Zero Database Initialization**: Neither `UniverseStore` nor SQLite database files are opened, modified, or created during integration runs.
-- **Pure In-Memory Execution**: The builder operates against an in-memory `IsolatedMarketDataStub` providing baseline price and volume data only for candidates passing input validation.
+- **Strict Market Data Isolation**: The `IsolatedMarketDataStub` is strictly restricted to synthetic fixture testing (`is_synthetic_fixture=True`, `market_data_provenance="SYNTHETIC_STUB"`). In archived mode (`is_synthetic_fixture=False`), passing `IsolatedMarketDataStub` is prohibited (`ValueError`). If an archived batch is admitted without an attributable real market data provider, builder evaluation fails closed with `status="BLOCKED_MARKET_DATA_UNAVAILABLE"`, `market_data_provenance=None`, and `overall_outcome="ADMITTED_BUILDER_BLOCKED"`.
 - **Fail-Closed Gate**: If any candidate in a batch fails validation, whole-batch admission is revoked (`Stage F: REVOKED`), `SourcePopulationSnapshot` is not created, and `DeterministicUniverseBuilder` is strictly bypassed (`Stage G: NOT_RUN`).
 - **No Evidence Manufacturing**: Missing fields are never synthesized with placeholders or default constants to force a successful build on real data.
+- **Output Directory Containment**: Explicit collision checks prevent `output_dir` from overlapping with or containing source input files or directories.
 
 ---
 
@@ -119,13 +120,21 @@ Executes against acquired raw feeds from 2026-10-16 and truthfully reports admis
 ```bash
 python scripts/diagnostics/universe_connected_integration.py \
   --archive-dir C:\Users\akara\Documents\Projects\finance-sprint-2-listing-acquisition\data\raw_feeds\2026-10-16 \
-  --sec-path C:\Users\akara\Documents\Projects\finance-sprint-2-listing-acquisition\data\raw_feeds\2026-10-16\sec\company_tickers_exchange.json \
-  --nasdaq-listed-path C:\Users\akara\Documents\Projects\finance-sprint-2-listing-acquisition\data\raw_feeds\2026-10-16\nasdaq\nasdaqlisted.txt \
-  --other-listed-path C:\Users\akara\Documents\Projects\finance-sprint-2-listing-acquisition\data\raw_feeds\2026-10-16\nasdaq\otherlisted.txt \
-  --allow-incomplete-source-files \
+  --sec-path C:\Users\akara\Documents\Projects\finance-sprint-2-listing-acquisition\data\raw_feeds\2026-10-16\sec_company_tickers_exchange.json \
+  --nasdaq-listed-path C:\Users\akara\Documents\Projects\finance-sprint-2-listing-acquisition\data\raw_feeds\2026-10-16\nasdaq_listed_directory.txt \
+  --other-listed-path C:\Users\akara\Documents\Projects\finance-sprint-2-listing-acquisition\data\raw_feeds\2026-10-16\other_listed_directory.txt \
+  --diagnostic-inspect-incomplete-sources \
   --as-of 2026-10-16 \
   --evaluation-cutoff 2026-10-16
 ```
+*(Note: `--allow-incomplete-source-files` is retained as a deprecated compatibility alias that emits a stderr warning).*
+
+#### 3.3 Diagnostic CLI Exit Code Contract
+
+The CLI script implements an explicit, process-level exit code contract:
+- **`0` (`EXIT_SUCCESS_ADMITTED`)**: Pipeline executed successfully and batch was admitted and builder evaluated (e.g. synthetic fixture run).
+- **`2` (`EXIT_BLOCKED_FAIL_CLOSED`)**: Diagnostic inspection completed truthfully and admission was blocked fail-closed (validation failure, builder blocked due to missing real market data, or source hash mismatch).
+- **`1` (`EXIT_EXECUTION_ERROR`)**: Invalid arguments, missing paths, unhandled execution exception, or fatal runtime error.
 
 ---
 
@@ -163,16 +172,23 @@ The table below contrasts the accounting outcomes across all pipeline stages bet
 |:---|:---|:---|:---|
 | **Overall Execution Status** | **`SUCCESS_BUILDER_EVALUATED`** | **`BLOCKED_VALIDATION_FAILED`** | Synthetic runs end-to-end; real path blocks fail-closed. |
 | **Stage A: Source Ingestion** | | | |
-| - Source Files Loaded | 3 files (SEC, Nasdaq, Other) | 3 files (SEC, Nasdaq, Other) | Full SHA-256 verification on all input bytes. |
-| - Additional Fixtures Loaded | 4 files (OpenFIGI req/resp, mapping, overlay) | 0 files (none supplied) | Real path truthfully isolates unevidenced directory feeds. |
+| - Source Files Loaded | 5 files (3 listing feeds + 2 OpenFIGI fixtures) | 3 files (SEC, Nasdaq, Other) | Full SHA-256 verification on all input bytes. |
+| - Additional Fixtures Loaded | 2 files (identity mapping, evidence overlay) | 0 files (none supplied) | Real path truthfully isolates unevidenced directory feeds. |
 | **Stage B: Offline Parsing** | | | |
-| - Total Raw Rows | 16 lines across 3 files | 23,758 lines across 3 files | |
-| - Usable Data Rows Parsed | 10 data rows | 23,584 data rows | SEC: 10,276; Nasdaq: 5,634; Other: 7,674. |
-| - Malformed Rows Detected | 0 | 168 malformed SEC rows | SEC file contains 168 rows missing ticker, title, or venue. |
-| **Stage C: Cross-Feed Matching** | | | |
-| - Candidate Join Keys | 5 candidate symbols | 16,448 matched candidate keys | Combined SEC + Nasdaq directory universe. |
-| - Concordant Venues | 5 (100.0%) | 15,977 (97.1%) | Concordant exchange claims. |
-| - Venue Conflicts Detected | 0 (0.0%) | 471 (2.9%) | Preserved disagreements (e.g. SEC NYSE vs Other ARCA). |
+| - SEC Publisher Records | 5 publisher records (JSON structure, 0 lines) | 10,444 publisher records (JSON structure, 0 lines) | SEC EDGAR column-oriented JSON data payload. |
+| - Directory Physical Lines | 11 lines (Nasdaq: 6; Other: 5) | 13,312 lines (Nasdaq: 5,636; Other: 7,676) | Text lines (each with 1 header, N data rows, 1 trailer). |
+| - Usable Data Records Parsed | 10 data records | 23,584 data records | SEC: 10,276; Nasdaq: 5,634; Other: 7,674. |
+| - Malformed / Missing Attributes | 0 malformed records | 168 malformed SEC rows | SEC file contains 168 rows missing ticker, title, or venue. |
+| **Stage C: Candidate Matching** | | | |
+| - Total Candidate Lookup Keys | 5 normalized ticker symbols | 16,448 matched candidate keys | Combined SEC + Nasdaq directory candidate universe. |
+| - Dual-Source Candidates (Both Present) | 5 (100.0%) | 7,136 (43.4%) | Candidates observed in both SEC and Directory feeds. |
+|   - Agreeing Primary Venues | 5 (100.0%) | 6,665 (40.5%) | Dual-source verified cross-feed venue concordance. |
+|   - Conflicting Primary Venues | 0 (0.0%) | 471 (2.9%) | Preserved disagreements (e.g. SEC NYSE vs Other ARCA). |
+| - Single-Source Candidates | 0 (0.0%) | 9,312 (56.6%) | Candidates where cross-feed check is impossible: |
+|   - SEC EDGAR Only | 0 | 3,140 (19.1%) | Symbol present in SEC feed only. |
+|   - Directory Only | 0 | 6,172 (37.5%) | Symbol present in Directory feeds only. |
+| - Candidates Without Detected Conflict | 5 (100.0%) | 15,977 (97.1%) | 6,665 agreeing + 9,312 single-source records. *Note: Single-source is NOT equivalent to verified agreement.* |
+| - Mathematical Partition Closure | `5 == 5 + 0 + 0 + 0` (True) | `16448 == 6665 + 471 + 3140 + 6172` (True) | Exact 4-way candidate venue partition closure. |
 | **Stage D: Evidence Resolution** | | | |
 | - Fully Evidenced Records | 5 | 0 | Real path lacks security ID, currency, country, primary. |
 | - Unresolved Records | 0 | 15,977 | Missing required evidence fields. |
@@ -180,7 +196,8 @@ The table below contrasts the accounting outcomes across all pipeline stages bet
 | - Ambiguous Records | 0 | 0 | Zero multi-match OpenFIGI collisions. |
 | - Multi-Symbol Issuers | 1 issuer (CIK `0001652044`: 2 symbols) | 1,422 CIKs (3,812 symbols) | Issuer vs instrument separation strictly maintained. |
 | - Foreign US-Listed Issuers | 1 issuer (`BABA`, country `CYM`) | N/A (Country absent) | Foreign issuers accounted for in candidate pool. |
-| - Synthetic IDs Invented | **0** | **0** | `CIK_{cik}_{symbol}` surrogate key generation strictly prevented. |
+| - Production Identities Synthesized | **0** | **0** | Zero surrogate keys invented; strictly prohibited. |
+| - Synthetic Fixture Mappings | 5 (test fixtures only) | 0 (none supplied) | Isolated synthetic mapping fixtures. |
 | **Stage D Closure Verified** | **`5 == 5 + 0 + 0 + 0` (True)** | **`16448 == 0 + 15977 + 471 + 0` (True)** | Mathematical closure verified across all candidates. |
 | **Stage E: Input Validation** | | | |
 | - Batch Validation Status | **`VALIDATION_PASSED`** | **`VALIDATION_FAILED`** | Atomic whole-batch gate (`is_batch_valid`). |
@@ -193,12 +210,14 @@ The table below contrasts the accounting outcomes across all pipeline stages bet
 | - `SourcePopulationSnapshot` | Created (`SNAPSHOT-20261016`) | Not Created (`None`) | Population snapshot generation halted. |
 | **Stage G: Builder Evaluation** | | | |
 | - Builder Execution Status | **`EVALUATED`** | **`NOT_RUN`** | Builder strictly bypassed on validation failure. |
+| - Market Data Provenance | `SYNTHETIC_STUB` | `NONE` (Prohibited without real provider) | Pure in-memory market data isolation. |
+| - Canonical Rules Evaluated | Rules R01–R07 | None | Canonical rule set; no synthetic R08. |
 | - Evaluated Candidates | 5 | 0 | |
-| - Eligible Decisions | 4 (`AAPL`, `MSFT`, `GOOGL`, `GOOG`) | 0 | Passed all rules R01–R08. |
+| - Eligible Decisions | 4 (`AAPL`, `MSFT`, `GOOGL`, `GOOG`) | 0 | Passed canonical rules R01–R07. |
 | - Ineligible Decisions | 1 (`BABA`) | 0 | Failed Rule R02 (`R02_SECURITY_TYPE: False` as ADR). |
 | - Unresolved Decisions | 0 | 0 | |
 | **Stage G Closure Verified** | **`5 == 4 + 1 + 0` (True)** | **N/A** | Mathematical closure verified across builder outcomes. |
-| - Attestation Hash Generated | `a212c75aeeaa788df0d7...` | `None` | Cryptographically deterministic across identical inputs. |
+| - Attestation Hash Generated | `32f265546d4ae925eee4...` | `None` | Cryptographically deterministic across identical inputs. |
 
 ---
 
@@ -252,26 +271,30 @@ The integration suite was executed and verified locally within the isolated work
 
 | Test Case Name | Boundary Condition Verified | Result |
 |:---|:---|:---:|
-| `test_synthetic_fixture_full_integration_success` | Full pipeline execution through builder evaluation; 4 eligible, 1 ineligible ADR; attestation hash verification. | **PASSED** |
-| `test_archived_real_sources_fail_closed_validation` | Real archived feeds truthfully fail validation; Stage F revoked; Stage G bypassed. | **PASSED** |
-| `test_stage_d_accounting_closure` | Mathematical closure across candidate outcomes: `total == evidenced + unresolved + conflicted + ambiguous`. | **PASSED** |
-| `test_multi_symbol_issuer_distinct_records` | Alphabet Inc. (CIK `0001652044`) maintains distinct `GOOGL` and `GOOG` records through builder evaluation. | **PASSED** |
-| `test_foreign_issuer_adr_handling` | Alibaba (`BABA`) admitted to snapshot, evaluated by builder, and ruled ineligible under R02. | **PASSED** |
-| `test_venue_conflict_rejection` | Mismatched venues between feeds are rejected when `require_venue_match=True`. | **PASSED** |
-| `test_missing_security_id_fails_closed` | Missing `security_id` in candidate records fails validation and revokes admission. | **PASSED** |
-| `test_missing_required_evidence_fails_closed` | Missing currency, country, or primary listing fails validation. | **PASSED** |
-| `test_batch_validation_revokes_all_admissions` | Single invalid record in a batch revokes admission for all records. | **PASSED** |
-| `test_builder_evaluation_closure` | Mathematical closure in builder: `evaluated == eligible + ineligible + unresolved`. | **PASSED** |
-| `test_missing_source_files_rejection` | Missing required source files fails cleanly at Stage A without unhandled exceptions. | **PASSED** |
-| `test_cli_runner_synthetic_fixture` | Diagnostic CLI script executes cleanly on synthetic fixtures with JSON report output. | **PASSED** |
-| `test_cli_runner_archived_feeds` | Diagnostic CLI script executes cleanly on archived feeds and reports failure exit code. | **PASSED** |
+| `test_01_successful_synthetic_integration_end_to_end` | Full pipeline execution through builder evaluation; 4 eligible, 1 ineligible ADR; attestation hash verification. | **PASSED** |
+| `test_02_foreign_issuer_retention_and_adr_strategy_ineligibility` | Foreign issuer (`BABA`) accounted for in candidate pool, passes batch validation, evaluated ineligible under R02. | **PASSED** |
+| `test_03_multi_symbol_issuer_distinct_candidates_in_builder` | Alphabet Inc. (CIK `0001652044`) maintains distinct `GOOGL` and `GOOG` records through builder evaluation. | **PASSED** |
+| `test_04_missing_required_evidence_fails_batch_and_blocks_builder` | Missing required evidence (currency, country, primary listing) fails validation, revokes admission, blocks builder. | **PASSED** |
+| `test_05_source_hash_mismatch_fails_closed_in_stage_a` | Source artifact sha256 mismatch fails closed immediately in Stage A before parsing or resolution. | **PASSED** |
+| `test_06_missing_required_source_fails_batch` | Missing caller-required source feeds fails batch validation with `REQUIRED_SOURCES_MISSING`. | **PASSED** |
+| `test_07_malformed_source_observations_fails_batch` | Malformed rows in source feeds fail batch validation with `SOURCE_PARSE_FAILED`. | **PASSED** |
+| `test_08_ambiguous_openfigi_association_fails_validation` | OpenFIGI multi-match results remain ambiguous and fail validation fail-closed. | **PASSED** |
+| `test_09_venue_conflict_surviving_overlay_blocks_admission` | Surviving cross-feed venue conflicts block admission fail-closed even when exchange overlay is present. | **PASSED** |
+| `test_10_empty_population_fails_closed` | Empty candidate population fails closed without downstream admission. | **PASSED** |
+| `test_11_whole_batch_revocation_atomic_contract` | Atomic batch contract: 1 invalid member revokes admission for all 5 batch members. | **PASSED** |
+| `test_12_no_database_or_network_side_effects` | Zero database tables created or modified; zero `UniverseStore` writes; writes confined to designated `output_dir`. | **PASSED** |
+| `test_13_stable_accounting_and_deterministic_output_consistency` | Identical inputs yield identical counts, identical partitions, and identical attestation hashes. | **PASSED** |
+| `test_14_market_data_isolation_and_stub_prohibition` | `IsolatedMarketDataStub` prohibited in archived mode (`ValueError`); admitted batches fail closed without real provider. | **PASSED** |
+| `test_15_cli_runner_and_exit_codes` | CLI exits 0 on admitted fixture run, exits 2 on fail-closed diagnostic run, emits stderr deprecation warning on alias. | **PASSED** |
+| `test_16_four_way_candidate_partition_closure` | Mathematical 4-way candidate venue reconciliation closed across all partitions (`total == dual + sec_only + dir_only`). | **PASSED** |
+| `test_17_output_directory_collision_prevention` | Output directory colliding with or containing source input paths raises `ValueError`. | **PASSED** |
 
-**Outcome**: `13 passed in 2.75s`.
+**Outcome**: `17 passed in 6.75s`.
 
 #### 7.2 Full Universe Regression Suite
-**Execution Command**: `python -m pytest tests/test_universe* -v`  
-**Coverage**: All universe unit, adapter, acquisition, validator, builder, and integration tests across 11 test modules.  
-**Outcome**: `209 passed in 15.07s`.
+**Execution Command**: `python -m pytest tests/test_universe*.py -v`  
+**Coverage**: All universe unit, adapter, acquisition, validator, builder, and integration tests across 5 test modules.  
+**Outcome**: `172 passed in 7.52s`.
 
 #### 7.3 Code Quality & Linter Audits
 - **`flake8` Syntax & Style Check**:
