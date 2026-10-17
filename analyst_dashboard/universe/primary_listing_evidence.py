@@ -125,6 +125,13 @@ class AttributablePrimaryListingEvidenceRecord:
     publisher_primary_listing_claim: Optional[str] = None
     interpretation: Optional[str] = None
     prospective_lookup_target: Optional[str] = None
+    inspected_filing_accession: Optional[str] = None
+    inspected_filing_report_date: Optional[str] = None
+    inspected_filing_artifact: Optional[str] = None
+    inspected_filing_sha256: Optional[str] = None
+    inspected_filing_url: Optional[str] = None
+    inspected_table_locator: Optional[str] = None
+    unfetched_filing_targets: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
@@ -292,6 +299,13 @@ class PrimaryListingEvidenceAdapter:
                 publisher_primary_listing_claim=rec_dict.get("publisher_primary_listing_claim"),
                 interpretation=rec_dict.get("interpretation"),
                 prospective_lookup_target=rec_dict.get("prospective_lookup_target"),
+                inspected_filing_accession=rec_dict.get("inspected_filing_accession"),
+                inspected_filing_report_date=rec_dict.get("inspected_filing_report_date"),
+                inspected_filing_artifact=rec_dict.get("inspected_filing_artifact"),
+                inspected_filing_sha256=rec_dict.get("inspected_filing_sha256"),
+                inspected_filing_url=rec_dict.get("inspected_filing_url"),
+                inspected_table_locator=rec_dict.get("inspected_table_locator"),
+                unfetched_filing_targets=rec_dict.get("unfetched_filing_targets"),
             )
 
         return records

@@ -50,10 +50,10 @@ if validated.primary_listing is None:
 
 ---
 
-### 2. Actual Source Claims
+### 2. Actual Source Claims from Inspected Evidence
 
 #### 2.1 Source A: Official Exchange Reference Source (The Nasdaq Stock Market LLC)
-- **Source Artifact:** `data/research/exchange_reference/nasdaqlisted_20261017.txt`
+- **Source Artifact:** `data/research/exchange_reference/nasdaqlisted_20261017.txt` (Saved decoded text content of directory snapshot)
 - **Source URL:** `http://www.nasdaqtrader.com/dynamic/symdir/nasdaqlisted.txt`
 - **Retrieval Timestamp:** `2026-10-17T16:17:36Z`
 - **Digest (SHA-256):** `9f5c42346e6ab594a9e16bed99757e38cda89645c776b987626c9f51813bc99b`
@@ -61,20 +61,26 @@ if validated.primary_listing is None:
   - `AAPL`: `AAPL|Apple Inc. - Common Stock|Q|N|N|40|N|N` (Line 24)
   - `GOOG`: `GOOG|Alphabet Inc. - Class C Capital Stock|Q|N|N|40|N|N` (Line 2152)
   - `GOOGL`: `GOOGL|Alphabet Inc. - Class A Common Stock|Q|N|N|40|N|N` (Line 2153)
-- **Observed Claim:** All three securities are listed on The Nasdaq Stock Market in Market Category `Q` (Nasdaq Global Select Market).
+- **Observed Claim:** All three securities are actively traded on The Nasdaq Stock Market in Market Category `Q` (Nasdaq Global Select Market). Does not contain CIKs, par values, or voting rights.
 
-#### 2.2 Source B: SEC EDGAR Submissions API & Form 10-K Cover Page §12(b) Registration Tables
-- **Submissions API Metadata:**
-  - `AAPL` (CIK `0000320193`): `tickers: ['AAPL']`, `exchanges: ['Nasdaq']`
-  - `GOOG` / `GOOGL` (CIK `0001652044`): `tickers: ['GOOGL', 'GOOG']`, `exchanges: ['Nasdaq', 'Nasdaq']`
-- **Form 10-K Cover Page §12(b) Table (Governing Statutory Registration):**
-  - Section title: *"Securities registered pursuant to Section 12(b) of the Act"*
-  - Table schema: `Title of each class` | `Trading Symbol(s)` | `Name of each exchange on which registered`
-  - Rows for Apple Inc. (Accession `0000320193-24-000123` / `0000320193-25-000079`):
-    - `Common Stock, $0.00001 par value per share` | `AAPL` | `The Nasdaq Stock Market LLC`
-  - Rows for Alphabet Inc. (Accession `0001652044-24-000022` / `0001652044-25-000014`):
-    - `Class A Common Stock, $0.001 par value` | `GOOGL` | `The Nasdaq Stock Market LLC (Nasdaq Global Select Market)`
-    - `Class C Capital Stock, $0.001 par value` | `GOOG` | `The Nasdaq Stock Market LLC (Nasdaq Global Select Market)`
+#### 2.2 Source B: SEC EDGAR Submissions API Metadata
+- **Source Artifacts:**
+  - Apple Inc.: `data/research/sec_submissions_sample/CIK0000320193.json` (SHA-256: `aad00f6a...`)
+  - Alphabet Inc.: `data/research/sec_submissions_sample/CIK0001652044.json` (SHA-256: `648cea84...`)
+- **Observed Metadata:**
+  - Apple Inc.: `CIK: 0000320193`, `tickers: ['AAPL']`, `exchanges: ['Nasdaq']`, Form 10-K Accession `0000320193-25-000079`
+  - Alphabet Inc.: `CIK: 0001652044`, `tickers: ['GOOG', 'GOOGL']`, `exchanges: ['Nasdaq', 'Nasdaq']`, Form 10-K Accession `0001652044-26-000018`
+
+#### 2.3 Source C: Inspected SEC Form 10-K Section 12(b) Registration Tables
+- **Apple Inc. (Accession `0000320193-25-000079`, Report Date: `2025-09-27`):**
+  - Primary Doc: `data/research/sec_filings_sample/aapl-20250927.htm` (SHA-256: `63d29bf5...`)
+  - Heading: *"Securities registered pursuant to Section 12(b) of the Act"*
+  - Extracted Row: `Common Stock, $0.00001 par value per share` | `AAPL` | `The Nasdaq Stock Market LLC`
+- **Alphabet Inc. (Accession `0001652044-26-000018`, Report Date: `2025-12-31`):**
+  - Primary Doc: `data/research/sec_filings_sample/goog-20251231.htm` (SHA-256: `8cee92a0...`)
+  - Heading: *"Securities registered pursuant to Section 12(b) of the Act"*
+  - Extracted Row 1 (GOOGL): `Class A Common Stock, $0.001 par value` | `GOOGL` | `Nasdaq Stock Market LLC (Nasdaq Global Select Market)`
+  - Extracted Row 2 (GOOG): `Class C Capital Stock, $0.001 par value` | `GOOG` | `Nasdaq Stock Market LLC (Nasdaq Global Select Market)`
 
 ---
 
@@ -82,8 +88,8 @@ if validated.primary_listing is None:
 
 | Interpretation | Conceptual Premise | Treatment of Regulatory Wording |
 |:---|:---|:---|
-| **1. Strict Semantic Literalism (Narrow Fact)** | `primary_listing` requires an affirmative regulatory statement stating the word *"primary"*. | Form 10-K §12(b) and Nasdaq directory prove exchange registration and listing, but neither document prints the literal string *"primary listing"*. Therefore, `primary_listing` must remain `None` (unknown). |
-| **2. Sole-Venue Sovereign Registration Equivalence** | For a domestic US issuer, registration under §12(b) exclusively on a single national exchange constitutes the primary listing as a matter of law. | Because Apple and Alphabet register their equity classes solely on The Nasdaq Stock Market LLC (with zero secondary or dual national exchange registrations), this sole §12(b) registration IS their primary listing. |
+| **1. Strict Semantic Literalism (Narrow Fact - Current Baseline)** | `primary_listing` requires an affirmative, explicit statement using the term *"primary listing"*. | Form 10-K §12(b) and Nasdaq directory prove exchange registration and listing facts, but neither source asserts the literal boolean string *"primary listing = True"*. Therefore, `primary_listing` must remain `None` (unknown). |
+| **2. Sole-Venue Sovereign Registration Equivalence** | For a domestic US operating issuer, registration under §12(b) exclusively on a single national exchange constitutes the primary listing as a matter of law. | Because Apple and Alphabet register their equity classes solely on The Nasdaq Stock Market LLC (with zero secondary or dual national exchange registrations), this sole §12(b) registration IS their primary listing. |
 | **3. Multi-Class Capital Structure Divergence** | In multi-class structures (Alphabet Class A vs Class C), shares differ in voting power. | **3a (Voting Primacy):** Only voting Class A is primary; non-voting Class C is a derivative/secondary class.<br/>**3b (Dual Primary Classes):** Both Class A and Class C are separate, independent primary listings of their respective classes on Nasdaq, as neither is a cross-listing of the other. |
 
 ---

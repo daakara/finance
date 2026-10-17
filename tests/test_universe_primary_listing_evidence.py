@@ -793,3 +793,147 @@ class TestThreeCandidateListingEvidenceAcquisition:
             assert res.evidence_classification == PrimaryListingEvidenceClassification.EVIDENCE_UNAVAILABLE
 
 
+# =====================================================================
+# 11. Inspected Form 10-K Evidence & Provenance Accounting Verification
+# =====================================================================
+
+class TestThreeCandidateInspectedFilingEvidenceAndProvenance:
+    """
+    Verifies authentic Form 10-K Section 12(b) registration table evidence,
+    official accession metadata verification, separate provenance attribution,
+    and strict fail-closed atomic replay for AAPL, GOOGL, and GOOG.
+    """
+
+    def test_operator_sec_contact_configured_and_verified(self, monkeypatch):
+        monkeypatch.setenv("SEC_USER_AGENT", "ARXTerminal Research Akara.david26@gmail.com")
+        monkeypatch.setenv("SEC_CONTACT_EMAIL", "Akara.david26@gmail.com")
+        status = PrimaryListingEvidenceAdapter.get_operator_sec_contact_status()
+        assert status["verified"] is True
+        assert status["access_blocker"] is None
+        assert status["operator_contact"] == "Akara.david26@gmail.com"
+
+    def test_inspected_form_10k_filings_exist_and_match_accession_metadata(self):
+        import hashlib
+        from pathlib import Path
+        import json
+
+        manifest_file = Path("data/research/sec_filings_sample/retrieval_manifest.json")
+        assert manifest_file.exists(), f"Missing retrieval manifest: {manifest_file}"
+
+        manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+        assert "AAPL" in manifest
+        assert "GOOG_GOOGL" in manifest
+
+        # AAPL verification
+        aapl_meta = manifest["AAPL"]
+        assert aapl_meta["cik"] == "0000320193"
+        assert aapl_meta["accession"] == "0000320193-25-000079"
+        assert aapl_meta["filing_date"] == "2025-10-31"
+        assert aapl_meta["report_date"] == "2025-09-27"
+        assert aapl_meta["primary_doc"] == "aapl-20250927.htm"
+
+        aapl_path = Path(aapl_meta["doc_file"])
+        assert aapl_path.exists()
+        aapl_bytes = aapl_path.read_bytes()
+        assert len(aapl_bytes) == aapl_meta["doc_bytes"]
+        assert hashlib.sha256(aapl_bytes).hexdigest() == aapl_meta["doc_sha256"]
+
+        # Alphabet verification
+        goog_meta = manifest["GOOG_GOOGL"]
+        assert goog_meta["cik"] == "0001652044"
+        assert goog_meta["accession"] == "0001652044-26-000018"
+        assert goog_meta["filing_date"] == "2026-02-05"
+        assert goog_meta["report_date"] == "2025-12-31"
+        assert goog_meta["primary_doc"] == "goog-20251231.htm"
+
+        goog_path = Path(goog_meta["doc_file"])
+        assert goog_path.exists()
+        goog_bytes = goog_path.read_bytes()
+        assert len(goog_bytes) == goog_meta["doc_bytes"]
+        assert hashlib.sha256(goog_bytes).hexdigest() == goog_meta["doc_sha256"]
+
+    def test_section_12b_table_establishes_registration_without_primary_claim(self):
+        from pathlib import Path
+        import re
+
+        aapl_path = Path("data/research/sec_filings_sample/aapl-20250927.htm")
+        goog_path = Path("data/research/sec_filings_sample/goog-20251231.htm")
+
+        aapl_text = aapl_path.read_text(encoding="utf-8", errors="ignore")
+        goog_text = goog_path.read_text(encoding="utf-8", errors="ignore")
+
+        # AAPL: Section 12(b) registration table presence
+        assert "Securities registered pursuant to Section 12(b) of the Act" in aapl_text
+        assert "Common Stock, $0.00001 par value per share" in aapl_text
+        assert "The Nasdaq Stock Market LLC" in aapl_text
+
+        # Alphabet: Section 12(b) registration table presence (handling HTML/XML non-breaking spaces)
+        goog_clean = re.sub(r"&#160;|&nbsp;|\xa0", " ", goog_text)
+        assert "Securities registered pursuant to Section 12(b) of the Act" in goog_clean
+        assert "Class A Common Stock, $0.001 par value" in goog_clean
+        assert "Class C Capital Stock, $0.001 par value" in goog_clean
+        assert "Nasdaq Stock Market LLC" in goog_clean
+
+        # Neither filing asserts "primary listing" boolean in 12(b) table
+        # Find 12(b) table section in AAPL
+        aapl_idx = aapl_text.find("Securities registered pursuant to Section 12(b) of the Act")
+        aapl_12b_section = aapl_text[aapl_idx:aapl_idx + 2500]
+        assert "primary listing" not in aapl_12b_section.lower()
+
+        # Find 12(b) table section in Alphabet
+        goog_idx = goog_clean.find("Securities registered pursuant to Section 12(b) of the Act")
+        goog_12b_section = goog_clean[goog_idx:goog_idx + 3500]
+        assert "primary listing" not in goog_12b_section.lower()
+
+    def test_separate_metadata_attribution_and_unfetched_targets_separation(self):
+        from pathlib import Path
+        import json
+
+        ev_path = Path("data/research/primary_listing_evidence/three_candidates_listing_evidence.json")
+        data = json.loads(ev_path.read_text(encoding="utf-8"))
+
+        provenance = data["provenance_accounting"]
+        # Decoded content label check
+        assert "saved decoded text content" in provenance["official_exchange_reference_retrieval"].lower()
+        # Separate attribution check
+        sep_attr = provenance["separate_metadata_attribution"]
+        assert "cik_attribution" in sep_attr
+        assert "par_value_and_class_title_attribution" in sep_attr
+        assert "voting_rights_attribution" in sep_attr
+        assert "exchange_venue_and_market_tier_attribution" in sep_attr
+
+        # Unfetched filing targets explicitly separated from inspected documents
+        assert "unfetched_filing_targets" in provenance
+        assert "historical" in provenance["unfetched_filing_targets"].lower()
+        assert "inspected_regulatory_documents" in provenance
+
+        # Record level checks
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            rec = data["evidence_records"][sym]
+            assert rec["inspected_filing_accession"] is not None
+            assert rec["inspected_filing_artifact"] is not None
+            assert rec["unfetched_filing_targets"] is not None
+            assert rec["classification"] == "EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY"
+            assert rec["assigned_primary_listing"] is None
+
+    def test_simulation_replay_also_fails_closed_batch(self):
+        ledger = build_seven_candidate_proposal()
+        three_records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+
+        # Run with is_simulation=True
+        sim_report = PrimaryListingReplayEngine.run_replay(
+            ledger,
+            three_records,
+            is_simulation=True,
+        )
+
+        assert sim_report.is_simulation is True
+        assert sim_report.is_batch_valid is False
+        assert sim_report.batch_conversion_count == 0
+        assert sim_report.batch_admitted_count == 0
+        assert sim_report.converted_source_securities == []
+        assert sim_report.builder_status == "NOT_RUN"
+        assert sim_report.builder_handoff_permitted is False
+
+
+
