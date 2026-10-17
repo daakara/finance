@@ -221,10 +221,10 @@ export default function CompetitorComparisonPage({ params }: PageProps) {
           </p>
           <div className="pt-2 flex flex-wrap gap-3">
             <Link
-              href="/screener/"
+              href="/radar/"
               className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-mono font-semibold text-xs transition-all shadow-md shadow-cyan-500/20"
             >
-              Launch Live ARX Screener →
+              Launch Live Opportunity Radar →
             </Link>
             <Link
               href="/vs/"

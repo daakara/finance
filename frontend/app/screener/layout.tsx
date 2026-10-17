@@ -1,17 +1,14 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "High-Alpha Hidden Gems Screener | Small & Mid-Cap Quant Stock Screener",
-  description: "Screen high-alpha small and mid-cap equities with asymmetric risk-reward profiles, Minervini VCP setups, institutional accumulation, and catalyst tracking.",
-  openGraph: {
-    title: "High-Alpha Hidden Gems Screener | ARX Terminal",
-    description: "Screen high-alpha small and mid-cap equities with asymmetric risk-reward profiles and VCP setups.",
-    url: "https://www.arxterminal.com/screener/",
-    siteName: "ARX Terminal",
-    type: "website",
+  title: "Opportunity Radar & Factor Screener | ARX Terminal",
+  description: "Screen US equities across Mark Minervini VCP setups, value/GARP factors, volume dry-up contraction, and risk-reward asymmetry.",
+  robots: {
+    index: false,
+    follow: true,
   },
   alternates: {
-    canonical: "https://www.arxterminal.com/screener/",
+    canonical: "https://www.arxterminal.com/radar/",
   },
 };
 
