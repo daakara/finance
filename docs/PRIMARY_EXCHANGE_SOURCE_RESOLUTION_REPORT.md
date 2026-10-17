@@ -319,8 +319,8 @@ Unconfigured or untested external services represent **configuration and access 
 | Test Suite / Scope | Test Count | Status | Notes |
 |:---|:---:|:---:|:---|
 | **Primary-Listing Evidence Suite** (`tests/test_universe_primary_listing_evidence.py`) | **57 passed** | 57 passed, 0 skipped | Covers all 9 primary listing invariants, authentic association, clean-checkout synthetic safeguards, multi-match disambiguation, and FIGI isolation. |
-| **Universe Test Suite** (`tests/test_universe_*.py`) | **303 collected** | 300 passed, 3 skipped | Covers all 10 universe test modules across admission, binding, validation, and primary-listing evidence. |
-| **Selected Tier 2c Suite** (`pytest -m tier2c`) | **409 passed** | 409 passed, 2243 deselected | Selects all tests marked with `@pytest.mark.tier2c` across data fetchers, resilience, OpenFIGI rate limiters, and universe modules. (Note: deselected tests are not failures). |
+| **Universe Test Suite** (`tests/test_universe_*.py`) | **319 collected** | 316 passed, 3 skipped | Covers all 11 universe test modules across admission, binding, validation, primary-listing evidence, and post-merge PR #21 coverage/capacity. |
+| **Selected Tier 2c Suite** (`pytest -m tier2c`) | **442 passed** | 442 passed, 2243 deselected | Selects all tests marked with `@pytest.mark.tier2c` across data fetchers, resilience, OpenFIGI rate limiters, universe modules, and post-merge PR #21 capacity suite. (1 warning: Starlette/FastAPI httpx deprecation). |
 
 ---
 
