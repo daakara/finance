@@ -1007,6 +1007,8 @@ class TestPrimaryListingEvidenceAdjudication:
             aapl,
             symbol="TEST_DER",
             stated_primary_listing=None,
+            is_derived_claim=True,
+            derivation_rule_id="EXCHANGE_OPERATING_RULE_SECTION_4",
             classification=PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM,
             assigned_primary_listing=True,
             record_locators={
@@ -1014,30 +1016,53 @@ class TestPrimaryListingEvidenceAdjudication:
                 "supporting_facts": "Exclusive listing agreement dated 2026-01-01; no secondary admissions on file",
             },
         )
-        derived_adj = PrimaryListingAdjudicationResult(
-            symbol="TEST_DER",
-            instrument_class="COMMON",
-            is_multi_class=False,
-            adjudication_role=PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION,
-            is_direct_assertion=False,
-            is_derived_claim=True,
-            rule_id="R06_BOUNDED_EVIDENCE_ADJUDICATION_V1",
-            rule_version="1.0.0",
-            evaluation_date="2026-10-17",
-            temporal_scope="2026",
-            source_hierarchy=["PRIMARY_EXCHANGE_AUTHORITY", "REGULATORY_FILINGS_SEC_12B", "EXCHANGE_DIRECTORY"],
-            exact_claims={"derivation": "Derived from exclusive listing agreement"},
-            record_locators=derived_rec.record_locators,
-            adjudication_status="PRIMARY_LISTING_DETERMINED_VIA_RULE_DERIVATION",
-            assigned_primary_listing=True,
-            missing_evidence_definition=None,
-            limitations=["Requires annual re-attestation of exclusivity"],
-            rationale="Derived from documented exchange listing authority rules; distinguishable from direct publisher string.",
-        )
+        derived_adj = PrimaryListingAdjudicator.adjudicate_candidate(derived_rec)
         assert derived_adj.is_direct_assertion is False
         assert derived_adj.is_derived_claim is True
         assert derived_adj.assigned_primary_listing is True
+        assert derived_adj.adjudication_role == PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
+        assert derived_adj.rule_id == "EXCHANGE_OPERATING_RULE_SECTION_4"
+        assert derived_adj.missing_evidence_definition is None
         assert "derivation_rule" in derived_adj.record_locators
+
+    def test_alternative_evidence_paths_independence_and_non_universal_exclusivity(self):
+        """Verifies that Path A (direct identification) and Path B (documented derivation) are independent alternatives, and exclusivity is not universally required."""
+        import dataclasses
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        aapl = records["AAPL"]
+
+        # Path A: Direct identification does not require derivation or exclusivity proof
+        path_a_rec = dataclasses.replace(
+            aapl,
+            symbol="PATH_A",
+            is_direct_assertion=True,
+            publisher_primary_listing_claim="PRIMARY",
+            classification=PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM,
+            assigned_primary_listing=True,
+            record_locators={"source": "Direct exchange venue authority feed"},
+        )
+        path_a_adj = PrimaryListingAdjudicator.adjudicate_candidate(path_a_rec)
+        assert path_a_adj.is_direct_assertion is True
+        assert path_a_adj.is_derived_claim is False
+        assert path_a_adj.assigned_primary_listing is True
+        assert path_a_adj.missing_evidence_definition is None
+
+        # Path B: Documented derivation does not require publisher words 'primary listing' or exclusivity unless derivation relies on it
+        path_b_rec = dataclasses.replace(
+            aapl,
+            symbol="PATH_B",
+            is_direct_assertion=False,
+            is_derived_claim=True,
+            derivation_rule_id="RULE_HOME_EXCHANGE_AUTHORITY_V2",
+            classification=PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM,
+            assigned_primary_listing=True,
+            record_locators={"derivation_rule": "RULE_HOME_EXCHANGE_AUTHORITY_V2", "supporting_facts": "Home market primary admission under standard exchange operating rules"},
+        )
+        path_b_adj = PrimaryListingAdjudicator.adjudicate_candidate(path_b_rec)
+        assert path_b_adj.is_direct_assertion is False
+        assert path_b_adj.is_derived_claim is True
+        assert path_b_adj.assigned_primary_listing is True
+        assert path_b_adj.missing_evidence_definition is None
 
     def test_registration_only_evidence_remains_narrower_and_no_exclusivity_assumption(self):
         """SEC 12(b) and exchange directory listings remain narrower corroborating facts where primary designation is absent; absence of other exchanges does not prove exclusivity."""
@@ -1052,7 +1077,9 @@ class TestPrimaryListingEvidenceAdjudication:
         assert "proves registration under Section 12(b) of the Exchange Act, not designated primary listing" in aapl_adj.rationale
 
     def test_stale_and_conflicting_evidence_handling(self):
-        """Handling of discordant venues (DDS/ACCS style) and multi-venue claims."""
+        """Handling of discordant venues (DDS/ACCS style) and multi-venue claims.
+        Verifies that source hierarchy is an evidence policy ranking, not a factual erasure tool.
+        A higher-ranked source tier does not automatically erase conflicting claims."""
         ref_records = PrimaryListingEvidenceAdapter.load_reference_evidence()
 
         # DDS has TXSE vs NYSE vs Other Listed 'F' discordance
@@ -1106,8 +1133,15 @@ class TestPrimaryListingEvidenceAdjudication:
         with pytest.raises(ValueError, match="Cannot construct SourceSecurity without explicit, validated boolean value for 'primary_listing'"):
             to_source_security(val_res)
 
-    def test_rule_version_and_provenance_retention(self):
-        """Adjudication records retain rule ID, version, timestamp, source hierarchy and exact claims."""
+    def test_rule_version_full_dictionary_digest_and_provenance_retention(self):
+        """Adjudication records retain rule ID, version, timestamp, source hierarchy and exact claims.
+        Verifies that ELIGIBILITY_RULES_HASH is the full canonical-rules dictionary digest,
+        distinguishing the unchanged dictionary hash from the R06 executable predicate and newly approved semantic interpretation."""
+        from analyst_dashboard.universe.contracts import (
+            CANONICAL_ELIGIBILITY_RULES,
+            ELIGIBILITY_RULES_HASH,
+        )
+
         records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
         adjudications = PrimaryListingAdjudicator.adjudicate_all_candidates(records)
 
@@ -1136,6 +1170,15 @@ class TestPrimaryListingEvidenceAdjudication:
             adj = adjudications[sym]
             assert adj.adjudication_status == PrimaryListingEvidenceClassification.EVIDENCE_UNAVAILABLE
             assert adj.adjudication_role == PrimaryListingEvidenceRole.INSUFFICIENT_NARROW_OBSERVATION
+
+        # Digest & predicate distinction:
+        # 1. ELIGIBILITY_RULES_HASH is the full canonical-rules dictionary digest (not an R06-only hash)
+        assert ELIGIBILITY_RULES_HASH == "1ff5085341f449908d521c45261a35e409b143fdb01e73334950c891d09248e1"
+        # 2. R06 executable predicate is unchanged
+        r06_rule = CANONICAL_ELIGIBILITY_RULES["R06_PRIMARY_LISTING"]
+        assert r06_rule["operator"] == "=="
+        assert r06_rule["expected"] is True
+        assert "primary listing" in r06_rule["description"]
 
     def test_whole_batch_protection_atomic_fail_closed(self):
         """Adjudication failure or missing evidence in any candidate fails the batch conversion atomically."""

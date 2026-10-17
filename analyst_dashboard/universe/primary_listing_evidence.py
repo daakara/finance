@@ -512,18 +512,27 @@ class PrimaryListingAdjudicator:
     """
     Evaluates attributable listing evidence under the Product Owner approved R06 semantic direction:
     1. primary_listing identifies the designated primary exchange listing for the exact security class or instrument.
-    2. Does NOT identify:
+    2. Evidence sufficiency permits either:
+       - Path A: Attributable direct identification of the exact instrument's designated primary exchange listing; or
+       - Path B: A documented derivation supported by appropriate source authority and instrument-specific facts.
+       The adjudicator does NOT require both paths. Exclusivity evidence is required ONLY if the particular derivation
+       relies on exclusivity. Inference from the mere absence of other listings in one source remains rejected.
+    3. Source Hierarchy Qualification:
+       SOURCE_HIERARCHY reflects this adjudicator's claim-specific evidence policy for primary listing designations,
+       not a universal factual ranking. A higher-ranked source does NOT automatically erase a conflicting claim;
+       instrument scope, observation dates, and conflict dispositions are strictly preserved.
+    4. Does NOT identify:
        - The issuer's most important or voting share class.
        - Country of incorporation or headquarters.
-       - ARX's selected US assessment line (remains a distinct caller selection).
+       - ARX's selected US assessment line (remains an orthogonal caller parameter).
        - The underlying ordinary share's home market when evaluating an ADR.
-    3. Evidence may support a documented derivation without containing literal words "primary listing",
-       provided derivation is distinguishable from an explicit publisher assertion.
-    4. Conflicting or insufficient evidence remains UNKNOWN (None).
-    5. Voting-rights independence: Class A and Class C evaluated with identical standards.
-    6. Registration alone under Section 12(b) does NOT establish primary listing.
-    7. Absence of another exchange in one document is NOT treated as proof that no other listing exists.
-    8. Does NOT silently equate "listed on Nasdaq" with "primary listing on Nasdaq".
+    5. Derivations do not require literal words "primary listing" if supported by appropriate source authority,
+       but must remain distinguishable from an explicit publisher assertion and cannot be manufactured from
+       mere exchange registration facts.
+    6. Conflicting or insufficient evidence remains strictly UNKNOWN (None).
+    7. Multi-class equity structures evaluated under identical standards (voting rights do not confer primary status;
+       non-voting status does not subordinate).
+    8. Section 12(b) registration alone certifies trading registration, not designated primary listing.
     """
     RULE_ID = "R06_BOUNDED_EVIDENCE_ADJUDICATION_V1"
     RULE_VERSION = "1.0.0"
@@ -568,7 +577,7 @@ class PrimaryListingAdjudicator:
                 rationale="No attributable listing evidence record available.",
             )
 
-        # Check for venue conflict / discordance
+        # Check for venue conflict / discordance (preserved; higher-ranked sources do not erase conflicts)
         if evidence.classification == PrimaryListingEvidenceClassification.CONFLICTING_EVIDENCE:
             return PrimaryListingAdjudicationResult(
                 symbol=symbol,
@@ -591,10 +600,15 @@ class PrimaryListingAdjudicator:
                 rationale=f"Discordant exchange venues observed for '{symbol}'. Conflicting venue evidence strictly prevents primary listing determination.",
             )
 
-        # Check for direct primary listing identification
+        # Path A: Check for direct primary listing identification
         if (
-            evidence.publisher_primary_listing_claim == "PRIMARY"
-            or evidence.classification == PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM
+            evidence.is_direct_assertion is True
+            or (evidence.publisher_primary_listing_claim == "PRIMARY" and not evidence.is_derived_claim)
+            or (
+                evidence.classification == PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM
+                and not evidence.is_derived_claim
+                and evidence.is_direct_assertion is not False
+            )
         ) and evidence.assigned_primary_listing is True:
             locs = evidence.record_locators if isinstance(evidence.record_locators, dict) else {"section_locator": evidence.section_table_locator}
             return PrimaryListingAdjudicationResult(
@@ -616,6 +630,34 @@ class PrimaryListingAdjudicator:
                 missing_evidence_definition=None,
                 limitations=[],
                 rationale="Authoritative source directly identifies this venue as the designated primary listing.",
+            )
+
+        # Path B: Check for documented derivation supported by appropriate authority & facts
+        if (
+            evidence.is_derived_claim is True
+            or (evidence.derivation_rule_id is not None and evidence.assigned_primary_listing is True)
+            or (isinstance(evidence.record_locators, dict) and "derivation_rule" in evidence.record_locators and evidence.assigned_primary_listing is True)
+        ) and evidence.assigned_primary_listing is True:
+            locs = evidence.record_locators if isinstance(evidence.record_locators, dict) else {"section_locator": evidence.section_table_locator}
+            return PrimaryListingAdjudicationResult(
+                symbol=symbol,
+                instrument_class=evidence.instrument_title,
+                is_multi_class=evidence.is_multi_class,
+                adjudication_role=PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION,
+                is_direct_assertion=False,
+                is_derived_claim=True,
+                rule_id=evidence.derivation_rule_id or cls.RULE_ID,
+                rule_version=evidence.derivation_rule_version or cls.RULE_VERSION,
+                evaluation_date=evaluation_date,
+                temporal_scope=evidence.temporal_limitations,
+                source_hierarchy=list(cls.SOURCE_HIERARCHY),
+                exact_claims={"documented_derivation": evidence.source_claim or "Documented listing authority derivation."},
+                record_locators=locs,
+                adjudication_status=PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM,
+                assigned_primary_listing=True,
+                missing_evidence_definition=None,
+                limitations=["Requires periodic re-attestation of supporting derivation facts."],
+                rationale="Documented derivation supported by appropriate source authority and instrument-specific facts.",
             )
 
         # Corroborating registration & directory facts (Narrower listing facts)
@@ -653,11 +695,12 @@ class PrimaryListingAdjudicator:
         ]
 
         missing_evidence = (
+            "Requires either (Path A) attributable direct identification of designated primary exchange listing "
+            "from an authoritative listing source, or (Path B) a documented derivation supported by appropriate "
+            "source authority and instrument-specific facts (exclusivity required only if derivation relies on exclusivity). "
             "Absence of other registered exchanges in Form 10-K cannot be assumed as proof of venue exclusivity; "
-            "Direct identification of designated primary exchange listing for this exact security class "
-            "from an authoritative listing authority or verified cross-exchange listing master is required; "
             "Section 12(b) exchange registration certifies trading registration on The Nasdaq Stock Market LLC, "
-            "but does not assert an exclusive primary listing claim."
+            "but does not assert primary listing designation."
         )
 
         rationale = (

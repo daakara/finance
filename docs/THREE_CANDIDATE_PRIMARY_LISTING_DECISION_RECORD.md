@@ -63,31 +63,35 @@ The executable predicate of Rule R06 in [`analyst_dashboard/universe/contracts.p
 ```
 
 - **Executable Predicate:** `operator == "=="`, `expected == True` (Unchanged).
-- **Rule Description:** `"Must be primary listing, not secondary or cross-listing"` (Aligned with PO direction).
-- **Rule Dictionary Digest (`ELIGIBILITY_RULES_HASH`):**  
+- **Rule Description:** `"Must be primary listing, not secondary or cross-listing"`.
+- **Full Canonical-Rules Dictionary Digest (`ELIGIBILITY_RULES_HASH`):**  
   `1ff5085341f449908d521c45261a35e409b143fdb01e73334950c891d09248e1`  
-  *(0-byte change to rule dictionary; exact hash preserved and verified).*
+  *(Full canonical-rules dictionary digest computed over all canonical eligibility rules R01 through R07, NOT an R06-only hash. Canonical dictionary bytes and content are completely unchanged; the newly approved semantic interpretation provides authoritative evidence adjudication criteria without mutating rule dictionary content).*
 
 ---
 
 ### 4. Approved Bounded Adjudication Rule
 
-The narrow adjudication rule ([`PrimaryListingAdjudicator`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-three-candidate-listing-evidence/analyst_dashboard/universe/primary_listing_evidence.py#L450-L550)) enforces the following evidence roles and derivation standards:
+The narrow adjudication rule ([`PrimaryListingAdjudicator`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-three-candidate-listing-evidence/analyst_dashboard/universe/primary_listing_evidence.py#L510-L660)) enforces the following evidence paths, evidence policy, and derivation standards:
 
-#### 4.1 Evidence Roles
-1. **`DIRECT_PRIMARY_IDENTIFICATION`:** Direct identification of the exact instrument's primary/designated listing by an appropriate listing authority.
+#### 4.1 Evidence Sufficiency Requirements: Two Independent Alternative Paths
+The approved definition permits either:
+- **Path A (Attributable Direct Identification):** Direct identification of the exact instrument's designated primary exchange listing by an authoritative listing source. Path A does not require derivation logic or exclusivity proof.
+- **Path B (Documented Derivation):** A documented derivation supported by appropriate source authority and instrument-specific facts. Path B does not require literal publisher wording "primary listing". Proof of exclusivity is required *only* if the particular derivation relies on exclusivity.
+
+The adjudicator does **not** require both paths. Exclusivity is **not** universally required across all evidence. Inference from the mere absence of other listings in one source remains strictly rejected.
+
+#### 4.2 Qualified Source Hierarchy as Evidence Policy
+- **Adjudicator Source Hierarchy:** `PRIMARY_EXCHANGE_AUTHORITY > REGULATORY_FILINGS_SEC_12B > EXCHANGE_DIRECTORY`.
+- **Policy Qualification:** The hierarchy reflects this adjudicator's claim-specific evidence policy for evaluating primary listing designations, not a universal factual ranking.
+- **Preservation of Conflicts (No Automatic Erasure):** A higher-ranked source tier does not automatically erase conflicting claims. Instrument scope, observation dates, and conflict dispositions are strictly preserved.
+
+#### 4.3 Evidence Roles
+1. **`DIRECT_PRIMARY_IDENTIFICATION`:** Direct identification of the exact instrument's primary/designated listing by an appropriate listing authority (Path A or valid Path B derivation).
 2. **`CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT`:** Class-specific registration facts (SEC Form 10-K Section 12(b)) and exchange-directory listings (Nasdaq Symbol Directory).
 3. **`CONFLICTING_OR_DISCORDANT_OBSERVATION`:** Unreconciled venue conflicts (e.g. DDS TXSE vs NYSE, ACCS NYSE vs AMEX).
 4. **`STALE_OR_OUT_OF_SCOPE_OBSERVATION`:** Temporally expired or mismatched evidence.
 5. **`INSUFFICIENT_NARROW_OBSERVATION`:** Insufficient narrow observations or unevidenced candidates.
-
-#### 4.2 Derivation Requirements
-For any derived conclusion:
-- **Exact Source Claims & Locators:** Must be recorded without omission.
-- **Instrument/Class Matching:** Must verify exact security title and share class.
-- **Source Hierarchy:** `PRIMARY_EXCHANGE_AUTHORITY > REGULATORY_FILINGS_SEC_12B > EXCHANGE_DIRECTORY`.
-- **Negative Assumptions Prohibited:** The absence of another exchange in one filing does not establish exclusivity.
-- **Equating Prohibited:** "Listed on Nasdaq" cannot be equated with "designated primary listing on Nasdaq".
 
 ---
 
@@ -97,9 +101,9 @@ For any derived conclusion:
 
 | Candidate | Instrument / Class | Evidence Role | Direct vs Derived | Adjudication Status | Assigned Value | Required Evidence for True |
 |:---|:---|:---:|:---:|:---:|:---:|:---|
-| **AAPL** | Common Stock, $0.00001 par value | `CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT` | Corroborating narrower fact | `EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY` | **`None`** (UNKNOWN) | Authoritative direct identification of designated primary listing venue. |
-| **GOOGL** | Class A Common Stock, $0.001 par value | `CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT` | Corroborating narrower fact | `EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY` | **`None`** (UNKNOWN) | Authoritative direct identification of designated primary listing venue for Class A. |
-| **GOOG** | Class C Capital Stock, $0.001 par value | `CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT` | Corroborating narrower fact | `EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY` | **`None`** (UNKNOWN) | Authoritative direct identification of designated primary listing venue for Class C. |
+| **AAPL** | Common Stock, $0.00001 par value | `CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT` | Corroborating narrower fact | `EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY` | **`None`** (UNKNOWN) | Either (Path A) direct primary identification from listing authority, or (Path B) documented derivation citing authority rules and facts. |
+| **GOOGL** | Class A Common Stock, $0.001 par value | `CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT` | Corroborating narrower fact | `EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY` | **`None`** (UNKNOWN) | Either (Path A) direct primary identification for Class A, or (Path B) documented derivation citing authority rules and facts. |
+| **GOOG** | Class C Capital Stock, $0.001 par value | `CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT` | Corroborating narrower fact | `EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY` | **`None`** (UNKNOWN) | Either (Path A) direct primary identification for Class C, or (Path B) documented derivation citing authority rules and facts. |
 
 #### 5.2 Four Unevaluated Sample Candidates (Explicitly Outside Task Scope)
 - **TSM, ACCS, DDS, AACIU:** Labeled **`NOT_EVALUATED`** for this task. They remain outside this bounded evidence acquisition and retain their previously recorded archived states (`EVIDENCE_UNAVAILABLE` or `CONFLICTING_EVIDENCE`).

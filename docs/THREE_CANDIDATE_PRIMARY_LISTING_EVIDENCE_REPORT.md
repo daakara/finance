@@ -6,7 +6,7 @@
 **Worktree:** `C:\Users\akara\Documents\Projects\finance-sprint-2-three-candidate-listing-evidence`  
 **Branch:** `feat/sprint-2-three-candidate-listing-evidence`  
 **Base Commit:** `6eb1d40356d74ebf19075ac493f12417bd175780`  
-**Rule Hash:** `ELIGIBILITY_RULES_HASH = 1ff5085341f449908d521c45261a35e409b143fdb01e73334950c891d09248e1` (0-byte change, strictly preserved)
+**Full Canonical-Rules Dictionary Digest:** `ELIGIBILITY_RULES_HASH = 1ff5085341f449908d521c45261a35e409b143fdb01e73334950c891d09248e1` (Full dictionary digest over R01–R07, unchanged)
 
 ---
 
@@ -17,9 +17,10 @@ This report documents the recording of the Product Owner's approved **R06 semant
 Following the approved semantic standard:
 1. `primary_listing` identifies the designated primary exchange listing for the exact security class or instrument.
 2. It does not identify the issuer's most important or voting share class, country of incorporation or headquarters, ARX's selected US assessment line (`selected_us_assessment_listing`), or the underlying ordinary share's home market when evaluating an ADR.
-3. Derivations are permitted without literal words "primary listing" if documented and distinguishable from publisher assertions; conflicting or insufficient evidence remains strictly UNKNOWN (`None`).
-4. Neither Section 12(b) exchange registration alone nor the absence of other exchanges in a Form 10-K constitutes proof of an exclusive primary listing.
-5. Multi-class equity instruments (e.g. `GOOGL` Class A voting vs `GOOG` Class C non-voting) are evaluated under the identical standard: voting power does not confer primary status and absence of voting power does not subordinate a class.
+3. Evidence sufficiency permits either (Path A) attributable direct identification of designated primary exchange listing, or (Path B) a documented derivation supported by appropriate source authority and instrument-specific facts (exclusivity required only if the derivation relies on exclusivity). The adjudicator does not require both paths, nor does it universally demand exclusivity proof.
+4. Conflicting or insufficient evidence remains strictly UNKNOWN (`None`).
+5. Neither Section 12(b) exchange registration alone nor the absence of other exchanges in a Form 10-K constitutes proof of an exclusive primary listing.
+6. Multi-class equity instruments (e.g. `GOOGL` Class A voting vs `GOOG` Class C non-voting) are evaluated under the identical standard: voting power does not confer primary status and absence of voting power does not subordinate a class.
 
 Applying `R06_BOUNDED_EVIDENCE_ADJUDICATION_V1` (v1.0.0) to the authentic SEC Form 10-K filings and Nasdaq exchange directory rows, all three candidates are categorized as `CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT` with status `EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY`. In strict adherence to R06 and the non-invention rule, all three candidates retain `assigned_primary_listing = None` (UNKNOWN).
 
@@ -46,16 +47,19 @@ The Product Owner approved the following semantic definition:
 #### 2.2 Canonical Rule Invariant & Exact Rule Hash
 - **Rule Contract:** `CANONICAL_ELIGIBILITY_RULES["R06_PRIMARY_LISTING"]` in `analyst_dashboard/universe/contracts.py`:
   - `rule_id`: `"R06_PRIMARY_LISTING"`
-  - `field_name`: `"primary_listing"`
   - `operator`: `"=="`
   - `expected`: `True`
   - `description`: `"Must be primary listing, not secondary or cross-listing"`
 - **Digest Invariant:** `ELIGIBILITY_RULES_HASH = 1ff5085341f449908d521c45261a35e409b143fdb01e73334950c891d09248e1`
-- **Integrity Verification:** The canonical eligibility rule set, operator, expected value, and digest hash are unchanged (0-byte modification to rule contracts).
+- **Integrity Verification:**
+  1. **Full Canonical-Rules Dictionary Digest:** `1ff5085341f449908d521c45261a35e409b143fdb01e73334950c891d09248e1` is the digest of the entire `CANONICAL_ELIGIBILITY_RULES` dictionary across all rules R01 through R07, NOT an R06-only hash.
+  2. **Unchanged Executable Predicate:** The R06 predicate (`operator == "=="`, `expected == True`) is 100% unchanged.
+  3. **Unchanged Canonical Dictionary Bytes/Content:** The dictionary content and serialization bytes are strictly unchanged.
+  4. **Newly Approved Semantic Interpretation:** Provides authoritative evidence sufficiency criteria (Path A direct identification or Path B documented derivation) without mutating rule dictionary definitions.
 
 #### 2.3 Key Semantic Distinctions
 1. **Exchange Registration Fact $\ne$ Designated Primary Listing Claim:** Section 12(b) of the Exchange Act requires national securities exchange trading registration. The Form 10-K Section 12(b) registration table certifies trading registration on The Nasdaq Stock Market LLC, but does not assert that Nasdaq is the designated primary exchange listing.
-2. **Absence of Other Exchanges $\ne$ Proof of Exclusivity:** The absence of other registered venues in a Form 10-K table cannot be assumed as proof of exclusivity or primary designation.
+2. **Absence of Other Exchanges $\ne$ Proof of Exclusivity:** The absence of other registered venues in a Form 10-K table cannot be assumed as proof of exclusivity or primary designation. Exclusivity proof is required only if a specific derivation relies on exclusivity.
 3. **Directory Listing Fact $\ne$ Designated Primary Listing Claim:** The Nasdaq Symbol Directory confirms active listing on Nasdaq under tier Q (Nasdaq Global Select Market), but "listed on Nasdaq" cannot be equated with "primary listing on Nasdaq".
 4. **Voting Rights Neutrality:** Voting rights (1 vote for GOOGL Class A vs 0 votes for GOOG Class C) are corporate governance rights that do not confer or alter exchange listing primacy. Both classes are evaluated under the identical standard.
 5. **Orthogonality of Assessment Selection:** `selected_us_assessment_listing` remains an orthogonal caller parameter designating the specific US assessment line and does not substitute for or alter `primary_listing`.
@@ -66,9 +70,15 @@ The Product Owner approved the following semantic definition:
 
 - **Rule Identifier:** `R06_BOUNDED_EVIDENCE_ADJUDICATION_V1`
 - **Rule Version:** `1.0.0`
-- **Implementation:** [`PrimaryListingAdjudicator`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-three-candidate-listing-evidence/analyst_dashboard/universe/primary_listing_evidence.py#L525-L670) in `analyst_dashboard/universe/primary_listing_evidence.py`.
-- **Source Hierarchy Applied:**
-  $$\text{PRIMARY\_EXCHANGE\_AUTHORITY} \succ \text{REGULATORY\_FILINGS\_SEC\_12B} \succ \text{EXCHANGE\_DIRECTORY}$$
+- **Implementation:** [`PrimaryListingAdjudicator`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-three-candidate-listing-evidence/analyst_dashboard/universe/primary_listing_evidence.py#L510-L660) in `analyst_dashboard/universe/primary_listing_evidence.py`.
+- **Evidence Sufficiency Standards (Two Alternative Paths):**
+  - **Path A (Attributable Direct Identification):** Direct identification of the exact instrument's designated primary exchange listing from an authoritative listing source. Path A does not require derivation logic or exclusivity proof.
+  - **Path B (Documented Derivation):** A documented derivation supported by appropriate source authority and instrument-specific facts. Path B does not require literal publisher wording "primary listing". Proof of exclusivity is required *only* if the particular derivation relies on exclusivity.
+  - **Non-Universal Exclusivity:** Exclusivity proof is NOT universally required. The adjudicator does NOT require both paths. Inference from the mere absence of other listings in one source remains rejected.
+- **Qualified Source Hierarchy as Evidence Policy:**
+  - $\text{PRIMARY\_EXCHANGE\_AUTHORITY} \succ \text{REGULATORY\_FILINGS\_SEC\_12B} \succ \text{EXCHANGE\_DIRECTORY}$
+  - This hierarchy represents this adjudicator's claim-specific evidence policy for evaluating primary listing designations, not a universal factual ranking.
+  - A higher-ranked source tier does not automatically erase conflicting claims; instrument scope, observation dates, and conflict dispositions are strictly preserved.
 - **Evidence Roles:**
   - `DIRECT_PRIMARY_IDENTIFICATION`: Direct identification of the exact instrument's primary/designated listing by an authoritative source.
   - `CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT`: Corroborating class-specific registration and exchange-directory facts.
@@ -159,33 +169,34 @@ Replay was executed across the full ledger using [`PrimaryListingReplayEngine.ru
 
 ### 8. Test Execution Summary
 
-The focused test suite [`tests/test_universe_primary_listing_evidence.py`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-three-candidate-listing-evidence/tests/test_universe_primary_listing_evidence.py) contains 44 tests, all passing cleanly:
+The focused test suite [`tests/test_universe_primary_listing_evidence.py`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-three-candidate-listing-evidence/tests/test_universe_primary_listing_evidence.py) contains 45 tests, all passing cleanly:
 
 ```bash
-tests\test_universe_primary_listing_evidence.py ............................................ [100%]
-============================= 44 passed in 1.64s ==============================
+tests\test_universe_primary_listing_evidence.py ............................................. [100%]
+============================= 45 passed in 4.19s ==============================
 ```
 
-The newly added test class `TestPrimaryListingEvidenceAdjudication` verifies all 8 required items:
+The newly added test class `TestPrimaryListingEvidenceAdjudication` verifies all required items:
 1. **Class-level independence:** `GOOGL` and `GOOG` evaluated under identical standards; voting rights do not confer primary status; non-voting does not subordinate.
 2. **Direct assertion vs derived evidence:** Direct publisher assertions pass as direct; derivations are distinguishable and cite supporting facts.
-3. **Registration-only evidence:** SEC 12(b) and exchange directory listings remain narrower corroborating facts where primary designation is absent; absence of other exchanges does not prove exclusivity.
-4. **Stale and conflicting evidence:** Handling of discordant venues (`DDS`/`ACCS` style) and multi-venue claims.
-5. **Unknown preservation:** Non-primary, conflicting or unadjudicated rows do not populate `primary_listing = True`; `to_source_security()` cannot be called when `primary_listing` is `None`.
-6. **Rule-version and provenance retention:** Adjudication records retain rule ID (`R06_BOUNDED_EVIDENCE_ADJUDICATION_V1`), version (`1.0.0`), timestamp (`2026-10-17`), source hierarchy, exact claims, and record locators.
-7. **Whole-batch protection:** Adjudication failure or missing evidence in any candidate fails the batch conversion atomically.
-8. **No implicit production promotion:** Verified that provisional candidate IDs (`PROV_SEC_*`) remain uncommitted and production adoption is blocked.
+3. **Alternative evidence paths independence & non-universal exclusivity:** Verified that Path A (direct identification) and Path B (documented derivation) are independent alternatives, and exclusivity is not universally required (exclusivity required only if the derivation relies on exclusivity).
+4. **Registration-only evidence:** SEC 12(b) and exchange directory listings remain narrower corroborating facts where primary designation is absent; absence of other exchanges does not prove exclusivity.
+5. **Stale and conflicting evidence:** Handling of discordant venues (`DDS`/`ACCS` style) and multi-venue claims; verifies that source hierarchy is an evidence policy ranking, not a factual erasure tool (a higher-ranked source tier does not automatically erase conflicting claims).
+6. **Unknown preservation:** Non-primary, conflicting or unadjudicated rows do not populate `primary_listing = True`; `to_source_security()` cannot be called when `primary_listing` is `None`.
+7. **Rule-version and provenance retention:** Adjudication records retain rule ID (`R06_BOUNDED_EVIDENCE_ADJUDICATION_V1`), version (`1.0.0`), timestamp (`2026-10-17`), source hierarchy, exact claims, and record locators. Distinguishes full canonical-rules dictionary digest (`1ff50853...`) from unchanged R06 predicate and newly approved semantic interpretation.
+8. **Whole-batch protection:** Adjudication failure or missing evidence in any candidate fails the batch conversion atomically.
+9. **No implicit production promotion:** Verified that provisional candidate IDs (`PROV_SEC_*`) remain uncommitted and production adoption is blocked.
 
 ---
 
 ### 9. Remaining Exact Evidence Requirements
 
-To establish `primary_listing = True` under R06 for any candidate in future sprints, the following exact evidence elements remain required:
-1. **Direct Primary Identification:** A direct assertion from an authoritative listing exchange authority (e.g. an exchange listing certificate, official listing authority master, or direct listing rule certification) explicitly designating the exact security class as the primary listing.
-2. **Exclusivity or Cross-Venue Listing Master:** Attributable documentary evidence confirming that no other national securities exchange holds the primary listing designation for that specific share class.
-3. **Derivation Basis:** If derived without the literal words "primary listing", the derivation must cite specific, documented exchange authority rules and supporting facts, remaining fully distinguishable from an explicit publisher assertion.
+To establish `primary_listing = True` under R06 for any candidate, the following alternative evidence paths govern:
+1. **Path A (Attributable Direct Primary Identification):** A direct assertion from an authoritative listing exchange authority (e.g. an exchange listing certificate, official listing authority master, or direct listing rule certification) explicitly designating the exact security class as the primary listing. Path A does not require derivation logic or proof of exclusivity.
+2. **Path B (Documented Derivation):** A documented derivation citing specific, documented exchange authority operating rules and instrument-specific supporting facts, remaining fully distinguishable from an explicit publisher assertion. Proof of exclusivity is required *only* if the particular derivation relies on exclusivity.
+3. **Rejected Inferences:** Inference from the mere absence of other listings in a regulatory filing remains strictly rejected under both paths.
 
-Until such attributable evidence is acquired, all candidates strictly preserve `assigned_primary_listing = None` (UNKNOWN).
+Until attributable evidence satisfying Path A or Path B is acquired, all candidates strictly preserve `assigned_primary_listing = None` (UNKNOWN).
 
 ---
 
@@ -194,7 +205,8 @@ Until such attributable evidence is acquired, all candidates strictly preserve `
 ```ini
 PRIMARY_LISTING_EVIDENCE_ADJUDICATION = THREE_CANDIDATE_OFFLINE_VERIFIED
 R06_SEMANTIC_DIRECTION = RECORDED_AND_APPLIED
-CANONICAL_R06_PREDICATE_HASH = 1ff5085341f449908d521c45261a35e409b143fdb01e73334950c891d09248e1 (UNMODIFIED)
+FULL_CANONICAL_RULES_DICTIONARY_DIGEST = 1ff5085341f449908d521c45261a35e409b143fdb01e73334950c891d09248e1 (UNMODIFIED)
+UNCHANGED_R06_PREDICATE = (operator == "==", expected == True)
 REAL_SOURCE_POPULATION_ADMISSION = NOT_ESTABLISHED
 PRODUCTION_SECURITY_IDENTITY_ADOPTION = NO
 PROVISIONAL_ID_PROMOTION = NO
@@ -212,7 +224,4 @@ MODEL_TUNING = FROZEN
 EMPIRICAL_STRATEGY_VALIDATION = NOT_ESTABLISHED
 GATE12_ADVANCEMENT = NO
 BRANCH_OR_WORKTREE_DELETION = NO
-REMOTE_PUSH = NO
-PR_CREATION = NO
-MERGE_TO_MAIN = NO
 ```

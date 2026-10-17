@@ -82,7 +82,7 @@
       "derivation_rule_version": "1.0.0",
       "is_direct_assertion": false,
       "is_derived_claim": false,
-      "adjudication_missing_evidence": "Direct identification of designated primary exchange listing for this exact security class from an authoritative listing authority or verified cross-exchange listing master; Section 12(b) exchange registration certifies trading registration on The Nasdaq Stock Market LLC, but does not assert an exclusive primary listing claim."
+      "adjudication_missing_evidence": "Requires either (Path A) attributable direct identification of designated primary exchange listing from an authoritative listing source, or (Path B) a documented derivation supported by appropriate source authority and instrument-specific facts (exclusivity required only if derivation relies on exclusivity). Absence of other registered exchanges in Form 10-K cannot be assumed as proof of venue exclusivity; Section 12(b) exchange registration certifies trading registration on The Nasdaq Stock Market LLC, but does not assert primary listing designation."
     },
     "GOOGL": {
       "symbol": "GOOGL",
@@ -132,7 +132,7 @@
       "derivation_rule_version": "1.0.0",
       "is_direct_assertion": false,
       "is_derived_claim": false,
-      "adjudication_missing_evidence": "Direct identification of designated primary exchange listing for Class A Common Stock from an authoritative listing authority or verified cross-exchange listing master; Section 12(b) exchange registration certifies trading registration on The Nasdaq Stock Market LLC, but does not assert an exclusive primary listing claim."
+      "adjudication_missing_evidence": "Requires either (Path A) attributable direct identification of designated primary exchange listing from an authoritative listing source, or (Path B) a documented derivation supported by appropriate source authority and instrument-specific facts (exclusivity required only if derivation relies on exclusivity). Absence of other registered exchanges in Form 10-K cannot be assumed as proof of venue exclusivity; Section 12(b) exchange registration certifies trading registration on The Nasdaq Stock Market LLC, but does not assert primary listing designation."
     },
     "GOOG": {
       "symbol": "GOOG",
@@ -182,7 +182,7 @@
       "derivation_rule_version": "1.0.0",
       "is_direct_assertion": false,
       "is_derived_claim": false,
-      "adjudication_missing_evidence": "Direct identification of designated primary exchange listing for Class C Capital Stock from an authoritative listing authority or verified cross-exchange listing master; Section 12(b) exchange registration certifies trading registration on The Nasdaq Stock Market LLC, but does not assert an exclusive primary listing claim."
+      "adjudication_missing_evidence": "Requires either (Path A) attributable direct identification of designated primary exchange listing from an authoritative listing source, or (Path B) a documented derivation supported by appropriate source authority and instrument-specific facts (exclusivity required only if derivation relies on exclusivity). Absence of other registered exchanges in Form 10-K cannot be assumed as proof of venue exclusivity; Section 12(b) exchange registration certifies trading registration on The Nasdaq Stock Market LLC, but does not assert primary listing designation."
     }
   }
 }
