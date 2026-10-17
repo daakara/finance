@@ -1,0 +1,32 @@
+{
+  "AAPL": {
+    "cik": "0000320193",
+    "accession": "0000320193-25-000079",
+    "filing_date": "2025-10-31",
+    "report_date": "2025-09-27",
+    "primary_doc": "aapl-20250927.htm",
+    "doc_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/aapl-20250927.htm",
+    "doc_file": "data/research/sec_filings_sample/aapl-20250927.htm",
+    "doc_bytes": 1520320,
+    "doc_sha256": "63d29bf57dcc4a938a3517f215a7ff18c6dcc1a43cfa3e874524d3e09f21235a",
+    "sub_url": "https://data.sec.gov/submissions/CIK0000320193.json",
+    "sub_file": "data/research/sec_submissions_sample/CIK0000320193.json",
+    "sub_bytes": 163690,
+    "sub_sha256": "aad00f6aa75ba1405e0a34c788bdba9042281b2724fe1db3ff26f434b9a92e44"
+  },
+  "GOOG_GOOGL": {
+    "cik": "0001652044",
+    "accession": "0001652044-26-000018",
+    "filing_date": "2026-02-05",
+    "report_date": "2025-12-31",
+    "primary_doc": "goog-20251231.htm",
+    "doc_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000018/goog-20251231.htm",
+    "doc_file": "data/research/sec_filings_sample/goog-20251231.htm",
+    "doc_bytes": 2616611,
+    "doc_sha256": "8cee92a0ca058d3ad69c7621f076a8d0ca9da4041b2c80f5e523e94675f89f6c",
+    "sub_url": "https://data.sec.gov/submissions/CIK0001652044.json",
+    "sub_file": "data/research/sec_submissions_sample/CIK0001652044.json",
+    "sub_bytes": 152401,
+    "sub_sha256": "648cea84d824309b518807fd7e7fdb72d6855e12e8afa221d2caa047d5c9f2ca"
+  }
+}

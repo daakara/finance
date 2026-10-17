@@ -30,8 +30,11 @@ from analyst_dashboard.universe.identity_proposal import (
 )
 from analyst_dashboard.universe.primary_listing_evidence import (
     AttributablePrimaryListingEvidenceRecord,
+    PrimaryListingAdjudicationResult,
+    PrimaryListingAdjudicator,
     PrimaryListingEvidenceAdapter,
     PrimaryListingEvidenceClassification,
+    PrimaryListingEvidenceRole,
     PrimaryListingReplayEngine,
 )
 from analyst_dashboard.universe.validator import (
@@ -662,4 +665,575 @@ class TestIssuerAndInstrumentAssociationBinding:
         # Concrete operating MIC is unresolved
         assert dds.operating_mic is None
         assert dds.assigned_primary_listing is None
+
+
+# =====================================================================
+# 11. Three-Candidate (AAPL, GOOG, GOOGL) Evidence Acquisition & Replay
+# =====================================================================
+
+class TestThreeCandidateListingEvidenceAcquisition:
+    """
+    Verifies authentic official exchange reference evidence acquisition,
+    multi-class Class A / Class C row separation, unknown preservation,
+    and fail-closed replay for AAPL, GOOGL, and GOOG.
+    """
+
+    def test_three_candidate_dataset_loads_and_verifies_hashes(self):
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        assert len(records) == 3
+        assert set(records.keys()) == {"AAPL", "GOOGL", "GOOG"}
+
+        nasdaq_file = PrimaryListingEvidenceAdapter.DEFAULT_NASDAQ_DIRECTORY_PATH
+        assert nasdaq_file.exists(), f"Missing exchange reference file: {nasdaq_file}"
+
+        for sym, rec in records.items():
+            assert rec.cik in ("0000320193", "0001652044")
+            assert rec.source_url == "http://www.nasdaqtrader.com/dynamic/symdir/nasdaqlisted.txt"
+            assert rec.filing_form == "NASDAQ_LISTED_DIRECTORY"
+            assert len(rec.raw_response_sha256) == 64
+            assert rec.classification == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+            assert rec.assigned_primary_listing is None
+            ev_field = rec.to_attributable_field_evidence()
+            assert ev_field.transformation_rule == "NASDAQ_EXCHANGE_DIRECTORY_OBSERVATION"
+
+    def test_nasdaq_directory_raw_row_extraction(self):
+        nasdaq_file = PrimaryListingEvidenceAdapter.DEFAULT_NASDAQ_DIRECTORY_PATH
+        lines = nasdaq_file.read_text(encoding="utf-8").splitlines()
+
+        aapl_lines = [l for l in lines if l.startswith("AAPL|")]
+        goog_lines = [l for l in lines if l.startswith("GOOG|")]
+        googl_lines = [l for l in lines if l.startswith("GOOGL|")]
+
+        assert len(aapl_lines) == 1
+        assert len(goog_lines) == 1
+        assert len(googl_lines) == 1
+
+        # AAPL: Apple Inc. - Common Stock, Market Category Q (Nasdaq Global Select)
+        assert aapl_lines[0] == "AAPL|Apple Inc. - Common Stock|Q|N|N|40|N|N"
+        # GOOG: Alphabet Inc. - Class C Capital Stock, Market Category Q
+        assert goog_lines[0] == "GOOG|Alphabet Inc. - Class C Capital Stock|Q|N|N|40|N|N"
+        # GOOGL: Alphabet Inc. - Class A Common Stock, Market Category Q
+        assert googl_lines[0] == "GOOGL|Alphabet Inc. - Class A Common Stock|Q|N|N|40|N|N"
+
+    def test_alphabet_multi_class_separation_and_voting_rights_isolation(self):
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        googl = records["GOOGL"]
+        goog = records["GOOG"]
+
+        assert googl.cik == goog.cik == "0001652044"
+        assert googl.share_class == "CLASS_A"
+        assert goog.share_class == "CLASS_C"
+        assert "Class A" in googl.instrument_title
+        assert "Class C" in goog.instrument_title
+        assert googl.is_multi_class is True
+        assert goog.is_multi_class is True
+
+        # Neither class asserts primary listing over the other
+        assert googl.assigned_primary_listing is None
+        assert goog.assigned_primary_listing is None
+        assert any("voting" in p.lower() for p in googl.inferences_prohibited)
+        assert any("voting" in p.lower() for p in goog.inferences_prohibited)
+
+    def test_three_candidate_unknown_primary_listing_preservation(self):
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        for sym, rec in records.items():
+            assert rec.assigned_primary_listing is None
+
+        reqs = ValidationRequirements.create_listing_jurisdiction_profile(
+            allowed_listing_countries={"USA"},
+            require_selected_us_assessment=True,
+        )
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            raw_rec = {
+                "security_id": f"PROV_SEC_{sym}",
+                "symbol": sym,
+                "exchange": "NASDAQ",
+                "security_type": "Common Stock",
+                "listing_status": "ACTIVE",
+                "currency": "USD",
+                "listing_country": "USA",
+                "incorporation_country": "USA",
+                "selected_us_assessment_listing": True,
+                "primary_listing": None,
+                "asset_class": "EQUITY",
+                "listing_date": None,
+                "delisting_date": None,
+                "trading_suspension_date": None,
+            }
+            val_res = UniverseInputValidator.validate_record(raw_rec, reqs)
+            assert val_res.status == ValidationStatus.VALIDATION_PASSED
+            with pytest.raises(ValueError, match="Cannot construct SourceSecurity without explicit, validated boolean value for 'primary_listing'"):
+                to_source_security(val_res)
+
+    def test_three_candidate_replay_fails_closed_without_synthetic_substitution(self):
+        ledger = build_seven_candidate_proposal()
+        three_records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+
+        replay_report = PrimaryListingReplayEngine.run_replay(
+            ledger,
+            three_records,
+            is_simulation=False,
+        )
+
+        assert replay_report.is_simulation is False
+        assert replay_report.production_adoption_allowed is False
+        assert replay_report.is_batch_valid is False
+        assert replay_report.total_evaluated == 7
+        assert replay_report.conversion_count == 0
+        assert replay_report.conversion_blocked_count == 7
+        assert replay_report.batch_conversion_count == 0
+        assert replay_report.batch_admitted_count == 0
+        assert replay_report.converted_source_securities == []
+        assert replay_report.builder_status == "NOT_RUN"
+        assert replay_report.builder_handoff_permitted is False
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            res = replay_report.candidate_results[sym]
+            assert res.conversion_permitted is False
+            assert res.evidence_classification == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+        for sym in ("TSM", "ACCS", "DDS", "AACIU"):
+            res = replay_report.candidate_results[sym]
+            assert res.conversion_permitted is False
+            assert res.evidence_classification == PrimaryListingEvidenceClassification.EVIDENCE_UNAVAILABLE
+
+
+# =====================================================================
+# 11. Inspected Form 10-K Evidence & Provenance Accounting Verification
+# =====================================================================
+
+class TestThreeCandidateInspectedFilingEvidenceAndProvenance:
+    """
+    Verifies authentic Form 10-K Section 12(b) registration table evidence,
+    official accession metadata verification, separate provenance attribution,
+    and strict fail-closed atomic replay for AAPL, GOOGL, and GOOG.
+    """
+
+    def test_operator_sec_contact_configured_and_verified(self, monkeypatch):
+        monkeypatch.setenv("SEC_USER_AGENT", "ARXTerminal Research Akara.david26@gmail.com")
+        monkeypatch.setenv("SEC_CONTACT_EMAIL", "Akara.david26@gmail.com")
+        status = PrimaryListingEvidenceAdapter.get_operator_sec_contact_status()
+        assert status["verified"] is True
+        assert status["access_blocker"] is None
+        assert status["operator_contact"] == "Akara.david26@gmail.com"
+
+    def test_inspected_form_10k_filings_exist_and_match_accession_metadata(self):
+        import hashlib
+        from pathlib import Path
+        import json
+
+        manifest_file = Path("data/research/sec_filings_sample/retrieval_manifest.json")
+        assert manifest_file.exists(), f"Missing retrieval manifest: {manifest_file}"
+
+        manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+        assert "AAPL" in manifest
+        assert "GOOG_GOOGL" in manifest
+
+        # AAPL verification
+        aapl_meta = manifest["AAPL"]
+        assert aapl_meta["cik"] == "0000320193"
+        assert aapl_meta["accession"] == "0000320193-25-000079"
+        assert aapl_meta["filing_date"] == "2025-10-31"
+        assert aapl_meta["report_date"] == "2025-09-27"
+        assert aapl_meta["primary_doc"] == "aapl-20250927.htm"
+
+        aapl_path = Path(aapl_meta["doc_file"])
+        assert aapl_path.exists()
+        aapl_bytes = aapl_path.read_bytes()
+        assert len(aapl_bytes) == aapl_meta["doc_bytes"]
+        assert hashlib.sha256(aapl_bytes).hexdigest() == aapl_meta["doc_sha256"]
+
+        # Alphabet verification
+        goog_meta = manifest["GOOG_GOOGL"]
+        assert goog_meta["cik"] == "0001652044"
+        assert goog_meta["accession"] == "0001652044-26-000018"
+        assert goog_meta["filing_date"] == "2026-02-05"
+        assert goog_meta["report_date"] == "2025-12-31"
+        assert goog_meta["primary_doc"] == "goog-20251231.htm"
+
+        goog_path = Path(goog_meta["doc_file"])
+        assert goog_path.exists()
+        goog_bytes = goog_path.read_bytes()
+        assert len(goog_bytes) == goog_meta["doc_bytes"]
+        assert hashlib.sha256(goog_bytes).hexdigest() == goog_meta["doc_sha256"]
+
+    def test_section_12b_table_establishes_registration_without_primary_claim(self):
+        from pathlib import Path
+        import re
+
+        aapl_path = Path("data/research/sec_filings_sample/aapl-20250927.htm")
+        goog_path = Path("data/research/sec_filings_sample/goog-20251231.htm")
+
+        aapl_text = aapl_path.read_text(encoding="utf-8", errors="ignore")
+        goog_text = goog_path.read_text(encoding="utf-8", errors="ignore")
+
+        # AAPL: Section 12(b) registration table presence
+        assert "Securities registered pursuant to Section 12(b) of the Act" in aapl_text
+        assert "Common Stock, $0.00001 par value per share" in aapl_text
+        assert "The Nasdaq Stock Market LLC" in aapl_text
+
+        # Alphabet: Section 12(b) registration table presence (handling HTML/XML non-breaking spaces)
+        goog_clean = re.sub(r"&#160;|&nbsp;|\xa0", " ", goog_text)
+        assert "Securities registered pursuant to Section 12(b) of the Act" in goog_clean
+        assert "Class A Common Stock, $0.001 par value" in goog_clean
+        assert "Class C Capital Stock, $0.001 par value" in goog_clean
+        assert "Nasdaq Stock Market LLC" in goog_clean
+
+        # Neither filing asserts "primary listing" boolean in 12(b) table
+        # Find 12(b) table section in AAPL
+        aapl_idx = aapl_text.find("Securities registered pursuant to Section 12(b) of the Act")
+        aapl_12b_section = aapl_text[aapl_idx:aapl_idx + 2500]
+        assert "primary listing" not in aapl_12b_section.lower()
+
+        # Find 12(b) table section in Alphabet
+        goog_idx = goog_clean.find("Securities registered pursuant to Section 12(b) of the Act")
+        goog_12b_section = goog_clean[goog_idx:goog_idx + 3500]
+        assert "primary listing" not in goog_12b_section.lower()
+
+    def test_separate_metadata_attribution_and_unfetched_targets_separation(self):
+        from pathlib import Path
+        import json
+
+        ev_path = Path("data/research/primary_listing_evidence/three_candidates_listing_evidence.json")
+        data = json.loads(ev_path.read_text(encoding="utf-8"))
+
+        provenance = data["provenance_accounting"]
+        # Decoded content label check
+        assert "saved decoded text content" in provenance["official_exchange_reference_retrieval"].lower()
+        # Separate attribution check
+        sep_attr = provenance["separate_metadata_attribution"]
+        assert "cik_attribution" in sep_attr
+        assert "par_value_and_class_title_attribution" in sep_attr
+        assert "voting_rights_attribution" in sep_attr
+        assert "exchange_venue_and_market_tier_attribution" in sep_attr
+
+        # Unfetched filing targets explicitly separated from inspected documents
+        assert "unfetched_filing_targets" in provenance
+        assert "historical" in provenance["unfetched_filing_targets"].lower()
+        assert "inspected_regulatory_documents" in provenance
+
+        # Record level checks
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            rec = data["evidence_records"][sym]
+            assert rec["inspected_filing_accession"] is not None
+            assert rec["inspected_filing_artifact"] is not None
+            assert rec["unfetched_filing_targets"] is not None
+            assert rec["classification"] == "EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY"
+            assert rec["assigned_primary_listing"] is None
+
+    def test_simulation_replay_also_fails_closed_batch(self):
+        ledger = build_seven_candidate_proposal()
+        three_records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+
+        # Run with is_simulation=True
+        sim_report = PrimaryListingReplayEngine.run_replay(
+            ledger,
+            three_records,
+            is_simulation=True,
+        )
+
+        assert sim_report.is_simulation is True
+        assert sim_report.is_batch_valid is False
+        assert sim_report.batch_conversion_count == 0
+        assert sim_report.batch_admitted_count == 0
+        assert sim_report.converted_source_securities == []
+        assert sim_report.builder_status == "NOT_RUN"
+        assert sim_report.builder_handoff_permitted is False
+
+
+# =====================================================================
+# 11. Bounded Evidence Adjudication Suite (R06 Semantic Direction)
+# =====================================================================
+
+class TestPrimaryListingEvidenceAdjudication:
+    """Verifies R06 bounded evidence adjudication following PO semantic direction."""
+
+    def test_class_level_independence_voting_rights_neutrality(self):
+        """GOOGL and GOOG evaluated under identical standard; voting rights do not confer primary status; non-voting does not subordinate."""
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        googl = records["GOOGL"]
+        goog = records["GOOG"]
+
+        assert googl.is_multi_class is True
+        assert goog.is_multi_class is True
+        assert googl.share_class == "CLASS_A"
+        assert goog.share_class == "CLASS_C"
+
+        googl_adj = PrimaryListingAdjudicator.adjudicate_candidate(googl)
+        goog_adj = PrimaryListingAdjudicator.adjudicate_candidate(goog)
+
+        # Both evaluated under identical standard
+        assert googl_adj.rule_id == "R06_BOUNDED_EVIDENCE_ADJUDICATION_V1"
+        assert goog_adj.rule_id == "R06_BOUNDED_EVIDENCE_ADJUDICATION_V1"
+        assert googl_adj.adjudication_role == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+        assert goog_adj.adjudication_role == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+        assert googl_adj.adjudication_status == "EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY"
+        assert goog_adj.adjudication_status == "EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY"
+
+        # Voting rights (1 vote vs 0 votes) do not alter the primary listing determination
+        assert googl_adj.assigned_primary_listing is None
+        assert goog_adj.assigned_primary_listing is None
+        assert "Voting rights do not confer primary status" in googl_adj.rationale
+        assert "non-voting status does not subordinate" in goog_adj.rationale
+
+    def test_direct_assertion_versus_derived_evidence(self):
+        """Direct publisher assertions pass as direct; derivations are distinguishable and cite supporting facts."""
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        aapl = records["AAPL"]
+        aapl_adj = PrimaryListingAdjudicator.adjudicate_candidate(aapl)
+
+        # Real SEC + Nasdaq directory evidence is neither direct assertion nor derived claim
+        assert aapl_adj.is_direct_assertion is False
+        assert aapl_adj.is_derived_claim is False
+        assert aapl_adj.adjudication_role == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+
+        # Direct publisher assertion test fixture
+        import dataclasses
+        direct_rec = dataclasses.replace(
+            aapl,
+            symbol="TEST_DIR",
+            stated_primary_listing=True,
+            publisher_primary_listing_claim="PRIMARY",
+            classification=PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM,
+            assigned_primary_listing=True,
+            record_locators={"source": "Direct exchange venue authority feed", "field": "primary_listing_flag"},
+        )
+        direct_adj = PrimaryListingAdjudicator.adjudicate_candidate(direct_rec)
+        assert direct_adj.is_direct_assertion is True
+        assert direct_adj.is_derived_claim is False
+        assert direct_adj.adjudication_role == PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
+        assert direct_adj.assigned_primary_listing is True
+
+        # Derived claim test fixture (distinguishable from direct assertion, cites supporting facts)
+        derived_rec = dataclasses.replace(
+            aapl,
+            symbol="TEST_DER",
+            stated_primary_listing=None,
+            is_derived_claim=True,
+            derivation_rule_id="EXCHANGE_OPERATING_RULE_SECTION_4",
+            classification=PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM,
+            assigned_primary_listing=True,
+            record_locators={
+                "derivation_rule": "EXCHANGE_OPERATING_RULE_SECTION_4",
+                "supporting_facts": "Exclusive listing agreement dated 2026-01-01; no secondary admissions on file",
+            },
+        )
+        derived_adj = PrimaryListingAdjudicator.adjudicate_candidate(derived_rec)
+        assert derived_adj.is_direct_assertion is False
+        assert derived_adj.is_derived_claim is True
+        assert derived_adj.assigned_primary_listing is True
+        assert derived_adj.adjudication_role == PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
+        assert derived_adj.rule_id == "EXCHANGE_OPERATING_RULE_SECTION_4"
+        assert derived_adj.missing_evidence_definition is None
+        assert "derivation_rule" in derived_adj.record_locators
+
+    def test_alternative_evidence_paths_independence_and_non_universal_exclusivity(self):
+        """Verifies that Path A (direct identification) and Path B (documented derivation) are independent alternatives, and exclusivity is not universally required."""
+        import dataclasses
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        aapl = records["AAPL"]
+
+        # Path A: Direct identification does not require derivation or exclusivity proof
+        path_a_rec = dataclasses.replace(
+            aapl,
+            symbol="PATH_A",
+            is_direct_assertion=True,
+            publisher_primary_listing_claim="PRIMARY",
+            classification=PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM,
+            assigned_primary_listing=True,
+            record_locators={"source": "Direct exchange venue authority feed"},
+        )
+        path_a_adj = PrimaryListingAdjudicator.adjudicate_candidate(path_a_rec)
+        assert path_a_adj.is_direct_assertion is True
+        assert path_a_adj.is_derived_claim is False
+        assert path_a_adj.assigned_primary_listing is True
+        assert path_a_adj.missing_evidence_definition is None
+
+        # Path B: Documented derivation does not require publisher words 'primary listing' or exclusivity unless derivation relies on it
+        path_b_rec = dataclasses.replace(
+            aapl,
+            symbol="PATH_B",
+            is_direct_assertion=False,
+            is_derived_claim=True,
+            derivation_rule_id="RULE_HOME_EXCHANGE_AUTHORITY_V2",
+            classification=PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM,
+            assigned_primary_listing=True,
+            record_locators={"derivation_rule": "RULE_HOME_EXCHANGE_AUTHORITY_V2", "supporting_facts": "Home market primary admission under standard exchange operating rules"},
+        )
+        path_b_adj = PrimaryListingAdjudicator.adjudicate_candidate(path_b_rec)
+        assert path_b_adj.is_direct_assertion is False
+        assert path_b_adj.is_derived_claim is True
+        assert path_b_adj.assigned_primary_listing is True
+        assert path_b_adj.missing_evidence_definition is None
+
+    def test_registration_only_evidence_remains_narrower_and_no_exclusivity_assumption(self):
+        """SEC 12(b) and exchange directory listings remain narrower corroborating facts where primary designation is absent; absence of other exchanges does not prove exclusivity."""
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        aapl = records["AAPL"]
+        aapl_adj = PrimaryListingAdjudicator.adjudicate_candidate(aapl)
+
+        assert aapl_adj.adjudication_role == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+        assert aapl_adj.assigned_primary_listing is None
+        assert aapl_adj.adjudication_status == "EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY"
+        assert "Absence of other registered exchanges in Form 10-K cannot be assumed as proof of venue exclusivity" in aapl_adj.missing_evidence_definition
+        assert "proves registration under Section 12(b) of the Exchange Act, not designated primary listing" in aapl_adj.rationale
+
+    def test_stale_and_conflicting_evidence_handling(self):
+        """Handling of discordant venues (DDS/ACCS style) and multi-venue claims.
+        Verifies that source hierarchy is an evidence policy ranking, not a factual erasure tool.
+        A higher-ranked source tier does not automatically erase conflicting claims."""
+        ref_records = PrimaryListingEvidenceAdapter.load_reference_evidence()
+
+        # DDS has TXSE vs NYSE vs Other Listed 'F' discordance
+        dds = ref_records["DDS"]
+        dds_adj = PrimaryListingAdjudicator.adjudicate_candidate(dds)
+        assert dds_adj.adjudication_role == PrimaryListingEvidenceRole.CONFLICTING_OR_DISCORDANT_OBSERVATION
+        assert dds_adj.assigned_primary_listing is None
+        assert dds_adj.adjudication_status == PrimaryListingEvidenceClassification.CONFLICTING_EVIDENCE
+        assert "Discordant exchange venues observed" in dds_adj.rationale
+
+        # ACCS has historical CIK / OTC vs exchange discordance
+        accs = ref_records["ACCS"]
+        accs_adj = PrimaryListingAdjudicator.adjudicate_candidate(accs)
+        assert accs_adj.adjudication_role == PrimaryListingEvidenceRole.CONFLICTING_OR_DISCORDANT_OBSERVATION
+        assert accs_adj.assigned_primary_listing is None
+        assert accs_adj.adjudication_status == PrimaryListingEvidenceClassification.CONFLICTING_EVIDENCE
+
+    def test_unknown_preservation_and_to_source_security_rejection(self):
+        """Non-primary, conflicting or unadjudicated rows do not populate primary_listing=True; to_source_security() cannot be called when primary_listing is None."""
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        adjudications = PrimaryListingAdjudicator.adjudicate_all_candidates(records)
+
+        # All 3 candidates preserve None
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            assert adjudications[sym].assigned_primary_listing is None, f"{sym} must have assigned_primary_listing=None"
+
+        # Conversion to SourceSecurity with primary_listing=None strictly rejected
+        reqs = ValidationRequirements.create_listing_jurisdiction_profile(
+            allowed_listing_countries={"USA"},
+            require_selected_us_assessment=True,
+        )
+        sample_raw = {
+            "security_id": "PROV_SEC_TEST0002",
+            "symbol": "AAPL",
+            "exchange": "NASDAQ",
+            "security_type": "Common Stock",
+            "listing_status": "ACTIVE",
+            "currency": "USD",
+            "listing_country": "USA",
+            "incorporation_country": "USA",
+            "selected_us_assessment_listing": True,
+            "primary_listing": adjudications["AAPL"].assigned_primary_listing,  # None
+            "asset_class": "EQUITY",
+            "listing_date": None,
+            "delisting_date": None,
+            "trading_suspension_date": None,
+        }
+        val_res = UniverseInputValidator.validate_record(sample_raw, reqs)
+        assert val_res.status == ValidationStatus.VALIDATION_PASSED
+
+        with pytest.raises(ValueError, match="Cannot construct SourceSecurity without explicit, validated boolean value for 'primary_listing'"):
+            to_source_security(val_res)
+
+    def test_rule_version_full_dictionary_digest_and_provenance_retention(self):
+        """Adjudication records retain rule ID, version, timestamp, source hierarchy and exact claims.
+        Verifies that ELIGIBILITY_RULES_HASH is the full canonical-rules dictionary digest,
+        distinguishing the unchanged dictionary hash from the R06 executable predicate and newly approved semantic interpretation."""
+        from analyst_dashboard.universe.contracts import (
+            CANONICAL_ELIGIBILITY_RULES,
+            ELIGIBILITY_RULES_HASH,
+        )
+
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        adjudications = PrimaryListingAdjudicator.adjudicate_all_candidates(records)
+
+        expected_hierarchy = [
+            "PRIMARY_EXCHANGE_AUTHORITY",
+            "REGULATORY_FILINGS_SEC_12B",
+            "EXCHANGE_DIRECTORY",
+        ]
+
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            adj = adjudications[sym]
+            assert adj.rule_id == "R06_BOUNDED_EVIDENCE_ADJUDICATION_V1"
+            assert adj.rule_version == "1.0.0"
+            assert adj.evaluation_date == "2026-10-17"
+            assert adj.source_hierarchy == expected_hierarchy
+            assert isinstance(adj.exact_claims, dict)
+            assert "sec_form_10k_section_12b" in adj.exact_claims
+            assert "nasdaq_directory" in adj.exact_claims
+            assert isinstance(adj.record_locators, dict)
+            assert "accession_number" in adj.record_locators
+            assert adj.missing_evidence_definition is not None
+            assert len(adj.limitations) > 0
+
+        # Non-evaluated candidates in 3-candidate task receive EVIDENCE_UNAVAILABLE
+        for sym in ("TSM", "ACCS", "DDS", "AACIU"):
+            adj = adjudications[sym]
+            assert adj.adjudication_status == PrimaryListingEvidenceClassification.EVIDENCE_UNAVAILABLE
+            assert adj.adjudication_role == PrimaryListingEvidenceRole.INSUFFICIENT_NARROW_OBSERVATION
+
+        # Digest & predicate distinction:
+        # 1. ELIGIBILITY_RULES_HASH is the full canonical-rules dictionary digest (not an R06-only hash)
+        assert ELIGIBILITY_RULES_HASH == "1ff5085341f449908d521c45261a35e409b143fdb01e73334950c891d09248e1"
+        # 2. R06 executable predicate is unchanged
+        r06_rule = CANONICAL_ELIGIBILITY_RULES["R06_PRIMARY_LISTING"]
+        assert r06_rule["operator"] == "=="
+        assert r06_rule["expected"] is True
+        assert "primary listing" in r06_rule["description"]
+
+    def test_whole_batch_protection_atomic_fail_closed(self):
+        """Adjudication failure or missing evidence in any candidate fails the batch conversion atomically."""
+        ledger = build_seven_candidate_proposal()
+        three_records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+
+        report = PrimaryListingReplayEngine.run_replay(
+            ledger,
+            three_records,
+            is_simulation=False,
+        )
+
+        # Batch-level fail closed
+        assert report.is_batch_valid is False
+        assert report.batch_conversion_count == 0
+        assert report.batch_admitted_count == 0
+        assert report.converted_source_securities == []
+        assert report.builder_status == "NOT_RUN"
+        assert report.builder_handoff_permitted is False
+
+        # All 3 evaluated candidates have adjudication result and role
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            cand_res = report.candidate_results[sym]
+            assert cand_res.adjudication_task_scope == "EVALUATED"
+            assert cand_res.adjudication_role == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+            assert cand_res.adjudication_result is not None
+            assert cand_res.adjudication_result.assigned_primary_listing is None
+            assert cand_res.conversion_permitted is False
+
+        # Remaining 4 sample candidates are explicitly marked NOT_EVALUATED in this task
+        for sym in ("TSM", "ACCS", "DDS", "AACIU"):
+            cand_res = report.candidate_results[sym]
+            assert cand_res.adjudication_task_scope == "NOT_EVALUATED"
+
+    def test_no_implicit_production_promotion(self):
+        """Verified that provisional candidate IDs remain uncommitted and production adoption is blocked."""
+        ledger = build_seven_candidate_proposal()
+        three_records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+
+        report = PrimaryListingReplayEngine.run_replay(
+            ledger,
+            three_records,
+            is_simulation=False,
+        )
+
+        assert report.provisional_quarantine_enforced is True
+        assert report.production_adoption_allowed is False
+        assert report.builder_status == "NOT_RUN"
+
+        # Verify candidate IDs remain provisional
+        for prop in ledger.list_proposals():
+            assert prop.proposed_entity.provisional_security_id.startswith("PROV_SEC_")
+            assert prop.proposed_entity.is_adopted_production_id is False
+            assert prop.proposed_entity.status == "PROVISIONAL_NON_PRODUCTION"
+
+
+
 
