@@ -1,0 +1,58 @@
+{
+  "AAPL": {
+    "currency": "USD",
+    "country": "USA",
+    "primary_listing": true,
+    "listing_status": "ACTIVE",
+    "asset_class": "EQUITY",
+    "security_type": "COMMON_STOCK",
+    "listing_date": "1980-12-12",
+    "delisting_date": null,
+    "trading_suspension_date": null
+  },
+  "MSFT": {
+    "currency": "USD",
+    "country": "USA",
+    "primary_listing": true,
+    "listing_status": "ACTIVE",
+    "asset_class": "EQUITY",
+    "security_type": "COMMON_STOCK",
+    "listing_date": "1986-03-13",
+    "delisting_date": null,
+    "trading_suspension_date": null
+  },
+  "GOOGL": {
+    "currency": "USD",
+    "country": "USA",
+    "primary_listing": true,
+    "listing_status": "ACTIVE",
+    "asset_class": "EQUITY",
+    "security_type": "COMMON_STOCK",
+    "listing_date": "2004-08-19",
+    "delisting_date": null,
+    "trading_suspension_date": null
+  },
+  "GOOG": {
+    "currency": "USD",
+    "country": "USA",
+    "primary_listing": true,
+    "listing_status": "ACTIVE",
+    "asset_class": "EQUITY",
+    "security_type": "COMMON_STOCK",
+    "listing_date": "2014-04-03",
+    "delisting_date": null,
+    "trading_suspension_date": null
+  },
+  "BABA": {
+    "exchange": "NYSE",
+    "currency": "USD",
+    "country": "CYM",
+    "primary_listing": true,
+    "listing_status": "ACTIVE",
+    "asset_class": "EQUITY",
+    "security_type": "DEPOSITARY_RECEIPT",
+    "listing_date": "2014-09-19",
+    "delisting_date": null,
+    "trading_suspension_date": null
+  }
+}

@@ -27,6 +27,12 @@ from .fixtures import (
     HISTORICAL_VCP_35_REGRESSION_FIXTURE,
     create_canonical_fixture_snapshot,
 )
+from .connected_integration import (
+    ConnectedIntegrationResult,
+    IntegrationConfig,
+    format_markdown_report,
+    run_connected_integration,
+)
 
 __all__ = [
     "UNIVERSE_ID",
@@ -48,4 +54,10 @@ __all__ = [
     "UniverseStore",
     "HISTORICAL_VCP_35_REGRESSION_FIXTURE",
     "create_canonical_fixture_snapshot",
+    "ConnectedIntegrationResult",
+    "IntegrationConfig",
+    "format_markdown_report",
+    "run_connected_integration",
 ]
+
+
