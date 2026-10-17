@@ -1,0 +1,293 @@
+{
+  "retrieved_at_utc": "2026-10-17T07:51:57.204847+00:00",
+  "provider": "SEC_EDGAR_Submissions_API",
+  "ciks": {
+    "AAPL": "0000320193",
+    "GOOGL": "0001652044",
+    "GOOG": "0001652044",
+    "TSM": "0001046179",
+    "ACCS": "0000843006",
+    "DDS": "0000028917",
+    "AACIU": "0002092897"
+  },
+  "results": {
+    "0000320193": {
+      "success": true,
+      "cik": "0000320193",
+      "name": "Apple Inc.",
+      "entityType": "operating",
+      "sic": "3571",
+      "sicDescription": "Electronic Computers",
+      "stateOfIncorporation": "CA",
+      "stateOfIncorporationDescription": "CA",
+      "addresses": {
+        "mailing": {
+          "street1": "ONE APPLE PARK WAY",
+          "street2": null,
+          "city": "CUPERTINO",
+          "stateOrCountry": "CA",
+          "zipCode": "95014",
+          "stateOrCountryDescription": "CA",
+          "isForeignLocation": 0,
+          "foreignStateTerritory": null,
+          "country": null,
+          "countryCode": null
+        },
+        "business": {
+          "street1": "ONE APPLE PARK WAY",
+          "street2": null,
+          "city": "CUPERTINO",
+          "stateOrCountry": "CA",
+          "zipCode": "95014",
+          "stateOrCountryDescription": "CA",
+          "isForeignLocation": null,
+          "foreignStateTerritory": null,
+          "country": null,
+          "countryCode": null
+        }
+      },
+      "tickers": [
+        "AAPL"
+      ],
+      "exchanges": [
+        "Nasdaq"
+      ],
+      "source_url": "https://data.sec.gov/submissions/CIK0000320193.json",
+      "response_sha256": "aad00f6aa75ba1405e0a34c788bdba9042281b2724fe1db3ff26f434b9a92e44"
+    },
+    "0001652044": {
+      "success": true,
+      "cik": "0001652044",
+      "name": "Alphabet Inc.",
+      "entityType": "operating",
+      "sic": "7370",
+      "sicDescription": "Services-Computer Programming, Data Processing, Etc.",
+      "stateOfIncorporation": "DE",
+      "stateOfIncorporationDescription": "DE",
+      "addresses": {
+        "mailing": {
+          "street1": "1600 AMPHITHEATRE PARKWAY",
+          "street2": null,
+          "city": "MOUNTAIN VIEW",
+          "stateOrCountry": "CA",
+          "zipCode": "94043",
+          "stateOrCountryDescription": "CA",
+          "isForeignLocation": 0,
+          "foreignStateTerritory": null,
+          "country": null,
+          "countryCode": null
+        },
+        "business": {
+          "street1": "1600 AMPHITHEATRE PARKWAY",
+          "street2": null,
+          "city": "MOUNTAIN VIEW",
+          "stateOrCountry": "CA",
+          "zipCode": "94043",
+          "stateOrCountryDescription": "CA",
+          "isForeignLocation": null,
+          "foreignStateTerritory": null,
+          "country": null,
+          "countryCode": null
+        }
+      },
+      "tickers": [
+        "GOOGL",
+        "GOOG",
+        "GOOGM",
+        "GOOGN"
+      ],
+      "exchanges": [
+        "Nasdaq",
+        "Nasdaq",
+        "Nasdaq",
+        "Nasdaq"
+      ],
+      "source_url": "https://data.sec.gov/submissions/CIK0001652044.json",
+      "response_sha256": "648cea84d824309b518807fd7e7fdb72d6855e12e8afa221d2caa047d5c9f2ca"
+    },
+    "0001046179": {
+      "success": true,
+      "cik": "0001046179",
+      "name": "TAIWAN SEMICONDUCTOR MANUFACTURING CO LTD",
+      "entityType": "other",
+      "sic": "3674",
+      "sicDescription": "Semiconductors & Related Devices",
+      "stateOfIncorporation": "",
+      "stateOfIncorporationDescription": "",
+      "addresses": {
+        "mailing": {
+          "street1": "NO. 8, LI-HSIN ROAD 6",
+          "street2": "HSINCHU SCIENCE PARK",
+          "city": "HSINCHU",
+          "stateOrCountry": null,
+          "zipCode": null,
+          "stateOrCountryDescription": null,
+          "isForeignLocation": 1,
+          "foreignStateTerritory": null,
+          "country": "Taiwan",
+          "countryCode": "F5"
+        },
+        "business": {
+          "street1": "NO. 8, LI-HSIN ROAD 6",
+          "street2": "HSINCHU SCIENCE PARK",
+          "city": "HSINCHU",
+          "stateOrCountry": null,
+          "zipCode": null,
+          "stateOrCountryDescription": null,
+          "isForeignLocation": 1,
+          "foreignStateTerritory": null,
+          "country": "Taiwan",
+          "countryCode": "F5"
+        }
+      },
+      "tickers": [
+        "TSM",
+        "TSMWF"
+      ],
+      "exchanges": [
+        "NYSE",
+        "OTC"
+      ],
+      "source_url": "https://data.sec.gov/submissions/CIK0001046179.json",
+      "response_sha256": "8fafb91b40c2c0bd75e3efd8977f177e69a566fa2700bebf150cc2820fadd272"
+    },
+    "0000843006": {
+      "success": true,
+      "cik": "0000843006",
+      "name": "ACCESS Newswire Inc.",
+      "entityType": "operating",
+      "sic": "8742",
+      "sicDescription": "Services-Management Consulting Services",
+      "stateOfIncorporation": "",
+      "stateOfIncorporationDescription": "",
+      "addresses": {
+        "mailing": {
+          "street1": "1 GLENWOOD AVE.",
+          "street2": "SUITE 1001",
+          "city": "RALEIGH",
+          "stateOrCountry": "NC",
+          "zipCode": "27603",
+          "stateOrCountryDescription": "NC",
+          "isForeignLocation": 0,
+          "foreignStateTerritory": null,
+          "country": null,
+          "countryCode": null
+        },
+        "business": {
+          "street1": "1 GLENWOOD AVE.",
+          "street2": "SUITE 1001",
+          "city": "RALEIGH",
+          "stateOrCountry": "NC",
+          "zipCode": "27603",
+          "stateOrCountryDescription": "NC",
+          "isForeignLocation": null,
+          "foreignStateTerritory": null,
+          "country": null,
+          "countryCode": null
+        }
+      },
+      "tickers": [
+        "ACCS"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "source_url": "https://data.sec.gov/submissions/CIK0000843006.json",
+      "response_sha256": "0852a08693c0322cc796063213c9352b2e0351f3953d776671ef3c9634795e6f"
+    },
+    "0000028917": {
+      "success": true,
+      "cik": "0000028917",
+      "name": "DILLARD'S, INC.",
+      "entityType": "operating",
+      "sic": "5311",
+      "sicDescription": "Retail-Department Stores",
+      "stateOfIncorporation": "TX",
+      "stateOfIncorporationDescription": "TX",
+      "addresses": {
+        "mailing": {
+          "street1": "1600 CANTRELL ROAD",
+          "street2": null,
+          "city": "LITTLE ROCK",
+          "stateOrCountry": "AR",
+          "zipCode": "72201",
+          "stateOrCountryDescription": "AR",
+          "isForeignLocation": 0,
+          "foreignStateTerritory": null,
+          "country": null,
+          "countryCode": null
+        },
+        "business": {
+          "street1": "1600 CANTRELL RD",
+          "street2": null,
+          "city": "LITTLE ROCK",
+          "stateOrCountry": "AR",
+          "zipCode": "72201",
+          "stateOrCountryDescription": "AR",
+          "isForeignLocation": null,
+          "foreignStateTerritory": null,
+          "country": null,
+          "countryCode": null
+        }
+      },
+      "tickers": [
+        "DDS",
+        "DDT"
+      ],
+      "exchanges": [
+        "NYSE",
+        "NYSE"
+      ],
+      "source_url": "https://data.sec.gov/submissions/CIK0000028917.json",
+      "response_sha256": "34d2c575c41568900136252056e4a883be13aea7319332ab17209d91c7697455"
+    },
+    "0002092897": {
+      "success": true,
+      "cik": "0002092897",
+      "name": "Armada Acquisition Corp. III",
+      "entityType": "operating",
+      "sic": "6770",
+      "sicDescription": "Blank Checks",
+      "stateOfIncorporation": "E9",
+      "stateOfIncorporationDescription": "Cayman Islands",
+      "addresses": {
+        "mailing": {
+          "street1": "89 NEXUS WAY",
+          "street2": null,
+          "city": "CARMANA BAY",
+          "stateOrCountry": null,
+          "zipCode": "KY 1-9009",
+          "stateOrCountryDescription": null,
+          "isForeignLocation": 1,
+          "foreignStateTerritory": "GRAND CAYMAN",
+          "country": "Cayman Islands",
+          "countryCode": "E9"
+        },
+        "business": {
+          "street1": "89 NEXUS WAY",
+          "street2": null,
+          "city": "CARMANA BAY",
+          "stateOrCountry": null,
+          "zipCode": "KY 1-9009",
+          "stateOrCountryDescription": null,
+          "isForeignLocation": 1,
+          "foreignStateTerritory": "GRAND CAYMAN",
+          "country": "Cayman Islands",
+          "countryCode": "E9"
+        }
+      },
+      "tickers": [
+        "AACI",
+        "AACIU",
+        "AACIW"
+      ],
+      "exchanges": [
+        "Nasdaq",
+        "Nasdaq",
+        "Nasdaq"
+      ],
+      "source_url": "https://data.sec.gov/submissions/CIK0002092897.json",
+      "response_sha256": "3d9d52e78175fd32e67eece758621035126bc469fe65aa9fa8d714b4e821b6a5"
+    }
+  }
+}

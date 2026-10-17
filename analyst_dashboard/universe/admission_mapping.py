@@ -376,6 +376,17 @@ class SupportedVenueNormalizer:
                 publisher_citation=spec["citation"],
             )
 
+        if code_clean == "NASDAQ":
+            return VenueNormalizationResult(
+                raw_code=code_clean,
+                source_field="Exchange",
+                normalized_venue="NASDAQ",
+                operating_mic="XNAS",
+                dissemination_tape="TAPE_C",
+                status=VenueNormalizationStatus.EXACT_CONCORDANT,
+                publisher_citation="Nasdaq Listed Directory: Primary market is NASDAQ Stock Market (Tape C)",
+            )
+
         return VenueNormalizationResult(
             raw_code=code_clean,
             source_field="Exchange",
