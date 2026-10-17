@@ -628,10 +628,7 @@ def run_check_d_capacity_benchmarks(
         benchmarker = CapacityBenchmarker(store, target_session_date=target_session_date)
         comp_report = benchmarker.run_benchmarks(sample_symbols=stored_symbols[:50])
 
-        norm_path = str(market_db_path).replace("\\", "/")
-        uri = f"file:///{norm_path}?mode=ro"
-        conn = sqlite3.connect(uri, uri=True, timeout=10.0)
-        conn.row_factory = sqlite3.Row
+        conn = store._get_connection()
 
         sample_measurements = []
         for n in sample_sizes:

@@ -164,6 +164,64 @@ def test_read_only_store_immutability(synthetic_market_db):
         conn.close()
 
 
+def test_read_only_store_snapshot_consistency_during_concurrent_commit(tmp_path):
+    """
+    Verifies that ReadOnlyMarketStore maintains a consistent snapshot view:
+    Queries made through an active ReadOnlyMarketStore instance observe an immutable
+    read view even when another connection concurrently writes and commits changes.
+    """
+    db_file = tmp_path / "concurrent_wal_store.db"
+    conn = sqlite3.connect(str(db_file))
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("""
+        CREATE TABLE asset_ohlcv_daily (
+            symbol TEXT NOT NULL,
+            trade_date TEXT NOT NULL,
+            open REAL NOT NULL,
+            high REAL NOT NULL,
+            low REAL NOT NULL,
+            close REAL NOT NULL,
+            volume INTEGER NOT NULL,
+            PRIMARY KEY (symbol, trade_date)
+        )
+    """)
+    for i in range(60):
+        d = f"2026-09-{i+1:02d}" if i < 30 else f"2026-10-{i-29:02d}"
+        conn.execute("INSERT INTO asset_ohlcv_daily VALUES ('SNAP_SYM', ?, 100, 105, 99, 102, 1000)", (d,))
+    conn.commit()
+    conn.close()
+
+    with ReadOnlyMarketStore(str(db_file)) as store:
+        # Initial query within the snapshot
+        p1 = store.get_latest_price("SNAP_SYM")
+        assert p1 is not None
+        assert p1["currentPrice"] == 102.0
+        assert store.get_candle_count("NEW_CONCURRENT_SYM") == 0
+
+        # Concurrent writer connection modifies SNAP_SYM and inserts NEW_CONCURRENT_SYM
+        writer = sqlite3.connect(str(db_file))
+        writer.execute("UPDATE asset_ohlcv_daily SET close=999.0 WHERE symbol='SNAP_SYM' AND trade_date='2026-10-30'")
+        writer.execute("INSERT INTO asset_ohlcv_daily VALUES ('NEW_CONCURRENT_SYM', '2026-10-16', 50, 55, 49, 52, 2000)")
+        writer.commit()
+        writer.close()
+
+        # The existing ReadOnlyMarketStore must continue observing the initial frozen snapshot
+        p2 = store.get_latest_price("SNAP_SYM")
+        assert p2 is not None
+        assert p2["currentPrice"] == 102.0, "Snapshot isolation violated: observed concurrent update!"
+        assert store.get_candle_count("NEW_CONCURRENT_SYM") == 0, "Snapshot isolation violated: observed concurrent insert!"
+
+        # Direct mutation on store connection must be rejected
+        with pytest.raises(sqlite3.OperationalError, match="readonly database"):
+            store._get_connection().execute("INSERT INTO asset_ohlcv_daily VALUES ('ILLEGAL', '2026-10-16', 1, 1, 1, 1, 1)")
+
+    # After closing and opening a new ReadOnlyMarketStore, the new committed state is visible
+    with ReadOnlyMarketStore(str(db_file)) as store_after:
+        p3 = store_after.get_latest_price("SNAP_SYM")
+        assert p3["currentPrice"] == 999.0
+        assert store_after.get_candle_count("NEW_CONCURRENT_SYM") == 1
+
+
 def test_read_only_store_missing_table_fails_validation(tmp_path):
     """ReadOnlyMarketStore must reject databases lacking the required schema."""
     empty_db = tmp_path / "empty.db"

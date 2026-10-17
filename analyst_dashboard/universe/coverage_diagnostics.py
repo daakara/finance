@@ -249,8 +249,12 @@ class ReadOnlyMarketStore:
 
     def _get_connection(self) -> sqlite3.Connection:
         if self._conn is None:
-            self._conn = sqlite3.connect(self._get_uri(), uri=True, timeout=10.0)
+            self._conn = sqlite3.connect(
+                self._get_uri(), uri=True, timeout=10.0, isolation_level=None
+            )
             self._conn.row_factory = sqlite3.Row
+            # Start explicit read transaction to lock consistent snapshot across all queries
+            self._conn.execute("BEGIN DEFERRED")
         return self._conn
 
     def _verify_read_only_connect(self) -> None:
@@ -265,8 +269,12 @@ class ReadOnlyMarketStore:
             )
 
     def close(self) -> None:
-        """Close connection if open."""
+        """Close connection if open, cleanly releasing the active read transaction."""
         if self._conn is not None:
+            try:
+                self._conn.execute("ROLLBACK")
+            except Exception:
+                pass
             try:
                 self._conn.close()
             except Exception:
