@@ -321,6 +321,71 @@ class TestListingSelectionInvariant:
         assert sec.selected_us_assessment_listing is True
         assert sec.primary_listing is False
 
+    def test_to_source_security_listing_profile_preserves_true_primary_listing(self):
+        reqs = ValidationRequirements.create_listing_jurisdiction_profile(
+            allowed_listing_countries={"USA"},
+            require_selected_us_assessment=True,
+        )
+        raw_aapl = {
+            "security_id": "SEC_AAPL_001",
+            "symbol": "AAPL",
+            "exchange": "NASDAQ",
+            "security_type": "COMMON_STOCK",
+            "listing_status": "ACTIVE",
+            "currency": "USD",
+            "listing_country": "USA",
+            "incorporation_country": "USA",
+            "selected_us_assessment_listing": True,
+            "primary_listing": True,
+            "asset_class": "EQUITY",
+            "listing_date": None,
+            "delisting_date": None,
+            "trading_suspension_date": None,
+        }
+        res = UniverseInputValidator.validate_record(raw_aapl, reqs)
+        assert res.status == ValidationStatus.VALIDATION_PASSED
+        sec = to_source_security(res)
+        assert sec.selected_us_assessment_listing is True
+        assert sec.primary_listing is True
+
+    def test_to_source_security_listing_profile_blocks_conversion_when_primary_listing_is_unknown(self):
+        """When primary_listing is unknown (None or omitted), validation passes but conversion to SourceSecurity is blocked."""
+        reqs = ValidationRequirements.create_listing_jurisdiction_profile(
+            allowed_listing_countries={"USA"},
+            require_selected_us_assessment=True,
+        )
+        raw_unknown = {
+            "security_id": "SEC_001",
+            "symbol": "AAPL",
+            "exchange": "NASDAQ",
+            "security_type": "COMMON_STOCK",
+            "listing_status": "ACTIVE",
+            "currency": "USD",
+            "listing_country": "USA",
+            "incorporation_country": "USA",
+            "selected_us_assessment_listing": True,
+            # primary_listing omitted -> UNKNOWN
+            "asset_class": "EQUITY",
+            "listing_date": None,
+            "delisting_date": None,
+            "trading_suspension_date": None,
+        }
+        res = UniverseInputValidator.validate_record(raw_unknown, reqs)
+        assert res.status == ValidationStatus.VALIDATION_PASSED
+        assert res.validated_values.get("primary_listing") is None
+
+        # Conversion to SourceSecurity must fail closed
+        with pytest.raises(ValueError, match="Cannot construct SourceSecurity without explicit, validated boolean value for 'primary_listing'"):
+            to_source_security(res)
+
+        # Explicit None in record also blocks conversion
+        raw_explicit_none = dict(raw_unknown, primary_listing=None)
+        res_none = UniverseInputValidator.validate_record(raw_explicit_none, reqs)
+        assert res_none.status == ValidationStatus.VALIDATION_PASSED
+        assert res_none.validated_values.get("primary_listing") is None
+        with pytest.raises(ValueError, match="Cannot construct SourceSecurity without explicit, validated boolean value for 'primary_listing'"):
+            to_source_security(res_none)
+
 
 # ---------------------------------------------------------------------
 # 5. Missing or Conflicting Evidence
@@ -570,9 +635,10 @@ class TestCleanCheckoutExecution:
         exp_tsm = tsm_prof.explicit_semantics_profile
         assert exp_tsm is not None
         assert exp_tsm["listing_country"] == "USA"
-        assert exp_tsm["incorporation_country"] == "TAIWAN"
+        assert exp_tsm["incorporation_country"] == "UNKNOWN"  # Omitted from SEC stateOfIncorporation; not inferred from HQ
+        assert exp_tsm["headquarters"] == "HSINCHU, Taiwan"
         assert exp_tsm["selected_us_assessment_listing"] is True
-        assert exp_tsm["primary_listing"] is False
+        assert exp_tsm["primary_listing"] is None  # Preserved as UNKNOWN
         assert "SEMANTIC_DISTORTION" in exp_tsm["legacy_country_dilemma"]
         assert "FACTUAL_FALSIFICATION" in exp_tsm["legacy_primary_listing_dilemma"]
 
@@ -581,5 +647,15 @@ class TestCleanCheckoutExecution:
         assert exp_aapl is not None
         assert exp_aapl["listing_country"] == "USA"
         assert exp_aapl["incorporation_country"] == "USA"
+        assert exp_aapl["headquarters"] == "CUPERTINO, CA"
         assert exp_aapl["selected_us_assessment_listing"] is True
-        assert exp_aapl["primary_listing"] is True
+        assert exp_aapl["primary_listing"] is None  # Preserved as UNKNOWN
+
+        aaciu_prof = result.candidate_profiles["AACIU"]
+        exp_aaciu = aaciu_prof.explicit_semantics_profile
+        assert exp_aaciu is not None
+        assert exp_aaciu["listing_country"] == "USA"
+        assert exp_aaciu["incorporation_country"] == "CAYMAN ISLANDS"
+        assert exp_aaciu["headquarters"] == "CARMANA BAY, Cayman Islands"
+        assert exp_aaciu["selected_us_assessment_listing"] is True
+        assert exp_aaciu["primary_listing"] is None  # Preserved as UNKNOWN

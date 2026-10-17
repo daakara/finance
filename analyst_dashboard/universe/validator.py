@@ -916,8 +916,16 @@ def to_source_security(record_result: RecordValidationResult) -> SourceSecurity:
 
     if is_listing_profile:
         # Explicit listing jurisdiction profile:
-        # country is not assumed from listing_country; missing legacy country remains None
-        # primary_listing is NOT substituted by selected_us_assessment_listing; defaults to False if unevidenced
+        # country is not assumed from listing_country; missing legacy country remains None.
+        # primary_listing is NOT substituted by selected_us_assessment_listing.
+        # If primary_listing is unknown (None or omitted), conversion to SourceSecurity MUST BE BLOCKED
+        # with a precise ValueError rather than inventing False or weakening R01-R07.
+        if "primary_listing" not in vals or vals["primary_listing"] is None:
+            raise ValueError(
+                "Cannot construct SourceSecurity without explicit, validated boolean value for 'primary_listing'. "
+                "Evidence status is UNKNOWN (unevidenced); implicit defaulting to False or True is strictly prohibited to prevent "
+                "fabricating secondary listing status or bypassing R06 eligibility."
+            )
         return SourceSecurity(
             security_id=str(vals["security_id"]),
             symbol=str(vals["symbol"]),
@@ -926,7 +934,7 @@ def to_source_security(record_result: RecordValidationResult) -> SourceSecurity:
             listing_status=str(vals["listing_status"]),
             currency=str(vals["currency"]),
             country=str(vals["country"]) if "country" in vals and vals["country"] is not None else None,
-            primary_listing=bool(vals["primary_listing"]) if "primary_listing" in vals and vals["primary_listing"] is not None else False,
+            primary_listing=bool(vals["primary_listing"]),
             asset_class=str(vals["asset_class"]),
             listing_date=vals["listing_date"],
             delisting_date=vals["delisting_date"],

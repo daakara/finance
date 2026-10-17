@@ -584,7 +584,7 @@ class RealSourceAdmissionDiagnostic:
                         )
                     )
 
-            # Attributable SEC Submissions metadata (incorporation domicile)
+            # Attributable SEC Submissions metadata (incorporation domicile vs business address)
             if acquired_evidence.get("sec_submissions"):
                 c_map = acquired_evidence["sec_submissions"].get("ciks", {})
                 s_res = acquired_evidence["sec_submissions"].get("results", {})
@@ -592,11 +592,28 @@ class RealSourceAdmissionDiagnostic:
                 if sym_cik and sym_cik in s_res and s_res[sym_cik].get("success"):
                     s_data = s_res[sym_cik]
                     addr_biz = (s_data.get("addresses") or {}).get("business", {})
-                    # Record incorporation country/state truthfully
-                    if addr_biz.get("isForeignLocation"):
-                        sym_overlay["incorporation_country"] = addr_biz.get("country") or "FOREIGN"
-                    else:
-                        sym_overlay["incorporation_state"] = s_data.get("stateOfIncorporation") or addr_biz.get("stateOrCountry")
+                    # Record business address/headquarters for descriptive audit
+                    if addr_biz:
+                        city = addr_biz.get("city")
+                        state_or_country = addr_biz.get("stateOrCountry") or addr_biz.get("country")
+                        sym_overlay["headquarters"] = f"{city}, {state_or_country}" if city and state_or_country else (city or state_or_country)
+
+                    # Invariant: Domicile of incorporation is kept strictly separate from business address/headquarters.
+                    # Do NOT derive incorporation from addresses.business!
+                    soi = s_data.get("stateOfIncorporation")
+                    soid = s_data.get("stateOfIncorporationDescription")
+                    if soi and soi.strip():
+                        soi_clean = soi.strip()
+                        if soi_clean in ("E9",) or (soid and "Cayman" in soid):
+                            sym_overlay["incorporation_country"] = "CAYMAN ISLANDS"
+                            sym_overlay["incorporation_state"] = "E9"
+                        else:
+                            sym_overlay["incorporation_country"] = "USA"
+                            sym_overlay["incorporation_state"] = soi_clean
+                    # For TSM and ACCS, SEC Submissions API omits stateOfIncorporation ("").
+                    # Domicile of incorporation is strictly UNKNOWN from stateOfIncorporation;
+                    # it is NOT inferred from business address (TSM: Hsinchu, Taiwan; ACCS: Raleigh, NC).
+
                     sym_refs.append(
                         EvidenceReference(
                             source_authority="SEC_EDGAR_SUBMISSIONS",
@@ -617,21 +634,13 @@ class RealSourceAdmissionDiagnostic:
                 )
             )
 
-            # 2. Selected US Assessment Listing: All 7 are designated US quotation lines under assessment
+            # 2. Selected US Assessment Listing: Explicit caller policy selection under radar coverage scoping
+            # (Nature: selected / policy-derived, NOT observed from raw feeds)
             sym_overlay["selected_us_assessment_listing"] = True
 
-            # 3. Global Primary Listing vs Secondary Listing Line
-            if sym == "TSM":
-                # Taiwan Semiconductor global primary listing is Taiwan Stock Exchange (TWSE: 2330)
-                # The US NYSE listing line is an American Depositary Receipt (ADR)
-                sym_overlay["primary_listing"] = False
-                sym_overlay["incorporation_country"] = "TAIWAN"
-            elif sym in ("AAPL", "GOOG", "GOOGL", "DDS", "ACCS"):
-                sym_overlay["primary_listing"] = True
-                sym_overlay["incorporation_country"] = "USA"
-            elif sym == "AACIU":
-                sym_overlay["primary_listing"] = True
-                sym_overlay["incorporation_country"] = "CAYMAN ISLANDS"
+            # 3. Global Primary Listing:
+            # Preserved as UNKNOWN across all 7 candidates. Parent feeds do not certify
+            # instrument-level global primary listing. Defaulting to True or False is prohibited.
 
             if sym_overlay:
                 replay_field_overlay[sym] = sym_overlay
@@ -844,29 +853,32 @@ class RealSourceAdmissionDiagnostic:
                 "fields_newly_evidenced": list(replay_field_overlay.get(sym, {}).keys()),
             }
 
-            # Explicit Semantics Profile (Section 3)
+            # Explicit Semantics Profile (Section 3 & 7)
             r_val_exp = explicit_val_by_sym.get(sym)
             exp_issues = [f"{iss.field_name}: {iss.issue_code.value}" for iss in r_val_exp.issues] if r_val_exp else []
             sym_ov = replay_field_overlay.get(sym, {})
-            inc_country_val = sym_ov.get("incorporation_country") or ("TAIWAN" if sym == "TSM" else ("CAYMAN ISLANDS" if sym == "AACIU" else "USA"))
-            prim_listing_val = False if sym == "TSM" else True
+            inc_country_val = sym_ov.get("incorporation_country") or "UNKNOWN"
+            inc_state_val = sym_ov.get("incorporation_state")
+            hq_val = sym_ov.get("headquarters") or "UNKNOWN"
 
             exp_prof = {
                 "listing_country": "USA",
                 "incorporation_country": inc_country_val,
                 "country_of_incorporation": inc_country_val,
+                "incorporation_state": inc_state_val,
+                "headquarters": hq_val,
                 "selected_us_assessment_listing": True,
-                "primary_listing": prim_listing_val,
+                "primary_listing": None,  # Preserved as UNKNOWN across all real sources
                 "legacy_country_dilemma": (
                     "SEMANTIC_DISTORTION: Conflates quotation venue with sovereign legal domicile. "
-                    "Setting country='USA' for TSM misrepresents Taiwanese incorporation; setting country='Taiwan' "
-                    "causes exclusion under US radar coverage."
-                    if sym == "TSM" else "CONCORDANT: Listing venue and incorporation jurisdiction are both USA."
+                    "For foreign issuers (e.g. TSM, AACIU), setting country='USA' misrepresents legal domicile; "
+                    "setting foreign country excludes them from US radar coverage."
+                    if sym in ("TSM", "AACIU") else "CONCORDANT: Listing venue and incorporation jurisdiction are both USA."
                 ),
                 "legacy_primary_listing_dilemma": (
-                    "FACTUAL_FALSIFICATION: Marking US ADR as primary_listing=True makes false global primary quotation claim "
-                    "(global primary is TWSE: 2330); marking primary_listing=False fails single-listing legacy admission."
-                    if sym == "TSM" else "CONCORDANT: US exchange listing represents issuer's primary quotation line."
+                    "FACTUAL_FALSIFICATION: Parent feeds do not certify global primary listing at instrument level. "
+                    "Marking primary_listing=True fabricates unverified global primary status; marking False fabricates "
+                    "proven secondary status and triggers INELIGIBLE_SECONDARY_LISTING under R06."
                 ),
                 "explicit_profile_validation_status": r_val_exp.status.value if r_val_exp else "UNKNOWN",
                 "explicit_profile_validation_issues": exp_issues,
@@ -937,9 +949,10 @@ class RealSourceAdmissionDiagnostic:
             "admitted_candidates_count": 0,
             "narrative": (
                 "Explicit listing semantics successfully decouple quotation venue (listing_country='USA') "
-                "from sovereign legal domicile (incorporation_country='TAIWAN' for TSM, 'CAYMAN ISLANDS' for AACIU) "
+                "from sovereign legal domicile (incorporation_country='CAYMAN ISLANDS' for AACIU, 'USA' for domestic issuers; "
+                "incorporation is UNKNOWN for TSM and ACCS where omitted by SEC stateOfIncorporation and kept separate from business headquarters) "
                 "and decouple the designated US assessment line (selected_us_assessment_listing=True) "
-                "from global primary quotation (primary_listing=False for TSM). "
+                "from global primary quotation (primary_listing remains UNKNOWN across all real sources). "
                 "However, explicit listing semantics are necessary but not sufficient for admission: "
                 "production identity adoption (security_id) remains unauthorized, canonical rules R02/R04 "
                 "would reject ADR/Unit structures and non-allowlisted venues, and stored market data remains deficient."
@@ -1314,15 +1327,15 @@ def format_evidence_gap_report(result: RealSourceDiagnosticResult) -> str:
     md.append("2. **`SourceSecurity.primary_listing`**: Defined as a boolean flag requiring global primary quotation line under Rule R06. ")
     md.append("   - *Schema Limitation*: Cross-listed securities and ADRs have their global primary listing on foreign exchanges (TSM on TWSE: 2330). Forcing `primary_listing = True` makes a false market assertion, while omitting it fails admission. Decoupling `selected_us_assessment_listing` resolves this boundary.\n")
     md.append("#### Side-by-Side Candidate Evaluation (Legacy vs. Explicit Listing Semantics)\n")
-    md.append("| Candidate | Legacy Country / Primary Listing | Explicit Listing Country | Incorporation / Domicile | Selected Assessment Listing | Global Primary Listing | Remaining Admission Status |")
-    md.append("|:---|:---|:---:|:---:|:---:|:---:|:---|")
-    md.append("| **AAPL** | `country: \"USA\"` / `primary_listing: True` | `USA` | `USA` (CA) | `True` | `True` | 🔴 `REVOKED (UNADMITTED)`: Production identity unadopted; intraday regulatory halt unevidenced. |")
-    md.append("| **GOOGL** | `country: \"USA\"` / `primary_listing: True` | `USA` | `USA` (DE) | `True` | `True` | 🔴 `REVOKED (UNADMITTED)`: Production identity unadopted; market data stale (2026-10-12). |")
-    md.append("| **GOOG** | `country: \"USA\"` / `primary_listing: True` | `USA` | `USA` (DE) | `True` | `True` | 🔴 `REVOKED (UNADMITTED)`: Production identity unadopted; 0 market data bars in local store. |")
-    md.append("| **TSM** | *Distortion Dilemma*: `country: \"USA\"` (false domicile) vs `\"Taiwan\"` (rejected); `primary_listing: True` (false global primary) vs `False` (rejected) | `USA` | `TAIWAN` (F5) | `True` | `False` (TWSE: 2330) | 🔴 `REVOKED (UNADMITTED)`: Production identity unadopted; R02 Depositary Receipt (ADR); market data stale. |")
-    md.append("| **ACCS** | `country: \"USA\"` / `primary_listing: True` | `USA` | `USA` (NC) | `True` | `True` | 🔴 `REVOKED (UNADMITTED)`: Production identity unadopted; R04 venue allowlist (AMEX); 0 market data bars. |")
-    md.append("| **DDS** | `country: \"USA\"` / `primary_listing: True` | `USA` | `USA` (TX/AR) | `True` | `True` | 🔴 `REVOKED (UNADMITTED)`: Production identity unadopted; R04 venue allowlist & status (TXSE); 0 market data bars. |")
-    md.append("| **AACIU** | *Distortion Dilemma*: `country: \"USA\"` (false domicile) vs `\"Cayman Islands\"`; `primary_listing: True` | `USA` | `CAYMAN ISLANDS` (E9) | `True` | `True` | 🔴 `REVOKED (UNADMITTED)`: Production identity unadopted; R02 Unit instrument structure; 0 market data bars. |\n")
+    md.append("| Candidate | Legacy Country / Primary Listing | Explicit Listing Country | Incorporation / Domicile | Business Address / HQ | Selected Assessment Listing | Global Primary Listing | Pipeline Outcomes & Remaining Blocker |")
+    md.append("|:---|:---|:---:|:---:|:---:|:---:|:---:|:---|")
+    md.append("| **AAPL** | `country: \"USA\"` / `primary_listing: True` | `USA` (`derived`) | `USA` (CA) (`observed`) | `Cupertino, CA, USA` (`observed`) | `True` (`selected`) | `UNKNOWN` (`unknown`) | 🔴 `REVOKED (UNADMITTED)`: Validation failed (identity unadopted); batch revoked; conversion blocked; builder NOT_RUN; readiness UNRESOLVED_ASSOCIATION; strategy NOT_RUN. |")
+    md.append("| **GOOGL** | `country: \"USA\"` / `primary_listing: True` | `USA` (`derived`) | `USA` (DE) (`observed`) | `Mountain View, CA, USA` (`observed`) | `True` (`selected`) | `UNKNOWN` (`unknown`) | 🔴 `REVOKED (UNADMITTED)`: Validation failed (identity unadopted); batch revoked; conversion blocked; builder NOT_RUN; readiness UNRESOLVED_ASSOCIATION (stale 2026-10-12); strategy NOT_RUN. |")
+    md.append("| **GOOG** | `country: \"USA\"` / `primary_listing: True` | `USA` (`derived`) | `USA` (DE) (`observed`) | `Mountain View, CA, USA` (`observed`) | `True` (`selected`) | `UNKNOWN` (`unknown`) | 🔴 `REVOKED (UNADMITTED)`: Validation failed (identity unadopted); batch revoked; conversion blocked; builder NOT_RUN; readiness NO_DATA (0 bars); strategy NOT_RUN. |")
+    md.append("| **TSM** | *Distortion Dilemma*: `country: \"USA\"` (false domicile) vs `\"Taiwan\"` (rejected); `primary_listing: True` (false global primary) vs `False` (rejected) | `USA` (`derived`) | `UNKNOWN` (omitted from SEC `stateOfIncorporation`) | `Hsinchu, Taiwan` (`observed`) | `True` (`selected`) | `UNKNOWN` (`unknown` at instrument level) | 🔴 `REVOKED (UNADMITTED)`: Validation failed (identity unadopted); batch revoked; conversion blocked; builder NOT_RUN (static R02 ADR, R06 unevidenced); readiness UNRESOLVED_ASSOCIATION (stale 2026-05-07); strategy NOT_RUN. |")
+    md.append("| **ACCS** | `country: \"USA\"` / `primary_listing: True` | `USA` (`derived`) | `UNKNOWN` (omitted from SEC `stateOfIncorporation`) | `Raleigh, NC, USA` (`observed`) | `True` (`selected`) | `UNKNOWN` (`unknown`) | 🔴 `REVOKED (UNADMITTED)`: Validation failed (identity unadopted); batch revoked; conversion blocked; builder NOT_RUN (static R04 AMEX allowlist); readiness NO_DATA (0 bars); strategy NOT_RUN. |")
+    md.append("| **DDS** | `country: \"USA\"` / `primary_listing: True` | `USA` (`derived`) | `USA` (TX) (`observed`) | `Little Rock, AR, USA` (`observed`) | `True` (`selected`) | `UNKNOWN` (`unknown`) | 🔴 `REVOKED (UNADMITTED)`: Validation failed (identity unadopted); batch revoked; conversion blocked; builder NOT_RUN (static R04 TXSE allowlist & status); readiness NO_DATA (0 bars); strategy NOT_RUN. |")
+    md.append("| **AACIU** | *Distortion Dilemma*: `country: \"USA\"` (false domicile) vs `\"Cayman Islands\"`; `primary_listing: True` | `USA` (`derived`) | `CAYMAN ISLANDS (E9)` (`observed`) | `Grand Cayman, Cayman Islands` (`observed`) | `True` (`selected`) | `UNKNOWN` (`unknown`) | 🔴 `REVOKED (UNADMITTED)`: Validation failed (identity unadopted); batch revoked; conversion blocked; builder NOT_RUN (static R02 Unit structure); readiness NO_DATA (0 bars); strategy NOT_RUN. |\n")
     md.append("#### Architectural Assessment: Necessity vs. Non-Sufficiency of Explicit Listing Semantics\n")
     md.append("> [!IMPORTANT]\n")
     md.append("> **Necessity**: Explicit listing semantics are structurally essential. Without explicit separation of `listing_country` and `incorporation_country`, cross-listed issuers and ADRs such as `TSM` cannot be admitted to US radar evaluation without either falsifying their legal domicile (claiming Taiwan Semiconductor is a US corporation) or being disqualified by jurisdiction filters. Similarly, without `selected_us_assessment_listing`, assessing the US quotation line requires falsifying `primary_listing = True`, which corrupts global market structure modeling.\n")
@@ -1344,7 +1357,7 @@ def format_evidence_gap_report(result: RealSourceDiagnosticResult) -> str:
     md.append("- **Review of `admission_mapping.py`**: Retained only reusable production normalizer logic (`\"NASDAQ\"` directory code recognized as `XNAS` / `TAPE_C`). All diagnostic presentation is isolated to the diagnostic module.\n")
 
     md.append("### 9. Test Suite Inventory: Selected vs Full Universe Verification\n")
-    md.append("The complete universe test suite expanded from the earlier 205-test baseline across 7 modules to **224 tests across 8 modules** (221 passed, 3 skipped for optional commercial fixtures in clean checkout):\n\n")
+    md.append("The complete universe test suite expanded from the earlier 205-test baseline across 7 modules to **226 tests across 8 modules** (223 passed, 3 skipped for optional commercial fixtures in clean checkout):\n\n")
     md.append("| Module | Tests Collected | Tests Passed | Status | Coverage Scope |")
     md.append("|:---|:---:|:---:|:---:|:---|")
     md.append("| `tests/test_universe_listing_acquisition.py` | 25 | 25 | 🟢 PASS | Package 1 public-source acquisition, rate limiting, and raw byte preservation |")
@@ -1354,8 +1367,8 @@ def format_evidence_gap_report(result: RealSourceDiagnosticResult) -> str:
     md.append("| `tests/test_universe_connected_integration.py` | 17 | 17 | 🟢 PASS | Package 3 connected pipeline, synthetic isolation, and whole-batch gating |")
     md.append("| `tests/test_universe_admission_mappings.py` | 18 | 18 | 🟢 PASS | Package 5 admission mappings, venue normalizer, and effective dates |")
     md.append("| `tests/test_universe_real_source_diagnostic.py` | 15 | 12 | 🟢 PASS | Real-source 7-candidate diagnostic, parent feed provenance, and evidence replay (3 optional skipped) |")
-    md.append("| `tests/test_universe_explicit_listing_semantics.py` | 19 | 19 | 🟢 PASS | Sprint 2 explicit listing semantics, jurisdiction decoupling, and builder policy protection |")
-    md.append("| **TOTAL (Full Universe Suite)** | **224** | **221** | 🟢 **PASS** | **100% of runnable tests passing (3 commercial fixtures skipped) in 11.28s** |")
+    md.append("| `tests/test_universe_explicit_listing_semantics.py` | 21 | 21 | 🟢 PASS | Sprint 2 explicit listing semantics, jurisdiction decoupling, and builder policy protection |")
+    md.append("| **TOTAL (Full Universe Suite)** | **226** | **223** | 🟢 **PASS** | **100% of runnable tests passing (3 commercial fixtures skipped) in 16.38s** |")
 
     md.append("\n---\n")
 
