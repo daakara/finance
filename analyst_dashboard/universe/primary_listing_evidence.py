@@ -553,6 +553,7 @@ class PrimaryListingEvidenceAdapter:
                         "assigned_primary_listing": None,
                         "has_direct_primary_claim": False,
                         "is_ambiguous": False,
+                        "request_binding_verified": False,
                         "evidence_role": PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT,
                         "source_claim": f"OpenFIGI mapping returned error: {item['error']}",
                     }
@@ -597,6 +598,7 @@ class PrimaryListingEvidenceAdapter:
                     "assigned_primary_listing": None,
                     "has_direct_primary_claim": False,
                     "is_ambiguous": True,
+                    "request_binding_verified": False,
                     "evidence_role": PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT,
                     "source_claim": (
                         f"Positional request mismatch: expected symbol '{expected_sym}', but OpenFIGI response "
@@ -619,6 +621,7 @@ class PrimaryListingEvidenceAdapter:
                 else PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
             )
             assigned_primary = True if has_direct_primary_claim else None
+            request_binding_verified = bool(expected_sym is not None and ticker == expected_sym)
 
             results[ticker] = {
                 "symbol": ticker,
@@ -634,6 +637,7 @@ class PrimaryListingEvidenceAdapter:
                 "assigned_primary_listing": assigned_primary,
                 "has_direct_primary_claim": has_direct_primary_claim,
                 "is_ambiguous": is_ambiguous,
+                "request_binding_verified": request_binding_verified,
                 "evidence_role": (
                     PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
                     if has_direct_primary_claim

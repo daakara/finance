@@ -146,32 +146,38 @@ In accordance with operator instructions, existing provider entitlements and con
 - **Preserved Artifact Path:** `data/research/openfigi_reference/openfigi_three_candidates_mapping_20261017.json`
 - **Actual On-Disk Size & Digest:** 808 bytes | SHA-256: `003c995d4ce51d95573ac4fedf6afd9f368a5be356ba28e9b616b992a8f225d2`
 - **Retrieval Timestamp:** `2026-10-17T20:45:00Z` (created on disk at `2026-10-17 22:09:47 CEST`)
+- **Payload Hash Function & Role:**
+  - Cryptographic hashes provide deterministic payload integrity evidence against byte corruption, transmission truncation, or accidental local tampering.
+  - A SHA-256 digest does not serve as standalone proof of factual authenticity or semantic correctness without independent source attribution and schema verification.
 - **Version & Prose Discrepancy Reconciliation:**
-  - An earlier operator handoff summary erroneously cited `1,514 bytes` and SHA-256 `003c995d3c8c9e5bf9989ba6e1bc814545595562d9d1ae7ec982362b53589b21`, alongside a transposed ticker-to-FIGI mapping (`GOOG -> BBG009S39JX6`, `GOOGL -> BBG009S3NB30`).
-  - Forensics and filesystem inspection confirm that **no 1,514-byte artifact ever existed** on disk, in Git, or in the repository report. The authentic JSON payload written at 22:09:47 has always been 808 bytes with SHA-256 `003c995d4ce51d95573ac4fedf6afd9f368a5be356ba28e9b616b992a8f225d2`. It was never overwritten.
-  - The discrepancy was an isolated markdown prose transcription mistake in the operator response text.
+  - According to the completed source-to-adapter inspection, the prior GOOG/GOOGL reversal (`GOOG -> BBG009S39JX6`, `GOOGL -> BBG009S3NB30`) was in the operator summary text of the previous assistant handoff, not in the authentic response payload, adapter parsing logic, tests, or committed report files.
+  - Within this workspace and Git history, no 1,514-byte OpenFIGI artifact is present or preserved. The authentic JSON payload retained from retrieval has an on-disk size of 808 bytes with SHA-256 `003c995d4ce51d95573ac4fedf6afd9f368a5be356ba28e9b616b992a8f225d2`. It was never overwritten.
+  - The "1,514 bytes" and "003c995d3c8c9e5bf..." figures represented an isolated markdown prose transcription mistake in the operator response text.
 
 ##### 4.2.2 Request-to-Response Positional Trace & GOOG/GOOGL Attribution
 
-| Step | Request Job 0 | Request Job 1 | Request Job 2 |
-|:---|:---|:---|:---|
-| **Request Symbol & Filters** | `idType: "TICKER"`, `idValue: "AAPL"`, `exchCode: "US"` | `idType: "TICKER"`, `idValue: "GOOG"`, `exchCode: "US"` | `idType: "TICKER"`, `idValue: "GOOGL"`, `exchCode: "US"` |
-| **Request Job Position** | Index `0` | Index `1` | Index `2` |
-| **Response Array Item** | `items[0]["data"][0]` | `items[1]["data"][0]` | `items[2]["data"][0]` |
-| **Returned Ticker** | `AAPL` | `GOOG` | `GOOGL` |
-| **Returned Name** | `APPLE INC` | `ALPHABET INC-CL C` | `ALPHABET INC-CL A` |
-| **Security Type** | `Common Stock` | `Common Stock` | `Common Stock` |
-| **Exchange Code** | `exchCode: "US"` (National Composite) | `exchCode: "US"` (National Composite) | `exchCode: "US"` (National Composite) |
-| **Composite FIGI** | `BBG000B9XRY4` | `BBG009S3NB30` | `BBG009S39JX6` |
-| **Share Class FIGI** | `BBG001S5N8V8` | `BBG009S3NB21` | `BBG009S39JY5` |
-| **Adapter Parsed Record** | `results["AAPL"]["composite_figi"]` = `BBG000B9XRY4` | `results["GOOG"]["composite_figi"]` = `BBG009S3NB30` | `results["GOOGL"]["composite_figi"]` = `BBG009S39JX6` |
-| **Adjudication Outcome** | `primary_listing = None` (UNKNOWN) | `primary_listing = None` (UNKNOWN) | `primary_listing = None` (UNKNOWN) |
+| Step / Field | Request Job 0 (AAPL) | Request Job 1 (GOOG) | Request Job 2 (GOOGL) | Source Authority |
+|:---|:---|:---|:---|:---|
+| **Request Symbol & Filters** | `idType: "TICKER"`, `idValue: "AAPL"`, `exchCode: "US"` | `idType: "TICKER"`, `idValue: "GOOG"`, `exchCode: "US"` | `idType: "TICKER"`, `idValue: "GOOGL"`, `exchCode: "US"` | ARX Terminal Candidate Scope |
+| **Request Job Position** | Index `0` | Index `1` | Index `2` | OpenFIGI Batch Array Ordering |
+| **Response Array Item** | `items[0]["data"][0]` | `items[1]["data"][0]` | `items[2]["data"][0]` | OpenFIGI v3 Response (`api.openfigi.com`) |
+| **Returned Ticker** | `AAPL` | `GOOG` | `GOOGL` | OpenFIGI Reference Payload |
+| **Returned Name** | `APPLE INC` | `ALPHABET INC-CL C` | `ALPHABET INC-CL A` | OpenFIGI Reference Payload |
+| **Security Type** | `Common Stock` | `Common Stock` | `Common Stock` | OpenFIGI Reference Payload |
+| **Exchange Code** | `exchCode: "US"` | `exchCode: "US"` | `exchCode: "US"` | OpenFIGI Reference Payload (Composite Market Level) |
+| **Composite FIGI** | `BBG000B9XRY4` | `BBG009S3NB30` | `BBG009S39JX6` | OpenFIGI Reference Payload |
+| **Share Class FIGI** | `BBG001S5N8V8` | `BBG009S3NB21` | `BBG009S39JY5` | OpenFIGI Reference Payload |
+| **Corporate Issuer CIK** | `0000320193` (Apple Inc.) | `0001652044` (Alphabet Inc.) | `0001652044` (Alphabet Inc.) | **SEC EDGAR Form 10-K** (Not OpenFIGI) |
+| **Share Class Voting Rights** | 1 vote per share | 0 votes (Non-voting) | 1 vote per share | **Issuer Charter / 10-K** (Not OpenFIGI) |
+| **Adapter Parsed Record** | `composite_figi: "BBG000B9XRY4"` | `composite_figi: "BBG009S3NB30"` | `composite_figi: "BBG009S39JX6"` | `PrimaryListingEvidenceAdapter` |
+| **Adjudication Outcome** | `primary_listing = None` (UNKNOWN) | `primary_listing = None` (UNKNOWN) | `primary_listing = None` (UNKNOWN) | ARX Terminal Rule R06 Adjudicator |
 
 ##### 4.2.3 Analysis of OpenFIGI Attribution Findings
 1. `exchCode: "US"` represents a **national composite market code**, not an operating exchange MIC (such as `XNAS` or `XNYS`).
 2. OpenFIGI's official data dictionary confirms that the free API schema does not contain a `primary_listing`, `primaryExchange`, or `primaryListing` attribute.
 3. **Distinct Instrument & Share Class Isolation:** `compositeFIGI` and `shareClassFIGI` remain strictly separate fields. For `GOOG` (Class C non-voting), `compositeFIGI` is `BBG009S3NB30` and `shareClassFIGI` is `BBG009S3NB21`. For `GOOGL` (Class A voting), `compositeFIGI` is `BBG009S39JX6` and `shareClassFIGI` is `BBG009S39JY5`. Issuer CIK (`0001652044`) is strictly corporate-level and is not used as a share-class identifier.
-4. Consequently, OpenFIGI mapping provides an attributable identifier cross-reference, but **does not supply primary listing evidence**. Candidates strictly retain `assigned_primary_listing = None` (`NARROWER_FACT_ONLY`).
+4. **Independent Attribution of Fields:** CIKs and voting rights are attributed separately to SEC Form 10-K and issuer corporate governance charters; they are not part of the OpenFIGI payload. OpenFIGI supplies identifier cross-references only.
+5. Consequently, OpenFIGI mapping provides an attributable identifier cross-reference, but **does not supply primary listing evidence**. Candidates strictly retain `assigned_primary_listing = None` (`NARROWER_FACT_ONLY`).
 
 #### 4.3 Bounded Alpaca Asset Retrieval & Field Precision
 
@@ -312,9 +318,9 @@ Unconfigured or untested external services represent **configuration and access 
 
 | Test Suite / Scope | Test Count | Status | Notes |
 |:---|:---:|:---:|:---|
-| **Primary-Listing Evidence Suite** (`tests/test_universe_primary_listing_evidence.py`) | **55 passed** | 55 passed, 0 skipped | Covers all 9 primary listing invariants, multi-match disambiguation, request association, and FIGI isolation. |
-| **Universe Test Suite** (`tests/test_universe_*.py`) | **301 collected** | 298 passed, 3 skipped | Covers all 10 universe test modules across admission, binding, validation, and primary-listing evidence. |
-| **Selected Tier 2c Suite** (`pytest -m tier2c`) | **406 selected** | 403 passed, 3 skipped | Selects all tests marked with `@pytest.mark.tier2c` across data fetchers, resilience, OpenFIGI rate limiters, and universe modules. (Reconciles earlier counts, expanded by OpenFIGI disambiguation regression test). |
+| **Primary-Listing Evidence Suite** (`tests/test_universe_primary_listing_evidence.py`) | **57 passed** | 57 passed, 0 skipped | Covers all 9 primary listing invariants, authentic association, clean-checkout synthetic safeguards, multi-match disambiguation, and FIGI isolation. |
+| **Universe Test Suite** (`tests/test_universe_*.py`) | **303 collected** | 300 passed, 3 skipped | Covers all 10 universe test modules across admission, binding, validation, and primary-listing evidence. |
+| **Selected Tier 2c Suite** (`pytest -m tier2c`) | **409 passed** | 409 passed, 2243 deselected | Selects all tests marked with `@pytest.mark.tier2c` across data fetchers, resilience, OpenFIGI rate limiters, and universe modules. (Note: deselected tests are not failures). |
 
 ---
 
