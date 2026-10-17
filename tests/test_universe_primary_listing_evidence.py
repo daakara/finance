@@ -19,7 +19,11 @@ Covers all 9 required verification invariants:
 
 from __future__ import annotations
 
+from pathlib import Path
 import pytest
+
+from analyst_dashboard.universe.adapters.models import SourceFeedType
+from analyst_dashboard.universe.adapters.nasdaq_trader import parse_nasdaq_trader_directory
 
 from analyst_dashboard.universe.admission_mapping import (
     AttributableFieldEvidence,
@@ -1233,6 +1237,114 @@ class TestPrimaryListingEvidenceAdjudication:
             assert prop.proposed_entity.provisional_security_id.startswith("PROV_SEC_")
             assert prop.proposed_entity.is_adopted_production_id is False
             assert prop.proposed_entity.status == "PROVISIONAL_NON_PRODUCTION"
+
+
+# =====================================================================
+# 10. Primary-Exchange Source Discovery & Resolution Tests
+# =====================================================================
+
+class TestPrimaryExchangeSourceDiscovery:
+    """
+    Sprint 2: Primary-Exchange Source Discovery & Evidence Resolution.
+    Verifies that:
+    1. TradingSystemAddsDeletes.txt parser extracts Primary Listing Market column.
+    2. Daily delta feed does not contain static candidates (AAPL, GOOG, GOOGL absent).
+    3. Official exchange quote info payloads (api.nasdaq.com) extract venue and listing status.
+    4. 'exchange: NASDAQ-GS' and 'isNasdaqListed: true' classify as narrower listing facts only (assigned_primary_listing is None).
+    5. Synthetic direct assertion payload with explicit primaryExchange assigns assigned_primary_listing = True.
+    6. Non-Nasdaq control quote (IBM on NYSE) parsed accurately.
+    7. Multi-class candidates GOOG and GOOGL evaluate under identical primary listing standards.
+    8. Fail-closed replay prevents admission and builder execution.
+    """
+
+    def test_parse_nasdaq_adds_deletes_directory(self):
+        """Verifies parsing of TradingSystemAddsDeletes.txt and extraction of Primary Listing Market."""
+        path = Path("data/research/exchange_reference/TradingSystemAddsDeletes_20261016.txt")
+        if not path.exists():
+            pytest.skip("TradingSystemAddsDeletes_20261016.txt not present in workspace")
+
+        content = path.read_bytes()
+        parsed = parse_nasdaq_trader_directory(content, filename_hint="TradingSystemAddsDeletes.txt")
+        assert parsed.feed_type == SourceFeedType.NASDAQ_ADDS_DELETES
+        assert parsed.data_row_count > 0
+
+        # Verify that candidate stocks are absent from the daily delta feed
+        symbols = {r.raw_values.get("raw_symbol") for r in parsed.rows if not r.is_malformed}
+        assert "AAPL" not in symbols
+        assert "GOOG" not in symbols
+        assert "GOOGL" not in symbols
+
+        # Verify that a row with G or Z has primary_listing_market populated
+        for r in parsed.rows:
+            if not r.is_malformed and r.raw_values.get("raw_symbol") == "CTY":
+                assert r.raw_values.get("primary_listing_market") == "G"
+                assert r.raw_values.get("venue_exchange") == "NASDAQ"
+
+    def test_parse_official_quote_info_narrower_fact(self):
+        """Verifies that authentic api.nasdaq.com payloads extract narrower listing facts and retain None."""
+        for sym in ("AAPL", "GOOG", "GOOGL"):
+            path = Path(f"data/research/exchange_reference/nasdaq_quote_info_{sym}_20261017.json")
+            if not path.exists():
+                pytest.skip(f"Quote info file for {sym} not present")
+
+            parsed = PrimaryListingEvidenceAdapter.parse_exchange_quote_info_payload(path.read_text(encoding="utf-8"))
+            assert parsed["symbol"] == sym
+            assert parsed["exchange"] == "NASDAQ-GS"
+            assert parsed["is_nasdaq_listed"] is True
+            assert parsed["has_direct_primary_claim"] is False
+            assert parsed["classification"] == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+            assert parsed["assigned_primary_listing"] is None
+            assert parsed["evidence_role"] == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+
+    def test_parse_official_quote_info_control_nyse(self):
+        """Verifies that non-Nasdaq control quote (IBM) is extracted accurately without false positive."""
+        path = Path("data/research/exchange_reference/nasdaq_quote_info_IBM_20261017.json")
+        if not path.exists():
+            pytest.skip("Quote info file for IBM not present")
+
+        parsed = PrimaryListingEvidenceAdapter.parse_exchange_quote_info_payload(path.read_text(encoding="utf-8"))
+        assert parsed["symbol"] == "IBM"
+        assert parsed["exchange"] == "NYSE"
+        assert parsed["is_nasdaq_listed"] is False
+        assert parsed["assigned_primary_listing"] is None
+
+    def test_synthetic_direct_primary_claim_contract(self):
+        """Verifies contract behavior when an authentic or synthetic payload contains an explicit primaryExchange claim."""
+        synthetic_payload = {
+            "data": {
+                "symbol": "AAPL",
+                "companyName": "Apple Inc. Common Stock",
+                "stockType": "Common Stock",
+                "exchange": "NASDAQ-GS",
+                "primaryExchange": "NASDAQ",
+                "isNasdaqListed": True,
+            }
+        }
+        parsed = PrimaryListingEvidenceAdapter.parse_exchange_quote_info_payload(synthetic_payload)
+        assert parsed["symbol"] == "AAPL"
+        assert parsed["has_direct_primary_claim"] is True
+        assert parsed["classification"] == PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM
+        assert parsed["assigned_primary_listing"] is True
+        assert parsed["evidence_role"] == PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
+
+    def test_adjudicator_preserves_three_candidates_unknown_on_narrow_facts(self):
+        """Verifies that adjudicating three candidates with authentic exchange quote info preserves primary_listing as UNKNOWN (None)."""
+        three_records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        results = PrimaryListingAdjudicator.adjudicate_all_candidates(
+            three_records,
+            candidate_symbols=("AAPL", "GOOGL", "GOOG"),
+        )
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            res = results[sym]
+            assert res.assigned_primary_listing is None
+            assert res.adjudication_status == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+            assert res.is_direct_assertion is False
+            assert res.is_derived_claim is False
+            assert res.adjudication_role == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+
+        # Class separation check: GOOGL and GOOG evaluated under identical standards
+        assert results["GOOGL"].assigned_primary_listing == results["GOOG"].assigned_primary_listing
+
 
 
 

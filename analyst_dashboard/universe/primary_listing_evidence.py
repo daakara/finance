@@ -329,6 +329,66 @@ class PrimaryListingEvidenceAdapter:
         return True, None
 
     @classmethod
+    def parse_exchange_quote_info_payload(
+        cls,
+        payload: Dict[str, Any] | str | bytes,
+        source_url: str = "https://api.nasdaq.com/api/quote/{symbol}/info?assetclass=stocks",
+        retrieval_timestamp_utc: str = "2026-10-17T19:50:00Z",
+    ) -> Dict[str, Any]:
+        """
+        Parses official exchange quote info response payload (e.g. api.nasdaq.com).
+        Extracts exchange listing venue, company name, stock type, and listed status.
+        Enforces strict non-inference invariant:
+        'exchange: NASDAQ-GS' and 'isNasdaqListed: true' establish an active exchange
+        listing fact and market tier, but do NOT constitute direct identification of
+        designated primary listing under Rule R06.
+        """
+        if isinstance(payload, (str, bytes)):
+            text = payload.decode("utf-8") if isinstance(payload, bytes) else payload
+            data = json.loads(text)
+        else:
+            data = payload
+
+        quote_data = data.get("data", {}) or {}
+        symbol = quote_data.get("symbol", "")
+        company_name = quote_data.get("companyName", "")
+        stock_type = quote_data.get("stockType", "")
+        exchange = quote_data.get("exchange", "")
+        is_nasdaq_listed = quote_data.get("isNasdaqListed", False)
+
+        has_direct_primary_claim = "primaryExchange" in quote_data or "primaryListing" in quote_data
+
+        classification = (
+            PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM
+            if has_direct_primary_claim
+            else PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+        )
+        assigned_primary = True if has_direct_primary_claim else None
+
+        return {
+            "symbol": symbol,
+            "company_name": company_name,
+            "stock_type": stock_type,
+            "exchange": exchange,
+            "is_nasdaq_listed": is_nasdaq_listed,
+            "source_url": source_url,
+            "retrieval_timestamp_utc": retrieval_timestamp_utc,
+            "classification": classification,
+            "assigned_primary_listing": assigned_primary,
+            "has_direct_primary_claim": has_direct_primary_claim,
+            "source_claim": (
+                f"Official exchange quote endpoint reports symbol='{symbol}', exchange='{exchange}', "
+                f"isNasdaqListed={is_nasdaq_listed}. Establishes active exchange listing fact; "
+                "does not assert designated primary listing."
+            ),
+            "evidence_role": (
+                PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
+                if has_direct_primary_claim
+                else PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+            ),
+        }
+
+    @classmethod
     def get_operator_sec_contact_status(cls) -> Dict[str, Any]:
         """
         Inspects environment for a verified operator-supplied SEC contact identity.
