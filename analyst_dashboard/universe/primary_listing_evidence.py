@@ -142,6 +142,11 @@ class AttributablePrimaryListingEvidenceRecord:
             if is_real
             else EvidenceNature.POLICY_DERIVED_ASSERTION
         )
+        rule = (
+            "NASDAQ_EXCHANGE_DIRECTORY_OBSERVATION"
+            if self.filing_form == "NASDAQ_LISTED_DIRECTORY"
+            else "SEC_EDGAR_SUBMISSIONS_API_METADATA_OBSERVATION"
+        )
         return AttributableFieldEvidence(
             field_name="primary_listing",
             asserted_value=self.assigned_primary_listing,
@@ -150,7 +155,7 @@ class AttributablePrimaryListingEvidenceRecord:
             source_record_locator=self.section_table_locator,
             source_content_hash=self.raw_response_sha256,
             observation_timestamp_utc=self.retrieval_timestamp_utc,
-            transformation_rule="SEC_EDGAR_SUBMISSIONS_API_METADATA_OBSERVATION",
+            transformation_rule=rule,
             mapping_version="1.0.0",
             does_certify_claim=is_real,
         )
@@ -167,6 +172,8 @@ class PrimaryListingEvidenceAdapter:
     """
 
     DEFAULT_EVIDENCE_PATH = Path("data/research/primary_listing_evidence/seven_candidates_primary_listing_evidence.json")
+    DEFAULT_THREE_CANDIDATES_EVIDENCE_PATH = Path("data/research/primary_listing_evidence/three_candidates_listing_evidence.json")
+    DEFAULT_NASDAQ_DIRECTORY_PATH = Path("data/research/exchange_reference/nasdaqlisted_20261017.txt")
 
     AUTHORITATIVE_CANDIDATE_CIK_MAPPING = {
         "AAPL": "0000320193",
@@ -288,6 +295,17 @@ class PrimaryListingEvidenceAdapter:
             )
 
         return records
+
+    @classmethod
+    def load_three_candidate_evidence(
+        cls,
+        evidence_path: Optional[Path] = None,
+    ) -> Dict[str, AttributablePrimaryListingEvidenceRecord]:
+        """
+        Loads authentic three-candidate listing evidence (AAPL, GOOGL, GOOG).
+        """
+        target = evidence_path or cls.DEFAULT_THREE_CANDIDATES_EVIDENCE_PATH
+        return cls.load_reference_evidence(evidence_path=target)
 
     @classmethod
     def enrich_candidate_proposals(

@@ -663,3 +663,133 @@ class TestIssuerAndInstrumentAssociationBinding:
         assert dds.operating_mic is None
         assert dds.assigned_primary_listing is None
 
+
+# =====================================================================
+# 11. Three-Candidate (AAPL, GOOG, GOOGL) Evidence Acquisition & Replay
+# =====================================================================
+
+class TestThreeCandidateListingEvidenceAcquisition:
+    """
+    Verifies authentic official exchange reference evidence acquisition,
+    multi-class Class A / Class C row separation, unknown preservation,
+    and fail-closed replay for AAPL, GOOGL, and GOOG.
+    """
+
+    def test_three_candidate_dataset_loads_and_verifies_hashes(self):
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        assert len(records) == 3
+        assert set(records.keys()) == {"AAPL", "GOOGL", "GOOG"}
+
+        nasdaq_file = PrimaryListingEvidenceAdapter.DEFAULT_NASDAQ_DIRECTORY_PATH
+        assert nasdaq_file.exists(), f"Missing exchange reference file: {nasdaq_file}"
+
+        for sym, rec in records.items():
+            assert rec.cik in ("0000320193", "0001652044")
+            assert rec.source_url == "http://www.nasdaqtrader.com/dynamic/symdir/nasdaqlisted.txt"
+            assert rec.filing_form == "NASDAQ_LISTED_DIRECTORY"
+            assert len(rec.raw_response_sha256) == 64
+            assert rec.classification == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+            assert rec.assigned_primary_listing is None
+            ev_field = rec.to_attributable_field_evidence()
+            assert ev_field.transformation_rule == "NASDAQ_EXCHANGE_DIRECTORY_OBSERVATION"
+
+    def test_nasdaq_directory_raw_row_extraction(self):
+        nasdaq_file = PrimaryListingEvidenceAdapter.DEFAULT_NASDAQ_DIRECTORY_PATH
+        lines = nasdaq_file.read_text(encoding="utf-8").splitlines()
+
+        aapl_lines = [l for l in lines if l.startswith("AAPL|")]
+        goog_lines = [l for l in lines if l.startswith("GOOG|")]
+        googl_lines = [l for l in lines if l.startswith("GOOGL|")]
+
+        assert len(aapl_lines) == 1
+        assert len(goog_lines) == 1
+        assert len(googl_lines) == 1
+
+        # AAPL: Apple Inc. - Common Stock, Market Category Q (Nasdaq Global Select)
+        assert aapl_lines[0] == "AAPL|Apple Inc. - Common Stock|Q|N|N|40|N|N"
+        # GOOG: Alphabet Inc. - Class C Capital Stock, Market Category Q
+        assert goog_lines[0] == "GOOG|Alphabet Inc. - Class C Capital Stock|Q|N|N|40|N|N"
+        # GOOGL: Alphabet Inc. - Class A Common Stock, Market Category Q
+        assert googl_lines[0] == "GOOGL|Alphabet Inc. - Class A Common Stock|Q|N|N|40|N|N"
+
+    def test_alphabet_multi_class_separation_and_voting_rights_isolation(self):
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        googl = records["GOOGL"]
+        goog = records["GOOG"]
+
+        assert googl.cik == goog.cik == "0001652044"
+        assert googl.share_class == "CLASS_A"
+        assert goog.share_class == "CLASS_C"
+        assert "Class A" in googl.instrument_title
+        assert "Class C" in goog.instrument_title
+        assert googl.is_multi_class is True
+        assert goog.is_multi_class is True
+
+        # Neither class asserts primary listing over the other
+        assert googl.assigned_primary_listing is None
+        assert goog.assigned_primary_listing is None
+        assert any("voting" in p.lower() for p in googl.inferences_prohibited)
+        assert any("voting" in p.lower() for p in goog.inferences_prohibited)
+
+    def test_three_candidate_unknown_primary_listing_preservation(self):
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        for sym, rec in records.items():
+            assert rec.assigned_primary_listing is None
+
+        reqs = ValidationRequirements.create_listing_jurisdiction_profile(
+            allowed_listing_countries={"USA"},
+            require_selected_us_assessment=True,
+        )
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            raw_rec = {
+                "security_id": f"PROV_SEC_{sym}",
+                "symbol": sym,
+                "exchange": "NASDAQ",
+                "security_type": "Common Stock",
+                "listing_status": "ACTIVE",
+                "currency": "USD",
+                "listing_country": "USA",
+                "incorporation_country": "USA",
+                "selected_us_assessment_listing": True,
+                "primary_listing": None,
+                "asset_class": "EQUITY",
+                "listing_date": None,
+                "delisting_date": None,
+                "trading_suspension_date": None,
+            }
+            val_res = UniverseInputValidator.validate_record(raw_rec, reqs)
+            assert val_res.status == ValidationStatus.VALIDATION_PASSED
+            with pytest.raises(ValueError, match="Cannot construct SourceSecurity without explicit, validated boolean value for 'primary_listing'"):
+                to_source_security(val_res)
+
+    def test_three_candidate_replay_fails_closed_without_synthetic_substitution(self):
+        ledger = build_seven_candidate_proposal()
+        three_records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+
+        replay_report = PrimaryListingReplayEngine.run_replay(
+            ledger,
+            three_records,
+            is_simulation=False,
+        )
+
+        assert replay_report.is_simulation is False
+        assert replay_report.production_adoption_allowed is False
+        assert replay_report.is_batch_valid is False
+        assert replay_report.total_evaluated == 7
+        assert replay_report.conversion_count == 0
+        assert replay_report.conversion_blocked_count == 7
+        assert replay_report.batch_conversion_count == 0
+        assert replay_report.batch_admitted_count == 0
+        assert replay_report.converted_source_securities == []
+        assert replay_report.builder_status == "NOT_RUN"
+        assert replay_report.builder_handoff_permitted is False
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            res = replay_report.candidate_results[sym]
+            assert res.conversion_permitted is False
+            assert res.evidence_classification == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+        for sym in ("TSM", "ACCS", "DDS", "AACIU"):
+            res = replay_report.candidate_results[sym]
+            assert res.conversion_permitted is False
+            assert res.evidence_classification == PrimaryListingEvidenceClassification.EVIDENCE_UNAVAILABLE
+
+
