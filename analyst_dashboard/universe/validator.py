@@ -150,6 +150,10 @@ class ValidationRequirements:
         "listing_date",
         "delisting_date",
         "trading_suspension_date",
+        "listing_country",
+        "incorporation_country",
+        "country_of_incorporation",
+        "selected_us_assessment_listing",
     })
     allowed_values: Dict[str, Set[Any]] = field(default_factory=dict)
     type_expectations: Dict[str, type] = field(default_factory=lambda: {
@@ -160,7 +164,11 @@ class ValidationRequirements:
         "listing_status": str,
         "currency": str,
         "country": str,
+        "listing_country": str,
+        "incorporation_country": str,
+        "country_of_incorporation": str,
         "primary_listing": bool,
+        "selected_us_assessment_listing": bool,
         "asset_class": str,
         "listing_date": str,
         "delisting_date": str,
@@ -170,6 +178,84 @@ class ValidationRequirements:
     allow_identical_duplicates: bool = False
     require_evidence_reference: bool = False
     demand_established_evidence: bool = True
+
+    @classmethod
+    def create_legacy_requirements(cls, **kwargs) -> ValidationRequirements:
+        """Returns standard legacy validation requirements."""
+        return cls(**kwargs)
+
+    @classmethod
+    def create_listing_jurisdiction_profile(
+        cls,
+        allowed_listing_countries: Optional[Set[str]] = None,
+        require_selected_us_assessment: bool = True,
+        allowed_exchanges: Optional[Set[str]] = None,
+        allowed_asset_classes: Optional[Set[str]] = None,
+        require_evidence_reference: bool = False,
+        demand_established_evidence: bool = True,
+    ) -> ValidationRequirements:
+        """
+        Explicit listing-jurisdiction validation profile.
+
+        Validates candidate records based on explicit listing venue jurisdiction (listing_country)
+        and designated US assessment line (selected_us_assessment_listing) rather than
+        conflating statutory incorporation country or global primary listing.
+        """
+        allowed_vals: Dict[str, Set[Any]] = {}
+        if allowed_listing_countries is not None:
+            allowed_vals["listing_country"] = set(allowed_listing_countries)
+        if require_selected_us_assessment:
+            allowed_vals["selected_us_assessment_listing"] = {True}
+        if allowed_exchanges is not None:
+            allowed_vals["exchange"] = set(allowed_exchanges)
+        if allowed_asset_classes is not None:
+            allowed_vals["asset_class"] = set(allowed_asset_classes)
+
+        return cls(
+            required_fields={
+                "security_id",
+                "symbol",
+                "exchange",
+                "security_type",
+                "listing_status",
+                "currency",
+                "listing_country",
+                "selected_us_assessment_listing",
+                "asset_class",
+            },
+            permitted_null_fields={
+                "listing_date",
+                "delisting_date",
+                "trading_suspension_date",
+                "country",
+                "incorporation_country",
+                "country_of_incorporation",
+                "primary_listing",
+            },
+            allowed_values=allowed_vals,
+            type_expectations={
+                "security_id": str,
+                "symbol": str,
+                "exchange": str,
+                "security_type": str,
+                "listing_status": str,
+                "currency": str,
+                "country": str,
+                "listing_country": str,
+                "incorporation_country": str,
+                "country_of_incorporation": str,
+                "primary_listing": bool,
+                "selected_us_assessment_listing": bool,
+                "asset_class": str,
+                "listing_date": str,
+                "delisting_date": str,
+                "trading_suspension_date": str,
+            },
+            uniqueness_keys=("security_id",),
+            allow_identical_duplicates=False,
+            require_evidence_reference=require_evidence_reference,
+            demand_established_evidence=demand_established_evidence,
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -445,7 +531,7 @@ class UniverseInputValidator:
                 # Deterministic whitespace trimming
                 norm_str = raw_val.strip()
                 # Uppercase standard ticker/exchange/country/currency fields deterministically
-                if field_name in {"symbol", "exchange", "currency", "country", "asset_class", "security_type", "listing_status"}:
+                if field_name in {"symbol", "exchange", "currency", "country", "listing_country", "incorporation_country", "country_of_incorporation", "asset_class", "security_type", "listing_status"}:
                     norm_str = norm_str.upper()
                 validated_values[field_name] = norm_str
 
@@ -768,18 +854,38 @@ def to_source_security(record_result: RecordValidationResult) -> SourceSecurity:
     if vals is None:
         raise ValueError("Record passed validation but validated_values is None.")
 
-    # All fields consumed by SourceSecurity must be explicitly present and non-empty
-    mandatory_fields = [
-        "security_id",
-        "symbol",
-        "exchange",
-        "security_type",
-        "listing_status",
-        "currency",
-        "country",
-        "primary_listing",
-        "asset_class",
-    ]
+    reqs = record_result.requirements
+    is_listing_profile = (
+        reqs is not None
+        and "listing_country" in reqs.required_fields
+        and "country" not in reqs.required_fields
+    )
+
+    if is_listing_profile:
+        mandatory_fields = [
+            "security_id",
+            "symbol",
+            "exchange",
+            "security_type",
+            "listing_status",
+            "currency",
+            "listing_country",
+            "selected_us_assessment_listing",
+            "asset_class",
+        ]
+    else:
+        mandatory_fields = [
+            "security_id",
+            "symbol",
+            "exchange",
+            "security_type",
+            "listing_status",
+            "currency",
+            "country",
+            "primary_listing",
+            "asset_class",
+        ]
+
     for f in mandatory_fields:
         if f not in vals or vals[f] is None:
             raise ValueError(
@@ -805,17 +911,49 @@ def to_source_security(record_result: RecordValidationResult) -> SourceSecurity:
                 f"Explicit null (None) required for absence of event."
             )
 
-    return SourceSecurity(
-        security_id=str(vals["security_id"]),
-        symbol=str(vals["symbol"]),
-        exchange=str(vals["exchange"]),
-        security_type=str(vals["security_type"]),
-        listing_status=str(vals["listing_status"]),
-        currency=str(vals["currency"]),
-        country=str(vals["country"]),
-        primary_listing=bool(vals["primary_listing"]),
-        asset_class=str(vals["asset_class"]),
-        listing_date=vals["listing_date"],
-        delisting_date=vals["delisting_date"],
-        trading_suspension_date=vals["trading_suspension_date"],
-    )
+    # Canonical incorporation country handling
+    inc_country = vals.get("incorporation_country") or vals.get("country_of_incorporation")
+
+    if is_listing_profile:
+        # Explicit listing jurisdiction profile:
+        # country is not assumed from listing_country; missing legacy country remains None
+        # primary_listing is NOT substituted by selected_us_assessment_listing; defaults to False if unevidenced
+        return SourceSecurity(
+            security_id=str(vals["security_id"]),
+            symbol=str(vals["symbol"]),
+            exchange=str(vals["exchange"]),
+            security_type=str(vals["security_type"]),
+            listing_status=str(vals["listing_status"]),
+            currency=str(vals["currency"]),
+            country=str(vals["country"]) if "country" in vals and vals["country"] is not None else None,
+            primary_listing=bool(vals["primary_listing"]) if "primary_listing" in vals and vals["primary_listing"] is not None else False,
+            asset_class=str(vals["asset_class"]),
+            listing_date=vals["listing_date"],
+            delisting_date=vals["delisting_date"],
+            trading_suspension_date=vals["trading_suspension_date"],
+            listing_country=str(vals["listing_country"]),
+            incorporation_country=str(inc_country) if inc_country is not None else None,
+            selected_us_assessment_listing=bool(vals["selected_us_assessment_listing"]),
+        )
+    else:
+        return SourceSecurity(
+            security_id=str(vals["security_id"]),
+            symbol=str(vals["symbol"]),
+            exchange=str(vals["exchange"]),
+            security_type=str(vals["security_type"]),
+            listing_status=str(vals["listing_status"]),
+            currency=str(vals["currency"]),
+            country=str(vals["country"]),
+            primary_listing=bool(vals["primary_listing"]),
+            asset_class=str(vals["asset_class"]),
+            listing_date=vals["listing_date"],
+            delisting_date=vals["delisting_date"],
+            trading_suspension_date=vals["trading_suspension_date"],
+            listing_country=str(vals["listing_country"]) if "listing_country" in vals and vals["listing_country"] is not None else None,
+            incorporation_country=str(inc_country) if inc_country is not None else None,
+            selected_us_assessment_listing=(
+                bool(vals["selected_us_assessment_listing"])
+                if "selected_us_assessment_listing" in vals and vals["selected_us_assessment_listing"] is not None
+                else None
+            ),
+        )

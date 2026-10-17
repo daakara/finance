@@ -218,10 +218,24 @@ class ListingSemanticAttributes:
     # Evidence bindings
     evidence_references: List[AttributableFieldEvidence] = field(default_factory=list)
 
+    @property
+    def country_of_incorporation(self) -> Optional[str]:
+        """Canonical alias for incorporation_country."""
+        return self.incorporation_country
+
+    def to_source_security_kwargs(self) -> Dict[str, Any]:
+        """Produces keyword arguments for SourceSecurity explicit fields."""
+        return {
+            "listing_country": self.listing_country,
+            "incorporation_country": self.incorporation_country,
+            "selected_us_assessment_listing": self.selected_us_assessment_listing,
+        }
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "listing_country": self.listing_country,
             "incorporation_country": self.incorporation_country,
+            "country_of_incorporation": self.country_of_incorporation,
             "domicile_country": self.domicile_country,
             "contract_country": self.contract_country,
             "selected_us_assessment_listing": self.selected_us_assessment_listing,

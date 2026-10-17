@@ -1,7 +1,7 @@
 # ARX Terminal — Sprint 2 Real-Source Evidence Gap Report
 **Bounded Evidence Handoff, Provenance Reconciliation & Execution-Truth Audit for 7-Candidate Sample**
 
-- **Execution Timestamp**: `2026-10-17T08:47:16.863645+00:00`
+- **Execution Timestamp**: `2026-10-17T10:27:29.694028+00:00`
 - **Evaluated Candidates**: `AAPL, GOOG, GOOGL, TSM, ACCS, DDS, AACIU` (7 records)
 - **Baseline Admission Outcome**: `REVOKED (VALIDATION_FAILED)`
 - **Evidence-Replay Outcome**: `REVOKED (VALIDATION_FAILED)` (0 admissions, builder strictly NOT_RUN)
@@ -18,6 +18,7 @@ acquired attributable reference evidence (OpenFIGI, Yahoo Finance quote metadata
 and the strict admission requirements enforced by `UniverseInputValidator` and `SourceSecurity` conversion.
 
 > [!IMPORTANT]
+
 > **Diagnostic Acceptance**: Zero admissions is the truthful and expected diagnostic outcome across both baseline 
 > and evidence-replay passes. Attributable currency (`USD`) is available in enriched replay (when local research evidence is loaded), 
 > while omitted across original raw directory feeds. Reference evidence supplies active provider asset status (`ACTIVE`), 
@@ -67,6 +68,7 @@ Replay is explicitly qualified as **mixed-time reference enrichment** (retrieved
 | **Instrument Identity & Taxonomy** (`openfigi_sample/`) | OpenFIGI v3 Mapping API (`v3/mapping`) | Yes (public API) | None (zero credentials) | NOT ESTABLISHED (Raw batch envelope distribution unverified) | EXCLUDED from git tree (`git rm --cached`) | Retained locally on disk (`data/research/openfigi_sample/`) |
 
 > [!NOTE]
+
 > **Data Sharing & Security Integrity**: All reference artifacts were audited against sharing terms. 
 > Public accessibility does not grant redistribution rights, and absence of credentials does not establish sharing authorization. 
 > Raw commercial payloads are excluded from Git tracking and preserved locally on disk under permitted research use. 
@@ -97,13 +99,13 @@ Processing stages are strictly decoupled across the pipeline:
 
 | Symbol | CIK | Parent Feeds / Locators | Exchange (Resolved) | OpenFIGI Subtype | Baseline Executed Issues | Replay Executed Issues | Batch Admission State |
 |:---|:---:|:---|:---:|:---:|:---|:---|:---:|
-| **AAPL** | `0000320193` | SEC #1; Dir #24 | `NASDAQ` | `Common Stock` | `currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD` | `primary_listing: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD` | 🔴 `REVOKED` |
-| **GOOGL** | `0001652044` | SEC #2; Dir #2153 | `NASDAQ` | `Common Stock` | `currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD` | `primary_listing: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD` | 🔴 `REVOKED` |
-| **GOOG** | `0001652044` | SEC #7475; Dir #2152 | `NASDAQ` | `Common Stock` | `currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD` | `primary_listing: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD` | 🔴 `REVOKED` |
-| **TSM** | `0001046179` | SEC #6919; Dir #6791 | `NYSE` | `Depositary Receipt` | `currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | `primary_listing: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | 🔴 `REVOKED` |
-| **ACCS** | `0000843006` | SEC #5696; Dir #51 | `AMEX` | `Common Stock` | `__source_conflict__: CONFLICTING_MAPPING, currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | `__source_conflict__: CONFLICTING_MAPPING, primary_listing: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | 🔴 `REVOKED` |
-| **DDS** | `0000028917` | SEC #957; Dir #1641 | `TXSE` | `Common Stock` | `__source_conflict__: CONFLICTING_MAPPING, currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | `__source_conflict__: CONFLICTING_MAPPING, primary_listing: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | 🔴 `REVOKED` |
-| **AACIU** | `0002092897` | SEC #10187; Dir #5 | `NASDAQ` | `Unit` | `currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD` | `primary_listing: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD` | 🔴 `REVOKED` |
+| **AAPL** | `0000320193` | SEC #1; Dir #24 | `NASDAQ` | `N/A` | `listing_status: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD` | `listing_status: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, currency: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD` | 🔴 `REVOKED` |
+| **GOOGL** | `0001652044` | SEC #2; Dir #2153 | `NASDAQ` | `N/A` | `listing_status: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD` | `listing_status: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, currency: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD` | 🔴 `REVOKED` |
+| **GOOG** | `0001652044` | SEC #7475; Dir #2152 | `NASDAQ` | `N/A` | `listing_status: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD` | `listing_status: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, currency: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD` | 🔴 `REVOKED` |
+| **TSM** | `0001046179` | SEC #6919; Dir #6791 | `NYSE` | `N/A` | `listing_status: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | `listing_status: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, currency: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | 🔴 `REVOKED` |
+| **ACCS** | `0000843006` | SEC #5696; Dir #51 | `AMEX` | `N/A` | `__source_conflict__: CONFLICTING_MAPPING, listing_status: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | `__source_conflict__: CONFLICTING_MAPPING, listing_status: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, currency: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | 🔴 `REVOKED` |
+| **DDS** | `0000028917` | SEC #957; Dir #1641 | `TXSE` | `N/A` | `__source_conflict__: CONFLICTING_MAPPING, listing_status: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | `__source_conflict__: CONFLICTING_MAPPING, listing_status: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, currency: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | 🔴 `REVOKED` |
+| **AACIU** | `0002092897` | SEC #10187; Dir #5 | `NASDAQ` | `N/A` | `listing_status: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD` | `listing_status: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, currency: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD` | 🔴 `REVOKED` |
 
 #### Static Canonical Rule Compatibility Observations (Not Executed by Builder)
 
@@ -247,6 +249,36 @@ Existing contract fields in `contracts.py` and `builder.py` have exact operation
 2. **`SourceSecurity.primary_listing`**: Defined as a boolean flag requiring global primary quotation line under Rule R06. 
    - *Schema Limitation*: Cross-listed securities and ADRs have their global primary listing on foreign exchanges (TSM on TWSE: 2330). Forcing `primary_listing = True` makes a false market assertion, while omitting it fails admission. Decoupling `selected_us_assessment_listing` resolves this boundary.
 
+#### Side-by-Side Candidate Evaluation (Legacy vs. Explicit Listing Semantics)
+
+| Candidate | Legacy Country / Primary Listing | Explicit Listing Country | Incorporation / Domicile | Selected Assessment Listing | Global Primary Listing | Remaining Admission Status |
+|:---|:---|:---:|:---:|:---:|:---:|:---|
+| **AAPL** | `country: "USA"` / `primary_listing: True` | `USA` | `USA` (CA) | `True` | `True` | 🔴 `REVOKED (UNADMITTED)`: Production identity unadopted; intraday regulatory halt unevidenced. |
+| **GOOGL** | `country: "USA"` / `primary_listing: True` | `USA` | `USA` (DE) | `True` | `True` | 🔴 `REVOKED (UNADMITTED)`: Production identity unadopted; market data stale (2026-10-12). |
+| **GOOG** | `country: "USA"` / `primary_listing: True` | `USA` | `USA` (DE) | `True` | `True` | 🔴 `REVOKED (UNADMITTED)`: Production identity unadopted; 0 market data bars in local store. |
+| **TSM** | *Distortion Dilemma*: `country: "USA"` (false domicile) vs `"Taiwan"` (rejected); `primary_listing: True` (false global primary) vs `False` (rejected) | `USA` | `TAIWAN` (F5) | `True` | `False` (TWSE: 2330) | 🔴 `REVOKED (UNADMITTED)`: Production identity unadopted; R02 Depositary Receipt (ADR); market data stale. |
+| **ACCS** | `country: "USA"` / `primary_listing: True` | `USA` | `USA` (NC) | `True` | `True` | 🔴 `REVOKED (UNADMITTED)`: Production identity unadopted; R04 venue allowlist (AMEX); 0 market data bars. |
+| **DDS** | `country: "USA"` / `primary_listing: True` | `USA` | `USA` (TX/AR) | `True` | `True` | 🔴 `REVOKED (UNADMITTED)`: Production identity unadopted; R04 venue allowlist & status (TXSE); 0 market data bars. |
+| **AACIU** | *Distortion Dilemma*: `country: "USA"` (false domicile) vs `"Cayman Islands"`; `primary_listing: True` | `USA` | `CAYMAN ISLANDS` (E9) | `True` | `True` | 🔴 `REVOKED (UNADMITTED)`: Production identity unadopted; R02 Unit instrument structure; 0 market data bars. |
+
+#### Architectural Assessment: Necessity vs. Non-Sufficiency of Explicit Listing Semantics
+
+> [!IMPORTANT]
+
+> **Necessity**: Explicit listing semantics are structurally essential. Without explicit separation of `listing_country` and `incorporation_country`, cross-listed issuers and ADRs such as `TSM` cannot be admitted to US radar evaluation without either falsifying their legal domicile (claiming Taiwan Semiconductor is a US corporation) or being disqualified by jurisdiction filters. Similarly, without `selected_us_assessment_listing`, assessing the US quotation line requires falsifying `primary_listing = True`, which corrupts global market structure modeling.
+
+> [!WARNING]
+
+> **Non-Sufficiency**: While explicit listing semantics resolve schema conflation, they are **not sufficient** to authorize admission. Admission remains strictly fail-closed (`batch_valid = False`, `converted_count = 0`, builder `NOT_RUN`) due to four independent admission blockers:
+
+> 1. **Production Security Identity Authority**: `security_id` remains unassigned in production feeds. OpenFIGI composite FIGIs are qualified in research, but policy has not authorized production assignment.
+
+> 2. **Canonical Eligibility Rules (R01–R07)**: Even if structural validation passed, `DeterministicUniverseBuilder` eligibility rules reject non-common-stock types (TSM is an ADR, AACIU is a Unit under R02) and non-allowlisted exchanges (ACCS on AMEX, DDS on TXSE under R04).
+
+> 3. **Market Data History & Association**: Stored market data is deficient (GOOG, ACCS, DDS, AACIU have 0 bars; GOOGL and TSM are stale), and unassociated symbols remain blocked by `ConsumerReadinessEvaluator`.
+
+> 4. **Atomic Batch Gating**: Under the fail-closed contract, any single record failure or batch-level defect revokes downstream admission for the entire cohort.
+
 ### 8. Venue Code F and Normalizer Verification
 
 - **Nasdaq Other Listed Code F**: In the official Nasdaq Trader Symbol Directory technical specifications, exchange code `F` is assigned to **Texas Stock Exchange (TXSE)** under Tape B. 
@@ -261,7 +293,7 @@ Existing contract fields in `contracts.py` and `builder.py` have exact operation
 
 ### 9. Test Suite Inventory: Selected vs Full Universe Verification
 
-The earlier 102-test report represented a selected regression suite. The complete universe test suite across all 7 relevant modules executes **204 tests, all passing (100%)**:
+The complete universe test suite expanded from the earlier 205-test baseline across 7 modules to **224 tests across 8 modules** (221 passed, 3 skipped for optional commercial fixtures in clean checkout):
 
 
 | Module | Tests Collected | Tests Passed | Status | Coverage Scope |
@@ -272,8 +304,9 @@ The earlier 102-test report represented a selected regression suite. The complet
 | `tests/test_universe_security_evidence_resolution.py` | 28 | 28 | 🟢 PASS | Package 2 evidence resolver, trust boundaries, and multi-symbol accounting |
 | `tests/test_universe_connected_integration.py` | 17 | 17 | 🟢 PASS | Package 3 connected pipeline, synthetic isolation, and whole-batch gating |
 | `tests/test_universe_admission_mappings.py` | 18 | 18 | 🟢 PASS | Package 5 admission mappings, venue normalizer, and effective dates |
-| `tests/test_universe_real_source_diagnostic.py` | 15 | 15 | 🟢 PASS | Real-source 7-candidate diagnostic, parent feed provenance, and evidence replay |
-| **TOTAL (Full Universe Suite)** | **205** | **205** | 🟢 **PASS** | **100% Passing in 16.14s** |
+| `tests/test_universe_real_source_diagnostic.py` | 15 | 12 | 🟢 PASS | Real-source 7-candidate diagnostic, parent feed provenance, and evidence replay (3 optional skipped) |
+| `tests/test_universe_explicit_listing_semantics.py` | 19 | 19 | 🟢 PASS | Sprint 2 explicit listing semantics, jurisdiction decoupling, and builder policy protection |
+| **TOTAL (Full Universe Suite)** | **224** | **221** | 🟢 **PASS** | **100% of runnable tests passing (3 commercial fixtures skipped) in 11.28s** |
 
 ---
 
@@ -282,17 +315,15 @@ The earlier 102-test report represented a selected regression suite. The complet
 #### Remaining Admission Blockers:
 
 - 1. Missing Production Security Identity Authority: security_id is omitted from raw feeds; external FIGI identifiers are qualified but production adoption remains unauthorized.
-- 2. Legacy Country Schema Integration Gap: listing_country='USA' is approved, but SourceSecurity.country is not yet decoupled into listing_country vs incorporation_country (TSM incorporated in Taiwan).
-- 3. Legacy Primary Listing Schema Integration Gap: selected_us_assessment_listing=True is approved, but SourceSecurity.primary_listing requires global primary quotation (TSM primary is TWSE: 2330).
-- 4. Static Rule Compatibility Observations: OpenFIGI qualifies TSM as 'Depositary Receipt' and AACIU as 'Unit'; both would violate Rule R02 (COMMON_STOCK) if builder ran.
-- 5. Unresolved Venue Allowlist Policy: ACCS (AMEX) falls outside the canonical venue allowlist; DDS operates on TXSE, which has operating status NOT_ESTABLISHED and is outside the canonical allowlist.
-- 6. Stored Market Data Deficits: GOOG, ACCS, DDS, AACIU have 0 bars in local development store; GOOGL (latest 2026-10-12) and TSM (latest 2026-05-07) have stale observations.
-- 7. Unresolved Identity Association for Market Data: Even where history exists (AAPL: 465, GOOGL: 278, TSM: 352), bars cannot authorize admission while security_id association remains unverified.
+- 2. Decoupled Listing Semantics Implemented: listing_country, incorporation_country, and selected_us_assessment_listing are integrated, but candidates remain unadmitted under atomic fail-closed gating.
+- 3. Static Rule Compatibility Observations: OpenFIGI qualifies TSM as 'Depositary Receipt' and AACIU as 'Unit'; both would violate Rule R02 (COMMON_STOCK) if builder ran.
+- 4. Unresolved Venue Allowlist Policy: ACCS (AMEX) falls outside the canonical venue allowlist; DDS operates on TXSE, which has operating status NOT_ESTABLISHED and is outside the canonical allowlist.
+- 5. Stored Market Data Deficits: GOOG, ACCS, DDS, AACIU have 0 bars in local development store; GOOGL (latest 2026-10-12) and TSM (latest 2026-05-07) have stale observations.
+- 6. Unresolved Identity Association for Market Data: Even where history exists (AAPL: 465, GOOGL: 278, TSM: 352), bars cannot authorize admission while security_id association remains unverified.
 
 #### Smallest Concrete Evidence Acquisition Steps Needed Next:
 
 - 1. Formalize production identity schema adoption: ratify policy authorizing durable security_id assignment from verified OpenFIGI composite FIGI or internal master.
-- 2. Decouple country schema in SourceSecurity and UniverseInputValidator: add explicit listing_country alongside incorporation_country.
-- 3. Decouple listing selection schema in SourceSecurity and UniverseInputValidator: add selected_us_assessment_listing to assess US ADRs without falsifying global primary listing.
-- 4. Ratify venue expansion policy: determine whether AMEX (NYSE American) should be added to the canonical venue allowlist for common equities.
-- 5. Formalize exchange venue policy: define resolution criteria for venues with operating status NOT_ESTABLISHED such as Texas Stock Exchange (DDS).
+- 2. Ratify venue expansion policy: determine whether AMEX (NYSE American) should be added to the canonical venue allowlist for common equities.
+- 3. Formalize exchange venue policy: define resolution criteria for venues with operating status NOT_ESTABLISHED such as Texas Stock Exchange (DDS).
+- 4. Authorize market data ingestion and association: establish attributable link between assigned security_id and market store price series.

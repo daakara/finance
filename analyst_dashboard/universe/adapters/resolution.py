@@ -305,6 +305,7 @@ class SecurityEvidenceResolver:
         caller_evidence_references: dict[str, list[EvidenceReference]] | None = None,
         require_venue_match: bool = False,
         matching_accounting: SourceMatchingAccounting | None = None,
+        requirements: ValidationRequirements | None = None,
     ) -> SecurityEvidenceResolutionOutcome:
         """
         Resolves a list of MatchedUniverseCandidate instances into ResolvedSecurityRecord objects.
@@ -560,17 +561,22 @@ class SecurityEvidenceResolver:
             # ── H. Missing Evidence Accounting & Record Status Determination ──
             # Evaluate against mandatory validator requirements
             record_missing: list[str] = []
-            for req_field in (
-                "security_id",
-                "symbol",
-                "exchange",
-                "security_type",
-                "listing_status",
-                "currency",
-                "country",
-                "primary_listing",
-                "asset_class",
-            ):
+            eval_fields = (
+                sorted(list(requirements.required_fields))
+                if requirements is not None
+                else [
+                    "security_id",
+                    "symbol",
+                    "exchange",
+                    "security_type",
+                    "listing_status",
+                    "currency",
+                    "country",
+                    "primary_listing",
+                    "asset_class",
+                ]
+            )
+            for req_field in eval_fields:
                 if req_field not in raw_record or raw_record[req_field] is None:
                     record_missing.append(req_field)
                     missing_counts[req_field] = missing_counts.get(req_field, 0) + 1
@@ -681,6 +687,7 @@ class SecurityEvidenceResolver:
         require_venue_match: bool = False,
         required_sources: list[str] | None = None,
         expected_minimum_coverage: int | None = None,
+        requirements: ValidationRequirements | None = None,
     ) -> SecurityEvidenceResolutionOutcome:
         """
         High-level orchestrator that joins parsed source files and resolves candidate evidence.
@@ -702,4 +709,5 @@ class SecurityEvidenceResolver:
             caller_evidence_references=caller_evidence_references,
             require_venue_match=require_venue_match,
             matching_accounting=matching_accounting,
+            requirements=requirements,
         )
