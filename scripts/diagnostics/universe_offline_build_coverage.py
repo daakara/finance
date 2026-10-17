@@ -314,6 +314,11 @@ def main() -> int:
             results.append(res_c)
             print(f"Scenario C Outcome: {res_c.overall_outcome}")
             print(f"  - Real Candidates: {res_c.stage_1_identity_association.total_candidates}")
+            print(f"  - Stage 1 Identity: Resolved: {res_c.stage_1_identity_association.resolved_identities_count}, "
+                  f"Blocked: {res_c.stage_1_identity_association.blocked_identities_count}, "
+                  f"Unavailable: {res_c.stage_1_identity_association.unavailable_identities_count} "
+                  f"(Issuer Associated: {res_c.stage_1_identity_association.issuer_associated_count}, "
+                  f"Provisional: {res_c.stage_1_identity_association.provisional_mapping_count})")
             print(f"  - Admission: {res_c.stage_2_validation_and_conversion.status} "
                   f"(Fail-closed without fabricated currency/identity)")
             print(f"  - Builder Status: {res_c.stage_3_builder_evaluation.status}")

@@ -91,8 +91,10 @@ This integration record establishes the complete, connected offline execution pa
 To prevent confusion regarding repository state:
 - **Base Commit**: `0607bcd160f4d65a8cdfe1f7372e9895a06133fc` (`origin/main`, PR #22 merged).
 - **PR #22 Base Tree**: `db366ab273721403d3f3bf64df51194f799f371c`.
-- **Integration Commit**: `4c28b2cea355c9ac004ba9a2f44eb603a60d431b` (`feat(universe): sprint 2 bounded offline build and coverage integration`).
-- **Integration Commit Tree**: `121d0c9fa47f28d0acfad9bb6ea9c8ea3c9764e0` (distinct from the PR #22 base tree).
+- **Initial Integration Commit**: `4c28b2cea355c9ac004ba9a2f44eb603a60d431b` (`feat(universe): sprint 2 bounded offline build and coverage integration`).
+- **Initial Integration Tree**: `121d0c9fa47f28d0acfad9bb6ea9c8ea3c9764e0` (distinct from the PR #22 base tree).
+- **Stage Boundary & Reporting Commit**: `e5132df1a47978bb808afbce0205f5b35fb7cb70` (`fix(universe): correct identity gating, conversion boundary, and dynamic stage reporting`).
+- **Stage Boundary Tree**: `168ef009937b15dea10c8ddfe48f0d29a4b61b68`.
 
 ---
 
@@ -110,7 +112,7 @@ To prevent duplicate logic or conflicting models, this workstream strictly reuse
 | **Integration Pipeline** | `analyst_dashboard.universe.offline_build_coverage` | `run_offline_build_and_coverage`, `OfflineCandidateRecord`, `OfflineBuildCoverageConfig`, `OfflineBuildCoverageResult` | **Authored Glue** | End-to-end pipeline coordination, stage tracking, arithmetic closure verification, and serialization. |
 | **Scenario Generators** | `analyst_dashboard.universe.offline_build_coverage` | `build_scenario_a_candidates`, `build_scenario_b_candidates`, `build_scenario_b2_conversion_failure_candidates`, `build_scenario_d_identity_conflict_candidates`, `build_scenario_c_candidates` | **Authored Glue** | Standardized scenario candidate populations covering convertible batches, atomic validation failure, conversion boundary failure, identity conflicts, and real-source replays. |
 | **CLI Runner** | `scripts.diagnostics.universe_offline_build_coverage` | CLI script (`--scenario {A, B, B2, D, C, all}`) | **Authored Glue** | Diagnostic terminal runner with parameterizable market DB and output directory. |
-| **Test Suite** | `tests.test_universe_offline_build_coverage` | `TestUniverseOfflineBuildCoverage` (10 integration tests) | **Authored Glue** | Complete verification of all 5 scenarios, network guards, read safety, exact rule predicates, and arithmetic closures. |
+| **Test Suite** | `tests.test_universe_offline_build_coverage` | `TestUniverseOfflineBuildCoverage` (11 integration tests) | **Authored Glue** | Complete verification of all 5 scenarios, network guards, read safety, exact rule predicates, and arithmetic closures. |
 | **Module Export API** | `analyst_dashboard.universe.__init__` | Public API symbols export | **Updated Export** | Exposes new offline build coverage runners, models, and scenario builders. |
 
 ---
@@ -118,7 +120,13 @@ To prevent duplicate logic or conflicting models, this workstream strictly reuse
 ### 3. Detailed Demonstration of Offline Scenarios
 
 #### Scenario A: Fully Convertible Batch Reaching Builder and Readiness
-- **Description**: Demonstrates a convertible 7-candidate population reaching both builder evaluation and market-data diagnostics. Candidate 7 (`UNSUP1`) represents a resolved identity on an unsupported exchange (`Z`), permitting the actual builder to evaluate Rule R04 (`PRIMARY_EXCHANGE`).
+- **Description**: Demonstrates a convertible 7-candidate population reaching both builder evaluation and market-data diagnostics. Candidate 7 (`UNSUP1`) represents a resolved identity on a genuinely unsupported canonical exchange (`AMEX`, operating MIC `XASE`), permitting the actual builder to evaluate Rule R04 (`PRIMARY_EXCHANGE`).
+- **Canonical Exchange Normalization Tracing**:
+  - The pipeline correctly normalizes directory exchange codes to canonical exchange vocabulary: `raw directory exchange` (`"Z"`) → `SupportedVenueNormalizer` (`normalized_venue="BATS"`, `operating_mic="BATS"`, status: `DOCUMENTED_REPRESENTATIONAL`) → `validated record` (`raw_dict["exchange"] = "BATS"`) → `SourceSecurity(exchange="BATS")` → `builder input`.
+  - When normalization is supported and evidenced, the builder receives the canonical exchange vocabulary (`BATS`) expected by Rule R04. Dedicated regression test `test_09` verifies that `Z` normalizes to `BATS` and does not fail R04 solely because the source used a directory code.
+  - Raw directory codes and publisher citations are preserved in `associated_records` (`raw_exchange="Z"`, `canonical_exchange="BATS"`, `operating_mic="BATS"`).
+  - Rule R04 is unchanged and its allowlist (`["NASDAQ", "NYSE", "ARCA", "BATS"]`) is not polluted with directory codes.
+  - Candidate 7 (`UNSUP1`) uses a genuinely unsupported canonical exchange (`AMEX`) outside R04's allowlist to test ineligible exchange rejection without conflating it with supported venues.
 - **Constituent Candidates**:
   1. `AAPL`: Eligible common stock on NASDAQ with complete fresh market data (252 bars, as-of `2026-10-16`).
   2. `MSFT`: Eligible common stock on NASDAQ with stale market data (200 bars, quote date `2026-10-12`).
@@ -126,14 +134,16 @@ To prevent duplicate logic or conflicting models, this workstream strictly reuse
   4. `NOMKT`: Eligible common stock on NYSE absent entirely from market store (0 bars).
   5. `SPY`: Structurally ineligible ETF on ARCA (fails canonical rules R01 and R02 in Builder).
   6. `SEC1`: Secondary listing on NASDAQ (`primary_listing=False`, fails canonical rule R06 in Builder).
-  7. `UNSUP1`: Resolved association (`SEC_UNSUP1_007`) on exchange `Z` (BATS directory code; passes validator, fails canonical rule R04 in Builder, 252 bars fresh market data).
+  7. `UNSUP1`: Resolved association (`SEC_UNSUP1_007`) on canonical exchange `AMEX` (operating MIC `XASE`; passes validator, fails canonical builder rule R04 in Builder, 252 bars fresh market data).
 - **Execution Results**:
   - **Stage 1 (Identity & Listing Association)**:
     - Status: `COMPLETED`
     - Input Candidates: **7** | Distinct Symbols: **7**
+    - Issuer Associated Candidates: **7** (`AAPL`, `MSFT`, `GLX`, `NOMKT`, `SPY`, `SEC1`, `UNSUP1`)
+    - Provisional Mapping Available: **7** (`AAPL`, `MSFT`, `GLX`, `NOMKT`, `SPY`, `SEC1`, `UNSUP1`)
     - Resolved Identities: **7** (`AAPL`, `MSFT`, `GLX`, `NOMKT`, `SPY`, `SEC1`, `UNSUP1`)
     - Blocked Identities: **0** | Unavailable Identities: **0**
-    - Documented Venue Normalizations: **5** | Disputed Associations: **0**
+    - Documented Venue Normalizations: **4** | Disputed Associations: **0**
     - Stage 1 Accounting Closure: `7 == 7 + 0 + 0` (`True`)
   - **Stage 2 (Validation Gate & Atomic Conversion Boundary)**:
     - Validator Component Status: `ADMITTED` (is_batch_valid: `True`)
@@ -156,7 +166,7 @@ To prevent duplicate logic or conflicting models, this workstream strictly reuse
       - `SEC1`: Reason `INELIGIBLE_SECONDARY_LISTING`
         - `R06_PRIMARY_LISTING`: Predicate `primary_listing is True` | Actual `False` (Failed)
       - `UNSUP1`: Reason `INELIGIBLE_EXCHANGE`
-        - `R04_PRIMARY_EXCHANGE`: Predicate `exchange in ['NASDAQ', 'NYSE', 'ARCA', 'BATS']` | Actual `Z` (Failed)
+        - `R04_PRIMARY_EXCHANGE`: Predicate `exchange in ['NASDAQ', 'NYSE', 'ARCA', 'BATS']` | Actual `AMEX` (Failed)
     - Stage 3 Accounting Closure: `7 == 4 + 3 + 0` (`True`)
   - **Stage 4 (Market-Data Readiness Diagnostics)**:
     - Status: `COMPLETED` (Diagnostic-Only: inspection against market store; does not assert universe admission)
@@ -224,11 +234,16 @@ To prevent duplicate logic or conflicting models, this workstream strictly reuse
 - **Execution Results**:
   - **Stage 1 (Identity Association)**:
     - Total Candidates: **7** | Distinct Symbols: **7**
+    - Issuer Associated Candidates: **7** (`AAPL`, `GOOGL`, `GOOG`, `TSM`, `ACCS`, `DDS`, `AACIU`)
+    - Provisional Mapping Available: **7** (`AAPL`, `GOOGL`, `GOOG`, `TSM`, `ACCS`, `DDS`, `AACIU`)
+    - Resolved Security Identities: **0** (No authenticated production master adopted in offline mode; corporate CIK match, normalized symbol, or provisional ID is strictly NOT counted as an evidence-resolved security identity)
+    - Blocked Identity Associations: **1** (`ACCS`: genuine substantive disagreement `NYSE` vs `AMEX`)
+    - Unavailable Identity Associations: **6** (`AAPL`, `GOOGL`, `GOOG`, `TSM`, `DDS`, `AACIU`)
     - Multi-Symbol CIKs Detected: **1** (CIK `0001652044` tracks corporate association for `GOOG` and `GOOGL`; corporate association does NOT resolve distinct instrument identities).
-    - Documented Venue Normalizations: **1** (`DDS`: concordant representational mapping `F` -> `TXSE`).
-    - Disputed Associations / Blocked Identities: **1** (`ACCS`: genuine substantive disagreement `NYSE` vs `AMEX`).
-    - Resolved Identities: **6** | Blocked Identities: **1** | Unavailable: **0**
-    - Stage 1 Accounting Closure: `7 == 6 + 1 + 0` (`True`)
+    - Documented Venue Normalizations: **5** (including `DDS`: concordant representational mapping `F` -> `TXSE`).
+    - Note on DDS: `F -> TXSE` establishes representational concordance, but does not automatically resolve operating MIC or security association without authoritative security evidence.
+    - Disputed Associations: **1** (`ACCS`)
+    - Stage 1 Accounting Closure Verified: `True` (`7 == 0 + 1 + 6`)
   - **Stage 2 (Validation Gate & Conversion Boundary)**:
     - Status: `REVOKED` (is_batch_valid: `False`), Converted: **0**.
     - Truthful Fail-Closed Behavior: Raw directory feeds lack currency (`currency=None`) and primary listing status (`primary_listing=None`). Without synthetic backfill or speculative defaulting, atomic validation fails closed.
@@ -244,10 +259,12 @@ To prevent duplicate logic or conflicting models, this workstream strictly reuse
 |:---|:---:|:---:|:---:|:---:|:---:|
 | **Total Input Candidates** | 7 | 3 | 3 | 2 | 7 |
 | **Distinct Candidate Symbols** | 7 | 3 | 3 | 2 | 7 |
-| **Stage 1 Resolved Identities** | 7 | 3 | 3 | 1 | 6 |
+| **Stage 1 Issuer Associated** | 7 | 3 | 3 | 1 | 7 |
+| **Stage 1 Provisional Mappings** | 7 | 3 | 3 | 2 | 7 |
+| **Stage 1 Resolved Identities** | 7 | 3 | 3 | 1 | 0 |
 | **Stage 1 Blocked Identities** | 0 | 0 | 0 | 1 | 1 |
-| **Stage 1 Unavailable Identities** | 0 | 0 | 0 | 0 | 0 |
-| **Stage 1 Closure (`total == res + blk + unav`)** | `True` | `True` | `True` | `True` | `True` |
+| **Stage 1 Unavailable Identities** | 0 | 0 | 0 | 0 | 6 |
+| **Stage 1 Closure (`total == res + blk + unav`)** | `True` (`7==7+0+0`) | `True` (`3==3+0+0`) | `True` (`3==3+0+0`) | `True` (`2==1+1+0`) | `True` (`7==0+1+6`) |
 | **Stage 2 Validator Status** | `ADMITTED` | `REVOKED` | `ADMITTED` | `REVOKED` | `REVOKED` |
 | **Stage 2 Is Batch Valid** | `True` | `False` | `True` | `False` | `False` |
 | **Stage 2 Conversion Status** | `SUCCEEDED` | `NOT_RUN` | `BLOCKED` | `NOT_RUN` | `NOT_RUN` |
@@ -271,8 +288,10 @@ The implementation was strictly verified against all mandatory operational bound
    - Verification: `test_03_no_network_enforcement_network_blocked` monkeypatches `socket.socket` to raise an immediate exception on any socket call. The complete pipeline executes from end to end without invoking socket, HTTP, or DNS resources.
    - Status: **PASSED / COMPLIANT**.
 
-2. **Read-Safety & Zero Database Mutation**:
-   - Verification: `ReadOnlyMarketStore` connects via SQLite URI `file:<path>?mode=ro`. Pre- and post-run file size and mtime checks confirm zero file modifications (`test_07_read_safety_zero_database_mutation`). Any `UPDATE`, `INSERT`, or DDL attempt is blocked by SQLite engine-level permissions.
+2. **Read-Safety & Zero Database Mutation (3-Layer Enforcement)**:
+   - **Layer 1 (URI Mode)**: `ReadOnlyMarketStore` connects exclusively via SQLite URI `file:<path>?mode=ro`.
+   - **Layer 2 (Engine-Level Write Prevention)**: SQLite engine enforces read-only access at the database driver level; any `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `DROP`, or DDL/DML attempt raises an immediate `sqlite3.OperationalError: attempt to write a readonly database`.
+   - **Layer 3 (Filesystem Stat & Digest Immutability)**: `test_07_read_safety_zero_database_mutation` captures `os.stat()` before and after full execution, proving byte-for-byte immutability of file size (`st_size`) and modification timestamp (`st_mtime`).
    - Status: **PASSED / COMPLIANT**.
 
 3. **Zero Scanner Activation**:
@@ -298,32 +317,39 @@ The implementation was strictly verified against all mandatory operational bound
 platform win32 -- Python 3.11.0, pytest-9.1.1, pluggy-1.6.0
 rootdir: C:\Users\akara\Documents\Projects\finance-sprint-2-offline-build-coverage
 plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0, mock-3.15.1
-collected 10 items
+collected 11 items
 
-tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_01_full_pipeline_scenario_a_convertible_batch_end_to_end PASSED [ 10%]
-tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_02_atomic_batch_conversion_failure_zero_partial_handoff PASSED [ 20%]
-tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_02b_conversion_boundary_failure_staging_profile_pass_converter_fail PASSED [ 30%]
-tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_02c_unresolved_identity_conflict_blocks_before_conversion PASSED [ 40%]
-tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_03_no_network_enforcement_network_blocked PASSED [ 50%]
-tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_04_scenario_c_real_source_retained_evidence_replay PASSED [ 60%]
-tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_05_diagnostic_reporting_accuracy_and_reconciliation PASSED [ 70%]
-tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_06_arithmetic_closure_cross_stage_reconciliation PASSED [ 80%]
-tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_07_read_safety_zero_database_mutation PASSED [ 90%]
-tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_08_cli_runner_and_artifact_generation PASSED [100%]
+tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_01_full_pipeline_scenario_a_convertible_batch_end_to_end PASSED [  9%]
+tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_02_atomic_batch_conversion_failure_zero_partial_handoff PASSED [ 18%]
+tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_02b_conversion_boundary_failure_staging_profile_pass_converter_fail PASSED [ 27%]
+tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_02c_unresolved_identity_conflict_blocks_before_conversion PASSED [ 36%]
+tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_03_no_network_enforcement_network_blocked PASSED [ 45%]
+tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_04_scenario_c_real_source_retained_evidence_replay PASSED [ 54%]
+tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_05_diagnostic_reporting_accuracy_and_reconciliation PASSED [ 63%]
+tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_06_arithmetic_closure_cross_stage_reconciliation PASSED [ 72%]
+tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_07_read_safety_zero_database_mutation PASSED [ 81%]
+tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_08_cli_runner_and_artifact_generation PASSED [ 90%]
+tests/test_universe_offline_build_coverage.py::TestUniverseOfflineBuildCoverage::test_09_z_directory_code_normalizes_to_bats_and_passes_r04 PASSED [100%]
 
-============================= 10 passed in 4.71s ==============================
+============================= 11 passed in 5.27s ==============================
 ```
 
 Comprehensive regression check across all 7 universe test suites:
-- `tests/test_universe_offline_build_coverage.py` (10 tests)
-- `tests/test_universe_connected_integration.py` (6 tests)
-- `tests/test_universe_coverage_capacity.py` (13 tests)
-- `tests/test_universe_admission_mappings.py` (37 tests)
-- `tests/test_universe_validator.py` (64 tests)
-- `tests/test_universe_explicit_listing_semantics.py` (21 tests)
-- `tests/test_universe_identity_proposal.py` (19 tests)
+- `tests/test_universe_offline_build_coverage.py`: **11 passed**
+- `tests/test_universe_connected_integration.py`: **6 passed**
+- `tests/test_universe_coverage_capacity.py`: **13 passed**
+- `tests/test_universe_admission_mappings.py`: **37 passed**
+- `tests/test_universe_validator.py`: **64 passed**
+- `tests/test_universe_explicit_listing_semantics.py`: **21 passed**
+- `tests/test_universe_identity_proposal.py`: **19 passed**
 
-**Total Passing**: **170 passed in 24.00s** (zero failures, zero warnings, zero regressions).
+**Total Passing**: **171 passed in 11.73s** (zero failures, zero warnings, zero regressions).
+
+#### Reconciliation of Test Functions vs. Collected Items:
+- In `tests/test_universe_validator.py`, the test method `test_to_source_security_rejects_missing_temporal_fields` is parameterized across 3 temporal field values (`[listing_date]`, `[delisting_date]`, `[trading_suspension_date]`).
+- As a result, the 62 test functions defined in source code yield exactly 64 collected and executed test items.
+- Across all other 6 test suites, test functions and collected items are in exact 1:1 correspondence.
+- Overall total across the 7 suites: **171 executed test items**.
 
 ---
 
@@ -345,6 +371,10 @@ The bounded offline build and coverage integration workstream is complete, verif
 FINAL VERIFICATION STATUS:
   OFFLINE_BUILD_COVERAGE_INTEGRATION_LOCAL_VERIFIED = TRUE
   EXACT_GIT_OBJECTS_RECORDED                        = TRUE
+  CANONICAL_EXCHANGE_HANDOFF_VERIFIED               = TRUE
+  Z_NORMALIZATION_REGRESSION_VERIFIED               = TRUE
+  GENUINELY_UNSUPPORTED_EXCHANGE_VERIFIED           = TRUE
+  REAL_SOURCE_IDENTITY_ACCOUNTING_VERIFIED          = TRUE
   IDENTITY_STAGE_SEMANTICS_CORRECTED                = TRUE
   CONVERSION_BOUNDARY_FAILURE_ISOLATED              = TRUE
   REAL_SOURCE_ATTRIBUTION_CONCORDANCE_VERIFIED      = TRUE
@@ -357,5 +387,6 @@ FINAL VERIFICATION STATUS:
   DATABASE_READ_SAFETY_VERIFIED                     = TRUE
   ZERO_UNIVERSE_STORE_MUTATION_VERIFIED             = TRUE
   ZERO_SCANNER_ACTIVATION_VERIFIED                  = TRUE
+  TOTAL_REGRESSION_TESTS_PASSING                    = 171
 ================================================================================
 ```

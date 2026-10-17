@@ -234,6 +234,8 @@ class TestUniverseOfflineBuildCoverage:
         pred_unsup1 = result.stage_3_builder_evaluation.rule_predicate_details["UNSUP1"]
         assert pred_unsup1["reason_code"] == "INELIGIBLE_EXCHANGE"
         assert pred_unsup1["failed_predicates"][0]["rule"] == "R04_PRIMARY_EXCHANGE"
+        assert pred_unsup1["failed_predicates"][0]["actual"] == "AMEX"
+        assert result.stage_1_identity_association.associated_records[6]["canonical_exchange"] == "AMEX"
 
         # Stage 4: Market-Data Readiness Diagnostics
         assert result.stage_4_coverage_diagnostics.status == "COMPLETED"
@@ -456,12 +458,19 @@ class TestUniverseOfflineBuildCoverage:
         # Stage 1: Identity Association
         assert result.stage_1_identity_association.status == "COMPLETED"
         assert result.stage_1_identity_association.total_candidates == 7
+        assert result.stage_1_identity_association.distinct_symbols == 7
+        assert result.stage_1_identity_association.resolved_identities_count == 0  # 0 resolved security identities
+        assert result.stage_1_identity_association.blocked_identities_count == 1   # 1 blocked (ACCS venue disagreement)
+        assert result.stage_1_identity_association.unavailable_identities_count == 6  # 6 unavailable identities
+        assert result.stage_1_identity_association.issuer_associated_count == 7   # 7 issuer associated via CIK
+        assert result.stage_1_identity_association.provisional_mapping_count == 7  # 7 provisional mapping available
+        assert result.stage_1_identity_association.resolved_symbols == []
+        assert set(result.stage_1_identity_association.blocked_symbols) == {"ACCS"}
+        assert set(result.stage_1_identity_association.unavailable_symbols) == {"AAPL", "GOOGL", "GOOG", "TSM", "DDS", "AACIU"}
         assert result.stage_1_identity_association.multi_symbol_cik_count >= 1  # CIK 0001652044 (GOOG, GOOGL)
         assert result.stage_1_identity_association.venue_normalized_count >= 1  # DDS (code F -> TXSE concordant mapping)
         assert result.stage_1_identity_association.disputed_association_count == 1  # ACCS (genuine disagreement)
-        assert result.stage_1_identity_association.blocked_identities_count == 1  # ACCS blocked
-        assert "ACCS" in result.stage_1_identity_association.blocked_symbols
-        assert result.stage_1_identity_association.closure_verified is True
+        assert result.stage_1_identity_association.closure_verified is True  # 7 == 0 + 1 + 6
 
         # Stage 2: Batch Validation fails closed without fabricated currency/identity
         assert result.stage_2_validation_and_conversion.status == "REVOKED_VALIDATION_FAILED"
@@ -631,3 +640,66 @@ class TestUniverseOfflineBuildCoverage:
         with open(os.path.join(out_dir, "offline_build_coverage_scenario_b2_conversion_failure.md"), "r", encoding="utf-8") as fp:
             b2_md = fp.read()
         assert "0 == 0 + 0 + 0 (NOT_RUN)" in b2_md
+
+    def test_09_z_directory_code_normalizes_to_bats_and_passes_r04(
+        self, test_market_db: str
+    ) -> None:
+        """
+        Regression test: Raw directory exchange code 'Z' normalizes via SupportedVenueNormalizer
+        to canonical exchange 'BATS' (operating MIC 'BATS').
+        Verifies:
+        - Stage 1: Venue normalized count incremented, raw exchange 'Z' and canonical 'BATS' preserved.
+        - Stage 2: Validated record and SourceSecurity receive canonical exchange 'BATS'.
+        - Stage 3: DeterministicUniverseBuilder evaluates Rule R04 (PRIMARY_EXCHANGE) against 'BATS'.
+        - Candidate passes R04 and is ELIGIBLE; does not fail R04 solely because source used directory code 'Z'.
+        """
+        z_candidate = OfflineCandidateRecord(
+            record_locator="REG_Z#1_BATS_NORMALIZED",
+            symbol="ZBATS",
+            exchange="Z",  # Raw directory code for BATS
+            security_type="COMMON_STOCK",
+            listing_status="ACTIVE",
+            currency="USD",
+            country="USA",
+            primary_listing=True,
+            asset_class="EQUITY",
+            security_id="SEC_ZBATS_001",
+            issuer_cik="0001999999",
+            is_synthetic=True,
+            notes="Regression test for directory exchange code 'Z' normalisation to BATS.",
+        )
+
+        with ReadOnlyMarketStore(test_market_db) as store:
+            config = OfflineBuildCoverageConfig(
+                candidate_records=[z_candidate],
+                as_of_date="2026-10-16",
+                market_store=store,
+                scenario_label="SCENARIO_REGRESSION_Z_TO_BATS",
+                is_synthetic=True,
+            )
+            result = run_offline_build_and_coverage(config)
+
+        # Stage 1: Normalization verified
+        s1 = result.stage_1_identity_association
+        assert s1.status == "COMPLETED"
+        assert s1.venue_normalized_count == 1
+        assoc = s1.associated_records[0]
+        assert assoc["raw_exchange"] == "Z"
+        assert assoc["canonical_exchange"] == "BATS"
+        assert assoc["operating_mic"] == "BATS"
+        assert "Exchange code 'Z' = BATS" in assoc["normalization_provenance"]
+
+        # Stage 2: Validator and SourceSecurity received canonical exchange
+        s2 = result.stage_2_validation_and_conversion
+        assert s2.is_batch_valid is True
+        assert s2.conversion_status == "SUCCEEDED"
+        assert s2.converted_security_count == 1
+
+        # Stage 3: Builder evaluated and R04 passed
+        s3 = result.stage_3_builder_evaluation
+        assert s3.status == "EVALUATED"
+        assert s3.evaluated_security_count == 1
+        assert s3.eligible_count == 1
+        assert s3.ineligible_count == 0
+        assert s3.eligible_symbols == ["ZBATS"]
+        assert "R04_PRIMARY_EXCHANGE" not in s3.rule_failure_breakdown

@@ -185,6 +185,8 @@ class Stage1IdentityAssociationResult:
     resolved_identities_count: int
     blocked_identities_count: int = 0
     unavailable_identities_count: int = 0
+    issuer_associated_count: int = 0
+    provisional_mapping_count: int = 0
     multi_symbol_cik_count: int = 0
     venue_normalized_count: int = 0
     venue_conflict_count: int = 0
@@ -192,6 +194,8 @@ class Stage1IdentityAssociationResult:
     resolved_symbols: List[str] = field(default_factory=list)
     blocked_symbols: List[str] = field(default_factory=list)
     unavailable_symbols: List[str] = field(default_factory=list)
+    issuer_associated_symbols: List[str] = field(default_factory=list)
+    provisional_mapping_symbols: List[str] = field(default_factory=list)
     associated_records: List[Dict[str, Any]] = field(default_factory=list)
     closure_verified: bool = False
 
@@ -388,15 +392,27 @@ def run_offline_build_and_coverage(config: OfflineBuildCoverageConfig) -> Offlin
     resolved_ids_count = 0
     blocked_ids_count = 0
     unavailable_ids_count = 0
+    issuer_assoc_count = 0
+    prov_mapping_count = 0
     resolved_symbols: List[str] = []
     blocked_symbols: List[str] = []
     unavailable_symbols: List[str] = []
+    issuer_assoc_symbols: List[str] = []
+    prov_mapping_symbols: List[str] = []
     multi_sym_cik_count = 0
     venue_norm_count = 0
     venue_conflict_count = 0
     disputed_count = 0
 
     ciks_seen: Dict[str, List[str]] = {}
+
+    CANONICAL_MIC_MAP = {
+        "NASDAQ": "XNAS",
+        "NYSE": "XNYS",
+        "ARCA": "ARCX",
+        "BATS": "BATS",
+        "AMEX": "XASE",
+    }
 
     for cand in candidates:
         clean_sym = cand.symbol.strip().upper() if cand.symbol else ""
@@ -405,12 +421,21 @@ def run_offline_build_and_coverage(config: OfflineBuildCoverageConfig) -> Offlin
         # Check venue normalization via SupportedVenueNormalizer
         norm_venue_res = SupportedVenueNormalizer.normalize_directory_code(raw_venue)
         if norm_venue_res.status in (VenueNormalizationStatus.DOCUMENTED_REPRESENTATIONAL, VenueNormalizationStatus.EXACT_CONCORDANT):
+            canonical_exchange = norm_venue_res.normalized_venue or raw_venue
             operating_mic = norm_venue_res.operating_mic or "XNAS"
             venue_norm_count += 1
             is_venue_conflict = False
+            norm_provenance = norm_venue_res.publisher_citation
+        elif raw_venue in CANONICAL_MIC_MAP:
+            canonical_exchange = raw_venue
+            operating_mic = CANONICAL_MIC_MAP[raw_venue]
+            is_venue_conflict = False
+            norm_provenance = f"Direct canonical exchange: {raw_venue}"
         elif norm_venue_res.status == VenueNormalizationStatus.PROVISIONAL_UNRESOLVED:
+            canonical_exchange = norm_venue_res.normalized_venue or "TXSE"
             operating_mic = norm_venue_res.operating_mic or "TXSE"
-            # For documented provisional code F -> TXSE (e.g. DDS), SupportedVenueNormalizer maps F to TXSE
+            norm_provenance = norm_venue_res.publisher_citation
+            # For documented provisional code F -> TXSE (e.g. DDS), representational concordance is established
             if raw_venue == "F":
                 venue_norm_count += 1
                 is_venue_conflict = False
@@ -418,8 +443,10 @@ def run_offline_build_and_coverage(config: OfflineBuildCoverageConfig) -> Offlin
                 venue_conflict_count += 1
                 is_venue_conflict = True
         else:
+            canonical_exchange = raw_venue
             operating_mic = "XNAS"
-            if raw_venue not in ("NASDAQ", "NYSE", "ARCA", "BATS", "Z", "Q", "A", "N", "P"):
+            norm_provenance = f"Unmapped exchange code: '{raw_venue}'"
+            if raw_venue not in CANONICAL_MIC_MAP:
                 venue_conflict_count += 1
                 is_venue_conflict = True
             else:
@@ -432,53 +459,82 @@ def run_offline_build_and_coverage(config: OfflineBuildCoverageConfig) -> Offlin
         if is_blocked:
             is_venue_conflict = True
 
-        # Track CIK multi-symbol mapping
+        # Track CIK multi-symbol mapping and issuer association
         clean_cik = str(cand.issuer_cik).zfill(10) if cand.issuer_cik else None
         if clean_cik:
+            issuer_assoc_count += 1
+            if clean_sym:
+                issuer_assoc_symbols.append(clean_sym)
             ciks_seen.setdefault(clean_cik, []).append(clean_sym)
 
-        # Register security in offline admission mapping engine if not explicitly supplied
+        # Track provisional mapping proposal availability
+        prov_sec_id = None
+        if clean_sym:
+            prov_mapping_count += 1
+            prov_mapping_symbols.append(clean_sym)
+            prov_sec_id = f"PROV_SEC_{clean_sym}_{config.as_of_date.replace('-', '')}"
+
+        # Real-Source vs Synthetic Identity Accounting
         sec_id = cand.security_id
         assoc_id = None
 
-        if is_blocked:
-            # Block association before conversion; do NOT classify as resolved identity
-            blocked_ids_count += 1
-            blocked_symbols.append(clean_sym)
-            sec_id = None
-        elif not clean_sym:
-            unavailable_ids_count += 1
-            unavailable_symbols.append("UNKNOWN")
-            sec_id = None
-        elif not sec_id:
-            try:
-                sec_rec, assoc = mapping_engine.register_security(
-                    symbol=clean_sym,
-                    operating_mic=operating_mic,
-                    as_of_date=config.as_of_date,
-                    issuer_cik=clean_cik,
-                    share_class=cand.share_class,
-                    source_reference=cand.source_artifact or "OFFLINE_CANDIDATE",
-                )
-                sec_id = sec_rec.internal_security_id
-                assoc_id = assoc.association_id
-                resolved_ids_count += 1
-                resolved_symbols.append(clean_sym)
-            except Exception as e:
-                logger.warning(f"Registration conflict for {clean_sym}: {e}")
-                sec_id = None
+        if cand.is_synthetic:
+            # Synthetic fixtures define explicit test identities or blocked states
+            if is_blocked:
                 blocked_ids_count += 1
                 blocked_symbols.append(clean_sym)
-                is_venue_conflict = True
+                sec_id = None
+            elif not clean_sym:
+                unavailable_ids_count += 1
+                unavailable_symbols.append("UNKNOWN")
+                sec_id = None
+            elif not sec_id:
+                try:
+                    sec_rec, assoc = mapping_engine.register_security(
+                        symbol=clean_sym,
+                        operating_mic=operating_mic,
+                        as_of_date=config.as_of_date,
+                        issuer_cik=clean_cik,
+                        share_class=cand.share_class,
+                        source_reference=cand.source_artifact or "OFFLINE_CANDIDATE",
+                    )
+                    sec_id = sec_rec.internal_security_id
+                    assoc_id = assoc.association_id
+                    resolved_ids_count += 1
+                    resolved_symbols.append(clean_sym)
+                except Exception as e:
+                    logger.warning(f"Registration conflict for {clean_sym}: {e}")
+                    sec_id = None
+                    blocked_ids_count += 1
+                    blocked_symbols.append(clean_sym)
+                    is_venue_conflict = True
+            else:
+                resolved_ids_count += 1
+                resolved_symbols.append(clean_sym)
         else:
-            resolved_ids_count += 1
-            resolved_symbols.append(clean_sym)
+            # Real-source records:
+            # Do NOT count an issuer match, normalized symbol, or provisional ID as a resolved security identity.
+            # For DDS, F->TXSE establishes representational concordance, but does not automatically resolve
+            # operating MIC or security association without authoritative security evidence.
+            if is_blocked:
+                blocked_ids_count += 1
+                blocked_symbols.append(clean_sym)
+                sec_id = None
+            elif cand.security_id:
+                resolved_ids_count += 1
+                resolved_symbols.append(clean_sym)
+            else:
+                unavailable_ids_count += 1
+                unavailable_symbols.append(clean_sym)
+                sec_id = None
 
         associated_records.append({
             "record_locator": cand.record_locator,
             "symbol": clean_sym,
             "raw_exchange": cand.exchange,
+            "canonical_exchange": canonical_exchange,
             "operating_mic": operating_mic,
+            "normalization_provenance": norm_provenance,
             "internal_security_id": sec_id,
             "association_id": assoc_id,
             "is_venue_conflict": is_venue_conflict,
@@ -486,6 +542,8 @@ def run_offline_build_and_coverage(config: OfflineBuildCoverageConfig) -> Offlin
             "is_identity_blocked": is_blocked,
             "dispute_reason": cand.dispute_reason,
             "source_conflict": cand.source_conflict,
+            "is_issuer_associated": bool(clean_cik),
+            "provisional_security_id": prov_sec_id,
         })
 
     # Count CIKs with multiple symbols
@@ -499,6 +557,8 @@ def run_offline_build_and_coverage(config: OfflineBuildCoverageConfig) -> Offlin
         resolved_identities_count=resolved_ids_count,
         blocked_identities_count=blocked_ids_count,
         unavailable_identities_count=unavailable_ids_count,
+        issuer_associated_count=issuer_assoc_count,
+        provisional_mapping_count=prov_mapping_count,
         multi_symbol_cik_count=multi_sym_cik_count,
         venue_normalized_count=venue_norm_count,
         venue_conflict_count=venue_conflict_count,
@@ -506,6 +566,8 @@ def run_offline_build_and_coverage(config: OfflineBuildCoverageConfig) -> Offlin
         resolved_symbols=resolved_symbols,
         blocked_symbols=blocked_symbols,
         unavailable_symbols=unavailable_symbols,
+        issuer_associated_symbols=issuer_assoc_symbols,
+        provisional_mapping_symbols=prov_mapping_symbols,
         associated_records=associated_records,
         closure_verified=stage_1_closure,
     )
@@ -528,6 +590,11 @@ def run_offline_build_and_coverage(config: OfflineBuildCoverageConfig) -> Offlin
                 or "UNRESOLVED_IDENTITY_OR_VENUE_CONFLICT"
             )
 
+        # Canonical exchange handoff:
+        # When normalization is supported and evidenced, hand canonical exchange to raw_dict["exchange"]
+        if assoc_meta.get("canonical_exchange"):
+            raw_dict["exchange"] = assoc_meta["canonical_exchange"]
+
         raw_validator_records.append(raw_dict)
 
         lookup_key = str(raw_dict.get("security_id") or raw_dict.get("symbol") or idx)
@@ -546,7 +613,7 @@ def run_offline_build_and_coverage(config: OfflineBuildCoverageConfig) -> Offlin
         else:
             reqs = ValidationRequirements(
                 allowed_values={
-                    "exchange": {"NASDAQ", "NYSE", "ARCA", "BATS", "Q", "A", "N", "Z"},
+                    "exchange": {"NASDAQ", "NYSE", "ARCA", "BATS", "AMEX", "Q", "A", "N", "Z"},
                     "asset_class": {"EQUITY", "ETF"},
                 }
             )
@@ -888,7 +955,7 @@ def build_scenario_a_candidates() -> List[OfflineCandidateRecord]:
     4. Missing market data entirely (NOMKT)
     5. Structurally ineligible asset class (SPY, ETF)
     6. Unknown/secondary primary listing (SEC1, primary_listing=False)
-    7. Resolved association on unsupported exchange (UNSUP1, exchange=Z)
+    7. Resolved association on unsupported exchange (UNSUP1, exchange=AMEX)
     """
     return [
         # 1. Eligible stock with sufficient market data
@@ -997,7 +1064,7 @@ def build_scenario_a_candidates() -> List[OfflineCandidateRecord]:
         OfflineCandidateRecord(
             record_locator="SCEN_A#7_UNSUP1",
             symbol="UNSUP1",
-            exchange="Z",
+            exchange="AMEX",
             security_type="COMMON_STOCK",
             listing_status="ACTIVE",
             currency="USD",
@@ -1007,7 +1074,7 @@ def build_scenario_a_candidates() -> List[OfflineCandidateRecord]:
             security_id="SEC_UNSUP1_007",
             issuer_cik="0001625341",
             is_synthetic=True,
-            notes="Resolved association on exchange Z (BATS directory code); satisfies validator; fails canonical builder R04 (PRIMARY_EXCHANGE).",
+            notes="Synthetic fixture: resolved listing on canonical exchange AMEX (outside canonical R04 allowlist [NASDAQ, NYSE, ARCA, BATS]); satisfies validator; fails canonical builder R04 (PRIMARY_EXCHANGE).",
         ),
     ]
 
@@ -1333,7 +1400,7 @@ def format_offline_build_coverage_markdown(result: OfflineBuildCoverageResult) -
         f"| Pipeline Stage / Boundary | Evaluated Entity | Applicable Denominator | Terminal Status | Detail / Invariant Verification |",
         f"|:---|:---|:---:|:---:|:---|",
         f"| **Input Candidates** | Attributable Observations | {s1.total_candidates} | `RECEIVED` | Distinct Symbols: {s1.distinct_symbols}, Synthetic: {result.is_synthetic} |",
-        f"| **Stage 1: Identity & Listing Association** | Candidate Records | {s1.total_candidates} | `{s1.status}` | Resolved: {s1.resolved_identities_count}, Blocked: {s1.blocked_identities_count}, Unavailable: {s1.unavailable_identities_count} |",
+        f"| **Stage 1: Identity & Listing Association** | Candidate Records | {s1.total_candidates} | `{s1.status}` | Resolved: {s1.resolved_identities_count}, Blocked: {s1.blocked_identities_count}, Unavailable: {s1.unavailable_identities_count} (Issuer Associated: {s1.issuer_associated_count}, Provisional: {s1.provisional_mapping_count}) |",
         f"| **Stage 2: Validation Gate** | Candidate Records | {s2.total_input_count} | `{s2.component_validation_status}` (Validator Component) | Passed: {s2.passed_count}, Failed: {s2.failed_count}, Unresolved: {s2.unresolved_count} |",
         f"| **Stage 2: Atomic Conversion Boundary** | Validated Candidates | {s2.passed_count} | `{s2.conversion_status}` | Converted: {s2.converted_security_count}, Revocation: `{s2.revocation_reason or 'NONE'}` |",
         f"| **Stage 3: Universe Builder Evaluation** | Converted Securities | {s3.evaluated_security_count} | `{s3.status}` | Eligible: {s3.eligible_count}, Ineligible: {s3.ineligible_count}, Unresolved: {s3.unresolved_count} |",
@@ -1347,6 +1414,8 @@ def format_offline_build_coverage_markdown(result: OfflineBuildCoverageResult) -
         f"### Stage 1: Identity & Listing Association Checks",
         f"- Total Input Candidates: **{s1.total_candidates}**",
         f"- Distinct Lookup Symbols: **{s1.distinct_symbols}**",
+        f"- Issuer Associated Candidates: **{s1.issuer_associated_count}** ({', '.join(s1.issuer_associated_symbols) if s1.issuer_associated_symbols else 'NONE'})",
+        f"- Provisional Mapping Available: **{s1.provisional_mapping_count}** ({', '.join(s1.provisional_mapping_symbols) if s1.provisional_mapping_symbols else 'NONE'})",
         f"- Resolved Security Identities: **{s1.resolved_identities_count}** ({', '.join(s1.resolved_symbols) if s1.resolved_symbols else 'NONE'})",
         f"- Blocked Identity Associations: **{s1.blocked_identities_count}** ({', '.join(s1.blocked_symbols) if s1.blocked_symbols else 'NONE'})",
         f"- Unavailable Identity Associations: **{s1.unavailable_identities_count}** ({', '.join(s1.unavailable_symbols) if s1.unavailable_symbols else 'NONE'})",
