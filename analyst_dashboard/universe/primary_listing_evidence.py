@@ -124,6 +124,7 @@ class AttributablePrimaryListingEvidenceRecord:
     source_claim: Optional[str] = None
     publisher_primary_listing_claim: Optional[str] = None
     interpretation: Optional[str] = None
+    prospective_lookup_target: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
@@ -149,7 +150,7 @@ class AttributablePrimaryListingEvidenceRecord:
             source_record_locator=self.section_table_locator,
             source_content_hash=self.raw_response_sha256,
             observation_timestamp_utc=self.retrieval_timestamp_utc,
-            transformation_rule="SECTION_12B_SECURITY_REGISTRATION_TABLE_INGESTION",
+            transformation_rule="SEC_EDGAR_SUBMISSIONS_API_METADATA_OBSERVATION",
             mapping_version="1.0.0",
             does_certify_claim=is_real,
         )
@@ -166,6 +167,38 @@ class PrimaryListingEvidenceAdapter:
     """
 
     DEFAULT_EVIDENCE_PATH = Path("data/research/primary_listing_evidence/seven_candidates_primary_listing_evidence.json")
+
+    AUTHORITATIVE_CANDIDATE_CIK_MAPPING = {
+        "AAPL": "0000320193",
+        "GOOGL": "0001652044",
+        "GOOG": "0001652044",
+        "TSM": "0001046179",
+        "ACCS": "0000843006",
+        "DDS": "0000028917",
+        "AACIU": "0002092897",
+    }
+
+    @classmethod
+    def validate_candidate_issuer_binding(
+        cls,
+        symbol: str,
+        evidence: AttributablePrimaryListingEvidenceRecord,
+        expected_cik: Optional[str] = None,
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Validates that an attributable evidence record matches the candidate's verified issuer CIK.
+        Strictly rejects evidence reuse from another issuer, similarly named SPAC, or historical ticker.
+        """
+        authoritative_cik = expected_cik or cls.AUTHORITATIVE_CANDIDATE_CIK_MAPPING.get(symbol)
+        if authoritative_cik is None:
+            return True, None
+        if evidence.cik != authoritative_cik:
+            return (
+                False,
+                f"REJECTED_MISMATCHED_ISSUER_EVIDENCE: Evidence CIK '{evidence.cik}' does not match "
+                f"verified candidate CIK '{authoritative_cik}' for '{symbol}' (rejects cross-issuer or cross-SPAC evidence reuse)",
+            )
+        return True, None
 
     @classmethod
     def get_operator_sec_contact_status(cls) -> Dict[str, Any]:
@@ -251,6 +284,7 @@ class PrimaryListingEvidenceAdapter:
                 source_claim=rec_dict.get("source_claim"),
                 publisher_primary_listing_claim=rec_dict.get("publisher_primary_listing_claim"),
                 interpretation=rec_dict.get("interpretation"),
+                prospective_lookup_target=rec_dict.get("prospective_lookup_target"),
             )
 
         return records
@@ -268,6 +302,14 @@ class PrimaryListingEvidenceAdapter:
         for sym, ev in evidence_records.items():
             prop = ledger.get_proposal(sym)
             if not prop:
+                continue
+
+            # Validate issuer binding before attributing
+            is_valid_binding, binding_err = cls.validate_candidate_issuer_binding(
+                sym, ev, expected_cik=prop.proposed_entity.issuer_cik
+            )
+            if not is_valid_binding:
+                prop.ambiguities_and_missing_evidence.append(binding_err or "MISMATCHED_ISSUER_CIK")
                 continue
 
             # Attach attributable field evidence
@@ -423,17 +465,31 @@ class PrimaryListingReplayEngine:
         for prop in proposals:
             sym = prop.symbol
             ev = evidence_records.get(sym)
-            ev_class = ev.classification if ev else PrimaryListingEvidenceClassification.EVIDENCE_UNAVAILABLE
-            assigned_pl = ev.assigned_primary_listing if ev else None
+
+            # Check issuer binding
+            is_valid_binding, binding_err = (
+                PrimaryListingEvidenceAdapter.validate_candidate_issuer_binding(
+                    sym, ev, expected_cik=prop.proposed_entity.issuer_cik
+                )
+                if ev
+                else (True, None)
+            )
+
+            if not is_valid_binding:
+                ev_class = PrimaryListingEvidenceClassification.CONFLICTING_EVIDENCE
+                assigned_pl = None
+            else:
+                ev_class = ev.classification if ev else PrimaryListingEvidenceClassification.EVIDENCE_UNAVAILABLE
+                assigned_pl = ev.assigned_primary_listing if ev else None
 
             if assigned_pl is not None:
                 newly_evidenced.append(sym)
 
             # Determine security_id used
-            if is_simulation:
+            if is_simulation and is_valid_binding:
                 sec_id = prop.proposed_entity.provisional_security_id
             else:
-                sec_id = None  # Production adoption DISABLED
+                sec_id = None  # Production adoption DISABLED or mismatched issuer rejected
 
             # Build raw record for validation
             raw_rec = {
@@ -443,7 +499,7 @@ class PrimaryListingReplayEngine:
                 "listing_status": "ACTIVE",
                 "currency": "USD",
                 "listing_country": "USA",
-                "incorporation_country": prop.proposed_entity.issuer_cik,
+                "incorporation_country": prop.proposed_entity.issuer_cik if is_valid_binding else "INVALID_ISSUER_CIK",
                 "selected_us_assessment_listing": True,
                 "primary_listing": assigned_pl,
                 "asset_class": "EQUITY",
@@ -459,8 +515,10 @@ class PrimaryListingReplayEngine:
             val_res = UniverseInputValidator.validate_record(raw_rec, reqs)
             val_status = val_res.status.value
             val_issues = [f"{i.field_name}: {i.issue_code.value}" for i in val_res.issues]
+            if not is_valid_binding:
+                val_issues.append(f"issuer_cik: {binding_err}")
 
-            if val_res.status == ValidationStatus.VALIDATION_PASSED:
+            if val_res.status == ValidationStatus.VALIDATION_PASSED and is_valid_binding:
                 passed_count += 1
             else:
                 failed_count += 1
@@ -468,7 +526,7 @@ class PrimaryListingReplayEngine:
             # Isolated probe of SourceSecurity conversion
             can_convert = False
             conv_err = None
-            if val_res.status == ValidationStatus.VALIDATION_PASSED:
+            if val_res.status == ValidationStatus.VALIDATION_PASSED and is_valid_binding:
                 try:
                     to_source_security(val_res)
                     can_convert = True
@@ -479,15 +537,22 @@ class PrimaryListingReplayEngine:
                     probe_conversion_blocked += 1
             else:
                 probe_conversion_blocked += 1
-                conv_err = f"Validation failed ({val_status})"
+                if not is_valid_binding:
+                    conv_err = binding_err
+                else:
+                    conv_err = f"Validation failed ({val_status})"
 
             # Remaining uncertainty
             uncertainties = list(prop.ambiguities_and_missing_evidence)
-            if ev:
+            if not is_valid_binding:
+                uncertainties.append(binding_err or "REJECTED_MISMATCHED_ISSUER_EVIDENCE")
+            elif ev:
                 uncertainties.append(ev.contract_ambiguity_notes)
 
             # Blocking reason determination
-            if not is_simulation:
+            if not is_valid_binding:
+                block_reason = binding_err or "REJECTED_MISMATCHED_ISSUER_EVIDENCE"
+            elif not is_simulation:
                 block_reason = "PRODUCTION_IDENTITY_ADOPTION_DISABLED: security_id unadopted"
             elif assigned_pl is None:
                 block_reason = f"UNKNOWN_PRIMARY_LISTING: {ev_class.value}"

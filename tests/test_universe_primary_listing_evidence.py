@@ -29,6 +29,7 @@ from analyst_dashboard.universe.identity_proposal import (
     build_seven_candidate_proposal,
 )
 from analyst_dashboard.universe.primary_listing_evidence import (
+    AttributablePrimaryListingEvidenceRecord,
     PrimaryListingEvidenceAdapter,
     PrimaryListingEvidenceClassification,
     PrimaryListingReplayEngine,
@@ -495,3 +496,170 @@ class TestAtomicBatchMixedValidityProtection:
         # Calling to_source_securities() on the batch strictly fails closed
         with pytest.raises(ValueError, match="Cannot construct SourceSecurity without explicit, validated boolean value for 'primary_listing'"):
             batch_res2.to_source_securities()
+
+
+# =====================================================================
+# 10. Issuer Association & Source Attribution Binding
+# =====================================================================
+
+class TestIssuerAndInstrumentAssociationBinding:
+    """
+    Verifies that candidate claims strictly bind to verified archived CIKs,
+    reject unsupported CIKs / cross-SPAC evidence reuse, label source claims
+    as observed metadata, and accurately attribute DDS venue conflict.
+    """
+
+    def test_accs_archived_cik_verified_and_rejects_unsupported_cik(self):
+        records = PrimaryListingEvidenceAdapter.load_reference_evidence()
+        accs = records["ACCS"]
+        assert accs.cik == "0000843006"
+
+        # Valid binding passes
+        is_valid, err = PrimaryListingEvidenceAdapter.validate_candidate_issuer_binding("ACCS", accs)
+        assert is_valid is True
+        assert err is None
+
+        # Create conflicting evidence with unsupported CIK 0001844238
+        fake_rec = AttributablePrimaryListingEvidenceRecord(
+            symbol="ACCS",
+            cik="0001844238",  # Unsupported / mismatched CIK
+            instrument_title=accs.instrument_title,
+            instrument_structure=accs.instrument_structure,
+            share_class=accs.share_class,
+            source_provider=accs.source_provider,
+            source_url="https://data.sec.gov/submissions/CIK0001844238.json",
+            request_locator="Fake CIK0001844238.json",
+            retrieval_timestamp_utc=accs.retrieval_timestamp_utc,
+            filing_accession=None,
+            filing_report_date=None,
+            filing_form=accs.filing_form,
+            raw_response_sha256=accs.raw_response_sha256,
+            section_table_locator=accs.section_table_locator,
+            stated_exchange=accs.stated_exchange,
+            stated_symbol="ACCS",
+            operating_mic=accs.operating_mic,
+            is_multi_class=False,
+            effective_as_of_date=accs.effective_as_of_date,
+            temporal_limitations=accs.temporal_limitations,
+            classification=PrimaryListingEvidenceClassification.CONFLICTING_EVIDENCE,
+            claim_supported=accs.claim_supported,
+            inferences_prohibited=accs.inferences_prohibited,
+            assigned_primary_listing=True,  # Attempting to assign True with invalid CIK
+            contract_ambiguity_notes="Unsupported CIK test",
+        )
+
+        is_valid_fake, err_fake = PrimaryListingEvidenceAdapter.validate_candidate_issuer_binding("ACCS", fake_rec)
+        assert is_valid_fake is False
+        assert "REJECTED_MISMATCHED_ISSUER_EVIDENCE" in err_fake
+        assert "0001844238" in err_fake
+        assert "0000843006" in err_fake
+
+        # Verify replay engine strictly blocks fake evidence
+        ledger = build_seven_candidate_proposal()
+        bad_records = dict(records)
+        bad_records["ACCS"] = fake_rec
+        replay_res = PrimaryListingReplayEngine.run_replay(ledger, bad_records, is_simulation=True)
+        accs_res = replay_res.candidate_results["ACCS"]
+        assert accs_res.conversion_permitted is False
+        assert "REJECTED_MISMATCHED_ISSUER_EVIDENCE" in accs_res.blocking_reason
+
+    def test_aaciu_archived_cik_verified_and_rejects_older_spac_cik(self):
+        records = PrimaryListingEvidenceAdapter.load_reference_evidence()
+        aaciu = records["AACIU"]
+        assert aaciu.cik == "0002092897"  # Armada Acquisition Corp. III
+
+        # Valid binding passes
+        is_valid, err = PrimaryListingEvidenceAdapter.validate_candidate_issuer_binding("AACIU", aaciu)
+        assert is_valid is True
+        assert err is None
+
+        # Test rejection of older SPAC Armada Acquisition Corp. I (CIK 0001844419)
+        fake_rec = AttributablePrimaryListingEvidenceRecord(
+            symbol="AACIU",
+            cik="0001844419",  # Armada Acquisition Corp. I (older SPAC)
+            instrument_title=aaciu.instrument_title,
+            instrument_structure=aaciu.instrument_structure,
+            share_class=aaciu.share_class,
+            source_provider=aaciu.source_provider,
+            source_url="https://data.sec.gov/submissions/CIK0001844419.json",
+            request_locator="Submissions API CIK0001844419.json",
+            retrieval_timestamp_utc=aaciu.retrieval_timestamp_utc,
+            filing_accession=None,
+            filing_report_date=None,
+            filing_form=aaciu.filing_form,
+            raw_response_sha256=aaciu.raw_response_sha256,
+            section_table_locator=aaciu.section_table_locator,
+            stated_exchange=aaciu.stated_exchange,
+            stated_symbol="AACIU",
+            operating_mic=aaciu.operating_mic,
+            is_multi_class=False,
+            effective_as_of_date=aaciu.effective_as_of_date,
+            temporal_limitations=aaciu.temporal_limitations,
+            classification=PrimaryListingEvidenceClassification.CONFLICTING_EVIDENCE,
+            claim_supported=aaciu.claim_supported,
+            inferences_prohibited=aaciu.inferences_prohibited,
+            assigned_primary_listing=True,
+            contract_ambiguity_notes="Cross-SPAC CIK test",
+        )
+
+        is_valid_fake, err_fake = PrimaryListingEvidenceAdapter.validate_candidate_issuer_binding("AACIU", fake_rec)
+        assert is_valid_fake is False
+        assert "REJECTED_MISMATCHED_ISSUER_EVIDENCE" in err_fake
+        assert "0001844419" in err_fake
+        assert "0002092897" in err_fake
+
+        # Verify proposal enrichment rejects mismatched evidence
+        ledger = build_seven_candidate_proposal()
+        enriched_ledger = PrimaryListingEvidenceAdapter.enrich_candidate_proposals(
+            ledger, {"AACIU": fake_rec}
+        )
+        aaciu_prop = enriched_ledger.get_proposal("AACIU")
+        assert any("REJECTED_MISMATCHED_ISSUER_EVIDENCE" in amb for amb in aaciu_prop.ambiguities_and_missing_evidence)
+
+    def test_all_seven_candidates_bind_to_archived_ciks_and_authentic_responses(self):
+        records = PrimaryListingEvidenceAdapter.load_reference_evidence()
+        expected_ciks = {
+            "AAPL": "0000320193",
+            "GOOGL": "0001652044",
+            "GOOG": "0001652044",
+            "TSM": "0001046179",
+            "ACCS": "0000843006",
+            "DDS": "0000028917",
+            "AACIU": "0002092897",
+        }
+
+        for sym, exp_cik in expected_ciks.items():
+            assert sym in records, f"Missing evidence record for {sym}"
+            rec = records[sym]
+            assert rec.cik == exp_cik, f"CIK mismatch for {sym}: expected {exp_cik}, got {rec.cik}"
+            is_valid, err = PrimaryListingEvidenceAdapter.validate_candidate_issuer_binding(sym, rec)
+            assert is_valid is True, f"Binding failed for {sym}: {err}"
+
+    def test_source_claims_are_observed_metadata_not_inspected_cover_page(self):
+        records = PrimaryListingEvidenceAdapter.load_reference_evidence()
+        for sym, rec in records.items():
+            # Source claim must quote observed Submissions API metadata
+            assert "observed" in rec.source_claim.lower() or "submissions" in rec.source_claim.lower()
+            # Prospective lookup target must be explicitly declared as UNFETCHED
+            assert rec.prospective_lookup_target is not None
+            assert "UNFETCHED" in rec.prospective_lookup_target
+            # Transformation rule must reflect API metadata observation, not cover page ingestion
+            ev_field = rec.to_attributable_field_evidence()
+            assert ev_field.transformation_rule == "SEC_EDGAR_SUBMISSIONS_API_METADATA_OBSERVATION"
+
+    def test_dds_source_attribution_preserves_archived_txse_and_secondary_nyse(self):
+        records = PrimaryListingEvidenceAdapter.load_reference_evidence()
+        dds = records["DDS"]
+
+        # Archived parent feeds concordantly record TXSE (SEC: TXSE, Other Listed: F)
+        assert "TXSE" in dds.stated_exchange
+        assert "Archived 2026-10-16 parent feeds: SEC reports TXSE, Other Listed reports F" in dds.source_claim
+        # Secondary providers claim NYSE
+        assert "NYSE" in dds.source_claim
+        assert "UNRESOLVED_VENUE_CONFLICT" in dds.stated_exchange
+        # NYSE is NOT labeled as the archived directory observation
+        assert "archived directory observation" not in dds.source_claim.lower()
+        # Concrete operating MIC is unresolved
+        assert dds.operating_mic is None
+        assert dds.assigned_primary_listing is None
+
