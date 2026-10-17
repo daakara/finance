@@ -137,8 +137,8 @@ In accordance with operator instructions, existing provider entitlements and con
 | Provider / Interface | Environment Configuration | Active Access Tier | Documented Endpoint | Primary Exchange Field Supported? | Current Operational Status |
 |:---|:---:|:---:|:---|:---:|:---|
 | **OpenFIGI** | `OPENFIGI_API_KEY` Configured (`True`) | Free Registered API Key (25 req/min) | `POST https://api.openfigi.com/v3/mapping` | **No** (Schema omits primary listing attribute) | **ACTIVE**: Bounded reference mapping executed; leaves `primary_listing = None`. |
-| **Massive / Polygon** | `POLYGON_API_KEY` / `MASSIVE_API_KEY` Not Configured (`False`) | Unconfigured | `GET https://api.polygon.io/v3/reference/tickers/{ticker}` | **Yes** (`primary_exchange` ISO 10383 MIC) | **ACCESS DEPENDENCY**: Live retrieval blocked; requires operator-supplied credential. |
-| **Alpaca** | `ALPACA_API_KEY` Not Configured (`False`) | Unconfigured | `GET https://api.alpaca.markets/v2/assets/{symbol}` | **Yes** (`exchange` attribute) | **ACCESS DEPENDENCY**: Unconfigured in environment. |
+| **Massive / Polygon** | `POLYGON_API_KEY` / `MASSIVE_API_KEY` Not Configured (`False`) | Unconfigured Dependency | `GET https://api.polygon.io/v3/reference/tickers/{ticker}` | **Yes** (`primary_exchange` ISO 10383 MIC) | **CONFIGURATION DEPENDENCY**: Neither `POLYGON_API_KEY` nor `MASSIVE_API_KEY` is configured in the environment. This is an unconfigured service dependency, not a confirmed provider restriction or entitlement failure. |
+| **Alpaca** | `ALPACA_API_KEY_ID` / `ALPACA_API_SECRET_KEY` Not Configured in Active Environment (`False`) | Unconfigured Dependency | `GET https://api.alpaca.markets/v2/assets/{symbol}` | **Yes** (`exchange` attribute) | **CONFIGURATION DEPENDENCY**: Unconfigured in active environment. |
 
 #### 4.2 Bounded OpenFIGI Retrieval & Payload Verification
 A bounded retrieval was executed against the official OpenFIGI v3 mapping endpoint using the configured free API key:
@@ -230,16 +230,34 @@ The replay engine (`PrimaryListingReplayEngine`) executed against the candidate 
 
 ---
 
-### 8. Concrete Provider & Source Options for Production Adoption
+### 8. Approved R06 Evidence Paths & Concrete Source Options
 
-To advance beyond `primary_listing = None` without unapproved inferences, the following concrete provider options are available:
+To advance beyond `primary_listing = None` without unapproved inferences, Rule R06 preserves two distinct, approved evidence paths. Resolution is not restricted to a single provider (such as Massive) or a single corporate certification route; either approved path may be satisfied by appropriate authoritative evidence:
 
-| Provider / Source | Documented Field Availability | Status / Entitlement Prerequisites | Estimated Cost / Terms |
-|:---|:---|:---|:---|
-| **Massive / Polygon Tickers API** | Explicit `primary_exchange` attribute (ISO 10383 MIC, e.g. `XNAS`, `XNYS`) via `GET /v3/reference/tickers/{ticker}` | Requires operator-configured `POLYGON_API_KEY` or `MASSIVE_API_KEY` | Existing commercial subscription; pending local configuration |
-| **UTP SIP / DataCT Tape C Feed** | Explicit `Primary Listing Market` attribute for all Tape C securities | Licensed SIP distributor agreement; multicast network connection | Commercial market data fee schedule |
-| **Bloomberg Data License** | Explicit `EQY_PRIM_EXCH` / `PRIMARY_EXCHANGE_MIC` per-security field | Enterprise Bloomberg Data License contract | Enterprise institutional licensing |
-| **Direct Issuer IR Written Certification** | Formal corporate disclosure stating designated primary exchange | Operator outreach to Apple and Alphabet Corporate Secretaries | Zero data fees; requires human communication |
+#### 8.1 Approved Rule R06 Evidence Paths
+1. **Path A: Attributable Direct Identification**
+   - Direct identification of the exact instrument's designated primary exchange listing published by an authoritative source.
+   - *Candidate Channels:*
+     - Official exchange primary listing notices, regulatory filings, or direct exchange listing registers.
+     - Official national market system consolidated feeds (e.g., UTP SIP Tape C feed with explicit `Primary Listing Market`).
+     - Entitled commercial reference data providers with documented primary exchange fields (e.g., Massive / Polygon `primary_exchange` MIC, Bloomberg Data License `EQY_PRIM_EXCH`, or LSEG DataScope).
+2. **Path B: Documented Derivation Supported by Authoritative Rules & Facts**
+   - A documented derivation supported by appropriate source authority (e.g., exchange rulebook, operating plan, SEC filings) and instrument-specific facts.
+   - Does *not* require the literal phrasing "primary listing" if supported by source authority.
+   - Does *not* universally require exclusivity proof unless the specific derivation depends on exclusivity.
+   - Does *not* universally require a physical listing certificate or agreement (those are illustrative examples).
+   - Distinguishable from an explicit publisher assertion, but cannot be manufactured from mere Section 12(b) trading registration facts or directory presence alone.
+
+#### 8.2 Provider and Source Channels (Framed as Operational Dependencies)
+Unconfigured or untested external services represent **configuration and access dependencies**, not confirmed provider restrictions, account bans, or permanent entitlement failures:
+
+| Source / Provider Channel | Applicable Evidence Path | Documented Field / Authority | Operational Status / Dependency Description |
+|:---|:---:|:---|:---|
+| **Massive / Polygon Reference API** | Path A (Direct Identification) | Explicit `primary_exchange` attribute (ISO 10383 MIC, e.g. `XNAS`, `XNYS`) via `GET /v3/reference/tickers/{ticker}` | **Configuration Dependency**: Neither `POLYGON_API_KEY` nor `MASSIVE_API_KEY` is currently configured in the environment. This is an unconfigured service dependency, not a confirmed provider restriction or entitlement failure. |
+| **National Market System (UTP SIP Tape C)** | Path A (Direct Identification) | Explicit `Primary Listing Market` attribute for all Tape C securities under UTP Plan | **Access Dependency**: Requires commercial SIP data distributor agreement and network feed connection. |
+| **Enterprise Reference Masters (e.g. Bloomberg Data License)** | Path A (Direct Identification) | Per-security `EQY_PRIM_EXCH` / `PRIMARY_EXCHANGE_MIC` field | **Access Dependency**: Enterprise flat-file data service requiring institutional commercial subscription. |
+| **Official Exchange Rulebook / Formal Notice Synthesis** | Path B (Documented Derivation) | Documented exchange listing authority rule linking market tier to primary designation | **Research Dependency**: Requires identifying an authoritative exchange rule or circular explicitly bridging listing facts to designated primary status. |
+| **Direct Issuer Investor Relations Certification** | Path A (Direct Identification) | Formal corporate disclosure or IR confirmation of designated primary exchange | **Access Dependency**: Automated IR web endpoints enforce edge security (HTTP 403); requires authorized access or IR inquiry. |
 
 *Note on OpenFIGI:* OpenFIGI free API does not supply a primary listing attribute. Claims that an OpenFIGI Enterprise tier provides an explicit `primaryListing` boolean flag remain unverified.
 

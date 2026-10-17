@@ -451,7 +451,7 @@ class PrimaryListingEvidenceAdapter:
             },
             "massive_polygon": {
                 "configured": polygon_configured,
-                "tier": "RESTRICTED" if not polygon_configured else "CONFIGURED",
+                "tier": "UNCONFIGURED_DEPENDENCY" if not polygon_configured else "CONFIGURED",
                 "endpoint": "GET https://api.polygon.io/v3/reference/tickers/{ticker}",
                 "primary_exchange_field_supported": True,
                 "field_notes": (
@@ -462,21 +462,25 @@ class PrimaryListingEvidenceAdapter:
                     None
                     if polygon_configured
                     else (
-                        "UNCONFIGURED_CREDENTIAL: Neither POLYGON_API_KEY nor MASSIVE_API_KEY is configured "
-                        "in the environment. Provider inquiry requires operator configuration."
+                        "CONFIGURATION_DEPENDENCY (UNCONFIGURED_CREDENTIAL): Neither POLYGON_API_KEY nor MASSIVE_API_KEY "
+                        "is configured in the environment. This is an unconfigured local service dependency, not a "
+                        "confirmed provider restriction or entitlement failure."
                     )
                 ),
             },
             "alpaca": {
                 "configured": alpaca_configured,
-                "tier": "RESTRICTED" if not alpaca_configured else "CONFIGURED",
+                "tier": "UNCONFIGURED_DEPENDENCY" if not alpaca_configured else "CONFIGURED",
                 "endpoint": "GET https://api.alpaca.markets/v2/assets/{symbol_or_asset_id}",
                 "primary_exchange_field_supported": True,
                 "field_notes": "Alpaca Assets API returns 'exchange' attribute (e.g. 'NASDAQ'), but access requires API key pair.",
                 "access_blocker": (
                     None
                     if alpaca_configured
-                    else "UNCONFIGURED_CREDENTIAL: ALPACA_API_KEY / ALPACA_SECRET_KEY not configured in environment."
+                    else (
+                        "CONFIGURATION_DEPENDENCY (UNCONFIGURED_CREDENTIAL): ALPACA_API_KEY_ID / ALPACA_API_SECRET_KEY "
+                        "is not configured in the active environment. This is an unconfigured service dependency."
+                    )
                 ),
             },
         }
