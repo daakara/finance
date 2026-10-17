@@ -168,11 +168,6 @@ export default function StockDetailPage({ params }: PageProps) {
       "name": `${name} (${sym}) Trading Blueprint • Minervini VCP Levels & Insiders`,
       "description": `Quantitative equity analytics, Minervini VCP levels, and risk modeling for ${name} (${sym}).`,
       "url": `https://www.arxterminal.com/stock/${params.ticker.toLowerCase()}/`,
-      "about": {
-        "@type": "Corporation",
-        "name": name,
-        "tickerSymbol": sym
-      },
       "publisher": {
         "@type": "Organization",
         "name": "ARX Terminal",

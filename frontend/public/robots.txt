@@ -39,9 +39,6 @@ Disallow: /journal
 Disallow: /performance
 Disallow: /workbench/
 Disallow: /research
-Disallow: /*?*symbol=*
-Disallow: /*?*fromGoal=*
-Disallow: /*?*fromCount=*
 
 # Explicit OpenAI Search Crawler Policy: allow indexable routes while preserving private boundaries
 User-agent: OAI-SearchBot
@@ -83,9 +80,6 @@ Disallow: /journal
 Disallow: /performance
 Disallow: /workbench/
 Disallow: /research
-Disallow: /*?*symbol=*
-Disallow: /*?*fromGoal=*
-Disallow: /*?*fromCount=*
 Allow: /
 
 # Restrict LLM training scraping bot

@@ -96,15 +96,15 @@ export default function TerminalSsrShell() {
           {/* Active Asset Header Strip */}
           <div className="bg-[#0e1420] border border-[#1b2434] rounded-xl p-4 shadow-xl">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight" aria-label="Spotlight asset AAPL baseline price">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight" aria-label="Spotlight asset AAPL catalog baseline reference">
                   AAPL <span className="text-xl sm:text-2xl font-bold text-slate-200">${CATALOG_BASELINE_PRICES["AAPL"]?.toFixed(2) || "224.23"}</span>
                 </div>
-                <span className="px-2 py-0.5 rounded text-xs font-bold font-mono bg-emerald-950 text-emerald-400 border border-emerald-800">
-                  +0.45% 1Y
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">
+                  Catalog Reference
                 </span>
-                <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-[#111726] text-cyan-400 border border-cyan-900/60">
-                  20 EMA Active
+                <span className="text-[10px] text-slate-400 font-sans hidden sm:inline">
+                  (Static baseline · Live market tape loads interactively)
                 </span>
               </div>
             </div>

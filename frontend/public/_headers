@@ -30,3 +30,11 @@
   Cloudflare-CDN-Cache-Control: no-store
   Vary: Authorization, X-Evaluation-Key
   X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+
+# Cloudflare Pages Staging & Production Alias Domain Crawl Shield
+# Restricts crawling across pages.dev subdomains while keeping custom production hostnames indexable.
+https://:project.pages.dev/*
+  X-Robots-Tag: noindex
+
+https://finance-xp8.pages.dev/*
+  X-Robots-Tag: noindex

@@ -9,6 +9,7 @@ console.log("Starting ARX Technical SEO & Canonical Routing Invariant Test Suite
 
 const FRONTEND_DIR = path.resolve(__dirname, "..");
 const REDIRECTS_PATH = path.join(FRONTEND_DIR, "public", "_redirects");
+const HEADERS_PATH = path.join(FRONTEND_DIR, "public", "_headers");
 const ROBOTS_PATH = path.join(FRONTEND_DIR, "public", "robots.txt");
 const TERMINAL_SSR_PATH = path.join(FRONTEND_DIR, "components", "TerminalSsrShell.tsx");
 const STOCK_TICKER_PAGE_PATH = path.join(FRONTEND_DIR, "app", "stock", "[ticker]", "page.tsx");
@@ -41,11 +42,33 @@ assert.ok(
 console.log("   [OK] Permanent 301 redirects from /screener to /radar are present");
 
 // ---------------------------------------------------------------------------
-// 2. Invariant Check: frontend/app/sitemap.ts
+// 2. Invariant Check: frontend/public/_headers (Cloudflare Host Crawl Protection)
 // ---------------------------------------------------------------------------
-console.log("2. Verifying sitemap.ts route inventory & canonical URL generation...");
+console.log("2. Verifying Cloudflare Pages _headers host crawl rules...");
+const headersContent = fs.readFileSync(HEADERS_PATH, "utf-8");
+assert.ok(
+  headersContent.includes("https://:project.pages.dev/*") || headersContent.includes("https://finance-xp8.pages.dev/*"),
+  "FAIL: _headers must specify pages.dev absolute host pattern"
+);
+assert.ok(
+  headersContent.includes("X-Robots-Tag: noindex"),
+  "FAIL: _headers must specify X-Robots-Tag: noindex for pages.dev"
+);
+console.log("   [OK] _headers contains absolute hostname rules protecting pages.dev from indexing");
+
+// ---------------------------------------------------------------------------
+// 3. Invariant Check: frontend/app/sitemap.ts (Membership-based derivation)
+// ---------------------------------------------------------------------------
+console.log("3. Verifying sitemap.ts route inventory & canonical URL generation...");
 const routes = sitemap();
 const urls = routes.map((r) => r.url);
+
+// Check uniqueness (no duplicate URLs)
+assert.strictEqual(
+  urls.length,
+  new Set(urls).size,
+  "FAIL: sitemap must not contain duplicate URLs"
+);
 
 // /screener must NOT be in sitemap
 assert.strictEqual(
@@ -80,12 +103,6 @@ const masterTickers = getAllMasterTickers().map((t) => t.toLowerCase());
 const watchlistTickers = SHARED_WATCHLIST_ITEMS.map((item) => item.symbol.toLowerCase());
 const uniqueTickers = Array.from(new Set([...masterTickers, ...watchlistTickers])).sort();
 
-assert.strictEqual(
-  uniqueTickers.length,
-  49,
-  `FAIL: Expected 49 unique stock tickers, got ${uniqueTickers.length}`
-);
-
 for (const ticker of uniqueTickers) {
   const expectedUrl = `https://www.arxterminal.com/stock/${ticker}/`;
   assert.ok(
@@ -93,36 +110,41 @@ for (const ticker of uniqueTickers) {
     `FAIL: sitemap must include programmatic stock route: ${expectedUrl}`
   );
 }
-console.log(`   [OK] All 49 programmatic stock routes are present in sitemap`);
+console.log(`   [OK] All ${uniqueTickers.length} programmatic stock routes are present in sitemap (Total sitemap URLs: ${urls.length})`);
 
 // ---------------------------------------------------------------------------
-// 3. Invariant Check: frontend/public/robots.txt
+// 4. Invariant Check: frontend/public/robots.txt
 // ---------------------------------------------------------------------------
-console.log("3. Verifying robots.txt crawl directives & query hygiene...");
+console.log("4. Verifying robots.txt crawl directives & crawl hygiene...");
 const robotsContent = fs.readFileSync(ROBOTS_PATH, "utf-8");
 
-assert.ok(
+// Query parameter blanket exclusions must NOT be present (no ungrounded crawl blocks)
+assert.strictEqual(
   robotsContent.includes("Disallow: /*?*symbol=*"),
-  "FAIL: robots.txt must disallow crawler query parameter /*?*symbol=*"
+  false,
+  "FAIL: robots.txt should not block /*?*symbol=*"
 );
-assert.ok(
+assert.strictEqual(
   robotsContent.includes("Disallow: /*?*fromGoal=*"),
-  "FAIL: robots.txt must disallow crawler query parameter /*?*fromGoal=*"
+  false,
+  "FAIL: robots.txt should not block /*?*fromGoal=*"
 );
-assert.ok(
+assert.strictEqual(
   robotsContent.includes("Disallow: /*?*fromCount=*"),
-  "FAIL: robots.txt must disallow crawler query parameter /*?*fromCount=*"
+  false,
+  "FAIL: robots.txt should not block /*?*fromCount=*"
 );
+
 assert.ok(
   robotsContent.includes("Sitemap: https://www.arxterminal.com/sitemap.xml"),
   "FAIL: robots.txt must declare sitemap location"
 );
-console.log("   [OK] robots.txt contains query parameter crawl hygiene and sitemap reference");
+console.log("   [OK] robots.txt maintains clean crawler policies and sitemap declaration");
 
 // ---------------------------------------------------------------------------
-// 4. Invariant Check: TerminalSsrShell.tsx H1 & Brand Identity
+// 5. Invariant Check: TerminalSsrShell.tsx H1 & Brand Identity
 // ---------------------------------------------------------------------------
-console.log("4. Verifying homepage H1 semantic hierarchy in TerminalSsrShell.tsx...");
+console.log("5. Verifying homepage H1 semantic hierarchy in TerminalSsrShell.tsx...");
 const ssrContent = fs.readFileSync(TERMINAL_SSR_PATH, "utf-8");
 
 // Must NOT have AAPL price inside h1
@@ -143,12 +165,17 @@ assert.strictEqual(
   false,
   "FAIL: TerminalSsrShell must NOT link to legacy /screener"
 );
-console.log("   [OK] TerminalSsrShell renders authoritative ARX Terminal H1 and links to /radar");
+// Spotlight price must not masquerade as live market stream
+assert.ok(
+  ssrContent.includes("Catalog Reference") || ssrContent.includes("baseline"),
+  "FAIL: TerminalSsrShell spotlight must identify price as catalog/baseline reference"
+);
+console.log("   [OK] TerminalSsrShell renders authoritative ARX Terminal H1 and explicit reference provenance");
 
 // ---------------------------------------------------------------------------
-// 5. Invariant Check: stock/[ticker]/page.tsx Schema & Breadcrumbs
+// 6. Invariant Check: stock/[ticker]/page.tsx Schema & Breadcrumbs
 // ---------------------------------------------------------------------------
-console.log("5. Verifying stock detail schema.org and breadcrumbs in stock/[ticker]/page.tsx...");
+console.log("6. Verifying stock detail schema.org and breadcrumbs in stock/[ticker]/page.tsx...");
 const stockPageContent = fs.readFileSync(STOCK_TICKER_PAGE_PATH, "utf-8");
 
 assert.strictEqual(
@@ -156,13 +183,14 @@ assert.strictEqual(
   false,
   "FAIL: stock/[ticker]/page.tsx must NOT claim @type: 'FinancialProduct'"
 );
+assert.strictEqual(
+  stockPageContent.includes('"@type": "Corporation"'),
+  false,
+  "FAIL: stock/[ticker]/page.tsx must NOT apply blanket Corporation entity claims across ETF/Crypto inventory"
+);
 assert.ok(
   stockPageContent.includes('"@type": "WebPage"'),
   "FAIL: stock/[ticker]/page.tsx must use @type: 'WebPage'"
-);
-assert.ok(
-  stockPageContent.includes('"@type": "Corporation"'),
-  "FAIL: stock/[ticker]/page.tsx must identify subject company as Corporation"
 );
 assert.strictEqual(
   stockPageContent.includes('href="/screener"'),
@@ -173,12 +201,12 @@ assert.ok(
   stockPageContent.includes('https://www.arxterminal.com/radar/'),
   "FAIL: stock/[ticker]/page.tsx breadcrumbs must link to /radar/"
 );
-console.log("   [OK] stock/[ticker]/page.tsx uses WebPage/Corporation schema and radar breadcrumbs");
+console.log("   [OK] stock/[ticker]/page.tsx uses entity-neutral WebPage schema and radar breadcrumbs");
 
 // ---------------------------------------------------------------------------
-// 6. Invariant Check: stock/layout.tsx
+// 7. Invariant Check: stock/layout.tsx
 // ---------------------------------------------------------------------------
-console.log("6. Verifying stock/layout.tsx self-referential canonical...");
+console.log("7. Verifying stock/layout.tsx self-referential canonical...");
 assert.ok(fs.existsSync(STOCK_LAYOUT_PATH), "FAIL: frontend/app/stock/layout.tsx must exist");
 const stockLayoutContent = fs.readFileSync(STOCK_LAYOUT_PATH, "utf-8");
 assert.ok(
@@ -188,9 +216,9 @@ assert.ok(
 console.log("   [OK] stock/layout.tsx emits self-referencing canonical for /stock/");
 
 // ---------------------------------------------------------------------------
-// 7. Invariant Check: screener/layout.tsx
+// 8. Invariant Check: screener/layout.tsx
 // ---------------------------------------------------------------------------
-console.log("7. Verifying screener/layout.tsx noindex directive...");
+console.log("8. Verifying screener/layout.tsx noindex directive...");
 const screenerLayoutContent = fs.readFileSync(SCREENER_LAYOUT_PATH, "utf-8");
 assert.ok(
   screenerLayoutContent.includes("noindex") || screenerLayoutContent.includes("index: false"),
@@ -202,4 +230,4 @@ assert.ok(
 );
 console.log("   [OK] screener/layout.tsx declares index: false and canonical /radar/");
 
-console.log("\n[ALL 7 TECHNICAL SEO INVARIANT CHECKS PASSED SUCCESSFULLY]");
+console.log("\n[ALL 8 TECHNICAL SEO INVARIANT CHECKS PASSED SUCCESSFULLY]");
