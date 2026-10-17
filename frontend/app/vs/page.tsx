@@ -70,10 +70,10 @@ export default function ComparisonIndexPage() {
                 Quant Glossary 📚
               </Link>
               <Link
-                href="/screener/"
+                href="/radar/"
                 className="px-3.5 py-2 rounded-lg bg-[#111a2c] hover:bg-[#18263f] border border-[#223554] text-xs font-mono text-slate-200 transition-all shadow-sm"
               >
-                Live Screener ⚡
+                Live Radar ⚡
               </Link>
             </div>
           </div>

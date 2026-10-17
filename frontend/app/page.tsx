@@ -659,7 +659,7 @@ function TerminalContent() {
           <div className="space-y-4 pt-4 border-t border-[#182335]">
             <PageIntro
               hubId="analysis"
-              title={hasExplicitSymbol ? `Analysis — ${selectedSymbol}` : "Analysis"}
+              title={hasExplicitSymbol ? `Analysis — ${selectedSymbol}` : "ARX Terminal · Quantitative Analysis"}
               purpose="Evaluate whether an asset deserves capital based on confluence, technicals, and risk."
               badge={hasExplicitSymbol ? "Active Target" : "Demonstration Mode"}
               symbol={hasExplicitSymbol ? selectedSymbol : null}
