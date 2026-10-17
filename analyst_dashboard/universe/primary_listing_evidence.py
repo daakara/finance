@@ -120,6 +120,10 @@ class AttributablePrimaryListingEvidenceRecord:
     inferences_prohibited: Tuple[str, ...]
     assigned_primary_listing: Optional[bool]
     contract_ambiguity_notes: str
+    source_artifact: Optional[str] = None
+    source_claim: Optional[str] = None
+    publisher_primary_listing_claim: Optional[str] = None
+    interpretation: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
@@ -243,6 +247,10 @@ class PrimaryListingEvidenceAdapter:
                 inferences_prohibited=tuple(rec_dict.get("inferences_prohibited", ())),
                 assigned_primary_listing=rec_dict.get("assigned_primary_listing"),
                 contract_ambiguity_notes=rec_dict["contract_ambiguity_notes"],
+                source_artifact=rec_dict.get("source_artifact"),
+                source_claim=rec_dict.get("source_claim"),
+                publisher_primary_listing_claim=rec_dict.get("publisher_primary_listing_claim"),
+                interpretation=rec_dict.get("interpretation"),
             )
 
         return records
@@ -304,7 +312,10 @@ class PrimaryListingEvidenceAdapter:
 
 @dataclass
 class CandidateReplayResult:
-    """Individual candidate replay audit result."""
+    """
+    Individual candidate replay audit result.
+    Explicitly labeled as an isolated contract probe without admission authority.
+    """
     symbol: str
     provisional_security_id: str
     instrument_structure: str
@@ -320,6 +331,10 @@ class CandidateReplayResult:
     conversion_error: Optional[str]
     builder_status: str
     blocking_reason: str
+    is_isolated_probe: bool = True
+    has_admission_authority: bool = False
+    batch_admitted: bool = False
+    isolated_probe_note: str = "Isolated simulation probe only; carries zero admission authority."
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
@@ -329,19 +344,26 @@ class CandidateReplayResult:
 
 @dataclass
 class BatchReplayReport:
-    """Complete batch replay outcome separating actual state from proposal simulation."""
+    """
+    Complete batch replay outcome enforcing atomic whole-batch conversion gating.
+    Separates isolated contract probes from actual whole-batch admission.
+    """
     is_simulation: bool
     production_adoption_allowed: bool
     total_evaluated: int
     newly_evidenced_symbols: List[str]
     validation_passed_count: int
     validation_failed_count: int
-    conversion_count: int
-    conversion_blocked_count: int
+    conversion_count: int  # Count of isolated probes that passed conversion
+    conversion_blocked_count: int  # Count of isolated probes blocked
     is_batch_valid: bool
     builder_status: str
     candidate_results: Dict[str, CandidateReplayResult]
     blocking_summary: List[str]
+    batch_conversion_count: int = 0  # Actual SourceSecurity count from whole-batch gate
+    converted_source_securities: List[Any] = field(default_factory=list)
+    batch_admitted_count: int = 0
+    builder_handoff_permitted: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -353,8 +375,11 @@ class BatchReplayReport:
             "validation_failed_count": self.validation_failed_count,
             "conversion_count": self.conversion_count,
             "conversion_blocked_count": self.conversion_blocked_count,
+            "batch_conversion_count": self.batch_conversion_count,
+            "batch_admitted_count": self.batch_admitted_count,
             "is_batch_valid": self.is_batch_valid,
             "builder_status": self.builder_status,
+            "builder_handoff_permitted": self.builder_handoff_permitted,
             "candidate_results": {k: v.to_dict() for k, v in self.candidate_results.items()},
             "blocking_summary": self.blocking_summary,
         }
@@ -363,9 +388,9 @@ class BatchReplayReport:
 class PrimaryListingReplayEngine:
     """
     Executes bounded offline replay with newly ingested primary-listing evidence.
-    Enforces separation between:
-    A. Actual real-source admission (production identity adoption DISABLED).
-    B. PROPOSAL_SIMULATION exercising contract validation paths.
+    Enforces strict separation between:
+    A. Isolated per-record synthetic/proposal contract probes.
+    B. Actual whole-batch admission and conversion using the existing batch gate.
     """
 
     @classmethod
@@ -376,7 +401,7 @@ class PrimaryListingReplayEngine:
         is_simulation: bool = False,
     ) -> BatchReplayReport:
         """
-        Executes bounded offline replay.
+        Executes bounded offline replay enforcing atomic batch gating.
         """
         reqs = ValidationRequirements.create_listing_jurisdiction_profile(
             allowed_listing_countries={"USA"},
@@ -386,12 +411,16 @@ class PrimaryListingReplayEngine:
         candidate_results: Dict[str, CandidateReplayResult] = {}
         passed_count = 0
         failed_count = 0
-        converted_count = 0
-        conversion_blocked = 0
+        probe_converted_count = 0
+        probe_conversion_blocked = 0
         newly_evidenced: List[str] = []
         blocking_reasons: List[str] = []
+        raw_records: List[Dict[str, Any]] = []
 
-        for prop in ledger.list_proposals():
+        proposals = ledger.list_proposals()
+
+        # Step 1: Isolated per-record probes
+        for prop in proposals:
             sym = prop.symbol
             ev = evidence_records.get(sym)
             ev_class = ev.classification if ev else PrimaryListingEvidenceClassification.EVIDENCE_UNAVAILABLE
@@ -416,7 +445,7 @@ class PrimaryListingReplayEngine:
                 "listing_country": "USA",
                 "incorporation_country": prop.proposed_entity.issuer_cik,
                 "selected_us_assessment_listing": True,
-                "primary_listing": assigned_pl,  # Newly evidenced or preserved None
+                "primary_listing": assigned_pl,
                 "asset_class": "EQUITY",
                 "listing_date": None,
                 "delisting_date": None,
@@ -424,6 +453,8 @@ class PrimaryListingReplayEngine:
             }
             if sec_id:
                 raw_rec["security_id"] = sec_id
+
+            raw_records.append(raw_rec)
 
             val_res = UniverseInputValidator.validate_record(raw_rec, reqs)
             val_status = val_res.status.value
@@ -434,20 +465,20 @@ class PrimaryListingReplayEngine:
             else:
                 failed_count += 1
 
-            # Test conversion to SourceSecurity
+            # Isolated probe of SourceSecurity conversion
             can_convert = False
             conv_err = None
             if val_res.status == ValidationStatus.VALIDATION_PASSED:
                 try:
                     to_source_security(val_res)
                     can_convert = True
-                    converted_count += 1
+                    probe_converted_count += 1
                 except Exception as e:
                     can_convert = False
                     conv_err = str(e)
-                    conversion_blocked += 1
+                    probe_conversion_blocked += 1
             else:
-                conversion_blocked += 1
+                probe_conversion_blocked += 1
                 conv_err = f"Validation failed ({val_status})"
 
             # Remaining uncertainty
@@ -465,7 +496,7 @@ class PrimaryListingReplayEngine:
             elif not can_convert:
                 block_reason = f"CONVERSION_BLOCKED: {conv_err}"
             else:
-                block_reason = "NONE_CONVERTED_CLEANLY"
+                block_reason = "ISOLATED_PROBE_ONLY: NO_BATCH_ADMISSION_AUTHORITY"
 
             blocking_reasons.append(f"{sym}: {block_reason}")
 
@@ -485,11 +516,61 @@ class PrimaryListingReplayEngine:
                 conversion_error=conv_err,
                 builder_status="NOT_RUN",
                 blocking_reason=block_reason,
+                is_isolated_probe=True,
+                has_admission_authority=False,
+                batch_admitted=False,
             )
 
-        # Batch-level admission invariants
-        batch_valid = (failed_count == 0 and conversion_blocked == 0 and converted_count == len(ledger.list_proposals()))
-        builder_status = "NOT_RUN" if not batch_valid else "READY_FOR_BUILDER"
+        # Step 2: Whole-Batch Admission and Conversion Gate
+        batch_val_res = UniverseInputValidator.validate_batch(raw_records, reqs)
+        is_batch_valid = batch_val_res.is_batch_valid
+
+        converted_securities: List[Any] = []
+        batch_conv_count = 0
+        batch_admitted = 0
+        builder_status = "NOT_RUN"
+        builder_permitted = False
+
+        if is_batch_valid:
+            if is_simulation:
+                try:
+                    converted_securities = batch_val_res.to_source_securities()
+                    batch_conv_count = len(converted_securities)
+                    batch_admitted = batch_conv_count
+                    builder_status = "READY_FOR_BUILDER"
+                    builder_permitted = True
+                    for c in candidate_results.values():
+                        c.batch_admitted = True
+                        c.builder_status = "READY_FOR_BUILDER"
+                except Exception:
+                    # Atomic whole-batch failure: if any member fails conversion (e.g. primary_listing is None),
+                    # whole-batch conversion strictly fails closed with zero admitted.
+                    converted_securities = []
+                    batch_conv_count = 0
+                    batch_admitted = 0
+                    builder_status = "NOT_RUN"
+                    builder_permitted = False
+                    is_batch_valid = False
+                    for c in candidate_results.values():
+                        c.batch_admitted = False
+                        c.builder_status = "NOT_RUN"
+            else:
+                # Production adoption disabled
+                converted_securities = []
+                batch_conv_count = 0
+                batch_admitted = 0
+                builder_status = "NOT_RUN"
+                builder_permitted = False
+        else:
+            # Batch failed: Atomic whole-batch contract strictly blocks partial conversion
+            converted_securities = []
+            batch_conv_count = 0
+            batch_admitted = 0
+            builder_status = "NOT_RUN"
+            builder_permitted = False
+            for c in candidate_results.values():
+                c.batch_admitted = False
+                c.builder_status = "NOT_RUN"
 
         return BatchReplayReport(
             is_simulation=is_simulation,
@@ -498,10 +579,14 @@ class PrimaryListingReplayEngine:
             newly_evidenced_symbols=newly_evidenced,
             validation_passed_count=passed_count,
             validation_failed_count=failed_count,
-            conversion_count=converted_count,
-            conversion_blocked_count=conversion_blocked,
-            is_batch_valid=batch_valid,
+            conversion_count=probe_converted_count,
+            conversion_blocked_count=probe_conversion_blocked,
+            is_batch_valid=is_batch_valid,
             builder_status=builder_status,
             candidate_results=candidate_results,
             blocking_summary=blocking_reasons,
+            batch_conversion_count=batch_conv_count,
+            converted_source_securities=converted_securities,
+            batch_admitted_count=batch_admitted,
+            builder_handoff_permitted=builder_permitted,
         )

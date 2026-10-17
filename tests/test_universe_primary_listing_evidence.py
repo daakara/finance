@@ -58,23 +58,23 @@ class TestMultiClassFilingRowAssociation:
         assert googl is not None
         assert goog is not None
 
-        # Verify shared CIK and accession
+        # Verify shared CIK and source artifact
         assert googl.cik == "0001652044"
         assert goog.cik == "0001652044"
-        assert googl.filing_accession == "0001652044-24-000022"
-        assert goog.filing_accession == "0001652044-24-000022"
+        assert googl.source_artifact == goog.source_artifact
+        assert googl.raw_response_sha256 == goog.raw_response_sha256
 
-        # Verify distinct table rows and titles
-        assert "Row 1" in googl.section_table_locator
-        assert "Row 2" in goog.section_table_locator
+        # Verify distinct titles and share classes
         assert "Class A" in googl.instrument_title
         assert "Class C" in goog.instrument_title
         assert googl.share_class == "CLASS_A"
         assert goog.share_class == "CLASS_C"
+        assert googl.stated_symbol == "GOOGL"
+        assert goog.stated_symbol == "GOOG"
 
-        # Verify distinct classification and claim analysis
+        # Verify consistent classification under authentic source evidence
         assert googl.classification == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
-        assert goog.classification == PrimaryListingEvidenceClassification.CONTRACT_SEMANTICS_REQUIRE_SPECIFIC_DECISION
+        assert goog.classification == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
         assert googl.assigned_primary_listing is None
         assert goog.assigned_primary_listing is None
 
@@ -96,26 +96,33 @@ class TestMultiClassFilingRowAssociation:
 class TestListingFactVersusPrimaryListingClaim:
     """Verifies distinction between exchange registration facts and primary-listing claims."""
 
-    def test_aapl_evidence_sufficient_for_defined_primary_listing_claim(self):
+    def test_aapl_narrower_listing_fact_only(self):
         records = PrimaryListingEvidenceAdapter.load_reference_evidence()
         aapl = records.get("AAPL")
 
         assert aapl is not None
-        assert aapl.classification == PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM
-        assert aapl.assigned_primary_listing is True
+        assert aapl.classification == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+        assert aapl.assigned_primary_listing is None
         assert aapl.stated_exchange == "The Nasdaq Stock Market LLC"
         assert aapl.instrument_structure == "Common Stock"
         assert aapl.share_class is None
-        assert "Sole global Section 12(b)" in aapl.claim_supported
+        assert "narrower_listing_fact" in aapl.classification.value.lower()
 
-    def test_googl_narrower_listing_fact_only(self):
+    def test_goog_and_googl_treated_consistently_without_voting_rights_distinction(self):
         records = PrimaryListingEvidenceAdapter.load_reference_evidence()
         googl = records.get("GOOGL")
+        goog = records.get("GOOG")
 
-        assert googl is not None
+        assert googl is not None and goog is not None
         assert googl.classification == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+        assert goog.classification == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
         assert googl.assigned_primary_listing is None
-        assert "narrower_listing_fact" in googl.classification.value.lower()
+        assert goog.assigned_primary_listing is None
+        # Distinct identities preserved
+        assert googl.stated_symbol == "GOOGL"
+        assert goog.stated_symbol == "GOOG"
+        assert googl.share_class == "CLASS_A"
+        assert goog.share_class == "CLASS_C"
 
     def test_tsm_adr_listing_fact_distinguished_from_home_market(self):
         records = PrimaryListingEvidenceAdapter.load_reference_evidence()
@@ -188,6 +195,9 @@ class TestStaleOrTemporallyMismatchedEvidence:
                     "trading",
                     "txse",
                     "amex",
+                    "voting",
+                    "nasdaq",
+                    "listing",
                 )
             )
 
@@ -240,14 +250,14 @@ class TestConflictingSourceObservations:
 class TestUnknownPreservation:
     """Verifies that unevidenced primary_listing remains None and blocks conversion."""
 
-    def test_six_of_seven_candidates_preserve_none(self):
+    def test_all_seven_candidates_preserve_none(self):
         records = PrimaryListingEvidenceAdapter.load_reference_evidence()
         none_count = sum(1 for r in records.values() if r.assigned_primary_listing is None)
         true_count = sum(1 for r in records.values() if r.assigned_primary_listing is True)
         false_count = sum(1 for r in records.values() if r.assigned_primary_listing is False)
 
-        assert none_count == 6
-        assert true_count == 1  # Only AAPL under defined claim
+        assert none_count == 7
+        assert true_count == 0  # Zero unevidenced True assertions
         assert false_count == 0  # Zero fabricated False assertions
 
     def test_none_primary_listing_strictly_blocks_source_security_conversion(self):
@@ -299,12 +309,12 @@ class TestEvidenceReferenceAndHashIntegrity:
 
         assert isinstance(field_ev, AttributableFieldEvidence)
         assert field_ev.field_name == "primary_listing"
-        assert field_ev.asserted_value is True
-        assert field_ev.evidence_nature == EvidenceNature.DIRECT_PROVIDER_OBSERVATION
-        assert field_ev.source_identifier == "SEC_EDGAR"
+        assert field_ev.asserted_value is None
+        assert field_ev.evidence_nature == EvidenceNature.POLICY_DERIVED_ASSERTION
+        assert field_ev.source_identifier == "SEC_EDGAR_Submissions_API"
         assert field_ev.source_content_hash == aapl.raw_response_sha256
         assert field_ev.mapping_version == "1.0.0"
-        assert field_ev.does_certify_claim is True
+        assert field_ev.does_certify_claim is False
 
         goog = records["GOOG"]
         goog_field_ev = goog.to_attributable_field_evidence()
@@ -351,7 +361,11 @@ class TestWholeBatchConversionProtection:
         assert real_report.is_batch_valid is False
         assert real_report.conversion_count == 0
         assert real_report.conversion_blocked_count == 7
+        assert real_report.batch_conversion_count == 0
+        assert real_report.batch_admitted_count == 0
+        assert real_report.converted_source_securities == []
         assert real_report.builder_status == "NOT_RUN"
+        assert real_report.builder_handoff_permitted is False
         assert len(real_report.blocking_summary) == 7
 
     def test_simulation_fails_closed_on_unconverted_candidates(self):
@@ -361,11 +375,14 @@ class TestWholeBatchConversionProtection:
 
         assert sim_report.is_simulation is True
         assert sim_report.production_adoption_allowed is False
-        assert sim_report.validation_passed_count == 7
-        assert sim_report.conversion_count == 1  # Only AAPL converts
-        assert sim_report.conversion_blocked_count == 6  # 6 blocked
+        assert sim_report.conversion_count == 0
+        assert sim_report.conversion_blocked_count == 7
+        assert sim_report.batch_conversion_count == 0
+        assert sim_report.batch_admitted_count == 0
+        assert sim_report.converted_source_securities == []
         assert sim_report.is_batch_valid is False
         assert sim_report.builder_status == "NOT_RUN"
+        assert sim_report.builder_handoff_permitted is False
 
 
 # =====================================================================
@@ -386,4 +403,95 @@ class TestSeparationOfProposalSimulationFromActualAdmission:
         assert sim_report.is_simulation is True
         assert real_report.production_adoption_allowed is False
         assert sim_report.production_adoption_allowed is False
-        assert real_report.conversion_count != sim_report.conversion_count
+        assert real_report.batch_admitted_count == 0
+        assert sim_report.batch_admitted_count == 0
+        assert real_report.converted_source_securities == []
+        assert sim_report.converted_source_securities == []
+        assert real_report.builder_status == "NOT_RUN"
+        assert sim_report.builder_status == "NOT_RUN"
+
+
+# =====================================================================
+# 10. Atomic Batch Mixed-Validity Protection
+# =====================================================================
+
+class TestAtomicBatchMixedValidityProtection:
+    """
+    Verifies that a mixed-validity batch (1 valid record + 1 failing record)
+    results in zero batch conversion, zero admitted records, and no builder call.
+    Proves that an isolated probe conversion confers zero admission authority.
+    """
+
+    def test_mixed_validity_batch_fails_closed_with_zero_admitted(self):
+        reqs = ValidationRequirements.create_listing_jurisdiction_profile(
+            allowed_listing_countries={"USA"},
+            require_selected_us_assessment=True,
+        )
+
+        valid_rec = {
+            "security_id": "PROV_SEC_VALID_001",
+            "symbol": "VALID1",
+            "exchange": "NASDAQ",
+            "security_type": "Common Stock",
+            "listing_status": "ACTIVE",
+            "currency": "USD",
+            "listing_country": "USA",
+            "incorporation_country": "USA",
+            "selected_us_assessment_listing": True,
+            "primary_listing": True,
+            "asset_class": "EQUITY",
+            "listing_date": None,
+            "delisting_date": None,
+            "trading_suspension_date": None,
+        }
+
+        failing_rec = {
+            "security_id": "PROV_SEC_FAIL_002",
+            "symbol": "FAIL2",
+            "exchange": "NASDAQ",
+            "security_type": "Common Stock",
+            "listing_status": "ACTIVE",
+            "currency": "USD",
+            "listing_country": "USA",
+            "incorporation_country": "USA",
+            "selected_us_assessment_listing": True,
+            "primary_listing": None,
+            "asset_class": "EQUITY",
+            "listing_date": None,
+            "delisting_date": None,
+            "trading_suspension_date": None,
+        }
+
+        # Prove isolated probe on valid record can convert individually
+        val_single = UniverseInputValidator.validate_record(valid_rec, reqs)
+        assert val_single.status == ValidationStatus.VALIDATION_PASSED
+        source_sec = to_source_security(val_single)
+        assert source_sec.symbol == "VALID1"
+
+        # 1. Mixed batch where one member fails schema validation
+        invalid_rec = dict(failing_rec)
+        invalid_rec["listing_country"] = "GER"
+        mixed_batch = [valid_rec, invalid_rec]
+        batch_res = UniverseInputValidator.validate_batch(mixed_batch, reqs)
+
+        # Whole-batch validation MUST fail
+        assert batch_res.is_batch_valid is False
+        assert batch_res.total_input_count == 2
+        assert batch_res.passed_count == 1
+        assert batch_res.failed_count == 1
+
+        # The passing record's downstream admission MUST be demoted to False by the batch gate
+        passing_record_in_batch = batch_res.records[0]
+        assert passing_record_in_batch.downstream_admission_permitted is False
+        assert passing_record_in_batch.validated_values is None
+
+        # Calling to_source_securities() on the batch MUST strictly raise ValueError
+        with pytest.raises(ValueError, match="Cannot convert records from a failed batch to SourceSecurity"):
+            batch_res.to_source_securities()
+
+        # 2. Mixed batch where members pass schema validation, but one has unevidenced primary_listing (None)
+        unconvertible_batch = [valid_rec, failing_rec]
+        batch_res2 = UniverseInputValidator.validate_batch(unconvertible_batch, reqs)
+        # Calling to_source_securities() on the batch strictly fails closed
+        with pytest.raises(ValueError, match="Cannot construct SourceSecurity without explicit, validated boolean value for 'primary_listing'"):
+            batch_res2.to_source_securities()
