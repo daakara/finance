@@ -20,6 +20,7 @@ Covers all 9 required verification invariants:
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import pytest
 
 from analyst_dashboard.universe.adapters.models import SourceFeedType
@@ -1455,6 +1456,34 @@ class TestPrimaryExchangeSourceDiscovery:
         assert res_no_primary["has_direct_primary_claim"] is False
         assert res_no_primary["assigned_primary_listing"] is None
         assert res_no_primary["classification"] == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+
+    def test_alpaca_three_candidate_response_preserves_none_and_narrower_listing_fact(self):
+        """
+        Verifies that authentic Alpaca v2 asset response payload:
+        1. Extracts exchange='NASDAQ' for AAPL, GOOG, GOOGL.
+        2. Enforces absence of primary listing attribute in Alpaca schema (has_direct_primary_claim=False).
+        3. Preserves assigned_primary_listing = None (UNKNOWN).
+        4. Classifies under Rule R06 as EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY.
+        """
+        path = Path("data/research/alpaca_reference/alpaca_three_candidates_assets_20261017.json")
+        if not path.exists():
+            pytest.skip("Alpaca authentic response file not present in workspace")
+
+        raw_data = json.loads(path.read_text(encoding="utf-8"))
+        assert "AAPL" in raw_data
+        assert "GOOG" in raw_data
+        assert "GOOGL" in raw_data
+
+        for sym in ("AAPL", "GOOG", "GOOGL"):
+            parsed = PrimaryListingEvidenceAdapter.parse_alpaca_asset_payload(raw_data[sym])
+            assert parsed["symbol"] == sym
+            assert parsed["exchange"] == "NASDAQ"
+            assert parsed["class"] == "us_equity"
+            assert parsed["status"] == "active"
+            assert parsed["has_direct_primary_claim"] is False
+            assert parsed["assigned_primary_listing"] is None
+            assert parsed["classification"] == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+            assert parsed["evidence_role"] == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
 
 
 

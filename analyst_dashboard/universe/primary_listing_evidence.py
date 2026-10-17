@@ -430,7 +430,29 @@ class PrimaryListingEvidenceAdapter:
         """
         openfigi_key = os.environ.get("OPENFIGI_API_KEY", "").strip()
         polygon_key = os.environ.get("POLYGON_API_KEY", "").strip() or os.environ.get("MASSIVE_API_KEY", "").strip()
-        alpaca_key = os.environ.get("ALPACA_API_KEY", "").strip()
+        alpaca_key = (
+            os.environ.get("ALPACA_API_KEY_ID", "").strip()
+            or os.environ.get("ALPACA_API_KEY", "").strip()
+        )
+
+        # Inspect canonical configuration files (e.g. C:\Users\akara\Documents\Projects\finance\.env)
+        try:
+            from dotenv import dotenv_values
+            env_paths = [
+                Path.cwd() / ".env",
+                Path("C:/Users/akara/Documents/Projects/finance/.env"),
+            ]
+            for p in env_paths:
+                if p.exists():
+                    env_dict = dotenv_values(p)
+                    if not openfigi_key and env_dict.get("OPENFIGI_API_KEY"):
+                        openfigi_key = str(env_dict["OPENFIGI_API_KEY"]).strip()
+                    if not polygon_key and (env_dict.get("POLYGON_API_KEY") or env_dict.get("MASSIVE_API_KEY")):
+                        polygon_key = str(env_dict.get("POLYGON_API_KEY") or env_dict.get("MASSIVE_API_KEY")).strip()
+                    if not alpaca_key and (env_dict.get("ALPACA_API_KEY_ID") or env_dict.get("ALPACA_API_KEY")):
+                        alpaca_key = str(env_dict.get("ALPACA_API_KEY_ID") or env_dict.get("ALPACA_API_KEY")).strip()
+        except Exception:
+            pass
 
         openfigi_configured = bool(openfigi_key)
         polygon_configured = bool(polygon_key)
@@ -470,10 +492,13 @@ class PrimaryListingEvidenceAdapter:
             },
             "alpaca": {
                 "configured": alpaca_configured,
-                "tier": "UNCONFIGURED_DEPENDENCY" if not alpaca_configured else "CONFIGURED",
-                "endpoint": "GET https://api.alpaca.markets/v2/assets/{symbol_or_asset_id}",
-                "primary_exchange_field_supported": True,
-                "field_notes": "Alpaca Assets API returns 'exchange' attribute (e.g. 'NASDAQ'), but access requires API key pair.",
+                "tier": "CONFIGURED" if alpaca_configured else "UNCONFIGURED_DEPENDENCY",
+                "endpoint": "GET https://paper-api.alpaca.markets/v2/assets/{symbol}",
+                "primary_exchange_field_supported": False,
+                "field_notes": (
+                    "Official Alpaca Assets API returns 'exchange' attribute (e.g. 'NASDAQ'). "
+                    "Establishes active broker asset trading/listing venue; does not supply a designated primary listing claim under Rule R06."
+                ),
                 "access_blocker": (
                     None
                     if alpaca_configured
@@ -612,6 +637,65 @@ class PrimaryListingEvidenceAdapter:
                 "Designates primary exchange listing under official provider schema."
                 if has_direct_primary_claim
                 else f"Massive/Polygon reference endpoint reports ticker='{ticker}' without primary_exchange field."
+            ),
+        }
+
+    @classmethod
+    def parse_alpaca_asset_payload(
+        cls,
+        payload: Dict[str, Any] | str | bytes,
+        source_url: str = "https://paper-api.alpaca.markets/v2/assets/{symbol}",
+        retrieval_timestamp_utc: str = "2026-10-17T20:38:15Z",
+    ) -> Dict[str, Any]:
+        """
+        Parses official Alpaca v2 asset reference response payload.
+        Extracts symbol, name, exchange, class, and status.
+        Enforces strict non-inference invariant:
+        Alpaca 'exchange: NASDAQ' establishes an active exchange trading/listing fact.
+        It does NOT constitute direct identification of designated primary listing under Rule R06.
+        Candidates preserve assigned_primary_listing = None (UNKNOWN).
+        """
+        if isinstance(payload, (str, bytes)):
+            text = payload.decode("utf-8") if isinstance(payload, bytes) else payload
+            data = json.loads(text)
+        else:
+            data = payload
+
+        symbol = data.get("symbol", "")
+        name = data.get("name", "")
+        exchange = data.get("exchange", "")
+        asset_class = data.get("class", "")
+        status = data.get("status", "")
+        provider_asset_id = data.get("id", "")
+
+        has_direct_primary_claim = "primaryExchange" in data or "primaryListing" in data or "primary_exchange" in data
+        classification = (
+            PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM
+            if has_direct_primary_claim
+            else PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+        )
+        assigned_primary = True if has_direct_primary_claim else None
+
+        return {
+            "symbol": symbol,
+            "name": name,
+            "exchange": exchange,
+            "class": asset_class,
+            "status": status,
+            "provider_asset_id": provider_asset_id,
+            "source_url": source_url,
+            "retrieval_timestamp_utc": retrieval_timestamp_utc,
+            "classification": classification,
+            "assigned_primary_listing": assigned_primary,
+            "has_direct_primary_claim": has_direct_primary_claim,
+            "evidence_role": (
+                PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
+                if has_direct_primary_claim
+                else PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+            ),
+            "source_claim": (
+                f"Alpaca Asset directory reports symbol='{symbol}', exchange='{exchange}', class='{asset_class}', "
+                f"status='{status}'. Establishes active broker asset listing fact; does not assert designated primary listing."
             ),
         }
 
