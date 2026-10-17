@@ -85,8 +85,8 @@ export default function StrategyDetailPage({ params }: PageProps) {
         {
           "@type": "ListItem",
           "position": 2,
-          "name": "Quantitative Screeners",
-          "item": "https://www.arxterminal.com/screener/"
+          "name": "Market Radar",
+          "item": "https://www.arxterminal.com/radar/"
         },
         {
           "@type": "ListItem",
@@ -111,7 +111,7 @@ export default function StrategyDetailPage({ params }: PageProps) {
         <nav className="text-xs text-slate-500 flex items-center space-x-2">
           <Link href="/" className="hover:text-cyan-400">Terminal</Link>
           <span>/</span>
-          <Link href="/screener" className="hover:text-cyan-400">Screener</Link>
+          <Link href="/radar" className="hover:text-cyan-400">Radar</Link>
           <span>/</span>
           <span className="text-slate-300 font-bold">{strategy.name}</span>
         </nav>
@@ -159,10 +159,10 @@ export default function StrategyDetailPage({ params }: PageProps) {
             </p>
           </div>
           <Link
-            href="/screener"
+            href="/radar"
             className="w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-extrabold rounded-xl shadow-lg transition-transform active:scale-95 text-center whitespace-nowrap"
           >
-            Launch Interactive Screener →
+            Launch Opportunity Radar →
           </Link>
         </section>
 
@@ -264,10 +264,10 @@ export default function StrategyDetailPage({ params }: PageProps) {
         {/* Footer Navigation */}
         <footer className="border-t border-[#1e293b] pt-6 flex flex-wrap items-center justify-between gap-4 text-xs">
           <Link
-            href="/screener"
+            href="/radar"
             className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl transition-transform active:scale-95"
           >
-            ← Return to Interactive Screener
+            ← Return to Opportunity Radar
           </Link>
           <div className="text-slate-500 font-sans">
             Grounded in Minervini VCP, Joel Greenblatt & Peter Lynch Methodologies

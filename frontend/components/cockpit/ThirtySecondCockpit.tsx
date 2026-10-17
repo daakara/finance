@@ -360,8 +360,8 @@ export default function ThirtySecondCockpit() {
           Deep Exploration Workspaces
         </div>
         <div className="flex flex-wrap gap-2 text-xs">
-          <Link href="/screener" className="px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/60">
-            Market Screener Terminal
+          <Link href="/radar" className="px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/60">
+            Opportunity Radar Terminal
           </Link>
           <Link href="/portfolio" className="px-3 py-1.5 rounded-lg bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-800/60">
             Portfolio Terminal

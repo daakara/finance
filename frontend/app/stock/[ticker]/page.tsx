@@ -164,11 +164,16 @@ export default function StockDetailPage({ params }: PageProps) {
   const jsonLd = [
     {
       "@context": "https://schema.org",
-      "@type": "FinancialProduct",
-      "name": `${name} (${sym})`,
+      "@type": "WebPage",
+      "name": `${name} (${sym}) Trading Blueprint • Minervini VCP Levels & Insiders`,
       "description": `Quantitative equity analytics, Minervini VCP levels, and risk modeling for ${name} (${sym}).`,
       "url": `https://www.arxterminal.com/stock/${params.ticker.toLowerCase()}/`,
-      "provider": {
+      "about": {
+        "@type": "Corporation",
+        "name": name,
+        "tickerSymbol": sym
+      },
+      "publisher": {
         "@type": "Organization",
         "name": "ARX Terminal",
         "url": "https://www.arxterminal.com"
@@ -187,8 +192,8 @@ export default function StockDetailPage({ params }: PageProps) {
         {
           "@type": "ListItem",
           "position": 2,
-          "name": "Equities & Stocks",
-          "item": "https://www.arxterminal.com/screener/"
+          "name": "Market Radar",
+          "item": "https://www.arxterminal.com/radar/"
         },
         {
           "@type": "ListItem",
@@ -213,7 +218,7 @@ export default function StockDetailPage({ params }: PageProps) {
         <nav className="text-xs text-slate-500 flex items-center space-x-2">
           <Link href="/" className="hover:text-cyan-400">Terminal</Link>
           <span>/</span>
-          <Link href="/screener" className="hover:text-cyan-400">Screener</Link>
+          <Link href="/radar" className="hover:text-cyan-400">Radar</Link>
           <span>/</span>
           <span className="text-slate-300 font-bold">{sym}</span>
         </nav>

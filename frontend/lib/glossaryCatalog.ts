@@ -32,7 +32,7 @@ export const GLOSSARY_CATALOG: GlossaryTerm[] = [
     externalReferences: [
       { title: "Box & Jenkins Time Series Analysis", url: "https://en.wikipedia.org/wiki/Autoregressive%E2%80%93moving-average_model" }
     ],
-    relatedRoute: { title: "Explore ARX Multi-Factor Screener", url: "/screener/" }
+    relatedRoute: { title: "Explore ARX Opportunity Radar", url: "/radar/" }
   },
   {
     slug: "minervini-vcp",
@@ -96,7 +96,7 @@ export const GLOSSARY_CATALOG: GlossaryTerm[] = [
     arxApplication: "ARX Terminal's LiquidityGuard operates as a shadow observer evaluating 20-day scaled Amihud illiquidity and dollar volume, warning traders when order size threatens execution slippage.",
     keyTakeaway: "The Amihud ratio measures true execution friction, ensuring traders do not mistake high volatility for actionable liquidity.",
     relatedTerms: ["arx-model", "turtle-atr-trailing-stop"],
-    relatedRoute: { title: "Check Execution Friction on Screener", url: "/screener/" }
+    relatedRoute: { title: "Check Execution Friction on Radar", url: "/radar/" }
   },
   {
     slug: "turtle-atr-trailing-stop",
@@ -112,7 +112,7 @@ export const GLOSSARY_CATALOG: GlossaryTerm[] = [
     arxApplication: "ARX Terminal dynamically derives 14-day ATR corridors across all actionable setups, calculating exact dollar stops, risk-to-reward ratios (minimum 2.0:1), and dual profit targets.",
     keyTakeaway: "ATR trailing stops eliminate arbitrary percentage rules by tailoring capital defense directly to each stock's empirical volatility signature.",
     relatedTerms: ["minervini-vcp", "twenty-ema-pullback"],
-    relatedRoute: { title: "Inspect Live Execution Risk Ladders", url: "/screener/" }
+    relatedRoute: { title: "Inspect Live Execution Risk Ladders", url: "/radar/" }
   },
   {
     slug: "piotroski-f-score",
@@ -128,7 +128,7 @@ export const GLOSSARY_CATALOG: GlossaryTerm[] = [
     arxApplication: "ARX Terminal displays Piotroski ratings across all screened assets, ensuring technical momentum setups possess institutional balance-sheet confirmation.",
     keyTakeaway: "The Piotroski F-Score provides a rapid, statistically robust test that verifies whether a rising stock possesses authentic earnings quality.",
     relatedTerms: ["minervini-vcp", "arx-model"],
-    relatedRoute: { title: "Filter Candidates by Fundamental Health", url: "/screener/" }
+    relatedRoute: { title: "Filter Candidates by Fundamental Health", url: "/radar/" }
   },
   {
     slug: "twenty-ema-pullback",

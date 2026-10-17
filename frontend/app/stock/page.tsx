@@ -110,10 +110,10 @@ function StockDynamicContent() {
                 Go to Live Terminal →
               </Link>
               <Link
-                href="/screener"
+                href="/radar"
                 className="px-5 py-2.5 bg-[#111722] hover:bg-[#182335] border border-[#24334a] text-cyan-300 font-bold rounded-xl text-xs transition-all"
               >
-                Explore Screener
+                Explore Radar &amp; Screener
               </Link>
             </div>
           </div>
@@ -154,7 +154,7 @@ function StockDynamicContent() {
         <nav className="text-xs text-slate-500 flex items-center space-x-2">
           <Link href="/" className="hover:text-cyan-400">Terminal</Link>
           <span>/</span>
-          <Link href="/screener" className="hover:text-cyan-400">Screener</Link>
+          <Link href="/radar" className="hover:text-cyan-400">Radar</Link>
           <span>/</span>
           <span className="text-slate-300 font-bold">{ticker}</span>
         </nav>
@@ -219,7 +219,7 @@ function StockDynamicContent() {
                 Open in General Terminal
               </Link>
               <Link
-                href="/screener"
+                href="/radar"
                 className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold transition-all"
               >
                 Explore Screened Stocks
