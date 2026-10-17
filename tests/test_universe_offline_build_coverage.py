@@ -43,6 +43,8 @@ from analyst_dashboard.universe.offline_build_coverage import (
     OfflineCandidateRecord,
     build_scenario_a_candidates,
     build_scenario_b_candidates,
+    build_scenario_b2_conversion_failure_candidates,
+    build_scenario_d_identity_conflict_candidates,
     build_scenario_c_candidates,
     format_offline_build_coverage_markdown,
     run_offline_build_and_coverage,
@@ -139,6 +141,14 @@ def test_market_db(tmp_path: Path) -> Generator[str, None, None]:
         ("INV_OHLCV", target_date, 10.0, 11.0, 9.5, -5.0, 10000),  # Negative close
     )
 
+    # 8. UNSUP1: 252 bars, fresh session date (2026-10-16) -> DATA_READY
+    for i in range(252):
+        d = (base_date + timedelta(days=i)).isoformat() if i < 251 else target_date
+        cur.execute(
+            "INSERT INTO asset_ohlcv_daily VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("UNSUP1", d, 45.0, 46.0, 44.0, 45.5, 200000),
+        )
+
     # Note: NOMKT is omitted to test MISSING_MARKET_DATA
 
     conn.commit()
@@ -181,10 +191,14 @@ class TestUniverseOfflineBuildCoverage:
         assert result.stage_1_identity_association.total_candidates == 7
         assert result.stage_1_identity_association.distinct_symbols == 7
         assert result.stage_1_identity_association.resolved_identities_count == 7
+        assert result.stage_1_identity_association.blocked_identities_count == 0
+        assert result.stage_1_identity_association.unavailable_identities_count == 0
         assert result.stage_1_identity_association.closure_verified is True
 
         # Stage 2: Batch Validation & Conversion
         assert result.stage_2_validation_and_conversion.status == "ADMITTED"
+        assert result.stage_2_validation_and_conversion.component_validation_status == "ADMITTED"
+        assert result.stage_2_validation_and_conversion.conversion_status == "SUCCEEDED"
         assert result.stage_2_validation_and_conversion.is_batch_valid is True
         assert result.stage_2_validation_and_conversion.passed_count == 7
         assert result.stage_2_validation_and_conversion.failed_count == 0
@@ -198,15 +212,34 @@ class TestUniverseOfflineBuildCoverage:
         assert result.stage_3_builder_evaluation.ineligible_count == 3
         assert result.stage_3_builder_evaluation.unresolved_count == 0
         assert set(result.stage_3_builder_evaluation.eligible_symbols) == {"AAPL", "MSFT", "GLX", "NOMKT"}
-        assert set(result.stage_3_builder_evaluation.ineligible_symbols) == {"SPY", "SEC1", "DISP1"}
+        assert set(result.stage_3_builder_evaluation.ineligible_symbols) == {"SPY", "SEC1", "UNSUP1"}
         assert result.stage_3_builder_evaluation.rule_failure_breakdown.get("R01_ASSET_CLASS") == 1  # SPY
         assert result.stage_3_builder_evaluation.rule_failure_breakdown.get("R06_PRIMARY_LISTING") == 1  # SEC1
+        assert result.stage_3_builder_evaluation.rule_failure_breakdown.get("R04_PRIMARY_EXCHANGE") == 1  # UNSUP1
+        assert result.stage_3_builder_evaluation.production_adopted is False
+        assert result.stage_3_builder_evaluation.production_published is False
         assert result.stage_3_builder_evaluation.closure_verified is True
+
+        # Precise failed rule predicate checks:
+        pred_spy = result.stage_3_builder_evaluation.rule_predicate_details["SPY"]
+        assert pred_spy["reason_code"] == "INELIGIBLE_ASSET_CLASS"
+        failed_rules_spy = [p["rule"] for p in pred_spy["failed_predicates"]]
+        assert "R01_ASSET_CLASS" in failed_rules_spy
+        assert "R02_SECURITY_TYPE" in failed_rules_spy
+
+        pred_sec1 = result.stage_3_builder_evaluation.rule_predicate_details["SEC1"]
+        assert pred_sec1["reason_code"] == "INELIGIBLE_SECONDARY_LISTING"
+        assert pred_sec1["failed_predicates"][0]["rule"] == "R06_PRIMARY_LISTING"
+
+        pred_unsup1 = result.stage_3_builder_evaluation.rule_predicate_details["UNSUP1"]
+        assert pred_unsup1["reason_code"] == "INELIGIBLE_EXCHANGE"
+        assert pred_unsup1["failed_predicates"][0]["rule"] == "R04_PRIMARY_EXCHANGE"
 
         # Stage 4: Market-Data Readiness Diagnostics
         assert result.stage_4_coverage_diagnostics.status == "COMPLETED"
+        assert result.stage_4_coverage_diagnostics.is_diagnostic_only is True
         assert result.stage_4_coverage_diagnostics.distinct_lookup_keys == 7
-        assert result.stage_4_coverage_diagnostics.data_ready_count == 4  # AAPL, SPY, SEC1, DISP1
+        assert result.stage_4_coverage_diagnostics.data_ready_count == 4  # AAPL, SPY, SEC1, UNSUP1
         assert result.stage_4_coverage_diagnostics.stale_quote_count == 1  # MSFT
         assert result.stage_4_coverage_diagnostics.insufficient_history_count == 1  # GLX
         assert result.stage_4_coverage_diagnostics.missing_market_data_count == 1  # NOMKT
@@ -246,7 +279,9 @@ class TestUniverseOfflineBuildCoverage:
             result = run_offline_build_and_coverage(config)
 
         # Stage 2: Whole batch failed closed
-        assert result.stage_2_validation_and_conversion.status == "REVOKED"
+        assert result.stage_2_validation_and_conversion.status == "REVOKED_VALIDATION_FAILED"
+        assert result.stage_2_validation_and_conversion.component_validation_status == "REVOKED"
+        assert result.stage_2_validation_and_conversion.conversion_status == "NOT_RUN"
         assert result.stage_2_validation_and_conversion.is_batch_valid is False
         assert result.stage_2_validation_and_conversion.converted_security_count == 0
         assert "Atomic batch validation failed" in result.stage_2_validation_and_conversion.revocation_reason
@@ -256,9 +291,114 @@ class TestUniverseOfflineBuildCoverage:
         assert result.stage_3_builder_evaluation.evaluated_security_count == 0
         assert result.stage_3_builder_evaluation.eligible_count == 0
         assert result.stage_3_builder_evaluation.ineligible_count == 0
+        assert result.stage_3_builder_evaluation.production_adopted is False
+        assert result.stage_3_builder_evaluation.production_published is False
+        assert result.stage_3_builder_evaluation.closure_verified is True
 
         # Overall Outcome
         assert result.overall_outcome == "BLOCKED_ATOMIC_VALIDATION_FAILED"
+        assert result.reconciliation_closure["zero_partial_handoff_verified"] is True
+
+    def test_02b_conversion_boundary_failure_staging_profile_pass_converter_fail(
+        self, test_market_db: str, tmp_path: Path
+    ) -> None:
+        """
+        Scenario B2: Missing conversion-boundary failure on unknown primary listing.
+        Verifies:
+        - Batch satisfies staging validation profile (ValidationRequirements.for_explicit_listing_profile where primary_listing is permitted null).
+        - Validator component reports is_batch_valid=True, component_validation_status=ADMITTED.
+        - SourceSecurity conversion fails closed because converter requires primary_listing is not None.
+        - Converted security count is strictly 0.
+        - Stage 2 status is REVOKED_CONVERSION_FAILED with conversion_status=BLOCKED.
+        - UniverseBuilder is strictly NOT_RUN (evaluated count = 0).
+        - Zero partial conversion and zero partial builder handoff verified.
+        """
+        candidates = build_scenario_b2_conversion_failure_candidates()
+        assert len(candidates) == 3
+
+        with ReadOnlyMarketStore(test_market_db) as store:
+            config = OfflineBuildCoverageConfig(
+                candidate_records=candidates,
+                as_of_date="2026-10-16",
+                market_store=store,
+                scenario_label="SCENARIO_B2_CONVERSION_FAILURE",
+                is_synthetic=True,
+            )
+            result = run_offline_build_and_coverage(config)
+
+        # Stage 1: Identity resolved
+        assert result.stage_1_identity_association.status == "COMPLETED"
+        assert result.stage_1_identity_association.total_candidates == 3
+        assert result.stage_1_identity_association.resolved_identities_count == 3
+        assert result.stage_1_identity_association.blocked_identities_count == 0
+
+        # Stage 2: Staging validation passes, but atomic conversion fails closed
+        assert result.stage_2_validation_and_conversion.is_batch_valid is True
+        assert result.stage_2_validation_and_conversion.component_validation_status == "ADMITTED"
+        assert result.stage_2_validation_and_conversion.conversion_status == "BLOCKED"
+        assert result.stage_2_validation_and_conversion.status == "REVOKED_CONVERSION_FAILED"
+        assert result.stage_2_validation_and_conversion.converted_security_count == 0
+        assert "Atomic conversion boundary failed closed" in result.stage_2_validation_and_conversion.revocation_reason
+
+        # Stage 3: Universe Builder is strictly NOT_RUN
+        assert result.stage_3_builder_evaluation.status == "NOT_RUN"
+        assert result.stage_3_builder_evaluation.evaluated_security_count == 0
+        assert result.stage_3_builder_evaluation.closure_verified is True
+
+        # Overall Outcome
+        assert result.overall_outcome == "BLOCKED_CONVERSION_FAILED"
+        assert result.reconciliation_closure["zero_partial_handoff_verified"] is True
+
+    def test_02c_unresolved_identity_conflict_blocks_before_conversion(
+        self, test_market_db: str, tmp_path: Path
+    ) -> None:
+        """
+        Scenario D: Unresolved identity conflict batch.
+        Verifies:
+        - Candidate with disputed/unresolved listing association (DISP1) is withheld at Stage 1.
+        - Stage 1: 1 resolved identity (AAPL), 1 blocked identity (DISP1).
+        - Stage 2: Batch validation fails closed under whole-batch protections.
+        - Converted security count is strictly 0.
+        - UniverseBuilder is strictly NOT_RUN.
+        - Zero partial conversion and zero partial builder handoff verified.
+        """
+        candidates = build_scenario_d_identity_conflict_candidates()
+        assert len(candidates) == 2
+
+        with ReadOnlyMarketStore(test_market_db) as store:
+            config = OfflineBuildCoverageConfig(
+                candidate_records=candidates,
+                as_of_date="2026-10-16",
+                market_store=store,
+                scenario_label="SCENARIO_D_IDENTITY_CONFLICT",
+                is_synthetic=True,
+            )
+            result = run_offline_build_and_coverage(config)
+
+        # Stage 1: Identity gate blocks unresolved conflict
+        assert result.stage_1_identity_association.status == "COMPLETED"
+        assert result.stage_1_identity_association.total_candidates == 2
+        assert result.stage_1_identity_association.resolved_identities_count == 1
+        assert result.stage_1_identity_association.blocked_identities_count == 1
+        assert result.stage_1_identity_association.resolved_symbols == ["AAPL"]
+        assert result.stage_1_identity_association.blocked_symbols == ["DISP1"]
+        assert result.stage_1_identity_association.disputed_association_count == 1
+        assert result.stage_1_identity_association.closure_verified is True
+
+        # Stage 2: Batch validation fails closed
+        assert result.stage_2_validation_and_conversion.status == "REVOKED_VALIDATION_FAILED"
+        assert result.stage_2_validation_and_conversion.component_validation_status == "REVOKED"
+        assert result.stage_2_validation_and_conversion.conversion_status == "NOT_RUN"
+        assert result.stage_2_validation_and_conversion.is_batch_valid is False
+        assert result.stage_2_validation_and_conversion.converted_security_count == 0
+
+        # Stage 3: Universe Builder is strictly NOT_RUN
+        assert result.stage_3_builder_evaluation.status == "NOT_RUN"
+        assert result.stage_3_builder_evaluation.evaluated_security_count == 0
+        assert result.stage_3_builder_evaluation.closure_verified is True
+
+        # Overall Outcome
+        assert result.overall_outcome == "BLOCKED_IDENTITY_CONFLICT"
         assert result.reconciliation_closure["zero_partial_handoff_verified"] is True
 
     def test_03_no_network_enforcement_network_blocked(
@@ -316,17 +456,24 @@ class TestUniverseOfflineBuildCoverage:
         # Stage 1: Identity Association
         assert result.stage_1_identity_association.status == "COMPLETED"
         assert result.stage_1_identity_association.total_candidates == 7
-        assert result.stage_1_identity_association.multi_symbol_cik_count >= 1  # CIK 0001652044
-        assert result.stage_1_identity_association.disputed_association_count >= 2  # ACCS and DDS
+        assert result.stage_1_identity_association.multi_symbol_cik_count >= 1  # CIK 0001652044 (GOOG, GOOGL)
+        assert result.stage_1_identity_association.venue_normalized_count >= 1  # DDS (code F -> TXSE concordant mapping)
+        assert result.stage_1_identity_association.disputed_association_count == 1  # ACCS (genuine disagreement)
+        assert result.stage_1_identity_association.blocked_identities_count == 1  # ACCS blocked
+        assert "ACCS" in result.stage_1_identity_association.blocked_symbols
+        assert result.stage_1_identity_association.closure_verified is True
 
         # Stage 2: Batch Validation fails closed without fabricated currency/identity
-        assert result.stage_2_validation_and_conversion.status == "REVOKED"
+        assert result.stage_2_validation_and_conversion.status == "REVOKED_VALIDATION_FAILED"
+        assert result.stage_2_validation_and_conversion.component_validation_status == "REVOKED"
+        assert result.stage_2_validation_and_conversion.conversion_status == "NOT_RUN"
         assert result.stage_2_validation_and_conversion.is_batch_valid is False
         assert result.stage_2_validation_and_conversion.converted_security_count == 0
 
         # Stage 3: Builder is NOT_RUN
         assert result.stage_3_builder_evaluation.status == "NOT_RUN"
         assert result.stage_3_builder_evaluation.evaluated_security_count == 0
+        assert result.stage_3_builder_evaluation.closure_verified is True
 
         # Overall Outcome
         assert result.overall_outcome == "BLOCKED_ATOMIC_VALIDATION_FAILED"
@@ -460,16 +607,27 @@ class TestUniverseOfflineBuildCoverage:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         assert proc.returncode == 0, f"CLI runner failed: {proc.stderr}\nStdout: {proc.stdout}"
 
-        # Verify output artifacts for all three scenarios
-        assert os.path.exists(os.path.join(out_dir, "offline_build_coverage_scenario_a_convertible_batch.json"))
-        assert os.path.exists(os.path.join(out_dir, "offline_build_coverage_scenario_a_convertible_batch.md"))
-        assert os.path.exists(os.path.join(out_dir, "offline_build_coverage_scenario_b_atomic_fail_closed.json"))
-        assert os.path.exists(os.path.join(out_dir, "offline_build_coverage_scenario_b_atomic_fail_closed.md"))
-        assert os.path.exists(os.path.join(out_dir, "offline_build_coverage_scenario_c_real_source_replay.json"))
-        assert os.path.exists(os.path.join(out_dir, "offline_build_coverage_scenario_c_real_source_replay.md"))
+        # Verify output artifacts for all five scenarios
+        expected_scenarios = [
+            "scenario_a_convertible_batch",
+            "scenario_b_atomic_fail_closed",
+            "scenario_b2_conversion_failure",
+            "scenario_d_identity_conflict",
+            "scenario_c_real_source_replay",
+        ]
+        for scen in expected_scenarios:
+            json_file = os.path.join(out_dir, f"offline_build_coverage_{scen}.json")
+            md_file = os.path.join(out_dir, f"offline_build_coverage_{scen}.md")
+            assert os.path.exists(json_file), f"Missing JSON artifact: {json_file}"
+            assert os.path.exists(md_file), f"Missing Markdown artifact: {md_file}"
 
-        # Verify Markdown content contains stop point
+        # Verify Markdown content contains stop point and invariants
         with open(os.path.join(out_dir, "offline_build_coverage_scenario_a_convertible_batch.md"), "r", encoding="utf-8") as fp:
             md_content = fp.read()
         assert "OFFLINE_BUILD_COVERAGE_INTEGRATION_LOCAL_VERIFIED" in md_content
         assert "ZERO_DATABASE_WRITES = ENFORCED" in md_content
+
+        # Verify dynamic denominator in B2 / B / C / D when Stage 3 is NOT_RUN
+        with open(os.path.join(out_dir, "offline_build_coverage_scenario_b2_conversion_failure.md"), "r", encoding="utf-8") as fp:
+            b2_md = fp.read()
+        assert "0 == 0 + 0 + 0 (NOT_RUN)" in b2_md

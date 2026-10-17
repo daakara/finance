@@ -47,6 +47,8 @@ from analyst_dashboard.universe.offline_build_coverage import (
     OfflineBuildCoverageResult,
     build_scenario_a_candidates,
     build_scenario_b_candidates,
+    build_scenario_b2_conversion_failure_candidates,
+    build_scenario_d_identity_conflict_candidates,
     build_scenario_c_candidates,
     format_offline_build_coverage_markdown,
     run_offline_build_and_coverage,
@@ -122,6 +124,14 @@ def create_demo_market_db(db_path: str, as_of_date: str = "2026-10-16") -> str:
             ("DISP1", d, 25.0, 26.0, 24.5, 25.5, 100000),
         )
 
+    # 7. UNSUP1: 252 bars, fresh session date (2026-10-16) -> DATA_READY in market data (ineligible in builder R04)
+    for i in range(252):
+        d = (base_date + timedelta(days=i)).isoformat() if i < 251 else as_of_date
+        cur.execute(
+            "INSERT OR REPLACE INTO asset_ohlcv_daily VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("UNSUP1", d, 45.0, 46.0, 44.0, 45.5, 200000),
+        )
+
     # Note: NOMKT is intentionally omitted to demonstrate MISSING_MARKET_DATA
 
     conn.commit()
@@ -137,9 +147,9 @@ def main() -> int:
     parser.add_argument(
         "--scenario",
         type=str,
-        choices=["A", "B", "C", "all"],
+        choices=["A", "B", "B2", "D", "C", "all"],
         default="all",
-        help="Offline scenario to execute: A (Convertible Batch), B (Atomic Fail-Closed), C (Real-Source Replay), or all",
+        help="Offline scenario to execute: A (Convertible Batch), B (Atomic Fail-Closed), B2 (Conversion Boundary Failure), D (Identity Conflict), C (Real-Source Replay), or all",
     )
     parser.add_argument(
         "--market-db",
@@ -230,6 +240,60 @@ def main() -> int:
             print(f"  - Builder Status: {res_b.stage_3_builder_evaluation.status} "
                   f"(Evaluated: {res_b.stage_3_builder_evaluation.evaluated_security_count})")
             print(f"  - Zero Partial Handoff: {res_b.reconciliation_closure.get('zero_partial_handoff_verified')}")
+            print()
+
+        # ── SCENARIO B2: Missing Conversion-Boundary Failure (Unknown Primary Listing)
+        if args.scenario in ("B2", "all"):
+            print("==================================================================")
+            print("EXECUTING SCENARIO B2: Conversion Boundary Failure on Unknown Primary Listing")
+            print("==================================================================")
+            cands_b2 = build_scenario_b2_conversion_failure_candidates()
+            config_b2 = OfflineBuildCoverageConfig(
+                candidate_records=cands_b2,
+                as_of_date=args.as_of,
+                market_store=store,
+                scenario_label="SCENARIO_B2_CONVERSION_FAILURE",
+                is_synthetic=True,
+                output_dir=args.output_dir,
+            )
+            res_b2 = run_offline_build_and_coverage(config_b2)
+            results.append(res_b2)
+            print(f"Scenario B2 Outcome: {res_b2.overall_outcome}")
+            print(f"  - Candidates: {res_b2.stage_1_identity_association.total_candidates}")
+            print(f"  - Validator Component: {res_b2.stage_2_validation_and_conversion.component_validation_status} "
+                  f"(is_batch_valid: {res_b2.stage_2_validation_and_conversion.is_batch_valid})")
+            print(f"  - Conversion Boundary: {res_b2.stage_2_validation_and_conversion.conversion_status} "
+                  f"(Converted: {res_b2.stage_2_validation_and_conversion.converted_security_count})")
+            print(f"  - Builder Status: {res_b2.stage_3_builder_evaluation.status} "
+                  f"(Evaluated: {res_b2.stage_3_builder_evaluation.evaluated_security_count})")
+            print(f"  - Zero Partial Handoff: {res_b2.reconciliation_closure.get('zero_partial_handoff_verified')}")
+            print()
+
+        # ── SCENARIO D: Unresolved Identity Conflict Batch ───────────────────
+        if args.scenario in ("D", "all"):
+            print("==================================================================")
+            print("EXECUTING SCENARIO D: Unresolved Identity Conflict Batch")
+            print("==================================================================")
+            cands_d = build_scenario_d_identity_conflict_candidates()
+            config_d = OfflineBuildCoverageConfig(
+                candidate_records=cands_d,
+                as_of_date=args.as_of,
+                market_store=store,
+                scenario_label="SCENARIO_D_IDENTITY_CONFLICT",
+                is_synthetic=True,
+                output_dir=args.output_dir,
+            )
+            res_d = run_offline_build_and_coverage(config_d)
+            results.append(res_d)
+            print(f"Scenario D Outcome: {res_d.overall_outcome}")
+            print(f"  - Candidates: {res_d.stage_1_identity_association.total_candidates}")
+            print(f"  - Stage 1 Identity: Resolved: {res_d.stage_1_identity_association.resolved_identities_count}, "
+                  f"Blocked: {res_d.stage_1_identity_association.blocked_identities_count}")
+            print(f"  - Admission: {res_d.stage_2_validation_and_conversion.status} "
+                  f"(Converted: {res_d.stage_2_validation_and_conversion.converted_security_count})")
+            print(f"  - Builder Status: {res_d.stage_3_builder_evaluation.status} "
+                  f"(Evaluated: {res_d.stage_3_builder_evaluation.evaluated_security_count})")
+            print(f"  - Zero Partial Handoff: {res_d.reconciliation_closure.get('zero_partial_handoff_verified')}")
             print()
 
         # ── SCENARIO C: Real-Source Retained Evidence Replay ──────────────────
