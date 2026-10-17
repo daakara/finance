@@ -34,6 +34,21 @@ from .connected_integration import (
     run_connected_integration,
 )
 
+from .coverage_diagnostics import (
+    DiagnosticInputRecord,
+    ObservationDiagnosticResult,
+    SymbolDiagnosticResult,
+    CoverageAccountingSummary,
+    PrimaryDiagnosticOutcome,
+    BuildReadinessOutcome,
+    SessionReadinessOutcome,
+    ReadOnlyMarketStore,
+    CoverageDiagnosticEngine,
+    CapacityBenchmarker,
+    CapacityBenchmarkReport,
+    load_acquisition_artifacts_to_records,
+)
+
 __all__ = [
     "UNIVERSE_ID",
     "UNIVERSE_VERSION",
@@ -58,6 +73,18 @@ __all__ = [
     "IntegrationConfig",
     "format_markdown_report",
     "run_connected_integration",
+    "DiagnosticInputRecord",
+    "ObservationDiagnosticResult",
+    "SymbolDiagnosticResult",
+    "CoverageAccountingSummary",
+    "PrimaryDiagnosticOutcome",
+    "BuildReadinessOutcome",
+    "SessionReadinessOutcome",
+    "ReadOnlyMarketStore",
+    "CoverageDiagnosticEngine",
+    "CapacityBenchmarker",
+    "CapacityBenchmarkReport",
+    "load_acquisition_artifacts_to_records",
 ]
 
 
