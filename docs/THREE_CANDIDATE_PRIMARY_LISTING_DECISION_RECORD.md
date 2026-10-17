@@ -1,123 +1,115 @@
 # Three-Candidate Primary Listing Semantics Contract Decision Record
 
 **Target Candidates:** AAPL, GOOGL, GOOG  
-**Sprint / Scope:** Sprint 2 Bounded Three-Candidate Listing Evidence Acquisition  
+**Sprint / Scope:** Sprint 2 Bounded Three-Candidate Listing Evidence Adjudication  
 **Date:** 2026-10-17  
-**Status:** PROPOSED & PRESERVED (Fail-Closed, Zero Policy Change)  
+**Decision Authority:** Product Owner Approval (Binding)  
+**Status:** APPROVED & ADJUDICATED (Fail-Closed, Zero Production Adoption)  
 
 ---
 
-### 1. Exact Current Code & Governing Wording
+### 1. Approved Semantic Direction
 
-#### 1.1 Canonical Rule R06 Contract
-In [`analyst_dashboard/universe/contracts.py`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-three-candidate-listing-evidence/analyst_dashboard/universe/contracts.py):
+The Product Owner has approved the following authoritative semantic definition:
+
+> **`primary_listing` identifies the designated primary exchange listing for the exact security class or instrument.**
+
+#### 1.1 Excluded Derivations & Orthogonal Fields
+`primary_listing` does **not** identify:
+1. **The issuer's most important or voting share class:** Voting power is an internal corporate governance right, not an exchange listing designation.
+2. **Country of incorporation or headquarters:** Legal jurisdiction and principal executive offices are tracked independently.
+3. **ARX's selected US assessment line:** `selected_us_assessment_listing` remains an orthogonal caller selection parameter governing which line ARX evaluates for US market assessment.
+4. **The underlying ordinary share's home market when evaluating an ADR:** For American Depositary Receipts, the primary exchange listing refers to the ADR instrument's designated US listing venue, not the underlying foreign ordinary share's home exchange.
+
+#### 1.2 Derivation Standard
+- Evidence may support a documented derivation without containing the literal words *"primary listing"*, provided the derivation remains distinguishable from an explicit publisher assertion.
+- Conflicting or insufficient evidence remains strictly **UNKNOWN (`None`)**.
+- This approval does **not**:
+  - Automatically set AAPL, GOOG, or GOOGL to `True`.
+  - Establish that exchange registration alone is sufficient.
+  - Approve voting primacy.
+  - Authorize identity promotion, population publication, or scanner activation.
+  - Alter R02, R04, or other canonical eligibility predicates.
+
+---
+
+### 2. Alignment of Baseline & Removal of Rejected Paths
+
+In accordance with PO direction, previous theoretical alternatives are aligned as follows:
+
+1. **Removal of Voting-Primacy Path:**
+   - Voting-primacy alternatives (e.g. designating Class A as primary solely due to voting rights while demoting Class C) are **permanently removed** from the acceptance path.
+   - Distinct share classes (such as Alphabet Inc. Class A `GOOGL` and Class C `GOOG`) are adjudicated using the **identical semantic standard**.
+2. **Removal of Sole Exchange Registration Equivalence:**
+   - The assertion that sole Section 12(b) exchange registration legally establishes primary-listing status is **removed**.
+   - The absence of another exchange in a regulatory filing cannot be treated as affirmative proof that no other listing exists.
+3. **Removal of Mandatory Literalism Assertion:**
+   - The claim that the baseline contract required the exact literal words *"primary listing"* is **removed**. Rule R06 requires the substantiated fact of primary listing, which may be established by direct identification or valid documented derivation.
+4. **Preservation of `selected_us_assessment_listing`:**
+   - Maintained as an independent, explicit caller configuration.
+
+---
+
+### 3. Canonical Rule Contract & Hash Verification
+
+The executable predicate of Rule R06 in [`analyst_dashboard/universe/contracts.py`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-three-candidate-listing-evidence/analyst_dashboard/universe/contracts.py) is strictly unchanged:
+
 ```python
 "R06_PRIMARY_LISTING": {
-    "name": "Primary Listing Verification",
-    "description": "Must be primary listing (not secondary, dual, or OTC)",
-    "field": "primary_listing",
-    "required": True,
     "operator": "==",
-    "value": True,
+    "expected": True,
+    "description": "Must be primary listing, not secondary or cross-listing",
 }
 ```
 
-#### 1.2 Validation Requirements & Ingestion Guards
-In [`analyst_dashboard/universe/validator.py`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-three-candidate-listing-evidence/analyst_dashboard/universe/validator.py):
-```python
-if reqs.require_primary_listing:
-    val = record.get("primary_listing")
-    if val is None:
-        issues.append(
-            ValidationIssue(
-                field="primary_listing",
-                issue_type=ValidationIssueType.MISSING_REQUIRED_FIELD,
-                message="Field 'primary_listing' is None (unknown/unevidenced) and fails closed under Rule R06.",
-                code="UNKNOWN_PRIMARY_LISTING",
-                severity=ValidationSeverity.BLOCKING,
-            )
-        )
-```
-
-#### 1.3 Atomic Conversion Boundary
-In [`analyst_dashboard/universe/validator.py`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-three-candidate-listing-evidence/analyst_dashboard/universe/validator.py):
-```python
-if validated.primary_listing is None:
-    raise ValueError(
-        "Cannot construct SourceSecurity without explicit, validated boolean value for 'primary_listing' (None/unknown is blocked)"
-    )
-```
+- **Executable Predicate:** `operator == "=="`, `expected == True` (Unchanged).
+- **Rule Description:** `"Must be primary listing, not secondary or cross-listing"` (Aligned with PO direction).
+- **Rule Dictionary Digest (`ELIGIBILITY_RULES_HASH`):**  
+  `1ff5085341f449908d521c45261a35e409b143fdb01e73334950c891d09248e1`  
+  *(0-byte change to rule dictionary; exact hash preserved and verified).*
 
 ---
 
-### 2. Actual Source Claims from Inspected Evidence
+### 4. Approved Bounded Adjudication Rule
 
-#### 2.1 Source A: Official Exchange Reference Source (The Nasdaq Stock Market LLC)
-- **Source Artifact:** `data/research/exchange_reference/nasdaqlisted_20261017.txt` (Saved decoded text content of directory snapshot)
-- **Source URL:** `http://www.nasdaqtrader.com/dynamic/symdir/nasdaqlisted.txt`
-- **Retrieval Timestamp:** `2026-10-17T16:17:36Z`
-- **Digest (SHA-256):** `9f5c42346e6ab594a9e16bed99757e38cda89645c776b987626c9f51813bc99b`
-- **Extracted Records:**
-  - `AAPL`: `AAPL|Apple Inc. - Common Stock|Q|N|N|40|N|N` (Line 24)
-  - `GOOG`: `GOOG|Alphabet Inc. - Class C Capital Stock|Q|N|N|40|N|N` (Line 2152)
-  - `GOOGL`: `GOOGL|Alphabet Inc. - Class A Common Stock|Q|N|N|40|N|N` (Line 2153)
-- **Observed Claim:** All three securities are actively traded on The Nasdaq Stock Market in Market Category `Q` (Nasdaq Global Select Market). Does not contain CIKs, par values, or voting rights.
+The narrow adjudication rule ([`PrimaryListingAdjudicator`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-three-candidate-listing-evidence/analyst_dashboard/universe/primary_listing_evidence.py#L450-L550)) enforces the following evidence roles and derivation standards:
 
-#### 2.2 Source B: SEC EDGAR Submissions API Metadata
-- **Source Artifacts:**
-  - Apple Inc.: `data/research/sec_submissions_sample/CIK0000320193.json` (SHA-256: `aad00f6a...`)
-  - Alphabet Inc.: `data/research/sec_submissions_sample/CIK0001652044.json` (SHA-256: `648cea84...`)
-- **Observed Metadata:**
-  - Apple Inc.: `CIK: 0000320193`, `tickers: ['AAPL']`, `exchanges: ['Nasdaq']`, Form 10-K Accession `0000320193-25-000079`
-  - Alphabet Inc.: `CIK: 0001652044`, `tickers: ['GOOG', 'GOOGL']`, `exchanges: ['Nasdaq', 'Nasdaq']`, Form 10-K Accession `0001652044-26-000018`
+#### 4.1 Evidence Roles
+1. **`DIRECT_PRIMARY_IDENTIFICATION`:** Direct identification of the exact instrument's primary/designated listing by an appropriate listing authority.
+2. **`CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT`:** Class-specific registration facts (SEC Form 10-K Section 12(b)) and exchange-directory listings (Nasdaq Symbol Directory).
+3. **`CONFLICTING_OR_DISCORDANT_OBSERVATION`:** Unreconciled venue conflicts (e.g. DDS TXSE vs NYSE, ACCS NYSE vs AMEX).
+4. **`STALE_OR_OUT_OF_SCOPE_OBSERVATION`:** Temporally expired or mismatched evidence.
+5. **`INSUFFICIENT_NARROW_OBSERVATION`:** Insufficient narrow observations or unevidenced candidates.
 
-#### 2.3 Source C: Inspected SEC Form 10-K Section 12(b) Registration Tables
-- **Apple Inc. (Accession `0000320193-25-000079`, Report Date: `2025-09-27`):**
-  - Primary Doc: `data/research/sec_filings_sample/aapl-20250927.htm` (SHA-256: `63d29bf5...`)
-  - Heading: *"Securities registered pursuant to Section 12(b) of the Act"*
-  - Extracted Row: `Common Stock, $0.00001 par value per share` | `AAPL` | `The Nasdaq Stock Market LLC`
-- **Alphabet Inc. (Accession `0001652044-26-000018`, Report Date: `2025-12-31`):**
-  - Primary Doc: `data/research/sec_filings_sample/goog-20251231.htm` (SHA-256: `8cee92a0...`)
-  - Heading: *"Securities registered pursuant to Section 12(b) of the Act"*
-  - Extracted Row 1 (GOOGL): `Class A Common Stock, $0.001 par value` | `GOOGL` | `Nasdaq Stock Market LLC (Nasdaq Global Select Market)`
-  - Extracted Row 2 (GOOG): `Class C Capital Stock, $0.001 par value` | `GOOG` | `Nasdaq Stock Market LLC (Nasdaq Global Select Market)`
+#### 4.2 Derivation Requirements
+For any derived conclusion:
+- **Exact Source Claims & Locators:** Must be recorded without omission.
+- **Instrument/Class Matching:** Must verify exact security title and share class.
+- **Source Hierarchy:** `PRIMARY_EXCHANGE_AUTHORITY > REGULATORY_FILINGS_SEC_12B > EXCHANGE_DIRECTORY`.
+- **Negative Assumptions Prohibited:** The absence of another exchange in one filing does not establish exclusivity.
+- **Equating Prohibited:** "Listed on Nasdaq" cannot be equated with "designated primary listing on Nasdaq".
 
 ---
 
-### 3. Competing Interpretations
+### 5. Application & Adjudication Outcome for Sample Candidates
 
-| Interpretation | Conceptual Premise | Treatment of Regulatory Wording |
-|:---|:---|:---|
-| **1. Strict Semantic Literalism (Narrow Fact - Current Baseline)** | `primary_listing` requires an affirmative, explicit statement using the term *"primary listing"*. | Form 10-K §12(b) and Nasdaq directory prove exchange registration and listing facts, but neither source asserts the literal boolean string *"primary listing = True"*. Therefore, `primary_listing` must remain `None` (unknown). |
-| **2. Sole-Venue Sovereign Registration Equivalence** | For a domestic US operating issuer, registration under §12(b) exclusively on a single national exchange constitutes the primary listing as a matter of law. | Because Apple and Alphabet register their equity classes solely on The Nasdaq Stock Market LLC (with zero secondary or dual national exchange registrations), this sole §12(b) registration IS their primary listing. |
-| **3. Multi-Class Capital Structure Divergence** | In multi-class structures (Alphabet Class A vs Class C), shares differ in voting power. | **3a (Voting Primacy):** Only voting Class A is primary; non-voting Class C is a derivative/secondary class.<br/>**3b (Dual Primary Classes):** Both Class A and Class C are separate, independent primary listings of their respective classes on Nasdaq, as neither is a cross-listing of the other. |
+#### 5.1 Three Evaluated Candidates
 
----
+| Candidate | Instrument / Class | Evidence Role | Direct vs Derived | Adjudication Status | Assigned Value | Required Evidence for True |
+|:---|:---|:---:|:---:|:---:|:---:|:---|
+| **AAPL** | Common Stock, $0.00001 par value | `CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT` | Corroborating narrower fact | `EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY` | **`None`** (UNKNOWN) | Authoritative direct identification of designated primary listing venue. |
+| **GOOGL** | Class A Common Stock, $0.001 par value | `CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT` | Corroborating narrower fact | `EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY` | **`None`** (UNKNOWN) | Authoritative direct identification of designated primary listing venue for Class A. |
+| **GOOG** | Class C Capital Stock, $0.001 par value | `CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT` | Corroborating narrower fact | `EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY` | **`None`** (UNKNOWN) | Authoritative direct identification of designated primary listing venue for Class C. |
 
-### 4. Consequences for AAPL, GOOG and GOOGL
-
-#### Under Interpretation 1 (Current Code Baseline):
-- **AAPL:** `primary_listing = None` → Validation fails closed (`UNKNOWN_PRIMARY_LISTING`) → Conversion to `SourceSecurity` blocked.
-- **GOOGL:** `primary_listing = None` → Conversion blocked.
-- **GOOG:** `primary_listing = None` → Conversion blocked.
-- **Replay Outcome:** 0 converted, 3 blocked. Whole batch fails closed. Zero admission authority conferred.
-
-#### Under Interpretation 2 (Sole-Venue Equivalence):
-- **AAPL:** Converts to `SourceSecurity` with `primary_listing = True`.
-- **GOOGL / GOOG:** Requires resolution of Interpretation 3 (whether multi-class equity permits dual primary classes or requires voting primacy).
-
-#### Under Interpretation 3 (Multi-Class Treatment):
-- If 3a (Voting Primacy) is adopted: GOOGL converts to True; GOOG is marked `primary_listing = False` (or blocked). However, Rule R06 and Exchange Act Section 12(b) do not condition primary listing status on voting rights.
-- If 3b (Dual Primary) is adopted: Both GOOGL and GOOG convert to `primary_listing = True` because each is a distinct, independently registered class listed on Nasdaq Global Select Market.
+#### 5.2 Four Unevaluated Sample Candidates (Explicitly Outside Task Scope)
+- **TSM, ACCS, DDS, AACIU:** Labeled **`NOT_EVALUATED`** for this task. They remain outside this bounded evidence acquisition and retain their previously recorded archived states (`EVIDENCE_UNAVAILABLE` or `CONFLICTING_EVIDENCE`).
 
 ---
 
-### 5. Smallest Compatible Resolution
+### 6. Replay & Boundary Integrity
 
-1. **Preserve Current Invariants Strictly (No Policy Change)**:
-   - For this sprint, maintain `assigned_primary_listing = None` across all three candidates (`AAPL`, `GOOGL`, `GOOG`).
-   - Classify all three records as `EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY`.
-   - Replay strictly fails closed with `0/3` admitted and `builder_status = 'NOT_RUN'`.
-2. **Path for Future Architectural Ratification**:
-   - If the operator/architectural council approves, a formal semantic mapping policy may be enacted that maps verified sole-venue Section 12(b) registration on an approved US exchange (XNAS/XNYS) to `primary_listing = True` for single-class issuers, and resolves multi-class capital structures under Interpretation 3b.
-   - Until such ratification, zero synthetic values are substituted into the platform.
+Under both real-source replay and proposal contract simulation:
+- **`production_adoption_allowed = False`**: Zero provisional identity promotion.
+- **`is_batch_valid = False`**: Atomic whole-batch gate strictly fails closed.
+- **`batch_conversion_count = 0`**: Zero `SourceSecurity` instances admitted.
+- **`builder_status = "NOT_RUN"`**: Downstream builder rules strictly unexecuted.

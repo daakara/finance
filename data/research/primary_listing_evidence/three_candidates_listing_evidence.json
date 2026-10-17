@@ -1,8 +1,20 @@
 {
   "manifest_version": "1.0.0",
   "dataset_name": "three_candidates_listing_evidence",
-  "generated_at_utc": "2026-10-17T17:25:00Z",
+  "generated_at_utc": "2026-10-17T17:45:00Z",
   "effective_as_of_date": "2026-10-17",
+  "approved_semantic_direction": {
+    "definition": "primary_listing identifies the designated primary exchange listing for the exact security class or instrument.",
+    "excluded_derivations": [
+      "The issuer's most important or voting share class.",
+      "Country of incorporation or headquarters.",
+      "ARX's selected US assessment line.",
+      "The underlying ordinary share's home market when evaluating an ADR."
+    ],
+    "derivation_standard": "Evidence may support a documented derivation without containing the literal words 'primary listing', provided derivation remains distinguishable from an explicit publisher assertion. Conflicting or insufficient evidence remains UNKNOWN (None).",
+    "adjudication_rule_id": "R06_BOUNDED_EVIDENCE_ADJUDICATION_V1",
+    "adjudication_rule_version": "1.0.0"
+  },
   "provenance_accounting": {
     "official_exchange_reference_retrieval": "data/research/exchange_reference/nasdaqlisted_20261017.txt (Saved decoded text content of the directory snapshot, not preserved original HTTPS wire response bytes; 349,723 bytes, 5,637 lines; SHA-256: 9f5c42346e6ab594a9e16bed99757e38cda89645c776b987626c9f51813bc99b; Retrieved from http://www.nasdaqtrader.com/dynamic/symdir/nasdaqlisted.txt)",
     "official_sec_edgar_submissions_retrieval": "Live HTTPS retrieval via data.sec.gov with authorized operator contact (SEC_CONTACT_EMAIL=Akara.david26@gmail.com, SEC_USER_AGENT=ARXTerminal Research Akara.david26@gmail.com): AAPL CIK 0000320193 (data/research/sec_submissions_sample/CIK0000320193.json, SHA-256: aad00f6aa75ba1405e0a34c788bdba9042281b2724fe1db3ff26f434b9a92e44); Alphabet CIK 0001652044 (data/research/sec_submissions_sample/CIK0001652044.json, SHA-256: 648cea84d824309b518807fd7e7fdb72d6855e12e8afa221d2caa047d5c9f2ca). Official accession numbers verified from source metadata.",
@@ -48,7 +60,7 @@
       "source_claim": "Form 10-K Cover Page certifies Common Stock, $0.00001 par value per share is registered pursuant to Section 12(b) of the Exchange Act on The Nasdaq Stock Market LLC under trading symbol AAPL. Active exchange listing is corroborated by Nasdaq Symbol Directory (Tier Q).",
       "prospective_lookup_target": "None (Document has been retrieved and inspected)",
       "publisher_primary_listing_claim": "UNVERIFIED_IN_SOURCE",
-      "interpretation": "Establishes authentic exchange registration and listing on The Nasdaq Stock Market LLC (Global Select Market tier Q). Neither the Nasdaq symbol directory nor the SEC Form 10-K §12(b) registration table prints an explicit 'primary listing' boolean assertion.",
+      "interpretation": "Establishes authentic exchange registration and listing on The Nasdaq Stock Market LLC (Global Select Market tier Q). Section 12(b) registration fact does not assert designated primary listing, and absence of other venues in regulatory filings cannot be treated as proof of exclusivity.",
       "stated_exchange": "The Nasdaq Stock Market LLC",
       "stated_symbol": "AAPL",
       "operating_mic": "XNAS",
@@ -60,10 +72,17 @@
       "inferences_prohibited": [
         "Does not infer primary_listing=True from Section 12(b) exchange registration.",
         "Does not infer primary listing from Nasdaq directory Tier Q market category.",
-        "Does not infer perpetual absence of trading suspensions from active directory status."
+        "Does not infer perpetual absence of trading suspensions from active directory status.",
+        "Does not treat absence of other exchanges in 10-K as proof that no other listing exists."
       ],
       "assigned_primary_listing": null,
-      "contract_ambiguity_notes": "Official Nasdaq directory and SEC Form 10-K §12(b) registration table prove exchange registration and listing on The Nasdaq Stock Market LLC. However, Rule R06 requires an explicit, validated primary listing determination. Because regulatory sources establish listing facts without asserting a primary vs secondary listing boolean, primary_listing is preserved as None."
+      "contract_ambiguity_notes": "Under PO approved R06 semantics, primary_listing identifies designated primary exchange listing for exact security class. Available evidence (Section 12(b) Form 10-K registration and Nasdaq directory) establishes corroborating exchange registration and listing facts, but lacks direct primary identification. Absence of other exchanges cannot be assumed as proof of exclusivity. primary_listing is preserved as UNKNOWN (None).",
+      "adjudication_role": "CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT",
+      "derivation_rule_id": "R06_BOUNDED_EVIDENCE_ADJUDICATION_V1",
+      "derivation_rule_version": "1.0.0",
+      "is_direct_assertion": false,
+      "is_derived_claim": false,
+      "adjudication_missing_evidence": "Direct identification of designated primary exchange listing for this exact security class from an authoritative listing authority or verified cross-exchange listing master; Section 12(b) exchange registration certifies trading registration on The Nasdaq Stock Market LLC, but does not assert an exclusive primary listing claim."
     },
     "GOOGL": {
       "symbol": "GOOGL",
@@ -103,10 +122,17 @@
       "inferences_prohibited": [
         "Does not infer primary_listing=True from Section 12(b) exchange registration.",
         "Does not infer that voting rights confer primary listing status over non-voting Class C.",
-        "Does not infer that Class A is the issuer's sole primary listing."
+        "Does not infer that Class A is the issuer's sole primary listing.",
+        "Does not treat absence of other exchanges in 10-K as proof that no other listing exists."
       ],
       "assigned_primary_listing": null,
-      "contract_ambiguity_notes": "Class A Common Stock (voting, 1 vote per share) is listed on Nasdaq Global Select Market alongside Class C Capital Stock (non-voting). While voting rights distinguish corporate governance power, securities regulation and exchange rules do not designate Class A as the sole primary listing or subordinate Class C. Under Rule R06, primary_listing is preserved as None."
+      "contract_ambiguity_notes": "Under PO approved R06 semantics, primary_listing identifies designated primary exchange listing for exact security class. Class A Common Stock (voting, 1 vote per share) is listed on Nasdaq Global Select Market alongside Class C Capital Stock (non-voting). Voting rights do not confer primary listing status under approved semantics. Because regulatory sources establish listing facts without asserting designated primary listing, primary_listing is preserved as UNKNOWN (None).",
+      "adjudication_role": "CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT",
+      "derivation_rule_id": "R06_BOUNDED_EVIDENCE_ADJUDICATION_V1",
+      "derivation_rule_version": "1.0.0",
+      "is_direct_assertion": false,
+      "is_derived_claim": false,
+      "adjudication_missing_evidence": "Direct identification of designated primary exchange listing for Class A Common Stock from an authoritative listing authority or verified cross-exchange listing master; Section 12(b) exchange registration certifies trading registration on The Nasdaq Stock Market LLC, but does not assert an exclusive primary listing claim."
     },
     "GOOG": {
       "symbol": "GOOG",
@@ -146,10 +172,17 @@
       "inferences_prohibited": [
         "Does not infer primary_listing=True from Section 12(b) exchange registration.",
         "Does not infer that absence of voting rights negates primary listing potential.",
-        "Does not infer that Class C is secondary merely because Class A has votes."
+        "Does not infer that Class C is secondary merely because Class A has votes.",
+        "Does not treat absence of other exchanges in 10-K as proof that no other listing exists."
       ],
       "assigned_primary_listing": null,
-      "contract_ambiguity_notes": "Class C Capital Stock (non-voting) is registered pursuant to Section 12(b) on Nasdaq Global Select Market alongside Class A Common Stock. Neither regulatory filings nor exchange rules subordinate Class C or define a primary listing preference between simultaneous equity classes. Under Rule R06, primary_listing is preserved as None."
+      "contract_ambiguity_notes": "Under PO approved R06 semantics, primary_listing identifies designated primary exchange listing for exact security class. Class C Capital Stock (non-voting) is registered pursuant to Section 12(b) on Nasdaq Global Select Market alongside Class A Common Stock. Absence of voting power does not subordinate Class C. Evaluated under the identical adjudication standard as Class A. primary_listing is preserved as UNKNOWN (None).",
+      "adjudication_role": "CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT",
+      "derivation_rule_id": "R06_BOUNDED_EVIDENCE_ADJUDICATION_V1",
+      "derivation_rule_version": "1.0.0",
+      "is_direct_assertion": false,
+      "is_derived_claim": false,
+      "adjudication_missing_evidence": "Direct identification of designated primary exchange listing for Class C Capital Stock from an authoritative listing authority or verified cross-exchange listing master; Section 12(b) exchange registration certifies trading registration on The Nasdaq Stock Market LLC, but does not assert an exclusive primary listing claim."
     }
   }
 }

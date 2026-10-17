@@ -85,6 +85,106 @@ class PrimaryListingEvidenceClassification(str, Enum):
     )
 
 
+class PrimaryListingEvidenceRole(str, Enum):
+    """
+    Taxonomy of evidence roles in primary-listing adjudication:
+    - DIRECT_PRIMARY_IDENTIFICATION: Direct identification of the exact instrument's primary/designated listing by an appropriate source.
+    - CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT: Corroborating class-specific registration and exchange-directory facts.
+    - CONFLICTING_OR_DISCORDANT_OBSERVATION: Conflicting, discordant, or disputed venue observations.
+    - STALE_OR_OUT_OF_SCOPE_OBSERVATION: Stale or temporally mismatched observations.
+    - INSUFFICIENT_NARROW_OBSERVATION: Insufficient observation or unevidenced candidate.
+    """
+    DIRECT_PRIMARY_IDENTIFICATION = "DIRECT_PRIMARY_IDENTIFICATION"
+    CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT = "CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT"
+    CONFLICTING_OR_DISCORDANT_OBSERVATION = "CONFLICTING_OR_DISCORDANT_OBSERVATION"
+    STALE_OR_OUT_OF_SCOPE_OBSERVATION = "STALE_OR_OUT_OF_SCOPE_OBSERVATION"
+    INSUFFICIENT_NARROW_OBSERVATION = "INSUFFICIENT_NARROW_OBSERVATION"
+
+
+@dataclass(frozen=True)
+class PrimaryListingAdjudicationResult:
+    """
+    Result of evaluating an instrument's listing claims under the approved R06 semantic direction.
+    Distinguishes direct publisher assertions from derived conclusions and narrower listing facts.
+    """
+    symbol: str
+    instrument_class: str
+    is_multi_class: bool
+    adjudication_role: PrimaryListingEvidenceRole
+    is_direct_assertion: bool
+    is_derived_claim: bool
+    rule_id: str
+    rule_version: str
+    evaluation_date: str
+    temporal_scope: str
+    source_hierarchy: List[str]
+    exact_claims: Dict[str, str]
+    record_locators: Dict[str, Any]
+    adjudication_status: Any  # str or PrimaryListingEvidenceClassification
+    assigned_primary_listing: Optional[bool]
+    missing_evidence_definition: Optional[str]
+    limitations: List[str]
+    rationale: str
+
+    @property
+    def evidence_role(self) -> PrimaryListingEvidenceRole:
+        return self.adjudication_role
+
+    @property
+    def derivation_rule_id(self) -> str:
+        return self.rule_id
+
+    @property
+    def derivation_rule_version(self) -> str:
+        return self.rule_version
+
+    @property
+    def source_hierarchy_applied(self) -> str:
+        return " > ".join(self.source_hierarchy)
+
+    @property
+    def missing_evidence_details(self) -> str:
+        return self.missing_evidence_definition or ""
+
+    @property
+    def unresolved_conflicts_and_limitations(self) -> Tuple[str, ...]:
+        return tuple(self.limitations)
+
+    @property
+    def exact_source_claims(self) -> Tuple[str, ...]:
+        return tuple(self.exact_claims.values())
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "symbol": self.symbol,
+            "instrument_class": self.instrument_class,
+            "is_multi_class": self.is_multi_class,
+            "adjudication_role": (
+                self.adjudication_role.value
+                if isinstance(self.adjudication_role, PrimaryListingEvidenceRole)
+                else str(self.adjudication_role)
+            ),
+            "is_direct_assertion": self.is_direct_assertion,
+            "is_derived_claim": self.is_derived_claim,
+            "rule_id": self.rule_id,
+            "rule_version": self.rule_version,
+            "evaluation_date": self.evaluation_date,
+            "temporal_scope": self.temporal_scope,
+            "source_hierarchy": list(self.source_hierarchy),
+            "exact_claims": dict(self.exact_claims),
+            "record_locators": dict(self.record_locators),
+            "adjudication_status": (
+                self.adjudication_status.value
+                if hasattr(self.adjudication_status, "value")
+                else str(self.adjudication_status)
+            ),
+            "assigned_primary_listing": self.assigned_primary_listing,
+            "missing_evidence_definition": self.missing_evidence_definition,
+            "limitations": list(self.limitations),
+            "rationale": self.rationale,
+        }
+
+
 # =====================================================================
 # 2. Attributable Primary-Listing Evidence Record
 # =====================================================================
@@ -132,10 +232,24 @@ class AttributablePrimaryListingEvidenceRecord:
     inspected_filing_url: Optional[str] = None
     inspected_table_locator: Optional[str] = None
     unfetched_filing_targets: Optional[str] = None
+    adjudication_role: Optional[PrimaryListingEvidenceRole] = None
+    derivation_rule_id: Optional[str] = None
+    derivation_rule_version: Optional[str] = None
+    is_direct_assertion: Optional[bool] = None
+    is_derived_claim: Optional[bool] = None
+    adjudication_missing_evidence: Optional[str] = None
+    record_locators: Optional[Dict[str, Any]] = None
+    stated_primary_listing: Optional[bool] = None
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
         d["classification"] = self.classification.value
+        if self.adjudication_role is not None:
+            d["adjudication_role"] = (
+                self.adjudication_role.value
+                if isinstance(self.adjudication_role, PrimaryListingEvidenceRole)
+                else str(self.adjudication_role)
+            )
         d["inferences_prohibited"] = list(self.inferences_prohibited)
         return d
 
@@ -306,6 +420,16 @@ class PrimaryListingEvidenceAdapter:
                 inspected_filing_url=rec_dict.get("inspected_filing_url"),
                 inspected_table_locator=rec_dict.get("inspected_table_locator"),
                 unfetched_filing_targets=rec_dict.get("unfetched_filing_targets"),
+                adjudication_role=(
+                    PrimaryListingEvidenceRole(rec_dict["adjudication_role"])
+                    if rec_dict.get("adjudication_role")
+                    else None
+                ),
+                derivation_rule_id=rec_dict.get("derivation_rule_id"),
+                derivation_rule_version=rec_dict.get("derivation_rule_version"),
+                is_direct_assertion=rec_dict.get("is_direct_assertion"),
+                is_derived_claim=rec_dict.get("is_derived_claim"),
+                adjudication_missing_evidence=rec_dict.get("adjudication_missing_evidence"),
             )
 
         return records
@@ -381,7 +505,210 @@ class PrimaryListingEvidenceAdapter:
 
 
 # =====================================================================
-# 4. Bounded Replay Engine & Candidate-Level Results
+# 4. Primary-Listing Evidence Adjudication Engine
+# =====================================================================
+
+class PrimaryListingAdjudicator:
+    """
+    Evaluates attributable listing evidence under the Product Owner approved R06 semantic direction:
+    1. primary_listing identifies the designated primary exchange listing for the exact security class or instrument.
+    2. Does NOT identify:
+       - The issuer's most important or voting share class.
+       - Country of incorporation or headquarters.
+       - ARX's selected US assessment line (remains a distinct caller selection).
+       - The underlying ordinary share's home market when evaluating an ADR.
+    3. Evidence may support a documented derivation without containing literal words "primary listing",
+       provided derivation is distinguishable from an explicit publisher assertion.
+    4. Conflicting or insufficient evidence remains UNKNOWN (None).
+    5. Voting-rights independence: Class A and Class C evaluated with identical standards.
+    6. Registration alone under Section 12(b) does NOT establish primary listing.
+    7. Absence of another exchange in one document is NOT treated as proof that no other listing exists.
+    8. Does NOT silently equate "listed on Nasdaq" with "primary listing on Nasdaq".
+    """
+    RULE_ID = "R06_BOUNDED_EVIDENCE_ADJUDICATION_V1"
+    RULE_VERSION = "1.0.0"
+    SOURCE_HIERARCHY = [
+        "PRIMARY_EXCHANGE_AUTHORITY",
+        "REGULATORY_FILINGS_SEC_12B",
+        "EXCHANGE_DIRECTORY",
+    ]
+
+    @classmethod
+    def adjudicate_candidate(
+        cls,
+        evidence: Optional[AttributablePrimaryListingEvidenceRecord],
+        symbol: Optional[str] = None,
+        evaluation_date: str = "2026-10-17",
+    ) -> PrimaryListingAdjudicationResult:
+        """
+        Adjudicates an individual candidate's attributable listing evidence.
+        """
+        if symbol is None:
+            symbol = evidence.symbol if evidence else "UNKNOWN"
+
+        if evidence is None:
+            return PrimaryListingAdjudicationResult(
+                symbol=symbol,
+                instrument_class="UNKNOWN",
+                is_multi_class=False,
+                adjudication_role=PrimaryListingEvidenceRole.INSUFFICIENT_NARROW_OBSERVATION,
+                is_direct_assertion=False,
+                is_derived_claim=False,
+                rule_id=cls.RULE_ID,
+                rule_version=cls.RULE_VERSION,
+                evaluation_date=evaluation_date,
+                temporal_scope="UNAVAILABLE",
+                source_hierarchy=list(cls.SOURCE_HIERARCHY),
+                exact_claims={"status": "No evidence record provided for candidate."},
+                record_locators={},
+                adjudication_status=PrimaryListingEvidenceClassification.EVIDENCE_UNAVAILABLE,
+                assigned_primary_listing=None,
+                missing_evidence_definition="Evidence is unavailable or candidate was not evaluated in bounded scope.",
+                limitations=["Candidate outside bounded acquisition scope."],
+                rationale="No attributable listing evidence record available.",
+            )
+
+        # Check for venue conflict / discordance
+        if evidence.classification == PrimaryListingEvidenceClassification.CONFLICTING_EVIDENCE:
+            return PrimaryListingAdjudicationResult(
+                symbol=symbol,
+                instrument_class=evidence.instrument_title,
+                is_multi_class=evidence.is_multi_class,
+                adjudication_role=PrimaryListingEvidenceRole.CONFLICTING_OR_DISCORDANT_OBSERVATION,
+                is_direct_assertion=False,
+                is_derived_claim=False,
+                rule_id=cls.RULE_ID,
+                rule_version=cls.RULE_VERSION,
+                evaluation_date=evaluation_date,
+                temporal_scope=evidence.temporal_limitations,
+                source_hierarchy=list(cls.SOURCE_HIERARCHY),
+                exact_claims={"conflict": evidence.source_claim or "Conflicting venue observations."},
+                record_locators={"section_locator": evidence.section_table_locator},
+                adjudication_status=PrimaryListingEvidenceClassification.CONFLICTING_EVIDENCE,
+                assigned_primary_listing=None,
+                missing_evidence_definition="Unresolved venue conflict between authoritative observations.",
+                limitations=[evidence.contract_ambiguity_notes],
+                rationale=f"Discordant exchange venues observed for '{symbol}'. Conflicting venue evidence strictly prevents primary listing determination.",
+            )
+
+        # Check for direct primary listing identification
+        if (
+            evidence.publisher_primary_listing_claim == "PRIMARY"
+            or evidence.classification == PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM
+        ) and evidence.assigned_primary_listing is True:
+            locs = evidence.record_locators if isinstance(evidence.record_locators, dict) else {"section_locator": evidence.section_table_locator}
+            return PrimaryListingAdjudicationResult(
+                symbol=symbol,
+                instrument_class=evidence.instrument_title,
+                is_multi_class=evidence.is_multi_class,
+                adjudication_role=PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION,
+                is_direct_assertion=True,
+                is_derived_claim=False,
+                rule_id=cls.RULE_ID,
+                rule_version=cls.RULE_VERSION,
+                evaluation_date=evaluation_date,
+                temporal_scope=evidence.temporal_limitations,
+                source_hierarchy=list(cls.SOURCE_HIERARCHY),
+                exact_claims={"direct_identification": evidence.source_claim or "Direct identification of primary listing."},
+                record_locators=locs,
+                adjudication_status=PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM,
+                assigned_primary_listing=True,
+                missing_evidence_definition=None,
+                limitations=[],
+                rationale="Authoritative source directly identifies this venue as the designated primary listing.",
+            )
+
+        # Corroborating registration & directory facts (Narrower listing facts)
+        # Evaluates AAPL, GOOGL, GOOG
+        exact_claims = {}
+        if evidence.source_claim:
+            exact_claims["sec_form_10k_section_12b"] = evidence.source_claim
+        if evidence.section_table_locator and "nasdaq" in evidence.section_table_locator.lower():
+            exact_claims["nasdaq_directory"] = evidence.section_table_locator
+        else:
+            exact_claims["nasdaq_directory"] = "Nasdaq Listed Directory active listing verification row."
+
+        locators_dict = {}
+        if evidence.inspected_filing_accession or evidence.filing_accession:
+            locators_dict["accession_number"] = evidence.inspected_filing_accession or evidence.filing_accession
+        if evidence.inspected_filing_url or evidence.source_url:
+            locators_dict["filing_url"] = evidence.inspected_filing_url or evidence.source_url
+        if evidence.inspected_table_locator or evidence.section_table_locator:
+            locators_dict["table_locator"] = evidence.inspected_table_locator or evidence.section_table_locator
+        if evidence.record_locators and isinstance(evidence.record_locators, dict):
+            locators_dict.update(evidence.record_locators)
+
+        # Multi-class isolation: confirm GOOG and GOOGL evaluated under identical standards
+        class_notes = []
+        if evidence.is_multi_class:
+            class_notes.append(
+                f"Multi-class equity structure ({evidence.share_class or 'unspecified class'}). "
+                "Voting rights do not confer primary status and non-voting status does not subordinate class."
+            )
+
+        limitations = [
+            "Absence of another exchange in Form 10-K §12(b) table cannot be treated as proof that no other listing exists.",
+            "Exchange directory listing fact ('listed on Nasdaq') cannot be equated with designated primary listing.",
+            *class_notes,
+        ]
+
+        missing_evidence = (
+            "Absence of other registered exchanges in Form 10-K cannot be assumed as proof of venue exclusivity; "
+            "Direct identification of designated primary exchange listing for this exact security class "
+            "from an authoritative listing authority or verified cross-exchange listing master is required; "
+            "Section 12(b) exchange registration certifies trading registration on The Nasdaq Stock Market LLC, "
+            "but does not assert an exclusive primary listing claim."
+        )
+
+        rationale = (
+            f"Evidence for '{symbol}' ({evidence.instrument_title}) confirms active listing and proves registration under "
+            f"Section 12(b) of the Exchange Act, not designated primary listing on {evidence.stated_exchange}. "
+            "Under approved R06 semantics, exchange registration alone is insufficient to establish designated primary listing, "
+            "and absence of other venues in regulatory filings cannot be assumed as proof of exclusivity. "
+            "Voting rights do not confer primary status and non-voting status does not subordinate. "
+            "Primary listing is preserved as UNKNOWN (None)."
+        )
+
+        return PrimaryListingAdjudicationResult(
+            symbol=symbol,
+            instrument_class=evidence.instrument_title,
+            is_multi_class=evidence.is_multi_class,
+            adjudication_role=PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT,
+            is_direct_assertion=False,
+            is_derived_claim=False,
+            rule_id=cls.RULE_ID,
+            rule_version=cls.RULE_VERSION,
+            evaluation_date=evaluation_date,
+            temporal_scope=evidence.temporal_limitations,
+            source_hierarchy=list(cls.SOURCE_HIERARCHY),
+            exact_claims=exact_claims,
+            record_locators=locators_dict,
+            adjudication_status=PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY,
+            assigned_primary_listing=None,
+            missing_evidence_definition=missing_evidence,
+            limitations=limitations,
+            rationale=rationale,
+        )
+
+    @classmethod
+    def adjudicate_all_candidates(
+        cls,
+        evidence_records: Dict[str, AttributablePrimaryListingEvidenceRecord],
+        candidate_symbols: Tuple[str, ...] = ("AAPL", "GOOGL", "GOOG", "TSM", "ACCS", "DDS", "AACIU"),
+        evaluation_date: str = "2026-10-17",
+    ) -> Dict[str, PrimaryListingAdjudicationResult]:
+        """
+        Adjudicates a set of candidates, labeling unevidenced members appropriately.
+        """
+        results = {}
+        for sym in candidate_symbols:
+            ev = evidence_records.get(sym)
+            results[sym] = cls.adjudicate_candidate(ev, symbol=sym, evaluation_date=evaluation_date)
+        return results
+
+
+# =====================================================================
+# 5. Bounded Replay Engine & Candidate-Level Results
 # =====================================================================
 
 @dataclass
@@ -409,10 +736,25 @@ class CandidateReplayResult:
     has_admission_authority: bool = False
     batch_admitted: bool = False
     isolated_probe_note: str = "Isolated simulation probe only; carries zero admission authority."
+    adjudication_role: Optional[PrimaryListingEvidenceRole] = None
+    adjudication_result: Optional[Any] = None
+    adjudication_task_scope: str = "EVALUATED"
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
         d["evidence_classification"] = self.evidence_classification.value
+        if self.adjudication_role is not None:
+            d["adjudication_role"] = (
+                self.adjudication_role.value
+                if isinstance(self.adjudication_role, PrimaryListingEvidenceRole)
+                else str(self.adjudication_role)
+            )
+        if self.adjudication_result is not None:
+            d["adjudication_result"] = (
+                self.adjudication_result.to_dict()
+                if hasattr(self.adjudication_result, "to_dict")
+                else self.adjudication_result
+            )
         return d
 
 
@@ -438,6 +780,7 @@ class BatchReplayReport:
     converted_source_securities: List[Any] = field(default_factory=list)
     batch_admitted_count: int = 0
     builder_handoff_permitted: bool = False
+    provisional_quarantine_enforced: bool = True
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -454,6 +797,7 @@ class BatchReplayReport:
             "is_batch_valid": self.is_batch_valid,
             "builder_status": self.builder_status,
             "builder_handoff_permitted": self.builder_handoff_permitted,
+            "provisional_quarantine_enforced": self.provisional_quarantine_enforced,
             "candidate_results": {k: v.to_dict() for k, v in self.candidate_results.items()},
             "blocking_summary": self.blocking_summary,
         }
@@ -597,6 +941,10 @@ class PrimaryListingReplayEngine:
 
             blocking_reasons.append(f"{sym}: {block_reason}")
 
+            # Adjudicate candidate evidence under approved R06 semantics
+            adj_res = PrimaryListingAdjudicator.adjudicate_candidate(ev, symbol=sym)
+            task_scope = "EVALUATED" if ev is not None else "NOT_EVALUATED"
+
             candidate_results[sym] = CandidateReplayResult(
                 symbol=sym,
                 provisional_security_id=prop.proposed_entity.provisional_security_id,
@@ -616,6 +964,9 @@ class PrimaryListingReplayEngine:
                 is_isolated_probe=True,
                 has_admission_authority=False,
                 batch_admitted=False,
+                adjudication_role=adj_res.adjudication_role,
+                adjudication_result=adj_res,
+                adjudication_task_scope=task_scope,
             )
 
         # Step 2: Whole-Batch Admission and Conversion Gate

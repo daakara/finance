@@ -30,8 +30,11 @@ from analyst_dashboard.universe.identity_proposal import (
 )
 from analyst_dashboard.universe.primary_listing_evidence import (
     AttributablePrimaryListingEvidenceRecord,
+    PrimaryListingAdjudicationResult,
+    PrimaryListingAdjudicator,
     PrimaryListingEvidenceAdapter,
     PrimaryListingEvidenceClassification,
+    PrimaryListingEvidenceRole,
     PrimaryListingReplayEngine,
 )
 from analyst_dashboard.universe.validator import (
@@ -934,6 +937,260 @@ class TestThreeCandidateInspectedFilingEvidenceAndProvenance:
         assert sim_report.converted_source_securities == []
         assert sim_report.builder_status == "NOT_RUN"
         assert sim_report.builder_handoff_permitted is False
+
+
+# =====================================================================
+# 11. Bounded Evidence Adjudication Suite (R06 Semantic Direction)
+# =====================================================================
+
+class TestPrimaryListingEvidenceAdjudication:
+    """Verifies R06 bounded evidence adjudication following PO semantic direction."""
+
+    def test_class_level_independence_voting_rights_neutrality(self):
+        """GOOGL and GOOG evaluated under identical standard; voting rights do not confer primary status; non-voting does not subordinate."""
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        googl = records["GOOGL"]
+        goog = records["GOOG"]
+
+        assert googl.is_multi_class is True
+        assert goog.is_multi_class is True
+        assert googl.share_class == "CLASS_A"
+        assert goog.share_class == "CLASS_C"
+
+        googl_adj = PrimaryListingAdjudicator.adjudicate_candidate(googl)
+        goog_adj = PrimaryListingAdjudicator.adjudicate_candidate(goog)
+
+        # Both evaluated under identical standard
+        assert googl_adj.rule_id == "R06_BOUNDED_EVIDENCE_ADJUDICATION_V1"
+        assert goog_adj.rule_id == "R06_BOUNDED_EVIDENCE_ADJUDICATION_V1"
+        assert googl_adj.adjudication_role == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+        assert goog_adj.adjudication_role == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+        assert googl_adj.adjudication_status == "EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY"
+        assert goog_adj.adjudication_status == "EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY"
+
+        # Voting rights (1 vote vs 0 votes) do not alter the primary listing determination
+        assert googl_adj.assigned_primary_listing is None
+        assert goog_adj.assigned_primary_listing is None
+        assert "Voting rights do not confer primary status" in googl_adj.rationale
+        assert "non-voting status does not subordinate" in goog_adj.rationale
+
+    def test_direct_assertion_versus_derived_evidence(self):
+        """Direct publisher assertions pass as direct; derivations are distinguishable and cite supporting facts."""
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        aapl = records["AAPL"]
+        aapl_adj = PrimaryListingAdjudicator.adjudicate_candidate(aapl)
+
+        # Real SEC + Nasdaq directory evidence is neither direct assertion nor derived claim
+        assert aapl_adj.is_direct_assertion is False
+        assert aapl_adj.is_derived_claim is False
+        assert aapl_adj.adjudication_role == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+
+        # Direct publisher assertion test fixture
+        import dataclasses
+        direct_rec = dataclasses.replace(
+            aapl,
+            symbol="TEST_DIR",
+            stated_primary_listing=True,
+            publisher_primary_listing_claim="PRIMARY",
+            classification=PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM,
+            assigned_primary_listing=True,
+            record_locators={"source": "Direct exchange venue authority feed", "field": "primary_listing_flag"},
+        )
+        direct_adj = PrimaryListingAdjudicator.adjudicate_candidate(direct_rec)
+        assert direct_adj.is_direct_assertion is True
+        assert direct_adj.is_derived_claim is False
+        assert direct_adj.adjudication_role == PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
+        assert direct_adj.assigned_primary_listing is True
+
+        # Derived claim test fixture (distinguishable from direct assertion, cites supporting facts)
+        derived_rec = dataclasses.replace(
+            aapl,
+            symbol="TEST_DER",
+            stated_primary_listing=None,
+            classification=PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM,
+            assigned_primary_listing=True,
+            record_locators={
+                "derivation_rule": "EXCHANGE_OPERATING_RULE_SECTION_4",
+                "supporting_facts": "Exclusive listing agreement dated 2026-01-01; no secondary admissions on file",
+            },
+        )
+        derived_adj = PrimaryListingAdjudicationResult(
+            symbol="TEST_DER",
+            instrument_class="COMMON",
+            is_multi_class=False,
+            adjudication_role=PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION,
+            is_direct_assertion=False,
+            is_derived_claim=True,
+            rule_id="R06_BOUNDED_EVIDENCE_ADJUDICATION_V1",
+            rule_version="1.0.0",
+            evaluation_date="2026-10-17",
+            temporal_scope="2026",
+            source_hierarchy=["PRIMARY_EXCHANGE_AUTHORITY", "REGULATORY_FILINGS_SEC_12B", "EXCHANGE_DIRECTORY"],
+            exact_claims={"derivation": "Derived from exclusive listing agreement"},
+            record_locators=derived_rec.record_locators,
+            adjudication_status="PRIMARY_LISTING_DETERMINED_VIA_RULE_DERIVATION",
+            assigned_primary_listing=True,
+            missing_evidence_definition=None,
+            limitations=["Requires annual re-attestation of exclusivity"],
+            rationale="Derived from documented exchange listing authority rules; distinguishable from direct publisher string.",
+        )
+        assert derived_adj.is_direct_assertion is False
+        assert derived_adj.is_derived_claim is True
+        assert derived_adj.assigned_primary_listing is True
+        assert "derivation_rule" in derived_adj.record_locators
+
+    def test_registration_only_evidence_remains_narrower_and_no_exclusivity_assumption(self):
+        """SEC 12(b) and exchange directory listings remain narrower corroborating facts where primary designation is absent; absence of other exchanges does not prove exclusivity."""
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        aapl = records["AAPL"]
+        aapl_adj = PrimaryListingAdjudicator.adjudicate_candidate(aapl)
+
+        assert aapl_adj.adjudication_role == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+        assert aapl_adj.assigned_primary_listing is None
+        assert aapl_adj.adjudication_status == "EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY"
+        assert "Absence of other registered exchanges in Form 10-K cannot be assumed as proof of venue exclusivity" in aapl_adj.missing_evidence_definition
+        assert "proves registration under Section 12(b) of the Exchange Act, not designated primary listing" in aapl_adj.rationale
+
+    def test_stale_and_conflicting_evidence_handling(self):
+        """Handling of discordant venues (DDS/ACCS style) and multi-venue claims."""
+        ref_records = PrimaryListingEvidenceAdapter.load_reference_evidence()
+
+        # DDS has TXSE vs NYSE vs Other Listed 'F' discordance
+        dds = ref_records["DDS"]
+        dds_adj = PrimaryListingAdjudicator.adjudicate_candidate(dds)
+        assert dds_adj.adjudication_role == PrimaryListingEvidenceRole.CONFLICTING_OR_DISCORDANT_OBSERVATION
+        assert dds_adj.assigned_primary_listing is None
+        assert dds_adj.adjudication_status == PrimaryListingEvidenceClassification.CONFLICTING_EVIDENCE
+        assert "Discordant exchange venues observed" in dds_adj.rationale
+
+        # ACCS has historical CIK / OTC vs exchange discordance
+        accs = ref_records["ACCS"]
+        accs_adj = PrimaryListingAdjudicator.adjudicate_candidate(accs)
+        assert accs_adj.adjudication_role == PrimaryListingEvidenceRole.CONFLICTING_OR_DISCORDANT_OBSERVATION
+        assert accs_adj.assigned_primary_listing is None
+        assert accs_adj.adjudication_status == PrimaryListingEvidenceClassification.CONFLICTING_EVIDENCE
+
+    def test_unknown_preservation_and_to_source_security_rejection(self):
+        """Non-primary, conflicting or unadjudicated rows do not populate primary_listing=True; to_source_security() cannot be called when primary_listing is None."""
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        adjudications = PrimaryListingAdjudicator.adjudicate_all_candidates(records)
+
+        # All 3 candidates preserve None
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            assert adjudications[sym].assigned_primary_listing is None, f"{sym} must have assigned_primary_listing=None"
+
+        # Conversion to SourceSecurity with primary_listing=None strictly rejected
+        reqs = ValidationRequirements.create_listing_jurisdiction_profile(
+            allowed_listing_countries={"USA"},
+            require_selected_us_assessment=True,
+        )
+        sample_raw = {
+            "security_id": "PROV_SEC_TEST0002",
+            "symbol": "AAPL",
+            "exchange": "NASDAQ",
+            "security_type": "Common Stock",
+            "listing_status": "ACTIVE",
+            "currency": "USD",
+            "listing_country": "USA",
+            "incorporation_country": "USA",
+            "selected_us_assessment_listing": True,
+            "primary_listing": adjudications["AAPL"].assigned_primary_listing,  # None
+            "asset_class": "EQUITY",
+            "listing_date": None,
+            "delisting_date": None,
+            "trading_suspension_date": None,
+        }
+        val_res = UniverseInputValidator.validate_record(sample_raw, reqs)
+        assert val_res.status == ValidationStatus.VALIDATION_PASSED
+
+        with pytest.raises(ValueError, match="Cannot construct SourceSecurity without explicit, validated boolean value for 'primary_listing'"):
+            to_source_security(val_res)
+
+    def test_rule_version_and_provenance_retention(self):
+        """Adjudication records retain rule ID, version, timestamp, source hierarchy and exact claims."""
+        records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        adjudications = PrimaryListingAdjudicator.adjudicate_all_candidates(records)
+
+        expected_hierarchy = [
+            "PRIMARY_EXCHANGE_AUTHORITY",
+            "REGULATORY_FILINGS_SEC_12B",
+            "EXCHANGE_DIRECTORY",
+        ]
+
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            adj = adjudications[sym]
+            assert adj.rule_id == "R06_BOUNDED_EVIDENCE_ADJUDICATION_V1"
+            assert adj.rule_version == "1.0.0"
+            assert adj.evaluation_date == "2026-10-17"
+            assert adj.source_hierarchy == expected_hierarchy
+            assert isinstance(adj.exact_claims, dict)
+            assert "sec_form_10k_section_12b" in adj.exact_claims
+            assert "nasdaq_directory" in adj.exact_claims
+            assert isinstance(adj.record_locators, dict)
+            assert "accession_number" in adj.record_locators
+            assert adj.missing_evidence_definition is not None
+            assert len(adj.limitations) > 0
+
+        # Non-evaluated candidates in 3-candidate task receive EVIDENCE_UNAVAILABLE
+        for sym in ("TSM", "ACCS", "DDS", "AACIU"):
+            adj = adjudications[sym]
+            assert adj.adjudication_status == PrimaryListingEvidenceClassification.EVIDENCE_UNAVAILABLE
+            assert adj.adjudication_role == PrimaryListingEvidenceRole.INSUFFICIENT_NARROW_OBSERVATION
+
+    def test_whole_batch_protection_atomic_fail_closed(self):
+        """Adjudication failure or missing evidence in any candidate fails the batch conversion atomically."""
+        ledger = build_seven_candidate_proposal()
+        three_records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+
+        report = PrimaryListingReplayEngine.run_replay(
+            ledger,
+            three_records,
+            is_simulation=False,
+        )
+
+        # Batch-level fail closed
+        assert report.is_batch_valid is False
+        assert report.batch_conversion_count == 0
+        assert report.batch_admitted_count == 0
+        assert report.converted_source_securities == []
+        assert report.builder_status == "NOT_RUN"
+        assert report.builder_handoff_permitted is False
+
+        # All 3 evaluated candidates have adjudication result and role
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            cand_res = report.candidate_results[sym]
+            assert cand_res.adjudication_task_scope == "EVALUATED"
+            assert cand_res.adjudication_role == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+            assert cand_res.adjudication_result is not None
+            assert cand_res.adjudication_result.assigned_primary_listing is None
+            assert cand_res.conversion_permitted is False
+
+        # Remaining 4 sample candidates are explicitly marked NOT_EVALUATED in this task
+        for sym in ("TSM", "ACCS", "DDS", "AACIU"):
+            cand_res = report.candidate_results[sym]
+            assert cand_res.adjudication_task_scope == "NOT_EVALUATED"
+
+    def test_no_implicit_production_promotion(self):
+        """Verified that provisional candidate IDs remain uncommitted and production adoption is blocked."""
+        ledger = build_seven_candidate_proposal()
+        three_records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+
+        report = PrimaryListingReplayEngine.run_replay(
+            ledger,
+            three_records,
+            is_simulation=False,
+        )
+
+        assert report.provisional_quarantine_enforced is True
+        assert report.production_adoption_allowed is False
+        assert report.builder_status == "NOT_RUN"
+
+        # Verify candidate IDs remain provisional
+        for prop in ledger.list_proposals():
+            assert prop.proposed_entity.provisional_security_id.startswith("PROV_SEC_")
+            assert prop.proposed_entity.is_adopted_production_id is False
+            assert prop.proposed_entity.status == "PROVISIONAL_NON_PRODUCTION"
+
 
 
 
