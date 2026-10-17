@@ -58,7 +58,8 @@ from enum import Enum
 import hashlib
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+import uuid
 
 from .admission_mapping import (
     AttributableFieldEvidence,
@@ -366,6 +367,30 @@ class IdentityAdoptionDryRunEngine:
         return canonical_hash(content_payload)
 
     @classmethod
+    def allocate_opaque_security_id(cls, prefix: str = "ARX_SEC") -> str:
+        """
+        Allocates an opaque proposed durable security ID.
+        Decoupled from ephemeral listing observations (MIC, symbol, observation date).
+        Once allocated in a plan, this ID is preserved in serialized artifacts and
+        in the target ledger upon adoption.
+        """
+        return f"{prefix}_{uuid.uuid4().hex[:12].upper()}"
+
+    @classmethod
+    def allocate_opaque_association_id(
+        cls,
+        security_id: str,
+        operating_mic: str,
+        symbol: str,
+        effective_from: str,
+    ) -> str:
+        """
+        Allocates a listing association ID tying a durable security to a venue and symbol
+        starting from its verified effective date.
+        """
+        return f"ASSOC_{security_id}_{operating_mic}_{symbol}_{effective_from}"
+
+    @classmethod
     def generate_plan(
         cls,
         proposals: Union[IdentityAssociationProposalLedger, List[CandidateAssociationProposal]],
@@ -373,6 +398,7 @@ class IdentityAdoptionDryRunEngine:
         authorization: Optional[IdentityAdoptionAuthorization] = None,
         evaluation_reference_date: Optional[str] = None,
         deterministic_plan_time_utc: Optional[str] = None,
+        id_allocator: Optional[Callable[[], str]] = None,
     ) -> IdentityAdoptionPlan:
         """
         Generates a deterministic identity adoption plan from candidate proposals.
@@ -417,17 +443,15 @@ class IdentityAdoptionDryRunEngine:
         assocs_approved = 0
         assocs_blocked = 0
 
-        # Determine reference date across proposals if not explicitly supplied
-        effective_dates = [p.proposed_association.effective_from for p in proposal_list if p.proposed_association]
-        default_ref_date = min(effective_dates) if effective_dates else "2026-10-17"
-        eval_ref_date = evaluation_reference_date or default_ref_date
+        # Evaluation reference date is a replay query parameter, NOT evidence of listing start
+        as_of_eval_date = evaluation_reference_date
 
         for prop in proposal_list:
             sym = prop.symbol.strip().upper()
             ent = prop.proposed_entity
             assoc = prop.proposed_association
             clean_cik = str(ent.issuer_cik).zfill(10) if ent.issuer_cik else None
-            effective_date = eval_ref_date or assoc.effective_from
+            effective_date = as_of_eval_date or assoc.effective_from
 
             # Record primary listing state separately from identity adoption
             pla = prop.primary_listing_analysis
@@ -610,7 +634,7 @@ class IdentityAdoptionDryRunEngine:
                 if ev_dates:
                     earliest_ev_date = min(ev_dates)
 
-            evidence_date_limit = earliest_ev_date or eval_ref_date
+            evidence_date_limit = earliest_ev_date or assoc.effective_from
             if not assoc.backdating_established and assoc.effective_from < evidence_date_limit:
                 reason = (
                     f"Unsupported backdating for {sym}: proposed effective_from '{assoc.effective_from}' "
@@ -656,6 +680,7 @@ class IdentityAdoptionDryRunEngine:
             # Enforces:
             # - CIK alone CANNOT match a security (different share classes of same issuer remain distinct)
             # - Same-issuer distinct-security locator collision fails closed
+            # - Ambiguous continuity cannot be assumed from CIK and share class alone
             key = (sym, clean_mic)
             existing_assocs = engine._active_listing_index.get(key, [])
             matched_assoc: Optional[EffectiveDatedListingAssociation] = None
@@ -684,14 +709,27 @@ class IdentityAdoptionDryRunEngine:
                         conflict_message = (
                             f"Same-issuer locator collision: Listing '{sym}' on '{clean_mic}' is actively associated "
                             f"with distinct security '{ex_sec.internal_security_id}' (share class '{ex_sec.share_class}') "
-                            f"of issuer CIK {clean_cik} on {effective_date}. Distinct securities of the same issuer "
-                            f"cannot share an active locator."
+                            f"of issuer CIK {clean_cik} on {effective_date}, while proposed share class is '{ent.share_class}'. "
+                            "Distinct securities of the same issuer cannot share an active locator."
                         )
                         break
 
-                    # Case C: Concordant CIK, share class, and locator -> Exact match
-                    matched_assoc = ex_a
-                    break
+                    # Case C: Concordant CIK, share class, AND matching primary symbol/locator -> Exact match
+                    if (
+                        ex_sec.primary_symbol == sym
+                        and ex_sec.issuer_cik == clean_cik
+                        and ex_sec.share_class == ent.share_class
+                    ):
+                        matched_assoc = ex_a
+                        break
+                    else:
+                        conflict_detected = True
+                        conflict_message = (
+                            f"Ambiguous security continuity: Listing '{sym}' on '{clean_mic}' shares CIK {clean_cik} "
+                            f"and share class '{ent.share_class}' with '{ex_sec.internal_security_id}' (symbol '{ex_sec.primary_symbol}'), "
+                            "but continuity cannot be inferred from CIK and share class alone without explicit corporate action or alias record."
+                        )
+                        break
 
             if conflict_detected:
                 ent_adopt = ProposedEntityAdoption(
@@ -770,18 +808,45 @@ class IdentityAdoptionDryRunEngine:
             # INVARIANT: Real-source candidates (AAPL, GOOG, GOOGL, TSM, AACIU, etc.) are NEVER
             # marked APPROVED_FOR_ADOPTION. Adopting real candidates prior to Rule R06 primary-listing
             # evidence closure is an unresolved policy decision, and real production adoption is unauthorized.
-            is_synthetic_fixture = (
-                sym.startswith("SYNTH_")
-                or getattr(prop, "is_synthetic", False)
-                or ent.status == "SYNTHETIC_TEST_FIXTURE"
-                or (auth.scope == "SYNTHETIC_TEST_ONLY" and not authoritative_cik)
+            #
+            # Governance Guards:
+            # - A symbol beginning "SYNTH_" MUST NOT grant synthetic status or approval.
+            # - Changing only a real proposal's symbol CANNOT change its authorization disposition.
+            # - is_synthetic is proposal metadata, NOT production authorization.
+            # - A proposal is ONLY treated as an authorized synthetic fixture if:
+            #     a) It is explicitly marked as synthetic test metadata (getattr(prop, "is_synthetic", False) is True
+            #        or ent.status == "SYNTHETIC_TEST_FIXTURE");
+            #     b) It is NOT a known real-source candidate (by symbol or CIK);
+            #     c) Authorization explicitly declares scope == "SYNTHETIC_TEST_ONLY".
+            real_candidate_ciks = set(PrimaryListingEvidenceAdapter.AUTHORITATIVE_CANDIDATE_CIK_MAPPING.values())
+            is_known_real_candidate = (
+                sym in PrimaryListingEvidenceAdapter.AUTHORITATIVE_CANDIDATE_CIK_MAPPING
+                or (clean_cik is not None and clean_cik in real_candidate_ciks)
             )
 
-            # Compute durable ID deterministically from canonical formula
-            id_material = f"{clean_cik or 'NOCIK'}:{clean_mic}:{sym}:{effective_date}"
-            sec_id_hash = hashlib.sha256(id_material.encode("utf-8")).hexdigest()[:12].upper()
-            durable_sec_id = f"ARX_SEC_{sec_id_hash}"
-            durable_assoc_id = f"ASSOC_{durable_sec_id}_{clean_mic}_{sym}_{effective_date}"
+            has_synthetic_metadata = (
+                getattr(prop, "is_synthetic", False) is True
+                or ent.status == "SYNTHETIC_TEST_FIXTURE"
+            )
+
+            is_synthetic_fixture = (
+                not is_known_real_candidate
+                and has_synthetic_metadata
+            )
+
+            # Allocate opaque proposed durable security ID decoupled from listing attributes
+            if ent.provisional_security_id in provisional_to_durable_map:
+                durable_sec_id = provisional_to_durable_map[ent.provisional_security_id]
+            else:
+                durable_sec_id = id_allocator() if id_allocator else cls.allocate_opaque_security_id()
+                provisional_to_durable_map[ent.provisional_security_id] = durable_sec_id
+
+            durable_assoc_id = cls.allocate_opaque_association_id(
+                security_id=durable_sec_id,
+                operating_mic=clean_mic,
+                symbol=sym,
+                effective_from=assoc.effective_from,
+            )
 
             if not is_synthetic_fixture:
                 # Real candidate: mechanically plannable, but adoption remains policy-unresolved
@@ -817,7 +882,6 @@ class IdentityAdoptionDryRunEngine:
                 )
                 proposed_entities.append(ent_adopt)
                 proposed_associations.append(assoc_adopt)
-                provisional_to_durable_map[ent.provisional_security_id] = durable_sec_id
                 entities_blocked += 1
                 assocs_blocked += 1
                 blocked_operations.append({"symbol": sym, "reason": reason})
@@ -829,8 +893,8 @@ class IdentityAdoptionDryRunEngine:
                 continue
 
             # 8. Synthetic fixture branch: check explicit synthetic authorization
-            if not auth.is_authorized:
-                reason = "Synthetic fixture adoption blocked: authorization token is absent or is_authorized=False."
+            if not auth.is_authorized or auth.scope != "SYNTHETIC_TEST_ONLY":
+                reason = "Synthetic fixture adoption blocked: authorization token is absent, is_authorized=False, or scope is not SYNTHETIC_TEST_ONLY."
                 ent_adopt = ProposedEntityAdoption(
                     provisional_security_id=ent.provisional_security_id,
                     primary_symbol=sym,
@@ -922,7 +986,7 @@ class IdentityAdoptionDryRunEngine:
         return IdentityAdoptionPlan(
             plan_id=plan_id,
             created_at_utc=plan_created_utc,
-            evaluation_reference_date=eval_ref_date,
+            evaluation_reference_date=as_of_eval_date or "REPLAY_AS_OF_OBSERVATION",
             target_state_digest=target_state_digest,
             plan_content_digest=plan_content_digest,
             authorization=auth,
@@ -975,6 +1039,13 @@ def apply_adoption_plan_test_only(
     Atomic rollback: Takes a full snapshot before mutation; restores 100% of state
     on any failure.
     """
+    # 0. Test-only execution boundary (must not become a production apply path)
+    if plan.authorization.scope != "SYNTHETIC_TEST_ONLY":
+        raise PlanApplicationError(
+            f"Test-only application helper cannot apply plan with authorization scope '{plan.authorization.scope}'. "
+            "The test-only helper must not become a production apply path (strictly restricted to scope='SYNTHETIC_TEST_ONLY')."
+        )
+
     initial_snapshot = engine.to_dict()
     current_digest = IdentityAdoptionDryRunEngine.compute_target_state_digest(initial_snapshot)
 

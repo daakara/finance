@@ -2,28 +2,25 @@
 tests/test_identity_adoption_dry_run.py
 
 Sprint 2: Bounded Offline Identity Adoption Dry-Run Test Suite (Hardened).
-Verifies the bounded offline dry-run adoption planner, plan serialization,
-target-state integrity binding, authoritative issuer CIK gating, and test-scoped
-atomic application.
-
-Core Invariants Tested:
-1. Multi-Symbol Issuer Separation:
-   - Distinct share classes (GOOG vs GOOGL) sharing CIK 0001652044 generate distinct durable IDs.
-2. Authoritative Candidate Issuer Binding & AACIU Regression:
-   - Real AACIU binds to verified CIK 0002092897 (Armada Acquisition Corp. III).
-   - Rejection regression: Contaminated/older CIKs (0001836102 or 0001844419) fail closed
-     with BLOCKED_MISMATCHED_ISSUER.
-3. Separation of Real Candidates from Synthetic Approval:
-   - Real-source candidates (AAPL, GOOG, GOOGL, TSM, AACIU) are NEVER marked APPROVED_FOR_ADOPTION;
-     they receive BLOCKED_POLICY_UNRESOLVED because adoption prior to Rule R06 closure is an open policy.
-   - The mechanical approval path is exercised strictly via explicitly labeled synthetic fixtures.
-4. Same-Issuer Distinct-Security Collision Detection:
-   - Distinct securities of the same issuer competing for the same locator and overlapping
-     dates fail closed with BLOCKED_ASSOCIATION_CONFLICT.
-5. Evidence-Bounded Temporal Semantics:
-   - Unsupported backdating prior to earliest verified evidence observation fails closed
-     with BLOCKED_BACKDATED_UNSUPPORTED.
-6. Content and Target-State Cryptographic Binding:
+Verifies:
+1. Durable Security ID Decoupling from Ephemeral Listing Attributes:
+   - Durable IDs are opaque and not seeded by CIK:MIC:symbol:observation_date.
+   - Existing durable IDs are matched and preserved via established associations.
+   - Retains proposed opaque IDs across serialization/reload of the same plan.
+2. Symbol-Based Synthetic Authority Elimination:
+   - A symbol beginning "SYNTH_" does NOT grant synthetic status or approval.
+   - Changing only a real proposal's symbol cannot change its authorization disposition.
+   - is_synthetic is proposal metadata, NOT production authorization.
+   - Test-only application helper rejects non-synthetic authorization plans.
+3. Authority Separation: Real Candidates vs. Synthetic Fixtures:
+   - Real-source candidates remain BLOCKED_POLICY_UNRESOLVED under unresolved policy.
+   - Exactly 0 real candidates are approved for creation.
+4. Same-Issuer Distinct-Security Locator Collision:
+   - Overlapping locators sharing an issuer CIK but representing different share classes
+     fail closed with BLOCKED_ASSOCIATION_CONFLICT.
+5. Evidence-Bounded Observation Dates:
+   - Unsupported backdating prior to verified observation window fails closed.
+6. Plan Cryptographic Integrity and Stale Rejection:
    - Stale target engine state fails closed with StalePlanError.
    - Tampered plan content actions fail closed with PlanIntegrityError.
 7. Test-Scoped Atomic Application Boundaries:
@@ -67,7 +64,7 @@ pytestmark = pytest.mark.tier2c
 
 @pytest.fixture
 def test_authorization() -> IdentityAdoptionAuthorization:
-    """Fixture providing valid explicit test authorization."""
+    """Fixture providing valid explicit test authorization with PRODUCTION scope."""
     return IdentityAdoptionAuthorization(
         is_authorized=True,
         authorized_by="TEST_GOVERNANCE_OPERATOR",
@@ -98,7 +95,7 @@ def create_synthetic_proposal(
     share_class: str = None,
     effective_from: str = "2026-10-17",
 ) -> CandidateAssociationProposal:
-    """Helper creating an explicitly labeled synthetic proposal."""
+    """Helper creating an explicitly labeled synthetic proposal with synthetic metadata."""
     ent = ProvisionalSecurityEntity(
         provisional_security_id=f"PROV_SEC_{symbol}_01",
         primary_symbol=symbol,
@@ -108,6 +105,7 @@ def create_synthetic_proposal(
         company_name=f"{symbol} Corp",
         external_identifiers=(),
         created_at_utc="2026-10-17T00:00:00Z",
+        status="SYNTHETIC_TEST_FIXTURE",
     )
     assoc = ProvisionalListingAssociation(
         provisional_association_id=f"PROV_ASSOC_{symbol}_01",
@@ -138,7 +136,7 @@ def create_synthetic_proposal(
         missing_evidence_details="None",
         contract_ambiguity_notes="Synthetic fixture test",
     )
-    return CandidateAssociationProposal(
+    prop = CandidateAssociationProposal(
         symbol=symbol,
         observed_venue="NASDAQ",
         instrument_classification="Common Stock",
@@ -153,6 +151,8 @@ def create_synthetic_proposal(
         ambiguities_and_missing_evidence=[],
         review_disposition="READY_FOR_REVIEW",
     )
+    prop.is_synthetic = True
+    return prop
 
 
 class TestAuthoritativeIssuerBindingAndAACIURegression:
@@ -178,8 +178,11 @@ class TestAuthoritativeIssuerBindingAndAACIURegression:
         assert aaciu_ent.issuer_cik == "0002092897"
         # Not rejected as mismatched CIK
         assert aaciu_ent.status != IdentityAdoptionStatus.BLOCKED_MISMATCHED_ISSUER
-        # Proposed durable ID matches authentic hash of 0002092897:XNAS:AACIU:2026-10-17
-        assert aaciu_ent.proposed_durable_security_id == "ARX_SEC_FD699E6BC08E"
+        # Proposed durable ID is an opaque ID allocated once, decoupled from listing attributes
+        assert aaciu_ent.proposed_durable_security_id.startswith("ARX_SEC_")
+        assert aaciu_ent.status == IdentityAdoptionStatus.BLOCKED_POLICY_UNRESOLVED
+        assert aaciu_ent.is_creation is False
+        assert aaciu_ent.is_mechanically_plannable is True
 
     def test_aaciu_regression_rejects_contaminated_or_older_spac_ciks(self, test_authorization):
         engine = OfflineAdmissionMappingEngine()
@@ -263,7 +266,7 @@ class TestAuthoritativeIssuerBindingAndAACIURegression:
 
 
 class TestSeparationOfRealCandidatesFromSyntheticApproval:
-    """Verifies that real candidates are never marked APPROVED_FOR_ADOPTION."""
+    """Verifies that real candidates are never approved and SYNTH_ prefix conveys no authority."""
 
     def test_real_candidates_receive_policy_unresolved_not_approved(self, test_authorization):
         ledger = build_seven_candidate_proposal()
@@ -286,6 +289,7 @@ class TestSeparationOfRealCandidatesFromSyntheticApproval:
             assert assoc.status == IdentityAdoptionStatus.BLOCKED_POLICY_UNRESOLVED
             assert "unresolved policy decision" in ent.rationale.lower()
             assert ent.is_creation is False
+            assert ent.proposed_durable_security_id.startswith("ARX_SEC_")
 
         # Real candidates with unresolved MIC (DDS) and disputed venue (ACCS)
         dds_ent = next(e for e in plan.entities if e.primary_symbol == "DDS")
@@ -299,6 +303,125 @@ class TestSeparationOfRealCandidatesFromSyntheticApproval:
         # Exactly zero real candidates are approved
         assert plan.summary.entities_approved_creation == 0
         assert plan.summary.associations_approved_creation == 0
+
+    def test_changing_only_real_proposal_symbol_cannot_change_disposition(self, synthetic_authorization):
+        """
+        Governance Invariant: A symbol beginning with 'SYNTH_' must not grant synthetic status.
+        Renaming a real candidate's symbol (e.g. AAPL -> SYNTH_AAPL) must NOT alter its authorization
+        disposition or bypass the unresolved policy decision.
+        """
+        ledger = build_seven_candidate_proposal()
+        real_aapl = ledger.get_proposal("AAPL")
+        assert real_aapl is not None
+
+        # Mutate ONLY the symbol on the real proposal
+        mutated_ent = ProvisionalSecurityEntity(
+            provisional_security_id=real_aapl.proposed_entity.provisional_security_id,
+            primary_symbol="SYNTH_AAPL",
+            share_class=real_aapl.proposed_entity.share_class,
+            instrument_structure=real_aapl.proposed_entity.instrument_structure,
+            issuer_cik=real_aapl.proposed_entity.issuer_cik,
+            company_name=real_aapl.proposed_entity.company_name,
+            external_identifiers=real_aapl.proposed_entity.external_identifiers,
+            created_at_utc=real_aapl.proposed_entity.created_at_utc,
+            status=real_aapl.proposed_entity.status,
+        )
+        mutated_assoc = ProvisionalListingAssociation(
+            provisional_association_id=real_aapl.proposed_association.provisional_association_id,
+            provisional_security_id=real_aapl.proposed_association.provisional_security_id,
+            symbol="SYNTH_AAPL",
+            operating_mic=real_aapl.proposed_association.operating_mic,
+            effective_from=real_aapl.proposed_association.effective_from,
+            effective_to=real_aapl.proposed_association.effective_to,
+        )
+        mutated_prop = CandidateAssociationProposal(
+            symbol="SYNTH_AAPL",
+            observed_venue=real_aapl.observed_venue,
+            instrument_classification=real_aapl.instrument_classification,
+            available_figis=real_aapl.available_figis,
+            provider_asset_identifiers=real_aapl.provider_asset_identifiers,
+            issuer_cik=real_aapl.issuer_cik,
+            issuer_name=real_aapl.issuer_name,
+            evidence_references=real_aapl.evidence_references,
+            proposed_entity=mutated_ent,
+            proposed_association=mutated_assoc,
+            primary_listing_analysis=real_aapl.primary_listing_analysis,
+            ambiguities_and_missing_evidence=real_aapl.ambiguities_and_missing_evidence,
+            review_disposition=real_aapl.review_disposition,
+        )
+
+        engine = OfflineAdmissionMappingEngine()
+        plan = IdentityAdoptionDryRunEngine.generate_plan(
+            proposals=[mutated_prop],
+            existing_target=engine,
+            authorization=synthetic_authorization,
+        )
+
+        # Disposition must remain BLOCKED_POLICY_UNRESOLVED, never APPROVED_FOR_ADOPTION
+        ent_res = plan.entities[0]
+        assert ent_res.status == IdentityAdoptionStatus.BLOCKED_POLICY_UNRESOLVED
+        assert ent_res.is_creation is False
+        assert plan.summary.entities_approved_creation == 0
+
+    def test_synth_prefix_symbol_without_synthetic_metadata_not_approved(self, synthetic_authorization):
+        """A proposal with symbol starting with SYNTH_ without explicit synthetic metadata is not approved."""
+        ent = ProvisionalSecurityEntity(
+            provisional_security_id="PROV_SEC_SYNTH_UNMARKED",
+            primary_symbol="SYNTH_UNMARKED",
+            share_class=None,
+            instrument_structure="Common Stock",
+            issuer_cik="0009999111",
+            company_name="Unmarked Corp",
+            external_identifiers=(),
+            created_at_utc="2026-10-17T00:00:00Z",
+            status="PROVISIONAL_NON_PRODUCTION",
+        )
+        assoc = ProvisionalListingAssociation(
+            provisional_association_id="PROV_ASSOC_SYNTH_UNMARKED",
+            provisional_security_id=ent.provisional_security_id,
+            symbol="SYNTH_UNMARKED",
+            operating_mic="XNAS",
+            effective_from="2026-10-17",
+            effective_to=None,
+        )
+        pla = PrimaryListingClaimAnalysis(
+            symbol="SYNTH_UNMARKED",
+            exact_claim_needed="NONE",
+            issuer_home_market="US",
+            underlying_ordinary_share_listing=None,
+            depositary_receipt_listing=None,
+            primary_exchange_for_instrument="NASDAQ",
+            selected_us_assessment_listing=True,
+            claimed_primary_listing=True,
+            evidence_sufficiency="SUFFICIENT",
+            missing_evidence_details="None",
+            contract_ambiguity_notes="Test",
+        )
+        prop = CandidateAssociationProposal(
+            symbol="SYNTH_UNMARKED",
+            observed_venue="NASDAQ",
+            instrument_classification="Common Stock",
+            available_figis={},
+            provider_asset_identifiers={},
+            issuer_cik="0009999111",
+            issuer_name="Unmarked Corp",
+            evidence_references=[],
+            proposed_entity=ent,
+            proposed_association=assoc,
+            primary_listing_analysis=pla,
+            ambiguities_and_missing_evidence=[],
+            review_disposition="READY_FOR_REVIEW",
+        )
+
+        engine = OfflineAdmissionMappingEngine()
+        plan = IdentityAdoptionDryRunEngine.generate_plan(
+            proposals=[prop],
+            existing_target=engine,
+            authorization=synthetic_authorization,
+        )
+
+        assert plan.entities[0].status == IdentityAdoptionStatus.BLOCKED_POLICY_UNRESOLVED
+        assert plan.entities[0].is_creation is False
 
     def test_synthetic_fixture_exercises_mechanical_approval_path(self, synthetic_authorization):
         synth_prop = create_synthetic_proposal("SYNTH_TEST1", "XNAS", "0009876543")
@@ -315,37 +438,121 @@ class TestSeparationOfRealCandidatesFromSyntheticApproval:
         assert plan.entities[0].status == IdentityAdoptionStatus.APPROVED_FOR_ADOPTION
         assert plan.entities[0].is_creation is True
         assert plan.entities[0].is_mechanically_plannable is True
+        assert plan.entities[0].proposed_durable_security_id.startswith("ARX_SEC_")
         assert plan.associations[0].status == IdentityAdoptionStatus.APPROVED_FOR_ADOPTION
+
+    def test_missing_authorization_blocks_adoption(self):
+        """Synthetic proposal without explicit authorization fails closed."""
+        engine = OfflineAdmissionMappingEngine()
+        synth_prop = create_synthetic_proposal("SYNTH_UNAUTH", "XNAS", "0009876543")
+        unauth = IdentityAdoptionAuthorization(is_authorized=False)
+
+        plan = IdentityAdoptionDryRunEngine.generate_plan(
+            proposals=[synth_prop],
+            existing_target=engine,
+            authorization=unauth,
+        )
+
+        assert plan.summary.entities_approved_creation == 0
+        assert plan.entities[0].status == IdentityAdoptionStatus.BLOCKED_MISSING_AUTHORIZATION
+        assert plan.entities[0].is_creation is False
+
+    def test_test_only_application_helper_rejects_non_synthetic_plans(self, test_authorization):
+        """apply_adoption_plan_test_only fails closed if plan scope is not SYNTHETIC_TEST_ONLY."""
+        synth_prop = create_synthetic_proposal("SYNTH_TEST_SCOPE", "XNAS", "0009876543")
+        engine = OfflineAdmissionMappingEngine()
+
+        plan = IdentityAdoptionDryRunEngine.generate_plan(
+            proposals=[synth_prop],
+            existing_target=engine,
+            authorization=test_authorization,  # scope="PRODUCTION"
+        )
+
+        with pytest.raises(PlanApplicationError, match="strictly restricted to scope='SYNTHETIC_TEST_ONLY'"):
+            apply_adoption_plan_test_only(plan, engine, allow_partial=True)
+
+
+class TestExistingDurableIdPreservationAndIdempotency:
+    """Verifies that existing durable IDs are preserved and application is idempotent."""
+
+    def test_existing_durable_ids_are_matched_and_preserved(self, synthetic_authorization):
+        engine = OfflineAdmissionMappingEngine()
+        sec_rec, assoc = engine.register_security(
+            symbol="SYNTH_EXIST",
+            operating_mic="XNAS",
+            as_of_date="2026-10-17",
+            issuer_cik="0009876543",
+        )
+
+        synth_prop = create_synthetic_proposal("SYNTH_EXIST", "XNAS", "0009876543")
+        plan = IdentityAdoptionDryRunEngine.generate_plan(
+            proposals=[synth_prop],
+            existing_target=engine,
+            authorization=synthetic_authorization,
+        )
+
+        assert plan.summary.entities_matched_existing == 1
+        assert plan.summary.associations_matched_existing == 1
+        assert plan.summary.entities_approved_creation == 0
+        ent = plan.entities[0]
+        assert ent.status == IdentityAdoptionStatus.MATCHES_EXISTING_DURABLE
+        assert ent.is_creation is False
+        assert ent.proposed_durable_security_id == sec_rec.internal_security_id
+        assert ent.matched_existing_security_id == sec_rec.internal_security_id
+
+    def test_repeated_dry_run_and_application_yields_zero_duplicates(self, synthetic_authorization):
+        engine = OfflineAdmissionMappingEngine()
+        synth_prop = create_synthetic_proposal("SYNTH_IDEM", "XNAS", "0009876543")
+
+        plan1 = IdentityAdoptionDryRunEngine.generate_plan(
+            proposals=[synth_prop],
+            existing_target=engine,
+            authorization=synthetic_authorization,
+        )
+        assert plan1.summary.entities_approved_creation == 1
+        applied_engine = apply_adoption_plan_test_only(plan1, engine)
+        assert len(applied_engine._security_registry) == 1
+        assert len(applied_engine._association_ledger) == 1
+
+        # Second plan against the updated engine
+        plan2 = IdentityAdoptionDryRunEngine.generate_plan(
+            proposals=[synth_prop],
+            existing_target=applied_engine,
+            authorization=synthetic_authorization,
+        )
+        assert plan2.summary.entities_matched_existing == 1
+        assert plan2.summary.entities_approved_creation == 0
+        assert plan2.entities[0].status == IdentityAdoptionStatus.MATCHES_EXISTING_DURABLE
+        assert plan2.entities[0].proposed_durable_security_id == plan1.entities[0].proposed_durable_security_id
 
 
 class TestSameIssuerDistinctSecurityCollision:
-    """Verifies that same-issuer, distinct-security collisions fail closed."""
+    """Verifies that distinct share classes sharing an issuer collision fail closed on overlapping locators."""
 
     def test_same_issuer_distinct_security_collision_on_locator_fails_closed(self, synthetic_authorization):
         engine = OfflineAdmissionMappingEngine()
-        # Register a preexisting security of Alphabet Inc. (GOOG, Class C) on (GOOG, XNAS)
+        # Pre-populate engine with Class A security for issuer on XNAS / SYM
         engine.register_security(
-            symbol="GOOG",
+            symbol="SYNTH_MULTICLASS",
             operating_mic="XNAS",
             as_of_date="2026-10-17",
-            issuer_cik="0001652044",
-            share_class="CLASS_C",
-            source_reference="EXISTING_CLASS_C",
-        )
-
-        # Construct a synthetic proposal for the SAME issuer CIK 0001652044 and SAME locator (GOOG, XNAS),
-        # but for a DISTINCT security (share_class="CLASS_A")
-        conflicting_prop = create_synthetic_proposal(
-            symbol="GOOG",
-            operating_mic="XNAS",
-            cik="0001652044",
+            issuer_cik="0009876543",
             share_class="CLASS_A",
         )
 
+        # Propose distinct Class C security for SAME issuer on SAME locator overlapping active interval
+        prop_class_c = create_synthetic_proposal(
+            symbol="SYNTH_MULTICLASS",
+            operating_mic="XNAS",
+            cik="0009876543",
+            share_class="CLASS_C",
+        )
+
         plan = IdentityAdoptionDryRunEngine.generate_plan(
-            proposals=[conflicting_prop],
+            proposals=[prop_class_c],
             existing_target=engine,
             authorization=synthetic_authorization,
+            evaluation_reference_date="2026-10-17",
         )
 
         ent = plan.entities[0]
@@ -458,7 +665,7 @@ class TestPlanIntegrityAndApplicationBoundaries:
 
         # When allow_partial=True is explicitly granted, only approved item is applied
         apply_adoption_plan_test_only(mixed_plan, engine, allow_partial=True)
-        assert "ARX_SEC_7793A60EEF74" in engine._security_registry or len(engine._security_registry) == 1
+        assert len(engine._security_registry) == 1
 
     def test_mid_operation_failure_rolls_back_completely(self, synthetic_authorization):
         engine = OfflineAdmissionMappingEngine()
@@ -483,7 +690,7 @@ class TestPlanIntegrityAndApplicationBoundaries:
 
 
 class TestMultiSymbolIssuerSeparation:
-    """Verifies that distinct share classes sharing an issuer maintain distinct durable IDs."""
+    """Verifies that distinct share classes sharing an issuer maintain distinct opaque durable IDs."""
 
     def test_goog_and_googl_receive_distinct_durable_ids(self, test_authorization):
         ledger = build_seven_candidate_proposal()
@@ -503,7 +710,7 @@ class TestMultiSymbolIssuerSeparation:
         assert goog_ent.share_class == "CLASS_C"
         assert googl_ent.share_class == "CLASS_A"
 
-        # Distinct proposed durable IDs
+        # Distinct proposed opaque durable IDs
         assert goog_ent.proposed_durable_security_id != googl_ent.proposed_durable_security_id
         assert goog_ent.proposed_durable_security_id.startswith("ARX_SEC_")
         assert googl_ent.proposed_durable_security_id.startswith("ARX_SEC_")
@@ -515,18 +722,25 @@ class TestMultiSymbolIssuerSeparation:
 
 
 class TestPlanSerializationAndIntegrity:
-    """Verifies plan JSON serialization and reload stability."""
+    """Verifies plan JSON serialization and reload stability for opaque IDs and digests."""
 
-    def test_plan_json_roundtrip_preserves_all_fields(self, test_authorization):
+    def test_plan_json_roundtrip_preserves_opaque_ids_and_all_fields(self, synthetic_authorization):
         engine = OfflineAdmissionMappingEngine()
-        ledger = build_seven_candidate_proposal()
+        p1 = create_synthetic_proposal("SYNTH_JSON1", "XNAS", "0009876541")
+        p2 = create_synthetic_proposal("SYNTH_JSON2", "XNYS", "0009876542")
 
         original_plan = IdentityAdoptionDryRunEngine.generate_plan(
-            proposals=ledger,
+            proposals=[p1, p2],
             existing_target=engine,
-            authorization=test_authorization,
-            deterministic_plan_time_utc="2026-10-17T12:00:00Z",
+            authorization=synthetic_authorization,
+            deterministic_plan_time_utc="2026-10-18T00:00:00Z",
         )
+
+        allocated_id_1 = original_plan.entities[0].proposed_durable_security_id
+        allocated_id_2 = original_plan.entities[1].proposed_durable_security_id
+        assert allocated_id_1.startswith("ARX_SEC_")
+        assert allocated_id_2.startswith("ARX_SEC_")
+        assert allocated_id_1 != allocated_id_2
 
         json_repr = original_plan.to_json()
         reloaded_plan = IdentityAdoptionPlan.from_json(json_repr)
@@ -545,3 +759,5 @@ class TestPlanSerializationAndIntegrity:
             assert orig_e.status == rel_e.status
             assert orig_e.proposed_durable_security_id == rel_e.proposed_durable_security_id
             assert orig_e.is_mechanically_plannable == rel_e.is_mechanically_plannable
+
+        assert reloaded_plan.is_plan_content_valid() is True
