@@ -120,12 +120,22 @@ class SourceSecurity:
     security_type: str
     listing_status: str
     currency: str = "USD"
-    country: str = "USA"
-    primary_listing: bool = True
+    country: Optional[str] = "USA"
+    primary_listing: Optional[bool] = True
     asset_class: str = "EQUITY"
     listing_date: Optional[str] = None
     delisting_date: Optional[str] = None
     trading_suspension_date: Optional[str] = None
+
+    # Explicit listing semantics extensions (Optional for full backward compatibility)
+    listing_country: Optional[str] = None
+    incorporation_country: Optional[str] = None
+    selected_us_assessment_listing: Optional[bool] = None
+
+    @property
+    def country_of_incorporation(self) -> Optional[str]:
+        """Canonical alias for incorporation_country."""
+        return self.incorporation_country
 
     def normalize(self) -> SourceSecurity:
         """Deterministically trims and normalizes casing."""
@@ -136,16 +146,51 @@ class SourceSecurity:
             security_type=self.security_type.strip().upper(),
             listing_status=self.listing_status.strip().upper(),
             currency=self.currency.strip().upper(),
-            country=self.country.strip().upper(),
-            primary_listing=bool(self.primary_listing),
+            country=self.country.strip().upper() if self.country else None,
+            primary_listing=bool(self.primary_listing) if self.primary_listing is not None else None,
             asset_class=self.asset_class.strip().upper(),
             listing_date=self.listing_date.strip() if self.listing_date else None,
             delisting_date=self.delisting_date.strip() if self.delisting_date else None,
             trading_suspension_date=self.trading_suspension_date.strip() if self.trading_suspension_date else None,
+            listing_country=self.listing_country.strip().upper() if self.listing_country else None,
+            incorporation_country=self.incorporation_country.strip().upper() if self.incorporation_country else None,
+            selected_us_assessment_listing=(
+                bool(self.selected_us_assessment_listing)
+                if self.selected_us_assessment_listing is not None
+                else None
+            ),
         )
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        res = asdict(self)
+        res["country_of_incorporation"] = self.country_of_incorporation
+        return res
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> SourceSecurity:
+        """Constructs a SourceSecurity from dictionary, supporting canonical aliases."""
+        inc_c = data.get("incorporation_country") or data.get("country_of_incorporation")
+        return cls(
+            security_id=str(data["security_id"]),
+            symbol=str(data["symbol"]),
+            exchange=str(data["exchange"]),
+            security_type=str(data["security_type"]),
+            listing_status=str(data["listing_status"]),
+            currency=str(data.get("currency", "USD")),
+            country=str(data["country"]) if "country" in data and data["country"] is not None else None,
+            primary_listing=bool(data["primary_listing"]) if "primary_listing" in data and data["primary_listing"] is not None else None,
+            asset_class=str(data.get("asset_class", "EQUITY")),
+            listing_date=data.get("listing_date"),
+            delisting_date=data.get("delisting_date"),
+            trading_suspension_date=data.get("trading_suspension_date"),
+            listing_country=str(data["listing_country"]) if data.get("listing_country") else None,
+            incorporation_country=str(inc_c) if inc_c else None,
+            selected_us_assessment_listing=(
+                bool(data["selected_us_assessment_listing"])
+                if "selected_us_assessment_listing" in data and data["selected_us_assessment_listing"] is not None
+                else None
+            ),
+        )
 
     def compute_hash(self) -> str:
         return compute_sha256(self.to_dict())
