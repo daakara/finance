@@ -12,19 +12,19 @@
 
 ### 1. Executive Summary & Resolution Verdict
 
-A bounded, systematic source investigation was conducted across three independent source families (official exchange documentation, official exchange quote APIs, and official issuer investor-relations portals) to discover an attributable claim satisfying either approved Rule R06 evidence path:
+A bounded, systematic source investigation was conducted across public open sources (official exchange documentation, official exchange quote APIs, and official issuer investor-relations portals) and entitled/reference provider interfaces (OpenFIGI, Massive/Polygon, Alpaca) to discover an attributable claim satisfying either approved Rule R06 evidence path:
 - **Path A:** Attributable direct identification of the exact instrument's designated primary exchange listing; or
 - **Path B:** Documented derivation supported by authoritative rules and instrument-specific facts.
 
 #### Final Adjudication Verdict:
-**No inspected public open source provides an attributable claim sufficient to certify `primary_listing = True` under the approved Rule R06 definition.**
+**No source inspected across the evaluated public and entitled reference sources provides an attributable claim sufficient to certify `primary_listing = True` under the approved Rule R06 definition.**
 All three evaluated candidates (**AAPL**, **GOOGL**, and **GOOG**) are adjudicated as **`NARROWER_FACT_ONLY`** and strictly preserve **`primary_listing = None`** (UNKNOWN). In accordance with fail-closed governance, zero candidates are admitted to the production universe, provisional identity adoption remains completely disabled, and the offline builder remains `NOT_RUN`.
 
 | Candidate | Instrument Title | Inspected Source Claims | Path A Result | Path B Result | Final R06 Status | `primary_listing` | Replay Action |
 |:---|:---|:---|:---:|:---:|:---:|:---:|:---:|
-| **AAPL** | Apple Inc. Common Stock | Form 10-K §12(b); `nasdaqlisted.txt` Tier Q; `api.nasdaq.com` `exchange: NASDAQ-GS` | Absent | Insufficient (Narrow Fact Only) | `NARROWER_FACT_ONLY` | `None` (UNKNOWN) | Fail-Closed Block |
-| **GOOGL** | Alphabet Inc. Class A Common Stock | Form 10-K §12(b); `nasdaqlisted.txt` Tier Q; `api.nasdaq.com` `exchange: NASDAQ-GS` | Absent | Insufficient (Narrow Fact Only) | `NARROWER_FACT_ONLY` | `None` (UNKNOWN) | Fail-Closed Block |
-| **GOOG** | Alphabet Inc. Class C Capital Stock | Form 10-K §12(b); `nasdaqlisted.txt` Tier Q; `api.nasdaq.com` `exchange: NASDAQ-GS` | Absent | Insufficient (Narrow Fact Only) | `NARROWER_FACT_ONLY` | `None` (UNKNOWN) | Fail-Closed Block |
+| **AAPL** | Apple Inc. Common Stock | Form 10-K §12(b); `nasdaqlisted.txt` Tier Q; `api.nasdaq.com` `exchange: NASDAQ-GS`; OpenFIGI `exchCode: "US"` | Absent | Insufficient (Narrow Fact Only) | `NARROWER_FACT_ONLY` | `None` (UNKNOWN) | Fail-Closed Block |
+| **GOOGL** | Alphabet Inc. Class A Common Stock | Form 10-K §12(b); `nasdaqlisted.txt` Tier Q; `api.nasdaq.com` `exchange: NASDAQ-GS`; OpenFIGI `exchCode: "US"` | Absent | Insufficient (Narrow Fact Only) | `NARROWER_FACT_ONLY` | `None` (UNKNOWN) | Fail-Closed Block |
+| **GOOG** | Alphabet Inc. Class C Capital Stock | Form 10-K §12(b); `nasdaqlisted.txt` Tier Q; `api.nasdaq.com` `exchange: NASDAQ-GS`; OpenFIGI `exchCode: "US"` | Absent | Insufficient (Narrow Fact Only) | `NARROWER_FACT_ONLY` | `None` (UNKNOWN) | Fail-Closed Block |
 | **TSM** | Taiwan Semiconductor ADR | Not re-evaluated in this task | — | — | `NOT_EVALUATED` | `None` (UNKNOWN) | Out of Scope |
 | **ACCS** | Access Pharmaceuticals Inc. | Not re-evaluated in this task | — | — | `NOT_EVALUATED` | `None` (UNKNOWN) | Out of Scope |
 | **DDS** | Dillard's Inc. Class A | Not re-evaluated in this task | — | — | `NOT_EVALUATED` | `None` (UNKNOWN) | Out of Scope |
@@ -47,13 +47,13 @@ In accordance with Sprint 2 documentation verification standards, the PR #20 rel
 
 ---
 
-### 3. Source Families Inspected & Exact Evidence Account
+### 3. Public Source Families Inspected & Exact Evidence Account
 
-A finite search across three source families was conducted under strict safeguards (HTTPS, finite 10s timeouts, documented rate limits, non-invention rule, and zero bypass of access controls).
+A finite search across three public source families was conducted under strict safeguards (HTTPS, finite 10s timeouts, documented rate limits, non-invention rule, and zero bypass of access controls).
 
 ```
    ┌─────────────────────────────────────────────────────────────────────────────┐
-   │                          SOURCE FAMILIES INSPECTED                          │
+   │                       PUBLIC SOURCE FAMILIES INSPECTED                      │
    └──────────────────────────────────────┬──────────────────────────────────────┘
                                           │
        ┌──────────────────────────────────┼──────────────────────────────────┐
@@ -107,7 +107,7 @@ A finite search across three source families was conducted under strict safeguar
     - AAPL: `"exchange": "NASDAQ-GS"`, `"isNasdaqListed": true`, `"stockType": "Common Stock"`
     - GOOG: `"exchange": "NASDAQ-GS"`, `"isNasdaqListed": true`, `"stockType": "Class C Capital Stock"`
     - GOOGL: `"exchange": "NASDAQ-GS"`, `"isNasdaqListed": true`, `"stockType": "Class A Common Stock"`
-    - IBM: `"exchange": "NYSE"`, `"isNasdaqListed": false`, `"stockType": "Common Stock"`
+    - IBM: `"exchange": "NYSE"`, `"isNasdaqListed": false`, `"stockType": "Common Stock"` (Disclosed non-Nasdaq control request to confirm payload parsing integrity across market centers)
   - *Limitation / Outcome:* The response provides `"exchange": "NASDAQ-GS"`, which indicates current quote venue and listing tier. It does not provide an explicit `"primaryExchange"` attribute. In accordance with Rule R06, an exchange listing tier cannot be conflated with a designated primary listing assertion. Outcome: **`NARROWER_FACT_ONLY`**.
 - **Source 2.2: Nasdaq Company Profile API (`https://api.nasdaq.com/api/company/AAPL/company-profile`)**
   - *Retrieved:* 2026-10-17 live. Contains corporate description, sector, and industry; exchange attributes are null/omitted.
@@ -128,16 +128,49 @@ A finite search across three source families was conducted under strict safeguar
 
 ---
 
-### 4. Direct vs. Derived Attribution Analysis & Invariant Adherence
+### 4. Provider Access Inspection & Field Verification
 
-#### 4.1 Path A: Direct Attribution Assessment
+In accordance with operator instructions, existing provider entitlements and configurations were inspected directly from the environment without purchasing data, opening new accounts, or inventing credentials.
+
+#### 4.1 Provider Access Status Matrix
+
+| Provider / Interface | Environment Configuration | Active Access Tier | Documented Endpoint | Primary Exchange Field Supported? | Current Operational Status |
+|:---|:---:|:---:|:---|:---:|:---|
+| **OpenFIGI** | `OPENFIGI_API_KEY` Configured (`True`) | Free Registered API Key (25 req/min) | `POST https://api.openfigi.com/v3/mapping` | **No** (Schema omits primary listing attribute) | **ACTIVE**: Bounded reference mapping executed; leaves `primary_listing = None`. |
+| **Massive / Polygon** | `POLYGON_API_KEY` / `MASSIVE_API_KEY` Not Configured (`False`) | Unconfigured | `GET https://api.polygon.io/v3/reference/tickers/{ticker}` | **Yes** (`primary_exchange` ISO 10383 MIC) | **ACCESS DEPENDENCY**: Live retrieval blocked; requires operator-supplied credential. |
+| **Alpaca** | `ALPACA_API_KEY` Not Configured (`False`) | Unconfigured | `GET https://api.alpaca.markets/v2/assets/{symbol}` | **Yes** (`exchange` attribute) | **ACCESS DEPENDENCY**: Unconfigured in environment. |
+
+#### 4.2 Bounded OpenFIGI Retrieval & Payload Verification
+A bounded retrieval was executed against the official OpenFIGI v3 mapping endpoint using the configured free API key:
+- **Request Parameters:** `[{"idType": "TICKER", "idValue": "AAPL", "exchCode": "US"}, {"idType": "TICKER", "idValue": "GOOG", "exchCode": "US"}, {"idType": "TICKER", "idValue": "GOOGL", "exchCode": "US"}]`.
+- **Response Artifact Preserved:** `data/research/openfigi_reference/openfigi_three_candidates_mapping_20261017.json`.
+- **Artifact Size & Hash:** 808 bytes, SHA-256: `003c995d4ce51d95573ac4fedf6afd9f368a5be356ba28e9b616b992a8f225d2`.
+- **Exact Extracted Fields:**
+  - **AAPL:** `figi: "BBG000B9XRY4"`, `compositeFIGI: "BBG000B9XRY4"`, `shareClassFIGI: "BBG001S5N8V8"`, `exchCode: "US"`, `securityType: "Common Stock"`.
+  - **GOOG:** `figi: "BBG009S3NB30"`, `compositeFIGI: "BBG009S3NB30"`, `shareClassFIGI: "BBG009S3NB21"`, `exchCode: "US"`, `securityType: "Common Stock"`.
+  - **GOOGL:** `figi: "BBG009S39JX6"`, `compositeFIGI: "BBG009S39JX6"`, `shareClassFIGI: "BBG009S39JY5"`, `exchCode: "US"`, `securityType: "Common Stock"`.
+- **Analysis:**
+  1. `exchCode: "US"` represents a **national composite market code**, not an operating exchange MIC (such as `XNAS` or `XNYS`).
+  2. OpenFIGI's official data dictionary confirms that the free API schema does not contain a `primary_listing`, `primaryExchange`, or `primaryListing` attribute.
+  3. When queried without exchange constraints, OpenFIGI returns over 70 venue-level listings for AAPL (e.g. `UW` for Nasdaq, `UN` for NYSE, `UA` for Amex, `UZ` for Finra ADF) without any field designating which venue is the primary listing.
+  4. Consequently, OpenFIGI mapping provides an attributable identifier cross-reference, but **does not supply primary listing evidence**. Candidates strictly retain `assigned_primary_listing = None` (`NARROWER_FACT_ONLY`).
+
+#### 4.3 Correction of Unsupported Provider Claims
+- **Removal of "OpenFIGI Enterprise primaryListing=true" Claim:** An earlier draft hypothesized that OpenFIGI Enterprise supplies an explicit `primaryListing: true` attribute. Official documentation review indicates that OpenFIGI is strictly an open financial identifier mapping engine; it does not publish a `primaryListing` boolean flag. Bloomberg Data License is an entirely separate enterprise bulk flat-file service (`EQY_PRIM_EXCH`). These two products must not be conflated. ARX operates on the free OpenFIGI tier, and claims regarding an Enterprise `primaryListing` field are formally labeled **UNVERIFIED** and removed from the active capability matrix.
+
+---
+
+### 5. Direct vs. Derived Attribution Analysis & Invariant Adherence
+
+#### 5.1 Path A: Direct Attribution Assessment
 Path A requires attributable direct identification of the exact instrument's designated primary exchange listing by an authoritative publisher.
 - In `TradingSystemAddsDeletes.txt`, the column `Primary Listing Market` exists, but the three candidate records are absent.
 - In `api.nasdaq.com`, the attribute is `"exchange": "NASDAQ-GS"`, which is a quote venue indicator rather than a direct primary listing designation.
 - In `nasdaqlisted.txt`, the column is `Market Category`, which defines listing standards, not a primary designation.
-- *Verdict:* Direct primary listing claims are **absent** from all accessible public records.
+- In OpenFIGI v3 mapping, the attribute is `exchCode: "US"`, which is a composite code without a primary listing attribute.
+- *Verdict:* Direct primary listing claims are **absent** from all inspected sources.
 
-#### 4.2 Path B: Documented Derivation Assessment
+#### 5.2 Path B: Documented Derivation Assessment
 Path B permits a documented derivation supported by authoritative exchange rules and instrument-specific facts, without requiring literal wording or universal exclusivity proof (unless the derivation relies upon exclusivity).
 - *Potential Derivation Tested:* Form 10-K §12(b) registration on The Nasdaq Stock Market LLC + `nasdaqlisted.txt` Tier Q + `symboldirdefs` primary market mapping.
 - *Failure Mode / Rigorous Critique:* While Nasdaq Trader technical documentation notes that Q represents the Global Select tier and is treated as a primary listing market in delta processing, adopting this derivation without an official exchange primary listing certificate or an explicit exchange rule stating that all Category Q securities are by definition primary listings would breach Rule R06's non-inference invariant:
@@ -146,17 +179,18 @@ Path B permits a documented derivation supported by authoritative exchange rules
   - Therefore, without an authoritative primary venue certificate or direct listing agreement, the evidence constitutes a **narrower listing fact only**.
 - *Rule R06 Invariant Enforcement:* Setting `primary_listing = True` based solely on Tier Q directory listing would relax Rule R06. The adjudicator strictly resists this relaxation and preserves `primary_listing = None`.
 
-#### 4.3 Multi-Class Isolation: GOOG vs. GOOGL
+#### 5.3 Multi-Class Isolation: GOOG vs. GOOGL
 - **GOOGL** represents Alphabet Inc. Class A Common Stock (1 vote per share).
 - **GOOG** represents Alphabet Inc. Class C Capital Stock (0 votes per share, non-voting).
 - Both classes were evaluated under identical primary listing standards:
   - Voting rights were not treated as conferring primary status.
   - Non-voting status was not treated as subordinating the class.
   - Both classes evaluated to `NARROWER_FACT_ONLY` and retain `primary_listing = None`.
+  - Share-class FIGIs remain distinct (`BBG009S39JY5` for GOOGL vs. `BBG009S3NB21` for GOOG).
 
 ---
 
-### 5. Candidate-Level Adjudication Results
+### 6. Candidate-Level Adjudication Results
 
 ```
 ========================================================================================================
@@ -174,11 +208,11 @@ AACIU    Armada Acquisition Corp. I Units  NOT_EVALUATED          None (UNKNOWN)
 
 ---
 
-### 6. Actual Offline Replay & Handoff Protection Verification
+### 7. Actual Offline Replay & Handoff Protection Verification
 
-The replay engine (`PrimaryListingReplayEngine`) executed against the three candidate records under both operational modes:
+The replay engine (`PrimaryListingReplayEngine`) executed against the candidate records under both operational modes:
 
-#### 6.1 Real-Source Mode (`is_simulation=False`)
+#### 7.1 Real-Source Mode (`is_simulation=False`)
 - **Provisional Quarantine:** `ENFORCED` (`PROV_SEC_...` IDs strictly quarantined).
 - **Production Adoption Allowed:** `NO` (`PRODUCTION_IDENTITY_ADOPTION_DISABLED`).
 - **Batch Validity:** `False` (`is_batch_valid = False`).
@@ -186,7 +220,7 @@ The replay engine (`PrimaryListingReplayEngine`) executed against the three cand
 - **Builder Status:** `NOT_RUN` (Builder handoff strictly blocked).
 - **Blocking Reason:** `PRODUCTION_IDENTITY_ADOPTION_DISABLED: Real-source identity adoption is blocked by Sprint 2 governance.`
 
-#### 6.2 Simulation Mode (`is_simulation=True`)
+#### 7.2 Simulation Mode (`is_simulation=True`)
 - **Provisional Quarantine:** `ENFORCED`.
 - **Production Adoption Allowed:** `NO` (`PROPOSAL_SIMULATION`).
 - **Batch Validity:** `False` (`is_batch_valid = False`).
@@ -196,39 +230,27 @@ The replay engine (`PrimaryListingReplayEngine`) executed against the three cand
 
 ---
 
-### 7. Concrete Unresolved Evidence & Access Limitations
-
-1. **Edge Bot Management on Issuer IR Portals:**
-   - Both `investor.apple.com` and `abc.xyz/investor` enforce HTTP 403 access barriers against automated requests.
-   - Without an authorized operator browser session, headless clearance, or direct API partnership, public issuer IR portals cannot be harvested programmatically.
-2. **Directory Static vs. Delta Asymmetry:**
-   - The authoritative `Primary Listing Market` field is present in `TradingSystemAddsDeletes.txt`, but this endpoint is strictly an incremental daily delta file containing new listings and delistings. Existing seasoned stocks (AAPL, GOOG, GOOGL) are absent.
-   - The full universe directory `nasdaqlisted.txt` contains all active securities, but names the corresponding column `Market Category` rather than `Primary Listing Market`.
-3. **Commercial SIP / Exchange Feeds Behind Licensing Gates:**
-   - The definitive national market system authority for primary market designations (UTP SIP / CTA Plan / Consolidated Tape Plan) distributes Tape A, B, and C feeds through commercial multicast networks and licensed vendors. Direct feeds require vendor agreements and data licensing fees.
-
----
-
 ### 8. Concrete Provider & Source Options for Production Adoption
 
 To advance beyond `primary_listing = None` without unapproved inferences, the following concrete provider options are available:
 
 | Provider / Source | Documented Field Availability | Status / Entitlement Prerequisites | Estimated Cost / Terms |
 |:---|:---|:---|:---|
+| **Massive / Polygon Tickers API** | Explicit `primary_exchange` attribute (ISO 10383 MIC, e.g. `XNAS`, `XNYS`) via `GET /v3/reference/tickers/{ticker}` | Requires operator-configured `POLYGON_API_KEY` or `MASSIVE_API_KEY` | Existing commercial subscription; pending local configuration |
 | **UTP SIP / DataCT Tape C Feed** | Explicit `Primary Listing Market` attribute for all Tape C securities | Licensed SIP distributor agreement; multicast network connection | Commercial market data fee schedule |
-| **OpenFIGI Enterprise / Bloomberg** | `exchCode: "UW"` (Nasdaq GS) and `primaryListing: true` in paid API tier | Paid Bloomberg Data License or OpenFIGI Enterprise key (free tier omits explicit primary flag) | Tiered API subscription |
-| **Refinitiv / LSEG Tick History** | Explicit `Primary Market MIC` (`XNAS`) and exchange register codes | Enterprise LSEG DataScope account | Enterprise institutional licensing |
+| **Bloomberg Data License** | Explicit `EQY_PRIM_EXCH` / `PRIMARY_EXCHANGE_MIC` per-security field | Enterprise Bloomberg Data License contract | Enterprise institutional licensing |
 | **Direct Issuer IR Written Certification** | Formal corporate disclosure stating designated primary exchange | Operator outreach to Apple and Alphabet Corporate Secretaries | Zero data fees; requires human communication |
+
+*Note on OpenFIGI:* OpenFIGI free API does not supply a primary listing attribute. Claims that an OpenFIGI Enterprise tier provides an explicit `primaryListing` boolean flag remain unverified.
 
 ---
 
-### 9. Remaining Identity Adoption Requirements
+### 9. Test Suite Inventory Reconciliation
 
-Before any candidate from the seven-candidate sample can be admitted to the ARX production universe:
-1. **Authoritative Primary Designation Evidence**: Must acquire either an attributable direct assertion from an authorized exchange register or an enterprise provider field explicitly certifying primary market designation.
-2. **Enterprise Identity Authority Ratification**: An enterprise security master policy must be established to govern how CIK, FIGI, and local tickers bind into canonical ARX entities.
-3. **Venue Discordance Adjudication for Secondary Candidates**: Resolution of archived cross-source venue discordances (ACCS: NYSE vs AMEX; DDS: TXSE vs NYSE).
-4. **Product Owner & Architecture Sign-Off**: Formal release gate review authorizing `PRODUCTION_SECURITY_IDENTITY_ADOPTION = YES`.
+| Test Suite / Scope | Test Count | Status | Notes |
+|:---|:---:|:---:|:---|
+| **Universe Test Suite** (`tests/test_universe_*.py`) | **299 collected** | 296 passed, 3 skipped | Covers all 10 universe test modules across admission, binding, validation, and primary-listing evidence. |
+| **Selected Tier 2c Suite** (`pytest -m tier2c`) | **405 selected** | 402 passed, 3 skipped | Selects all tests marked with `@pytest.mark.tier2c` across data fetchers, resilience, OpenFIGI rate limiters, and universe modules. (Reconciles the previously cited 402-pass figure, expanded by 3 new provider reference tests). |
 
 ---
 
@@ -241,7 +263,7 @@ PRODUCTION_SECURITY_IDENTITY_ADOPTION = NO
 PROVISIONAL_ID_PROMOTION = NO
 PRODUCTION_DATABASE_WRITES = NONE
 UNIVERSE_STORE_WRITES = NONE
-ADDITIONAL_LIVE_SOURCE_ACQUISITION = NONE
+ADDITIONAL_LIVE_SOURCE_ACQUISITION = BOUNDED_RESEARCH_ONLY
 MARKET_DATA_BACKFILL = NONE
 STRATEGY_POLICY_CHANGES = NONE
 UNIVERSE_PUBLICATION = NO

@@ -1345,6 +1345,118 @@ class TestPrimaryExchangeSourceDiscovery:
         # Class separation check: GOOGL and GOOG evaluated under identical standards
         assert results["GOOGL"].assigned_primary_listing == results["GOOG"].assigned_primary_listing
 
+    def test_provider_access_status_inspection(self):
+        """Verifies environment inspection of reference provider credentials and access blockers."""
+        status = PrimaryListingEvidenceAdapter.get_provider_access_status()
+        assert "openfigi" in status
+        assert "massive_polygon" in status
+        assert "alpaca" in status
+
+        # OpenFIGI free API key status
+        openfigi = status["openfigi"]
+        assert openfigi["primary_exchange_field_supported"] is False
+        assert "compositeFIGI" in openfigi["field_notes"]
+
+        # Massive / Polygon status
+        massive = status["massive_polygon"]
+        assert massive["primary_exchange_field_supported"] is True
+        assert "ISO 10383 Market Identifier Code" in massive["field_notes"]
+        # If unconfigured in local env, must report explicit access blocker
+        if not massive["configured"]:
+            assert massive["access_blocker"] is not None
+            assert "UNCONFIGURED_CREDENTIAL" in massive["access_blocker"]
+
+    def test_openfigi_three_candidate_response_preserves_none_and_composite_distinction(self):
+        """
+        Verifies that authentic OpenFIGI v3 mapping payload:
+        1. Preserves distinct compositeFIGI and shareClassFIGI for all 3 candidates.
+        2. Preserves exchCode='US' (national composite, not exchange MIC).
+        3. Enforces absence of primary_exchange/primaryListing attribute in OpenFIGI schema.
+        4. Preserves assigned_primary_listing = None (UNKNOWN) and narrow listing fact classification.
+        """
+        path = Path("data/research/openfigi_reference/openfigi_three_candidates_mapping_20261017.json")
+        if not path.exists():
+            pytest.skip("OpenFIGI authentic response file not present in workspace")
+
+        parsed = PrimaryListingEvidenceAdapter.parse_openfigi_mapping_payload(path.read_bytes())
+        assert "AAPL" in parsed
+        assert "GOOG" in parsed
+        assert "GOOGL" in parsed
+
+        # AAPL verification
+        aapl = parsed["AAPL"]
+        assert aapl["figi"] == "BBG000B9XRY4"
+        assert aapl["composite_figi"] == "BBG000B9XRY4"
+        assert aapl["share_class_figi"] == "BBG001S5N8V8"
+        assert aapl["exch_code"] == "US"
+        assert aapl["has_direct_primary_claim"] is False
+        assert aapl["assigned_primary_listing"] is None
+        assert aapl["classification"] == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+        assert aapl["evidence_role"] == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+
+        # GOOG (Class C) verification
+        goog = parsed["GOOG"]
+        assert goog["figi"] == "BBG009S3NB30"
+        assert goog["composite_figi"] == "BBG009S3NB30"
+        assert goog["share_class_figi"] == "BBG009S3NB21"
+        assert goog["exch_code"] == "US"
+        assert goog["assigned_primary_listing"] is None
+
+        # GOOGL (Class A) verification
+        googl = parsed["GOOGL"]
+        assert googl["figi"] == "BBG009S39JX6"
+        assert googl["composite_figi"] == "BBG009S39JX6"
+        assert googl["share_class_figi"] == "BBG009S39JY5"
+        assert googl["exch_code"] == "US"
+        assert googl["assigned_primary_listing"] is None
+
+        # Structural multi-class preservation: shareClassFIGIs are distinct
+        assert goog["share_class_figi"] != googl["share_class_figi"]
+        assert goog["figi"] != googl["figi"]
+
+    def test_massive_polygon_synthetic_contract_and_unconfigured_status(self):
+        """
+        Verifies Massive / Polygon v3 reference ticker contract:
+        1. When primary_exchange ('XNAS') is present, sets assigned_primary_listing = True.
+        2. When primary_exchange is absent, retains assigned_primary_listing = None.
+        3. Validates unconfigured provider credential status reporting.
+        """
+        # Case 1: Ticker with primary_exchange MIC
+        synthetic_payload = {
+            "results": {
+                "ticker": "AAPL",
+                "name": "Apple Inc.",
+                "market": "stocks",
+                "primary_exchange": "XNAS",
+                "cik": "0000320193",
+                "composite_figi": "BBG000B9XRY4",
+                "share_class_figi": "BBG001S5N8V8",
+            },
+            "status": "OK",
+        }
+        res = PrimaryListingEvidenceAdapter.parse_massive_ticker_payload(synthetic_payload)
+        assert res["symbol"] == "AAPL"
+        assert res["primary_exchange"] == "XNAS"
+        assert res["has_direct_primary_claim"] is True
+        assert res["classification"] == PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM
+        assert res["assigned_primary_listing"] is True
+        assert res["evidence_role"] == PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
+
+        # Case 2: Ticker without primary_exchange
+        synthetic_no_primary = {
+            "results": {
+                "ticker": "UNKNOWN_TICKER",
+                "name": "Some Company",
+                "market": "stocks",
+            },
+            "status": "OK",
+        }
+        res_no_primary = PrimaryListingEvidenceAdapter.parse_massive_ticker_payload(synthetic_no_primary)
+        assert res_no_primary["has_direct_primary_claim"] is False
+        assert res_no_primary["assigned_primary_listing"] is None
+        assert res_no_primary["classification"] == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+
+
 
 
 

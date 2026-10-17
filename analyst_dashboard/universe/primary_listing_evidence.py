@@ -422,6 +422,196 @@ class PrimaryListingEvidenceAdapter:
             }
 
     @classmethod
+    def get_provider_access_status(cls) -> Dict[str, Any]:
+        """
+        Inspects provider configuration and credentials across candidate reference sources.
+        Reports entitlement status, documented endpoint capability, and access blockers.
+        Does not purchase keys, extract unverified tokens, or contact unconfigured endpoints.
+        """
+        openfigi_key = os.environ.get("OPENFIGI_API_KEY", "").strip()
+        polygon_key = os.environ.get("POLYGON_API_KEY", "").strip() or os.environ.get("MASSIVE_API_KEY", "").strip()
+        alpaca_key = os.environ.get("ALPACA_API_KEY", "").strip()
+
+        openfigi_configured = bool(openfigi_key)
+        polygon_configured = bool(polygon_key)
+        alpaca_configured = bool(alpaca_key)
+
+        return {
+            "openfigi": {
+                "configured": openfigi_configured,
+                "tier": "FREE_API_KEY" if openfigi_configured else "UNCONFIGURED",
+                "rate_limit": "25 requests / minute" if openfigi_configured else "10 requests / minute (unauthenticated)",
+                "endpoint": "POST https://api.openfigi.com/v3/mapping",
+                "primary_exchange_field_supported": False,
+                "field_notes": (
+                    "Official OpenFIGI v3 schema returns figi, compositeFIGI, shareClassFIGI, exchCode. "
+                    "exchCode='US' denotes national composite; no primary_listing or primaryExchange attribute exists."
+                ),
+                "access_blocker": None if openfigi_configured else "UNCONFIGURED_CREDENTIAL: OPENFIGI_API_KEY not configured.",
+            },
+            "massive_polygon": {
+                "configured": polygon_configured,
+                "tier": "RESTRICTED" if not polygon_configured else "CONFIGURED",
+                "endpoint": "GET https://api.polygon.io/v3/reference/tickers/{ticker}",
+                "primary_exchange_field_supported": True,
+                "field_notes": (
+                    "Official Massive/Polygon schema defines 'primary_exchange' as the ISO 10383 Market "
+                    "Identifier Code (MIC, e.g. 'XNAS') of the primary listing exchange."
+                ),
+                "access_blocker": (
+                    None
+                    if polygon_configured
+                    else (
+                        "UNCONFIGURED_CREDENTIAL: Neither POLYGON_API_KEY nor MASSIVE_API_KEY is configured "
+                        "in the environment. Provider inquiry requires operator configuration."
+                    )
+                ),
+            },
+            "alpaca": {
+                "configured": alpaca_configured,
+                "tier": "RESTRICTED" if not alpaca_configured else "CONFIGURED",
+                "endpoint": "GET https://api.alpaca.markets/v2/assets/{symbol_or_asset_id}",
+                "primary_exchange_field_supported": True,
+                "field_notes": "Alpaca Assets API returns 'exchange' attribute (e.g. 'NASDAQ'), but access requires API key pair.",
+                "access_blocker": (
+                    None
+                    if alpaca_configured
+                    else "UNCONFIGURED_CREDENTIAL: ALPACA_API_KEY / ALPACA_SECRET_KEY not configured in environment."
+                ),
+            },
+        }
+
+    @classmethod
+    def parse_openfigi_mapping_payload(
+        cls,
+        payload: List[Dict[str, Any]] | Dict[str, Any] | str | bytes,
+        source_url: str = "https://api.openfigi.com/v3/mapping",
+        retrieval_timestamp_utc: str = "2026-10-17T20:45:00Z",
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Parses official OpenFIGI v3 mapping response payload.
+        Extracts figi, compositeFIGI, shareClassFIGI, ticker, exchCode, and securityType.
+        Enforces strict non-inference invariant:
+        OpenFIGI free API does not supply a designated primary listing attribute.
+        exchCode='US' represents a national composite, not an exchange MIC.
+        Candidates preserve assigned_primary_listing = None (UNKNOWN).
+        """
+        if isinstance(payload, (str, bytes)):
+            text = payload.decode("utf-8") if isinstance(payload, bytes) else payload
+            data = json.loads(text)
+        else:
+            data = payload
+
+        results: Dict[str, Dict[str, Any]] = {}
+        items = data if isinstance(data, list) else [data]
+
+        for item in items:
+            matches = item.get("data", [])
+            for match in matches:
+                ticker = match.get("ticker", "")
+                if not ticker:
+                    continue
+                figi = match.get("figi", "")
+                composite_figi = match.get("compositeFIGI", "")
+                share_class_figi = match.get("shareClassFIGI", "")
+                exch_code = match.get("exchCode", "")
+                name = match.get("name", "")
+                sec_type = match.get("securityType", "")
+
+                has_direct_primary_claim = "primaryExchange" in match or "primaryListing" in match
+                classification = (
+                    PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM
+                    if has_direct_primary_claim
+                    else PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+                )
+                assigned_primary = True if has_direct_primary_claim else None
+
+                results[ticker] = {
+                    "symbol": ticker,
+                    "name": name,
+                    "figi": figi,
+                    "composite_figi": composite_figi,
+                    "share_class_figi": share_class_figi,
+                    "exch_code": exch_code,
+                    "security_type": sec_type,
+                    "source_url": source_url,
+                    "retrieval_timestamp_utc": retrieval_timestamp_utc,
+                    "classification": classification,
+                    "assigned_primary_listing": assigned_primary,
+                    "has_direct_primary_claim": has_direct_primary_claim,
+                    "evidence_role": (
+                        PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
+                        if has_direct_primary_claim
+                        else PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+                    ),
+                    "source_claim": (
+                        f"OpenFIGI v3 mapping reports ticker='{ticker}', figi='{figi}', compositeFIGI='{composite_figi}', "
+                        f"shareClassFIGI='{share_class_figi}', exchCode='{exch_code}'. Establishes Bloomberg identifier mapping "
+                        "and US composite market level; does not assert designated primary listing."
+                    ),
+                }
+        return results
+
+    @classmethod
+    def parse_massive_ticker_payload(
+        cls,
+        payload: Dict[str, Any] | str | bytes,
+        source_url: str = "https://api.polygon.io/v3/reference/tickers/{ticker}",
+        retrieval_timestamp_utc: str = "2026-10-17T20:45:00Z",
+    ) -> Dict[str, Any]:
+        """
+        Parses Massive / Polygon v3 reference tickers payload.
+        Extracts primary_exchange (ISO 10383 MIC), ticker, market, and active status.
+        When primary_exchange is present (e.g. 'XNAS'), it directly designates
+        the primary listing exchange under the provider's official schema definition.
+        """
+        if isinstance(payload, (str, bytes)):
+            text = payload.decode("utf-8") if isinstance(payload, bytes) else payload
+            data = json.loads(text)
+        else:
+            data = payload
+
+        results = data.get("results", {}) if isinstance(data, dict) else {}
+        ticker = results.get("ticker", "")
+        name = results.get("name", "")
+        primary_exchange = results.get("primary_exchange", "")
+        market = results.get("market", "")
+        cik = results.get("cik", "")
+
+        has_direct_primary_claim = bool(primary_exchange)
+
+        classification = (
+            PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM
+            if has_direct_primary_claim
+            else PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+        )
+        assigned_primary = True if has_direct_primary_claim else None
+
+        return {
+            "symbol": ticker,
+            "name": name,
+            "primary_exchange": primary_exchange,
+            "market": market,
+            "cik": cik,
+            "source_url": source_url,
+            "retrieval_timestamp_utc": retrieval_timestamp_utc,
+            "classification": classification,
+            "assigned_primary_listing": assigned_primary,
+            "has_direct_primary_claim": has_direct_primary_claim,
+            "evidence_role": (
+                PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
+                if has_direct_primary_claim
+                else PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+            ),
+            "source_claim": (
+                f"Massive/Polygon reference endpoint reports ticker='{ticker}', primary_exchange='{primary_exchange}' (ISO 10383 MIC). "
+                "Designates primary exchange listing under official provider schema."
+                if has_direct_primary_claim
+                else f"Massive/Polygon reference endpoint reports ticker='{ticker}' without primary_exchange field."
+            ),
+        }
+
+    @classmethod
     def load_reference_evidence(
         cls,
         evidence_path: Optional[Path] = None,
