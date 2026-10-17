@@ -516,6 +516,7 @@ class PrimaryListingEvidenceAdapter:
         payload: List[Dict[str, Any]] | Dict[str, Any] | str | bytes,
         source_url: str = "https://api.openfigi.com/v3/mapping",
         retrieval_timestamp_utc: str = "2026-10-17T20:45:00Z",
+        expected_symbols: Optional[List[str]] = None,
     ) -> Dict[str, Dict[str, Any]]:
         """
         Parses official OpenFIGI v3 mapping response payload.
@@ -524,6 +525,12 @@ class PrimaryListingEvidenceAdapter:
         OpenFIGI free API does not supply a designated primary listing attribute.
         exchCode='US' represents a national composite, not an exchange MIC.
         Candidates preserve assigned_primary_listing = None (UNKNOWN).
+
+        Guarantees:
+        - Returned matches are correlated positionally to expected_symbols (if supplied).
+        - Ambiguous multi-matches with conflicting compositeFIGIs are flagged and fail closed.
+        - compositeFIGI and shareClassFIGI remain distinct fields.
+        - Issuer identity is not conflated with share-class or instrument identity.
         """
         if isinstance(payload, (str, bytes)):
             text = payload.decode("utf-8") if isinstance(payload, bytes) else payload
@@ -534,51 +541,111 @@ class PrimaryListingEvidenceAdapter:
         results: Dict[str, Dict[str, Any]] = {}
         items = data if isinstance(data, list) else [data]
 
-        for item in items:
+        for i, item in enumerate(items):
+            expected_sym = expected_symbols[i] if expected_symbols and i < len(expected_symbols) else None
+
+            if "error" in item:
+                if expected_sym:
+                    results[expected_sym] = {
+                        "symbol": expected_sym,
+                        "error": item["error"],
+                        "classification": PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY,
+                        "assigned_primary_listing": None,
+                        "has_direct_primary_claim": False,
+                        "is_ambiguous": False,
+                        "evidence_role": PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT,
+                        "source_claim": f"OpenFIGI mapping returned error: {item['error']}",
+                    }
+                continue
+
             matches = item.get("data", [])
-            for match in matches:
-                ticker = match.get("ticker", "")
-                if not ticker:
-                    continue
-                figi = match.get("figi", "")
-                composite_figi = match.get("compositeFIGI", "")
-                share_class_figi = match.get("shareClassFIGI", "")
-                exch_code = match.get("exchCode", "")
-                name = match.get("name", "")
-                sec_type = match.get("securityType", "")
+            if not matches:
+                continue
 
-                has_direct_primary_claim = "primaryExchange" in match or "primaryListing" in match
-                classification = (
-                    PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM
-                    if has_direct_primary_claim
-                    else PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
-                )
-                assigned_primary = True if has_direct_primary_claim else None
+            # Detect ambiguous multi-matches
+            composite_figis = {m.get("compositeFIGI") for m in matches if m.get("compositeFIGI")}
+            is_ambiguous = len(composite_figis) > 1
 
-                results[ticker] = {
-                    "symbol": ticker,
-                    "name": name,
-                    "figi": figi,
-                    "composite_figi": composite_figi,
-                    "share_class_figi": share_class_figi,
-                    "exch_code": exch_code,
-                    "security_type": sec_type,
+            # Select match: prefer exchCode == 'US' or first match
+            selected_match = None
+            for m in matches:
+                if m.get("exchCode") == "US":
+                    selected_match = m
+                    break
+            if selected_match is None:
+                selected_match = matches[0]
+
+            ticker = selected_match.get("ticker", "")
+            if not ticker and expected_sym:
+                ticker = expected_sym
+            if not ticker:
+                continue
+
+            # Verify request-to-response positional association
+            if expected_sym and ticker != expected_sym:
+                results[expected_sym] = {
+                    "symbol": expected_sym,
+                    "name": selected_match.get("name", ""),
+                    "figi": selected_match.get("figi", ""),
+                    "composite_figi": selected_match.get("compositeFIGI", ""),
+                    "share_class_figi": selected_match.get("shareClassFIGI", ""),
+                    "exch_code": selected_match.get("exchCode", ""),
+                    "security_type": selected_match.get("securityType", ""),
                     "source_url": source_url,
                     "retrieval_timestamp_utc": retrieval_timestamp_utc,
-                    "classification": classification,
-                    "assigned_primary_listing": assigned_primary,
-                    "has_direct_primary_claim": has_direct_primary_claim,
-                    "evidence_role": (
-                        PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
-                        if has_direct_primary_claim
-                        else PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
-                    ),
+                    "classification": PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY,
+                    "assigned_primary_listing": None,
+                    "has_direct_primary_claim": False,
+                    "is_ambiguous": True,
+                    "evidence_role": PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT,
                     "source_claim": (
-                        f"OpenFIGI v3 mapping reports ticker='{ticker}', figi='{figi}', compositeFIGI='{composite_figi}', "
-                        f"shareClassFIGI='{share_class_figi}', exchCode='{exch_code}'. Establishes Bloomberg identifier mapping "
-                        "and US composite market level; does not assert designated primary listing."
+                        f"Positional request mismatch: expected symbol '{expected_sym}', but OpenFIGI response "
+                        f"item {i} returned ticker '{ticker}'. Binding marked unresolved and ambiguous."
                     ),
                 }
+                continue
+
+            figi = selected_match.get("figi", "")
+            composite_figi = selected_match.get("compositeFIGI", "")
+            share_class_figi = selected_match.get("shareClassFIGI", "")
+            exch_code = selected_match.get("exchCode", "")
+            name = selected_match.get("name", "")
+            sec_type = selected_match.get("securityType", "")
+
+            has_direct_primary_claim = ("primaryExchange" in selected_match or "primaryListing" in selected_match) and not is_ambiguous
+            classification = (
+                PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM
+                if has_direct_primary_claim
+                else PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+            )
+            assigned_primary = True if has_direct_primary_claim else None
+
+            results[ticker] = {
+                "symbol": ticker,
+                "name": name,
+                "figi": figi,
+                "composite_figi": composite_figi,
+                "share_class_figi": share_class_figi,
+                "exch_code": exch_code,
+                "security_type": sec_type,
+                "source_url": source_url,
+                "retrieval_timestamp_utc": retrieval_timestamp_utc,
+                "classification": classification,
+                "assigned_primary_listing": assigned_primary,
+                "has_direct_primary_claim": has_direct_primary_claim,
+                "is_ambiguous": is_ambiguous,
+                "evidence_role": (
+                    PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
+                    if has_direct_primary_claim
+                    else PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+                ),
+                "source_claim": (
+                    f"OpenFIGI v3 mapping reports ticker='{ticker}', figi='{figi}', compositeFIGI='{composite_figi}', "
+                    f"shareClassFIGI='{share_class_figi}', exchCode='{exch_code}'. Establishes Bloomberg identifier mapping "
+                    "and US composite market level; does not assert designated primary listing."
+                    + (" (AMBIGUOUS_MULTI_MATCH)" if is_ambiguous else "")
+                ),
+            }
         return results
 
     @classmethod
@@ -649,10 +716,11 @@ class PrimaryListingEvidenceAdapter:
     ) -> Dict[str, Any]:
         """
         Parses official Alpaca v2 asset reference response payload.
-        Extracts symbol, name, exchange, class, and status.
+        Extracts symbol, name, exchange, class, status, and tradable flag.
         Enforces strict non-inference invariant:
         Alpaca 'exchange: NASDAQ' establishes an active exchange trading/listing fact.
-        It does NOT constitute direct identification of designated primary listing under Rule R06.
+        It is NOT an ISO 10383 operating MIC (XNAS) or segment MIC (XNGS), and does NOT
+        constitute direct identification of designated primary listing under Rule R06.
         Candidates preserve assigned_primary_listing = None (UNKNOWN).
         """
         if isinstance(payload, (str, bytes)):
@@ -666,6 +734,7 @@ class PrimaryListingEvidenceAdapter:
         exchange = data.get("exchange", "")
         asset_class = data.get("class", "")
         status = data.get("status", "")
+        tradable = data.get("tradable", None)
         provider_asset_id = data.get("id", "")
 
         has_direct_primary_claim = "primaryExchange" in data or "primaryListing" in data or "primary_exchange" in data
@@ -682,6 +751,7 @@ class PrimaryListingEvidenceAdapter:
             "exchange": exchange,
             "class": asset_class,
             "status": status,
+            "tradable": tradable,
             "provider_asset_id": provider_asset_id,
             "source_url": source_url,
             "retrieval_timestamp_utc": retrieval_timestamp_utc,
@@ -695,7 +765,8 @@ class PrimaryListingEvidenceAdapter:
             ),
             "source_claim": (
                 f"Alpaca Asset directory reports symbol='{symbol}', exchange='{exchange}', class='{asset_class}', "
-                f"status='{status}'. Establishes active broker asset listing fact; does not assert designated primary listing."
+                f"status='{status}', tradable={tradable}. Establishes active broker asset listing venue fact; "
+                "does not assert designated primary listing."
             ),
         }
 

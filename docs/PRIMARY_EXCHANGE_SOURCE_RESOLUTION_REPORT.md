@@ -140,35 +140,65 @@ In accordance with operator instructions, existing provider entitlements and con
 | **Alpaca** | `ALPACA_API_KEY_ID` / `ALPACA_API_SECRET_KEY` Configured in `finance/.env` (`True`) | Active Paper/Brokerage Key Pair | `GET https://paper-api.alpaca.markets/v2/assets/{symbol}` | **No** (Schema returns `exchange: "NASDAQ"`; omits primary listing attribute) | **ACTIVE**: Bounded asset queries executed for AAPL, GOOG, GOOGL; leaves `primary_listing = None`. |
 | **Massive / Polygon** | `POLYGON_API_KEY` / `MASSIVE_API_KEY` Not Configured (`False`) | Unconfigured Dependency | `GET https://api.polygon.io/v3/reference/tickers/{ticker}` | **Yes** (`primary_exchange` ISO 10383 MIC) | **CONFIGURATION DEPENDENCY**: Neither `POLYGON_API_KEY` nor `MASSIVE_API_KEY` is configured in the environment or `.env`. Live retrieval blocked. |
 
-#### 4.2 Bounded OpenFIGI Retrieval & Payload Verification
-A bounded retrieval was executed against the official OpenFIGI v3 mapping endpoint using the configured free API key:
-- **Request Parameters:** `[{"idType": "TICKER", "idValue": "AAPL", "exchCode": "US"}, {"idType": "TICKER", "idValue": "GOOG", "exchCode": "US"}, {"idType": "TICKER", "idValue": "GOOGL", "exchCode": "US"}]`.
-- **Response Artifact Preserved:** `data/research/openfigi_reference/openfigi_three_candidates_mapping_20261017.json`.
-- **Artifact Size & Hash:** 808 bytes, SHA-256: `003c995d4ce51d95573ac4fedf6afd9f368a5be356ba28e9b616b992a8f225d2`.
-- **Exact Extracted Fields:**
-  - **AAPL:** `figi: "BBG000B9XRY4"`, `compositeFIGI: "BBG000B9XRY4"`, `shareClassFIGI: "BBG001S5N8V8"`, `exchCode: "US"`, `securityType: "Common Stock"`.
-  - **GOOG:** `figi: "BBG009S3NB30"`, `compositeFIGI: "BBG009S3NB30"`, `shareClassFIGI: "BBG009S3NB21"`, `exchCode: "US"`, `securityType: "Common Stock"`.
-  - **GOOGL:** `figi: "BBG009S39JX6"`, `compositeFIGI: "BBG009S39JX6"`, `shareClassFIGI: "BBG009S39JY5"`, `exchCode: "US"`, `securityType: "Common Stock"`.
-- **Analysis:**
-  1. `exchCode: "US"` represents a **national composite market code**, not an operating exchange MIC (such as `XNAS` or `XNYS`).
-  2. OpenFIGI's official data dictionary confirms that the free API schema does not contain a `primary_listing`, `primaryExchange`, or `primaryListing` attribute.
-  3. When queried without exchange constraints, OpenFIGI returns over 70 venue-level listings for AAPL (e.g. `UW` for Nasdaq, `UN` for NYSE, `UA` for Amex, `UZ` for Finra ADF) without any field designating which venue is the primary listing.
-  4. Consequently, OpenFIGI mapping provides an attributable identifier cross-reference, but **does not supply primary listing evidence**. Candidates strictly retain `assigned_primary_listing = None` (`NARROWER_FACT_ONLY`).
+#### 4.2 Bounded OpenFIGI Retrieval, Artifact Reconciliation & Trace
 
-#### 4.3 Bounded Alpaca Asset Retrieval & Payload Verification
-A bounded retrieval was executed against the official Alpaca v2 Assets endpoint using the credentials configured in `C:\Users\akara\Documents\Projects\finance\.env`:
-- **Request Parameters:** `GET /v2/assets/AAPL`, `GET /v2/assets/GOOG`, `GET /v2/assets/GOOGL`.
-- **Response Artifact Preserved:** `data/research/alpaca_reference/alpaca_three_candidates_assets_20261017.json`.
-- **Artifact Size & Hash:** 1,791 bytes, SHA-256: `57b9e70c26950c6c7634ee581dab0b2b3e21c814c8a43356fa022f526c678137`.
+##### 4.2.1 Authentic Artifact Reconciliation
+- **Preserved Artifact Path:** `data/research/openfigi_reference/openfigi_three_candidates_mapping_20261017.json`
+- **Actual On-Disk Size & Digest:** 808 bytes | SHA-256: `003c995d4ce51d95573ac4fedf6afd9f368a5be356ba28e9b616b992a8f225d2`
+- **Retrieval Timestamp:** `2026-10-17T20:45:00Z` (created on disk at `2026-10-17 22:09:47 CEST`)
+- **Version & Prose Discrepancy Reconciliation:**
+  - An earlier operator handoff summary erroneously cited `1,514 bytes` and SHA-256 `003c995d3c8c9e5bf9989ba6e1bc814545595562d9d1ae7ec982362b53589b21`, alongside a transposed ticker-to-FIGI mapping (`GOOG -> BBG009S39JX6`, `GOOGL -> BBG009S3NB30`).
+  - Forensics and filesystem inspection confirm that **no 1,514-byte artifact ever existed** on disk, in Git, or in the repository report. The authentic JSON payload written at 22:09:47 has always been 808 bytes with SHA-256 `003c995d4ce51d95573ac4fedf6afd9f368a5be356ba28e9b616b992a8f225d2`. It was never overwritten.
+  - The discrepancy was an isolated markdown prose transcription mistake in the operator response text.
+
+##### 4.2.2 Request-to-Response Positional Trace & GOOG/GOOGL Attribution
+
+| Step | Request Job 0 | Request Job 1 | Request Job 2 |
+|:---|:---|:---|:---|
+| **Request Symbol & Filters** | `idType: "TICKER"`, `idValue: "AAPL"`, `exchCode: "US"` | `idType: "TICKER"`, `idValue: "GOOG"`, `exchCode: "US"` | `idType: "TICKER"`, `idValue: "GOOGL"`, `exchCode: "US"` |
+| **Request Job Position** | Index `0` | Index `1` | Index `2` |
+| **Response Array Item** | `items[0]["data"][0]` | `items[1]["data"][0]` | `items[2]["data"][0]` |
+| **Returned Ticker** | `AAPL` | `GOOG` | `GOOGL` |
+| **Returned Name** | `APPLE INC` | `ALPHABET INC-CL C` | `ALPHABET INC-CL A` |
+| **Security Type** | `Common Stock` | `Common Stock` | `Common Stock` |
+| **Exchange Code** | `exchCode: "US"` (National Composite) | `exchCode: "US"` (National Composite) | `exchCode: "US"` (National Composite) |
+| **Composite FIGI** | `BBG000B9XRY4` | `BBG009S3NB30` | `BBG009S39JX6` |
+| **Share Class FIGI** | `BBG001S5N8V8` | `BBG009S3NB21` | `BBG009S39JY5` |
+| **Adapter Parsed Record** | `results["AAPL"]["composite_figi"]` = `BBG000B9XRY4` | `results["GOOG"]["composite_figi"]` = `BBG009S3NB30` | `results["GOOGL"]["composite_figi"]` = `BBG009S39JX6` |
+| **Adjudication Outcome** | `primary_listing = None` (UNKNOWN) | `primary_listing = None` (UNKNOWN) | `primary_listing = None` (UNKNOWN) |
+
+##### 4.2.3 Analysis of OpenFIGI Attribution Findings
+1. `exchCode: "US"` represents a **national composite market code**, not an operating exchange MIC (such as `XNAS` or `XNYS`).
+2. OpenFIGI's official data dictionary confirms that the free API schema does not contain a `primary_listing`, `primaryExchange`, or `primaryListing` attribute.
+3. **Distinct Instrument & Share Class Isolation:** `compositeFIGI` and `shareClassFIGI` remain strictly separate fields. For `GOOG` (Class C non-voting), `compositeFIGI` is `BBG009S3NB30` and `shareClassFIGI` is `BBG009S3NB21`. For `GOOGL` (Class A voting), `compositeFIGI` is `BBG009S39JX6` and `shareClassFIGI` is `BBG009S39JY5`. Issuer CIK (`0001652044`) is strictly corporate-level and is not used as a share-class identifier.
+4. Consequently, OpenFIGI mapping provides an attributable identifier cross-reference, but **does not supply primary listing evidence**. Candidates strictly retain `assigned_primary_listing = None` (`NARROWER_FACT_ONLY`).
+
+#### 4.3 Bounded Alpaca Asset Retrieval & Field Precision
+
+##### 4.3.1 Authentic Artifact Integrity
+- **Request Parameters:** `GET /v2/assets/AAPL`, `GET /v2/assets/GOOG`, `GET /v2/assets/GOOGL`
+- **Response Artifact Preserved:** `data/research/alpaca_reference/alpaca_three_candidates_assets_20261017.json`
+- **Disk Format (Windows CRLF):** 1,858 bytes | SHA-256: `f655012528bbccd971f6e4e7276a7fbb9f6ba9be42db85ad0696a02c92c5934c`
+- **Normalized Format (POSIX LF):** 1,791 bytes | SHA-256: `57b9e70c26950c6c7634ee581dab0b2b3e21c814c8a43356fa022f526c678137`
 - **Exact Extracted Fields:**
-  - **AAPL:** `id: "b0b6dd9d-8b9b-48a9-ba46-b9d54906e415"`, `class: "us_equity"`, `exchange: "NASDAQ"`, `symbol: "AAPL"`, `name: "Apple Inc. Common Stock"`, `status: "active"`.
-  - **GOOG:** `id: "f30d734c-2806-4d0d-b145-f9fade61432b"`, `class: "us_equity"`, `exchange: "NASDAQ"`, `symbol: "GOOG"`, `name: "Alphabet Inc. Class C Capital Stock"`, `status: "active"`.
-  - **GOOGL:** `id: "69b15845-7c63-4586-b274-1cfdfe9df3d8"`, `class: "us_equity"`, `exchange: "NASDAQ"`, `symbol: "GOOGL"`, `name: "Alphabet Inc. Class A Common Stock"`, `status: "active"`.
-- **Analysis:**
-  1. Alpaca reports `exchange: "NASDAQ"` (broad venue name), not an ISO 10383 operating MIC (`XNAS` / `XNGS`).
-  2. Alpaca's Asset schema does not contain an explicit `primary_listing`, `primaryExchange`, or `primary_exchange` attribute.
-  3. Consistent with the invariant `ALPACA_BROAD_CLASS_IS_SUBTYPE_AUTHORITY = NO` and Rule R06, an exchange listing/trading venue attribute does not constitute direct identification of designated primary listing.
-  4. Candidates strictly retain `assigned_primary_listing = None` (`NARROWER_FACT_ONLY`).
+  - **AAPL:** `id: "b0b6dd9d-8b9b-48a9-ba46-b9d54906e415"`, `symbol: "AAPL"`, `name: "Apple Inc. Common Stock"`, `class: "us_equity"`, `exchange: "NASDAQ"`, `status: "active"`, `tradable: true`, `fractionable: true`, `marginable: true`.
+  - **GOOG:** `id: "f30d734c-2806-4d0d-b145-f9fade61432b"`, `symbol: "GOOG"`, `name: "Alphabet Inc. Class C Capital Stock"`, `class: "us_equity"`, `exchange: "NASDAQ"`, `status: "active"`, `tradable: true`, `fractionable: true`, `marginable: true`.
+  - **GOOGL:** `id: "69b15845-7c63-4586-b274-1cfdfe9df3d8"`, `symbol: "GOOGL"`, `name: "Alphabet Inc. Class A Common Stock"`, `class: "us_equity"`, `exchange: "NASDAQ"`, `status: "active"`, `tradable: true`, `fractionable: true`, `marginable: true`.
+
+##### 4.3.2 Critical Distinction of Terms & Venues
+1. **Active Status vs. Tradable Attribute:**
+   - `status: "active"` designates that the asset is active within Alpaca's security master catalog (i.e., not archived, delisted, or purged).
+   - `tradable: true` designates that Alpaca's clearing broker permits order routing and execution on the symbol.
+   - Neither active status nor order execution tradability constitutes or implies a designated primary exchange listing.
+2. **Provider Venue Observation vs. Primary-Exchange Assertion:**
+   - Alpaca reports `exchange: "NASDAQ"`. This is a broad provider venue observation indicating where Alpaca routes or maps the asset.
+   - It does not constitute an authoritative publisher claim of designated primary exchange listing.
+3. **Operating MIC vs. Segment MIC Distinction:**
+   - Under ISO 10383, `XNAS` is the **Operating MIC** for The Nasdaq Stock Market LLC.
+   - `XNGS` (Nasdaq Global Select Market), `XNMS` (Nasdaq Global Market), and `XNCM` (Nasdaq Capital Market) are **Market Segment MICs**.
+   - Alpaca's text value `"exchange": "NASDAQ"` and OpenFIGI's `"exchCode": "US"` are neither operating nor segment MICs.
+   - Massive / Polygon returns an ISO 10383 MIC in `primary_exchange` (e.g. `XNAS`), which directly designates the exchange venue.
+4. Consistent with invariant `ALPACA_BROAD_CLASS_IS_SUBTYPE_AUTHORITY = NO` and Rule R06, broker listing facts do not satisfy primary listing sufficiency. Candidates strictly retain `assigned_primary_listing = None` (`NARROWER_FACT_ONLY`).
 
 #### 4.4 Correction of Unsupported Provider Claims
 - **Removal of "OpenFIGI Enterprise primaryListing=true" Claim:** An earlier draft hypothesized that OpenFIGI Enterprise supplies an explicit `primaryListing: true` attribute. Official documentation review indicates that OpenFIGI is strictly an open financial identifier mapping engine; it does not publish a `primaryListing` boolean flag. Bloomberg Data License is an entirely separate enterprise bulk flat-file service (`EQY_PRIM_EXCH`). These two products must not be conflated. ARX operates on the free OpenFIGI tier, and claims regarding an Enterprise `primaryListing` field are formally labeled **UNVERIFIED** and removed from the active capability matrix.
@@ -282,8 +312,9 @@ Unconfigured or untested external services represent **configuration and access 
 
 | Test Suite / Scope | Test Count | Status | Notes |
 |:---|:---:|:---:|:---|
-| **Universe Test Suite** (`tests/test_universe_*.py`) | **299 collected** | 296 passed, 3 skipped | Covers all 10 universe test modules across admission, binding, validation, and primary-listing evidence. |
-| **Selected Tier 2c Suite** (`pytest -m tier2c`) | **405 selected** | 402 passed, 3 skipped | Selects all tests marked with `@pytest.mark.tier2c` across data fetchers, resilience, OpenFIGI rate limiters, and universe modules. (Reconciles the previously cited 402-pass figure, expanded by 3 new provider reference tests). |
+| **Primary-Listing Evidence Suite** (`tests/test_universe_primary_listing_evidence.py`) | **55 passed** | 55 passed, 0 skipped | Covers all 9 primary listing invariants, multi-match disambiguation, request association, and FIGI isolation. |
+| **Universe Test Suite** (`tests/test_universe_*.py`) | **301 collected** | 298 passed, 3 skipped | Covers all 10 universe test modules across admission, binding, validation, and primary-listing evidence. |
+| **Selected Tier 2c Suite** (`pytest -m tier2c`) | **406 selected** | 403 passed, 3 skipped | Selects all tests marked with `@pytest.mark.tier2c` across data fetchers, resilience, OpenFIGI rate limiters, and universe modules. (Reconciles earlier counts, expanded by OpenFIGI disambiguation regression test). |
 
 ---
 

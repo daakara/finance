@@ -1480,10 +1480,104 @@ class TestPrimaryExchangeSourceDiscovery:
             assert parsed["exchange"] == "NASDAQ"
             assert parsed["class"] == "us_equity"
             assert parsed["status"] == "active"
+            assert parsed["tradable"] is True
             assert parsed["has_direct_primary_claim"] is False
             assert parsed["assigned_primary_listing"] is None
             assert parsed["classification"] == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
             assert parsed["evidence_role"] == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+
+    def test_openfigi_request_association_disambiguation_and_figi_separation(self):
+        """
+        Regression test for OpenFIGI request association, multi-match disambiguation,
+        and separation of compositeFIGI vs shareClassFIGI.
+
+        Verifies:
+        1. Exact request job-to-response item positional binding using authentic saved response.
+        2. GOOG Class C vs GOOGL Class A compositeFIGI and shareClassFIGI distinctness.
+        3. Strict separation of compositeFIGI and shareClassFIGI fields (not identical).
+        4. Synthetic positional mismatch fails closed and flags ambiguity.
+        5. Synthetic multi-match with conflicting compositeFIGIs flags ambiguity and fails closed.
+        6. Synthetic provider error item is handled safely without producing false records.
+        """
+        path = Path("data/research/openfigi_reference/openfigi_three_candidates_mapping_20261017.json")
+        if not path.exists():
+            pytest.skip("OpenFIGI authentic response file not present in workspace")
+
+        raw_data = json.loads(path.read_text(encoding="utf-8"))
+
+        # Part 1: Authentic response with explicit expected_symbols
+        parsed = PrimaryListingEvidenceAdapter.parse_openfigi_mapping_payload(
+            raw_data,
+            expected_symbols=["AAPL", "GOOG", "GOOGL"],
+        )
+
+        assert len(parsed) == 3
+        assert "AAPL" in parsed
+        assert "GOOG" in parsed
+        assert "GOOGL" in parsed
+
+        # GOOG (Class C Capital Stock, non-voting)
+        goog = parsed["GOOG"]
+        assert goog["symbol"] == "GOOG"
+        assert goog["name"] == "ALPHABET INC-CL C"
+        assert goog["composite_figi"] == "BBG009S3NB30"
+        assert goog["share_class_figi"] == "BBG009S3NB21"
+        assert goog["composite_figi"] != goog["share_class_figi"], "compositeFIGI and shareClassFIGI must remain separate"
+        assert goog["assigned_primary_listing"] is None
+        assert goog["is_ambiguous"] is False
+
+        # GOOGL (Class A Common Stock, voting)
+        googl = parsed["GOOGL"]
+        assert googl["symbol"] == "GOOGL"
+        assert googl["name"] == "ALPHABET INC-CL A"
+        assert googl["composite_figi"] == "BBG009S39JX6"
+        assert googl["share_class_figi"] == "BBG009S39JY5"
+        assert googl["composite_figi"] != googl["share_class_figi"], "compositeFIGI and shareClassFIGI must remain separate"
+        assert googl["assigned_primary_listing"] is None
+        assert googl["is_ambiguous"] is False
+
+        # Instrument-level isolation
+        assert goog["composite_figi"] != googl["composite_figi"]
+        assert goog["share_class_figi"] != googl["share_class_figi"]
+
+        # Part 2: Explicitly labeled synthetic fixtures
+        # Synthetic Case A: Positional request mismatch (expected GOOG, response returns AMZN)
+        synthetic_mismatch_payload = [
+            {"data": [{"ticker": "AAPL", "compositeFIGI": "BBG000B9XRY4", "shareClassFIGI": "BBG001S5N8V8"}]},
+            {"data": [{"ticker": "AMZN", "compositeFIGI": "BBG000BVPV84", "shareClassFIGI": "BBG001S5PQL7"}]},
+        ]
+        mismatch_res = PrimaryListingEvidenceAdapter.parse_openfigi_mapping_payload(
+            synthetic_mismatch_payload,
+            expected_symbols=["AAPL", "GOOG"],
+        )
+        assert mismatch_res["GOOG"]["is_ambiguous"] is True
+        assert mismatch_res["GOOG"]["assigned_primary_listing"] is None
+        assert "Positional request mismatch" in mismatch_res["GOOG"]["source_claim"]
+
+        # Synthetic Case B: Ambiguous multi-match with conflicting compositeFIGIs
+        synthetic_ambiguous_payload = [
+            {
+                "data": [
+                    {"ticker": "XYZ", "compositeFIGI": "BBG001111111", "shareClassFIGI": "BBG001111112", "exchCode": "US"},
+                    {"ticker": "XYZ", "compositeFIGI": "BBG002222222", "shareClassFIGI": "BBG001111112", "exchCode": "LN"},
+                ]
+            }
+        ]
+        ambig_res = PrimaryListingEvidenceAdapter.parse_openfigi_mapping_payload(synthetic_ambiguous_payload)
+        assert ambig_res["XYZ"]["is_ambiguous"] is True
+        assert ambig_res["XYZ"]["assigned_primary_listing"] is None
+        assert "AMBIGUOUS_MULTI_MATCH" in ambig_res["XYZ"]["source_claim"]
+
+        # Synthetic Case C: Provider error item
+        synthetic_error_payload = [{"error": "Invalid ticker or no identifier found"}]
+        err_res = PrimaryListingEvidenceAdapter.parse_openfigi_mapping_payload(
+            synthetic_error_payload,
+            expected_symbols=["BADTICKER"],
+        )
+        assert "BADTICKER" in err_res
+        assert err_res["BADTICKER"]["assigned_primary_listing"] is None
+        assert err_res["BADTICKER"]["error"] == "Invalid ticker or no identifier found"
+
 
 
 
