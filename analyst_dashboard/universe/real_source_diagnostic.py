@@ -831,10 +831,10 @@ class RealSourceAdmissionDiagnostic:
         ]
 
         replay_summary = {
-            "openfigi_matches_total": len(acquired_evidence.get("openfigi", {}).get("response_payload", [])),
-            "currency_evidence_count": len(acquired_evidence.get("currency", {}).get("results", {})),
-            "alpaca_evidence_count": len(acquired_evidence.get("alpaca", {}).get("results", {})),
-            "sec_submissions_count": len(acquired_evidence.get("sec_submissions", {}).get("results", {})),
+            "openfigi_matches_total": len((acquired_evidence.get("openfigi") or {}).get("response_payload", [])),
+            "currency_evidence_count": len((acquired_evidence.get("currency") or {}).get("results", {})),
+            "alpaca_evidence_count": len((acquired_evidence.get("alpaca") or {}).get("results", {})),
+            "sec_submissions_count": len((acquired_evidence.get("sec_submissions") or {}).get("results", {})),
             "replay_batch_valid": replay_batch_val.is_batch_valid,
             "replay_passed_count": replay_batch_val.passed_count,
             "replay_failed_count": replay_batch_val.failed_count,
@@ -1069,11 +1069,13 @@ def format_evidence_gap_report(result: RealSourceDiagnosticResult) -> str:
     md.append("and the strict admission requirements enforced by `UniverseInputValidator` and `SourceSecurity` conversion.\n")
     md.append("> [!IMPORTANT]\n")
     md.append("> **Diagnostic Acceptance**: Zero admissions is the truthful and expected diagnostic outcome across both baseline ")
-    md.append("> and evidence-replay passes. While reference evidence supplies attributable currency (`USD`), asset class (`EQUITY`), ")
-    md.append("> active provider asset status (`ACTIVE`), and OpenFIGI structural classifications, production security identity adoption remains disabled. ")
+    md.append("> and evidence-replay passes. Attributable currency (`USD`) is available in enriched replay (when local research evidence is loaded), ")
+    md.append("> while omitted across original raw directory feeds. Reference evidence supplies active provider asset status (`ACTIVE`), ")
+    md.append("> and OpenFIGI structural classifications, but production security identity adoption remains disabled. ")
     md.append("> All 7 candidates fail structural and evidence validation under `UniverseInputValidator`. Under the atomic whole-batch contract, ")
-    md.append("> the entire batch is revoked, converted count is 0, and Builder evaluation is strictly NOT_RUN. ")
-    md.append("> Canonical rules R01-R07 were NOT executed by the builder; comparisons are static observations only.\n")
+    md.append("> the entire batch is revoked, converted count is 0, and Universe Builder evaluation is strictly NOT_RUN. ")
+    md.append("> Canonical rules R01-R07 were NOT executed by the builder; comparisons are static observations only. ")
+    md.append("> Successful Next.js static compilation/export in CI verifies static route synthesis, not live browser DOM hydration or client-side runtime behavior.\n")
 
     md.append("### 2. Parent-Feed Accounting & Full Digest Reconciliation\n")
     md.append("Counts recomputed directly from the actual parent files in binary mode with verified complete SHA-256 digests:\n")
@@ -1107,11 +1109,20 @@ def format_evidence_gap_report(result: RealSourceDiagnosticResult) -> str:
     md.append("| **Provider Asset Status** | Alpaca Asset Directory (`v2/assets/{sym}`) | Platform Routing Directory | `2026-10-17T07:51:57Z` | `Per-symbol asset hashes` | `fbaa142afb26d603c36a1ea3799d27c7ee10e6b2a053e37acd4ea90f63d1632c` | Provider asset status `active` and broad class `us_equity`. Indicates platform routing availability, NOT absence of halts/suspensions |")
     md.append("| **Entity Incorporation** | SEC EDGAR Submissions API (`submissions/CIK{cik}.json`) | Corporate Filings Office | `2026-10-17T07:51:57Z` | `Per-CIK submission hashes` | `c029151d088e75cefec408a6d08d3b7b4a2378366e9dbc9b8b1f80dfdcdaade5` | Supported SEC User-Agent contact attribution syntax; state of incorporation (DE, CA, FL); TSM foreign country `Taiwan` (code `F5`) |")
 
+    md.append("\n#### Payload Sharing & Redistribution Rights Disposition\n")
+    md.append("| Evidence Domain / Payload | Quoted Endpoint / Scope | Publicly Accessible | Secrets / Credentials | Permission to Store & Redistribute | Repository Tree Disposition | Local Disk Retention |")
+    md.append("|:---|:---|:---:|:---:|:---:|:---:|:---:|")
+    md.append("| **Entity Incorporation & Filings** (`sec_submissions_sample/`) | SEC EDGAR API (`submissions/CIK*.json`) | Yes (public domain) | None (zero credentials) | Established (US Gov public domain, 17 U.S.C. § 105) | Committed (`data/research/sec_submissions_sample/`) | Retained |")
+    md.append("| **Quote & Trading Currency** (`currency_sample/`) | Yahoo Finance Public Quote API (`v8/finance/chart/{sym}`) | Yes (public query) | None (zero credentials) | NOT ESTABLISHED (TOS prohibits redistribution) | EXCLUDED from git tree (`git rm --cached`) | Retained locally on disk (`data/research/currency_sample/`) |")
+    md.append("| **Provider Asset Status** (`alpaca_sample/`) | Alpaca Asset Directory (`v2/assets/{sym}`) | Yes (via API query) | None (zero credentials) | NOT ESTABLISHED (Brokerage TOS restricts feed redistribution) | EXCLUDED from git tree (`git rm --cached`) | Retained locally on disk (`data/research/alpaca_sample/`) |")
+    md.append("| **Instrument Identity & Taxonomy** (`openfigi_sample/`) | OpenFIGI v3 Mapping API (`v3/mapping`) | Yes (public API) | None (zero credentials) | NOT ESTABLISHED (Raw batch envelope distribution unverified) | EXCLUDED from git tree (`git rm --cached`) | Retained locally on disk (`data/research/openfigi_sample/`) |")
     md.append("\n> [!NOTE]\n")
-    md.append("> **Data Sharing & Security Integrity**: All committed reference artifacts were audited against sharing terms. ")
-    md.append("> Artifacts contain exclusively public entity/quote metadata with zero credentials, API secrets, or account identifiers. ")
+    md.append("> **Data Sharing & Security Integrity**: All reference artifacts were audited against sharing terms. ")
+    md.append("> Public accessibility does not grant redistribution rights, and absence of credentials does not establish sharing authorization. ")
+    md.append("> Raw commercial payloads are excluded from Git tracking and preserved locally on disk under permitted research use. ")
     md.append("> SEC requests conformed to official SEC User-Agent format requirements (`User-Agent: Sample Company Name AdminContact@<sample company domain>.com`). ")
-    md.append("> While the contact address syntax is well-formed and supported by the client, syntactic address validity does not prove operator domain ownership or verified corporate identity.\n")
+    md.append("> While the contact address syntax is well-formed and supported by the client, syntactic address validity does not prove operator domain ownership or verified corporate identity. ")
+    md.append("> In clean repository checkouts where commercial research payloads are absent, tests remain deterministic (skipping uncommitted payload checks with explicit reason), offline replay handles missing artifacts cleanly, missing real evidence remains missing, and zero synthetic substitution occurs.\n")
 
     md.append("---\n")
 
@@ -1206,7 +1217,7 @@ def format_evidence_gap_report(result: RealSourceDiagnosticResult) -> str:
     md.append("- **Nasdaq Other Listed Code F**: In the official Nasdaq Trader Symbol Directory technical specifications, exchange code `F` is assigned to **Texas Stock Exchange (TXSE)** under Tape B. ")
     md.append("  - *Code Interpretation*: `F` denotes Texas Stock Exchange.")
     md.append("  - *Operating MIC*: Assigned MIC is `TXSE`.")
-    md.append("  - *Exchange Operating Status*: `NOT_ESTABLISHED` (Operating status has not been established; uncommenced status is not inferred from provisional local mapping).")
+    md.append("  - *Exchange Operating Status*: `NOT_ESTABLISHED` (Describes an evidence limitation in our reference data; does not establish or certify that exchange operations are uncommenced).")
     md.append("  - *DDS Publisher-Code Concordance*: Both SEC EDGAR (`TXSE`) and Nasdaq Other Listed (`F`) concordantly identify Texas Stock Exchange as the exchange venue for Dillard's (`DDS`). There is no publisher-level factual disagreement regarding venue identity.")
     md.append("  - *Resolver Retained Conflict Flag*: In `SecurityEvidenceResolver` / `matching.py`, the internal `VENUE_MAP` only normalizes legacy exchange codes (`A`, `N`, `P`, `Z`, `Q`) and does not translate directory code `F` to `TXSE`. When raw publisher representations are compared pre-normalization, `\"TXSE\" != \"F\"`, causing the resolver to retain a `VENUE_MISMATCH` conflict flag (`__source_conflict__: CONFLICTING_MAPPING`).")
     md.append("  - *Provisional Normalizer Status & Canonical Eligibility*: In `admission_mapping.py`, `SupportedVenueNormalizer` correctly designates `TXSE` with status `PROVISIONAL_UNRESOLVED` (`is_substantive_disagreement=True`) because Texas Stock Exchange has operating status `NOT_ESTABLISHED` (uncommenced operations require operational trading confirmation). Furthermore, under canonical builder Rule R04 (`R04_PRIMARY_EXCHANGE`), `TXSE` falls outside the major exchange allowlist (`{\"NASDAQ\", \"NYSE\", \"ARCA\", \"BATS\"}`).\n")

@@ -239,9 +239,25 @@ class TestReadinessDimensionsSeparation:
         assert mr["AAPL"]["benchmark_252_bars_available"] is True # Annualization scalar available (not gate)
 
 
+RESEARCH_DIR = Path("data/research")
+OPENFIGI_PAYLOAD = RESEARCH_DIR / "openfigi_sample" / "seven_candidates_openfigi_response.json"
+CURRENCY_PAYLOAD = RESEARCH_DIR / "currency_sample" / "seven_candidates_currency_reference.json"
+ALPACA_PAYLOAD = RESEARCH_DIR / "alpaca_sample" / "seven_candidates_alpaca_assets.json"
+SEC_SUBMISSIONS_PAYLOAD = RESEARCH_DIR / "sec_submissions_sample" / "seven_candidates_sec_submissions.json"
+
+
 class TestAcquiredEvidenceReplayAndQualification:
     """Verifies Sections 2, 3, and 4: Qualification of acquired research evidence and replay."""
 
+    @pytest.mark.skipif(
+        not (
+            OPENFIGI_PAYLOAD.exists()
+            and CURRENCY_PAYLOAD.exists()
+            and ALPACA_PAYLOAD.exists()
+            and SEC_SUBMISSIONS_PAYLOAD.exists()
+        ),
+        reason="Requires uncommitted commercial research payloads (retained locally on disk)",
+    )
     def test_acquired_research_artifacts_loaded(self):
         ev = load_acquired_research_evidence()
         assert ev["openfigi"] is not None
@@ -249,6 +265,10 @@ class TestAcquiredEvidenceReplayAndQualification:
         assert ev["alpaca"] is not None
         assert ev["sec_submissions"] is not None
 
+    @pytest.mark.skipif(
+        not OPENFIGI_PAYLOAD.exists(),
+        reason="Requires uncommitted OpenFIGI research payload (retained locally on disk)",
+    )
     def test_openfigi_qualification_for_seven_candidates(self):
         ev = load_acquired_research_evidence()
         payload = ev["openfigi"]["response_payload"]
@@ -273,6 +293,10 @@ class TestAcquiredEvidenceReplayAndQualification:
         # Check AACIU Unit qualification
         assert sym_to_data["AACIU"]["securityType2"] == "Unit"
 
+    @pytest.mark.skipif(
+        not CURRENCY_PAYLOAD.exists(),
+        reason="Requires uncommitted currency research payload (retained locally on disk)",
+    )
     def test_currency_evidence_attribution(self):
         ev = load_acquired_research_evidence()
         curr_res = ev["currency"]["results"]
@@ -383,3 +407,9 @@ class TestEvidenceGapReporting:
 
         # Verify canonical rule inventory citation
         assert "Rule R04 (Primary Exchange Allowlist)" in report_md
+
+        # Verify payload sharing disposition and qualification
+        assert "Payload Sharing & Redistribution Rights Disposition" in report_md
+        assert "EXCLUDED from git tree" in report_md
+        assert "Describes an evidence limitation in our reference data" in report_md
+        assert "Successful Next.js static compilation/export in CI verifies static route synthesis" in report_md
