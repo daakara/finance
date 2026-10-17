@@ -53,6 +53,7 @@ from .admission_mapping import (
     InternalSecurityRecord,
     ListingLocator,
 )
+from .contracts import CANONICAL_ELIGIBILITY_RULES
 from .validator import (
     UniverseInputValidator,
     ValidationRequirements,
@@ -726,14 +727,17 @@ class GuardedProposalHandoff:
                 )
 
         # Static rule compatibility observations (builder NOT_RUN)
+        r04_expected = CANONICAL_ELIGIBILITY_RULES["R04_PRIMARY_EXCHANGE"]["expected"]
         if any(p.symbol == "ACCS" for p in proposals):
             blockers.append(
-                "ACCS venue 'AMEX': static rule compatibility observation against Rule R04 allowlist "
+                f"ACCS observed exchange 'AMEX' (MIC: 'XASE'): static rule compatibility observation against "
+                f"Rule R04 canonical exchange allowlist {r04_expected} "
                 "(NOT an executed eligibility failure; builder NOT_RUN)."
             )
         if any(p.symbol == "DDS" for p in proposals):
             blockers.append(
-                "DDS venue 'TXSE': static rule compatibility observation against Rule R04 allowlist "
+                f"DDS observed exchange 'TXSE' (candidate MIC: 'XTXS'): static rule compatibility observation against "
+                f"Rule R04 canonical exchange allowlist {r04_expected} "
                 "(NOT an executed eligibility failure; builder NOT_RUN)."
             )
         if any(p.symbol == "TSM" and p.instrument_classification == "Depositary Receipt" for p in proposals):
@@ -1015,8 +1019,10 @@ def build_seven_candidate_proposal(research_root: Optional[Path] = None) -> Iden
             prov_assoc_id = f"PROV_ASSOC_UNRESOLVED_{sym}_{clean_date}"
             val_basis = "UNRESOLVED_VENUE_CONFLICT"
             temp_limits = (
-                "Venue identity unresolved between archived parent observations (TXSE) and secondary provider "
-                "claims (NYSE). Alternative candidate MICs: XTXS vs XNYS."
+                "Venue identity unresolved between archived parent observations (SEC: TXSE, Other Listed: F; "
+                "candidate MIC: XTXS, operating status NOT_ESTABLISHED) and secondary provider enrichment "
+                "(OpenFIGI: UN, Yahoo: NYQ, Alpaca: NYSE; candidate MIC: XNYS). "
+                "Alternative candidate MICs: XTXS vs XNYS."
             )
 
         entity = ProvisionalSecurityEntity(
@@ -1054,8 +1060,9 @@ def build_seven_candidate_proposal(research_root: Optional[Path] = None) -> Iden
         )
         missing_doc = (
             "Parent feeds (Nasdaq Listed / Other Listed / SEC) omit explicit boolean primary_listing column. "
-            "Candidate evidence sources include SEC filing cover pages (Form 10-K / 20-F check-boxes), "
-            "official exchange directory master feeds, or exchange listing certifications."
+            "Primary-listing evidence must be sufficient for the defined claim. Candidate sources include SEC "
+            "filing cover pages (Form 10-K / 20-F check-boxes), official exchange directory master feeds with "
+            "primary listing indicators, or official exchange listing agreements/certifications."
         )
 
         if sym == "TSM":

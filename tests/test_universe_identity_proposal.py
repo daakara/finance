@@ -40,6 +40,8 @@ from analyst_dashboard.universe.identity_proposal import (
     build_seven_candidate_proposal,
 )
 
+pytestmark = pytest.mark.tier2c
+
 
 class TestDistinctInstrumentsSharingIssuer:
 
