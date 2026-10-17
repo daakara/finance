@@ -86,15 +86,15 @@ class TestInstrumentStructureSeparation:
         tsm = ledger.get_proposal("TSM")
         assert tsm is not None
 
-        # Verify ADR structure
+        # Verify ADR structure without unevidenced 5:1 ratio claim
         assert tsm.instrument_classification == "Depositary Receipt"
         assert tsm.proposed_entity.instrument_structure == "Depositary Receipt"
-        assert tsm.proposed_entity.share_class == "ADR_5_ORDINARY"
+        assert tsm.proposed_entity.share_class == "ADR"
 
         # Verify primary listing analysis distinguishes home market from ADR listing
         pla = tsm.primary_listing_analysis
         assert "TWSE" in pla.issuer_home_market
-        assert pla.underlying_ordinary_share_listing == "TWSE (2330)"
+        assert pla.underlying_ordinary_share_listing is None  # Omitted: unevidenced in raw parent feed
         assert pla.depositary_receipt_listing == "NYSE (Tape A)"
         assert pla.primary_exchange_for_instrument == "NYSE"
         assert pla.selected_us_assessment_listing is True
@@ -105,10 +105,10 @@ class TestInstrumentStructureSeparation:
         aaciu = ledger.get_proposal("AACIU")
         assert aaciu is not None
 
-        # Structure is explicitly Unit
+        # Structure is explicitly Unit without unevidenced component ticker claims
         assert aaciu.instrument_classification == "Unit"
         assert aaciu.proposed_entity.instrument_structure == "Unit"
-        assert aaciu.proposed_entity.share_class == "UNIT_ORDINARY_AND_WARRANT"
+        assert aaciu.proposed_entity.share_class == "UNIT"
         assert aaciu.issuer_cik == "0002092897"
 
         # Entity not merged with common share AACI or warrant AACIW
@@ -245,8 +245,12 @@ class TestEvidenceBoundedValidityIntervals:
             assert assoc.effective_from == "2026-10-17"
             assert assoc.effective_to is None  # Currently active
             assert assoc.backdating_established is False
-            assert "historical backdating is NOT evidenced" in assoc.temporal_limitations
-            assert assoc.validity_basis == "EVIDENCE_OBSERVATION_WINDOW"
+            if prop.symbol == "DDS":
+                assert assoc.validity_basis == "UNRESOLVED_VENUE_CONFLICT"
+                assert "Venue identity unresolved" in assoc.temporal_limitations
+            else:
+                assert "historical backdating is NOT evidenced" in assoc.temporal_limitations
+                assert assoc.validity_basis == "EVIDENCE_OBSERVATION_WINDOW"
 
     def test_contradictory_date_range_fails_closed(self):
         with pytest.raises(ValueError, match="Contradictory date range"):
@@ -417,7 +421,81 @@ class TestGuardedProposalHandoffAndWholeBatchProtection:
         assert outcome.is_simulation is True
         assert outcome.production_adoption_allowed is False
         assert outcome.validation_passed_count == 7
+        assert outcome.conversion_blocked_count == 2  # DDS and ACCS blocked due to dispute / unresolved MIC
         # Remaining blockers identify downstream canonical rule boundaries (R02, R04)
         blockers = " ".join(outcome.remaining_blockers)
         assert "Depositary Receipt" in blockers or "Unit" in blockers
         assert "AMEX" in blockers or "TXSE" in blockers
+
+
+class TestDDSReconciliationAndVenueConflict:
+    """Verifies DDS venue reconciliation, unresolved status, and strict conflict blocking."""
+
+    def test_dds_venue_conflict_preserves_unresolved_association_without_concrete_mic(self):
+        ledger = build_seven_candidate_proposal()
+        dds = ledger.get_proposal("DDS")
+        assert dds is not None
+
+        # Archived parent observations vs secondary provider claims
+        assert dds.observed_venue == "TXSE"
+        assert "TXSE" in dds.archived_parent_venue
+        assert "NYSE" in dds.provider_claimed_venue
+        assert "PROVISIONAL_UNRESOLVED" in dds.normalized_venue
+
+        # Association does not emit concrete MIC
+        assoc = dds.proposed_association
+        assert assoc.operating_mic is None
+        assert assoc.alternative_mics == ("XTXS", "XNYS")
+        assert assoc.is_disputed is True
+        assert assoc.provisional_association_id == "PROV_ASSOC_UNRESOLVED_DDS_20261017"
+        assert dds.review_disposition == "BLOCKED_ON_VENUE_CONFLICT"
+
+        # Attempting to construct a ListingLocator without operating_mic fails closed
+        with pytest.raises(ValueError, match="operating_mic is unresolved"):
+            assoc.to_listing_locator()
+
+    def test_dds_and_accs_conflicts_strictly_block_guarded_handoff(self):
+        ledger = build_seven_candidate_proposal()
+        outcome = GuardedProposalHandoff.simulate_validation_handoff(ledger, simulate_primary_listing_resolution=True)
+
+        dds_disp = outcome.disposition_by_symbol["DDS"]
+        assert dds_disp["can_convert_to_source_security"] is False
+        assert "unresolved conflict" in dds_disp["conversion_error"]
+
+        accs_disp = outcome.disposition_by_symbol["ACCS"]
+        assert accs_disp["can_convert_to_source_security"] is False
+        assert "unresolved conflict" in accs_disp["conversion_error"]
+
+
+class TestIdentityModelReuseAndProvisionalQuarantine:
+    """Verifies that provisional models wrap released identity models and adhere to quarantine rules."""
+
+    def test_provisional_entity_wraps_internal_security_record(self):
+        ledger = build_seven_candidate_proposal()
+        aapl = ledger.get_proposal("AAPL")
+        assert aapl is not None
+
+        internal_rec = aapl.proposed_entity.to_internal_security_record()
+        assert internal_rec.internal_security_id == aapl.proposed_entity.provisional_security_id
+        assert internal_rec.primary_symbol == "AAPL"
+        assert internal_rec.share_class is None
+        assert internal_rec.issuer_cik == "0000320193"
+        assert internal_rec.status == "PROVISIONAL_NON_PRODUCTION"
+        assert internal_rec.certifies_continuity is False
+
+    def test_provisional_association_wraps_listing_locator_and_effective_association(self):
+        ledger = build_seven_candidate_proposal()
+        aapl = ledger.get_proposal("AAPL")
+        assert aapl is not None
+
+        locator = aapl.proposed_association.to_listing_locator()
+        assert locator.symbol == "AAPL"
+        assert locator.operating_mic == "XNAS"
+        assert locator.as_of_date == "2026-10-17"
+
+        effective_assoc = aapl.proposed_association.to_effective_dated_association()
+        assert effective_assoc.internal_security_id == aapl.proposed_entity.provisional_security_id
+        assert effective_assoc.symbol == "AAPL"
+        assert effective_assoc.operating_mic == "XNAS"
+        assert effective_assoc.effective_from == "2026-10-17"
+        assert effective_assoc.effective_to is None

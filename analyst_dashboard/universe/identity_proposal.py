@@ -39,7 +39,7 @@ Core Architectural Invariants:
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from enum import Enum
 import hashlib
 import json
@@ -48,7 +48,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .admission_mapping import (
     AttributableFieldEvidence,
+    EffectiveDatedListingAssociation,
     EvidenceNature,
+    InternalSecurityRecord,
+    ListingLocator,
 )
 from .validator import (
     UniverseInputValidator,
@@ -97,6 +100,7 @@ class ProvisionalSecurityEntity:
     """
     Tier B Proposal: Provisional internal security entity.
     Explicitly marked as non-production; CANNOT be adopted into production master without authorization.
+    Reuses released InternalSecurityRecord structure without writing to production master.
     """
     provisional_security_id: str
     primary_symbol: str
@@ -120,6 +124,22 @@ class ProvisionalSecurityEntity:
                 "ProvisionalSecurityEntity cannot declare is_adopted_production_id=True."
             )
 
+    def to_internal_security_record(self) -> InternalSecurityRecord:
+        """
+        Wraps provisional entity into released InternalSecurityRecord model.
+        Maintains provisional status without mutating production master.
+        """
+        return InternalSecurityRecord(
+            internal_security_id=self.provisional_security_id,
+            issuer_cik=self.issuer_cik,
+            primary_symbol=self.primary_symbol,
+            share_class=self.share_class,
+            created_at_utc=self.created_at_utc,
+            status="PROVISIONAL_NON_PRODUCTION",
+            continuity_basis="PROVISIONAL_OFFLINE_PROPOSAL",
+            certifies_continuity=False,
+        )
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "provisional_security_id": self.provisional_security_id,
@@ -141,12 +161,14 @@ class ProvisionalListingAssociation:
     """
     Proposed effective-dated listing association.
     Enforces observation-window temporal bounds and prohibits unevidenced inception backdating.
+    Reuses released ListingLocator and EffectiveDatedListingAssociation semantics.
     """
     provisional_association_id: str
     provisional_security_id: str
     symbol: str
-    operating_mic: str
-    effective_from: str  # YYYY-MM-DD
+    operating_mic: Optional[str] = None
+    alternative_mics: Tuple[str, ...] = ()
+    effective_from: str = "2026-10-17"  # YYYY-MM-DD
     effective_to: Optional[str] = None  # None indicates open/active
     validity_basis: str = "EVIDENCE_OBSERVATION_WINDOW"
     backdating_established: bool = False
@@ -174,8 +196,50 @@ class ProvisionalListingAssociation:
             return False
         return True
 
+    def to_listing_locator(self, as_of_date: Optional[str] = None) -> ListingLocator:
+        """
+        Constructs a released ListingLocator from this association.
+        Fails closed if operating_mic is unresolved.
+        """
+        if not self.operating_mic:
+            raise ValueError(
+                f"Cannot construct ListingLocator for {self.symbol}: "
+                f"operating_mic is unresolved ({self.dispute_reason})"
+            )
+        target_date = as_of_date or self.effective_from
+        return ListingLocator(operating_mic=self.operating_mic, symbol=self.symbol, as_of_date=target_date)
+
+    def to_effective_dated_association(
+        self,
+        internal_security_id: Optional[str] = None,
+        source_reference: str = "OFFLINE_PROPOSAL_LEDGER",
+    ) -> EffectiveDatedListingAssociation:
+        """
+        Wraps provisional association into released EffectiveDatedListingAssociation model.
+        Fails closed if operating_mic is unresolved.
+        """
+        if not self.operating_mic:
+            raise ValueError(
+                f"Cannot construct EffectiveDatedListingAssociation for {self.symbol}: "
+                f"operating_mic is unresolved ({self.dispute_reason})"
+            )
+        sec_id = internal_security_id or self.provisional_security_id
+        return EffectiveDatedListingAssociation(
+            association_id=self.provisional_association_id,
+            internal_security_id=sec_id,
+            symbol=self.symbol,
+            operating_mic=self.operating_mic,
+            effective_from=self.effective_from,
+            effective_to=self.effective_to,
+            source_reference=source_reference,
+            is_disputed=self.is_disputed,
+            dispute_reason=self.dispute_reason,
+        )
+
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        d = asdict(self)
+        d["alternative_mics"] = list(self.alternative_mics)
+        return d
 
 
 # =====================================================================
@@ -184,6 +248,7 @@ class ProvisionalListingAssociation:
 
 @dataclass(frozen=True)
 class PrimaryListingClaimAnalysis:
+
     """
     Disaggregates the 5 independent listing dimensions from single-field primary_listing.
     Enforces that unevidenced primary_listing remains None (unknown) without defaulting.
@@ -199,6 +264,11 @@ class PrimaryListingClaimAnalysis:
     evidence_sufficiency: str  # SUFFICIENT, INSUFFICIENT, UNRESOLVED_CONFLICT
     missing_evidence_details: str
     contract_ambiguity_notes: str
+    candidate_evidence_sources: str = (
+        "Candidate evidence sources include SEC filing cover pages (Form 10-K / 20-F check-boxes), "
+        "official exchange directory master feeds, or exchange listing certifications. "
+        "Exclusive §12(b) registration is not mandated by existing contracts."
+    )
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -223,7 +293,12 @@ class CandidateAssociationProposal:
     proposed_association: ProvisionalListingAssociation
     primary_listing_analysis: PrimaryListingClaimAnalysis
     ambiguities_and_missing_evidence: List[str]
-    review_disposition: str  # READY_FOR_REVIEW, BLOCKED_ON_CONFLICT, MISSING_EVIDENCE
+    review_disposition: str  # READY_FOR_REVIEW, BLOCKED_ON_VENUE_CONFLICT, BLOCKED_ON_CONFLICT, MISSING_EVIDENCE
+    archived_parent_venue: Optional[str] = None
+    provider_claimed_venue: Optional[str] = None
+    normalized_venue: Optional[str] = None
+    alternative_mics: Tuple[str, ...] = ()
+    evidence_nature_summary: Dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -240,6 +315,11 @@ class CandidateAssociationProposal:
             "primary_listing_analysis": self.primary_listing_analysis.to_dict(),
             "ambiguities_and_missing_evidence": self.ambiguities_and_missing_evidence,
             "review_disposition": self.review_disposition,
+            "archived_parent_venue": self.archived_parent_venue,
+            "provider_claimed_venue": self.provider_claimed_venue,
+            "normalized_venue": self.normalized_venue,
+            "alternative_mics": list(self.alternative_mics),
+            "evidence_nature_summary": self.evidence_nature_summary,
         }
 
 
@@ -248,6 +328,7 @@ class CandidateAssociationProposal:
 # =====================================================================
 
 class IdentityAssociationProposalLedger:
+
     """
     Isolated in-memory / task-local ledger for association proposals.
     Guarantees:
@@ -269,7 +350,8 @@ class IdentityAssociationProposalLedger:
         assoc = proposal.proposed_association
 
         # Overlap and conflict detection
-        key = (assoc.symbol, assoc.operating_mic)
+        mic_key = assoc.operating_mic or "UNRESOLVED_MIC"
+        key = (assoc.symbol, mic_key)
         for existing in self._active_index.get(key, []):
             if existing.is_active_on(assoc.effective_from):
                 if existing.provisional_security_id != assoc.provisional_security_id:
@@ -344,7 +426,8 @@ class IdentityAssociationProposalLedger:
                 provisional_association_id=assoc_d["provisional_association_id"],
                 provisional_security_id=assoc_d["provisional_security_id"],
                 symbol=assoc_d["symbol"],
-                operating_mic=assoc_d["operating_mic"],
+                operating_mic=assoc_d.get("operating_mic"),
+                alternative_mics=tuple(assoc_d.get("alternative_mics", ())),
                 effective_from=assoc_d["effective_from"],
                 effective_to=assoc_d.get("effective_to"),
                 validity_basis=assoc_d.get("validity_basis", "EVIDENCE_OBSERVATION_WINDOW"),
@@ -368,6 +451,12 @@ class IdentityAssociationProposalLedger:
                 evidence_sufficiency=pla_d["evidence_sufficiency"],
                 missing_evidence_details=pla_d["missing_evidence_details"],
                 contract_ambiguity_notes=pla_d["contract_ambiguity_notes"],
+                candidate_evidence_sources=pla_d.get(
+                    "candidate_evidence_sources",
+                    "Candidate evidence sources include SEC filing cover pages (Form 10-K / 20-F check-boxes), "
+                    "official exchange directory master feeds, or exchange listing certifications. "
+                    "Exclusive §12(b) registration is not mandated by existing contracts.",
+                ),
             )
 
             # Reconstruct evidence references
@@ -400,13 +489,20 @@ class IdentityAssociationProposalLedger:
                 primary_listing_analysis=pla,
                 ambiguities_and_missing_evidence=p_dict.get("ambiguities_and_missing_evidence", []),
                 review_disposition=p_dict.get("review_disposition", "READY_FOR_REVIEW"),
+                archived_parent_venue=p_dict.get("archived_parent_venue"),
+                provider_claimed_venue=p_dict.get("provider_claimed_venue"),
+                normalized_venue=p_dict.get("normalized_venue"),
+                alternative_mics=tuple(p_dict.get("alternative_mics", ())),
+                evidence_nature_summary=p_dict.get("evidence_nature_summary", {}),
             )
+
             ledger.add_proposal(cand_proposal)
 
         return ledger
 
     @classmethod
     def from_json(cls, json_str: str) -> IdentityAssociationProposalLedger:
+
         return cls.from_dict(json.loads(json_str))
 
 
@@ -590,13 +686,22 @@ class GuardedProposalHandoff:
             can_convert = False
             conversion_error = None
             if val_passed:
-                try:
-                    to_source_security(res)
-                    can_convert = True
-                except ValueError as ve:
+                # INVARIANT: If proposal is disputed or venue is unresolved, conversion is strictly BLOCKED
+                if prop.proposed_association.is_disputed or prop.proposed_association.operating_mic is None:
                     can_convert = False
-                    conversion_error = str(ve)
+                    conversion_error = (
+                        f"Proposal handoff blocked by unresolved conflict: "
+                        f"{prop.proposed_association.dispute_reason}"
+                    )
                     blocked_conversion_count += 1
+                else:
+                    try:
+                        to_source_security(res)
+                        can_convert = True
+                    except ValueError as ve:
+                        can_convert = False
+                        conversion_error = str(ve)
+                        blocked_conversion_count += 1
             else:
                 blocked_conversion_count += 1
 
@@ -612,18 +717,38 @@ class GuardedProposalHandoff:
         builder_status = "READY_TO_EVALUATE" if batch_valid else "BLOCKED_ADMISSION_FAILED"
 
         blockers = []
-        if not simulate_primary_listing_resolution:
-            blockers.append("SourceSecurity conversion blocked: primary_listing remains UNKNOWN (None).")
-        if any(p.symbol == "ACCS" and p.observed_venue == "AMEX" for p in proposals):
-            blockers.append("ACCS venue 'AMEX' is outside canonical builder Rule R04 allowlist.")
-        if any(p.symbol == "DDS" and p.observed_venue in ("TXSE", "F") for p in proposals):
-            blockers.append("DDS venue 'TXSE' is provisional and outside canonical builder Rule R04 allowlist.")
+        if blocked_conversion_count > 0:
+            if not simulate_primary_listing_resolution:
+                blockers.append("SourceSecurity conversion blocked: primary_listing remains UNKNOWN (None).")
+            if any(p.proposed_association.is_disputed for p in proposals):
+                blockers.append(
+                    "SourceSecurity conversion blocked: association conflicts remain unresolved (DDS/ACCS)."
+                )
+
+        # Static rule compatibility observations (builder NOT_RUN)
+        if any(p.symbol == "ACCS" for p in proposals):
+            blockers.append(
+                "ACCS venue 'AMEX': static rule compatibility observation against Rule R04 allowlist "
+                "(NOT an executed eligibility failure; builder NOT_RUN)."
+            )
+        if any(p.symbol == "DDS" for p in proposals):
+            blockers.append(
+                "DDS venue 'TXSE': static rule compatibility observation against Rule R04 allowlist "
+                "(NOT an executed eligibility failure; builder NOT_RUN)."
+            )
         if any(p.symbol == "TSM" and p.instrument_classification == "Depositary Receipt" for p in proposals):
-            blockers.append("TSM structure 'Depositary Receipt' fails canonical builder Rule R02 (COMMON_STOCK).")
+            blockers.append(
+                "TSM structure 'Depositary Receipt': static rule compatibility observation against Rule R02 "
+                "(COMMON_STOCK) — NOT an executed eligibility failure (builder NOT_RUN)."
+            )
         if any(p.symbol == "AACIU" and p.instrument_classification == "Unit" for p in proposals):
-            blockers.append("AACIU structure 'Unit' fails canonical builder Rule R02 (COMMON_STOCK).")
+            blockers.append(
+                "AACIU structure 'Unit': static rule compatibility observation against Rule R02 "
+                "(COMMON_STOCK) — NOT an executed eligibility failure (builder NOT_RUN)."
+            )
 
         return ProposalValidationOutcome(
+
             is_simulation=True,
             production_adoption_allowed=False,
             total_evaluated=len(proposals),
@@ -679,7 +804,11 @@ def build_seven_candidate_proposal(research_root: Optional[Path] = None) -> Iden
         {
             "symbol": "AAPL",
             "observed_venue": "NASDAQ",
+            "archived_parent_venue": "NASDAQ",
+            "provider_claimed_venue": "NASDAQ",
+            "normalized_venue": "NASDAQ",
             "mic": "XNAS",
+            "alternative_mics": (),
             "cik": "0000320193",
             "company_name": "Apple Inc.",
             "instrument_structure": "Common Stock",
@@ -692,7 +821,11 @@ def build_seven_candidate_proposal(research_root: Optional[Path] = None) -> Iden
         {
             "symbol": "GOOGL",
             "observed_venue": "NASDAQ",
+            "archived_parent_venue": "NASDAQ",
+            "provider_claimed_venue": "NASDAQ",
+            "normalized_venue": "NASDAQ",
             "mic": "XNAS",
+            "alternative_mics": (),
             "cik": "0001652044",
             "company_name": "Alphabet Inc.",
             "instrument_structure": "Common Stock",
@@ -705,7 +838,11 @@ def build_seven_candidate_proposal(research_root: Optional[Path] = None) -> Iden
         {
             "symbol": "GOOG",
             "observed_venue": "NASDAQ",
+            "archived_parent_venue": "NASDAQ",
+            "provider_claimed_venue": "NASDAQ",
+            "normalized_venue": "NASDAQ",
             "mic": "XNAS",
+            "alternative_mics": (),
             "cik": "0001652044",
             "company_name": "Alphabet Inc.",
             "instrument_structure": "Common Stock",
@@ -718,11 +855,15 @@ def build_seven_candidate_proposal(research_root: Optional[Path] = None) -> Iden
         {
             "symbol": "TSM",
             "observed_venue": "NYSE",
+            "archived_parent_venue": "NYSE (Other Listed: N, SEC: NYSE)",
+            "provider_claimed_venue": "NYSE",
+            "normalized_venue": "NYSE",
             "mic": "XNYS",
+            "alternative_mics": (),
             "cik": "0001046179",
             "company_name": "TAIWAN SEMICONDUCTOR MANUFACTURING CO LTD",
             "instrument_structure": "Depositary Receipt",
-            "share_class": "ADR_5_ORDINARY",
+            "share_class": "ADR",
             "home_market": "TAIWAN (TWSE: 2330)",
             "primary_exchange": "NYSE",
             "disputed": False,
@@ -731,7 +872,11 @@ def build_seven_candidate_proposal(research_root: Optional[Path] = None) -> Iden
         {
             "symbol": "ACCS",
             "observed_venue": "AMEX",
+            "archived_parent_venue": "AMEX (Other Listed: A, SEC: NYSE)",
+            "provider_claimed_venue": "AMEX",
+            "normalized_venue": "AMEX",
             "mic": "XASE",
+            "alternative_mics": (),
             "cik": "0000843006",
             "company_name": "ACCESS Newswire Inc.",
             "instrument_structure": "Common Stock",
@@ -740,33 +885,44 @@ def build_seven_candidate_proposal(research_root: Optional[Path] = None) -> Iden
             "primary_exchange": "AMEX",
             "disputed": True,
             "dispute_reason": (
-                "SEC reports 'NYSE'; Other Listed directory reports 'A' (AMEX Tape B)."
+                "Dual-source venue discordance: SEC company tickers reports 'NYSE', whereas Nasdaq Other Listed "
+                "directory reports 'A' (AMEX Tape B). Normalized to AMEX (XASE), but falls outside R04 allowlist."
             ),
         },
         {
             "symbol": "DDS",
-            "observed_venue": "NYSE",
-            "mic": "XNYS",
+            "observed_venue": "TXSE",
+            "archived_parent_venue": "TXSE (SEC: TXSE, Other Listed: F)",
+            "provider_claimed_venue": "NYSE (OpenFIGI: UN, Yahoo: NYQ, Alpaca: NYSE)",
+            "normalized_venue": "TXSE (PROVISIONAL_UNRESOLVED, operating status NOT_ESTABLISHED)",
+            "mic": None,  # UNRESOLVED: DO NOT EMIT CONCRETE XNYS ASSOCIATION
+            "alternative_mics": ("XTXS", "XNYS"),
             "cik": "0000028917",
             "company_name": "DILLARD'S, INC.",
             "instrument_structure": "Common Stock",
             "share_class": "CLASS_A",
-            "home_market": "US (NYSE)",
-            "primary_exchange": "NYSE",
+            "home_market": "US (TXSE / NYSE conflict)",
+            "primary_exchange": "UNRESOLVED_VENUE_CONFLICT",
             "disputed": True,
             "dispute_reason": (
-                "Directory reports exchange code 'F' (TXSE, operating status NOT_ESTABLISHED); "
-                "active quote is on NYSE."
+                "Cross-source venue conflict: Official 2026-10-16 parent feeds (SEC: TXSE, Other Listed: F) "
+                "concordantly record Texas Stock Exchange (operating status NOT_ESTABLISHED), whereas later "
+                "provider enrichment (OpenFIGI: UN, Yahoo: NYQ, Alpaca: NYSE) claims NYSE. Concrete MIC association "
+                "is omitted pending operational venue confirmation."
             ),
         },
         {
             "symbol": "AACIU",
             "observed_venue": "NASDAQ",
+            "archived_parent_venue": "NASDAQ",
+            "provider_claimed_venue": "NASDAQ",
+            "normalized_venue": "NASDAQ",
             "mic": "XNAS",
+            "alternative_mics": (),
             "cik": "0002092897",
-            "company_name": "Armada Acquisition Corp. III",
+            "company_name": "Armada Acquisition Corp. II",
             "instrument_structure": "Unit",
-            "share_class": "UNIT_ORDINARY_AND_WARRANT",
+            "share_class": "UNIT",
             "home_market": "CAYMAN_ISLANDS / US_LISTED",
             "primary_exchange": "NASDAQ",
             "disputed": False,
@@ -844,11 +1000,24 @@ def build_seven_candidate_proposal(research_root: Optional[Path] = None) -> Iden
                 notes="Brokerage routing directory asset ID.",
             ))
 
-        id_material = f"{cik}:{sym}:{spec['mic']}:{spec.get('share_class') or 'BASE'}"
+        mic_key = spec["mic"] or "UNRESOLVED"
+        id_material = f"{cik}:{sym}:{mic_key}:{spec.get('share_class') or 'BASE'}"
         id_hash = hashlib.sha256(id_material.encode("utf-8")).hexdigest()[:10].upper()
         prov_sec_id = f"PROV_SEC_{id_hash}"
         clean_date = as_of_date.replace("-", "")
-        prov_assoc_id = f"PROV_ASSOC_{prov_sec_id}_{spec['mic']}_{sym}_{clean_date}"
+        if spec["mic"]:
+            prov_assoc_id = f"PROV_ASSOC_{prov_sec_id}_{spec['mic']}_{sym}_{clean_date}"
+            val_basis = "EVIDENCE_OBSERVATION_WINDOW"
+            temp_limits = (
+                "Valid for observation date 2026-10-17. Inception / IPO historical backdating is NOT evidenced."
+            )
+        else:
+            prov_assoc_id = f"PROV_ASSOC_UNRESOLVED_{sym}_{clean_date}"
+            val_basis = "UNRESOLVED_VENUE_CONFLICT"
+            temp_limits = (
+                "Venue identity unresolved between archived parent observations (TXSE) and secondary provider "
+                "claims (NYSE). Alternative candidate MICs: XTXS vs XNYS."
+            )
 
         entity = ProvisionalSecurityEntity(
             provisional_security_id=prov_sec_id,
@@ -869,13 +1038,12 @@ def build_seven_candidate_proposal(research_root: Optional[Path] = None) -> Iden
             provisional_security_id=prov_sec_id,
             symbol=sym,
             operating_mic=spec["mic"],
+            alternative_mics=spec.get("alternative_mics", ()),
             effective_from=as_of_date,
             effective_to=None,
-            validity_basis="EVIDENCE_OBSERVATION_WINDOW",
+            validity_basis=val_basis,
             backdating_established=False,
-            temporal_limitations=(
-                "Valid for observation date 2026-10-17. Inception / IPO historical backdating is NOT evidenced."
-            ),
+            temporal_limitations=temp_limits,
             is_disputed=spec["disputed"],
             dispute_reason=spec["dispute_reason"],
         )
@@ -885,15 +1053,17 @@ def build_seven_candidate_proposal(research_root: Optional[Path] = None) -> Iden
             "(Rule R06: 'Must be primary listing, not secondary or cross-listing')"
         )
         missing_doc = (
-            "Directory feeds (Nasdaq Listed / Other Listed) omit explicit boolean primary_listing column. "
-            "Authoritative exchange listing agreement or Form 8-A / 10-K Section 12(b) exchange registration required."
+            "Parent feeds (Nasdaq Listed / Other Listed / SEC) omit explicit boolean primary_listing column. "
+            "Candidate evidence sources include SEC filing cover pages (Form 10-K / 20-F check-boxes), "
+            "official exchange directory master feeds, or exchange listing certifications."
         )
 
         if sym == "TSM":
             ambiguity_note = (
-                "TSM global home market is Taiwan Stock Exchange (TWSE: 2330). On NYSE, TSM is a Depositary Receipt. "
-                "If R06 denotes global primary equity line, TSM is False. If R06 denotes primary exchange for the ADR, "
-                "NYSE is True. The field remains None (unknown) without explicit policy and exchange certification."
+                "TSM global home market is Taiwan (TWSE: 2330). On NYSE, TSM trades as a Depositary Receipt. "
+                "Rule R06 requires primary listing, but existing contracts do not specify whether ADR primary "
+                "trading venue satisfies R06 when the underlying ordinary share is listed abroad. "
+                "Field remains None (unknown) pending explicit policy qualification."
             )
         elif sym in ("GOOG", "GOOGL"):
             other_sym = "GOOGL" if sym == "GOOG" else "GOOG"
@@ -903,18 +1073,22 @@ def build_seven_candidate_proposal(research_root: Optional[Path] = None) -> Iden
             )
         elif sym == "AACIU":
             ambiguity_note = (
-                "AACIU is a SPAC Unit (1 ordinary share + 1/2 warrant). It is primary-listed on NASDAQ, but fails "
-                "Rule R02 (COMMON_STOCK). Directory feeds omit explicit primary_listing boolean."
+                "AACIU is a Unit consisting of underlying components. It trades on NASDAQ, but fails "
+                "static rule compatibility observation against Rule R02 (COMMON_STOCK). "
+                "Parent feeds omit explicit primary_listing boolean."
             )
         elif sym == "ACCS":
             ambiguity_note = (
-                "SEC reports NYSE; Directory reports AMEX (Tape B). Unreconciled venue discrepancy prevents "
-                "unambiguous primary venue certification."
+                "SEC reports NYSE; Other Listed directory reports AMEX (Tape B). Dual-source venue discordance "
+                "prevents unambiguous primary venue certification. Normalized venue AMEX (XASE) fails "
+                "static rule compatibility observation against Rule R04 allowlist."
             )
         elif sym == "DDS":
             ambiguity_note = (
-                "Active quote is on NYSE, but Other Listed directory assigns code F (Texas Stock Exchange, TXSE). "
-                "TXSE operating status is NOT_ESTABLISHED; primary listing cannot be certified from conflicting feeds."
+                "Official 2026-10-16 parent feeds (SEC: TXSE, Other Listed: F) concordantly designate "
+                "Texas Stock Exchange (operating status NOT_ESTABLISHED), whereas later provider enrichment "
+                "(OpenFIGI: UN, Yahoo: NYQ, Alpaca: NYSE) claims NYSE. "
+                "Cross-source venue conflict remains unresolved; concrete MIC association cannot be emitted."
             )
         else:
             ambiguity_note = (
@@ -926,7 +1100,7 @@ def build_seven_candidate_proposal(research_root: Optional[Path] = None) -> Iden
             symbol=sym,
             exact_claim_needed=exact_claim,
             issuer_home_market=spec["home_market"],
-            underlying_ordinary_share_listing="TWSE (2330)" if sym == "TSM" else None,
+            underlying_ordinary_share_listing=None,
             depositary_receipt_listing="NYSE (Tape A)" if sym == "TSM" else None,
             primary_exchange_for_instrument=spec["primary_exchange"],
             selected_us_assessment_listing=True,
@@ -944,7 +1118,11 @@ def build_seven_candidate_proposal(research_root: Optional[Path] = None) -> Iden
         ambiguities.append("Parent feeds omit explicit boolean primary_listing column.")
         ambiguities.append("Inception / IPO date not established from single-day observation.")
 
-        disposition = "BLOCKED_ON_CONFLICT" if spec["disputed"] else "READY_FOR_REVIEW"
+        disposition = (
+            "BLOCKED_ON_VENUE_CONFLICT"
+            if sym == "DDS"
+            else ("BLOCKED_ON_CONFLICT" if spec["disputed"] else "READY_FOR_REVIEW")
+        )
 
         cand_proposal = CandidateAssociationProposal(
             symbol=sym,
@@ -968,6 +1146,17 @@ def build_seven_candidate_proposal(research_root: Optional[Path] = None) -> Iden
             primary_listing_analysis=pla,
             ambiguities_and_missing_evidence=ambiguities,
             review_disposition=disposition,
+            archived_parent_venue=spec.get("archived_parent_venue"),
+            provider_claimed_venue=spec.get("provider_claimed_venue"),
+            normalized_venue=spec.get("normalized_venue"),
+            alternative_mics=spec.get("alternative_mics", ()),
+            evidence_nature_summary={
+                "venue_evidence": "REAL_OBSERVATION" if not spec["disputed"] else "UNRESOLVED_CONFLICT",
+                "cik_evidence": "REAL_OBSERVATION" if cik else "UNAVAILABLE",
+                "figi_evidence": "DERIVED_PROPOSAL" if comp_figi else "UNAVAILABLE",
+                "classification_evidence": "REAL_OBSERVATION",
+                "primary_listing_evidence": "UNKNOWN_PRESERVED",
+            },
         )
 
         ledger.add_proposal(cand_proposal)
