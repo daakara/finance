@@ -1,0 +1,23 @@
+Symbol|Company Name|NASDAQ Action|BX Action|PSX Action|Effective Date|Primary Listing Market
+AAAB|Corgi ETF Trust I|Add|Add|Add|10/16/2026|Z
+ACVA|ACV Auctions Inc.|Delete|Delete|Delete|10/16/2026|N
+AELV|Harbor ETF Trust|Delete|Delete|Delete|10/16/2026|P
+AGGB|Corgi ETF Trust I|Add|Add|Add|10/16/2026|Z
+ANG|Corgi ETF Trust I|Add|Add|Add|10/16/2026|Z
+BBBB|Corgi ETF Trust I|Add|Add|Add|10/16/2026|Z
+CTY|City Therapeutics, Inc.|Add|Add|Add|10/16/2026|G
+FTN|Corgi ETF Trust I|Add|Add|Add|10/16/2026|Z
+GCB|Corgi ETF Trust I|Add|Add|Add|10/16/2026|Z
+HH|Corgi ETF Trust I|Add|Add|Add|10/16/2026|Z
+HOID|Collaborative Investment Series Trust|Add|Add|Add|10/16/2026|Z
+IBIC|iShares Trust|Delete|Delete|Delete|10/16/2026|P
+IGB|Corgi ETF Trust I|Add|Add|Add|10/16/2026|Z
+LIGB|Corgi ETF Trust I|Add|Add|Add|10/16/2026|Z
+LTB|Corgi ETF Trust I|Add|Add|Add|10/16/2026|Z
+MMF|Corgi MANGOS ETF|Add|Add|Add|10/16/2026|Z
+SVTN|Corgi ETF Trust I|Add|Add|Add|10/16/2026|Z
+TCXB|TCGX Acquisition Corp. II|Add|Add|Add|10/16/2026|S
+TNTW|Corgi ETF Trust I|Add|Add|Add|10/16/2026|Z
+TTTT|Corgi ETF Trust I|Add|Add|Add|10/16/2026|Z
+UB|Corgi ETF Trust I|Add|Add|Add|10/16/2026|Z
+File Creation Time: 1016202621:33|||||

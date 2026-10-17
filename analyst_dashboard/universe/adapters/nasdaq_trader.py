@@ -50,6 +50,16 @@ OTHER_LISTED_HEADER = [
     "NASDAQ Symbol",
 ]
 
+TRADING_SYSTEM_ADDS_DELETES_HEADER = [
+    "Symbol",
+    "Company Name",
+    "NASDAQ Action",
+    "BX Action",
+    "PSX Action",
+    "Effective Date",
+    "Primary Listing Market",
+]
+
 
 def parse_nasdaq_trader_directory(
     content: str | bytes,
@@ -101,6 +111,9 @@ def parse_nasdaq_trader_directory(
     is_other_listed = header_cols == OTHER_LISTED_HEADER or (
         filename_hint and "otherlisted" in filename_hint.lower()
     )
+    is_adds_deletes = header_cols == TRADING_SYSTEM_ADDS_DELETES_HEADER or (
+        filename_hint and "tradingsystemaddsdeletes" in filename_hint.lower()
+    )
 
     if is_nasdaq_listed:
         feed_type = SourceFeedType.NASDAQ_LISTED_DIRECTORY
@@ -108,6 +121,9 @@ def parse_nasdaq_trader_directory(
     elif is_other_listed:
         feed_type = SourceFeedType.OTHER_LISTED_DIRECTORY
         expected_cols = OTHER_LISTED_HEADER
+    elif is_adds_deletes:
+        feed_type = SourceFeedType.NASDAQ_ADDS_DELETES
+        expected_cols = TRADING_SYSTEM_ADDS_DELETES_HEADER
     else:
         # Unknown directory schema
         return ParsedSourceFile(
@@ -208,6 +224,49 @@ def parse_nasdaq_trader_directory(
                         "nextshares": nextshares == "Y",
                         "venue_exchange": "NASDAQ",
                         "source_directory": "nasdaqlisted",
+                    },
+                    is_malformed=False,
+                )
+            )
+
+        elif is_adds_deletes:
+            raw_sym = row_dict.get("Symbol", "")
+            comp_name = row_dict.get("Company Name", "")
+            nasdaq_action = row_dict.get("NASDAQ Action", "")
+            bx_action = row_dict.get("BX Action", "")
+            psx_action = row_dict.get("PSX Action", "")
+            eff_date = row_dict.get("Effective Date", "")
+            primary_market = row_dict.get("Primary Listing Market", "")
+
+            if not raw_sym:
+                malformed_count += 1
+                parsed_rows.append(
+                    ParsedSourceRow(
+                        row_index=line_idx,
+                        raw_values=row_dict,
+                        is_malformed=True,
+                        malformed_reason="Invalid or missing Symbol in adds/deletes row",
+                    )
+                )
+                continue
+
+            data_count += 1
+            seen_symbols.add(raw_sym)
+
+            parsed_rows.append(
+                ParsedSourceRow(
+                    row_index=line_idx,
+                    raw_values={
+                        "raw_symbol": raw_sym,
+                        "normalized_symbol": raw_sym.upper(),
+                        "company_name": comp_name,
+                        "nasdaq_action": nasdaq_action,
+                        "bx_action": bx_action,
+                        "psx_action": psx_action,
+                        "effective_date": eff_date,
+                        "primary_listing_market": primary_market,
+                        "venue_exchange": "NASDAQ" if primary_market in {"Q", "G", "S"} else primary_market,
+                        "source_directory": "TradingSystemAddsDeletes",
                     },
                     is_malformed=False,
                 )

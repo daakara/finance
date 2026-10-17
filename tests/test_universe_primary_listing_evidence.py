@@ -19,7 +19,12 @@ Covers all 9 required verification invariants:
 
 from __future__ import annotations
 
+from pathlib import Path
+import json
 import pytest
+
+from analyst_dashboard.universe.adapters.models import SourceFeedType
+from analyst_dashboard.universe.adapters.nasdaq_trader import parse_nasdaq_trader_directory
 
 from analyst_dashboard.universe.admission_mapping import (
     AttributableFieldEvidence,
@@ -1233,6 +1238,405 @@ class TestPrimaryListingEvidenceAdjudication:
             assert prop.proposed_entity.provisional_security_id.startswith("PROV_SEC_")
             assert prop.proposed_entity.is_adopted_production_id is False
             assert prop.proposed_entity.status == "PROVISIONAL_NON_PRODUCTION"
+
+
+# =====================================================================
+# 10. Primary-Exchange Source Discovery & Resolution Tests
+# =====================================================================
+
+class TestPrimaryExchangeSourceDiscovery:
+    """
+    Sprint 2: Primary-Exchange Source Discovery & Evidence Resolution.
+    Verifies that:
+    1. TradingSystemAddsDeletes.txt parser extracts Primary Listing Market column.
+    2. Daily delta feed does not contain static candidates (AAPL, GOOG, GOOGL absent).
+    3. Official exchange quote info payloads (api.nasdaq.com) extract venue and listing status.
+    4. 'exchange: NASDAQ-GS' and 'isNasdaqListed: true' classify as narrower listing facts only (assigned_primary_listing is None).
+    5. Synthetic direct assertion payload with explicit primaryExchange assigns assigned_primary_listing = True.
+    6. Non-Nasdaq control quote (IBM on NYSE) parsed accurately.
+    7. Multi-class candidates GOOG and GOOGL evaluate under identical primary listing standards.
+    8. Fail-closed replay prevents admission and builder execution.
+    """
+
+    def test_parse_nasdaq_adds_deletes_directory(self):
+        """Verifies parsing of TradingSystemAddsDeletes.txt and extraction of Primary Listing Market."""
+        path = Path("data/research/exchange_reference/TradingSystemAddsDeletes_20261016.txt")
+        if not path.exists():
+            pytest.skip("TradingSystemAddsDeletes_20261016.txt not present in workspace")
+
+        content = path.read_bytes()
+        parsed = parse_nasdaq_trader_directory(content, filename_hint="TradingSystemAddsDeletes.txt")
+        assert parsed.feed_type == SourceFeedType.NASDAQ_ADDS_DELETES
+        assert parsed.data_row_count > 0
+
+        # Verify that candidate stocks are absent from the daily delta feed
+        symbols = {r.raw_values.get("raw_symbol") for r in parsed.rows if not r.is_malformed}
+        assert "AAPL" not in symbols
+        assert "GOOG" not in symbols
+        assert "GOOGL" not in symbols
+
+        # Verify that a row with G or Z has primary_listing_market populated
+        for r in parsed.rows:
+            if not r.is_malformed and r.raw_values.get("raw_symbol") == "CTY":
+                assert r.raw_values.get("primary_listing_market") == "G"
+                assert r.raw_values.get("venue_exchange") == "NASDAQ"
+
+    def test_parse_official_quote_info_narrower_fact(self):
+        """Verifies that authentic api.nasdaq.com payloads extract narrower listing facts and retain None."""
+        for sym in ("AAPL", "GOOG", "GOOGL"):
+            path = Path(f"data/research/exchange_reference/nasdaq_quote_info_{sym}_20261017.json")
+            if not path.exists():
+                pytest.skip(f"Quote info file for {sym} not present")
+
+            parsed = PrimaryListingEvidenceAdapter.parse_exchange_quote_info_payload(path.read_text(encoding="utf-8"))
+            assert parsed["symbol"] == sym
+            assert parsed["exchange"] == "NASDAQ-GS"
+            assert parsed["is_nasdaq_listed"] is True
+            assert parsed["has_direct_primary_claim"] is False
+            assert parsed["classification"] == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+            assert parsed["assigned_primary_listing"] is None
+            assert parsed["evidence_role"] == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+
+    def test_parse_official_quote_info_control_nyse(self):
+        """Verifies that non-Nasdaq control quote (IBM) is extracted accurately without false positive."""
+        path = Path("data/research/exchange_reference/nasdaq_quote_info_IBM_20261017.json")
+        if not path.exists():
+            pytest.skip("Quote info file for IBM not present")
+
+        parsed = PrimaryListingEvidenceAdapter.parse_exchange_quote_info_payload(path.read_text(encoding="utf-8"))
+        assert parsed["symbol"] == "IBM"
+        assert parsed["exchange"] == "NYSE"
+        assert parsed["is_nasdaq_listed"] is False
+        assert parsed["assigned_primary_listing"] is None
+
+    def test_synthetic_direct_primary_claim_contract(self):
+        """Verifies contract behavior when an authentic or synthetic payload contains an explicit primaryExchange claim."""
+        synthetic_payload = {
+            "data": {
+                "symbol": "AAPL",
+                "companyName": "Apple Inc. Common Stock",
+                "stockType": "Common Stock",
+                "exchange": "NASDAQ-GS",
+                "primaryExchange": "NASDAQ",
+                "isNasdaqListed": True,
+            }
+        }
+        parsed = PrimaryListingEvidenceAdapter.parse_exchange_quote_info_payload(synthetic_payload)
+        assert parsed["symbol"] == "AAPL"
+        assert parsed["has_direct_primary_claim"] is True
+        assert parsed["classification"] == PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM
+        assert parsed["assigned_primary_listing"] is True
+        assert parsed["evidence_role"] == PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
+
+    def test_adjudicator_preserves_three_candidates_unknown_on_narrow_facts(self):
+        """Verifies that adjudicating three candidates with authentic exchange quote info preserves primary_listing as UNKNOWN (None)."""
+        three_records = PrimaryListingEvidenceAdapter.load_three_candidate_evidence()
+        results = PrimaryListingAdjudicator.adjudicate_all_candidates(
+            three_records,
+            candidate_symbols=("AAPL", "GOOGL", "GOOG"),
+        )
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            res = results[sym]
+            assert res.assigned_primary_listing is None
+            assert res.adjudication_status == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+            assert res.is_direct_assertion is False
+            assert res.is_derived_claim is False
+            assert res.adjudication_role == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+
+        # Class separation check: GOOGL and GOOG evaluated under identical standards
+        assert results["GOOGL"].assigned_primary_listing == results["GOOG"].assigned_primary_listing
+
+    def test_provider_access_status_inspection(self):
+        """Verifies environment inspection of reference provider credentials and access blockers."""
+        status = PrimaryListingEvidenceAdapter.get_provider_access_status()
+        assert "openfigi" in status
+        assert "massive_polygon" in status
+        assert "alpaca" in status
+
+        # OpenFIGI free API key status
+        openfigi = status["openfigi"]
+        assert openfigi["primary_exchange_field_supported"] is False
+        assert "compositeFIGI" in openfigi["field_notes"]
+
+        # Massive / Polygon status
+        massive = status["massive_polygon"]
+        assert massive["primary_exchange_field_supported"] is True
+        assert "ISO 10383 Market Identifier Code" in massive["field_notes"]
+        # If unconfigured in local env, must report explicit access blocker
+        if not massive["configured"]:
+            assert massive["access_blocker"] is not None
+            assert "UNCONFIGURED_CREDENTIAL" in massive["access_blocker"]
+
+    def test_openfigi_three_candidate_response_preserves_none_and_composite_distinction(self):
+        """
+        Verifies that authentic OpenFIGI v3 mapping payload:
+        1. Preserves distinct compositeFIGI and shareClassFIGI for all 3 candidates.
+        2. Preserves exchCode='US' (national composite, not exchange MIC).
+        3. Enforces absence of primary_exchange/primaryListing attribute in OpenFIGI schema.
+        4. Preserves assigned_primary_listing = None (UNKNOWN) and narrow listing fact classification.
+        """
+        path = Path("data/research/openfigi_reference/openfigi_three_candidates_mapping_20261017.json")
+        if not path.exists():
+            pytest.skip("OpenFIGI authentic response file not present in workspace")
+
+        parsed = PrimaryListingEvidenceAdapter.parse_openfigi_mapping_payload(path.read_bytes())
+        assert "AAPL" in parsed
+        assert "GOOG" in parsed
+        assert "GOOGL" in parsed
+
+        # AAPL verification
+        aapl = parsed["AAPL"]
+        assert aapl["figi"] == "BBG000B9XRY4"
+        assert aapl["composite_figi"] == "BBG000B9XRY4"
+        assert aapl["share_class_figi"] == "BBG001S5N8V8"
+        assert aapl["exch_code"] == "US"
+        assert aapl["has_direct_primary_claim"] is False
+        assert aapl["assigned_primary_listing"] is None
+        assert aapl["classification"] == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+        assert aapl["evidence_role"] == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+
+        # GOOG (Class C) verification
+        goog = parsed["GOOG"]
+        assert goog["figi"] == "BBG009S3NB30"
+        assert goog["composite_figi"] == "BBG009S3NB30"
+        assert goog["share_class_figi"] == "BBG009S3NB21"
+        assert goog["exch_code"] == "US"
+        assert goog["assigned_primary_listing"] is None
+
+        # GOOGL (Class A) verification
+        googl = parsed["GOOGL"]
+        assert googl["figi"] == "BBG009S39JX6"
+        assert googl["composite_figi"] == "BBG009S39JX6"
+        assert googl["share_class_figi"] == "BBG009S39JY5"
+        assert googl["exch_code"] == "US"
+        assert googl["assigned_primary_listing"] is None
+
+        # Structural multi-class preservation: shareClassFIGIs are distinct
+        assert goog["share_class_figi"] != googl["share_class_figi"]
+        assert goog["figi"] != googl["figi"]
+
+    def test_massive_polygon_synthetic_contract_and_unconfigured_status(self):
+        """
+        Verifies Massive / Polygon v3 reference ticker contract:
+        1. When primary_exchange ('XNAS') is present, sets assigned_primary_listing = True.
+        2. When primary_exchange is absent, retains assigned_primary_listing = None.
+        3. Validates unconfigured provider credential status reporting.
+        """
+        # Case 1: Ticker with primary_exchange MIC
+        synthetic_payload = {
+            "results": {
+                "ticker": "AAPL",
+                "name": "Apple Inc.",
+                "market": "stocks",
+                "primary_exchange": "XNAS",
+                "cik": "0000320193",
+                "composite_figi": "BBG000B9XRY4",
+                "share_class_figi": "BBG001S5N8V8",
+            },
+            "status": "OK",
+        }
+        res = PrimaryListingEvidenceAdapter.parse_massive_ticker_payload(synthetic_payload)
+        assert res["symbol"] == "AAPL"
+        assert res["primary_exchange"] == "XNAS"
+        assert res["has_direct_primary_claim"] is True
+        assert res["classification"] == PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM
+        assert res["assigned_primary_listing"] is True
+        assert res["evidence_role"] == PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
+
+        # Case 2: Ticker without primary_exchange
+        synthetic_no_primary = {
+            "results": {
+                "ticker": "UNKNOWN_TICKER",
+                "name": "Some Company",
+                "market": "stocks",
+            },
+            "status": "OK",
+        }
+        res_no_primary = PrimaryListingEvidenceAdapter.parse_massive_ticker_payload(synthetic_no_primary)
+        assert res_no_primary["has_direct_primary_claim"] is False
+        assert res_no_primary["assigned_primary_listing"] is None
+        assert res_no_primary["classification"] == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+
+    def test_alpaca_three_candidate_response_preserves_none_and_narrower_listing_fact(self):
+        """
+        Verifies that authentic Alpaca v2 asset response payload:
+        1. Extracts exchange='NASDAQ' for AAPL, GOOG, GOOGL.
+        2. Enforces absence of primary listing attribute in Alpaca schema (has_direct_primary_claim=False).
+        3. Preserves assigned_primary_listing = None (UNKNOWN).
+        4. Classifies under Rule R06 as EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY.
+        """
+        path = Path("data/research/alpaca_reference/alpaca_three_candidates_assets_20261017.json")
+        if not path.exists():
+            pytest.skip("Alpaca authentic response file not present in workspace")
+
+        raw_data = json.loads(path.read_text(encoding="utf-8"))
+        assert "AAPL" in raw_data
+        assert "GOOG" in raw_data
+        assert "GOOGL" in raw_data
+
+        for sym in ("AAPL", "GOOG", "GOOGL"):
+            parsed = PrimaryListingEvidenceAdapter.parse_alpaca_asset_payload(raw_data[sym])
+            assert parsed["symbol"] == sym
+            assert parsed["exchange"] == "NASDAQ"
+            assert parsed["class"] == "us_equity"
+            assert parsed["status"] == "active"
+            assert parsed["tradable"] is True
+            assert parsed["has_direct_primary_claim"] is False
+            assert parsed["assigned_primary_listing"] is None
+            assert parsed["classification"] == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+            assert parsed["evidence_role"] == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+
+    def test_alpaca_synthetic_asset_safeguards_always_execute(self):
+        """
+        Clean-checkout reproducible regression test for Alpaca asset parsing:
+        - Distinctness of active status vs. tradable attribute.
+        - Non-inference of R06 primary listing from broker venue exchange='NASDAQ'.
+        - Broad asset class 'us_equity' does not certify exact instrument subtype.
+        Always executes in CI without local optional payloads or API keys.
+        """
+        synthetic_payload = {
+            "id": "synthetic-alpaca-id-001",
+            "symbol": "SYNTH_TICKER",
+            "name": "Synthetic Corporation Common Stock",
+            "class": "us_equity",
+            "exchange": "NASDAQ",
+            "status": "active",
+            "tradable": True,
+            "marginable": True,
+            "shortable": False,
+        }
+        res = PrimaryListingEvidenceAdapter.parse_alpaca_asset_payload(synthetic_payload)
+        assert res["symbol"] == "SYNTH_TICKER"
+        assert res["status"] == "active"
+        assert res["tradable"] is True
+        assert res["exchange"] == "NASDAQ"
+        assert res["class"] == "us_equity"
+        assert res["has_direct_primary_claim"] is False
+        assert res["assigned_primary_listing"] is None
+        assert res["classification"] == PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY
+        assert res["evidence_role"] == PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT
+
+    def test_openfigi_authentic_three_candidate_response_association(self):
+        """
+        Authentic OpenFIGI payload verification:
+        1. Exact request job-to-response item positional binding using authentic saved response.
+        2. GOOG Class C vs GOOGL Class A compositeFIGI and shareClassFIGI distinctness.
+        3. Strict separation of compositeFIGI and shareClassFIGI fields (not identical).
+        Skips gracefully if local gitignored payload is absent in clean checkout.
+        """
+        path = Path("data/research/openfigi_reference/openfigi_three_candidates_mapping_20261017.json")
+        if not path.exists():
+            pytest.skip("OpenFIGI authentic response file not present in workspace")
+
+        raw_data = json.loads(path.read_text(encoding="utf-8"))
+
+        parsed = PrimaryListingEvidenceAdapter.parse_openfigi_mapping_payload(
+            raw_data,
+            expected_symbols=["AAPL", "GOOG", "GOOGL"],
+        )
+
+        assert len(parsed) == 3
+        assert "AAPL" in parsed
+        assert "GOOG" in parsed
+        assert "GOOGL" in parsed
+
+        # GOOG (Class C Capital Stock, non-voting)
+        goog = parsed["GOOG"]
+        assert goog["symbol"] == "GOOG"
+        assert goog["name"] == "ALPHABET INC-CL C"
+        assert goog["composite_figi"] == "BBG009S3NB30"
+        assert goog["share_class_figi"] == "BBG009S3NB21"
+        assert goog["composite_figi"] != goog["share_class_figi"]
+        assert goog["assigned_primary_listing"] is None
+        assert goog["is_ambiguous"] is False
+        assert goog["request_binding_verified"] is True
+
+        # GOOGL (Class A Common Stock, voting)
+        googl = parsed["GOOGL"]
+        assert googl["symbol"] == "GOOGL"
+        assert googl["name"] == "ALPHABET INC-CL A"
+        assert googl["composite_figi"] == "BBG009S39JX6"
+        assert googl["share_class_figi"] == "BBG009S39JY5"
+        assert googl["composite_figi"] != googl["share_class_figi"]
+        assert googl["assigned_primary_listing"] is None
+        assert googl["is_ambiguous"] is False
+        assert googl["request_binding_verified"] is True
+
+        # Instrument-level isolation
+        assert goog["composite_figi"] != googl["composite_figi"]
+        assert goog["share_class_figi"] != googl["share_class_figi"]
+
+    def test_openfigi_synthetic_binding_and_disambiguation_safeguards_always_execute(self):
+        """
+        Clean-checkout reproducible regression test for OpenFIGI request association,
+        multi-match disambiguation, and separation of compositeFIGI vs shareClassFIGI.
+        Always executes in CI without local optional payloads or API keys.
+
+        Verifies:
+        1. Missing expected_symbols does NOT silently imply verified request binding (request_binding_verified=False).
+        2. Expected symbols matching job position verifies request binding (request_binding_verified=True).
+        3. Synthetic positional mismatch fails closed and flags ambiguity.
+        4. Synthetic multi-match with conflicting compositeFIGIs flags ambiguity and fails closed.
+        5. Synthetic provider error item is handled safely without producing false records.
+        """
+        # Case 1: Missing expected_symbols does NOT silently imply verified request binding
+        synthetic_basic_payload = [
+            {"data": [{"ticker": "AAPL", "compositeFIGI": "BBG000B9XRY4", "shareClassFIGI": "BBG001S5N8V8", "exchCode": "US"}]}
+        ]
+        unverified_res = PrimaryListingEvidenceAdapter.parse_openfigi_mapping_payload(synthetic_basic_payload)
+        assert unverified_res["AAPL"]["request_binding_verified"] is False
+        assert unverified_res["AAPL"]["composite_figi"] == "BBG000B9XRY4"
+        assert unverified_res["AAPL"]["share_class_figi"] == "BBG001S5N8V8"
+        assert unverified_res["AAPL"]["composite_figi"] != unverified_res["AAPL"]["share_class_figi"]
+
+        # Case 2: Matching expected_symbols verifies request binding
+        verified_res = PrimaryListingEvidenceAdapter.parse_openfigi_mapping_payload(
+            synthetic_basic_payload,
+            expected_symbols=["AAPL"],
+        )
+        assert verified_res["AAPL"]["request_binding_verified"] is True
+        assert verified_res["AAPL"]["is_ambiguous"] is False
+
+        # Case 3: Positional request mismatch (expected GOOG, response returns AMZN)
+        synthetic_mismatch_payload = [
+            {"data": [{"ticker": "AAPL", "compositeFIGI": "BBG000B9XRY4", "shareClassFIGI": "BBG001S5N8V8"}]},
+            {"data": [{"ticker": "AMZN", "compositeFIGI": "BBG000BVPV84", "shareClassFIGI": "BBG001S5PQL7"}]},
+        ]
+        mismatch_res = PrimaryListingEvidenceAdapter.parse_openfigi_mapping_payload(
+            synthetic_mismatch_payload,
+            expected_symbols=["AAPL", "GOOG"],
+        )
+        assert mismatch_res["GOOG"]["is_ambiguous"] is True
+        assert mismatch_res["GOOG"]["request_binding_verified"] is False
+        assert mismatch_res["GOOG"]["assigned_primary_listing"] is None
+        assert "Positional request mismatch" in mismatch_res["GOOG"]["source_claim"]
+
+        # Case 4: Ambiguous multi-match with conflicting compositeFIGIs
+        synthetic_ambiguous_payload = [
+            {
+                "data": [
+                    {"ticker": "XYZ", "compositeFIGI": "BBG001111111", "shareClassFIGI": "BBG001111112", "exchCode": "US"},
+                    {"ticker": "XYZ", "compositeFIGI": "BBG002222222", "shareClassFIGI": "BBG001111112", "exchCode": "LN"},
+                ]
+            }
+        ]
+        ambig_res = PrimaryListingEvidenceAdapter.parse_openfigi_mapping_payload(synthetic_ambiguous_payload)
+        assert ambig_res["XYZ"]["is_ambiguous"] is True
+        assert ambig_res["XYZ"]["assigned_primary_listing"] is None
+        assert "AMBIGUOUS_MULTI_MATCH" in ambig_res["XYZ"]["source_claim"]
+
+        # Case 5: Provider error item
+        synthetic_error_payload = [{"error": "Invalid ticker or no identifier found"}]
+        err_res = PrimaryListingEvidenceAdapter.parse_openfigi_mapping_payload(
+            synthetic_error_payload,
+            expected_symbols=["BADTICKER"],
+        )
+        assert "BADTICKER" in err_res
+        assert err_res["BADTICKER"]["assigned_primary_listing"] is None
+        assert err_res["BADTICKER"]["error"] == "Invalid ticker or no identifier found"
+
+
+
 
 
 
