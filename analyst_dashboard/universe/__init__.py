@@ -58,6 +58,7 @@ from .identity_adoption import (
     IdentityAdoptionPlan,
     IdentityAdoptionDryRunEngine,
     StalePlanError,
+    PlanIntegrityError,
     PlanApplicationError,
     apply_adoption_plan_test_only,
 )
@@ -106,6 +107,7 @@ __all__ = [
     "IdentityAdoptionPlan",
     "IdentityAdoptionDryRunEngine",
     "StalePlanError",
+    "PlanIntegrityError",
     "PlanApplicationError",
     "apply_adoption_plan_test_only",
 ]

@@ -12,29 +12,42 @@ Core Architectural Invariants:
    - Evaluates explicitly selected proposal sets against an explicitly supplied snapshot
      of existing identity records.
    - Categorizes each entity and association into clear dispositions:
-     APPROVED_FOR_ADOPTION, MATCHES_EXISTING_DURABLE, BLOCKED_MISSING_AUTHORIZATION,
-     BLOCKED_UNRESOLVED_MIC, BLOCKED_ASSOCIATION_CONFLICT, BLOCKED_CONTRADICTORY_DATES,
-     or BLOCKED_BACKDATED_UNSUPPORTED.
+     APPROVED_FOR_ADOPTION, MATCHES_EXISTING_DURABLE, BLOCKED_POLICY_UNRESOLVED,
+     BLOCKED_MISSING_AUTHORIZATION, BLOCKED_UNRESOLVED_MIC, BLOCKED_ASSOCIATION_CONFLICT,
+     BLOCKED_CONTRADICTORY_DATES, BLOCKED_BACKDATED_UNSUPPORTED, or BLOCKED_MISMATCHED_ISSUER.
    - Preserves existing durable IDs and guarantees stable durable IDs across reload/replay.
    - Unresolved cases remain strictly unresolved; never mints alternate IDs to bypass conflict.
 
-2. Content and Target-State Binding:
-   - The adoption plan is bound to both its proposed content (plan_content_digest)
-     and the target state snapshot (target_state_digest).
-   - If the target state mutates, stale plans fail closed.
-
-3. Strict Separation of Evidence, Authorization, and Admission:
-   - Mechanical identity adoption evaluates internal security master registration only.
-   - Does NOT imply production adoption, primary-listing sufficiency (Rule R06),
+2. Strict Separation of Evidence, Policy, Authorization, and Admission:
+   - Real retained-source records (AAPL, GOOG, GOOGL, TSM, AACIU) are NEVER marked
+     APPROVED_FOR_ADOPTION merely because a test or caller supplies an authorization token.
+   - For real candidates, adopting an internal identity prior to primary-listing evidence closure
+     (Rule R06) is an UNRESOLVED policy decision. They are marked BLOCKED_POLICY_UNRESOLVED.
+   - The mechanical approval path is exercised strictly using explicitly labeled synthetic fixtures
+     and synthetic authorization.
+   - A dry-run plan NEVER implies adopted production identity, primary-listing sufficiency (Rule R06),
      SourceSecurity conversion authority, or universe admission.
-   - Real-source records (AAPL, GOOG, GOOGL) retain primary_listing = None (UNKNOWN)
-     and remain ineligible for universe admission unless newer qualifying evidence exists.
 
-4. Test-Scoped Atomic Application:
-   - Test-only application callable (apply_adoption_plan_test_only) operates strictly
-     in temporary/in-memory stores.
-   - Guarantees full rollback on mid-operation failure and idempotent re-application.
-   - NEVER exposed as a production CLI, API route, startup hook, or scheduled job.
+3. Authoritative Issuer Binding Gating:
+   - Evaluates candidate CIKs against the verified primary-listing evidence authority
+     (PrimaryListingEvidenceAdapter.AUTHORITATIVE_CANDIDATE_CIK_MAPPING).
+   - Rejects mismatched CIKs (e.g. older/cross-SPAC reuse) with BLOCKED_MISMATCHED_ISSUER.
+
+4. Robust Collision and Matching Semantics:
+   - Issuer CIK alone CANNOT match a security; matching requires concordant locator, CIK, and share class.
+   - Detects same-issuer, distinct-security collisions on overlapping locators and fails closed.
+   - Symbol or venue changes without explicit alias continuity records remain unresolved.
+
+5. Evidence-Bounded Temporal Semantics:
+   - Replaces fixed calendar cutoffs with attributable evidence observation timestamps.
+   - Fails closed on unsupported backdating prior to verified documentary observation.
+
+6. Content and Target-State Binding with Test-Scoped Atomic Application:
+   - Plan is cryptographically bound to target store digest (target_state_digest) and plan content digest.
+   - Stale target stores and tampered plan content fail closed (StalePlanError, PlanIntegrityError).
+   - Atomic rollback completely restores temporary engine state on mid-operation failure.
+   - Idempotent: repeated application introduces zero duplicate records.
+   - Test-only helper (apply_adoption_plan_test_only) operates strictly in temporary stores.
 """
 
 from __future__ import annotations
@@ -64,6 +77,7 @@ from .identity_proposal import (
     ProvisionalListingAssociation,
     ProvisionalSecurityEntity,
 )
+from .primary_listing_evidence import PrimaryListingEvidenceAdapter
 
 
 # =====================================================================
@@ -73,23 +87,26 @@ from .identity_proposal import (
 class IdentityAdoptionStatus(str, Enum):
     APPROVED_FOR_ADOPTION = "APPROVED_FOR_ADOPTION"
     MATCHES_EXISTING_DURABLE = "MATCHES_EXISTING_DURABLE"
+    BLOCKED_POLICY_UNRESOLVED = "BLOCKED_POLICY_UNRESOLVED"
     BLOCKED_MISSING_AUTHORIZATION = "BLOCKED_MISSING_AUTHORIZATION"
     BLOCKED_UNRESOLVED_MIC = "BLOCKED_UNRESOLVED_MIC"
     BLOCKED_ASSOCIATION_CONFLICT = "BLOCKED_ASSOCIATION_CONFLICT"
     BLOCKED_CONTRADICTORY_DATES = "BLOCKED_CONTRADICTORY_DATES"
     BLOCKED_BACKDATED_UNSUPPORTED = "BLOCKED_BACKDATED_UNSUPPORTED"
+    BLOCKED_MISMATCHED_ISSUER = "BLOCKED_MISMATCHED_ISSUER"
 
 
 @dataclass(frozen=True)
 class IdentityAdoptionAuthorization:
     """
     Explicit authorization context for identity adoption.
-    Without an authorized token and affirmative flag, proposals cannot be adopted.
+    Differentiates synthetic test execution from production authorization.
     """
     is_authorized: bool = False
     authorized_by: Optional[str] = None
     authorization_timestamp_utc: Optional[str] = None
     authorization_token: Optional[str] = None
+    scope: str = "PRODUCTION"  # PRODUCTION or SYNTHETIC_TEST_ONLY
     notes: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
@@ -109,6 +126,7 @@ class ProposedEntityAdoption:
     issuer_cik: Optional[str]
     status: IdentityAdoptionStatus
     is_creation: bool
+    is_mechanically_plannable: bool
     matched_existing_security_id: Optional[str] = None
     proposed_durable_security_id: str = ""
     rationale: str = ""
@@ -131,6 +149,7 @@ class ProposedAssociationAdoption:
     effective_to: Optional[str]
     status: IdentityAdoptionStatus
     is_creation: bool
+    is_mechanically_plannable: bool
     matched_existing_association_id: Optional[str] = None
     proposed_durable_association_id: Optional[str] = None
     conflict_reason: Optional[str] = None
@@ -146,10 +165,10 @@ class AdoptionPlanSummary:
     """Quantitative summary of the adoption plan."""
     total_proposals: int
     entities_matched_existing: int
-    entities_proposed_creation: int
+    entities_approved_creation: int
     entities_blocked: int
     associations_matched_existing: int
-    associations_proposed_creation: int
+    associations_approved_creation: int
     associations_blocked: int
     conflicts_count: int
 
@@ -169,6 +188,7 @@ class IdentityAdoptionPlan:
     """
     plan_id: str
     created_at_utc: str
+    evaluation_reference_date: str
     target_state_digest: str
     plan_content_digest: str
     authorization: IdentityAdoptionAuthorization
@@ -183,7 +203,8 @@ class IdentityAdoptionPlan:
     eligibility_separation_note: str = (
         "GOVERNANCE INVARIANT: Adoption of an internal security entity or listing association "
         "registers identity in the internal master only. It does NOT imply primary-listing sufficiency, "
-        "SourceSecurity conversion authority, or universe admission under Rule R06."
+        "SourceSecurity conversion authority, or universe admission under Rule R06. Real-candidate "
+        "adoption remains policy-unresolved pending primary-listing evidence closure."
     )
 
     def is_target_state_valid(
@@ -196,10 +217,21 @@ class IdentityAdoptionPlan:
         current_digest = IdentityAdoptionDryRunEngine.compute_target_state_digest(current_target)
         return current_digest == self.target_state_digest
 
+    def is_plan_content_valid(self) -> bool:
+        """Recomputes and verifies the plan content digest to detect any payload tampering."""
+        recomputed = IdentityAdoptionDryRunEngine.compute_plan_content_digest(
+            entities=self.entities,
+            associations=self.associations,
+            provisional_to_durable_map=self.provisional_to_durable_map,
+            summary=self.summary,
+        )
+        return recomputed == self.plan_content_digest
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "plan_id": self.plan_id,
             "created_at_utc": self.created_at_utc,
+            "evaluation_reference_date": self.evaluation_reference_date,
             "target_state_digest": self.target_state_digest,
             "plan_content_digest": self.plan_content_digest,
             "authorization": self.authorization.to_dict(),
@@ -230,6 +262,7 @@ class IdentityAdoptionPlan:
                 issuer_cik=e.get("issuer_cik"),
                 status=IdentityAdoptionStatus(e["status"]),
                 is_creation=e["is_creation"],
+                is_mechanically_plannable=e.get("is_mechanically_plannable", False),
                 matched_existing_security_id=e.get("matched_existing_security_id"),
                 proposed_durable_security_id=e.get("proposed_durable_security_id", ""),
                 rationale=e.get("rationale", ""),
@@ -248,6 +281,7 @@ class IdentityAdoptionPlan:
                 effective_to=a.get("effective_to"),
                 status=IdentityAdoptionStatus(a["status"]),
                 is_creation=a["is_creation"],
+                is_mechanically_plannable=a.get("is_mechanically_plannable", False),
                 matched_existing_association_id=a.get("matched_existing_association_id"),
                 proposed_durable_association_id=a.get("proposed_durable_association_id"),
                 conflict_reason=a.get("conflict_reason"),
@@ -256,11 +290,18 @@ class IdentityAdoptionPlan:
         ]
 
         sum_d = data.get("summary", {})
+        # Remap legacy field names if present
+        if "entities_proposed_creation" in sum_d and "entities_approved_creation" not in sum_d:
+            sum_d["entities_approved_creation"] = sum_d.pop("entities_proposed_creation")
+        if "associations_proposed_creation" in sum_d and "associations_approved_creation" not in sum_d:
+            sum_d["associations_approved_creation"] = sum_d.pop("associations_proposed_creation")
+
         summary = AdoptionPlanSummary(**sum_d)
 
         return cls(
             plan_id=data["plan_id"],
             created_at_utc=data["created_at_utc"],
+            evaluation_reference_date=data.get("evaluation_reference_date", "2026-10-17"),
             target_state_digest=data["target_state_digest"],
             plan_content_digest=data["plan_content_digest"],
             authorization=auth,
@@ -308,13 +349,30 @@ class IdentityAdoptionDryRunEngine:
             raise TypeError(f"Unsupported target type for digest computation: {type(target)}")
         return canonical_hash(snapshot)
 
+    @staticmethod
+    def compute_plan_content_digest(
+        entities: List[ProposedEntityAdoption],
+        associations: List[ProposedAssociationAdoption],
+        provisional_to_durable_map: Dict[str, str],
+        summary: AdoptionPlanSummary,
+    ) -> str:
+        """Computes deterministic SHA-256 digest of planned adoption actions."""
+        content_payload = {
+            "entities": [e.to_dict() for e in entities],
+            "associations": [a.to_dict() for a in associations],
+            "provisional_to_durable_map": provisional_to_durable_map,
+            "summary": summary.to_dict(),
+        }
+        return canonical_hash(content_payload)
+
     @classmethod
     def generate_plan(
         cls,
         proposals: Union[IdentityAssociationProposalLedger, List[CandidateAssociationProposal]],
         existing_target: Union[OfflineAdmissionMappingEngine, Dict[str, Any], None] = None,
         authorization: Optional[IdentityAdoptionAuthorization] = None,
-        as_of_date: Optional[str] = None,
+        evaluation_reference_date: Optional[str] = None,
+        deterministic_plan_time_utc: Optional[str] = None,
     ) -> IdentityAdoptionPlan:
         """
         Generates a deterministic identity adoption plan from candidate proposals.
@@ -342,7 +400,7 @@ class IdentityAdoptionDryRunEngine:
 
         target_state_digest = cls.compute_target_state_digest(target_snapshot)
         auth = authorization or IdentityAdoptionAuthorization(is_authorized=False)
-        plan_created_utc = datetime.now(timezone.utc).isoformat()
+        plan_created_utc = deterministic_plan_time_utc or datetime.now(timezone.utc).isoformat()
 
         proposed_entities: List[ProposedEntityAdoption] = []
         proposed_associations: List[ProposedAssociationAdoption] = []
@@ -353,18 +411,23 @@ class IdentityAdoptionDryRunEngine:
         primary_listing_states: Dict[str, Dict[str, Any]] = {}
 
         entities_matched = 0
-        entities_created = 0
+        entities_approved = 0
         entities_blocked = 0
         assocs_matched = 0
-        assocs_created = 0
+        assocs_approved = 0
         assocs_blocked = 0
+
+        # Determine reference date across proposals if not explicitly supplied
+        effective_dates = [p.proposed_association.effective_from for p in proposal_list if p.proposed_association]
+        default_ref_date = min(effective_dates) if effective_dates else "2026-10-17"
+        eval_ref_date = evaluation_reference_date or default_ref_date
 
         for prop in proposal_list:
             sym = prop.symbol.strip().upper()
             ent = prop.proposed_entity
             assoc = prop.proposed_association
             clean_cik = str(ent.issuer_cik).zfill(10) if ent.issuer_cik else None
-            effective_date = as_of_date or assoc.effective_from
+            effective_date = eval_ref_date or assoc.effective_from
 
             # Record primary listing state separately from identity adoption
             pla = prop.primary_listing_analysis
@@ -381,7 +444,47 @@ class IdentityAdoptionDryRunEngine:
                 ),
             }
 
-            # 1. Check for contradictory date ranges
+            # 1. Authoritative Issuer Binding Gating
+            # Enforces candidate CIK matches authoritative public reference evidence
+            authoritative_cik = PrimaryListingEvidenceAdapter.AUTHORITATIVE_CANDIDATE_CIK_MAPPING.get(sym)
+            if authoritative_cik is not None and clean_cik != authoritative_cik:
+                reason = (
+                    f"REJECTED_MISMATCHED_ISSUER_EVIDENCE: Proposal issuer CIK '{clean_cik}' for '{sym}' "
+                    f"does not match authoritative candidate CIK '{authoritative_cik}' "
+                    "(rejects cross-issuer or cross-SPAC evidence reuse)."
+                )
+                ent_adopt = ProposedEntityAdoption(
+                    provisional_security_id=ent.provisional_security_id,
+                    primary_symbol=sym,
+                    share_class=ent.share_class,
+                    issuer_cik=clean_cik,
+                    status=IdentityAdoptionStatus.BLOCKED_MISMATCHED_ISSUER,
+                    is_creation=False,
+                    is_mechanically_plannable=False,
+                    rationale=reason,
+                )
+                assoc_adopt = ProposedAssociationAdoption(
+                    provisional_association_id=assoc.provisional_association_id,
+                    provisional_security_id=ent.provisional_security_id,
+                    target_durable_security_id="",
+                    symbol=sym,
+                    operating_mic=assoc.operating_mic,
+                    effective_from=assoc.effective_from,
+                    effective_to=assoc.effective_to,
+                    status=IdentityAdoptionStatus.BLOCKED_MISMATCHED_ISSUER,
+                    is_creation=False,
+                    is_mechanically_plannable=False,
+                    conflict_reason=reason,
+                )
+                proposed_entities.append(ent_adopt)
+                proposed_associations.append(assoc_adopt)
+                entities_blocked += 1
+                assocs_blocked += 1
+                blocked_operations.append({"symbol": sym, "reason": reason})
+                conflicts.append({"symbol": sym, "conflict_type": "MISMATCHED_ISSUER_CIK", "details": reason})
+                continue
+
+            # 2. Check for contradictory date ranges
             if assoc.effective_to and assoc.effective_to < assoc.effective_from:
                 reason = (
                     f"Contradictory date range for {sym}: effective_to ({assoc.effective_to}) "
@@ -394,6 +497,7 @@ class IdentityAdoptionDryRunEngine:
                     issuer_cik=clean_cik,
                     status=IdentityAdoptionStatus.BLOCKED_CONTRADICTORY_DATES,
                     is_creation=False,
+                    is_mechanically_plannable=False,
                     rationale=reason,
                 )
                 assoc_adopt = ProposedAssociationAdoption(
@@ -406,6 +510,7 @@ class IdentityAdoptionDryRunEngine:
                     effective_to=assoc.effective_to,
                     status=IdentityAdoptionStatus.BLOCKED_CONTRADICTORY_DATES,
                     is_creation=False,
+                    is_mechanically_plannable=False,
                     conflict_reason=reason,
                 )
                 proposed_entities.append(ent_adopt)
@@ -416,7 +521,7 @@ class IdentityAdoptionDryRunEngine:
                 conflicts.append({"symbol": sym, "conflict_type": "CONTRADICTORY_DATES", "details": reason})
                 continue
 
-            # 2. Check for unresolved operating MIC (e.g. DDS)
+            # 3. Check for unresolved operating MIC (e.g. DDS)
             if not assoc.operating_mic:
                 reason = (
                     f"Operating MIC is unresolved for {sym} (alternatives: {list(assoc.alternative_mics)}; "
@@ -429,6 +534,7 @@ class IdentityAdoptionDryRunEngine:
                     issuer_cik=clean_cik,
                     status=IdentityAdoptionStatus.BLOCKED_UNRESOLVED_MIC,
                     is_creation=False,
+                    is_mechanically_plannable=False,
                     rationale=reason,
                 )
                 assoc_adopt = ProposedAssociationAdoption(
@@ -441,6 +547,7 @@ class IdentityAdoptionDryRunEngine:
                     effective_to=assoc.effective_to,
                     status=IdentityAdoptionStatus.BLOCKED_UNRESOLVED_MIC,
                     is_creation=False,
+                    is_mechanically_plannable=False,
                     conflict_reason=reason,
                 )
                 proposed_entities.append(ent_adopt)
@@ -457,7 +564,7 @@ class IdentityAdoptionDryRunEngine:
 
             clean_mic = assoc.operating_mic.strip().upper()
 
-            # 3. Check for disputed association (e.g. ACCS)
+            # 4. Check for disputed association (e.g. ACCS dual-source venue dispute)
             if assoc.is_disputed:
                 reason = f"Listing association for {sym} on {clean_mic} is disputed: {assoc.dispute_reason}"
                 ent_adopt = ProposedEntityAdoption(
@@ -467,6 +574,7 @@ class IdentityAdoptionDryRunEngine:
                     issuer_cik=clean_cik,
                     status=IdentityAdoptionStatus.BLOCKED_ASSOCIATION_CONFLICT,
                     is_creation=False,
+                    is_mechanically_plannable=False,
                     rationale=reason,
                 )
                 assoc_adopt = ProposedAssociationAdoption(
@@ -479,6 +587,7 @@ class IdentityAdoptionDryRunEngine:
                     effective_to=assoc.effective_to,
                     status=IdentityAdoptionStatus.BLOCKED_ASSOCIATION_CONFLICT,
                     is_creation=False,
+                    is_mechanically_plannable=False,
                     conflict_reason=reason,
                 )
                 proposed_entities.append(ent_adopt)
@@ -489,11 +598,24 @@ class IdentityAdoptionDryRunEngine:
                 conflicts.append({"symbol": sym, "conflict_type": "DISPUTED_ASSOCIATION", "details": reason})
                 continue
 
-            # 4. Check for unsupported backdating beyond evidence window
-            if not assoc.backdating_established and assoc.effective_from < "2026-10-17":
+            # 5. Check for unsupported backdating beyond evidence observation window
+            # Derive observation cutoff from the proposal's attributable evidence
+            earliest_ev_date = None
+            if prop.evidence_references:
+                ev_dates = [
+                    e.observation_timestamp_utc[:10]
+                    for e in prop.evidence_references
+                    if e.observation_timestamp_utc
+                ]
+                if ev_dates:
+                    earliest_ev_date = min(ev_dates)
+
+            evidence_date_limit = earliest_ev_date or eval_ref_date
+            if not assoc.backdating_established and assoc.effective_from < evidence_date_limit:
                 reason = (
-                    f"Observation date {assoc.effective_from} for {sym} is backdated prior to verified "
-                    "evidence window without documentary inception proof."
+                    f"Unsupported backdating for {sym}: proposed effective_from '{assoc.effective_from}' "
+                    f"precedes earliest verified documentary observation date '{evidence_date_limit}' "
+                    "without documentary backdating proof."
                 )
                 ent_adopt = ProposedEntityAdoption(
                     provisional_security_id=ent.provisional_security_id,
@@ -502,6 +624,7 @@ class IdentityAdoptionDryRunEngine:
                     issuer_cik=clean_cik,
                     status=IdentityAdoptionStatus.BLOCKED_BACKDATED_UNSUPPORTED,
                     is_creation=False,
+                    is_mechanically_plannable=False,
                     rationale=reason,
                 )
                 assoc_adopt = ProposedAssociationAdoption(
@@ -514,6 +637,7 @@ class IdentityAdoptionDryRunEngine:
                     effective_to=assoc.effective_to,
                     status=IdentityAdoptionStatus.BLOCKED_BACKDATED_UNSUPPORTED,
                     is_creation=False,
+                    is_mechanically_plannable=False,
                     conflict_reason=reason,
                 )
                 proposed_entities.append(ent_adopt)
@@ -528,7 +652,10 @@ class IdentityAdoptionDryRunEngine:
                 })
                 continue
 
-            # 5. Check against target engine for existing durable records or conflicts
+            # 6. Check target engine for preexisting records and locator collisions
+            # Enforces:
+            # - CIK alone CANNOT match a security (different share classes of same issuer remain distinct)
+            # - Same-issuer distinct-security locator collision fails closed
             key = (sym, clean_mic)
             existing_assocs = engine._active_listing_index.get(key, [])
             matched_assoc: Optional[EffectiveDatedListingAssociation] = None
@@ -538,17 +665,33 @@ class IdentityAdoptionDryRunEngine:
             for ex_a in existing_assocs:
                 if ex_a.is_active_on(effective_date):
                     ex_sec = engine._security_registry.get(ex_a.internal_security_id)
-                    if ex_sec and (clean_cik is None or ex_sec.issuer_cik == clean_cik):
-                        matched_assoc = ex_a
-                        break
-                    else:
+                    if not ex_sec:
+                        continue
+
+                    # Case A: Different CIK -> Overlapping cross-issuer conflict
+                    if clean_cik is not None and ex_sec.issuer_cik != clean_cik:
                         conflict_detected = True
                         conflict_message = (
-                            f"Overlapping mapping conflict: Listing '{sym}' on '{clean_mic}' is actively associated "
-                            f"with distinct security '{ex_a.internal_security_id}' (CIK {ex_sec.issuer_cik if ex_sec else 'UNKNOWN'}) "
-                            f"on {effective_date}. Cannot adopt candidate with CIK {clean_cik} without corporate action."
+                            f"Overlapping cross-issuer mapping conflict: Listing '{sym}' on '{clean_mic}' is actively associated "
+                            f"with distinct security '{ex_a.internal_security_id}' (CIK {ex_sec.issuer_cik}) "
+                            f"on {effective_date}. Cannot map to CIK {clean_cik} without corporate action."
                         )
                         break
+
+                    # Case B: Same CIK, but distinct security (different share class or entity) -> Collision
+                    if ex_sec.share_class != ent.share_class:
+                        conflict_detected = True
+                        conflict_message = (
+                            f"Same-issuer locator collision: Listing '{sym}' on '{clean_mic}' is actively associated "
+                            f"with distinct security '{ex_sec.internal_security_id}' (share class '{ex_sec.share_class}') "
+                            f"of issuer CIK {clean_cik} on {effective_date}. Distinct securities of the same issuer "
+                            f"cannot share an active locator."
+                        )
+                        break
+
+                    # Case C: Concordant CIK, share class, and locator -> Exact match
+                    matched_assoc = ex_a
+                    break
 
             if conflict_detected:
                 ent_adopt = ProposedEntityAdoption(
@@ -558,6 +701,7 @@ class IdentityAdoptionDryRunEngine:
                     issuer_cik=clean_cik,
                     status=IdentityAdoptionStatus.BLOCKED_ASSOCIATION_CONFLICT,
                     is_creation=False,
+                    is_mechanically_plannable=False,
                     rationale=conflict_message,
                 )
                 assoc_adopt = ProposedAssociationAdoption(
@@ -570,6 +714,7 @@ class IdentityAdoptionDryRunEngine:
                     effective_to=assoc.effective_to,
                     status=IdentityAdoptionStatus.BLOCKED_ASSOCIATION_CONFLICT,
                     is_creation=False,
+                    is_mechanically_plannable=False,
                     conflict_reason=conflict_message,
                 )
                 proposed_entities.append(ent_adopt)
@@ -579,7 +724,7 @@ class IdentityAdoptionDryRunEngine:
                 blocked_operations.append({"symbol": sym, "reason": conflict_message})
                 conflicts.append({
                     "symbol": sym,
-                    "conflict_type": "OVERLAPPING_ACTIVE_ASSOCIATION",
+                    "conflict_type": "LOCATOR_ASSOCIATION_CONFLICT",
                     "details": conflict_message,
                 })
                 continue
@@ -595,6 +740,7 @@ class IdentityAdoptionDryRunEngine:
                     issuer_cik=clean_cik,
                     status=IdentityAdoptionStatus.MATCHES_EXISTING_DURABLE,
                     is_creation=False,
+                    is_mechanically_plannable=True,
                     matched_existing_security_id=durable_sec_id,
                     proposed_durable_security_id=durable_sec_id,
                     rationale=f"Listing '{sym}' on '{clean_mic}' already matches active durable entity '{durable_sec_id}'.",
@@ -609,6 +755,7 @@ class IdentityAdoptionDryRunEngine:
                     effective_to=assoc.effective_to,
                     status=IdentityAdoptionStatus.MATCHES_EXISTING_DURABLE,
                     is_creation=False,
+                    is_mechanically_plannable=True,
                     matched_existing_association_id=durable_assoc_id,
                     proposed_durable_association_id=durable_assoc_id,
                 )
@@ -619,9 +766,71 @@ class IdentityAdoptionDryRunEngine:
                 assocs_matched += 1
                 continue
 
-            # 6. Check authorization for new adoption
+            # 7. Real Candidate vs Synthetic Fixture Policy & Authorization Separation
+            # INVARIANT: Real-source candidates (AAPL, GOOG, GOOGL, TSM, AACIU, etc.) are NEVER
+            # marked APPROVED_FOR_ADOPTION. Adopting real candidates prior to Rule R06 primary-listing
+            # evidence closure is an unresolved policy decision, and real production adoption is unauthorized.
+            is_synthetic_fixture = (
+                sym.startswith("SYNTH_")
+                or getattr(prop, "is_synthetic", False)
+                or ent.status == "SYNTHETIC_TEST_FIXTURE"
+                or (auth.scope == "SYNTHETIC_TEST_ONLY" and not authoritative_cik)
+            )
+
+            # Compute durable ID deterministically from canonical formula
+            id_material = f"{clean_cik or 'NOCIK'}:{clean_mic}:{sym}:{effective_date}"
+            sec_id_hash = hashlib.sha256(id_material.encode("utf-8")).hexdigest()[:12].upper()
+            durable_sec_id = f"ARX_SEC_{sec_id_hash}"
+            durable_assoc_id = f"ASSOC_{durable_sec_id}_{clean_mic}_{sym}_{effective_date}"
+
+            if not is_synthetic_fixture:
+                # Real candidate: mechanically plannable, but adoption remains policy-unresolved
+                reason = (
+                    f"Real-source candidate '{sym}' is mechanically plannable, but adoption into durable "
+                    "master prior to primary-listing evidence closure (Rule R06) remains an unresolved policy "
+                    "decision. Production adoption is unauthorized."
+                )
+                ent_adopt = ProposedEntityAdoption(
+                    provisional_security_id=ent.provisional_security_id,
+                    primary_symbol=sym,
+                    share_class=ent.share_class,
+                    issuer_cik=clean_cik,
+                    status=IdentityAdoptionStatus.BLOCKED_POLICY_UNRESOLVED,
+                    is_creation=False,
+                    is_mechanically_plannable=True,
+                    proposed_durable_security_id=durable_sec_id,
+                    rationale=reason,
+                )
+                assoc_adopt = ProposedAssociationAdoption(
+                    provisional_association_id=assoc.provisional_association_id,
+                    provisional_security_id=ent.provisional_security_id,
+                    target_durable_security_id=durable_sec_id,
+                    symbol=sym,
+                    operating_mic=clean_mic,
+                    effective_from=assoc.effective_from,
+                    effective_to=assoc.effective_to,
+                    status=IdentityAdoptionStatus.BLOCKED_POLICY_UNRESOLVED,
+                    is_creation=False,
+                    is_mechanically_plannable=True,
+                    proposed_durable_association_id=durable_assoc_id,
+                    conflict_reason=reason,
+                )
+                proposed_entities.append(ent_adopt)
+                proposed_associations.append(assoc_adopt)
+                provisional_to_durable_map[ent.provisional_security_id] = durable_sec_id
+                entities_blocked += 1
+                assocs_blocked += 1
+                blocked_operations.append({"symbol": sym, "reason": reason})
+                missing_evidence_or_auth.append({
+                    "symbol": sym,
+                    "issue_type": "POLICY_UNRESOLVED_R06_PREREQUISITE",
+                    "details": reason,
+                })
+                continue
+
+            # 8. Synthetic fixture branch: check explicit synthetic authorization
             if not auth.is_authorized:
-                reason = "Proposal adoption blocked: explicit authorization token is absent or is_authorized=False."
+                reason = "Synthetic fixture adoption blocked: authorization token is absent or is_authorized=False."
                 ent_adopt = ProposedEntityAdoption(
                     provisional_security_id=ent.provisional_security_id,
                     primary_symbol=sym,
@@ -629,22 +838,27 @@ class IdentityAdoptionDryRunEngine:
                     issuer_cik=clean_cik,
                     status=IdentityAdoptionStatus.BLOCKED_MISSING_AUTHORIZATION,
                     is_creation=False,
+                    is_mechanically_plannable=True,
+                    proposed_durable_security_id=durable_sec_id,
                     rationale=reason,
                 )
                 assoc_adopt = ProposedAssociationAdoption(
                     provisional_association_id=assoc.provisional_association_id,
                     provisional_security_id=ent.provisional_security_id,
-                    target_durable_security_id="",
+                    target_durable_security_id=durable_sec_id,
                     symbol=sym,
                     operating_mic=clean_mic,
                     effective_from=assoc.effective_from,
                     effective_to=assoc.effective_to,
                     status=IdentityAdoptionStatus.BLOCKED_MISSING_AUTHORIZATION,
                     is_creation=False,
+                    is_mechanically_plannable=True,
+                    proposed_durable_association_id=durable_assoc_id,
                     conflict_reason=reason,
                 )
                 proposed_entities.append(ent_adopt)
                 proposed_associations.append(assoc_adopt)
+                provisional_to_durable_map[ent.provisional_security_id] = durable_sec_id
                 entities_blocked += 1
                 assocs_blocked += 1
                 blocked_operations.append({"symbol": sym, "reason": reason})
@@ -655,13 +869,7 @@ class IdentityAdoptionDryRunEngine:
                 })
                 continue
 
-            # 7. Authorized new creation: compute deterministic durable IDs
-            # Reuses released OfflineAdmissionMappingEngine hash formula
-            id_material = f"{clean_cik or 'NOCIK'}:{clean_mic}:{sym}:{effective_date}"
-            sec_id_hash = hashlib.sha256(id_material.encode("utf-8")).hexdigest()[:12].upper()
-            durable_sec_id = f"ARX_SEC_{sec_id_hash}"
-            durable_assoc_id = f"ASSOC_{durable_sec_id}_{clean_mic}_{sym}_{effective_date}"
-
+            # Synthetic fixture with valid authorization -> APPROVED_FOR_ADOPTION
             ent_adopt = ProposedEntityAdoption(
                 provisional_security_id=ent.provisional_security_id,
                 primary_symbol=sym,
@@ -669,8 +877,9 @@ class IdentityAdoptionDryRunEngine:
                 issuer_cik=clean_cik,
                 status=IdentityAdoptionStatus.APPROVED_FOR_ADOPTION,
                 is_creation=True,
+                is_mechanically_plannable=True,
                 proposed_durable_security_id=durable_sec_id,
-                rationale="Authorized for durable identity adoption under dry-run plan.",
+                rationale="Authorized synthetic test fixture approved for mechanical dry-run adoption.",
             )
             assoc_adopt = ProposedAssociationAdoption(
                 provisional_association_id=assoc.provisional_association_id,
@@ -682,38 +891,38 @@ class IdentityAdoptionDryRunEngine:
                 effective_to=assoc.effective_to,
                 status=IdentityAdoptionStatus.APPROVED_FOR_ADOPTION,
                 is_creation=True,
+                is_mechanically_plannable=True,
                 proposed_durable_association_id=durable_assoc_id,
             )
             proposed_entities.append(ent_adopt)
             proposed_associations.append(assoc_adopt)
             provisional_to_durable_map[ent.provisional_security_id] = durable_sec_id
-            entities_created += 1
-            assocs_created += 1
+            entities_approved += 1
+            assocs_approved += 1
 
         summary = AdoptionPlanSummary(
             total_proposals=len(proposal_list),
             entities_matched_existing=entities_matched,
-            entities_proposed_creation=entities_created,
+            entities_approved_creation=entities_approved,
             entities_blocked=entities_blocked,
             associations_matched_existing=assocs_matched,
-            associations_proposed_creation=assocs_created,
+            associations_approved_creation=assocs_approved,
             associations_blocked=assocs_blocked,
             conflicts_count=len(conflicts),
         )
 
-        # Compute content digest
-        content_payload = {
-            "entities": [e.to_dict() for e in proposed_entities],
-            "associations": [a.to_dict() for a in proposed_associations],
-            "provisional_to_durable_map": provisional_to_durable_map,
-            "summary": summary.to_dict(),
-        }
-        plan_content_digest = canonical_hash(content_payload)
+        plan_content_digest = cls.compute_plan_content_digest(
+            entities=proposed_entities,
+            associations=proposed_associations,
+            provisional_to_durable_map=provisional_to_durable_map,
+            summary=summary,
+        )
         plan_id = f"PLAN_ADOPT_{plan_content_digest[:12].upper()}"
 
         return IdentityAdoptionPlan(
             plan_id=plan_id,
             created_at_utc=plan_created_utc,
+            evaluation_reference_date=eval_ref_date,
             target_state_digest=target_state_digest,
             plan_content_digest=plan_content_digest,
             authorization=auth,
@@ -737,6 +946,11 @@ class StalePlanError(RuntimeError):
     pass
 
 
+class PlanIntegrityError(RuntimeError):
+    """Raised when plan actions have been tampered with or do not match declared plan content digest."""
+    pass
+
+
 class PlanApplicationError(RuntimeError):
     """Raised when an error occurs during test-scoped plan application."""
     pass
@@ -746,20 +960,25 @@ def apply_adoption_plan_test_only(
     plan: IdentityAdoptionPlan,
     engine: OfflineAdmissionMappingEngine,
     simulate_mid_failure_on_symbol: Optional[str] = None,
+    allow_partial: bool = False,
 ) -> OfflineAdmissionMappingEngine:
     """
     TEST-SCOPED ONLY: atomic transaction verification in temporary/test stores.
     NEVER exposed as a production or operational entry point.
 
-    Validates plan freshness against target state digest.
-    Takes a full snapshot before mutation.
-    Applies approved entity and association creations atomically.
-    If an error occurs or simulate_mid_failure_on_symbol matches, rolls back to snapshot completely.
+    Validates:
+    1. Plan target state freshness against engine (StalePlanError).
+    2. Plan content integrity against plan_content_digest (PlanIntegrityError).
+    3. Explicit partial application policy: fails closed if plan contains blocked items
+       unless allow_partial=True is explicitly granted (PlanApplicationError).
+
+    Atomic rollback: Takes a full snapshot before mutation; restores 100% of state
+    on any failure.
     """
     initial_snapshot = engine.to_dict()
     current_digest = IdentityAdoptionDryRunEngine.compute_target_state_digest(initial_snapshot)
 
-    # 1. Stale plan invalidation
+    # 1. Stale target state rejection
     if current_digest != plan.target_state_digest:
         raise StalePlanError(
             f"Stale plan rejected: Plan target digest '{plan.target_state_digest[:12]}...' "
@@ -767,8 +986,28 @@ def apply_adoption_plan_test_only(
             "Target state has changed since plan generation."
         )
 
+    # 2. Plan content integrity verification (rejects altered plan actions)
+    if not plan.is_plan_content_valid():
+        raise PlanIntegrityError(
+            f"Plan content tampering detected: Recomputed plan content digest does not match "
+            f"declared digest '{plan.plan_content_digest}'. Application aborted."
+        )
+
+    # 3. Explicit tested application rule for mixed blocked/ready plans
+    has_blocked_items = (
+        plan.summary.entities_blocked > 0
+        or plan.summary.associations_blocked > 0
+        or plan.summary.conflicts_count > 0
+    )
+    if has_blocked_items and not allow_partial:
+        raise PlanApplicationError(
+            f"Plan application failed closed: Plan '{plan.plan_id}' contains {plan.summary.entities_blocked} "
+            f"blocked entities, {plan.summary.associations_blocked} blocked associations, and "
+            f"{plan.summary.conflicts_count} conflicts. Mixed plans cannot be applied when allow_partial=False."
+        )
+
     try:
-        # 2. Apply approved entity creations
+        # 4. Apply approved entity creations
         for ent in plan.entities:
             if ent.status == IdentityAdoptionStatus.APPROVED_FOR_ADOPTION and ent.is_creation:
                 if simulate_mid_failure_on_symbol and ent.primary_symbol == simulate_mid_failure_on_symbol:
@@ -792,7 +1031,7 @@ def apply_adoption_plan_test_only(
                         sec_rec.internal_security_id
                     )
 
-        # 3. Apply approved association creations
+        # 5. Apply approved association creations
         for assoc in plan.associations:
             if assoc.status == IdentityAdoptionStatus.APPROVED_FOR_ADOPTION and assoc.is_creation:
                 if simulate_mid_failure_on_symbol and assoc.symbol == simulate_mid_failure_on_symbol:
