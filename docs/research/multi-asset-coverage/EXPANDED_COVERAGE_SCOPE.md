@@ -1,13 +1,13 @@
 # ARX Terminal — Expanded Asset Coverage Scoping Specification
 ## Multi-Asset Universe Architecture: Equities, US & German ETFs, and Cryptocurrency
 
-**Document ID**: `DOCS-RESEARCH-MULTI-ASSET-COVERAGE-001-REV3`  
+**Document ID**: `DOCS-RESEARCH-MULTI-ASSET-COVERAGE-001-REV4`  
 **Classification**: Architecture, Product Requirements & Delivery Scoping  
 **Branch**: `research/multi-asset-coverage-scope`  
 **Baseline Anchor**: `93aa322d84fc1ad001402516a81d07f4d39d8e40` (`origin/main` post-PR #12)  
-**Parent Commit**: `76c502e9b444fda2d5ebdef4f3c4013d326f4a74`  
+**Parent Commit**: `04a3e6cbd84567d7f42394f07d54a4b6d844ee4f`  
 **Date**: 2026-10-17  
-**Status**: `APPROVED_DIRECTION_RECORDED_AND_FIRST_SLICE_DEFINED`  
+**Status**: `APPROVED_DIRECTION_RECORDED_AND_POLICY_NEUTRAL_B1_HANDOFF`  
 
 ---
 
@@ -17,14 +17,14 @@ This specification establishes the architectural boundaries, population definiti
 
 #### 1.1 Product Owner Approved Delivery Direction (Formally Recorded)
 
-The Product Owner has reviewed the scoping proposals and formally authorized the initial delivery direction for Exchange-Traded Funds (ETFs):
+The Product Owner has formally approved the initial delivery direction for Exchange-Traded Funds (ETFs) under decision `DEC-EXP-01`:
 
-- **US-Listed ETF Coverage**: Approved for initial ETF integration.
+- **US-Listed ETF Coverage**: Approved for initial ETF delivery scope.
 - **Xetra-First Delivery for German-Listed ETFs**: Approved as the initial venue delivery slice (`XETR`).
-- **Multi-Currency Retention**: Approved to retain all supported trading currencies per listing line; no EUR-only restriction is imposed.
-- **Wider German Venues Preserved**: The ultimate goal of full German-listed ETF coverage is preserved; non-Xetra venues (Börse Frankfurt floor, Tradegate, regional Börsen) are explicitly deferred from the initial slice.
-- **Reuse-First Engineering**: Existing ETF identity, governance, data models, and assessment capabilities must be reused before proposing new components.
-- **Unapproved Boundaries**: This authorization does **NOT** approve new ETF scoring strategies, cryptocurrency policies/venues/thresholds, automatic inclusion/exclusion of ETNs/ETCs/leveraged products, live acquisition, production mutation, universe publication, or scanner activation. Implementation remains unscheduled until capacity is allocated.
+- **Retain Supported Listing Currencies**: Approved to retain every supported, source-evidenced listing currency per quote line. The architecture represents currencies explicitly rather than imposing an artificial EUR-only filter. *(Note: This architectural capability does not imply that EUR, USD, GBP, or CHF listings are confirmed available until demonstrated by source evidence)*.
+- **Wider German Venues Preserved**: The ultimate goal of complete German-listed ETF coverage is preserved; non-Xetra venues (Börse Frankfurt floor `XFRA`, Tradegate `XGAT`, Stuttgart `XSTU`, München `XMUN`, Düsseldorf `XDUS`, Berlin `XBER`, Hamburg `XHAM`) are explicitly deferred from the initial slice.
+- **Reuse-First Engineering**: Existing ETF identity, governance, data models, and assessment capabilities must be evaluated and reused before proposing new components.
+- **Unapproved Scope**: This authorization does **NOT** approve new ETF scoring strategies, cryptocurrency policies/venues/thresholds, automatic admission/rejection of ETNs/ETCs/leveraged products, live acquisition, production mutation, universe publication, or scanner activation. Implementation remains unscheduled until capacity is allocated.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -37,17 +37,17 @@ The Product Owner has reviewed the scoping proposals and formally authorized the
 │   └── Business Development Companies (BDCs)                            │
 │                                                                        │
 │   Track 2: Exchange-Traded Funds (ETFs) [PO APPROVED INITIAL DIRECTION]│
-│   ├── US-Listed ETFs (1940 Act Funds & 1933 Act Commodity Trusts)      │
-│   └── German-Listed ETFs (Xetra-First Delivery; All Currencies)        │
+│   ├── US-Listed ETFs (Exchange-Traded Fund Population)                 │
+│   └── German-Listed ETFs (Xetra-First Delivery; Explicit Currencies)   │
 │                                                                        │
 │   Track 3: Cryptocurrency (Dedicated Continuous Track) [PROPOSAL ONLY] │
-│   └── Bounded Spot Trading Pairs on Approved Institutional Venues      │
+│   └── Bounded Spot Trading Pairs on Approved Venues                    │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
                                     ▼
        ┌────────────────────────────────────────────────────────┐
        │             ACCEPTED CORE CRITERION                    │
-       │                                                                        │
+       │                                                        │
        │ “Every instrument in each agreed population is         │
        │  accounted for. Supported strategies assess            │
        │  instruments when required data is available, with      │
@@ -66,12 +66,12 @@ The Product Owner has reviewed the scoping proposals and formally authorized the
        └────────────────────────────────────────────────────────┘
 ```
 
-#### 1.2 Separation of Accepted Goals vs. Approved Initial Slice vs. Proposals
+#### 1.2 Separation of Accepted Goals vs. Approved Initial Slice vs. Pending Proposals
 
 | Scope Category | Accepted Ultimate Product Goal (PO Approved) | Approved Initial Delivery Direction (DEC-EXP-01 Approved) | Proposals Awaiting Separate Decision (Not Yet Approved) | Explicitly Deferred Scope (Later Expansion) |
 | :--- | :--- | :--- | :--- | :--- |
 | **Equities Track** | Complete accounting of all US-listed stocks, exchange-listed ADRs, REITs, and BDCs. | Complete Equity Foundation (S2-04 through S2-10); retain full population denominator visibility. | Proposed classification filters for non-common corporate forms. | Dedicated fundamental models for REITs (FFO/AFFO) and BDCs (NII/NAV leverage); ADR Level I / OTC tracking. |
-| **ETF Track** | Coverage of US-listed ETFs and all German-listed ETFs, regardless of fund domicile. | **US**: 1940 Act Open-End Funds + 1933 Act Grantor Trusts.<br>**German**: XETRA (`XETR`) primary continuous listings, retaining all listing currencies. | ETN/ETC exclusion vs quarantine (`DEC-EXP-02`); leveraged/inverse ETP policy (`DEC-EXP-03`). | Börse Frankfurt (`XFRA`) floor trading; regional German exchanges (Tradegate `XGAT`, Stuttgart `XSTU`, München `XMUN`); non-Xetra European listings. |
+| **ETF Track** | Coverage of US-listed ETFs and all German-listed ETFs, regardless of fund domicile. | **US**: US-listed ETFs.<br>**German**: XETRA (`XETR`) primary listings, retaining all evidenced listing currencies. | ETN/ETC classification policy (`DEC-EXP-02`); leveraged/inverse ETP policy (`DEC-EXP-03`). | Börse Frankfurt (`XFRA`) floor trading; regional German exchanges (Tradegate `XGAT`, Stuttgart `XSTU`, München `XMUN`); non-Xetra European listings. |
 | **Crypto Track** | Separately scoped coverage track for cryptocurrency. | None (Implementation strictly barred under current authorization). | Top 50 spot assets (`DEC-EXP-04`); Coinbase/Kraken (`DEC-EXP-05`); monthly hysteresis buffer (`DEC-EXP-06`); stablecoin policy (`DEC-EXP-07`); 00:00 UTC roll (`DEC-EXP-08`). | Long-tail tokens (>50), decentralized exchange (DEX) liquidity, perpetual swaps/futures, cross-currency pairs, automated on-chain ingestion. |
 | **Strategy Gating** | Coverage does not grant eligibility for stock Minervini VCP. | Enforce strict strategy boundaries: VCP for Operating Common Stock only; Factor Radar for ETFs. | Crypto Volatility & Momentum screening (`DEC-EXP-10`). | Expansion of VCP to ADRs or specialized vehicle types pending empirical validation. |
 | **Currency / Pricing** | Support multi-asset pricing without currency contamination. | Retain explicit per-listing denomination; retain all supported currencies (EUR, USD, GBP, CHF). | Boundary `PriceQuote` container (`DEC-EXP-09`). | System-wide schema migration converting every numeric column in SQLite/DuckDB to `(amount, currency)` tuples. |
@@ -80,11 +80,10 @@ The Product Owner has reviewed the scoping proposals and formally authorized the
 
 1. **Population Accounting Decoupled from Strategy Eligibility**:  
    Population membership (being accounted for in the universe denominator) does **NOT** grant eligibility for any individual trading strategy. Specifically, coverage does **NOT** automatically grant eligibility for the stock Minervini Volatility Contraction Pattern (`VCP`) strategy.
-2. **Mathematical Accounting Closure**:  
-   Every instrument in each defined population has an unambiguous, mutually exclusive terminal outcome:
-   $$N_{\text{population}} = N_{\text{assessed\_qualifying}} + N_{\text{assessed\_no\_setup}} + N_{\text{excluded}} + N_{\text{unsupported}} + N_{\text{unresolved}} + N_{\text{missing\_data}} + N_{\text{failed}}$$
+2. **Multi-Dimensional Accounting Closure**:  
+   Reconciliation must close across discrete, non-overlapping dimensions (Candidate Listing Lines, Admission Disposition, and Strategy Assessment Outcome).
 3. **No Invented Identities, Equivalences, or Rules**:  
-   German ETF listings cannot be collapsed into US tickers or synthetic umbrella identities; crypto cannot be forced into equity NYSE exchange-session calendars; synthetic surrogate keys are strictly prohibited; and unreleased terminal reasons cannot be invented.
+   German ETF listings cannot be collapsed into US tickers or synthetic umbrella identities; crypto cannot be forced into equity NYSE exchange-session calendars; synthetic surrogate keys are strictly prohibited; and unreleased terminal reasons or status codes cannot be represented as implemented canonical enums.
 4. **Execution Boundaries**:  
    This document is a bounded architecture and scoping specification. It authorizes zero application implementation, zero production mutation, zero live data acquisition, zero database writes, and zero edits to authoritative backlogs or PRDs.
 
@@ -102,8 +101,8 @@ Each existing repository capability across backend engines, data adapters, secur
 
 | Capability Subsystem | Current State in Repository | Classification Status | Evidence / File Reference | Architectural Gap & Reconciliation Boundary |
 | :--- | :--- | :--- | :--- | :--- |
-| **Equity Input Validator Core** | Strict, policy-independent validator enforcing schema, types, nulls, temporal cutoffs, batch uniqueness, and atomic rejection. | `Released as evidenced` | [`analyst_dashboard/universe/validator.py`](file:///analyst_dashboard/universe/validator.py), PR #6, commit `5f26f3f` | Standalone validator is fully released; downstream admission requires explicit caller requirements and evidence references. |
-| **Offline Directory Adapters** | Pure in-memory parsers for SEC EDGAR `company_tickers_exchange.json`, Nasdaq Listed, Other Listed, and OpenFIGI mappings. | `Released as evidenced` | [`analyst_dashboard/universe/adapters/`](file:///analyst_dashboard/universe/adapters/), PR #8, commit `31af239` | Replays local bytes without live network calls; syntax validation decoupled from universe certification. |
+| **Equity Input Validator Core** | Strict, policy-independent validator enforcing schema, types, nulls, temporal cutoffs, batch uniqueness, and atomic rejection. | `Released as evidenced` | [`analyst_dashboard/universe/validator.py`](file:///analyst_dashboard/universe/validator.py), PR #6, commit `5f26f3f` | Standalone equity validator; **cannot admit ETFs without an ETF-specific contract/ruleset** (Rule R02 rejects non-common stocks). |
+| **Offline Directory Adapters** | Pure in-memory parsers for SEC EDGAR `company_tickers_exchange.json`, Nasdaq Listed, Other Listed, and OpenFIGI mappings. | `Released as evidenced` | [`analyst_dashboard/universe/adapters/`](file:///analyst_dashboard/universe/adapters/), PR #8, commit `31af239` | Replays local bytes without live network calls; directory feeds provide publisher classifications (`ETF=Y`), not legal structure proof. |
 | **Directory Acquisition Client** | Streaming HTTPS client with TLS enforcement, byte caps, exponential backoff, atomic storage, and isolated quarantine routing. | `Released as evidenced` | [`analyst_dashboard/universe/acquisition/`](file:///analyst_dashboard/universe/acquisition/), PR #10, commit `ef0bf4f` | Strictly explicitly invoked. Live acquisition verified locally; scheduled background acquisition remains disconnected. |
 | **Security Evidence Resolver** | Correlates multi-source observations, resolves multi-share class CIKs (GOOG/GOOGL), rejects synthetic IDs, preserves venue conflicts. | `Implemented`, `Tested` | [`analyst_dashboard/universe/adapters/resolution.py`](file:///analyst_dashboard/universe/adapters/resolution.py), 15 tests | Pure in-memory offline resolver; outputs structured candidate partitions ready for validator admission. |
 | **Connected Ingestion Pipeline** | Bridges acquisition $\to$ resolution $\to$ validation $\to$ builder evaluation in isolated offline environments. | `Released as evidenced` | [`analyst_dashboard/universe/connected_integration.py`](file:///analyst_dashboard/universe/connected_integration.py), PR #12, commit `93aa322` | Verified offline in isolation. Full market data coverage measurement and full-population scaling remain in progress. |
@@ -120,7 +119,7 @@ Each existing repository capability across backend engines, data adapters, secur
 | **Market Calendar — German Venues** | Calendar authority for Deutsche Börse XETRA (`XETR`) in CET/CEST (`Europe/Berlin`). | `Not established` | N/A | Codebase currently lacks XETRA calendar instantiation, German holiday rules, and CET session close timing. |
 | **Market Calendar — Crypto Continuous** | 24/7/365 continuous trading calendar with UTC daily boundary rolls. | `Not established` | N/A | Codebase enforces equity market session closures; crypto evaluation currently lacks a continuous session guard. |
 | **Currency Authority — USD** | Fail-closed enforcement that all prices, limits, and indicators are denominated in USD. | `Released as evidenced` | [`analyst_dashboard/universe/contracts.py`](file:///analyst_dashboard/universe/contracts.py) (Rule R05), `market_price_state.py` | Multi-currency conversions are not supported. Prohibits inferring USD without explicit feed evidence. |
-| **Currency Authority — Multi-Asset** | Denomination-aware pricing supporting EUR (German ETFs) and native quote assets (USD, USDT, USDC, BTC in crypto). | `Not established` | N/A | Pricing stores assume scalar numeric values without explicit currency or quote asset metadata columns. |
+| **Currency Authority — Multi-Asset** | Denomination-aware pricing supporting explicit listing currencies (EUR, USD, GBP, CHF) and quote assets. | `Not established` | N/A | Pricing stores assume scalar numeric values without explicit currency or quote asset metadata columns. |
 
 ---
 
@@ -158,7 +157,7 @@ The relationship between specialized equity subtypes (REITs, BDCs, ADRs) and tra
    - Standard daily OHLCV price and volume bars exist for exchange-listed REITs, BDCs, and ADRs. Mathematically, technical indicators can execute on these bars without numerical failure.
 2. **Fundamental Metric Applicability**:
    - Minervini growth stock investing applies fundamental filters: quarterly operating earnings per share (EPS) acceleration ($\ge 25\%$), sales growth, and return on equity (ROE).
-   - **Equity REITs**: Heavily distorted by GAAP real estate depreciation. The industry-standard operational metrics are Funds From Operations (FFO) and Adjusted Funds From Operations (AFFO). Evaluating REITs on GAAP net income produces misleading fundamental signals.
+   - **Equity REITs**: Distorted by GAAP real estate depreciation. The industry-standard operational metrics are Funds From Operations (FFO) and Adjusted Funds From Operations (AFFO). Evaluating REITs on GAAP net income produces misleading fundamental signals.
    - **Business Development Companies (BDCs)**: Closed-end lending vehicles evaluated on Net Investment Income (NII), portfolio credit quality, and Net Asset Value (NAV) per share discounts/premiums.
    - **ADRs**: Foreign private issuers report under IFRS or home-country GAAP (Form 20-F / 6-K) with semi-annual or annual filing cycles differing from US quarterly 10-Q cycles, and are exempt from SEC Form 4 insider transaction filings.
 3. **Existing Strategy Eligibility**:
@@ -189,7 +188,7 @@ In accordance with the Product Owner's approved decision (`DEC-EXP-01`), the Ger
 │                                                                        │
 │   Layer B: Approved Initial Delivery Slice (DEC-EXP-01 Approved)       │
 │   • Deutsche Börse XETRA (MIC: XETR) electronic continuous market.     │
-│   • Retains ALL supported listing currencies (EUR, USD, GBP, CHF).     │
+│   • Retains ALL evidenced listing currencies (EUR, USD, GBP, CHF).     │
 │   • Primary institutional liquidity pool; standardized reference data. │
 │                                                                        │
 │   Layer C: Explicitly Deferred Venues (Subsequent Phases)              │
@@ -205,19 +204,15 @@ In accordance with the Product Owner's approved decision (`DEC-EXP-01`), the Ger
 
 The Product Owner explicitly directed that the German ETF track must **NOT** impose an artificial EUR-only restriction. 
 
-While the majority of XETRA ETF trading lines are denominated in EUR, Deutsche Börse actively supports trading lines in other major currencies:
-- **EUR** (`EUR`): Standard domestic and UCITS quote currency.
-- **USD** (`USD`): US-dollar-denominated share-class quote lines for global investors.
-- **GBP** (`GBP`): British-pound-denominated cross-listings.
-- **CHF** (`CHF`): Swiss-franc-denominated cross-listings.
+While the majority of XETRA ETF trading lines are denominated in EUR, Deutsche Börse supports trading lines in other currencies (EUR, USD, GBP, CHF).
 
-*Contract Requirement*: The data model and adapter must represent trading currency as an **explicit property of the listing line**, preserving whatever valid ISO 4217 currency is assigned by the exchange. Currency restrictions must be disclosed rather than assumed.
+*Contract Requirement*: The data model and adapter must represent trading currency as an **explicit property of the listing line**, preserving whatever valid ISO 4217 currency is evidenced by the exchange feed. Currency restrictions must be disclosed rather than assumed.
 
 ##### 3.2.3 Instrument and Identity Architecture (Six Distinct Identity Layers)
 
 A European ETF cannot be identified by a single US-style ticker. The system distinctly separates six layers:
 
-1. **Fund Legal Identity**: The overarching legal umbrella entity or corporate company (e.g., *iShares III Public Limited Company*, an Irish investment company with variable capital; identified by **LEI**: `549300V6WG5095V10738`).
+1. **Fund Legal Identity**: The overarching legal umbrella entity or corporate company (e.g., *iShares III Public Limited Company*; identified by **LEI**: `549300V6WG5095V10738` when available). LEI is a fund/umbrella attribute and is **not required for every fund or share class**.
 2. **Sub-Fund Identity**: The segregated portfolio within the umbrella (e.g., *iShares Core MSCI World UCITS ETF*).
 3. **Share-Class Identity**: The specific share class issued by the sub-fund (e.g., *USD Accumulating Share Class*; identified globally by **ISIN**: `IE00B4L5Y983`).
 4. **Trading Venue**: The specific execution exchange where the share class is listed (identified by ISO 10383 Market Identifier Code, e.g. **MIC**: `XETR`).
@@ -226,42 +221,30 @@ A European ETF cannot be identified by a single US-style ticker. The system dist
 
 ##### 3.2.4 Qualified Scope of ISIN Checksum Validation
 
-Existing modules (such as `scripts/research/etf_v2/global_identifier_authority.py`) implement the **ISO 6166 Modulus-10 Double-Add-Double (Luhn) check digit algorithm**:
+Existing modules (`scripts/research/etf_v2/global_identifier_authority.py`) implement the **ISO 6166 Modulus-10 Double-Add-Double (Luhn) check digit algorithm**:
 - **What ISIN Checksum Validation Proves**: It verifies that an ISIN string conforms to structural format rules (2 alpha characters for country code, 9 alphanumeric characters for security identifier, 1 numeric check digit matching the algorithmic hash).
 - **What ISIN Checksum Validation Does NOT Prove**:
   - It does **NOT** prove the instrument actually exists or has ever been legally issued.
   - It does **NOT** prove the instrument is currently active or admitted to trading on any exchange.
   - It does **NOT** establish correct association between a share class and an umbrella fund.
   - It does **NOT** confirm whether a specific share class is traded in EUR on XETRA or USD on LSE.
-- *Architectural Rule*: Structural validation must be paired with **Tier 1 regulatory register evidence** (BaFin/CBI/CSSF) or **authoritative exchange reference files** (Deutsche Börse Cash Market) to certify instrument authenticity and trading status.
+- *Architectural Rule*: Structural validation must be paired with **authoritative exchange reference files** or **regulatory register evidence** to certify instrument authenticity and trading status.
 
-##### 3.2.5 Reconciling Legal Structures: ETFs vs. Grantor Trusts vs. ETNs vs. ETCs vs. CEFs
+##### 3.2.5 Policy-Neutral ETP Classification & Pending Legal Structure Decisions
 
-To prevent conflicting rules, the scoping document reconciles the legal structures of exchange-traded products:
-
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        EXCHANGE-TRADED PRODUCT TAXONOMY                │
-│                                                                        │
-│   COLLECTIVE INVESTMENT FUNDS (Initial ETF Scope Boundary)             │
-│   ├── US 1940 Act Open-End Funds (Form N-1A) ── Segregated fund assets │
-│   ├── US 1933 Act Physical Commodity Trusts (S-1/S-3, GLD/IAU)         │
-│   └── European UCITS ETFs (Directive 2009/65/EC, Ireland/Lux/Germany)  │
-│                                                                        │
-│   NON-FUND DEBT & CLOSED-END VEHICLES (Proposed Deferred Scope)        │
-│   ├── Exchange-Traded Notes (ETNs)  ── Unsecured bank debt / credit    │
-│   ├── Exchange-Traded Commodities (ETCs) ── European debt notes/metals │
-│   └── Closed-End Funds (CEFs)       ── Fixed capital / NAV discount    │
-└────────────────────────────────────────────────────────────────────────┘
-```
+The scoping document captures legal structures objectively without prematurely executing policy decisions that remain pending Product Owner determination:
 
 1. **Exchange-Traded Funds (ETFs)**: Registered Open-End Management Investment Companies under the US 1940 Act, or European UCITS funds under Directive 2009/65/EC. Assets are held in segregated custodial accounts for fund shareholders.
-2. **Grantor Trusts / Statutory Trusts (Commodity Products)**: Funds such as SPDR Gold Shares (`GLD`) or iShares Gold Trust (`IAU`) are **1933 Act Grantor Trusts**, NOT 1940 Act investment companies. They hold physical bullion in custodian vaults. The initial ETF population **includes 1933 Act physical commodity grantor trusts** alongside 1940 Act funds to reflect market reality.
-3. **Exchange-Traded Notes (ETNs)**: Senior, unsecured debt obligations issued by an underwriting bank (e.g. Barclays, UBS). The investor is an unsecured creditor; returns are linked to an index via an issuer promise, with zero underlying fund assets. **Segregated from fund population; requires separate approval (`DEC-EXP-02`)**.
-4. **Exchange-Traded Commodities / Currencies (ETCs)**: In Europe, UCITS diversification rules prohibit single-asset funds (a fund cannot hold 100% gold). Therefore, European physical gold/silver products are structured as debt securities (notes or certificates) under national debt prospectuses (e.g. *Xetra-Gold* `DE000A0S9GB0`). **Segregated from core ETF fund population or quarantined into a distinct `COMMODITY_ETC` track**.
-5. **Closed-End Funds (CEFs)**: Fixed-share-capital investment companies trading on exchanges without continuous AP creation/redemption. **Excluded from ETF population**.
-6. **Leveraged and Inverse Products (Geared ETPs)**: Products offering $2\times$, $3\times$, or $-1\times$ daily exposure. If organized as a fund, a leveraged ETF is accounted for in the ETF denominator, but flagged `ASSESSMENT_UNSUPPORTED (Reason: LEVERAGED_INVERSE_POLICY_PENDING)` pending a separate Product Owner decision (`DEC-EXP-03`).
-7. **Accounting for Unresolved Products**: Products in directory feeds whose legal classification cannot be definitively established as a fund or debt note must **NOT be silently discarded**. They are accounted for in the denominator with terminal status `ASSESSMENT_UNSUPPORTED (Reason: CLASSIFICATION_UNRESOLVED)`.
+2. **Grantor Trusts / Statutory Trusts (Commodity Products)**: Funds such as SPDR Gold Shares (`GLD`) or iShares Gold Trust (`IAU`) are **1933 Act Grantor Trusts**, NOT 1940 Act investment companies. They hold physical bullion in custodian vaults.
+3. **Exchange-Traded Notes (ETNs)**: Senior, unsecured debt obligations issued by an underwriting bank (e.g. Barclays, UBS). The investor is an unsecured creditor; returns are linked to an index via an issuer promise. *(Governing decision: `DEC-EXP-02` Pending)*.
+4. **Exchange-Traded Commodities / Currencies (ETCs)**: Debt securities (notes or certificates) that track single commodities or currencies, often with limited recourse and collateralization. *(Governing decision: `DEC-EXP-02` Pending)*.
+5. **Closed-End Funds (CEFs)**: Fixed-share-capital investment companies trading on exchanges without continuous AP creation/redemption.
+6. **Leveraged and Inverse Products (Geared ETPs)**: Products offering $2\times$, $3\times$, or $-1\times$ daily exposure. *(Governing decision: `DEC-EXP-03` Pending)*.
+7. **Policy-Neutral Handling in Ingestion**:
+   - Source-observed classification and legal-structure claims are preserved as evidence.
+   - Products with pending policy determinations (`DEC-EXP-02`, `DEC-EXP-03`) are **not prematurely admitted or permanently rejected**.
+   - Instead, they are represented explicitly with status `PENDING_POLICY_DETERMINATION` [PROPOSED] or `UNRESOLVED_CLASSIFICATION` [PROPOSED].
+   - Distinguish technical inability to assess from a policy decision awaiting determination. A pending policy is not evidence that an assessment is technically unsupported.
 
 ---
 
@@ -333,11 +316,11 @@ To establish rigorous engineering accountability, every proposed external data s
 
 | Proposed Source & Authority | Public Documentation Available | Endpoint Access Verified | Required Fields Verified | Population Completeness Established | Historical Depth Established | Usage / Redistribution Rights Established | Operational Capacity Measured | Qualified Feasibility Finding |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **SEC EDGAR `company_tickers_exchange.json`** | Yes (sec.gov/edgar) | Yes (HTTP 200, PR #10) | Yes (`cik`, `ticker`, `name`, `exchange`) | Yes (~10,000 corporate filers) | Point-in-time only (Current snapshot) | Yes (Public US government work; $0 cost) | Yes (10 req/sec limit; User-Agent enforced) | `CONFIRMED_HIGH` for equity directory acquisition. |
-| **Nasdaq Trader Directory (`nasdaqlisted.txt`, `otherlisted.txt`)** | Yes (nasdaqtrader.com) | Yes (FTP/HTTPS, PR #10) | Yes (`Symbol`, `Security Name`, `Market Category`, `ETF`) | Yes (~10,000 exchange listings) | Point-in-time only (Daily export) | Yes (Public exchange trade data; $0 cost) | Yes (Daily batch export; $< 2\text{ MB}$) | `CONFIRMED_HIGH` for exchange listing baseline. |
+| **SEC EDGAR `company_tickers_exchange.json`** | Yes (sec.gov/edgar) | Yes (HTTP 200, PR #10) | Yes (`cik`, `ticker`, `name`, `exchange`) | Yes (~10,000 corporate filers) | Point-in-time only (Current snapshot) | Yes (Public US government work; $0 cost) | Yes (10 req/sec limit; User-Agent enforced) | `CONFIRMED_HIGH` for equity directory acquisition; **not required for all ETF candidates**. |
+| **Nasdaq Trader Directory (`nasdaqlisted.txt`, `otherlisted.txt`)** | Yes (nasdaqtrader.com) | Yes (FTP/HTTPS, PR #10) | Yes (`Symbol`, `Security Name`, `Market Category`, `ETF`) | Yes (~10,000 exchange listings) | Point-in-time only (Daily export) | Yes (Public exchange trade data; $0 cost) | Yes (Daily batch export; $< 2\text{ MB}$) | `CONFIRMED_HIGH` for exchange listing baseline; `ETF=Y` is a publisher classification observation. |
 | **OpenFIGI v3 API (Bloomberg)** | Yes (openfigi.com/api) | Yes (HTTP 200 in research) | Yes (`figi`, `composite_figi`, `share_class_figi`) | High for US/EU securities | Historical FIGI mapping maintained | Free tier: 25 req/min (no key), 250 req/min (free key). Commercial license for bulk. | Measured in research scripts; batching required | `CONFIRMED_MEDIUM` (Sufficient for identity resolution; rate limits require batching). |
 | **SEC Form N-PORT & N-CEN (EDGAR)** | Yes (sec.gov) | Yes (EDGAR REST API) | Yes (Series ID, Class ID, holdings, fees) | Complete for US 1940 Act registered funds | Multi-year historical filings available | Yes (Public US government work; $0 cost) | Ingestion payload large (XML/JSON); parsing compute required | `CONFIRMED_MEDIUM` (Rich data; parsed in `scripts/research/etf_v2`). |
-| **Deutsche Börse Cash Market Reference Files** | Yes (deutsche-boerse-cash-market.com) | Yes (Public download page) | Yes (`ISIN`, `WKN`, `Instrument Name`, `Mnemonic`, `MIC`) | Complete for XETRA cash instruments | Daily snapshot; historical changes require archiving | Publicly downloadable for trading participants and market monitoring | Daily CSV export (~5–10 MB); low bandwidth requirement | `CONFIRMED_MEDIUM` (Sufficient for XETRA directory; commercial license needed for live trade ticks). |
+| **Deutsche Börse Cash Market Reference Files** | Yes (Website mentions files) | **NOT ESTABLISHED** in repository | **NOT ESTABLISHED** in repository | **NOT ESTABLISHED** in repository | **NOT ESTABLISHED** in repository | **NOT ESTABLISHED** in repository | **NOT ESTABLISHED** in repository | `PROPOSED_SOURCE_PREREQUISITE_NOT_ESTABLISHED` (Filename, schema, and rights must be evidenced from archived sample). |
 | **BaFin Database für Investmentvermögen** | Yes (portal.mvp.bafin.de) | Yes (Web portal verified) | Yes (Fund name, BaFin ID, Umbrella, Depositary) | Authoritative for Germany-registered & passported funds | Historical fund register maintained | Public regulatory register; no commercial redistribution fee | Web search portal; lacks clean public REST API (requires export parsing) | `QUALIFIED_UNCERTAIN` (Authoritative for fund legality; cumbersome to automate without scraping). |
 | **European Exchange Market Data Feeds** | Vendor dependent | Not established in mainline | Variable by vendor (`EODHD`, Interactive Brokers, Refinitiv) | Varies by commercial subscription tier | Multi-year historical daily bars available | Commercial license required for European exchange data redistribution | Not measured in mainline | `NOT_ESTABLISHED` (Concrete operational prerequisite before live German ETF scanner activation). |
 | **Coinbase Advanced Trade Public REST/WS API** | Yes (docs.cdp.coinbase.com) | Yes (Public endpoints responsive) | Yes (`product_id`, `base_currency`, `quote_currency`, `price`, `volume`) | Complete for Coinbase spot order books (~300 pairs) | Multi-year historical candles (1m to 1d) | Free for personal/direct app trading; redistribution subject to ToS | REST: 10–30 req/sec; WebSocket: real-time streaming | `CONFIRMED_HIGH` for spot quote data on Top 50 assets. |
@@ -366,15 +349,14 @@ To prevent currency contamination and numeric corruption across asset families, 
 
 1. **ISO 4217 Fiat Currency Codes**: Standard three-letter fiat codes (`USD`, `EUR`, `GBP`, `CHF`). Must not be conflated with cryptocurrency symbols.
 2. **Native Crypto Asset Identifiers**: Canonical blockchain asset identifiers (`BTC`, `ETH`, `SOL`, `ADA`).
-3. **Stablecoin Identifiers**: Cryptographic tokens pegged to fiat currencies (`USDT`, `USDC`, `DAI`, `EURC`). **These are cryptographic tokens, NOT ISO fiat currencies**. Labeling `USDT` as `currency_iso` is factually incorrect and introduces peg deviation risk.
-4. **Trading-Pair Base and Quote Units**: Every crypto market is a ratio:
-   $$\text{Pair} = \frac{\text{Base Asset}}{\text{Quote Unit}} \quad \left(\text{e.g. } \frac{\text{BTC}}{\text{USD}}, \frac{\text{ETH}}{\text{BTC}}, \frac{\text{SOL}}{\text{USDC}}\right)$$
+3. **Stablecoin Identifiers**: Cryptographic tokens pegged to fiat currencies (`USDT`, `USDC`, `DAI`, `EURC`). **These are cryptographic tokens, NOT ISO fiat currencies**.
+4. **Trading-Pair Base and Quote Units**: Every crypto market is a ratio: $\text{Pair} = \text{Base} / \text{Quote}$.
 5. **Reporting Currency**: The user's portfolio or terminal presentation currency (default: `USD`).
-6. **Foreign Exchange (FX) Conversion Context**: When converting EUR or crypto valuations to the reporting currency, the rate must carry an authoritative source and timestamp.
+6. **Foreign Exchange (FX) Conversion Context**: When converting valuations to the reporting currency, the rate must carry an authoritative source and timestamp.
 
 #### 7.2 Smallest Compatible Architectural Extension
 
-**Blanket Migration Rejection**: A system-wide migration turning every numeric price field in SQLite, DuckDB, Pandas DataFrames, and TypeScript models into a `(amount, currency)` tuple is **explicitly rejected**. It would break dozens of existing, verified calculators (`confluence_engine.py`, `vcp/scanner.py`, `governorSizingEngine.ts`) and create massive regression blast radius.
+**Blanket Migration Rejection**: A system-wide migration turning every numeric price field in SQLite, DuckDB, Pandas DataFrames, and TypeScript models into a `(amount, currency)` tuple is **explicitly rejected**.
 
 **Recommended Bounded Architecture**:
 1. **Boundary Price Container (`PriceQuote`)**: Introduce a typed container strictly at ingestion, adapter, and API presentation boundaries:
@@ -401,8 +383,6 @@ To prevent currency contamination and numeric corruption across asset families, 
 
 Delivery is strictly structured into three sequential phases adhering to the accepted order: **Equity Foundation First $\to$ ETF Integration $\to$ Crypto Foundation**.
 
-No expanded scope is scheduled into active Sprint 2 packages. Slices are sized relatively with confidence ratings; zero calendar dates or staffing commitments are assigned.
-
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │                      PHASED DELIVERY ROADMAP                           │
@@ -428,92 +408,113 @@ No expanded scope is scheduled into active Sprint 2 packages. Slices are sized r
 
 ---
 
-#### 8.1 Detailed First ETF Implementation Slice: Slice B1 (US + XETRA Integration)
+#### 8.1 Detailed First ETF Implementation Slice: Slice B1 (US + XETRA Ingestion & Accounting)
 
-In accordance with the Product Owner's authorization, **Slice B1** is defined as the smallest next implementation slice that produces a measurable integration result:
+##### 8.1.1 Policy-Neutral Implementation Contract
+
+In accordance with Product Owner directives, Slice B1 is defined as an **isolated offline ingestion, evidence-accounting, and identity-resolution slice**:
+
+- **Policy Neutrality**:
+  - Captures source-observed classification, legal-structure claims, and publisher attributes without imposing unapproved policy rules.
+  - Preserves unresolved, ambiguous, or conflicting classifications.
+  - Records leverage and inverse attributes only when attributable source evidence exists.
+  - Represents pending policy decisions (`DEC-EXP-02`, `DEC-EXP-03`) explicitly with status codes labeled `PROPOSED` (e.g. `PENDING_POLICY_DETERMINATION` [PROPOSED]).
+  - Does **NOT** implement permanent admission, rejection, or assessment suppression merely from scoping proposals.
+  - Distinguishes technical inability to assess from a pending policy determination.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │                 FIRST ETF IMPLEMENTATION SLICE: SLICE B1               │
 │                                                                        │
-│   Deliverable: Isolated Offline Adapter, Identity Resolver & Validator│
-│   for US-Listed ETFs and German-Listed ETFs on Xetra.                  │
+│   Scope: Isolated Offline Ingestion & Evidence Accounting Slice        │
 │                                                                        │
-│   Source Populations:                                                  │
-│   1. US-Listed ETFs: SEC EDGAR + Nasdaq Trader (`ETF=Y` in directories)│
-│   2. German-Listed ETFs: Deutsche Börse XETRA reference data (`XETR`)  │
+│   Source Inputs:                                                       │
+│   1. US Directory Fixtures: Nasdaq Trader (`ETF=Y` publisher claim)    │
+│      + SEC EDGAR archives (where available, not mandatory for all).   │
+│   2. German Reference Fixtures: Archived or synthetic XETRA reference  │
+│      files (MIC `XETR`), preserving evidenced currencies.             │
 │                                                                        │
 │   Existing Components Reused:                                          │
-│   • `scripts/research/etf_v2/ucits_discovery_authority.py` (Registers) │
 │   • `scripts/research/etf_v2/global_identifier_authority.py` (ISIN)   │
-│   • `scripts/research/etf_v2/series_boundary.py` (SEC Series/Classes)  │
+│   • `scripts/research/etf_v2/ucits_discovery_models.py` (Tier models)  │
+│   • `scripts/research/etf_v2/series_boundary.py` (Series extraction)   │
 │   • `analyst_dashboard/security_master/models.py` (CanonicalInstrument)│
-│   • `analyst_dashboard/universe/validator.py` (UniverseInputValidator)│
+│   • `analyst_dashboard/universe/validator.py` (Validation primitives)  │
 │                                                                        │
-│   Identity Boundaries:                                                 │
-│   • Fund Legal Entity (LEI / Umbrella)                                 │
-│   • Share-Class Entity (ISIN with Luhn Checksum)                       │
-│   • Listing Quote Line: (ShareClassISIN, OperatingMIC, Currency)       │
+│   Three-Way Reconciliations:                                           │
+│   A. Candidate Listing Line Accounting (Source Rows -> Deduped Lines)  │
+│   B. Admission Disposition Accounting (Admitted, Ineligible, Pending)  │
+│   C. Strategy Assessment Accounting (Assessed, Unsupported, Missing)   │
 │                                                                        │
-│   Listing Currencies:                                                  │
-│   • Retains ALL supported listing currencies (EUR, USD, GBP, CHF).     │
-│                                                                        │
-│   Classification & Unresolved Accounting:                              │
-│   • Core Funds: 1940 Act Open-End + 1933 Act Commodity Trusts + UCITS  │
-│   • Leveraged/Inverse: Accounted; marked ASSESSMENT_UNSUPPORTED        │
-│   • Ambiguous / Non-Fund ETPs: Accounted; marked CLASSIFICATION_UNRESOLVED│
-│                                                                        │
-│   Mathematical Denominator Closure:                                    │
-│   N_ETF = N_admitted + N_unsupported + N_unresolved + N_rejected       │
+│   Entity Level Separation:                                             │
+│   • Distinct counts for Funds, Share Classes, and Listing Lines.       │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-##### Slice B1 Execution Specification:
-1. **Existing Components Reused**:
-   - Ingestion Parsing: Reuse `scripts/research/etf_v2/us_sec_authority_adapter.py` for US filings; adapt `ucits_discovery_adapters.py` for XETRA reference files.
-   - Identifier Resolution: Reuse `scripts/research/etf_v2/global_identifier_authority.py` for ISO 6166 ISIN checksum validation and WKN alias mapping.
-   - Domain Model: Reuse `analyst_dashboard/security_master/models.py` (`AssetClass.ETF`, `SecurityType.ETF`, `ExecutionEligibility.ETF_EXECUTION`).
-   - Validation Engine: Reuse `analyst_dashboard/universe/validator.py` (`UniverseInputValidator`) with ETF-specific rules.
-2. **Source Populations and Evidence Basis**:
-   - **US ETFs**: SEC EDGAR `company_tickers_exchange.json` + Nasdaq Trader `nasdaqlisted.txt` and `otherlisted.txt` (`ETF=Y` filter). Corroborated against SEC Form N-CEN / N-PORT series registers.
-   - **German ETFs**: Deutsche Börse Cash Market downloadable tradable instruments reference file (`allTradableInstruments.csv`) filtered by MIC `XETR` and instrument group `ETF`. Corroborated against BaFin fund database.
-3. **Fund, Share-Class, and Listing Identity Boundaries**:
-   - The data model must maintain three distinct identity tiers:
-     - `Fund`: Identified by Legal Entity Identifier (`LEI`) or SEC Series CIK.
-     - `Share Class`: Identified globally by `ISIN`.
-     - `Listing Quote Line`: Identified by the tuple `(ShareClassISIN, OperatingMIC, Currency)` alongside local exchange ticker (`mnemonic`) and German `WKN`.
-4. **Listing-Currency Representation**:
-   - The listing currency is captured as an explicit string field (`currency: str`) matching the exchange's trading denomination (e.g. `EUR`, `USD`, `GBP`, `CHF`).
-   - No currency conversion or EUR-only filtering is performed in the adapter.
-5. **Classification and Unresolved-Product Handling**:
-   - Products verified as collective investment funds (US 1940 Act, US 1933 Act Commodity Trusts, European UCITS) are admitted as eligible ETFs.
-   - Products with active leveraged/inverse mandates ($2\times, -1\times$) are admitted to the denominator with status `ASSESSMENT_UNSUPPORTED (Reason: LEVERAGED_INVERSE_POLICY_PENDING)`.
-   - Products whose classification cannot be definitively certified (or non-fund ETNs/ETCs pending separate policy) are accounted for in the denominator with status `ASSESSMENT_UNSUPPORTED (Reason: CLASSIFICATION_UNRESOLVED)`. Zero products are silently dropped.
-6. **Existing Assessment Capabilities Available**:
-   - Technical price trend on existing EOD bars (where available).
-   - Cost of Ownership and Factor Radar attributes (reusing logic from `scripts/research/etf_v2/` and `frontend/components/EtfCostOfOwnershipCard.tsx`).
-7. **Source Access, History Depth, and Usage-Rights Prerequisites**:
-   - US: Free public regulatory work; $0 licensing; full history available.
-   - German: Daily reference CSV downloadable for informational use; European historical trade bar availability is `NOT_ESTABLISHED` and remains a prerequisite before live scanning.
-8. **Coverage Accounting and Limitations**:
-   - Denominator accounting must close with zero unaccounted records:
-     $$N_{\text{ETF\_source}} = N_{\text{admitted}} + N_{\text{unsupported}} + N_{\text{unresolved}} + N_{\text{rejected}}$$
-   - Exclusions (Börse Frankfurt floor, Tradegate, regional Börsen, crypto) must be explicitly listed in coverage disclosures.
-9. **Implementation Acceptance Criteria**:
-   - In-memory offline adapter ingests US directory bytes and XETRA reference CSV bytes in isolation.
-   - Zero live network requests or external credential access.
-   - Durable unit tests verify ISIN Luhn validation, WKN alias separation, multi-currency retention, and unresolved-product accounting.
-   - Outputs structured, validated candidate records ready for builder evaluation.
-10. **Dependencies on Equity Foundation**:
-    - Reuses the offline directory adapter, resolution engine, and validator interfaces delivered in Phase 1 (S2-01 through S2-04 / PR #12).
-11. **Explicit Exclusions**:
-    - Live trading execution, live market data scanning, production database writes, Börse Frankfurt floor trading (`XFRA`), Tradegate (`XGAT`), and regional German exchanges.
+##### 8.1.2 Three-Way Population Accounting Reconciliations
+
+To prevent overlapping dimensions from distorting accounting, Slice B1 enforces three discrete, mutually exclusive reconciliations:
+
+###### Reconciliation A: Source Observations and Deduplicated Candidate Listing Lines
+- **Observation Unit**: Raw rows from directory feeds observed at timestamp $T_{\text{obs}}$.
+- **Deduplication Unit**:
+  - US Candidates: `(Symbol, Exchange)` listing line.
+  - German Candidates: `(ShareClassISIN, OperatingMIC, Currency)` quote line.
+- **Accounting Equation**:
+  $$N_{\text{source\_observations}} = N_{\text{deduplicated\_candidate\_lines}} + N_{\text{duplicate\_source\_rows}} + N_{\text{malformed\_raw\_records}}$$
+- **Entity Level Counting**:
+  - $N_{\text{funds}}$: Count of distinct legal umbrella entities or investment trusts (LEI or Series CIK).
+  - $N_{\text{share\_classes}}$: Count of distinct share classes (ISINs).
+  - $N_{\text{listing\_lines}}$: Count of distinct tradable quote lines.
+  - *Rule*: Multiple listing lines of a single share class (or multiple share classes of a single fund) are **never counted as multiple funds**.
+
+###### Reconciliation B: Admission Disposition Accounting
+Mutually exclusive disposition for all $N_{\text{deduplicated\_candidate\_lines}}$:
+$$N_{\text{deduplicated\_candidate\_lines}} = N_{\text{admitted}} + N_{\text{ineligible\_rule\_failure}} + N_{\text{unresolved\_classification}} + N_{\text{structural\_validation\_failure}}$$
+- $N_{\text{admitted}}$: Candidates certified as meeting active ETF admission rules.
+- $N_{\text{ineligible\_rule\_failure}}$: Candidates violating an active invariant (e.g. delisted, inactive).
+- $N_{\text{unresolved\_classification}}$: ETP candidates whose fund vs debt status is unverified or whose governing policy is pending (`DEC-EXP-02`). Retained visibly in candidate accounting; **never counted as confirmed ETFs**.
+- $N_{\text{structural\_validation\_failure}}$: Candidates failing basic syntax (malformed ticker, invalid ISIN check digit).
+
+###### Reconciliation C: Strategy Assessment Outcome Accounting
+Applicable strictly to $N_{\text{admitted}}$ for each evaluated strategy:
+$$N_{\text{admitted}} = N_{\text{assessed\_qualifying}} + N_{\text{assessed\_no\_setup}} + N_{\text{missing\_data}} + N_{\text{technically\_unsupported}} + N_{\text{assessment\_failed}} + N_{\text{pending\_policy\_determination}}$$
+- $N_{\text{technically\_unsupported}}$: Indicator math cannot execute on the asset.
+- $N_{\text{pending\_policy\_determination}}$: Assessment suppressed due to an unratified policy (`DEC-EXP-03` for leveraged products), distinct from technical failure.
+
+##### 8.1.3 Reusable Components and Compatibility Questions
+
+| Existing Component | Proposed Reuse in Slice B1 | Implementation Compatibility Questions to Verify |
+| :--- | :--- | :--- |
+| `scripts/research/etf_v2/global_identifier_authority.py` | ISO 6166 ISIN Luhn validation; canonical ID generators (`etfi:v1:`, `etfs:v1:`, `etfl:v1:`); WKN alias mapping. | Verify whether the internal ID scheme handles multi-currency listing lines cleanly without collision when the same ISIN trades in EUR and USD on XETRA. |
+| `scripts/research/etf_v2/ucits_discovery_models.py` | `RawDiscoveryObservation`, `RawRegisterPayload`, Tier 1–3 provenance models. | Verify if models can be instantiated from offline directory CSV bytes without requiring live registry network metadata. |
+| `scripts/research/etf_v2/series_boundary.py` | SEC series/class mapping logic for US funds. | Verify how directory-only candidates (`ETF=Y` on Nasdaq without SEC EDGAR exchange table entry) are resolved without throwing unhandled missing CIK exceptions. |
+| `analyst_dashboard/security_master/models.py` | `AssetClass.ETF`, `SecurityType.ETF`, `ExecutionEligibility.ETF_EXECUTION`, `CanonicalInstrument`. | Verify whether `CanonicalInstrument` supports listing-level currency fields and multi-share-class linkage without data loss. |
+| `analyst_dashboard/universe/validator.py` | Validation primitives: `FieldValidationIssue`, `ValidationIssueCode`, `EvidenceReference`, atomic batch rejection. | **CRITICAL**: The stock `UniverseInputValidator` enforces Rule R02 (`COMMON_STOCK`) and Rule R05 (`USD`). **It CANNOT admit ETFs unchanged**. B1 must reuse the validation primitives within a dedicated ETF validation contract or subclass without weakening stock rules. |
+
+##### 8.1.4 Source Access, History Depth, and Usage-Rights Prerequisites
+
+- **US Directory Feeds**: Free public exchange and regulatory data ($0 licensing); point-in-time daily snapshots; Nasdaq `ETF=Y` treated as a publisher classification claim, not legal proof. Directory-only candidates are preserved.
+- **German XETRA Reference Data**:
+  - The specific Deutsche Börse file format (`allTradableInstruments.csv`), schema, download endpoint, historical depth, completeness, and redistribution rights are **NOT ESTABLISHED** in the mainline repository.
+  - B1 implementation must rely on **archived or clearly labeled synthetic source fixtures**. Zero live network acquisition tasks are authorized in this slice.
+- **Market Data Feeds**: EOD price history and live assessment integration are deferred as later dependencies. No new Factor Radar, cost model, or scoring strategy is authorized in B1.
+
+##### 8.1.5 Implementation Acceptance Criteria
+
+1. **Deterministic Offline Replay**: Ingestion adapter parses archived or synthetic US and German fixture bytes in memory with zero live network calls.
+2. **Provenance & Evidence Preservation**: Source publisher claims (`ETF=Y`, WKN, exchange-supplied asset type) are captured as raw evidence without premature mutation.
+3. **Identifier Resolution**: ISINs validated via Luhn checksum; WKN captured as local German alias; CIK/Series captured where available; directory-only candidates preserved.
+4. **Listing Currency Integrity**: Listing currency captured explicitly as an ISO string (`EUR`, `USD`, `GBP`, `CHF`) matching source evidence; no default currency injected.
+5. **Three-Way Accounting Verification**: Adapter outputs structured accounting records demonstrating exact closure across Reconciliations A, B, and C.
+6. **Failure & Policy Visibility**: Unresolved classifications, structural failures, and pending policy items are visibly exposed in structured test outputs.
+7. **Durable Unit Tests**: Regression test suite demonstrates offline replay reproducibility, failure handling, and entity count separation ($N_{\text{funds}} \le N_{\text{share\_classes}} \le N_{\text{listing\_lines}}$).
 
 ---
 
 ### 9. Strategic Product Owner Approval Table
 
-The table below summarizes all required Product Owner decisions using stable decision IDs (`DEC-EXP-01` through `DEC-EXP-10`). Only `DEC-EXP-01` has been formally approved in its initial direction; all other decisions remain pending:
+The table below summarizes all strategic Product Owner decisions using stable decision IDs (`DEC-EXP-01` through `DEC-EXP-10`). `DEC-EXP-01` is formally approved in its initial direction; all other decisions remain pending:
 
 | Decision ID | Decision Subject | Accepted Goal | Approved / Recommended Initial Direction | Alternative Option | Explicitly Deferred Scope | Evidence / Prerequisite Required | Approval Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :---: |
@@ -532,7 +533,7 @@ The table below summarizes all required Product Owner decisions using stable dec
 
 ### 10. Staged Backlog Handoff Records
 
-To protect repository governance, the shared `docs/planning/ENGINEERING_BACKLOG.md` is **NOT** directly edited in this research branch. Below are the staged backlog records formatted for controlled integration upon Product Owner approval:
+The shared `docs/planning/ENGINEERING_BACKLOG.md` is **NOT** directly edited in this research branch. Below are the staged backlog records formatted for controlled integration upon Product Owner approval:
 
 ```markdown
 ### `BACKLOG-RADAR-MULTI-ASSET-001`: Multi-Asset Architecture & Strategy Boundary Alignment
@@ -545,7 +546,7 @@ To protect repository governance, the shared `docs/planning/ENGINEERING_BACKLOG.
   > “Every instrument in each agreed population (US Equities, US ETFs, German ETFs, Crypto) is accounted for. Supported strategies assess instruments when required data is available, with explicit disclosure of exclusions, unsupported assessments, missing data, failures, freshness, and coverage limitations.”
 - **Scope**:
   - Deliver polymorphic multi-asset universe schemas supporting ISIN, WKN, and Crypto trading pairs.
-  - Implement European exchange calendar (XETRA in `Europe/Berlin`) and 24/7 continuous crypto session guard with 00:00 UTC roll.
+  - Implement European exchange calendar (XETRA in `Europe/Berlin`) and 24/7 continuous crypto session guard with proposed 00:00 UTC roll.
   - Implement boundary `PriceQuote` container preserving explicit denomination without breaking internal scalar math.
   - Enforce strict strategy gating: VCP restricted to Common Equities; ETF Factor Radar for ETFs; Crypto Volatility for Crypto.
 - **Dependencies**:
@@ -557,12 +558,13 @@ To protect repository governance, the shared `docs/planning/ENGINEERING_BACKLOG.
 - **Release Target**: Phase 2 Delivery Track (Unscheduled until equity foundation complete)
 - **Status**: `APPROVED_DIRECTION_PENDING_IMPLEMENTATION_SCHEDULING`
 - **Owner**: ETF Analytics & Data Governance Team
-- **Approved Direction**:
-  - Ingest US ETF registers (SEC 1940 Act N-1A and 1933 Act Grantor Trusts S-1/S-3) and German XETRA reference data (`XETR`).
-  - Retain all supported listing currencies (EUR, USD, GBP, CHF); disclose currency restrictions rather than assuming EUR-only.
+- **Approved Direction & Scope**:
+  - Deliver isolated offline ingestion and evidence-accounting slice (Slice B1) for US-listed ETFs and German XETRA ETFs (`XETR`).
+  - Retain all supported, source-evidenced listing currencies (EUR, USD, GBP, CHF); disclose currency restrictions rather than assuming EUR-only.
   - Preserve wider German-venue goal (Frankfurt floor `XFRA`, Tradegate `XGAT`, regional Börsen) as explicitly deferred scope.
   - Maximize reuse of existing ETF components in `scripts/research/etf_v2`, `analyst_dashboard/security_master/models.py`, and `frontend/components/`.
-  - Design explicit unresolved accounting for ambiguous/non-fund ETPs; zero products silently dropped.
+  - Enforce policy-neutral classification: capture source claims (`ETF=Y`); represent pending policy items (`DEC-EXP-02`, `DEC-EXP-03`) explicitly; zero products silently dropped.
+  - Enforce three-way accounting: Source & Candidate lines, Admission disposition, and Strategy assessment outcome.
   - Implementation remains unscheduled until engineering capacity is allocated post-equity foundation.
 
 ### `BACKLOG-RADAR-CRYPTO-SPOT-003`: Institutional Spot Cryptocurrency Radar Track (Phase 3)
@@ -597,19 +599,22 @@ To protect repository governance, the shared `docs/planning/ENGINEERING_BACKLOG.
  6. Deferred German Venues Explicitly Mapped        🟢 Complete   XFRA, XGAT, regional Börsen deferred  
  7. ETF 6-Layer Identity Architecture              🟢 Complete   Fund/ISIN/Listing/MIC/Curr separated  
  8. ISIN Checksum Scope Qualified                   🟢 Complete   Luhn structural validity only         
- 9. ETF Legal Taxonomy (1940 Act, Trusts, ETN/ETC)  🟢 Complete   1933 Act trusts reconciled; debt split
- 10. First ETF Implementation Slice (Slice B1)      🟢 Complete   US + XETRA slice fully specified      
- 11. Reusable ETF Components Identified             🟢 Complete   etf_v2, models.py, frontend reused    
- 12. Operational Timing Concepts Decoupled          🟢 Complete   Sessions vs auctions vs buffers       
- 13. Package 5 Worktree Reference Corrected         🟢 Complete   finance-sprint-2-admission-mappings   
- 14. Crypto Proposals Explicitly Unapproved         🟢 Complete   All 8 crypto decisions held pending   
- 15. Source Feasibility Matrix (7 dimensions)       🟢 Complete   Documented / access / rights qualified
- 16. Currency / Unit Architecture (Boundary Quote)  🟢 Complete   Blanket tuple migration rejected      
- 17. Strategic PO Approval Table (DEC-EXP-01 to 10) 🟡 Decision   DEC-EXP-01 approved; 9 pending        
- 18. European Exchange Trade Bar Availability       ⚪ FeasibilityPrerequisite not yet established      
- 19. Active Sprint 2 Package 5 Protection           🟢 Complete   Zero contamination of Package 5       
- 20. Application Code Implementation                ⛔ Blocked    Explicitly unauthorized               
- 21. Live Ingestion / Production Mutation           ⛔ Blocked    Explicitly unauthorized               
+ 9. Policy-Neutral Classification Contract          🟢 Complete   Source claims captured; policy pending
+ 10. First ETF Implementation Slice (Slice B1)      🟢 Complete   Offline ingestion & accounting defined
+ 11. Three-Way Population Accounting Reconciliations🟢 Complete   Source, Admission & Assessment split  
+ 12. Entity Level Separation                        🟢 Complete   Fund vs ShareClass vs ListingLine     
+ 13. Reusable ETF Components & Compatibility Audited🟢 Complete   etf_v2, models.py, validator primitives
+ 14. Stock Validator Incompatibility Noted          🟢 Complete   Stock validator cannot admit ETFs     
+ 15. Deutsche Börse Reference File Status Qualified ⚪ FeasibilityNOT_ESTABLISHED in repo; sample needed 
+ 16. Operational Timing Concepts Decoupled          🟢 Complete   Sessions vs auctions vs buffers       
+ 17. Package 5 Worktree Reference Corrected         🟢 Complete   finance-sprint-2-admission-mappings   
+ 18. Crypto Proposals Explicitly Unapproved         🟢 Complete   All 8 crypto decisions held pending   
+ 19. Currency / Unit Architecture (Boundary Quote)  🟢 Complete   Blanket tuple migration rejected      
+ 20. Strategic PO Approval Table (DEC-EXP-01 to 10) 🟡 Decision   DEC-EXP-01 approved; 9 pending        
+ 21. European Exchange Trade Bar Availability       ⚪ FeasibilityPrerequisite not yet established      
+ 22. Active Sprint 2 Package 5 Protection           🟢 Complete   Zero contamination of Package 5       
+ 23. Application Code Implementation                ⛔ Blocked    Explicitly unauthorized               
+ 24. Live Ingestion / Production Mutation           ⛔ Blocked    Explicitly unauthorized               
 ========================================================================================================
 ```
 
