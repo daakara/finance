@@ -29,8 +29,11 @@ Core Safeguards Verified:
 
 from __future__ import annotations
 
+from pathlib import Path
 import sqlite3
 import pytest
+
+LOCAL_DB_PATH = Path.home() / ".finance_market_store.db"
 
 from analyst_dashboard.universe.adapters.resolution import (
     IdentityResolutionStatus,
@@ -185,6 +188,22 @@ class TestRealSourceSampleResolution:
 class TestReadinessDimensionsSeparation:
     """Verifies Section 1.B: Readiness dimensions are kept strictly separate."""
 
+    def test_portable_offline_execution_without_local_database(self, tmp_path):
+        """Verifies clean, deterministic diagnostic execution when optional local store is not present."""
+        clean_db = tmp_path / "clean_checkout_missing.db"
+        result = RealSourceAdmissionDiagnostic.run(market_db_path=clean_db)
+        assert result.market_db_status == "NOT_ACCESSED"
+        assert result.batch_valid is False
+        assert result.failed_count == 7
+        assert result.passed_count == 0
+        assert result.converted_security_count == 0
+        assert result.builder_status == "NOT_RUN"
+
+        report_md = format_evidence_gap_report(result)
+        assert "NOT_ACCESSED" in report_md
+        assert "252-Bar Range (Annual Benchmark)" not in report_md
+
+    @pytest.mark.skipif(not LOCAL_DB_PATH.exists(), reason="Optional local market database ~/.finance_market_store.db not present in clean checkout")
     def test_unresolved_association_guard_not_bypassed_for_googl_or_tsm(self):
         result = RealSourceAdmissionDiagnostic.run()
         mr = result.market_readiness_by_candidate
@@ -208,6 +227,7 @@ class TestReadinessDimensionsSeparation:
             assert mr[sym]["freshness_state"] == "NO_DATA"
             assert mr[sym]["evaluator_primary_state"] == MarketDataReadinessState.NO_DATA.value
 
+    @pytest.mark.skipif(not LOCAL_DB_PATH.exists(), reason="Optional local market database ~/.finance_market_store.db not present in clean checkout")
     def test_query_buffer_and_annualization_are_not_acceptance_gates(self):
         result = RealSourceAdmissionDiagnostic.run()
         mr = result.market_readiness_by_candidate
@@ -216,7 +236,7 @@ class TestReadinessDimensionsSeparation:
         assert mr["AAPL"]["gate_50_bars"] is True       # Acceptance gate 50
         assert mr["AAPL"]["gate_200_bars"] is True      # Acceptance gate 200
         assert mr["AAPL"]["buffer_60_bars_available"] is True     # Operational buffer (not gate)
-        assert mr["AAPL"]["benchmark_252_bars_available"] is True # Benchmark range (not gate)
+        assert mr["AAPL"]["benchmark_252_bars_available"] is True # Annualization scalar available (not gate)
 
 
 class TestAcquiredEvidenceReplayAndQualification:
@@ -349,4 +369,17 @@ class TestEvidenceGapReporting:
 
         # Verify mixed-time reference enrichment qualification
         assert "mixed-time reference enrichment" in report_md
-        assert "204" in report_md
+        assert "205" in report_md
+
+        # Verify 252-bar benchmark presentation is removed from table
+        assert "252-Bar Range (Annual Benchmark)" not in report_md
+
+        # Verify DDS publisher-code concordance is distinguished from resolver retained conflict flag
+        assert "DDS Publisher-Code Concordance" in report_md
+        assert "Resolver Retained Conflict Flag" in report_md
+
+        # Verify SEC contact attribution does not equate address syntax with operator ownership
+        assert "syntactic address validity does not prove operator domain ownership" in report_md
+
+        # Verify canonical rule inventory citation
+        assert "Rule R04 (Primary Exchange Allowlist)" in report_md

@@ -914,7 +914,7 @@ class RealSourceAdmissionDiagnostic:
         exch_consequence = "VALIDATION_PASSED" if is_exch_valid else "UNRECOGNIZED_VALUE_OR_CONFLICT"
         audits.append(FieldAdmissionAudit(
             field_name="exchange",
-            contract_semantics="Primary listing exchange; must be one of NASDAQ, NYSE, ARCA, BATS",
+            contract_semantics="Primary listing exchange (must be one of NASDAQ, NYSE, ARCA, BATS under Rule R04)",
             source_observation=exchange_obs,
             source_artifact="Composite (SEC EDGAR + Directory)",
             row_locator=f"SEC row {loc.get('sec_row_index')}, Directory line {loc.get('nasdaq_line') or loc.get('other_line')}",
@@ -967,7 +967,7 @@ class RealSourceAdmissionDiagnostic:
         # 7. country
         audits.append(FieldAdmissionAudit(
             field_name="country",
-            contract_semantics="Jurisdictional country of the contract / listing",
+            contract_semantics="Jurisdictional country of the contract / listing (validated against accepted_countries under Validator)",
             source_observation=None,
             source_artifact="Directory omits; SEC has stateOfIncorporation",
             row_locator="Omitted across raw directory feeds",
@@ -1073,7 +1073,7 @@ def format_evidence_gap_report(result: RealSourceDiagnosticResult) -> str:
     md.append("> active provider asset status (`ACTIVE`), and OpenFIGI structural classifications, production security identity adoption remains disabled. ")
     md.append("> All 7 candidates fail structural and evidence validation under `UniverseInputValidator`. Under the atomic whole-batch contract, ")
     md.append("> the entire batch is revoked, converted count is 0, and Builder evaluation is strictly NOT_RUN. ")
-    md.append("> Canonical rules R02/R04/R06 were NOT executed by the builder; comparisons are static observations only.\n")
+    md.append("> Canonical rules R01-R07 were NOT executed by the builder; comparisons are static observations only.\n")
 
     md.append("### 2. Parent-Feed Accounting & Full Digest Reconciliation\n")
     md.append("Counts recomputed directly from the actual parent files in binary mode with verified complete SHA-256 digests:\n")
@@ -1105,12 +1105,13 @@ def format_evidence_gap_report(result: RealSourceDiagnosticResult) -> str:
     md.append("| **Instrument Identity & Taxonomy** | OpenFIGI v3 (`https://api.openfigi.com/v3/mapping`) | US Equity Market | `2026-10-17T07:49:09Z` | `c0ad9c377c7e767ca7975b191bfb00fce4207c713dcb64df93048f1b0653903a` | `d6baf1179d19789bfde9e109bf87d4c8c24c2dd825af38db3edc8276b690f25f` | Distinct FIGIs for all 7 candidates; GOOG Class C vs GOOGL Class A; TSM Depositary Receipt (ADR); AACIU Unit |")
     md.append("| **Quote & Trading Currency** | Yahoo Finance Public Quote API (`v8/finance/chart/{sym}`) | Primary US Listing Lines | `2026-10-17T07:50:44Z` | `Per-symbol quote hashes` | `1f59a7cb937a8cbb0686d1bcf8bc6a57721a89ddd4379fad98ec8d92aabee29b` | Attributable per-listing trading currency (`USD`) for US quotation lines (e.g. TSM NYSE ADR in USD, not TWSE in TWD) |")
     md.append("| **Provider Asset Status** | Alpaca Asset Directory (`v2/assets/{sym}`) | Platform Routing Directory | `2026-10-17T07:51:57Z` | `Per-symbol asset hashes` | `fbaa142afb26d603c36a1ea3799d27c7ee10e6b2a053e37acd4ea90f63d1632c` | Provider asset status `active` and broad class `us_equity`. Indicates platform routing availability, NOT absence of halts/suspensions |")
-    md.append("| **Entity Incorporation** | SEC EDGAR Submissions API (`submissions/CIK{cik}.json`) | Corporate Filings Office | `2026-10-17T07:51:57Z` | `Per-CIK submission hashes` | `c029151d088e75cefec408a6d08d3b7b4a2378366e9dbc9b8b1f80dfdcdaade5` | Verified operator User-Agent format; state of incorporation (DE, CA, FL); TSM foreign country `Taiwan` (code `F5`) |")
+    md.append("| **Entity Incorporation** | SEC EDGAR Submissions API (`submissions/CIK{cik}.json`) | Corporate Filings Office | `2026-10-17T07:51:57Z` | `Per-CIK submission hashes` | `c029151d088e75cefec408a6d08d3b7b4a2378366e9dbc9b8b1f80dfdcdaade5` | Supported SEC User-Agent contact attribution syntax; state of incorporation (DE, CA, FL); TSM foreign country `Taiwan` (code `F5`) |")
 
     md.append("\n> [!NOTE]\n")
     md.append("> **Data Sharing & Security Integrity**: All committed reference artifacts were audited against sharing terms. ")
     md.append("> Artifacts contain exclusively public entity/quote metadata with zero credentials, API secrets, or account identifiers. ")
-    md.append("> SEC requests used verified operator User-Agent formatting; no unverified addresses were created.\n")
+    md.append("> SEC requests conformed to official SEC User-Agent format requirements (`User-Agent: Sample Company Name AdminContact@<sample company domain>.com`). ")
+    md.append("> While the contact address syntax is well-formed and supported by the client, syntactic address validity does not prove operator domain ownership or verified corporate identity.\n")
 
     md.append("---\n")
 
@@ -1120,7 +1121,7 @@ def format_evidence_gap_report(result: RealSourceDiagnosticResult) -> str:
     md.append("2. **Structural & Evidence Validation**: Executed by `UniverseInputValidator` (7 records evaluated, 7 failed closed).\n")
     md.append("3. **Whole-Batch Admission**: Revoked (0 admitted, 7 failed; atomicity enforced).\n")
     md.append("4. **SourceSecurity Conversion**: Blocked (`to_source_securities()` raises `ValueError`, 0 converted).\n")
-    md.append("5. **Deterministic Universe Builder**: Strictly `NOT_RUN` (No R02/R04/R06 decisions executed).\n")
+    md.append("5. **Deterministic Universe Builder**: Strictly `NOT_RUN` (No R01-R07 decisions executed).\n")
     md.append("6. **Strategy Assessment**: Strictly `NOT_RUN`.\n\n")
 
     md.append("#### Executed Validator Issues by Candidate (Baseline vs Evidence Replay)\n")
@@ -1139,9 +1140,9 @@ def format_evidence_gap_report(result: RealSourceDiagnosticResult) -> str:
         md.append(f"| **{sym}** | `{p.issuer_cik}` | {loc_str} | `{norm_venue}` | `{figi_type}` | `{b_issues}` | `{r_issues}` | 🔴 `REVOKED` |")
 
     md.append("\n#### Static Canonical Rule Compatibility Observations (Not Executed by Builder)\n")
-    md.append("Because `DeterministicUniverseBuilder` was `NOT_RUN`, the following observations are static compatibility comparisons, not executed eligibility decisions:\n")
-    md.append("- **Rule R02 (Common Stock Eligibility)**: OpenFIGI classifies `TSM` as `Depositary Receipt` (ADR) and `AACIU` as `Unit`. Neither is common stock. If the builder were executed, both would fail Rule R02. Blocked status is diagnostic, not permanent rejection.\n")
-    md.append("- **Rule R03 (Venue Allowlist)**: ACCS operates on `AMEX` (NYSE American) and DDS on `TXSE`. The canonical validator allowlist accepts `{\"NASDAQ\", \"NYSE\", \"ARCA\", \"BATS\"}`. Both remain unadmitted under canonical venue rules.\n")
+    md.append("Because `DeterministicUniverseBuilder` was `NOT_RUN`, the following observations are static compatibility comparisons against the implemented canonical inventory (R01-R07), not executed eligibility decisions:\n")
+    md.append("- **Rule R02 (Security Type / Common Stock Eligibility)**: OpenFIGI classifies `TSM` as `Depositary Receipt` (ADR) and `AACIU` as `Unit`. Neither is common stock. If the builder were executed, both would fail Rule R02. Blocked status is diagnostic, not permanent rejection.\n")
+    md.append("- **Rule R04 (Primary Exchange Allowlist)**: ACCS operates on `AMEX` (NYSE American) and DDS on `TXSE`. The canonical exchange allowlist in Rule R04 accepts `{\"NASDAQ\", \"NYSE\", \"ARCA\", \"BATS\"}`. Both remain unadmitted under canonical venue rules.\n")
     md.append("- **Rule R06 (Primary Listing Assertion)**: TSM's home primary exchange is the Taiwan Stock Exchange (TWSE: 2330). Under current single-field `primary_listing`, asserting `True` on the US ADR would make a false global primary claim.\n")
 
     md.append("\n---\n")
@@ -1161,15 +1162,19 @@ def format_evidence_gap_report(result: RealSourceDiagnosticResult) -> str:
     md.append("\n---\n")
 
     md.append("### 6. Development Market Data Store Audit & Lookback Readiness\n")
-    md.append(f"- **Store URI**: `file:C:/Users/akara/.finance_market_store.db?mode=ro` (Enforced Read-Only)")
-    md.append(f"- **Daily OHLCV Rows**: `{result.market_db_row_counts.get('asset_ohlcv_daily_total', 0)}` across 150 development symbols")
-    md.append(f"- **Provenance Rows**: `{result.market_db_row_counts.get('asset_ohlcv_provenance_total', 0)}`\n")
+    if result.market_db_status == "ENFORCED_READ_ONLY_INSPECTED":
+        md.append(f"- **Store URI**: `file:C:/Users/akara/.finance_market_store.db?mode=ro` (Enforced Read-Only)")
+        md.append(f"- **Daily OHLCV Rows**: `{result.market_db_row_counts.get('asset_ohlcv_daily_total', 0)}` across 150 development symbols")
+        md.append(f"- **Provenance Rows**: `{result.market_db_row_counts.get('asset_ohlcv_provenance_total', 0)}`\n")
+    else:
+        md.append("- **Store URI**: `NOT_ACCESSED` (Local development market database not present in portable checkout)")
+        md.append("- **Audit Mode**: Portable offline fixture replay verified; store inspection skipped.\n")
 
     md.append("The table below separates **Identity Association**, **Bar Availability**, **Freshness Observation**, and **Consumer Lookbacks** ")
     md.append("without bypassing unresolved association guards for GOOGL or TSM, and without treating query buffers or annualization scalars as admission gates:\n")
 
-    md.append("| Symbol | Stored Bars | Freshness (Cutoff 2026-10-16) | 50-Bar MA (Trend Gate) | 200-Bar MA (Regime Gate) | 60-Bar Query Buffer (Operational) | 252-Bar Range (Annual Benchmark) | Identity Association | Readiness Evaluator State |")
-    md.append("|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---|")
+    md.append("| Symbol | Stored Bars | Freshness (Cutoff 2026-10-16) | 50-Bar MA (Trend Gate) | 200-Bar MA (Regime Gate) | 60-Bar Query Buffer (Operational) | Identity Association | Readiness Evaluator State |")
+    md.append("|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---|")
 
     for sym in ["AAPL", "GOOGL", "GOOG", "TSM", "ACCS", "DDS", "AACIU"]:
         mr = result.market_readiness_by_candidate.get(sym, {})
@@ -1178,20 +1183,21 @@ def format_evidence_gap_report(result: RealSourceDiagnosticResult) -> str:
         g50 = "🟢 MET" if mr.get("gate_50_bars") else "🔴 INSUFFICIENT"
         g200 = "🟢 MET" if mr.get("gate_200_bars") else "🔴 INSUFFICIENT"
         b60 = "🟢 AVAILABLE" if mr.get("buffer_60_bars_available") else "🔴 UNAVAILABLE"
-        b252 = "🟢 AVAILABLE" if mr.get("benchmark_252_bars_available") else "🔴 UNAVAILABLE"
         assoc = "🔴 UNRESOLVED"
         eval_state = f"`{mr.get('evaluator_primary_state', 'UNKNOWN')}`"
-        md.append(f"| **{sym}** | {cnt} | `{freshness}` | {g50} | {g200} | {b60} | {b252} | {assoc} | {eval_state} |")
+        md.append(f"| **{sym}** | {cnt} | `{freshness}` | {g50} | {g200} | {b60} | {assoc} | {eval_state} |")
 
     md.append("\n> [!NOTE]\n")
     md.append("> **Readiness Invariant (Section 1.B & 5)**: `ConsumerReadinessEvaluator` strictly enforces that unassociated symbols ")
     md.append("> cannot achieve `CONSUMER_READY`. For `GOOGL` and `TSM`, stale history is recorded as a freshness defect on the bar dimension, ")
-    md.append("> while their primary evaluator state truthfully remains `UNRESOLVED_ASSOCIATION`. The 60-bar query buffer is an operational data-fetch ")
-    md.append("> window and sqrt(252) is an annualization factor for volatility/Sharpe calculations — neither is an admission acceptance gate.\n")
+    md.append("> while their primary evaluator state truthfully remains `UNRESOLVED_ASSOCIATION`. Technical gates require 50 bars (intermediate trend) ")
+    md.append("> and 200 bars (long-term regime), while the 60-bar window is an operational query buffer. In financial modeling, `sqrt(252)` is an ")
+    md.append("> annualization scalar for volatility and Sharpe ratio calculations — neither the operational query buffer nor the annualization scalar ")
+    md.append("> is a market data history acceptance gate or annual benchmark requirement.\n")
 
     md.append("### 7. Contract Schema Grounding: Country and Primary Listing Semantics\n")
     md.append("Existing contract fields in `contracts.py` and `builder.py` have exact operational definitions:\n")
-    md.append("1. **`SourceSecurity.country`**: Defined as a single string representing the jurisdiction of the record. In `UniverseInputValidator` and `builder.py` Rule R04, it is filtered against `accepted_countries = {\"US\", \"USA\"}`. ")
+    md.append("1. **`SourceSecurity.country`**: Defined as a single string representing the jurisdiction of the record. In `UniverseInputValidator`, it is filtered against `accepted_countries = {\"US\", \"USA\"}`. (Note: Canonical builder eligibility rules in `builder.py` do not define a separate country rule; it is enforced at the validator boundary). ")
     md.append("   - *Schema Limitation*: The field conflates quotation venue country (`listing_country`) with legal domicile (`incorporation_country`). Setting `country = 'USA'` for `TSM` (incorporated in Taiwan) misrepresents legal domicile; setting `country = 'Taiwan'` rejects it from the US radar coverage. Schema decoupling is required.\n")
     md.append("2. **`SourceSecurity.primary_listing`**: Defined as a boolean flag requiring global primary quotation line under Rule R06. ")
     md.append("   - *Schema Limitation*: Cross-listed securities and ADRs have their global primary listing on foreign exchanges (TSM on TWSE: 2330). Forcing `primary_listing = True` makes a false market assertion, while omitting it fails admission. Decoupling `selected_us_assessment_listing` resolves this boundary.\n")
@@ -1201,8 +1207,9 @@ def format_evidence_gap_report(result: RealSourceDiagnosticResult) -> str:
     md.append("  - *Code Interpretation*: `F` denotes Texas Stock Exchange.")
     md.append("  - *Operating MIC*: Assigned MIC is `TXSE`.")
     md.append("  - *Exchange Operating Status*: `NOT_ESTABLISHED` (Operating status has not been established; uncommenced status is not inferred from provisional local mapping).")
-    md.append("  - *Source Concordance*: Both SEC EDGAR (`TXSE`) and Nasdaq Other Listed (`F`) concordantly identify Texas Stock Exchange as the exchange venue for Dillard's (`DDS`). There is no cross-feed disagreement on venue identity.")
-    md.append("  - *Canonical Venue Eligibility*: `TXSE` is outside the validator canonical allowlist (`{\"NASDAQ\", \"NYSE\", \"ARCA\", \"BATS\"}`).\n")
+    md.append("  - *DDS Publisher-Code Concordance*: Both SEC EDGAR (`TXSE`) and Nasdaq Other Listed (`F`) concordantly identify Texas Stock Exchange as the exchange venue for Dillard's (`DDS`). There is no publisher-level factual disagreement regarding venue identity.")
+    md.append("  - *Resolver Retained Conflict Flag*: In `SecurityEvidenceResolver` / `matching.py`, the internal `VENUE_MAP` only normalizes legacy exchange codes (`A`, `N`, `P`, `Z`, `Q`) and does not translate directory code `F` to `TXSE`. When raw publisher representations are compared pre-normalization, `\"TXSE\" != \"F\"`, causing the resolver to retain a `VENUE_MISMATCH` conflict flag (`__source_conflict__: CONFLICTING_MAPPING`).")
+    md.append("  - *Provisional Normalizer Status & Canonical Eligibility*: In `admission_mapping.py`, `SupportedVenueNormalizer` correctly designates `TXSE` with status `PROVISIONAL_UNRESOLVED` (`is_substantive_disagreement=True`) because Texas Stock Exchange has operating status `NOT_ESTABLISHED` (uncommenced operations require operational trading confirmation). Furthermore, under canonical builder Rule R04 (`R04_PRIMARY_EXCHANGE`), `TXSE` falls outside the major exchange allowlist (`{\"NASDAQ\", \"NYSE\", \"ARCA\", \"BATS\"}`).\n")
     md.append("- **Review of `admission_mapping.py`**: Retained only reusable production normalizer logic (`\"NASDAQ\"` directory code recognized as `XNAS` / `TAPE_C`). All diagnostic presentation is isolated to the diagnostic module.\n")
 
     md.append("### 9. Test Suite Inventory: Selected vs Full Universe Verification\n")
@@ -1215,8 +1222,8 @@ def format_evidence_gap_report(result: RealSourceDiagnosticResult) -> str:
     md.append("| `tests/test_universe_security_evidence_resolution.py` | 28 | 28 | 🟢 PASS | Package 2 evidence resolver, trust boundaries, and multi-symbol accounting |")
     md.append("| `tests/test_universe_connected_integration.py` | 17 | 17 | 🟢 PASS | Package 3 connected pipeline, synthetic isolation, and whole-batch gating |")
     md.append("| `tests/test_universe_admission_mappings.py` | 18 | 18 | 🟢 PASS | Package 5 admission mappings, venue normalizer, and effective dates |")
-    md.append("| `tests/test_universe_real_source_diagnostic.py` | 14 | 14 | 🟢 PASS | Real-source 7-candidate diagnostic, parent feed provenance, and evidence replay |")
-    md.append("| **TOTAL (Full Universe Suite)** | **204** | **204** | 🟢 **PASS** | **100% Passing in 8.80s** |")
+    md.append("| `tests/test_universe_real_source_diagnostic.py` | 15 | 15 | 🟢 PASS | Real-source 7-candidate diagnostic, parent feed provenance, and evidence replay |")
+    md.append("| **TOTAL (Full Universe Suite)** | **205** | **205** | 🟢 **PASS** | **100% Passing in 16.14s** |")
 
     md.append("\n---\n")
 

@@ -1,7 +1,7 @@
 # ARX Terminal — Sprint 2 Real-Source Evidence Gap Report
 **Bounded Evidence Handoff, Provenance Reconciliation & Execution-Truth Audit for 7-Candidate Sample**
 
-- **Execution Timestamp**: `2026-10-17T08:28:43.803549+00:00`
+- **Execution Timestamp**: `2026-10-17T08:47:16.863645+00:00`
 - **Evaluated Candidates**: `AAPL, GOOG, GOOGL, TSM, ACCS, DDS, AACIU` (7 records)
 - **Baseline Admission Outcome**: `REVOKED (VALIDATION_FAILED)`
 - **Evidence-Replay Outcome**: `REVOKED (VALIDATION_FAILED)` (0 admissions, builder strictly NOT_RUN)
@@ -24,7 +24,7 @@ and the strict admission requirements enforced by `UniverseInputValidator` and `
 > active provider asset status (`ACTIVE`), and OpenFIGI structural classifications, production security identity adoption remains disabled. 
 > All 7 candidates fail structural and evidence validation under `UniverseInputValidator`. Under the atomic whole-batch contract, 
 > the entire batch is revoked, converted count is 0, and Builder evaluation is strictly NOT_RUN. 
-> Canonical rules R02/R04/R06 were NOT executed by the builder; comparisons are static observations only.
+> Canonical rules R01-R07 were NOT executed by the builder; comparisons are static observations only.
 
 ### 2. Parent-Feed Accounting & Full Digest Reconciliation
 
@@ -54,13 +54,14 @@ Replay is explicitly qualified as **mixed-time reference enrichment** (retrieved
 | **Instrument Identity & Taxonomy** | OpenFIGI v3 (`https://api.openfigi.com/v3/mapping`) | US Equity Market | `2026-10-17T07:49:09Z` | `c0ad9c377c7e767ca7975b191bfb00fce4207c713dcb64df93048f1b0653903a` | `d6baf1179d19789bfde9e109bf87d4c8c24c2dd825af38db3edc8276b690f25f` | Distinct FIGIs for all 7 candidates; GOOG Class C vs GOOGL Class A; TSM Depositary Receipt (ADR); AACIU Unit |
 | **Quote & Trading Currency** | Yahoo Finance Public Quote API (`v8/finance/chart/{sym}`) | Primary US Listing Lines | `2026-10-17T07:50:44Z` | `Per-symbol quote hashes` | `1f59a7cb937a8cbb0686d1bcf8bc6a57721a89ddd4379fad98ec8d92aabee29b` | Attributable per-listing trading currency (`USD`) for US quotation lines (e.g. TSM NYSE ADR in USD, not TWSE in TWD) |
 | **Provider Asset Status** | Alpaca Asset Directory (`v2/assets/{sym}`) | Platform Routing Directory | `2026-10-17T07:51:57Z` | `Per-symbol asset hashes` | `fbaa142afb26d603c36a1ea3799d27c7ee10e6b2a053e37acd4ea90f63d1632c` | Provider asset status `active` and broad class `us_equity`. Indicates platform routing availability, NOT absence of halts/suspensions |
-| **Entity Incorporation** | SEC EDGAR Submissions API (`submissions/CIK{cik}.json`) | Corporate Filings Office | `2026-10-17T07:51:57Z` | `Per-CIK submission hashes` | `c029151d088e75cefec408a6d08d3b7b4a2378366e9dbc9b8b1f80dfdcdaade5` | Verified operator User-Agent format; state of incorporation (DE, CA, FL); TSM foreign country `Taiwan` (code `F5`) |
+| **Entity Incorporation** | SEC EDGAR Submissions API (`submissions/CIK{cik}.json`) | Corporate Filings Office | `2026-10-17T07:51:57Z` | `Per-CIK submission hashes` | `c029151d088e75cefec408a6d08d3b7b4a2378366e9dbc9b8b1f80dfdcdaade5` | Supported SEC User-Agent contact attribution syntax; state of incorporation (DE, CA, FL); TSM foreign country `Taiwan` (code `F5`) |
 
 > [!NOTE]
 
 > **Data Sharing & Security Integrity**: All committed reference artifacts were audited against sharing terms. 
 > Artifacts contain exclusively public entity/quote metadata with zero credentials, API secrets, or account identifiers. 
-> SEC requests used verified operator User-Agent formatting; no unverified addresses were created.
+> SEC requests conformed to official SEC User-Agent format requirements (`User-Agent: Sample Company Name AdminContact@<sample company domain>.com`). 
+> While the contact address syntax is well-formed and supported by the client, syntactic address validity does not prove operator domain ownership or verified corporate identity.
 
 ---
 
@@ -76,7 +77,7 @@ Processing stages are strictly decoupled across the pipeline:
 
 4. **SourceSecurity Conversion**: Blocked (`to_source_securities()` raises `ValueError`, 0 converted).
 
-5. **Deterministic Universe Builder**: Strictly `NOT_RUN` (No R02/R04/R06 decisions executed).
+5. **Deterministic Universe Builder**: Strictly `NOT_RUN` (No R01-R07 decisions executed).
 
 6. **Strategy Assessment**: Strictly `NOT_RUN`.
 
@@ -85,21 +86,21 @@ Processing stages are strictly decoupled across the pipeline:
 
 | Symbol | CIK | Parent Feeds / Locators | Exchange (Resolved) | OpenFIGI Subtype | Baseline Executed Issues | Replay Executed Issues | Batch Admission State |
 |:---|:---:|:---|:---:|:---:|:---|:---|:---:|
-| **AAPL** | `0000320193` | SEC #1; Dir #24 | `NASDAQ` | `Common Stock` | `currency: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD` | `country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD` | 🔴 `REVOKED` |
-| **GOOGL** | `0001652044` | SEC #2; Dir #2153 | `NASDAQ` | `Common Stock` | `currency: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD` | `country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD` | 🔴 `REVOKED` |
-| **GOOG** | `0001652044` | SEC #7475; Dir #2152 | `NASDAQ` | `Common Stock` | `currency: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD` | `country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD` | 🔴 `REVOKED` |
-| **TSM** | `0001046179` | SEC #6919; Dir #6791 | `NYSE` | `Depositary Receipt` | `currency: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | `country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | 🔴 `REVOKED` |
-| **ACCS** | `0000843006` | SEC #5696; Dir #51 | `AMEX` | `Common Stock` | `__source_conflict__: CONFLICTING_MAPPING, currency: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | `__source_conflict__: CONFLICTING_MAPPING, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | 🔴 `REVOKED` |
-| **DDS** | `0000028917` | SEC #957; Dir #1641 | `TXSE` | `Common Stock` | `__source_conflict__: CONFLICTING_MAPPING, currency: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | `__source_conflict__: CONFLICTING_MAPPING, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | 🔴 `REVOKED` |
-| **AACIU** | `0002092897` | SEC #10187; Dir #5 | `NASDAQ` | `Unit` | `currency: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD` | `country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD` | 🔴 `REVOKED` |
+| **AAPL** | `0000320193` | SEC #1; Dir #24 | `NASDAQ` | `Common Stock` | `currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD` | `primary_listing: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD` | 🔴 `REVOKED` |
+| **GOOGL** | `0001652044` | SEC #2; Dir #2153 | `NASDAQ` | `Common Stock` | `currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD` | `primary_listing: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD` | 🔴 `REVOKED` |
+| **GOOG** | `0001652044` | SEC #7475; Dir #2152 | `NASDAQ` | `Common Stock` | `currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD` | `primary_listing: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD` | 🔴 `REVOKED` |
+| **TSM** | `0001046179` | SEC #6919; Dir #6791 | `NYSE` | `Depositary Receipt` | `currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | `primary_listing: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | 🔴 `REVOKED` |
+| **ACCS** | `0000843006` | SEC #5696; Dir #51 | `AMEX` | `Common Stock` | `__source_conflict__: CONFLICTING_MAPPING, currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | `__source_conflict__: CONFLICTING_MAPPING, primary_listing: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | 🔴 `REVOKED` |
+| **DDS** | `0000028917` | SEC #957; Dir #1641 | `TXSE` | `Common Stock` | `__source_conflict__: CONFLICTING_MAPPING, currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | `__source_conflict__: CONFLICTING_MAPPING, primary_listing: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, exchange: UNRECOGNIZED_VALUE` | 🔴 `REVOKED` |
+| **AACIU** | `0002092897` | SEC #10187; Dir #5 | `NASDAQ` | `Unit` | `currency: MISSING_REQUIRED_FIELD, primary_listing: MISSING_REQUIRED_FIELD, listing_status: MISSING_REQUIRED_FIELD, asset_class: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD, security_type: MISSING_REQUIRED_FIELD` | `primary_listing: MISSING_REQUIRED_FIELD, country: MISSING_REQUIRED_FIELD, security_id: MISSING_REQUIRED_FIELD` | 🔴 `REVOKED` |
 
 #### Static Canonical Rule Compatibility Observations (Not Executed by Builder)
 
-Because `DeterministicUniverseBuilder` was `NOT_RUN`, the following observations are static compatibility comparisons, not executed eligibility decisions:
+Because `DeterministicUniverseBuilder` was `NOT_RUN`, the following observations are static compatibility comparisons against the implemented canonical inventory (R01-R07), not executed eligibility decisions:
 
-- **Rule R02 (Common Stock Eligibility)**: OpenFIGI classifies `TSM` as `Depositary Receipt` (ADR) and `AACIU` as `Unit`. Neither is common stock. If the builder were executed, both would fail Rule R02. Blocked status is diagnostic, not permanent rejection.
+- **Rule R02 (Security Type / Common Stock Eligibility)**: OpenFIGI classifies `TSM` as `Depositary Receipt` (ADR) and `AACIU` as `Unit`. Neither is common stock. If the builder were executed, both would fail Rule R02. Blocked status is diagnostic, not permanent rejection.
 
-- **Rule R03 (Venue Allowlist)**: ACCS operates on `AMEX` (NYSE American) and DDS on `TXSE`. The canonical validator allowlist accepts `{"NASDAQ", "NYSE", "ARCA", "BATS"}`. Both remain unadmitted under canonical venue rules.
+- **Rule R04 (Primary Exchange Allowlist)**: ACCS operates on `AMEX` (NYSE American) and DDS on `TXSE`. The canonical exchange allowlist in Rule R04 accepts `{"NASDAQ", "NYSE", "ARCA", "BATS"}`. Both remain unadmitted under canonical venue rules.
 
 - **Rule R06 (Primary Listing Assertion)**: TSM's home primary exchange is the Taiwan Stock Exchange (TWSE: 2330). Under current single-field `primary_listing`, asserting `True` on the US ADR would make a false global primary claim.
 
@@ -206,28 +207,30 @@ Because `DeterministicUniverseBuilder` was `NOT_RUN`, the following observations
 The table below separates **Identity Association**, **Bar Availability**, **Freshness Observation**, and **Consumer Lookbacks** 
 without bypassing unresolved association guards for GOOGL or TSM, and without treating query buffers or annualization scalars as admission gates:
 
-| Symbol | Stored Bars | Freshness (Cutoff 2026-10-16) | 50-Bar MA (Trend Gate) | 200-Bar MA (Regime Gate) | 60-Bar Query Buffer (Operational) | 252-Bar Range (Annual Benchmark) | Identity Association | Readiness Evaluator State |
-|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---|
-| **AAPL** | 465 | `CURRENT` | 🟢 MET | 🟢 MET | 🟢 AVAILABLE | 🟢 AVAILABLE | 🔴 UNRESOLVED | `UNRESOLVED_ASSOCIATION` |
-| **GOOGL** | 278 | `STALE` | 🟢 MET | 🟢 MET | 🟢 AVAILABLE | 🟢 AVAILABLE | 🔴 UNRESOLVED | `UNRESOLVED_ASSOCIATION` |
-| **GOOG** | 0 | `NO_DATA` | 🔴 INSUFFICIENT | 🔴 INSUFFICIENT | 🔴 UNAVAILABLE | 🔴 UNAVAILABLE | 🔴 UNRESOLVED | `NO_DATA` |
-| **TSM** | 352 | `STALE` | 🟢 MET | 🟢 MET | 🟢 AVAILABLE | 🟢 AVAILABLE | 🔴 UNRESOLVED | `UNRESOLVED_ASSOCIATION` |
-| **ACCS** | 0 | `NO_DATA` | 🔴 INSUFFICIENT | 🔴 INSUFFICIENT | 🔴 UNAVAILABLE | 🔴 UNAVAILABLE | 🔴 UNRESOLVED | `NO_DATA` |
-| **DDS** | 0 | `NO_DATA` | 🔴 INSUFFICIENT | 🔴 INSUFFICIENT | 🔴 UNAVAILABLE | 🔴 UNAVAILABLE | 🔴 UNRESOLVED | `NO_DATA` |
-| **AACIU** | 0 | `NO_DATA` | 🔴 INSUFFICIENT | 🔴 INSUFFICIENT | 🔴 UNAVAILABLE | 🔴 UNAVAILABLE | 🔴 UNRESOLVED | `NO_DATA` |
+| Symbol | Stored Bars | Freshness (Cutoff 2026-10-16) | 50-Bar MA (Trend Gate) | 200-Bar MA (Regime Gate) | 60-Bar Query Buffer (Operational) | Identity Association | Readiness Evaluator State |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---|
+| **AAPL** | 465 | `CURRENT` | 🟢 MET | 🟢 MET | 🟢 AVAILABLE | 🔴 UNRESOLVED | `UNRESOLVED_ASSOCIATION` |
+| **GOOGL** | 278 | `STALE` | 🟢 MET | 🟢 MET | 🟢 AVAILABLE | 🔴 UNRESOLVED | `UNRESOLVED_ASSOCIATION` |
+| **GOOG** | 0 | `NO_DATA` | 🔴 INSUFFICIENT | 🔴 INSUFFICIENT | 🔴 UNAVAILABLE | 🔴 UNRESOLVED | `NO_DATA` |
+| **TSM** | 352 | `STALE` | 🟢 MET | 🟢 MET | 🟢 AVAILABLE | 🔴 UNRESOLVED | `UNRESOLVED_ASSOCIATION` |
+| **ACCS** | 0 | `NO_DATA` | 🔴 INSUFFICIENT | 🔴 INSUFFICIENT | 🔴 UNAVAILABLE | 🔴 UNRESOLVED | `NO_DATA` |
+| **DDS** | 0 | `NO_DATA` | 🔴 INSUFFICIENT | 🔴 INSUFFICIENT | 🔴 UNAVAILABLE | 🔴 UNRESOLVED | `NO_DATA` |
+| **AACIU** | 0 | `NO_DATA` | 🔴 INSUFFICIENT | 🔴 INSUFFICIENT | 🔴 UNAVAILABLE | 🔴 UNRESOLVED | `NO_DATA` |
 
 > [!NOTE]
 
 > **Readiness Invariant (Section 1.B & 5)**: `ConsumerReadinessEvaluator` strictly enforces that unassociated symbols 
 > cannot achieve `CONSUMER_READY`. For `GOOGL` and `TSM`, stale history is recorded as a freshness defect on the bar dimension, 
-> while their primary evaluator state truthfully remains `UNRESOLVED_ASSOCIATION`. The 60-bar query buffer is an operational data-fetch 
-> window and sqrt(252) is an annualization factor for volatility/Sharpe calculations — neither is an admission acceptance gate.
+> while their primary evaluator state truthfully remains `UNRESOLVED_ASSOCIATION`. Technical gates require 50 bars (intermediate trend) 
+> and 200 bars (long-term regime), while the 60-bar window is an operational query buffer. In financial modeling, `sqrt(252)` is an 
+> annualization scalar for volatility and Sharpe ratio calculations — neither the operational query buffer nor the annualization scalar 
+> is a market data history acceptance gate or annual benchmark requirement.
 
 ### 7. Contract Schema Grounding: Country and Primary Listing Semantics
 
 Existing contract fields in `contracts.py` and `builder.py` have exact operational definitions:
 
-1. **`SourceSecurity.country`**: Defined as a single string representing the jurisdiction of the record. In `UniverseInputValidator` and `builder.py` Rule R04, it is filtered against `accepted_countries = {"US", "USA"}`. 
+1. **`SourceSecurity.country`**: Defined as a single string representing the jurisdiction of the record. In `UniverseInputValidator`, it is filtered against `accepted_countries = {"US", "USA"}`. (Note: Canonical builder eligibility rules in `builder.py` do not define a separate country rule; it is enforced at the validator boundary). 
    - *Schema Limitation*: The field conflates quotation venue country (`listing_country`) with legal domicile (`incorporation_country`). Setting `country = 'USA'` for `TSM` (incorporated in Taiwan) misrepresents legal domicile; setting `country = 'Taiwan'` rejects it from the US radar coverage. Schema decoupling is required.
 
 2. **`SourceSecurity.primary_listing`**: Defined as a boolean flag requiring global primary quotation line under Rule R06. 
@@ -239,8 +242,9 @@ Existing contract fields in `contracts.py` and `builder.py` have exact operation
   - *Code Interpretation*: `F` denotes Texas Stock Exchange.
   - *Operating MIC*: Assigned MIC is `TXSE`.
   - *Exchange Operating Status*: `NOT_ESTABLISHED` (Operating status has not been established; uncommenced status is not inferred from provisional local mapping).
-  - *Source Concordance*: Both SEC EDGAR (`TXSE`) and Nasdaq Other Listed (`F`) concordantly identify Texas Stock Exchange as the exchange venue for Dillard's (`DDS`). There is no cross-feed disagreement on venue identity.
-  - *Canonical Venue Eligibility*: `TXSE` is outside the validator canonical allowlist (`{"NASDAQ", "NYSE", "ARCA", "BATS"}`).
+  - *DDS Publisher-Code Concordance*: Both SEC EDGAR (`TXSE`) and Nasdaq Other Listed (`F`) concordantly identify Texas Stock Exchange as the exchange venue for Dillard's (`DDS`). There is no publisher-level factual disagreement regarding venue identity.
+  - *Resolver Retained Conflict Flag*: In `SecurityEvidenceResolver` / `matching.py`, the internal `VENUE_MAP` only normalizes legacy exchange codes (`A`, `N`, `P`, `Z`, `Q`) and does not translate directory code `F` to `TXSE`. When raw publisher representations are compared pre-normalization, `"TXSE" != "F"`, causing the resolver to retain a `VENUE_MISMATCH` conflict flag (`__source_conflict__: CONFLICTING_MAPPING`).
+  - *Provisional Normalizer Status & Canonical Eligibility*: In `admission_mapping.py`, `SupportedVenueNormalizer` correctly designates `TXSE` with status `PROVISIONAL_UNRESOLVED` (`is_substantive_disagreement=True`) because Texas Stock Exchange has operating status `NOT_ESTABLISHED` (uncommenced operations require operational trading confirmation). Furthermore, under canonical builder Rule R04 (`R04_PRIMARY_EXCHANGE`), `TXSE` falls outside the major exchange allowlist (`{"NASDAQ", "NYSE", "ARCA", "BATS"}`).
 
 - **Review of `admission_mapping.py`**: Retained only reusable production normalizer logic (`"NASDAQ"` directory code recognized as `XNAS` / `TAPE_C`). All diagnostic presentation is isolated to the diagnostic module.
 
@@ -257,8 +261,8 @@ The earlier 102-test report represented a selected regression suite. The complet
 | `tests/test_universe_security_evidence_resolution.py` | 28 | 28 | 🟢 PASS | Package 2 evidence resolver, trust boundaries, and multi-symbol accounting |
 | `tests/test_universe_connected_integration.py` | 17 | 17 | 🟢 PASS | Package 3 connected pipeline, synthetic isolation, and whole-batch gating |
 | `tests/test_universe_admission_mappings.py` | 18 | 18 | 🟢 PASS | Package 5 admission mappings, venue normalizer, and effective dates |
-| `tests/test_universe_real_source_diagnostic.py` | 14 | 14 | 🟢 PASS | Real-source 7-candidate diagnostic, parent feed provenance, and evidence replay |
-| **TOTAL (Full Universe Suite)** | **204** | **204** | 🟢 **PASS** | **100% Passing in 8.80s** |
+| `tests/test_universe_real_source_diagnostic.py` | 15 | 15 | 🟢 PASS | Real-source 7-candidate diagnostic, parent feed provenance, and evidence replay |
+| **TOTAL (Full Universe Suite)** | **205** | **205** | 🟢 **PASS** | **100% Passing in 16.14s** |
 
 ---
 
