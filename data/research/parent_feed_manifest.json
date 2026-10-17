@@ -1,0 +1,45 @@
+{
+  "manifest_version": "1.0.0",
+  "generated_at_utc": "2026-10-17T08:25:00+00:00",
+  "authoritative_parent_directory": "C:/Users/akara/Documents/Projects/finance-sprint-2-listing-acquisition/data/raw_feeds/2026-10-16",
+  "files": {
+    "sec_company_tickers_exchange.json": {
+      "absolute_source_path": "C:/Users/akara/Documents/Projects/finance-sprint-2-listing-acquisition/data/raw_feeds/2026-10-16/sec_company_tickers_exchange.json",
+      "byte_size": 523925,
+      "sha256": "d04923d674c6d0084dc56e67efd9cb5756f965366affe9d3e18d38b379ffd45f",
+      "physical_lines": 1,
+      "metadata_rows": 1,
+      "usable_data_records": 10276,
+      "missing_exchange_records": 168,
+      "syntactic_json_errors": 0,
+      "unique_records": 10276,
+      "raw_array_items": 10444,
+      "as_of_date": "2026-10-16",
+      "description": "SEC EDGAR Company Tickers Exchange master feed (168 rows missing exchange attribute; 0 syntax errors)"
+    },
+    "nasdaq_listed_directory.txt": {
+      "absolute_source_path": "C:/Users/akara/Documents/Projects/finance-sprint-2-listing-acquisition/data/raw_feeds/2026-10-16/nasdaq_listed_directory.txt",
+      "byte_size": 349723,
+      "sha256": "67f42dd0594aff8e29634ec9e42b561319cbb74340829098cbfbf9b4517fe272",
+      "physical_lines": 5636,
+      "metadata_rows": 2,
+      "usable_data_records": 5634,
+      "malformed_rows": 0,
+      "unique_records": 5634,
+      "as_of_date": "2026-10-16",
+      "description": "Nasdaq Trader Symbol Directory (Nasdaq Listed)"
+    },
+    "other_listed_directory.txt": {
+      "absolute_source_path": "C:/Users/akara/Documents/Projects/finance-sprint-2-listing-acquisition/data/raw_feeds/2026-10-16/other_listed_directory.txt",
+      "byte_size": 543140,
+      "sha256": "a0cb851a772098d64830304bf7e7a7d1ca1cbd8421da20a6bfbec9a336243792",
+      "physical_lines": 7676,
+      "metadata_rows": 2,
+      "usable_data_records": 7674,
+      "malformed_rows": 0,
+      "unique_records": 7674,
+      "as_of_date": "2026-10-16",
+      "description": "Nasdaq Trader Symbol Directory (Other Listed / CTA Tape A & B)"
+    }
+  }
+}
