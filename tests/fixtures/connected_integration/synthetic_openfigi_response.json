@@ -1,0 +1,72 @@
+[
+  {
+    "data": [{
+      "figi": "BBG000B9XRY4",
+      "name": "APPLE INC",
+      "ticker": "AAPL",
+      "exchCode": "US",
+      "compositeFIGI": "BBG000B9XRY4",
+      "securityType": "Common Stock",
+      "marketSector": "Equity",
+      "shareClassFIGI": "BBG001S5N8V8",
+      "securityType2": "Common Stock",
+      "securityDescription": "AAPL"
+    }]
+  },
+  {
+    "data": [{
+      "figi": "BBG000BPH459",
+      "name": "MICROSOFT CORP",
+      "ticker": "MSFT",
+      "exchCode": "US",
+      "compositeFIGI": "BBG000BPH459",
+      "securityType": "Common Stock",
+      "marketSector": "Equity",
+      "shareClassFIGI": "BBG001S5TD05",
+      "securityType2": "Common Stock",
+      "securityDescription": "MSFT"
+    }]
+  },
+  {
+    "data": [{
+      "figi": "BBG009S39JX6",
+      "name": "ALPHABET INC-CL A",
+      "ticker": "GOOGL",
+      "exchCode": "US",
+      "compositeFIGI": "BBG009S39JX6",
+      "securityType": "Common Stock",
+      "marketSector": "Equity",
+      "shareClassFIGI": "BBG009S39JY5",
+      "securityType2": "Common Stock",
+      "securityDescription": "GOOGL"
+    }]
+  },
+  {
+    "data": [{
+      "figi": "BBG009S3NB30",
+      "name": "ALPHABET INC-CL C",
+      "ticker": "GOOG",
+      "exchCode": "US",
+      "compositeFIGI": "BBG009S3NB30",
+      "securityType": "Common Stock",
+      "marketSector": "Equity",
+      "shareClassFIGI": "BBG009S3NB49",
+      "securityType2": "Common Stock",
+      "securityDescription": "GOOG"
+    }]
+  },
+  {
+    "data": [{
+      "figi": "BBG006G24542",
+      "name": "ALIBABA GROUP HOLDING-SP ADR",
+      "ticker": "BABA",
+      "exchCode": "US",
+      "compositeFIGI": "BBG006G24542",
+      "securityType": "Depositary Receipt",
+      "marketSector": "Equity",
+      "shareClassFIGI": "BBG006G24551",
+      "securityType2": "Depositary Receipt",
+      "securityDescription": "BABA"
+    }]
+  }
+]

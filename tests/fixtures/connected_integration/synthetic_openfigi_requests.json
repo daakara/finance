@@ -1,0 +1,7 @@
+[
+  {"idType": "TICKER", "idValue": "AAPL", "exchCode": "US"},
+  {"idType": "TICKER", "idValue": "MSFT", "exchCode": "US"},
+  {"idType": "TICKER", "idValue": "GOOGL", "exchCode": "US"},
+  {"idType": "TICKER", "idValue": "GOOG", "exchCode": "US"},
+  {"idType": "TICKER", "idValue": "BABA", "exchCode": "US"}
+]
