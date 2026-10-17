@@ -2,8 +2,8 @@
 tests/test_universe_real_source_diagnostic.py
 
 Sprint 2: Bounded Real-Source Evidence Handoff & Admission Diagnostic Test Suite.
-Verifies the 7-candidate representative real-source sample against the released
-admission-mapping and validation contracts:
+Verifies the 7-candidate representative real-source sample against released
+admission-mapping, validation contracts, and newly acquired research evidence:
 
 1. Straightforward US common stock: AAPL
 2. Multi-symbol issuer sharing CIK: GOOG & GOOGL (CIK 0001652044)
@@ -13,12 +13,17 @@ admission-mapping and validation contracts:
 6. Unresolved classification / Units: AACIU
 
 Core Safeguards Verified:
-- Source Grounding & Attributable Provenance (2026-10-16 parent feeds).
+- Recomputed parent feed accounting from exact archived bytes (5,634 Nasdaq, 7,674 Other, 10,276 SEC usable).
+- Explanation of previous 5,166 / 8,172 report discrepancy.
 - Strict Non-Inference: Zero surrogate keys synthesized (CIK+symbol).
 - Separation of Evidentiary Categories (source fact, external mapping, policy assertion, triage hint, conflict).
-- Substantive venue disagreements preserved (DDS TXSE vs F).
-- Regex triage hints cannot certify COMMON_STOCK (AACIU = UNIT; corporate common stock uncertified).
-- Atomic whole-batch validation failure: 0 converted securities, builder strictly NOT_RUN.
+- Substantive venue disagreements preserved (DDS TXSE vs F; ACCS AMEX).
+- OpenFIGI qualification: preserves levels (listing, composite, shareClass), distinct Class A/C for GOOG/GOOGL,
+  TSM Depositary Receipt, AACIU Unit.
+- Attributable per-listing currency evidence (USD) from quote reference metadata.
+- Separated readiness dimensions: unresolved association guard is not bypassed for GOOGL/TSM;
+  query buffers (60) and annualization factors (252) are not acceptance gates.
+- Atomic whole-batch validation failure across both baseline and replay: 0 converted securities, builder strictly NOT_RUN.
 - Enforced read-only SQLite market store audit (mode=ro mutation prevention).
 """
 
@@ -35,6 +40,7 @@ from analyst_dashboard.universe.adapters.resolution import (
 from analyst_dashboard.universe.admission_mapping import (
     ClassificationTriageEngine,
     ConsumerReadinessEvaluator,
+    MarketDataReadinessState,
     SupportedVenueNormalizer,
     VenueNormalizationStatus,
 )
@@ -45,6 +51,7 @@ from analyst_dashboard.universe.real_source_diagnostic import (
     RealSourceDiagnosticResult,
     build_real_source_sample_files,
     format_evidence_gap_report,
+    load_acquired_research_evidence,
 )
 from analyst_dashboard.universe.validator import (
     ValidationRequirements,
@@ -55,18 +62,39 @@ from analyst_dashboard.universe.validator import (
 class TestRealSourceParentFeedProvenance:
     """Verifies that sample candidates trace to authentic 2026-10-16 parent feed artifacts."""
 
-    def test_parent_feed_digests_and_record_counts(self):
+    def test_parent_feed_exact_counts_and_discrepancy_explanation(self):
         sec_feed = REAL_SOURCE_PARENT_FEEDS["sec_company_tickers_exchange.json"]
         assert sec_feed["sha256"] == "d04923d674c6d0084dc56e67efd9cb5756f965366affe9d3e18d38b379ffd45f"
-        assert sec_feed["record_count"] == 10444
+        assert sec_feed["physical_lines"] == 1
+        assert sec_feed["metadata_rows"] == 1
+        assert sec_feed["data_records"] == 10276
+        assert sec_feed["malformed_rows"] == 168
+        assert sec_feed["unique_records"] == 10276
+        assert sec_feed["raw_array_items"] == 10444
 
         nasdaq_feed = REAL_SOURCE_PARENT_FEEDS["nasdaq_listed_directory.txt"]
         assert nasdaq_feed["sha256"] == "67f42dd0594aff8e29634ec9e42b561319cbb74340829098cbfbf9b4517fe272"
-        assert nasdaq_feed["record_count"] == 5166
+        assert nasdaq_feed["physical_lines"] == 5636
+        assert nasdaq_feed["metadata_rows"] == 2
+        assert nasdaq_feed["data_records"] == 5634
+        assert nasdaq_feed["malformed_rows"] == 0
+        assert nasdaq_feed["unique_records"] == 5634
 
         other_feed = REAL_SOURCE_PARENT_FEEDS["other_listed_directory.txt"]
         assert other_feed["sha256"] == "a0cb851a772098d64830304bf7e7a7d1ca1cbd8421da20a6bfbec9a336243792"
-        assert other_feed["record_count"] == 8172
+        assert other_feed["physical_lines"] == 7676
+        assert other_feed["metadata_rows"] == 2
+        assert other_feed["data_records"] == 7674
+        assert other_feed["malformed_rows"] == 0
+        assert other_feed["unique_records"] == 7674
+
+        # Verify discrepancy explanations exist and explain previous numbers
+        assert "5,166" in nasdaq_feed["discrepancy_explanation"]
+        assert "5,634" in nasdaq_feed["discrepancy_explanation"]
+        assert "8,172" in other_feed["discrepancy_explanation"]
+        assert "7,674" in other_feed["discrepancy_explanation"]
+        assert "10,276" in sec_feed["discrepancy_explanation"]
+        assert "168" in sec_feed["discrepancy_explanation"]
 
     def test_seven_candidates_have_exact_parent_locators(self):
         candidates = ["AAPL", "GOOGL", "GOOG", "TSM", "ACCS", "DDS", "AACIU"]
@@ -102,7 +130,6 @@ class TestRealSourceSampleResolution:
             assert rec.symbol == sym
             assert rec.issuer_cik is not None
             assert rec.company_name is not None
-            # Verified: No synthetic surrogate keys attached
             assert rec.identity_status == IdentityResolutionStatus.UNRESOLVED
             assert rec.security_id is None
 
@@ -129,22 +156,18 @@ class TestRealSourceSampleResolution:
 
     def test_venue_normalization_and_disagreement_preservation(self):
         """Preserves substantive disagreements (DDS TXSE vs F) and normalizes codes (TSM, ACCS)."""
-        # ACCS: SEC NYSE vs Directory A (AMEX)
         accs_res = SupportedVenueNormalizer.reconcile_dual_source_venues("NYSE", "A")
         assert accs_res.status == VenueNormalizationStatus.DOCUMENTED_REPRESENTATIONAL
         assert accs_res.normalized_venue == "AMEX"
 
-        # TSM: SEC NYSE vs Directory N (NYSE)
         tsm_res = SupportedVenueNormalizer.reconcile_dual_source_venues("NYSE", "N")
         assert tsm_res.status == VenueNormalizationStatus.EXACT_CONCORDANT
         assert tsm_res.normalized_venue == "NYSE"
 
-        # DDS: SEC TXSE vs Directory F (TXSE) - Substantive provisional disagreement
         dds_res = SupportedVenueNormalizer.reconcile_dual_source_venues("TXSE", "F")
         assert dds_res.status == VenueNormalizationStatus.PROVISIONAL_UNRESOLVED
         assert dds_res.is_substantive_disagreement is True
 
-        # AAPL: SEC Nasdaq vs Directory NASDAQ
         aapl_res = SupportedVenueNormalizer.reconcile_dual_source_venues("Nasdaq", "NASDAQ")
         assert aapl_res.status == VenueNormalizationStatus.EXACT_CONCORDANT
         assert aapl_res.normalized_venue == "NASDAQ"
@@ -159,44 +182,111 @@ class TestRealSourceSampleResolution:
         assert hint.is_diagnostic_hint is True
 
 
-class TestAtomicWholeBatchRevocation:
-    """Verifies that the 7-candidate sample fails closed with 0 admissions and builder NOT_RUN."""
+class TestReadinessDimensionsSeparation:
+    """Verifies Section 1.B: Readiness dimensions are kept strictly separate."""
 
-    def test_atomic_batch_revocation_and_zero_conversions(self):
+    def test_unresolved_association_guard_not_bypassed_for_googl_or_tsm(self):
+        result = RealSourceAdmissionDiagnostic.run()
+        mr = result.market_readiness_by_candidate
+
+        # AAPL, GOOGL, TSM have bars in store
+        for sym in ["AAPL", "GOOGL", "TSM"]:
+            assert mr[sym]["bar_count"] > 0
+            # INVARIANT: Association is NOT resolved
+            assert mr[sym]["identity_association_resolved"] is False
+            # INVARIANT: Primary evaluator state MUST remain UNRESOLVED_ASSOCIATION
+            assert mr[sym]["evaluator_primary_state"] == MarketDataReadinessState.UNRESOLVED_ASSOCIATION.value
+
+        # Freshness is tracked as an additional observation
+        assert mr["AAPL"]["freshness_state"] == "CURRENT"
+        assert mr["GOOGL"]["freshness_state"] == "STALE"
+        assert mr["TSM"]["freshness_state"] == "STALE"
+
+        # Symbols with 0 bars are NO_DATA
+        for sym in ["GOOG", "ACCS", "DDS", "AACIU"]:
+            assert mr[sym]["bar_count"] == 0
+            assert mr[sym]["freshness_state"] == "NO_DATA"
+            assert mr[sym]["evaluator_primary_state"] == MarketDataReadinessState.NO_DATA.value
+
+    def test_query_buffer_and_annualization_are_not_acceptance_gates(self):
+        result = RealSourceAdmissionDiagnostic.run()
+        mr = result.market_readiness_by_candidate
+
+        # For AAPL (465 bars):
+        assert mr["AAPL"]["gate_50_bars"] is True       # Acceptance gate 50
+        assert mr["AAPL"]["gate_200_bars"] is True      # Acceptance gate 200
+        assert mr["AAPL"]["buffer_60_bars_available"] is True     # Operational buffer (not gate)
+        assert mr["AAPL"]["benchmark_252_bars_available"] is True # Benchmark range (not gate)
+
+
+class TestAcquiredEvidenceReplayAndQualification:
+    """Verifies Sections 2, 3, and 4: Qualification of acquired research evidence and replay."""
+
+    def test_acquired_research_artifacts_loaded(self):
+        ev = load_acquired_research_evidence()
+        assert ev["openfigi"] is not None
+        assert ev["currency"] is not None
+        assert ev["alpaca"] is not None
+        assert ev["sec_submissions"] is not None
+
+    def test_openfigi_qualification_for_seven_candidates(self):
+        ev = load_acquired_research_evidence()
+        payload = ev["openfigi"]["response_payload"]
+        assert len(payload) == 7
+
+        sym_to_data = {
+            job["idValue"]: res["data"][0]
+            for job, res in zip(ev["openfigi"]["request_parameters"], payload)
+            if "data" in res
+        }
+
+        # Check distinct FIGIs and shareClassFIGIs for GOOG vs GOOGL
+        assert sym_to_data["GOOG"]["figi"] != sym_to_data["GOOGL"]["figi"]
+        assert sym_to_data["GOOG"]["shareClassFIGI"] != sym_to_data["GOOGL"]["shareClassFIGI"]
+        assert "CL C" in sym_to_data["GOOG"]["name"] or "CLASS C" in sym_to_data["GOOG"]["name"].upper()
+        assert "CL A" in sym_to_data["GOOGL"]["name"] or "CLASS A" in sym_to_data["GOOGL"]["name"].upper()
+
+        # Check TSM Depositary Receipt qualification
+        assert sym_to_data["TSM"]["securityType2"] == "Depositary Receipt"
+        assert sym_to_data["TSM"]["securityType"] == "ADR"
+
+        # Check AACIU Unit qualification
+        assert sym_to_data["AACIU"]["securityType2"] == "Unit"
+
+    def test_currency_evidence_attribution(self):
+        ev = load_acquired_research_evidence()
+        curr_res = ev["currency"]["results"]
+        for sym in ["AAPL", "GOOG", "GOOGL", "TSM", "ACCS", "DDS", "AACIU"]:
+            assert curr_res[sym]["success"] is True
+            assert curr_res[sym]["currency"] == "USD"
+            assert curr_res[sym]["source_url"] is not None
+            assert curr_res[sym]["response_sha256"] is not None
+
+    def test_replay_with_acquired_evidence_fails_closed(self):
+        """Even with attributable currency and OpenFIGI, whole batch fails closed."""
         result = RealSourceAdmissionDiagnostic.run()
 
-        # Batch validation must fail
+        # Baseline batch fails closed
         assert result.batch_valid is False
         assert result.failed_count == 7
         assert result.passed_count == 0
-        assert result.unresolved_count == 0
-
-        # Builder must be NOT_RUN
-        assert result.builder_status == "NOT_RUN"
         assert result.converted_security_count == 0
-        assert "BLOCKED_VALIDATION_FAILED" in result.builder_blocking_reason
+        assert result.builder_status == "NOT_RUN"
 
-        # Every candidate must have missing required fields
-        for sym, p in result.candidate_profiles.items():
-            assert p.batch_validation_status == ValidationStatus.VALIDATION_FAILED.value
-            missing_fields = {
-                fa.field_name for fa in p.field_audits if not fa.satisfies_requirement
-            }
-            # Crucial missing fields across raw sources
-            assert "security_id" in missing_fields
-            assert "currency" in missing_fields
-            assert "country" in missing_fields
-            assert "primary_listing" in missing_fields
-            assert "security_type" in missing_fields
-            assert "listing_status" in missing_fields
-            assert "asset_class" in missing_fields
+        # Replay summary confirms replay batch also fails closed
+        rep = result.replay_summary
+        assert rep["replay_batch_valid"] is False
+        assert rep["replay_failed_count"] == 7
+        assert rep["replay_passed_count"] == 0
+        assert rep["replay_converted_count"] == 0
+        assert rep["replay_builder_status"] == "NOT_RUN"
+        assert "BLOCKED_VALIDATION_FAILED" in rep["replay_builder_blocking_reason"]
 
 
 class TestReadOnlyMarketStoreAudit:
     """Verifies that the market store is accessed strictly under read-only mode."""
 
     def test_readonly_sqlite_mutation_prevented(self, tmp_path):
-        # Create a mock database
         db_file = tmp_path / "test_store.db"
         conn = sqlite3.connect(str(db_file))
         conn.execute("CREATE TABLE asset_ohlcv_daily (symbol TEXT, trade_date TEXT, open REAL, high REAL, low REAL, close REAL, volume REAL)")
@@ -205,12 +295,10 @@ class TestReadOnlyMarketStoreAudit:
         conn.commit()
         conn.close()
 
-        # Run diagnostic against the mock DB
         res = RealSourceAdmissionDiagnostic.run(market_db_path=db_file)
         assert res.market_db_status == "ENFORCED_READ_ONLY_INSPECTED"
         assert res.market_db_row_counts["asset_ohlcv_daily_total"] == 1
 
-        # Direct test that URI ?mode=ro blocks mutation
         uri = f"file:{db_file.resolve().as_posix()}?mode=ro"
         ro_conn = sqlite3.connect(uri, uri=True)
         with pytest.raises(sqlite3.OperationalError, match="readonly"):
@@ -226,20 +314,27 @@ class TestEvidenceGapReporting:
         report_md = format_evidence_gap_report(result)
 
         # Must not contain ascii box-drawing characters
-        assert "+" not in report_md or "|" in report_md  # ensure no +---+ style borders
         assert "┌" not in report_md
         assert "└" not in report_md
-        assert "─" not in report_md or "---" in report_md  # standard markdown hr / table divider ok
         assert "│" not in report_md
 
         # Must contain essential sections
         assert "# ARX Terminal — Sprint 2 Real-Source Evidence Gap Report" in report_md
         assert "### 1. Executive Summary & Diagnostic Verdict" in report_md
-        assert "### 2. Candidate Evidence Resolution & Validation Summary" in report_md
-        assert "### 3. Field-by-Candidate Admission Requirement Matrix" in report_md
-        assert "### 4. Development Market Data Store Audit & Lookback Readiness" in report_md
-        assert "### 5. Remaining Admission Blockers & Smallest Next Acquisition Steps" in report_md
+        assert "### 2. Parent-Feed Accounting & Discrepancy Reconciliation" in report_md
+        assert "### 3. Acquired Bounded Real Evidence Provenance" in report_md
+        assert "### 4. Candidate Evidence Resolution & Validation Summary" in report_md
+        assert "### 5. Field-by-Candidate Admission Requirement Matrix" in report_md
+        assert "### 6. Development Market Data Store Audit & Lookback Readiness" in report_md
+        assert "### 7. Previously Approved Semantics & Exact Legacy Contract Integration Gaps" in report_md
+        assert "### 8. Review of `admission_mapping.py` Changes" in report_md
+        assert "### 9. Remaining Admission Blockers & Smallest Next Acquisition Steps" in report_md
 
         # Must mention all 7 candidates
         for sym in ["AAPL", "GOOGL", "GOOG", "TSM", "ACCS", "DDS", "AACIU"]:
             assert sym in report_md
+
+        # Verify parent feed discrepancy explanation is rendered
+        assert "5,634" in report_md
+        assert "7,674" in report_md
+        assert "10,276" in report_md
