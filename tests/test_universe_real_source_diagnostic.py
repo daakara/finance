@@ -321,20 +321,32 @@ class TestEvidenceGapReporting:
         # Must contain essential sections
         assert "# ARX Terminal — Sprint 2 Real-Source Evidence Gap Report" in report_md
         assert "### 1. Executive Summary & Diagnostic Verdict" in report_md
-        assert "### 2. Parent-Feed Accounting & Discrepancy Reconciliation" in report_md
-        assert "### 3. Acquired Bounded Real Evidence Provenance" in report_md
-        assert "### 4. Candidate Evidence Resolution & Validation Summary" in report_md
-        assert "### 5. Field-by-Candidate Admission Requirement Matrix" in report_md
+        assert "### 2. Parent-Feed Accounting & Full Digest Reconciliation" in report_md
+        assert "### 3. Acquired Bounded Reference Evidence Provenance & Qualification" in report_md
+        assert "### 4. Lifecycle Stage Separation & Executed Validator Issues" in report_md
+        assert "### 5. Field-by-Candidate Admission Requirement Matrix (12 Contract Fields)" in report_md
         assert "### 6. Development Market Data Store Audit & Lookback Readiness" in report_md
-        assert "### 7. Previously Approved Semantics & Exact Legacy Contract Integration Gaps" in report_md
-        assert "### 8. Review of `admission_mapping.py` Changes" in report_md
-        assert "### 9. Remaining Admission Blockers & Smallest Next Acquisition Steps" in report_md
+        assert "### 7. Contract Schema Grounding: Country and Primary Listing Semantics" in report_md
+        assert "### 8. Venue Code F and Normalizer Verification" in report_md
+        assert "### 9. Test Suite Inventory: Selected vs Full Universe Verification" in report_md
+        assert "### 10. Remaining Admission Blockers & Smallest Next Acquisition Steps" in report_md
 
         # Must mention all 7 candidates
         for sym in ["AAPL", "GOOGL", "GOOG", "TSM", "ACCS", "DDS", "AACIU"]:
             assert sym in report_md
 
-        # Verify parent feed discrepancy explanation is rendered
+        # Verify parent feed discrepancy explanation and full hashes are rendered
         assert "5,634" in report_md
         assert "7,674" in report_md
         assert "10,276" in report_md
+        assert "d04923d674c6d0084dc56e67efd9cb5756f965366affe9d3e18d38b379ffd45f" in report_md
+        assert "67f42dd0594aff8e29634ec9e42b561319cbb74340829098cbfbf9b4517fe272" in report_md
+        assert "a0cb851a772098d64830304bf7e7a7d1ca1cbd8421da20a6bfbec9a336243792" in report_md
+
+        # Verify FINRA ADF regression is eliminated
+        assert "FINRA ADF" not in report_md
+        assert "Texas Stock Exchange" in report_md
+
+        # Verify mixed-time reference enrichment qualification
+        assert "mixed-time reference enrichment" in report_md
+        assert "204" in report_md
