@@ -344,6 +344,7 @@ def test_b2_case_12_concurrent_execution_overlapping_scan_prohibited(monkeypatch
         res = client.post(
             "/api/v1/screener/vcp/natural-scan",
             headers={"X-Scheduler-Token": "secret-token"},
+            json={"scheduled_date": "2026-10-14"},
         )
         assert res.status_code == 409
         assert "OVERLAPPING_VCP_SCANS_PROHIBITED" in res.json()["detail"]

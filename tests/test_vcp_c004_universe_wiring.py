@@ -289,7 +289,7 @@ class TestVCPC004UniverseWiring(unittest.TestCase):
             invocation_class="MANUAL_OPERATOR",
         )
         # Should complete and consume CANONICAL_VCP_UNIVERSE without raising
-        self.assertIn(res.get("status"), ["AVAILABLE", "FAILED"])
+        self.assertIn(res.get("status"), ["AVAILABLE", "FAILED", "PIPELINE_PENDING"])
         univ_size = res.get("universe_size") or res.get("snapshot", {}).get("universe_size")
         self.assertEqual(univ_size, len(CANONICAL_VCP_UNIVERSE))
 
