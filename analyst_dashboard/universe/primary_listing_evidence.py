@@ -40,7 +40,9 @@ Core Architectural Invariants:
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+import dataclasses
 from enum import Enum
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -240,6 +242,9 @@ class AttributablePrimaryListingEvidenceRecord:
     adjudication_missing_evidence: Optional[str] = None
     record_locators: Optional[Dict[str, Any]] = None
     stated_primary_listing: Optional[bool] = None
+    composite_figi: Optional[str] = None
+    share_class_figi: Optional[str] = None
+    provider_request_id: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
@@ -844,6 +849,9 @@ class PrimaryListingEvidenceAdapter:
                 is_direct_assertion=rec_dict.get("is_direct_assertion"),
                 is_derived_claim=rec_dict.get("is_derived_claim"),
                 adjudication_missing_evidence=rec_dict.get("adjudication_missing_evidence"),
+                composite_figi=rec_dict.get("composite_figi"),
+                share_class_figi=rec_dict.get("share_class_figi"),
+                provider_request_id=rec_dict.get("provider_request_id"),
             )
 
         return records
@@ -863,13 +871,136 @@ class PrimaryListingEvidenceAdapter:
     def load_three_candidate_route_a_evidence(
         cls,
         evidence_path: Optional[Path] = None,
+        verify_raw_payloads: bool = True,
     ) -> Dict[str, AttributablePrimaryListingEvidenceRecord]:
         """
         Loads authentic three-candidate Route A direct primary-listing evidence (AAPL, GOOGL, GOOG)
         retrieved from Massive / Polygon reference ticker API.
+
+        When raw response artifacts are present on disk and verify_raw_payloads is True,
+        this loader parses each raw provider payload via parse_massive_ticker_payload(),
+        verifies SHA-256 byte digests against retained bytes, confirms agreement across ticker, CIK,
+        primary_exchange, composite FIGI, and share-class FIGI, and ensures that the executable
+        path consumes the parsed provider claim rather than relying on an unverified manual flag.
         """
         target = evidence_path or cls.DEFAULT_ROUTE_A_EVIDENCE_PATH
-        return cls.load_reference_evidence(evidence_path=target)
+        records = cls.load_reference_evidence(evidence_path=target)
+
+        if not verify_raw_payloads or not records:
+            return records
+
+        verified_records: Dict[str, AttributablePrimaryListingEvidenceRecord] = {}
+        for sym, rec in records.items():
+            verified_records[sym] = cls.verify_and_consume_route_a_provider_payload(rec)
+
+        return verified_records
+
+    @classmethod
+    def verify_and_consume_route_a_provider_payload(
+        cls,
+        rec: AttributablePrimaryListingEvidenceRecord,
+    ) -> AttributablePrimaryListingEvidenceRecord:
+        """
+        Verifies retained raw response bytes against recorded SHA-256 and manifest,
+        parses the provider claim via parse_massive_ticker_payload(), verifies field parity,
+        and ensures assigned_primary_listing is driven by the parsed claim.
+        """
+        if not rec.source_artifact:
+            return rec
+
+        artifact_path = Path(rec.source_artifact)
+        if not artifact_path.exists():
+            root_candidates = [
+                Path.cwd() / rec.source_artifact,
+                cls.DEFAULT_ROUTE_A_EVIDENCE_PATH.parent.parent.parent / rec.source_artifact,
+            ]
+            for candidate in root_candidates:
+                if candidate.exists():
+                    artifact_path = candidate
+                    break
+
+        if not artifact_path.exists():
+            # If the raw response file is not on disk (e.g. clean remote CI without local payloads),
+            # preserve loaded normalized record without synthesizing data.
+            return rec
+
+        raw_bytes = artifact_path.read_bytes()
+        computed_sha256 = hashlib.sha256(raw_bytes).hexdigest()
+        if computed_sha256 != rec.raw_response_sha256:
+            raise ValueError(
+                f"INTEGRITY_CHECK_FAILED: Raw payload SHA-256 mismatch for {rec.symbol}. "
+                f"Expected {rec.raw_response_sha256}, computed {computed_sha256}."
+            )
+
+        # Parse provider payload using the executable parser
+        parsed_claim = cls.parse_massive_ticker_payload(raw_bytes, source_url=rec.source_url)
+
+        # Confirm agreement on ticker, CIK, primary_exchange
+        if parsed_claim.get("symbol") != rec.symbol:
+            raise ValueError(
+                f"INTEGRITY_CHECK_FAILED: Parsed symbol '{parsed_claim.get('symbol')}' "
+                f"does not match record symbol '{rec.symbol}'."
+            )
+
+        authoritative_cik = cls.AUTHORITATIVE_CANDIDATE_CIK_MAPPING.get(rec.symbol)
+        parsed_cik = parsed_claim.get("cik")
+        if parsed_cik and authoritative_cik and parsed_cik != authoritative_cik:
+            raise ValueError(
+                f"INTEGRITY_CHECK_FAILED: Parsed CIK '{parsed_cik}' does not match "
+                f"authoritative CIK '{authoritative_cik}' for {rec.symbol}."
+            )
+        if rec.cik and parsed_cik and rec.cik != parsed_cik:
+            raise ValueError(
+                f"INTEGRITY_CHECK_FAILED: Record CIK '{rec.cik}' does not match "
+                f"parsed CIK '{parsed_cik}' for {rec.symbol}."
+            )
+
+        if parsed_claim.get("primary_exchange") != rec.stated_exchange:
+            raise ValueError(
+                f"INTEGRITY_CHECK_FAILED: Parsed primary_exchange '{parsed_claim.get('primary_exchange')}' "
+                f"does not match record stated_exchange '{rec.stated_exchange}'."
+            )
+
+        # Check raw JSON results for composite_figi and share_class_figi
+        try:
+            raw_json = json.loads(raw_bytes.decode("utf-8")).get("results", {})
+            raw_comp_figi = raw_json.get("composite_figi")
+            raw_sc_figi = raw_json.get("share_class_figi")
+            if rec.composite_figi and raw_comp_figi and rec.composite_figi != raw_comp_figi:
+                raise ValueError(
+                    f"INTEGRITY_CHECK_FAILED: Parsed composite_figi '{raw_comp_figi}' "
+                    f"does not match record composite_figi '{rec.composite_figi}'."
+                )
+            if rec.share_class_figi and raw_sc_figi and rec.share_class_figi != raw_sc_figi:
+                raise ValueError(
+                    f"INTEGRITY_CHECK_FAILED: Parsed share_class_figi '{raw_sc_figi}' "
+                    f"does not match record share_class_figi '{rec.share_class_figi}'."
+                )
+        except Exception as e:
+            if isinstance(e, ValueError):
+                raise
+            pass
+
+        # Ensure assigned_primary_listing is directly consumed from parsed provider claim
+        parsed_assigned = parsed_claim.get("assigned_primary_listing")
+        parsed_classification = parsed_claim.get("classification")
+
+        if parsed_assigned is not True:
+            raise ValueError(
+                f"INTEGRITY_CHECK_FAILED: Parsed claim for {rec.symbol} does not assert direct primary listing "
+                f"(observed assigned_primary_listing={parsed_assigned})."
+            )
+
+        # Re-bind with verified parsed claims to guarantee parsed claim consumption
+        if rec.assigned_primary_listing != parsed_assigned or rec.classification != parsed_classification:
+            import dataclasses
+            return dataclasses.replace(
+                rec,
+                assigned_primary_listing=parsed_assigned,
+                classification=parsed_classification,
+            )
+
+        return rec
 
     @classmethod
     def enrich_candidate_proposals(
@@ -1286,9 +1417,12 @@ class PrimaryListingReplayEngine:
         ledger: IdentityAssociationProposalLedger,
         evidence_records: Dict[str, AttributablePrimaryListingEvidenceRecord],
         is_simulation: bool = False,
+        candidate_symbols: Optional[Sequence[str]] = None,
     ) -> BatchReplayReport:
         """
         Executes bounded offline replay enforcing atomic batch gating.
+        When candidate_symbols is specified, restricts evaluation to the explicit candidate set
+        (e.g. the three-candidate pilot boundary AAPL, GOOGL, GOOG).
         """
         reqs = ValidationRequirements.create_listing_jurisdiction_profile(
             allowed_listing_countries={"USA"},
@@ -1305,6 +1439,9 @@ class PrimaryListingReplayEngine:
         raw_records: List[Dict[str, Any]] = []
 
         proposals = ledger.list_proposals()
+        if candidate_symbols is not None:
+            allowed = set(candidate_symbols)
+            proposals = [p for p in proposals if p.symbol in allowed]
 
         # Step 1: Isolated per-record probes
         for prop in proposals:

@@ -1169,3 +1169,18 @@ def build_seven_candidate_proposal(research_root: Optional[Path] = None) -> Iden
         ledger.add_proposal(cand_proposal)
 
     return ledger
+
+
+def build_three_candidate_proposal() -> IdentityAssociationProposalLedger:
+    """
+    Builds proposal ledger bounded strictly to the three candidate pilot:
+    AAPL, GOOGL, GOOG.
+    """
+    full_ledger = build_seven_candidate_proposal()
+    three_ledger = IdentityAssociationProposalLedger()
+    for sym in ("AAPL", "GOOGL", "GOOG"):
+        p = full_ledger.get_proposal(sym)
+        if p:
+            three_ledger.add_proposal(p)
+    return three_ledger
+

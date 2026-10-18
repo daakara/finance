@@ -20,6 +20,7 @@ Covers all 9 required verification invariants:
 from __future__ import annotations
 
 from pathlib import Path
+import dataclasses
 import json
 import pytest
 
@@ -1808,6 +1809,96 @@ class TestRouteADirectPrimaryDesignationAdjudication:
             assert c.primary_listing_value is True
             assert c.conversion_permitted is True
             assert c.validation_status == "VALIDATION_PASSED"
+
+    def test_route_a_raw_response_verification_and_claim_consumption(self):
+        """
+        Verifies that the executable path consumes the parsed provider claim from raw bytes,
+        validates SHA-256 byte digests, confirms agreement across ticker, CIK, primary exchange,
+        composite FIGI, and share-class FIGI, and rejects tampered or unverified manual flags.
+        """
+        route_a_records = PrimaryListingEvidenceAdapter.load_three_candidate_route_a_evidence(verify_raw_payloads=True)
+        if not route_a_records:
+            pytest.skip("Route A evidence file not present in workspace")
+
+        for sym, rec in route_a_records.items():
+            assert rec.assigned_primary_listing is True
+            assert rec.stated_exchange == "XNAS"
+            assert rec.adjudication_role == PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
+            assert rec.is_direct_assertion is True
+            assert rec.is_derived_claim is False
+            assert rec.composite_figi is not None
+            assert rec.share_class_figi is not None
+
+        # Verify tamper rejection: hash mismatch triggers ValueError
+        aapl_rec = route_a_records["AAPL"]
+        tampered_rec = dataclasses.replace(aapl_rec, raw_response_sha256="0" * 64)
+        with pytest.raises(ValueError, match="Raw payload SHA-256 mismatch"):
+            PrimaryListingEvidenceAdapter.verify_and_consume_route_a_provider_payload(tampered_rec)
+
+        # Verify CIK mismatch rejection
+        tampered_cik_rec = dataclasses.replace(aapl_rec, cik="0009999999")
+        with pytest.raises(ValueError, match="CIK"):
+            PrimaryListingEvidenceAdapter.verify_and_consume_route_a_provider_payload(tampered_cik_rec)
+
+    def test_route_a_three_candidate_pilot_boundary_replay(self):
+        """
+        Evaluates AAPL, GOOG, and GOOGL as an explicitly selected 3-candidate pilot batch:
+        1. Genuine real-source replay (is_simulation=False):
+           - unadopted security IDs are NOT injected (security_id remains None);
+           - reports R01_REQUIRED_FIELDS validation blockers;
+           - batch admission count = 0, batch conversion count = 0, builder = NOT_RUN;
+           - publication readiness remains NOT_AUTHORIZED.
+        2. Counterfactual test probe (is_simulation=True):
+           - clearly labeled as a test probe;
+           - provisional IDs supplied;
+           - all 3 pass validation and convert to SourceSecurity;
+           - 3-candidate batch validity is True, batch admitted = 3, builder = READY_FOR_BUILDER.
+        """
+        from analyst_dashboard.universe.identity_proposal import build_three_candidate_proposal
+        three_ledger = build_three_candidate_proposal()
+
+        route_a_records = PrimaryListingEvidenceAdapter.load_three_candidate_route_a_evidence()
+        if not route_a_records:
+            pytest.skip("Route A evidence file not present in workspace")
+
+        # 1. Real 3-candidate replay (is_simulation=False)
+        real_report = PrimaryListingReplayEngine.run_replay(three_ledger, route_a_records, is_simulation=False)
+        assert real_report.is_simulation is False
+        assert real_report.total_evaluated == 3
+        assert real_report.is_batch_valid is False
+        assert real_report.batch_conversion_count == 0
+        assert real_report.batch_admitted_count == 0
+        assert real_report.builder_status == "NOT_RUN"
+        assert real_report.builder_handoff_permitted is False
+
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            c = real_report.candidate_results[sym]
+            assert c.primary_listing_value is True
+            assert c.validation_status == "VALIDATION_FAILED"
+            assert any("security_id" in issue for issue in c.validation_issues)
+            assert c.conversion_permitted is False
+            assert "PRODUCTION_IDENTITY_ADOPTION_DISABLED" in c.blocking_reason
+            assert c.batch_admitted is False
+
+        # 2. Counterfactual test probe (is_simulation=True)
+        sim_report = PrimaryListingReplayEngine.run_replay(three_ledger, route_a_records, is_simulation=True)
+        assert sim_report.is_simulation is True
+        assert sim_report.total_evaluated == 3
+        assert sim_report.is_batch_valid is True
+        assert sim_report.conversion_count == 3
+        assert sim_report.batch_conversion_count == 3
+        assert sim_report.batch_admitted_count == 3
+        assert sim_report.builder_status == "READY_FOR_BUILDER"
+        assert sim_report.builder_handoff_permitted is True
+
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            c = sim_report.candidate_results[sym]
+            assert c.primary_listing_value is True
+            assert c.validation_status == "VALIDATION_PASSED"
+            assert c.conversion_permitted is True
+            assert c.batch_admitted is True
+            assert c.builder_status == "READY_FOR_BUILDER"
+
 
 
 
