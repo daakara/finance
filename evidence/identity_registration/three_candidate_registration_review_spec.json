@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "document_id": "SPEC-IDENTITY-REGISTRATION-THREE-CANDIDATES-REVIEW",
+  "specification_version": "1.0.0",
+  "description": "Non-executable operational review specification pinning proposed entity and association actions, explicit candidate identity bindings, attributable evidence, and expected baseline target state for AAPL, GOOG, and GOOGL.",
+  "governance_status": {
+    "exact_real_plan_approval": "ABSENT",
+    "application_authorized": false,
+    "is_authorized": false,
+    "authorized_by": null,
+    "production_schema_initialization": "NOT_PERFORMED",
+    "production_identity_application": "NOT_PERFORMED",
+    "real_universe_admission": "NOT_PERFORMED",
+    "universe_publication": "NOT_AUTHORIZED",
+    "scanner_scheduler_activation": "NOT_AUTHORIZED",
+    "model_tuning": "FROZEN",
+    "gate_12": "DEFERRED"
+  },
+  "reviewed_unapproved_plan": {
+    "plan_id": "PLAN_ADOPT_3C5D8B5E3D39",
+    "plan_file_path": "evidence/identity_registration/three_candidate_registration_plan.json",
+    "plan_file_sha256": "e64cfc70167f98e2d1a18da04fd3805d92546bd36ae491e4fa32afe5b1d177ef",
+    "plan_content_digest": "3c5d8b5e3d39453332141dcb5ab818eba5f503fba43f67dbf7d464b298f365c6",
+    "evaluation_reference_date": "2026-10-17"
+  },
+  "verified_target": {
+    "project": "tranquil-radiance",
+    "project_id": "a339a92a-7236-4ac0-9a3a-d7ad440f9690",
+    "environment": "production",
+    "service": "web",
+    "persistent_volume_mount": "/root",
+    "filesystem_device": "/dev/zd15680",
+    "target_db_path": "/root/analyst_dashboard/data/identity.db",
+    "current_existence": false,
+    "directory_permissions": "drwxr-xr-x root:root",
+    "expected_target_state_digest": "ea11990ec0e3790abcb0b4293bfadd7ae4e58ca050e79e949e688a82437a93ee"
+  },
+  "explicit_candidate_bindings": {
+    "AAPL": {
+      "primary_symbol": "AAPL",
+      "issuer_cik": "0000320193",
+      "share_class": null,
+      "instrument_title": "Apple Inc. Common Stock",
+      "provisional_security_id": "PROV_SEC_A562B55CDF",
+      "durable_security_id": "ARX_SEC_0B4C728FE0BE",
+      "operating_mic": "XNAS",
+      "venue_name": "NASDAQ",
+      "provisional_association_id": "PROV_ASSOC_PROV_SEC_A562B55CDF_XNAS_AAPL_20261017",
+      "durable_association_id": "ASSOC_ARX_SEC_0B4C728FE0BE_XNAS_AAPL_2026-10-17",
+      "effective_from": "2026-10-17",
+      "effective_to": null,
+      "listing_observation_date": "2026-10-17",
+      "primary_observation_date": "2026-10-18",
+      "effective_date_status": "OBSERVATION_BOUNDED_HISTORICAL_INCEPTION_PENDING",
+      "evidence_references": [
+        {
+          "provider": "MASSIVE_POLYGON",
+          "url": "https://api.polygon.io/v3/reference/tickers/AAPL",
+          "retrieval_timestamp_utc": "2026-10-18T12:33:43Z",
+          "raw_response_sha256": "4b971a8e1047192aa0373abde0eb9f1c7d2c366ffef55716df7905186b51fa15",
+          "primary_exchange_claim": "XNAS"
+        },
+        {
+          "provider": "NASDAQ_TRADER",
+          "form": "NASDAQ_LISTED_DIRECTORY",
+          "observation_date": "2026-10-17",
+          "stated_exchange": "NASDAQ",
+          "market_category": "Q",
+          "financial_status": "N"
+        },
+        {
+          "provider": "SEC_EDGAR",
+          "form": "10-K",
+          "accession": "0000320193-23-000106",
+          "cik": "0000320193",
+          "section_table": "Section 12(b) Registration Table"
+        }
+      ]
+    },
+    "GOOG": {
+      "primary_symbol": "GOOG",
+      "issuer_cik": "0001652044",
+      "share_class": "CLASS_C",
+      "instrument_title": "Alphabet Inc. Class C Capital Stock",
+      "provisional_security_id": "PROV_SEC_BC68113BFE",
+      "durable_security_id": "ARX_SEC_A11A24D442E2",
+      "operating_mic": "XNAS",
+      "venue_name": "NASDAQ",
+      "provisional_association_id": "PROV_ASSOC_PROV_SEC_BC68113BFE_XNAS_GOOG_20261017",
+      "durable_association_id": "ASSOC_ARX_SEC_A11A24D442E2_XNAS_GOOG_2026-10-17",
+      "effective_from": "2026-10-17",
+      "effective_to": null,
+      "listing_observation_date": "2026-10-17",
+      "primary_observation_date": "2026-10-18",
+      "effective_date_status": "OBSERVATION_BOUNDED_HISTORICAL_INCEPTION_PENDING",
+      "evidence_references": [
+        {
+          "provider": "MASSIVE_POLYGON",
+          "url": "https://api.polygon.io/v3/reference/tickers/GOOG",
+          "retrieval_timestamp_utc": "2026-10-18T12:33:44Z",
+          "raw_response_sha256": "cfbd399d5a7d65691ea448939c0576189efafec13c49427b687f8f94cb4c4d57",
+          "primary_exchange_claim": "XNAS"
+        },
+        {
+          "provider": "NASDAQ_TRADER",
+          "form": "NASDAQ_LISTED_DIRECTORY",
+          "observation_date": "2026-10-17",
+          "stated_exchange": "NASDAQ",
+          "market_category": "Q",
+          "financial_status": "N"
+        },
+        {
+          "provider": "SEC_EDGAR",
+          "form": "10-K",
+          "accession": "0001652044-24-000022",
+          "cik": "0001652044",
+          "section_table": "Section 12(b) Registration Table"
+        }
+      ]
+    },
+    "GOOGL": {
+      "primary_symbol": "GOOGL",
+      "issuer_cik": "0001652044",
+      "share_class": "CLASS_A",
+      "instrument_title": "Alphabet Inc. Class A Common Stock",
+      "provisional_security_id": "PROV_SEC_6907BAAE38",
+      "durable_security_id": "ARX_SEC_B7EF9ED7A35A",
+      "operating_mic": "XNAS",
+      "venue_name": "NASDAQ",
+      "provisional_association_id": "PROV_ASSOC_PROV_SEC_6907BAAE38_XNAS_GOOGL_20261017",
+      "durable_association_id": "ASSOC_ARX_SEC_B7EF9ED7A35A_XNAS_GOOGL_2026-10-17",
+      "effective_from": "2026-10-17",
+      "effective_to": null,
+      "listing_observation_date": "2026-10-17",
+      "primary_observation_date": "2026-10-18",
+      "effective_date_status": "OBSERVATION_BOUNDED_HISTORICAL_INCEPTION_PENDING",
+      "evidence_references": [
+        {
+          "provider": "MASSIVE_POLYGON",
+          "url": "https://api.polygon.io/v3/reference/tickers/GOOGL",
+          "retrieval_timestamp_utc": "2026-10-18T12:33:43Z",
+          "raw_response_sha256": "fe8981cef5c5c3ac0105334d23b3f26a8e0af9493e231045c7868d531171284a",
+          "primary_exchange_claim": "XNAS"
+        },
+        {
+          "provider": "NASDAQ_TRADER",
+          "form": "NASDAQ_LISTED_DIRECTORY",
+          "observation_date": "2026-10-17",
+          "stated_exchange": "NASDAQ",
+          "market_category": "Q",
+          "financial_status": "N"
+        },
+        {
+          "provider": "SEC_EDGAR",
+          "form": "10-K",
+          "accession": "0001652044-24-000022",
+          "cik": "0001652044",
+          "section_table": "Section 12(b) Registration Table"
+        }
+      ]
+    }
+  },
+  "approval_binding_procedure": {
+    "method": "CONTROLLED_MANIFEST_BINDING",
+    "wrapper_script": "scripts/apply_registration_plan_wrapper.py",
+    "requirements": [
+      "Explicit external operator approval manifest attested by authorized operator",
+      "Full SHA-256 byte parity of three_candidate_registration_plan.json against e64cfc70167f98e2d1a18da04fd3805d92546bd36ae491e4fa32afe5b1d177ef",
+      "Content digest verification against 3c5d8b5e3d39453332141dcb5ab818eba5f503fba43f67dbf7d464b298f365c6",
+      "Explicit candidate binding verification (rejecting missing, swapped, or duplicated IDs)",
+      "Target repository path verified against approved target /root/analyst_dashboard/data/identity.db",
+      "Pre-backup target freshness and retry detection (rejecting unexpected state without touching backups)",
+      "Pre-application consistent SQLite backup created via SQLite backup API with exclusive non-clobber preservation and independent verification",
+      "Target baseline digest verified against ea11990ec0e3790abcb0b4293bfadd7ae4e58ca050e79e949e688a82437a93ee",
+      "Atomic whole-batch application executed through IdentityPlanApplicationService.apply_plan under SQLite transaction lock",
+      "Permanent audit retention of the applied plan artifact on disk with post-commit reporting guarantee"
+    ]
+  }
+}
