@@ -9,23 +9,18 @@ Enforces Product Owner Approved Architectural Principle:
 may be registered independently of strategy eligibility and R06 admission status.
 Such registration grants no conversion, admission, publication or scanner authority."
 
-Test Verification Gates:
-1. Canonical plan artifact existence, schema validation, and SHA-256 cryptographic content integrity.
-2. Independent candidate identity evidence bindings:
-   - AAPL: Apple Inc., CIK 0000320193, Common Stock, XNAS, 2026-10-17.
-   - GOOG: Alphabet Inc., CIK 0001652044, Class C Capital Stock, XNAS, 2026-10-17.
-   - GOOGL: Alphabet Inc., CIK 0001652044, Class A Common Stock, XNAS, 2026-10-17.
-3. Same-issuer distinct securities separation (GOOG vs GOOGL under CIK 0001652044).
-4. Decoupling of identity registration from Rule R06 primary-listing status (claimed_primary_listing = None).
-5. Controlled application rehearsal on temporary SQLite stores:
-   - Unauthorized plan rejection (REJECTED_UNAUTHORIZED, 0 writes).
-   - Tampered plan content rejection (REJECTED_INTEGRITY_TAMPERED, 0 writes).
-   - Stale target state rejection (REJECTED_STALE_STATE, 0 writes).
-   - Clean atomic application (APPLIED, 3 entities, 3 associations, audit logged).
-   - Idempotent repeated application (NO_OP_ALREADY_APPLIED, 0 duplicate rows).
-   - Mid-application failure rollback (REJECTED_ERROR, 0 partial rows).
-   - Read-only inspection mode safety (PermissionError on write).
-6. Full interoperability with OfflineAdmissionMappingEngine.
+Governance & Verification Isolation Rules:
+1. Real Three-Candidate Plan Testing (Gates 1-5):
+   - Restricted strictly to evidence inspection, plan serialization integrity, readiness
+     determination (MECHANICALLY_READY_UNAPPROVED), and confirmation of application rejection
+     due to exact_plan_approval = ABSENT and application_authorized = False.
+   - Real candidate records are NEVER marked approved merely to satisfy a test harness.
+2. Controlled Application Rehearsal (Gates 6-12):
+   - Executed exclusively against isolated temporary stores using an explicitly synthetic
+     test fixture plan (SYNTH_ALPHA, SYNTH_BETA, SYNTH_GAMMA under scope='SYNTHETIC_TEST_ONLY').
+   - Validates atomic application, SHA-256 tampering rejection, stale state rejection,
+     idempotent reapplication, mid-failure rollback via BEGIN IMMEDIATE, read-only inspection safety,
+     and roundtrip interoperability with OfflineAdmissionMappingEngine.
 """
 
 from datetime import datetime, timezone
@@ -57,6 +52,13 @@ from analyst_dashboard.universe.identity_persistence import (
     IdentityPlanApplicationService,
     SqliteIdentityRepository,
 )
+from analyst_dashboard.universe.identity_proposal import (
+    CandidateAssociationProposal,
+    IdentityAssociationProposalLedger,
+    PrimaryListingClaimAnalysis,
+    ProvisionalListingAssociation,
+    ProvisionalSecurityEntity,
+)
 
 pytestmark = pytest.mark.tier2c
 
@@ -70,11 +72,103 @@ CANONICAL_PLAN_PATH = (
 
 @pytest.fixture
 def canonical_plan() -> IdentityAdoptionPlan:
-    """Loads and deserializes the canonical three-candidate registration plan artifact."""
+    """Loads and deserializes the canonical unapproved three-candidate registration plan artifact."""
     assert CANONICAL_PLAN_PATH.exists(), f"Canonical plan artifact not found at: {CANONICAL_PLAN_PATH}"
     content = CANONICAL_PLAN_PATH.read_text(encoding="utf-8")
     plan = IdentityAdoptionPlan.from_json(content)
     assert plan.is_plan_content_valid(), "Canonical plan content integrity check failed!"
+    return plan
+
+
+@pytest.fixture
+def synthetic_rehearsal_plan() -> IdentityAdoptionPlan:
+    """
+    Constructs an explicitly synthetic adoption plan for execution rehearsal.
+    Guarantees unapproved real candidates are NEVER marked approved solely to satisfy a test harness.
+    Uses synthetic CIKs (0009999001, 0009999002), synthetic symbols (SYNTH_ALPHA, SYNTH_BETA, SYNTH_GAMMA),
+    and scope='SYNTHETIC_TEST_ONLY'.
+    """
+    repo = SqliteIdentityRepository(":memory:")
+    ledger = IdentityAssociationProposalLedger()
+
+    specs = [
+        ("SYNTH_ALPHA", "0009999001", None, "XNAS", "PROV_SEC_SYNTH_A", "PROV_ASSOC_SYNTH_A"),
+        ("SYNTH_BETA", "0009999002", "CLASS_B", "XNAS", "PROV_SEC_SYNTH_B", "PROV_ASSOC_SYNTH_B"),
+        ("SYNTH_GAMMA", "0009999002", "CLASS_A", "XNAS", "PROV_SEC_SYNTH_C", "PROV_ASSOC_SYNTH_C"),
+    ]
+
+    for sym, cik, sc, mic, prov_sec, prov_assoc in specs:
+        ent = ProvisionalSecurityEntity(
+            provisional_security_id=prov_sec,
+            primary_symbol=sym,
+            share_class=sc,
+            instrument_structure="Common Stock",
+            issuer_cik=cik,
+            company_name=f"{sym} Synthetic Corp",
+            external_identifiers=(),
+            created_at_utc="2026-10-18T12:00:00Z",
+            status="SYNTHETIC_TEST_FIXTURE",
+        )
+        assoc = ProvisionalListingAssociation(
+            provisional_association_id=prov_assoc,
+            provisional_security_id=prov_sec,
+            symbol=sym,
+            operating_mic=mic,
+            effective_from="2026-10-17",
+            effective_to=None,
+        )
+        pla = PrimaryListingClaimAnalysis(
+            symbol=sym,
+            exact_claim_needed="SYNTHETIC_TEST",
+            issuer_home_market="US",
+            underlying_ordinary_share_listing=None,
+            depositary_receipt_listing=None,
+            primary_exchange_for_instrument=mic,
+            selected_us_assessment_listing=True,
+            claimed_primary_listing=None,
+            evidence_sufficiency="SYNTHETIC_TEST",
+            missing_evidence_details=[],
+            contract_ambiguity_notes="Synthetic fixture for execution rehearsal",
+        )
+        prop = CandidateAssociationProposal(
+            symbol=sym,
+            observed_venue=mic,
+            instrument_classification="Common Stock",
+            available_figis={},
+            provider_asset_identifiers={},
+            issuer_cik=cik,
+            issuer_name=f"{sym} Synthetic Corp",
+            evidence_references=[],
+            proposed_entity=ent,
+            proposed_association=assoc,
+            primary_listing_analysis=pla,
+            ambiguities_and_missing_evidence=[],
+            review_disposition="READY_FOR_REVIEW",
+        )
+        ledger.add_proposal(prop)
+
+    synth_auth = IdentityAdoptionAuthorization(
+        is_authorized=True,
+        authorized_by="Synthetic Test Harness",
+        authorization_timestamp_utc="2026-10-18T12:00:00Z",
+        scope="SYNTHETIC_TEST_ONLY",
+        allow_reference_identity_registration=False,
+        exact_plan_approval="APPROVED",
+        application_authorized=True,
+        notes="Authorized synthetic test fixture for execution rehearsal.",
+    )
+
+    opaque_ids = ["ARX_SEC_SYNTH_01", "ARX_SEC_SYNTH_02", "ARX_SEC_SYNTH_03"]
+    id_iter = iter(opaque_ids)
+
+    plan = IdentityAdoptionDryRunEngine.generate_plan(
+        proposals=ledger,
+        existing_target=repo.to_snapshot_dict(),
+        authorization=synth_auth,
+        evaluation_reference_date="2026-10-17",
+        deterministic_plan_time_utc="2026-10-18T12:00:00Z",
+        id_allocator=lambda: next(id_iter),
+    )
     return plan
 
 
@@ -84,28 +178,42 @@ def temp_db_path(tmp_path: Path) -> str:
     return str(tmp_path / "test_identity_rehearsal.db")
 
 
-# ─── Gate 1: Canonical Plan Artifact Integrity ─────────────────────────────────
+# ─── Part I: Real Three-Candidate Plan Inspection & Integrity ───────────────────
 
 def test_01_canonical_plan_artifact_exists_and_is_valid(canonical_plan: IdentityAdoptionPlan):
-    """Verifies that the canonical plan artifact exists, parses cleanly, and validates its content digest."""
-    assert canonical_plan.plan_id == "PLAN_ADOPT_957CE8EBE74A"
-    assert canonical_plan.plan_content_digest == "957ce8ebe74a1e2f091132adfd93e764681170ce7530022396e8a39d88a04cf4"
+    """
+    Verifies that the canonical plan artifact exists, parses cleanly, validates its
+    content digest, and represents an unapproved but mechanically ready registration plan.
+    """
+    assert canonical_plan.plan_id == "PLAN_ADOPT_3C5D8B5E3D39"
+    assert canonical_plan.plan_content_digest == "3c5d8b5e3d39453332141dcb5ab818eba5f503fba43f67dbf7d464b298f365c6"
     assert canonical_plan.target_state_digest == "ea11990ec0e3790abcb0b4293bfadd7ae4e58ca050e79e949e688a82437a93ee"
     assert canonical_plan.evaluation_reference_date == "2026-10-17"
+
+    # Plan summary: exactly 3 proposals mechanically ready, 0 approved creations
     assert canonical_plan.summary.total_proposals == 3
-    assert canonical_plan.summary.entities_approved_creation == 3
-    assert canonical_plan.summary.associations_approved_creation == 3
+    assert canonical_plan.summary.entities_mechanically_ready == 3
+    assert canonical_plan.summary.associations_mechanically_ready == 3
+    assert canonical_plan.summary.entities_approved_creation == 0
+    assert canonical_plan.summary.associations_approved_creation == 0
     assert canonical_plan.summary.entities_blocked == 0
     assert canonical_plan.summary.associations_blocked == 0
     assert canonical_plan.summary.conflicts_count == 0
 
+    # Authorization status: unapproved plan
+    auth = canonical_plan.authorization
+    assert auth.exact_plan_approval == "ABSENT"
+    assert auth.application_authorized is False
+    assert auth.is_authorized is False
+    assert auth.authorized_by is None
+    assert auth.production_target == "PROPOSED_NOT_INITIALIZED"
 
-# ─── Gate 2: Candidate Identity Evidence Bindings ─────────────────────────────
 
 def test_02_three_candidate_identity_evidence_bindings(canonical_plan: IdentityAdoptionPlan):
     """
-    Verifies that AAPL, GOOG, and GOOGL are accurately bound to their authoritative
-    corporate issuer CIKs, instrument share classes, listing symbols, and operating MICs.
+    Verifies that AAPL, GOOG, and GOOGL are bound to authoritative corporate CIKs,
+    share classes, listing symbols, operating MICs, and observation dates.
+    Confirms status is MECHANICALLY_READY_UNAPPROVED.
     """
     ent_map = {e.primary_symbol: e for e in canonical_plan.entities}
     assoc_map = {a.symbol: a for a in canonical_plan.associations}
@@ -118,12 +226,16 @@ def test_02_three_candidate_identity_evidence_bindings(canonical_plan: IdentityA
     aapl_assoc = assoc_map["AAPL"]
     assert aapl_ent.issuer_cik == "0000320193"
     assert aapl_ent.share_class is None
-    assert aapl_ent.status == IdentityAdoptionStatus.APPROVED_FOR_ADOPTION
+    assert aapl_ent.status == IdentityAdoptionStatus.MECHANICALLY_READY_UNAPPROVED
     assert aapl_ent.is_creation is True
+    assert aapl_ent.is_mechanically_plannable is True
     assert aapl_ent.proposed_durable_security_id == "ARX_SEC_0B4C728FE0BE"
     assert aapl_assoc.operating_mic == "XNAS"
     assert aapl_assoc.effective_from == "2026-10-17"
+    assert aapl_assoc.observation_date == "2026-10-17"
+    assert aapl_assoc.effective_date_status == "OBSERVATION_BOUNDED_HISTORICAL_INCEPTION_PENDING"
     assert aapl_assoc.effective_to is None
+    assert aapl_assoc.status == IdentityAdoptionStatus.MECHANICALLY_READY_UNAPPROVED
     assert aapl_assoc.target_durable_security_id == "ARX_SEC_0B4C728FE0BE"
     assert aapl_assoc.proposed_durable_association_id == "ASSOC_ARX_SEC_0B4C728FE0BE_XNAS_AAPL_2026-10-17"
 
@@ -132,12 +244,16 @@ def test_02_three_candidate_identity_evidence_bindings(canonical_plan: IdentityA
     goog_assoc = assoc_map["GOOG"]
     assert goog_ent.issuer_cik == "0001652044"
     assert goog_ent.share_class == "CLASS_C"
-    assert goog_ent.status == IdentityAdoptionStatus.APPROVED_FOR_ADOPTION
+    assert goog_ent.status == IdentityAdoptionStatus.MECHANICALLY_READY_UNAPPROVED
     assert goog_ent.is_creation is True
+    assert goog_ent.is_mechanically_plannable is True
     assert goog_ent.proposed_durable_security_id == "ARX_SEC_A11A24D442E2"
     assert goog_assoc.operating_mic == "XNAS"
     assert goog_assoc.effective_from == "2026-10-17"
+    assert goog_assoc.observation_date == "2026-10-17"
+    assert goog_assoc.effective_date_status == "OBSERVATION_BOUNDED_HISTORICAL_INCEPTION_PENDING"
     assert goog_assoc.effective_to is None
+    assert goog_assoc.status == IdentityAdoptionStatus.MECHANICALLY_READY_UNAPPROVED
     assert goog_assoc.target_durable_security_id == "ARX_SEC_A11A24D442E2"
     assert goog_assoc.proposed_durable_association_id == "ASSOC_ARX_SEC_A11A24D442E2_XNAS_GOOG_2026-10-17"
 
@@ -146,17 +262,19 @@ def test_02_three_candidate_identity_evidence_bindings(canonical_plan: IdentityA
     googl_assoc = assoc_map["GOOGL"]
     assert googl_ent.issuer_cik == "0001652044"
     assert googl_ent.share_class == "CLASS_A"
-    assert googl_ent.status == IdentityAdoptionStatus.APPROVED_FOR_ADOPTION
+    assert googl_ent.status == IdentityAdoptionStatus.MECHANICALLY_READY_UNAPPROVED
     assert googl_ent.is_creation is True
+    assert googl_ent.is_mechanically_plannable is True
     assert googl_ent.proposed_durable_security_id == "ARX_SEC_B7EF9ED7A35A"
     assert googl_assoc.operating_mic == "XNAS"
     assert googl_assoc.effective_from == "2026-10-17"
+    assert googl_assoc.observation_date == "2026-10-17"
+    assert googl_assoc.effective_date_status == "OBSERVATION_BOUNDED_HISTORICAL_INCEPTION_PENDING"
     assert googl_assoc.effective_to is None
+    assert googl_assoc.status == IdentityAdoptionStatus.MECHANICALLY_READY_UNAPPROVED
     assert googl_assoc.target_durable_security_id == "ARX_SEC_B7EF9ED7A35A"
     assert googl_assoc.proposed_durable_association_id == "ASSOC_ARX_SEC_B7EF9ED7A35A_XNAS_GOOGL_2026-10-17"
 
-
-# ─── Gate 3: Same-Issuer Distinct Securities Separation ───────────────────────
 
 def test_03_same_issuer_distinct_securities_separation(canonical_plan: IdentityAdoptionPlan):
     """
@@ -180,8 +298,6 @@ def test_03_same_issuer_distinct_securities_separation(canonical_plan: IdentityA
     assert googl_ent.proposed_durable_security_id == "ARX_SEC_B7EF9ED7A35A"
 
 
-# ─── Gate 4: Rule R06 Decoupling & Status Preservation ────────────────────────
-
 def test_04_r06_primary_listing_separation_and_decoupling(canonical_plan: IdentityAdoptionPlan):
     """
     Verifies that identity registration is decoupled from Rule R06 primary-listing status.
@@ -195,59 +311,64 @@ def test_04_r06_primary_listing_separation_and_decoupling(canonical_plan: Identi
         assert state["evidence_sufficiency"] == "INSUFFICIENT_IN_RAW_FEEDS"
         assert "Primary-listing evidence remains disaggregated" in state["status_note"]
 
-    # Authorization scope and notes reflect approved architectural principle
+    # Authorization status reflects unapproved plan under approved principle
     auth = canonical_plan.authorization
-    assert auth.is_authorized is True
+    assert auth.is_authorized is False
+    assert auth.application_authorized is False
+    assert auth.exact_plan_approval == "ABSENT"
     assert auth.scope == "REFERENCE_IDENTITY_REGISTRATION"
     assert auth.allow_reference_identity_registration is True
-    assert auth.authorized_by == "Product Owner"
-    assert "Grants zero universe admission" in auth.notes
+    assert "Exact candidate plan approval is ABSENT" in auth.notes
 
 
-# ─── Gate 5: Application Rehearsal — Rejection Paths ──────────────────────────
-
-def test_05_rehearsal_unauthorized_plan_fails_closed(canonical_plan: IdentityAdoptionPlan, temp_db_path: str):
-    """Verifies that an unauthorized execution attempt is rejected with 0 database writes."""
+def test_05_unapproved_canonical_plan_rejected_on_application(canonical_plan: IdentityAdoptionPlan, temp_db_path: str):
+    """
+    GOVERNANCE GATE: Verifies that applying the unapproved canonical plan fails closed
+    with REJECTED_UNAUTHORIZED and results in 0 database writes.
+    """
     with SqliteIdentityRepository(temp_db_path) as repo:
-        unauth = IdentityAdoptionAuthorization(is_authorized=False)
         outcome = IdentityPlanApplicationService.apply_plan(
-            plan=canonical_plan, repository=repo, authorization=unauth
+            plan=canonical_plan,
+            repository=repo,
         )
         assert outcome.status == IdentityApplicationStatus.REJECTED_UNAUTHORIZED
         assert outcome.applied_entities_count == 0
         assert outcome.applied_associations_count == 0
+        assert outcome.audit_entry_recorded is False
         assert len(repo.list_all_securities()) == 0
         assert len(repo.list_all_associations()) == 0
 
 
-def test_06_rehearsal_tampered_plan_fails_closed(canonical_plan: IdentityAdoptionPlan, temp_db_path: str):
+# ─── Part II: Controlled Execution Rehearsal Using Synthetic Fixtures ───────────
+
+def test_06_rehearsal_tampered_plan_fails_closed(synthetic_rehearsal_plan: IdentityAdoptionPlan, temp_db_path: str):
     """Verifies that any content modification invalidating the SHA-256 digest is rejected with 0 writes."""
     with SqliteIdentityRepository(temp_db_path) as repo:
         tampered_ent = ProposedEntityAdoption(
-            provisional_security_id=canonical_plan.entities[0].provisional_security_id,
-            primary_symbol="TAMPERED_AAPL",
-            share_class=canonical_plan.entities[0].share_class,
-            issuer_cik=canonical_plan.entities[0].issuer_cik,
-            status=canonical_plan.entities[0].status,
-            is_creation=canonical_plan.entities[0].is_creation,
-            is_mechanically_plannable=canonical_plan.entities[0].is_mechanically_plannable,
-            proposed_durable_security_id=canonical_plan.entities[0].proposed_durable_security_id,
+            provisional_security_id=synthetic_rehearsal_plan.entities[0].provisional_security_id,
+            primary_symbol="TAMPERED_SYNTH",
+            share_class=synthetic_rehearsal_plan.entities[0].share_class,
+            issuer_cik=synthetic_rehearsal_plan.entities[0].issuer_cik,
+            status=synthetic_rehearsal_plan.entities[0].status,
+            is_creation=synthetic_rehearsal_plan.entities[0].is_creation,
+            is_mechanically_plannable=synthetic_rehearsal_plan.entities[0].is_mechanically_plannable,
+            proposed_durable_security_id=synthetic_rehearsal_plan.entities[0].proposed_durable_security_id,
         )
         tampered_plan = IdentityAdoptionPlan(
-            plan_id=canonical_plan.plan_id,
-            created_at_utc=canonical_plan.created_at_utc,
-            evaluation_reference_date=canonical_plan.evaluation_reference_date,
-            target_state_digest=canonical_plan.target_state_digest,
-            plan_content_digest=canonical_plan.plan_content_digest,  # Untampered digest
-            authorization=canonical_plan.authorization,
-            entities=[tampered_ent, canonical_plan.entities[1], canonical_plan.entities[2]],
-            associations=canonical_plan.associations,
-            provisional_to_durable_map=canonical_plan.provisional_to_durable_map,
+            plan_id=synthetic_rehearsal_plan.plan_id,
+            created_at_utc=synthetic_rehearsal_plan.created_at_utc,
+            evaluation_reference_date=synthetic_rehearsal_plan.evaluation_reference_date,
+            target_state_digest=synthetic_rehearsal_plan.target_state_digest,
+            plan_content_digest=synthetic_rehearsal_plan.plan_content_digest,  # Untampered digest
+            authorization=synthetic_rehearsal_plan.authorization,
+            entities=[tampered_ent, synthetic_rehearsal_plan.entities[1], synthetic_rehearsal_plan.entities[2]],
+            associations=synthetic_rehearsal_plan.associations,
+            provisional_to_durable_map=synthetic_rehearsal_plan.provisional_to_durable_map,
             conflicts=[],
             blocked_operations=[],
             missing_evidence_or_authorization=[],
-            primary_listing_states=canonical_plan.primary_listing_states,
-            summary=canonical_plan.summary,
+            primary_listing_states=synthetic_rehearsal_plan.primary_listing_states,
+            summary=synthetic_rehearsal_plan.summary,
         )
         outcome = IdentityPlanApplicationService.apply_plan(tampered_plan, repo)
         assert outcome.status == IdentityApplicationStatus.REJECTED_INTEGRITY_TAMPERED
@@ -255,10 +376,10 @@ def test_06_rehearsal_tampered_plan_fails_closed(canonical_plan: IdentityAdoptio
         assert len(repo.list_all_securities()) == 0
 
 
-def test_07_rehearsal_stale_target_state_fails_closed(canonical_plan: IdentityAdoptionPlan, temp_db_path: str):
+def test_07_rehearsal_stale_target_state_fails_closed(synthetic_rehearsal_plan: IdentityAdoptionPlan, temp_db_path: str):
     """Verifies that a plan applied against a mutated target state is rejected with 0 writes."""
     with SqliteIdentityRepository(temp_db_path) as repo:
-        # Mutate the repository by inserting an unrelated security
+        # Mutate repository by inserting an unrelated security
         repo.save_security(
             InternalSecurityRecord(
                 internal_security_id="ARX_SEC_EXISTING_UNRELATED",
@@ -268,21 +389,19 @@ def test_07_rehearsal_stale_target_state_fails_closed(canonical_plan: IdentityAd
                 created_at_utc="2026-10-18T10:00:00Z",
             )
         )
-        outcome = IdentityPlanApplicationService.apply_plan(canonical_plan, repo)
+        outcome = IdentityPlanApplicationService.apply_plan(synthetic_rehearsal_plan, repo)
         assert outcome.status == IdentityApplicationStatus.REJECTED_STALE_STATE
         assert outcome.applied_entities_count == 0
         assert len(repo.list_all_securities()) == 1  # Only the pre-existing row remains
 
 
-# ─── Gate 6: Application Rehearsal — Success & Idempotency ─────────────────────
-
-def test_08_rehearsal_successful_atomic_application(canonical_plan: IdentityAdoptionPlan, temp_db_path: str):
+def test_08_rehearsal_successful_atomic_application(synthetic_rehearsal_plan: IdentityAdoptionPlan, temp_db_path: str):
     """
-    Verifies that applying the canonical three-candidate plan against an initialized
-    clean temporary repository succeeds atomically, persisting all 3 securities and 3 associations.
+    Verifies that applying an authorized synthetic fixture plan against an initialized clean
+    temporary repository succeeds atomically, persisting all 3 securities and 3 associations.
     """
     with SqliteIdentityRepository(temp_db_path) as repo:
-        outcome = IdentityPlanApplicationService.apply_plan(canonical_plan, repo)
+        outcome = IdentityPlanApplicationService.apply_plan(synthetic_rehearsal_plan, repo)
         assert outcome.status == IdentityApplicationStatus.APPLIED
         assert outcome.applied_entities_count == 3
         assert outcome.applied_associations_count == 3
@@ -297,72 +416,115 @@ def test_08_rehearsal_successful_atomic_application(canonical_plan: IdentityAdop
         assert len(secs) == 3
         sec_map = {s.primary_symbol: s for s in secs}
 
-        aapl = sec_map["AAPL"]
-        assert aapl.internal_security_id == "ARX_SEC_0B4C728FE0BE"
-        assert aapl.issuer_cik == "0000320193"
-        assert aapl.share_class is None
-        assert aapl.status == "ACTIVE"
+        alpha = sec_map["SYNTH_ALPHA"]
+        assert alpha.internal_security_id == "ARX_SEC_SYNTH_01"
+        assert alpha.issuer_cik == "0009999001"
+        assert alpha.share_class is None
+        assert alpha.status == "ACTIVE"
 
-        goog = sec_map["GOOG"]
-        assert goog.internal_security_id == "ARX_SEC_A11A24D442E2"
-        assert goog.issuer_cik == "0001652044"
-        assert goog.share_class == "CLASS_C"
-        assert goog.status == "ACTIVE"
+        beta = sec_map["SYNTH_BETA"]
+        assert beta.internal_security_id == "ARX_SEC_SYNTH_02"
+        assert beta.issuer_cik == "0009999002"
+        assert beta.share_class == "CLASS_B"
+        assert beta.status == "ACTIVE"
 
-        googl = sec_map["GOOGL"]
-        assert googl.internal_security_id == "ARX_SEC_B7EF9ED7A35A"
-        assert googl.issuer_cik == "0001652044"
-        assert googl.share_class == "CLASS_A"
-        assert googl.status == "ACTIVE"
+        gamma = sec_map["SYNTH_GAMMA"]
+        assert gamma.internal_security_id == "ARX_SEC_SYNTH_03"
+        assert gamma.issuer_cik == "0009999002"
+        assert gamma.share_class == "CLASS_A"
+        assert gamma.status == "ACTIVE"
 
         # Verify persisted associations
         assocs = repo.list_all_associations()
         assert len(assocs) == 3
         assoc_map = {a.symbol: a for a in assocs}
 
-        aapl_a = assoc_map["AAPL"]
-        assert aapl_a.association_id == "ASSOC_ARX_SEC_0B4C728FE0BE_XNAS_AAPL_2026-10-17"
-        assert aapl_a.internal_security_id == "ARX_SEC_0B4C728FE0BE"
-        assert aapl_a.operating_mic == "XNAS"
-        assert aapl_a.effective_from == "2026-10-17"
-        assert aapl_a.effective_to is None
+        alpha_a = assoc_map["SYNTH_ALPHA"]
+        assert alpha_a.internal_security_id == "ARX_SEC_SYNTH_01"
+        assert alpha_a.operating_mic == "XNAS"
+        assert alpha_a.effective_from == "2026-10-17"
+        assert alpha_a.effective_to is None
 
-        goog_a = assoc_map["GOOG"]
-        assert goog_a.association_id == "ASSOC_ARX_SEC_A11A24D442E2_XNAS_GOOG_2026-10-17"
-        assert goog_a.internal_security_id == "ARX_SEC_A11A24D442E2"
-        assert goog_a.operating_mic == "XNAS"
-        assert goog_a.effective_from == "2026-10-17"
-        assert goog_a.effective_to is None
+        beta_a = assoc_map["SYNTH_BETA"]
+        assert beta_a.internal_security_id == "ARX_SEC_SYNTH_02"
+        assert beta_a.operating_mic == "XNAS"
+        assert beta_a.effective_from == "2026-10-17"
+        assert beta_a.effective_to is None
 
-        googl_a = assoc_map["GOOGL"]
-        assert googl_a.association_id == "ASSOC_ARX_SEC_B7EF9ED7A35A_XNAS_GOOGL_2026-10-17"
-        assert googl_a.internal_security_id == "ARX_SEC_B7EF9ED7A35A"
-        assert googl_a.operating_mic == "XNAS"
-        assert googl_a.effective_from == "2026-10-17"
-        assert googl_a.effective_to is None
+        gamma_a = assoc_map["SYNTH_GAMMA"]
+        assert gamma_a.internal_security_id == "ARX_SEC_SYNTH_03"
+        assert gamma_a.operating_mic == "XNAS"
+        assert gamma_a.effective_from == "2026-10-17"
+        assert gamma_a.effective_to is None
 
 
-def test_09_rehearsal_idempotent_reapplication(canonical_plan: IdentityAdoptionPlan, temp_db_path: str):
+def test_09_rehearsal_idempotent_reapplication(synthetic_rehearsal_plan: IdentityAdoptionPlan, temp_db_path: str):
     """
     Verifies that applying a plan that matches existing durable records yields
     NO_OP_ALREADY_APPLIED with 0 duplicate rows.
     """
-    from analyst_dashboard.universe.identity_proposal import build_three_candidate_proposals
-
     with SqliteIdentityRepository(temp_db_path) as repo:
         # First application: APPLIED
-        outcome1 = IdentityPlanApplicationService.apply_plan(canonical_plan, repo)
+        outcome1 = IdentityPlanApplicationService.apply_plan(synthetic_rehearsal_plan, repo)
         assert outcome1.status == IdentityApplicationStatus.APPLIED
         assert len(repo.list_all_securities()) == 3
         assert len(repo.list_all_associations()) == 3
 
-        # Construct updated plan representing re-evaluation against the current state
-        # In this updated plan, the candidates match existing durable IDs
-        proposals = build_three_candidate_proposals()
+        # Second application of identical plan against updated target:
+        # The engine recognizes records match existing durable state
+        outcome2 = IdentityPlanApplicationService.apply_plan(synthetic_rehearsal_plan, repo)
+        # Because target state digest changed, fresh plan generated against current repo
+        # Re-generating plan against current state:
         plan2 = IdentityAdoptionDryRunEngine.generate_plan(
-            proposals=proposals,
+            proposals=[
+                CandidateAssociationProposal(
+                    symbol=e.primary_symbol,
+                    observed_venue="XNAS",
+                    instrument_classification="Common Stock",
+                    available_figis={},
+                    provider_asset_identifiers={},
+                    issuer_cik=e.issuer_cik,
+                    issuer_name=f"{e.primary_symbol} Corp",
+                    evidence_references=[],
+                    proposed_entity=ProvisionalSecurityEntity(
+                        provisional_security_id=f"PROV_SEC_{e.primary_symbol}",
+                        primary_symbol=e.primary_symbol,
+                        share_class=e.share_class,
+                        instrument_structure="Common Stock",
+                        issuer_cik=e.issuer_cik,
+                        company_name=f"{e.primary_symbol} Corp",
+                        external_identifiers=(),
+                        created_at_utc="2026-10-18T12:00:00Z",
+                        status="SYNTHETIC_TEST_FIXTURE",
+                    ),
+                    proposed_association=ProvisionalListingAssociation(
+                        provisional_association_id=f"PROV_ASSOC_{e.primary_symbol}",
+                        provisional_security_id=f"PROV_SEC_{e.primary_symbol}",
+                        symbol=e.primary_symbol,
+                        operating_mic="XNAS",
+                        effective_from="2026-10-17",
+                        effective_to=None,
+                    ),
+                    primary_listing_analysis=PrimaryListingClaimAnalysis(
+                        symbol=e.primary_symbol,
+                        exact_claim_needed="TEST",
+                        issuer_home_market="US",
+                        underlying_ordinary_share_listing=None,
+                        depositary_receipt_listing=None,
+                        primary_exchange_for_instrument="XNAS",
+                        selected_us_assessment_listing=True,
+                        claimed_primary_listing=None,
+                        evidence_sufficiency="TEST",
+                        missing_evidence_details=[],
+                        contract_ambiguity_notes="Synthetic fixture reapplication test",
+                    ),
+                    ambiguities_and_missing_evidence=[],
+                    review_disposition="READY_FOR_REVIEW",
+                )
+                for e in synthetic_rehearsal_plan.entities
+            ],
             existing_target=repo.to_snapshot_dict(),
-            authorization=canonical_plan.authorization,
+            authorization=synthetic_rehearsal_plan.authorization,
             evaluation_reference_date="2026-10-17",
             deterministic_plan_time_utc="2026-10-18T12:05:00Z",
         )
@@ -371,45 +533,45 @@ def test_09_rehearsal_idempotent_reapplication(canonical_plan: IdentityAdoptionP
         assert plan2.summary.entities_approved_creation == 0
         assert plan2.summary.associations_approved_creation == 0
 
-        outcome2 = IdentityPlanApplicationService.apply_plan(plan2, repo)
-        assert outcome2.status == IdentityApplicationStatus.NO_OP_ALREADY_APPLIED
-        assert outcome2.applied_entities_count == 0
-        assert outcome2.applied_associations_count == 0
-        assert outcome2.noop_entities_count == 3
-        assert outcome2.noop_associations_count == 3
+        outcome_idempotent = IdentityPlanApplicationService.apply_plan(plan2, repo)
+        assert outcome_idempotent.status == IdentityApplicationStatus.NO_OP_ALREADY_APPLIED
+        assert outcome_idempotent.applied_entities_count == 0
+        assert outcome_idempotent.applied_associations_count == 0
+        assert outcome_idempotent.noop_entities_count == 3
+        assert outcome_idempotent.noop_associations_count == 3
         assert len(repo.list_all_securities()) == 3
         assert len(repo.list_all_associations()) == 3
 
 
-def test_10_rehearsal_simulated_mid_failure_rollback(canonical_plan: IdentityAdoptionPlan, temp_db_path: str):
+def test_10_rehearsal_simulated_mid_failure_rollback(synthetic_rehearsal_plan: IdentityAdoptionPlan, temp_db_path: str):
     """
     Verifies that a mid-application failure triggers 100% rollback via SQLite BEGIN IMMEDIATE.
     Zero partial rows remain in the repository.
     """
     with SqliteIdentityRepository(temp_db_path) as repo:
         outcome = IdentityPlanApplicationService.apply_plan(
-            plan=canonical_plan,
+            plan=synthetic_rehearsal_plan,
             repository=repo,
-            simulate_mid_failure_on_symbol="GOOGL",
+            simulate_mid_failure_on_symbol="SYNTH_GAMMA",
         )
         assert outcome.status == IdentityApplicationStatus.REJECTED_ERROR
         assert outcome.applied_entities_count == 0
         assert outcome.applied_associations_count == 0
         assert outcome.audit_entry_recorded is False
 
-        # Verify complete rollback: AAPL and GOOG were NOT committed
+        # Verify complete rollback: SYNTH_ALPHA and SYNTH_BETA were NOT committed
         assert len(repo.list_all_securities()) == 0
         assert len(repo.list_all_associations()) == 0
 
 
-def test_11_rehearsal_read_only_inspection(canonical_plan: IdentityAdoptionPlan, temp_db_path: str):
+def test_11_rehearsal_read_only_inspection(synthetic_rehearsal_plan: IdentityAdoptionPlan, temp_db_path: str):
     """
     Verifies that an applied repository can be safely inspected in read_only=True mode,
     and that any write attempt raises PermissionError.
     """
     # First apply to initialize and populate the DB file
     with SqliteIdentityRepository(temp_db_path) as repo:
-        outcome = IdentityPlanApplicationService.apply_plan(canonical_plan, repo)
+        outcome = IdentityPlanApplicationService.apply_plan(synthetic_rehearsal_plan, repo)
         assert outcome.status == IdentityApplicationStatus.APPLIED
 
     # Open repository in strict read-only mode
@@ -435,39 +597,37 @@ def test_11_rehearsal_read_only_inspection(canonical_plan: IdentityAdoptionPlan,
                 pass
 
 
-# ─── Gate 7: Interoperability with OfflineAdmissionMappingEngine ───────────────
-
-def test_12_interoperability_with_admission_engine(canonical_plan: IdentityAdoptionPlan, temp_db_path: str):
+def test_12_interoperability_with_admission_engine(synthetic_rehearsal_plan: IdentityAdoptionPlan, temp_db_path: str):
     """
-    Verifies that records persisted by the three-candidate plan can be exported into
-    an OfflineAdmissionMappingEngine, resolving locators and CIK mappings correctly.
+    Verifies that records persisted during rehearsal can be exported into an
+    OfflineAdmissionMappingEngine, resolving locators and CIK mappings correctly.
     """
     with SqliteIdentityRepository(temp_db_path) as repo:
-        outcome = IdentityPlanApplicationService.apply_plan(canonical_plan, repo)
+        outcome = IdentityPlanApplicationService.apply_plan(synthetic_rehearsal_plan, repo)
         assert outcome.status == IdentityApplicationStatus.APPLIED
 
         engine = repo.load_into_admission_engine()
 
         # Locator resolution via active listing index
-        aapl_assocs = engine._active_listing_index.get(("AAPL", "XNAS"), [])
-        assert len(aapl_assocs) == 1
-        assert aapl_assocs[0].internal_security_id == "ARX_SEC_0B4C728FE0BE"
+        alpha_assocs = engine._active_listing_index.get(("SYNTH_ALPHA", "XNAS"), [])
+        assert len(alpha_assocs) == 1
+        assert alpha_assocs[0].internal_security_id == "ARX_SEC_SYNTH_01"
 
-        goog_assocs = engine._active_listing_index.get(("GOOG", "XNAS"), [])
-        assert len(goog_assocs) == 1
-        assert goog_assocs[0].internal_security_id == "ARX_SEC_A11A24D442E2"
+        beta_assocs = engine._active_listing_index.get(("SYNTH_BETA", "XNAS"), [])
+        assert len(beta_assocs) == 1
+        assert beta_assocs[0].internal_security_id == "ARX_SEC_SYNTH_02"
 
-        googl_assocs = engine._active_listing_index.get(("GOOGL", "XNAS"), [])
-        assert len(googl_assocs) == 1
-        assert googl_assocs[0].internal_security_id == "ARX_SEC_B7EF9ED7A35A"
+        gamma_assocs = engine._active_listing_index.get(("SYNTH_GAMMA", "XNAS"), [])
+        assert len(gamma_assocs) == 1
+        assert gamma_assocs[0].internal_security_id == "ARX_SEC_SYNTH_03"
 
-        # Alphabet Inc. CIK maps to exactly 2 distinct securities
-        alphabet_secs = engine.get_securities_for_cik("0001652044")
-        assert len(alphabet_secs) == 2
-        alphabet_sec_ids = {s.internal_security_id for s in alphabet_secs}
-        assert alphabet_sec_ids == {"ARX_SEC_A11A24D442E2", "ARX_SEC_B7EF9ED7A35A"}
+        # Shared synthetic issuer CIK maps to exactly 2 distinct securities
+        c2_secs = engine.get_securities_for_cik("0009999002")
+        assert len(c2_secs) == 2
+        c2_sec_ids = {s.internal_security_id for s in c2_secs}
+        assert c2_sec_ids == {"ARX_SEC_SYNTH_02", "ARX_SEC_SYNTH_03"}
 
-        # Apple Inc. CIK maps to exactly 1 security
-        apple_secs = engine.get_securities_for_cik("0000320193")
-        assert len(apple_secs) == 1
-        assert apple_secs[0].internal_security_id == "ARX_SEC_0B4C728FE0BE"
+        # Distinct issuer CIK maps to exactly 1 security
+        c1_secs = engine.get_securities_for_cik("0009999001")
+        assert len(c1_secs) == 1
+        assert c1_secs[0].internal_security_id == "ARX_SEC_SYNTH_01"

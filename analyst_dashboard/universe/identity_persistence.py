@@ -980,7 +980,11 @@ class IdentityPlanApplicationService:
         auth = authorization or plan.authorization
 
         # 1. Authorization Gate
-        if not auth.is_authorized:
+        if (
+            not auth.is_authorized
+            or (auth.scope != "SYNTHETIC_TEST_ONLY" and not getattr(auth, "application_authorized", False))
+            or (auth.scope != "SYNTHETIC_TEST_ONLY" and getattr(auth, "exact_plan_approval", "") != "APPROVED")
+        ):
             return IdentityApplicationOutcome(
                 status=IdentityApplicationStatus.REJECTED_UNAUTHORIZED,
                 plan_id=plan.plan_id,
@@ -988,12 +992,16 @@ class IdentityPlanApplicationService:
                 target_state_digest_after=repository.compute_target_state_digest(),
                 applied_entities_count=0,
                 noop_entities_count=0,
-                blocked_entities_count=plan.summary.entities_blocked,
+                blocked_entities_count=plan.summary.entities_blocked + getattr(plan.summary, "entities_mechanically_ready", 0),
                 applied_associations_count=0,
                 noop_associations_count=0,
-                blocked_associations_count=plan.summary.associations_blocked,
+                blocked_associations_count=plan.summary.associations_blocked + getattr(plan.summary, "associations_mechanically_ready", 0),
                 audit_entry_recorded=False,
-                details=["Plan application rejected: authorization.is_authorized is False."],
+                details=[
+                    "Plan application rejected: unauthorized or unapproved exact plan "
+                    f"(is_authorized={auth.is_authorized}, application_authorized={getattr(auth, 'application_authorized', False)}, "
+                    f"exact_plan_approval='{getattr(auth, 'exact_plan_approval', 'ABSENT')}')."
+                ],
             )
 
         # 2. Plan Content Integrity Gate
@@ -1039,8 +1047,14 @@ class IdentityPlanApplicationService:
             plan.summary.entities_blocked > 0
             or plan.summary.associations_blocked > 0
             or plan.summary.conflicts_count > 0
+            or getattr(plan.summary, "entities_mechanically_ready", 0) > 0
+            or getattr(plan.summary, "associations_mechanically_ready", 0) > 0
         )
         if has_blocked_items and not allow_partial:
+            total_unapproved = (
+                plan.summary.entities_blocked
+                + getattr(plan.summary, "entities_mechanically_ready", 0)
+            )
             return IdentityApplicationOutcome(
                 status=IdentityApplicationStatus.REJECTED_BLOCKED_ITEMS,
                 plan_id=plan.plan_id,
@@ -1048,15 +1062,14 @@ class IdentityPlanApplicationService:
                 target_state_digest_after=digest_before,
                 applied_entities_count=0,
                 noop_entities_count=0,
-                blocked_entities_count=plan.summary.entities_blocked,
+                blocked_entities_count=total_unapproved,
                 applied_associations_count=0,
                 noop_associations_count=0,
-                blocked_associations_count=plan.summary.associations_blocked,
+                blocked_associations_count=plan.summary.associations_blocked + getattr(plan.summary, "associations_mechanically_ready", 0),
                 audit_entry_recorded=False,
                 details=[
-                    f"Atomic whole-batch rule rejected plan: Contains {plan.summary.entities_blocked} blocked "
-                    f"entities, {plan.summary.associations_blocked} blocked associations, and {plan.summary.conflicts_count} "
-                    f"conflicts while allow_partial is False."
+                    f"Atomic whole-batch rule rejected plan: Contains {total_unapproved} unapproved or blocked "
+                    f"entities, and {plan.summary.conflicts_count} conflicts while allow_partial is False."
                 ],
             )
 

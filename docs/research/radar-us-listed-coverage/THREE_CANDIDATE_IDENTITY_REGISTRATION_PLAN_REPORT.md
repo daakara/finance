@@ -1,5 +1,6 @@
 # ARX Terminal — Sprint 2 Technical Decision & Verification Record
 ## Exact Three-Candidate Identity Registration Plan (`AAPL`, `GOOG`, `GOOGL`)
+### Evidence Audit, Unapproved Candidate Plan Specification & Execution Rehearsal
 
 **Document ID**: `DOCS-RESEARCH-RADAR-THREE-CANDIDATE-IDENTITY-REGISTRATION-PLAN-REPORT`  
 **Classification**: Engineering Implementation, Evidence Audit & Rehearsal Verification Record  
@@ -9,241 +10,304 @@
 **Base Release Commit SHA**: `6121235021340e46ab57e95dba014b3510867c93` (`origin/main`, PR #25 squash merge)  
 **Base Tree SHA**: `c2afe4c03f48afc8cd1f7ab27fd399d26a67f42c`  
 **Date**: 2026-10-18  
-**Terminal State / Stop Point**: `THREE_CANDIDATE_REGISTRATION_PLAN_VERIFIED`  
+**Terminal State / Stop Point**: `THREE_CANDIDATE_REGISTRATION_PLAN_PREPARED_FOR_REVIEW`  
 
 ---
 
-### 1. Executive Summary & Git Lineage Attestation
+### 1. Architectural Policy Approval vs. Exact-Plan Approval Separation
 
 This technical record certifies the preparation, evidence audit, artifact generation, and local rehearsal verification of the **Exact Three-Candidate Identity Registration Plan** for `AAPL`, `GOOG`, and `GOOGL` in ARX Terminal.
 
-This work operationalizes the architectural principle formally approved by the Product Owner:
+#### The Approved Architectural Principle
+The Product Owner formally approved the following architectural principle:
 
 > **Approved Architectural Principle**:  
 > *"An evidence-resolved internal security identity and supported listing association may be registered independently of strategy eligibility and R06 admission status. Such registration grants no conversion, admission, publication or scanner authority."*
 
-#### Strict Governance Boundaries Maintained
-- **Zero Production Database Writes**: No tables, files, or migrations were created or modified on production.
-- **Zero Production Plan Application**: No real-candidate adoption plan was applied to production.
-- **Strict Decoupling**: Reference identity registration does NOT grant Rule R06 universe admission, `contracts.SourceSecurity` conversion authority, strategy eligibility, or scanner activation.
-- **Evidence-Grounded**: All candidate facts are bound to retained public reference files; zero evidence was accepted by assumption.
-- **Worktree Isolation**: Sibling worktrees (`finance-sprint-2-real-data-pilot`, `finance-sprint-2-identity-persistence`, and mainline) remain untouched.
+#### Strict Separation of Policy from Plan Approval
+This architectural principle approves **separation of concerns only**. It establishes that internal identity registration does not depend on market data readiness (Rule R05) or Rule R06 primary-listing evidence closure.
 
-#### Git Object Lineage
-```
-Mainline History:
-  PR #21 (SEO Release)               SHA: 21fa1ef17e7d69b4ecbb785081efb44869c3629e
-    └── PR #24 (Identity Adoption)   SHA: 68cf491ae828e29b43495303326b322374bcbded
-          └── PR #23 (Build/Coverage)SHA: ceef16a0a30bcdda4f1da25f46749eed5c72977c
-                └── PR #25 (Persistence) SHA: 6121235021340e46ab57e95dba014b3510867c93 (Base HEAD)
-                      └── feat/sprint-2-three-candidate-registration-plan (Current Worktree)
-```
+It does **NOT** approve:
+- The exact identities or effective dates of particular candidate instruments;
+- An authorized adoption plan for production execution;
+- Production database creation, migration, or writes;
+- `SourceSecurity` conversion, Rule R06 universe admission, or scanner activation.
 
-Base tree verification confirmed presence of all prerequisite released modules:
-- `analyst_dashboard/universe/identity_adoption.py` (PR #24)
-- `analyst_dashboard/universe/identity_persistence.py` (PR #25)
-- `analyst_dashboard/universe/offline_build_coverage.py` & `admission_mapping.py` (PR #23)
-
----
-
-### 2. Production Service Configuration & Storage Discovery
-
-Prior to generating an executable plan, production service configuration and persistent storage conventions were inspected through authorized read-only access on Railway project `a339a92a-7236-4ac0-9a3a-d7ad440f9690` (Service: `web`, Environment: `production`).
-
-#### Production Architecture Inspection Findings
-
-| System Dimension | Discovery Observation | Technical Implication |
-| :--- | :--- | :--- |
-| **Serving Service** | `web` (FastAPI backend + Next.js SSR reverse proxy) | The primary container running Python 3.11 runtime. |
-| **Environment** | `production` | Production deployment container. |
-| **Persistent Storage** | Railway Volume `web-volume` (`RAILWAY_VOLUME_ID=7867d923-89e9-4619-955a-cc7a43344f73`) | Mounted at `/root` inside the container; **survives container redeployments and restarts**. |
-| **Existing Databases in `/root`** | `shadow_evidence.db`, `governance.db`, `market.db`, `openfigi_operational.db` | Operational and market stores are present. |
-| **Existing App Databases** | `/app/data/operational/security_master.db` | Ephemeral container build artifact. |
-| **Identity Database Presence** | **ZERO identity databases exist in production** | No `identity.db` or identity repository tables exist anywhere on the host. |
-| **Proposed Target Location** | `/root/analyst_dashboard/data/identity.db` | **PROPOSED_NOT_INITIALIZED** |
-| **Process Owner** | Explicit operator CLI command: `python -m analyst_dashboard.universe.identity_persistence apply --db-path ...` | **Never automatic container startup, background workers, or web request hooks.** |
-| **Backup / Recovery** | Railway volume snapshot capability via Railway CLI / dashboard | Atomic SQLite WAL file backup prior to write execution. |
-
-#### Target State Digest Governance Rule
-> [!IMPORTANT]
-> **Strict Anti-Assumption Invariant**: An absent production target must NOT be assumed to match an empty in-memory repository. Computing a target state digest from an in-memory store and asserting it represents production would violate governance.
-> 
-> Therefore:
-> 1. The target store designation is formally labeled **`PROPOSED_NOT_INITIALIZED`**.
-> 2. The canonical registration plan artifact records the clean initialized schema digest (`ea11990ec0e3790abcb0b4293bfadd7ae4e58ca050e79e949e688a82437a93ee`) strictly as the **local rehearsal baseline**.
-> 3. Production pre-state digest can only be confirmed after an authorized operator explicitly executes `init` on the target database path.
-
----
-
-### 3. Candidate Identity Evidence Matrix (`AAPL`, `GOOG`, `GOOGL`)
-
-All evidence bindings were verified directly against retained repository sources (`evidence/sample-cache/2026-10-17/`, `docs/research/radar-us-listed-coverage/`). Zero external network requests were made.
+#### Additive Schema Representation: Mechanical Readiness vs. Plan Approval
+To prevent false owner authorization claims, the identity adoption engine and serialized plan artifact explicitly separate mechanical feasibility from governance approval:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                 Corporate Issuer (EDGAR)                               │
-│                         Alphabet Inc. (CIK: 0001652044)                                │
-└───────────────────────────┬────────────────────────────────────────────┬───────────────┘
-                            │                                            │
-                            ▼                                            ▼
-          ┌──────────────────────────────────┐         ┌──────────────────────────────────┐
-          │ Class C Capital Stock (Non-voting)│         │   Class A Common Stock (1 Vote)  │
-          │ Primary Symbol: GOOG             │         │ Primary Symbol: GOOGL            │
-          │ Durable ID: ARX_SEC_A11A24D442E2 │         │ Durable ID: ARX_SEC_B7EF9ED7A35A │
-          │ Composite FIGI: BBG009S3NB30     │         │ Composite FIGI: BBG009S39JX6     │
-          │ ShareClass FIGI: BBG009S3NB21    │         │ ShareClass FIGI: BBG009S39JY5    │
-          │ Listing FIGI: BBG009S3NB49       │         │ Listing FIGI: BBG009S39JW7       │
-          │ Operating MIC: XNAS              │         │ Operating MIC: XNAS              │
-          │ Effective: 2026-10-17            │         │ Effective: 2026-10-17            │
-          └──────────────────────────────────┘         └──────────────────────────────────┘
+│                                 GOVERNANCE STATUS AUDIT                                │
+├───────────────────────────────────────┬────────────────────────────────────────────────┤
+│ exact_plan_approval                   │ ABSENT                                         │
+│ application_authorized                │ FALSE                                          │
+│ production_target                     │ PROPOSED_NOT_INITIALIZED                       │
+│ is_authorized                         │ FALSE                                          │
+│ authorized_by                         │ None (NO HUMAN APPROVER FABRICATED)            │
+│ candidate_disposition                 │ MECHANICALLY_READY_UNAPPROVED                  │
+│ entities_approved_creation            │ 0                                              │
+│ associations_approved_creation        │ 0                                              │
+│ entities_mechanically_ready           │ 3 (AAPL, GOOG, GOOGL)                          │
+│ associations_mechanically_ready       │ 3 (AAPL/XNAS, GOOG/XNAS, GOOGL/XNAS)           │
+└───────────────────────────────────────┴────────────────────────────────────────────────┘
 ```
 
-#### Detailed Attribute & Evidence Specification Table
-
-| Attribute Field | `AAPL` | `GOOG` | `GOOGL` |
-| :--- | :--- | :--- | :--- |
-| **Issuer Corporate Legal Name** | Apple Inc. | Alphabet Inc. | Alphabet Inc. |
-| **Issuer CIK (10-digit)** | `0000320193` | `0001652044` | `0001652044` |
-| **Exact Instrument Title** | Common Stock | Class C Capital Stock | Class A Common Stock |
-| **Instrument Share Class** | `None` (Single class common) | `CLASS_C` (Non-voting) | `CLASS_A` (1 vote per share) |
-| **Voting Rights Distinction** | Standard voting | Non-voting capital stock | 1 vote per share |
-| **Instrument Structure** | Common Stock | Common Stock | Common Stock |
-| **Listing Symbol** | `AAPL` | `GOOG` | `GOOGL` |
-| **Operating MIC** | `XNAS` (NASDAQ Stock Market) | `XNAS` (NASDAQ Stock Market) | `XNAS` (NASDAQ Stock Market) |
-| **OpenFIGI Composite FIGI** | `BBG000B9XRY4` | `BBG009S3NB30` | `BBG009S39JX6` |
-| **OpenFIGI Share Class FIGI** | `BBG001S5N8V8` | `BBG009S3NB21` | `BBG009S39JY5` |
-| **OpenFIGI Listing FIGI** | `BBG000B9Y5X2` | `BBG009S3NB49` | `BBG009S39JW7` |
-| **Alpaca Asset ID** | `b0b6dd9d-8b9b-48a9-ba46-b9d54906e415` | `e122ea54-71ee-497b-944a-d34346ad79a6` | `f30d733c-9b35-4081-9964-b0ad4b7c191a` |
-| **Evidence Source Locator** | SEC EDGAR company tickers & OpenFIGI cache | SEC EDGAR company tickers & OpenFIGI cache | SEC EDGAR company tickers & OpenFIGI cache |
-| **Observation Timestamp UTC** | `2026-10-17T07:51:57Z` | `2026-10-17T07:51:57Z` | `2026-10-17T07:51:57Z` |
-| **Supported Validity Interval** | `2026-10-17` to `None` (Active) | `2026-10-17` to `None` (Active) | `2026-10-17` to `None` (Active) |
-| **Temporal Limitation** | Bounded to empirical observation; historical IPO backdating is NOT evidenced. | Bounded to empirical observation; historical IPO backdating is NOT evidenced. | Bounded to empirical observation; historical IPO backdating is NOT evidenced. |
-| **Identity Sufficiency** | **SUFFICIENT** | **SUFFICIENT** | **SUFFICIENT** |
-
-#### Multi-Symbol Issuer Principles & Decoupling Invariants
-1. **Shared CIK Does Not Merge GOOG and GOOGL**: Both instruments share Alphabet Inc.'s corporate CIK (`0001652044`), but represent legally and economically distinct equity classes. They maintain completely independent durable security IDs (`ARX_SEC_A11A24D442E2` vs `ARX_SEC_B7EF9ED7A35A`).
-2. **Voting Rights Do Not Determine Primary Listing**: Class C non-voting shares trade natively on NASDAQ as an independent listing line. Voting power is an governance characteristic, not a primary-listing disqualifier.
-3. **Decoupled from Strategy Eligibility & Price History**: Neither `AAPL`, `GOOG`, nor `GOOGL` identity registration depends on bar count (Rule R05) or price history readiness. Missing market data is not missing identity evidence.
-4. **Decoupled from Rule R06 Primary-Listing Status**: All candidates retain `claimed_primary_listing = None` (UNKNOWN) and `rule_r06_admitted = False`.
+The candidates are **mechanically plannable** (their evidence is clean, locators do not collide, share classes are distinct), but they are **UNAPPROVED for application**. Attempting to apply this canonical plan against an initialized repository fails closed immediately with `REJECTED_UNAUTHORIZED` (0 database writes).
 
 ---
 
-### 4. Investigation of Previously Reported Proposal Identifiers
+### 2. Local Rehearsal Isolation & Synthetic Verification Architecture
 
-The user instructions directed an investigation into previously reported proposal IDs:
-- `AAPL`: `ARX_SEC_7BCE79482066`
-- `GOOG`: `ARX_SEC_5471476DCFF5`
-- `GOOGL`: `ARX_SEC_AA263F6E0358`
+#### Prior Rehearsal Clarification
+Prior rehearsal runs reported in earlier increments were executed **strictly against temporary test stores** (`tmp_path`, in-memory SQLite `:memory:`). All temporary database files and artifacts were automatically destroyed upon test suite teardown. Zero candidate records were ever modified in, written to, or left resident in any shared or production database.
 
-#### Forensic Investigation Findings
-1. An exhaustive search across all worktree files, git commits, and sibling directories was conducted:
-   ```powershell
-   git log -S "ARX_SEC_7BCE79482066" --all
-   grep -rn "ARX_SEC_7BCE79482066" C:\Users\akara\Documents\Projects\finance*
-   ```
-2. **Result**: **No serialized JSON plan containing these IDs was ever created or committed to disk.**
-3. These identifiers appeared exclusively as static string literals in unit test fixtures in `tests/test_identity_persistence.py` and narrative text in report prose.
-4. Under the user's explicit rule:
-   > *"Reuse these only if their original persisted plan and binding can actually be located and verified. Do not reconstruct unavailable plans from report prose..."*
-5. Therefore, fresh, authoritative opaque durable security IDs were generated and bound into the canonical plan artifact. Once serialized, these IDs are immutably locked by the plan's cryptographic content hash.
+#### Migration to Explicitly Synthetic Rehearsal Fixtures
+To guarantee that unapproved real candidates are **never marked approved solely to satisfy a test harness**, the testing architecture is now strictly partitioned:
 
-#### Canonical Allocated Durable Identifiers
+1. **Real Candidate Plan Verification (Gates 1–5)**:
+   - Evaluates the canonical unapproved plan artifact: `evidence/identity_registration/three_candidate_registration_plan.json`.
+   - Verifies evidence bindings (`AAPL`, `GOOG`, `GOOGL`), CIK concordance, share class segregation, observation bounding, and SHA-256 integrity.
+   - Enforces readiness status (`MECHANICALLY_READY_UNAPPROVED`).
+   - Verifies that attempting to apply the unapproved plan fails closed (`REJECTED_UNAUTHORIZED`, 0 database writes).
+   - Never applies or marks real candidate records as approved.
 
-| Candidate | Opaque Durable Security ID | Durable Listing Association ID |
+2. **Controlled Execution Rehearsal (Gates 6–12)**:
+   - Evaluates an explicitly labeled, synthetic test fixture plan (`SYNTH_ALPHA`, `SYNTH_BETA`, `SYNTH_GAMMA` with synthetic CIKs `0009999001` and `0009999002` under `scope="SYNTHETIC_TEST_ONLY"`).
+   - Rigorously exercises the full write and transactional pipeline: atomic insertion, SHA-256 tampering rejection, stale state rejection, idempotent reapplication, 100% rollback on mid-operation failure via SQLite `BEGIN IMMEDIATE`, read-only inspection safety, and roundtrip interoperability with `OfflineAdmissionMappingEngine`.
+
+---
+
+### 3. Discovery and Assessment of the Existing Security Master
+
+A rigorous inspection of the running production container (`web`, Railway environment: `production`) and repository codebase was conducted to determine the relationship between existing database stores and the proposed identity repository.
+
+#### Discovery Findings: `/app/data/operational/security_master.db`
+
+| Inspection Dimension | Observation | Technical Implication |
 | :--- | :--- | :--- |
-| **`AAPL`** | `ARX_SEC_0B4C728FE0BE` | `ASSOC_ARX_SEC_0B4C728FE0BE_XNAS_AAPL_2026-10-17` |
-| **`GOOG`** | `ARX_SEC_A11A24D442E2` | `ASSOC_ARX_SEC_A11A24D442E2_XNAS_GOOG_2026-10-17` |
-| **`GOOGL`** | `ARX_SEC_B7EF9ED7A35A` | `ASSOC_ARX_SEC_B7EF9ED7A35A_XNAS_GOOGL_2026-10-17` |
+| **Filesystem Location** | `/app/data/operational/security_master.db` | Resides on the **ephemeral container build overlay** (`/app`), NOT on persistent volume `/root`. |
+| **Lifecycle** | Ephemeral / Recreated on container deploy | Discarded and rebuilt whenever a new Railway container is deployed. |
+| **Creating Module** | `analyst_dashboard/security_master/store.py` (`SecurityMasterStore`) | Instantiated by live market fetchers (`analyst_dashboard/data/alpaca_fetcher.py`). |
+| **Database Schema** | `CREATE TABLE canonical_instruments (symbol TEXT PRIMARY KEY, name TEXT, asset_class TEXT, exchange TEXT, currency TEXT, is_active INTEGER, first_seen TEXT, last_updated TEXT, raw_attributes TEXT)` | A flat, symbol-keyed instrument cache. |
+| **Current Row Count** | Exactly **1 row** (`AAPL` Common Stock, cached from earlier test probe) | 0 rows for `GOOG`, 0 rows for `GOOGL`. |
+| **Component Usage** | Used at runtime by Alpaca market data fetchers to cache quote attributes for 24 hours. | Avoids repetitive REST API lookups to Alpaca. |
+
+#### Architectural Assessment & Relationship to `identity.db`
+1. **Why `security_master.db` was created**: It was designed as an ephemeral, 24-hour runtime cache for `CanonicalInstrument` objects fetched from market data providers.
+2. **Why it cannot serve as the authoritative identity repository**:
+   - **No durable internal security IDs**: It is keyed strictly by symbol string (`symbol TEXT PRIMARY KEY`).
+   - **No CIK tracking**: It contains no corporate issuer CIK or EDGAR lineage.
+   - **No corporate share-class modeling**: It cannot distinguish Alphabet Class A (`GOOGL`) from Class C (`GOOG`) as distinct equity classes of the same corporate issuer beyond raw ticker strings.
+   - **No effective-dated intervals**: It lacks validity interval bounds (`effective_from`, `effective_to`).
+   - **No attributable evidence lineage**: It does not track documentary hashes, observation timestamps, or regulatory sources.
+3. **Proposed `identity.db` Location & Precise Absence Claim**:
+   - The proposed durable identity repository is designated for persistent volume `web-volume` at `/root/analyst_dashboard/data/identity.db`.
+   - **Precise Finding**: We state precisely that **`/root/analyst_dashboard/data/identity.db` is ABSENT and NOT INITIALIZED**. We do not assert that "no identity databases exist" on the host, as `security_master.db` exists in `/app` as an ephemeral operational cache.
+4. **Adoption / Migration Strategy**:
+   - `security_master.db` should be **KEPT SEPARATE** as an ephemeral runtime cache.
+   - Once `identity.db` is initialized and populated under human authorization, downstream components can resolve canonical identities through `identity.db` and hydrate or validate `security_master.db` cache entries.
 
 ---
 
-### 5. Canonical Registration Plan Artifact
+### 4. Authoritative Re-Verification of Provider Identifier Bindings
 
-The canonical plan artifact was generated and serialized to:  
+All provider bindings were re-verified directly against the saved, raw capture artifacts.
+
+#### 4.1 Alpaca Asset Identifiers
+**Raw Response File**: `data/research/alpaca_reference/alpaca_three_candidates_assets_20261017.json`  
+**Retrieval Timestamp**: `2026-10-17T07:51:57Z`  
+**Endpoint**: `GET /v2/assets/{symbol}`  
+**Cryptographic File Digest (SHA-256)**: `f655012528bbccd971f6e4e7276a7fbb9f6ba9be42db85ad0696a02c92c5934c`  
+
+```json
+{
+  "AAPL": {
+    "id": "b0b6dd9d-8b9b-48a9-ba46-b9d54906e415",
+    "class": "us_equity",
+    "exchange": "NASDAQ",
+    "symbol": "AAPL",
+    "name": "Apple Inc. Common Stock",
+    "status": "active"
+  },
+  "GOOG": {
+    "id": "f30d734c-2806-4d0d-b145-f9fade61432b",
+    "class": "us_equity",
+    "exchange": "NASDAQ",
+    "symbol": "GOOG",
+    "name": "Alphabet Inc. Class C Capital Stock",
+    "status": "active"
+  },
+  "GOOGL": {
+    "id": "69b15845-7c63-4586-b274-1cfdfe9df3d8",
+    "class": "us_equity",
+    "exchange": "NASDAQ",
+    "symbol": "GOOGL",
+    "name": "Alphabet Inc. Class A Common Stock",
+    "status": "active"
+  }
+}
+```
+
+#### Forensic Explanation of Earlier Discrepant Alpaca IDs
+- **`e122ea54-71ee-497b-944a-d34346ad79a6` (previously cited for GOOG)**: This value was an unbacked test literal or placeholder introduced in an early mock draft. It does not exist in any authenticated Alpaca API payload. **Formally revoked and corrected to `f30d734c-2806-4d0d-b145-f9fade61432b`**.
+- **`f30d733c-9b35-4081-9964-b0ad4b7c191a` (previously cited for GOOGL)**: This value was a transcription corruption of the GOOG ID (`f30d734c...` with character substitutions). The actual authenticated Alpaca asset ID for `GOOGL` in the saved artifact is **`69b15845-7c63-4586-b274-1cfdfe9df3d8`**.
+
+#### 4.2 OpenFIGI Identifier Levels & Listing FIGI Omission
+**Raw Response File**: `data/research/openfigi_reference/openfigi_three_candidates_mapping_20261017.json`  
+**Retrieval Timestamp**: `2026-10-17T07:49:09Z`  
+**Cryptographic File Digest (SHA-256)**: `003c995d4ce51d95573ac4fedf6afd9f368a5be356ba28e9b616b992a8f225d2`  
+**Mapping Request Parameters**: `[{"idType": "TICKER", "idValue": "AAPL", "exchCode": "US"}, {"idType": "TICKER", "idValue": "GOOG", "exchCode": "US"}, {"idType": "TICKER", "idValue": "GOOGL", "exchCode": "US"}]`
+
+#### Response Data Analysis
+The OpenFIGI mapping request specified `exchCode: "US"`. In the OpenFIGI data model:
+1. `exchCode: "US"` queries return **US Composite FIGIs** and **Share Class FIGIs**.
+2. The returned `figi` attribute is identical to `compositeFIGI`:
+   - `AAPL`: `figi = "BBG000B9XRY4"`, `compositeFIGI = "BBG000B9XRY4"`, `shareClassFIGI = "BBG001S5N8V8"`
+   - `GOOG`: `figi = "BBG009S3NB30"`, `compositeFIGI = "BBG009S3NB30"`, `shareClassFIGI = "BBG009S3NB21"`
+   - `GOOGL`: `figi = "BBG009S39JX6"`, `compositeFIGI = "BBG009S39JX6"`, `shareClassFIGI = "BBG009S39JY5"`
+3. **No venue-specific listing FIGIs (for operating venue `XNAS`) were returned in the saved payload.**
+
+#### Forensic Explanation of Listing FIGIs
+- Previously reported listing FIGIs (`BBG000B9Y5X2`, `BBG009S3NB49`, `BBG009S39JW7`) were external terminal lookups (associated with Bloomberg exchange code `UW`), but were **not present in the saved mapping response artifact**.
+- Under the strict anti-assumption invariant, these listing FIGIs are **FORMALLY OMITTED and marked `UNRESOLVED / OMITTED`** in the authoritative plan. They are not retained on assumption.
+
+---
+
+### 5. Date and Identifier Honesty
+
+#### 5.1 Observation-Bounded Temporal Semantics
+1. **Observation Date**: `2026-10-17` represents the empirical observation timestamp (`observation_date = "2026-10-17"`). It proves that the listing was active on NASDAQ on `2026-10-17`.
+2. **Historical Inception Honesty**: It is **NOT** asserted as the corporate listing inception or IPO date.
+3. **Status Tag**: The association is explicitly tagged:
+   ```json
+   {
+     "effective_from": "2026-10-17",
+     "observation_date": "2026-10-17",
+     "effective_date_status": "OBSERVATION_BOUNDED_HISTORICAL_INCEPTION_PENDING",
+     "effective_to": null
+   }
+   ```
+   This prevents falsifying corporate history while providing bounded temporal intervals for offline mapping.
+
+#### 5.2 Opaque Durable Security ID Lineage
+1. **Allocation Mechanism**: `IdentityAdoptionDryRunEngine.allocate_opaque_security_id()` allocates random opaque identifiers (`ARX_SEC_<12_HEX>`) that are completely decoupled from mutable attributes (symbol, exchange, CIK, date).
+2. **Prior Draft Test Literals**: Previously cited IDs (`ARX_SEC_7BCE79482066`, `ARX_SEC_5471476DCFF5`, `ARX_SEC_AA263F6E0358`) were static string literals in unit tests, not backed by any persisted JSON plan artifact.
+3. **Authoritative Pinned Allocations**:
+   - `AAPL`: `ARX_SEC_0B4C728FE0BE`
+   - `GOOG`: `ARX_SEC_A11A24D442E2`
+   - `GOOGL`: `ARX_SEC_B7EF9ED7A35A`
+   These allocations are pinned in `scripts/generate_three_candidate_plan.py` to ensure deterministic artifact reproduction and are cryptographically locked by the plan content digest.
+
+---
+
+### 6. Qualified Backup and Recovery Capabilities
+
+To ensure technical accuracy, backup and recovery claims are strictly qualified across operational tiers:
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                              RECOVERY TIER SPECIFICATION                               │
+├─────────────────────┬─────────────────────────────────┬────────────────────────────────┤
+│ Mechanism           │ Implementation Scope            │ Operational Guarantee          │
+├─────────────────────┼─────────────────────────────────┼────────────────────────────────┤
+│ Transaction         │ In-engine SQLite native         │ 100% intra-process atomicity.  │
+│ Rollback            │ BEGIN IMMEDIATE transaction lock│ Mid-failure restores 0 rows.   │
+├─────────────────────┼─────────────────────────────────┼────────────────────────────────┤
+│ Consistent File     │ SQLite online backup API        │ Hot backup during active WAL.  │
+│ Backup              │ (`sqlite3_backup` / `.backup`)  │ NOT implemented for identity.db│
+├─────────────────────┼─────────────────────────────────┼────────────────────────────────┤
+│ Storage Volume      │ Railway Volume Snapshot         │ Block-level storage restore.   │
+│ Snapshot            │ (`web-volume` on `/root`)       │ Manual CLI/dashboard trigger.  │
+└─────────────────────┴─────────────────────────────────┴────────────────────────────────┘
+```
+
+> [!CAUTION]
+> **Production Backup Reality**: No automated or persistent backup mechanism currently exists for `/root/analyst_dashboard/data/identity.db` because the file has **not yet been created or initialized** on the production volume. Enterprise automated backup should not be claimed until an explicit operator backup cron or hook is deployed.
+
+---
+
+### 7. Canonical Plan Specification Summary
+
+The canonical unapproved plan artifact is serialized at:  
 `evidence/identity_registration/three_candidate_registration_plan.json`
 
-#### Cryptographic Fingerprints & Metadata
-- **Plan ID**: `PLAN_ADOPT_957CE8EBE74A`
-- **Plan Content Digest (SHA-256)**: `957ce8ebe74a1e2f091132adfd93e764681170ce7530022396e8a39d88a04cf4`
+- **Plan ID**: `PLAN_ADOPT_3C5D8B5E3D39`
+- **Plan Content Digest (SHA-256)**: `3c5d8b5e3d39453332141dcb5ab818eba5f503fba43f67dbf7d464b298f365c6`
 - **Target State Baseline Digest (SHA-256)**: `ea11990ec0e3790abcb0b4293bfadd7ae4e58ca050e79e949e688a82437a93ee`
-- **Evaluation Reference Date**: `2026-10-17`
 - **Created Timestamp UTC**: `2026-10-18T12:00:00Z`
-- **Authorization Scope**: `REFERENCE_IDENTITY_REGISTRATION`
-- **Authorized By**: `Product Owner`
-- **Allow Reference Registration**: `True`
-
-#### Plan Summary Accounting
-- **Total Proposals**: `3`
-- **Entities Approved for Creation**: `3` (`AAPL`, `GOOG`, `GOOGL`)
-- **Entities Matched Existing**: `0`
-- **Entities Blocked**: `0`
-- **Associations Approved for Creation**: `3`
-- **Associations Matched Existing**: `0`
-- **Associations Blocked**: `0`
-- **Conflicts Count**: `0`
-
----
-
-### 6. Application Rehearsal on Local Temporary Stores
-
-Application rehearsal was executed against isolated temporary SQLite files using `IdentityPlanApplicationService.apply_plan()`. All 12 verification gates in `tests/test_three_candidate_registration_plan.py` passed cleanly.
-
-```
-Rehearsal Gate Execution Summary:
-[PASS] Gate 1:  Canonical plan artifact exists and passes SHA-256 content integrity.
-[PASS] Gate 2:  Three-candidate identity evidence bindings (AAPL, GOOG, GOOGL) verified.
-[PASS] Gate 3:  Same-issuer distinct securities separation (GOOG vs GOOGL under CIK 0001652044).
-[PASS] Gate 4:  Rule R06 primary-listing status remains UNKNOWN (claimed_primary_listing = None).
-[PASS] Gate 5:  Rejection on unauthorized execution (REJECTED_UNAUTHORIZED, 0 writes).
-[PASS] Gate 6:  Rejection on tampered plan payload (REJECTED_INTEGRITY_TAMPERED, 0 writes).
-[PASS] Gate 7:  Rejection on stale target state (REJECTED_STALE_STATE, 0 writes).
-[PASS] Gate 8:  Clean atomic application (APPLIED, 3 entities, 3 associations, audit entry logged).
-[PASS] Gate 9:  Idempotent repeated application (NO_OP_ALREADY_APPLIED, 0 duplicate rows).
-[PASS] Gate 10: 100% rollback on mid-application failure via BEGIN IMMEDIATE (0 partial rows).
-[PASS] Gate 11: Read-only inspection mode safety (PermissionError on attempted write).
-[PASS] Gate 12: Full interoperability with OfflineAdmissionMappingEngine.
-```
-
-#### Test Execution Evidence
-- Focused Rehearsal Suite: `tests/test_three_candidate_registration_plan.py` (12 passed in 2.09s)
-- Persistence Suite: `tests/test_identity_persistence.py` (18 passed in 1.15s)
-- Adoption Dry-Run Suite: `tests/test_identity_adoption_dry_run.py` (22 passed in 1.52s)
-- Offline Build & Coverage Suite: `tests/test_universe_offline_build_coverage.py` (11 passed in 4.97s)
-- Offline Adapters Suite: `tests/test_universe_offline_adapters.py` (34 passed in 1.28s)
-- **Grand Total**: **97 passed, 0 failures, 0 skipped**.
+- **Evaluation Reference Date**: `2026-10-17`
+- **Authorization**:
+  - `is_authorized`: `False`
+  - `application_authorized`: `False`
+  - `exact_plan_approval`: `"ABSENT"`
+  - `production_target`: `"PROPOSED_NOT_INITIALIZED"`
+  - `authorized_by`: `None`
+- **Plan Summary**:
+  - `total_proposals`: `3`
+  - `entities_mechanically_ready`: `3`
+  - `associations_mechanically_ready`: `3`
+  - `entities_approved_creation`: `0`
+  - `associations_approved_creation`: `0`
+  - `entities_blocked`: `0`
+  - `associations_blocked`: `0`
+  - `conflicts_count`: `0`
 
 ---
 
-### 7. Governance Traffic-Light Readiness Scorecard
+### 8. Full Verification Gate Execution Evidence
+
+The complete test suite was executed in the dedicated worktree:
+
+```
+Test Execution Summary:
+tests/test_three_candidate_registration_plan.py:
+  [PASS] Gate 1:  Canonical plan artifact exists, parses cleanly, content digest matches.
+  [PASS] Gate 2:  Candidate identity bindings verified (CIK, class, MIC, observation dates).
+  [PASS] Gate 3:  Same-issuer distinct securities separation (GOOG vs GOOGL under CIK 0001652044).
+  [PASS] Gate 4:  Rule R06 primary-listing decoupling verified (claimed_primary_listing = None).
+  [PASS] Gate 5:  Unapproved canonical plan application rejected fails closed (REJECTED_UNAUTHORIZED, 0 writes).
+  [PASS] Gate 6:  Rehearsal: Tampered synthetic plan payload rejected (REJECTED_INTEGRITY_TAMPERED, 0 writes).
+  [PASS] Gate 7:  Rehearsal: Stale target state rejected (REJECTED_STALE_STATE, 0 writes).
+  [PASS] Gate 8:  Rehearsal: Clean atomic application (APPLIED, 3 entities, 3 associations, audit logged).
+  [PASS] Gate 9:  Rehearsal: Idempotent repeated application (NO_OP_ALREADY_APPLIED, 0 duplicate rows).
+  [PASS] Gate 10: Rehearsal: 100% rollback on mid-application failure via BEGIN IMMEDIATE (0 partial rows).
+  [PASS] Gate 11: Rehearsal: Read-only inspection mode safety (PermissionError on attempted write).
+  [PASS] Gate 12: Interoperability: Persisted rehearsal records roundtrip with OfflineAdmissionMappingEngine.
+
+Related Suite Execution:
+  - tests/test_identity_adoption_dry_run.py: 22 passed
+  - tests/test_identity_persistence.py: 18 passed
+  - tests/test_universe_offline_build_coverage.py: 11 passed
+  - tests/test_universe_offline_adapters.py: 34 passed
+  - Grand Total: 97 passed in 6.52s, 0 failures, 0 skipped.
+```
+
+---
+
+### 9. Governance Traffic-Light Readiness Scorecard
 
 | Governance Dimension | Status | Justification / Operational Condition |
 | :--- | :---: | :--- |
-| **Candidate Identity Evidence** | 🟢 **GREEN** | Full evidence resolution: CIK, exact class title, composite/listing FIGIs, Alpaca IDs, XNAS operating MIC. |
+| **Candidate Identity Evidence** | 🟢 **GREEN** | Full evidence resolution: CIK, exact class title, composite/shareClass FIGIs, Alpaca IDs, XNAS operating MIC. Listing FIGIs omitted as unbacked. |
 | **Durable Opaque ID Allocation** | 🟢 **GREEN** | Bound in canonical plan artifact: `ARX_SEC_0B4C728FE0BE`, `ARX_SEC_A11A24D442E2`, `ARX_SEC_B7EF9ED7A35A`. |
-| **Local Plan Artifact & Rehearsal** | 🟢 **GREEN** | Serialized to `three_candidate_registration_plan.json`; all 12 rehearsal gates passed. |
-| **Production Target Location Design** | 🟢 **GREEN** | Target identified on persistent volume at `/root/analyst_dashboard/data/identity.db`. |
+| **Local Plan Artifact & Integrity** | 🟢 **GREEN** | Serialized to `three_candidate_registration_plan.json`; SHA-256 digest `3c5d8b5e3d39...` verified. |
+| **Execution Rehearsal** | 🟢 **GREEN** | Fully verified via synthetic fixtures (`SYNTH_ALPHA`, `SYNTH_BETA`, `SYNTH_GAMMA`); all 7 execution rehearsal gates passed. |
+| **Exact Plan Approval** | 🔴 **ABSENT** | Formally represented as **`ABSENT`**. No approver fabricated. |
+| **Application Authorization** | 🔴 **FALSE** | Formally represented as **`FALSE`**. Attempting application produces `REJECTED_UNAUTHORIZED`. |
 | **Production Target State** | 🟡 **AMBER** | Formally designated **`PROPOSED_NOT_INITIALIZED`**. Database does not exist yet. |
-| **Production Target Initialization** | 🔴 **HOLD** | Operator CLI command (`init`) defined but **strictly unauthorized** in this increment. |
-| **Production Plan Application** | 🔴 **HOLD** | Operator CLI command (`apply`) defined but **strictly unauthorized** in this increment. |
+| **Production Initialization / Writes** | 🔴 **HOLD** | Operator CLI commands (`init`, `apply`) defined but **strictly unauthorized**. |
 | **Rule R06 Admission / Publication** | 🔴 **BLOCK** | Decoupled by policy principle. Grants zero universe admission, conversion, or publication authority. |
 
 ---
 
-### 8. Recommended Next Steps for Authorized Release
+### 10. Stop Condition Attestation
 
-When the Product Owner authorizes production deployment and initialization, the release workflow must proceed in strictly guarded stages:
+This increment terminates strictly at:  
+`THREE_CANDIDATE_REGISTRATION_PLAN_PREPARED_FOR_REVIEW`
 
-1. **Step 1 (PR Merge)**: Create and merge a minimal PR from `feat/sprint-2-three-candidate-registration-plan` containing the canonical plan artifact, test suite, and report. Verify clean CI and deployment marker match on `www.arxterminal.com`.
-2. **Step 2 (Authorized Target Initialization)**: With explicit authorization, an operator executes initialization on the live Railway container:
-   ```bash
-   railway ssh -s web -e production -- python -m analyst_dashboard.universe.identity_persistence init --db-path /root/analyst_dashboard/data/identity.db
-   ```
-3. **Step 3 (Pre-State Digest Attestation)**: The operator reads the newly initialized target state digest:
-   ```bash
-   railway ssh -s web -e production -- python -m analyst_dashboard.universe.identity_persistence inspect --db-path /root/analyst_dashboard/data/identity.db
-   ```
-4. **Step 4 (Guarded Plan Application)**: Only after confirming pre-state digest matches `target_state_digest` (`ea11990ec0e3790abcb0b4293bfadd7ae4e58ca050e79e949e688a82437a93ee`), apply the plan:
-   ```bash
-   railway ssh -s web -e production -- python -m analyst_dashboard.universe.identity_persistence apply --db-path /root/analyst_dashboard/data/identity.db --plan-path evidence/identity_registration/three_candidate_registration_plan.json
-   ```
-5. **Step 5 (Read-Only Post-Application Readback)**: Inspect and verify that exactly 3 securities, 3 listing associations, and 1 audit record exist.
+In strict adherence to instructions:
+- Zero git pushes or PR creations were initiated.
+- Zero production database files or tables were created or migrated.
+- Zero candidate records were applied to real stores.
+- Zero universe admission, `SourceSecurity` conversion, or scanner activation occurred.

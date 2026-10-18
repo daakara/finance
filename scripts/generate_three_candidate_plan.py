@@ -37,17 +37,21 @@ def generate_plan() -> IdentityAdoptionPlan:
     # 2. Focus proposal ledger for AAPL, GOOG, GOOGL
     proposals = build_three_candidate_proposals()
 
-    # 3. Explicit authorization under approved architectural principle
+    # 3. Explicit representation of approved architectural principle with UNAPPROVED exact plan
     auth = IdentityAdoptionAuthorization(
-        is_authorized=True,
-        authorized_by="Product Owner",
-        authorization_timestamp_utc="2026-10-18T12:00:00Z",
+        is_authorized=False,
+        authorized_by=None,
+        authorization_timestamp_utc=None,
         scope="REFERENCE_IDENTITY_REGISTRATION",
         allow_reference_identity_registration=True,
+        exact_plan_approval="ABSENT",
+        application_authorized=False,
+        production_target="PROPOSED_NOT_INITIALIZED",
         notes=(
-            "Approved under architectural principle: evidence-resolved reference identity registration "
-            "independently of strategy eligibility and R06 admission status. Grants zero universe admission, "
-            "conversion, publication, or scanner activation authority."
+            "PO approved architectural principle: evidence-resolved reference identity registration "
+            "independently of strategy eligibility and R06 admission status. "
+            "Exact candidate plan approval is ABSENT; application is unauthorized (application_authorized=False); "
+            "production target is PROPOSED_NOT_INITIALIZED."
         ),
     )
 
