@@ -466,3 +466,139 @@ def test_retained_legacy_snapshot_with_unsupported_matches_fails_closed(tmp_path
     assert env["matched_count"] is None
     assert len(env["results"]) == 0
 
+
+def test_migration_read_only_connection_skips_ddl_cleanly(tmp_path):
+    """Requirement 12: Read-only database connections safely skip DDL without error."""
+    import sqlite3
+    from analyst_dashboard.data.scanner_store import ensure_scanner_snapshots_table
+
+    db_path = str(tmp_path / "ro_scanner.db")
+    # Create legacy table in writable mode
+    conn = sqlite3.connect(db_path)
+    conn.execute("""
+        CREATE TABLE scanner_snapshots (
+            snapshot_id TEXT PRIMARY KEY, scanner_id TEXT NOT NULL, run_id TEXT NOT NULL,
+            api_contract_version TEXT NOT NULL, ruleset_version TEXT NOT NULL,
+            evidence_schema_version TEXT NOT NULL, score_model_version TEXT NOT NULL,
+            data_provenance_version TEXT NOT NULL, universe_version TEXT NOT NULL,
+            freshness_policy_version TEXT NOT NULL, implementation_release_sha TEXT NOT NULL,
+            semantic_fingerprint TEXT NOT NULL, generated_at TEXT NOT NULL, data_as_of TEXT NOT NULL,
+            status_at_publication TEXT NOT NULL, universe_id TEXT NOT NULL, universe_size INTEGER NOT NULL,
+            matched_count INTEGER NOT NULL, results_json TEXT NOT NULL, provenance_json TEXT NOT NULL,
+            freshness_json TEXT NOT NULL, publication_decision TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+    conn.commit()
+    conn.close()
+
+    # Open connection in read-only mode and execute ensure_scanner_snapshots_table
+    conn_ro = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    try:
+        # Must return cleanly without OperationalError ('attempt to write a readonly database')
+        ensure_scanner_snapshots_table(conn_ro)
+    finally:
+        conn_ro.close()
+
+
+def test_migration_unknown_schema_shape_rejected_without_partial_changes(tmp_path):
+    """Requirement 13: Unknown schema shape is rejected with RuntimeError and leaves table intact."""
+    import sqlite3
+    from analyst_dashboard.data.scanner_store import ensure_scanner_snapshots_table
+
+    db_path = str(tmp_path / "corrupted_schema.db")
+    conn = sqlite3.connect(db_path)
+    # Create corrupted schema missing 10 required columns
+    conn.execute("CREATE TABLE scanner_snapshots (snapshot_id TEXT PRIMARY KEY, matched_count INTEGER NOT NULL);")
+    conn.execute("INSERT INTO scanner_snapshots VALUES ('corrupt-1', 42);")
+    conn.commit()
+
+    with pytest.raises(RuntimeError, match="UNSUPPORTED_SCHEMA_SHAPE"):
+        ensure_scanner_snapshots_table(conn)
+
+    # Verify original table remained 100% intact
+    cols = conn.execute("PRAGMA table_info(scanner_snapshots);").fetchall()
+    assert len(cols) == 2
+    row = conn.execute("SELECT * FROM scanner_snapshots").fetchone()
+    assert row == ("corrupt-1", 42)
+    conn.close()
+
+
+def test_nondestructive_recovery_and_immutability_preservation(tmp_path):
+    """Requirement 14: Deletion of NULL snapshots is prohibited by trigger; recovery preserves 100% of records."""
+    import sqlite3
+    import time
+    from analyst_dashboard.data.scanner_store import ScannerSnapshotStore
+    from analyst_dashboard.analyzers.scanner_runner import VCPScannerRunner
+
+    db_path = str(tmp_path / "recovery_store.db")
+    store = ScannerSnapshotStore(db_path=db_path)
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+    # 1. Historical record
+    store.save_snapshot({
+        "snapshot_id": "snap-historical-001",
+        "scanner_id": "MINERVINI_VCP",
+        "run_id": "run-hist-1",
+        "api_contract_version": "1.0.0",
+        "ruleset_version": "1.0.0",
+        "evidence_schema_version": "1.0.0",
+        "score_model_version": "1.0.0",
+        "data_provenance_version": "1.0.0",
+        "universe_version": "1.0.0",
+        "freshness_policy_version": "1.0.0",
+        "implementation_release_sha": "sha-old",
+        "semantic_fingerprint": "fp-old",
+        "generated_at": now_iso,
+        "data_as_of": "2026-10-15",
+        "status_at_publication": "AVAILABLE",
+        "universe_id": "ARX_UNIVERSE",
+        "universe_size": 35,
+        "matched_count": 0,
+        "results": [],
+        "provenance": {},
+        "freshness": {"status": "LIVE"},
+        "publication_decision": "PUBLISH",
+    })
+
+    # 2. Post-upgrade PIPELINE_PENDING record with matched_count=None
+    store.save_snapshot({
+        "snapshot_id": "snap-pending-002",
+        "scanner_id": "MINERVINI_VCP",
+        "run_id": "run-pending-2",
+        "api_contract_version": "1.0.0",
+        "ruleset_version": "1.0.0",
+        "evidence_schema_version": "1.0.0",
+        "score_model_version": "1.0.0",
+        "data_provenance_version": "1.0.0",
+        "universe_version": "1.0.0",
+        "freshness_policy_version": "1.0.0",
+        "implementation_release_sha": "sha-current",
+        "semantic_fingerprint": "fp-current",
+        "generated_at": now_iso,
+        "data_as_of": "2026-10-18",
+        "status_at_publication": "PIPELINE_PENDING",
+        "universe_id": "ARX_CANONICAL_LONG_TERM_V1",
+        "universe_size": 3,
+        "matched_count": None,
+        "results": [],
+        "provenance": {},
+        "freshness": {"status": "LIVE"},
+        "publication_decision": "PUBLISH",
+    })
+
+    conn = sqlite3.connect(db_path)
+    # Attempting to delete NULL snapshots must raise IMMUTABILITY_VIOLATION
+    with pytest.raises(sqlite3.IntegrityError, match="IMMUTABILITY_VIOLATION: scanner_snapshots rows cannot be deleted"):
+        conn.execute("DELETE FROM scanner_snapshots WHERE matched_count IS NULL")
+    conn.close()
+
+    # Recovery build / version-aware reader safely handles both records without deletion
+    runner = VCPScannerRunner(snapshot_store=store)
+    env = runner.get_active_or_latest_snapshot()
+    # All rows preserved:
+    assert store.get_snapshot_by_id("snap-historical-001") is not None
+    assert store.get_snapshot_by_id("snap-pending-002") is not None
+    assert store.get_snapshot_by_id("snap-pending-002")["matched_count"] is None
+
+
