@@ -66,6 +66,20 @@ from .offline_build_coverage import (
     save_offline_build_coverage_artifacts,
 )
 
+from .identity_adoption import (
+    IdentityAdoptionStatus,
+    IdentityAdoptionAuthorization,
+    ProposedEntityAdoption,
+    ProposedAssociationAdoption,
+    AdoptionPlanSummary,
+    IdentityAdoptionPlan,
+    IdentityAdoptionDryRunEngine,
+    StalePlanError,
+    PlanIntegrityError,
+    PlanApplicationError,
+    apply_adoption_plan_test_only,
+)
+
 __all__ = [
     "UNIVERSE_ID",
     "UNIVERSE_VERSION",
@@ -117,6 +131,17 @@ __all__ = [
     "build_scenario_c_candidates",
     "format_offline_build_coverage_markdown",
     "save_offline_build_coverage_artifacts",
+    "IdentityAdoptionStatus",
+    "IdentityAdoptionAuthorization",
+    "ProposedEntityAdoption",
+    "ProposedAssociationAdoption",
+    "AdoptionPlanSummary",
+    "IdentityAdoptionPlan",
+    "IdentityAdoptionDryRunEngine",
+    "StalePlanError",
+    "PlanIntegrityError",
+    "PlanApplicationError",
+    "apply_adoption_plan_test_only",
 ]
 
 
