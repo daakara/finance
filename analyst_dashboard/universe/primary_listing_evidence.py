@@ -294,6 +294,7 @@ class PrimaryListingEvidenceAdapter:
 
     DEFAULT_EVIDENCE_PATH = Path("data/research/primary_listing_evidence/seven_candidates_primary_listing_evidence.json")
     DEFAULT_THREE_CANDIDATES_EVIDENCE_PATH = Path("data/research/primary_listing_evidence/three_candidates_listing_evidence.json")
+    DEFAULT_ROUTE_A_EVIDENCE_PATH = Path("data/research/primary_listing_evidence/three_candidates_route_a_evidence.json")
     DEFAULT_NASDAQ_DIRECTORY_PATH = Path("data/research/exchange_reference/nasdaqlisted_20261017.txt")
 
     AUTHORITATIVE_CANDIDATE_CIK_MAPPING = {
@@ -856,6 +857,18 @@ class PrimaryListingEvidenceAdapter:
         Loads authentic three-candidate listing evidence (AAPL, GOOGL, GOOG).
         """
         target = evidence_path or cls.DEFAULT_THREE_CANDIDATES_EVIDENCE_PATH
+        return cls.load_reference_evidence(evidence_path=target)
+
+    @classmethod
+    def load_three_candidate_route_a_evidence(
+        cls,
+        evidence_path: Optional[Path] = None,
+    ) -> Dict[str, AttributablePrimaryListingEvidenceRecord]:
+        """
+        Loads authentic three-candidate Route A direct primary-listing evidence (AAPL, GOOGL, GOOG)
+        retrieved from Massive / Polygon reference ticker API.
+        """
+        target = evidence_path or cls.DEFAULT_ROUTE_A_EVIDENCE_PATH
         return cls.load_reference_evidence(evidence_path=target)
 
     @classmethod

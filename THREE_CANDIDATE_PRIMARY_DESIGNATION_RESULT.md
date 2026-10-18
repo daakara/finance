@@ -7,185 +7,111 @@
 **Base Commit SHA:** `ceef16a0a30bcdda4f1da25f46749eed5c72977c`  
 **Base Tree SHA:** `d01e3105008735bd41d40ecc09e23d835c8ed0ef`  
 **Target Candidate Scope:** `AAPL`, `GOOGL`, `GOOG`  
-**Evaluation Date:** 2026-10-18  
+**Adjudication Date:** 2026-10-18  
 **Governance Authority:** ARX Independent Governance, Production-Readiness & Adjudication Gate  
 
 ---
 
 ### 1. Executive Summary & Resolution Verdict
 
-A finite, source-led investigation was executed within an isolated research worktree to resolve the specific missing primary-exchange designation for **AAPL**, **GOOGL**, and **GOOG** under the Product Owner approved Rule R06 semantic contract:
+A bounded, source-led investigation was completed to resolve the specific missing primary-exchange designation for **AAPL**, **GOOGL**, and **GOOG** under the Product Owner approved Rule R06 semantic contract:
 
 > **`primary_listing` identifies the designated primary exchange listing for the exact security class or instrument.**
 
-The investigation evaluated both approved evidence routes:
-- **Route A (Attributable Direct Designation):** Attributable direct identification of the exact instrument's designated primary exchange listing by an authoritative listing or reference source.
-- **Route B (Documented Derivation):** A documented derivation supported by authoritative exchange rules and verified instrument-specific facts (exclusivity required only if the specific derivation relies on exclusivity).
+Following initial reconnaissance where access was blocked by an unconfigured/invalid credential (`401 Unauthorized`), the operator configured a valid working credential for the Massive / Polygon Reference Tickers API. A bounded, rate-spaced retest was executed and successfully retrieved HTTP 200 responses directly supplying the ISO 10383 Market Identifier Code (MIC) `primary_exchange = "XNAS"` for all three candidates.
 
-#### Final Adjudication Verdict
-**Across all accessible public, regulatory, and entitled reference sources inspected in this targeted pass, no attributable claim is sufficient to certify `primary_listing = True` under Rule R06.**
+#### Final Adjudication Verdict: ROUTE A SATISFIED
+**Route A (Attributable Direct Designation) is fully satisfied for AAPL, GOOGL, and GOOG.**
 
-All three evaluated candidates (**AAPL**, **GOOGL**, and **GOOG**) are adjudicated as **`EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY`** (`NARROWER_FACT_ONLY`) and strictly preserve **`primary_listing = None`** (`UNKNOWN`).
+Under [`PrimaryListingAdjudicator`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-primary-designation/analyst_dashboard/universe/primary_listing_evidence.py#L924-L1150), all three candidates are adjudicated as:
+- **Adjudication Status:** **`EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM`**
+- **Adjudication Role:** **`DIRECT_PRIMARY_IDENTIFICATION`**
+- **Direct Assertion:** `True` (`is_derived_claim = False`)
+- **Assigned Value:** **`primary_listing = True`**
+- **Rule R06 Predicate Evaluation:** **PASS** (`expected == True`, observed `True`)
 
-In accordance with ARX fail-closed governance:
-- Zero candidates are admitted to the production universe.
-- Zero `SourceSecurity` models are converted (`batch_conversion_count = 0`).
-- Provisional identity adoption remains strictly disabled (`production_adoption_allowed = False`).
-- Downstream Universe Builder execution remains strictly unexecuted (`builder_status = "NOT_RUN"`).
-- Strict non-retroactivity and fail-closed batch integrity are completely preserved.
+#### Candidate Resolution Matrix (Target Candidates Solely)
 
-#### Summary Table: Candidate Resolution & Adjudication Status
+| Candidate | Instrument Title / Share Class | Primary Exchange (MIC) | CIK Binding | Composite FIGI | Route A Status | Assigned `primary_listing` | R06 Result | Stage Status |
+|:---|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---|
+| **AAPL** | Apple Inc. Common Stock ($0.00001 par value) | **`XNAS`** | `0000320193` | `BBG000B9XRY4` | `EVIDENCE_SUFFICIENT` | **`True`** | **PASS** | R06 Satisfied; Production Adoption Gate Closed |
+| **GOOGL** | Alphabet Inc. Class A Common Stock ($0.001 par value) | **`XNAS`** | `0001652044` | `BBG009S39JX6` | `EVIDENCE_SUFFICIENT` | **`True`** | **PASS** | R06 Satisfied; Production Adoption Gate Closed |
+| **GOOG** | Alphabet Inc. Class C Capital Stock ($0.001 par value) | **`XNAS`** | `0001652044` | `BBG009S3NB30` | `EVIDENCE_SUFFICIENT` | **`True`** | **PASS** | R06 Satisfied; Production Adoption Gate Closed |
 
-| Candidate | Instrument Title / Share Class | Inspected Source Evidence | Route A Result | Route B Result | Final R06 Status | Assigned `primary_listing` | Fail-Closed Action |
-|:---|:---|:---|:---:|:---:|:---:|:---:|:---:|
-| **AAPL** | Apple Inc. Common Stock ($0.00001 par value) | SEC Form 10-K §12(b); Form 10-K Ex. 4.1 (`a10-kexhibit4109272025.htm`); SEC `company_tickers_exchange.json`; `nasdaqlisted.txt` (Tier Q); `otherlisted.txt` (Absent); Polygon API (`401 Unauthorized`) | Absent | Insufficient (Narrow Fact Only) | `NARROWER_FACT_ONLY` | `None` (`UNKNOWN`) | Conversion Blocked (`batch_valid = False`) |
-| **GOOGL** | Alphabet Inc. Class A Common Stock ($0.001 par value) | SEC Form 10-K §12(b); Form 10-K Ex. 4.20 (`googexhibit420q42022.htm`); SEC `company_tickers_exchange.json`; `nasdaqlisted.txt` (Tier Q); `otherlisted.txt` (Absent); Polygon API (`401 Unauthorized`) | Absent | Insufficient (Narrow Fact Only) | `NARROWER_FACT_ONLY` | `None` (`UNKNOWN`) | Conversion Blocked (`batch_valid = False`) |
-| **GOOG** | Alphabet Inc. Class C Capital Stock ($0.001 par value) | SEC Form 10-K §12(b); Form 10-K Ex. 4.20 (`googexhibit420q42022.htm`); SEC `company_tickers_exchange.json`; `nasdaqlisted.txt` (Tier Q); `otherlisted.txt` (Absent); Polygon API (`401 Unauthorized`) | Absent | Insufficient (Narrow Fact Only) | `NARROWER_FACT_ONLY` | `None` (`UNKNOWN`) | Conversion Blocked (`batch_valid = False`) |
-| **TSM** | Taiwan Semiconductor ADR | Retained from earlier pass (not re-evaluated) | — | — | `NOT_EVALUATED` | `None` (`UNKNOWN`) | Out of Task Scope |
-| **ACCS** | Access Pharmaceuticals Inc. | Retained dual-source discordance (SEC: NYSE vs Other Listed: AMEX) | — | — | `CONFLICTING_EVIDENCE` | `None` (`UNKNOWN`) | Out of Task Scope |
-| **DDS** | Dillard's Inc. Class A | Retained venue conflict (TXSE vs NYSE) | — | — | `CONFLICTING_EVIDENCE` | `None` (`UNKNOWN`) | Out of Task Scope |
-| **AACIU** | Armada Acquisition Corp. I Units | Retained SPAC unit structure (Share + Warrant) | — | — | `CONTRACT_SEMANTICS_REQUIRE_DECISION` | `None` (`UNKNOWN`) | Out of Task Scope |
+*(Note: Unrelated out-of-scope sample candidates from earlier exploratory batches have been omitted in accordance with task instructions to preserve focus strictly on the evaluated 3-candidate population).*
 
 ---
 
-### 2. Worktree & Git Provenance
+### 2. Historical Baseline vs. Current Access State
 
-To guarantee complete isolation from concurrent workflows (such as PR #22, PR #23, and the identity-adoption dry-run session), this research pass was conducted in a clean, dedicated worktree branched from current mainline `origin/main`:
-
-- **Worktree Directory:** `C:\Users\akara\Documents\Projects\finance-sprint-2-primary-designation`
-- **Branch:** `research/sprint-2-primary-designation`
-- **Base Commit SHA:** `ceef16a0a30bcdda4f1da25f46749eed5c72977c` (Merge PR #23 into main)
-- **Base Tree SHA:** `d01e3105008735bd41d40ecc09e23d835c8ed0ef`
-- **Parent Commit SHA:** `68cf491ae828e29b43495303326b322374bcbded` (PR #24 deployment release)
-- **Sibling Worktrees Preserved:**
-  - `C:\Users\akara\Documents\Projects\finance` (main workspace)
-  - `C:\Users\akara\Documents\Projects\finance-sprint-2-offline-build-coverage` (PR #23 integration worktree)
-  - `C:\Users\akara\Documents\Projects\finance-sprint-2-identity-adoption-dry-run` (PR #24 verification worktree)
+1. **Earlier State (Historical Baseline):**
+   - In the initial reconnaissance pass, a request to `https://api.polygon.io/v3/reference/tickers/AAPL` with the previously stored key returned:
+     `HTTP 401 Unauthorized: {"status":"ERROR","request_id":"75b37636fcef1720b33f0ad099c21c74","error":"Unknown API Key"}`.
+   - In accordance with fail-closed governance, execution stopped immediately. The credential blocker was recorded, and candidates preserved `primary_listing = None` (`UNKNOWN`).
+2. **Current State (Resolved Working Access):**
+   - The operator updated [`.env`](file:///C:/Users/akara/Documents/Projects/finance/.env) with a valid, working `POLYGON_API_KEY`.
+   - A rate-spaced retrieval probe (13-second spacing to strictly comply with the free-tier rate limit of 5 req/min) was executed.
+   - All three candidate requests succeeded with **`HTTP 200 OK`**.
+   - The credential blocker is **permanently resolved and obsolete**.
 
 ---
 
-### 3. Preserved Canonical Limitations (Not Repeated)
+### 3. Preserved Route A Observations & Provenance Integrity
 
-In strict compliance with operator instructions, established baseline limitations were preserved and not reframed as new acquisitions:
+In strict compliance with repository rules, no secrets, API keys, or authenticated query strings were logged or committed. Responses were preserved locally in the gitignored data store (`data/research/polygon_reference/`):
 
-1. **OpenFIGI Composite Codes (`exchCode: "US"`):**
-   - Free API returns composite/share-class FIGIs (`BBG000B9XRY4`, `BBG009S3NB30`, `BBG009S39JX6`).
-   - `exchCode: "US"` denotes a national composite market tier, not an operating exchange MIC (such as `XNAS` or `XNYS`).
-   - The OpenFIGI v3 free schema completely omits `primary_exchange` or `primaryListing` attributes.
-2. **Alpaca Broker Venue Observations (`exchange: "NASDAQ"`):**
-   - Official Alpaca Assets API returns `exchange: "NASDAQ"`, `status: "active"`, `tradable: true`.
-   - Represents broker order routing and execution permissions; does not certify designated primary listing under Rule R06.
-3. **SEC Form 10-K Cover Page §12(b) Registration Tables:**
-   - Proves statutory registration under Section 12(b) of the Exchange Act on The Nasdaq Stock Market LLC.
-   - Certifies trading registration on a national securities exchange pursuant to federal securities laws; does not assert designated primary listing status.
-   - Under binding ARX governance ([`THREE_CANDIDATE_PRIMARY_LISTING_DECISION_RECORD.md`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-primary-designation/docs/THREE_CANDIDATE_PRIMARY_LISTING_DECISION_RECORD.md)), absence of another exchange in a regulatory filing cannot be treated as affirmative proof of exclusivity.
-4. **Nasdaq Trader Listing Directory (`nasdaqlisted.txt`):**
-   - Designates `Market Category: Q` (Nasdaq Global Select Market listing tier).
-   - Confirms exchange listing qualification tier, not an explicit primary listing market assertion.
-5. **Nasdaq Daily Delta Feed (`TradingSystemAddsDeletes.txt`):**
-   - Column `Primary Listing Market` defines listing venues (`Q`, `G`, `S`, `N`, `P`, `Z`), but seasoned, static constituents (`AAPL`, `GOOG`, `GOOGL`) are absent from delta feeds unless undergoing a corporate addition or deletion.
+- **Provider:** Massive / Polygon
+- **Endpoint Pattern (Sanitized):** `GET https://api.polygon.io/v3/reference/tickers/{ticker}`
+- **Source Claim:** *"Polygon reports XNAS as this instrument's primary exchange."*
+- **Provider Field Definition:** Official schema defines `primary_exchange` as the ISO 10383 Market Identifier Code (MIC) of the primary listing exchange. `XNAS` represents The Nasdaq Stock Market.
 
----
+#### Exact Response Metadata Accounting
 
-### 4. Finite Targeted Source Check: Sources Inspected & Requests Executed
-
-A targeted, source-led inquiry was executed prioritizing: (a) official issuer and exchange filings explicitly describing listing of the exact share classes; (b) authoritative exchange rules; and (c) documented primary-exchange fields through existing accessible services.
-
-```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        TARGETED SOURCES INSPECTED IN THIS PASS                         │
-└───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                            │
-        ┌───────────────────────────────────┼───────────────────────────────────┐
-        │                                   │                                   │
-        ▼                                   ▼                                   ▼
-┌───────────────────────────────┐ ┌───────────────────────────────┐ ┌───────────────────────────────┐
-│  Source Family 1: SEC EDGAR   │ │  Source Family 2: Exchange    │ │  Source Family 3: Reference   │
-│  Exhibit 4 (Descriptions)     │ │  Directories & Rules          │ │  Provider APIs                │
-├───────────────────────────────┤ ├───────────────────────────────┤ ├───────────────────────────────┤
-│ • AAPL Ex. 4.1 (118,697 B)    │ │ • Nasdaq otherlisted.txt      │ │ • Massive / Polygon Tickers   │
-│   "is listed on The Nasdaq    │ │   (7,676 lines: absent)       │ │   API (401 Unauthorized)      │
-│   Stock Market LLC"           │ │ • Nasdaq Rule 5005 & IM-5220  │ │ • Yahoo Finance Quote API     │
-│ • GOOG/GOOGL Ex. 4.20 (79,828)│ │   (Dual listing & Tape C)     │ │   (401 Unauthorized)          │
-│   "listed on The NASDAQ       │ │ • UTP Plan Eligible Security  │ │ • OpenFIGI & Alpaca           │
-│   Global Select Market"       │ │   (Halt regulatory authority) │ │   (Retained: Schema limitation)│
-│ • SEC company_tickers_        │ │                               │ │ • Issuer IR Portals           │
-│   exchange.json (523,925 B)   │ │                               │ │   (403 Forbidden: edge block) │
-└───────────────────────────────┘ └───────────────────────────────┘ └───────────────────────────────┘
-```
-
-#### 4.1 Source Family 1: Official SEC EDGAR Exhibit 4 (Description of Securities)
-Using the authorized genuine operator contact identity (`ARXTerminal Research Akara.david26@gmail.com`) under SEC fair access limits (<=10 req/s), standalone Exhibit 4 descriptions of securities were retrieved and inspected:
-
-- **Source 1.1: Apple Inc. Form 10-K Exhibit 4.1 (Description of Securities of the Registrant)**
-  - *Filing Accession:* `0000320193-25-000079` (FY ended Sept 27, 2025; filed Oct 31, 2025)
-  - *URL:* `https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/a10-kexhibit4109272025.htm`
-  - *Payload Size & Digest:* 118,697 bytes | SHA-256: `f2ac8f0eefb5abf56d79fbee0709e7eb1ce32668559f90a9652af1121992150d`
-  - *Local Artifact:* `data/research/sec_filings_sample/aapl-exhibit41-20250927.htm`
-  - *Exact Text Locator:* Section `Listing`:
-    > *"The Company’s Common Stock is listed on The Nasdaq Stock Market LLC under the trading symbol “AAPL.”"*
-  - *Adjudication:* Establishes that Common Stock ($0.00001 par value) is listed on The Nasdaq Stock Market LLC. It does not use the term "primary listing" or assert primary listing designation over other potential venues.
-
-- **Source 1.2: Alphabet Inc. Form 10-K Exhibit 4.20 (Description of Registrant’s Securities)**
-  - *Filing Accession:* `0001652044-23-000016` (incorporated by reference into Form 10-K `0001652044-26-000018` for FY ended Dec 31, 2025)
-  - *URL:* `https://www.sec.gov/Archives/edgar/data/1652044/000165204423000016/googexhibit420q42022.htm`
-  - *Payload Size & Digest:* 79,828 bytes | SHA-256: `0f13b4210218c0c7f77ea34d100e811d62770517003d163c0cdf7ac4a72c57f2`
-  - *Local Artifact:* `data/research/sec_filings_sample/goog-exhibit420-20221231.htm`
-  - *Exact Text Locator:* Section `Listing`:
-    > *"Our Class C Capital Stock and Class A Common Stock are listed on The NASDAQ Global Select Market under the symbols “GOOG” and “GOOGL” respectively. Our Class B Common Stock is not listed on any stock market or exchange."*
-  - *Adjudication:* Establishes listing of Class C Capital Stock (`GOOG`) and Class A Common Stock (`GOOGL`) on The NASDAQ Global Select Market (segment MIC `XNGS`), and that Class B Common Stock is unlisted. It does not use the term "primary listing" or designate either as a primary market.
-
-- **Source 1.3: SEC EDGAR `company_tickers_exchange.json`**
-  - *URL:* `https://www.sec.gov/files/company_tickers_exchange.json`
-  - *Payload Size & Digest:* 523,925 bytes | Retrieved 2026-10-18 live.
-  - *Rows Observed:*
-    - `{'cik': 320193, 'name': 'Apple Inc.', 'ticker': 'AAPL', 'exchange': 'Nasdaq'}`
-    - `{'cik': 1652044, 'name': 'Alphabet Inc.', 'ticker': 'GOOGL', 'exchange': 'Nasdaq'}`
-    - `{'cik': 1652044, 'name': 'Alphabet Inc.', 'ticker': 'GOOG', 'exchange': 'Nasdaq'}`
-  - *Adjudication:* Corroborates exchange directory registration with SEC; per `analyst_dashboard/universe/adapters/sec_edgar.py`, directory exchange values establish regulatory directory registration, not designated primary listing.
-
-#### 4.2 Source Family 2: Exchange Directories & Rulebook Framework
-- **Source 2.1: Nasdaq Trader Other-Listed Directory (`otherlisted.txt`)**
-  - *URL:* `http://www.nasdaqtrader.com/dynamic/symdir/otherlisted.txt`
-  - *Retrieved:* 2026-10-18 live (7,676 lines).
-  - *Observation:* A complete scan across all 7,676 records confirmed that **AAPL**, **GOOG**, and **GOOGL** are completely absent from `otherlisted.txt` (the official directory of securities listed on NYSE, NYSE American, NYSE Arca, BATS, and IEX).
-  - *Adjudication:* Absence confirms that Nasdaq Trader does not categorize these symbols as listed on non-Nasdaq US exchanges. However, absence of a listing in a third-party directory cannot be converted into affirmative proof of primary designation without an authoritative cross-exchange exclusivity rule.
-
-- **Source 2.2: Nasdaq Listing Rules (Rule 5005, Rule 5220, IM-5220) & UTP Plan**
-  - *Rule 5005:* Defines terms used throughout the Rule 5000 Series, including "Primary Equity Security".
-  - *IM-5220 (Impact of Non-Designation of Dually Listed Securities):* Clarifies that companies whose securities are listed on the NYSE may also apply to list on Nasdaq. Nasdaq does not separately designate or register dually listed securities under the Nasdaq UTP Plan; they remain under the CTA/CQ Plans (Tape A/Tape B), and Nasdaq sends quotes/trades to the CTA processor.
-  - *UTP Plan (Tape C):* Securities listed on Nasdaq that are not governed by the CTA Plan are governed by the UTP Plan (Tape C), where Nasdaq acts as the Listing Market with sole authority to declare and lift regulatory trading halts.
-  - *Derivation Assessment:* While the UTP Plan designates Nasdaq as the listing market for Tape C regulatory halts, ARX governance requires an attributable primary listing claim for the exact instrument. Equating UTP regulatory halt jurisdiction with designated primary listing under Rule R06 represents an unauthorized statutory leap that was specifically rejected in earlier governance reviews.
-
-#### 4.3 Source Family 3: Reference Provider APIs & Access Limits
-- **Source 3.1: Massive / Polygon Reference Tickers API**
-  - *Endpoint:* `GET https://api.polygon.io/v3/reference/tickers/AAPL`
-  - *Schema Attribute:* `primary_exchange` (documented as ISO 10383 MIC, e.g. `XNAS`).
-  - *Environment Inspection:* `POLYGON_API_KEY` was discovered in `finance/.env`.
-  - *Live Request Attempt:* `https://api.polygon.io/v3/reference/tickers/AAPL?apiKey=...`
-  - *Result:* **`HTTP 401 Unauthorized: {"status":"ERROR","request_id":"...","error":"Unknown API Key"}`**.
-  - *Adjudication:* The configured key is rejected by the provider's authentication gate. In accordance with strict operational boundaries:
-    - Zero key purchases, account creations, or credential modifications were attempted.
-    - Operator was not prompted to paste secrets into chat or logs.
-    - Execution stopped immediately upon access denial. Outcome: **`CONFIGURATION_DEPENDENCY_ACCESS_DENIED`**.
-
-- **Source 3.2: Yahoo Finance Public API**
-  - *Endpoint:* `GET https://query1.finance.yahoo.com/v7/finance/quote?symbols=AAPL,GOOG,GOOGL`
-  - *Result:* **`HTTP 401 Unauthorized`**. Stopped immediately on access denial.
-
-- **Source 3.3: Issuer Investor Relations Portals**
-  - *Apple Investor Relations:* `https://investor.apple.com/` (HTTP 403 Forbidden).
-  - *Alphabet Investor Relations:* `https://abc.xyz/investor/` (HTTP 403 Forbidden).
-  - *Result:* Stopped immediately upon edge bot detection / 403 response.
+| Metric / Parameter | Apple Inc. (`AAPL`) | Alphabet Class A (`GOOGL`) | Alphabet Class C (`GOOG`) | Source Authority |
+|:---|:---|:---|:---|:---|
+| **Response Status** | `200 OK` | `200 OK` | `200 OK` | HTTP Response |
+| **Provider Request ID** | `3f58c7d8dc7a9116582024a7dd45c4de` | `bff1d7f53314f36f33b6ef2e68335143` | `222e63f55d57707c607edf5ccc91ca18` | Polygon Response Header / Body |
+| **Retrieval Timestamp (UTC)** | `2026-10-18T12:33:17.663134+00:00` | `2026-10-18T12:33:31.052559+00:00` | `2026-10-18T12:33:44.372917+00:00` | Client Network Session |
+| **Raw Response Size** | 1,756 bytes | 1,801 bytes | 1,781 bytes | On-disk payload |
+| **Raw Response SHA-256** | `824fa76e07ccfb2157b13e2264681c436d83fb0035a3b987908303c7b6f321dc` | `fe8981cef5c5c3ac0105334d23b3f26a8e0af9493e231045c7868d531171284a` | `f8d0cfce3e8976891a624bff5d9a4634794b4d9252fc501a6e6c7e114642679b` | Local Integrity Digest |
+| **Local File Path** | `data/research/polygon_reference/polygon_AAPL_ticker_reference_20261018.json` | `data/research/polygon_reference/polygon_GOOGL_ticker_reference_20261018.json` | `data/research/polygon_reference/polygon_GOOG_ticker_reference_20261018.json` | Local Artifact Storage |
+| **Returned Ticker** | `AAPL` | `GOOGL` | `GOOG` | Provider Payload |
+| **Returned Name** | `Apple Inc.` | `Alphabet Inc. Class A Common Stock` | `Alphabet Inc. Class C Capital Stock` | Provider Payload |
+| **Primary Exchange (MIC)** | **`XNAS`** | **`XNAS`** | **`XNAS`** | Provider Payload |
+| **Market / Locale** | `stocks` / `us` | `stocks` / `us` | `stocks` / `us` | Provider Payload |
+| **Security Type** | `CS` (Common Stock) | `CS` (Common Stock) | `CS` (Capital Stock) | Provider Payload |
+| **Active Status** | `True` | `True` | `True` | Provider Payload |
+| **Currency** | `usd` | `usd` | `usd` | Provider Payload |
+| **Corporate CIK** | `0000320193` | `0001652044` | `0001652044` | Provider Payload |
+| **Composite FIGI** | `BBG000B9XRY4` | `BBG009S39JX6` | `BBG009S3NB30` | Provider Payload |
+| **Share Class FIGI** | `BBG001S5N8V8` | `BBG009S39JY5` | `BBG009S3NB21` | Provider Payload |
+| **Provider `last_updated_utc`** | `null` | `null` | `null` | Provider Payload |
 
 ---
 
-### 5. Qualified Adjudication Results (Rule R06 Evaluation)
+### 4. Instrument & Claim Binding Verification
 
-The newly acquired evidence was evaluated locally through the released [`PrimaryListingAdjudicator`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-primary-designation/analyst_dashboard/universe/primary_listing_evidence.py#L924-L1150):
+1. **Exact Instrument Separation:**
+   - **`AAPL`:** Binds to Apple Inc. (CIK `0000320193`), Common Stock ($0.00001 par value), composite FIGI `BBG000B9XRY4`.
+   - **`GOOGL`:** Binds to Alphabet Inc. (CIK `0001652044`), Class A Common Stock ($0.001 par value, voting 1 vote/share), composite FIGI `BBG009S39JX6`, share-class FIGI `BBG009S39JY5`.
+   - **`GOOG`:** Binds to Alphabet Inc. (CIK `0001652044`), Class C Capital Stock ($0.001 par value, non-voting), composite FIGI `BBG009S3NB30`, share-class FIGI `BBG009S3NB21`.
+2. **Multi-Class Isolation:**
+   - Distinct share classes are preserved without cross-class conflation or inheritance.
+   - `composite_figi` and `share_class_figi` strictly differentiate `GOOGL` from `GOOG`.
+   - Neither share class claims primacy over the other: both independently receive direct attribution of primary exchange `XNAS`.
+3. **Claim Boundary Non-Inflation:**
+   - The claim is recorded strictly as: *"Polygon reports XNAS as this instrument's primary exchange."*
+   - It is **not** relabeled as an official exchange listing certification or an SEC statutory registration finding.
+   - The ISO 10383 MIC (`XNAS`) is interpreted through the documented schema definition of Polygon's `primary_exchange` attribute, satisfying Route A direct designation standards.
 
-```
-Executable Predicate (contracts.py):
+---
+
+### 5. Qualified Route A Adjudication (Rule R06 Evaluation)
+
+The evidence was evaluated through the released [`PrimaryListingAdjudicator`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-primary-designation/analyst_dashboard/universe/primary_listing_evidence.py#L924-L1150):
+
+```python
+# Rule R06 Predicate Contract (contracts.py)
 "R06_PRIMARY_LISTING": {
     "operator": "==",
     "expected": True,
@@ -193,100 +119,95 @@ Executable Predicate (contracts.py):
 }
 ```
 
-#### 5.1 Route A Evaluation (Direct Primary Identification)
-- Direct primary identification requires an authoritative assertion from an exchange or reference provider explicitly identifying the venue as the designated primary exchange.
-- Result: **ABSENT / UNAVAILABLE** across all inspected public and regulatory sources.
-- Massive/Polygon supports this field (`primary_exchange`), but retrieval was blocked by `401 Unauthorized`.
-
-#### 5.2 Route B Evaluation (Documented Derivation)
-- Derivation was tested using:
-  1. SEC Form 10-K §12(b) exchange registration on The Nasdaq Stock Market LLC;
-  2. SEC Form 10-K Exhibit 4 description of securities ("listed on The Nasdaq Stock Market LLC" / "listed on The NASDAQ Global Select Market");
-  3. Live verified absence in Nasdaq Trader `otherlisted.txt`;
-  4. Nasdaq Rulebook IM-5220 and UTP Plan definitions.
-- Evaluation: Under binding ARX governance ([`THREE_CANDIDATE_PRIMARY_LISTING_DECISION_RECORD.md`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-primary-designation/docs/THREE_CANDIDATE_PRIMARY_LISTING_DECISION_RECORD.md)), Section 2.2:
-  > *"The assertion that sole Section 12(b) exchange registration legally establishes primary-listing status is removed. The absence of another exchange in a regulatory filing cannot be treated as affirmative proof that no other listing exists."*
-- Therefore, without a verified multi-exchange certification or an authoritative legal definition equating single-venue §12(b) registration with primary listing under Rule R06, Route B fails closed as **`INSUFFICIENT_NARROW_OBSERVATION`**.
-
-#### 5.3 Multi-Class Isolation
-- **GOOGL (Class A Common Stock, 1 vote/share)** and **GOOG (Class C Capital Stock, 0 votes/share)** were evaluated under the **identical standard**.
-- Voting rights do not confer primary status; non-voting rights do not subordinate.
-- Both candidates independently fail closed as `None` (`UNKNOWN`).
-
-#### 5.4 Adjudication Object Summary
-
-```python
-PrimaryListingAdjudicationResult(
-    symbol="AAPL" | "GOOGL" | "GOOG",
-    instrument_class="Common Stock" | "Class A Common Stock" | "Class C Capital Stock",
-    is_multi_class=False | True | True,
-    adjudication_role=PrimaryListingEvidenceRole.CORROBORATING_REGISTRATION_AND_DIRECTORY_FACT,
-    is_direct_assertion=False,
-    is_derived_claim=False,
-    rule_id="R06_BOUNDED_EVIDENCE_ADJUDICATION_V1",
-    rule_version="1.0.0",
-    evaluation_date="2026-10-18",
-    temporal_scope="Bounded to 2025/2026 Form 10-K filings and 2026-10-18 directory snapshots",
-    source_hierarchy=["PRIMARY_EXCHANGE_AUTHORITY", "REGULATORY_FILINGS_SEC_12B", "EXCHANGE_DIRECTORY"],
-    adjudication_status=PrimaryListingEvidenceClassification.EVIDENCE_ESTABLISHES_NARROWER_LISTING_FACT_ONLY,
-    assigned_primary_listing=None,  # Strictly UNKNOWN
-    missing_evidence_definition="Requires either (Path A) attributable direct identification of designated primary exchange listing from an authoritative listing source, or (Path B) a documented derivation supported by appropriate source authority and instrument-specific facts.",
-    rationale="Evidence confirms active listing and proves registration under Section 12(b) of the Exchange Act, not designated primary listing. Under approved R06 semantics, exchange registration alone is insufficient, and absence of other venues cannot be assumed as proof of exclusivity. primary_listing is preserved as UNKNOWN (None)."
-)
-```
+#### Adjudication Results:
+- **`is_direct_assertion`:** `True` (direct provider field attribution).
+- **`is_derived_claim`:** `False` (does not rely on statutory inference or exclusivity derivation).
+- **`adjudication_role`:** `DIRECT_PRIMARY_IDENTIFICATION`.
+- **`adjudication_status`:** `EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM`.
+- **`assigned_primary_listing`:** **`True`**.
+- **`missing_evidence_definition`:** `None`.
+- **`rationale`:** *"Authoritative source directly identifies this venue as the designated primary listing."*
+- **Predicate Outcome:** **PASS** (`expected == True`, observed `True`).
 
 ---
 
-### 6. Exact Missing Fact & Access Dependencies
+### 6. Temporal Honesty & Scope Alignment
 
-For the three candidates to resolve to `primary_listing = True` in a future session:
-
-1. **Route A Dependency (Direct Designation):**
-   - **Access Dependency:** A valid, working API credential for an authorized provider whose schema explicitly supplies the primary listing MIC (specifically, a functional `POLYGON_API_KEY` for Polygon's `primary_exchange` field, or a licensed CTA/UTP direct data feed subscriber agreement).
-   - **Fact Dependency:** An explicit disclosure from the issuer or exchange stating that The Nasdaq Stock Market LLC is the designated primary listing venue for the specific class.
-
-2. **Route B Dependency (Documented Derivation):**
-   - **Policy Authority Dependency:** A binding Product Governance rule amendment formally codifying that:
-     *(a)* An equity registered under Exchange Act Section 12(b) solely on The Nasdaq Stock Market LLC, and
-     *(b)* Present in the Nasdaq Global Select Market directory (`nasdaqlisted.txt`), and
-     *(c)* Absent from all other US exchange directories (`otherlisted.txt`),
-     conclusively constitutes the designated primary exchange listing under Rule R06.
-   - Without such explicit policy authority, engineering cannot manufacture statutory equivalence from negative directory evidence.
+1. **Observation Time Anchoring:**
+   - The evidence is anchored strictly to its authentic retrieval timestamp: **`2026-10-18T12:33:00Z`**.
+   - It is **not backdated** to the October 16, 2026 directory snapshot, the 2025 Form 10-K fiscal report dates, or earlier backtest dates.
+2. **Historical Continuity Prohibited:**
+   - In accordance with non-inference rules, a current reference ticker observation does **not** establish continuous historical primary listing in prior months or years.
+   - Earlier historical replay reports (e.g., as of 2026-10-16 / 2026-10-17) remain valid historical records where primary listing was properly preserved as `None` (`UNKNOWN`).
+3. **Pilot Evaluation Scope:**
+   - The new evidence is effective as of **`2026-10-18`** and directly supports prospective pilot evaluations conducted on or after this date.
 
 ---
 
-### 7. Recommended Single Next Action
+### 7. Local Replay & Honest Stage Results
 
-**Configure a valid `POLYGON_API_KEY` in `finance/.env` (or replace the placeholder with an active key):**
-- Massive/Polygon already provides native, attributable support for the ISO 10383 `primary_exchange` MIC field (e.g., returning `XNAS`).
-- The parser, evidence models, and test harnesses (`parse_massive_ticker_payload`) are already fully implemented and verified in the codebase.
-- Providing a valid key will allow Route A to resolve directly and cleanly on the next pass without requiring novel statutory derivations or governance exceptions.
+The Route A evidence dataset ([`three_candidates_route_a_evidence.json`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-primary-designation/data/research/primary_listing_evidence/three_candidates_route_a_evidence.json)) was executed through the local replay engine ([`PrimaryListingReplayEngine`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-primary-designation/analyst_dashboard/universe/primary_listing_evidence.py#L1262-L1460)):
 
----
+#### Stage Separation Accounting
 
-### 8. Inspected Artifacts & Cryptographic Hash Accounting
-
-| Source / Artifact Description | Local Path / Remote URL | Byte Count | SHA-256 Checksum | Attribution Role |
-|:---|:---|:---:|:---:|:---|
-| **AAPL Exhibit 4.1** | `data/research/sec_filings_sample/aapl-exhibit41-20250927.htm` | 118,697 | `f2ac8f0eefb5abf56d79fbee0709e7eb1ce32668559f90a9652af1121992150d` | Corroborating listing description |
-| **Alphabet Exhibit 4.20** | `data/research/sec_filings_sample/goog-exhibit420-20221231.htm` | 79,828 | `0f13b4210218c0c7f77ea34d100e811d62770517003d163c0cdf7ac4a72c57f2` | Corroborating listing description |
-| **SEC Company Tickers Exchange** | `https://www.sec.gov/files/company_tickers_exchange.json` | 523,925 | Live wire response | Corroborating regulatory directory |
-| **Nasdaq Other-Listed Directory** | `http://www.nasdaqtrader.com/dynamic/symdir/otherlisted.txt` | 7,676 lines | Live wire response | Cross-venue negative verification |
-| **AAPL Form 10-K §12(b)** | `data/research/sec_filings_sample/aapl-20250927.htm` | 1,520,320 | `63d29bf57dcc4a938a3517f215a7ff18c6dcc1a43cfa3e874524d3e09f21235a` | Statutory exchange registration |
-| **Alphabet Form 10-K §12(b)** | `data/research/sec_filings_sample/goog-20251231.htm` | 2,616,611 | `8cee92a0ca058d3ad69c7621f076a8d0ca9da4041b2c80f5e523e94675f89f6c` | Statutory exchange registration |
-| **Nasdaq Directory (2026-10-17)** | `data/research/exchange_reference/nasdaqlisted_20261017.txt` | 349,723 | `9f5c42346e6ab594a9e16bed99757e38cda89645c776b987626c9f51813bc99b` | Listing tier corroboration (Tier Q) |
-| **OpenFIGI 3-Candidate Mapping** | `data/research/openfigi_reference/openfigi_three_candidates_mapping_20261017.json` | 808 | `003c995d4ce51d95573ac4fedf6afd9f368a5be356ba28e9b616b992a8f225d2` | Composite identifier mapping |
-| **Alpaca 3-Candidate Assets** | `data/research/alpaca_reference/alpaca_three_candidates_assets_20261017.json` | 1,858 | `f655012528bbccd971f6e4e7276a7fbb9f6ba9be42db85ad0696a02c92c5934c` | Broker asset venue observation |
+| Pipeline Stage / Check | Real-Source Replay (`is_simulation=False`) | Counterfactual Probe (`is_simulation=True`) | Architectural Explanation |
+|:---|:---:|:---:|:---|
+| **Route A Evidence Ingestion** | **`SUFFICIENT`** | **`SUFFICIENT`** | Polygon `primary_exchange: XNAS` successfully ingested for all 3 candidates. |
+| **`primary_listing` Assignment** | **`True`** | **`True`** | Rule R06 predicate satisfied (`expected == True`). |
+| **Identity Adoption Gate** | **`DISABLED`** | *Provisional Mock* | In real execution, production identity adoption is disabled; `security_id` remains unadopted. |
+| **Record Validation (`validate_record`)** | **`FAILED`** | **`PASSED`** | Real replay fails closed on `MISSING_FIELD: security_id`. Counterfactual probe passes all validation rules. |
+| **Isolated Probe Conversion (`to_source_security`)** | `0 / 3 converted` | `3 / 3 converted` | When provisional ID is supplied in counterfactual isolation, all 3 convert cleanly. |
+| **Whole-Batch Conversion Gate (`batch_conversion_count`)** | **`0 admitted`** | **`0 admitted`** | Atomic whole-batch gate fails closed because the wider batch contains unevidenced members (`primary_listing=None`). |
+| **Batch Validity (`is_batch_valid`)** | **`False`** | **`False`** | Atomic fail-closed integrity strictly preserved. |
+| **Universe Builder Execution (`builder_status`)** | **`NOT_RUN`** | **`NOT_RUN`** | Downstream builder execution remains strictly unexecuted. |
+| **Builder Handoff Permitted** | **`False`** | **`False`** | Prohibits handoff until whole-batch admission and identity adoption are authorized. |
 
 ---
 
-### 9. Operational Enforcements & Final STOP
+### 8. Remaining Pilot Dependencies (Path Forward)
 
-In strict adherence to the mandate:
-- **Zero Push / Zero PR:** Branch `research/sprint-2-primary-designation` remains purely local.
-- **Zero Merge / Zero Deployment:** No code promoted to main or staging/production.
-- **Zero Production Identity Adoption:** Provisional ID promotion remains locked (`PROVISIONAL_ID_PROMOTION = NO`).
-- **Zero Real Population Admission:** Universe publication remains locked (`ADMISSION_ALLOWED = NO`).
-- **Zero Capture / Strategy Changes:** Autonomous scheduler/observer arming remains `NOT_AUTHORIZED`.
-- **Zero Bypass of Controls:** All access denials honored immediately.
-- **Normal Local Commit:** This report is committed locally to the research branch.
+With the primary-exchange designation now resolved under Route A, the remaining engineering dependencies before production universe inclusion are:
+
+1. **Authorized Identity Adoption Plan:**
+   - Production identity application remains disabled until a formal identity-adoption plan assigns approved durable/synthetic security IDs (e.g., following the PR #24 identity-adoption methodology).
+2. **Batch Boundary Gating:**
+   - Because the 7-candidate population contains un-evidenced candidates (`TSM`, `ACCS`, `DDS`, `AACIU`), whole-batch atomic admission fails closed. Admission requires either resolving the remaining candidates or formally scoping the pilot admission batch strictly to the 3 resolved candidates (`AAPL`, `GOOGL`, `GOOG`).
+3. **Publication & Scanner Authorization:**
+   - Operational universe publication, scanner execution, and scheduler arming remain separate governance gates.
+
+---
+
+### 9. Verification Suite & Hash Accounting
+
+- **Unit & Integration Test Verification:**  
+  `57 passed, 3 skipped in 1.91s` across [`tests/test_universe_primary_listing_evidence.py`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-primary-designation/tests/test_universe_primary_listing_evidence.py).
+- **Focused Test Additions ([`TestRouteADirectPrimaryDesignationAdjudication`](file:///C:/Users/akara/Documents/Projects/finance-sprint-2-primary-designation/tests/test_universe_primary_listing_evidence.py#L1642)):**
+  - `test_route_a_direct_designation_adjudication_synthetic`: Confirms synthetic Polygon record adjudicates to `primary_listing = True`.
+  - `test_route_a_multi_class_separation_goog_googl_synthetic`: Confirms GOOG and GOOGL maintain distinct FIGIs and independent adjudication.
+  - `test_route_a_replay_real_vs_counterfactual_simulation`: Confirms real replay blocks on unadopted ID while counterfactual probe passes R06.
+
+#### Cryptographic Hash Accounting
+
+| Artifact | Local File Path | Byte Count | SHA-256 Checksum |
+|:---|:---|:---:|:---|
+| **AAPL Polygon Response** | `data/research/polygon_reference/polygon_AAPL_ticker_reference_20261018.json` | 1,756 | `824fa76e07ccfb2157b13e2264681c436d83fb0035a3b987908303c7b6f321dc` |
+| **GOOGL Polygon Response** | `data/research/polygon_reference/polygon_GOOGL_ticker_reference_20261018.json` | 1,801 | `fe8981cef5c5c3ac0105334d23b3f26a8e0af9493e231045c7868d531171284a` |
+| **GOOG Polygon Response** | `data/research/polygon_reference/polygon_GOOG_ticker_reference_20261018.json` | 1,781 | `f8d0cfce3e8976891a624bff5d9a4634794b4d9252fc501a6e6c7e114642679b` |
+| **Route A Evidence Dataset** | `data/research/primary_listing_evidence/three_candidates_route_a_evidence.json` | 5,640 | `e5bc6457eb26ebc39ce6b971439ea2f654f15d2a716c59296db8fcb5bbab68d2` |
+| **Polygon Retrieval Manifest** | `data/research/polygon_reference/polygon_retrieval_manifest_20261018.json` | 2,463 | `6c18f3ef841cfd740a66d03d32fe8bdf5f6fc7fb140a8dca2ef94f9b83b631d8` |
+
+---
+
+### 10. Git Object Details & Final STOP
+
+- **Worktree:** `C:\Users\akara\Documents\Projects\finance-sprint-2-primary-designation`
+- **Branch:** `research/sprint-2-primary-designation`
+- **Base Commit SHA:** `ceef16a0a30bcdda4f1da25f46749eed5c72977c`
+- **Base Tree SHA:** `d01e3105008735bd41d40ecc09e23d835c8ed0ef`
+
+#### STOP ENFORCEMENT
+`THREE_CANDIDATE_ROUTE_A_EVIDENCE_LOCALLY_ADJUDICATED`
+- Zero push, PR, merge, or deployment.
+- Zero production schema initialization or real identity application.
+- Zero real population admission, publication, or scanner/scheduler activation.
+- Zero strategy changes, model tuning, or Gate 12 advancement.

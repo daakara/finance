@@ -1636,6 +1636,181 @@ class TestPrimaryExchangeSourceDiscovery:
         assert err_res["BADTICKER"]["error"] == "Invalid ticker or no identifier found"
 
 
+# =====================================================================
+# 13. Route A Direct Primary-Exchange Designation Adjudication Suite
+# =====================================================================
+
+class TestRouteADirectPrimaryDesignationAdjudication:
+    """
+    Focused verification for Route A (Attributable Direct Designation) evidence from Massive / Polygon:
+    1. Direct identification of primary exchange MIC ('XNAS') satisfies Rule R06 with primary_listing = True.
+    2. Adjudication role is strictly DIRECT_PRIMARY_IDENTIFICATION, is_direct_assertion = True, is_derived_claim = False.
+    3. Multi-class equity structures (GOOG Class C vs GOOGL Class A) remain completely distinct with separate FIGIs.
+    4. Real-source replay preserves production adoption disabled (security_id unadopted) and blocks conversion.
+    5. Counterfactual simulation probe confirms R06 predicate satisfaction while atomic batch fails closed.
+    6. Temporal honesty: evidence is anchored to retrieval time and does NOT claim historical continuity.
+    """
+
+    def test_route_a_direct_designation_adjudication_synthetic(self):
+        """Verifies synthetic Route A record from Massive/Polygon adjudicates to primary_listing = True."""
+        synthetic_record = AttributablePrimaryListingEvidenceRecord(
+            symbol="AAPL",
+            cik="0000320193",
+            instrument_title="Apple Inc. Common Stock",
+            instrument_structure="Common Stock",
+            share_class=None,
+            source_provider="MASSIVE_POLYGON",
+            source_url="https://api.polygon.io/v3/reference/tickers/AAPL",
+            request_locator="results.primary_exchange: XNAS",
+            retrieval_timestamp_utc="2026-10-18T12:33:17Z",
+            filing_accession=None,
+            filing_report_date=None,
+            filing_form="POLYGON_REFERENCE_TICKERS_V3",
+            raw_response_sha256="824fa76e07ccfb2157b13e2264681c436d83fb0035a3b987908303c7b6f321dc",
+            section_table_locator="results.primary_exchange",
+            stated_exchange="XNAS",
+            stated_symbol="AAPL",
+            operating_mic="XNAS",
+            is_multi_class=False,
+            effective_as_of_date="2026-10-18",
+            temporal_limitations="Current query observation. Does not establish historical continuity.",
+            classification=PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM,
+            claim_supported="Polygon reports XNAS as this instrument's primary exchange.",
+            inferences_prohibited=(
+                "Does not infer exchange certification from reference provider observation.",
+                "Does not infer historical primary-listing continuity prior to retrieval date.",
+            ),
+            assigned_primary_listing=True,
+            contract_ambiguity_notes="Route A direct designation.",
+            source_claim="Polygon reports XNAS as this instrument's primary exchange.",
+            publisher_primary_listing_claim="PRIMARY",
+            interpretation="Direct designation of primary listing venue (XNAS).",
+            adjudication_role=PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION,
+            is_direct_assertion=True,
+            is_derived_claim=False,
+        )
+
+        res = PrimaryListingAdjudicator.adjudicate_candidate(synthetic_record, symbol="AAPL")
+        assert res.assigned_primary_listing is True
+        assert res.adjudication_role == PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
+        assert res.is_direct_assertion is True
+        assert res.is_derived_claim is False
+        assert res.adjudication_status == PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM
+        assert res.missing_evidence_definition is None
+        assert "Authoritative source directly identifies" in res.rationale
+
+    def test_route_a_multi_class_separation_goog_googl_synthetic(self):
+        """Verifies multi-class equity structures preserve distinct identity and independent adjudication."""
+        googl_rec = AttributablePrimaryListingEvidenceRecord(
+            symbol="GOOGL",
+            cik="0001652044",
+            instrument_title="Alphabet Inc. Class A Common Stock",
+            instrument_structure="Common Stock",
+            share_class="CLASS_A",
+            source_provider="MASSIVE_POLYGON",
+            source_url="https://api.polygon.io/v3/reference/tickers/GOOGL",
+            request_locator="results.primary_exchange: XNAS",
+            retrieval_timestamp_utc="2026-10-18T12:33:31Z",
+            filing_accession=None,
+            filing_report_date=None,
+            filing_form="POLYGON_REFERENCE_TICKERS_V3",
+            raw_response_sha256="fe8981cef5c5c3ac0105334d23b3f26a8e0af9493e231045c7868d531171284a",
+            section_table_locator="results.primary_exchange",
+            stated_exchange="XNAS",
+            stated_symbol="GOOGL",
+            operating_mic="XNAS",
+            is_multi_class=True,
+            effective_as_of_date="2026-10-18",
+            temporal_limitations="Current query observation.",
+            classification=PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM,
+            claim_supported="Polygon reports XNAS as this instrument's primary exchange.",
+            inferences_prohibited=("Does not infer voting primacy.",),
+            assigned_primary_listing=True,
+            contract_ambiguity_notes="Route A direct designation for Class A.",
+            source_claim="Polygon reports XNAS as this instrument's primary exchange.",
+            publisher_primary_listing_claim="PRIMARY",
+            adjudication_role=PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION,
+            is_direct_assertion=True,
+            is_derived_claim=False,
+        )
+
+        goog_rec = AttributablePrimaryListingEvidenceRecord(
+            symbol="GOOG",
+            cik="0001652044",
+            instrument_title="Alphabet Inc. Class C Capital Stock",
+            instrument_structure="Common Stock",
+            share_class="CLASS_C",
+            source_provider="MASSIVE_POLYGON",
+            source_url="https://api.polygon.io/v3/reference/tickers/GOOG",
+            request_locator="results.primary_exchange: XNAS",
+            retrieval_timestamp_utc="2026-10-18T12:33:44Z",
+            filing_accession=None,
+            filing_report_date=None,
+            filing_form="POLYGON_REFERENCE_TICKERS_V3",
+            raw_response_sha256="f8d0cfce3e8976891a624bff5d9a4634794b4d9252fc501a6e6c7e114642679b",
+            section_table_locator="results.primary_exchange",
+            stated_exchange="XNAS",
+            stated_symbol="GOOG",
+            operating_mic="XNAS",
+            is_multi_class=True,
+            effective_as_of_date="2026-10-18",
+            temporal_limitations="Current query observation.",
+            classification=PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM,
+            claim_supported="Polygon reports XNAS as this instrument's primary exchange.",
+            inferences_prohibited=("Non-voting status does not subordinate.",),
+            assigned_primary_listing=True,
+            contract_ambiguity_notes="Route A direct designation for Class C.",
+            source_claim="Polygon reports XNAS as this instrument's primary exchange.",
+            publisher_primary_listing_claim="PRIMARY",
+            adjudication_role=PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION,
+            is_direct_assertion=True,
+            is_derived_claim=False,
+        )
+
+        adj_googl = PrimaryListingAdjudicator.adjudicate_candidate(googl_rec, symbol="GOOGL")
+        adj_goog = PrimaryListingAdjudicator.adjudicate_candidate(goog_rec, symbol="GOOG")
+
+        assert adj_googl.assigned_primary_listing is True
+        assert adj_goog.assigned_primary_listing is True
+        assert adj_googl.is_multi_class is True
+        assert adj_goog.is_multi_class is True
+        assert adj_googl.instrument_class != adj_goog.instrument_class
+
+    def test_route_a_replay_real_vs_counterfactual_simulation(self):
+        """Verifies replay behavior across real-source (fail closed on unadopted ID) vs counterfactual probe."""
+        from analyst_dashboard.universe.identity_proposal import build_seven_candidate_proposal
+        ledger = build_seven_candidate_proposal()
+
+        route_a_records = PrimaryListingEvidenceAdapter.load_three_candidate_route_a_evidence()
+        if not route_a_records:
+            pytest.skip("Route A evidence file not present in workspace")
+
+        # Real replay (is_simulation=False)
+        real_report = PrimaryListingReplayEngine.run_replay(ledger, route_a_records, is_simulation=False)
+        assert real_report.is_simulation is False
+        assert real_report.is_batch_valid is False
+        assert real_report.batch_conversion_count == 0
+        assert real_report.builder_status == "NOT_RUN"
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            c = real_report.candidate_results[sym]
+            assert c.primary_listing_value is True
+            assert c.conversion_permitted is False
+            assert "PRODUCTION_IDENTITY_ADOPTION_DISABLED" in c.blocking_reason
+
+        # Counterfactual probe (is_simulation=True)
+        sim_report = PrimaryListingReplayEngine.run_replay(ledger, route_a_records, is_simulation=True)
+        assert sim_report.is_simulation is True
+        assert sim_report.conversion_count == 3  # All 3 isolated probes pass R06
+        assert sim_report.batch_conversion_count == 0  # Atomic whole batch fails closed on other members
+        assert sim_report.builder_status == "NOT_RUN"
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            c = sim_report.candidate_results[sym]
+            assert c.primary_listing_value is True
+            assert c.conversion_permitted is True
+            assert c.validation_status == "VALIDATION_PASSED"
+
+
+
 
 
 
