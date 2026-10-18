@@ -48,6 +48,23 @@ from .coverage_diagnostics import (
     CapacityBenchmarkReport,
     load_acquisition_artifacts_to_records,
 )
+from .offline_build_coverage import (
+    OfflineCandidateRecord,
+    OfflineBuildCoverageConfig,
+    OfflineBuildCoverageResult,
+    Stage1IdentityAssociationResult,
+    Stage2ValidationAndConversionResult,
+    Stage3BuilderEvaluationResult,
+    Stage4CoverageDiagnosticsResult,
+    run_offline_build_and_coverage,
+    build_scenario_a_candidates,
+    build_scenario_b_candidates,
+    build_scenario_b2_conversion_failure_candidates,
+    build_scenario_d_identity_conflict_candidates,
+    build_scenario_c_candidates,
+    format_offline_build_coverage_markdown,
+    save_offline_build_coverage_artifacts,
+)
 
 from .identity_adoption import (
     IdentityAdoptionStatus,
@@ -99,6 +116,21 @@ __all__ = [
     "CapacityBenchmarker",
     "CapacityBenchmarkReport",
     "load_acquisition_artifacts_to_records",
+    "OfflineCandidateRecord",
+    "OfflineBuildCoverageConfig",
+    "OfflineBuildCoverageResult",
+    "Stage1IdentityAssociationResult",
+    "Stage2ValidationAndConversionResult",
+    "Stage3BuilderEvaluationResult",
+    "Stage4CoverageDiagnosticsResult",
+    "run_offline_build_and_coverage",
+    "build_scenario_a_candidates",
+    "build_scenario_b_candidates",
+    "build_scenario_b2_conversion_failure_candidates",
+    "build_scenario_d_identity_conflict_candidates",
+    "build_scenario_c_candidates",
+    "format_offline_build_coverage_markdown",
+    "save_offline_build_coverage_artifacts",
     "IdentityAdoptionStatus",
     "IdentityAdoptionAuthorization",
     "ProposedEntityAdoption",
@@ -111,5 +143,6 @@ __all__ = [
     "PlanApplicationError",
     "apply_adoption_plan_test_only",
 ]
+
 
 
