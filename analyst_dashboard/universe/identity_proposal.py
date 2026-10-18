@@ -1169,3 +1169,26 @@ def build_seven_candidate_proposal(research_root: Optional[Path] = None) -> Iden
         ledger.add_proposal(cand_proposal)
 
     return ledger
+
+
+def build_three_candidate_proposals(research_root: Optional[Path] = None) -> IdentityAssociationProposalLedger:
+    """
+    Constructs the offline association proposal ledger for the three focus candidates:
+    AAPL, GOOG, and GOOGL.
+    """
+    seven_ledger = build_seven_candidate_proposal(research_root=research_root)
+    three_ledger = IdentityAssociationProposalLedger()
+    for sym in ("AAPL", "GOOG", "GOOGL"):
+        prop = seven_ledger.get_proposal(sym)
+        if prop:
+            three_ledger.add_proposal(prop)
+    return three_ledger
+
+
+def build_three_candidate_proposal(research_root: Optional[Path] = None) -> IdentityAssociationProposalLedger:
+    """
+    Convenience alias for build_three_candidate_proposals bounded strictly
+    to the three candidate pilot: AAPL, GOOGL, GOOG.
+    """
+    return build_three_candidate_proposals(research_root=research_root)
+

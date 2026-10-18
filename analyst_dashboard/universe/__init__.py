@@ -80,6 +80,11 @@ from .identity_adoption import (
     apply_adoption_plan_test_only,
 )
 
+from .identity_proposal import (
+    build_seven_candidate_proposal,
+    build_three_candidate_proposals,
+)
+
 from .identity_persistence import (
     APPROVED_ARCHITECTURAL_PRINCIPLE,
     IdentityApplicationStatus,

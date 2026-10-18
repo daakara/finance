@@ -20,6 +20,7 @@ Covers all 9 required verification invariants:
 from __future__ import annotations
 
 from pathlib import Path
+import dataclasses
 import json
 import pytest
 
@@ -1634,6 +1635,277 @@ class TestPrimaryExchangeSourceDiscovery:
         assert "BADTICKER" in err_res
         assert err_res["BADTICKER"]["assigned_primary_listing"] is None
         assert err_res["BADTICKER"]["error"] == "Invalid ticker or no identifier found"
+
+
+# =====================================================================
+# 13. Route A Direct Primary-Exchange Designation Adjudication Suite
+# =====================================================================
+
+class TestRouteADirectPrimaryDesignationAdjudication:
+    """
+    Focused verification for Route A (Attributable Direct Designation) evidence from Massive / Polygon:
+    1. Direct identification of primary exchange MIC ('XNAS') satisfies Rule R06 with primary_listing = True.
+    2. Adjudication role is strictly DIRECT_PRIMARY_IDENTIFICATION, is_direct_assertion = True, is_derived_claim = False.
+    3. Multi-class equity structures (GOOG Class C vs GOOGL Class A) remain completely distinct with separate FIGIs.
+    4. Real-source replay preserves production adoption disabled (security_id unadopted) and blocks conversion.
+    5. Counterfactual simulation probe confirms R06 predicate satisfaction while atomic batch fails closed.
+    6. Temporal honesty: evidence is anchored to retrieval time and does NOT claim historical continuity.
+    """
+
+    def test_route_a_direct_designation_adjudication_synthetic(self):
+        """Verifies synthetic Route A record from Massive/Polygon adjudicates to primary_listing = True."""
+        synthetic_record = AttributablePrimaryListingEvidenceRecord(
+            symbol="AAPL",
+            cik="0000320193",
+            instrument_title="Apple Inc. Common Stock",
+            instrument_structure="Common Stock",
+            share_class=None,
+            source_provider="MASSIVE_POLYGON",
+            source_url="https://api.polygon.io/v3/reference/tickers/AAPL",
+            request_locator="results.primary_exchange: XNAS",
+            retrieval_timestamp_utc="2026-10-18T12:33:17Z",
+            filing_accession=None,
+            filing_report_date=None,
+            filing_form="POLYGON_REFERENCE_TICKERS_V3",
+            raw_response_sha256="824fa76e07ccfb2157b13e2264681c436d83fb0035a3b987908303c7b6f321dc",
+            section_table_locator="results.primary_exchange",
+            stated_exchange="XNAS",
+            stated_symbol="AAPL",
+            operating_mic="XNAS",
+            is_multi_class=False,
+            effective_as_of_date="2026-10-18",
+            temporal_limitations="Current query observation. Does not establish historical continuity.",
+            classification=PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM,
+            claim_supported="Polygon reports XNAS as this instrument's primary exchange.",
+            inferences_prohibited=(
+                "Does not infer exchange certification from reference provider observation.",
+                "Does not infer historical primary-listing continuity prior to retrieval date.",
+            ),
+            assigned_primary_listing=True,
+            contract_ambiguity_notes="Route A direct designation.",
+            source_claim="Polygon reports XNAS as this instrument's primary exchange.",
+            publisher_primary_listing_claim="PRIMARY",
+            interpretation="Direct designation of primary listing venue (XNAS).",
+            adjudication_role=PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION,
+            is_direct_assertion=True,
+            is_derived_claim=False,
+        )
+
+        res = PrimaryListingAdjudicator.adjudicate_candidate(synthetic_record, symbol="AAPL")
+        assert res.assigned_primary_listing is True
+        assert res.adjudication_role == PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
+        assert res.is_direct_assertion is True
+        assert res.is_derived_claim is False
+        assert res.adjudication_status == PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM
+        assert res.missing_evidence_definition is None
+        assert "Authoritative source directly identifies" in res.rationale
+
+    def test_route_a_multi_class_separation_goog_googl_synthetic(self):
+        """Verifies multi-class equity structures preserve distinct identity and independent adjudication."""
+        googl_rec = AttributablePrimaryListingEvidenceRecord(
+            symbol="GOOGL",
+            cik="0001652044",
+            instrument_title="Alphabet Inc. Class A Common Stock",
+            instrument_structure="Common Stock",
+            share_class="CLASS_A",
+            source_provider="MASSIVE_POLYGON",
+            source_url="https://api.polygon.io/v3/reference/tickers/GOOGL",
+            request_locator="results.primary_exchange: XNAS",
+            retrieval_timestamp_utc="2026-10-18T12:33:31Z",
+            filing_accession=None,
+            filing_report_date=None,
+            filing_form="POLYGON_REFERENCE_TICKERS_V3",
+            raw_response_sha256="fe8981cef5c5c3ac0105334d23b3f26a8e0af9493e231045c7868d531171284a",
+            section_table_locator="results.primary_exchange",
+            stated_exchange="XNAS",
+            stated_symbol="GOOGL",
+            operating_mic="XNAS",
+            is_multi_class=True,
+            effective_as_of_date="2026-10-18",
+            temporal_limitations="Current query observation.",
+            classification=PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM,
+            claim_supported="Polygon reports XNAS as this instrument's primary exchange.",
+            inferences_prohibited=("Does not infer voting primacy.",),
+            assigned_primary_listing=True,
+            contract_ambiguity_notes="Route A direct designation for Class A.",
+            source_claim="Polygon reports XNAS as this instrument's primary exchange.",
+            publisher_primary_listing_claim="PRIMARY",
+            adjudication_role=PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION,
+            is_direct_assertion=True,
+            is_derived_claim=False,
+        )
+
+        goog_rec = AttributablePrimaryListingEvidenceRecord(
+            symbol="GOOG",
+            cik="0001652044",
+            instrument_title="Alphabet Inc. Class C Capital Stock",
+            instrument_structure="Common Stock",
+            share_class="CLASS_C",
+            source_provider="MASSIVE_POLYGON",
+            source_url="https://api.polygon.io/v3/reference/tickers/GOOG",
+            request_locator="results.primary_exchange: XNAS",
+            retrieval_timestamp_utc="2026-10-18T12:33:44Z",
+            filing_accession=None,
+            filing_report_date=None,
+            filing_form="POLYGON_REFERENCE_TICKERS_V3",
+            raw_response_sha256="f8d0cfce3e8976891a624bff5d9a4634794b4d9252fc501a6e6c7e114642679b",
+            section_table_locator="results.primary_exchange",
+            stated_exchange="XNAS",
+            stated_symbol="GOOG",
+            operating_mic="XNAS",
+            is_multi_class=True,
+            effective_as_of_date="2026-10-18",
+            temporal_limitations="Current query observation.",
+            classification=PrimaryListingEvidenceClassification.EVIDENCE_SUFFICIENT_FOR_DEFINED_PRIMARY_LISTING_CLAIM,
+            claim_supported="Polygon reports XNAS as this instrument's primary exchange.",
+            inferences_prohibited=("Non-voting status does not subordinate.",),
+            assigned_primary_listing=True,
+            contract_ambiguity_notes="Route A direct designation for Class C.",
+            source_claim="Polygon reports XNAS as this instrument's primary exchange.",
+            publisher_primary_listing_claim="PRIMARY",
+            adjudication_role=PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION,
+            is_direct_assertion=True,
+            is_derived_claim=False,
+        )
+
+        adj_googl = PrimaryListingAdjudicator.adjudicate_candidate(googl_rec, symbol="GOOGL")
+        adj_goog = PrimaryListingAdjudicator.adjudicate_candidate(goog_rec, symbol="GOOG")
+
+        assert adj_googl.assigned_primary_listing is True
+        assert adj_goog.assigned_primary_listing is True
+        assert adj_googl.is_multi_class is True
+        assert adj_goog.is_multi_class is True
+        assert adj_googl.instrument_class != adj_goog.instrument_class
+
+    def test_route_a_replay_real_vs_counterfactual_simulation(self):
+        """Verifies replay behavior across real-source (fail closed on unadopted ID) vs counterfactual probe."""
+        from analyst_dashboard.universe.identity_proposal import build_seven_candidate_proposal
+        ledger = build_seven_candidate_proposal()
+
+        route_a_records = PrimaryListingEvidenceAdapter.load_three_candidate_route_a_evidence()
+        if not route_a_records:
+            pytest.skip("Route A evidence file not present in workspace")
+
+        # Real replay (is_simulation=False)
+        real_report = PrimaryListingReplayEngine.run_replay(ledger, route_a_records, is_simulation=False)
+        assert real_report.is_simulation is False
+        assert real_report.is_batch_valid is False
+        assert real_report.batch_conversion_count == 0
+        assert real_report.builder_status == "NOT_RUN"
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            c = real_report.candidate_results[sym]
+            assert c.primary_listing_value is True
+            assert c.conversion_permitted is False
+            assert "PRODUCTION_IDENTITY_ADOPTION_DISABLED" in c.blocking_reason
+
+        # Counterfactual probe (is_simulation=True)
+        sim_report = PrimaryListingReplayEngine.run_replay(ledger, route_a_records, is_simulation=True)
+        assert sim_report.is_simulation is True
+        assert sim_report.conversion_count == 3  # All 3 isolated probes pass R06
+        assert sim_report.batch_conversion_count == 0  # Atomic whole batch fails closed on other members
+        assert sim_report.builder_status == "NOT_RUN"
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            c = sim_report.candidate_results[sym]
+            assert c.primary_listing_value is True
+            assert c.conversion_permitted is True
+            assert c.validation_status == "VALIDATION_PASSED"
+
+    def test_route_a_raw_response_verification_and_claim_consumption(self):
+        """
+        Verifies that the executable path consumes the parsed provider claim from raw bytes,
+        validates SHA-256 byte digests, confirms agreement across ticker, CIK, primary exchange,
+        composite FIGI, and share-class FIGI, and rejects tampered or unverified manual flags.
+        """
+        route_a_records = PrimaryListingEvidenceAdapter.load_three_candidate_route_a_evidence(
+            verify_raw_payloads=True, allow_synthetic_fallback=False
+        )
+        if not route_a_records:
+            pytest.skip("Route A evidence file not present in workspace")
+
+        aapl_rec = route_a_records.get("AAPL")
+        if not aapl_rec or not aapl_rec.source_artifact or not Path(aapl_rec.source_artifact).exists():
+            pytest.skip("Route A raw payload not present in workspace")
+
+        for sym, rec in route_a_records.items():
+            assert rec.assigned_primary_listing is True
+            assert rec.stated_exchange == "XNAS"
+            assert rec.adjudication_role == PrimaryListingEvidenceRole.DIRECT_PRIMARY_IDENTIFICATION
+            assert rec.is_direct_assertion is True
+            assert rec.is_derived_claim is False
+            assert rec.composite_figi is not None
+            assert rec.share_class_figi is not None
+
+        # Verify tamper rejection: hash mismatch triggers ValueError
+        aapl_rec = route_a_records["AAPL"]
+        tampered_rec = dataclasses.replace(aapl_rec, raw_response_sha256="0" * 64)
+        with pytest.raises(ValueError, match="Raw payload SHA-256 mismatch"):
+            PrimaryListingEvidenceAdapter.verify_and_consume_route_a_provider_payload(tampered_rec)
+
+        # Verify CIK mismatch rejection
+        tampered_cik_rec = dataclasses.replace(aapl_rec, cik="0009999999")
+        with pytest.raises(ValueError, match="CIK"):
+            PrimaryListingEvidenceAdapter.verify_and_consume_route_a_provider_payload(tampered_cik_rec)
+
+    def test_route_a_three_candidate_pilot_boundary_replay(self):
+        """
+        Evaluates AAPL, GOOG, and GOOGL as an explicitly selected 3-candidate pilot batch:
+        1. Genuine real-source replay (is_simulation=False):
+           - unadopted security IDs are NOT injected (security_id remains None);
+           - reports R01_REQUIRED_FIELDS validation blockers;
+           - batch admission count = 0, batch conversion count = 0, builder = NOT_RUN;
+           - publication readiness remains NOT_AUTHORIZED.
+        2. Counterfactual test probe (is_simulation=True):
+           - clearly labeled as a test probe;
+           - provisional IDs supplied;
+           - all 3 pass validation and convert to SourceSecurity;
+           - 3-candidate batch validity is True, batch admitted = 3, builder = READY_FOR_BUILDER.
+        """
+        from analyst_dashboard.universe.identity_proposal import build_three_candidate_proposal
+        three_ledger = build_three_candidate_proposal()
+
+        route_a_records = PrimaryListingEvidenceAdapter.load_three_candidate_route_a_evidence()
+        if not route_a_records:
+            pytest.skip("Route A evidence file not present in workspace")
+
+        # 1. Real 3-candidate replay (is_simulation=False)
+        real_report = PrimaryListingReplayEngine.run_replay(three_ledger, route_a_records, is_simulation=False)
+        assert real_report.is_simulation is False
+        assert real_report.total_evaluated == 3
+        assert real_report.is_batch_valid is False
+        assert real_report.batch_conversion_count == 0
+        assert real_report.batch_admitted_count == 0
+        assert real_report.builder_status == "NOT_RUN"
+        assert real_report.builder_handoff_permitted is False
+
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            c = real_report.candidate_results[sym]
+            assert c.primary_listing_value is True
+            assert c.validation_status == "VALIDATION_FAILED"
+            assert any("security_id" in issue for issue in c.validation_issues)
+            assert c.conversion_permitted is False
+            assert "PRODUCTION_IDENTITY_ADOPTION_DISABLED" in c.blocking_reason
+            assert c.batch_admitted is False
+
+        # 2. Counterfactual test probe (is_simulation=True)
+        sim_report = PrimaryListingReplayEngine.run_replay(three_ledger, route_a_records, is_simulation=True)
+        assert sim_report.is_simulation is True
+        assert sim_report.total_evaluated == 3
+        assert sim_report.is_batch_valid is True
+        assert sim_report.conversion_count == 3
+        assert sim_report.batch_conversion_count == 3
+        assert sim_report.batch_admitted_count == 3
+        assert sim_report.builder_status == "READY_FOR_BUILDER"
+        assert sim_report.builder_handoff_permitted is True
+
+        for sym in ("AAPL", "GOOGL", "GOOG"):
+            c = sim_report.candidate_results[sym]
+            assert c.primary_listing_value is True
+            assert c.validation_status == "VALIDATION_PASSED"
+            assert c.conversion_permitted is True
+            assert c.batch_admitted is True
+            assert c.builder_status == "READY_FOR_BUILDER"
+
+
 
 
 

@@ -87,6 +87,7 @@ from .primary_listing_evidence import PrimaryListingEvidenceAdapter
 
 class IdentityAdoptionStatus(str, Enum):
     APPROVED_FOR_ADOPTION = "APPROVED_FOR_ADOPTION"
+    MECHANICALLY_READY_UNAPPROVED = "MECHANICALLY_READY_UNAPPROVED"
     MATCHES_EXISTING_DURABLE = "MATCHES_EXISTING_DURABLE"
     BLOCKED_POLICY_UNRESOLVED = "BLOCKED_POLICY_UNRESOLVED"
     BLOCKED_MISSING_AUTHORIZATION = "BLOCKED_MISSING_AUTHORIZATION"
@@ -107,7 +108,11 @@ class IdentityAdoptionAuthorization:
     authorized_by: Optional[str] = None
     authorization_timestamp_utc: Optional[str] = None
     authorization_token: Optional[str] = None
-    scope: str = "PRODUCTION"  # PRODUCTION or SYNTHETIC_TEST_ONLY
+    scope: str = "PRODUCTION"  # PRODUCTION, SYNTHETIC_TEST_ONLY, or REFERENCE_IDENTITY_REGISTRATION
+    allow_reference_identity_registration: bool = False
+    exact_plan_approval: str = "ABSENT"  # ABSENT, PENDING, APPROVED, REJECTED
+    application_authorized: bool = False
+    production_target: str = "PROPOSED_NOT_INITIALIZED"
     notes: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
@@ -154,6 +159,8 @@ class ProposedAssociationAdoption:
     matched_existing_association_id: Optional[str] = None
     proposed_durable_association_id: Optional[str] = None
     conflict_reason: Optional[str] = None
+    observation_date: Optional[str] = "2026-10-17"
+    effective_date_status: str = "OBSERVATION_BOUNDED_HISTORICAL_INCEPTION_PENDING"
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
@@ -172,6 +179,8 @@ class AdoptionPlanSummary:
     associations_approved_creation: int
     associations_blocked: int
     conflicts_count: int
+    entities_mechanically_ready: int = 0
+    associations_mechanically_ready: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -286,6 +295,8 @@ class IdentityAdoptionPlan:
                 matched_existing_association_id=a.get("matched_existing_association_id"),
                 proposed_durable_association_id=a.get("proposed_durable_association_id"),
                 conflict_reason=a.get("conflict_reason"),
+                observation_date=a.get("observation_date", "2026-10-17"),
+                effective_date_status=a.get("effective_date_status", "OBSERVATION_BOUNDED_HISTORICAL_INCEPTION_PENDING"),
             )
             for a in data.get("associations", [])
         ]
@@ -439,9 +450,11 @@ class IdentityAdoptionDryRunEngine:
         entities_matched = 0
         entities_approved = 0
         entities_blocked = 0
+        entities_ready = 0
         assocs_matched = 0
         assocs_approved = 0
         assocs_blocked = 0
+        assocs_ready = 0
 
         # Evaluation reference date is a replay query parameter, NOT evidence of listing start
         as_of_eval_date = evaluation_reference_date
@@ -876,7 +889,68 @@ class IdentityAdoptionDryRunEngine:
             )
 
             if not is_synthetic_fixture:
-                # Real candidate: mechanically plannable, but adoption remains policy-unresolved
+                allow_reference_reg = (
+                    getattr(auth, "allow_reference_identity_registration", False)
+                    or auth.scope in ("REFERENCE_IDENTITY_REGISTRATION", "EVIDENCE_RESOLVED_REFERENCE_IDENTITY")
+                )
+                if allow_reference_reg:
+                    # Check whether exact candidate plan has been explicitly approved for application
+                    is_exact_plan_approved = (
+                        auth.is_authorized
+                        and getattr(auth, "application_authorized", False) is True
+                        and getattr(auth, "exact_plan_approval", "") == "APPROVED"
+                    )
+                    if is_exact_plan_approved:
+                        ent_status = IdentityAdoptionStatus.APPROVED_FOR_ADOPTION
+                        ent_rationale = (
+                            "Approved under architectural principle: evidence-resolved internal security "
+                            "identity registered independently of strategy eligibility and R06 status. "
+                            "Grants zero universe admission or publication authority."
+                        )
+                        entities_approved += 1
+                        assocs_approved += 1
+                    else:
+                        ent_status = IdentityAdoptionStatus.MECHANICALLY_READY_UNAPPROVED
+                        ent_rationale = (
+                            "Candidate is mechanically ready for reference identity registration under PO-approved "
+                            "architectural principle separating identity from Rule R06. Exact candidate plan approval "
+                            "is ABSENT; application is unauthorized (application_authorized=False)."
+                        )
+                        entities_ready += 1
+                        assocs_ready += 1
+
+                    ent_adopt = ProposedEntityAdoption(
+                        provisional_security_id=ent.provisional_security_id,
+                        primary_symbol=sym,
+                        share_class=ent.share_class,
+                        issuer_cik=clean_cik,
+                        status=ent_status,
+                        is_creation=True,
+                        is_mechanically_plannable=True,
+                        proposed_durable_security_id=durable_sec_id,
+                        rationale=ent_rationale,
+                    )
+                    assoc_adopt = ProposedAssociationAdoption(
+                        provisional_association_id=assoc.provisional_association_id,
+                        provisional_security_id=ent.provisional_security_id,
+                        target_durable_security_id=durable_sec_id,
+                        symbol=sym,
+                        operating_mic=clean_mic,
+                        effective_from=assoc.effective_from,
+                        effective_to=assoc.effective_to,
+                        status=ent_status,
+                        is_creation=True,
+                        is_mechanically_plannable=True,
+                        proposed_durable_association_id=durable_assoc_id,
+                        conflict_reason=None if is_exact_plan_approved else "EXACT_PLAN_APPROVAL_ABSENT",
+                        observation_date="2026-10-17",
+                        effective_date_status="OBSERVATION_BOUNDED_HISTORICAL_INCEPTION_PENDING",
+                    )
+                    proposed_entities.append(ent_adopt)
+                    proposed_associations.append(assoc_adopt)
+                    continue
+
+                # Real candidate without reference registration authorization: mechanically plannable, but adoption remains policy-unresolved
                 reason = (
                     f"Real-source candidate '{sym}' is mechanically plannable, but adoption into durable "
                     "master prior to primary-listing evidence closure (Rule R06) remains an unresolved policy "
@@ -1000,6 +1074,8 @@ class IdentityAdoptionDryRunEngine:
             associations_approved_creation=assocs_approved,
             associations_blocked=assocs_blocked,
             conflicts_count=len(conflicts),
+            entities_mechanically_ready=entities_ready,
+            associations_mechanically_ready=assocs_ready,
         )
 
         plan_content_digest = cls.compute_plan_content_digest(
