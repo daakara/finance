@@ -687,11 +687,38 @@ class IdentityAdoptionDryRunEngine:
             conflict_detected = False
             conflict_message = ""
 
-            for ex_a in existing_assocs:
-                if ex_a.is_active_on(effective_date):
+            active_existing_assocs = [a for a in existing_assocs if a.is_active_on(effective_date)]
+            if len(active_existing_assocs) > 1:
+                conflict_detected = True
+                conflict_message = (
+                    f"Overlapping active associations conflict: Target ledger contains {len(active_existing_assocs)} "
+                    f"overlapping active associations for listing '{sym}' on '{clean_mic}' on {effective_date}. "
+                    "Cannot match or plan adoption on a conflicting multi-active locator."
+                )
+            else:
+                for ex_a in active_existing_assocs:
                     ex_sec = engine._security_registry.get(ex_a.internal_security_id)
                     if not ex_sec:
                         continue
+
+                    # Case 0a: Disputed listing association in target ledger
+                    if ex_a.is_disputed:
+                        conflict_detected = True
+                        conflict_message = (
+                            f"Disputed listing association: Association '{ex_a.association_id}' for listing '{sym}' on '{clean_mic}' "
+                            f"is flagged as disputed ({ex_a.dispute_reason or 'unspecified dispute reason'}). "
+                            "Cannot match or adopt against an active disputed association."
+                        )
+                        break
+
+                    # Case 0b: Inactive or suspended security in target master
+                    if ex_sec.status != "ACTIVE":
+                        conflict_detected = True
+                        conflict_message = (
+                            f"Inactive target security: Security '{ex_sec.internal_security_id}' has non-active status "
+                            f"'{ex_sec.status}'. Cannot match an inactive or retired security."
+                        )
+                        break
 
                     # Case A: Different CIK -> Overlapping cross-issuer conflict
                     if clean_cik is not None and ex_sec.issuer_cik != clean_cik:

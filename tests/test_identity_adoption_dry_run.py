@@ -525,6 +525,170 @@ class TestExistingDurableIdPreservationAndIdempotency:
         assert plan2.entities[0].status == IdentityAdoptionStatus.MATCHES_EXISTING_DURABLE
         assert plan2.entities[0].proposed_durable_security_id == plan1.entities[0].proposed_durable_security_id
 
+    def test_symbol_reuse_non_overlapping_does_not_inherit_identity(self, synthetic_authorization):
+        engine = OfflineAdmissionMappingEngine()
+        # Historical security on SYNTH_REUSE, association closed in 2024
+        old_sec, old_assoc = engine.register_security(
+            symbol="SYNTH_REUSE",
+            operating_mic="XNAS",
+            as_of_date="2020-01-01",
+            issuer_cik="0001111111",
+        )
+        engine.close_association(old_assoc.association_id, effective_to="2024-01-01")
+
+        # New proposal on SYNTH_REUSE in 2026 for a distinct issuer
+        new_prop = create_synthetic_proposal(
+            symbol="SYNTH_REUSE",
+            operating_mic="XNAS",
+            cik="0002222222",
+            effective_from="2026-10-17",
+        )
+
+        plan = IdentityAdoptionDryRunEngine.generate_plan(
+            proposals=[new_prop],
+            existing_target=engine,
+            authorization=synthetic_authorization,
+            evaluation_reference_date="2026-10-17",
+        )
+
+        assert plan.summary.entities_matched_existing == 0
+        assert plan.summary.entities_approved_creation == 1
+        ent = plan.entities[0]
+        # Must allocate a brand new ID, not inherit the historical security ID!
+        assert ent.status == IdentityAdoptionStatus.APPROVED_FOR_ADOPTION
+        assert ent.proposed_durable_security_id != old_sec.internal_security_id
+        assert ent.is_creation is True
+
+    def test_disputed_listing_association_fails_closed(self, synthetic_authorization):
+        from analyst_dashboard.universe.admission_mapping import EffectiveDatedListingAssociation, InternalSecurityRecord
+
+        engine = OfflineAdmissionMappingEngine()
+        sec = InternalSecurityRecord(
+            internal_security_id="ARX_SEC_TEST_DISP",
+            issuer_cik="0009876543",
+            primary_symbol="SYNTH_DISP",
+            share_class=None,
+            created_at_utc="2026-10-17T00:00:00Z",
+            status="ACTIVE",
+        )
+        engine._security_registry[sec.internal_security_id] = sec
+        engine._cik_to_securities.setdefault("0009876543", set()).add(sec.internal_security_id)
+
+        assoc = EffectiveDatedListingAssociation(
+            association_id="ASSOC_TEST_DISP",
+            internal_security_id=sec.internal_security_id,
+            symbol="SYNTH_DISP",
+            operating_mic="XNAS",
+            effective_from="2026-10-17",
+            effective_to=None,
+            is_disputed=True,
+            dispute_reason="Venue listing under formal dispute",
+        )
+        engine._association_ledger[assoc.association_id] = assoc
+        engine._active_listing_index.setdefault(("SYNTH_DISP", "XNAS"), []).append(assoc)
+
+        synth_prop = create_synthetic_proposal("SYNTH_DISP", "XNAS", "0009876543")
+        plan = IdentityAdoptionDryRunEngine.generate_plan(
+            proposals=[synth_prop],
+            existing_target=engine,
+            authorization=synthetic_authorization,
+        )
+
+        assert plan.summary.entities_blocked == 1
+        assert plan.entities[0].status == IdentityAdoptionStatus.BLOCKED_ASSOCIATION_CONFLICT
+        assert "Disputed listing association" in plan.entities[0].rationale
+
+    def test_inactive_target_security_fails_closed(self, synthetic_authorization):
+        from analyst_dashboard.universe.admission_mapping import EffectiveDatedListingAssociation, InternalSecurityRecord
+
+        engine = OfflineAdmissionMappingEngine()
+        sec = InternalSecurityRecord(
+            internal_security_id="ARX_SEC_TEST_RET",
+            issuer_cik="0009876543",
+            primary_symbol="SYNTH_RET",
+            share_class=None,
+            created_at_utc="2026-10-17T00:00:00Z",
+            status="RETIRED",
+        )
+        engine._security_registry[sec.internal_security_id] = sec
+        engine._cik_to_securities.setdefault("0009876543", set()).add(sec.internal_security_id)
+
+        assoc = EffectiveDatedListingAssociation(
+            association_id="ASSOC_TEST_RET",
+            internal_security_id=sec.internal_security_id,
+            symbol="SYNTH_RET",
+            operating_mic="XNAS",
+            effective_from="2026-10-17",
+            effective_to=None,
+        )
+        engine._association_ledger[assoc.association_id] = assoc
+        engine._active_listing_index.setdefault(("SYNTH_RET", "XNAS"), []).append(assoc)
+
+        synth_prop = create_synthetic_proposal("SYNTH_RET", "XNAS", "0009876543")
+        plan = IdentityAdoptionDryRunEngine.generate_plan(
+            proposals=[synth_prop],
+            existing_target=engine,
+            authorization=synthetic_authorization,
+        )
+
+        assert plan.summary.entities_blocked == 1
+        assert plan.entities[0].status == IdentityAdoptionStatus.BLOCKED_ASSOCIATION_CONFLICT
+        assert "Inactive target security" in plan.entities[0].rationale
+
+    def test_corrupted_multi_active_locator_fails_closed(self, synthetic_authorization):
+        from analyst_dashboard.universe.admission_mapping import EffectiveDatedListingAssociation, InternalSecurityRecord
+
+        engine = OfflineAdmissionMappingEngine()
+        sec1 = InternalSecurityRecord(
+            internal_security_id="ARX_SEC_MULTI1",
+            issuer_cik="0009876543",
+            primary_symbol="SYNTH_MA",
+            share_class=None,
+            created_at_utc="2026-10-17T00:00:00Z",
+            status="ACTIVE",
+        )
+        sec2 = InternalSecurityRecord(
+            internal_security_id="ARX_SEC_MULTI2",
+            issuer_cik="0009876543",
+            primary_symbol="SYNTH_MA",
+            share_class=None,
+            created_at_utc="2026-10-17T00:00:00Z",
+            status="ACTIVE",
+        )
+        engine._security_registry[sec1.internal_security_id] = sec1
+        engine._security_registry[sec2.internal_security_id] = sec2
+
+        assoc1 = EffectiveDatedListingAssociation(
+            association_id="ASSOC_MA1",
+            internal_security_id=sec1.internal_security_id,
+            symbol="SYNTH_MA",
+            operating_mic="XNAS",
+            effective_from="2026-10-17",
+            effective_to=None,
+        )
+        assoc2 = EffectiveDatedListingAssociation(
+            association_id="ASSOC_MA2",
+            internal_security_id=sec2.internal_security_id,
+            symbol="SYNTH_MA",
+            operating_mic="XNAS",
+            effective_from="2026-10-17",
+            effective_to=None,
+        )
+        engine._association_ledger[assoc1.association_id] = assoc1
+        engine._association_ledger[assoc2.association_id] = assoc2
+        engine._active_listing_index.setdefault(("SYNTH_MA", "XNAS"), []).extend([assoc1, assoc2])
+
+        synth_prop = create_synthetic_proposal("SYNTH_MA", "XNAS", "0009876543")
+        plan = IdentityAdoptionDryRunEngine.generate_plan(
+            proposals=[synth_prop],
+            existing_target=engine,
+            authorization=synthetic_authorization,
+        )
+
+        assert plan.summary.entities_blocked == 1
+        assert plan.entities[0].status == IdentityAdoptionStatus.BLOCKED_ASSOCIATION_CONFLICT
+        assert "Overlapping active associations conflict" in plan.entities[0].rationale
+
 
 class TestSameIssuerDistinctSecurityCollision:
     """Verifies that distinct share classes sharing an issuer collision fail closed on overlapping locators."""
