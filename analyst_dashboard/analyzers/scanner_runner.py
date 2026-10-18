@@ -266,6 +266,8 @@ class VCPScannerRunner:
 
             universe_size = len(universe)
             scanned_successfully_count = 0
+            computed_evaluations_count = 0
+            uncomputed_evaluations_count = 0
             unavailable_reasons: Dict[str, int] = {}
             qualified_candidates: List[Dict[str, Any]] = []
 
@@ -289,9 +291,32 @@ class VCPScannerRunner:
 
                 exec_res = OptimalExecutionEngine.calculate_trade_levels(df, current_price, user_role="LONG_TERM")
 
-                # Qualification ruleset: Must be confirmed VCP in Stage 2 Advancing Growth Phase
-                is_vcp = exec_res.get("vcp_contraction_status") == "VCP 3-Stage Compression Confirmed"
-                is_stage_2 = exec_res.get("stage_phase") == "Stage 2 Advancing Growth Phase"
+                # Compute actual moving averages directly from daily candles
+                close_s = df["Close"]
+                actual_sma_50 = round(float(close_s.rolling(50).mean().iloc[-1]), 4) if len(close_s) >= 50 else None
+                actual_ema_20 = round(float(close_s.ewm(span=20, adjust=False).mean().iloc[-1]), 4) if len(close_s) >= 20 else None
+
+                # Truthfulness Invariant: OptimalExecutionEngine evaluates tactical execution corridors (entry/stop/target/ATR).
+                # Its legacy strategy 2.0.0 heuristic strings ("Minervini VCP", "Stage 2") on 60-bar windows
+                # do not constitute authoritative VCP domain classification or 200-session trend template qualification.
+                # A 60-bar query window is epistemically incapable of evaluating a 200-session trend template.
+                # Operational runner rejects the legacy false-certification fallback and enforces uncomputed status:
+                vcp_authoritative_computed = bool(exec_res.get("vcp_authoritative_evaluated", False))
+
+                if vcp_authoritative_computed:
+                    vcp_status = exec_res.get("vcp_contraction_status")
+                    stage_status = exec_res.get("stage_phase")
+                    setup_pattern = exec_res.get("setup_pattern")
+                    computed_evaluations_count += 1
+                else:
+                    vcp_status = "Consolidation Unverified"
+                    stage_status = "Stage Unverified (Trend Template Uncomputed)"
+                    setup_pattern = "Consolidation Setup (Pattern Unverified)"
+                    uncomputed_evaluations_count += 1
+
+                # Qualification ruleset: Must be authoritatively confirmed VCP in Stage 2 Advancing Growth Phase
+                is_vcp = vcp_authoritative_computed and (vcp_status == "VCP 3-Stage Compression Confirmed")
+                is_stage_2 = vcp_authoritative_computed and (stage_status == "Stage 2 Advancing Growth Phase")
 
                 if is_vcp and is_stage_2:
                     # Calculate multi-factor confluence conviction score
@@ -300,8 +325,8 @@ class VCPScannerRunner:
                         technical_data={
                             "executionStatus": exec_res["execution_status"],
                             "riskRewardRatio": exec_res["risk_reward_ratio"],
-                            "setup_pattern": exec_res["setup_pattern"],
-                            "stage_phase": exec_res["stage_phase"],
+                            "setup_pattern": setup_pattern,
+                            "stage_phase": stage_status,
                             "rsi_14": exec_res.get("rsi_14"),
                             "stop_loss": exec_res["stop_loss"],
                             "current_price": current_price,
@@ -310,11 +335,11 @@ class VCPScannerRunner:
                     score = round(float(conf_res.get("confluenceScore", 75.0)), 1)
 
                     scanner_evidence = {
-                        "vcp_stage": exec_res.get("vcp_contraction_status"),
-                        "setup_pattern": exec_res.get("setup_pattern"),
-                        "stage_phase": exec_res.get("stage_phase"),
-                        "sma_50": exec_res.get("breakout_pivot"),
-                        "ema_20": exec_res.get("optimal_entry_min"),
+                        "vcp_stage": vcp_status,
+                        "setup_pattern": setup_pattern,
+                        "stage_phase": stage_status,
+                        "sma_50": actual_sma_50,
+                        "ema_20": actual_ema_20,
                         "atr_14": exec_res.get("atr_14"),
                         "breakout_pivot": exec_res.get("breakout_pivot"),
                         "optimal_entry_min": exec_res.get("optimal_entry_min"),
@@ -425,6 +450,32 @@ class VCPScannerRunner:
                 freshness_policy_hash=CANONICAL_VCP_FRESHNESS_HASH,
             )
 
+            # Resolve 4-way semantic state:
+            # Scenario A: Computed evaluation with zero matches (e.g. empty universe or computed 0-match)
+            # Scenario B: Uncomputed / pipeline pending (pattern unverified across evaluated assets)
+            # Scenario C: Evaluation failed / insufficient data
+            # Scenario D: Computed with supported matches
+            if eval_report.decision != PublicationDecision.PUBLISH:
+                status_at_pub = ScannerStatus.ERROR
+                effective_matched_count = None
+            elif len(qualified_candidates) > 0:
+                status_at_pub = ScannerStatus.AVAILABLE
+                effective_matched_count = len(qualified_candidates)
+            elif universe_size == 0:
+                status_at_pub = ScannerStatus.AVAILABLE
+                effective_matched_count = 0
+            elif scanned_successfully_count == 0:
+                status_at_pub = ScannerStatus.ERROR
+                effective_matched_count = None
+            elif computed_evaluations_count == 0 and uncomputed_evaluations_count > 0:
+                status_at_pub = ScannerStatus.PIPELINE_PENDING
+                effective_matched_count = None
+            else:
+                status_at_pub = ScannerStatus.AVAILABLE
+                effective_matched_count = 0
+
+            coverage_metadata["matched_count"] = effective_matched_count
+
             snapshot_id = f"vcp-snap-{int(time.time())}-{uuid.uuid4().hex[:8]}"
 
             provenance_dict: Dict[str, Any] = {
@@ -460,10 +511,10 @@ class VCPScannerRunner:
                 "semantic_fingerprint": semantic_fingerprint,
                 "generated_at": generated_at,
                 "data_as_of": data_as_of,
-                "status_at_publication": ScannerStatus.AVAILABLE.value if eval_report.decision == PublicationDecision.PUBLISH else ScannerStatus.ERROR.value,
+                "status_at_publication": status_at_pub.value,
                 "universe_id": "ARX_CANONICAL_LONG_TERM_V1",
                 "universe_size": universe_size,
-                "matched_count": matched_count,
+                "matched_count": effective_matched_count,
                 "results": qualified_candidates,
                 "provenance": provenance_dict,
                 "freshness": {
@@ -491,7 +542,7 @@ class VCPScannerRunner:
                 else:
                     self.snapshot_store.save_snapshot(snapshot_record)
                 self._cached_active_snapshot = snapshot_record
-                logger.info(f"VCP Scanner snapshot {snapshot_id} published successfully with {matched_count} matches.")
+                logger.info(f"VCP Scanner snapshot {snapshot_id} published successfully with status={status_at_pub.value}, matches={effective_matched_count}.")
             else:
                 if lease is not None:
                     self.coordinator.release(lease)
@@ -506,10 +557,10 @@ class VCPScannerRunner:
                 semantic_fingerprint=semantic_fingerprint,
                 generated_at=generated_at,
                 data_as_of=data_as_of,
-                status_at_publication=ScannerStatus.AVAILABLE if eval_report.decision == PublicationDecision.PUBLISH else ScannerStatus.ERROR,
+                status_at_publication=status_at_pub,
                 universe_id="ARX_CANONICAL_LONG_TERM_V1",
                 universe_size=universe_size,
-                matched_count=matched_count,
+                matched_count=effective_matched_count,
                 results=qualified_candidates,
                 provenance=snapshot_record["provenance"],
                 freshness=snapshot_record["freshness"],
@@ -523,21 +574,45 @@ class VCPScannerRunner:
             if acquired_thread_lock:
                 self._scan_lock.release()
 
+    def _has_unsupported_vcp_matches(self, rec: Dict[str, Any]) -> bool:
+        """Detect if a snapshot claims AVAILABLE matches but contains unverified or legacy proxy classifications."""
+        if rec.get("status_at_publication") not in (ScannerStatus.AVAILABLE.value, "AVAILABLE"):
+            return False
+        results = rec.get("results", [])
+        if not isinstance(results, list):
+            return False
+        for cand in results:
+            if not isinstance(cand, dict):
+                continue
+            evidence = cand.get("scanner_evidence", {})
+            setup_pattern = cand.get("setup_pattern") or evidence.get("setup_pattern", "")
+            vcp_stage = cand.get("vcp_stage") or evidence.get("vcp_stage", "")
+            stage_phase = cand.get("stage_phase") or evidence.get("stage_phase", "")
+
+            # Any unverified or uncomputed indicators in candidates claiming VCP qualification
+            if any("Unverified" in str(s) or "Uncomputed" in str(s) for s in [setup_pattern, vcp_stage, stage_phase]):
+                return True
+            # Legacy proxy fallback where VCP pattern was not detected or stage 2 is unconfirmed
+            if evidence.get("vcp_pattern_detected") is False and evidence.get("stage2_status") != "STAGE_2_CONFIRMED":
+                if "Minervini" in str(setup_pattern) or "VCP" in str(vcp_stage):
+                    return True
+        return False
+
     def get_active_or_latest_snapshot(self) -> Dict[str, Any]:
         """Retrieve active in-memory snapshot or load latest from store without initiating background scan execution."""
         try:
             if self._cached_active_snapshot is not None:
-                if self._cached_active_snapshot.get("implementation_release_sha") == CURRENT_IMPLEMENTATION_RELEASE_SHA:
+                if (
+                    self._cached_active_snapshot.get("implementation_release_sha") == CURRENT_IMPLEMENTATION_RELEASE_SHA
+                    and not self._has_unsupported_vcp_matches(self._cached_active_snapshot)
+                ):
                     latest_id = self.snapshot_store.get_latest_active_snapshot_id("MINERVINI_VCP")
                     if latest_id == self._cached_active_snapshot.get("snapshot_id"):
                         return self._to_envelope(self._cached_active_snapshot)
 
             persisted = self.snapshot_store.get_latest_active_snapshot("MINERVINI_VCP")
             if persisted is not None:
-                if persisted.get("implementation_release_sha") == CURRENT_IMPLEMENTATION_RELEASE_SHA:
-                    self._cached_active_snapshot = persisted
-                    return self._to_envelope(persisted)
-                else:
+                if persisted.get("implementation_release_sha") != CURRENT_IMPLEMENTATION_RELEASE_SHA:
                     return self._to_status_envelope(
                         status=ScannerStatus.PIPELINE_PENDING,
                         reason="RELEASE_MISMATCH",
@@ -546,6 +621,15 @@ class VCPScannerRunner:
                             f"does not match current release ({CURRENT_IMPLEMENTATION_RELEASE_SHA}). Pipeline execution pending."
                         ),
                     )
+                if self._has_unsupported_vcp_matches(persisted):
+                    logger.warning("VCPScannerRunner: retained snapshot contains unsupported VCP matches; failing closed to PIPELINE_PENDING.")
+                    return self._to_status_envelope(
+                        status=ScannerStatus.PIPELINE_PENDING,
+                        reason="UNSUPPORTED_LEGACY_MATCHES",
+                        detail="Retained scanner snapshot contains unsupported or unverified VCP classifications. Pipeline execution pending.",
+                    )
+                self._cached_active_snapshot = persisted
+                return self._to_envelope(persisted)
 
             # Store is empty / cache miss: fail closed to PIPELINE_PENDING without initiating execution
             return self._to_status_envelope(

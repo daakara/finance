@@ -156,7 +156,7 @@ class ImmutableScannerSnapshot:
     status_at_publication: ScannerStatus
     universe_id: str
     universe_size: int
-    matched_count: int
+    matched_count: Optional[int]
     results: List[Dict[str, Any]]
     provenance: Dict[str, Any]
     freshness: Dict[str, Any]

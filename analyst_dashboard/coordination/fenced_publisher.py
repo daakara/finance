@@ -12,6 +12,7 @@ import uuid
 from typing import Dict, Any, Optional
 
 from analyst_dashboard.data.market_db import retry_sqlite
+from analyst_dashboard.data.scanner_store import ensure_scanner_snapshots_table
 from .contracts import (
     CurrentLease,
     EventType,
@@ -126,34 +127,8 @@ class FencedPublisher:
             provenance_dict = dict(snapshot_data.get("provenance", {}))
             provenance_dict["coordination"] = lease.to_provenance()
 
-            # Ensure scanner_snapshots table exists
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS scanner_snapshots (
-                    snapshot_id TEXT PRIMARY KEY,
-                    scanner_id TEXT NOT NULL,
-                    run_id TEXT NOT NULL,
-                    api_contract_version TEXT NOT NULL,
-                    ruleset_version TEXT NOT NULL,
-                    evidence_schema_version TEXT NOT NULL,
-                    score_model_version TEXT NOT NULL,
-                    data_provenance_version TEXT NOT NULL,
-                    universe_version TEXT NOT NULL,
-                    freshness_policy_version TEXT NOT NULL,
-                    implementation_release_sha TEXT NOT NULL,
-                    semantic_fingerprint TEXT NOT NULL,
-                    generated_at TEXT NOT NULL,
-                    data_as_of TEXT NOT NULL,
-                    status_at_publication TEXT NOT NULL,
-                    universe_id TEXT NOT NULL,
-                    universe_size INTEGER NOT NULL,
-                    matched_count INTEGER NOT NULL,
-                    results_json TEXT NOT NULL,
-                    provenance_json TEXT NOT NULL,
-                    freshness_json TEXT NOT NULL,
-                    publication_decision TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-            """)
+            # Ensure scanner_snapshots table exists (with nullable matched_count)
+            ensure_scanner_snapshots_table(conn)
 
             # 3. Insert Immutable Snapshot Record
             conn.execute("""

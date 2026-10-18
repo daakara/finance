@@ -136,18 +136,18 @@ def get_radar_capabilities(vcp_snapshot: Optional[Dict[str, Any]] = None) -> Dic
                 "rationale": "Authentic Minervini Volatility Contraction Pattern universe screening active with deterministic publication integrity.",
             }
         elif snap_status == "PIPELINE_PENDING":
-            reason = vcp_snapshot.get("reason", "NO_ACTIVE_SNAPSHOT")
+            reason = vcp_snapshot.get("reason", "UNCOMPUTED_CLASSIFICATION" if vcp_snapshot.get("snapshot_id") else "NO_ACTIVE_SNAPSHOT")
             caps["VCP"] = {
                 "status": "PIPELINE_PENDING",
                 "universeScreening": "PIPELINE_PENDING",
                 "singleAssetAnalysis": "AVAILABLE",
                 "matchedCount": None,
-                "dataAsOf": None,
-                "generatedAt": None,
-                "snapshotId": None,
-                "freshnessStatus": "UNKNOWN",
+                "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
+                "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
+                "snapshotId": vcp_snapshot.get("snapshot_id"),
+                "freshnessStatus": freshness_info.get("status", "UNKNOWN"),
                 "reason": reason,
-                "rationale": vcp_snapshot.get("detail", "VCP scanner snapshot pipeline pending publication."),
+                "rationale": vcp_snapshot.get("detail") or "Automated market-wide volatility contraction screening is pending authoritative classifier integration.",
             }
         elif snap_status == "ERROR":
             caps["VCP"] = {
