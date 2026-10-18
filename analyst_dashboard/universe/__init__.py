@@ -80,6 +80,14 @@ from .identity_adoption import (
     apply_adoption_plan_test_only,
 )
 
+from .identity_persistence import (
+    APPROVED_ARCHITECTURAL_PRINCIPLE,
+    IdentityApplicationStatus,
+    IdentityApplicationOutcome,
+    SqliteIdentityRepository,
+    IdentityPlanApplicationService,
+)
+
 __all__ = [
     "UNIVERSE_ID",
     "UNIVERSE_VERSION",
@@ -142,6 +150,11 @@ __all__ = [
     "PlanIntegrityError",
     "PlanApplicationError",
     "apply_adoption_plan_test_only",
+    "APPROVED_ARCHITECTURAL_PRINCIPLE",
+    "IdentityApplicationStatus",
+    "IdentityApplicationOutcome",
+    "SqliteIdentityRepository",
+    "IdentityPlanApplicationService",
 ]
 
 
