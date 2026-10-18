@@ -265,18 +265,26 @@ A comprehensive field-by-field audit was conducted reconciling the integrated Ro
 | SourceSecurity Field | Retained Route A / Registry Provenance | Normalization / Adjudication Logic | Status for Conversion |
 | :--- | :--- | :--- | :---: |
 | **`symbol`** | Authoritative SEC CIK filings (`0000320193`, `0001652044`), Nasdaq directory, Polygon reference payload (`AAPL`, `GOOG`, `GOOGL`), OpenFIGI mappings. | Exact uppercase ticker match across all sources. Preserved without alteration. | 🟢 **SATISFIED** |
-| **`exchange`** | Polygon reference ticker payload: `primary_exchange: "XNAS"`. | Normalized to canonical exchange vocabulary `NASDAQ` via `SupportedVenueNormalizer` per Rule R04 allowlist (`NASDAQ`, `NYSE`, `BATS`, `AMEX`, `ARCA`). Raw MIC `XNAS` retained in provenance. | 🟢 **SATISFIED** |
+| **`exchange`** | Polygon reference ticker payload: `primary_exchange: "XNAS"`. | Normalized to canonical exchange vocabulary `NASDAQ` via `SupportedVenueNormalizer`. **Canonical Builder Rule R04 Allowlist**: `{"NASDAQ", "NYSE", "ARCA", "BATS"}`. (`AMEX` is a venue recognized by the normalizer, but is **NOT** included in builder eligibility Rule R04). Raw MIC `XNAS` retained in provenance. | 🟢 **SATISFIED** |
 | **`primary_listing`** | Polygon Reference Ticker API: direct assertion `primary_exchange: "XNAS"`. | `PrimaryListingEvidenceAdapter` parses provider claim: `assigned_primary_listing = True`, `is_direct_assertion = True`. Directly satisfies Rule R06 primary-listing designation. | 🟢 **SATISFIED** |
-| **`currency`** | Polygon reference payload: `currency_name: "usd"`; Nasdaq listed book trading currency: `USD`. | **Trading Currency Honesty**: Evaluated as instrument trading currency on the operating exchange, **NOT** corporate financial reporting currency (though both coincide as USD here). Mapped to `USD`. | 🟢 **SATISFIED** |
-| **`listing_country`** | Polygon reference payload: `locale: "us"`; Nasdaq US domestic market directory. | **Venue Jurisdiction Honesty**: Evaluated as exchange listing jurisdiction (`USA`), **NOT** statutory incorporation domicile (e.g., Delaware state charter). Mapped to `USA`. | 🟢 **SATISFIED** |
-| **`selected_us_assessment_listing`** | Pipeline execution parameter for ARX Terminal primary US assessment line. | Explicit boolean flag designating the instrument for US assessment evaluation. | 🟢 **SATISFIED** |
-| **`listing_status`** | Polygon reference payload: `active: true`; Nasdaq directory record `N` (active listing). | Direct provider assertion: `ACTIVE`. Confirmed `delisting_date = None`, `trading_suspension_date = None`. | 🟢 **SATISFIED** |
+| **`currency`** | Polygon reference payload: `currency_name: "usd"`; Nasdaq listed book trading currency: `USD`. | **Trading Currency Honesty**: Evaluated as instrument trading currency on the operating exchange venue, **NOT** corporate financial reporting currency (though both happen to be USD here). Mapped to `USD`. | 🟢 **SATISFIED** |
+| **`listing_country`** | Polygon reference payload: `locale: "us"`; Nasdaq US domestic market directory. | **Venue Jurisdiction Honesty**: Evaluated as exchange listing jurisdiction (`USA`) normalized from verified listing venue (`XNAS` / `NASDAQ`) using supported venue mappings, **NOT** corporate statutory incorporation domicile (which remains SEC EDGAR CIK state of incorporation). Mapped to `USA`. | 🟢 **SATISFIED** |
+| **`selected_us_assessment_listing`** | Explicit pipeline execution parameter for ARX Terminal primary US assessment line. | **Assessment Choice Honesty**: An explicit analyst/pipeline assessment choice configuring the evaluation scope, **NOT** a provider evidence claim. Mapped to `True`. | 🟢 **SATISFIED (Configured)** |
+| **`listing_status`** | Polygon reference payload: `active: true`. Nasdaq directory columns: `Financial Status = "N"` (means "Normal" financial status per Nasdaq Trader specifications; NOT an affirmative active-listing claim), `Test Issue = "N"` (not a test symbol). | **Attributable Provider Assertion**: Direct provider assertion `active: true` mapped to `ACTIVE`. Absences: `delisting_date = None` and `trading_suspension_date = None` reflect null/absent fields in the active ticker payload, **NOT** independently verified historical delisting clearances. | 🟢 **SATISFIED** |
 | **`asset_class`** | Polygon reference payload: `market: "stocks"`; Alpaca reference: `class: "us_equity"`. | Mapped to domain enum `EQUITY`. | 🟢 **SATISFIED** |
 | **`security_type`** | Polygon: `type: "CS"`; Nasdaq directory: common share; OpenFIGI: `Common Stock`. | Mapped to domain enum `COMMON_STOCK`. For `GOOG` (Class C Capital Stock), classified as non-voting common equity under Rule R02. | 🟢 **SATISFIED** |
-| **`security_id`** | Canonical unapproved registration plan allocations: `ARX_SEC_0B4C728FE0BE` (`AAPL`), `ARX_SEC_A11A24D442E2` (`GOOG`), `ARX_SEC_B7EF9ED7A35A` (`GOOGL`). | **SINGLE REMAINING BLOCKER**: Identity plan application is unapproved (`exact_plan_approval = ABSENT`, `application_authorized = False`). Production identity adoption is disabled (`PRODUCTION_IDENTITY_ADOPTION_DISABLED`). Real execution cannot fabricate or inject unadopted IDs. | 🔴 **BLOCKED (Unadopted Identity)** |
+| **`security_id`** | Canonical unapproved registration plan allocations: `ARX_SEC_0B4C728FE0BE` (`AAPL`), `ARX_SEC_A11A24D442E2` (`GOOG`), `ARX_SEC_B7EF9ED7A35A` (`GOOGL`). | **ADOPTION BLOCKER**: Identity plan application is unapproved (`exact_plan_approval = ABSENT`, `application_authorized = False`). Production identity adoption is disabled (`PRODUCTION_IDENTITY_ADOPTION_DISABLED`). Real execution fails closed on missing adopted `security_id` (Rule R01 required field). | 🔴 **BLOCKED (Unadopted Identity)** |
 
-#### Provenance Synthesis
-All required market, venue, jurisdiction, currency, status, and primary-listing evidence fields are **fully satisfied by authentic retained data**. Zero assumptions, heuristic fallbacks, or synthetic values are utilized for market attributes. The **sole remaining blocker** preventing `SourceSecurity` conversion and subsequent universe admission is the lack of approved, persistent internal identity adoption (`security_id`).
+#### Provenance & Blocker Synthesis
+- **Provider Evidence vs. Documented Normalization vs. Assessment Choices**:
+  - **Provider Evidence**: `symbol` (`AAPL`, `GOOG`, `GOOGL`), `primary_exchange` (`XNAS`), `active` (`true`), `market` (`stocks`), `type` (`CS`), `currency_name` (`usd`).
+  - **Documented Normalization**: `exchange` normalized to canonical `NASDAQ` (Rule R04 allows `NASDAQ, NYSE, ARCA, BATS`; normalizer also knows `AMEX` and `IEX`, but builder eligibility strictly excludes them); `listing_country` normalized from verified venue `XNAS` -> `USA`; `listing_status` normalized from `active: true` -> `ACTIVE`; `asset_class` -> `EQUITY`; `security_type` -> `COMMON_STOCK`.
+  - **Assessment Choice**: `selected_us_assessment_listing = True` is an explicit pipeline configuration parameter, not a provider observation.
+  - **Corporate Domicile**: Corporate statutory domicile is distinct from venue listing jurisdiction and is preserved from SEC EDGAR CIK filings.
+- **Conversion and Admission Blockers**:
+  - In genuine real-source replay, **`security_id` remains the immediate executable conversion blocker** because production identity adoption is disabled (`PRODUCTION_IDENTITY_ADOPTION_DISABLED`), preventing `to_source_security()` from completing under Rule R01.
+  - The counterfactual simulation probe passing with provisional IDs demonstrates mechanical conversion feasibility, but does **NOT** grant actual admission or builder authority.
+  - Upstream governance dependencies for production activation remain: exact plan human approval (`exact_plan_approval = ABSENT`), production identity store initialization (`identity.db` remains uninitialized), and explicit universe publication authorization.
 
 ---
 
@@ -397,7 +405,7 @@ Suite 5: tests/test_universe_offline_build_coverage.py
 The following reviewable PR title and description have been prepared for the eventual submission of this candidate branch:
 
 #### Proposed PR Title
-`feat(universe): integrate Route A primary-listing evidence with three-candidate identity registration plan`
+`feat(universe): prepare unapproved identity registration plans with verified primary-listing evidence`
 
 #### Proposed PR Description
 ```markdown
@@ -415,26 +423,32 @@ Integrates the completed Route A primary-listing evidence path (from `research/s
    - `production_target = "PROPOSED_NOT_INITIALIZED"`
    - Plan ID: `PLAN_ADOPT_3C5D8B5E3D39`
    - Content SHA-256 Digest: `3c5d8b5e3d39453332141dcb5ab818eba5f503fba43f67dbf7d464b298f365c6`
-3. **Strict Separation of Stores**:
+3. **Distinct Same-Issuer Opaque Identities**:
+   - `AAPL`: `ARX_SEC_0B4C728FE0BE`
+   - `GOOG` (Class C Capital Stock): `ARX_SEC_A11A24D442E2`
+   - `GOOGL` (Class A Common Stock): `ARX_SEC_B7EF9ED7A35A`
+   - Opaque IDs remain unadopted in production stores.
+4. **Strict Separation of Stores**:
    - Ephemeral `/app/data/operational/security_master.db` remains a separate 24h market cache.
    - Proposed durable `/root/analyst_dashboard/data/identity.db` remains uncreated and uninitialized (baseline digest `ea11990ec0e3...`).
 
 ### Field-by-Field Evidence Reconciliation
 - `symbol`: Retained across filings, directories, and provider responses (`AAPL`, `GOOG`, `GOOGL`).
-- `exchange`: Stated MIC `XNAS` normalized to canonical `NASDAQ` under Rule R04.
-- `primary_listing`: Route A Polygon Reference Ticker direct assertion (`primary_exchange: XNAS`) parsed cleanly as `True`.
-- `currency`: Stated trading currency `USD` (distinguished from corporate reporting currency).
-- `listing_country`: Stated exchange listing jurisdiction `USA` (distinguished from state of incorporation).
-- `selected_us_assessment_listing`: `True` for US assessment pipeline.
-- `listing_status`: Verified active (`ACTIVE`).
-- `asset_class`: `EQUITY`.
+- `exchange`: Stated MIC `XNAS` normalized to canonical `NASDAQ` under canonical Rule R04 allowlist (`NASDAQ`, `NYSE`, `ARCA`, `BATS`). Note that venue normalizer recognizes `AMEX` and `IEX`, but builder eligibility strictly excludes them.
+- `primary_listing`: Route A Polygon Reference Ticker direct assertion (`primary_exchange: XNAS`) parsed cleanly as `True` under Rule R06.
+- `currency`: Provider trading currency `usd` -> `USD` on operating venue (distinguished from corporate reporting currency).
+- `listing_country`: Venue listing jurisdiction `USA` normalized from verified venue `XNAS`/`NASDAQ` (distinguished from state of statutory incorporation).
+- `selected_us_assessment_listing`: Explicit pipeline assessment configuration choice (`True`), not a provider claim.
+- `listing_status`: Provider assertion `active: true` -> `ACTIVE`. Nasdaq directory column `Financial Status = N` indicates Normal financial status per specifications, not an active-listing claim.
+- `asset_class`: Provider market `stocks` / broker `us_equity` -> `EQUITY`.
 - `security_type`: `COMMON_STOCK` (Alphabet Class C non-voting equity classified under R02).
-- `security_id`: **Single remaining blocker**. Unadopted in production stores (`PRODUCTION_IDENTITY_ADOPTION_DISABLED`).
+- `security_id`: **Immediate conversion blocker in real replay**. Unadopted in production stores (`PRODUCTION_IDENTITY_ADOPTION_DISABLED`).
 
 ### Replay & Builder Verification
-- **Real-Source Execution**: With real-source constraints (`is_simulation=False`), conversion fails closed on unadopted security IDs: 0 converted, 0 admitted, builder `NOT_RUN`.
-- **Counterfactual Probe**: Isolated simulation (`is_simulation=True`) with provisional IDs converts all 3: batch validity `True`, 3 admitted, builder `READY_FOR_BUILDER`. (Strictly qualified as a test probe).
+- **Real-Source Execution**: With real-source constraints (`is_simulation=False`), conversion fails closed on unadopted security IDs: exactly 0 converted, 0 admitted, builder `NOT_RUN`.
+- **Counterfactual Probe**: Isolated simulation (`is_simulation=True`) with provisional IDs converts all 3: batch validity `True`, 3 admitted, builder `READY_FOR_BUILDER`. (Strictly qualified as a test probe; `READY_FOR_BUILDER` is not builder execution).
 - **7-Candidate Population**: Whole-batch protection fails closed (0 admitted, builder `NOT_RUN`).
+- **Operational Authority**: No publication or scanner activation is included.
 
 ### Test Evidence
 123 passed, 3 skipped across 5 suites:

@@ -1816,9 +1816,15 @@ class TestRouteADirectPrimaryDesignationAdjudication:
         validates SHA-256 byte digests, confirms agreement across ticker, CIK, primary exchange,
         composite FIGI, and share-class FIGI, and rejects tampered or unverified manual flags.
         """
-        route_a_records = PrimaryListingEvidenceAdapter.load_three_candidate_route_a_evidence(verify_raw_payloads=True)
+        route_a_records = PrimaryListingEvidenceAdapter.load_three_candidate_route_a_evidence(
+            verify_raw_payloads=True, allow_synthetic_fallback=False
+        )
         if not route_a_records:
             pytest.skip("Route A evidence file not present in workspace")
+
+        aapl_rec = route_a_records.get("AAPL")
+        if not aapl_rec or not aapl_rec.source_artifact or not Path(aapl_rec.source_artifact).exists():
+            pytest.skip("Route A raw payload not present in workspace")
 
         for sym, rec in route_a_records.items():
             assert rec.assigned_primary_listing is True
