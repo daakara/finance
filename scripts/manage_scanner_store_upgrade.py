@@ -282,14 +282,150 @@ def create_and_verify_backup(
     }
 
 
+def migrate_scanner_snapshots_table_schema(conn: sqlite3.Connection) -> None:
+    """
+    Self-contained schema migration for scanner_snapshots table.
+    Ensures table exists and migrates NOT NULL matched_count to nullable INTEGER.
+    Rebuilds indexes and immutability triggers inside the caller's transaction.
+    """
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(scanner_snapshots);")
+    cols = cursor.fetchall()
+    if not cols:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS scanner_snapshots (
+                snapshot_id TEXT PRIMARY KEY,
+                scanner_id TEXT NOT NULL,
+                run_id TEXT NOT NULL,
+                api_contract_version TEXT NOT NULL,
+                ruleset_version TEXT NOT NULL,
+                evidence_schema_version TEXT NOT NULL,
+                score_model_version TEXT NOT NULL,
+                data_provenance_version TEXT NOT NULL,
+                universe_version TEXT NOT NULL,
+                freshness_policy_version TEXT NOT NULL,
+                implementation_release_sha TEXT NOT NULL,
+                semantic_fingerprint TEXT NOT NULL,
+                generated_at TEXT NOT NULL,
+                data_as_of TEXT NOT NULL,
+                status_at_publication TEXT NOT NULL,
+                universe_id TEXT NOT NULL,
+                universe_size INTEGER NOT NULL,
+                matched_count INTEGER,
+                results_json TEXT NOT NULL,
+                provenance_json TEXT NOT NULL,
+                freshness_json TEXT NOT NULL,
+                publication_decision TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_snapshots_scanner_created ON scanner_snapshots (scanner_id, created_at DESC);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_snapshots_run_id ON scanner_snapshots (run_id);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_snapshots_fingerprint ON scanner_snapshots (semantic_fingerprint);")
+        cursor.execute("""
+            CREATE TRIGGER IF NOT EXISTS trg_scanner_snapshots_no_update
+            BEFORE UPDATE ON scanner_snapshots
+            BEGIN
+                SELECT RAISE(ABORT, 'IMMUTABILITY_VIOLATION: scanner_snapshots rows cannot be updated in place');
+            END;
+        """)
+        cursor.execute("""
+            CREATE TRIGGER IF NOT EXISTS trg_scanner_snapshots_no_delete
+            BEFORE DELETE ON scanner_snapshots
+            BEGIN
+                SELECT RAISE(ABORT, 'IMMUTABILITY_VIOLATION: scanner_snapshots rows cannot be deleted');
+            END;
+        """)
+        return
+
+    # Check nullability of matched_count
+    # SQLite PRAGMA table_info returns tuples/rows: (cid, name, type, notnull, dflt_value, pk)
+    matched_col = next((c for c in cols if (c[1] if isinstance(c, tuple) else c["name"]) == "matched_count"), None)
+    is_not_null = bool(matched_col and (matched_col[3] if isinstance(matched_col, tuple) else matched_col["notnull"]) == 1)
+    if is_not_null:
+        actual_cols = {(c[1] if isinstance(c, tuple) else c["name"]) for c in cols}
+        missing_cols = REQUIRED_SNAPSHOT_COLUMNS - actual_cols
+        if missing_cols:
+            raise RuntimeError(
+                f"UNSUPPORTED_SCHEMA_SHAPE: scanner_snapshots missing required columns {sorted(missing_cols)}. Migration aborted."
+            )
+
+        cursor.execute("DROP TABLE IF EXISTS _scanner_snapshots_migration_new;")
+        cursor.execute("""
+            CREATE TABLE _scanner_snapshots_migration_new (
+                snapshot_id TEXT PRIMARY KEY,
+                scanner_id TEXT NOT NULL,
+                run_id TEXT NOT NULL,
+                api_contract_version TEXT NOT NULL,
+                ruleset_version TEXT NOT NULL,
+                evidence_schema_version TEXT NOT NULL,
+                score_model_version TEXT NOT NULL,
+                data_provenance_version TEXT NOT NULL,
+                universe_version TEXT NOT NULL,
+                freshness_policy_version TEXT NOT NULL,
+                implementation_release_sha TEXT NOT NULL,
+                semantic_fingerprint TEXT NOT NULL,
+                generated_at TEXT NOT NULL,
+                data_as_of TEXT NOT NULL,
+                status_at_publication TEXT NOT NULL,
+                universe_id TEXT NOT NULL,
+                universe_size INTEGER NOT NULL,
+                matched_count INTEGER,
+                results_json TEXT NOT NULL,
+                provenance_json TEXT NOT NULL,
+                freshness_json TEXT NOT NULL,
+                publication_decision TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        cursor.execute("""
+            INSERT INTO _scanner_snapshots_migration_new (
+                snapshot_id, scanner_id, run_id, api_contract_version, ruleset_version,
+                evidence_schema_version, score_model_version, data_provenance_version,
+                universe_version, freshness_policy_version, implementation_release_sha,
+                semantic_fingerprint, generated_at, data_as_of, status_at_publication,
+                universe_id, universe_size, matched_count, results_json, provenance_json,
+                freshness_json, publication_decision, created_at
+            )
+            SELECT
+                snapshot_id, scanner_id, run_id, api_contract_version, ruleset_version,
+                evidence_schema_version, score_model_version, data_provenance_version,
+                universe_version, freshness_policy_version, implementation_release_sha,
+                semantic_fingerprint, generated_at, data_as_of, status_at_publication,
+                universe_id, universe_size, matched_count, results_json, provenance_json,
+                freshness_json, publication_decision, created_at
+            FROM scanner_snapshots;
+        """)
+        cursor.execute("DROP TRIGGER IF EXISTS trg_scanner_snapshots_no_update;")
+        cursor.execute("DROP TRIGGER IF EXISTS trg_scanner_snapshots_no_delete;")
+        cursor.execute("DROP TABLE scanner_snapshots;")
+        cursor.execute("ALTER TABLE _scanner_snapshots_migration_new RENAME TO scanner_snapshots;")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_snapshots_scanner_created ON scanner_snapshots (scanner_id, created_at DESC);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_snapshots_run_id ON scanner_snapshots (run_id);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_snapshots_fingerprint ON scanner_snapshots (semantic_fingerprint);")
+        cursor.execute("""
+            CREATE TRIGGER IF NOT EXISTS trg_scanner_snapshots_no_update
+            BEFORE UPDATE ON scanner_snapshots
+            BEGIN
+                SELECT RAISE(ABORT, 'IMMUTABILITY_VIOLATION: scanner_snapshots rows cannot be updated in place');
+            END;
+        """)
+        cursor.execute("""
+            CREATE TRIGGER IF NOT EXISTS trg_scanner_snapshots_no_delete
+            BEFORE DELETE ON scanner_snapshots
+            BEGIN
+                SELECT RAISE(ABORT, 'IMMUTABILITY_VIOLATION: scanner_snapshots rows cannot be deleted');
+            END;
+        """)
+
+
 def apply_migration(db_path: str) -> Dict[str, Any]:
     """
-    Applies ensure_scanner_snapshots_table against db_path.
+    Applies schema migration against db_path.
     Requires db_path to exist. Migrates NOT NULL matched_count to nullable INTEGER
     inside a single atomic SQLite transaction, rebuilding indexes and immutability triggers.
+    Self-contained: does not depend on external module resolution.
     """
-    from analyst_dashboard.data.scanner_store import ensure_scanner_snapshots_table
-
     abs_target = os.path.abspath(db_path)
     if not os.path.isfile(abs_target):
         raise FileNotFoundError(f"Database not found: {abs_target}")
@@ -297,7 +433,7 @@ def apply_migration(db_path: str) -> Dict[str, Any]:
     conn = sqlite3.connect(abs_target, timeout=30.0)
     try:
         with conn:
-            ensure_scanner_snapshots_table(conn)
+            migrate_scanner_snapshots_table_schema(conn)
         return {
             "status": "MIGRATION_COMPLETED",
             "target_database_path": abs_target,
@@ -321,8 +457,6 @@ def verify_post_upgrade(
     5. No temporary staging table remains.
     6. Repeated ensure_scanner_snapshots_table is idempotent.
     """
-    from analyst_dashboard.data.scanner_store import ensure_scanner_snapshots_table
-
     abs_target = os.path.abspath(db_path)
     if os.path.abspath(baseline["target_database_path"]) != abs_target:
         raise ValueError(f"Baseline target mismatch: baseline is for {baseline['target_database_path']}, but target is {abs_target}")
@@ -383,10 +517,10 @@ def verify_post_upgrade(
     finally:
         conn.close()
 
-    # 7. Idempotency check: run ensure_scanner_snapshots_table on writable connection
+    # 7. Idempotency check: run migrate_scanner_snapshots_table_schema on writable connection
     conn_rw = sqlite3.connect(abs_target, timeout=30.0)
     try:
-        ensure_scanner_snapshots_table(conn_rw)
+        migrate_scanner_snapshots_table_schema(conn_rw)
     finally:
         conn_rw.close()
 
