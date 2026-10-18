@@ -224,14 +224,16 @@ class SqliteIdentityRepository:
     CREATE INDEX IF NOT EXISTS idx_audit_plan_id ON applied_plan_audit_ledger(plan_id);
     """
 
-    def __init__(self, db_path: Union[str, Path] = ":memory:"):
+    def __init__(
+        self,
+        db_path: Union[str, Path] = ":memory:",
+        read_only: bool = False,
+        auto_init: bool = True,
+    ):
         self.db_path = str(db_path)
         self.is_memory = self.db_path == ":memory:" or self.db_path.startswith("file::memory:")
-
-        if not self.is_memory:
-            p = Path(self.db_path).resolve()
-            p.parent.mkdir(parents=True, exist_ok=True)
-            self.db_path = str(p)
+        self.read_only = read_only
+        self.auto_init = auto_init
 
         self._persistent_conn: Optional[sqlite3.Connection] = None
         if self.is_memory:
@@ -239,17 +241,46 @@ class SqliteIdentityRepository:
             self._persistent_conn = sqlite3.connect(":memory:", check_same_thread=False)
             self._persistent_conn.row_factory = sqlite3.Row
             self._persistent_conn.execute("PRAGMA foreign_keys = ON;")
-            self._init_schema(self._persistent_conn)
+            if self.auto_init and not self.read_only:
+                self._init_schema(self._persistent_conn)
         else:
-            with self._get_connection() as conn:
-                conn.execute("PRAGMA foreign_keys = ON;")
+            p = Path(self.db_path).resolve()
+            if self.read_only:
+                if not p.exists():
+                    raise FileNotFoundError(f"Database file not found for read-only repository: {self.db_path}")
+                self.db_path = str(p)
+            else:
+                self.db_path = str(p)
+                if self.auto_init:
+                    p.parent.mkdir(parents=True, exist_ok=True)
+                    with self._get_connection() as conn:
+                        conn.execute("PRAGMA foreign_keys = ON;")
+                        conn.execute("PRAGMA journal_mode = WAL;")
+                        self._init_schema(conn)
+
+    def initialize_schema(self) -> None:
+        """Explicitly initializes database directory, connection, and tables."""
+        if self.read_only:
+            raise PermissionError("Cannot initialize schema on a read-only repository.")
+        if not self.is_memory:
+            p = Path(self.db_path).resolve()
+            p.parent.mkdir(parents=True, exist_ok=True)
+            self.db_path = str(p)
+        with self._get_connection() as conn:
+            conn.execute("PRAGMA foreign_keys = ON;")
+            if not self.is_memory:
                 conn.execute("PRAGMA journal_mode = WAL;")
-                self._init_schema(conn)
+            self._init_schema(conn)
 
     def _get_connection(self) -> sqlite3.Connection:
         if self.is_memory and self._persistent_conn is not None:
             return self._persistent_conn
-        conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        if self.read_only:
+            # Enforce SQLite driver-level read-only URI mode (?mode=ro)
+            uri = Path(self.db_path).resolve().as_uri()
+            conn = sqlite3.connect(f"{uri}?mode=ro", uri=True, check_same_thread=False)
+        else:
+            conn = sqlite3.connect(self.db_path, check_same_thread=False)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON;")
         return conn
@@ -265,6 +296,8 @@ class SqliteIdentityRepository:
         Guarantees that write locks are acquired immediately, preventing race conditions.
         Automatically commits on normal exit; executes ROLLBACK on any raised exception.
         """
+        if self.read_only:
+            raise PermissionError("Cannot initiate write transaction on a read-only repository.")
         conn = self._get_connection()
         conn.execute("BEGIN IMMEDIATE")
         try:
@@ -636,6 +669,8 @@ class SqliteIdentityRepository:
         Returns True if a new row was inserted; False if already exists with matching attributes (no-op).
         Raises ValueError if internal_security_id already exists with conflicting attributes.
         """
+        if self.read_only:
+            raise PermissionError("Cannot save security in a read-only repository.")
         c = conn or self._get_connection()
         try:
             cur = c.cursor()
@@ -719,6 +754,8 @@ class SqliteIdentityRepository:
         Validates date ordering and verifies interval overlaps across distinct securities.
         Returns True if a new row was inserted; False if already exists with matching attributes (no-op).
         """
+        if self.read_only:
+            raise PermissionError("Cannot save association in a read-only repository.")
         if assoc.effective_to and assoc.effective_to < assoc.effective_from:
             raise ValueError(
                 f"Contradictory date range: effective_to ({assoc.effective_to}) "
@@ -1183,7 +1220,7 @@ class IdentityPlanApplicationService:
 
 # ─── 4. Local Operator CLI Entry Point ────────────────────────────────────────
 
-def main() -> None:
+def main(argv: Optional[List[str]] = None) -> int:
     """
     Local operator command line interface for identity plan application.
     Requires an explicit local target --db-path with NO production default.
@@ -1200,6 +1237,14 @@ Strict Governance Requirements:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    # Subcommand: init / setup
+    init_parser = subparsers.add_parser("init", aliases=["setup"], help="Initialize empty repository schema on target database path.")
+    init_parser.add_argument("--db-path", required=True, help="Explicit target SQLite database path (REQUIRED).")
+
+    # Subcommand: inspect
+    inspect_parser = subparsers.add_parser("inspect", help="Inspect local repository entities and associations.")
+    inspect_parser.add_argument("--db-path", required=True, help="Explicit target SQLite database path (REQUIRED).")
+
     # Subcommand: apply
     apply_parser = subparsers.add_parser("apply", help="Apply a reviewed adoption plan to local repository.")
     apply_parser.add_argument("--db-path", required=True, help="Explicit target SQLite database path (REQUIRED, no default).")
@@ -1209,17 +1254,21 @@ Strict Governance Requirements:
     apply_parser.add_argument("--authorized-by", default=None, help="Operator identifier authorizing execution.")
     apply_parser.add_argument("--scope", default="LOCAL_TEMPORARY", help="Execution scope (default: LOCAL_TEMPORARY).")
 
-    # Subcommand: inspect
-    inspect_parser = subparsers.add_parser("inspect", help="Inspect local repository entities and associations.")
-    inspect_parser.add_argument("--db-path", required=True, help="Explicit target SQLite database path (REQUIRED).")
+    args = parser.parse_args(argv)
 
-    args = parser.parse_args()
+    if args.command in ("init", "setup"):
+        p = Path(args.db_path).resolve()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        repo = SqliteIdentityRepository(str(p), auto_init=False)
+        repo.initialize_schema()
+        print(f"Repository schema successfully initialized at: {str(p)}")
+        return 0
 
-    if args.command == "inspect":
+    elif args.command == "inspect":
         if not os.path.exists(args.db_path):
             print(f"Error: Target database '{args.db_path}' does not exist.", file=sys.stderr)
-            sys.exit(1)
-        with SqliteIdentityRepository(args.db_path) as repo:
+            return 1
+        with SqliteIdentityRepository(args.db_path, read_only=True) as repo:
             secs = repo.list_all_securities()
             assocs = repo.list_all_associations()
             digest = repo.compute_target_state_digest()
@@ -1231,23 +1280,75 @@ Strict Governance Requirements:
             print(f"Total Associations: {len(assocs)}")
             for a in assocs:
                 print(f"  Assoc ID: {a.association_id} -> {a.internal_security_id} | {a.symbol} on {a.operating_mic} [{a.effective_from} to {a.effective_to or 'ACTIVE'}]")
+            return 0
 
     elif args.command == "apply":
         if not os.path.exists(args.plan_file):
             print(f"Error: Plan file '{args.plan_file}' does not exist.", file=sys.stderr)
-            sys.exit(1)
+            return 1
 
-        with open(args.plan_file, "r", encoding="utf-8") as f:
-            plan = IdentityAdoptionPlan.from_json(f.read())
+        try:
+            with open(args.plan_file, "r", encoding="utf-8") as f:
+                plan = IdentityAdoptionPlan.from_json(f.read())
+        except Exception as e:
+            print(f"Error: Failed to parse plan file: {e}", file=sys.stderr)
+            return 1
+
+        # Authorization Gate prior to touching target database
+        if not args.authorize:
+            outcome = IdentityApplicationOutcome(
+                status=IdentityApplicationStatus.REJECTED_UNAUTHORIZED,
+                plan_id=plan.plan_id,
+                target_state_digest_before="",
+                target_state_digest_after="",
+                applied_entities_count=0,
+                noop_entities_count=0,
+                blocked_entities_count=plan.summary.entities_blocked,
+                applied_associations_count=0,
+                noop_associations_count=0,
+                blocked_associations_count=plan.summary.associations_blocked,
+                audit_entry_recorded=False,
+                details=["Plan application rejected: --authorize flag was not supplied."],
+            )
+            print(outcome.to_json(indent=2))
+            return 1
+
+        # Content integrity verification prior to touching target database
+        if not plan.is_plan_content_valid():
+            outcome = IdentityApplicationOutcome(
+                status=IdentityApplicationStatus.REJECTED_INTEGRITY_TAMPERED,
+                plan_id=plan.plan_id,
+                target_state_digest_before="",
+                target_state_digest_after="",
+                applied_entities_count=0,
+                noop_entities_count=0,
+                blocked_entities_count=plan.summary.entities_blocked,
+                applied_associations_count=0,
+                noop_associations_count=0,
+                blocked_associations_count=plan.summary.associations_blocked,
+                audit_entry_recorded=False,
+                details=["Plan content tampering detected: recomputed plan digest does not match declared digest."],
+            )
+            print(outcome.to_json(indent=2))
+            return 1
+
+        # Check target database exists - do NOT auto-create on apply
+        if not os.path.exists(args.db_path):
+            print(
+                f"Error: Target database '{args.db_path}' does not exist. "
+                "Repository must be explicitly initialized with 'init' before applying plans.",
+                file=sys.stderr,
+            )
+            return 1
 
         auth = IdentityAdoptionAuthorization(
-            is_authorized=args.authorize,
+            is_authorized=True,
             authorized_by=args.authorized_by or "LOCAL_OPERATOR",
             scope=args.scope,
             authorization_timestamp_utc=datetime.now(timezone.utc).isoformat(),
         )
 
-        with SqliteIdentityRepository(args.db_path) as repo:
+        with SqliteIdentityRepository(args.db_path, auto_init=False) as repo:
             outcome = IdentityPlanApplicationService.apply_plan(
                 plan=plan,
                 repository=repo,
@@ -1255,11 +1356,10 @@ Strict Governance Requirements:
                 allow_partial=args.allow_partial,
             )
             print(outcome.to_json(indent=2))
-            if outcome.status in (IdentityApplicationStatus.APPLIED, IdentityApplicationStatus.NO_OP_ALREADY_APPLIED):
-                sys.exit(0)
-            else:
-                sys.exit(1)
+            return 0 if outcome.status in (IdentityApplicationStatus.APPLIED, IdentityApplicationStatus.NO_OP_ALREADY_APPLIED) else 1
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

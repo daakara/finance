@@ -271,37 +271,28 @@ The persistence suite (`tests/test_identity_persistence.py`) exercises all 14 re
 | **06** | `test_06_unsupported_effective_date_backdating_rejected` | Verified CHECK constraint rejects invalid date orders (`effective_to < effective_from`). | **PASSED** |
 | **07** | `test_07_tampered_plans_rejected` | Verified hash recomputation detects in-transit payload tampering and terminates with 0 writes. | **PASSED** |
 | **08** | `test_08_stale_target_state_rejected` | Verified plan computed against baseline is rejected when repository state is mutated. | **PASSED** |
-| **09** | `test_09_state_validation_and_application_no_race_window` | Verified target state digest is validated inside transaction lock to eliminate TOCTOU window. | **PASSED** |
+| **09** | `test_09_state_validation_and_application_no_race_window` | Verified target state digest is validated inside transaction lock to eliminate TOCTOU window; verified transaction contention and serialization using independent SQLite connections. | **PASSED** |
 | **10** | `test_10_mixed_blocked_ready_batches_follow_atomic_rule` | Verified fail-closed whole-batch rule when `allow_partial=False` vs partial application when `True`. | **PASSED** |
 | **11** | `test_11_mid_application_failure_rolls_back_all_changes` | Verified 100% native SQLite rollback on mid-transaction exception; zero partial records persist. | **PASSED** |
 | **12** | `test_12_repeated_application_is_idempotent` | Verified re-application of already applied plan produces `NO_OP_ALREADY_APPLIED` with no duplicates. | **PASSED** |
 | **13** | `test_13_rejected_authorization_causes_no_writes` | Verified unauthorized plan (`is_authorized=False`) immediately rejects with zero writes. | **PASSED** |
 | **14** | `test_14_interoperability_with_admission_engine` | Verified state export directly into `OfflineAdmissionMappingEngine` preserving registry and active indices. | **PASSED** |
+| **15** | `test_15_rejected_apply_does_not_create_or_initialize_db_on_nonexistent_path` | Verified unauthorized, tampered, or uninitialized apply requests against nonexistent database paths create zero files or directories on disk. | **PASSED** |
+| **16** | `test_16_rejected_apply_does_not_alter_existing_initialized_db` | Verified unauthorized apply requests against existing initialized databases perform zero writes, zero DDL migrations, and append zero audit entries. | **PASSED** |
+| **17** | `test_17_inspect_is_strictly_read_only` | Verified inspect subcommand connects strictly in read-only mode (`?mode=ro`), cannot modify database, and fails closed without creating files if nonexistent. | **PASSED** |
+| **18** | `test_18_already_applied_noop_requires_authorization_and_integrity` | Verified already-applied/no-op shortcut does NOT bypass required authorization or plan-integrity verification; unauthorized or tampered re-applications reject immediately. | **PASSED** |
 
 #### Combined Test Suite Results
 ```
 ============================= test session starts =============================
 platform win32 -- Python 3.11.0, pytest-9.1.1
-collected 47 items
+collected 51 items
 
-tests/test_identity_persistence.py::test_01_approved_architectural_principle_recorded PASSED
-tests/test_identity_persistence.py::test_02_persistence_and_reload_preserve_opaque_ids_and_evidence PASSED
-tests/test_identity_persistence.py::test_03_existing_ids_preserved_without_duplicate_creation PASSED
-tests/test_identity_persistence.py::test_04_goog_googl_same_issuer_distinct_securities_remain_separate PASSED
-tests/test_identity_persistence.py::test_05_locator_overlaps_and_ambiguous_matches_fail_closed PASSED
-tests/test_identity_persistence.py::test_06_unsupported_effective_date_backdating_rejected PASSED
-tests/test_identity_persistence.py::test_07_tampered_plans_rejected PASSED
-tests/test_identity_persistence.py::test_08_stale_target_state_rejected PASSED
-tests/test_identity_persistence.py::test_09_state_validation_and_application_no_race_window PASSED
-tests/test_identity_persistence.py::test_10_mixed_blocked_ready_batches_follow_atomic_rule PASSED
-tests/test_identity_persistence.py::test_11_mid_application_failure_rolls_back_all_changes PASSED
-tests/test_identity_persistence.py::test_12_repeated_application_is_idempotent PASSED
-tests/test_identity_persistence.py::test_13_rejected_authorization_causes_no_writes PASSED
-tests/test_identity_persistence.py::test_14_interoperability_with_admission_engine PASSED
-tests/test_identity_adoption_dry_run.py (22 tests) PASSED
-tests/test_universe_offline_build_coverage.py (11 tests) PASSED
+tests/test_identity_persistence.py (18 tests) PASSED (tier2c selected)
+tests/test_identity_adoption_dry_run.py (22 tests) PASSED (tier2c selected)
+tests/test_universe_offline_build_coverage.py (11 tests) PASSED (tier2c selected)
 
-============================= 47 passed in 6.10s ==============================
+============================= 51 passed in 5.75s ==============================
 ```
 
 ---
@@ -322,7 +313,7 @@ The dry-run and persistence machinery were evaluated in **read-only mode** again
 └─────────┴─────────────┴─────────────┴───────────┴───────────────┴────────────┴──────────┘
 ```
 
-#### Detailed Candidate Readback
+#### Detailed Candidate Readback & Evidence Clarification
 
 1. **`AAPL` (Apple Inc.)**:
    - **Identity Evidence**: SEC CIK `0000320193`, single common stock class. Evidence resolution is unambiguous and verified.
@@ -333,15 +324,22 @@ The dry-run and persistence machinery were evaluated in **read-only mode** again
    - **Admission Status (Rule R06)**: **BLOCKED**. Authoritative primary-listing designation and operational market-data ingestion are not yet closed. Registration conveys zero admission or scanner authority.
 
 2. **`GOOG` (Alphabet Inc. Class C Capital Stock)**:
-   - **Identity Evidence**: SEC CIK `0001652044`, non-voting Class C capital stock. Allocated durable opaque ID `ARX_SEC_5471476DCFF5`.
+   - **Identity Evidence**: SEC CIK `0001652044`, non-voting Class C capital stock. Allocated durable opaque ID `ARX_SEC_5471476DCFF5` in retained dry-run plan.
    - **Listing Support**: Active listing on NASDAQ (`XNAS`).
    - **Multi-Class Separation**: Stays completely distinct from Class A (`GOOGL`), verifying that CIK does not determine 1:1 security identity.
-   - **Status**: Identity evidence sufficient; plan approval absent; application unperformed; Rule R06 admission blocked.
+   - **Primary-Listing Status**: **GOOG lacks qualifying primary-listing evidence**. There is no unresolved requirement to choose one primary share class; rather, Rule R06 requires authoritative primary-listing attribution for each individual listing.
+   - **Status**: Identity evidence sufficient; exact plan approval absent; application unperformed; Rule R06 admission blocked.
 
 3. **`GOOGL` (Alphabet Inc. Class A Common Stock)**:
-   - **Identity Evidence**: SEC CIK `0001652044`, voting Class A common stock. Allocated durable opaque ID `ARX_SEC_AA263F6E0358`.
+   - **Identity Evidence**: SEC CIK `0001652044`, voting Class A common stock. Allocated durable opaque ID `ARX_SEC_AA263F6E0358` in retained dry-run plan.
    - **Listing Support**: Active listing on NASDAQ (`XNAS`).
-   - **Status**: Identity evidence sufficient; plan approval absent; application unperformed; Rule R06 admission blocked.
+   - **Primary-Listing Status**: **GOOGL lacks qualifying primary-listing evidence**. There is no unresolved requirement to choose one primary share class; rather, Rule R06 requires authoritative primary-listing attribution for each individual listing.
+   - **Status**: Identity evidence sufficient; exact plan approval absent; application unperformed; Rule R06 admission blocked.
+
+#### Invariant Attestation: Persistence Is Not Identity Certification
+- **Successful persistence** of identity records in temporary or local stores is purely a storage and transactional capability; it does NOT constitute identity-evidence certification or governance approval.
+- Real candidates (`AAPL`, `GOOG`, `GOOGL`, `AACIU`, `TSM`) remain strictly unapproved and unapplied.
+- No real candidate plan application, production-store writes, or universe publication is authorized.
 
 ---
 
@@ -360,6 +358,6 @@ Before any production database migration or identity plan application may be aut
 
 - **Production Mutation**: None. Zero production database writes executed.
 - **Isolated Worktree Preserved**: Sibling worktrees (`finance-sprint-2-real-data-pilot`, `finance-sprint-2-offline-build-coverage`, etc.) preserved intact.
-- **Verification Complete**: All 14 persistence tests passed; coexistence with dry-run engine and offline builder verified.
+- **Verification Complete**: All 18 persistence tests passed; coexistence with dry-run engine and offline builder verified.
 
 **TERMINAL STATE**: `IDENTITY_PERSISTENCE_LOCAL_VERIFIED`

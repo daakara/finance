@@ -21,6 +21,7 @@ Verifies:
 """
 
 from datetime import datetime, timezone
+import json
 import os
 from pathlib import Path
 import sqlite3
@@ -49,7 +50,10 @@ from analyst_dashboard.universe.identity_persistence import (
     IdentityApplicationStatus,
     IdentityPlanApplicationService,
     SqliteIdentityRepository,
+    main,
 )
+
+pytestmark = pytest.mark.tier2c
 
 
 @pytest.fixture
@@ -416,13 +420,57 @@ def test_09_state_validation_and_application_no_race_window(temp_db_path: str):
     """
     Verifies that the target state digest check is enforced inside the transaction
     lock, eliminating TOCTOU race windows.
+    Demonstrates:
+    - Pre-lock baseline: plan computed against initial state.
+    - An independent connection commits an intervening write to the same DB file.
+    - Application acquires lock, validates lock_digest, detects mutation, raises StalePlanError,
+      and rolls back with REJECTED_STALE_STATE (0 writes).
+    - Competing write transactions are serialized via BEGIN IMMEDIATE.
     """
     with SqliteIdentityRepository(temp_db_path) as repo:
+        # 1. Compute plan against initial state
         plan = _build_synthetic_plan(repo, symbol="SYNTH_R1")
+
+        # 2. Open an independent SQLite connection to the exact same database file
+        independent_conn = sqlite3.connect(temp_db_path)
+        try:
+            independent_conn.execute("PRAGMA foreign_keys = ON;")
+            now_utc = datetime.now(timezone.utc).isoformat()
+            independent_conn.execute(
+                "INSERT INTO internal_securities ("
+                "internal_security_id, issuer_cik, primary_symbol, share_class, created_at_utc, "
+                "status, continuity_basis, certifies_continuity"
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                ("ARX_SEC_INTERVENING", "0009999999", "INTERVENING", None, now_utc, "ACTIVE", "TEST", 0),
+            )
+            independent_conn.commit()
+        finally:
+            independent_conn.close()
+
+        # 3. Apply the plan: pre-lock and in-lock check detects stale state immediately
         outcome = IdentityPlanApplicationService.apply_plan(plan, repo)
-        assert outcome.status == IdentityApplicationStatus.APPLIED
-        assert outcome.applied_entities_count == 1
-        assert outcome.applied_associations_count == 1
+        assert outcome.status == IdentityApplicationStatus.REJECTED_STALE_STATE
+        assert outcome.applied_entities_count == 0
+
+        # 4. Plan computed against fresh state succeeds cleanly
+        plan_fresh = _build_synthetic_plan(repo, symbol="SYNTH_R2")
+
+        # 5. Verify transaction serialization: when independent connection holds BEGIN IMMEDIATE, competing connection cannot write
+        conn_holding_lock = sqlite3.connect(temp_db_path, timeout=0.1)
+        conn_holding_lock.execute("BEGIN IMMEDIATE")
+        try:
+            with pytest.raises(sqlite3.OperationalError):
+                blocking_conn = sqlite3.connect(temp_db_path, timeout=0.1)
+                blocking_conn.execute("BEGIN IMMEDIATE")
+        finally:
+            conn_holding_lock.rollback()
+            conn_holding_lock.close()
+
+        # Once released, application succeeds cleanly
+        outcome_ok = IdentityPlanApplicationService.apply_plan(plan_fresh, repo)
+        assert outcome_ok.status == IdentityApplicationStatus.APPLIED
+        assert outcome_ok.applied_entities_count == 1
+        assert outcome_ok.applied_associations_count == 1
 
 
 # ─── 10. Atomic Whole-Batch Rule on Blocked Items ─────────────────────────────
@@ -708,3 +756,165 @@ def test_14_interoperability_with_admission_engine(temp_db_path: str):
         assert key in engine._active_listing_index
         assert len(engine._active_listing_index[key]) == 1
         assert engine._active_listing_index[key][0].internal_security_id == "ARX_SEC_SYNTH_INTEROP_OPAQUE"
+
+
+# ─── 15. Nonexistent Path Storage Protection ──────────────────────────────────
+
+def test_15_rejected_apply_does_not_create_or_initialize_db_on_nonexistent_path(tmp_path: Path):
+    """
+    Verifies that an unauthorized or malformed apply request against a nonexistent database path
+    does NOT create a database file or directory on disk.
+    """
+    never_created_dir = tmp_path / "never_created"
+    nonexistent_db = str(never_created_dir / "master.db")
+    plan_file = str(tmp_path / "valid_plan.json")
+
+    # Create a plan file
+    with SqliteIdentityRepository(":memory:") as mem_repo:
+        plan = _build_synthetic_plan(mem_repo, symbol="SYNTH_CLI_1")
+    Path(plan_file).write_text(plan.to_json(), encoding="utf-8")
+
+    # Case A: Unauthorized apply (without --authorize)
+    ret_unauth = main(["apply", "--db-path", nonexistent_db, "--plan-file", plan_file])
+    assert ret_unauth == 1
+    assert not os.path.exists(nonexistent_db)
+    assert not never_created_dir.exists()
+
+    # Case B: Tampered plan file
+    tampered_data = plan.to_dict()
+    tampered_data["entities"][0]["primary_symbol"] = "TAMPERED_SYM"
+    tampered_file = str(tmp_path / "tampered_plan.json")
+    Path(tampered_file).write_text(json.dumps(tampered_data), encoding="utf-8")
+
+    ret_tampered = main(["apply", "--db-path", nonexistent_db, "--plan-file", tampered_file, "--authorize"])
+    assert ret_tampered == 1
+    assert not os.path.exists(nonexistent_db)
+
+    # Case C: Even if authorized and valid plan, nonexistent path must be explicitly initialized first
+    ret_nonexistent = main(["apply", "--db-path", nonexistent_db, "--plan-file", plan_file, "--authorize"])
+    assert ret_nonexistent == 1
+    assert not os.path.exists(nonexistent_db)
+
+
+# ─── 16. Existing Initialized DB Invariant on Rejection ────────────────────────
+
+def test_16_rejected_apply_does_not_alter_existing_initialized_db(tmp_path: Path):
+    """
+    Verifies that an unauthorized or malformed apply request against an existing initialized database
+    does not alter any rows, run DDL/migrations, or append audit records.
+    """
+    db_file = str(tmp_path / "existing_repo.db")
+    # Explicitly initialize repository via CLI init
+    ret_init = main(["init", "--db-path", db_file])
+    assert ret_init == 0
+    assert os.path.exists(db_file)
+
+    # Inspect initial state
+    with SqliteIdentityRepository(db_file, read_only=True) as repo:
+        initial_digest = repo.compute_target_state_digest()
+        assert len(repo.list_all_securities()) == 0
+
+    # Build plan against initial state
+    with SqliteIdentityRepository(db_file, read_only=True) as repo:
+        plan = _build_synthetic_plan(repo, symbol="SYNTH_CLI_2")
+    plan_file = str(tmp_path / "plan_2.json")
+    Path(plan_file).write_text(plan.to_json(), encoding="utf-8")
+
+    # Attempt unauthorized apply
+    ret_unauth = main(["apply", "--db-path", db_file, "--plan-file", plan_file])
+    assert ret_unauth == 1
+
+    # Verify existing DB completely unaltered
+    with SqliteIdentityRepository(db_file, read_only=True) as repo:
+        assert repo.compute_target_state_digest() == initial_digest
+        assert len(repo.list_all_securities()) == 0
+        with repo._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) FROM applied_plan_audit_ledger")
+            assert cur.fetchone()[0] == 0
+
+
+# ─── 17. Inspect Subcommand Read-Only Protection ──────────────────────────────
+
+def test_17_inspect_is_strictly_read_only(tmp_path: Path):
+    """
+    Verifies that inspect subcommand runs strictly read-only (?mode=ro),
+    cannot modify the database, and does not create a database if nonexistent.
+    """
+    nonexistent_db = str(tmp_path / "ghost.db")
+    ret_nonexistent = main(["inspect", "--db-path", nonexistent_db])
+    assert ret_nonexistent == 1
+    assert not os.path.exists(nonexistent_db)
+
+    # Now with existing DB
+    real_db = str(tmp_path / "read_only_test.db")
+    main(["init", "--db-path", real_db])
+
+    # Inspect succeeds
+    ret_inspect = main(["inspect", "--db-path", real_db])
+    assert ret_inspect == 0
+
+    # Verify SqliteIdentityRepository with read_only=True rejects any write attempt
+    with SqliteIdentityRepository(real_db, read_only=True) as ro_repo:
+        sec = InternalSecurityRecord(
+            internal_security_id="ARX_SEC_RO_TEST",
+            issuer_cik="0001234567",
+            primary_symbol="RO_TEST",
+            share_class=None,
+            created_at_utc=datetime.now(timezone.utc).isoformat(),
+        )
+        with pytest.raises(PermissionError):
+            ro_repo.save_security(sec)
+        with pytest.raises(PermissionError):
+            with ro_repo.transaction():
+                pass
+
+
+# ─── 18. Already-Applied / No-Op Shortcut Requires Authorization & Integrity ──
+
+def test_18_already_applied_noop_requires_authorization_and_integrity(temp_db_path: str):
+    """
+    Verifies that an already-applied plan shortcut does NOT bypass required authorization
+    or plan integrity verification.
+    """
+    with SqliteIdentityRepository(temp_db_path) as repo:
+        plan = _build_synthetic_plan(repo, symbol="SYNTH_AUTH_REQ")
+        outcome = IdentityPlanApplicationService.apply_plan(plan, repo)
+        assert outcome.status == IdentityApplicationStatus.APPLIED
+
+        # Re-apply with is_authorized=False: MUST reject with REJECTED_UNAUTHORIZED
+        unauth_auth = IdentityAdoptionAuthorization(is_authorized=False, scope="SYNTHETIC_TEST_ONLY")
+        outcome_unauth = IdentityPlanApplicationService.apply_plan(
+            plan=plan, repository=repo, authorization=unauth_auth
+        )
+        assert outcome_unauth.status == IdentityApplicationStatus.REJECTED_UNAUTHORIZED
+
+        # Re-apply with tampered plan: MUST reject with REJECTED_INTEGRITY_TAMPERED
+        tampered_ent = ProposedEntityAdoption(
+            provisional_security_id=plan.entities[0].provisional_security_id,
+            primary_symbol="TAMPERED_SYM",
+            share_class=plan.entities[0].share_class,
+            issuer_cik=plan.entities[0].issuer_cik,
+            status=plan.entities[0].status,
+            is_creation=plan.entities[0].is_creation,
+            is_mechanically_plannable=plan.entities[0].is_mechanically_plannable,
+            proposed_durable_security_id=plan.entities[0].proposed_durable_security_id,
+        )
+        tampered_plan = IdentityAdoptionPlan(
+            plan_id=plan.plan_id,
+            created_at_utc=plan.created_at_utc,
+            evaluation_reference_date=plan.evaluation_reference_date,
+            target_state_digest=repo.compute_target_state_digest(),
+            plan_content_digest=plan.plan_content_digest,  # old digest
+            authorization=plan.authorization,
+            entities=[tampered_ent],
+            associations=plan.associations,
+            provisional_to_durable_map=plan.provisional_to_durable_map,
+            conflicts=[],
+            blocked_operations=[],
+            missing_evidence_or_authorization=[],
+            primary_listing_states={},
+            summary=plan.summary,
+        )
+        outcome_tampered = IdentityPlanApplicationService.apply_plan(tampered_plan, repo)
+        assert outcome_tampered.status == IdentityApplicationStatus.REJECTED_INTEGRITY_TAMPERED
