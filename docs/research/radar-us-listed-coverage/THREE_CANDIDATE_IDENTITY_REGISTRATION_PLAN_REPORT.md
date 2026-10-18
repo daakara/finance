@@ -9,8 +9,11 @@
 **Dedicated Branch**: `feat/sprint-2-three-candidate-registration-plan`  
 **Base Release Commit SHA**: `6121235021340e46ab57e95dba014b3510867c93` (`origin/main`, PR #25 squash merge)  
 **Base Tree SHA**: `c2afe4c03f48afc8cd1f7ab27fd399d26a67f42c`  
+**Registration Input Commit HEAD**: `8e7aae32ce9d58b10d3ac0d81405f3ab68ef6e05` (tree `223e16b412f934c50fd847e8f2ac9fb57ddebf84`)  
+**Completed Route A Commit HEAD**: `1e9bcd85994bba6ac7350d3c6aa17c94208d2020` (tree `d6386e7d293613ebec20263d5e8f3d7fc1306505`)  
+**Integrated Merge Commit SHA**: `648f04b8b6e680a6d05f37bc44ae55734df224f8`  
 **Date**: 2026-10-18  
-**Terminal State / Stop Point**: `THREE_CANDIDATE_REGISTRATION_PLAN_PREPARED_FOR_REVIEW`  
+**Terminal State / Stop Point**: `THREE_CANDIDATE_IDENTITY_EVIDENCE_INTEGRATION_LOCAL_VERIFIED`  
 
 ---
 
@@ -255,13 +258,87 @@ The canonical unapproved plan artifact is serialized at:
 
 ---
 
-### 8. Full Verification Gate Execution Evidence
+### 8. Field-by-Field Provenance Reconciliation Matrix
 
-The complete test suite was executed in the dedicated worktree:
+A comprehensive field-by-field audit was conducted reconciling the integrated Route A primary-listing evidence with the requirements of the `SourceSecurity` domain model, Rule R01 through R06 invariants, and the unapproved identity registration plan.
+
+| SourceSecurity Field | Retained Route A / Registry Provenance | Normalization / Adjudication Logic | Status for Conversion |
+| :--- | :--- | :--- | :---: |
+| **`symbol`** | Authoritative SEC CIK filings (`0000320193`, `0001652044`), Nasdaq directory, Polygon reference payload (`AAPL`, `GOOG`, `GOOGL`), OpenFIGI mappings. | Exact uppercase ticker match across all sources. Preserved without alteration. | 🟢 **SATISFIED** |
+| **`exchange`** | Polygon reference ticker payload: `primary_exchange: "XNAS"`. | Normalized to canonical exchange vocabulary `NASDAQ` via `SupportedVenueNormalizer` per Rule R04 allowlist (`NASDAQ`, `NYSE`, `BATS`, `AMEX`, `ARCA`). Raw MIC `XNAS` retained in provenance. | 🟢 **SATISFIED** |
+| **`primary_listing`** | Polygon Reference Ticker API: direct assertion `primary_exchange: "XNAS"`. | `PrimaryListingEvidenceAdapter` parses provider claim: `assigned_primary_listing = True`, `is_direct_assertion = True`. Directly satisfies Rule R06 primary-listing designation. | 🟢 **SATISFIED** |
+| **`currency`** | Polygon reference payload: `currency_name: "usd"`; Nasdaq listed book trading currency: `USD`. | **Trading Currency Honesty**: Evaluated as instrument trading currency on the operating exchange, **NOT** corporate financial reporting currency (though both coincide as USD here). Mapped to `USD`. | 🟢 **SATISFIED** |
+| **`listing_country`** | Polygon reference payload: `locale: "us"`; Nasdaq US domestic market directory. | **Venue Jurisdiction Honesty**: Evaluated as exchange listing jurisdiction (`USA`), **NOT** statutory incorporation domicile (e.g., Delaware state charter). Mapped to `USA`. | 🟢 **SATISFIED** |
+| **`selected_us_assessment_listing`** | Pipeline execution parameter for ARX Terminal primary US assessment line. | Explicit boolean flag designating the instrument for US assessment evaluation. | 🟢 **SATISFIED** |
+| **`listing_status`** | Polygon reference payload: `active: true`; Nasdaq directory record `N` (active listing). | Direct provider assertion: `ACTIVE`. Confirmed `delisting_date = None`, `trading_suspension_date = None`. | 🟢 **SATISFIED** |
+| **`asset_class`** | Polygon reference payload: `market: "stocks"`; Alpaca reference: `class: "us_equity"`. | Mapped to domain enum `EQUITY`. | 🟢 **SATISFIED** |
+| **`security_type`** | Polygon: `type: "CS"`; Nasdaq directory: common share; OpenFIGI: `Common Stock`. | Mapped to domain enum `COMMON_STOCK`. For `GOOG` (Class C Capital Stock), classified as non-voting common equity under Rule R02. | 🟢 **SATISFIED** |
+| **`security_id`** | Canonical unapproved registration plan allocations: `ARX_SEC_0B4C728FE0BE` (`AAPL`), `ARX_SEC_A11A24D442E2` (`GOOG`), `ARX_SEC_B7EF9ED7A35A` (`GOOGL`). | **SINGLE REMAINING BLOCKER**: Identity plan application is unapproved (`exact_plan_approval = ABSENT`, `application_authorized = False`). Production identity adoption is disabled (`PRODUCTION_IDENTITY_ADOPTION_DISABLED`). Real execution cannot fabricate or inject unadopted IDs. | 🔴 **BLOCKED (Unadopted Identity)** |
+
+#### Provenance Synthesis
+All required market, venue, jurisdiction, currency, status, and primary-listing evidence fields are **fully satisfied by authentic retained data**. Zero assumptions, heuristic fallbacks, or synthetic values are utilized for market attributes. The **sole remaining blocker** preventing `SourceSecurity` conversion and subsequent universe admission is the lack of approved, persistent internal identity adoption (`security_id`).
+
+---
+
+### 9. Comparative Replay & Builder Admission Verification
+
+To prove conclusively that the integration respects fail-closed boundaries while preserving ready conversion paths, three comparative replays were executed and verified:
 
 ```
-Test Execution Summary:
-tests/test_three_candidate_registration_plan.py:
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                       COMPARATIVE REPLAY MATRIX                                         │
+├───────────────────────────────┬─────────────────────────┬───────────────────────┬───────────────────────┤
+│ Execution Dimension           │ 3-Candidate Pilot       │ 3-Candidate Pilot     │ 7-Candidate Full      │
+│                               │ Genuine Real-Source     │ Counterfactual Probe  │ Population Replay     │
+├───────────────────────────────┼─────────────────────────┼───────────────────────┼───────────────────────┤
+│ Input Population              │ AAPL, GOOG, GOOGL       │ AAPL, GOOG, GOOGL     │ 7 candidates (all)    │
+│ Route A Evidence Available    │ YES (XNAS / Direct)     │ YES (XNAS / Direct)   │ 3 covered / 4 missing │
+│ Simulation Mode               │ False (Real Source)     │ True (Isolated Probe) │ True (Simulation)     │
+│ Injected Provisional IDs      │ NO (Fails Closed)       │ YES (Hypothetical)    │ YES (Where plannable) │
+│ Total Evaluated               │ 3                       │ 3                     │ 7                     │
+│ Conversion Permitted per Item │ 0 (All blocked on ID)   │ 3 (All pass R01-R06)  │ 3 pass / 4 blocked    │
+│ Atomic Batch Validity         │ FALSE                   │ TRUE                  │ FALSE                 │
+│ Batch Conversion Count        │ 0                       │ 3                     │ 0                     │
+│ Batch Admitted Count          │ 0                       │ 3                     │ 0                     │
+│ Builder Status                │ NOT_RUN                 │ READY_FOR_BUILDER     │ NOT_RUN               │
+│ Builder Handoff Permitted     │ FALSE                   │ TRUE                  │ FALSE                 │
+│ Blocking Reasons Reported     │ PRODUCTION_IDENTITY_    │ None                  │ Missing primary-      │
+│                               │ ADOPTION_DISABLED       │                       │ listing on 4 items    │
+└───────────────────────────────┴─────────────────────────┴───────────────────────┴───────────────────────┘
+```
+
+#### Detailed Observations:
+1. **Genuine Real-Source Replay (3-Candidate Pilot Boundary)**:
+   - Evaluated under authentic real-source constraints (`is_simulation=False`).
+   - Despite having valid Route A primary-exchange evidence (`XNAS`), conversion strictly fails closed because internal security IDs are unadopted in production stores.
+   - Result: Exactly 0 converted, 0 admitted, builder `NOT_RUN`, `builder_handoff_permitted = False`.
+   - Invariant Preserved: No bypass of identity governance occurs simply because primary-listing evidence is resolved.
+
+2. **Counterfactual Simulation Probe (3-Candidate Pilot Boundary)**:
+   - Evaluated under an isolated simulation harness (`is_simulation=True`) supplying provisional opaque IDs.
+   - All 3 candidates satisfy all required fields (R01), valid share class (R02), supported canonical exchange (R04), and verified primary listing (R06).
+   - Result: Batch validity is `True`, 3 converted, 3 admitted, builder status `READY_FOR_BUILDER`.
+   - Qualification: Strictly designated as a **hypothetical test probe**. It proves mechanical conversion feasibility without establishing actual admission or granting builder activation authority.
+
+3. **7-Candidate Full Population Replay**:
+   - Evaluated against the entire research cohort (`AAPL`, `GOOG`, `GOOGL`, `ACCS`, `AACIU`, `DDS`, `AMSC`).
+   - Route A evidence resolves primary listing for the 3 pilot candidates, but the remaining 4 candidates have unresolved primary-listing claims.
+   - Result: Atomic whole-batch protection activates. Batch validity is `False`, batch admitted count is `0`, and builder remains `NOT_RUN`.
+   - Invariant Preserved: Partial batch contamination is strictly prevented.
+
+---
+
+### 10. Complete Verification Gate Execution Evidence
+
+All five affected test suites were executed in the integrated worktree `C:\Users\akara\Documents\Projects\finance-sprint-2-registration-plan` using Python 3.11:
+
+```
+============================= test session starts =============================
+platform win32 -- Python 3.11.0, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\akara\Documents\Projects\finance-sprint-2-registration-plan
+configfile: pyproject.toml
+
+Suite 1: tests/test_three_candidate_registration_plan.py
   [PASS] Gate 1:  Canonical plan artifact exists, parses cleanly, content digest matches.
   [PASS] Gate 2:  Candidate identity bindings verified (CIK, class, MIC, observation dates).
   [PASS] Gate 3:  Same-issuer distinct securities separation (GOOG vs GOOGL under CIK 0001652044).
@@ -274,40 +351,111 @@ tests/test_three_candidate_registration_plan.py:
   [PASS] Gate 10: Rehearsal: 100% rollback on mid-application failure via BEGIN IMMEDIATE (0 partial rows).
   [PASS] Gate 11: Rehearsal: Read-only inspection mode safety (PermissionError on attempted write).
   [PASS] Gate 12: Interoperability: Persisted rehearsal records roundtrip with OfflineAdmissionMappingEngine.
+  [PASS] Gate 13: Route A evidence coexistence, genuine real-source fail-closed vs counterfactual replay.
+  Results: 13 passed in 2.05s
 
-Related Suite Execution:
-  - tests/test_identity_adoption_dry_run.py: 22 passed
-  - tests/test_identity_persistence.py: 18 passed
-  - tests/test_universe_offline_build_coverage.py: 11 passed
-  - tests/test_universe_offline_adapters.py: 34 passed
-  - Grand Total: 97 passed in 6.52s, 0 failures, 0 skipped.
+Suite 2: tests/test_identity_adoption_dry_run.py
+  Results: 22 passed in 1.15s
+
+Suite 3: tests/test_identity_persistence.py
+  Results: 18 passed in 2.45s
+
+Suite 4: tests/test_universe_primary_listing_evidence.py
+  Results: 59 passed, 3 skipped in 1.27s
+
+Suite 5: tests/test_universe_offline_build_coverage.py
+  Results: 11 passed in 4.98s
+
+=========================== VERIFICATION CUMULATIVE TOTAL ===========================
+  Total Tests Passed:  123
+  Total Tests Skipped: 3 (External API unauthenticated skip markers)
+  Total Failures:      0
+=====================================================================================
 ```
 
 ---
 
-### 9. Governance Traffic-Light Readiness Scorecard
+### 11. Governance Traffic-Light Readiness Scorecard
 
 | Governance Dimension | Status | Justification / Operational Condition |
 | :--- | :---: | :--- |
 | **Candidate Identity Evidence** | 🟢 **GREEN** | Full evidence resolution: CIK, exact class title, composite/shareClass FIGIs, Alpaca IDs, XNAS operating MIC. Listing FIGIs omitted as unbacked. |
 | **Durable Opaque ID Allocation** | 🟢 **GREEN** | Bound in canonical plan artifact: `ARX_SEC_0B4C728FE0BE`, `ARX_SEC_A11A24D442E2`, `ARX_SEC_B7EF9ED7A35A`. |
 | **Local Plan Artifact & Integrity** | 🟢 **GREEN** | Serialized to `three_candidate_registration_plan.json`; SHA-256 digest `3c5d8b5e3d39...` verified. |
-| **Execution Rehearsal** | 🟢 **GREEN** | Fully verified via synthetic fixtures (`SYNTH_ALPHA`, `SYNTH_BETA`, `SYNTH_GAMMA`); all 7 execution rehearsal gates passed. |
+| **Route A Primary Listing Evidence** | 🟢 **GREEN** | Authentic Polygon reference responses preserved, cryptographic hashes verified, direct XNAS primary exchange parsed. |
+| **Execution Rehearsal** | 🟢 **GREEN** | Fully verified via synthetic fixtures (`SYNTH_ALPHA`, `SYNTH_BETA`, `SYNTH_GAMMA`); all transactional safety invariants proven. |
 | **Exact Plan Approval** | 🔴 **ABSENT** | Formally represented as **`ABSENT`**. No approver fabricated. |
 | **Application Authorization** | 🔴 **FALSE** | Formally represented as **`FALSE`**. Attempting application produces `REJECTED_UNAUTHORIZED`. |
-| **Production Target State** | 🟡 **AMBER** | Formally designated **`PROPOSED_NOT_INITIALIZED`**. Database does not exist yet. |
+| **Production Target State** | 🟡 **AMBER** | Formally designated **`PROPOSED_NOT_INITIALIZED`**. Database does not exist yet (`/root/analyst_dashboard/data/identity.db`). |
 | **Production Initialization / Writes** | 🔴 **HOLD** | Operator CLI commands (`init`, `apply`) defined but **strictly unauthorized**. |
 | **Rule R06 Admission / Publication** | 🔴 **BLOCK** | Decoupled by policy principle. Grants zero universe admission, conversion, or publication authority. |
 
 ---
 
-### 10. Stop Condition Attestation
+### 12. Proposed Pull Request Title and Description
 
-This increment terminates strictly at:  
-`THREE_CANDIDATE_REGISTRATION_PLAN_PREPARED_FOR_REVIEW`
+The following reviewable PR title and description have been prepared for the eventual submission of this candidate branch:
+
+#### Proposed PR Title
+`feat(universe): integrate Route A primary-listing evidence with three-candidate identity registration plan`
+
+#### Proposed PR Description
+```markdown
+### Summary
+Integrates the completed Route A primary-listing evidence path (from `research/sprint-2-primary-designation`) into the three-candidate identity registration planning capability (`feat/sprint-2-three-candidate-registration-plan`) for `AAPL`, `GOOG`, and `GOOGL`.
+
+### Architectural Context & Governance Compliance
+1. **Architectural Principle Recorded**:
+   *"An evidence-resolved internal security identity and supported listing association may be registered independently of strategy eligibility and R06 admission status. Such registration grants no conversion, admission, publication or scanner authority."*
+2. **Canonical Plan Preserved Unapproved**:
+   - `exact_plan_approval = "ABSENT"`
+   - `application_authorized = False`
+   - `is_authorized = False`
+   - `authorized_by = None`
+   - `production_target = "PROPOSED_NOT_INITIALIZED"`
+   - Plan ID: `PLAN_ADOPT_3C5D8B5E3D39`
+   - Content SHA-256 Digest: `3c5d8b5e3d39453332141dcb5ab818eba5f503fba43f67dbf7d464b298f365c6`
+3. **Strict Separation of Stores**:
+   - Ephemeral `/app/data/operational/security_master.db` remains a separate 24h market cache.
+   - Proposed durable `/root/analyst_dashboard/data/identity.db` remains uncreated and uninitialized (baseline digest `ea11990ec0e3...`).
+
+### Field-by-Field Evidence Reconciliation
+- `symbol`: Retained across filings, directories, and provider responses (`AAPL`, `GOOG`, `GOOGL`).
+- `exchange`: Stated MIC `XNAS` normalized to canonical `NASDAQ` under Rule R04.
+- `primary_listing`: Route A Polygon Reference Ticker direct assertion (`primary_exchange: XNAS`) parsed cleanly as `True`.
+- `currency`: Stated trading currency `USD` (distinguished from corporate reporting currency).
+- `listing_country`: Stated exchange listing jurisdiction `USA` (distinguished from state of incorporation).
+- `selected_us_assessment_listing`: `True` for US assessment pipeline.
+- `listing_status`: Verified active (`ACTIVE`).
+- `asset_class`: `EQUITY`.
+- `security_type`: `COMMON_STOCK` (Alphabet Class C non-voting equity classified under R02).
+- `security_id`: **Single remaining blocker**. Unadopted in production stores (`PRODUCTION_IDENTITY_ADOPTION_DISABLED`).
+
+### Replay & Builder Verification
+- **Real-Source Execution**: With real-source constraints (`is_simulation=False`), conversion fails closed on unadopted security IDs: 0 converted, 0 admitted, builder `NOT_RUN`.
+- **Counterfactual Probe**: Isolated simulation (`is_simulation=True`) with provisional IDs converts all 3: batch validity `True`, 3 admitted, builder `READY_FOR_BUILDER`. (Strictly qualified as a test probe).
+- **7-Candidate Population**: Whole-batch protection fails closed (0 admitted, builder `NOT_RUN`).
+
+### Test Evidence
+123 passed, 3 skipped across 5 suites:
+- `tests/test_three_candidate_registration_plan.py`: 13 passed
+- `tests/test_identity_adoption_dry_run.py`: 22 passed
+- `tests/test_identity_persistence.py`: 18 passed
+- `tests/test_universe_primary_listing_evidence.py`: 59 passed, 3 skipped
+- `tests/test_universe_offline_build_coverage.py`: 11 passed
+```
+
+---
+
+### 13. Stop Condition Attestation
+
+This integration increment terminates strictly at:  
+`THREE_CANDIDATE_IDENTITY_EVIDENCE_INTEGRATION_LOCAL_VERIFIED`
 
 In strict adherence to instructions:
-- Zero git pushes or PR creations were initiated.
+- Zero git pushes or PR submissions were executed.
 - Zero production database files or tables were created or migrated.
-- Zero candidate records were applied to real stores.
+- Zero candidate records were applied to real identity stores.
 - Zero universe admission, `SourceSecurity` conversion, or scanner activation occurred.
+- Work was conducted strictly within the designated worktree `finance-sprint-2-registration-plan`.
+

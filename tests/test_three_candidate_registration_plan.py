@@ -631,3 +631,89 @@ def test_12_interoperability_with_admission_engine(synthetic_rehearsal_plan: Ide
         c1_secs = engine.get_securities_for_cik("0009999001")
         assert len(c1_secs) == 1
         assert c1_secs[0].internal_security_id == "ARX_SEC_SYNTH_01"
+
+
+def test_13_route_a_evidence_coexistence_and_genuine_vs_counterfactual_replay(
+    canonical_plan: IdentityAdoptionPlan,
+):
+    """
+    Verifies coexistence and integration of the unapproved identity registration plan
+    with the completed Route A primary-listing evidence path:
+    1. Route A evidence loads authentic Polygon XNAS direct primary-exchange designations.
+    2. Real-source replay preserves production adoption disabled:
+       - unadopted security IDs are NOT injected;
+       - reports R01_REQUIRED_FIELDS validation blockers;
+       - 0 records converted, 0 admitted, builder remains NOT_RUN.
+    3. Counterfactual conversion probe passes:
+       - provisional IDs supplied in simulation;
+       - all 3 candidates validate and convert cleanly;
+       - 3-candidate batch validity is True, batch admitted = 3, builder = READY_FOR_BUILDER;
+       - strictly labeled as a test probe (does not establish actual admission or builder run).
+    4. 7-candidate population replay confirms whole-batch protection fails closed.
+    5. Direct application of canonical real plan is rejected without persisting real records.
+    """
+    from analyst_dashboard.universe.primary_listing_evidence import (
+        PrimaryListingEvidenceAdapter,
+        PrimaryListingReplayEngine,
+    )
+    from analyst_dashboard.universe.identity_proposal import (
+        build_three_candidate_proposals,
+        build_seven_candidate_proposal,
+    )
+
+    # 1. Route A Evidence Ingestion & Verification
+    route_a_records = PrimaryListingEvidenceAdapter.load_three_candidate_route_a_evidence()
+    assert set(route_a_records.keys()) == {"AAPL", "GOOG", "GOOGL"}
+    for sym in ("AAPL", "GOOG", "GOOGL"):
+        rec = route_a_records[sym]
+        assert rec.assigned_primary_listing is True
+        assert rec.stated_exchange == "XNAS"
+        assert rec.is_direct_assertion is True
+
+    # 2. Replay against isolated 3-candidate ledger
+    three_ledger = build_three_candidate_proposals()
+
+    # Real-source replay (is_simulation=False): fails closed on unadopted security_id
+    real_report = PrimaryListingReplayEngine.run_replay(three_ledger, route_a_records, is_simulation=False)
+    assert real_report.is_simulation is False
+    assert real_report.total_evaluated == 3
+    assert real_report.is_batch_valid is False
+    assert real_report.batch_conversion_count == 0
+    assert real_report.batch_admitted_count == 0
+    assert real_report.builder_status == "NOT_RUN"
+    assert real_report.builder_handoff_permitted is False
+    for sym in ("AAPL", "GOOG", "GOOGL"):
+        c = real_report.candidate_results[sym]
+        assert c.primary_listing_value is True
+        assert c.conversion_permitted is False
+        assert "PRODUCTION_IDENTITY_ADOPTION_DISABLED" in c.blocking_reason
+        assert any("security_id" in issue for issue in c.validation_issues)
+
+    # Counterfactual probe (is_simulation=True): passes all 3 in isolated simulation
+    sim_report = PrimaryListingReplayEngine.run_replay(three_ledger, route_a_records, is_simulation=True)
+    assert sim_report.is_simulation is True
+    assert sim_report.total_evaluated == 3
+    assert sim_report.is_batch_valid is True
+    assert sim_report.conversion_count == 3
+    assert sim_report.batch_conversion_count == 3
+    assert sim_report.batch_admitted_count == 3
+    assert sim_report.builder_status == "READY_FOR_BUILDER"
+    assert sim_report.builder_handoff_permitted is True
+
+    # 3. 7-Candidate Population Replay: Whole-batch protection fails closed
+    seven_ledger = build_seven_candidate_proposal()
+    pop_sim_report = PrimaryListingReplayEngine.run_replay(seven_ledger, route_a_records, is_simulation=True)
+    assert pop_sim_report.is_batch_valid is False
+    assert pop_sim_report.batch_conversion_count == 0
+    assert pop_sim_report.batch_admitted_count == 0
+    assert pop_sim_report.builder_status == "NOT_RUN"
+
+    # 4. Canonical Real Plan Application Rejection: Zero real records persisted
+    with SqliteIdentityRepository(":memory:") as repo:
+        outcome = IdentityPlanApplicationService.apply_plan(canonical_plan, repo)
+        assert outcome.status == IdentityApplicationStatus.REJECTED_UNAUTHORIZED
+        assert outcome.applied_entities_count == 0
+        assert outcome.applied_associations_count == 0
+        assert len(repo.list_all_securities()) == 0
+        assert len(repo.list_all_associations()) == 0
+
