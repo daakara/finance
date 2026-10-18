@@ -1,0 +1,149 @@
+{
+  "associations": [
+    {
+      "conflict_reason": null,
+      "effective_from": "2026-10-17",
+      "effective_to": null,
+      "is_creation": true,
+      "is_mechanically_plannable": true,
+      "matched_existing_association_id": null,
+      "operating_mic": "XNAS",
+      "proposed_durable_association_id": "ASSOC_ARX_SEC_0B4C728FE0BE_XNAS_AAPL_2026-10-17",
+      "provisional_association_id": "PROV_ASSOC_PROV_SEC_A562B55CDF_XNAS_AAPL_20261017",
+      "provisional_security_id": "PROV_SEC_A562B55CDF",
+      "status": "APPROVED_FOR_ADOPTION",
+      "symbol": "AAPL",
+      "target_durable_security_id": "ARX_SEC_0B4C728FE0BE"
+    },
+    {
+      "conflict_reason": null,
+      "effective_from": "2026-10-17",
+      "effective_to": null,
+      "is_creation": true,
+      "is_mechanically_plannable": true,
+      "matched_existing_association_id": null,
+      "operating_mic": "XNAS",
+      "proposed_durable_association_id": "ASSOC_ARX_SEC_A11A24D442E2_XNAS_GOOG_2026-10-17",
+      "provisional_association_id": "PROV_ASSOC_PROV_SEC_BC68113BFE_XNAS_GOOG_20261017",
+      "provisional_security_id": "PROV_SEC_BC68113BFE",
+      "status": "APPROVED_FOR_ADOPTION",
+      "symbol": "GOOG",
+      "target_durable_security_id": "ARX_SEC_A11A24D442E2"
+    },
+    {
+      "conflict_reason": null,
+      "effective_from": "2026-10-17",
+      "effective_to": null,
+      "is_creation": true,
+      "is_mechanically_plannable": true,
+      "matched_existing_association_id": null,
+      "operating_mic": "XNAS",
+      "proposed_durable_association_id": "ASSOC_ARX_SEC_B7EF9ED7A35A_XNAS_GOOGL_2026-10-17",
+      "provisional_association_id": "PROV_ASSOC_PROV_SEC_6907BAAE38_XNAS_GOOGL_20261017",
+      "provisional_security_id": "PROV_SEC_6907BAAE38",
+      "status": "APPROVED_FOR_ADOPTION",
+      "symbol": "GOOGL",
+      "target_durable_security_id": "ARX_SEC_B7EF9ED7A35A"
+    }
+  ],
+  "authorization": {
+    "allow_reference_identity_registration": true,
+    "authorization_timestamp_utc": "2026-10-18T12:00:00Z",
+    "authorization_token": null,
+    "authorized_by": "Product Owner",
+    "is_authorized": true,
+    "notes": "Approved under architectural principle: evidence-resolved reference identity registration independently of strategy eligibility and R06 admission status. Grants zero universe admission, conversion, publication, or scanner activation authority.",
+    "scope": "REFERENCE_IDENTITY_REGISTRATION"
+  },
+  "blocked_operations": [],
+  "conflicts": [],
+  "created_at_utc": "2026-10-18T12:00:00Z",
+  "eligibility_separation_note": "GOVERNANCE INVARIANT: Adoption of an internal security entity or listing association registers identity in the internal master only. It does NOT imply primary-listing sufficiency, SourceSecurity conversion authority, or universe admission under Rule R06. Real-candidate adoption remains policy-unresolved pending primary-listing evidence closure.",
+  "entities": [
+    {
+      "is_creation": true,
+      "is_mechanically_plannable": true,
+      "issuer_cik": "0000320193",
+      "matched_existing_security_id": null,
+      "primary_symbol": "AAPL",
+      "proposed_durable_security_id": "ARX_SEC_0B4C728FE0BE",
+      "provisional_security_id": "PROV_SEC_A562B55CDF",
+      "rationale": "Approved under architectural principle: evidence-resolved internal security identity registered independently of strategy eligibility and R06 status. Grants zero universe admission or publication authority.",
+      "share_class": null,
+      "status": "APPROVED_FOR_ADOPTION"
+    },
+    {
+      "is_creation": true,
+      "is_mechanically_plannable": true,
+      "issuer_cik": "0001652044",
+      "matched_existing_security_id": null,
+      "primary_symbol": "GOOG",
+      "proposed_durable_security_id": "ARX_SEC_A11A24D442E2",
+      "provisional_security_id": "PROV_SEC_BC68113BFE",
+      "rationale": "Approved under architectural principle: evidence-resolved internal security identity registered independently of strategy eligibility and R06 status. Grants zero universe admission or publication authority.",
+      "share_class": "CLASS_C",
+      "status": "APPROVED_FOR_ADOPTION"
+    },
+    {
+      "is_creation": true,
+      "is_mechanically_plannable": true,
+      "issuer_cik": "0001652044",
+      "matched_existing_security_id": null,
+      "primary_symbol": "GOOGL",
+      "proposed_durable_security_id": "ARX_SEC_B7EF9ED7A35A",
+      "provisional_security_id": "PROV_SEC_6907BAAE38",
+      "rationale": "Approved under architectural principle: evidence-resolved internal security identity registered independently of strategy eligibility and R06 status. Grants zero universe admission or publication authority.",
+      "share_class": "CLASS_A",
+      "status": "APPROVED_FOR_ADOPTION"
+    }
+  ],
+  "evaluation_reference_date": "2026-10-17",
+  "missing_evidence_or_authorization": [],
+  "plan_content_digest": "957ce8ebe74a1e2f091132adfd93e764681170ce7530022396e8a39d88a04cf4",
+  "plan_id": "PLAN_ADOPT_957CE8EBE74A",
+  "primary_listing_states": {
+    "AAPL": {
+      "claimed_primary_listing": null,
+      "evidence_sufficiency": "INSUFFICIENT_IN_RAW_FEEDS",
+      "issuer_home_market": "US (NASDAQ)",
+      "primary_exchange_for_instrument": "NASDAQ",
+      "rule_r06_admitted": false,
+      "selected_us_assessment_listing": true,
+      "status_note": "Primary-listing evidence remains disaggregated from internal identity adoption. Rule R06 eligibility requires verified primary listing; None remains UNKNOWN."
+    },
+    "GOOG": {
+      "claimed_primary_listing": null,
+      "evidence_sufficiency": "INSUFFICIENT_IN_RAW_FEEDS",
+      "issuer_home_market": "US (NASDAQ)",
+      "primary_exchange_for_instrument": "NASDAQ",
+      "rule_r06_admitted": false,
+      "selected_us_assessment_listing": true,
+      "status_note": "Primary-listing evidence remains disaggregated from internal identity adoption. Rule R06 eligibility requires verified primary listing; None remains UNKNOWN."
+    },
+    "GOOGL": {
+      "claimed_primary_listing": null,
+      "evidence_sufficiency": "INSUFFICIENT_IN_RAW_FEEDS",
+      "issuer_home_market": "US (NASDAQ)",
+      "primary_exchange_for_instrument": "NASDAQ",
+      "rule_r06_admitted": false,
+      "selected_us_assessment_listing": true,
+      "status_note": "Primary-listing evidence remains disaggregated from internal identity adoption. Rule R06 eligibility requires verified primary listing; None remains UNKNOWN."
+    }
+  },
+  "provisional_to_durable_map": {
+    "PROV_SEC_6907BAAE38": "ARX_SEC_B7EF9ED7A35A",
+    "PROV_SEC_A562B55CDF": "ARX_SEC_0B4C728FE0BE",
+    "PROV_SEC_BC68113BFE": "ARX_SEC_A11A24D442E2"
+  },
+  "summary": {
+    "associations_approved_creation": 3,
+    "associations_blocked": 0,
+    "associations_matched_existing": 0,
+    "conflicts_count": 0,
+    "entities_approved_creation": 3,
+    "entities_blocked": 0,
+    "entities_matched_existing": 0,
+    "total_proposals": 3
+  },
+  "target_state_digest": "ea11990ec0e3790abcb0b4293bfadd7ae4e58ca050e79e949e688a82437a93ee"
+}

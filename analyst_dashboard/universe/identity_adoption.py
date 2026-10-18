@@ -107,7 +107,8 @@ class IdentityAdoptionAuthorization:
     authorized_by: Optional[str] = None
     authorization_timestamp_utc: Optional[str] = None
     authorization_token: Optional[str] = None
-    scope: str = "PRODUCTION"  # PRODUCTION or SYNTHETIC_TEST_ONLY
+    scope: str = "PRODUCTION"  # PRODUCTION, SYNTHETIC_TEST_ONLY, or REFERENCE_IDENTITY_REGISTRATION
+    allow_reference_identity_registration: bool = False
     notes: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
@@ -876,7 +877,54 @@ class IdentityAdoptionDryRunEngine:
             )
 
             if not is_synthetic_fixture:
-                # Real candidate: mechanically plannable, but adoption remains policy-unresolved
+                allow_reference_reg = (
+                    auth.is_authorized
+                    and (
+                        getattr(auth, "allow_reference_identity_registration", False)
+                        or auth.scope in ("REFERENCE_IDENTITY_REGISTRATION", "EVIDENCE_RESOLVED_REFERENCE_IDENTITY")
+                    )
+                )
+                if allow_reference_reg:
+                    # Under PO-approved architectural principle:
+                    # "An evidence-resolved internal security identity and supported listing association
+                    # may be registered independently of strategy eligibility and R06 admission status.
+                    # Such registration grants no conversion, admission, publication or scanner authority."
+                    ent_adopt = ProposedEntityAdoption(
+                        provisional_security_id=ent.provisional_security_id,
+                        primary_symbol=sym,
+                        share_class=ent.share_class,
+                        issuer_cik=clean_cik,
+                        status=IdentityAdoptionStatus.APPROVED_FOR_ADOPTION,
+                        is_creation=True,
+                        is_mechanically_plannable=True,
+                        proposed_durable_security_id=durable_sec_id,
+                        rationale=(
+                            "Approved under architectural principle: evidence-resolved internal security "
+                            "identity registered independently of strategy eligibility and R06 status. "
+                            "Grants zero universe admission or publication authority."
+                        ),
+                    )
+                    assoc_adopt = ProposedAssociationAdoption(
+                        provisional_association_id=assoc.provisional_association_id,
+                        provisional_security_id=ent.provisional_security_id,
+                        target_durable_security_id=durable_sec_id,
+                        symbol=sym,
+                        operating_mic=clean_mic,
+                        effective_from=assoc.effective_from,
+                        effective_to=assoc.effective_to,
+                        status=IdentityAdoptionStatus.APPROVED_FOR_ADOPTION,
+                        is_creation=True,
+                        is_mechanically_plannable=True,
+                        proposed_durable_association_id=durable_assoc_id,
+                        conflict_reason=None,
+                    )
+                    proposed_entities.append(ent_adopt)
+                    proposed_associations.append(assoc_adopt)
+                    entities_approved += 1
+                    assocs_approved += 1
+                    continue
+
+                # Real candidate without reference registration authorization: mechanically plannable, but adoption remains policy-unresolved
                 reason = (
                     f"Real-source candidate '{sym}' is mechanically plannable, but adoption into durable "
                     "master prior to primary-listing evidence closure (Rule R06) remains an unresolved policy "
