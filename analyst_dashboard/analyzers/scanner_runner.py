@@ -82,6 +82,13 @@ CURRENT_IMPLEMENTATION_RELEASE_SHA = "ed04de51160e0f2c3e82bd43d989897a4fd77f89"
 from analyst_dashboard.analyzers.scanner_contract import CANONICAL_VCP_UNIVERSE
 
 
+# Supported authoritative classification authorities for VCP
+SUPPORTED_VCP_CLASSIFICATION_AUTHORITIES = {
+    "CANONICAL_VCP_CLASSIFIER",
+    "VCP_CLASSIFIER_V1",
+}
+
+
 class VCPScannerRunner:
     """Market-wide execution runner for Minervini Volatility Contraction Pattern."""
 
@@ -574,28 +581,136 @@ class VCPScannerRunner:
             if acquired_thread_lock:
                 self._scan_lock.release()
 
+    @staticmethod
+    def _is_candidate_vcp_classification_authoritative(
+        cand: Dict[str, Any],
+        snapshot_provenance: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """
+        Evaluate whether a single candidate possesses affirmative, verifiable,
+        authoritative VCP classification.
+        """
+        if not isinstance(cand, dict):
+            return False
+
+        evidence = cand.get("scanner_evidence")
+        if not isinstance(evidence, dict):
+            return False
+
+        setup_pattern = str(cand.get("setup_pattern") or evidence.get("setup_pattern") or "")
+        vcp_stage = str(cand.get("vcp_stage") or evidence.get("vcp_stage") or "")
+        stage_phase = str(cand.get("stage_phase") or evidence.get("stage_phase") or "")
+
+        # 1. Reject unverified or uncomputed indicators
+        if any("Unverified" in s or "Uncomputed" in s for s in (setup_pattern, vcp_stage, stage_phase)):
+            return False
+
+        # 2. Check provenance authority boundary:
+        # If provenance indicates internal reference only / deferred validation,
+        # it cannot claim public classification authority.
+        prov = snapshot_provenance if isinstance(snapshot_provenance, dict) else {}
+        shadow_gov = prov.get("shadow_governance", {})
+        if isinstance(shadow_gov, dict):
+            if (
+                shadow_gov.get("shadow_domain_authority") == "INTERNAL_REFERENCE_ONLY"
+                and shadow_gov.get("external_validation_status") == "DEFERRED"
+            ):
+                return False
+
+        # 3. Must specify an authorized classification authority
+        authority = (
+            evidence.get("classification_authority")
+            or cand.get("classification_authority")
+            or prov.get("classification_authority")
+        )
+        if authority not in SUPPORTED_VCP_CLASSIFICATION_AUTHORITIES:
+            return False
+
+        # 4. Must declare affirmative evaluation flag
+        if evidence.get("vcp_authoritative_evaluated") is not True and cand.get("vcp_authoritative_evaluated") is not True:
+            return False
+
+        # 5. Must have affirmative boolean pattern detection and stage 2 confirmation
+        if evidence.get("vcp_pattern_detected") is not True:
+            return False
+        if evidence.get("stage2_status") != "STAGE_2_CONFIRMED":
+            return False
+
+        # 6. Must have calculated moving average (SMA50)
+        sma_50 = evidence.get("sma_50")
+        if sma_50 is None or not isinstance(sma_50, (int, float)) or sma_50 <= 0:
+            return False
+
+        return True
+
     def _has_unsupported_vcp_matches(self, rec: Dict[str, Any]) -> bool:
-        """Detect if a snapshot claims AVAILABLE matches but contains unverified or legacy proxy classifications."""
-        if rec.get("status_at_publication") not in (ScannerStatus.AVAILABLE.value, "AVAILABLE"):
+        """
+        Detect if a snapshot claims AVAILABLE or STALE matches but contains unsupported,
+        unverified, or legacy proxy classifications.
+
+        Enforces affirmative classification trust:
+        - If snapshot claims AVAILABLE or STALE status:
+          - If matched_count is 0 and results is empty: returns False (valid zero-match evaluation).
+          - If matched_count > 0 or results has candidates:
+            EVERY candidate claiming VCP qualification or containing scanner evidence
+            must be authoritatively verified via _is_candidate_vcp_classification_authoritative.
+          - If any candidate contains legacy label strings ('Minervini', 'VCP', 'Stage 2')
+            without authoritative classification, fails closed.
+          - If any candidate contains unverified/uncomputed indicators, fails closed.
+          - If matched_count is inconsistent with results length, fails closed.
+        """
+        if not isinstance(rec, dict):
+            return True
+
+        status_pub = rec.get("status_at_publication")
+        if status_pub not in (ScannerStatus.AVAILABLE.value, "AVAILABLE", ScannerStatus.STALE.value, "STALE"):
             return False
-        results = rec.get("results", [])
+
+        matched_count = rec.get("matched_count")
+        results = rec.get("results")
+
+        # Inconsistent null matched_count on AVAILABLE/STALE snapshot
+        if matched_count is None and (results is None or len(results) == 0):
+            return True
+
+        # Valid zero-match evaluation
+        if matched_count == 0 and (results is None or (isinstance(results, list) and len(results) == 0)):
+            return False
+
         if not isinstance(results, list):
-            return False
+            return True
+
+        if (matched_count or 0) > 0 and len(results) == 0:
+            return True
+        if (matched_count or 0) == 0 and len(results) > 0:
+            return True
+
+        provenance = rec.get("provenance", {})
+        if not isinstance(provenance, dict):
+            provenance = {}
+
         for cand in results:
             if not isinstance(cand, dict):
-                continue
-            evidence = cand.get("scanner_evidence", {})
-            setup_pattern = cand.get("setup_pattern") or evidence.get("setup_pattern", "")
-            vcp_stage = cand.get("vcp_stage") or evidence.get("vcp_stage", "")
-            stage_phase = cand.get("stage_phase") or evidence.get("stage_phase", "")
-
-            # Any unverified or uncomputed indicators in candidates claiming VCP qualification
-            if any("Unverified" in str(s) or "Uncomputed" in str(s) for s in [setup_pattern, vcp_stage, stage_phase]):
                 return True
-            # Legacy proxy fallback where VCP pattern was not detected or stage 2 is unconfirmed
-            if evidence.get("vcp_pattern_detected") is False and evidence.get("stage2_status") != "STAGE_2_CONFIRMED":
-                if "Minervini" in str(setup_pattern) or "VCP" in str(vcp_stage):
+            evidence = cand.get("scanner_evidence", {})
+            setup_pattern = str(cand.get("setup_pattern") or evidence.get("setup_pattern") or "")
+            vcp_stage = str(cand.get("vcp_stage") or evidence.get("vcp_stage") or "")
+            stage_phase = str(cand.get("stage_phase") or evidence.get("stage_phase") or "")
+
+            # 1. Any unverified or uncomputed indicators in candidates claiming VCP qualification
+            if any("Unverified" in s or "Uncomputed" in s for s in (setup_pattern, vcp_stage, stage_phase)):
+                return True
+
+            # 2. Legacy proxy fallback or claims of VCP / Minervini / Stage 2
+            is_claiming_vcp = any(
+                term in s for s in (setup_pattern, vcp_stage, stage_phase)
+                for term in ("Minervini", "VCP", "Stage 2")
+            )
+            # If candidate claims VCP or contains scanner_evidence
+            if is_claiming_vcp or "scanner_evidence" in cand:
+                if not self._is_candidate_vcp_classification_authoritative(cand, snapshot_provenance=provenance):
                     return True
+
         return False
 
     def get_active_or_latest_snapshot(self) -> Dict[str, Any]:

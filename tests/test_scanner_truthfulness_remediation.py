@@ -602,3 +602,403 @@ def test_nondestructive_recovery_and_immutability_preservation(tmp_path):
     assert store.get_snapshot_by_id("snap-pending-002")["matched_count"] is None
 
 
+def test_faithful_legacy_snapshot_1792300690_fixture_fails_closed(tmp_path):
+    """PR #28 Follow-up: Faithful production fixture vcp-snap-1792300690-2a43ca7f fails closed to PIPELINE_PENDING."""
+    import json, os
+    repo_root = os.path.dirname(os.path.dirname(__file__))
+    fixture_path = os.path.join(repo_root, "tests", "fixtures", "legacy_vcp_snapshot_1792300690.json")
+    with open(fixture_path, "r", encoding="utf-8") as f:
+        fixture_data = json.load(f)
+
+    db_path = str(tmp_path / "test_faithful_fixture.db")
+    store = ScannerSnapshotStore(db_path=db_path)
+    store.save_snapshot(fixture_data)
+
+    runner = VCPScannerRunner(snapshot_store=store)
+    env = runner.get_active_or_latest_snapshot()
+
+    assert env["status"] == "PIPELINE_PENDING"
+    assert env["reason"] == "UNSUPPORTED_LEGACY_MATCHES"
+    assert env["matched_count"] is None
+    assert env["snapshot"]["matched_count"] is None
+    assert len(env["results"]) == 0
+
+
+def test_missing_and_null_classification_values_fail_closed(tmp_path):
+    """PR #28 Follow-up: Missing, null, or false classification values fail closed."""
+    import time
+    from analyst_dashboard.analyzers.scanner_runner import CURRENT_IMPLEMENTATION_RELEASE_SHA
+
+    db_path = str(tmp_path / "test_missing_vals.db")
+    store = ScannerSnapshotStore(db_path=db_path)
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+    # Test candidate with absent vcp_pattern_detected and absent stage2_status
+    store.save_snapshot({
+        "snapshot_id": "snap-absent-fields",
+        "scanner_id": "MINERVINI_VCP",
+        "run_id": "run-absent-1",
+        "api_contract_version": "1.0.0",
+        "ruleset_version": "1.0.0",
+        "evidence_schema_version": "1.0.0",
+        "score_model_version": "1.0.0",
+        "data_provenance_version": "1.0.0",
+        "universe_version": "1.0.0",
+        "freshness_policy_version": "1.0.0",
+        "implementation_release_sha": CURRENT_IMPLEMENTATION_RELEASE_SHA,
+        "semantic_fingerprint": "fp-absent-1",
+        "generated_at": now_iso,
+        "data_as_of": "2026-10-18",
+        "status_at_publication": "AVAILABLE",
+        "universe_id": "ARX_CANONICAL_LONG_TERM_V1",
+        "universe_size": 35,
+        "matched_count": 1,
+        "results": [
+            {
+                "symbol": "XYZ",
+                "score": 30.0,
+                "current_price": 100.0,
+                "scanner_evidence": {
+                    "setup_pattern": "Minervini VCP (Volatility Contraction Pattern)",
+                    "vcp_stage": "VCP 3-Stage Compression Confirmed",
+                    "stage_phase": "Stage 2 Advancing Growth Phase",
+                    # vcp_pattern_detected absent
+                    # stage2_status absent
+                    "sma_50": None,
+                },
+            }
+        ],
+        "provenance": {},
+        "freshness": {"status": "LIVE"},
+        "publication_decision": "PUBLISH",
+    })
+
+    runner = VCPScannerRunner(snapshot_store=store)
+    env = runner.get_active_or_latest_snapshot()
+    assert env["status"] == "PIPELINE_PENDING"
+    assert env["reason"] == "UNSUPPORTED_LEGACY_MATCHES"
+    assert env["matched_count"] is None
+    assert len(env["results"]) == 0
+
+
+def test_true_boolean_and_valid_sma50_without_authoritative_provenance_fails_closed(tmp_path):
+    """PR #28 Follow-up: True boolean and valid SMA50 without authoritative evaluation provenance fails closed."""
+    import time
+    from analyst_dashboard.analyzers.scanner_runner import CURRENT_IMPLEMENTATION_RELEASE_SHA
+
+    db_path = str(tmp_path / "test_no_provenance.db")
+    store = ScannerSnapshotStore(db_path=db_path)
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+    # Candidate has vcp_pattern_detected=True, stage2_status=STAGE_2_CONFIRMED, and valid sma_50
+    # but lacks authoritative evaluation provenance and classification authority
+    store.save_snapshot({
+        "snapshot_id": "snap-no-provenance",
+        "scanner_id": "MINERVINI_VCP",
+        "run_id": "run-no-prov-1",
+        "api_contract_version": "1.0.0",
+        "ruleset_version": "1.0.0",
+        "evidence_schema_version": "1.0.0",
+        "score_model_version": "1.0.0",
+        "data_provenance_version": "1.0.0",
+        "universe_version": "1.0.0",
+        "freshness_policy_version": "1.0.0",
+        "implementation_release_sha": CURRENT_IMPLEMENTATION_RELEASE_SHA,
+        "semantic_fingerprint": "fp-no-prov-1",
+        "generated_at": now_iso,
+        "data_as_of": "2026-10-18",
+        "status_at_publication": "AVAILABLE",
+        "universe_id": "ARX_CANONICAL_LONG_TERM_V1",
+        "universe_size": 35,
+        "matched_count": 1,
+        "results": [
+            {
+                "symbol": "ABC",
+                "score": 30.0,
+                "current_price": 100.0,
+                "scanner_evidence": {
+                    "setup_pattern": "Minervini VCP (Volatility Contraction Pattern)",
+                    "vcp_stage": "VCP 3-Stage Compression Confirmed",
+                    "stage_phase": "Stage 2 Advancing Growth Phase",
+                    "vcp_pattern_detected": True,
+                    "stage2_status": "STAGE_2_CONFIRMED",
+                    "sma_50": 95.5,
+                    # No vcp_authoritative_evaluated flag
+                    # No supported classification_authority
+                },
+            }
+        ],
+        "provenance": {
+            "shadow_governance": {
+                "shadow_domain_authority": "INTERNAL_REFERENCE_ONLY",
+                "external_validation_status": "DEFERRED",
+            }
+        },
+        "freshness": {"status": "LIVE"},
+        "publication_decision": "PUBLISH",
+    })
+
+    runner = VCPScannerRunner(snapshot_store=store)
+    env = runner.get_active_or_latest_snapshot()
+    assert env["status"] == "PIPELINE_PENDING"
+    assert env["reason"] == "UNSUPPORTED_LEGACY_MATCHES"
+    assert env["matched_count"] is None
+    assert len(env["results"]) == 0
+
+
+def test_mixed_candidate_evidence_fails_entire_snapshot_closed(tmp_path):
+    """PR #28 Follow-up: If even one candidate lacks authoritative classification, the entire snapshot fails closed."""
+    import time
+    from analyst_dashboard.analyzers.scanner_runner import CURRENT_IMPLEMENTATION_RELEASE_SHA
+
+    db_path = str(tmp_path / "test_mixed_candidates.db")
+    store = ScannerSnapshotStore(db_path=db_path)
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+    # Candidate 1 is authoritatively valid; Candidate 2 has legacy unverified evidence
+    store.save_snapshot({
+        "snapshot_id": "snap-mixed-001",
+        "scanner_id": "MINERVINI_VCP",
+        "run_id": "run-mixed-1",
+        "api_contract_version": "1.0.0",
+        "ruleset_version": "1.0.0",
+        "evidence_schema_version": "1.0.0",
+        "score_model_version": "1.0.0",
+        "data_provenance_version": "1.0.0",
+        "universe_version": "1.0.0",
+        "freshness_policy_version": "1.0.0",
+        "implementation_release_sha": CURRENT_IMPLEMENTATION_RELEASE_SHA,
+        "semantic_fingerprint": "fp-mixed-1",
+        "generated_at": now_iso,
+        "data_as_of": "2026-10-18",
+        "status_at_publication": "AVAILABLE",
+        "universe_id": "ARX_CANONICAL_LONG_TERM_V1",
+        "universe_size": 35,
+        "matched_count": 2,
+        "results": [
+            {
+                "symbol": "VALID1",
+                "score": 85.0,
+                "current_price": 150.0,
+                "scanner_evidence": {
+                    "setup_pattern": "Minervini VCP",
+                    "vcp_stage": "Stage 2 Breakout",
+                    "stage_phase": "Stage 2 Advancing",
+                    "vcp_pattern_detected": True,
+                    "stage2_status": "STAGE_2_CONFIRMED",
+                    "sma_50": 140.0,
+                    "vcp_authoritative_evaluated": True,
+                    "classification_authority": "CANONICAL_VCP_CLASSIFIER",
+                },
+            },
+            {
+                "symbol": "INVALID2",
+                "score": 30.0,
+                "current_price": 50.0,
+                "scanner_evidence": {
+                    "setup_pattern": "Minervini VCP (Volatility Contraction Pattern)",
+                    "vcp_stage": "VCP 3-Stage Compression Confirmed",
+                    "stage_phase": "Stage 2 Advancing Growth Phase",
+                    "vcp_pattern_detected": None,  # Missing!
+                    "stage2_status": None,
+                    "sma_50": None,
+                },
+            },
+        ],
+        "provenance": {"classification_authority": "CANONICAL_VCP_CLASSIFIER"},
+        "freshness": {"status": "LIVE"},
+        "publication_decision": "PUBLISH",
+    })
+
+    runner = VCPScannerRunner(snapshot_store=store)
+    env = runner.get_active_or_latest_snapshot()
+    # All-or-nothing containment: entire snapshot fails closed, zero leak
+    assert env["status"] == "PIPELINE_PENDING"
+    assert env["reason"] == "UNSUPPORTED_LEGACY_MATCHES"
+    assert env["matched_count"] is None
+    assert len(env["results"]) == 0
+
+
+def test_no_fallback_to_older_unsupported_snapshots(tmp_path):
+    """PR #28 Follow-up: Reader never falls back to older unsupported snapshots when latest fails closed."""
+    import time
+    from analyst_dashboard.analyzers.scanner_runner import CURRENT_IMPLEMENTATION_RELEASE_SHA
+
+    db_path = str(tmp_path / "test_no_fallback.db")
+    store = ScannerSnapshotStore(db_path=db_path)
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+    # Snapshot 1 (older): unsupported legacy matches
+    store.save_snapshot({
+        "snapshot_id": "snap-older-legacy",
+        "scanner_id": "MINERVINI_VCP",
+        "run_id": "run-older-1",
+        "api_contract_version": "1.0.0",
+        "ruleset_version": "1.0.0",
+        "evidence_schema_version": "1.0.0",
+        "score_model_version": "1.0.0",
+        "data_provenance_version": "1.0.0",
+        "universe_version": "1.0.0",
+        "freshness_policy_version": "1.0.0",
+        "implementation_release_sha": CURRENT_IMPLEMENTATION_RELEASE_SHA,
+        "semantic_fingerprint": "fp-older-1",
+        "generated_at": now_iso,
+        "data_as_of": "2026-10-17",
+        "status_at_publication": "AVAILABLE",
+        "universe_id": "ARX_CANONICAL_LONG_TERM_V1",
+        "universe_size": 35,
+        "matched_count": 10,
+        "results": [
+            {
+                "symbol": "OLD1",
+                "score": 25.0,
+                "current_price": 100.0,
+                "scanner_evidence": {
+                    "setup_pattern": "Minervini VCP (Volatility Contraction Pattern)",
+                    "vcp_stage": "VCP 3-Stage Compression Confirmed",
+                    "stage_phase": "Stage 2 Advancing Growth Phase",
+                    "sma_50": None,
+                },
+            }
+        ],
+        "provenance": {},
+        "freshness": {"status": "LIVE"},
+        "publication_decision": "PUBLISH",
+    })
+
+    time.sleep(0.01)
+
+    # Snapshot 2 (latest): also unsupported legacy matches
+    store.save_snapshot({
+        "snapshot_id": "snap-latest-legacy",
+        "scanner_id": "MINERVINI_VCP",
+        "run_id": "run-latest-2",
+        "api_contract_version": "1.0.0",
+        "ruleset_version": "1.0.0",
+        "evidence_schema_version": "1.0.0",
+        "score_model_version": "1.0.0",
+        "data_provenance_version": "1.0.0",
+        "universe_version": "1.0.0",
+        "freshness_policy_version": "1.0.0",
+        "implementation_release_sha": CURRENT_IMPLEMENTATION_RELEASE_SHA,
+        "semantic_fingerprint": "fp-latest-2",
+        "generated_at": now_iso,
+        "data_as_of": "2026-10-18",
+        "status_at_publication": "AVAILABLE",
+        "universe_id": "ARX_CANONICAL_LONG_TERM_V1",
+        "universe_size": 35,
+        "matched_count": 17,
+        "results": [
+            {
+                "symbol": "LATEST1",
+                "score": 30.0,
+                "current_price": 200.0,
+                "scanner_evidence": {
+                    "setup_pattern": "Minervini VCP (Volatility Contraction Pattern)",
+                    "vcp_stage": "VCP 3-Stage Compression Confirmed",
+                    "stage_phase": "Stage 2 Advancing Growth Phase",
+                    "sma_50": None,
+                },
+            }
+        ],
+        "provenance": {},
+        "freshness": {"status": "LIVE"},
+        "publication_decision": "PUBLISH",
+    })
+
+    runner = VCPScannerRunner(snapshot_store=store)
+    env = runner.get_active_or_latest_snapshot()
+    # Must immediately fail closed; must NOT fall back to older snapshot
+    assert env["status"] == "PIPELINE_PENDING"
+    assert env["reason"] == "UNSUPPORTED_LEGACY_MATCHES"
+    assert env["matched_count"] is None
+    assert len(env["results"]) == 0
+
+
+def test_distinguishable_zero_match_evaluation_from_uncomputed_classification(tmp_path):
+    """PR #28 Follow-up: A completed evaluation with 0 matches is distinguishable from uncomputed classification."""
+    import time
+    from analyst_dashboard.analyzers.scanner_runner import CURRENT_IMPLEMENTATION_RELEASE_SHA
+
+    db_path = str(tmp_path / "test_zero_matches.db")
+    store = ScannerSnapshotStore(db_path=db_path)
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+    # Valid completed scan with 0 matches
+    store.save_snapshot({
+        "snapshot_id": "snap-zero-matches",
+        "scanner_id": "MINERVINI_VCP",
+        "run_id": "run-zero-1",
+        "api_contract_version": "1.0.0",
+        "ruleset_version": "1.0.0",
+        "evidence_schema_version": "1.0.0",
+        "score_model_version": "1.0.0",
+        "data_provenance_version": "1.0.0",
+        "universe_version": "1.0.0",
+        "freshness_policy_version": "1.0.0",
+        "implementation_release_sha": CURRENT_IMPLEMENTATION_RELEASE_SHA,
+        "semantic_fingerprint": "fp-zero-1",
+        "generated_at": now_iso,
+        "data_as_of": "2026-10-18",
+        "status_at_publication": "AVAILABLE",
+        "universe_id": "ARX_CANONICAL_LONG_TERM_V1",
+        "universe_size": 35,
+        "matched_count": 0,
+        "results": [],
+        "provenance": {},
+        "freshness": {"status": "LIVE", "data_as_of": "2026-10-18", "generated_at": now_iso},
+        "publication_decision": "PUBLISH",
+    })
+
+    runner = VCPScannerRunner(snapshot_store=store)
+    env = runner.get_active_or_latest_snapshot()
+    assert env["status"] == "AVAILABLE"
+    assert env["matched_count"] == 0
+    assert len(env["results"]) == 0
+
+
+def test_real_api_path_screener_run_with_legacy_snapshot(tmp_path, monkeypatch):
+    """PR #28 Follow-up: Real API route /api/v1/screener/run fails closed and leaks zero VCP candidates."""
+    import json, os
+    from fastapi.testclient import TestClient
+    from api.main import app
+    import api.routes.screener as screener_mod
+
+    repo_root = os.path.dirname(os.path.dirname(__file__))
+    fixture_path = os.path.join(repo_root, "tests", "fixtures", "legacy_vcp_snapshot_1792300690.json")
+    with open(fixture_path, "r", encoding="utf-8") as f:
+        fixture_data = json.load(f)
+
+    db_path = str(tmp_path / "test_api_screener.db")
+    store = ScannerSnapshotStore(db_path=db_path)
+    store.save_snapshot(fixture_data)
+
+    runner = VCPScannerRunner(
+        market_db=screener_mod.market_db,
+        snapshot_store=store,
+        confluence_engine=screener_mod.confluence_engine,
+    )
+    monkeypatch.setattr(screener_mod, "vcp_scanner_runner", runner)
+
+    client = TestClient(app)
+    res = client.get("/api/v1/screener/run")
+    assert res.status_code == 200
+    data = res.json()
+
+    # VCP capability must fail closed
+    caps = data["capabilities"]
+    assert caps["VCP"]["status"] == "PIPELINE_PENDING"
+    assert caps["VCP"]["matchedCount"] is None
+    assert caps["VCP"]["universeScreening"] == "PIPELINE_PENDING"
+    assert caps["VCP"]["reason"] == "UNSUPPORTED_LEGACY_MATCHES"
+
+    # Unrelated scanners remain intact
+    assert caps["VALUE_GARP"]["status"] == "AVAILABLE"
+    assert caps["SMART_MONEY"]["status"] == "PIPELINE_PENDING"
+
+    # Candidates must contain ZERO VCP category tags
+    vcp_candidates = [c["symbol"] for c in data["candidates"] if "VCP" in c.get("categories", [])]
+    assert len(vcp_candidates) == 0, f"Leaked VCP candidates: {vcp_candidates}"
+
+
+
