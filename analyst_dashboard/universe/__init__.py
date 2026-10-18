@@ -49,6 +49,20 @@ from .coverage_diagnostics import (
     load_acquisition_artifacts_to_records,
 )
 
+from .identity_adoption import (
+    IdentityAdoptionStatus,
+    IdentityAdoptionAuthorization,
+    ProposedEntityAdoption,
+    ProposedAssociationAdoption,
+    AdoptionPlanSummary,
+    IdentityAdoptionPlan,
+    IdentityAdoptionDryRunEngine,
+    StalePlanError,
+    PlanIntegrityError,
+    PlanApplicationError,
+    apply_adoption_plan_test_only,
+)
+
 __all__ = [
     "UNIVERSE_ID",
     "UNIVERSE_VERSION",
@@ -85,6 +99,17 @@ __all__ = [
     "CapacityBenchmarker",
     "CapacityBenchmarkReport",
     "load_acquisition_artifacts_to_records",
+    "IdentityAdoptionStatus",
+    "IdentityAdoptionAuthorization",
+    "ProposedEntityAdoption",
+    "ProposedAssociationAdoption",
+    "AdoptionPlanSummary",
+    "IdentityAdoptionPlan",
+    "IdentityAdoptionDryRunEngine",
+    "StalePlanError",
+    "PlanIntegrityError",
+    "PlanApplicationError",
+    "apply_adoption_plan_test_only",
 ]
 
 
