@@ -95,6 +95,8 @@ To prevent confusion regarding repository state:
 - **Initial Integration Tree**: `121d0c9fa47f28d0acfad9bb6ea9c8ea3c9764e0` (distinct from the PR #22 base tree).
 - **Stage Boundary & Reporting Commit**: `e5132df1a47978bb808afbce0205f5b35fb7cb70` (`fix(universe): correct identity gating, conversion boundary, and dynamic stage reporting`).
 - **Stage Boundary Tree**: `168ef009937b15dea10c8ddfe48f0d29a4b61b68`.
+- **Exchange Handoff & Real-Source Identity Commit**: `c4b916a1de8f2fe80d3e7d42b75672d946fad725` (`fix(universe): normalize directory exchanges to canonical vocabulary and refine real-source identity accounting`).
+- **Exchange Handoff Tree**: `91ece41ea90aa0e552277c756297c9a4e241ecfd`.
 
 ---
 
@@ -285,13 +287,16 @@ To prevent duplicate logic or conflicting models, this workstream strictly reuse
 The implementation was strictly verified against all mandatory operational boundaries:
 
 1. **Pure Offline Execution (Zero Network Calls)**:
-   - Verification: `test_03_no_network_enforcement_network_blocked` monkeypatches `socket.socket` to raise an immediate exception on any socket call. The complete pipeline executes from end to end without invoking socket, HTTP, or DNS resources.
+   - Verification: `test_03_no_network_enforcement_network_blocked` explicitly monkeypatches `socket.socket` to raise an immediate exception on any network connection attempt, proving that the full offline pipeline (Scenario A) runs with zero socket calls.
+   - Note on Scope: Broader regression test suites run offline by virtue of architecture, local files, and synthetic fixtures, but are not all individually socket-mocked.
    - Status: **PASSED / COMPLIANT**.
 
-2. **Read-Safety & Zero Database Mutation (3-Layer Enforcement)**:
-   - **Layer 1 (URI Mode)**: `ReadOnlyMarketStore` connects exclusively via SQLite URI `file:<path>?mode=ro`.
-   - **Layer 2 (Engine-Level Write Prevention)**: SQLite engine enforces read-only access at the database driver level; any `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `DROP`, or DDL/DML attempt raises an immediate `sqlite3.OperationalError: attempt to write a readonly database`.
-   - **Layer 3 (Filesystem Stat & Digest Immutability)**: `test_07_read_safety_zero_database_mutation` captures `os.stat()` before and after full execution, proving byte-for-byte immutability of file size (`st_size`) and modification timestamp (`st_mtime`).
+2. **Read-Safety & Zero Database Mutation (Multi-Layer Enforcement)**:
+   - **Environment / Fixture Distinction**: Tests use a writable temporary fixture store (`tmp_path / "test_market_data.db"`) exclusively for initial test data seeding. Once seeded, diagnostic execution occurs strictly through `ReadOnlyMarketStore`.
+   - **URI Connection Mode**: `ReadOnlyMarketStore` connects exclusively via SQLite URI `file:<path>?mode=ro`.
+   - **Engine-Level Write Rejection**: Verified directly in `test_07_read_safety_zero_database_mutation` via an explicit assertion (`pytest.raises(sqlite3.OperationalError, match="attempt to write a readonly database|readonly")`) attempting an illegal `INSERT`. The SQLite engine unconditionally rejects write operations at the driver level.
+   - **Supporting File Observation**: `test_07` captures `os.stat()` before and after full execution, proving byte-for-byte immutability of file size (`st_size`) and modification timestamp (`st_mtime`). (Note: file size and mtime are supporting evidence; the driver-level write rejection is the authoritative security boundary.)
+   - **Call Path Audit**: Call paths were inspected to verify that no publication or adoption methods (`UniverseStore.publish`, `publish_universe`, etc.) are called by the offline build/coverage path.
    - Status: **PASSED / COMPLIANT**.
 
 3. **Zero Scanner Activation**:
@@ -302,10 +307,11 @@ The implementation was strictly verified against all mandatory operational bound
    - Verification: `production_published=False` and `production_adopted=False` are enforced across all runs. The `UniverseBuildAttestation` and eligibility ledger rows are emitted as in-memory return objects and serialized solely to localized file artifacts (`output/diagnostics/...`). No production database tables or cache registers are altered.
    - Status: **PASSED / COMPLIANT**.
 
-5. **Strict Local Worktree Boundary**:
+5. **Strict Worktree Boundary & Remote Review Gate Authorization**:
    - Dedicated Worktree: `C:\Users\akara\Documents\Projects\finance-sprint-2-offline-build-coverage`
    - Dedicated Branch: `feat/sprint-2-offline-build-coverage`
-   - No `git push`, no GitHub pull request creation, no merge to `main`, and zero mutation of sibling worktrees.
+   - Zero mutation of sibling worktrees.
+   - Remote PR creation and CI observation authorized; merges and production activations remain strictly blocked.
    - Status: **PASSED / COMPLIANT**.
 
 ---

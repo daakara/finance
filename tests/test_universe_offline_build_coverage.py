@@ -576,6 +576,13 @@ class TestUniverseOfflineBuildCoverage:
 
         candidates = build_scenario_a_candidates()
         with ReadOnlyMarketStore(test_market_db) as store:
+            # 1. Direct write-rejection assertion: engine level rejects any write/DDL
+            with pytest.raises(sqlite3.OperationalError, match="attempt to write a readonly database|readonly"):
+                store._get_connection().execute(
+                    "INSERT INTO asset_ohlcv_daily VALUES ('ILLEGAL', '2026-10-16', 1, 1, 1, 1, 1)"
+                )
+
+            # 2. Read-only diagnostic execution
             config = OfflineBuildCoverageConfig(
                 candidate_records=candidates,
                 as_of_date="2026-10-16",
