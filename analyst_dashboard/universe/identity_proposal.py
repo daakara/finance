@@ -1183,3 +1183,12 @@ def build_three_candidate_proposals(research_root: Optional[Path] = None) -> Ide
         if prop:
             three_ledger.add_proposal(prop)
     return three_ledger
+
+
+def build_three_candidate_proposal(research_root: Optional[Path] = None) -> IdentityAssociationProposalLedger:
+    """
+    Convenience alias for build_three_candidate_proposals bounded strictly
+    to the three candidate pilot: AAPL, GOOGL, GOOG.
+    """
+    return build_three_candidate_proposals(research_root=research_root)
+
