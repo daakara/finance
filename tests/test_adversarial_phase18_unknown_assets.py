@@ -281,8 +281,8 @@ def test_hidden_gems_screener_fails_closed_on_uncataloged_tickers():
         assert r["lynch_score"] == 0.0
         assert r["greenblatt_score"] == 0.0
         assert r["growth_score"] == 0.0
-        assert r["roic_pct"] == 0.0
-        assert r["peg_ratio"] == 0.0
+        assert r["roic_pct"] is None  # Unavailable fundamentals remain None, not synthetic 0.0
+        assert r["peg_ratio"] is None
         assert "Unverified" in r["expert_model"]
         assert "Unverified" in r["factor_verdict"]
         assert "Unverified" in r["dna_verdict"]
