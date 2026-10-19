@@ -804,3 +804,24 @@ def test_17_r1_dynamic_normalization_engine_and_ledger_adapter():
     assert incomplete["status"] == "INCOMPLETE"
     assert "Missing required financial inputs" in incomplete["error"]
     assert incomplete["sustainable_cash_flow_millions"] is None
+
+def test_18_application_route_registration_and_prefix_verification():
+    """Verify FastAPI application in api.main registers fundamentals router under /api/v1/fundamentals with middleware."""
+    from api.main import app
+
+    # 1. Structural route registration check
+    registered_routes = [getattr(route, "path", "") for route in app.routes]
+    fundamentals_routes = [p for p in registered_routes if p.startswith("/api/v1/fundamentals")]
+    assert len(fundamentals_routes) >= 2, f"Expected at least 2 fundamentals routes, found: {fundamentals_routes}"
+    assert "/api/v1/fundamentals/" in fundamentals_routes
+    assert "/api/v1/fundamentals/{symbol}" in fundamentals_routes
+
+    # 2. Live dispatch through real application router
+    resp = client.get("/api/v1/fundamentals/")
+    assert resp.status_code == 200
+    assert resp.json()["metadata"]["api_contract_version"] == "2.0.0"
+    assert resp.json()["metadata"]["read_only"] is True
+
+    # 3. Middleware integration verification (security headers added by application middleware)
+    assert resp.headers.get("X-Content-Type-Options") == "nosniff"
+    assert resp.headers.get("X-Frame-Options") == "DENY"
