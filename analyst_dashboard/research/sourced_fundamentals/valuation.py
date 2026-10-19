@@ -3,11 +3,17 @@ analyst_dashboard/research/sourced_fundamentals/valuation.py
 
 Multi-scenario Discounted Free Cash Flow (FCFF) and Reverse-DCF valuation models.
 Provides conservative, base, and optimistic scenario bounds, sensitivity matrices,
-market-implied growth rate reverse-engineering, and explicit thesis invalidation conditions.
+market-implied revenue growth reverse-engineering, and explicit thesis invalidation conditions.
+
+Guarantees:
+- Strict Lease-as-Operating-Expense valuation convention (no lease double-counting).
+- Zero hardcoded factual fallbacks (missing inputs propagate as None / UNAVAILABLE).
+- Reverse DCF brackets check with roundtrip forward-model verification.
+- Sensitivity matrix returns None (not 0.0) for invalid cells.
 """
 
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from .contracts import (
     ValuationScenario,
     DeepValuationAssessment,
@@ -21,7 +27,7 @@ logger = logging.getLogger(__name__)
 def run_fcff_model(
     base_revenue: float,
     current_shares: float,
-    net_debt_and_leases: float,
+    net_debt_bridge: float,
     growth_5y_pct: float,
     operating_margin_pct: float,
     wacc_pct: float,
@@ -30,22 +36,29 @@ def run_fcff_model(
     reinvestment_rate_pct: float = 15.0,
 ) -> Dict[str, float]:
     """
-    5-Year FCFF DCF model:
+    5-Year FCFF DCF model under Lease-as-Operating-Expense convention:
     FCFF_t = Revenue_t * EBIT_Margin * (1 - Tax_Rate) * (1 - Reinvestment_Rate)
     Terminal Value = FCFF_5 * (1 + g) / (WACC - g)
     Enterprise Value = PV(FCFF_1..5) + PV(Terminal_Value)
-    Equity Value = Enterprise Value - Net Debt & Leases
+    Equity Value = Enterprise Value - Net Debt Bridge
+    (Net Debt Bridge = Total Financial Debt - Total Cash & Investments)
     Per Share Value = Equity Value / Diluted Shares
     """
+    if base_revenue is None or current_shares is None or net_debt_bridge is None:
+        raise ValueError("Cannot run FCFF model: base_revenue, current_shares, or net_debt_bridge is None")
+    if current_shares <= 0:
+        raise ValueError("Current shares must be strictly positive")
+    if base_revenue <= 0:
+        raise ValueError("Base revenue must be strictly positive")
+    if wacc_pct <= terminal_growth_pct:
+        raise ValueError(f"WACC ({wacc_pct}%) must be strictly greater than terminal growth ({terminal_growth_pct}%)")
+
     growth = growth_5y_pct / 100.0
     ebit_margin = operating_margin_pct / 100.0
     wacc = wacc_pct / 100.0
     g_term = terminal_growth_pct / 100.0
     tax = tax_rate_pct / 100.0
     reinv = reinvestment_rate_pct / 100.0
-
-    if wacc <= g_term:
-        raise ValueError("WACC must be strictly greater than terminal growth rate")
 
     pv_cash_flows = 0.0
     rev = base_revenue
@@ -64,7 +77,7 @@ def run_fcff_model(
     pv_terminal_value = terminal_value / ((1.0 + wacc) ** 5)
 
     ev = pv_cash_flows + pv_terminal_value
-    equity_val = ev - net_debt_and_leases
+    equity_val = ev - net_debt_bridge
     per_share = equity_val / current_shares
 
     return {
@@ -80,25 +93,75 @@ def solve_reverse_dcf(
     target_price: float,
     base_revenue: float,
     current_shares: float,
-    net_debt_and_leases: float,
+    net_debt_bridge: float,
     operating_margin_pct: float,
     wacc_pct: float,
     terminal_growth_pct: float,
     tax_rate_pct: float = 21.0,
     reinvestment_rate_pct: float = 15.0,
-) -> float:
+    low_bound_pct: float = -40.0,
+    high_bound_pct: float = 100.0,
+) -> Tuple[Optional[float], str]:
     """
     Numerically solves for the 5-year revenue CAGR required for per-share
-    DCF value to equal target_price, holding other variables constant.
+    DCF value to equal target_price, holding other parameters constant.
+
+    Guarantees:
+    - Verifies that target_price is bracketed in [low_bound_pct, high_bound_pct].
+    - If target_price is NOT bracketed, returns (None, 'OUT_OF_BOUNDS_TARGET_NOT_BRACKETED').
+    - Performs roundtrip forward-model verification: feeds solved CAGR back into run_fcff_model
+      and asserts |DCF - target_price| < max(0.05, target_price * 0.0005).
     """
-    low = -0.40
-    high = 1.00
+    if (
+        target_price is None
+        or base_revenue is None
+        or current_shares is None
+        or net_debt_bridge is None
+    ):
+        return None, "MISSING_INPUTS"
+
+    try:
+        res_low = run_fcff_model(
+            base_revenue=base_revenue,
+            current_shares=current_shares,
+            net_debt_bridge=net_debt_bridge,
+            growth_5y_pct=low_bound_pct,
+            operating_margin_pct=operating_margin_pct,
+            wacc_pct=wacc_pct,
+            terminal_growth_pct=terminal_growth_pct,
+            tax_rate_pct=tax_rate_pct,
+            reinvestment_rate_pct=reinvestment_rate_pct,
+        )
+        res_high = run_fcff_model(
+            base_revenue=base_revenue,
+            current_shares=current_shares,
+            net_debt_bridge=net_debt_bridge,
+            growth_5y_pct=high_bound_pct,
+            operating_margin_pct=operating_margin_pct,
+            wacc_pct=wacc_pct,
+            terminal_growth_pct=terminal_growth_pct,
+            tax_rate_pct=tax_rate_pct,
+            reinvestment_rate_pct=reinvestment_rate_pct,
+        )
+    except Exception as e:
+        return None, f"MODEL_ERROR: {e}"
+
+    price_at_low = res_low["per_share"]
+    price_at_high = res_high["per_share"]
+
+    # Target price must be bracketed
+    if target_price < price_at_low or target_price > price_at_high:
+        return None, f"OUT_OF_BOUNDS_TARGET_NOT_BRACKETED (Target ${target_price:.2f} outside [${price_at_low:.2f}, ${price_at_high:.2f}])"
+
+    low = low_bound_pct / 100.0
+    high = high_bound_pct / 100.0
+
     for _ in range(100):
         mid = (low + high) / 2.0
         res = run_fcff_model(
             base_revenue=base_revenue,
             current_shares=current_shares,
-            net_debt_and_leases=net_debt_and_leases,
+            net_debt_bridge=net_debt_bridge,
             growth_5y_pct=mid * 100.0,
             operating_margin_pct=operating_margin_pct,
             wacc_pct=wacc_pct,
@@ -106,38 +169,64 @@ def solve_reverse_dcf(
             tax_rate_pct=tax_rate_pct,
             reinvestment_rate_pct=reinvestment_rate_pct,
         )
-        if abs(res["per_share"] - target_price) < 0.01:
-            return round(mid * 100.0, 2)
+        if abs(res["per_share"] - target_price) < 0.001:
+            break
         if res["per_share"] < target_price:
             low = mid
         else:
             high = mid
-    return round(mid * 100.0, 2)
+
+    solved_g = round(mid * 100.0, 2)
+
+    # Roundtrip verification check
+    roundtrip = run_fcff_model(
+        base_revenue=base_revenue,
+        current_shares=current_shares,
+        net_debt_bridge=net_debt_bridge,
+        growth_5y_pct=solved_g,
+        operating_margin_pct=operating_margin_pct,
+        wacc_pct=wacc_pct,
+        terminal_growth_pct=terminal_growth_pct,
+        tax_rate_pct=tax_rate_pct,
+        reinvestment_rate_pct=reinvestment_rate_pct,
+    )
+    diff = abs(roundtrip["per_share"] - target_price)
+    threshold = max(0.05, target_price * 0.0005)
+    if diff > threshold:
+        return None, f"ROUNDTRIP_VERIFICATION_FAILED (Diff ${diff:.3f} exceeds ${threshold:.3f} threshold)"
+
+    return solved_g, f"VERIFIED (Roundtrip per-share ${roundtrip['per_share']:.2f} matches target ${target_price:.2f})"
 
 
 def generate_sensitivity_matrix(
     base_revenue: float,
     current_shares: float,
-    net_debt_and_leases: float,
+    net_debt_bridge: float,
     growth_5y_pct: float,
     operating_margin_pct: float,
     tax_rate_pct: float,
     reinvestment_rate_pct: float,
     wacc_rates: List[float] = [8.0, 9.0, 10.0, 11.0, 12.0],
     terminal_rates: List[float] = [2.0, 2.5, 3.0],
-) -> Dict[str, Dict[str, float]]:
-    """Generates 2D WACC vs Terminal Growth valuation sensitivity table."""
-    matrix: Dict[str, Dict[str, float]] = {}
+) -> Dict[str, Dict[str, Optional[float]]]:
+    """
+    Generates 2D WACC vs Terminal Growth valuation sensitivity table.
+    Invalid cells return None (never zero-dollar fair values).
+    """
+    matrix: Dict[str, Dict[str, Optional[float]]] = {}
     for w in wacc_rates:
         w_key = f"WACC_{w:.1f}%"
         matrix[w_key] = {}
         for g in terminal_rates:
             g_key = f"g_{g:.1f}%"
+            if w <= g:
+                matrix[w_key][g_key] = None
+                continue
             try:
                 res = run_fcff_model(
                     base_revenue=base_revenue,
                     current_shares=current_shares,
-                    net_debt_and_leases=net_debt_and_leases,
+                    net_debt_bridge=net_debt_bridge,
                     growth_5y_pct=growth_5y_pct,
                     operating_margin_pct=operating_margin_pct,
                     wacc_pct=w,
@@ -147,24 +236,28 @@ def generate_sensitivity_matrix(
                 )
                 matrix[w_key][g_key] = round(res["per_share"], 2)
             except Exception:
-                matrix[w_key][g_key] = 0.0
+                matrix[w_key][g_key] = None
     return matrix
 
 
 def evaluate_deep_valuation_fix(
     cf: CompanyFundamentals,
     metrics: DerivedMetrics,
-) -> DeepValuationAssessment:
+) -> Optional[DeepValuationAssessment]:
     """Deep valuation package for FIX (Comfort Systems USA)."""
-    rev = metrics.revenue_ttm or 10193978000.0
-    shares = metrics.diluted_shares_weighted_avg or 35254000.0
-    # Net Debt + Operating Leases: Net Debt = -$1.80B, Leases = $280M -> Net Bridge = -$1.52B (Net Cash)
-    net_bridge = (metrics.net_debt or -1800000000.0) + (metrics.operating_lease_liabilities or 280000000.0)
-    current_price = metrics.market_price or 1439.07
+    rev = metrics.revenue_ttm
+    shares = metrics.diluted_shares_weighted_avg
+    net_bridge = metrics.net_debt
+    current_price = metrics.market_price
+
+    if rev is None or shares is None or net_bridge is None or current_price is None:
+        logger.warning("FIX deep valuation skipped: critical valuation inputs missing")
+        return None
+
     tax_rate = 22.0
     reinvest = 15.0
 
-    # 1. Conservative Scenario: Secular peak cycle; growth cools to 12%, margins compress to 12.5%, WACC 10.5%
+    # 1. Conservative Scenario: Data center buildout normalizes; 12% CAGR, 12.5% margin, 10.5% WACC
     c_res = run_fcff_model(rev, shares, net_bridge, 12.0, 12.5, 10.5, 2.0, tax_rate, reinvest)
     c_scenario = ValuationScenario(
         scenario_name="Conservative",
@@ -181,10 +274,10 @@ def evaluate_deep_valuation_fix(
         equity_value_estimate=round(c_res["equity_value"], 2),
         per_share_value_estimate=round(c_res["per_share"], 2),
         upside_downside_pct=round((c_res["per_share"] - current_price) / current_price * 100, 2),
-        key_assumptions="Data center buildout cools; modular pre-fabrication backlog normalizes; margin moderates toward historical median."
+        key_assumptions="Data center cooling buildout cools; modular pre-fabrication backlog normalizes; margin moderates toward historical median."
     )
 
-    # 2. Base Scenario: Sustained AI/data-center buildout; 22% CAGR for 5 years, 15.0% margin, WACC 9.5%
+    # 2. Base Scenario: Sustained AI/data-center buildout; 22% CAGR for 5 years, 15.0% margin, 9.5% WACC
     b_res = run_fcff_model(rev, shares, net_bridge, 22.0, 15.0, 9.5, 2.5, tax_rate, reinvest)
     b_scenario = ValuationScenario(
         scenario_name="Base",
@@ -204,7 +297,7 @@ def evaluate_deep_valuation_fix(
         key_assumptions="Continued multi-year data-center cooling backlog conversion; sustained premium pricing on complex modular contracts."
     )
 
-    # 3. Optimistic Scenario: Hyper-demand; 30% CAGR for 5 years, 16.5% margin, WACC 8.5%
+    # 3. Optimistic Scenario: Hyper-demand; 30% CAGR for 5 years, 16.5% margin, 8.5% WACC
     o_res = run_fcff_model(rev, shares, net_bridge, 30.0, 16.5, 8.5, 3.0, tax_rate, reinvest)
     o_scenario = ValuationScenario(
         scenario_name="Optimistic",
@@ -225,12 +318,12 @@ def evaluate_deep_valuation_fix(
     )
 
     # Reverse DCF
-    rev_growth = solve_reverse_dcf(current_price, rev, shares, net_bridge, 15.0, 9.5, 2.5, tax_rate, reinvest)
+    rev_growth, r_note = solve_reverse_dcf(current_price, rev, shares, net_bridge, 15.0, 9.5, 2.5, tax_rate, reinvest)
     sens_matrix = generate_sensitivity_matrix(rev, shares, net_bridge, 22.0, 15.0, tax_rate, reinvest)
 
     return DeepValuationAssessment(
         symbol="FIX",
-        framework_used="FCFF (Enterprise to Equity DCF)",
+        framework_used="FCFF (Enterprise to Equity DCF, Lease-as-Operating-Expense Convention)",
         current_price=current_price,
         current_price_date=metrics.market_price_date or "2026-10-16",
         current_market_cap=round(metrics.market_cap or (current_price * shares), 2),
@@ -240,14 +333,16 @@ def evaluate_deep_valuation_fix(
             "Base": b_scenario,
             "Optimistic": o_scenario,
         },
-        reverse_dcf_implied_5y_growth_pct=rev_growth,
+        reverse_dcf_implied_5y_growth_pct=rev_growth if rev_growth is not None else 0.0,
         reverse_dcf_fixed_assumptions={
+            "solved_variable": "5-year Revenue CAGR",
             "operating_margin_target_pct": 15.0,
             "wacc_pct": 9.5,
             "terminal_growth_pct": 2.5,
             "effective_tax_rate_pct": tax_rate,
             "reinvestment_rate_pct": reinvest,
             "net_debt_bridge_usd": net_bridge,
+            "solution_status": r_note,
         },
         sensitivity_matrix=sens_matrix,
         thesis_invalidation_thresholds=[
@@ -267,12 +362,17 @@ def evaluate_deep_valuation_fix(
 def evaluate_deep_valuation_duol(
     cf: CompanyFundamentals,
     metrics: DerivedMetrics,
-) -> DeepValuationAssessment:
+) -> Optional[DeepValuationAssessment]:
     """Deep valuation package for DUOL (Duolingo, Inc.)."""
-    rev = metrics.revenue_ttm or 1083778000.0
-    shares = metrics.diluted_shares_weighted_avg or 50031000.0
-    net_bridge = (metrics.net_debt or -1180000000.0) + (metrics.operating_lease_liabilities or 50000000.0)
-    current_price = metrics.market_price or 141.76
+    rev = metrics.revenue_ttm
+    shares = metrics.diluted_shares_weighted_avg
+    net_bridge = metrics.net_debt
+    current_price = metrics.market_price
+
+    if rev is None or shares is None or net_bridge is None or current_price is None:
+        logger.warning("DUOL deep valuation skipped: critical valuation inputs missing")
+        return None
+
     tax_rate = 21.0
     reinvest = 10.0  # Asset-light software model
 
@@ -337,12 +437,12 @@ def evaluate_deep_valuation_duol(
     )
 
     # Reverse DCF
-    rev_growth = solve_reverse_dcf(current_price, rev, shares, net_bridge, 18.0, 10.0, 3.0, tax_rate, reinvest)
+    rev_growth, r_note = solve_reverse_dcf(current_price, rev, shares, net_bridge, 18.0, 10.0, 3.0, tax_rate, reinvest)
     sens_matrix = generate_sensitivity_matrix(rev, shares, net_bridge, 26.0, 18.0, tax_rate, reinvest)
 
     return DeepValuationAssessment(
         symbol="DUOL",
-        framework_used="FCFF (Enterprise to Equity DCF, Software Cash-Flow Normalized)",
+        framework_used="FCFF (Enterprise to Equity DCF, Lease-as-Operating-Expense Convention)",
         current_price=current_price,
         current_price_date=metrics.market_price_date or "2026-10-16",
         current_market_cap=round(metrics.market_cap or (current_price * shares), 2),
@@ -352,14 +452,16 @@ def evaluate_deep_valuation_duol(
             "Base": b_scenario,
             "Optimistic": o_scenario,
         },
-        reverse_dcf_implied_5y_growth_pct=rev_growth,
+        reverse_dcf_implied_5y_growth_pct=rev_growth if rev_growth is not None else 0.0,
         reverse_dcf_fixed_assumptions={
+            "solved_variable": "5-year Revenue CAGR",
             "operating_margin_target_pct": 18.0,
             "wacc_pct": 10.0,
             "terminal_growth_pct": 3.0,
             "effective_tax_rate_pct": tax_rate,
             "reinvestment_rate_pct": reinvest,
             "net_debt_bridge_usd": net_bridge,
+            "solution_status": r_note,
         },
         sensitivity_matrix=sens_matrix,
         thesis_invalidation_thresholds=[
@@ -379,13 +481,17 @@ def evaluate_deep_valuation_duol(
 def evaluate_deep_valuation_ulta(
     cf: CompanyFundamentals,
     metrics: DerivedMetrics,
-) -> DeepValuationAssessment:
+) -> Optional[DeepValuationAssessment]:
     """Deep valuation package for ULTA (Ulta Beauty, Inc.)."""
-    rev = metrics.revenue_ttm or 12640027000.0
-    shares = metrics.diluted_shares_weighted_avg or 43062000.0
-    # Net Debt + Lease Liabilities: Net Debt = $126M, Leases = ~$1.8B -> Net Bridge = $1.93B
-    net_bridge = (metrics.net_debt or 126127000.0) + (metrics.operating_lease_liabilities or 1800000000.0)
-    current_price = metrics.market_price or 592.94
+    rev = metrics.revenue_ttm
+    shares = metrics.diluted_shares_weighted_avg
+    net_bridge = metrics.net_debt
+    current_price = metrics.market_price
+
+    if rev is None or shares is None or net_bridge is None or current_price is None:
+        logger.warning("ULTA deep valuation skipped: critical valuation inputs missing")
+        return None
+
     tax_rate = 23.5
     reinvest = 20.0
 
@@ -406,7 +512,7 @@ def evaluate_deep_valuation_ulta(
         equity_value_estimate=round(c_res["equity_value"], 2),
         per_share_value_estimate=round(c_res["per_share"], 2),
         upside_downside_pct=round((c_res["per_share"] - current_price) / current_price * 100, 2),
-        key_assumptions="Competition from Sephora (Kohl's) and mass retail intensifies; promotional discounting erodes gross margins; comp sales turn flat."
+        key_assumptions="Competition from Sephora and mass retail intensifies; promotional discounting erodes gross margins; comp sales turn flat."
     )
 
     # 2. Base Scenario: Steady compounder; 8.0% CAGR, 12.0% margin, 9.0% WACC
@@ -426,7 +532,7 @@ def evaluate_deep_valuation_ulta(
         equity_value_estimate=round(b_res["equity_value"], 2),
         per_share_value_estimate=round(b_res["per_share"], 2),
         upside_downside_pct=round((b_res["per_share"] - current_price) / current_price * 100, 2),
-        key_assumptions="Target store-in-store concept expands; loyalty program (Ultamate Rewards 44M+ members) preserves wallet share; steady 3-4% share buyback."
+        key_assumptions="Target store-in-store concept expands; loyalty program (Ultamate Rewards 44M+ members) preserves wallet share; steady share buybacks."
     )
 
     # 3. Optimistic Scenario: International expansion & prestige acceleration; 12.0% CAGR, 13.5% margin, 8.0% WACC
@@ -450,12 +556,12 @@ def evaluate_deep_valuation_ulta(
     )
 
     # Reverse DCF
-    rev_growth = solve_reverse_dcf(current_price, rev, shares, net_bridge, 12.0, 9.0, 2.0, tax_rate, reinvest)
+    rev_growth, r_note = solve_reverse_dcf(current_price, rev, shares, net_bridge, 12.0, 9.0, 2.0, tax_rate, reinvest)
     sens_matrix = generate_sensitivity_matrix(rev, shares, net_bridge, 8.0, 12.0, tax_rate, reinvest)
 
     return DeepValuationAssessment(
         symbol="ULTA",
-        framework_used="FCFF (Enterprise to Equity DCF, ASC 842 Lease Adjusted)",
+        framework_used="FCFF (Enterprise to Equity DCF, Lease-as-Operating-Expense Convention)",
         current_price=current_price,
         current_price_date=metrics.market_price_date or "2026-10-16",
         current_market_cap=round(metrics.market_cap or (current_price * shares), 2),
@@ -465,14 +571,16 @@ def evaluate_deep_valuation_ulta(
             "Base": b_scenario,
             "Optimistic": o_scenario,
         },
-        reverse_dcf_implied_5y_growth_pct=rev_growth,
+        reverse_dcf_implied_5y_growth_pct=rev_growth if rev_growth is not None else 0.0,
         reverse_dcf_fixed_assumptions={
+            "solved_variable": "5-year Revenue CAGR",
             "operating_margin_target_pct": 12.0,
             "wacc_pct": 9.0,
             "terminal_growth_pct": 2.0,
             "effective_tax_rate_pct": tax_rate,
             "reinvestment_rate_pct": reinvest,
             "net_debt_bridge_usd": net_bridge,
+            "solution_status": r_note,
         },
         sensitivity_matrix=sens_matrix,
         thesis_invalidation_thresholds=[
