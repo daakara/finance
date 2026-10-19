@@ -22,8 +22,9 @@ HVAC, electrical, and modular thermal infrastructure for data centers and techno
 - **Non-GAAP Free Cash Flow (CFO - Capex)**: **$2,159.81M** (116.8% conversion of EBIT).
 - **Total Cash & Short-Term Investments**: **N/A** (Cash & equivalents: $1,854.79M).
 - **Total Financial Debt**: **$54.06M**.
-- **Net Debt Bridge (Debt - Cash)**: **$-1,800.73M** (Lease-as-Operating-Expense convention: operating leases excluded from bridge).
-- **Diluted Shares (TTM)**: **35.25M shares** (1Y dilution: -0.3%, 3Y dilution: -1.8%).
+- **Diluted Shares (Latest Quarter)**: **35.25M shares** (1Y dilution: -0.3%, 3Y dilution: -1.8%).
+- **Diluted EPS (TTM)**: **UNAVAILABLE (Interim period; US GAAP ASC 260 shares not aggregated across quarters)**
+- **TTM Net Income per Latest-Quarter Diluted Share (Research Estimate)**: **$40.69** (Numerator: 2025-07-01 to 2026-06-30; Denominator: 2026-04-01 to 2026-06-30 (quarterly weighted-average shares))
 
 ### 1.3 Multi-Scenario FCFF Valuation Model
 All scenarios model 5 years of explicit free cash flows discounted at WACC, followed by perpetual terminal value under the Lease-as-Operating-Expense convention.
@@ -86,8 +87,9 @@ Mobile learning platform monetized via subscriptions (Duolingo Super, Max) and a
 - **Non-GAAP Free Cash Flow (CFO - Capex)**: **$407.93M** (259.7% conversion of EBIT).
 - **Total Cash & Short-Term Investments**: **N/A** (Cash & equivalents: $1,180.89M).
 - **Total Financial Debt**: **N/A**.
-- **Net Debt Bridge (Debt - Cash)**: **N/A** (Lease-as-Operating-Expense convention: operating leases excluded from bridge).
-- **Diluted Shares (TTM)**: **50.03M shares** (1Y dilution: +2.1%, 3Y dilution: +6.7%).
+- **Diluted Shares (Latest Quarter)**: **50.03M shares** (1Y dilution: +2.1%, 3Y dilution: +6.7%).
+- **Diluted EPS (TTM)**: **UNAVAILABLE (Interim period; US GAAP ASC 260 shares not aggregated across quarters)**
+- **TTM Net Income per Latest-Quarter Diluted Share (Research Estimate)**: **$8.21** (Numerator: 2025-07-01 to 2026-06-30; Denominator: 2026-04-01 to 2026-06-30 (quarterly weighted-average shares))
 
 ### 2.3 Multi-Scenario FCFF Valuation Model — SUPPRESSED (UNAVAILABLE)
 > [!WARNING]
@@ -146,8 +148,9 @@ Omnichannel beauty retailer with salon services and 44M+ loyalty members.
 - **Non-GAAP Free Cash Flow (CFO - Capex)**: **$1,149.45M** (71.2% conversion of EBIT).
 - **Total Cash & Short-Term Investments**: **$213.45M** (Cash & equivalents: $158.45M).
 - **Total Financial Debt**: **N/A**.
-- **Net Debt Bridge (Debt - Cash)**: **N/A** (Lease-as-Operating-Expense convention: operating leases excluded from bridge).
-- **Diluted Shares (TTM)**: **43.06M shares** (1Y dilution: -4.5%, 3Y dilution: -13.6%).
+- **Diluted Shares (Latest Quarter)**: **43.06M shares** (1Y dilution: -4.5%, 3Y dilution: -13.6%).
+- **Diluted EPS (TTM)**: **UNAVAILABLE (Interim period; US GAAP ASC 260 shares not aggregated across quarters)**
+- **TTM Net Income per Latest-Quarter Diluted Share (Research Estimate)**: **$28.10** (Numerator: 2025-08-03 to 2026-08-01; Denominator: 2026-05-03 to 2026-08-01 (quarterly weighted-average shares))
 
 ### 3.3 Multi-Scenario FCFF Valuation Model — SUPPRESSED (UNAVAILABLE)
 > [!WARNING]

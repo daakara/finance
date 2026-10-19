@@ -65,8 +65,9 @@ $$TTM = FY_{latest} + YTD_{current} - YTD_{prior\_comparable}$$
 | **Total Financial Debt** | $54.06M | N/A | N/A | N/A | N/A | $5,887.41M | N/A | $674.85M |
 | **Net Debt (Debt - Cash)** | $-1,800.73M | N/A | N/A | N/A | N/A | $2,769.18M | N/A | $43.62M |
 | **Operating Leases** | $315.85M | $86.14M | $1,871.81M | $144.11M | $398.98M | $264.30M | $1,774.48M | N/A |
-| **Stockholders' Equity** | $1,416.54M | N/A | N/A | N/A | N/A | $9,119.00M | N/A | $1,243.20M |
-| **Diluted Shares (TTM)** | 35.25M | 50.03M | 43.06M | 28.55M | 138.56M | 1,319.63M | 112.92M | 256.93M |
+| **Diluted Shares (Latest Period)** | 35.25M (Quarterly) | 50.03M (Quarterly) | 43.06M (Quarterly) | 28.55M (Quarterly) | 138.56M (Quarterly) | 1,319.63M (Annual) | 112.92M (Quarterly) | 256.93M (Quarterly) |
+| **Diluted EPS (TTM)** | UNAVAILABLE (Interim) | UNAVAILABLE (Interim) | UNAVAILABLE (Interim) | UNAVAILABLE (Interim) | UNAVAILABLE (Interim) | $3.66 | UNAVAILABLE (Interim) | UNAVAILABLE (Interim) |
+| **TTM Net Inc / Diluted Share (Est)** | $40.69 | $8.21 | $28.10 | $17.21 | $7.32 | N/A | $12.56 | $0.50 |
 | **1Y Share Dilution %** | -0.3% | +2.1% | -4.5% | -2.0% | -7.4% | -1.3% | -5.7% | -1.3% |
 | **3Y Share Dilution %** | -1.8% | +6.7% | -13.6% | -9.6% | -12.3% | -5.9% | -11.3% | +8.5% |
 | **Market Price (10/16/26)** | $1439.07 | $141.76 | $592.94 | $618.47 | $85.71 | $165.74 | $97.10 | $28.19 |
@@ -83,161 +84,170 @@ $$TTM = FY_{latest} + YTD_{current} - YTD_{prior\_comparable}$$
 
 ### 4.1 COMFORT SYSTEMS USA, INC. (`FIX`)
 - **Research Disposition**: `RESEARCH_FURTHER`
-- **Disposition Rationale**: Selected Case Study: Operational momentum supported by multi-year secular tailwinds in data center thermal cooling and electrical infrastructure. TTM revenue reached $11.2B (+46.1% YoY) with operating margins expanding to 16.5%. Generates robust non-GAAP free cash flow ($2.2B CFO minus Capex, 116.8% EBIT conversion) supported by customer prepayments and billings in excess of costs. Fortress balance sheet with $-1.8B net debt ($1.9B cash vs $54.1M debt). Diluted share count is disciplined (-0.33% 1Y). Primary research focus centers on valuation: investigate whether high growth expectations are already fully priced into market shares.
-- **Growth Durability**: High visibility backed by multi-billion institutional backlogs across AI data centers, semiconductor cleanrooms, and life-science facilities. Off-site modular prefabrication reduces jobsite labor constraints and creates competitive barriers.
-- **Reinvestment Economics**: Asset-light specialty contracting and modular assembly model yields high cash conversion. Organic reinvestment requirements are modest relative to cash generation.
-- **Shareholder Outcomes**: Disciplined capital allocation: net-cash balance sheet, modest recurring dividend, selective accretive bolt-on acquisitions, and negative net share dilution.
-- **Balance Sheet Resilience**: Exceptional liquidity: holds $1.9B in cash and equivalents against just $54.1M in debt, providing an immense liquidity cushion against construction cyclicality or project delays.
-- **Valuation Uncertainty**: Substantial rerating over the past 24 months. Reverse-DCF indicates elevated multi-year growth rates required to justify current market price under base margins.
-- **Evidence Sufficiency**: Comprehensive primary XBRL filings available through Q2 2026. Backlog customer concentration and modular prefabrication margin disclosures should be tracked quarterly in MD&A.
+- **Disposition Rationale**: Selected Case Study: Evaluated as a diagnostic case study representing Industrials / Specialty Contractors. TTM revenue reached $11.2B (+46.1% YoY) with operating margin of 16.5%. Cash generation: CFO minus Capex of $2.2B (116.8% EBIT conversion). Balance sheet: net cash position of $1.8B ($1.9B cash vs $54.1M debt). Share structure: diluted share count decreased by -0.33% over 1 year (-1.82% 3Y). Primary research focus centers on valuation: assess whether market price reflects sustainable cash flows.
+- **Growth Durability**: Visibility supported by institutional backlogs across data centers, semiconductor cleanrooms, and modular thermal infrastructure.
+- **Reinvestment Economics**: Asset-light specialty model yields high cash conversion when operating profitably. Organic reinvestment requirements are modest relative to cash generation.
+- **Shareholder Outcomes**: Capital return via repurchases: share count reduced by -0.33% over 1 year (3-year change: -1.82%). Maintains a net cash position of $1.8B.
+- **Balance Sheet Resilience**: Net cash position of $1.8B ($1.9B in cash and short-term investments against $54.1M in debt). Liquidity provides operational resilience against project delays or cyclical downturns.
+- **Valuation Uncertainty**: Moderate
+- **Evidence Sufficiency**: Primary SEC XBRL filings analyzed through 2026-06-30. Data gaps noted: None critical.
 - **Thesis Invalidation Conditions**:
-  - Hyperscaler or enterprise data center cancellation or deferral of thermal cooling backlogs.
-  - Operating margin contraction below 12.0% indicating fixed-price contract cost overruns.
-  - Operating cash flow conversion falling below 80% of EBIT for two consecutive quarters.
-  - Shift toward debt-funded speculative acquisitions outside core mechanical/electrical competencies.
+  - YoY revenue growth decelerating below 0.0% for FIX.
+  - Operating margin contraction exceeding 300 basis points.
+  - Operating cash flow conversion falling below 70% of EBIT for two consecutive quarters.
+  - Material adverse change in customer concentration or balance sheet leverage.
 - **Next Evidence to Monitor**:
-  - Quarterly backlog growth rate and percentage of backlog dedicated to tech/institutional sectors.
-  - Gross margin stability across modular construction and mechanical contracting segments.
-  - Working capital cash conversion and billing in excess of costs reconciliation.
+  - Next 10-Q filing for period ending after 2026-06-30.
+  - Quarterly segment margins and working capital cash conversion.
+  - Primary footnote disclosures regarding debt facilities or off-balance sheet commitments.
 - **Remaining Evidence Gaps**:
-  - Granular margin breakdown between custom modular prefabrication and standard maintenance contracting.
+  - Ongoing quarterly monitoring of primary SEC filings.
 
 ### 4.2 Duolingo, Inc. (`DUOL`)
 - **Research Disposition**: `RESEARCH_FURTHER`
-- **Disposition Rationale**: Selected Case Study: Digital consumer subscription model displaying +29.4% YoY revenue growth ($1.1B TTM) and expanding operating margins (13.7%). Software economics generate $407.9M in CFO minus Capex (259.7% EBIT conversion due to upfront deferred subscription billings). Liquid reserves hold $1.2B; financial debt concepts are UNAVAILABLE in SEC XBRL (net debt is UNAVAILABLE; debt-free status cannot be asserted from primary XBRL tags alone). Forward DCF valuation is suppressed under completeness rules. Stock-based compensation ($144.7M TTM, 12.6% of revenue) produces net share dilution (+2.10% 1Y) that must be scrutinized against true owner earnings.
-- **Growth Durability**: Organic viral user acquisition flywheel (>80% organic downloads). Duolingo Max AI subscription tier and expansion into multi-subject learning (Math, Music) support ongoing top-line expansion.
-- **Reinvestment Economics**: Negligible tangible capital intensity. Primary reinvestment flows through R&D expense (engineering and AI model product development).
-- **Shareholder Outcomes**: Exceptional cash generation and revenue compounding, tempered by persistent stock-based compensation dilution that reduces per-share economic participation.
-- **Balance Sheet Resilience**: Liquid software balance sheet: $1.2B in cash and short-term investments; total financial debt is unevidenced in XBRL tags, requiring footnote inspection before leverage or net cash can be asserted.
-- **Valuation Uncertainty**: Trading at premium multiples of revenue and earnings. High valuation sensitivity to subscriber growth deceleration or generative AI app competition. DCF valuation suppressed due to unavailable debt.
-- **Evidence Sufficiency**: Complete SEC XBRL filings through Q2 2026 for operating statements. Critical evidence gap: financial debt concepts are unavailable in XBRL tags, suppressing full DCF equity bridge calculations.
+- **Disposition Rationale**: Selected Case Study: Evaluated as a diagnostic case study representing Technology / Application Software. TTM revenue reached $1.1B (+29.4% YoY) with operating margin of 13.7%. Cash generation: CFO minus Capex of $407.9M (259.7% EBIT conversion). Balance sheet: liquid reserves hold $1.2B; financial debt is UNAVAILABLE (net debt UNAVAILABLE; debt structure requires footnote inspection). Share structure: diluted share count expanded by +2.10% over 1 year (+6.74% 3Y). Forward DCF valuation is suppressed under completeness rules because financial debt concepts are unevidenced in primary XBRL tags. Stock-based compensation ($144.7M TTM, 12.6% of revenue) produces net share dilution.
+- **Growth Durability**: Organic user acquisition flywheel (>80% organic downloads) and expansion into multi-subject learning (Math, Music) support top-line expansion.
+- **Reinvestment Economics**: Software and service model requires minimal tangible capex. Reinvestment flows predominantly through operating expenses (R&D, personnel).
+- **Shareholder Outcomes**: Share count expanded: 1-year dilution is +2.10% (3-year change: +6.74%), reducing per-share participation.
+- **Balance Sheet Resilience**: Liquid reserves hold $1.2B; financial debt concepts are unevidenced in primary XBRL tags (total debt and net debt cannot be verified from primary XBRL tags alone; requires footnote inspection).
+- **Valuation Uncertainty**: Moderate
+- **Evidence Sufficiency**: Primary SEC XBRL filings analyzed through 2026-06-30. Data gaps noted: total_financial_debt unavailable.
 - **Thesis Invalidation Conditions**:
-  - Daily Active User (DAU) or Paid Subscriber YoY growth decelerating below 15%.
-  - Stock-based compensation expanding beyond 15% of revenue without operating leverage.
-  - Gross margin compression below 70% driven by escalating AI model inference API costs.
-  - Erosion in Duolingo English Test (DET) institutional acceptance rate.
+  - YoY revenue growth decelerating below 0.0% for DUOL.
+  - Operating margin contraction exceeding 300 basis points.
+  - Operating cash flow conversion falling below 70% of EBIT for two consecutive quarters.
+  - Material adverse change in customer concentration or balance sheet leverage.
 - **Next Evidence to Monitor**:
-  - Duolingo Max conversion rate and percentage of total paid subscribers.
-  - SBC-to-revenue trajectory and net annual share dilution moderation.
-  - Primary source disclosure of long-term debt or credit agreements in 10-Q footnotes.
+  - Next 10-Q filing for period ending after 2026-06-30.
+  - Quarterly segment margins and working capital cash conversion.
+  - Primary footnote disclosures regarding debt facilities or off-balance sheet commitments.
 - **Remaining Evidence Gaps**:
-  - Detailed gross margins and API inference costs specific to the Duolingo Max GenAI features.
-  - Primary filing confirmation of credit facilities or off-balance sheet debt obligations.
+  - total_financial_debt unavailable
 
 ### 4.3 ULTA BEAUTY, INC. (`ULTA`)
 - **Research Disposition**: `RESEARCH_FURTHER`
-- **Disposition Rationale**: Selected Case Study: Omnichannel beauty specialty retailer with steady growth (11.2% YoY, $13.0B TTM) and healthy operating profitability (12.5% EBIT margin). Generates $1.1B in CFO minus Capex. Balance sheet reports UNAVAILABLE in short-term borrowings, but noncurrent debt is unevidenced in XBRL, making total financial debt and net debt UNAVAILABLE under aggregate completeness rules; forward DCF valuation is suppressed. Strong capital return track record via share repurchases (-4.54% 1Y, -13.62% 3Y dilution). Offers attractive GARP characteristics if comparable-store sales stabilize against promotional mass-retail competition.
-- **Growth Durability**: Expansive loyalty program (Ultamate Rewards 44M+ active members) accounts for >95% of sales. Store-in-store partnership with Target and international expansion (Mexico) provide ongoing footprint growth.
-- **Reinvestment Economics**: Moderate capital intensity driven by new store fit-outs, supply chain automation, and digital upgrades. ROIC remains attractive on mature retail store bases.
-- **Shareholder Outcomes**: Consistent counter-cyclical share repurchases have significantly reduced diluted share count over 3 years, accreting earnings per share even during periods of moderate top-line growth.
-- **Balance Sheet Resilience**: Sound liquidity with $213.5M in cash against UNAVAILABLE in reported short-term borrowings; long-term debt is unevidenced in XBRL tags, so total debt and net debt cannot be verified from primary XBRL tags alone. Significant operating lease obligations (~$2.18B) require ongoing store-level EBITDA generation.
-- **Valuation Uncertainty**: Moderated multiples relative to historical retail peer averages; downside risk centers on gross margin compression from price competition and promotional beauty discounting. DCF valuation suppressed due to incomplete debt.
-- **Evidence Sufficiency**: Authoritative primary 10-Q and 10-K filings available through Q2 2026. Critical evidence gap: incomplete debt components in XBRL (short-term borrowings reported without noncurrent debt component) suppress total debt derivation and DCF equity bridge.
+- **Disposition Rationale**: Selected Case Study: Evaluated as a diagnostic case study representing Consumer Cyclical / Specialty Retail. TTM revenue reached $13.0B (+11.2% YoY) with operating margin of 12.5%. Cash generation: CFO minus Capex of $1.1B (71.2% EBIT conversion). Balance sheet: liquid reserves hold $213.5M; financial debt is UNAVAILABLE (net debt UNAVAILABLE; debt structure requires footnote inspection). Share structure: diluted share count decreased by -4.54% over 1 year (-13.62% 3Y). Forward DCF valuation is suppressed under completeness rules because noncurrent debt concepts are unevidenced in primary XBRL tags. Placed on WATCH due to promotional retail competition.
+- **Growth Durability**: Expansive loyalty program (Ultamate Rewards 44M+ active members) accounts for >95% of sales, supported by store-in-store partnerships.
+- **Reinvestment Economics**: Moderate capital intensity driven by retail store fit-outs, digital infrastructure, and supply chain automation.
+- **Shareholder Outcomes**: Capital return via repurchases: share count reduced by -4.54% over 1 year (3-year change: -13.62%).
+- **Balance Sheet Resilience**: Liquid reserves hold $213.5M; financial debt concepts are unevidenced in primary XBRL tags (total debt and net debt cannot be verified from primary XBRL tags alone; requires footnote inspection).
+- **Valuation Uncertainty**: Moderate
+- **Evidence Sufficiency**: Primary SEC XBRL filings analyzed through 2026-08-01. Data gaps noted: sbc_ttm unavailable, total_financial_debt unavailable (incomplete debt components).
 - **Thesis Invalidation Conditions**:
-  - Comparable store sales turning negative for two consecutive quarters.
-  - Operating margin contraction below 10.0% due to persistent industry price discounting.
-  - Decline in active Ultamate Rewards member count or spend per member.
-  - Inventory turnover degradation leading to substantial merchandise inventory write-downs.
+  - YoY revenue growth decelerating below 0.0% for ULTA.
+  - Operating margin contraction exceeding 300 basis points.
+  - Operating cash flow conversion falling below 70% of EBIT for two consecutive quarters.
+  - Material adverse change in customer concentration or balance sheet leverage.
 - **Next Evidence to Monitor**:
-  - Quarterly comparable store sales growth (transactions vs average ticket size).
-  - Merchandise gross margin vs supply chain cost trends.
-  - Pace of share repurchases relative to free cash flow generation.
+  - Next 10-Q filing for period ending after 2026-08-01.
+  - Quarterly segment margins and working capital cash conversion.
+  - Primary footnote disclosures regarding debt facilities or off-balance sheet commitments.
 - **Remaining Evidence Gaps**:
-  - Store-level profitability distribution between strip-center and enclosed mall locations.
-  - Primary filing confirmation of noncurrent credit facility balances.
+  - sbc_ttm unavailable
+  - total_financial_debt unavailable (incomplete debt components)
 
 ### 4.4 Medpace Holdings, Inc. (`MEDP`)
 - **Research Disposition**: `RESEARCH_FURTHER`
-- **Disposition Rationale**: Full-service Phase I-IV clinical contract research organization (CRO) delivering +24.7% YoY revenue growth ($2.8B TTM) with superior operating margins (21.0%). Cash flow generation is strong ($706.7M CFO minus Capex, 121.1% EBIT conversion). Liquid reserves hold $502.7M; financial debt concepts are unevidenced in XBRL tags (total debt and net debt unavailable). Steady share repurchase execution has reduced shares by -9.57% over 3 years.
-- **Growth Durability**: Specialization in small to mid-sized biopharma companies provides pricing power and sticky relationships. Biotech funding cycles represent the primary external demand driver.
-- **Reinvestment Economics**: Capital-light service model with low tangible capex needs. Substantial cash conversion into liquid reserves.
-- **Shareholder Outcomes**: Management prioritizes opportunistic share repurchases and maintains zero debt, delivering strong per-share compounding.
-- **Balance Sheet Resilience**: Liquid service model: holds $502.7M in cash and equivalents; financial debt concepts are unevidenced in primary XBRL tags.
-- **Valuation Uncertainty**: Valuation reflects premium CRO quality; vulnerable to sustained macro downturns in venture biopharma funding.
-- **Evidence Sufficiency**: Complete SEC filings through Q2 2026. Net new business bookings and backlog disclosures provide forward visibility.
+- **Disposition Rationale**: TTM revenue reached $2.8B (+24.7% YoY) with operating margin of 21.0%. Cash generation: CFO minus Capex of $706.7M (121.1% EBIT conversion). Balance sheet: liquid reserves hold $502.7M; financial debt is UNAVAILABLE (net debt UNAVAILABLE; debt structure requires footnote inspection). Share structure: diluted share count decreased by -2.02% over 1 year (-9.57% 3Y). Biotech funding cycles represent the primary external demand driver; debt concepts unevidenced in primary XBRL tags.
+- **Growth Durability**: Specialization in small to mid-sized biopharma companies provides pricing power and sticky relationships across clinical development cycles.
+- **Reinvestment Economics**: Software and service model requires minimal tangible capex. Reinvestment flows predominantly through operating expenses (R&D, personnel).
+- **Shareholder Outcomes**: Capital return via repurchases: share count reduced by -2.02% over 1 year (3-year change: -9.57%).
+- **Balance Sheet Resilience**: Liquid reserves hold $502.7M; financial debt concepts are unevidenced in primary XBRL tags (total debt and net debt cannot be verified from primary XBRL tags alone; requires footnote inspection).
+- **Valuation Uncertainty**: Moderate
+- **Evidence Sufficiency**: Primary SEC XBRL filings analyzed through 2026-06-30. Data gaps noted: total_financial_debt unavailable.
 - **Thesis Invalidation Conditions**:
-  - Net book-to-bill ratio declining below 1.0x for two consecutive quarters.
-  - Operating margin compression below 17% due to project cancellations.
-  - Material increase in biopharma client bankruptcy write-offs.
+  - YoY revenue growth decelerating below 0.0% for MEDP.
+  - Operating margin contraction exceeding 300 basis points.
+  - Operating cash flow conversion falling below 70% of EBIT for two consecutive quarters.
+  - Material adverse change in customer concentration or balance sheet leverage.
 - **Next Evidence to Monitor**:
-  - Quarterly net new business awards and cancellation rates.
-  - Biotech venture funding trends and client clinical trial starts.
+  - Next 10-Q filing for period ending after 2026-06-30.
+  - Quarterly segment margins and working capital cash conversion.
+  - Primary footnote disclosures regarding debt facilities or off-balance sheet commitments.
 - **Remaining Evidence Gaps**:
-  - Client concentration details beyond top-10 biopharma sponsor disclosures.
+  - total_financial_debt unavailable
 
 ### 4.5 DECKERS OUTDOOR CORP (`DECK`)
 - **Research Disposition**: `WATCH`
-- **Disposition Rationale**: Footwear innovator powered by HOKA and UGG brands. Revenue reached $5.5B (+7.8% YoY) with 22.7% operating margin and $1.1B CFO minus Capex. Liquid reserves hold $1.6B; financial debt concepts are unevidenced in XBRL tags (total debt and net debt unavailable). 3-year share dilution is -12.26% when properly normalized for the 6-for-1 forward stock split on Sep 13, 2024. Maintained on WATCH due to channel inventory normalization and brand maturity considerations.
-- **Growth Durability**: HOKA maintains strong global consumer running demand; UGG provides high-margin seasonal cash flows. Direct-to-consumer (DTC) channel expansion enhances customer lifetime value.
-- **Reinvestment Economics**: Outsourced manufacturing model limits capex requirements, generating superior cash conversion.
-- **Shareholder Outcomes**: Management has executed continuous share repurchases, shrinking the split-adjusted share count over 3 years.
-- **Balance Sheet Resilience**: Liquid balance sheet: holds $1.6B in cash; financial debt concepts are unevidenced in primary XBRL tags.
-- **Valuation Uncertainty**: Trading at full valuation multiples; deceleration in HOKA wholesale sell-through could prompt multiple compression.
-- **Evidence Sufficiency**: Full SEC XBRL filings available through Q1 FY2026 (ended June 30, 2026).
+- **Disposition Rationale**: TTM revenue reached $5.5B (+7.8% YoY) with operating margin of 22.7%. Cash generation: CFO minus Capex of $1.1B (89.2% EBIT conversion). Balance sheet: liquid reserves hold $1.6B; financial debt is UNAVAILABLE (net debt UNAVAILABLE; debt structure requires footnote inspection). Share structure: diluted share count decreased by -7.40% over 1 year (-12.26% 3Y). Maintained on WATCH due to channel inventory normalization and brand maturity considerations.
+- **Growth Durability**: HOKA maintains global consumer running demand; UGG provides seasonal cash flows with direct-to-consumer channel expansion.
+- **Reinvestment Economics**: Outsourced footwear manufacturing model limits tangible capex requirements, supporting cash conversion.
+- **Shareholder Outcomes**: Capital return via repurchases: share count reduced by -7.40% over 1 year (3-year change: -12.26%).
+- **Balance Sheet Resilience**: Liquid reserves hold $1.6B; financial debt concepts are unevidenced in primary XBRL tags (total debt and net debt cannot be verified from primary XBRL tags alone; requires footnote inspection).
+- **Valuation Uncertainty**: Moderate
+- **Evidence Sufficiency**: Primary SEC XBRL filings analyzed through 2026-06-30. Data gaps noted: total_financial_debt unavailable.
 - **Thesis Invalidation Conditions**:
-  - HOKA brand YoY revenue deceleration below 10%.
-  - Gross margin contraction below 52% indicating promotional discounting.
-  - Wholesale channel inventory buildup leading to order cancellations.
+  - YoY revenue growth decelerating below 0.0% for DECK.
+  - Operating margin contraction exceeding 300 basis points.
+  - Operating cash flow conversion falling below 70% of EBIT for two consecutive quarters.
+  - Material adverse change in customer concentration or balance sheet leverage.
 - **Next Evidence to Monitor**:
-  - HOKA DTC vs wholesale revenue growth split.
-  - International expansion pace in Europe and Asia-Pacific.
+  - Next 10-Q filing for period ending after 2026-06-30.
+  - Quarterly segment margins and working capital cash conversion.
+  - Primary footnote disclosures regarding debt facilities or off-balance sheet commitments.
 - **Remaining Evidence Gaps**:
-  - Wholesale sell-through data by regional specialty running store accounts.
+  - total_financial_debt unavailable
 
 ### 4.6 KLA Corporation (`KLAC`)
 - **Research Disposition**: `WATCH`
-- **Disposition Rationale**: Semiconductor process control and yield management leader. Revenue of $13.6B (+11.7% YoY) with derived operating margin of 41.7% and $3.8B in CFO minus Capex. Carries $5.9B in long-term debt against $3.1B in cash ($2.8B net debt). Maintained on WATCH due to semiconductor wafer fab equipment (WFE) cyclicality and valuation rerating.
-- **Growth Durability**: Process control intensity increases with advanced nodes (gate-all-around, EUV, advanced packaging). Leading market share in optical wafer inspection creates a powerful moat.
-- **Reinvestment Economics**: High R&D investment requirement (~15% of revenue) is critical to maintaining technological differentiation.
-- **Shareholder Outcomes**: Consistent dividend payouts and active share repurchases support shareholder compounding.
-- **Balance Sheet Resilience**: Solid investment-grade profile, supported by $3.8B annual free cash flow despite $2.8B net debt.
-- **Valuation Uncertainty**: Valuation reflects peak-cycle optimism for AI semiconductor fab expansions.
-- **Evidence Sufficiency**: 10-K full fiscal year filed through June 30, 2026. KLAC reports operating expenses (R&D, SG&A) without a separate OperatingIncomeLoss XBRL tag, requiring derived EBIT computation.
+- **Disposition Rationale**: TTM revenue reached $13.6B (+11.7% YoY) with operating margin of 41.7%. Cash generation: CFO minus Capex of $3.8B (66.5% EBIT conversion). Balance sheet: net debt position of $2.8B ($3.1B cash vs $5.9B debt). Share structure: diluted share count decreased by -1.34% over 1 year (-5.90% 3Y). Adverse financial momentum (contraction, operating losses, or elevated leverage); placed on WATCH for operational stabilization.
+- **Growth Durability**: Process control intensity increases with advanced semiconductor nodes (gate-all-around, EUV, advanced packaging).
+- **Reinvestment Economics**: High R&D investment requirement (~15% of revenue) is critical to maintaining metrology and process control technology differentiation.
+- **Shareholder Outcomes**: Capital return via repurchases: share count reduced by -1.34% over 1 year (3-year change: -5.90%). Carries net debt of $2.8B.
+- **Balance Sheet Resilience**: Carries net debt of $2.8B ($3.1B cash vs $5.9B total financial debt). Leverage and debt service obligations require monitoring against operating cash generation.
+- **Valuation Uncertainty**: High
+- **Evidence Sufficiency**: Primary SEC XBRL filings analyzed through 2026-06-30. Data gaps noted: None critical.
 - **Thesis Invalidation Conditions**:
-  - Major semiconductor foundry capex reductions exceeding 15%.
-  - Export restriction tightening further curtailing China shipments.
-  - Market share loss to competitors in advanced inspection technologies.
+  - YoY revenue growth decelerating below 0.0% for KLAC.
+  - Operating margin contraction exceeding 300 basis points.
+  - Operating cash flow conversion falling below 70% of EBIT for two consecutive quarters.
+  - Material adverse change in customer concentration or balance sheet leverage.
 - **Next Evidence to Monitor**:
-  - Wafer fab equipment industry capex guidance from TSMC, Samsung, and Intel.
-  - Advanced packaging and EUV metrology tool adoption rates.
+  - Next 10-Q filing for period ending after 2026-06-30.
+  - Quarterly segment margins and working capital cash conversion.
+  - Primary footnote disclosures regarding debt facilities or off-balance sheet commitments.
 - **Remaining Evidence Gaps**:
-  - Granular revenue breakdown between leading-edge logic, DRAM, and NAND wafer fab segments.
+  - Ongoing quarterly monitoring of primary SEC filings.
 
 ### 4.7 lululemon athletica inc. (`LULU`)
 - **Research Disposition**: `WATCH`
-- **Disposition Rationale**: Athletic apparel compounder generating $11.1B in TTM revenue (+1.7% YoY) and 17.8% EBIT margin. Free cash flow is robust at $1.4B. Balance sheet holds $1.4B in cash with reported $0.0 short-term borrowings; long-term debt is unevidenced in XBRL (total debt unavailable under completeness rules). Share repurchases reduced share count by -11.27% over 3 years. Placed on WATCH due to decelerating North American consumer demand and execution headwinds in new product lines.
-- **Growth Durability**: International expansion (specifically Greater China) continues to deliver strong growth, offsetting mature North American market deceleration.
-- **Reinvestment Economics**: Capital-light supply chain with direct-to-consumer store investments yielding high returns on capital.
-- **Shareholder Outcomes**: Steady share repurchases have reduced diluted shares by double-digits over 3 years.
-- **Balance Sheet Resilience**: Holds $1.4B in cash with reported $0.0 short-term borrowings; long-term debt unevidenced in XBRL tags.
-- **Valuation Uncertainty**: Multiples have compressed; further downside if promotional competition erodes premium gross margins.
-- **Evidence Sufficiency**: Authoritative primary 10-Q filings available through August 2, 2026.
+- **Disposition Rationale**: TTM revenue reached $11.1B (+1.7% YoY) with operating margin of 17.8%. Cash generation: CFO minus Capex of $1.4B (68.4% EBIT conversion). Balance sheet: liquid reserves hold $1.4B; financial debt is UNAVAILABLE (net debt UNAVAILABLE; debt structure requires footnote inspection). Share structure: diluted share count decreased by -5.65% over 1 year (-11.27% 3Y). Placed on WATCH due to North American consumer demand deceleration.
+- **Growth Durability**: International expansion (specifically Greater China) continues to deliver growth, offsetting mature North American market deceleration.
+- **Reinvestment Economics**: Moderate capital intensity driven by retail store fit-outs, digital infrastructure, and supply chain automation.
+- **Shareholder Outcomes**: Capital return via repurchases: share count reduced by -5.65% over 1 year (3-year change: -11.27%).
+- **Balance Sheet Resilience**: Liquid reserves hold $1.4B; financial debt concepts are unevidenced in primary XBRL tags (total debt and net debt cannot be verified from primary XBRL tags alone; requires footnote inspection).
+- **Valuation Uncertainty**: Moderate
+- **Evidence Sufficiency**: Primary SEC XBRL filings analyzed through 2026-08-02. Data gaps noted: total_financial_debt unavailable (incomplete debt components).
 - **Thesis Invalidation Conditions**:
-  - North America comparable sales growth falling below -3%.
-  - Gross margin contraction below 55% indicating severe markdowns.
-  - Deceleration in Greater China revenue growth below 15%.
+  - YoY revenue growth decelerating below 0.0% for LULU.
+  - Operating margin contraction exceeding 300 basis points.
+  - Operating cash flow conversion falling below 70% of EBIT for two consecutive quarters.
+  - Material adverse change in customer concentration or balance sheet leverage.
 - **Next Evidence to Monitor**:
-  - Quarterly Americas comp store sales vs international expansion revenue.
-  - Inventory-to-sales growth alignment.
+  - Next 10-Q filing for period ending after 2026-08-02.
+  - Quarterly segment margins and working capital cash conversion.
+  - Primary footnote disclosures regarding debt facilities or off-balance sheet commitments.
 - **Remaining Evidence Gaps**:
-  - Brand sentiment metrics and product return rates in new category launches.
+  - total_financial_debt unavailable (incomplete debt components)
 
 ### 4.8 CELSIUS HOLDINGS, INC. (`CELH`)
 - **Research Disposition**: `WATCH`
-- **Disposition Rationale**: Rapidly expanding functional energy drink brand with TTM revenue of $3.0B (+82.9% YoY) and 5.3% operating margin. CFO minus Capex is $462.8M. Balance sheet has $631.2M cash against $674.9M debt ($43.6M net debt). Shares normalized for the 3-for-1 forward split in Nov 2023. Placed on WATCH due to PepsiCo distribution inventory rebalancing and category growth deceleration.
-- **Growth Durability**: High brand resonance among health-conscious consumers; international distribution rollout is in early stages.
-- **Reinvestment Economics**: Asset-light contract manufacturing and partner distribution limits capex requirements.
-- **Shareholder Outcomes**: High historical revenue growth, though share dilution ({dil_3y_str} 3Y) reflects equity compensation.
-- **Balance Sheet Resilience**: Strong cash reserves of $631.2M against $674.9M in long-term debt.
-- **Valuation Uncertainty**: High volatility driven by distributor inventory swings and tough year-over-year volume comparisons.
-- **Evidence Sufficiency**: SEC XBRL filings complete through Q2 2026 (ended June 30, 2026).
+- **Disposition Rationale**: TTM revenue reached $3.0B (+82.9% YoY) with operating margin of 5.3%. Cash generation: CFO minus Capex of $462.8M (288.7% EBIT conversion). Balance sheet: net debt position of $43.6M ($631.2M cash vs $674.9M debt). Share structure: diluted share count decreased by -1.26% over 1 year (+8.49% 3Y). Placed on WATCH due to distributor inventory rebalancing and tough comparative volume benchmarks.
+- **Growth Durability**: Brand resonance among health-conscious consumers with national distribution rollout via partner network.
+- **Reinvestment Economics**: Asset-light specialty model yields high cash conversion when operating profitably. Organic reinvestment requirements are modest relative to cash generation.
+- **Shareholder Outcomes**: Capital return via repurchases: share count reduced by -1.26% over 1 year (3-year change: +8.49%). Carries net debt of $43.6M.
+- **Balance Sheet Resilience**: Carries net debt of $43.6M ($631.2M cash vs $674.9M total financial debt). Leverage and debt service obligations require monitoring against operating cash generation.
+- **Valuation Uncertainty**: Moderate
+- **Evidence Sufficiency**: Primary SEC XBRL filings analyzed through 2026-06-30. Data gaps noted: None critical.
 - **Thesis Invalidation Conditions**:
-  - Energy drink market share losses to Monster or Red Bull in tracked retail channels.
-  - EBIT margin compression below 5% due to aggressive promotional allowances.
-  - Persistent distributor inventory reductions impairing quarterly cash generation.
+  - YoY revenue growth decelerating below 0.0% for CELH.
+  - Operating margin contraction exceeding 300 basis points.
+  - Operating cash flow conversion falling below 70% of EBIT for two consecutive quarters.
+  - Material adverse change in customer concentration or balance sheet leverage.
 - **Next Evidence to Monitor**:
-  - Circana/Nielsen retail scanner sales growth and market share trajectory.
-  - International revenue contribution and distributor inventory levels.
+  - Next 10-Q filing for period ending after 2026-06-30.
+  - Quarterly segment margins and working capital cash conversion.
+  - Primary footnote disclosures regarding debt facilities or off-balance sheet commitments.
 - **Remaining Evidence Gaps**:
-  - Real-time distributor inventory depletion rates vs retail sell-through.
+  - Ongoing quarterly monitoring of primary SEC filings.
 

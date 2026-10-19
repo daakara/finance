@@ -1,6 +1,6 @@
 # SOURCED FUNDAMENTALS IMPLEMENTATION & HANDOFF RECORD
 
-**Workstream Status**: `SOURCED_FUNDAMENTALS_EVIDENCE_HANDLING_AND_REPLAY_REVIEW_READY`  
+**Workstream Status**: `SOURCED_FUNDAMENTALS_TARGETED_SEMANTIC_CORRECTIONS_REVIEW_READY`  
 **Date**: October 19, 2026  
 **Repository**: `daakara/finance`  
 **Worktree**: `C:\Users\akara\Documents\Projects\finance-sourced-fundamentals-pilot`  
@@ -25,6 +25,10 @@ All code lives in an isolated module under `analyst_dashboard/research/sourced_f
 8. **Intra-filing Conflict Detection & Restatement Precedence**: Detects identical metadata conflicts returning `UNAVAILABLE`, and respects amendment/restatement precedence deterministically.
 9. **Programmatic Report Parity**: All markdown tables and analytical reports are generated directly from `sourced_fundamentals_ledger.json`, eliminating human transcription errors and report/model divergence.
 10. **Complete Offline Replay**: Primary SEC JSONs and dated market prices are retained in `data/research/sourced_fundamentals/raw/` with a cryptographic `manifest.json` ledger. The entire research package executes in `--offline` mode with zero network requests.
+11. **Measurement Basis Matching & Permutation-Invariant Dilution**: Strict duration filtering (`75 <= duration <= 105` days for quarterly, `345 <= duration <= 385` days for annual) prevents conflating 6-month YTD shares with 3-month quarterly shares. Canonical deduplication and sorting guarantees identical dilution across any input observation ordering.
+12. **Interim TTM EPS Suppression & Research Estimate Semantics**: Suppresses conventional `diluted_eps_ttm` for interim quarters under US GAAP ASC 260 rules, exposing `ttm_net_income_per_latest_quarter_diluted_share` as an explicitly labeled research estimate with unambiguous numerator/denominator period dates.
+13. **Evidence-Conditional Financial Narratives**: Fails closed with `INSUFFICIENT_EVIDENCE` when balance sheet or operating facts are unevidenced. Truthfully states revenue contractions, operating losses, negative cash flows, net debt, and share dilution without unconditional or contradictory praise phrases.
+14. **Byte-Level UTF-8 Encoding**: Cumulative patch is exported in strict byte-level UTF-8 without BOM or NUL bytes, validated with `git apply --check` against base commit `3b953f8`.
 
 ---
 
@@ -43,7 +47,7 @@ All code lives in an isolated module under `analyst_dashboard/research/sourced_f
 | `analyst_dashboard/research/sourced_fundamentals/__init__.py` | Package entrypoint exposing clean public interfaces. | Verified |
 | `data/research/sourced_fundamentals/raw/manifest.json` | Provenance manifest tracking raw SEC JSONs, URLs, timestamps, and SHA-256 hashes. | Verified |
 | `data/research/sourced_fundamentals/sourced_fundamentals_ledger.json` | Master JSON evidence ledger containing complete facts, derivations, assessments, and deep valuations for 8 companies. | Verified |
-| `tests/test_sourced_fundamentals_pilot.py` | Comprehensive 23-scenario failure-reproducing test suite verifying duration selection, split adjustments, reverse DCF, aggregate completeness, and offline replay. | Verified |
+| `tests/test_sourced_fundamentals_pilot.py` | Comprehensive 30-scenario test suite verifying duration selection, split adjustments, reverse DCF, aggregate completeness, offline replay, dilution order invariance, TTM EPS interim suppression, evidence-conditional narratives, and valid UTF-8 patch export. | Verified |
 
 ---
 

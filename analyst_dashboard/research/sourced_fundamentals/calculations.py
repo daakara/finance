@@ -11,6 +11,7 @@ split-normalized share comparisons, and honest non-positive invested capital rep
 import logging
 from typing import Dict, Any, Optional, Tuple
 from .contracts import CompanyFundamentals, DerivedMetrics
+from .normalizer import parse_date
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,8 @@ def compute_derived_metrics(
     revenue_prior_ttm: Optional[float] = None,
     dilution_1y_pct: Optional[float] = None,
     dilution_3y_pct: Optional[float] = None,
-    split_notes: Optional[str] = None
+    split_notes: Optional[str] = None,
+    dilution_details: Optional[Dict[str, Any]] = None,
 ) -> DerivedMetrics:
     """
     Compute derived financial metrics, valuation multiples, and verification checks.
@@ -134,20 +136,80 @@ def compute_derived_metrics(
 
     # 4. Per-Share Metrics & Denominator Semantics
     # Distinguish period-weighted diluted shares from point-in-time common shares
+    dshares_fact = facts.get("diluted_shares_weighted_avg")
+    ni_fact = facts.get("net_income_ttm")
+
+    dshares_duration = (parse_date(dshares_fact.period_end) - parse_date(dshares_fact.period_start)).days if (dshares_fact and dshares_fact.period_start and dshares_fact.period_end) else 0
+    ni_duration = (parse_date(ni_fact.period_end) - parse_date(ni_fact.period_start)).days if (ni_fact and ni_fact.period_start and ni_fact.period_end) else 0
+
     eps_ttm = None
+    est_eps = None
+    est_status = None
+    num_period = f"{ni_fact.period_start} to {ni_fact.period_end}" if (ni_fact and ni_fact.period_start and ni_fact.period_end) else None
+    den_period = f"{dshares_fact.period_start} to {dshares_fact.period_end}" if (dshares_fact and dshares_fact.period_start and dshares_fact.period_end) else None
+
     if ni_ttm is not None and dshares is not None and dshares > 0:
-        eps_ttm = ni_ttm / dshares
-        calculation_notes["diluted_eps_ttm"] = (
-            f"Net Income TTM ({ni_ttm:,.0f}) / latest reported diluted weighted-average shares ({dshares:,.0f}). "
-            "Denominator represents weighted average diluted shares matching the latest reporting period."
-        )
+        if 340 <= dshares_duration <= 385 and 340 <= ni_duration <= 385:
+            # Full fiscal year / annual match: conventional diluted EPS is supported
+            eps_ttm = ni_ttm / dshares
+            est_status = "REPORTED_ANNUAL_COMPATIBLE"
+            den_period = f"{den_period} (annual weighted-average shares)"
+            calculation_notes["diluted_eps_ttm"] = (
+                f"Annual Diluted EPS: Net Income ({ni_ttm:,.0f}) / annual diluted weighted-average shares ({dshares:,.0f}). "
+                f"Compatible 12-month periods ({num_period})."
+            )
+        else:
+            # Interim period (e.g. 10-Q): conventional diluted_eps_ttm is suppressed
+            eps_ttm = None
+            est_eps = ni_ttm / dshares
+            est_status = "RESEARCH_ESTIMATE"
+            den_period = f"{den_period} (quarterly weighted-average shares)"
+            calculation_notes["diluted_eps_ttm"] = (
+                f"Conventional diluted_eps_ttm is suppressed for interim reporting periods because US GAAP ASC 260 "
+                "diluted weighted-average shares cannot be constructed by aggregating quarterly share counts. "
+                f"Exposing separately named research estimate: TTM net income per latest-quarter diluted share (${est_eps:.2f})."
+            )
+            calculation_notes["ttm_net_income_per_latest_quarter_diluted_share"] = (
+                f"Research estimate: TTM Net Income ({ni_ttm:,.0f}) / latest-quarter diluted weighted-average shares ({dshares:,.0f}). "
+                f"Numerator period: {num_period}; Denominator period: {den_period}; Status: {est_status}."
+            )
 
     fcf_per_share = None
     if fcf_ttm is not None and dshares is not None and dshares > 0:
         fcf_per_share = fcf_ttm / dshares
-        calculation_notes["cfo_minus_capex_per_share"] = (
-            f"CFO minus Capex ({fcf_ttm:,.0f}) / latest reported diluted weighted-average shares ({dshares:,.0f})"
-        )
+        if dshares_duration < 300:
+            calculation_notes["cfo_minus_capex_per_share"] = (
+                f"TTM CFO-minus-Capex per latest-quarter diluted share: CFO minus Capex ({fcf_ttm:,.0f}) / "
+                f"latest reported diluted weighted-average shares ({dshares:,.0f}). "
+                f"Denominator is quarterly ({den_period}); not a full-year weighted average."
+            )
+        else:
+            calculation_notes["cfo_minus_capex_per_share"] = (
+                f"TTM CFO-minus-Capex per annual diluted share: CFO minus Capex ({fcf_ttm:,.0f}) / "
+                f"annual reported diluted weighted-average shares ({dshares:,.0f})."
+            )
+
+    # Dilution notes with comparison metadata
+    if dilution_details:
+        comp_1y = dilution_details.get("comparison_1y", {})
+        comp_3y = dilution_details.get("comparison_3y", {})
+        basis = dilution_details.get("measurement_basis", "period-weighted")
+        if dilution_1y_pct is not None and comp_1y.get("status") == "AVAILABLE":
+            calculation_notes["share_dilution_1y_pct"] = (
+                f"1-year change in {str(basis).lower()} diluted weighted-average shares: "
+                f"{comp_1y.get('period_start')}..{comp_1y.get('period_end')} ({comp_1y.get('reported_val', 0):,.0f} shares, "
+                f"form {comp_1y.get('form')} filed {comp_1y.get('filed')}, accn {comp_1y.get('accn')}) to current period "
+                f"({dshares:,.0f} shares). Adjustment basis: {comp_1y.get('adjustment_basis')}. "
+                "Represents period-weighted diluted share count change, distinct from point-in-time common shares outstanding."
+            )
+        if dilution_3y_pct is not None and comp_3y.get("status") == "AVAILABLE":
+            calculation_notes["share_dilution_3y_pct"] = (
+                f"3-year change in {str(basis).lower()} diluted weighted-average shares: "
+                f"{comp_3y.get('period_start')}..{comp_3y.get('period_end')} ({comp_3y.get('reported_val', 0):,.0f} shares, "
+                f"form {comp_3y.get('form')} filed {comp_3y.get('filed')}, accn {comp_3y.get('accn')}) to current period "
+                f"({dshares:,.0f} shares). Adjustment basis: {comp_3y.get('adjustment_basis')}. "
+                "Represents period-weighted diluted share count change, distinct from point-in-time common shares outstanding."
+            )
 
     # 5. Market Reference & Market Capitalization
     price = market_data.get("market_price")
@@ -261,6 +323,10 @@ def compute_derived_metrics(
         diluted_shares_weighted_avg=dshares,
         common_shares_outstanding=cshares,
         diluted_eps_ttm=round(eps_ttm, 2) if eps_ttm is not None else None,
+        ttm_net_income_per_latest_quarter_diluted_share=round(est_eps, 2) if est_eps is not None else None,
+        ttm_eps_estimate_status=est_status,
+        ttm_eps_numerator_period=num_period,
+        ttm_eps_denominator_period=den_period,
         cfo_minus_capex_per_share=round(fcf_per_share, 2) if fcf_per_share is not None else None,
         share_dilution_1y_pct=round(dilution_1y_pct, 2) if dilution_1y_pct is not None else None,
         share_dilution_3y_pct=round(dilution_3y_pct, 2) if dilution_3y_pct is not None else None,

@@ -55,8 +55,9 @@ def generate_research_pilot_report(ledger: Dict[str, Any]) -> str:
         ("Total Financial Debt", lambda c: _fmt_m(c["derived_metrics"]["total_financial_debt"])),
         ("Net Debt (Debt - Cash)", lambda c: _fmt_m(c["derived_metrics"]["net_debt"])),
         ("Operating Leases", lambda c: _fmt_m(c["derived_metrics"]["operating_lease_liabilities"])),
-        ("Stockholders' Equity", lambda c: _fmt_m(c["derived_metrics"]["invested_capital"])),  # Or equity
-        ("Diluted Shares (TTM)", lambda c: f"{c['derived_metrics']['diluted_shares_weighted_avg'] / 1e6:,.2f}M" if c['derived_metrics']['diluted_shares_weighted_avg'] else "N/A"),
+        ("Diluted Shares (Latest Period)", lambda c: f"{c['derived_metrics']['diluted_shares_weighted_avg'] / 1e6:,.2f}M ({'Annual' if c['derived_metrics'].get('ttm_eps_estimate_status') == 'REPORTED_ANNUAL_COMPATIBLE' else 'Quarterly'})" if c['derived_metrics']['diluted_shares_weighted_avg'] else "N/A"),
+        ("Diluted EPS (TTM)", lambda c: f"${c['derived_metrics']['diluted_eps_ttm']:.2f}" if c['derived_metrics'].get('diluted_eps_ttm') is not None else "UNAVAILABLE (Interim)"),
+        ("TTM Net Inc / Diluted Share (Est)", lambda c: f"${c['derived_metrics']['ttm_net_income_per_latest_quarter_diluted_share']:.2f}" if c['derived_metrics'].get('ttm_net_income_per_latest_quarter_diluted_share') is not None else "N/A"),
         ("1Y Share Dilution %", lambda c: _fmt_pct(c["derived_metrics"]["share_dilution_1y_pct"], show_sign=True)),
         ("3Y Share Dilution %", lambda c: _fmt_pct(c["derived_metrics"]["share_dilution_3y_pct"], show_sign=True)),
         ("Market Price (10/16/26)", lambda c: f"${c['derived_metrics']['market_price']:.2f}" if c['derived_metrics']['market_price'] else "N/A"),
@@ -202,8 +203,9 @@ def generate_deep_dive_report(ledger: Dict[str, Any]) -> str:
 - **Non-GAAP Free Cash Flow (CFO - Capex)**: **{_fmt_m(m['cfo_minus_capex_ttm'])}** ({_fmt_pct(m['fcf_conversion_ebit_pct'])} conversion of EBIT).
 - **Total Cash & Short-Term Investments**: **{_fmt_m(m['total_cash_and_investments'])}** (Cash & equivalents: {_fmt_m(m['cash_and_equivalents'])}).
 - **Total Financial Debt**: **{_fmt_m(m['total_financial_debt'])}**.
-- **Net Debt Bridge (Debt - Cash)**: **{_fmt_m(m['net_debt'])}** (Lease-as-Operating-Expense convention: operating leases excluded from bridge).
-- **Diluted Shares (TTM)**: **{m['diluted_shares_weighted_avg'] / 1e6:,.2f}M shares** (1Y dilution: {_fmt_pct(m['share_dilution_1y_pct'], show_sign=True)}, 3Y dilution: {_fmt_pct(m['share_dilution_3y_pct'], show_sign=True)}).
+- **Diluted Shares ({'Annual' if m.get('ttm_eps_estimate_status') == 'REPORTED_ANNUAL_COMPATIBLE' else 'Latest Quarter'})**: **{m['diluted_shares_weighted_avg'] / 1e6:,.2f}M shares** (1Y dilution: {_fmt_pct(m['share_dilution_1y_pct'], show_sign=True)}, 3Y dilution: {_fmt_pct(m['share_dilution_3y_pct'], show_sign=True)}).
+- **Diluted EPS (TTM)**: **{f"${m['diluted_eps_ttm']:.2f}" if m.get('diluted_eps_ttm') is not None else "UNAVAILABLE (Interim period; US GAAP ASC 260 shares not aggregated across quarters)"}**
+- **TTM Net Income per Latest-Quarter Diluted Share (Research Estimate)**: **{f"${m['ttm_net_income_per_latest_quarter_diluted_share']:.2f}" if m.get('ttm_net_income_per_latest_quarter_diluted_share') is not None else "N/A"}** {f"(Numerator: {m.get('ttm_eps_numerator_period')}; Denominator: {m.get('ttm_eps_denominator_period')})" if m.get('ttm_net_income_per_latest_quarter_diluted_share') is not None else ""}
 """
 
         if val_status == "SUPPRESSED_UNAVAILABLE" or not scenarios:
@@ -315,7 +317,7 @@ def generate_implementation_handoff_report(ledger: Dict[str, Any]) -> str:
     """Generate SOURCED_FUNDAMENTALS_IMPLEMENTATION_AND_HANDOFF.md directly from ledger."""
     content = f"""# SOURCED FUNDAMENTALS IMPLEMENTATION & HANDOFF RECORD
 
-**Workstream Status**: `SOURCED_FUNDAMENTALS_EVIDENCE_HANDLING_AND_REPLAY_REVIEW_READY`  
+**Workstream Status**: `SOURCED_FUNDAMENTALS_TARGETED_SEMANTIC_CORRECTIONS_REVIEW_READY`  
 **Date**: October 19, 2026  
 **Repository**: `daakara/finance`  
 **Worktree**: `C:\\Users\\akara\\Documents\\Projects\\finance-sourced-fundamentals-pilot`  
@@ -340,6 +342,10 @@ All code lives in an isolated module under `analyst_dashboard/research/sourced_f
 8. **Intra-filing Conflict Detection & Restatement Precedence**: Detects identical metadata conflicts returning `UNAVAILABLE`, and respects amendment/restatement precedence deterministically.
 9. **Programmatic Report Parity**: All markdown tables and analytical reports are generated directly from `sourced_fundamentals_ledger.json`, eliminating human transcription errors and report/model divergence.
 10. **Complete Offline Replay**: Primary SEC JSONs and dated market prices are retained in `data/research/sourced_fundamentals/raw/` with a cryptographic `manifest.json` ledger. The entire research package executes in `--offline` mode with zero network requests.
+11. **Measurement Basis Matching & Permutation-Invariant Dilution**: Strict duration filtering (`75 <= duration <= 105` days for quarterly, `345 <= duration <= 385` days for annual) prevents conflating 6-month YTD shares with 3-month quarterly shares. Canonical deduplication and sorting guarantees identical dilution across any input observation ordering.
+12. **Interim TTM EPS Suppression & Research Estimate Semantics**: Suppresses conventional `diluted_eps_ttm` for interim quarters under US GAAP ASC 260 rules, exposing `ttm_net_income_per_latest_quarter_diluted_share` as an explicitly labeled research estimate with unambiguous numerator/denominator period dates.
+13. **Evidence-Conditional Financial Narratives**: Fails closed with `INSUFFICIENT_EVIDENCE` when balance sheet or operating facts are unevidenced. Truthfully states revenue contractions, operating losses, negative cash flows, net debt, and share dilution without unconditional or contradictory praise phrases.
+14. **Byte-Level UTF-8 Encoding**: Cumulative patch is exported in strict byte-level UTF-8 without BOM or NUL bytes, validated with `git apply --check` against base commit `3b953f8`.
 
 ---
 
@@ -358,7 +364,7 @@ All code lives in an isolated module under `analyst_dashboard/research/sourced_f
 | `analyst_dashboard/research/sourced_fundamentals/__init__.py` | Package entrypoint exposing clean public interfaces. | Verified |
 | `data/research/sourced_fundamentals/raw/manifest.json` | Provenance manifest tracking raw SEC JSONs, URLs, timestamps, and SHA-256 hashes. | Verified |
 | `data/research/sourced_fundamentals/sourced_fundamentals_ledger.json` | Master JSON evidence ledger containing complete facts, derivations, assessments, and deep valuations for 8 companies. | Verified |
-| `tests/test_sourced_fundamentals_pilot.py` | Comprehensive 23-scenario failure-reproducing test suite verifying duration selection, split adjustments, reverse DCF, aggregate completeness, and offline replay. | Verified |
+| `tests/test_sourced_fundamentals_pilot.py` | Comprehensive 30-scenario test suite verifying duration selection, split adjustments, reverse DCF, aggregate completeness, offline replay, dilution order invariance, TTM EPS interim suppression, evidence-conditional narratives, and valid UTF-8 patch export. | Verified |
 
 ---
 

@@ -29,6 +29,8 @@ import json
 import random
 import socket
 import urllib.request
+import subprocess
+import tempfile
 import pytest
 from datetime import datetime
 
@@ -743,3 +745,513 @@ def test_23_split_normalization_without_magnitude_guessing(normalizer):
     # v3 was 20M, multiplied by 3.0 = 60M. curr_shares = 60M -> dilution = 0.0%
     assert d3 is not None
     assert abs(d3 - 0.0) < 0.01
+
+
+# 24. Historical Dilution Order Invariance & Basis Matching (Issue 1)
+def test_24_historical_dilution_order_invariance_and_basis_matching(normalizer):
+    """
+    Scenario 24 (Issue 1):
+    A. Original, reversed, and multiple shuffled orders produce identical:
+       - Selected comparison observations (form, accn, filed, start, end, val)
+       - Period dates
+       - Adjustment basis
+       - Dilution percentages or unavailable status
+    B. Covers both DUOL and FIX retained primary inputs.
+    C. Synthetic case where quarterly and YTD observations share end date, accession, and filing date.
+    D. Missing comparable period returns unavailable rather than falling back to another quarter.
+    """
+    # --- Test B: DUOL and FIX Retained Inputs ---
+    # 1. DUOL
+    duol_path = os.path.join(DEFAULT_CACHE_DIR, "CIK0001562088_companyfacts.json")
+    with open(duol_path, "r", encoding="utf-8") as f:
+        duol_facts = json.load(f)["facts"]["us-gaap"]
+
+    duol_shares_items = list(duol_facts["WeightedAverageNumberOfDilutedSharesOutstanding"]["units"]["shares"])
+    duol_latest_end = "2026-06-30"
+    duol_curr_shares = 50031000.0  # Q2 2026 quarterly diluted shares
+
+    # Original order
+    d1_orig, d3_orig, meta_orig = compute_split_normalized_dilution(
+        normalizer, duol_facts, duol_latest_end, duol_curr_shares, curr_start="2026-04-01", return_details=True
+    )
+    assert d1_orig is not None and abs(d1_orig - 2.10) < 0.01
+    assert d3_orig is not None and abs(d3_orig - 6.74) < 0.01
+    assert meta_orig["comparison_1y"]["period_start"] == "2025-04-01"
+    assert meta_orig["comparison_1y"]["period_end"] == "2025-06-30"
+    assert meta_orig["comparison_1y"]["duration_days"] in range(80, 100)
+    assert meta_orig["comparison_3y"]["period_start"] == "2023-04-01"
+    assert meta_orig["comparison_3y"]["period_end"] == "2023-06-30"
+    assert meta_orig["comparison_3y"]["duration_days"] in range(80, 100)
+
+    # Reversed order
+    duol_rev_facts = {
+        "WeightedAverageNumberOfDilutedSharesOutstanding": {
+            "units": {"shares": list(reversed(duol_shares_items))}
+        }
+    }
+    d1_rev, d3_rev, meta_rev = compute_split_normalized_dilution(
+        normalizer, duol_rev_facts, duol_latest_end, duol_curr_shares, curr_start="2026-04-01", return_details=True
+    )
+    assert d1_rev == d1_orig
+    assert d3_rev == d3_orig
+    assert meta_rev["comparison_1y"]["reported_val"] == meta_orig["comparison_1y"]["reported_val"]
+    assert meta_rev["comparison_1y"]["period_start"] == meta_orig["comparison_1y"]["period_start"]
+    assert meta_rev["comparison_1y"]["accn"] == meta_orig["comparison_1y"]["accn"]
+    assert meta_rev["comparison_1y"]["adjustment_basis"] == meta_orig["comparison_1y"]["adjustment_basis"]
+    assert meta_rev["comparison_3y"]["reported_val"] == meta_orig["comparison_3y"]["reported_val"]
+    assert meta_rev["comparison_3y"]["period_start"] == meta_orig["comparison_3y"]["period_start"]
+
+    # Multiple random shuffles
+    for seed in [11, 42, 99, 1337, 2026]:
+        shuffled_items = list(duol_shares_items)
+        random.seed(seed)
+        random.shuffle(shuffled_items)
+        duol_shuf_facts = {
+            "WeightedAverageNumberOfDilutedSharesOutstanding": {
+                "units": {"shares": shuffled_items}
+            }
+        }
+        d1_shuf, d3_shuf, meta_shuf = compute_split_normalized_dilution(
+            normalizer, duol_shuf_facts, duol_latest_end, duol_curr_shares, curr_start="2026-04-01", return_details=True
+        )
+        assert d1_shuf == d1_orig
+        assert d3_shuf == d3_orig
+        assert meta_shuf["comparison_1y"]["reported_val"] == meta_orig["comparison_1y"]["reported_val"]
+        assert meta_shuf["comparison_3y"]["reported_val"] == meta_orig["comparison_3y"]["reported_val"]
+
+    # 2. FIX
+    fix_path = os.path.join(DEFAULT_CACHE_DIR, "CIK0001035983_companyfacts.json")
+    with open(fix_path, "r", encoding="utf-8") as f:
+        fix_facts = json.load(f)["facts"]["us-gaap"]
+    fix_shares_items = list(fix_facts["WeightedAverageNumberOfDilutedSharesOutstanding"]["units"]["shares"])
+    fix_latest_end = "2026-06-30"
+    fix_curr_shares = 35251000.0  # Q2 2026 quarterly diluted shares
+
+    d1_fix_orig, d3_fix_orig, meta_fix_orig = compute_split_normalized_dilution(
+        normalizer, fix_facts, fix_latest_end, fix_curr_shares, curr_start="2026-04-01", return_details=True
+    )
+    assert d1_fix_orig is not None and abs(d1_fix_orig - (-0.33)) < 0.01
+    assert d3_fix_orig is not None and abs(d3_fix_orig - (-1.82)) < 0.01
+    assert meta_fix_orig["comparison_1y"]["period_start"] == "2025-04-01"
+    assert meta_fix_orig["comparison_3y"]["period_start"] == "2023-04-01"
+
+    fix_rev_facts = {
+        "WeightedAverageNumberOfDilutedSharesOutstanding": {
+            "units": {"shares": list(reversed(fix_shares_items))}
+        }
+    }
+    d1_fix_rev, d3_fix_rev, meta_fix_rev = compute_split_normalized_dilution(
+        normalizer, fix_rev_facts, fix_latest_end, fix_curr_shares, curr_start="2026-04-01", return_details=True
+    )
+    assert d1_fix_rev == d1_fix_orig
+    assert d3_fix_rev == d3_fix_orig
+    assert meta_fix_rev["comparison_1y"]["reported_val"] == meta_fix_orig["comparison_1y"]["reported_val"]
+    assert meta_fix_rev["comparison_3y"]["reported_val"] == meta_fix_orig["comparison_3y"]["reported_val"]
+
+    # --- Test C: Synthetic Case — Quarterly vs YTD sharing end, accession, and filing date ---
+    # In Q2 10-Q, companies often report 6M YTD (e.g. 40M) and 3M standalone quarter (e.g. 50M) in the exact same filing
+    synthetic_shared_filing = {
+        "WeightedAverageNumberOfDilutedSharesOutstanding": {
+            "units": {
+                "shares": [
+                    # 6M YTD observation (duration 181 days)
+                    {"form": "10-Q", "fp": "Q2", "start": "2025-01-01", "end": "2025-06-30", "val": 40000000.0, "filed": "2025-08-05", "accn": "0001-25-000100"},
+                    # 3M standalone interim quarter observation (duration 91 days)
+                    {"form": "10-Q", "fp": "Q2", "start": "2025-04-01", "end": "2025-06-30", "val": 50000000.0, "filed": "2025-08-05", "accn": "0001-25-000100"},
+                ]
+            }
+        }
+    }
+    # Current period is quarterly: 2026-04-01 to 2026-06-30 with 55M shares
+    # Order 1: YTD first, quarterly second
+    d1_syn1, _, meta_syn1 = compute_split_normalized_dilution(
+        normalizer, synthetic_shared_filing, "2026-06-30", curr_shares=55000000.0, curr_start="2026-04-01", return_details=True
+    )
+    assert meta_syn1["comparison_1y"]["reported_val"] == 50000000.0, "Must select quarterly observation, not YTD"
+    assert abs(d1_syn1 - 10.0) < 0.01  # (55M - 50M) / 50M = +10.0%
+
+    # Order 2: Quarterly first, YTD second (reversed)
+    synthetic_shared_filing_rev = {
+        "WeightedAverageNumberOfDilutedSharesOutstanding": {
+            "units": {
+                "shares": list(reversed(synthetic_shared_filing["WeightedAverageNumberOfDilutedSharesOutstanding"]["units"]["shares"]))
+            }
+        }
+    }
+    d1_syn2, _, meta_syn2 = compute_split_normalized_dilution(
+        normalizer, synthetic_shared_filing_rev, "2026-06-30", curr_shares=55000000.0, curr_start="2026-04-01", return_details=True
+    )
+    assert meta_syn2["comparison_1y"]["reported_val"] == 50000000.0, "Reversed order must also select quarterly observation"
+    assert d1_syn2 == d1_syn1
+
+    # --- Test D: Missing Comparable Period Returns Unavailable ---
+    # Target 1Y has only a Q4 observation (end: 2025-12-31) when current is Q2 (end: 2026-06-30)
+    synthetic_missing_comparable = {
+        "WeightedAverageNumberOfDilutedSharesOutstanding": {
+            "units": {
+                "shares": [
+                    # Q4 observation 6 months away from target
+                    {"form": "10-K", "fp": "FY", "start": "2025-10-01", "end": "2025-12-31", "val": 48000000.0, "filed": "2026-02-15", "accn": "0001-26-000010"},
+                ]
+            }
+        }
+    }
+    d1_miss, d3_miss, meta_miss = compute_split_normalized_dilution(
+        normalizer, synthetic_missing_comparable, "2026-06-30", curr_shares=55000000.0, curr_start="2026-04-01", return_details=True
+    )
+    assert d1_miss is None, "Must return None when comparable 1Y quarter is missing; must not fall back to Q4"
+    assert meta_miss["comparison_1y"]["status"] == "UNAVAILABLE"
+
+
+# 25. TTM EPS Interim Suppression & Research Estimate Semantics (Issue 2)
+def test_25_ttm_eps_interim_suppression_and_research_estimate_semantics():
+    """
+    Scenario 25 (Issue 2):
+    1. For interim periods (FIX, DUOL Q2 10-Q), conventional diluted_eps_ttm is suppressed (None).
+    2. Explicit research estimate ttm_net_income_per_latest_quarter_diluted_share is exposed
+       with status RESEARCH_ESTIMATE and explicit numerator and denominator periods.
+    3. For annual reporting periods with matching 12M net income and 12M shares, diluted_eps_ttm is populated.
+    4. Generated reports and master tables do NOT relabel research estimate as conventional diluted TTM EPS
+       and do NOT label quarterly shares as 'Diluted Shares (TTM)'.
+    """
+    ledger = run_pipeline(offline=True, refresh=False)
+    fix_m = ledger["companies"]["FIX"]["derived_metrics"]
+    duol_m = ledger["companies"]["DUOL"]["derived_metrics"]
+
+    # 1. FIX interim suppression & research estimate
+    assert fix_m["diluted_eps_ttm"] is None, "Conventional diluted_eps_ttm must be suppressed for interim period"
+    assert fix_m["ttm_net_income_per_latest_quarter_diluted_share"] is not None
+    assert abs(fix_m["ttm_net_income_per_latest_quarter_diluted_share"] - 40.69) < 0.05
+    assert fix_m["ttm_eps_estimate_status"] == "RESEARCH_ESTIMATE"
+    assert fix_m["ttm_eps_numerator_period"] == "2025-07-01 to 2026-06-30"
+    assert "2026-04-01 to 2026-06-30" in fix_m["ttm_eps_denominator_period"]
+    assert "quarterly" in fix_m["ttm_eps_denominator_period"].lower()
+
+    # 2. DUOL interim suppression & research estimate
+    assert duol_m["diluted_eps_ttm"] is None, "Conventional diluted_eps_ttm must be suppressed for interim period"
+    assert duol_m["ttm_net_income_per_latest_quarter_diluted_share"] is not None
+    assert abs(duol_m["ttm_net_income_per_latest_quarter_diluted_share"] - 8.21) < 0.05
+    assert duol_m["ttm_eps_estimate_status"] == "RESEARCH_ESTIMATE"
+    assert duol_m["ttm_eps_numerator_period"] == "2025-07-01 to 2026-06-30"
+    assert "2026-04-01 to 2026-06-30" in duol_m["ttm_eps_denominator_period"]
+
+    # 3. Calculation notes verification
+    assert "suppressed for interim reporting periods" in fix_m["calculation_notes"]["diluted_eps_ttm"]
+    assert "ASC 260" in fix_m["calculation_notes"]["diluted_eps_ttm"]
+    assert "Denominator is quarterly" in fix_m["calculation_notes"]["cfo_minus_capex_per_share"]
+
+    # 4. Check report text parity
+    with open("SOURCED_FUNDAMENTALS_RESEARCH_PILOT.md", "r", encoding="utf-8") as f:
+        pilot_text = f.read()
+
+    assert "Diluted Shares (TTM)" not in pilot_text, "Master table must not label quarterly shares as Diluted Shares (TTM)"
+    assert "Diluted Shares (Latest Period)" in pilot_text
+    assert "UNAVAILABLE (Interim)" in pilot_text
+
+
+# 26. Evidence-Conditional Narratives: Missing Balance Sheet (Confirmed Case A)
+def test_26_evidence_conditional_narratives_missing_balance_sheet_case_a():
+    """
+    Scenario 26 (Issue 3, Confirmed Case A):
+    Supply FIX symbol with revenue and diluted shares present,
+    but cash, debt, net debt, and operating results unavailable.
+    The assessor must NOT claim 'Exceptional liquidity', 'immense liquidity cushion',
+    'fortress balance sheet', or 'net-cash balance sheet'.
+    """
+    cf = CompanyFundamentals(
+        symbol="FIX",
+        company_name="Comfort Systems USA, Inc.",
+        cik="0001035983",
+        primary_exchange="NYSE",
+        sector_industry="Industrials / Specialty Contractors",
+        business_model="HVAC and modular thermal infrastructure",
+        fiscal_year_end="12-31",
+        latest_reported_period="2026-06-30",
+        latest_filing_date="2026-07-25",
+    )
+    # Revenue and shares present; cash, debt, net debt, and operating results None
+    metrics = DerivedMetrics(
+        symbol="FIX",
+        period_label="TTM",
+        revenue_ttm=11228024000.0,
+        diluted_shares_weighted_avg=35251000.0,
+        operating_income_ttm=None,
+        cfo_minus_capex_ttm=None,
+        cash_and_equivalents=None,
+        total_cash_and_investments=None,
+        total_financial_debt=None,
+        net_debt=None,
+        share_dilution_1y_pct=None,
+    )
+    record = assess_company(cf, metrics)
+
+    # Must fail closed with INSUFFICIENT_EVIDENCE
+    assert record.disposition == ResearchDisposition.INSUFFICIENT_EVIDENCE
+    assert "unavailable" in record.disposition_rationale.lower()
+
+    # Balance sheet resilience must report unknown/unavailable
+    assert "unknown" in record.balance_sheet_resilience.lower()
+    assert "unavailable" in record.balance_sheet_resilience.lower()
+
+    # Strictly assert absence of contradictory claims
+    all_narrative = (
+        record.disposition_rationale + " " +
+        record.balance_sheet_resilience + " " +
+        record.shareholder_outcomes + " " +
+        record.reinvestment_economics
+    ).lower()
+
+    assert "exceptional liquidity" not in all_narrative
+    assert "immense liquidity cushion" not in all_narrative
+    assert "fortress balance sheet" not in all_narrative
+    assert "net-cash balance sheet" not in all_narrative
+
+
+# 27. Evidence-Conditional Narratives: Adverse Financials (Confirmed Case B)
+def test_27_evidence_conditional_narratives_adverse_financials_case_b():
+    """
+    Scenario 27 (Issue 3, Confirmed Case B):
+    Supply company with adverse metrics:
+    - Revenue growth: -50.0%
+    - Operating margin: -20.0%
+    - CFO minus Capex: -100,000,000
+    - Financial debt: 5,000,000,000
+    - Cash: 100,000,000
+    - Net debt: 4,900,000,000
+    - One-year share-count increase: +50.0%
+
+    The assessor must truthfully report contraction, losses, negative cash flow,
+    net debt, and share dilution.
+    The assessor must NOT state:
+    - 'Fortress balance sheet'
+    - 'Disciplined'
+    - 'Net-cash balance sheet'
+    - 'Negative net share dilution'
+    - 'Robust'
+    - 'Exceptional liquidity'
+    - 'immense liquidity cushion'
+    """
+    cf = CompanyFundamentals(
+        symbol="FIX",
+        company_name="Comfort Systems USA, Inc.",
+        cik="0001035983",
+        primary_exchange="NYSE",
+        sector_industry="Industrials / Specialty Contractors",
+        business_model="HVAC and modular thermal infrastructure",
+        fiscal_year_end="12-31",
+        latest_reported_period="2026-06-30",
+        latest_filing_date="2026-07-25",
+    )
+    metrics = DerivedMetrics(
+        symbol="FIX",
+        period_label="TTM",
+        revenue_ttm=5000000000.0,
+        revenue_growth_yoy_pct=-50.0,
+        operating_income_ttm=-1000000000.0,
+        operating_margin_pct=-20.0,
+        cfo_minus_capex_ttm=-100000000.0,
+        fcf_conversion_ebit_pct=10.0,
+        cash_and_equivalents=100000000.0,
+        total_cash_and_investments=100000000.0,
+        total_financial_debt=5000000000.0,
+        net_debt=4900000000.0,
+        diluted_shares_weighted_avg=50000000.0,
+        share_dilution_1y_pct=50.0,
+        share_dilution_3y_pct=100.0,
+    )
+    record = assess_company(cf, metrics)
+
+    # Truthful statements must be present
+    assert "-50.0% yoy contraction" in record.disposition_rationale.lower()
+    assert "operating loss" in record.disposition_rationale.lower()
+    assert "negative cfo minus capex" in record.disposition_rationale.lower()
+    assert "net debt position of $4.9b" in record.disposition_rationale.lower()
+    assert "diluted share count expanded by +50.00%" in record.disposition_rationale.lower()
+    assert "net debt of $4.9b" in record.balance_sheet_resilience.lower()
+    assert "share count expanded" in record.shareholder_outcomes.lower()
+    assert "reinvestment currently consumes cash" in record.reinvestment_economics.lower()
+
+    # Contradictory positive claims must be ABSENT
+    all_narrative = (
+        record.disposition_rationale + " " +
+        record.balance_sheet_resilience + " " +
+        record.shareholder_outcomes + " " +
+        record.reinvestment_economics + " " +
+        record.growth_durability
+    ).lower()
+
+    assert "fortress balance sheet" not in all_narrative
+    assert "disciplined" not in all_narrative
+    assert "net-cash balance sheet" not in all_narrative
+    assert "negative net share dilution" not in all_narrative
+    assert "robust" not in all_narrative
+    assert "exceptional liquidity" not in all_narrative
+    assert "immense liquidity cushion" not in all_narrative
+    assert "high cash conversion" not in all_narrative
+
+
+# 28. Evidence-Conditional Narratives: Acceptance Matrix C through F (Issue 3)
+def test_28_evidence_conditional_narratives_acceptance_matrix_c_to_f():
+    """
+    Scenario 28 (Issue 3):
+    Acceptance Tests C through F:
+    C. Negative CFO-minus-capex reported as consuming cash without 'robust' praise.
+    D. Positive net debt vs negative net debt reported accurately.
+    E. Share count increase vs decrease reported accurately.
+    F. Zero values distinguished from missing values.
+    """
+    cf = CompanyFundamentals(
+        symbol="TEST",
+        company_name="Test Corp",
+        cik="0001111111",
+        primary_exchange="NASDAQ",
+        sector_industry="Technology",
+        business_model="Software",
+        fiscal_year_end="12-31",
+        latest_reported_period="2026-06-30",
+        latest_filing_date="2026-08-01",
+    )
+
+    # --- Matrix C: Negative FCF ---
+    m_neg_fcf = DerivedMetrics(
+        symbol="TEST", period_label="TTM", revenue_ttm=1e9, diluted_shares_weighted_avg=10e6,
+        cfo_minus_capex_ttm=-50e6, operating_income_ttm=-20e6, operating_margin_pct=-2.0
+    )
+    rec_neg_fcf = assess_company(cf, m_neg_fcf)
+    assert "reinvestment currently consumes cash" in rec_neg_fcf.reinvestment_economics.lower()
+    assert "robust" not in rec_neg_fcf.disposition_rationale.lower()
+
+    # --- Matrix D: Net Debt vs Net Cash ---
+    # Net Debt > 0
+    m_pos_nd = DerivedMetrics(
+        symbol="TEST", period_label="TTM", revenue_ttm=1e9, diluted_shares_weighted_avg=10e6,
+        operating_income_ttm=100e6, operating_margin_pct=10.0, cfo_minus_capex_ttm=80e6,
+        total_cash_and_investments=100e6, total_financial_debt=500e6, net_debt=400e6
+    )
+    rec_pos_nd = assess_company(cf, m_pos_nd)
+    assert "net debt position of $400.0m" in rec_pos_nd.disposition_rationale.lower()
+    assert "net cash" not in rec_pos_nd.balance_sheet_resilience.lower()
+
+    # Net Debt < 0 (Net Cash)
+    m_neg_nd = DerivedMetrics(
+        symbol="TEST", period_label="TTM", revenue_ttm=1e9, diluted_shares_weighted_avg=10e6,
+        operating_income_ttm=100e6, operating_margin_pct=10.0, cfo_minus_capex_ttm=80e6,
+        total_cash_and_investments=500e6, total_financial_debt=100e6, net_debt=-400e6
+    )
+    rec_neg_nd = assess_company(cf, m_neg_nd)
+    assert "net cash position of $400.0m" in rec_neg_nd.disposition_rationale.lower()
+
+    # --- Matrix E: Share Count Increase vs Decrease ---
+    # Dilution > 0
+    m_dil_pos = DerivedMetrics(
+        symbol="TEST", period_label="TTM", revenue_ttm=1e9, diluted_shares_weighted_avg=10e6,
+        operating_income_ttm=100e6, operating_margin_pct=10.0, cfo_minus_capex_ttm=80e6,
+        share_dilution_1y_pct=4.5
+    )
+    rec_dil_pos = assess_company(cf, m_dil_pos)
+    assert "share count expanded by +4.50%" in rec_dil_pos.disposition_rationale.lower()
+    assert "repurchase" not in rec_dil_pos.shareholder_outcomes.lower()
+
+    # Dilution < 0 (Buybacks)
+    m_dil_neg = DerivedMetrics(
+        symbol="TEST", period_label="TTM", revenue_ttm=1e9, diluted_shares_weighted_avg=10e6,
+        operating_income_ttm=100e6, operating_margin_pct=10.0, cfo_minus_capex_ttm=80e6,
+        share_dilution_1y_pct=-4.5
+    )
+    rec_dil_neg = assess_company(cf, m_dil_neg)
+    assert "share count decreased by -4.50%" in rec_dil_neg.disposition_rationale.lower()
+    assert "capital return via repurchases" in rec_dil_neg.shareholder_outcomes.lower()
+
+    # --- Matrix F: Zero Values vs Missing Values ---
+    # Reported 0.0 debt
+    m_zero_debt = DerivedMetrics(
+        symbol="TEST", period_label="TTM", revenue_ttm=1e9, diluted_shares_weighted_avg=10e6,
+        operating_income_ttm=100e6, operating_margin_pct=10.0, cfo_minus_capex_ttm=80e6,
+        total_cash_and_investments=100e6, total_financial_debt=0.0, net_debt=-100e6
+    )
+    rec_zero_debt = assess_company(cf, m_zero_debt)
+    assert "$0.0 debt" in rec_zero_debt.disposition_rationale.lower()
+
+    # Missing debt
+    m_miss_debt = DerivedMetrics(
+        symbol="TEST", period_label="TTM", revenue_ttm=1e9, diluted_shares_weighted_avg=10e6,
+        operating_income_ttm=100e6, operating_margin_pct=10.0, cfo_minus_capex_ttm=80e6,
+        total_cash_and_investments=100e6, total_financial_debt=None, net_debt=None
+    )
+    rec_miss_debt = assess_company(cf, m_miss_debt)
+    assert "net debt unavailable" in rec_miss_debt.disposition_rationale.lower()
+    assert "unevidenced in primary xbrl tags" in rec_miss_debt.balance_sheet_resilience.lower()
+
+
+# 29. Actual Eight-Company Narrative Soundness (Matrix G)
+def test_29_actual_eight_company_narrative_soundness():
+    """
+    Scenario 29 (Issue 3, Matrix G):
+    Verify that across all 8 actual companies in the population:
+    1. Financial claims match actual derived metrics.
+    2. Zero contradictory positive claims occur.
+    3. Case studies (FIX, DUOL, ULTA) retain explicit Case Study designation.
+    4. DUOL and ULTA maintain UNAVAILABLE net debt and suppressed valuations.
+    """
+    ledger = run_pipeline(offline=True, refresh=False)
+    companies = ledger["companies"]
+    assert len(companies) == 8
+
+    banned_contradictions = [
+        "fortress balance sheet",
+        "exceptional liquidity",
+        "immense liquidity cushion",
+        "negative net share dilution",
+    ]
+
+    for sym, c in companies.items():
+        assessment = c["assessment"]
+        rationale = assessment["disposition_rationale"]
+        bs = assessment["balance_sheet_resilience"]
+        sh = assessment["shareholder_outcomes"]
+        combined = (rationale + " " + bs + " " + sh).lower()
+
+        for b in banned_contradictions:
+            assert b not in combined, f"{sym} assessment contains prohibited contradictory claim: {b}"
+
+    # Verify DUOL and ULTA debt and valuation status
+    assert "UNAVAILABLE" in companies["DUOL"]["assessment"]["disposition_rationale"]
+    assert "UNAVAILABLE" in companies["ULTA"]["assessment"]["disposition_rationale"]
+    assert companies["DUOL"]["deep_valuation"]["valuation_status"] == "SUPPRESSED_UNAVAILABLE"
+    assert companies["ULTA"]["deep_valuation"]["valuation_status"] == "SUPPRESSED_UNAVAILABLE"
+
+
+# 30. Valid UTF-8 Cumulative Patch Verification (Issue 4)
+def test_30_valid_utf8_cumulative_patch_verification():
+    """
+    Scenario 30 (Issue 4):
+    1. Generates cumulative git diff from base commit 3b953f834a49d88496dfa9dae56584e17e60bae4 to HEAD.
+    2. Verifies valid UTF-8 encoding:
+       - No UTF-16 little-endian BOM (0xFF 0xFE).
+       - No UTF-16 big-endian BOM (0xFE 0xFF).
+       - Zero embedded NUL bytes (0x00).
+       - Strict utf-8 decoding succeeds.
+    3. Verifies git apply --check succeeds in an isolated worktree of the base commit.
+    """
+    base_sha = "3b953f834a49d88496dfa9dae56584e17e60bae4"
+    diff_bytes = subprocess.check_output(["git", "diff", base_sha, "HEAD"])
+
+    # 1. Byte-level encoding checks
+    assert not diff_bytes.startswith(b"\xff\xfe"), "Patch must NOT start with UTF-16 LE BOM"
+    assert not diff_bytes.startswith(b"\xfe\xff"), "Patch must NOT start with UTF-16 BE BOM"
+    assert b"\x00" not in diff_bytes, "Patch must NOT contain NUL bytes"
+
+    # 2. Strict UTF-8 decode
+    decoded_text = diff_bytes.decode("utf-8")
+    assert len(decoded_text) > 0
+    assert "diff --git" in decoded_text
+
+    # 3. Isolated worktree git apply --check
+    td = tempfile.mkdtemp()
+    try:
+        subprocess.check_call(["git", "worktree", "add", "--detach", td, base_sha], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        res = subprocess.run(["git", "apply", "--check"], input=diff_bytes, cwd=td, capture_output=True)
+        assert res.returncode == 0, f"git apply --check failed: {res.stderr.decode('utf-8', errors='replace')}"
+    finally:
+        subprocess.check_call(["git", "worktree", "remove", "--force", td], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+

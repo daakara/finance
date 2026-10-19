@@ -128,7 +128,11 @@ class DerivedMetrics:
     # Share Structure & Per-Share
     diluted_shares_weighted_avg: Optional[float] = None
     common_shares_outstanding: Optional[float] = None
-    diluted_eps_ttm: Optional[float] = None
+    diluted_eps_ttm: Optional[float] = None  # Conventional TTM diluted EPS (populated only when compatible annual shares match annual net income)
+    ttm_net_income_per_latest_quarter_diluted_share: Optional[float] = None  # Research estimate for interim reporting periods
+    ttm_eps_estimate_status: Optional[str] = None  # "RESEARCH_ESTIMATE" or "REPORTED_ANNUAL_COMPATIBLE"
+    ttm_eps_numerator_period: Optional[str] = None  # e.g. "2025-07-01 to 2026-06-30"
+    ttm_eps_denominator_period: Optional[str] = None  # e.g. "2026-04-01 to 2026-06-30 (quarterly diluted shares)"
     cfo_minus_capex_per_share: Optional[float] = None
     share_dilution_1y_pct: Optional[float] = None
     share_dilution_3y_pct: Optional[float] = None
