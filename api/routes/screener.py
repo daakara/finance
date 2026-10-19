@@ -107,6 +107,16 @@ CONFIRMED_CORPORATE_ACTIONS: Dict[str, Dict[str, Any]] = {
     }
 }
 
+# ── Attributable Lifecycle Evidence Registry ──────────────────────────────
+# Invariant: Static reference catalog membership does NOT constitute lifecycle evidence.
+# Listing status is reported as ACTIVE only where attributable, primary-source lifecycle
+# evidence exists (e.g. verified exchange certificate, primary listing confirmation).
+# Without attributable lifecycle evidence, candidates report UNVERIFIED.
+ATTRIBUTABLE_LIFECYCLE_EVIDENCE: Dict[str, Dict[str, Any]] = {
+    # Populated when attributable primary listing / lifecycle verification is supplied.
+    # Candidates without verified lifecycle records report 'UNVERIFIED'.
+}
+
 # ── Canonical Radar Discovery Taxonomy ──────────────────────────────────────
 # Exactly three canonical categories governed across backend transport, API contracts,
 # and UI presentation (no transport aliases such as "VALUE").
@@ -607,13 +617,14 @@ def run_screener_get(
             "screeningStatus": "DELISTED" if is_delisted else ("SCREENING_ZONE" if execution_status == "IN_BUY_ZONE" else execution_status),
             "screeningGeometry": "INACTIVE" if is_delisted else ("WITHIN_TOLERANCE" if execution_status == "IN_BUY_ZONE" else "OUTSIDE_TOLERANCE"),
             "screeningEligible": False if is_delisted else bool(execution_status in ["IN_BUY_ZONE", "APPROACHING_TARGET"]),
-            "isInvestable": not is_delisted and execution_status != "UNVERIFIED_ASSET",
             "corporateAction": corp_action,
             "fundamentalEvidence": {
                 "provenance": "STATIC_REFERENCE_CATALOG" if sym in screener.KNOWN_GEMS_DATA else "UNVERIFIED",
+                "isCatalogReference": bool(sym in screener.KNOWN_GEMS_DATA),
                 "metricBasis": "HISTORICAL_PRE_ACQUISITION_CATALOG" if is_delisted else ("HISTORICAL_CATALOG_VALUE" if sym in screener.KNOWN_GEMS_DATA else "MISSING"),
                 "asOfDate": corp_action["effective_date"] if is_delisted else ("CURATED_CATALOG_BASELINE" if sym in screener.KNOWN_GEMS_DATA else None),
-                "listingStatus": corp_action["status"] if is_delisted else ("ACTIVE" if sym in screener.KNOWN_GEMS_DATA else "UNVERIFIED"),
+                "listingStatus": corp_action["status"] if is_delisted else (ATTRIBUTABLE_LIFECYCLE_EVIDENCE[sym]["status"] if sym in ATTRIBUTABLE_LIFECYCLE_EVIDENCE else "UNVERIFIED"),
+                "lifecycleEvidenceSource": corp_action.get("action_type") if is_delisted else (ATTRIBUTABLE_LIFECYCLE_EVIDENCE[sym].get("source") if sym in ATTRIBUTABLE_LIFECYCLE_EVIDENCE else None),
                 "isAudited": False,
                 "qualificationState": "INELIGIBLE_INACTIVE" if is_delisted else ("REFERENCE_CRITERIA_MET" if "VALUE_GARP" in cand_categories else ("REFERENCE_CRITERIA_UNMET" if sym in screener.KNOWN_GEMS_DATA else "UNASSESSED_INSUFFICIENT_EVIDENCE")),
                 "sortingBasis": "TECHNICAL_CONFLUENCE_MOMENTUM" if not is_delisted and execution_status != "UNVERIFIED_ASSET" else "UNAVAILABLE",

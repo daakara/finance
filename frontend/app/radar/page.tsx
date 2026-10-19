@@ -939,7 +939,19 @@ function RadarContent() {
               </span>
               <span className="text-slate-600">•</span>
               <span className="text-slate-400">
-                Sorted by: <strong className="text-cyan-300">Technical Confluence</strong> (RSI / Execution / Smart Money), <span className="text-amber-300/90 font-medium">not intrinsic valuation discount</span>
+                Sorted by: {sortBy === 'SCORE' ? (
+                  <>
+                    <strong className="text-cyan-300">Technical Confluence</strong> (Confluence Score descending), <span className="text-amber-300/90 font-medium">not an intrinsic valuation discount ranking</span>
+                  </>
+                ) : sortBy === 'RVOL' ? (
+                  <>
+                    <strong className="text-cyan-300">Relative Volume</strong> (RVOL descending), <span className="text-amber-300/90 font-medium">not an intrinsic valuation discount ranking</span>
+                  </>
+                ) : (
+                  <>
+                    <strong className="text-cyan-300">Share Price</strong> (Nominal price descending), <span className="text-amber-300/90 font-medium">not an intrinsic valuation discount ranking</span>
+                  </>
+                )}
               </span>
               <span className="text-slate-600">•</span>
               <span className="text-slate-400">

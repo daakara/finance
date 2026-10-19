@@ -17,6 +17,7 @@ This evaluation investigates three contrasting public companies from active and 
 > - A scenario valuation output is **not an objective intrinsic truth or an investment recommendation**. It represents the mathematical implication of specified cash flows, discount rates, and terminal parameters.
 > - Reverse valuation is conditional on the fixed model assumptions and does not establish a unique observable market forecast.
 > - Universal rules such as a mandatory 25–30% "margin of safety" discount are treated here as illustrative analytical cushions, not approved corporate governance policies.
+> - **Multi-Dimensional Bridge Verification**: All cash flow and income normalization bridges are computed via `verify_normalization_bridge()` in `scripts/undervalued_growth_model.py`. While arithmetic closure is verified within ±$0.15M, overall `closureVerified` remains `false` (fail-closed) because subjective analyst adjustments (such as working-capital smoothing or capex normalizations) are analytical modeling choices, not audited SEC facts.
 > - Market price-to-modeled-value comparisons are reported with explicit mathematical denominators:
 >   - **Potential Return from Reference Price**: $\frac{\text{Modeled Value}}{\text{Reference Price}} - 1$
 >   - **Premium to Modeled Value**: $\frac{\text{Reference Price}}{\text{Modeled Value}} - 1$
@@ -44,7 +45,7 @@ All underlying values are generated deterministically by [`scripts/undervalued_g
 | **Two-Years-Prior Fiscal Label** | **FY2023** (Ended 2023-12-31) | **FY2023** (Ended 2023-12-31) | **FY2023** (Ended 2024-02-03) |
 | **FY2025 Revenue** | $9,101.6M (+29.5% YoY) | $1,037.6M (+38.7% YoY) | $12,392.8M (+9.7% YoY) |
 | **3-Year Revenue CAGR** | **32.2%** | **39.7%** | **5.1%** |
-| **FY2025 Operating Income (EBIT)**| $1,312.6M (14.4% margin) | $135.6M (13.1% margin) | $1,548.8M (12.5% margin) |
+| **FY2025 Operating Income (EBIT)**| $1,314.6M reported / $1,312.6M adjusted (14.4% margin, ex-$1.97M gain on sale) | $135.6M (13.1% margin) | $1,548.8M (12.5% margin) |
 | **Reported GAAP Net Income**| $1,022.6M | $414.1M (*includes tax credit*) | $1,153.5M |
 | **Normalized Equity Net Income** | $1,014.0M (at 22.8% tax) | **$144.1M** (at 21.0% tax) | $1,180.2M (at 23.8% tax) |
 | **Operating NOPAT (EBIT $\times$ (1-t))**| $1,014.0M | **$107.1M** | $1,180.2M |
@@ -101,10 +102,14 @@ graph TD
 - **Cyclicality Assessment**: Industrial contracting is inherently cyclical. High current demand reflects concentrated hyperscaler capital spending. Backlog is subject to project rescheduling, cancellation, or customer capital digestion phases.
 
 #### 3.1.2 Reinvestment, ROIC & Normalization Bridge
+- **Operating Income Normalization**:
+  - Reported GAAP Operating Income (FY2025 Form 10-K): **$1,314.589M**
+  - Less: Non-recurring gain on sale of assets/business: **-$1.974M**
+  - **Adjusted Operating Income (EBIT)**: **$1,312.615M** (used for recurring operational NOPAT)
 - **ROIC Inputs (FY2025)**:
-  - $\text{NOPAT} = \text{Operating Income } (\$1,312.6\text{M}) \times (1 - 0.2275) = \$1,014.0\text{M}$.
+  - $\text{NOPAT (Adjusted)} = \text{Operating Income } (\$1,312.6\text{M}) \times (1 - 0.2275) = \$1,014.0\text{M}$ (Reported NOPAT is $\$1,015.5\text{M}$).
   - $\text{Invested Capital} = \text{Stockholders' Equity } (\$2,448.8\text{M}) + \text{Total Debt } (\$483.4\text{M}) - \text{Cash } (\$981.9\text{M}) = \$1,950.2\text{M}$.
-  - $\text{ROIC} = \frac{\$1,014.0\text{M}}{\$1,950.2\text{M}} = \mathbf{52.0\%}$.
+  - $\text{ROIC} = \frac{\$1,014.0\text{M}}{\$1,950.2\text{M}} = \mathbf{52.0\%}$ (or 52.1% on reported NOPAT).
 - **Incremental ROIC (ROIIC)**:
   - $\Delta \text{NOPAT}_{(\text{FY23}\rightarrow\text{FY25})} = \$1,014.0\text{M} - \$324.5\text{M} = \$689.5\text{M}$.
   - $\Delta \text{IC}_{(\text{FY23}\rightarrow\text{FY25})} = \$1,950.2\text{M} - \$1,329.5\text{M} = \$620.7\text{M}$.
@@ -175,15 +180,19 @@ graph TD
   - Economic Deduction for SBC: **-$137.4M**
   - **Derived FCF less SBC (Unadjusted)**: **$223.0M**
 - **The Interest Income & Cash Double-Counting Reconciliation**:
-  - *Accounting Root Cause*: Under US GAAP (ASC 230), Operating Cash Flow ($387.8M) includes interest received from cash and short-term investment holdings ($46.8M pretax, or ~$37.0M after 21% statutory tax).
+  - *Accounting Root Cause*: Under US GAAP (ASC 230), Operating Cash Flow ($387.8M) includes interest received from cash and short-term investment holdings. In FY2025, DUOL reported **$45.231M in interest income** and **$1.609M in other income, net** (total non-operating income of $46.840M).
+  - *Cash Interest Approximation*: Accrued interest income ($45.231M) serves as an approximation of cash interest collected in CFO under ASC 230. The after-tax deduction at 21% statutory tax is **-$35.73M** for interest income and **-$1.27M** for other income (totaling **-$37.00M**).
   - *The Valuation Trap*: If an analyst capitalizes the unadjusted post-SBC flow ($223.0M) and then adds the net cash balance ($1.23B) to operating present value in an EV-to-Equity bridge, the cash balance is **double-counted**! Its interest yield is capitalized into operating PV, AND its principal is added as non-operating excess cash at the end.
   - *Surgical Resolution (True Operating Cash Flow)*:
-    $$\text{True Operating Base FCF} = \text{Unadjusted FCF } (\$222.98\text{M}) - \text{After-Tax Interest Received } (\$37.00\text{M}) = \mathbf{\$186.0M}$$
+    $$\text{True Operating Base FCF} = \text{Unadjusted FCF } (\$222.98\text{M}) - \text{After-Tax Interest } (\$35.73\text{M}) - \text{After-Tax Other } (\$1.27\text{M}) = \mathbf{\$186.0M}$$
     This $186.0M operating flow directly ties to operating NOPAT ($107.1M) and working capital unearned subscription float. Capitalizing this operating flow and then adding net cash ($1,227.7M) closes the enterprise-to-equity bridge cleanly and mathematically without double-counting!
 
-#### 3.2.4 Valuation Framework & Scenario Outputs
+#### 3.2.4 Valuation Framework, Lease Reconciliation & Scenario Outputs
 - **Methodology**: Enterprise DCF on True Operating Free Cash Flow ($186.0M base post-SBC, ex-interest).
-- **Enterprise to Equity Bridge**: $\text{Equity Value} = \text{Operating PV} + \text{Net Cash } (\$1,227.7\text{M})$. Per-share values divided by 46.63M diluted shares.
+- **Enterprise to Equity Bridge**: $\text{Equity Value} = \text{Operating PV} + \text{Net Cash } (\$1,227.7\text{M})$. Per-share values divided by 46.63M diluted shares (Class A and B).
+- **Operating Lease Treatment Reconciliation**:
+  - *Primary Post-Rent Equity FCFE Framework*: Duolingo has $0.0 funded financial senior debt. Its operating lease payments ($14.8M in FY2025) are fully deducted as operating expenses within CFO under ASC 842. Therefore, capitalized operating lease liabilities ($86.136M) are NOT deducted again in the equity bridge, preventing double-charging of the lease obligation. Base Fair Value is **$141.39 / share**.
+  - *Comparison Capitalized Enterprise Framework*: If an analyst treats ASC 842 lease liabilities as financial debt and deducts the $86.136M lease liability without adding back the lease payment rent expense, Base Fair Value drops to **$138.89 / share** (an unadjusted $1.85 / share or 1.3% conservative variance). In either framework, DUOL trades within 2% of fundamental fair value.
 - **Primary Scenario Table (True Operating Base FCF $186.0M)**:
   - *Conservative* (Growth [12%, 10%, 8%, 6%, 5%], Discount Rate 10.0%, g 2.5%):
     - PV Discrete FCF: $914.5M | PV Terminal: $2,337.8M (71.9% of Op PV) | Op PV: $3,252.3M

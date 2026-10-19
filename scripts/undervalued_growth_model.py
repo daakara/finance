@@ -61,6 +61,46 @@ def reverse_dcf(
     return mid
 
 
+def verify_normalization_bridge(
+    additive_components: List[float],
+    target_base: float,
+    tolerance_millions: float = 0.15,
+) -> Dict[str, Any]:
+    """
+    Computes arithmetic closure for a normalization bridge and evaluates
+    explicit multi-dimensional epistemic verification status:
+    1. Arithmetic Closure: Sum of additive components equals target base within tolerance.
+    2. Agreement with Source: Explicitly distinguishes whether all items are audited lines.
+    3. Accounting Method Consistency: Identifies whether non-GAAP smoothing adjustments are used.
+    4. Economic Reasonableness: Recognizes subjective forward-looking assumptions.
+
+    A passing arithmetic check does NOT imply empirical or economic validity.
+    """
+    calc_sum = sum(additive_components)
+    discrepancy = round(abs(calc_sum - target_base), 4)
+    arithmetic_closure = discrepancy <= tolerance_millions
+
+    return {
+        "calculatedSumMillions": round(calc_sum, 3),
+        "targetBaseMillions": round(target_base, 3),
+        "discrepancyMillions": discrepancy,
+        "toleranceMillions": tolerance_millions,
+        "arithmeticClosureVerified": arithmetic_closure,
+        "agreementWithSourceVerified": False,  # Subjective analyst normalizations are not audited line items
+        "accountingMethodConsistencyVerified": False,  # Working capital / capex smoothing is non-GAAP
+        "economicReasonablenessVerified": False,  # Model assumption, not an empirical certainty
+        "closureVerified": False,  # Fail-closed: arithmetic closure alone does NOT certify economic validity
+        "epistemicStatus": "ARITHMETIC_CLOSED_UNVOUCHED_NORMALIZATIONS" if arithmetic_closure else "ARITHMETIC_DISCREPANCY",
+        "verificationNotes": (
+            f"Arithmetic closure verified within ±{tolerance_millions}M (discrepancy: {discrepancy}M). "
+            "However, agreementWithSource, accountingMethodConsistency, and economicReasonableness are NOT verified "
+            "because the bridge incorporates subjective analyst adjustments unvouched by audited SEC filings."
+            if arithmetic_closure
+            else f"Arithmetic closure FAILED: sum of components ({calc_sum:.2f}M) differs from target ({target_base:.2f}M) by {discrepancy:.2f}M > {tolerance_millions}M."
+        )
+    }
+
+
 def compute_metrics_and_ledger() -> Dict[str, Any]:
     """
     Constructs the authoritative data ledger with explicit field-level citations,
@@ -152,6 +192,7 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
             "marketPriceUsd": fix_price,
             "periodEndBasicShares": fix_shares_basic,
             "weightedAverageDilutedShares": fix_shares_diluted,
+            "valuationDenominatorBasis": "Historical FY2025 weighted-average diluted shares (35.410M). Period-end basic shares were 35.194M. Limitation: Potential option/RSU dilution from FY2026 grants is unmodeled; using historical diluted average as an illustrative proxy.",
             "dilutedMarketEquityValueUsd": round(fix_diluted_mcap, 2),
             "cashAndEquivalentsUsd": fix_cash,
             "totalDebtUsd": fix_debt,
@@ -233,7 +274,11 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
                 "periodEnded": "2025-12-31",
                 "revenueUsd": 9101641000.0,
                 "grossProfitUsd": 2195899000.0,
-                "operatingIncomeUsd": 1312615000.0,
+                "operatingIncomeReportedUsd": 1314589000.0,
+                "gainOnSaleOfAssetsUsd": 1974000.0,
+                "operatingIncomeAdjustedUsd": 1312615000.0,
+                "operatingIncomeAdjustmentRationale": "Reported GAAP operating income of $1,314.589M includes $1.974M gain on sale of assets/business. Adjusted operating income of $1,312.615M excludes this non-recurring gain to reflect core ongoing operational earnings.",
+                "operatingIncomeUsd": 1314589000.0,  # Canonical reported GAAP operating income
                 "netIncomeUsd": 1022558000.0,
                 "operatingCashFlowUsd": 1186356000.0,
                 "capitalExpendituresUsd": -154903000.0,
@@ -245,8 +290,11 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
                 "stockholdersEquityUsd": 2448774000.0,
                 "dilutedAverageShares": 35410000,
                 "investedCapitalUsd": 1950234000.0,
-                "nopatUsd": 1013995088.0,            # EBIT * (1 - 0.2275)
-                "roicPct": 51.99,
+                "nopatReportedUsd": 1015519998.0,    # Reported EBIT * (1 - 0.2275)
+                "nopatAdjustedUsd": 1013995088.0,    # Adjusted EBIT * (1 - 0.2275)
+                "nopatUsd": 1015519998.0,            # Canonical NOPAT based on reported EBIT
+                "roicPct": 52.07,                    # Reported EBIT NOPAT / Invested Capital
+                "roicAdjustedPct": 51.99,            # Adjusted EBIT NOPAT / Invested Capital
             }
         },
         "normalizationBridge": {
@@ -258,7 +306,8 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
                 {"item": "Working Capital Timing & Advance Billings Smoothing (+1.8% run-rate adjustment)", "amountMillions": 18.5, "classification": "ANALYST_ASSUMED"},
                 {"item": "Normalized Starting Base Free Cash Flow", "amountMillions": 1050.0, "classification": "DERIVED_NORMALIZED_BASE"}
             ],
-            "closureVerified": True
+            "verification": verify_normalization_bridge([1186.4, -154.9, 18.5], 1050.0, tolerance_millions=0.15),
+            "closureVerified": False
         },
         "valuationScenarios": fix_scenarios_output,
         "sensitivityTable": fix_sensitivity,
@@ -385,11 +434,20 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
             "marketPriceUsd": duol_price,
             "periodEndBasicShares": duol_shares_basic,
             "weightedAverageDilutedShares": duol_shares_diluted,
+            "valuationDenominatorBasis": "Historical FY2025 weighted-average diluted shares (46.628M). Duolingo has a dual-class structure (Class A and Class B common stock). Period-end basic shares were 40.387M (and ~44.0M combined basic shares across Class A and Class B). Valuation uses 46.628M diluted shares to account for dilutive impact of RSUs and stock options. Limitation: Does not reflect unvested option overhang beyond treasury stock effect or potential FY2026 dilutive grants.",
             "dilutedMarketEquityValueUsd": round(duol_diluted_mcap, 2),
             "cashAndEquivalentsUsd": duol_cash,
-            "totalDebtUsd": duol_debt,
+            "operatingLeaseLiabilitiesUsd": duol_debt,
+            "fundedFinancialDebtUsd": 0.0,
             "netCashUsd": duol_net_cash,
             "operatingPresentValueTargetUsd": round(duol_target_op_pv, 2),
+            "leaseTreatmentReconciliation": {
+                "framework": "Post-Rent Equity FCFE Model (Primary)",
+                "fundedDebtSeniorNotesUsd": 0.0,
+                "operatingLeaseLiabilitiesAsc842Usd": duol_debt,
+                "netCashForEquityBridgeUsd": duol_cash,
+                "reconciliationNote": "Operating lease payments ($14.8M) are deducted in CFO. Funded financial debt is $0.0. Capitalized lease liabilities are not deducted again in the bridge to avoid double-charging the lease obligation. Under the comparison Capitalized Enterprise model (deducting $86.136M lease debt without adding back rent), Base Fair Value is $141.39 / share (incorporating an unadjusted $1.85/share conservative haircut)."
+            },
         },
         "sources": [
             {
@@ -471,6 +529,14 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
                 "revenueUsd": 1037589000.0,
                 "grossProfitUsd": 749457000.0,
                 "operatingIncomeUsd": 135570000.0,
+                "interestIncomeReportedUsd": 45231000.0,
+                "otherIncomeNetReportedUsd": 1609000.0,
+                "totalNonOperatingIncomeReportedUsd": 46840000.0,
+                "interestAdjustmentAfterTaxUsd": -35732490.0,
+                "otherIncomeAdjustmentAfterTaxUsd": -1271110.0,
+                "cashInterestApproximationNote": "Accrued interest income of $45.231M is used as an approximation of cash interest received included in CFO under US GAAP ASC 230; other income of $1.609M consists of miscellaneous non-operating items that should not be assumed to be pure cash yield.",
+                "operatingLeaseLiabilitiesAsc842Usd": 86136000.0,
+                "fundedDebtSeniorNotesUsd": 0.0,
                 "pretaxIncomeUsd": 182410000.0,
                 "taxProvisionUsd": -231655000.0,  # Negative tax = tax benefit
                 "netIncomeUsd": 414065000.0,
@@ -503,10 +569,12 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
                 {"item": "Derived Free Cash Flow (CFO - Capex)", "amountMillions": 360.42, "classification": "DERIVED"},
                 {"item": "Less: Stock-Based Compensation (SBC)", "amountMillions": -137.44, "classification": "REPORTED_COMPENSATION"},
                 {"item": "Derived Post-SBC Free Cash Flow (Unadjusted)", "amountMillions": 222.98, "classification": "DERIVED_UNADJUSTED_POST_SBC"},
-                {"item": "Less: After-tax net interest income in CFO ($46.84M * 0.79)", "amountMillions": -37.00, "classification": "DERIVED_INTEREST_DEDUCTION"},
-                {"item": "True Operating Base Free Cash Flow (Post-SBC, ex-interest)", "amountMillions": 186.0, "classification": "DERIVED_OPERATING_BASE_FCF"}
+                {"item": "Less: After-tax pure interest income in CFO ($45.23M * 0.79)", "amountMillions": -35.73, "classification": "DERIVED_INTEREST_DEDUCTION"},
+                {"item": "Less: After-tax other non-operating income ($1.61M * 0.79)", "amountMillions": -1.27, "classification": "DERIVED_OTHER_INCOME_DEDUCTION"},
+                {"item": "True Operating Base Free Cash Flow (Post-SBC, ex-all non-operating)", "amountMillions": 186.0, "classification": "DERIVED_OPERATING_BASE_FCF"}
             ],
-            "closureVerified": True
+            "verification": verify_normalization_bridge([387.82, -27.40, -137.44, -35.73, -1.27], 186.0, tolerance_millions=0.15),
+            "closureVerified": False
         },
         "valuationScenarios": duol_scenarios_output,
         "sensitivityTable": duol_sensitivity,
@@ -609,11 +677,18 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
             "marketPriceUsd": ulta_price,
             "periodEndBasicShares": ulta_shares_basic,
             "weightedAverageDilutedShares": ulta_shares_diluted,
+            "valuationDenominatorBasis": "Recent basic shares outstanding (42.757M, reflecting ongoing share repurchases). Valuation per-share outputs use 42.757M basic shares ($444.23 Base FV). For comparison, on historical FY2025 diluted average shares (44.990M), Base FV is $422.19. Limitation: Future repurchase pace is uncertain.",
             "dilutedMarketEquityValueUsd": round(ulta_diluted_mcap, 2),
             "cashAndEquivalentsUsd": ulta_cash,
             "operatingLeaseLiabilitiesUsd": ulta_lease_debt,
             "fundedFinancialDebtUsd": ulta_funded_debt,
             "operatingPresentValueTargetUsd": round(ulta_target_op_equity_pv, 2),
+            "leaseTreatmentReconciliation": {
+                "framework": "Post-Rent Equity FCFE Model (Primary)",
+                "operatingLeaseLiabilitiesAsc842Usd": ulta_lease_debt,
+                "fundedFinancialDebtUsd": 0.0,
+                "reconciliationNote": "Operating store lease payments are deducted as cash outflows in CFO under US GAAP. Under the Post-Rent Equity FCFE model, capitalized lease liabilities ($2,182.061M) are not deducted in the equity bridge, avoiding double counting. If capitalized under an Enterprise DCF model, operating cash flows must be increased by lease rent before deducting the $2.18B lease debt."
+            },
         },
         "sources": [
             {
@@ -724,7 +799,8 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
                 {"item": "Store remodel & supply chain maintenance capex smoothing", "amountMillions": -38.0, "classification": "ANALYST_ASSUMED"},
                 {"item": "Normalized Starting Base Free Cash Flow (Equity Level)", "amountMillions": 1030.0, "classification": "DERIVED_NORMALIZED_BASE"}
             ],
-            "closureVerified": True
+            "verification": verify_normalization_bridge([1502.8, -434.8, -38.0], 1030.0, tolerance_millions=0.15),
+            "closureVerified": False
         },
         "valuationScenarios": ulta_scenarios_output,
         "sensitivityTable": ulta_sensitivity,
@@ -740,11 +816,11 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
     }
 
     ledger = {
-        "schemaVersion": "2.0.0",
-        "generatedAt": "2026-10-19T07:35:00Z",
-        "description": "Machine-readable field-level source evidence ledger and reproducible valuation scenario repository.",
+        "schemaVersion": "2.1.0",
+        "generatedAt": "2026-10-19T08:30:00Z",
+        "description": "Machine-readable field-level source evidence ledger and provisional valuation scenario repository. All valuation outputs represent illustrative scenarios under explicit modeling constraints, not certified intrinsic values or investment recommendations.",
         "authoritativeMethodology": "ARX Financial Epistemic Invariants & Bounded Valuation Specification",
-        "verificationPerformed": "Verified against SEC Form 10-K filings, EDGAR accessions, income tax footnote reconciliations, and discrete mathematical model bridges. Independent external audit was NOT performed.",
+        "verificationPerformed": "Verified against SEC Form 10-K filings, EDGAR accessions, income tax footnote reconciliations, and discrete mathematical bridges. Arithmetic verification performed via verify_normalization_bridge(); overall closureVerified is false pending independent epistemic certification of analyst normalization adjustments.",
         "companies": companies_data,
     }
 
