@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import analytics, volatility, screener, regimes, cache, smart_money, governance, portfolio, macro, cockpit, journal, telemetry, etf, market, security_master
+from api.routes import analytics, volatility, screener, regimes, cache, smart_money, governance, portfolio, macro, cockpit, journal, telemetry, etf, market, security_master, fundamentals
 from api.middleware.rate_limiter import RedisRateLimitMiddleware
 from api.middleware.api_key_auth import ApiKeyAuthMiddleware
 from api.observability import (
@@ -232,6 +232,7 @@ app.include_router(telemetry.router, prefix="/api/v1/telemetry", tags=["Telemetr
 app.include_router(etf.router, prefix="/api/v1/etf", tags=["ETF Analytics & Risk Profile"])
 app.include_router(market.router, prefix="/api/v1/market", tags=["Market & Instruments"])
 app.include_router(security_master.router, prefix="/api/v1/security-master", tags=["Security Master"])
+app.include_router(fundamentals.router, prefix="/api/v1/fundamentals", tags=["Sourced Fundamentals"])
 
 
 @app.get("/health", tags=["Health"])
