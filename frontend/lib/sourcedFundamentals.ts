@@ -4,6 +4,7 @@
  * Client and SSG data accessor for SEC EDGAR-sourced company fundamentals evidence.
  * Reads the immutable snapshot generated from analyst_dashboard research ledger.
  * Fails closed (returns null) for uncataloged assets.
+ * Strictly facts-only: Excludes DCF scenarios and investment rankings.
  */
 
 import snapshotData from "./sourcedFundamentalsSnapshot.json";
@@ -25,6 +26,7 @@ export interface SourcedReportedFact {
   input_references?: string[];
   notes?: string | null;
   duration_type: "INSTANT" | "DURATION";
+  fact_type: "PRIMARY_REPORTED" | "DERIVED_CALCULATION";
 }
 
 export interface SourcedDerivedMetric {
@@ -34,6 +36,7 @@ export interface SourcedDerivedMetric {
   label?: string;
   formula?: string;
   notes?: string;
+  period_start?: string;
   period_end?: string;
 }
 
@@ -50,29 +53,11 @@ export interface SourcedCompanyIdentity {
   sec_edgar_company_url: string | null;
 }
 
-export interface SourcedResearchDisposition {
-  disposition: string | null;
-  disposition_rationale: string | null;
-  growth_durability: string | null;
-  reinvestment_economics: string | null;
-  balance_sheet_resilience: string | null;
-  evidence_sufficiency: string | null;
-  valuation_uncertainty: string | null;
-  remaining_evidence_gaps: string[];
-  thesis_invalidation_conditions: string[];
-  specific_next_evidence_to_monitor: string[];
-  valuation_assessment_status: string;
-  valuation_suppression_reason: string | null;
-}
-
-export interface SourcedDeepValuation {
-  valuation_status: string;
-  suppression_reason?: string | null;
-  current_price?: number | null;
-  current_price_date?: string | null;
-  thesis_invalidation_thresholds?: string[];
-  next_quarter_evidence_milestones?: string[];
-  [key: string]: any;
+export interface SourcedResearchEvidenceNotes {
+  evidence_sufficiency?: string | null;
+  remaining_evidence_gaps?: string[];
+  thesis_invalidation_conditions?: string[];
+  specific_next_evidence_to_monitor?: string[];
 }
 
 export interface SourcedCompanySnapshot {
@@ -82,13 +67,14 @@ export interface SourcedCompanySnapshot {
     research_cutoff_date?: string;
     api_contract_version?: string;
     read_only?: boolean;
+    status?: string;
+    is_available?: boolean;
     [key: string]: any;
   };
   company_identity: SourcedCompanyIdentity;
   reported_facts: SourcedReportedFact[];
   derived_calculations: Record<string, SourcedDerivedMetric>;
-  research_disposition_and_evidence: SourcedResearchDisposition;
-  deep_valuation: SourcedDeepValuation;
+  research_evidence_notes: SourcedResearchEvidenceNotes;
 }
 
 interface SourcedSnapshotFile {
@@ -99,18 +85,23 @@ interface SourcedSnapshotFile {
 const typedSnapshot = snapshotData as unknown as SourcedSnapshotFile;
 
 /**
- * Returns the company fundamentals snapshot for a symbol, or null if uncataloged.
+ * Returns the company fundamentals snapshot for a symbol, or null if uncataloged or invalid.
  */
 export function getSourcedFundamentals(symbol: string): SourcedCompanySnapshot | null {
-  if (!symbol) return null;
-  const clean = symbol.trim().toUpperCase().replace("-USD", "");
-  return typedSnapshot.companies[clean] || null;
+  if (!symbol || typeof symbol !== "string") return null;
+  const clean = symbol.trim().toUpperCase();
+  const company = typedSnapshot.companies?.[clean];
+  if (!company) return null;
+  // Strict identity verification: company record must match requested symbol
+  if (company.company_identity?.symbol !== clean) return null;
+  return company;
 }
 
 /**
  * Returns all cataloged company symbols with sourced fundamentals evidence.
  */
 export function listSourcedCompanySymbols(): string[] {
+  if (!typedSnapshot.companies) return [];
   return Object.keys(typedSnapshot.companies).sort();
 }
 
@@ -118,5 +109,5 @@ export function listSourcedCompanySymbols(): string[] {
  * Returns all snapshots in the current ledger.
  */
 export function getAllSourcedFundamentals(): Record<string, SourcedCompanySnapshot> {
-  return typedSnapshot.companies;
+  return typedSnapshot.companies || {};
 }

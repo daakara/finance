@@ -5,11 +5,18 @@ Read-Only Sourced Fundamentals & Financial Evidence Service.
 Exposes bounded, versioned company fundamentals snapshots through pure read-only access.
 Zero side-effects: GET requests do not trigger SEC harvesting, valuation solving,
 filesystem writes, or database mutations.
+
+Enforces strict facts-only scope:
+- Excludes DCF scenarios, fair values, and investment rankings from the product-facing contract.
+- Truthful state handling for missing, malformed, or valid snapshots.
+- Strict symbol identity validation.
+- Preservation of null values without synthetic zero substitution.
 """
 
 import os
 import json
 import logging
+from enum import Enum
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 
@@ -23,11 +30,21 @@ LEDGER_PATH = LEDGER_DIR / LEDGER_FILENAME
 SEC_EDGAR_ARCHIVE_BASE = "https://www.sec.gov/Archives/edgar/data"
 
 
+class SnapshotState(str, Enum):
+    READY = "READY"
+    MISSING_LEDGER = "MISSING_LEDGER"
+    MALFORMED_LEDGER = "MALFORMED_LEDGER"
+    EMPTY_LEDGER = "EMPTY_LEDGER"
+
+
 def format_sec_edgar_url(cik: Optional[str], accession_number: Optional[str]) -> Optional[str]:
     """Formats canonical SEC EDGAR direct document index URL for a given accession and CIK."""
     if not cik or not accession_number:
         return None
-    clean_cik = str(int(cik.strip()))  # strip leading zeroes for directory path
+    try:
+        clean_cik = str(int(cik.strip()))  # strip leading zeroes for directory path
+    except (ValueError, TypeError):
+        return None
     clean_acc_no_hyphens = accession_number.strip().replace("-", "")
     clean_acc = accession_number.strip()
     return f"{SEC_EDGAR_ARCHIVE_BASE}/{clean_cik}/{clean_acc_no_hyphens}/{clean_acc}-index.htm"
@@ -39,46 +56,91 @@ class SourcedFundamentalsService:
     def __init__(self, ledger_path: Optional[Path] = None):
         self._ledger_path = ledger_path or LEDGER_PATH
         self._data: Optional[Dict[str, Any]] = None
+        self._state: SnapshotState = SnapshotState.MISSING_LEDGER
+        self._error_detail: Optional[str] = None
         self._load_ledger()
 
     def _load_ledger(self) -> None:
         """Loads the serialized immutable research ledger snapshot into memory."""
         if not self._ledger_path.exists():
+            self._state = SnapshotState.MISSING_LEDGER
+            self._error_detail = "Sourced fundamentals ledger snapshot file is not present on disk."
+            self._data = None
             logger.warning(f"Sourced fundamentals ledger not found at {self._ledger_path}")
-            self._data = {"metadata": {}, "companies": {}}
             return
 
         try:
             with open(self._ledger_path, "r", encoding="utf-8") as f:
-                self._data = json.load(f)
+                loaded = json.load(f)
+
+            if not isinstance(loaded, dict) or "companies" not in loaded or "metadata" not in loaded:
+                self._state = SnapshotState.MALFORMED_LEDGER
+                self._error_detail = "Sourced fundamentals ledger data structure is malformed."
+                self._data = None
+                return
+
+            companies = loaded.get("companies")
+            if not isinstance(companies, dict) or len(companies) == 0:
+                self._state = SnapshotState.EMPTY_LEDGER
+                self._error_detail = "Sourced fundamentals ledger contains no company records."
+                self._data = None
+                return
+
+            self._data = loaded
+            self._state = SnapshotState.READY
+            self._error_detail = None
             logger.info(
                 f"Successfully loaded sourced fundamentals ledger from {self._ledger_path} "
-                f"({len(self._data.get('companies', {}))} companies)"
+                f"({len(companies)} companies)"
             )
+        except json.JSONDecodeError as jde:
+            self._state = SnapshotState.MALFORMED_LEDGER
+            self._error_detail = f"Sourced fundamentals ledger contains invalid JSON: {jde.msg}."
+            self._data = None
+            logger.error(f"Malformed JSON in sourced fundamentals ledger: {jde}")
         except Exception as e:
+            self._state = SnapshotState.MALFORMED_LEDGER
+            self._error_detail = "Failed to load sourced fundamentals ledger due to an unexpected read error."
+            self._data = None
             logger.error(f"Error loading sourced fundamentals ledger: {e}", exc_info=True)
-            self._data = {"metadata": {}, "companies": {}}
+
+    @property
+    def state(self) -> SnapshotState:
+        return self._state
+
+    @property
+    def is_ready(self) -> bool:
+        return self._state == SnapshotState.READY
+
+    @property
+    def error_detail(self) -> Optional[str]:
+        return self._error_detail
 
     def get_snapshot_metadata(self) -> Dict[str, Any]:
         """Returns top-level snapshot metadata, research cutoff date, and compliance attestation."""
-        if not self._data:
-            return {}
+        if not self.is_ready or not self._data:
+            return {
+                "status": self._state.value,
+                "read_only": True,
+                "is_available": False,
+                "error": self._error_detail,
+            }
         meta = dict(self._data.get("metadata", {}))
-        meta["api_contract_version"] = "1.0.0"
+        meta["api_contract_version"] = "2.0.0"
         meta["read_only"] = True
+        meta["status"] = self._state.value
+        meta["is_available"] = True
         return meta
 
     def list_available_companies(self) -> List[Dict[str, Any]]:
         """Returns catalog summary of all companies present in the current snapshot."""
-        if not self._data or "companies" not in self._data:
+        if not self.is_ready or not self._data or "companies" not in self._data:
             return []
 
         results = []
         for sym, cdata in sorted(self._data["companies"].items()):
             f = cdata.get("fundamentals") or {}
             dm = cdata.get("derived_metrics") or {}
-            asmt = cdata.get("assessment") or {}
-            dv = cdata.get("deep_valuation") or {}
             results.append({
                 "symbol": sym,
                 "company_name": f.get("company_name", sym),
@@ -87,38 +149,58 @@ class SourcedFundamentalsService:
                 "sector_industry": f.get("sector_industry"),
                 "latest_reported_period": f.get("latest_reported_period"),
                 "latest_filing_date": f.get("latest_filing_date"),
-                "disposition": asmt.get("disposition"),
-                "valuation_status": dv.get("valuation_status", "UNAVAILABLE"),
-                "total_financial_debt_evidenced": dm.get("total_financial_debt") is not None,
+                "total_financial_debt_evidenced": (
+                    dm.get("total_financial_debt") is not None
+                ),
             })
         return results
+
+    def validate_symbol_identity(self, requested_symbol: str, company_data: Dict[str, Any]) -> bool:
+        """
+        Validates that requested symbol matches company record's canonical symbol and CIK.
+        Fails closed on any mismatch, whitespace/format anomaly, or missing CIK.
+        """
+        if not requested_symbol or not isinstance(requested_symbol, str):
+            return False
+        clean_sym = requested_symbol.strip().upper()
+        if not clean_sym:
+            return False
+        f = company_data.get("fundamentals") or {}
+        canonical_sym = f.get("symbol")
+        cik = f.get("cik")
+        return canonical_sym == clean_sym and bool(cik)
 
     def get_company_snapshot(self, symbol: str) -> Optional[Dict[str, Any]]:
         """
         Retrieves full, structured financial evidence snapshot for a company.
-        Fails closed (returns None) if symbol is uncataloged or missing in snapshot.
+        Fails closed (returns None) if symbol is uncataloged, missing, or mismatched.
+        Facts-only: Excludes DCF scenarios, fair values, and investment rankings.
         """
-        if not symbol or not self._data or "companies" not in self._data:
+        if not symbol or not isinstance(symbol, str) or not self.is_ready or not self._data:
             return None
 
         clean_sym = symbol.strip().upper()
-        if clean_sym not in self._data["companies"]:
+        if not clean_sym or clean_sym not in self._data["companies"]:
             return None
 
         cdata = self._data["companies"][clean_sym]
         f = cdata.get("fundamentals") or {}
         dm = cdata.get("derived_metrics") or {}
         asmt = cdata.get("assessment") or {}
-        dv = cdata.get("deep_valuation") or {}
         cik = f.get("cik")
 
-        # 1. Transform reported facts with attributable SEC links and duration types
+        # Identity validation (P02): Verify that internal symbol and CIK match
+        if not self.validate_symbol_identity(clean_sym, cdata):
+            logger.warning(f"Identity mismatch in ledger for requested symbol {clean_sym}")
+            return None
+
+        # 1. Transform reported facts with attributable SEC links and fact types
         reported_facts = []
         raw_facts = f.get("facts", {})
         for metric_key, fact in raw_facts.items():
             acc = fact.get("accession_number")
             sec_url = format_sec_edgar_url(cik, acc)
-            
+
             # Determine duration / instant type
             p_start = fact.get("period_start")
             p_end = fact.get("period_end")
@@ -126,10 +208,12 @@ class SourcedFundamentalsService:
             if p_start and p_end and p_start != p_end:
                 duration_type = "DURATION"
 
+            fact_type = "PRIMARY_REPORTED" if acc else "DERIVED_CALCULATION"
+
             reported_facts.append({
                 "metric_key": metric_key,
                 "value": fact.get("value"),
-                "units": fact.get("units"),
+                "units": fact.get("units", "USD"),
                 "concept": fact.get("concept"),
                 "accession_number": acc,
                 "form": fact.get("form"),
@@ -137,18 +221,19 @@ class SourcedFundamentalsService:
                 "period_end": p_end,
                 "filing_date": fact.get("filing_date"),
                 "retrieval_time": fact.get("retrieval_time"),
-                "status": fact.get("status"),
+                "status": fact.get("status", "REPORTED"),
                 "source_url": sec_url,
                 "formula": fact.get("formula"),
                 "input_references": fact.get("input_references", []),
                 "notes": fact.get("notes"),
                 "duration_type": duration_type,
+                "fact_type": fact_type,
             })
 
         # Sort facts deterministically by metric_key
         reported_facts.sort(key=lambda x: x["metric_key"])
 
-        # 2. Extract derived calculations with explicit basis & formulas
+        # 2. Extract derived calculations with explicit basis & formulas (Facts only)
         derived_calculations = {
             "period_label": dm.get("period_label"),
             "revenue_ttm": {
@@ -259,6 +344,7 @@ class SourcedFundamentalsService:
                 "value": dm.get("diluted_shares_weighted_avg"),
                 "units": "shares",
                 "status": "REPORTED" if dm.get("diluted_shares_weighted_avg") is not None else "UNAVAILABLE",
+                "period_start": dm.get("ttm_eps_denominator_period"),
             },
             "share_dilution_1y_pct": {
                 "value": dm.get("share_dilution_1y_pct"),
@@ -286,7 +372,12 @@ class SourcedFundamentalsService:
             "enterprise_value": dm.get("enterprise_value"),
         }
 
-        # 3. Assemble full response contract
+        # 3. Assemble full facts-only response contract (P09: No DCF scenarios or investment rankings)
+        try:
+            sec_browse_url = f"https://www.sec.gov/edgar/browse/?CIK={int(cik)}"
+        except (ValueError, TypeError):
+            sec_browse_url = None
+
         return {
             "snapshot_metadata": self.get_snapshot_metadata(),
             "company_identity": {
@@ -299,31 +390,15 @@ class SourcedFundamentalsService:
                 "fiscal_year_end": f.get("fiscal_year_end"),
                 "latest_reported_period": f.get("latest_reported_period"),
                 "latest_filing_date": f.get("latest_filing_date"),
-                "sec_edgar_company_url": f"https://www.sec.gov/edgar/browse/?CIK={int(cik)}" if cik else None,
+                "sec_edgar_company_url": sec_browse_url,
             },
             "reported_facts": reported_facts,
             "derived_calculations": derived_calculations,
-            "research_disposition_and_evidence": {
-                "disposition": asmt.get("disposition"),
-                "disposition_rationale": asmt.get("disposition_rationale"),
-                "growth_durability": asmt.get("growth_durability"),
-                "reinvestment_economics": asmt.get("reinvestment_economics"),
-                "balance_sheet_resilience": asmt.get("balance_sheet_resilience"),
+            "research_evidence_notes": {
                 "evidence_sufficiency": asmt.get("evidence_sufficiency"),
-                "valuation_uncertainty": asmt.get("valuation_uncertainty"),
                 "remaining_evidence_gaps": asmt.get("remaining_evidence_gaps", []),
                 "thesis_invalidation_conditions": asmt.get("thesis_invalidation_conditions", []),
                 "specific_next_evidence_to_monitor": asmt.get("specific_next_evidence_to_monitor", []),
-                "valuation_assessment_status": dv.get("valuation_status", "UNAVAILABLE"),
-                "valuation_suppression_reason": dv.get("suppression_reason"),
-            },
-            "deep_valuation": dv if dv.get("valuation_status") == "AVAILABLE" else {
-                "valuation_status": dv.get("valuation_status", "SUPPRESSED_UNAVAILABLE"),
-                "suppression_reason": dv.get("suppression_reason"),
-                "current_price": dv.get("current_price"),
-                "current_price_date": dv.get("current_price_date"),
-                "thesis_invalidation_thresholds": dv.get("thesis_invalidation_thresholds", []),
-                "next_quarter_evidence_milestones": dv.get("next_quarter_evidence_milestones", []),
             },
         }
 
@@ -338,3 +413,9 @@ def get_sourced_fundamentals_service() -> SourcedFundamentalsService:
     if _SERVICE_INSTANCE is None:
         _SERVICE_INSTANCE = SourcedFundamentalsService()
     return _SERVICE_INSTANCE
+
+
+def reset_sourced_fundamentals_service() -> None:
+    """Resets singleton instance for test fixtures."""
+    global _SERVICE_INSTANCE
+    _SERVICE_INSTANCE = None

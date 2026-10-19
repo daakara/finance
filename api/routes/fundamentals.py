@@ -2,10 +2,12 @@
 api/routes/fundamentals.py
 
 Canonical Server Sourced Fundamentals & Financial Evidence API Routes.
-Exposes read-only SEC EDGAR-sourced company fundamentals, derived calculations,
-and evidence-aware research assessments.
-Strictly zero side-effects: GET requests do not harvest SEC filings, write to disk,
-or mutate database state.
+Exposes read-only SEC EDGAR-sourced company fundamentals and derived calculations.
+Strictly facts-only and zero side-effects:
+- GET requests do not harvest SEC filings, write to disk, or mutate database state.
+- Excludes DCF scenarios, fair values, and investment rankings.
+- Fails closed with explicit status codes (503 for missing snapshot, 500 for corrupt snapshot, 404 for uncataloged symbols).
+- Preserves nulls without synthetic zero substitution.
 """
 
 import logging
@@ -16,6 +18,7 @@ from pydantic import BaseModel, Field
 from analyst_dashboard.research.sourced_fundamentals.service import (
     get_sourced_fundamentals_service,
     SourcedFundamentalsService,
+    SnapshotState,
 )
 
 logger = logging.getLogger("api.routes.fundamentals")
@@ -30,8 +33,6 @@ class CompanyCatalogItem(BaseModel):
     sector_industry: Optional[str] = Field(None, description="Sector and industry classification")
     latest_reported_period: Optional[str] = Field(None, description="Latest fiscal period end (YYYY-MM-DD)")
     latest_filing_date: Optional[str] = Field(None, description="Latest Form 10-K / 10-Q filing date (YYYY-MM-DD)")
-    disposition: Optional[str] = Field(None, description="Research candidate disposition")
-    valuation_status: str = Field(..., description="Status of valuation model ('AVAILABLE', 'SUPPRESSED_UNAVAILABLE')")
     total_financial_debt_evidenced: bool = Field(..., description="Whether total financial debt is fully evidenced in primary XBRL")
 
 
@@ -50,13 +51,25 @@ def list_fundamentals_catalog(response: Response = None) -> FundamentalsCatalogR
     """
     Returns the catalog of companies with available sourced fundamental evidence.
     Pure read-only endpoint with zero mutation side effects.
+    Fails with explicit 503 if snapshot is missing, or 500 if malformed.
     """
     service = get_sourced_fundamentals_service()
+
+    if service.state == SnapshotState.MISSING_LEDGER:
+        raise HTTPException(
+            status_code=503,
+            detail="Sourced fundamentals snapshot service unavailable: dataset is missing.",
+        )
+    if service.state in (SnapshotState.MALFORMED_LEDGER, SnapshotState.EMPTY_LEDGER):
+        raise HTTPException(
+            status_code=500,
+            detail="Sourced fundamentals snapshot service error: dataset is invalid.",
+        )
+
     metadata = service.get_snapshot_metadata()
     companies = service.list_available_companies()
 
     if response is not None:
-        # Cacheable for 5 minutes since snapshot is versioned/immutable in-process
         response.headers["Cache-Control"] = "public, max-age=300"
 
     return FundamentalsCatalogResponse(
@@ -76,7 +89,7 @@ def get_company_fundamentals(
 ) -> Dict[str, Any]:
     """
     Retrieves full structured financial evidence snapshot for a company by symbol.
-    Fails closed with 404 Not Found if the company is not cataloged in the research snapshot.
+    Strictly facts-only. Fails closed with 404 Not Found if uncataloged or identity mismatched.
     Preserves null values without synthetic zero substitution.
     """
     clean_sym = symbol.strip().upper()
@@ -84,15 +97,28 @@ def get_company_fundamentals(
         raise HTTPException(status_code=400, detail="Symbol parameter cannot be empty.")
 
     service = get_sourced_fundamentals_service()
+
+    if service.state == SnapshotState.MISSING_LEDGER:
+        raise HTTPException(
+            status_code=503,
+            detail="Sourced fundamentals snapshot service unavailable: dataset is missing.",
+        )
+    if service.state in (SnapshotState.MALFORMED_LEDGER, SnapshotState.EMPTY_LEDGER):
+        raise HTTPException(
+            status_code=500,
+            detail="Sourced fundamentals snapshot service error: dataset is invalid.",
+        )
+
     snapshot = service.get_company_snapshot(clean_sym)
 
     if snapshot is None:
         available = [c["symbol"] for c in service.list_available_companies()]
+        available_str = ", ".join(available) if available else "none"
         raise HTTPException(
             status_code=404,
             detail=(
                 f"Sourced financial evidence not found for symbol '{clean_sym}'. "
-                f"Currently available cataloged symbols: {', '.join(available)}."
+                f"Currently available cataloged symbols: {available_str}."
             ),
         )
 
@@ -109,15 +135,18 @@ def get_company_fundamentals(
 def get_fundamentals_service_status() -> Dict[str, Any]:
     """
     Returns diagnostic health and metadata regarding the sourced fundamentals data layer.
+    Never exposes internal filesystem paths or raw exception traces.
     """
     service = get_sourced_fundamentals_service()
     meta = service.get_snapshot_metadata()
     catalog = service.list_available_companies()
     return {
-        "status": "online",
+        "status": "online" if service.is_ready else "degraded",
         "subsystem": "ARX_SOURCED_FUNDAMENTALS_EVIDENCE_ENGINE",
+        "snapshot_state": service.state.value,
         "read_only": True,
         "companies_cataloged_count": len(catalog),
         "cataloged_symbols": [c["symbol"] for c in catalog],
         "snapshot_metadata": meta,
+        "error": service.error_detail,
     }

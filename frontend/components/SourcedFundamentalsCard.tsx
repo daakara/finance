@@ -2,14 +2,15 @@
  * frontend/components/SourcedFundamentalsCard.tsx
  *
  * Dedicated institutional view for inspecting SEC EDGAR-sourced company fundamentals,
- * derived cash flows, SBC dilution, balance sheet debt completeness, and research dispositions.
+ * derived cash flows, SBC dilution, balance sheet debt completeness, and evidence gaps.
  *
- * Enforces key invariants:
- * - Clear separation of reported facts vs derived calculations
- * - Preservation of nulls without synthetic zero substitution
- * - Explicit aggregate completeness warnings for missing debt tags
- * - Research scenario valuations quarantined behind illustrative disclosures
- * - Direct links to primary SEC EDGAR accession documents
+ * Enforces strict facts-only scope & quality gates:
+ * - Pure factual presentation: zero DCF scenario models, fair values, or investment rankings.
+ * - Accurate units: shares formatted as shares, dollars as dollars, percents as percents.
+ * - Meaningful evidence statuses: reported XBRL vs derived formulas clearly distinguished.
+ * - Dynamic, truthful aggregate debt completeness notices reflecting exact reported components.
+ * - Missing-value states rendered with neutral slate styling, never false positive/negative colors.
+ * - Direct links to primary SEC EDGAR accession index documents.
  */
 
 import React from "react";
@@ -45,19 +46,53 @@ function formatUSD(value: number | null | undefined, abbreviate = true): string 
   return `$${value.toFixed(2)}`;
 }
 
+function formatShares(value: number | null | undefined): string {
+  if (value === null || value === undefined) return "UNAVAILABLE";
+  const abs = Math.abs(value);
+  if (abs >= 1e9) {
+    return `${(value / 1e9).toFixed(2)}B shares`;
+  }
+  if (abs >= 1e6) {
+    return `${(value / 1e6).toFixed(2)}M shares`;
+  }
+  if (abs >= 1e3) {
+    return `${(value / 1e3).toFixed(1)}K shares`;
+  }
+  return `${value.toLocaleString("en-US")} shares`;
+}
+
 function formatPct(value: number | null | undefined): string {
   if (value === null || value === undefined) return "UNAVAILABLE";
   const sign = value > 0 ? "+" : "";
   return `${sign}${value.toFixed(1)}%`;
 }
 
+function formatFactValue(value: number | null | undefined, units: string | null | undefined): string {
+  if (value === null || value === undefined) return "UNAVAILABLE";
+  const cleanUnits = (units || "USD").toLowerCase();
+  if (cleanUnits === "shares") {
+    return formatShares(value);
+  }
+  if (cleanUnits === "percent") {
+    return formatPct(value);
+  }
+  if (cleanUnits === "usd/share") {
+    return `$${value.toFixed(2)}/share`;
+  }
+  return formatUSD(value);
+}
+
 export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsCardProps) {
-  const cleanSym = symbol.trim().toUpperCase().replace("-USD", "");
+  const cleanSym = symbol ? symbol.trim().toUpperCase() : "";
   const snapshot: SourcedCompanySnapshot | null = getSourcedFundamentals(cleanSym);
 
   if (!snapshot) {
     return (
-      <section className="bg-[#0b1019] p-5 rounded-2xl border border-[#1e293b] space-y-4">
+      <section
+        id="sourced-fundamentals-section"
+        data-testid="sourced-fundamentals-card"
+        className="bg-[#0b1019] p-5 rounded-2xl border border-[#1e293b] space-y-4"
+      >
         <div className="flex items-center justify-between border-b border-[#162030] pb-3">
           <div className="flex items-center gap-2">
             <span className="text-base">📑</span>
@@ -71,10 +106,10 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
         </div>
         <p className="text-xs text-slate-400 font-sans leading-relaxed">
           Primary filing XBRL extraction is currently available for the 8 deep-dive pilot companies.
-          Sourced financial evidence has not yet been cataloged for <strong className="text-white font-mono">{cleanSym}</strong>.
+          Sourced financial evidence has not yet been cataloged for <strong className="text-white font-mono">{cleanSym || "Unknown"}</strong>.
         </p>
         <div className="pt-2 border-t border-[#162030] flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-slate-500 text-[11px]">Inspect cataloged evidence pilots:</span>
+          <span className="text-slate-500 text-[11px]">Inspect cataloged pilot evidence:</span>
           <Link
             href="/stock/fix"
             className="px-2.5 py-1 rounded-lg bg-[#111722] hover:bg-[#1a2332] text-cyan-300 border border-cyan-900/50 text-[11px] font-mono"
@@ -98,17 +133,41 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
     );
   }
 
-  const { company_identity: ident, derived_calculations: dm, research_disposition_and_evidence: asmt, deep_valuation: dv, reported_facts } = snapshot;
+  const {
+    company_identity: ident,
+    derived_calculations: dm,
+    research_evidence_notes: evidenceNotes,
+    reported_facts: reportedFacts,
+  } = snapshot;
 
   const revGrowth = dm.revenue_growth_yoy_pct?.value;
   const opMargin = dm.operating_margin_pct?.value;
   const cfoMinusCapex = dm.cfo_minus_capex_ttm?.value;
   const sbcPct = dm.sbc_to_revenue_pct?.value;
-  const isDebtEvidenced = dm.total_financial_debt?.value !== null;
-  const isValuationAvailable = dv?.valuation_status === "AVAILABLE";
+  const shortDebt = dm.short_term_debt?.value;
+  const longDebt = dm.long_term_debt?.value;
+
+  // Strict completeness check: must be explicitly non-null and defined
+  const isDebtEvidenced = dm.total_financial_debt?.value !== null && dm.total_financial_debt?.value !== undefined;
+
+  // Construct dynamic, evidence-responsive debt completeness warning
+  let debtNoticeText = "";
+  if (!isDebtEvidenced) {
+    if (shortDebt !== null && shortDebt !== undefined && (longDebt === null || longDebt === undefined)) {
+      debtNoticeText = `Short-term borrowings (${formatUSD(shortDebt)}) reported under credit facility; long-term debt concept is unavailable in primary XBRL taxonomy. Under aggregate completeness rules, unevidenced long-term debt is not assumed to be $0.00 without primary source confirmation.`;
+    } else if (longDebt !== null && longDebt !== undefined && (shortDebt === null || shortDebt === undefined)) {
+      debtNoticeText = `Long-term debt obligations (${formatUSD(longDebt)}) reported; short-term debt concept is unavailable in primary XBRL taxonomy. Complete debt structure requires primary footnote verification.`;
+    } else {
+      debtNoticeText = `Financial debt concepts (short-term, long-term, and combined debt) are unavailable in primary XBRL tags. Under aggregate completeness rules, unevidenced debt is not assumed to be $0.00.`;
+    }
+  }
 
   return (
-    <section className="bg-[#0b1019] p-5 sm:p-6 rounded-2xl border border-cyan-900/50 space-y-6">
+    <section
+      id="sourced-fundamentals-section"
+      data-testid="sourced-fundamentals-card"
+      className="bg-[#0b1019] p-5 sm:p-6 rounded-2xl border border-cyan-900/50 space-y-6"
+    >
       {/* Header & SEC Metadata */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#1e293b] pb-4 gap-3">
         <div>
@@ -118,11 +177,13 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
               SEC EDGAR Sourced Fundamentals & Evidence
             </h2>
             <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-800">
-              VERIFIED SEC DATA
+              SEC EDGAR Disclosures (Form 10-Q / 10-K)
             </span>
           </div>
           <p className="text-[11px] text-slate-400 font-sans mt-1">
-            Grounded in Form 10-K/10-Q XBRL filings through <span className="text-slate-200 font-mono">{ident.latest_reported_period}</span> (Filing: {ident.latest_filing_date}). CIK: <span className="font-mono text-slate-300">{ident.cik}</span>.
+            Grounded in SEC EDGAR filings through reported period ending{" "}
+            <span className="text-slate-200 font-mono">{ident.latest_reported_period}</span> (Filed:{" "}
+            {ident.latest_filing_date}). CIK: <span className="font-mono text-slate-300">{ident.cik}</span>.
           </p>
         </div>
 
@@ -148,7 +209,15 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
           </div>
           <div className="flex items-center justify-between text-xs pt-1 border-t border-[#111722]">
             <span className="text-slate-500 text-[11px]">YoY Growth:</span>
-            <span className={`font-mono font-bold ${revGrowth !== null && revGrowth !== undefined && revGrowth >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+            <span
+              className={`font-mono font-bold ${
+                revGrowth === null || revGrowth === undefined
+                  ? "text-slate-400"
+                  : revGrowth >= 0
+                  ? "text-emerald-400"
+                  : "text-rose-400"
+              }`}
+            >
               {formatPct(revGrowth)}
             </span>
           </div>
@@ -165,7 +234,11 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
           </div>
           <div className="flex items-center justify-between text-xs pt-1 border-t border-[#111722]">
             <span className="text-slate-500 text-[11px]">Operating Margin:</span>
-            <span className="font-mono font-bold text-cyan-400">
+            <span
+              className={`font-mono font-bold ${
+                opMargin === null || opMargin === undefined ? "text-slate-400" : "text-cyan-400"
+              }`}
+            >
               {formatPct(opMargin)}
             </span>
           </div>
@@ -177,7 +250,11 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
         {/* 3. Cash Flow Conversion */}
         <div className="bg-[#06090f] p-4 rounded-xl border border-[#162030] space-y-2">
           <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">CFO Less Capex (TTM)</div>
-          <div className="text-lg font-bold font-mono text-emerald-400">
+          <div
+            className={`text-lg font-bold font-mono ${
+              cfoMinusCapex === null || cfoMinusCapex === undefined ? "text-slate-400" : "text-emerald-400"
+            }`}
+          >
             {formatUSD(cfoMinusCapex)}
           </div>
           <div className="flex items-center justify-between text-xs pt-1 border-t border-[#111722]">
@@ -193,13 +270,17 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
         {/* 4. Dilution & SBC */}
         <div className="bg-[#06090f] p-4 rounded-xl border border-[#162030] space-y-2">
           <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">SBC & Share Dilution</div>
-          <div className="text-lg font-bold font-mono text-purple-400">
+          <div
+            className={`text-lg font-bold font-mono ${
+              dm.sbc_ttm?.value === null || dm.sbc_ttm?.value === undefined ? "text-slate-400" : "text-purple-400"
+            }`}
+          >
             {formatUSD(dm.sbc_ttm?.value)}
           </div>
           <div className="flex items-center justify-between text-xs pt-1 border-t border-[#111722]">
             <span className="text-slate-500 text-[11px]">SBC / Revenue:</span>
             <span className="font-mono font-bold text-purple-300">
-              {sbcPct !== null && sbcPct !== undefined ? `${sbcPct.toFixed(1)}%` : "N/A"}
+              {sbcPct !== null && sbcPct !== undefined ? `${sbcPct.toFixed(1)}%` : "UNAVAILABLE"}
             </span>
           </div>
           <div className="flex items-center justify-between text-[10px] text-slate-500">
@@ -267,7 +348,11 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
         {/* Operating Leases Note */}
         <div className="text-[11px] text-slate-400 font-sans pt-1 border-t border-[#111722] flex flex-wrap items-center justify-between gap-2">
           <span>
-            Operating Lease Liabilities (ASC 842): <strong className="text-slate-200 font-mono">{formatUSD(dm.operating_lease_liabilities?.value)}</strong> (Treated as operating expense, not financial debt).
+            Operating Lease Liabilities (ASC 842):{" "}
+            <strong className="text-slate-200 font-mono">
+              {formatUSD(dm.operating_lease_liabilities?.value)}
+            </strong>{" "}
+            (Contractual operating lease commitments treated as operating expenses rather than financial debt).
           </span>
           {dm.net_debt?.value !== null && dm.net_debt?.value !== undefined && (
             <span>
@@ -283,22 +368,20 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
               ⚠️ Invariant Notice: Financial Debt Incomplete in Primary XBRL Tags
             </strong>
             <p className="text-amber-200/80 text-[11px] font-sans leading-relaxed">
-              Neither combined debt nor current/noncurrent debt tags were reported in the primary XBRL taxonomy for {cleanSym}.
-              Under aggregate completeness rules, unevidenced debt is <span className="underline font-semibold">never assumed to be $0.00</span>.
-              Full debt structure and credit agreements must be inspected via primary filing footnotes before establishing net debt.
+              {debtNoticeText}
             </p>
           </div>
         )}
       </div>
 
-      {/* Primary SEC EDGAR Facts Table (Collapsible / Sample) */}
+      {/* Primary SEC EDGAR Facts Table */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-            <span>🔍 Primary Filing Audited Facts (Sample)</span>
+            <span>🔍 Primary Filing SEC Disclosures (Sample)</span>
           </h3>
           <span className="text-[11px] text-slate-500 font-mono">
-            {reported_facts.length} facts evidenced
+            {reportedFacts.length} metric items tracked
           </span>
         </div>
 
@@ -306,28 +389,40 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
           <table className="w-full text-left text-xs font-sans">
             <thead className="bg-[#0e1624] text-[10px] font-mono text-slate-400 uppercase tracking-wider border-b border-[#1e293b]">
               <tr>
-                <th className="py-2.5 px-3">Metric Concept</th>
-                <th className="py-2.5 px-3 text-right">Reported Value</th>
+                <th className="py-2.5 px-3">Metric Concept / Basis</th>
+                <th className="py-2.5 px-3 text-right">Disclosed / Calculated Value</th>
                 <th className="py-2.5 px-3">Period / Duration</th>
-                <th className="py-2.5 px-3">Filing Form</th>
+                <th className="py-2.5 px-3">Source Classification</th>
                 <th className="py-2.5 px-3">Primary SEC Archive Link</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#162030] font-mono text-[11px]">
-              {reported_facts.slice(0, 8).map((fact, idx) => (
+              {reportedFacts.slice(0, 10).map((fact, idx) => (
                 <tr key={idx} className="hover:bg-[#111722] transition-colors">
                   <td className="py-2 px-3 text-slate-200">
                     <span className="font-semibold block">{fact.metric_key}</span>
-                    <span className="text-[10px] text-slate-500 font-mono">{fact.concept || fact.formula || "Derived"}</span>
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      {fact.concept || fact.formula || "Derived"}
+                    </span>
                   </td>
                   <td className="py-2 px-3 text-right font-bold text-white">
-                    {fact.value !== null ? formatUSD(fact.value) : "UNAVAILABLE"}
+                    {formatFactValue(fact.value, fact.units)}
                   </td>
                   <td className="py-2 px-3 text-slate-400">
-                    {fact.period_end}
+                    {fact.period_end || "Instant"}
                     <span className="text-[10px] text-slate-500 block">{fact.duration_type}</span>
                   </td>
-                  <td className="py-2 px-3 text-slate-400">{fact.form || "10-Q / 10-K"}</td>
+                  <td className="py-2 px-3">
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                        fact.fact_type === "PRIMARY_REPORTED"
+                          ? "bg-cyan-950 text-cyan-300 border border-cyan-800"
+                          : "bg-slate-900 text-slate-400 border border-slate-700"
+                      }`}
+                    >
+                      {fact.fact_type === "PRIMARY_REPORTED" ? "REPORTED (XBRL)" : "DERIVED FORMULA"}
+                    </span>
+                  </td>
                   <td className="py-2 px-3">
                     {fact.source_url ? (
                       <a
@@ -340,7 +435,7 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
                         {fact.accession_number ? fact.accession_number.slice(0, 18) + "..." : "SEC Archive ↗"}
                       </a>
                     ) : (
-                      <span className="text-slate-600">Synthetic / Derived</span>
+                      <span className="text-slate-500 text-[10px]">Formula Derivation</span>
                     )}
                   </td>
                 </tr>
@@ -350,85 +445,42 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
         </div>
       </div>
 
-      {/* Research Disposition & Thesis Invalidation Conditions */}
+      {/* Evidence Gaps & Invalidation Framework (Facts only - No investment rankings or targets) */}
       <div className="bg-[#0b1320] p-4 rounded-xl border border-[#1e293b] space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#162030] pb-2">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-white uppercase tracking-wider">
-              Research Disposition & Invalidation Framework
-            </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-950 text-purple-300 border border-purple-800">
-              {asmt.disposition || "RESEARCH_FURTHER"}
+              Research Evidence & Invalidation Framework
             </span>
           </div>
           <span className="text-[10px] text-slate-400 font-mono">
-            Uncertainty: {asmt.valuation_uncertainty || "Moderate"}
+            Sufficiency: {evidenceNotes.evidence_sufficiency || "Monitored"}
           </span>
         </div>
 
-        <p className="text-xs text-slate-300 font-sans leading-relaxed">
-          {asmt.disposition_rationale}
-        </p>
-
-        {asmt.thesis_invalidation_conditions && asmt.thesis_invalidation_conditions.length > 0 && (
-          <div className="space-y-1.5 pt-2 border-t border-[#162030]">
-            <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider block">
-              🛑 Explicit Thesis Invalidation Triggers:
+        {evidenceNotes.remaining_evidence_gaps && evidenceNotes.remaining_evidence_gaps.length > 0 && (
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">
+              ⚠️ Remaining Evidence Gaps:
             </span>
-            <ul className="list-disc list-inside text-[11px] text-slate-400 font-sans space-y-1">
-              {asmt.thesis_invalidation_conditions.map((cond, i) => (
-                <li key={i}>{cond}</li>
+            <ul className="list-disc list-inside text-[11px] text-slate-300 font-sans space-y-0.5">
+              {evidenceNotes.remaining_evidence_gaps.map((gap, i) => (
+                <li key={i}>{gap}</li>
               ))}
             </ul>
           </div>
         )}
-      </div>
 
-      {/* Quarantined Research Scenario Valuation */}
-      <div className="pt-2 border-t border-[#1e293b]">
-        {isValuationAvailable ? (
-          <div className="bg-[#06090f] p-4 rounded-xl border border-cyan-800/40 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
-                🔬 Research Scenario DCF (Illustrative Sensitivity Model)
-              </span>
-              <span className="text-[10px] font-mono text-slate-400">
-                Model: Enterprise FCFF
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400 font-sans">
-              Illustrative research scenarios based on explicit WACC, terminal growth, and reinvestment assumptions.
-              These are hypothetical sensitivity boundaries, <span className="underline">not certified price targets or buy recommendations</span>.
-            </p>
-            {dv.scenarios && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
-                {Object.entries(dv.scenarios).map(([name, s]: [string, any]) => (
-                  <div key={name} className="bg-[#0b1019] p-3 rounded-lg border border-[#162030] space-y-1">
-                    <span className="text-[10px] text-slate-500 uppercase block">{name} Case</span>
-                    <div className="text-base font-bold font-mono text-cyan-300">
-                      ${s.fair_value_per_share?.toFixed(2)}
-                    </div>
-                    <div className="text-[10px] text-slate-400">
-                      Implied Upside: <span className="font-mono text-emerald-400">+{s.implied_upside_pct?.toFixed(1)}%</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="bg-[#06090f] p-4 rounded-xl border border-[#162030] space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                🔒 Deep Valuation Model Suppressed
-              </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-900 text-slate-400 border border-slate-700">
-                SUPPRESSED_UNAVAILABLE
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
-              {dv?.suppression_reason || asmt.valuation_suppression_reason || "Forward DCF is suppressed under aggregate completeness rules."}
-            </p>
+        {evidenceNotes.thesis_invalidation_conditions && evidenceNotes.thesis_invalidation_conditions.length > 0 && (
+          <div className="space-y-1.5 pt-2 border-t border-[#162030]">
+            <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider block">
+              🛑 Explicit Invalidation Conditions to Track:
+            </span>
+            <ul className="list-disc list-inside text-[11px] text-slate-400 font-sans space-y-1">
+              {evidenceNotes.thesis_invalidation_conditions.map((cond, i) => (
+                <li key={i}>{cond}</li>
+              ))}
+            </ul>
           </div>
         )}
       </div>

@@ -4,12 +4,13 @@
     "generation_time": "2026-10-19T13:43:16.611481Z",
     "research_cutoff_date": "2026-10-16",
     "operator_identity": "ARXTerminal Research Akara.david26@gmail.com",
-    "status": "SOURCED_FUNDAMENTALS_TARGETED_SEMANTIC_CORRECTIONS_REVIEW_READY",
+    "status": "READY",
     "scope": "8-company diagnostic research population with deep valuation case studies for selected models (FIX, DUOL, ULTA)",
     "offline_mode": true,
     "compliance": "Strict SEC fair access compliant; primary EDGAR XBRL facts; Lease-as-Operating-Expense convention; no composite scoring.",
-    "api_contract_version": "1.0.0",
-    "read_only": true
+    "api_contract_version": "2.0.0",
+    "read_only": true,
+    "is_available": true
   },
   "companies": {
     "CELH": {
@@ -18,12 +19,13 @@
         "generation_time": "2026-10-19T13:43:16.611481Z",
         "research_cutoff_date": "2026-10-16",
         "operator_identity": "ARXTerminal Research Akara.david26@gmail.com",
-        "status": "SOURCED_FUNDAMENTALS_TARGETED_SEMANTIC_CORRECTIONS_REVIEW_READY",
+        "status": "READY",
         "scope": "8-company diagnostic research population with deep valuation case studies for selected models (FIX, DUOL, ULTA)",
         "offline_mode": true,
         "compliance": "Strict SEC fair access compliant; primary EDGAR XBRL facts; Lease-as-Operating-Expense convention; no composite scoring.",
-        "api_contract_version": "1.0.0",
-        "read_only": true
+        "api_contract_version": "2.0.0",
+        "read_only": true,
+        "is_available": true
       },
       "company_identity": {
         "symbol": "CELH",
@@ -58,7 +60,8 @@
             "10-Q:0001341766-26-000050"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "cash_and_equivalents",
@@ -76,7 +79,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-08-06",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "cfo_minus_capex_ttm",
@@ -97,7 +101,8 @@
             "capex_ttm"
           ],
           "notes": "Non-GAAP derived cash flow measure. Defined strictly as CFO minus Capex.",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "cfo_ttm",
@@ -119,7 +124,8 @@
             "10-Q:0001341766-26-000050"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "common_shares_outstanding",
@@ -137,7 +143,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-08-06",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "diluted_shares_weighted_avg",
@@ -155,7 +162,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Reported quarterly diluted weighted-average shares (2026-04-01 to 2026-06-30, 90 days) in 10-Q; not full-year TTM shares",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "long_term_debt",
@@ -173,7 +181,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-08-06",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "net_debt",
@@ -194,7 +203,8 @@
             "cash_and_equivalents"
           ],
           "notes": "Net financial debt relative to reported cash and cash equivalents; short-term investments unavailable without filing evidence.",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "net_income_ttm",
@@ -216,7 +226,8 @@
             "10-Q:0001341766-26-000050"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "operating_income_ttm",
@@ -238,7 +249,8 @@
             "10-Q:0001341766-26-000050"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "operating_lease_liabilities",
@@ -256,7 +268,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Concept us-gaap/OperatingLeaseLiability found but no instant observation for period 2026-06-30",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "pretax_income_ttm",
@@ -278,7 +291,8 @@
             "10-Q:0001341766-26-000050"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "revenue_ttm",
@@ -300,7 +314,8 @@
             "10-Q:0001341766-26-000050"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "sbc_ttm",
@@ -322,7 +337,8 @@
             "10-Q:0001341766-26-000050"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "short_term_debt",
@@ -340,7 +356,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-08-06",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "short_term_investments",
@@ -358,7 +375,8 @@
           "formula": null,
           "input_references": [],
           "notes": "No reported concept found among ['MarketableSecuritiesCurrent', 'ShortTermInvestments', 'AvailableForSaleSecuritiesCurrent', 'AvailableForSaleSecuritiesDebtMaturitiesWithinOneYearAmortizedCost']",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "stockholders_equity",
@@ -376,7 +394,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-08-06",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "tax_expense_ttm",
@@ -398,7 +417,8 @@
             "10-Q:0001341766-26-000050"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "total_cash_and_investments",
@@ -416,7 +436,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Short-term investments concept not reported; complete cash-and-investments aggregate cannot be asserted without primary filing evidence. Cash is reported separately as cash_and_equivalents.",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "total_financial_debt",
@@ -437,7 +458,8 @@
             "long_term_debt"
           ],
           "notes": "Fully evidenced sum of reported current and noncurrent financial debt obligations",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         }
       ],
       "derived_calculations": {
@@ -545,7 +567,8 @@
         "diluted_shares_weighted_avg": {
           "value": 256933000.0,
           "units": "shares",
-          "status": "REPORTED"
+          "status": "REPORTED",
+          "period_start": "2026-04-01 to 2026-06-30 (quarterly weighted-average shares)"
         },
         "share_dilution_1y_pct": {
           "value": -1.26,
@@ -572,14 +595,8 @@
         "market_cap": 7141682790.0,
         "enterprise_value": 7185298790.0
       },
-      "research_disposition_and_evidence": {
-        "disposition": "WATCH",
-        "disposition_rationale": "TTM revenue reached $3.0B (+82.9% YoY) with operating margin of 5.3%. Cash generation: CFO minus Capex of $462.8M (288.7% EBIT conversion). Balance sheet: net debt position of $43.6M ($631.2M cash vs $674.9M debt). Share structure: diluted share count decreased by -1.26% over 1 year (+8.49% 3Y). Placed on WATCH due to distributor inventory rebalancing and tough comparative volume benchmarks.",
-        "growth_durability": "Brand resonance among health-conscious consumers with national distribution rollout via partner network.",
-        "reinvestment_economics": "Asset-light specialty model yields high cash conversion when operating profitably. Organic reinvestment requirements are modest relative to cash generation.",
-        "balance_sheet_resilience": "Carries net debt of $43.6M ($631.2M cash vs $674.9M total financial debt). Leverage and debt service obligations require monitoring against operating cash generation.",
+      "research_evidence_notes": {
         "evidence_sufficiency": "Primary SEC XBRL filings analyzed through 2026-06-30. Data gaps noted: None critical.",
-        "valuation_uncertainty": "Moderate",
         "remaining_evidence_gaps": [
           "Ongoing quarterly monitoring of primary SEC filings."
         ],
@@ -593,17 +610,7 @@
           "Next 10-Q filing for period ending after 2026-06-30.",
           "Quarterly segment margins and working capital cash conversion.",
           "Primary footnote disclosures regarding debt facilities or off-balance sheet commitments."
-        ],
-        "valuation_assessment_status": "UNAVAILABLE",
-        "valuation_suppression_reason": null
-      },
-      "deep_valuation": {
-        "valuation_status": "SUPPRESSED_UNAVAILABLE",
-        "suppression_reason": null,
-        "current_price": null,
-        "current_price_date": null,
-        "thesis_invalidation_thresholds": [],
-        "next_quarter_evidence_milestones": []
+        ]
       }
     },
     "DECK": {
@@ -612,12 +619,13 @@
         "generation_time": "2026-10-19T13:43:16.611481Z",
         "research_cutoff_date": "2026-10-16",
         "operator_identity": "ARXTerminal Research Akara.david26@gmail.com",
-        "status": "SOURCED_FUNDAMENTALS_TARGETED_SEMANTIC_CORRECTIONS_REVIEW_READY",
+        "status": "READY",
         "scope": "8-company diagnostic research population with deep valuation case studies for selected models (FIX, DUOL, ULTA)",
         "offline_mode": true,
         "compliance": "Strict SEC fair access compliant; primary EDGAR XBRL facts; Lease-as-Operating-Expense convention; no composite scoring.",
-        "api_contract_version": "1.0.0",
-        "read_only": true
+        "api_contract_version": "2.0.0",
+        "read_only": true,
+        "is_available": true
       },
       "company_identity": {
         "symbol": "DECK",
@@ -652,7 +660,8 @@
             "10-Q:0000910521-26-000022"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "cash_and_equivalents",
@@ -670,7 +679,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-07-30",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "cfo_minus_capex_ttm",
@@ -691,7 +701,8 @@
             "capex_ttm"
           ],
           "notes": "Non-GAAP derived cash flow measure. Defined strictly as CFO minus Capex.",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "cfo_ttm",
@@ -713,7 +724,8 @@
             "10-Q:0000910521-26-000022"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "common_shares_outstanding",
@@ -731,7 +743,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-07-30",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "diluted_shares_weighted_avg",
@@ -749,7 +762,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Reported quarterly diluted weighted-average shares (2026-04-01 to 2026-06-30, 90 days) in 10-Q; not full-year TTM shares",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "long_term_debt",
@@ -767,7 +781,8 @@
           "formula": null,
           "input_references": [],
           "notes": "No reported concept found among ['LongTermDebtNoncurrent', 'LongTermDebt', 'LongTermDebtAndCapitalLeaseObligations']",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "net_debt",
@@ -785,7 +800,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Cannot calculate net debt due to unavailable total financial debt or cash",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "net_income_ttm",
@@ -807,7 +823,8 @@
             "10-Q:0000910521-26-000022"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "operating_income_ttm",
@@ -829,7 +846,8 @@
             "10-Q:0000910521-26-000022"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "operating_lease_liabilities",
@@ -847,7 +865,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-07-30",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "pretax_income_ttm",
@@ -865,7 +884,8 @@
           "formula": null,
           "input_references": [],
           "notes": "No current YTD observation found starting near expected fiscal start 2018-04-01",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "revenue_ttm",
@@ -887,7 +907,8 @@
             "10-Q:0000910521-26-000022"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "sbc_ttm",
@@ -909,7 +930,8 @@
             "10-Q:0000910521-26-000022"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "short_term_debt",
@@ -927,7 +949,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Concept us-gaap/ShortTermBorrowings found but no instant observation for period 2026-06-30",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "short_term_investments",
@@ -945,7 +968,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Concept us-gaap/ShortTermInvestments found but no instant observation for period 2026-06-30",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "stockholders_equity",
@@ -963,7 +987,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-07-30",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "tax_expense_ttm",
@@ -985,7 +1010,8 @@
             "10-Q:0000910521-26-000022"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "total_cash_and_investments",
@@ -1003,7 +1029,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Short-term investments concept not reported; complete cash-and-investments aggregate cannot be asserted without primary filing evidence. Cash is reported separately as cash_and_equivalents.",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "total_financial_debt",
@@ -1021,7 +1048,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Financial debt concepts are unavailable in primary filings.",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         }
       ],
       "derived_calculations": {
@@ -1129,7 +1157,8 @@
         "diluted_shares_weighted_avg": {
           "value": 138559000.0,
           "units": "shares",
-          "status": "REPORTED"
+          "status": "REPORTED",
+          "period_start": "2026-04-01 to 2026-06-30 (quarterly weighted-average shares)"
         },
         "share_dilution_1y_pct": {
           "value": -7.4,
@@ -1156,14 +1185,8 @@
         "market_cap": 11718699750.0,
         "enterprise_value": null
       },
-      "research_disposition_and_evidence": {
-        "disposition": "WATCH",
-        "disposition_rationale": "TTM revenue reached $5.5B (+7.8% YoY) with operating margin of 22.7%. Cash generation: CFO minus Capex of $1.1B (89.2% EBIT conversion). Balance sheet: liquid reserves hold $1.6B; financial debt is UNAVAILABLE (net debt UNAVAILABLE; debt structure requires footnote inspection). Share structure: diluted share count decreased by -7.40% over 1 year (-12.26% 3Y). Maintained on WATCH due to channel inventory normalization and brand maturity considerations.",
-        "growth_durability": "HOKA maintains global consumer running demand; UGG provides seasonal cash flows with direct-to-consumer channel expansion.",
-        "reinvestment_economics": "Outsourced footwear manufacturing model limits tangible capex requirements, supporting cash conversion.",
-        "balance_sheet_resilience": "Liquid reserves hold $1.6B; financial debt concepts are unevidenced in primary XBRL tags (total debt and net debt cannot be verified from primary XBRL tags alone; requires footnote inspection).",
+      "research_evidence_notes": {
         "evidence_sufficiency": "Primary SEC XBRL filings analyzed through 2026-06-30. Data gaps noted: total_financial_debt unavailable.",
-        "valuation_uncertainty": "Moderate",
         "remaining_evidence_gaps": [
           "total_financial_debt unavailable"
         ],
@@ -1177,17 +1200,7 @@
           "Next 10-Q filing for period ending after 2026-06-30.",
           "Quarterly segment margins and working capital cash conversion.",
           "Primary footnote disclosures regarding debt facilities or off-balance sheet commitments."
-        ],
-        "valuation_assessment_status": "UNAVAILABLE",
-        "valuation_suppression_reason": null
-      },
-      "deep_valuation": {
-        "valuation_status": "SUPPRESSED_UNAVAILABLE",
-        "suppression_reason": null,
-        "current_price": null,
-        "current_price_date": null,
-        "thesis_invalidation_thresholds": [],
-        "next_quarter_evidence_milestones": []
+        ]
       }
     },
     "DUOL": {
@@ -1196,12 +1209,13 @@
         "generation_time": "2026-10-19T13:43:16.611481Z",
         "research_cutoff_date": "2026-10-16",
         "operator_identity": "ARXTerminal Research Akara.david26@gmail.com",
-        "status": "SOURCED_FUNDAMENTALS_TARGETED_SEMANTIC_CORRECTIONS_REVIEW_READY",
+        "status": "READY",
         "scope": "8-company diagnostic research population with deep valuation case studies for selected models (FIX, DUOL, ULTA)",
         "offline_mode": true,
         "compliance": "Strict SEC fair access compliant; primary EDGAR XBRL facts; Lease-as-Operating-Expense convention; no composite scoring.",
-        "api_contract_version": "1.0.0",
-        "read_only": true
+        "api_contract_version": "2.0.0",
+        "read_only": true,
+        "is_available": true
       },
       "company_identity": {
         "symbol": "DUOL",
@@ -1236,7 +1250,8 @@
             "10-Q:0001628280-26-053603"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "cash_and_equivalents",
@@ -1254,7 +1269,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-08-06",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "cfo_minus_capex_ttm",
@@ -1275,7 +1291,8 @@
             "capex_ttm"
           ],
           "notes": "Non-GAAP derived cash flow measure. Defined strictly as CFO minus Capex.",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "cfo_ttm",
@@ -1297,7 +1314,8 @@
             "10-Q:0001628280-26-053603"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "common_shares_outstanding",
@@ -1315,7 +1333,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Concept us-gaap/CommonStockSharesOutstanding found but no instant observation for period 2026-06-30",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "diluted_shares_weighted_avg",
@@ -1333,7 +1352,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Reported quarterly diluted weighted-average shares (2026-04-01 to 2026-06-30, 90 days) in 10-Q; not full-year TTM shares",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "long_term_debt",
@@ -1351,7 +1371,8 @@
           "formula": null,
           "input_references": [],
           "notes": "No reported concept found among ['LongTermDebtNoncurrent', 'LongTermDebt', 'LongTermDebtAndCapitalLeaseObligations']",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "net_debt",
@@ -1369,7 +1390,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Cannot calculate net debt due to unavailable total financial debt or cash",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "net_income_ttm",
@@ -1391,7 +1413,8 @@
             "10-Q:0001628280-26-053603"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "operating_income_ttm",
@@ -1413,7 +1436,8 @@
             "10-Q:0001628280-26-053603"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "operating_lease_liabilities",
@@ -1431,7 +1455,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-08-06",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "pretax_income_ttm",
@@ -1453,7 +1478,8 @@
             "10-Q:0001628280-26-053603"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "revenue_ttm",
@@ -1475,7 +1501,8 @@
             "10-Q:0001628280-26-053603"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "sbc_ttm",
@@ -1497,7 +1524,8 @@
             "10-Q:0001628280-26-053603"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "short_term_debt",
@@ -1515,7 +1543,8 @@
           "formula": null,
           "input_references": [],
           "notes": "No reported concept found among ['ShortTermBorrowings', 'LongTermDebtCurrent', 'DebtCurrent', 'CommercialPaper']",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "short_term_investments",
@@ -1533,7 +1562,8 @@
           "formula": null,
           "input_references": [],
           "notes": "No reported concept found among ['MarketableSecuritiesCurrent', 'ShortTermInvestments', 'AvailableForSaleSecuritiesCurrent', 'AvailableForSaleSecuritiesDebtMaturitiesWithinOneYearAmortizedCost']",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "stockholders_equity",
@@ -1551,7 +1581,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-08-06",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "tax_expense_ttm",
@@ -1573,7 +1604,8 @@
             "10-Q:0001628280-26-053603"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "total_cash_and_investments",
@@ -1591,7 +1623,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Short-term investments concept not reported; complete cash-and-investments aggregate cannot be asserted without primary filing evidence. Cash is reported separately as cash_and_equivalents.",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "total_financial_debt",
@@ -1609,7 +1642,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Financial debt concepts are unavailable in primary filings.",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         }
       ],
       "derived_calculations": {
@@ -1717,7 +1751,8 @@
         "diluted_shares_weighted_avg": {
           "value": 50031000.0,
           "units": "shares",
-          "status": "REPORTED"
+          "status": "REPORTED",
+          "period_start": "2026-04-01 to 2026-06-30 (quarterly weighted-average shares)"
         },
         "share_dilution_1y_pct": {
           "value": 2.1,
@@ -1744,14 +1779,8 @@
         "market_cap": 7092394560.0,
         "enterprise_value": null
       },
-      "research_disposition_and_evidence": {
-        "disposition": "RESEARCH_FURTHER",
-        "disposition_rationale": "Selected Case Study: Evaluated as a diagnostic case study representing Technology / Application Software. TTM revenue reached $1.1B (+29.4% YoY) with operating margin of 13.7%. Cash generation: CFO minus Capex of $407.9M (259.7% EBIT conversion). Balance sheet: liquid reserves hold $1.2B; financial debt is UNAVAILABLE (net debt UNAVAILABLE; debt structure requires footnote inspection). Share structure: diluted share count expanded by +2.10% over 1 year (+6.74% 3Y). Forward DCF valuation is suppressed under completeness rules because financial debt concepts are unevidenced in primary XBRL tags. Stock-based compensation ($144.7M TTM, 12.6% of revenue) produces net share dilution.",
-        "growth_durability": "Organic user acquisition flywheel (>80% organic downloads) and expansion into multi-subject learning (Math, Music) support top-line expansion.",
-        "reinvestment_economics": "Software and service model requires minimal tangible capex. Reinvestment flows predominantly through operating expenses (R&D, personnel).",
-        "balance_sheet_resilience": "Liquid reserves hold $1.2B; financial debt concepts are unevidenced in primary XBRL tags (total debt and net debt cannot be verified from primary XBRL tags alone; requires footnote inspection).",
+      "research_evidence_notes": {
         "evidence_sufficiency": "Primary SEC XBRL filings analyzed through 2026-06-30. Data gaps noted: total_financial_debt unavailable.",
-        "valuation_uncertainty": "Moderate",
         "remaining_evidence_gaps": [
           "total_financial_debt unavailable"
         ],
@@ -1765,25 +1794,6 @@
           "Next 10-Q filing for period ending after 2026-06-30.",
           "Quarterly segment margins and working capital cash conversion.",
           "Primary footnote disclosures regarding debt facilities or off-balance sheet commitments."
-        ],
-        "valuation_assessment_status": "SUPPRESSED_UNAVAILABLE",
-        "valuation_suppression_reason": "Total financial debt is UNAVAILABLE in SEC EDGAR XBRL (neither DebtLongtermAndShorttermCombinedAmount nor Debt concepts reported, and no current/noncurrent debt components found). Under aggregate completeness rules, missing debt cannot be assumed to be 0.0 without primary filing evidence. Without verified total financial debt, net debt bridge cannot be established; deep DCF valuation is suppressed."
-      },
-      "deep_valuation": {
-        "valuation_status": "SUPPRESSED_UNAVAILABLE",
-        "suppression_reason": "Total financial debt is UNAVAILABLE in SEC EDGAR XBRL (neither DebtLongtermAndShorttermCombinedAmount nor Debt concepts reported, and no current/noncurrent debt components found). Under aggregate completeness rules, missing debt cannot be assumed to be 0.0 without primary filing evidence. Without verified total financial debt, net debt bridge cannot be established; deep DCF valuation is suppressed.",
-        "current_price": 141.76,
-        "current_price_date": "2026-10-16",
-        "thesis_invalidation_thresholds": [
-          "Daily Active User (DAU) or Paid Subscriber YoY growth decelerating below 15%.",
-          "Stock-based compensation expanding beyond 15% of total revenues without corresponding operating leverage.",
-          "Gross margin dropping below 70% driven by escalating third-party LLM API inference fees.",
-          "Material erosion of Duolingo English Test (DET) institutional acceptance rate."
-        ],
-        "next_quarter_evidence_milestones": [
-          "Duolingo Max conversion rate as percentage of total paid subscribers.",
-          "SBC / Revenue trajectory and net annual share dilution moderation.",
-          "Primary source disclosure of long-term debt or credit agreements in 10-Q footnotes."
         ]
       }
     },
@@ -1793,12 +1803,13 @@
         "generation_time": "2026-10-19T13:43:16.611481Z",
         "research_cutoff_date": "2026-10-16",
         "operator_identity": "ARXTerminal Research Akara.david26@gmail.com",
-        "status": "SOURCED_FUNDAMENTALS_TARGETED_SEMANTIC_CORRECTIONS_REVIEW_READY",
+        "status": "READY",
         "scope": "8-company diagnostic research population with deep valuation case studies for selected models (FIX, DUOL, ULTA)",
         "offline_mode": true,
         "compliance": "Strict SEC fair access compliant; primary EDGAR XBRL facts; Lease-as-Operating-Expense convention; no composite scoring.",
-        "api_contract_version": "1.0.0",
-        "read_only": true
+        "api_contract_version": "2.0.0",
+        "read_only": true,
+        "is_available": true
       },
       "company_identity": {
         "symbol": "FIX",
@@ -1833,7 +1844,8 @@
             "10-Q:0001104659-26-086258"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "cash_and_equivalents",
@@ -1851,7 +1863,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-07-23",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "cfo_minus_capex_ttm",
@@ -1872,7 +1885,8 @@
             "capex_ttm"
           ],
           "notes": "Non-GAAP derived cash flow measure. Defined strictly as CFO minus Capex.",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "cfo_ttm",
@@ -1894,7 +1908,8 @@
             "10-Q:0001104659-26-086258"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "common_shares_outstanding",
@@ -1912,7 +1927,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-07-23",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "diluted_shares_weighted_avg",
@@ -1930,7 +1946,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Reported quarterly diluted weighted-average shares (2026-04-01 to 2026-06-30, 90 days) in 10-Q; not full-year TTM shares",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "long_term_debt",
@@ -1948,7 +1965,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-07-23",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "net_debt",
@@ -1969,7 +1987,8 @@
             "cash_and_equivalents"
           ],
           "notes": "Net financial debt relative to reported cash and cash equivalents; short-term investments unavailable without filing evidence.",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "net_income_ttm",
@@ -1991,7 +2010,8 @@
             "10-Q:0001104659-26-086258"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "operating_income_ttm",
@@ -2013,7 +2033,8 @@
             "10-Q:0001104659-26-086258"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "operating_lease_liabilities",
@@ -2031,7 +2052,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-07-23",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "pretax_income_ttm",
@@ -2053,7 +2075,8 @@
             "10-Q:0001104659-26-086258"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "revenue_ttm",
@@ -2075,7 +2098,8 @@
             "10-Q:0001104659-26-086258"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "sbc_ttm",
@@ -2097,7 +2121,8 @@
             "10-Q:0001104659-26-086258"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "short_term_debt",
@@ -2115,7 +2140,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-07-23",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "short_term_investments",
@@ -2133,7 +2159,8 @@
           "formula": null,
           "input_references": [],
           "notes": "No reported concept found among ['MarketableSecuritiesCurrent', 'ShortTermInvestments', 'AvailableForSaleSecuritiesCurrent', 'AvailableForSaleSecuritiesDebtMaturitiesWithinOneYearAmortizedCost']",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "stockholders_equity",
@@ -2151,7 +2178,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-07-23",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "tax_expense_ttm",
@@ -2173,7 +2201,8 @@
             "10-Q:0001104659-26-086258"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "total_cash_and_investments",
@@ -2191,7 +2220,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Short-term investments concept not reported; complete cash-and-investments aggregate cannot be asserted without primary filing evidence. Cash is reported separately as cash_and_equivalents.",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "total_financial_debt",
@@ -2212,7 +2242,8 @@
             "long_term_debt"
           ],
           "notes": "Fully evidenced sum of reported current and noncurrent financial debt obligations",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         }
       ],
       "derived_calculations": {
@@ -2320,7 +2351,8 @@
         "diluted_shares_weighted_avg": {
           "value": 35254000.0,
           "units": "shares",
-          "status": "REPORTED"
+          "status": "REPORTED",
+          "period_start": "2026-04-01 to 2026-06-30 (quarterly weighted-average shares)"
         },
         "share_dilution_1y_pct": {
           "value": -0.33,
@@ -2347,14 +2379,8 @@
         "market_cap": 50655264000.0,
         "enterprise_value": 48854534000.0
       },
-      "research_disposition_and_evidence": {
-        "disposition": "RESEARCH_FURTHER",
-        "disposition_rationale": "Selected Case Study: Evaluated as a diagnostic case study representing Industrials / Specialty Contractors. TTM revenue reached $11.2B (+46.1% YoY) with operating margin of 16.5%. Cash generation: CFO minus Capex of $2.2B (116.8% EBIT conversion). Balance sheet: net cash position of $1.8B ($1.9B cash vs $54.1M debt). Share structure: diluted share count decreased by -0.33% over 1 year (-1.82% 3Y). Primary research focus centers on valuation: assess whether market price reflects sustainable cash flows.",
-        "growth_durability": "Visibility supported by institutional backlogs across data centers, semiconductor cleanrooms, and modular thermal infrastructure.",
-        "reinvestment_economics": "Asset-light specialty model yields high cash conversion when operating profitably. Organic reinvestment requirements are modest relative to cash generation.",
-        "balance_sheet_resilience": "Net cash position of $1.8B ($1.9B in cash and short-term investments against $54.1M in debt). Liquidity provides operational resilience against project delays or cyclical downturns.",
+      "research_evidence_notes": {
         "evidence_sufficiency": "Primary SEC XBRL filings analyzed through 2026-06-30. Data gaps noted: None critical.",
-        "valuation_uncertainty": "Moderate",
         "remaining_evidence_gaps": [
           "Ongoing quarterly monitoring of primary SEC filings."
         ],
@@ -2368,121 +2394,7 @@
           "Next 10-Q filing for period ending after 2026-06-30.",
           "Quarterly segment margins and working capital cash conversion.",
           "Primary footnote disclosures regarding debt facilities or off-balance sheet commitments."
-        ],
-        "valuation_assessment_status": "AVAILABLE",
-        "valuation_suppression_reason": null
-      },
-      "deep_valuation": {
-        "symbol": "FIX",
-        "framework_used": "FCFF (Enterprise to Equity DCF, Lease-as-Operating-Expense Convention)",
-        "current_price": 1439.07,
-        "current_price_date": "2026-10-16",
-        "current_market_cap": 50655264000.0,
-        "diluted_shares": 35254000.0,
-        "scenarios": {
-          "Conservative": {
-            "scenario_name": "Conservative",
-            "growth_years_1_to_5_pct": 12.0,
-            "operating_margin_target_pct": 12.5,
-            "wacc_pct": 10.5,
-            "terminal_growth_pct": 2.0,
-            "tax_rate_pct": 22.0,
-            "reinvestment_rate_pct": 15.0,
-            "pv_explicit_cash_flows": 4845549828.3,
-            "pv_terminal_value": 11945018947.55,
-            "enterprise_value_estimate": 16790568775.84,
-            "net_debt_bridge": -1800730000.0,
-            "equity_value_estimate": 18591298775.84,
-            "per_share_value_estimate": 527.35,
-            "upside_downside_pct": -63.35,
-            "key_assumptions": "Data center cooling buildout cools; modular pre-fabrication backlog normalizes; margin moderates toward historical median."
-          },
-          "Base": {
-            "scenario_name": "Base",
-            "growth_years_1_to_5_pct": 22.0,
-            "operating_margin_target_pct": 15.0,
-            "wacc_pct": 9.5,
-            "terminal_growth_pct": 2.5,
-            "tax_rate_pct": 22.0,
-            "reinvestment_rate_pct": 15.0,
-            "pv_explicit_cash_flows": 7812268068.65,
-            "pv_terminal_value": 28071298516.27,
-            "enterprise_value_estimate": 35883566584.93,
-            "net_debt_bridge": -1800730000.0,
-            "equity_value_estimate": 37684296584.93,
-            "per_share_value_estimate": 1068.94,
-            "upside_downside_pct": -25.72,
-            "key_assumptions": "Continued multi-year data-center cooling backlog conversion; sustained premium pricing on complex modular contracts."
-          },
-          "Optimistic": {
-            "scenario_name": "Optimistic",
-            "growth_years_1_to_5_pct": 30.0,
-            "operating_margin_target_pct": 16.5,
-            "wacc_pct": 8.5,
-            "terminal_growth_pct": 3.0,
-            "tax_rate_pct": 22.0,
-            "reinvestment_rate_pct": 15.0,
-            "pv_explicit_cash_flows": 10912052637.03,
-            "pv_terminal_value": 56799355878.72,
-            "enterprise_value_estimate": 67711408515.75,
-            "net_debt_bridge": -1800730000.0,
-            "equity_value_estimate": 69512138515.75,
-            "per_share_value_estimate": 1971.75,
-            "upside_downside_pct": 37.02,
-            "key_assumptions": "Accelerating hyperscaler capex expansions into 2028+; supply shortage in modular HVAC mechanics preserves pricing power."
-          }
-        },
-        "reverse_dcf_implied_5y_growth_pct": 30.43,
-        "reverse_dcf_fixed_assumptions": {
-          "solved_variable": "5-year Revenue CAGR",
-          "operating_margin_target_pct": 15.0,
-          "wacc_pct": 9.5,
-          "terminal_growth_pct": 2.5,
-          "effective_tax_rate_pct": 22.0,
-          "reinvestment_rate_pct": 15.0,
-          "net_debt_bridge_usd": -1800730000.0,
-          "solution_status": "VERIFIED (Roundtrip per-share $1439.08 matches target $1439.07)"
-        },
-        "sensitivity_matrix": {
-          "WACC_8.0%": {
-            "g_2.0%": 1273.21,
-            "g_2.5%": 1368.55,
-            "g_3.0%": 1482.95
-          },
-          "WACC_9.0%": {
-            "g_2.0%": 1086.68,
-            "g_2.5%": 1153.33,
-            "g_3.0%": 1231.08
-          },
-          "WACC_10.0%": {
-            "g_2.0%": 947.17,
-            "g_2.5%": 995.9,
-            "g_3.0%": 1051.58
-          },
-          "WACC_11.0%": {
-            "g_2.0%": 838.99,
-            "g_2.5%": 875.85,
-            "g_3.0%": 917.31
-          },
-          "WACC_12.0%": {
-            "g_2.0%": 752.73,
-            "g_2.5%": 781.36,
-            "g_3.0%": 813.18
-          }
-        },
-        "thesis_invalidation_thresholds": [
-          "Data-center order backlog cancellations or deferrals exceeding 15% in quarterly disclosures.",
-          "Operating margin contraction below 12.0% indicating fixed-price contract cost overruns.",
-          "Operating cash flow conversion falling below 80% of EBIT for two consecutive quarters.",
-          "Material capital allocation shift from organic growth / bolt-on acquisitions to aggressive leveraged megadeals."
-        ],
-        "next_quarter_evidence_milestones": [
-          "Quarterly backlog growth rate and percentage of backlog dedicated to tech/institutional sectors.",
-          "Gross margin stability in modular construction and mechanical contracting segments.",
-          "Working capital cash conversion and billing in excess of costs reconciliation."
-        ],
-        "valuation_status": "AVAILABLE",
-        "suppression_reason": null
+        ]
       }
     },
     "KLAC": {
@@ -2491,12 +2403,13 @@
         "generation_time": "2026-10-19T13:43:16.611481Z",
         "research_cutoff_date": "2026-10-16",
         "operator_identity": "ARXTerminal Research Akara.david26@gmail.com",
-        "status": "SOURCED_FUNDAMENTALS_TARGETED_SEMANTIC_CORRECTIONS_REVIEW_READY",
+        "status": "READY",
         "scope": "8-company diagnostic research population with deep valuation case studies for selected models (FIX, DUOL, ULTA)",
         "offline_mode": true,
         "compliance": "Strict SEC fair access compliant; primary EDGAR XBRL facts; Lease-as-Operating-Expense convention; no composite scoring.",
-        "api_contract_version": "1.0.0",
-        "read_only": true
+        "api_contract_version": "2.0.0",
+        "read_only": true,
+        "is_available": true
       },
       "company_identity": {
         "symbol": "KLAC",
@@ -2527,7 +2440,8 @@
           "formula": "Reported 10-K full fiscal year ended 2026-06-30",
           "input_references": [],
           "notes": "Full fiscal year 10-K filed on 2026-08-06",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "cash_and_equivalents",
@@ -2545,7 +2459,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-K filed 2026-08-06",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "cfo_minus_capex_ttm",
@@ -2566,7 +2481,8 @@
             "capex_ttm"
           ],
           "notes": "Non-GAAP derived cash flow measure. Defined strictly as CFO minus Capex.",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "cfo_ttm",
@@ -2584,7 +2500,8 @@
           "formula": "Reported 10-K full fiscal year ended 2026-06-30",
           "input_references": [],
           "notes": "Full fiscal year 10-K filed on 2026-08-06",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "common_shares_outstanding",
@@ -2602,7 +2519,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-K filed 2026-08-06",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "diluted_shares_weighted_avg",
@@ -2620,7 +2538,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Reported annual diluted weighted-average shares (2025-07-01 to 2026-06-30, 364 days) in 10-K",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "long_term_debt",
@@ -2638,7 +2557,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-K filed 2026-08-06",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "net_debt",
@@ -2659,7 +2579,8 @@
             "total_cash_and_investments"
           ],
           "notes": "Net financial debt relative to total cash and short-term investments (negative indicates net cash balance)",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "net_income_ttm",
@@ -2677,7 +2598,8 @@
           "formula": "Reported 10-K full fiscal year ended 2026-06-30",
           "input_references": [],
           "notes": "Full fiscal year 10-K filed on 2026-08-06",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "operating_income_ttm",
@@ -2700,7 +2622,8 @@
             "sga_expense_ttm"
           ],
           "notes": "Derived from reported revenue and operating expense components in 10-K",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "operating_lease_liabilities",
@@ -2718,7 +2641,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-K filed 2026-08-06",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "pretax_income_ttm",
@@ -2736,7 +2660,8 @@
           "formula": "Reported 10-K full fiscal year ended 2026-06-30",
           "input_references": [],
           "notes": "Full fiscal year 10-K filed on 2026-08-06",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "revenue_ttm",
@@ -2754,7 +2679,8 @@
           "formula": "Reported 10-K full fiscal year ended 2026-06-30",
           "input_references": [],
           "notes": "Full fiscal year 10-K filed on 2026-08-06",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "sbc_ttm",
@@ -2772,7 +2698,8 @@
           "formula": "Reported 10-K full fiscal year ended 2026-06-30",
           "input_references": [],
           "notes": "Full fiscal year 10-K filed on 2026-08-06",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "short_term_debt",
@@ -2790,7 +2717,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Concept us-gaap/LongTermDebtCurrent found but no instant observation for period 2026-06-30",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "short_term_investments",
@@ -2808,7 +2736,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-K filed 2026-08-06",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "stockholders_equity",
@@ -2826,7 +2755,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-K filed 2026-08-06",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "tax_expense_ttm",
@@ -2844,7 +2774,8 @@
           "formula": "Reported 10-K full fiscal year ended 2026-06-30",
           "input_references": [],
           "notes": "Full fiscal year 10-K filed on 2026-08-06",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "total_cash_and_investments",
@@ -2865,7 +2796,8 @@
             "short_term_investments"
           ],
           "notes": "Sum of reported cash and short-term marketable investment securities",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "total_financial_debt",
@@ -2883,7 +2815,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-K filed 2026-08-06",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         }
       ],
       "derived_calculations": {
@@ -2991,7 +2924,8 @@
         "diluted_shares_weighted_avg": {
           "value": 1319633000.0,
           "units": "shares",
-          "status": "REPORTED"
+          "status": "REPORTED",
+          "period_start": "2025-07-01 to 2026-06-30 (annual weighted-average shares)"
         },
         "share_dilution_1y_pct": {
           "value": -1.34,
@@ -3018,14 +2952,8 @@
         "market_cap": 216619362420.0,
         "enterprise_value": 219388547420.0
       },
-      "research_disposition_and_evidence": {
-        "disposition": "WATCH",
-        "disposition_rationale": "TTM revenue reached $13.6B (+11.7% YoY) with operating margin of 41.7%. Cash generation: CFO minus Capex of $3.8B (66.5% EBIT conversion). Balance sheet: net debt position of $2.8B ($3.1B cash vs $5.9B debt). Share structure: diluted share count decreased by -1.34% over 1 year (-5.90% 3Y). Adverse financial momentum (contraction, operating losses, or elevated leverage); placed on WATCH for operational stabilization.",
-        "growth_durability": "Process control intensity increases with advanced semiconductor nodes (gate-all-around, EUV, advanced packaging).",
-        "reinvestment_economics": "High R&D investment requirement (~15% of revenue) is critical to maintaining metrology and process control technology differentiation.",
-        "balance_sheet_resilience": "Carries net debt of $2.8B ($3.1B cash vs $5.9B total financial debt). Leverage and debt service obligations require monitoring against operating cash generation.",
+      "research_evidence_notes": {
         "evidence_sufficiency": "Primary SEC XBRL filings analyzed through 2026-06-30. Data gaps noted: None critical.",
-        "valuation_uncertainty": "High",
         "remaining_evidence_gaps": [
           "Ongoing quarterly monitoring of primary SEC filings."
         ],
@@ -3039,17 +2967,7 @@
           "Next 10-Q filing for period ending after 2026-06-30.",
           "Quarterly segment margins and working capital cash conversion.",
           "Primary footnote disclosures regarding debt facilities or off-balance sheet commitments."
-        ],
-        "valuation_assessment_status": "UNAVAILABLE",
-        "valuation_suppression_reason": null
-      },
-      "deep_valuation": {
-        "valuation_status": "SUPPRESSED_UNAVAILABLE",
-        "suppression_reason": null,
-        "current_price": null,
-        "current_price_date": null,
-        "thesis_invalidation_thresholds": [],
-        "next_quarter_evidence_milestones": []
+        ]
       }
     },
     "LULU": {
@@ -3058,12 +2976,13 @@
         "generation_time": "2026-10-19T13:43:16.611481Z",
         "research_cutoff_date": "2026-10-16",
         "operator_identity": "ARXTerminal Research Akara.david26@gmail.com",
-        "status": "SOURCED_FUNDAMENTALS_TARGETED_SEMANTIC_CORRECTIONS_REVIEW_READY",
+        "status": "READY",
         "scope": "8-company diagnostic research population with deep valuation case studies for selected models (FIX, DUOL, ULTA)",
         "offline_mode": true,
         "compliance": "Strict SEC fair access compliant; primary EDGAR XBRL facts; Lease-as-Operating-Expense convention; no composite scoring.",
-        "api_contract_version": "1.0.0",
-        "read_only": true
+        "api_contract_version": "2.0.0",
+        "read_only": true,
+        "is_available": true
       },
       "company_identity": {
         "symbol": "LULU",
@@ -3098,7 +3017,8 @@
             "10-Q:0001397187-26-000127"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "cash_and_equivalents",
@@ -3116,7 +3036,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-09-03",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "cfo_minus_capex_ttm",
@@ -3137,7 +3058,8 @@
             "capex_ttm"
           ],
           "notes": "Non-GAAP derived cash flow measure. Defined strictly as CFO minus Capex.",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "cfo_ttm",
@@ -3159,7 +3081,8 @@
             "10-Q:0001397187-26-000127"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "common_shares_outstanding",
@@ -3177,7 +3100,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-09-03",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "diluted_shares_weighted_avg",
@@ -3195,7 +3119,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Reported quarterly diluted weighted-average shares (2026-05-04 to 2026-08-02, 90 days) in 10-Q; not full-year TTM shares",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "long_term_debt",
@@ -3213,7 +3138,8 @@
           "formula": null,
           "input_references": [],
           "notes": "No reported concept found among ['LongTermDebtNoncurrent', 'LongTermDebt', 'LongTermDebtAndCapitalLeaseObligations']",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "net_debt",
@@ -3231,7 +3157,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Cannot calculate net debt due to unavailable total financial debt or cash",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "net_income_ttm",
@@ -3253,7 +3180,8 @@
             "10-Q:0001397187-26-000127"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "operating_income_ttm",
@@ -3275,7 +3203,8 @@
             "10-Q:0001397187-26-000127"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "operating_lease_liabilities",
@@ -3293,7 +3222,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-09-03",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "pretax_income_ttm",
@@ -3315,7 +3245,8 @@
             "10-Q:0001397187-26-000127"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "revenue_ttm",
@@ -3337,7 +3268,8 @@
             "10-Q:0001397187-26-000127"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "sbc_ttm",
@@ -3359,7 +3291,8 @@
             "10-Q:0001397187-26-000127"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "short_term_debt",
@@ -3377,7 +3310,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-09-03",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "short_term_investments",
@@ -3395,7 +3329,8 @@
           "formula": null,
           "input_references": [],
           "notes": "No reported concept found among ['MarketableSecuritiesCurrent', 'ShortTermInvestments', 'AvailableForSaleSecuritiesCurrent', 'AvailableForSaleSecuritiesDebtMaturitiesWithinOneYearAmortizedCost']",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "stockholders_equity",
@@ -3413,7 +3348,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-09-03",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "tax_expense_ttm",
@@ -3435,7 +3371,8 @@
             "10-Q:0001397187-26-000127"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "total_cash_and_investments",
@@ -3453,7 +3390,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Short-term investments concept not reported; complete cash-and-investments aggregate cannot be asserted without primary filing evidence. Cash is reported separately as cash_and_equivalents.",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "total_financial_debt",
@@ -3471,7 +3409,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Partial debt observation known (Short-term debt=0, Long-term debt unavailable), but complete debt obligations cannot be established without both components or a single comprehensive debt total. Known partial amounts are not presented as total debt.",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         }
       ],
       "derived_calculations": {
@@ -3579,7 +3518,8 @@
         "diluted_shares_weighted_avg": {
           "value": 112919000.0,
           "units": "shares",
-          "status": "REPORTED"
+          "status": "REPORTED",
+          "period_start": "2026-05-04 to 2026-08-02 (quarterly weighted-average shares)"
         },
         "share_dilution_1y_pct": {
           "value": -5.65,
@@ -3606,14 +3546,8 @@
         "market_cap": 10347558600.0,
         "enterprise_value": null
       },
-      "research_disposition_and_evidence": {
-        "disposition": "WATCH",
-        "disposition_rationale": "TTM revenue reached $11.1B (+1.7% YoY) with operating margin of 17.8%. Cash generation: CFO minus Capex of $1.4B (68.4% EBIT conversion). Balance sheet: liquid reserves hold $1.4B; financial debt is UNAVAILABLE (net debt UNAVAILABLE; debt structure requires footnote inspection). Share structure: diluted share count decreased by -5.65% over 1 year (-11.27% 3Y). Placed on WATCH due to North American consumer demand deceleration.",
-        "growth_durability": "International expansion (specifically Greater China) continues to deliver growth, offsetting mature North American market deceleration.",
-        "reinvestment_economics": "Moderate capital intensity driven by retail store fit-outs, digital infrastructure, and supply chain automation.",
-        "balance_sheet_resilience": "Liquid reserves hold $1.4B; financial debt concepts are unevidenced in primary XBRL tags (total debt and net debt cannot be verified from primary XBRL tags alone; requires footnote inspection).",
+      "research_evidence_notes": {
         "evidence_sufficiency": "Primary SEC XBRL filings analyzed through 2026-08-02. Data gaps noted: total_financial_debt unavailable (incomplete debt components).",
-        "valuation_uncertainty": "Moderate",
         "remaining_evidence_gaps": [
           "total_financial_debt unavailable (incomplete debt components)"
         ],
@@ -3627,17 +3561,7 @@
           "Next 10-Q filing for period ending after 2026-08-02.",
           "Quarterly segment margins and working capital cash conversion.",
           "Primary footnote disclosures regarding debt facilities or off-balance sheet commitments."
-        ],
-        "valuation_assessment_status": "UNAVAILABLE",
-        "valuation_suppression_reason": null
-      },
-      "deep_valuation": {
-        "valuation_status": "SUPPRESSED_UNAVAILABLE",
-        "suppression_reason": null,
-        "current_price": null,
-        "current_price_date": null,
-        "thesis_invalidation_thresholds": [],
-        "next_quarter_evidence_milestones": []
+        ]
       }
     },
     "MEDP": {
@@ -3646,12 +3570,13 @@
         "generation_time": "2026-10-19T13:43:16.611481Z",
         "research_cutoff_date": "2026-10-16",
         "operator_identity": "ARXTerminal Research Akara.david26@gmail.com",
-        "status": "SOURCED_FUNDAMENTALS_TARGETED_SEMANTIC_CORRECTIONS_REVIEW_READY",
+        "status": "READY",
         "scope": "8-company diagnostic research population with deep valuation case studies for selected models (FIX, DUOL, ULTA)",
         "offline_mode": true,
         "compliance": "Strict SEC fair access compliant; primary EDGAR XBRL facts; Lease-as-Operating-Expense convention; no composite scoring.",
-        "api_contract_version": "1.0.0",
-        "read_only": true
+        "api_contract_version": "2.0.0",
+        "read_only": true,
+        "is_available": true
       },
       "company_identity": {
         "symbol": "MEDP",
@@ -3686,7 +3611,8 @@
             "10-Q:0001668397-26-000025"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "cash_and_equivalents",
@@ -3704,7 +3630,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-07-23",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "cfo_minus_capex_ttm",
@@ -3725,7 +3652,8 @@
             "capex_ttm"
           ],
           "notes": "Non-GAAP derived cash flow measure. Defined strictly as CFO minus Capex.",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "cfo_ttm",
@@ -3747,7 +3675,8 @@
             "10-Q:0001668397-26-000025"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "common_shares_outstanding",
@@ -3765,7 +3694,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-07-23",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "diluted_shares_weighted_avg",
@@ -3783,7 +3713,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Reported quarterly diluted weighted-average shares (2026-04-01 to 2026-06-30, 90 days) in 10-Q; not full-year TTM shares",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "long_term_debt",
@@ -3801,7 +3732,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Concept us-gaap/LongTermDebtNoncurrent found but no instant observation for period 2026-06-30",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "net_debt",
@@ -3819,7 +3751,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Cannot calculate net debt due to unavailable total financial debt or cash",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "net_income_ttm",
@@ -3841,7 +3774,8 @@
             "10-Q:0001668397-26-000025"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "operating_income_ttm",
@@ -3863,7 +3797,8 @@
             "10-Q:0001668397-26-000025"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "operating_lease_liabilities",
@@ -3881,7 +3816,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-07-23",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "pretax_income_ttm",
@@ -3903,7 +3839,8 @@
             "10-Q:0001668397-26-000025"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "revenue_ttm",
@@ -3925,7 +3862,8 @@
             "10-Q:0001668397-26-000025"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "sbc_ttm",
@@ -3947,7 +3885,8 @@
             "10-Q:0001668397-26-000025"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "short_term_debt",
@@ -3965,7 +3904,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Concept us-gaap/ShortTermBorrowings found but no instant observation for period 2026-06-30",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "short_term_investments",
@@ -3983,7 +3923,8 @@
           "formula": null,
           "input_references": [],
           "notes": "No reported concept found among ['MarketableSecuritiesCurrent', 'ShortTermInvestments', 'AvailableForSaleSecuritiesCurrent', 'AvailableForSaleSecuritiesDebtMaturitiesWithinOneYearAmortizedCost']",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "stockholders_equity",
@@ -4001,7 +3942,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-07-23",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "tax_expense_ttm",
@@ -4023,7 +3965,8 @@
             "10-Q:0001668397-26-000025"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "total_cash_and_investments",
@@ -4041,7 +3984,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Short-term investments concept not reported; complete cash-and-investments aggregate cannot be asserted without primary filing evidence. Cash is reported separately as cash_and_equivalents.",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "total_financial_debt",
@@ -4059,7 +4003,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Financial debt concepts are unavailable in primary filings.",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         }
       ],
       "derived_calculations": {
@@ -4167,7 +4112,8 @@
         "diluted_shares_weighted_avg": {
           "value": 28554000.0,
           "units": "shares",
-          "status": "REPORTED"
+          "status": "REPORTED",
+          "period_start": "2026-04-01 to 2026-06-30 (quarterly weighted-average shares)"
         },
         "share_dilution_1y_pct": {
           "value": -2.02,
@@ -4194,14 +4140,8 @@
         "market_cap": 17261871874.35,
         "enterprise_value": null
       },
-      "research_disposition_and_evidence": {
-        "disposition": "RESEARCH_FURTHER",
-        "disposition_rationale": "TTM revenue reached $2.8B (+24.7% YoY) with operating margin of 21.0%. Cash generation: CFO minus Capex of $706.7M (121.1% EBIT conversion). Balance sheet: liquid reserves hold $502.7M; financial debt is UNAVAILABLE (net debt UNAVAILABLE; debt structure requires footnote inspection). Share structure: diluted share count decreased by -2.02% over 1 year (-9.57% 3Y). Biotech funding cycles represent the primary external demand driver; debt concepts unevidenced in primary XBRL tags.",
-        "growth_durability": "Specialization in small to mid-sized biopharma companies provides pricing power and sticky relationships across clinical development cycles.",
-        "reinvestment_economics": "Software and service model requires minimal tangible capex. Reinvestment flows predominantly through operating expenses (R&D, personnel).",
-        "balance_sheet_resilience": "Liquid reserves hold $502.7M; financial debt concepts are unevidenced in primary XBRL tags (total debt and net debt cannot be verified from primary XBRL tags alone; requires footnote inspection).",
+      "research_evidence_notes": {
         "evidence_sufficiency": "Primary SEC XBRL filings analyzed through 2026-06-30. Data gaps noted: total_financial_debt unavailable.",
-        "valuation_uncertainty": "Moderate",
         "remaining_evidence_gaps": [
           "total_financial_debt unavailable"
         ],
@@ -4215,17 +4155,7 @@
           "Next 10-Q filing for period ending after 2026-06-30.",
           "Quarterly segment margins and working capital cash conversion.",
           "Primary footnote disclosures regarding debt facilities or off-balance sheet commitments."
-        ],
-        "valuation_assessment_status": "UNAVAILABLE",
-        "valuation_suppression_reason": null
-      },
-      "deep_valuation": {
-        "valuation_status": "SUPPRESSED_UNAVAILABLE",
-        "suppression_reason": null,
-        "current_price": null,
-        "current_price_date": null,
-        "thesis_invalidation_thresholds": [],
-        "next_quarter_evidence_milestones": []
+        ]
       }
     },
     "ULTA": {
@@ -4234,12 +4164,13 @@
         "generation_time": "2026-10-19T13:43:16.611481Z",
         "research_cutoff_date": "2026-10-16",
         "operator_identity": "ARXTerminal Research Akara.david26@gmail.com",
-        "status": "SOURCED_FUNDAMENTALS_TARGETED_SEMANTIC_CORRECTIONS_REVIEW_READY",
+        "status": "READY",
         "scope": "8-company diagnostic research population with deep valuation case studies for selected models (FIX, DUOL, ULTA)",
         "offline_mode": true,
         "compliance": "Strict SEC fair access compliant; primary EDGAR XBRL facts; Lease-as-Operating-Expense convention; no composite scoring.",
-        "api_contract_version": "1.0.0",
-        "read_only": true
+        "api_contract_version": "2.0.0",
+        "read_only": true,
+        "is_available": true
       },
       "company_identity": {
         "symbol": "ULTA",
@@ -4274,7 +4205,8 @@
             "10-Q:0001104659-26-102442"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "cash_and_equivalents",
@@ -4292,7 +4224,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-08-27",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "cfo_minus_capex_ttm",
@@ -4313,7 +4246,8 @@
             "capex_ttm"
           ],
           "notes": "Non-GAAP derived cash flow measure. Defined strictly as CFO minus Capex.",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "cfo_ttm",
@@ -4335,7 +4269,8 @@
             "10-Q:0001104659-26-102442"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "common_shares_outstanding",
@@ -4353,7 +4288,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-08-27",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "diluted_shares_weighted_avg",
@@ -4371,7 +4307,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Reported quarterly diluted weighted-average shares (2026-05-03 to 2026-08-01, 90 days) in 10-Q; not full-year TTM shares",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "long_term_debt",
@@ -4389,7 +4326,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Concept us-gaap/LongTermDebtNoncurrent found but no instant observation for period 2026-08-01",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "net_debt",
@@ -4407,7 +4345,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Cannot calculate net debt due to unavailable total financial debt or cash",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "net_income_ttm",
@@ -4429,7 +4368,8 @@
             "10-Q:0001104659-26-102442"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "operating_income_ttm",
@@ -4451,7 +4391,8 @@
             "10-Q:0001104659-26-102442"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "operating_lease_liabilities",
@@ -4469,7 +4410,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-08-27",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "pretax_income_ttm",
@@ -4491,7 +4433,8 @@
             "10-Q:0001104659-26-102442"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "revenue_ttm",
@@ -4513,7 +4456,8 @@
             "10-Q:0001104659-26-102442"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "sbc_ttm",
@@ -4531,7 +4475,8 @@
           "formula": null,
           "input_references": [],
           "notes": "No current YTD observation found starting near expected fiscal start 2026-02-01",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "short_term_debt",
@@ -4549,7 +4494,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-08-27",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "short_term_investments",
@@ -4567,7 +4513,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-08-27",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "stockholders_equity",
@@ -4585,7 +4532,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Directly reported in 10-Q filed 2026-08-27",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "tax_expense_ttm",
@@ -4607,7 +4555,8 @@
             "10-Q:0001104659-26-102442"
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
-          "duration_type": "DURATION"
+          "duration_type": "DURATION",
+          "fact_type": "PRIMARY_REPORTED"
         },
         {
           "metric_key": "total_cash_and_investments",
@@ -4628,7 +4577,8 @@
             "short_term_investments"
           ],
           "notes": "Sum of reported cash and short-term marketable investment securities",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "total_financial_debt",
@@ -4646,7 +4596,8 @@
           "formula": null,
           "input_references": [],
           "notes": "Partial debt observation known (Short-term debt=339,578,000, Long-term debt unavailable), but complete debt obligations cannot be established without both components or a single comprehensive debt total. Known partial amounts are not presented as total debt.",
-          "duration_type": "INSTANT"
+          "duration_type": "INSTANT",
+          "fact_type": "DERIVED_CALCULATION"
         }
       ],
       "derived_calculations": {
@@ -4754,7 +4705,8 @@
         "diluted_shares_weighted_avg": {
           "value": 43062000.0,
           "units": "shares",
-          "status": "REPORTED"
+          "status": "REPORTED",
+          "period_start": "2026-05-03 to 2026-08-01 (quarterly weighted-average shares)"
         },
         "share_dilution_1y_pct": {
           "value": -4.54,
@@ -4781,14 +4733,8 @@
         "market_cap": 25380796700.0,
         "enterprise_value": null
       },
-      "research_disposition_and_evidence": {
-        "disposition": "RESEARCH_FURTHER",
-        "disposition_rationale": "Selected Case Study: Evaluated as a diagnostic case study representing Consumer Cyclical / Specialty Retail. TTM revenue reached $13.0B (+11.2% YoY) with operating margin of 12.5%. Cash generation: CFO minus Capex of $1.1B (71.2% EBIT conversion). Balance sheet: liquid reserves hold $213.5M; financial debt is UNAVAILABLE (net debt UNAVAILABLE; debt structure requires footnote inspection). Share structure: diluted share count decreased by -4.54% over 1 year (-13.62% 3Y). Forward DCF valuation is suppressed under completeness rules because noncurrent debt concepts are unevidenced in primary XBRL tags. Placed on WATCH due to promotional retail competition.",
-        "growth_durability": "Expansive loyalty program (Ultamate Rewards 44M+ active members) accounts for >95% of sales, supported by store-in-store partnerships.",
-        "reinvestment_economics": "Moderate capital intensity driven by retail store fit-outs, digital infrastructure, and supply chain automation.",
-        "balance_sheet_resilience": "Liquid reserves hold $213.5M; financial debt concepts are unevidenced in primary XBRL tags (total debt and net debt cannot be verified from primary XBRL tags alone; requires footnote inspection).",
+      "research_evidence_notes": {
         "evidence_sufficiency": "Primary SEC XBRL filings analyzed through 2026-08-01. Data gaps noted: sbc_ttm unavailable, total_financial_debt unavailable (incomplete debt components).",
-        "valuation_uncertainty": "Moderate",
         "remaining_evidence_gaps": [
           "sbc_ttm unavailable",
           "total_financial_debt unavailable (incomplete debt components)"
@@ -4803,25 +4749,6 @@
           "Next 10-Q filing for period ending after 2026-08-01.",
           "Quarterly segment margins and working capital cash conversion.",
           "Primary footnote disclosures regarding debt facilities or off-balance sheet commitments."
-        ],
-        "valuation_assessment_status": "SUPPRESSED_UNAVAILABLE",
-        "valuation_suppression_reason": "Total financial debt is UNAVAILABLE due to incomplete component reporting in SEC EDGAR XBRL (reported ShortTermBorrowings of $339.6M without noncurrent debt component). Partial debt cannot be presented as total debt under aggregate completeness rules. Without verified total financial debt, net debt bridge cannot be established; deep DCF valuation is suppressed."
-      },
-      "deep_valuation": {
-        "valuation_status": "SUPPRESSED_UNAVAILABLE",
-        "suppression_reason": "Total financial debt is UNAVAILABLE due to incomplete component reporting in SEC EDGAR XBRL (reported ShortTermBorrowings of $339.6M without noncurrent debt component). Partial debt cannot be presented as total debt under aggregate completeness rules. Without verified total financial debt, net debt bridge cannot be established; deep DCF valuation is suppressed.",
-        "current_price": 592.94,
-        "current_price_date": "2026-10-16",
-        "thesis_invalidation_thresholds": [
-          "Comparable store sales (comps) turning negative for two consecutive quarters.",
-          "Operating margin falling below 10.0% due to persistent industry promotional battles.",
-          "Decline in active Ultamate Rewards loyalty member count or spend-per-member.",
-          "Inventory turnover degradation leading to substantial merchandise inventory write-downs."
-        ],
-        "next_quarter_evidence_milestones": [
-          "Comparable store sales breakdown (transactions vs average ticket).",
-          "Merchandise margin versus supply chain costs commentary.",
-          "Pace of share repurchases relative to free cash flow generation."
         ]
       }
     }
