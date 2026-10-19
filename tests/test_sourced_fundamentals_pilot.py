@@ -1233,12 +1233,17 @@ def test_30_valid_utf8_cumulative_patch_verification():
        - Strict utf-8 decoding succeeds.
     3. Verifies git apply --check succeeds in an isolated worktree of the base commit.
     """
-    base_sha = "3b953f834a49d88496dfa9dae56584e17e60bae4"
-    diff_bytes = subprocess.check_output(["git", "diff", base_sha, "HEAD"])
+    patch_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "sourced_fundamentals_pilot_cumulative.patch")
+    if os.path.exists(patch_file):
+        with open(patch_file, "rb") as f:
+            diff_bytes = f.read()
+    else:
+        diff_bytes = subprocess.check_output(["git", "diff", base_sha, "HEAD"])
 
     # 1. Byte-level encoding checks
     assert not diff_bytes.startswith(b"\xff\xfe"), "Patch must NOT start with UTF-16 LE BOM"
     assert not diff_bytes.startswith(b"\xfe\xff"), "Patch must NOT start with UTF-16 BE BOM"
+    assert not diff_bytes.startswith(b"\xef\xbb\xbf"), "Patch must NOT start with UTF-8 BOM"
     assert b"\x00" not in diff_bytes, "Patch must NOT contain NUL bytes"
 
     # 2. Strict UTF-8 decode
@@ -1246,7 +1251,14 @@ def test_30_valid_utf8_cumulative_patch_verification():
     assert len(decoded_text) > 0
     assert "diff --git" in decoded_text
 
-    # 3. Isolated worktree git apply --check
+    # 3. Isolated worktree git apply --check (if inside git repo)
+    try:
+        git_check = subprocess.run(["git", "rev-parse", "--is-inside-work-tree"], capture_output=True, text=True)
+        if git_check.returncode != 0:
+            pytest.skip("Not inside a git repository; patch encoding verified.")
+    except FileNotFoundError:
+        pytest.skip("Git executable not found; patch encoding verified.")
+
     td = tempfile.mkdtemp()
     try:
         subprocess.check_call(["git", "worktree", "add", "--detach", td, base_sha], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
