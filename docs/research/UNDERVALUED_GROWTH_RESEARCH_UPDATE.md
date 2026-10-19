@@ -58,8 +58,8 @@ Automated XBRL extraction reported `total_financial_debt: null` for DUOL and ULT
   - Accrued expenses and other current liabilities: $55,364,000.
   - Deferred revenue: $505,102,000 (prepaid annual/family subscriptions).
   - Operating lease liabilities (ASC 842): $108,936,000 ($22.80M current + $86.14M non-current).
-  - Senior notes, credit facilities, bank debt: **$0.00**.
-- **Forensic Debt Finding & Qualification**: Form 10-Q (accession `0001628280-26-053603`) discloses accounts payable, accrued liabilities, deferred revenue, and operating leases, with no explicit line items for funded financial debt, senior notes, or credit facility draws. However, missing XBRL debt concepts alone do not definitively establish the total absence of debt or credit agreements without broader legal and credit agreement verification. Because primary XBRL omits funded debt tags, automated extraction preserves `total_financial_debt: null` (`UNAVAILABLE`) under fail-closed aggregate completeness rules.
+  - Senior notes, credit facilities, bank debt: No separately presented funded-debt or credit facility line item was identified on the condensed consolidated balance sheet.
+- **Forensic Debt Finding & Qualification**: Form 10-Q (accession `0001628280-26-053603`) discloses accounts payable, accrued liabilities, deferred revenue, and operating leases, with no separately presented funded debt or credit facility line items. Missing XBRL tags do not establish zero debt, and complete debt remains unestablished where evidence is insufficient. Because primary XBRL omits funded debt tags, automated extraction preserves `total_financial_debt: null` (`UNAVAILABLE`) under fail-closed aggregate completeness rules, and existing valuation suppression remains intact.
 - **Valuation Governance**: The DCF model remains officially **`SUPPRESSED_UNAVAILABLE`** in the product contract to prevent synthetic zero fabrication without upstream tag verification.
 
 ### B. Ulta Beauty, Inc. (ULTA — CIK 0001403568)
@@ -71,8 +71,8 @@ Automated XBRL extraction reported `total_financial_debt: null` for DUOL and ULT
   - Current liabilities — Short-term borrowings: **$339,578,000** ($339.58M drawn under revolving credit facility).
   - Current liabilities — Current operating lease liabilities: $312,625,000.
   - Non-current liabilities — Non-current operating lease liabilities: $1,871,805,000 ($1,871.81M).
-  - Non-current liabilities — Long-term debt: **$0.00** (no senior notes or debentures presented).
-- **Forensic Debt Finding & Qualification**: Form 10-Q reports current short-term borrowings of $339,578,000 ($339.58M drawn under its revolving credit facility) and noncurrent operating lease liabilities of $1,871,805,000 ($1,871.81M). No separate long-term debt line item is presented on the condensed consolidated balance sheet. However, the absence of an explicit long-term debt tag in primary XBRL does not certify that long-term borrowings are definitively $0.00 without primary footnote and debt agreement verification. Thus, automated extraction preserves `total_financial_debt: null` (`UNAVAILABLE`) under the fail-closed aggregate completeness rule, while reporting evidenced short-term borrowings.
+  - Non-current liabilities — Long-term debt: No separately presented long-term debt line item was identified on the condensed consolidated balance sheet.
+- **Forensic Debt Finding & Qualification**: Form 10-Q reports current short-term borrowings of $339,578,000 ($339.58M drawn under its revolving credit facility) and noncurrent operating lease liabilities of $1,871,805,000 ($1,871.81M). No separately presented long-term debt line item was identified on the condensed consolidated balance sheet. Missing XBRL tags do not establish zero debt, and complete debt remains unestablished where evidence is insufficient. Thus, automated extraction preserves `total_financial_debt: null` (`UNAVAILABLE`) under the fail-closed aggregate completeness rule, existing valuation suppression remains intact, while reporting evidenced short-term borrowings.
 - **Valuation Governance**: Officially **`SUPPRESSED_UNAVAILABLE`** in product contracts. Renders a dynamic partial-debt notice in the UI explaining that short-term credit line is reported while long-term XBRL tags are unavailable.
 
 ---
@@ -140,7 +140,7 @@ All metrics below are generated directly from the immutable research ledger (`so
 | Symbol | Cash & Equiv ($M) | Short-Term Debt ($M) | Long-Term Debt ($M) | Total Financial Debt | Lease Liabilities (ASC 842) ($M) | Automated XBRL Status | Primary Filing Finding |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
 | **FIX** | $1,854.8 | $0.22 | $53.85 | $54.06 | $315.8 | `DERIVED` | Funded debt $54.06M ($0.22M ST + $53.85M LT) derived from primary XBRL tags |
-| **DUOL** | $1,180.9 | *null* | *null* | **UNAVAILABLE** | $86.1 | `UNAVAILABLE` | Manual audit indicates zero funded debt line items; missing XBRL tags preserved as null |
+| **DUOL** | $1,180.9 | *null* | *null* | **UNAVAILABLE** | $86.1 | `UNAVAILABLE` | No separately presented funded debt line items identified; missing XBRL tags preserved as null |
 | **ULTA** | $158.45 | $339.58 | *null* | **UNAVAILABLE** | $1,871.8 | `UNAVAILABLE` | Manual audit indicates $339.58M ST credit facility, unpopulated LT debt tag; preserved null under aggregate rule |
 | **MEDP** | $502.7 | *null* | *null* | **UNAVAILABLE** | $144.1 | `UNAVAILABLE` | Debt concepts absent in primary XBRL taxonomy; preserved null under fail-closed rule |
 | **DECK** | $1,602.6 | *null* | *null* | **UNAVAILABLE** | $399.0 | `UNAVAILABLE` | Debt concepts absent in primary XBRL taxonomy; preserved null under fail-closed rule |
@@ -210,7 +210,7 @@ The 8 companies evaluated constitute an exploratory research pilot sample, not a
 ## 7. Conclusions & Research Limits
 
 1. **Facts-Only Separation**: Product-facing user interfaces strictly display attributable reported facts, explicit formulas, and evidence gap disclosures. All DCF valuation models, sensitivity bands, and investment recommendations are quarantined to research documents.
-2. **Preservation of Pipeline Invariants**: The automated pipeline strictly adheres to fail-closed aggregate completeness rules. Primary filing confirmations (such as DUOL's $0.00 funded debt) do not bypass automated XBRL schema gates in the product layer.
+2. **Preservation of Pipeline Invariants**: The automated pipeline strictly adheres to fail-closed aggregate completeness rules. Primary filing inspections (such as identifying no separately presented funded debt on DUOL's balance sheet) do not bypass automated XBRL schema gates or manufacture synthetic zero debt in the product layer.
 3. **Formal Research Verdict**: `SUPPORTED_WITH_LIMITATIONS`.
    - The reported financial facts, normalization arithmetic, and primary filing balance sheet reconciliations are verified and reproducible.
    - Intrinsic valuation models for DUOL and ULTA remain officially suppressed due to unresolved XBRL debt tags.

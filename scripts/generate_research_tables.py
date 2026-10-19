@@ -98,7 +98,7 @@ def generate_tables(ledger_path: Path = Path("analyst_dashboard/research/sourced
         if sym == "FIX":
             finding = "Funded debt $54.06M ($0.22M ST + $53.85M LT) derived from primary XBRL tags"
         elif sym == "DUOL":
-            finding = "Manual audit indicates zero funded debt line items; missing XBRL tags preserved as null"
+            finding = "No separately presented funded debt line items identified; missing XBRL tags preserved as null"
         elif sym == "ULTA":
             finding = "Manual audit indicates $339.58M ST credit facility, unpopulated LT debt tag; preserved null under aggregate rule"
         elif sym == "KLAC":
