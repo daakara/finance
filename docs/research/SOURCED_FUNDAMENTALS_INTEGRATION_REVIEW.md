@@ -1,10 +1,10 @@
 # ARX Terminal — Sourced Fundamentals Integration Pilot Review
 ## Technical Architecture, Data Contracts, Facts-Only UI Integration, and Isolated Verification
 
-**Document Version**: 2.0.0  
-**Implementation Branch**: `feat/sourced-fundamentals-integration-pilot`  
-**Base Commit**: `b816f773cfbc6481d28413e2758a362ac153e995` (PR #31 Mainline Release)  
-**Status**: `SOURCED_FUNDAMENTALS_FACTS_ONLY_INTEGRATION_AND_RESEARCH_CORRECTIONS_REVIEW_READY`  
+**Document Version**: 2.0.0
+**Implementation Branch**: `feat/sourced-fundamentals-integration-pilot`
+**Base Commit**: `b816f773cfbc6481d28413e2758a362ac153e995` (PR #31 Mainline Release)
+**Status**: `SOURCED_FUNDAMENTALS_FACTS_ONLY_INTEGRATION_AND_RESEARCH_CORRECTIONS_REVIEW_READY`
 
 ---
 

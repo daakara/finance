@@ -52,7 +52,7 @@ def generate_tables(ledger_path: Path = Path("analyst_dashboard/research/sourced
         shares_str = f"{shares/1e6:.2f}" if shares is not None else "N/A"
         price = (dv.get("current_price") if isinstance(dv, dict) else None) or dm.get("market_price")
         price_str = f"${price:.2f}" if price is not None else "N/A"
-        
+
         # Preserve distinct unavailable vs not evaluated vs suppressed states (8.B)
         if isinstance(dv, dict) and dv.get("valuation_status"):
             val_status = dv.get("valuation_status")
@@ -73,7 +73,7 @@ def generate_tables(ledger_path: Path = Path("analyst_dashboard/research/sourced
         c = companies[sym]
         dm = c.get("derived_metrics", {})
         facts = c.get("fundamentals", {}).get("facts", {})
-        
+
         cash = dm.get("cash_and_equivalents")
         cash_str = f"${cash/1e6:,.2f}" if (sym == "ULTA" and cash is not None) else (f"${cash/1e6:,.1f}" if cash is not None else "N/A")
         st = dm.get("short_term_debt")

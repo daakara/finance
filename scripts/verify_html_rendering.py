@@ -12,7 +12,7 @@ from pathlib import Path
 
 def check_html():
     stock_dir = Path("frontend/.next/server/app/stock")
-    
+
     # 1. FIX
     fix_path = stock_dir / "fix.html"
     assert fix_path.exists(), "fix.html does not exist"

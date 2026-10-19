@@ -804,4 +804,3 @@ def test_17_r1_dynamic_normalization_engine_and_ledger_adapter():
     assert incomplete["status"] == "INCOMPLETE"
     assert "Missing required financial inputs" in incomplete["error"]
     assert incomplete["sustainable_cash_flow_millions"] is None
-

@@ -31,7 +31,7 @@ def calculate_fix_normalized_cash_flow(
     """
     Computes illustrative sustainable run-rate cash flow from reported ledger inputs
     and versioned analyst assumptions.
-    
+
     Inputs (in raw USD):
     - ebit_raw: e.g. 1,849,302,000.0 ($1,849.30M)
     - effective_tax_rate_pct: e.g. 21.93106 (%)

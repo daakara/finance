@@ -1,11 +1,11 @@
 # ARX Terminal — Undervalued-Growth Research Update
 ## Authoritative Ledger Reconciliation, Cash Flow Normalization, and 8-Company Financial Evidence Audit
 
-**Document Version**: 2.1.0  
-**Research Cutoff Date**: 2026-10-19  
-**Baseline Commit**: `b816f773cfbc6481d28413e2758a362ac153e995` (PR #31 Mainline Release)  
-**Status**: `RESEARCH_CORRECTIONS_LOCAL_REVIEW_READY`  
-**Classification**: Bound Research & Financial Evidence Artifact  
+**Document Version**: 2.1.0
+**Research Cutoff Date**: 2026-10-19
+**Baseline Commit**: `b816f773cfbc6481d28413e2758a362ac153e995` (PR #31 Mainline Release)
+**Status**: `RESEARCH_CORRECTIONS_LOCAL_REVIEW_READY`
+**Classification**: Bound Research & Financial Evidence Artifact
 
 ---
 
