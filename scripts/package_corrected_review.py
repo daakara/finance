@@ -45,6 +45,8 @@ REQUIRED_FILES = [
     "docs/research/screenshots/unobscured_viewport_aapl_mobile.png",
 
     # Backend Service & Data Layer
+    "analyst_dashboard/research/sourced_fundamentals/identity.py",
+    "analyst_dashboard/research/sourced_fundamentals/normalization.py",
     "analyst_dashboard/research/sourced_fundamentals/service.py",
     "analyst_dashboard/research/sourced_fundamentals/sourced_fundamentals_ledger.json",
     "api/routes/fundamentals.py",
@@ -58,10 +60,13 @@ REQUIRED_FILES = [
     "scripts/capture_unobscured_screenshots.py",
     "scripts/export_frontend_fundamentals.py",
     "scripts/generate_research_tables.py",
+    "scripts/verify_html_rendering.py",
     "tests/test_fundamentals_api.py",
+    "tests/test_sourced_fundamentals_pilot.py",
 ]
 
-ARCHIVE_NAME = "sourced_fundamentals_integration_corrected_review_package.zip"
+ARCHIVE_NAME = "sourced_fundamentals_integration_targeted_closure_review_package.zip"
+LEGACY_ARCHIVE_NAME = "sourced_fundamentals_integration_corrected_review_package.zip"
 
 
 def sha256_file(path: Path) -> str:
@@ -105,7 +110,10 @@ def main():
     archive_size = archive_path.stat().st_size
     archive_hash = sha256_file(archive_path)
 
-    print(f"\n[SUCCESS] Successfully created '{ARCHIVE_NAME}'")
+    import shutil
+    shutil.copyfile(archive_path, Path(LEGACY_ARCHIVE_NAME))
+
+    print(f"\n[SUCCESS] Successfully created '{ARCHIVE_NAME}' (and '{LEGACY_ARCHIVE_NAME}')")
     print(f"Archive Size: {archive_size} bytes")
     print(f"Archive SHA-256: {archive_hash}")
 
