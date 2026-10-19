@@ -29,10 +29,10 @@ This command:
 8. Automatically triggers `report_generator.py` to regenerate all Markdown deliverables with 100% numerical parity.
 
 ## 3. Running Automated Tests
-To execute the 17-scenario failure-reproducing test suite:
+To execute the 23-scenario failure-reproducing test suite:
 
 ```bash
 python -m pytest tests/test_sourced_fundamentals_pilot.py -v
 ```
 
-All 17 tests verify duration extraction, split normalization, bracketing, report parity, and offline execution with network egress disabled.
+All 23 tests verify duration extraction, split normalization, bracketing, report parity, aggregate completeness, share duration discrimination, evidence-responsive valuation suppression, conflicting observations handling, cutoff enforcement, and offline execution with network egress disabled.
