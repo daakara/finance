@@ -34,6 +34,8 @@ import tempfile
 import pytest
 from datetime import datetime
 
+pytestmark = pytest.mark.tier2c
+
 from analyst_dashboard.research.sourced_fundamentals.contracts import (
     FinancialFact,
     CompanyFundamentals,
@@ -1300,6 +1302,18 @@ def test_31_cumulative_patch_application_against_base():
         cwd=repo_root,
         capture_output=True
     )
+    if base_check.returncode != 0:
+        # In CI shallow clones (fetch-depth=1), attempt to fetch the base commit from origin
+        subprocess.run(
+            ["git", "fetch", "--depth=1", "origin", base_sha],
+            cwd=repo_root,
+            capture_output=True
+        )
+        base_check = subprocess.run(
+            ["git", "cat-file", "-e", f"{base_sha}^{{commit}}"],
+            cwd=repo_root,
+            capture_output=True
+        )
     if base_check.returncode != 0:
         pytest.skip(f"Base commit {base_sha} not present in repository history; application check requires base commit object.")
 
