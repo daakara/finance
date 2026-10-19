@@ -251,8 +251,28 @@ def evaluate_deep_valuation_fix(
     current_price = metrics.market_price
 
     if rev is None or shares is None or net_bridge is None or current_price is None:
-        logger.warning("FIX deep valuation skipped: critical valuation inputs missing")
-        return None
+        missing_reasons = []
+        if rev is None: missing_reasons.append("revenue_ttm unavailable")
+        if shares is None: missing_reasons.append("diluted_shares_weighted_avg unavailable")
+        if net_bridge is None: missing_reasons.append("net_debt unavailable")
+        if current_price is None: missing_reasons.append("market_price unavailable")
+        logger.warning(f"FIX deep valuation suppressed: {', '.join(missing_reasons)}")
+        return DeepValuationAssessment(
+            symbol="FIX",
+            framework_used="FCFF (Enterprise to Equity DCF, Lease-as-Operating-Expense Convention)",
+            current_price=current_price or 0.0,
+            current_price_date=metrics.market_price_date or "2026-10-16",
+            current_market_cap=round(metrics.market_cap or ((current_price or 0.0) * (shares or 0.0)), 2),
+            diluted_shares=shares or 0.0,
+            scenarios={},
+            reverse_dcf_implied_5y_growth_pct=None,
+            reverse_dcf_fixed_assumptions={"solution_status": "CRITICAL_INPUTS_UNAVAILABLE"},
+            sensitivity_matrix={},
+            thesis_invalidation_thresholds=[],
+            next_quarter_evidence_milestones=[],
+            valuation_status="SUPPRESSED_UNAVAILABLE",
+            suppression_reason=f"Critical valuation inputs unavailable: {', '.join(missing_reasons)}"
+        )
 
     tax_rate = 22.0
     reinvest = 15.0
@@ -333,7 +353,7 @@ def evaluate_deep_valuation_fix(
             "Base": b_scenario,
             "Optimistic": o_scenario,
         },
-        reverse_dcf_implied_5y_growth_pct=rev_growth if rev_growth is not None else 0.0,
+        reverse_dcf_implied_5y_growth_pct=rev_growth,
         reverse_dcf_fixed_assumptions={
             "solved_variable": "5-year Revenue CAGR",
             "operating_margin_target_pct": 15.0,
@@ -355,7 +375,9 @@ def evaluate_deep_valuation_fix(
             "Quarterly backlog growth rate and percentage of backlog dedicated to tech/institutional sectors.",
             "Gross margin stability in modular construction and mechanical contracting segments.",
             "Working capital cash conversion and billing in excess of costs reconciliation.",
-        ]
+        ],
+        valuation_status="AVAILABLE",
+        suppression_reason=None,
     )
 
 
@@ -370,8 +392,46 @@ def evaluate_deep_valuation_duol(
     current_price = metrics.market_price
 
     if rev is None or shares is None or net_bridge is None or current_price is None:
-        logger.warning("DUOL deep valuation skipped: critical valuation inputs missing")
-        return None
+        logger.warning("DUOL deep valuation suppressed: critical inputs unavailable (net_debt is None)")
+        return DeepValuationAssessment(
+            symbol="DUOL",
+            framework_used="FCFF (Enterprise to Equity DCF, Lease-as-Operating-Expense Convention)",
+            current_price=current_price or 0.0,
+            current_price_date=metrics.market_price_date or "2026-10-16",
+            current_market_cap=round(metrics.market_cap or ((current_price or 0.0) * (shares or 0.0)), 2),
+            diluted_shares=shares or 0.0,
+            scenarios={},
+            reverse_dcf_implied_5y_growth_pct=None,
+            reverse_dcf_fixed_assumptions={
+                "solved_variable": "5-year Revenue CAGR",
+                "operating_margin_target_pct": 18.0,
+                "wacc_pct": 10.0,
+                "terminal_growth_pct": 3.0,
+                "effective_tax_rate_pct": 21.0,
+                "reinvestment_rate_pct": 10.0,
+                "net_debt_bridge_usd": None,
+                "solution_status": "SUPPRESSED_NET_DEBT_UNAVAILABLE",
+            },
+            sensitivity_matrix={},
+            thesis_invalidation_thresholds=[
+                "Daily Active User (DAU) or Paid Subscriber YoY growth decelerating below 15%.",
+                "Stock-based compensation expanding beyond 15% of total revenues without corresponding operating leverage.",
+                "Gross margin dropping below 70% driven by escalating third-party LLM API inference fees.",
+                "Material erosion of Duolingo English Test (DET) institutional acceptance rate.",
+            ],
+            next_quarter_evidence_milestones=[
+                "Duolingo Max conversion rate as percentage of total paid subscribers.",
+                "SBC / Revenue trajectory and net annual share dilution moderation.",
+                "Primary source disclosure of long-term debt or credit agreements in 10-Q footnotes.",
+            ],
+            valuation_status="SUPPRESSED_UNAVAILABLE",
+            suppression_reason=(
+                "Total financial debt is UNAVAILABLE in SEC EDGAR XBRL (neither DebtLongtermAndShorttermCombinedAmount nor Debt "
+                "concepts reported, and no current/noncurrent debt components found). Under aggregate completeness rules, "
+                "missing debt cannot be assumed to be 0.0 without primary filing evidence. "
+                "Without verified total financial debt, net debt bridge cannot be established; deep DCF valuation is suppressed."
+            )
+        )
 
     tax_rate = 21.0
     reinvest = 10.0  # Asset-light software model
@@ -452,7 +512,7 @@ def evaluate_deep_valuation_duol(
             "Base": b_scenario,
             "Optimistic": o_scenario,
         },
-        reverse_dcf_implied_5y_growth_pct=rev_growth if rev_growth is not None else 0.0,
+        reverse_dcf_implied_5y_growth_pct=rev_growth,
         reverse_dcf_fixed_assumptions={
             "solved_variable": "5-year Revenue CAGR",
             "operating_margin_target_pct": 18.0,
@@ -474,7 +534,9 @@ def evaluate_deep_valuation_duol(
             "Duolingo Max conversion rate as percentage of total paid subscribers.",
             "SBC / Revenue trajectory and net annual share dilution moderation.",
             "DAU-to-MAU engagement ratio stability across international non-English geographies.",
-        ]
+        ],
+        valuation_status="AVAILABLE",
+        suppression_reason=None,
     )
 
 
@@ -489,8 +551,46 @@ def evaluate_deep_valuation_ulta(
     current_price = metrics.market_price
 
     if rev is None or shares is None or net_bridge is None or current_price is None:
-        logger.warning("ULTA deep valuation skipped: critical valuation inputs missing")
-        return None
+        logger.warning("ULTA deep valuation suppressed: critical inputs unavailable (net_debt is None)")
+        return DeepValuationAssessment(
+            symbol="ULTA",
+            framework_used="FCFF (Enterprise to Equity DCF, Lease-as-Operating-Expense Convention)",
+            current_price=current_price or 0.0,
+            current_price_date=metrics.market_price_date or "2026-10-16",
+            current_market_cap=round(metrics.market_cap or ((current_price or 0.0) * (shares or 0.0)), 2),
+            diluted_shares=shares or 0.0,
+            scenarios={},
+            reverse_dcf_implied_5y_growth_pct=None,
+            reverse_dcf_fixed_assumptions={
+                "solved_variable": "5-year Revenue CAGR",
+                "operating_margin_target_pct": 12.0,
+                "wacc_pct": 9.0,
+                "terminal_growth_pct": 2.0,
+                "effective_tax_rate_pct": 23.5,
+                "reinvestment_rate_pct": 20.0,
+                "net_debt_bridge_usd": None,
+                "solution_status": "SUPPRESSED_NET_DEBT_UNAVAILABLE",
+            },
+            sensitivity_matrix={},
+            thesis_invalidation_thresholds=[
+                "Comparable store sales (comps) turning negative for two consecutive quarters.",
+                "Operating margin falling below 10.0% due to persistent industry promotional battles.",
+                "Decline in active Ultamate Rewards loyalty member count or spend-per-member.",
+                "Inventory turnover degradation leading to substantial merchandise inventory write-downs.",
+            ],
+            next_quarter_evidence_milestones=[
+                "Comparable store sales breakdown (transactions vs average ticket).",
+                "Merchandise margin versus supply chain costs commentary.",
+                "Pace of share repurchases relative to free cash flow generation.",
+            ],
+            valuation_status="SUPPRESSED_UNAVAILABLE",
+            suppression_reason=(
+                "Total financial debt is UNAVAILABLE due to incomplete component reporting in SEC EDGAR XBRL (reported "
+                "ShortTermBorrowings of $339.6M without noncurrent debt component). Partial debt cannot be presented as total debt "
+                "under aggregate completeness rules. Without verified total financial debt, net debt bridge cannot be established; "
+                "deep DCF valuation is suppressed."
+            )
+        )
 
     tax_rate = 23.5
     reinvest = 20.0
@@ -571,7 +671,7 @@ def evaluate_deep_valuation_ulta(
             "Base": b_scenario,
             "Optimistic": o_scenario,
         },
-        reverse_dcf_implied_5y_growth_pct=rev_growth if rev_growth is not None else 0.0,
+        reverse_dcf_implied_5y_growth_pct=rev_growth,
         reverse_dcf_fixed_assumptions={
             "solved_variable": "5-year Revenue CAGR",
             "operating_margin_target_pct": 12.0,
@@ -593,5 +693,7 @@ def evaluate_deep_valuation_ulta(
             "Comparable store sales breakdown (transactions vs average ticket).",
             "Merchandise margin versus supply chain costs commentary.",
             "Pace of share repurchases relative to free cash flow generation.",
-        ]
+        ],
+        valuation_status="AVAILABLE",
+        suppression_reason=None,
     )

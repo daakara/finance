@@ -1,6 +1,6 @@
 # SOURCED FUNDAMENTALS IMPLEMENTATION & HANDOFF RECORD
 
-**Workstream Status**: `SOURCED_FUNDAMENTALS_CORRECTIONS_AND_OFFLINE_REPLAY_LOCAL_VERIFIED`  
+**Workstream Status**: `SOURCED_FUNDAMENTALS_EVIDENCE_HANDLING_AND_REPLAY_REVIEW_READY`  
 **Date**: October 19, 2026  
 **Repository**: `daakara/finance`  
 **Worktree**: `C:\Users\akara\Documents\Projects\finance-sourced-fundamentals-pilot`  
@@ -20,8 +20,11 @@ All code lives in an isolated module under `analyst_dashboard/research/sourced_f
 3. **Lease-as-Operating-Expense Valuation Framework**: Operating lease obligations are evaluated under a consistent convention where leases are expensed in operating earnings, preventing double-counting of lease liabilities in the net debt bridge.
 4. **Corporate Action Normalization**: Multi-year share dilution comparisons explicitly account for forward splits (`DECK` 6:1 split on Sep 13, 2024; `CELH` 3:1 split on Nov 15, 2023; `KLAC` 10:1 split in 2026). Split multipliers are applied only to pre-split filings, eliminating phantom dilution spikes while avoiding double adjustment on restated observations.
 5. **Reverse-DCF Target Bracketing & Roundtrip Verification**: Reverse-DCF solves for 5-year Revenue CAGR ($g$) with target bracketing verification. Target prices outside reasonable bounds return explicit `None` instead of boundary artifacts. Solved CAGRs are validated via forward-model roundtrip check ($|DCF - target| < $0.05).
-6. **Programmatic Report Parity**: All markdown tables and analytical reports are generated directly from `sourced_fundamentals_ledger.json`, eliminating human transcription errors and report/model divergence.
-7. **Complete Offline Replay**: Primary SEC JSONs and dated market prices are retained in `data/research/sourced_fundamentals/raw/` with a cryptographic `manifest.json` ledger. The entire research package executes in `--offline` mode with zero network requests.
+6. **Aggregate Completeness & Missing-Data Propagation**: Disallows partial debt sum-to-total and removes ticker whitelisting. Missing debt propagates to net debt, EV, and suppresses deep valuations with explicit diagnostic reasons.
+7. **Denominator Semantics**: Explicitly discriminates between period-weighted diluted shares for flow items (EPS, CFO-Capex per share) and point-in-time common shares for market cap.
+8. **Intra-filing Conflict Detection & Restatement Precedence**: Detects identical metadata conflicts returning `UNAVAILABLE`, and respects amendment/restatement precedence deterministically.
+9. **Programmatic Report Parity**: All markdown tables and analytical reports are generated directly from `sourced_fundamentals_ledger.json`, eliminating human transcription errors and report/model divergence.
+10. **Complete Offline Replay**: Primary SEC JSONs and dated market prices are retained in `data/research/sourced_fundamentals/raw/` with a cryptographic `manifest.json` ledger. The entire research package executes in `--offline` mode with zero network requests.
 
 ---
 
@@ -31,16 +34,16 @@ All code lives in an isolated module under `analyst_dashboard/research/sourced_f
 | :--- | :--- | :---: |
 | `analyst_dashboard/research/sourced_fundamentals/contracts.py` | Immutable data contracts: `FinancialFact`, `CompanyFundamentals`, `DerivedMetrics`, `ResearchAssessmentRecord`, `ValuationScenario`, `DeepValuationAssessment`. | Verified |
 | `analyst_dashboard/research/sourced_fundamentals/sec_harvester.py` | Rate-limited SEC EDGAR API harvester and offline replay loader with SHA-256 manifest generation. | Verified |
-| `analyst_dashboard/research/sourced_fundamentals/normalizer.py` | Duration-validated US-GAAP concept mapper, fiscal boundary matcher, and instant balance-sheet fact extractor. | Verified |
+| `analyst_dashboard/research/sourced_fundamentals/normalizer.py` | Duration-validated US-GAAP concept mapper, conflict detector, amendment precedence resolver, and instant fact extractor. | Verified |
 | `analyst_dashboard/research/sourced_fundamentals/calculations.py` | Derived metrics engine: growth, margins, non-GAAP CFO - Capex, ROIC, multiples, and arithmetic verification. | Verified |
-| `analyst_dashboard/research/sourced_fundamentals/qualitative_assessor.py` | Dynamic qualitative assessment engine assigning dispositions (`RESEARCH_FURTHER`, `WATCH`) and thesis invalidation conditions. | Verified |
+| `analyst_dashboard/research/sourced_fundamentals/qualitative_assessor.py` | Dynamic qualitative assessment engine assigning dispositions (`RESEARCH_FURTHER`, `WATCH`, `INSUFFICIENT_EVIDENCE`) and thesis invalidation conditions. | Verified |
 | `analyst_dashboard/research/sourced_fundamentals/valuation.py` | FCFF multi-scenario DCF engine, numerical Reverse-DCF solver with bracketing, and 2D sensitivity matrix generator. | Verified |
-| `analyst_dashboard/research/sourced_fundamentals/cli.py` | CLI orchestrator supporting `--offline` and `--refresh` modes, split-normalized dilution, and evidence ledger export. | Verified |
+| `analyst_dashboard/research/sourced_fundamentals/cli.py` | CLI orchestrator supporting `--offline`, `--refresh`, and `--cutoff-date`, split-normalized dilution, and evidence ledger export. | Verified |
 | `analyst_dashboard/research/sourced_fundamentals/report_generator.py` | Programmatic Markdown deliverable generator reading directly from `sourced_fundamentals_ledger.json`. | Verified |
 | `analyst_dashboard/research/sourced_fundamentals/__init__.py` | Package entrypoint exposing clean public interfaces. | Verified |
 | `data/research/sourced_fundamentals/raw/manifest.json` | Provenance manifest tracking raw SEC JSONs, URLs, timestamps, and SHA-256 hashes. | Verified |
 | `data/research/sourced_fundamentals/sourced_fundamentals_ledger.json` | Master JSON evidence ledger containing complete facts, derivations, assessments, and deep valuations for 8 companies. | Verified |
-| `tests/test_sourced_fundamentals_pilot.py` | Comprehensive 17-scenario failure-reproducing test suite verifying duration selection, split adjustments, reverse DCF, and offline replay. | Verified |
+| `tests/test_sourced_fundamentals_pilot.py` | Comprehensive 23-scenario failure-reproducing test suite verifying duration selection, split adjustments, reverse DCF, aggregate completeness, and offline replay. | Verified |
 
 ---
 

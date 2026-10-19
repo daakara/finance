@@ -40,15 +40,33 @@ def assess_company(cf: CompanyFundamentals, metrics: DerivedMetrics) -> Research
     sym = cf.symbol
     gaps = list(cf.data_gaps)
 
+    # Fail closed with INSUFFICIENT_EVIDENCE if critical financial facts are missing
+    if metrics.revenue_ttm is None or metrics.diluted_shares_weighted_avg is None:
+        return ResearchAssessmentRecord(
+            symbol=sym,
+            disposition=ResearchDisposition.INSUFFICIENT_EVIDENCE,
+            disposition_rationale=f"Critical financial facts missing for {sym} (revenue_ttm or diluted shares unavailable in primary filings).",
+            growth_durability="Unknown — critical top-line facts unevidenced.",
+            reinvestment_economics="Unknown — cash flow or operating income unevidenced.",
+            shareholder_outcomes="Unknown — per-share participation cannot be computed.",
+            balance_sheet_resilience="Unknown — balance sheet facts unevidenced.",
+            valuation_uncertainty="High — valuation cannot be computed without primary revenue and shares.",
+            evidence_sufficiency="Incomplete — missing essential SEC XBRL tags.",
+            thesis_invalidation_conditions=["Lack of verified primary source evidence in SEC filings."],
+            specific_next_evidence_to_monitor=["Primary 10-K/10-Q filing availability."],
+            remaining_evidence_gaps=gaps or ["Essential financial statements required."]
+        )
+
     # Helper format strings
     rev_str = _fmt(metrics.revenue_ttm, divisor=1e9)
     growth_str = f"{metrics.revenue_growth_yoy_pct:.1f}%" if metrics.revenue_growth_yoy_pct is not None else "N/A"
     ebit_margin_str = f"{metrics.operating_margin_pct:.1f}%" if metrics.operating_margin_pct is not None else "N/A"
     fcf_str = _fmt(metrics.cfo_minus_capex_ttm, divisor=1e9 if (metrics.cfo_minus_capex_ttm or 0) >= 1e9 else 1e6)
     conv_str = f"{metrics.fcf_conversion_ebit_pct:.1f}%" if metrics.fcf_conversion_ebit_pct is not None else "N/A"
-    net_debt_str = _fmt(metrics.net_debt, divisor=1e9 if abs(metrics.net_debt or 0) >= 1e9 else 1e6)
-    cash_str = _fmt(metrics.total_cash_and_investments, divisor=1e9 if (metrics.total_cash_and_investments or 0) >= 1e9 else 1e6)
-    debt_str = _fmt(metrics.total_financial_debt, divisor=1e6 if (metrics.total_financial_debt or 0) < 1e9 else 1e9)
+    net_debt_str = _fmt(metrics.net_debt, divisor=1e9 if abs(metrics.net_debt or 0) >= 1e9 else 1e6) if metrics.net_debt is not None else "UNAVAILABLE"
+    effective_cash = metrics.total_cash_and_investments if metrics.total_cash_and_investments is not None else metrics.cash_and_equivalents
+    cash_str = _fmt(effective_cash, divisor=1e9 if (effective_cash or 0) >= 1e9 else 1e6)
+    debt_str = _fmt(metrics.total_financial_debt, divisor=1e6 if (metrics.total_financial_debt or 0) < 1e9 else 1e9) if metrics.total_financial_debt is not None else "UNAVAILABLE"
     dil_1y_str = f"{metrics.share_dilution_1y_pct:+.2f}%" if metrics.share_dilution_1y_pct is not None else "N/A"
     dil_3y_str = f"{metrics.share_dilution_3y_pct:+.2f}%" if metrics.share_dilution_3y_pct is not None else "N/A"
 
@@ -57,7 +75,7 @@ def assess_company(cf: CompanyFundamentals, metrics: DerivedMetrics) -> Research
             symbol="FIX",
             disposition=ResearchDisposition.RESEARCH_FURTHER,
             disposition_rationale=(
-                f"Operational momentum supported by multi-year secular tailwinds in data center "
+                f"Selected Case Study: Operational momentum supported by multi-year secular tailwinds in data center "
                 f"thermal cooling and electrical infrastructure. TTM revenue reached {rev_str} (+{growth_str} YoY) "
                 f"with operating margins expanding to {ebit_margin_str}. Generates robust non-GAAP free cash flow "
                 f"({fcf_str} CFO minus Capex, {conv_str} EBIT conversion) supported by customer prepayments and billings in excess of costs. "
@@ -79,7 +97,7 @@ def assess_company(cf: CompanyFundamentals, metrics: DerivedMetrics) -> Research
                 "selective accretive bolt-on acquisitions, and negative net share dilution."
             ),
             balance_sheet_resilience=(
-                f"Exceptional liquidity: holds {cash_str} in total cash and investments against just {debt_str} in debt, "
+                f"Exceptional liquidity: holds {cash_str} in cash and equivalents against just {debt_str} in debt, "
                 "providing an immense liquidity cushion against construction cyclicality or project delays."
             ),
             valuation_uncertainty=(
@@ -113,11 +131,12 @@ def assess_company(cf: CompanyFundamentals, metrics: DerivedMetrics) -> Research
             symbol="DUOL",
             disposition=ResearchDisposition.RESEARCH_FURTHER,
             disposition_rationale=(
-                f"Digital consumer subscription model displaying +{growth_str} YoY revenue growth ({rev_str} TTM) "
+                f"Selected Case Study: Digital consumer subscription model displaying +{growth_str} YoY revenue growth ({rev_str} TTM) "
                 f"and expanding operating margins ({ebit_margin_str}). Software economics generate {fcf_str} "
                 f"in CFO minus Capex ({conv_str} EBIT conversion due to upfront deferred subscription billings). "
-                f"Holds {cash_str} in liquid cash with zero debt ({net_debt_str} net debt). However, stock-based "
-                f"compensation ({sbc_str} TTM, {sbc_pct_str} of revenue) produces net share dilution ({dil_1y_str} 1Y) "
+                f"Liquid reserves hold {cash_str}; financial debt concepts are UNAVAILABLE in SEC XBRL (net debt is UNAVAILABLE; "
+                f"debt-free status cannot be asserted from primary XBRL tags alone). Forward DCF valuation is suppressed under completeness rules. "
+                f"Stock-based compensation ({sbc_str} TTM, {sbc_pct_str} of revenue) produces net share dilution ({dil_1y_str} 1Y) "
                 "that must be scrutinized against true owner earnings."
             ),
             growth_durability=(
@@ -133,15 +152,16 @@ def assess_company(cf: CompanyFundamentals, metrics: DerivedMetrics) -> Research
                 "dilution that reduces per-share economic participation."
             ),
             balance_sheet_resilience=(
-                f"Fortress software balance sheet: {cash_str} in cash and short-term investments with zero financial debt."
+                f"Liquid software balance sheet: {cash_str} in cash and short-term investments; total financial debt is unevidenced "
+                "in XBRL tags, requiring footnote inspection before leverage or net cash can be asserted."
             ),
             valuation_uncertainty=(
                 "Trading at premium multiples of revenue and earnings. High valuation sensitivity to "
-                "subscriber growth deceleration or generative AI app competition."
+                "subscriber growth deceleration or generative AI app competition. DCF valuation suppressed due to unavailable debt."
             ),
             evidence_sufficiency=(
-                "Complete SEC XBRL filings through Q2 2026. Detailed paid subscriber cohorts and ARPU "
-                "disclosures in earnings calls require continuous tracking."
+                "Complete SEC XBRL filings through Q2 2026 for operating statements. Critical evidence gap: financial debt concepts "
+                "are unavailable in XBRL tags, suppressing full DCF equity bridge calculations."
             ),
             thesis_invalidation_conditions=[
                 "Daily Active User (DAU) or Paid Subscriber YoY growth decelerating below 15%.",
@@ -152,10 +172,11 @@ def assess_company(cf: CompanyFundamentals, metrics: DerivedMetrics) -> Research
             specific_next_evidence_to_monitor=[
                 "Duolingo Max conversion rate and percentage of total paid subscribers.",
                 "SBC-to-revenue trajectory and net annual share dilution moderation.",
-                "DAU-to-MAU engagement ratio stability across international geographies.",
+                "Primary source disclosure of long-term debt or credit agreements in 10-Q footnotes.",
             ],
             remaining_evidence_gaps=[
-                "Detailed gross margins and API inference costs specific to the Duolingo Max GenAI features."
+                "Detailed gross margins and API inference costs specific to the Duolingo Max GenAI features.",
+                "Primary filing confirmation of credit facilities or off-balance sheet debt obligations."
             ]
         )
 
@@ -164,11 +185,12 @@ def assess_company(cf: CompanyFundamentals, metrics: DerivedMetrics) -> Research
             symbol="ULTA",
             disposition=ResearchDisposition.RESEARCH_FURTHER,
             disposition_rationale=(
-                f"Omnichannel beauty specialty retailer with steady growth ({growth_str} YoY, {rev_str} TTM) "
+                f"Selected Case Study: Omnichannel beauty specialty retailer with steady growth ({growth_str} YoY, {rev_str} TTM) "
                 f"and healthy operating profitability ({ebit_margin_str} EBIT margin). Generates {fcf_str} in CFO minus Capex. "
-                f"Net financial debt is modest at {net_debt_str}. Strong capital return track record via share repurchases "
-                f"({dil_1y_str} 1Y, {dil_3y_str} 3Y dilution). Offers attractive GARP characteristics if comparable-store "
-                "sales stabilize against promotional mass-retail competition."
+                f"Balance sheet reports {debt_str} in short-term borrowings, but noncurrent debt is unevidenced in XBRL, making "
+                f"total financial debt and net debt UNAVAILABLE under aggregate completeness rules; forward DCF valuation is suppressed. "
+                f"Strong capital return track record via share repurchases ({dil_1y_str} 1Y, {dil_3y_str} 3Y dilution). "
+                "Offers attractive GARP characteristics if comparable-store sales stabilize against promotional mass-retail competition."
             ),
             growth_durability=(
                 "Expansive loyalty program (Ultamate Rewards 44M+ active members) accounts for >95% of sales. "
@@ -183,16 +205,17 @@ def assess_company(cf: CompanyFundamentals, metrics: DerivedMetrics) -> Research
                 "accreting earnings per share even during periods of moderate top-line growth."
             ),
             balance_sheet_resilience=(
-                f"Sound liquidity with {cash_str} in cash/investments against {debt_str} in short-term borrowings. "
+                f"Sound liquidity with {cash_str} in cash against {debt_str} in reported short-term borrowings; "
+                "long-term debt is unevidenced in XBRL tags, so total debt and net debt cannot be verified from primary XBRL tags alone. "
                 "Significant operating lease obligations (~$2.18B) require ongoing store-level EBITDA generation."
             ),
             valuation_uncertainty=(
                 "Moderated multiples relative to historical retail peer averages; downside risk centers on gross margin "
-                "compression from price competition and promotional beauty discounting."
+                "compression from price competition and promotional beauty discounting. DCF valuation suppressed due to incomplete debt."
             ),
             evidence_sufficiency=(
-                "Authoritative primary 10-Q and 10-K filings available through Q2 2026. Comparable store sales "
-                "breakdowns are disclosed in earnings releases."
+                "Authoritative primary 10-Q and 10-K filings available through Q2 2026. Critical evidence gap: incomplete debt components "
+                "in XBRL (short-term borrowings reported without noncurrent debt component) suppress total debt derivation and DCF equity bridge."
             ),
             thesis_invalidation_conditions=[
                 "Comparable store sales turning negative for two consecutive quarters.",
@@ -206,7 +229,8 @@ def assess_company(cf: CompanyFundamentals, metrics: DerivedMetrics) -> Research
                 "Pace of share repurchases relative to free cash flow generation.",
             ],
             remaining_evidence_gaps=[
-                "Store-level profitability distribution between strip-center and enclosed mall locations."
+                "Store-level profitability distribution between strip-center and enclosed mall locations.",
+                "Primary filing confirmation of noncurrent credit facility balances."
             ]
         )
 
@@ -217,8 +241,8 @@ def assess_company(cf: CompanyFundamentals, metrics: DerivedMetrics) -> Research
             disposition_rationale=(
                 f"Full-service Phase I-IV clinical contract research organization (CRO) delivering +{growth_str} YoY revenue growth "
                 f"({rev_str} TTM) with superior operating margins ({ebit_margin_str}). Cash flow generation is strong ({fcf_str} "
-                f"CFO minus Capex, {conv_str} EBIT conversion). Robust net cash position ({net_debt_str}) with zero debt. "
-                f"Steady share repurchase execution has reduced shares by {dil_3y_str} over 3 years."
+                f"CFO minus Capex, {conv_str} EBIT conversion). Liquid reserves hold {cash_str}; financial debt concepts are unevidenced "
+                f"in XBRL tags (total debt and net debt unavailable). Steady share repurchase execution has reduced shares by {dil_3y_str} over 3 years."
             ),
             growth_durability=(
                 "Specialization in small to mid-sized biopharma companies provides pricing power and sticky relationships. "
@@ -231,7 +255,7 @@ def assess_company(cf: CompanyFundamentals, metrics: DerivedMetrics) -> Research
                 "Management prioritizes opportunistic share repurchases and maintains zero debt, delivering strong per-share compounding."
             ),
             balance_sheet_resilience=(
-                f"Fortress balance sheet: holds {cash_str} in cash and equivalents with zero debt."
+                f"Liquid service model: holds {cash_str} in cash and equivalents; financial debt concepts are unevidenced in primary XBRL tags."
             ),
             valuation_uncertainty=(
                 "Valuation reflects premium CRO quality; vulnerable to sustained macro downturns in venture biopharma funding."
@@ -259,7 +283,8 @@ def assess_company(cf: CompanyFundamentals, metrics: DerivedMetrics) -> Research
             disposition=ResearchDisposition.WATCH,
             disposition_rationale=(
                 f"Footwear innovator powered by HOKA and UGG brands. Revenue reached {rev_str} (+{growth_str} YoY) with "
-                f"{ebit_margin_str} operating margin and {fcf_str} CFO minus Capex. Fortress net cash of {net_debt_str}. "
+                f"{ebit_margin_str} operating margin and {fcf_str} CFO minus Capex. Liquid reserves hold {cash_str}; "
+                f"financial debt concepts are unevidenced in XBRL tags (total debt and net debt unavailable). "
                 f"3-year share dilution is {dil_3y_str} when properly normalized for the 6-for-1 forward stock split on Sep 13, 2024. "
                 "Maintained on WATCH due to channel inventory normalization and brand maturity considerations."
             ),
@@ -274,7 +299,7 @@ def assess_company(cf: CompanyFundamentals, metrics: DerivedMetrics) -> Research
                 "Management has executed continuous share repurchases, shrinking the split-adjusted share count over 3 years."
             ),
             balance_sheet_resilience=(
-                f"Impeccable balance sheet: {cash_str} in cash with zero financial debt."
+                f"Liquid balance sheet: holds {cash_str} in cash; financial debt concepts are unevidenced in primary XBRL tags."
             ),
             valuation_uncertainty=(
                 "Trading at full valuation multiples; deceleration in HOKA wholesale sell-through could prompt multiple compression."
@@ -346,7 +371,8 @@ def assess_company(cf: CompanyFundamentals, metrics: DerivedMetrics) -> Research
             disposition=ResearchDisposition.WATCH,
             disposition_rationale=(
                 f"Athletic apparel compounder generating {rev_str} in TTM revenue (+{growth_str} YoY) and {ebit_margin_str} "
-                f"EBIT margin. Free cash flow is robust at {fcf_str}. Balance sheet holds {cash_str} with zero financial debt. "
+                f"EBIT margin. Free cash flow is robust at {fcf_str}. Balance sheet holds {cash_str} in cash with reported "
+                f"$0.0 short-term borrowings; long-term debt is unevidenced in XBRL (total debt unavailable under completeness rules). "
                 f"Share repurchases reduced share count by {dil_3y_str} over 3 years. "
                 "Placed on WATCH due to decelerating North American consumer demand and execution headwinds in new product lines."
             ),
@@ -361,7 +387,7 @@ def assess_company(cf: CompanyFundamentals, metrics: DerivedMetrics) -> Research
                 "Steady share repurchases have reduced diluted shares by double-digits over 3 years."
             ),
             balance_sheet_resilience=(
-                f"Zero financial debt with {cash_str} in cash and substantial operating cash generation."
+                f"Holds {cash_str} in cash with reported $0.0 short-term borrowings; long-term debt unevidenced in XBRL tags."
             ),
             valuation_uncertainty=(
                 "Multiples have compressed; further downside if promotional competition erodes premium gross margins."

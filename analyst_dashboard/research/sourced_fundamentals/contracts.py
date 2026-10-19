@@ -203,8 +203,10 @@ class DeepValuationAssessment:
     current_market_cap: float
     diluted_shares: float
     scenarios: Dict[str, ValuationScenario]
-    reverse_dcf_implied_5y_growth_pct: float
+    reverse_dcf_implied_5y_growth_pct: Optional[float]
     reverse_dcf_fixed_assumptions: Dict[str, Any]
-    sensitivity_matrix: Dict[str, Dict[str, float]]  # WACC vs Terminal Growth -> Per Share Value
+    sensitivity_matrix: Dict[str, Dict[str, Optional[float]]]  # WACC vs Terminal Growth -> Per Share Value
     thesis_invalidation_thresholds: List[str]
     next_quarter_evidence_milestones: List[str]
+    valuation_status: str = "AVAILABLE"  # "AVAILABLE" or "SUPPRESSED_UNAVAILABLE"
+    suppression_reason: Optional[str] = None

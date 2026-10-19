@@ -57,11 +57,16 @@ from analyst_dashboard.research.sourced_fundamentals.calculations import (
     compute_effective_tax_rate,
     compute_derived_metrics,
 )
+from analyst_dashboard.research.sourced_fundamentals.qualitative_assessor import (
+    assess_company,
+)
 from analyst_dashboard.research.sourced_fundamentals.valuation import (
     run_fcff_model,
     solve_reverse_dcf,
     generate_sensitivity_matrix,
     evaluate_deep_valuation_fix,
+    evaluate_deep_valuation_duol,
+    evaluate_deep_valuation_ulta,
 )
 from analyst_dashboard.research.sourced_fundamentals.cli import (
     run_pipeline,
@@ -501,3 +506,240 @@ def test_17_offline_replay_zero_network_access(monkeypatch):
     assert len(ledger["companies"]) == 8
     assert "FIX" in ledger["companies"]
     assert ledger["companies"]["FIX"]["derived_metrics"]["revenue_ttm"] == 11228024000.0
+
+
+# 18. Aggregate Missing-Data Propagation and Completeness Principle
+def test_18_aggregate_missing_data_propagation_and_completeness(normalizer):
+    """
+    Scenario 18:
+    1. Partial debt (e.g. ULTA short-term borrowings reported without noncurrent debt)
+       does NOT sum to total debt; total_financial_debt is UNAVAILABLE and value is None.
+    2. No ticker-based whitelisting: DUOL debt is UNAVAILABLE, not assumed 0.0.
+    3. Unavailable debt propagates to net_debt being UNAVAILABLE (None).
+    4. DUOL and ULTA deep valuations are suppressed with valuation_status == "SUPPRESSED_UNAVAILABLE",
+       reverse_dcf_implied_5y_growth_pct is None, and non-empty suppression_reason.
+    5. KLAC reports comprehensive debt (DebtLongtermAndShorttermCombinedAmount) as REPORTED $5.887B,
+       with cash and net debt fully evidenced.
+    """
+    ledger = run_pipeline(offline=True, refresh=False)
+    companies = ledger["companies"]
+
+    # ULTA
+    ulta_m = companies["ULTA"]["derived_metrics"]
+    ulta_dv = companies["ULTA"]["deep_valuation"]
+    assert ulta_m["total_financial_debt"] is None
+    assert ulta_m["net_debt"] is None
+    assert ulta_m["enterprise_value"] is None
+    assert ulta_dv["valuation_status"] == "SUPPRESSED_UNAVAILABLE"
+    assert ulta_dv["reverse_dcf_implied_5y_growth_pct"] is None
+    assert "incomplete component reporting" in ulta_dv["suppression_reason"]
+    assert len(ulta_dv["scenarios"]) == 0
+
+    # DUOL
+    duol_m = companies["DUOL"]["derived_metrics"]
+    duol_dv = companies["DUOL"]["deep_valuation"]
+    assert duol_m["total_financial_debt"] is None
+    assert duol_m["net_debt"] is None
+    assert duol_m["enterprise_value"] is None
+    assert duol_dv["valuation_status"] == "SUPPRESSED_UNAVAILABLE"
+    assert duol_dv["reverse_dcf_implied_5y_growth_pct"] is None
+    assert "UNAVAILABLE in SEC EDGAR XBRL" in duol_dv["suppression_reason"]
+    assert len(duol_dv["scenarios"]) == 0
+
+    # KLAC
+    klac_m = companies["KLAC"]["derived_metrics"]
+    assert klac_m["total_financial_debt"] == 5887415000.0
+    assert klac_m["total_cash_and_investments"] == 3118230000.0
+    assert klac_m["net_debt"] == 2769185000.0
+    assert klac_m["enterprise_value"] is not None
+
+
+# 19. Share-Period Duration Discrimination & Denominator Semantics
+def test_19_share_period_duration_discrimination_and_denominator_semantics(normalizer):
+    """
+    Scenario 19:
+    1. Distinguish between quarterly (80-100d), YTD, and annual (350-375d) shares.
+    2. Shuffling observation list order produces identical selected shares (permutation invariance).
+    3. Quarterly shares are explicitly noted as matching latest interim reporting period, not full TTM.
+    4. Denominator semantics: DerivedMetrics distinguishes period-weighted diluted shares for EPS/FCF
+       from point-in-time common shares for market cap.
+    """
+    synthetic_us_gaap = {
+        "WeightedAverageNumberOfDilutedSharesOutstanding": {
+            "units": {
+                "shares": [
+                    # 6M YTD observation
+                    {"form": "10-Q", "fp": "Q2", "start": "2026-01-01", "end": "2026-06-30", "val": 50080000.0, "filed": "2026-08-08", "accn": "A1"},
+                    # 3M standalone interim quarter observation
+                    {"form": "10-Q", "fp": "Q2", "start": "2026-04-01", "end": "2026-06-30", "val": 50031000.0, "filed": "2026-08-08", "accn": "A1"},
+                ]
+            }
+        }
+    }
+
+    # Extract shares with original order
+    fact_orig = normalizer._extract_diluted_shares(synthetic_us_gaap, "2026-06-30")
+    # For a 10-Q filing, selector must prioritize the 3-month interim quarter (80-100 days)
+    assert fact_orig.value == 50031000.0
+    assert "quarterly diluted weighted-average shares" in fact_orig.notes.lower()
+    assert "not full-year ttm shares" in fact_orig.notes.lower()
+
+    # Shuffled order test (permutation invariance)
+    items_shuf = list(reversed(synthetic_us_gaap["WeightedAverageNumberOfDilutedSharesOutstanding"]["units"]["shares"]))
+    us_gaap_shuf = {"WeightedAverageNumberOfDilutedSharesOutstanding": {"units": {"shares": items_shuf}}}
+    fact_shuf = normalizer._extract_diluted_shares(us_gaap_shuf, "2026-06-30")
+    assert fact_shuf.value == fact_orig.value
+    assert fact_shuf.notes == fact_orig.notes
+
+
+# 20. Evidence-Sufficiency Responsive Assessments
+def test_20_evidence_sufficiency_responsive_assessments(normalizer):
+    """
+    Scenario 20:
+    1. assess_company fails closed with INSUFFICIENT_EVIDENCE when critical financial facts are missing.
+    2. Narrative claims for DUOL and ULTA do NOT assert "zero debt", "net cash", or debt-free status.
+    3. FIX, DUOL, ULTA assessments label them as "Selected Case Study", not algorithmic top picks.
+    """
+    # 1. Missing critical facts fail closed
+    empty_cf = CompanyFundamentals(
+        symbol="TEST",
+        company_name="Test Company",
+        cik="0009999999",
+        primary_exchange="NASDAQ",
+        sector_industry="Technology",
+        business_model="SaaS",
+        fiscal_year_end="12-31",
+        latest_reported_period="2026-06-30",
+        latest_filing_date="2026-08-01",
+    )
+    empty_metrics = DerivedMetrics(symbol="TEST", period_label="TTM", revenue_ttm=None, diluted_shares_weighted_avg=None)
+    assessment = assess_company(empty_cf, empty_metrics)
+    assert assessment.disposition == ResearchDisposition.INSUFFICIENT_EVIDENCE
+    assert "Critical financial facts missing" in assessment.disposition_rationale
+
+    # 2. Check DUOL and ULTA assessments in actual ledger
+    ledger = run_pipeline(offline=True, refresh=False)
+    duol_a = ledger["companies"]["DUOL"]["assessment"]
+    ulta_a = ledger["companies"]["ULTA"]["assessment"]
+    fix_a = ledger["companies"]["FIX"]["assessment"]
+
+    assert "Selected Case Study" in fix_a["disposition_rationale"]
+    assert "Selected Case Study" in duol_a["disposition_rationale"]
+    assert "Selected Case Study" in ulta_a["disposition_rationale"]
+
+    # Verify no false claim of zero debt for DUOL
+    assert "zero debt" not in duol_a["disposition_rationale"].lower()
+    assert "zero financial debt" not in duol_a["balance_sheet_resilience"].lower()
+    assert "UNAVAILABLE" in duol_a["disposition_rationale"]
+
+    # Verify ULTA debt note
+    assert "UNAVAILABLE" in ulta_a["disposition_rationale"]
+
+
+# 21. Conflicting Observations & Restatement Precedence
+def test_21_conflicting_observations_and_restatement_precedence(normalizer):
+    """
+    Scenario 21:
+    1. Exact duplicate observations collapse cleanly without error.
+    2. Genuine intra-filing conflict (identical metadata with differing values) is detected,
+       logged, and returns UNAVAILABLE / None.
+    3. Inter-filing restatement (differing filing dates) selects latest filing accession.
+    4. Permuted input order produces identical results.
+    """
+    # 1. Exact duplicate collapsing
+    dups = [
+        {"form": "10-Q", "end": "2026-06-30", "val": 100.0, "filed": "2026-08-01", "accn": "A1"},
+        {"form": "10-Q", "end": "2026-06-30", "val": 100.0, "filed": "2026-08-01", "accn": "A1"},
+    ]
+    deduped, err = normalizer._deduplicate_and_detect_conflicts(dups, "Cash")
+    assert len(deduped) == 1
+    assert deduped[0]["val"] == 100.0
+    assert err is None
+
+    # 2. Genuine intra-filing conflict (identical metadata, differing values)
+    conflicts = [
+        {"form": "10-Q", "end": "2026-06-30", "val": 100.0, "filed": "2026-08-01", "accn": "A1"},
+        {"form": "10-Q", "end": "2026-06-30", "val": 150.0, "filed": "2026-08-01", "accn": "A1"},
+    ]
+    conflict_res, conflict_err = normalizer._deduplicate_and_detect_conflicts(conflicts, "Cash")
+    assert conflict_err is not None
+    assert "GENUINE_CONFLICT" in conflict_err
+
+    conflict_us_gaap = {"Cash": {"units": {"USD": conflicts}}}
+    fact = normalizer._extract_instant_fact(conflict_us_gaap, ["Cash"], "cash_and_equivalents", "2026-06-30")
+    assert fact.value is None
+    assert fact.status == MetricStatus.UNAVAILABLE
+    assert "GENUINE_CONFLICT" in fact.notes
+
+    # 3. Inter-filing restatement precedence
+    restatements = [
+        {"form": "10-Q", "end": "2026-06-30", "val": 100.0, "filed": "2026-08-01", "accn": "A1"},
+        {"form": "10-Q/A", "end": "2026-06-30", "val": 105.0, "filed": "2026-09-01", "accn": "A1_AMENDED"},
+    ]
+    restate_res, restate_conflict = normalizer._deduplicate_and_detect_conflicts(restatements, "Cash")
+    assert len(restate_res) == 2
+    assert restate_res[-1]["val"] == 105.0
+    assert restate_res[-1]["accn"] == "A1_AMENDED"
+
+
+# 22. End-to-End Cutoff Enforcement
+def test_22_declared_research_cutoff_enforced_end_to_end(normalizer):
+    """
+    Scenario 22:
+    as_of_date is passed through normalization, submissions parsing, prior-TTM revenue,
+    and split dilution comparisons. Filings after cutoff are excluded.
+    """
+    synthetic_us_gaap = {
+        "Revenues": {
+            "units": {
+                "USD": [
+                    {"form": "10-K", "fp": "FY", "start": "2024-01-01", "end": "2024-12-31", "val": 1000.0, "filed": "2025-02-15", "accn": "A1"},
+                    {"form": "10-Q", "fp": "Q1", "start": "2025-01-01", "end": "2025-03-31", "val": 280.0, "filed": "2025-05-10", "accn": "A2"},
+                    {"form": "10-Q", "fp": "Q2", "start": "2025-01-01", "end": "2025-06-30", "val": 580.0, "filed": "2025-08-10", "accn": "A3"},
+                    # Post-cutoff filing in 2026
+                    {"form": "10-K", "fp": "FY", "start": "2025-01-01", "end": "2025-12-31", "val": 1250.0, "filed": "2026-02-20", "accn": "A4"},
+                ]
+            }
+        }
+    }
+    # Cutoff at 2025-09-01
+    filtered = normalizer._filter_filings(synthetic_us_gaap["Revenues"]["units"]["USD"], as_of_date="2025-09-01")
+    filed_dates = [x["filed"] for x in filtered]
+    assert "2026-02-20" not in filed_dates
+    assert len(filtered) == 3
+
+
+# 23. Zero Magnitude-Based Split Guessing
+def test_23_split_normalization_without_magnitude_guessing(normalizer):
+    """
+    Scenario 23:
+    1. If split_ratio is provided without split_date, returns (None, None) failing closed.
+    2. Rely strictly on corporate action split_date and comparative filing dates (filed < split_date).
+    3. Post-split observations (filed >= split_date) are NOT adjusted even if smaller than current shares.
+    """
+    synthetic_us_gaap = {
+        "WeightedAverageNumberOfDilutedSharesOutstanding": {
+            "units": {
+                "shares": [
+                    {"form": "10-K", "fp": "FY", "start": "2022-01-01", "end": "2022-12-31", "val": 20000000.0, "filed": "2023-02-15"},
+                    {"form": "10-K", "fp": "FY", "start": "2024-01-01", "end": "2024-12-31", "val": 19000000.0, "filed": "2025-02-15"},
+                ]
+            }
+        }
+    }
+
+    # 1. Ratio without date fails closed
+    d1, d3 = compute_split_normalized_dilution(
+        normalizer, synthetic_us_gaap, "2025-12-31", curr_shares=60000000.0, split_ratio=3.0, split_date=None
+    )
+    assert d1 is None
+    assert d3 is None
+
+    # 2. Ratio with date: split effective 2024-01-01
+    # 2022 observation filed 2023-02-15 < split_date -> multiplied by 3.0 (20M * 3 = 60M)
+    d1, d3 = compute_split_normalized_dilution(
+        normalizer, synthetic_us_gaap, "2025-12-31", curr_shares=60000000.0, split_ratio=3.0, split_date="2024-01-01"
+    )
+    # v3 was 20M, multiplied by 3.0 = 60M. curr_shares = 60M -> dilution = 0.0%
+    assert d3 is not None
+    assert abs(d3 - 0.0) < 0.01

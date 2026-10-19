@@ -137,9 +137,12 @@ def extract_prior_ttm_revenue(
     normalizer: SecFactNormalizer,
     us_gaap: Dict[str, Any],
     latest_period_end: str,
+    as_of_date: Optional[str] = None,
 ) -> Optional[float]:
     """Extracts non-overlapping prior TTM revenue using fiscal boundary reconciliation."""
-    val, start, end = normalizer._extract_prior_ttm_fact(us_gaap, REVENUE_CONCEPTS, latest_period_end)
+    val, start, end = normalizer._extract_prior_ttm_fact(
+        us_gaap, REVENUE_CONCEPTS, latest_period_end, as_of_date=as_of_date
+    )
     return val
 
 
@@ -150,22 +153,29 @@ def compute_split_normalized_dilution(
     curr_shares: Optional[float],
     split_date: Optional[str] = None,
     split_ratio: Optional[float] = None,
+    as_of_date: Optional[str] = None,
 ) -> Tuple[Optional[float], Optional[float]]:
     """
     Computes 1-year and 3-year share dilution percentages.
     Applies split multipliers only to observations filed prior to the split effective date,
     preventing double-adjustment on comparative periods already restated by the company.
+    Zero magnitude-based guessing: if split ratio is given without effective date, returns None.
     """
     if curr_shares is None or curr_shares <= 0:
         return None, None
 
+    # If split ratio is provided without an effective date, basis cannot be established
+    if split_ratio and not split_date:
+        logger.warning(f"Split ratio {split_ratio} provided without effective date; cannot establish adjustment basis.")
+        return None, None
+
     c_shares, s_items = normalizer._get_best_concept_items(
-        us_gaap, DILUTED_SHARES_CONCEPTS, unit_name="shares", target_end=latest_end
+        us_gaap, DILUTED_SHARES_CONCEPTS, unit_name="shares", target_end=latest_end, as_of_date=as_of_date
     )
     if not s_items:
         return None, None
 
-    filings = normalizer._filter_filings(s_items)
+    filings = normalizer._filter_filings(s_items, as_of_date=as_of_date)
     curr_yr = int(latest_end[:4])
 
     # 1. 1-Year Dilution
@@ -203,29 +213,31 @@ def compute_split_normalized_dilution(
         v3 = float(best_3y["val"])
         if split_date and split_ratio and best_3y.get("filed", "") < split_date:
             v3 *= split_ratio
-        elif split_ratio and v3 < (curr_shares / (split_ratio * 0.5)):
-            # Heuristic safety check for restatements not captured by filing date
-            v3 *= split_ratio
+        # Zero magnitude-based guessing: if filed >= split_date, company already restated prior periods
         if v3 > 0:
             dil_3y = ((curr_shares - v3) / v3) * 100.0
 
     return dil_1y, dil_3y
 
 
-def run_pipeline(offline: bool = True, refresh: bool = False) -> Dict[str, Any]:
+def run_pipeline(
+    offline: bool = True,
+    refresh: bool = False,
+    cutoff_date: str = RESEARCH_CUTOFF_DATE,
+) -> Dict[str, Any]:
     """Execute complete Sourced Fundamentals & Undervalued Growth Research pipeline."""
     harvester = SecEdgarHarvester(offline_mode=offline)
     normalizer = SecFactNormalizer()
 
-    logger.info(f"Starting pipeline execution across 8 companies (offline={offline}, refresh={refresh})...")
+    logger.info(f"Starting pipeline execution across 8 companies (offline={offline}, refresh={refresh}, cutoff={cutoff_date})...")
     ledger: Dict[str, Any] = {
         "metadata": {
             "title": "ARX Terminal Sourced Fundamentals & Undervalued Growth Evidence Ledger",
             "generation_time": datetime.utcnow().isoformat() + "Z",
-            "research_cutoff_date": RESEARCH_CUTOFF_DATE,
+            "research_cutoff_date": cutoff_date,
             "operator_identity": harvester.user_agent,
-            "status": "SOURCED_FUNDAMENTALS_RESEARCH_PILOT_LOCAL_VERIFIED",
-            "scope": "8-company diagnostic research population with multi-scenario valuations for primary leads",
+            "status": "SOURCED_FUNDAMENTALS_CORRECTIONS_AND_OFFLINE_REPLAY_LOCAL_VERIFIED",
+            "scope": "8-company diagnostic research population with deep valuation case studies for selected models (FIX, DUOL, ULTA)",
             "offline_mode": offline,
             "compliance": "Strict SEC fair access compliant; primary EDGAR XBRL facts; Lease-as-Operating-Expense convention; no composite scoring.",
         },
@@ -252,15 +264,15 @@ def run_pipeline(offline: bool = True, refresh: bool = False) -> Dict[str, Any]:
         subm_dict = harvester.get_company_submissions(cik, force_refresh=refresh)
         market_data = fetch_market_price_yfinance(sym, offline_mode=offline)
 
-        # 1. Normalize reported facts
-        cf = normalizer.normalize(sym, cik, facts_dict, subm_dict, sector, model)
+        # 1. Normalize reported facts with cutoff_date enforced end-to-end
+        cf = normalizer.normalize(sym, cik, facts_dict, subm_dict, sector, model, as_of_date=cutoff_date)
 
-        # 2. Extract prior periods and split-normalized dilution
+        # 2. Extract prior periods and split-normalized dilution with cutoff_date
         us_gaap = facts_dict.get("facts", {}).get("us-gaap", {})
-        prior_rev = extract_prior_ttm_revenue(normalizer, us_gaap, cf.latest_reported_period)
+        prior_rev = extract_prior_ttm_revenue(normalizer, us_gaap, cf.latest_reported_period, as_of_date=cutoff_date)
         curr_shares = cf.facts["diluted_shares_weighted_avg"].value
         dil_1y, dil_3y = compute_split_normalized_dilution(
-            normalizer, us_gaap, cf.latest_reported_period, curr_shares, s_date, s_ratio
+            normalizer, us_gaap, cf.latest_reported_period, curr_shares, s_date, s_ratio, as_of_date=cutoff_date
         )
 
         # 3. Compute derived metrics
@@ -276,7 +288,7 @@ def run_pipeline(offline: bool = True, refresh: bool = False) -> Dict[str, Any]:
         # 4. Assess qualitatively
         assessment = assess_company(cf, metrics)
 
-        # 5. Deep valuation for research leads (FIX, DUOL, ULTA)
+        # 5. Deep valuation for research case studies (FIX, DUOL, ULTA)
         deep_val: Optional[DeepValuationAssessment] = None
         if sym == "FIX":
             deep_val = evaluate_deep_valuation_fix(cf, metrics)
@@ -300,7 +312,7 @@ def run_pipeline(offline: bool = True, refresh: bool = False) -> Dict[str, Any]:
         if deep_val:
             ledger["companies"][sym]["deep_valuation"]["scenarios"] = {
                 k: v.__dict__ for k, v in deep_val.scenarios.items()
-            }
+            } if deep_val.scenarios else {}
 
     # Generate raw manifest
     harvester.build_manifest([c["cik"] for c in POPULATION])
@@ -321,13 +333,14 @@ def main():
     parser = argparse.ArgumentParser(description="ARX Sourced Fundamentals CLI")
     parser.add_argument("--offline", action="store_true", default=True, help="Run in offline replay mode using local raw cache (default)")
     parser.add_argument("--refresh", action="store_true", default=False, help="Force refresh files from SEC EDGAR")
+    parser.add_argument("--cutoff-date", default=RESEARCH_CUTOFF_DATE, help="Research cutoff date (YYYY-MM-DD)")
     args = parser.parse_args()
 
     # If --refresh is passed, offline mode is disabled
     offline_mode = False if args.refresh else args.offline
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-    ledger = run_pipeline(offline=offline_mode, refresh=args.refresh)
+    ledger = run_pipeline(offline=offline_mode, refresh=args.refresh, cutoff_date=args.cutoff_date)
 
     worktree_ledger_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
@@ -345,7 +358,7 @@ def main():
     except Exception as e:
         logger.warning(f"Could not automatically trigger report_generator: {e}")
 
-    print("\nPipeline finished with status: SOURCED_FUNDAMENTALS_RESEARCH_PILOT_LOCAL_VERIFIED")
+    print("\nPipeline finished with status: SOURCED_FUNDAMENTALS_EVIDENCE_HANDLING_AND_REPLAY_REVIEW_READY")
 
 
 if __name__ == "__main__":

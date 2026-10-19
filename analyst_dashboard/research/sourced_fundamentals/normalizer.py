@@ -77,6 +77,16 @@ DEBT_NONCURRENT_CONCEPTS = [
     "LongTermDebtAndCapitalLeaseObligations",
 ]
 
+DEBT_TOTAL_CONCEPTS = [
+    "DebtLongtermAndShorttermCombinedAmount",
+    "Debt",
+]
+
+TOTAL_CASH_CONCEPTS = [
+    "CashCashEquivalentsAndShortTermInvestments",
+    "CashAndShortTermInvestments",
+]
+
 LEASE_LIABILITY_CONCEPTS = [
     "OperatingLeaseLiability",
     "OperatingLeaseLiabilityNoncurrent",
@@ -121,11 +131,94 @@ class SecFactNormalizer:
         items: List[Dict[str, Any]],
         as_of_date: Optional[str] = None
     ) -> List[Dict[str, Any]]:
-        """Restrict to official 10-K and 10-Q reports, respecting optional cutoff."""
-        res = [x for x in items if x.get("form") in ["10-K", "10-Q"]]
+        """Restrict to official 10-K, 10-Q, 10-K/A, and 10-Q/A reports, respecting optional cutoff."""
+        res = [x for x in items if x.get("form") in ["10-K", "10-Q", "10-K/A", "10-Q/A"]]
         if as_of_date:
             res = [x for x in res if x.get("filed", "") <= as_of_date]
         return res
+
+    @staticmethod
+    def _deduplicate_and_detect_conflicts(
+        items: List[Dict[str, Any]],
+        concept_name: str = ""
+    ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+        """
+        Deduplicates identical observations and detects genuine unresolvable conflicts.
+        Policy:
+        1. Exact duplicate elimination: Observations with identical (start, end, form, filed, accn, val, units)
+           are collapsed into a single canonical observation.
+        2. Genuine conflict detection: If two observations have identical filing metadata
+           (form, filed, accn, start, end) but different values (e.g. 1000 vs 1200),
+           this is an unresolvable intra-filing contradiction. Returns an error string.
+        3. Restatement / Amendment precedence: If observations cover the same period (start, end)
+           from different filings, an amended filing (10-K/A, 10-Q/A) or a subsequent annual filing (10-K)
+           supersedes earlier filings under documented US-GAAP comparative restatement rules.
+        """
+        if not items:
+            return [], None
+
+        # 1. Exact deduplication
+        seen_exact = set()
+        unique_items = []
+        for it in items:
+            key = (
+                it.get("form"),
+                it.get("filed"),
+                it.get("accn"),
+                it.get("start"),
+                it.get("end"),
+                it.get("val"),
+                it.get("frame")
+            )
+            if key not in seen_exact:
+                seen_exact.add(key)
+                unique_items.append(it)
+
+        # 2. Check for intra-filing genuine conflicts (same form, filed, accn, start, end with differing values)
+        metadata_groups: Dict[Tuple, List[float]] = {}
+        for it in unique_items:
+            m_key = (
+                it.get("form"),
+                it.get("filed"),
+                it.get("accn"),
+                it.get("start"),
+                it.get("end"),
+            )
+            val = float(it.get("val", 0.0))
+            if m_key not in metadata_groups:
+                metadata_groups[m_key] = []
+            if val not in metadata_groups[m_key]:
+                metadata_groups[m_key].append(val)
+
+        for m_key, vals in metadata_groups.items():
+            if len(vals) > 1:
+                form, filed, accn, start, end = m_key
+                return (
+                    [],
+                    f"GENUINE_CONFLICT: Concept {concept_name} has conflicting values {vals} "
+                    f"with identical filing metadata (form={form}, filed={filed}, accn={accn}, start={start}, end={end})"
+                )
+
+        # 3. Restatement / Amendment precedence
+        def form_priority(f: str) -> int:
+            if f.endswith("/A"):
+                return 2
+            elif f == "10-K":
+                return 1
+            return 0
+
+        # Sort deterministically: end, start, filed date, form priority, accn
+        sorted_items = sorted(
+            unique_items,
+            key=lambda x: (
+                x.get("end", ""),
+                x.get("start", ""),
+                x.get("filed", ""),
+                form_priority(x.get("form", "")),
+                x.get("accn", "")
+            )
+        )
+        return sorted_items, None
 
     def _get_best_concept_items(
         self,
@@ -196,8 +289,20 @@ class SecFactNormalizer:
                 notes=f"Concept us-gaap/{c} found but no instant observation for period {target_end}"
             )
 
-        # Deterministic sort: latest filed, then accession
-        best_item = sorted(matching, key=lambda x: (x.get("filed", ""), x.get("accn", "")))[-1]
+        # Detect conflicts and deduplicate
+        deduped_matching, conflict_err = self._deduplicate_and_detect_conflicts(matching, concept_name=c)
+        if conflict_err:
+            return FinancialFact(
+                metric_key=metric_key,
+                value=None,
+                units=unit_name,
+                concept=f"us-gaap/{c}",
+                status=MetricStatus.UNAVAILABLE,
+                period_end=target_end,
+                notes=conflict_err
+            )
+
+        best_item = deduped_matching[-1]
         raw_val = float(best_item["val"])
 
         return FinancialFact(
@@ -253,10 +358,22 @@ class SecFactNormalizer:
         valid = self._filter_filings(items, as_of_date=as_of_date)
         latest_end = parse_date(latest_period_end)
 
+        deduped_valid, conflict_err = self._deduplicate_and_detect_conflicts(valid, concept_name=c)
+        if conflict_err:
+            return FinancialFact(
+                metric_key=metric_key,
+                value=None,
+                units=unit_name,
+                concept=f"us-gaap/{c}",
+                status=MetricStatus.UNAVAILABLE,
+                period_end=latest_period_end,
+                notes=conflict_err
+            )
+
         # 1. Identify all true 10-K full fiscal year observations (duration 350 to 375 days)
         fy_items = [
-            x for x in valid
-            if x.get("form") == "10-K"
+            x for x in deduped_valid
+            if x.get("form") in ["10-K", "10-K/A"]
             and x.get("start") and x.get("end")
             and 350 <= (parse_date(x["end"]) - parse_date(x["start"])).days <= 375
         ]
@@ -274,14 +391,14 @@ class SecFactNormalizer:
                 units=unit_name,
                 concept=f"us-gaap/{c}",
                 accession_number=best_fy.get("accn"),
-                form="10-K",
+                form=best_fy.get("form"),
                 period_start=best_fy.get("start"),
                 period_end=best_fy.get("end"),
                 filing_date=best_fy.get("filed"),
                 retrieval_time=datetime.utcnow().isoformat() + "Z",
                 status=MetricStatus.REPORTED,
-                formula=f"Reported 10-K full fiscal year ended {best_fy.get('end')}",
-                notes=f"Full fiscal year 10-K filed on {best_fy.get('filed')}"
+                formula=f"Reported {best_fy.get('form')} full fiscal year ended {best_fy.get('end')}",
+                notes=f"Full fiscal year {best_fy.get('form')} filed on {best_fy.get('filed')}"
             )
 
         # Case 2: Interim quarter (10-Q)
@@ -303,7 +420,7 @@ class SecFactNormalizer:
 
         # Current YTD: end == latest_end, start within 4 days of expected_curr_start
         curr_ytd_candidates = [
-            x for x in valid
+            x for x in deduped_valid
             if x.get("end") == latest_period_end
             and x.get("start")
             and abs((parse_date(x["start"]) - expected_curr_start).days) <= 4
@@ -341,7 +458,7 @@ class SecFactNormalizer:
 
         # Prior comparable YTD: start within 4 days of expected_prior_start, duration within 7 days of curr_duration_days
         prior_ytd_candidates = [
-            x for x in valid
+            x for x in deduped_valid
             if x.get("start") and x.get("end")
             and parse_date(x["end"]) < latest_end
             and abs((parse_date(x["start"]) - expected_prior_start).days) <= 4
@@ -420,9 +537,14 @@ class SecFactNormalizer:
         valid = self._filter_filings(items, as_of_date=as_of_date)
         latest_end = parse_date(latest_period_end)
 
+        deduped_valid, conflict_err = self._deduplicate_and_detect_conflicts(valid, concept_name=c)
+        if conflict_err:
+            logger.warning(f"Conflict in prior TTM extraction for {c}: {conflict_err}")
+            return None, None, None
+
         fy_items = [
-            x for x in valid
-            if x.get("form") == "10-K"
+            x for x in deduped_valid
+            if x.get("form") in ["10-K", "10-K/A"]
             and x.get("start") and x.get("end")
             and 350 <= (parse_date(x["end"]) - parse_date(x["start"])).days <= 375
         ]
@@ -444,7 +566,7 @@ class SecFactNormalizer:
         expected_curr_start = p_fy_end + timedelta(days=1)
 
         curr_ytd_cands = [
-            x for x in valid
+            x for x in deduped_valid
             if x.get("end") == latest_period_end
             and x.get("start")
             and abs((parse_date(x["start"]) - expected_curr_start).days) <= 4
@@ -462,7 +584,7 @@ class SecFactNormalizer:
         expected_prior_start = pp_fy_end + timedelta(days=1)
 
         prior_ytd_cands = [
-            x for x in valid
+            x for x in deduped_valid
             if x.get("start") and x.get("end")
             and parse_date(x["end"]) < latest_end
             and abs((parse_date(x["start"]) - expected_prior_start).days) <= 4
@@ -481,7 +603,7 @@ class SecFactNormalizer:
         expected_pp_start = ppp_fy_end + timedelta(days=1)
 
         pp_ytd_cands = [
-            x for x in valid
+            x for x in deduped_valid
             if x.get("start") and x.get("end")
             and parse_date(x["end"]) < parse_date(prior_ytd["end"])
             and abs((parse_date(x["start"]) - expected_pp_start).days) <= 4
@@ -505,7 +627,9 @@ class SecFactNormalizer:
     ) -> FinancialFact:
         """
         Extract WeightedAverageNumberOfDilutedSharesOutstanding.
-        Treats diluted shares as a duration observation matching the latest reporting period.
+        Discriminates deterministically between quarterly (80-100 days), YTD, and annual (350-375 days)
+        observations sharing the same period end.
+        Ensures permutation invariance and eliminates source-order sensitivity.
         """
         c, items = self._get_best_concept_items(
             us_gaap, DILUTED_SHARES_CONCEPTS, unit_name="shares", target_end=target_end, as_of_date=as_of_date
@@ -520,10 +644,19 @@ class SecFactNormalizer:
                 notes="WeightedAverageNumberOfDilutedSharesOutstanding concept not reported"
             )
 
-        matching = [x for x in items if x.get("end") == target_end and x.get("start")]
-        if not matching:
-            # Fallback to any matching end
-            matching = [x for x in items if x.get("end") == target_end]
+        deduped_items, conflict_err = self._deduplicate_and_detect_conflicts(items, concept_name=c)
+        if conflict_err:
+            return FinancialFact(
+                metric_key="diluted_shares_weighted_avg",
+                value=None,
+                units="shares",
+                concept=f"us-gaap/{c}",
+                status=MetricStatus.UNAVAILABLE,
+                period_end=target_end,
+                notes=conflict_err
+            )
+
+        matching = [x for x in deduped_items if x.get("end") == target_end]
         if not matching:
             return FinancialFact(
                 metric_key="diluted_shares_weighted_avg",
@@ -535,7 +668,96 @@ class SecFactNormalizer:
                 notes=f"No diluted shares observation matching period end {target_end}"
             )
 
-        best_item = sorted(matching, key=lambda x: (x.get("filed", ""), x.get("accn", "")))[-1]
+        # Check for genuine conflict within matching items at target_end
+        end_matching, end_conflict = self._deduplicate_and_detect_conflicts(matching, concept_name=c)
+        if end_conflict:
+            return FinancialFact(
+                metric_key="diluted_shares_weighted_avg",
+                value=None,
+                units="shares",
+                concept=f"us-gaap/{c}",
+                status=MetricStatus.UNAVAILABLE,
+                period_end=target_end,
+                notes=end_conflict
+            )
+
+        # Identify latest filing form
+        latest_filing = sorted(end_matching, key=lambda x: (x.get("filed", ""), x.get("accn", "")))[-1]
+        form = latest_filing.get("form", "")
+
+        # Case A: Annual 10-K filing -> select full fiscal year duration (350-375 days)
+        if form in ["10-K", "10-K/A"]:
+            fy_matches = [
+                x for x in end_matching
+                if x.get("start") and 350 <= (parse_date(x["end"]) - parse_date(x["start"])).days <= 375
+            ]
+            if fy_matches:
+                best_item = sorted(fy_matches, key=lambda x: (x.get("filed", ""), x.get("accn", "")))[-1]
+                duration_days = (parse_date(best_item["end"]) - parse_date(best_item["start"])).days
+                return FinancialFact(
+                    metric_key="diluted_shares_weighted_avg",
+                    value=float(best_item["val"]),
+                    units="shares",
+                    concept=f"us-gaap/{c}",
+                    accession_number=best_item.get("accn"),
+                    form=best_item.get("form"),
+                    period_start=best_item.get("start"),
+                    period_end=best_item.get("end"),
+                    filing_date=best_item.get("filed"),
+                    retrieval_time=datetime.utcnow().isoformat() + "Z",
+                    status=MetricStatus.REPORTED,
+                    notes=f"Reported annual diluted weighted-average shares ({best_item.get('start')} to {best_item.get('end')}, {duration_days} days) in {best_item.get('form')}"
+                )
+
+        # Case B: Interim quarter 10-Q -> select single quarterly duration (80-100 days)
+        quarterly_matches = [
+            x for x in end_matching
+            if x.get("start") and 80 <= (parse_date(x["end"]) - parse_date(x["start"])).days <= 100
+        ]
+        if quarterly_matches:
+            best_item = sorted(quarterly_matches, key=lambda x: (x.get("filed", ""), x.get("accn", "")))[-1]
+            duration_days = (parse_date(best_item["end"]) - parse_date(best_item["start"])).days
+            return FinancialFact(
+                metric_key="diluted_shares_weighted_avg",
+                value=float(best_item["val"]),
+                units="shares",
+                concept=f"us-gaap/{c}",
+                accession_number=best_item.get("accn"),
+                form=best_item.get("form"),
+                period_start=best_item.get("start"),
+                period_end=best_item.get("end"),
+                filing_date=best_item.get("filed"),
+                retrieval_time=datetime.utcnow().isoformat() + "Z",
+                status=MetricStatus.REPORTED,
+                notes=f"Reported quarterly diluted weighted-average shares ({best_item.get('start')} to {best_item.get('end')}, {duration_days} days) in {best_item.get('form')}; not full-year TTM shares"
+            )
+
+        # Fallback: YTD or any duration match, deterministically selected (prefer shortest non-zero duration)
+        with_start = [x for x in end_matching if x.get("start")]
+        if with_start:
+            best_item = sorted(with_start, key=lambda x: (
+                (parse_date(x["end"]) - parse_date(x["start"])).days,
+                x.get("filed", ""),
+                x.get("accn", "")
+            ))[0]
+            duration_days = (parse_date(best_item["end"]) - parse_date(best_item["start"])).days
+            return FinancialFact(
+                metric_key="diluted_shares_weighted_avg",
+                value=float(best_item["val"]),
+                units="shares",
+                concept=f"us-gaap/{c}",
+                accession_number=best_item.get("accn"),
+                form=best_item.get("form"),
+                period_start=best_item.get("start"),
+                period_end=best_item.get("end"),
+                filing_date=best_item.get("filed"),
+                retrieval_time=datetime.utcnow().isoformat() + "Z",
+                status=MetricStatus.REPORTED,
+                notes=f"Reported interim diluted weighted-average shares ({best_item.get('start')} to {best_item.get('end')}, {duration_days} days) in {best_item.get('form')}; not full-year TTM shares"
+            )
+
+        # Fallback to instant if no duration fact reported
+        best_item = sorted(end_matching, key=lambda x: (x.get("filed", ""), x.get("accn", "")))[-1]
         return FinancialFact(
             metric_key="diluted_shares_weighted_avg",
             value=float(best_item["val"]),
@@ -543,12 +765,11 @@ class SecFactNormalizer:
             concept=f"us-gaap/{c}",
             accession_number=best_item.get("accn"),
             form=best_item.get("form"),
-            period_start=best_item.get("start"),
             period_end=best_item.get("end"),
             filing_date=best_item.get("filed"),
             retrieval_time=datetime.utcnow().isoformat() + "Z",
             status=MetricStatus.REPORTED,
-            notes=f"Reported diluted shares in {best_item.get('form')} ({best_item.get('start')} to {best_item.get('end')})"
+            notes=f"Reported diluted shares observation in {best_item.get('form')} ending {best_item.get('end')}"
         )
 
     def normalize(
@@ -707,37 +928,44 @@ class SecFactNormalizer:
         facts["short_term_investments"] = st_inv_fact
 
         # Total Cash & Investments
-        # If cash is available and ST investments is unavailable, total cash equals cash (with explicit note)
+        # Completeness principle: If only cash is known, it is reported as cash;
+        # do not imply complete cash-and-investments coverage without evidence.
+        tot_cash_single = self._extract_instant_fact(
+            us_gaap, TOTAL_CASH_CONCEPTS, "total_cash_and_investments", latest_period_end, as_of_date=as_of_date
+        )
+
         cash_val = cash_fact.value
         st_inv_val = st_inv_fact.value
-        if cash_val is not None:
-            tot_cash_val = cash_val + (st_inv_val if st_inv_val is not None else 0.0)
-            notes_str = (
-                "Total liquid cash and short-term marketable investment securities"
-                if st_inv_val is not None
-                else "Short-term investments concept not reported; total cash equals reported cash and equivalents"
-            )
+
+        if tot_cash_single.value is not None:
+            facts["total_cash_and_investments"] = tot_cash_single
+        elif cash_val is not None and st_inv_val is not None:
+            # Fully evidenced sum
             facts["total_cash_and_investments"] = FinancialFact(
                 metric_key="total_cash_and_investments",
-                value=tot_cash_val,
+                value=cash_val + st_inv_val,
                 units="USD",
                 status=MetricStatus.DERIVED,
                 period_end=latest_period_end,
-                formula=f"Cash ({cash_val:,.0f}) + Short-Term Investments ({st_inv_val or 0:,.0f})",
+                formula=f"Cash ({cash_val:,.0f}) + Short-Term Investments ({st_inv_val:,.0f})",
                 input_references=["cash_and_equivalents", "short_term_investments"],
-                notes=notes_str
+                notes="Sum of reported cash and short-term marketable investment securities"
             )
         else:
+            # Missing investments not becoming an asserted complete aggregate
             facts["total_cash_and_investments"] = FinancialFact(
                 metric_key="total_cash_and_investments",
                 value=None,
                 units="USD",
                 status=MetricStatus.UNAVAILABLE,
                 period_end=latest_period_end,
-                notes="Cash and cash equivalents is unavailable"
+                notes=(
+                    "Short-term investments concept not reported; complete cash-and-investments aggregate "
+                    "cannot be asserted without primary filing evidence. Cash is reported separately as cash_and_equivalents."
+                )
             )
 
-        # 10. Debt Current & Noncurrent (Instants)
+        # 10. Debt Current, Noncurrent, and Total (Instants)
         dcur_fact = self._extract_instant_fact(
             us_gaap, DEBT_CURRENT_CONCEPTS, "short_term_debt", latest_period_end, as_of_date=as_of_date
         )
@@ -748,42 +976,63 @@ class SecFactNormalizer:
         )
         facts["long_term_debt"] = dnon_fact
 
-        # Total Financial Debt
-        if dcur_fact.value is not None or dnon_fact.value is not None:
-            tot_debt = (dcur_fact.value or 0.0) + (dnon_fact.value or 0.0)
+        # Comprehensive total debt concept (e.g. DebtLongtermAndShorttermCombinedAmount, Debt)
+        dtot_single = self._extract_instant_fact(
+            us_gaap, DEBT_TOTAL_CONCEPTS, "total_financial_debt", latest_period_end, as_of_date=as_of_date
+        )
+
+        # Determine total_financial_debt with aggregate completeness enforcement:
+        if dtot_single.value is not None:
+            # Case 1: Supported complete debt total from an alternate comprehensive concept
+            facts["total_financial_debt"] = dtot_single
+        elif dcur_fact.value is not None and dnon_fact.value is not None:
+            # Case 2: Fully evidenced total from both current and noncurrent components
+            tot_debt = dcur_fact.value + dnon_fact.value
             facts["total_financial_debt"] = FinancialFact(
                 metric_key="total_financial_debt",
                 value=tot_debt,
                 units="USD",
                 status=MetricStatus.DERIVED,
                 period_end=latest_period_end,
-                formula=f"Short-Term Debt ({dcur_fact.value or 0:,.0f}) + Long-Term Debt ({dnon_fact.value or 0:,.0f})",
+                formula=f"Short-Term Debt ({dcur_fact.value:,.0f}) + Long-Term Debt ({dnon_fact.value:,.0f})",
                 input_references=["short_term_debt", "long_term_debt"],
-                notes="Sum of current and noncurrent financial debt obligations"
+                notes="Fully evidenced sum of reported current and noncurrent financial debt obligations"
             )
-        elif symbol in ["DUOL", "MEDP", "DECK", "LULU"]:
-            # Companies with zero financial debt on 10-Q balance sheet: explicit analyst assumption
-            facts["total_financial_debt"] = FinancialFact(
-                metric_key="total_financial_debt",
-                value=0.0,
-                units="USD",
-                status=MetricStatus.ANALYST_ADJUSTED,
-                period_end=latest_period_end,
-                notes="No debt instruments reported on balance sheet; analyst verified zero financial debt from 10-Q disclosures"
-            )
-        else:
+        elif dcur_fact.value is not None or dnon_fact.value is not None:
+            # Case 3: Known partial amount (one component exists, the other is unavailable).
+            # Do NOT substitute zero or present a known partial amount as total debt.
+            known_s = f"Short-term debt={dcur_fact.value:,.0f}" if dcur_fact.value is not None else "Short-term debt unavailable"
+            known_l = f"Long-term debt={dnon_fact.value:,.0f}" if dnon_fact.value is not None else "Long-term debt unavailable"
             facts["total_financial_debt"] = FinancialFact(
                 metric_key="total_financial_debt",
                 value=None,
                 units="USD",
                 status=MetricStatus.UNAVAILABLE,
                 period_end=latest_period_end,
-                notes="Financial debt concepts are unavailable"
+                notes=(
+                    f"Partial debt observation known ({known_s}, {known_l}), but complete debt obligations "
+                    "cannot be established without both components or a single comprehensive debt total. "
+                    "Known partial amounts are not presented as total debt."
+                )
             )
+            data_gaps.append("total_financial_debt unavailable (incomplete debt components)")
+        else:
+            # Case 4: Neither component reported. No ticker-based whitelisting.
+            facts["total_financial_debt"] = FinancialFact(
+                metric_key="total_financial_debt",
+                value=None,
+                units="USD",
+                status=MetricStatus.UNAVAILABLE,
+                period_end=latest_period_end,
+                notes="Financial debt concepts are unavailable in primary filings."
+            )
+            data_gaps.append("total_financial_debt unavailable")
 
-        # Net Debt = Total Debt - Total Cash
+        # Net Debt = Total Debt - Total Cash (or Cash and Equivalents where investments are unevidenced)
         tot_d = facts["total_financial_debt"].value
         tot_c = facts["total_cash_and_investments"].value
+        cash_val = facts["cash_and_equivalents"].value
+
         if tot_d is not None and tot_c is not None:
             facts["net_debt"] = FinancialFact(
                 metric_key="net_debt",
@@ -791,9 +1040,21 @@ class SecFactNormalizer:
                 units="USD",
                 status=MetricStatus.DERIVED,
                 period_end=latest_period_end,
-                formula=f"Total Debt ({tot_d:,.0f}) - Total Cash ({tot_c:,.0f})",
+                formula=f"Total Debt ({tot_d:,.0f}) - Total Cash & Investments ({tot_c:,.0f})",
                 input_references=["total_financial_debt", "total_cash_and_investments"],
-                notes="Net financial debt (negative indicates net cash balance)"
+                notes="Net financial debt relative to total cash and short-term investments (negative indicates net cash balance)"
+            )
+        elif tot_d is not None and cash_val is not None:
+            # Only cash is known and evidenced; debt is fully evidenced
+            facts["net_debt"] = FinancialFact(
+                metric_key="net_debt",
+                value=tot_d - cash_val,
+                units="USD",
+                status=MetricStatus.DERIVED,
+                period_end=latest_period_end,
+                formula=f"Total Debt ({tot_d:,.0f}) - Cash & Equivalents ({cash_val:,.0f})",
+                input_references=["total_financial_debt", "cash_and_equivalents"],
+                notes="Net financial debt relative to reported cash and cash equivalents; short-term investments unavailable without filing evidence."
             )
         else:
             facts["net_debt"] = FinancialFact(
@@ -802,7 +1063,7 @@ class SecFactNormalizer:
                 units="USD",
                 status=MetricStatus.UNAVAILABLE,
                 period_end=latest_period_end,
-                notes="Cannot calculate net debt due to unavailable debt or cash"
+                notes="Cannot calculate net debt due to unavailable total financial debt or cash"
             )
 
         # 11. Operating Lease Liabilities

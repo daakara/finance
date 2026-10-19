@@ -119,7 +119,8 @@ def compute_derived_metrics(
     eff_tax_rate = compute_effective_tax_rate(tax_exp, pretax)
     nopat = (ebit_ttm * (1.0 - eff_tax_rate)) if ebit_ttm is not None else None
 
-    inv_cap = compute_invested_capital(equity, tot_debt, tot_cash)
+    effective_cash_for_ic = tot_cash if tot_cash is not None else cash
+    inv_cap = compute_invested_capital(equity, tot_debt, effective_cash_for_ic)
     roic = None
     if nopat is not None and inv_cap is not None:
         if inv_cap > 0:
@@ -131,23 +132,40 @@ def compute_derived_metrics(
                 "Conventional ROIC is not economically meaningful."
             )
 
-    # 4. Per-Share Metrics
-    shares_for_per_share = dshares or cshares
+    # 4. Per-Share Metrics & Denominator Semantics
+    # Distinguish period-weighted diluted shares from point-in-time common shares
     eps_ttm = None
-    if ni_ttm is not None and shares_for_per_share is not None and shares_for_per_share > 0:
-        eps_ttm = ni_ttm / shares_for_per_share
+    if ni_ttm is not None and dshares is not None and dshares > 0:
+        eps_ttm = ni_ttm / dshares
+        calculation_notes["diluted_eps_ttm"] = (
+            f"Net Income TTM ({ni_ttm:,.0f}) / latest reported diluted weighted-average shares ({dshares:,.0f}). "
+            "Denominator represents weighted average diluted shares matching the latest reporting period."
+        )
 
     fcf_per_share = None
-    if fcf_ttm is not None and shares_for_per_share is not None and shares_for_per_share > 0:
-        fcf_per_share = fcf_ttm / shares_for_per_share
+    if fcf_ttm is not None and dshares is not None and dshares > 0:
+        fcf_per_share = fcf_ttm / dshares
+        calculation_notes["cfo_minus_capex_per_share"] = (
+            f"CFO minus Capex ({fcf_ttm:,.0f}) / latest reported diluted weighted-average shares ({dshares:,.0f})"
+        )
 
-    # 5. Market Reference & Valuation Multiples
+    # 5. Market Reference & Market Capitalization
     price = market_data.get("market_price")
     price_date = market_data.get("price_date")
 
     market_cap = None
-    if price is not None and shares_for_per_share is not None and shares_for_per_share > 0:
-        market_cap = price * shares_for_per_share
+    if price is not None and cshares is not None and cshares > 0:
+        market_cap = price * cshares
+        calculation_notes["market_cap"] = (
+            f"Calculated from point-in-time common shares outstanding ({cshares:,.0f} shares) "
+            f"multiplied by reference price (${price:.2f})"
+        )
+    elif price is not None and dshares is not None and dshares > 0:
+        market_cap = price * dshares
+        calculation_notes["market_cap"] = (
+            f"Estimated proxy: reference price (${price:.2f}) multiplied by period-weighted diluted shares ({dshares:,.0f}). "
+            "Point-in-time common shares outstanding was unavailable; not an authoritative point-in-time market capitalization."
+        )
 
     # Enterprise Value: Lease-as-Operating-Expense Convention
     # EV = Market Cap + Net Debt
@@ -180,10 +198,12 @@ def compute_derived_metrics(
         calculation_notes["cfo_minus_capex"] = f"CFO ({cfo_ttm:,.0f}) - Capex ({capex_ttm:,.0f}) = {fcf_ttm:,.0f}"
 
     # Net Debt
-    if tot_debt is not None and tot_cash is not None and net_debt is not None:
-        reconciled_debt = abs((tot_debt - tot_cash) - net_debt) < 1.0
+    effective_cash_reconcile = tot_cash if tot_cash is not None else cash
+    if tot_debt is not None and effective_cash_reconcile is not None and net_debt is not None:
+        reconciled_debt = abs((tot_debt - effective_cash_reconcile) - net_debt) < 1.0
         arithmetic_checks["net_debt_reconciled"] = reconciled_debt
-        calculation_notes["net_debt"] = f"Total Debt ({tot_debt:,.0f}) - Total Cash ({tot_cash:,.0f}) = {net_debt:,.0f}"
+        cash_label = "Total Cash & Investments" if tot_cash is not None else "Cash & Equivalents"
+        calculation_notes["net_debt"] = f"Total Debt ({tot_debt:,.0f}) - {cash_label} ({effective_cash_reconcile:,.0f}) = {net_debt:,.0f}"
 
     # Enterprise Value
     if market_cap is not None and net_debt is not None and ev is not None:

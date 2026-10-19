@@ -95,15 +95,15 @@ def generate_research_pilot_report(ledger: Dict[str, Any]) -> str:
 
 The primary objective of this workstream is to provide **David Akara** with a rigorous, source-grounded foundation for identifying and evaluating **undervalued growth businesses**: companies with defensible business momentum whose shares trade at prices justified by credible future shareholder cash flows.
 
-This report reflects the **corrected, duration-validated Sourced Fundamentals pipeline**, eliminating previous extraction defects, unadjusted corporate split distortions, report/model disagreements, and arbitrary valuation assumptions.
+This report reflects the **corrected, duration-validated Sourced Fundamentals pipeline**, eliminating previous extraction defects, unadjusted corporate split distortions, report/model disagreements, and arbitrary valuation assumptions. Companies FIX, DUOL, and ULTA are evaluated as **Selected Diagnostic Case Studies** (contrasting accounting and capital structure archetypes), rather than automatically discovered investment winners.
 
-### Key Corrections Executed in this Release:
-1. **Duration Selection Integrity**: Enforced strict start/end fiscal boundary matching. TTM calculations strictly evaluate genuine YTD durations, eliminating the standalone 3-month quarter selection error in `FIX` and raising verified TTM revenue from \$10,193.98M to **\$11,228.02M (+46.11% YoY)**.
-2. **Elimination of Report/Model Disagreements**: All markdown tables are generated programmatically from `sourced_fundamentals_ledger.json`, establishing 100% exact numerical agreement across code, JSON ledger, and research reports.
-3. **Split-Normalized Dilution**: Incorporated corporate action forward split adjustments for `DECK` (6:1 split on Sep 13, 2024), `CELH` (3:1 split on Nov 15, 2023), and `KLAC` (10:1 split in 2026), eliminating phantom dilution artifacts. `DECK` 3-year share dilution corrected from +426.42% to **-12.26%** (active share repurchases).
-4. **Lease-as-Operating-Expense Valuation Convention**: Enforced a consistent FCFF valuation bridge. Because operating leases are expensed in GAAP Operating Income (EBIT) and Operating Cash Flow (CFO), operating lease liabilities are NOT deducted in the net debt bridge, eliminating double-counting of lease costs.
-5. **Reverse-DCF Target Bracketing & Roundtrip Verification**: Solves for 5-year Revenue CAGR ($g$) with strict bracketing check in [-50%, +200%]. Confirmed roundtrip forward-model verification ($|DCF - target| < $0.05).
-6. **Offline Replayability**: Complete primary source retention in `data/research/sourced_fundamentals/raw/` with cryptographic `manifest.json` SHA-256 hashes, enabling zero-network reproduction.
+### Key Evidence-Handling Corrections Executed in this Release:
+1. **Aggregate Completeness Enforcement**: Disallowed partial-debt sum-to-total (`(current or 0) + (noncurrent or 0)`). Removed ticker-based whitelisting (`DUOL`, `MEDP`, `DECK`, `LULU`). Propagated unavailable critical totals to net debt, EV, ROIC, multiples, and deep valuations. Incomplete debt components in `ULTA` and unavailable debt in `DUOL` trigger explicit valuation suppression.
+2. **Share-Period Selection & Denominator Semantics**: Eliminated source-order sensitivity. Added deterministic duration discrimination for weighted-average shares: interim quarterly (80-100d), YTD, and annual 10-K (350-375d). Clarified distinct denominators for per-share flows (period-weighted diluted shares) vs market capitalization (point-in-time common shares).
+3. **Evidence-Sufficiency Responsive Assessments**: Failed closed with `INSUFFICIENT_EVIDENCE` when critical financial facts are unevidenced. Conditioned narrative claims (liquidity, debt-free, leverage) strictly on verified facts. Designated `FIX`, `DUOL`, and `ULTA` as "Selected Case Studies".
+4. **Intra-Filing Conflict Detection & Restatement Precedence**: Permutation-invariant fact processing. Identical metadata with differing values flagged as `UNAVAILABLE` with conflicting values logged; comparative restatements resolved via explicit filing accession and amendment precedence.
+5. **End-to-End Cutoff Enforcement**: Passed `as_of_date=RESEARCH_CUTOFF_DATE` through normalization, submissions parsing, prior-TTM revenue, and split dilution calculations.
+6. **Zero Magnitude-Based Split Guessing**: Removed heuristic threshold checking (`v3 < curr_shares / (split_ratio * 0.5)`). Applied corporate action adjustments strictly based on documented split dates and comparative filing dates.
 
 ---
 
@@ -114,8 +114,8 @@ This report reflects the **corrected, duration-validated Sourced Fundamentals pi
 | **Duration Selection in Interim TTM** | Selected 3M standalone Q2 facts by array order (`val = 3,265,656,000`). | Validates `start == prior_fy_end + 1 day` (±4 days), selecting 6M YTD (`val = 6,130,988,000`). | `FIX` Revenue TTM: \$10,193.98M -> **\$11,228.02M**; YoY Growth: +37.9% -> **+46.1%**. | `test_ttm_duration_selection_counterexample_fix` |
 | **Report / Model Discrepancy** | Written Markdown reports typed different DCF values than code/ledger. | Programmatic generation of all markdown reports directly from `sourced_fundamentals_ledger.json`. | Base DCF per-share values reconciled to exact parity. | `test_report_ledger_numeric_parity` |
 | **Corporate Stock Split Distortion** | DECK unadjusted historical share counts caused phantom dilution spike. | Applied split factor (6.0 for DECK) only to pre-split filings filed before 2024-09-13. | `DECK` 3Y dilution: +426.42% -> **-12.26%** (share buybacks). | `test_split_normalized_share_dilution_deck` |
-| **Missing-to-Zero Conversion** | Absent debt and investment concepts became synthetic `0.0` with `REPORTED` status. | Preserves `None` with `MetricStatus.UNAVAILABLE` unless explicit analyst assumption is assigned. | Clean distinction between reported zeroes, derived zeroes, analyst assumptions, and unavailable data. | `test_missing_debt_preserves_unavailable_status` |
-| **Lease Double-Counting in DCF** | Operating lease liabilities were deducted in net debt bridge while rent was deducted in EBIT. | Lease-as-Operating-Expense convention: $\text{{Net Debt Bridge}} = \text{{Total Financial Debt}} - \text{{Total Cash}}$. | Unbiased equity valuation without double-counting lease expenses. | `test_fcff_model_lease_convention` |
+| **Aggregate Missing-Data Propagation** | Partial debt summed to total; ticker whitelist assumed zero debt; missing totals defaulted to 0.0. | Disallows partial-debt summing; removes ticker whitelisting; propagates unavailable totals to net debt, EV, multiples, and DCF suppression. | `DUOL` & `ULTA` DCF valuations suppressed; `net_debt` preserved as `UNAVAILABLE`. | `test_missing_debt_preserves_unavailable_status` |
+| **Share Denominator Discrimination** | First share count chosen; quarterly shares labeled as TTM shares. | Deterministically discriminates quarterly (80-100d), YTD, and annual (350-375d); notes non-TTM nature. | Permutation-invariant share extraction; distinct denominators for flows vs market cap. | `test_permutation_invariance_source_observations` |
 | **Reverse DCF Boundary Values** | Reverse DCF returned boundary value (100.0%) when target price was unbracketed. | Checks that target is bracketed in [-50%, +200%]; returns `None` with status if unbracketed; verifies roundtrip. | Implied revenue CAGRs verified via roundtrip forward model. | `test_reverse_dcf_unbracketed_target` |
 
 ---
@@ -167,14 +167,15 @@ def generate_deep_dive_report(ledger: Dict[str, Any]) -> str:
     companies = ledger["companies"]
     leads = [sym for sym in ["FIX", "DUOL", "ULTA"] if sym in companies and companies[sym].get("deep_valuation")]
 
-    content = f"""# DEEP DIVE UNDERVALUED GROWTH ASSESSMENTS
-## In-Depth Valuation, Shareholder Economics & Downside Risk Analysis for Primary Research Leads: {', '.join(leads)}
+    content = f"""# SELECTED CASE STUDY ASSESSMENTS: FIX, DUOL, ULTA
+## In-Depth Valuation, Shareholder Economics & Downside Risk Analysis for Selected Diagnostic Case Studies: {', '.join(leads)}
 
 **Document Status**: Official Research Deliverable  
 **Release Marker**: `SOURCED_FUNDAMENTALS_CORRECTIONS_AND_OFFLINE_REPLAY_LOCAL_VERIFIED`  
 **Date**: October 19, 2026  
 **Analyst Context**: Prepared for David Akara — ARX Terminal Research Workstream  
-**Methodology**: Free Cash Flow to Firm (FCFF) Multi-Scenario Modeling, Lease-as-Operating-Expense Convention, Numerical Reverse-DCF Solving, and SEC Primary XBRL Provenance.
+**Methodology**: Free Cash Flow to Firm (FCFF) Multi-Scenario Modeling, Lease-as-Operating-Expense Convention, Numerical Reverse-DCF Solving, and SEC Primary XBRL Provenance.  
+**Diagnostic Case Selection**: FIX, DUOL, and ULTA were designated as contrasting architectural case studies (industrial infrastructure compounder, asset-light software subscriber, omnichannel retail brand) to test the sourced fundamentals framework under distinct accounting and capital structure regimes, not as certified algorithmic top picks.
 
 ---
 """
@@ -184,24 +185,64 @@ def generate_deep_dive_report(ledger: Dict[str, Any]) -> str:
         m = c["derived_metrics"]
         cf_data = c["fundamentals"]
         dv = c["deep_valuation"]
-        scenarios = dv["scenarios"]
+        scenarios = dv.get("scenarios", {})
+        val_status = dv.get("valuation_status", "AVAILABLE")
+        supp_reason = dv.get("suppression_reason")
 
-        content += f"""## {idx}. {cf_data['company_name']} (`{sym}`)
+        content += f"""## {idx}. {cf_data['company_name']} (`{sym}`) [Selected Case Study]
 
-### {idx}.1 Business Model, Secular Drivers & Competitive Moat
+### {idx}.1 Business Model, Secular Drivers & Diagnostic Role
 {cf_data['business_model']}.
-- **Diagnostic Role**: Contrasting fundamental archetype evaluated under strict duration-validated SEC financial facts.
+- **Diagnostic Role**: Contrasting fundamental archetype evaluated under strict duration-validated SEC financial facts. Selected as an illustrative diagnostic case study, not an algorithmic top pick.
 
 ### {idx}.2 Sourced Shareholder Economics & Balance Sheet Architecture
 - **Revenue TTM**: **{_fmt_m(m['revenue_ttm'])}** ({_fmt_pct(m['revenue_growth_yoy_pct'], show_sign=True)} YoY from {_fmt_m(m['revenue_prior_ttm'])}).
 - **Operating Income (EBIT) TTM**: **{_fmt_m(m['operating_income_ttm'])}** ({_fmt_pct(m['operating_margin_pct'])} operating margin).
 - **Cash Flow Operations (CFO)**: **{_fmt_m(m['cfo_ttm'])}** | **Capex**: **{_fmt_m(m['capex_ttm'])}**.
 - **Non-GAAP Free Cash Flow (CFO - Capex)**: **{_fmt_m(m['cfo_minus_capex_ttm'])}** ({_fmt_pct(m['fcf_conversion_ebit_pct'])} conversion of EBIT).
-- **Total Cash & Short-Term Investments**: **{_fmt_m(m['total_cash_and_investments'])}**.
+- **Total Cash & Short-Term Investments**: **{_fmt_m(m['total_cash_and_investments'])}** (Cash & equivalents: {_fmt_m(m['cash_and_equivalents'])}).
 - **Total Financial Debt**: **{_fmt_m(m['total_financial_debt'])}**.
 - **Net Debt Bridge (Debt - Cash)**: **{_fmt_m(m['net_debt'])}** (Lease-as-Operating-Expense convention: operating leases excluded from bridge).
 - **Diluted Shares (TTM)**: **{m['diluted_shares_weighted_avg'] / 1e6:,.2f}M shares** (1Y dilution: {_fmt_pct(m['share_dilution_1y_pct'], show_sign=True)}, 3Y dilution: {_fmt_pct(m['share_dilution_3y_pct'], show_sign=True)}).
+"""
 
+        if val_status == "SUPPRESSED_UNAVAILABLE" or not scenarios:
+            content += f"""
+### {idx}.3 Multi-Scenario FCFF Valuation Model — SUPPRESSED (UNAVAILABLE)
+> [!WARNING]
+> **Valuation Suppressed Due to Critical Evidence Gap**:
+> {supp_reason or 'Critical balance sheet inputs unavailable in primary XBRL tags.'}
+
+Under the **Aggregate Completeness Principle**, unevidenced balance sheet components cannot be presumed to be zero. Because total financial debt is unavailable, the enterprise-to-equity bridge ($EV - \\text{{Net Debt}} = \\text{{Equity Value}}$) cannot be established without guessing. Consequently, forward DCF per-share estimates are suppressed rather than manufactured from unverified assumptions.
+
+| Valuation Metric | Conservative Scenario | Base Scenario | Optimistic Scenario |
+| :--- | :---: | :---: | :---: |
+| **5-Year Revenue CAGR** | N/A | N/A | N/A |
+| **Operating Margin Target** | N/A | N/A | N/A |
+| **Discount Rate (WACC)** | N/A | N/A | N/A |
+| **Terminal Growth Rate (g)** | N/A | N/A | N/A |
+| **PV of 5-Year Cash Flows** | N/A | N/A | N/A |
+| **PV of Terminal Value** | N/A | N/A | N/A |
+| **Enterprise Value (EV)** | N/A | N/A | N/A |
+| **Net Debt Bridge** | N/A | N/A | N/A |
+| **Equity Value Estimate** | N/A | N/A | N/A |
+| **Per Share Value Estimate** | **N/A** | **N/A** | **N/A** |
+| **Current Market Price ({dv['current_price_date']})** | **${dv['current_price']:.2f}** | **${dv['current_price']:.2f}** | **${dv['current_price']:.2f}** |
+| **Implied Upside / Downside %** | **N/A** | **N/A** | **N/A** |
+
+### {idx}.4 Reverse-DCF & Market Expectations Analysis
+- **Solved Variable**: 5-Year Revenue CAGR holding operating margin and cost of capital constant.
+- **Market-Implied 5-Year Revenue CAGR**: **N/A** (Suppressed — net debt bridge unavailable).
+- **Verification Status**: `{dv.get('reverse_dcf_fixed_assumptions', {}).get('solution_status', 'SUPPRESSED_NET_DEBT_UNAVAILABLE')}`.
+- **Economic Interpretation**: Reverse-DCF solving cannot be completed without an authoritative net debt bridge.
+
+### {idx}.5 Valuation Sensitivity Matrix
+*Sensitivity matrix suppressed due to unavailable net debt bridge.*
+"""
+        else:
+            rev_dcf_val = dv.get("reverse_dcf_implied_5y_growth_pct")
+            rev_dcf_str = f"{rev_dcf_val:.2f}%" if rev_dcf_val is not None else "N/A"
+            content += f"""
 ### {idx}.3 Multi-Scenario FCFF Valuation Model
 All scenarios model 5 years of explicit free cash flows discounted at WACC, followed by perpetual terminal value under the Lease-as-Operating-Expense convention.
 
@@ -222,49 +263,48 @@ All scenarios model 5 years of explicit free cash flows discounted at WACC, foll
 
 ### {idx}.4 Reverse-DCF & Market Expectations Analysis
 - **Solved Variable**: 5-Year Revenue CAGR holding base operating margin ({_fmt_pct(dv['reverse_dcf_fixed_assumptions']['operating_margin_target_pct'])}), WACC ({_fmt_pct(dv['reverse_dcf_fixed_assumptions']['wacc_pct'])}), and terminal growth ({_fmt_pct(dv['reverse_dcf_fixed_assumptions']['terminal_growth_pct'])}) constant.
-- **Market-Implied 5-Year Revenue CAGR**: **{dv['reverse_dcf_implied_5y_growth_pct']:.2f}%**.
+- **Market-Implied 5-Year Revenue CAGR**: **{rev_dcf_str}**.
 - **Verification Status**: `{dv['reverse_dcf_fixed_assumptions']['solution_status']}`.
-- **Economic Interpretation**: The prevailing reference price (${dv['current_price']:.2f}) requires {sym} to compound top-line revenue at **{dv['reverse_dcf_implied_5y_growth_pct']:.2f}% annually for five consecutive years** while maintaining target operating profitability.
+- **Economic Interpretation**: The prevailing reference price (${dv['current_price']:.2f}) requires {sym} to compound top-line revenue at **{rev_dcf_str} annually for five consecutive years** while maintaining target operating profitability.
 
 ### {idx}.5 Valuation Sensitivity Matrix (Per Share Value in USD)
 Evaluated across WACC and Terminal Growth rates holding Base Scenario operating margin and reinvestment assumptions constant:
 
 """
-        # Build sensitivity table
-        matrix = dv["sensitivity_matrix"]
-        wacc_keys = list(matrix.keys())
-        g_keys = list(matrix[wacc_keys[0]].keys()) if wacc_keys else []
+            matrix = dv.get("sensitivity_matrix", {})
+            wacc_keys = list(matrix.keys())
+            g_keys = list(matrix[wacc_keys[0]].keys()) if wacc_keys else []
 
-        g_headers = " | ".join([k.replace("g_", "g = ") for k in g_keys])
-        g_seps = " | ".join([":---:"] * len(g_keys))
-        content += f"| WACC \\ Terminal Growth | {g_headers} |\n"
-        content += f"| :---: | {g_seps} |\n"
+            g_headers = " | ".join([k.replace("g_", "g = ") for k in g_keys])
+            g_seps = " | ".join([":---:"] * len(g_keys))
+            content += f"| WACC \\ Terminal Growth | {g_headers} |\n"
+            content += f"| :---: | {g_seps} |\n"
 
-        for w_k in wacc_keys:
-            w_label = w_k.replace("WACC_", "")
-            row_vals = []
-            for g_k in g_keys:
-                v = matrix[w_k].get(g_k)
-                if v is None:
-                    row_vals.append("N/A")
-                elif sym == "FIX" and w_k == "WACC_9.5%" and g_k == "g_2.5%":
-                    row_vals.append(f"**${v:.2f}** (Base)")
-                elif sym == "DUOL" and w_k == "WACC_10.0%" and g_k == "g_3.0%":
-                    row_vals.append(f"**${v:.2f}** (Base)")
-                elif sym == "ULTA" and w_k == "WACC_9.0%" and g_k == "g_2.0%":
-                    row_vals.append(f"**${v:.2f}** (Base)")
-                else:
-                    row_vals.append(f"${v:.2f}")
-            content += f"| **{w_label}** | {' | '.join(row_vals)} |\n"
+            for w_k in wacc_keys:
+                w_label = w_k.replace("WACC_", "")
+                row_vals = []
+                for g_k in g_keys:
+                    v = matrix[w_k].get(g_k)
+                    if v is None:
+                        row_vals.append("N/A")
+                    elif sym == "FIX" and w_k == "WACC_9.5%" and g_k == "g_2.5%":
+                        row_vals.append(f"**${v:.2f}** (Base)")
+                    elif sym == "DUOL" and w_k == "WACC_10.0%" and g_k == "g_3.0%":
+                        row_vals.append(f"**${v:.2f}** (Base)")
+                    elif sym == "ULTA" and w_k == "WACC_9.0%" and g_k == "g_2.0%":
+                        row_vals.append(f"**${v:.2f}** (Base)")
+                    else:
+                        row_vals.append(f"${v:.2f}")
+                content += f"| **{w_label}** | {' | '.join(row_vals)} |\n"
 
         content += f"""
 ### {idx}.6 Thesis Invalidation Thresholds & Evidence Milestones
 - **Thesis Invalidation Thresholds**:
 """
-        for t_item in dv["thesis_invalidation_thresholds"]:
+        for t_item in dv.get("thesis_invalidation_thresholds", []):
             content += f"  - {t_item}\n"
         content += "- **Next Quarter Evidence Milestones**:\n"
-        for m_item in dv["next_quarter_evidence_milestones"]:
+        for m_item in dv.get("next_quarter_evidence_milestones", []):
             content += f"  - {m_item}\n"
         content += "\n---\n\n"
 
@@ -275,7 +315,7 @@ def generate_implementation_handoff_report(ledger: Dict[str, Any]) -> str:
     """Generate SOURCED_FUNDAMENTALS_IMPLEMENTATION_AND_HANDOFF.md directly from ledger."""
     content = f"""# SOURCED FUNDAMENTALS IMPLEMENTATION & HANDOFF RECORD
 
-**Workstream Status**: `SOURCED_FUNDAMENTALS_CORRECTIONS_AND_OFFLINE_REPLAY_LOCAL_VERIFIED`  
+**Workstream Status**: `SOURCED_FUNDAMENTALS_EVIDENCE_HANDLING_AND_REPLAY_REVIEW_READY`  
 **Date**: October 19, 2026  
 **Repository**: `daakara/finance`  
 **Worktree**: `C:\\Users\\akara\\Documents\\Projects\\finance-sourced-fundamentals-pilot`  
@@ -295,8 +335,11 @@ All code lives in an isolated module under `analyst_dashboard/research/sourced_f
 3. **Lease-as-Operating-Expense Valuation Framework**: Operating lease obligations are evaluated under a consistent convention where leases are expensed in operating earnings, preventing double-counting of lease liabilities in the net debt bridge.
 4. **Corporate Action Normalization**: Multi-year share dilution comparisons explicitly account for forward splits (`DECK` 6:1 split on Sep 13, 2024; `CELH` 3:1 split on Nov 15, 2023; `KLAC` 10:1 split in 2026). Split multipliers are applied only to pre-split filings, eliminating phantom dilution spikes while avoiding double adjustment on restated observations.
 5. **Reverse-DCF Target Bracketing & Roundtrip Verification**: Reverse-DCF solves for 5-year Revenue CAGR ($g$) with target bracketing verification. Target prices outside reasonable bounds return explicit `None` instead of boundary artifacts. Solved CAGRs are validated via forward-model roundtrip check ($|DCF - target| < $0.05).
-6. **Programmatic Report Parity**: All markdown tables and analytical reports are generated directly from `sourced_fundamentals_ledger.json`, eliminating human transcription errors and report/model divergence.
-7. **Complete Offline Replay**: Primary SEC JSONs and dated market prices are retained in `data/research/sourced_fundamentals/raw/` with a cryptographic `manifest.json` ledger. The entire research package executes in `--offline` mode with zero network requests.
+6. **Aggregate Completeness & Missing-Data Propagation**: Disallows partial debt sum-to-total and removes ticker whitelisting. Missing debt propagates to net debt, EV, and suppresses deep valuations with explicit diagnostic reasons.
+7. **Denominator Semantics**: Explicitly discriminates between period-weighted diluted shares for flow items (EPS, CFO-Capex per share) and point-in-time common shares for market cap.
+8. **Intra-filing Conflict Detection & Restatement Precedence**: Detects identical metadata conflicts returning `UNAVAILABLE`, and respects amendment/restatement precedence deterministically.
+9. **Programmatic Report Parity**: All markdown tables and analytical reports are generated directly from `sourced_fundamentals_ledger.json`, eliminating human transcription errors and report/model divergence.
+10. **Complete Offline Replay**: Primary SEC JSONs and dated market prices are retained in `data/research/sourced_fundamentals/raw/` with a cryptographic `manifest.json` ledger. The entire research package executes in `--offline` mode with zero network requests.
 
 ---
 
@@ -306,16 +349,16 @@ All code lives in an isolated module under `analyst_dashboard/research/sourced_f
 | :--- | :--- | :---: |
 | `analyst_dashboard/research/sourced_fundamentals/contracts.py` | Immutable data contracts: `FinancialFact`, `CompanyFundamentals`, `DerivedMetrics`, `ResearchAssessmentRecord`, `ValuationScenario`, `DeepValuationAssessment`. | Verified |
 | `analyst_dashboard/research/sourced_fundamentals/sec_harvester.py` | Rate-limited SEC EDGAR API harvester and offline replay loader with SHA-256 manifest generation. | Verified |
-| `analyst_dashboard/research/sourced_fundamentals/normalizer.py` | Duration-validated US-GAAP concept mapper, fiscal boundary matcher, and instant balance-sheet fact extractor. | Verified |
+| `analyst_dashboard/research/sourced_fundamentals/normalizer.py` | Duration-validated US-GAAP concept mapper, conflict detector, amendment precedence resolver, and instant fact extractor. | Verified |
 | `analyst_dashboard/research/sourced_fundamentals/calculations.py` | Derived metrics engine: growth, margins, non-GAAP CFO - Capex, ROIC, multiples, and arithmetic verification. | Verified |
-| `analyst_dashboard/research/sourced_fundamentals/qualitative_assessor.py` | Dynamic qualitative assessment engine assigning dispositions (`RESEARCH_FURTHER`, `WATCH`) and thesis invalidation conditions. | Verified |
+| `analyst_dashboard/research/sourced_fundamentals/qualitative_assessor.py` | Dynamic qualitative assessment engine assigning dispositions (`RESEARCH_FURTHER`, `WATCH`, `INSUFFICIENT_EVIDENCE`) and thesis invalidation conditions. | Verified |
 | `analyst_dashboard/research/sourced_fundamentals/valuation.py` | FCFF multi-scenario DCF engine, numerical Reverse-DCF solver with bracketing, and 2D sensitivity matrix generator. | Verified |
-| `analyst_dashboard/research/sourced_fundamentals/cli.py` | CLI orchestrator supporting `--offline` and `--refresh` modes, split-normalized dilution, and evidence ledger export. | Verified |
+| `analyst_dashboard/research/sourced_fundamentals/cli.py` | CLI orchestrator supporting `--offline`, `--refresh`, and `--cutoff-date`, split-normalized dilution, and evidence ledger export. | Verified |
 | `analyst_dashboard/research/sourced_fundamentals/report_generator.py` | Programmatic Markdown deliverable generator reading directly from `sourced_fundamentals_ledger.json`. | Verified |
 | `analyst_dashboard/research/sourced_fundamentals/__init__.py` | Package entrypoint exposing clean public interfaces. | Verified |
 | `data/research/sourced_fundamentals/raw/manifest.json` | Provenance manifest tracking raw SEC JSONs, URLs, timestamps, and SHA-256 hashes. | Verified |
 | `data/research/sourced_fundamentals/sourced_fundamentals_ledger.json` | Master JSON evidence ledger containing complete facts, derivations, assessments, and deep valuations for 8 companies. | Verified |
-| `tests/test_sourced_fundamentals_pilot.py` | Comprehensive 17-scenario failure-reproducing test suite verifying duration selection, split adjustments, reverse DCF, and offline replay. | Verified |
+| `tests/test_sourced_fundamentals_pilot.py` | Comprehensive 23-scenario failure-reproducing test suite verifying duration selection, split adjustments, reverse DCF, aggregate completeness, and offline replay. | Verified |
 
 ---
 
