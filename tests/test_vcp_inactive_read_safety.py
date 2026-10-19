@@ -458,6 +458,11 @@ def test_07_complete_status_propagation_matrix(isolated_vcp_environment, monkeyp
             "status": capabilities.get("VCP", {}).get("status", "AVAILABLE"),
         }
 
+    active_vcp_universe = [
+        s for s in CANONICAL_VCP_UNIVERSE
+        if s not in getattr(screener_module, "CONFIRMED_CORPORATE_ACTIONS", {})
+    ]
+
     # 1. PIPELINE_PENDING / NO_ACTIVE_SNAPSHOT (Empty store before seeding)
     resp_run = client.get("/api/v1/screener/run")
     assert resp_run.status_code == 200
@@ -472,7 +477,7 @@ def test_07_complete_status_propagation_matrix(isolated_vcp_environment, monkeyp
     assert ui["status"] == "PIPELINE_PENDING"
 
     # 2. AVAILABLE with positive matches (3 matches in active candidate universe)
-    _seed_snapshot(env["store"], snapshot_id="snap-mat-pos", symbols=CANONICAL_VCP_UNIVERSE[:3])
+    _seed_snapshot(env["store"], snapshot_id="snap-mat-pos", symbols=active_vcp_universe[:3])
     env["runner"]._cached_active_snapshot = None
     env["save_spy"].reset_mock()
 
@@ -548,7 +553,7 @@ def test_07_complete_status_propagation_matrix(isolated_vcp_environment, monkeyp
     orig_get_id = env["store"].__class__.get_latest_active_snapshot_id.__get__(env["store"], env["store"].__class__)
     monkeypatch.setattr(env["runner"].snapshot_store, "get_latest_active_snapshot", orig_get)
     monkeypatch.setattr(env["runner"].snapshot_store, "get_latest_active_snapshot_id", orig_get_id)
-    _seed_snapshot(env["store"], snapshot_id="snap-mat-stale", freshness_status="STALE", status_at_publication="STALE", symbols=CANONICAL_VCP_UNIVERSE[:2])
+    _seed_snapshot(env["store"], snapshot_id="snap-mat-stale", freshness_status="STALE", status_at_publication="STALE", symbols=active_vcp_universe[:2])
     env["runner"]._cached_active_snapshot = None
     env["save_spy"].reset_mock()
 
