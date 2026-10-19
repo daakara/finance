@@ -1221,24 +1221,41 @@ def test_29_actual_eight_company_narrative_soundness():
     assert companies["ULTA"]["deep_valuation"]["valuation_status"] == "SUPPRESSED_UNAVAILABLE"
 
 
-# 30. Valid UTF-8 Cumulative Patch Verification (Issue 4)
+def _get_cumulative_patch_bytes(base_sha: str, repo_root: str) -> bytes:
+    """
+    Loads exported cumulative patch if present on disk; otherwise generates it from Git.
+    """
+    patch_file = os.path.join(repo_root, "sourced_fundamentals_pilot_cumulative.patch")
+    if os.path.exists(patch_file):
+        with open(patch_file, "rb") as f:
+            return f.read()
+
+    # Generate from git if inside repository
+    try:
+        return subprocess.check_output(
+            ["git", "diff", base_sha, "HEAD"],
+            cwd=repo_root
+        )
+    except Exception as e:
+        pytest.fail(f"Exported patch not found at {patch_file} and git diff generation failed: {e}")
+
+
+# 30. Valid UTF-8 Cumulative Patch Encoding Verification (Issue 4, Part A)
 def test_30_valid_utf8_cumulative_patch_verification():
     """
-    Scenario 30 (Issue 4):
-    1. Generates cumulative git diff from base commit 3b953f834a49d88496dfa9dae56584e17e60bae4 to HEAD.
+    Scenario 30 (Issue 4, Part A):
+    1. Loads exported cumulative patch or generates git diff from base commit 3b953f834a49d88496dfa9dae56584e17e60bae4 to HEAD.
     2. Verifies valid UTF-8 encoding:
        - No UTF-16 little-endian BOM (0xFF 0xFE).
        - No UTF-16 big-endian BOM (0xFE 0xFF).
+       - No UTF-8 BOM (0xEF 0xBB 0xBF).
        - Zero embedded NUL bytes (0x00).
        - Strict utf-8 decoding succeeds.
-    3. Verifies git apply --check succeeds in an isolated worktree of the base commit.
+       - Contains valid diff content headers.
     """
-    patch_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "sourced_fundamentals_pilot_cumulative.patch")
-    if os.path.exists(patch_file):
-        with open(patch_file, "rb") as f:
-            diff_bytes = f.read()
-    else:
-        diff_bytes = subprocess.check_output(["git", "diff", base_sha, "HEAD"])
+    base_sha = "3b953f834a49d88496dfa9dae56584e17e60bae4"
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    diff_bytes = _get_cumulative_patch_bytes(base_sha, repo_root)
 
     # 1. Byte-level encoding checks
     assert not diff_bytes.startswith(b"\xff\xfe"), "Patch must NOT start with UTF-16 LE BOM"
@@ -1248,22 +1265,76 @@ def test_30_valid_utf8_cumulative_patch_verification():
 
     # 2. Strict UTF-8 decode
     decoded_text = diff_bytes.decode("utf-8")
-    assert len(decoded_text) > 0
-    assert "diff --git" in decoded_text
+    assert len(decoded_text) > 0, "Patch text must not be empty"
+    assert "diff --git" in decoded_text, "Patch must contain valid diff headers"
 
-    # 3. Isolated worktree git apply --check (if inside git repo)
+
+# 31. Cumulative Patch Application Against Base Commit (Issue 4, Part B)
+def test_31_cumulative_patch_application_against_base():
+    """
+    Scenario 31 (Issue 4, Part B):
+    1. Verifies repository availability and base commit object existence.
+    2. Executes git apply --check in an isolated detached worktree at base commit 3b953f834a49d88496dfa9dae56584e17e60bae4.
+    3. Guarantees safe cleanup without masking original test failures.
+    4. In an extracted package without Git history, skips cleanly with precise diagnostic message.
+    """
+    base_sha = "3b953f834a49d88496dfa9dae56584e17e60bae4"
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    # Inside extracted package without Git history: skip application check cleanly
     try:
-        git_check = subprocess.run(["git", "rev-parse", "--is-inside-work-tree"], capture_output=True, text=True)
+        git_check = subprocess.run(
+            ["git", "rev-parse", "--is-inside-work-tree"],
+            cwd=repo_root,
+            capture_output=True,
+            text=True
+        )
         if git_check.returncode != 0:
-            pytest.skip("Not inside a git repository; patch encoding verified.")
+            pytest.skip("Not inside a git repository; application check requires repository history.")
     except FileNotFoundError:
-        pytest.skip("Git executable not found; patch encoding verified.")
+        pytest.skip("Git executable not found; application check requires git command-line tool.")
+
+    # Check if base commit object exists in this git repository
+    base_check = subprocess.run(
+        ["git", "cat-file", "-e", f"{base_sha}^{{commit}}"],
+        cwd=repo_root,
+        capture_output=True
+    )
+    if base_check.returncode != 0:
+        pytest.skip(f"Base commit {base_sha} not present in repository history; application check requires base commit object.")
+
+    diff_bytes = _get_cumulative_patch_bytes(base_sha, repo_root)
 
     td = tempfile.mkdtemp()
+    worktree_added = False
     try:
-        subprocess.check_call(["git", "worktree", "add", "--detach", td, base_sha], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        res = subprocess.run(["git", "apply", "--check"], input=diff_bytes, cwd=td, capture_output=True)
+        add_res = subprocess.run(
+            ["git", "worktree", "add", "--detach", td, base_sha],
+            cwd=repo_root,
+            capture_output=True,
+            text=True
+        )
+        assert add_res.returncode == 0, f"git worktree add failed: {add_res.stderr}"
+        worktree_added = True
+
+        res = subprocess.run(
+            ["git", "apply", "--check"],
+            input=diff_bytes,
+            cwd=td,
+            capture_output=True
+        )
         assert res.returncode == 0, f"git apply --check failed: {res.stderr.decode('utf-8', errors='replace')}"
     finally:
-        subprocess.check_call(["git", "worktree", "remove", "--force", td], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if worktree_added:
+            try:
+                subprocess.run(
+                    ["git", "worktree", "remove", "--force", td],
+                    cwd=repo_root,
+                    capture_output=True
+                )
+            except Exception:
+                pass
+        if os.path.exists(td):
+            import shutil
+            shutil.rmtree(td, ignore_errors=True)
 
