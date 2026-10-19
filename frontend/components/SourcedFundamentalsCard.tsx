@@ -348,11 +348,11 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
         {/* Operating Leases Note */}
         <div className="text-[11px] text-slate-400 font-sans pt-1 border-t border-[#111722] flex flex-wrap items-center justify-between gap-2">
           <span>
-            Operating Lease Liabilities (ASC 842):{" "}
+            Operating Lease Liabilities (Noncurrent) (ASC 842):{" "}
             <strong className="text-slate-200 font-mono">
               {formatUSD(dm.operating_lease_liabilities?.value)}
             </strong>{" "}
-            (Contractual operating lease commitments treated as operating expenses rather than financial debt).
+            (Contractual noncurrent operating lease commitments treated as operating obligations rather than financial debt).
           </span>
           {dm.net_debt?.value !== null && dm.net_debt?.value !== undefined && (
             <span>
@@ -417,10 +417,20 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
                       className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
                         fact.fact_type === "PRIMARY_REPORTED"
                           ? "bg-cyan-950 text-cyan-300 border border-cyan-800"
+                          : fact.fact_type === "RESEARCH_ESTIMATE"
+                          ? "bg-purple-950 text-purple-300 border border-purple-800"
+                          : fact.fact_type === "UNAVAILABLE"
+                          ? "bg-slate-900 text-slate-500 border border-slate-800"
                           : "bg-slate-900 text-slate-400 border border-slate-700"
                       }`}
                     >
-                      {fact.fact_type === "PRIMARY_REPORTED" ? "REPORTED (XBRL)" : "DERIVED FORMULA"}
+                      {fact.fact_type === "PRIMARY_REPORTED"
+                        ? "REPORTED (XBRL)"
+                        : fact.fact_type === "RESEARCH_ESTIMATE"
+                        ? "RESEARCH ESTIMATE"
+                        : fact.fact_type === "UNAVAILABLE"
+                        ? "UNAVAILABLE"
+                        : "DERIVED FORMULA"}
                     </span>
                   </td>
                   <td className="py-2 px-3">
@@ -450,7 +460,7 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#162030] pb-2">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-white uppercase tracking-wider">
-              Research Evidence & Invalidation Framework
+              Analyst Research Invalidation Thresholds (Exploratory Scenarios)
             </span>
           </div>
           <span className="text-[10px] text-slate-400 font-mono">

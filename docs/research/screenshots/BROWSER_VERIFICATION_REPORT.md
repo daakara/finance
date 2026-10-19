@@ -1,6 +1,6 @@
 # Quality Gate D — Rendered Browser Verification Report
 
-**Verification Date**: 2026-10-19 19:31:50 UTC  
+**Verification Date**: 2026-10-19 22:05:30 UTC  
 **Engine**: Playwright Chromium (Automated Headless Browser)  
 **Status**: **GATE D PASSED (100% UNOBSCURED)**
 
@@ -8,13 +8,13 @@
 
 | Ticker | Viewport | Dimensions | Card Bounding Box | Card PNG | Viewport PNG | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :---: |
-| **FIX** | desktop | 1280x900 | 848x1360px | `unobscured_card_fix_desktop.png` | `unobscured_viewport_fix_desktop.png` | **PASSED** |
-| **DUOL** | desktop | 1280x900 | 848x1428px | `unobscured_card_duol_desktop.png` | `unobscured_viewport_duol_desktop.png` | **PASSED** |
-| **ULTA** | desktop | 1280x900 | 848x1462px | `unobscured_card_ulta_desktop.png` | `unobscured_viewport_ulta_desktop.png` | **PASSED** |
+| **FIX** | desktop | 1280x900 | 848x1376px | `unobscured_card_fix_desktop.png` | `unobscured_viewport_fix_desktop.png` | **PASSED** |
+| **DUOL** | desktop | 1280x900 | 848x1444px | `unobscured_card_duol_desktop.png` | `unobscured_viewport_duol_desktop.png` | **PASSED** |
+| **ULTA** | desktop | 1280x900 | 848x1479px | `unobscured_card_ulta_desktop.png` | `unobscured_viewport_ulta_desktop.png` | **PASSED** |
 | **AAPL** | desktop | 1280x900 | 848x166px | `unobscured_card_aapl_desktop.png` | `unobscured_viewport_aapl_desktop.png` | **PASSED** |
-| **FIX** | mobile | 390x844 | 358x2292px | `unobscured_card_fix_mobile.png` | `unobscured_viewport_fix_mobile.png` | **PASSED** |
-| **DUOL** | mobile | 390x844 | 358x2427px | `unobscured_card_duol_mobile.png` | `unobscured_viewport_duol_mobile.png` | **PASSED** |
-| **ULTA** | mobile | 390x844 | 358x2496px | `unobscured_card_ulta_mobile.png` | `unobscured_viewport_ulta_mobile.png` | **PASSED** |
+| **FIX** | mobile | 390x844 | 358x2308px | `unobscured_card_fix_mobile.png` | `unobscured_viewport_fix_mobile.png` | **PASSED** |
+| **DUOL** | mobile | 390x844 | 358x2444px | `unobscured_card_duol_mobile.png` | `unobscured_viewport_duol_mobile.png` | **PASSED** |
+| **ULTA** | mobile | 390x844 | 358x2513px | `unobscured_card_ulta_mobile.png` | `unobscured_viewport_ulta_mobile.png` | **PASSED** |
 | **AAPL** | mobile | 390x844 | 358x272px | `unobscured_card_aapl_mobile.png` | `unobscured_viewport_aapl_mobile.png` | **PASSED** |
 
 ## Invariant Checklist

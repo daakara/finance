@@ -104,6 +104,14 @@ def run_verification():
                 page.on("console", lambda msg: console_errors.append(msg.text) if msg.type == "error" else None)
 
                 for ticker, label, is_cataloged in targets:
+                    case_errors = []
+                    def handle_console(msg):
+                        if msg.type == "error":
+                            case_errors.append(msg.text)
+                            console_errors.append(f"[{ticker}:{vp_name}] {msg.text}")
+
+                    page.on("console", handle_console)
+
                     url = f"{BASE_URL}/stock/{ticker}/"
                     print(f"Navigating to {url} [{label}]...")
                     page.goto(url, wait_until="networkidle")
@@ -121,6 +129,10 @@ def run_verification():
                     card.scroll_into_view_if_needed()
                     time.sleep(0.3)
 
+                    # Ensure not covered by fixed top header (offset scroll if needed)
+                    page.evaluate("() => window.scrollBy(0, -60)")
+                    time.sleep(0.2)
+
                     # 3. Assert visibility and positive bounding box
                     assert card.is_visible(), f"Sourced fundamentals card is not visible for {ticker}"
                     box = card.bounding_box()
@@ -128,7 +140,19 @@ def run_verification():
                     assert box["width"] > 250, f"Card width {box['width']} is too narrow"
                     assert box["height"] > 80, f"Card height {box['height']} is too small"
 
-                    # 4. Check specific content assertions
+                    # 4. Check that content is not behind fixed navigation or overlays
+                    is_unobscured = page.evaluate("""() => {
+                        const card = document.getElementById('sourced-fundamentals-section');
+                        if (!card) return false;
+                        const r = card.getBoundingClientRect();
+                        const checkY = Math.min(Math.max(r.top + 30, 10), window.innerHeight - 20);
+                        const checkX = Math.min(Math.max(r.left + 30, 10), window.innerWidth - 20);
+                        const topEl = document.elementFromPoint(checkX, checkY);
+                        return topEl ? card.contains(topEl) : false;
+                    }""")
+                    assert is_unobscured, f"Card content at top-left is occluded by fixed overlay or navigation for {ticker} ({vp_name})"
+
+                    # 5. Check specific content assertions
                     card_text = card.inner_text()
                     if is_cataloged:
                         assert "SEC EDGAR Disclosures" in card_text or "Form 10-" in card_text
@@ -137,11 +161,32 @@ def run_verification():
                         assert "DCF" not in card_text
                         assert "Fair Value" not in card_text
                         assert "Accumulation" not in card_text
+
+                        # F07: Table horizontal scrollability on narrow viewports
+                        table_container = card.locator(".overflow-x-auto")
+                        assert table_container.count() > 0, f"Missing .overflow-x-auto container for {ticker}"
+                        if width <= 600:
+                            is_horiz_scrollable = page.evaluate(
+                                "el => el.scrollWidth >= el.clientWidth",
+                                table_container.first.element_handle(),
+                            )
+                            assert is_horiz_scrollable, f"Table in {ticker} is not horizontally scrollable on mobile"
+
+                        # F07: Verify primary SEC EDGAR source anchor links
+                        sec_anchors = card.locator("a[href*='sec.gov']")
+                        assert sec_anchors.count() >= 1, f"Expected SEC EDGAR anchor links for {ticker}"
+                        for idx in range(min(sec_anchors.count(), 3)):
+                            href = sec_anchors.nth(idx).get_attribute("href")
+                            assert href and href.startswith("https://www.sec.gov/"), f"Malformed SEC link: {href}"
+                            assert ("browse/?CIK=" in href or "/Archives/edgar/data/" in href), f"Unexpected SEC path: {href}"
                     else:
                         assert "UNAVAILABLE" in card_text
                         assert "Primary filing XBRL extraction is currently available" in card_text
 
-                    # 5. Capture unobscured element and viewport screenshots
+                    # F07: Assert zero console errors occurred for this case
+                    assert len(case_errors) == 0, f"Console error(s) detected on {ticker} ({vp_name}): {case_errors}"
+
+                    # 6. Capture unobscured element and viewport screenshots
                     card_img_path = SCREENSHOTS_DIR / f"unobscured_card_{ticker}_{vp_name}.png"
                     card.screenshot(path=str(card_img_path))
 
@@ -162,7 +207,7 @@ def run_verification():
                         "box_w": box["width"],
                         "box_h": box["height"],
                         "unobscured": True,
-                        "console_errors": len(console_errors),
+                        "console_errors": len(case_errors),
                     })
 
                 context.close()

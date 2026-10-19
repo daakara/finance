@@ -49,7 +49,7 @@ Automated XBRL extraction reported `total_financial_debt: null` for DUOL and ULT
 
 ### A. Duolingo, Inc. (DUOL — CIK 0001562088)
 - **Primary Filing Audited**: Form 10-Q for the quarterly period ended June 30, 2026.
-- **Filing Accession**: `0001628280-26-053603` (Filing Date: August 7, 2026).
+- **Filing Accession**: `0001628280-26-053603` (Filing Date: August 6, 2026).
 - **SEC EDGAR URL**: [DUOL Form 10-Q (2026-06-30)](https://www.sec.gov/Archives/edgar/data/1562088/000162828026053603/)
 - **Condensed Consolidated Balance Sheet Extraction**:
   - Cash and cash equivalents: **$1,180,887,000** ($1,180.89M).
@@ -65,10 +65,10 @@ Automated XBRL extraction reported `total_financial_debt: null` for DUOL and ULT
 
 ### B. Ulta Beauty, Inc. (ULTA — CIK 0001403568)
 - **Primary Filing Audited**: Form 10-Q for the quarterly period ended August 1, 2026.
-- **Filing Accession**: `0001104659-26-102442` (Filing Date: August 28, 2026).
+- **Filing Accession**: `0001104659-26-102442` (Filing Date: August 27, 2026).
 - **SEC EDGAR URL**: [ULTA Form 10-Q (2026-08-01)](https://www.sec.gov/Archives/edgar/data/1403568/000110465926102442/)
 - **Condensed Consolidated Balance Sheet Extraction**:
-  - Cash and cash equivalents: **$158,495,000** ($158.50M).
+  - Cash and cash equivalents: **$158,451,000** ($158.45M per primary XBRL fact `us-gaap:CashAndCashEquivalentsAtCarryingValue`).
   - Current liabilities — Short-term borrowings: **$339,578,000** ($339.58M drawn under revolving credit facility).
   - Current liabilities — Current operating lease liabilities: $312,625,000.
   - Non-current liabilities — Non-current operating lease liabilities: $1,871,805,000 ($1,871.81M).
@@ -89,15 +89,17 @@ Comfort Systems USA reported exceptional cash generation for the trailing twelve
 - CFO less Capex: **$2,159,806,000** ($2,159.81M)
 - Cash Conversion: **116.8% of EBIT** (and **150.6% of Net Income**)
 
-### B. Forensic Working Capital Analysis
-Inspection of Note 4 (*Contracts in Progress*) in Form 10-Q filings reveals that cash conversion was significantly bolstered by customer advances:
-1. **Billings in Excess of Costs (Customer Advances)**:
-   - Data center electrical and mechanical projects require significant advance procurement for long-lead equipment (chillers, switchgear, generators).
-   - Hyperscale clients fund modular off-site construction upfront to reserve factory capacity.
-   - Over the TTM period, customer advance liabilities expanded by approximately **+$710.0M**, representing temporary working capital financing rather than recurring operating margin.
+### B. Forensic Working Capital & Customer Advances Analysis
+Inspection of Note 4 (*Contracts in Progress*) and Consolidated Statements of Cash Flows in Form 10-Q filings reveals that cash conversion was significantly bolstered by customer advances:
+1. **Contract Liabilities (Billings in Excess of Costs)**:
+   - Beginning balance (2025-06-30): **$1,546,306,000** ($1,546.31M).
+   - Ending balance (2026-06-30): **$3,231,104,000** ($3,231.10M), representing a **+$1,684,798,000** (+108.96%) TTM expansion.
+   - For the six months ended June 30, 2026, operating cash flows included a direct cash inflow of **+$1,061,506,000** from `us-gaap:IncreaseDecreaseInContractWithCustomerLiability`.
+   - Data center electrical and mechanical projects require significant upfront customer advances for long-lead equipment (chillers, switchgear, generators) and modular off-site capacity reservations.
+   - These customer advance liabilities represent temporary working-capital financing rather than permanent recurring operating margins.
 
 ### C. Sustainable Cash Flow Normalization Walk
-To derive a sustainable run-rate free cash flow for research valuation scenarios, we separate reported cash flow, observed working capital financing, and explicit analyst assumptions:
+To derive a sustainable run-rate free cash flow for research valuation scenarios, we separate reported cash flow, observed working capital financing, and explicit analyst assumptions (implemented in `analyst_dashboard/research/sourced_fundamentals/normalization.py`):
 
 ```
 + TTM GAAP Operating Income (EBIT):                    $1,849.30M
@@ -114,7 +116,7 @@ To derive a sustainable run-rate free cash flow for research valuation scenarios
 #### Exact Arithmetic Check
 $$\text{Sustainable Cash Flow} = \$1,443.73\text{M} + \$112.50\text{M} - \$390.26\text{M} - \$280.00\text{M} = \mathbf{\$885.97\text{M}}$$
 - The arithmetic balances exactly to the penny ($1443.73 + 112.50 - 390.26 - 280.00 = 885.97$).
-- This sustainable cash flow ($885.97M) reflects economic reality: while FIX generated $2,159.8M of cash over the trailing year, roughly $710M was working-capital customer advances that will reverse as projects reach completion.
+- This sustainable cash flow ($885.97M) reflects economic reality: while FIX generated $2,159.8M of cash over the trailing year, roughly $710M–$1.06B was working-capital customer advances that will reverse as projects reach completion.
 - Valuation models based on unadjusted $2.16B cash flow would significantly overestimate intrinsic equity value.
 
 ---
@@ -138,14 +140,14 @@ All metrics below are generated directly from the immutable research ledger (`so
 ### Table 2: Balance Sheet & Debt Completeness Audit
 | Symbol | Cash & Equiv ($M) | Short-Term Debt ($M) | Long-Term Debt ($M) | Total Financial Debt | Lease Liabilities (ASC 842) ($M) | Automated XBRL Status | Primary Filing Finding |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **FIX** | $1,854.8 | $0.21 | $53.85 | $54.06 | $315.8 | `REPORTED` | Funded debt $54.06M ($0.22M ST + $53.85M LT) fully evidenced in primary XBRL |
+| **FIX** | $1,854.8 | $0.22 | $53.85 | $54.06 | $315.8 | `DERIVED` | Funded debt $54.06M ($0.22M ST + $53.85M LT) derived from primary XBRL tags |
 | **DUOL** | $1,180.9 | *null* | *null* | **UNAVAILABLE** | $86.1 | `UNAVAILABLE` | Manual audit confirms $0.00 funded debt; missing XBRL tags preserved as null |
-| **ULTA** | $158.5 | $339.58 | *null* | **UNAVAILABLE** | $1,871.8 | `UNAVAILABLE` | Manual audit confirms $339.58M ST credit facility, $0.00 LT debt; preserved null under aggregate rule |
+| **ULTA** | $158.45 | $339.58 | *null* | **UNAVAILABLE** | $1,871.8 | `UNAVAILABLE` | Manual audit confirms $339.58M ST credit facility, $0.00 LT debt; preserved null under aggregate rule |
 | **MEDP** | $502.7 | *null* | *null* | **UNAVAILABLE** | $144.1 | `UNAVAILABLE` | Debt concepts absent in primary XBRL taxonomy; preserved null under fail-closed rule |
 | **DECK** | $1,602.6 | *null* | *null* | **UNAVAILABLE** | $399.0 | `UNAVAILABLE` | Debt concepts absent in primary XBRL taxonomy; preserved null under fail-closed rule |
 | **KLAC** | $1,649.8 | *null* | $5,887.41 | $5,887.41 | $264.3 | `REPORTED` | Funded senior notes $5,887.4M fully evidenced |
 | **LULU** | $1,389.7 | $0.00 | *null* | **UNAVAILABLE** | $1,774.5 | `UNAVAILABLE` | Debt concepts absent in primary XBRL taxonomy; preserved null under fail-closed rule |
-| **CELH** | $631.2 | $7.00 | $667.85 | $674.85 | N/A | `REPORTED` | Funded debt $674.9M fully evidenced |
+| **CELH** | $631.2 | $7.00 | $667.85 | $674.85 | N/A | `DERIVED` | Funded debt $674.9M derived from ST + LT debt |
 
 ---
 
@@ -164,7 +166,7 @@ The 8 companies evaluated constitute an exploratory research pilot sample, not a
 - **Monitoring Focus**: Paid subscriber conversion, Max tier adoption, AI content generation cost trends.
 - **Thesis Invalidation Triggers**:
   - Daily active user (DAU) or paid subscriber growth decelerating below 15% YoY.
-  - SBC dilution exceeding 5.0% of revenue (TTM baseline: 3.4%).
+  - SBC dilution expanding above 16.0% of revenue (TTM baseline: 12.64%, $144.68M SBC / $1,145.00M revenue).
   - Introduction of funded debt obligations compromising pristine net-cash balance sheet.
 
 ### 3. Ulta Beauty, Inc. (ULTA)

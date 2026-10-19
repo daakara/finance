@@ -20,6 +20,12 @@ from enum import Enum
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 
+from analyst_dashboard.research.sourced_fundamentals.identity import (
+    verify_company_identity,
+    validate_cik_format,
+    ATTRIBUTABLE_SEC_IDENTITY_AUTHORITY,
+)
+
 logger = logging.getLogger("analyst_dashboard.research.sourced_fundamentals.service")
 
 LEDGER_FILENAME = "sourced_fundamentals_ledger.json"
@@ -28,6 +34,11 @@ LEDGER_PATH = LEDGER_DIR / LEDGER_FILENAME
 
 # SEC EDGAR base URL for archival search index
 SEC_EDGAR_ARCHIVE_BASE = "https://www.sec.gov/Archives/edgar/data"
+
+
+class IdentityIntegrityError(ValueError):
+    """Raised when an internal company record violates attributable SEC identity ground truth."""
+    pass
 
 
 class SnapshotState(str, Enum):
@@ -61,7 +72,7 @@ class SourcedFundamentalsService:
         self._load_ledger()
 
     def _load_ledger(self) -> None:
-        """Loads the serialized immutable research ledger snapshot into memory."""
+        """Loads the serialized immutable research ledger snapshot into memory with strict validation."""
         if not self._ledger_path.exists():
             self._state = SnapshotState.MISSING_LEDGER
             self._error_detail = "Sourced fundamentals ledger snapshot file is not present on disk."
@@ -73,25 +84,71 @@ class SourcedFundamentalsService:
             with open(self._ledger_path, "r", encoding="utf-8") as f:
                 loaded = json.load(f)
 
-            if not isinstance(loaded, dict) or "companies" not in loaded or "metadata" not in loaded:
+            if not isinstance(loaded, dict):
                 self._state = SnapshotState.MALFORMED_LEDGER
-                self._error_detail = "Sourced fundamentals ledger data structure is malformed."
+                self._error_detail = "Sourced fundamentals ledger root must be a JSON object."
                 self._data = None
                 return
 
-            companies = loaded.get("companies")
-            if not isinstance(companies, dict) or len(companies) == 0:
+            if "metadata" not in loaded or not isinstance(loaded.get("metadata"), dict):
+                self._state = SnapshotState.MALFORMED_LEDGER
+                self._error_detail = "Sourced fundamentals ledger metadata is missing or not a dictionary."
+                self._data = None
+                return
+
+            if "companies" not in loaded or not isinstance(loaded.get("companies"), dict):
+                self._state = SnapshotState.MALFORMED_LEDGER
+                self._error_detail = "Sourced fundamentals ledger companies mapping is missing or not a dictionary."
+                self._data = None
+                return
+
+            companies = loaded.get("companies", {})
+            if len(companies) == 0:
                 self._state = SnapshotState.EMPTY_LEDGER
                 self._error_detail = "Sourced fundamentals ledger contains no company records."
                 self._data = None
                 return
+
+            # Comprehensive structural & identity validation per company record
+            for sym, cdata in companies.items():
+                if not isinstance(cdata, dict):
+                    self._state = SnapshotState.MALFORMED_LEDGER
+                    self._error_detail = f"Company record for '{sym}' must be a JSON object."
+                    self._data = None
+                    return
+
+                fundamentals = cdata.get("fundamentals")
+                if not isinstance(fundamentals, dict):
+                    self._state = SnapshotState.MALFORMED_LEDGER
+                    self._error_detail = f"Company record for '{sym}' is missing valid fundamentals object."
+                    self._data = None
+                    return
+
+                derived_metrics = cdata.get("derived_metrics")
+                if not isinstance(derived_metrics, dict):
+                    self._state = SnapshotState.MALFORMED_LEDGER
+                    self._error_detail = f"Company record for '{sym}' is missing valid derived_metrics object."
+                    self._data = None
+                    return
+
+                # Validate identity agreement against attributable SEC ground truth
+                ident_res = verify_company_identity(
+                    requested_symbol=sym,
+                    record_symbol=fundamentals.get("symbol"),
+                    record_cik=fundamentals.get("cik"),
+                )
+                if not ident_res.is_valid:
+                    self._state = SnapshotState.MALFORMED_LEDGER
+                    self._error_detail = f"Identity integrity validation failed for '{sym}': {ident_res.error}"
+                    self._data = None
+                    return
 
             self._data = loaded
             self._state = SnapshotState.READY
             self._error_detail = None
             logger.info(
                 f"Successfully loaded sourced fundamentals ledger from {self._ledger_path} "
-                f"({len(companies)} companies)"
+                f"({len(companies)} companies validated)"
             )
         except json.JSONDecodeError as jde:
             self._state = SnapshotState.MALFORMED_LEDGER
@@ -157,23 +214,30 @@ class SourcedFundamentalsService:
 
     def validate_symbol_identity(self, requested_symbol: str, company_data: Dict[str, Any]) -> bool:
         """
-        Validates that requested symbol matches company record's canonical symbol and CIK.
-        Fails closed on any mismatch, whitespace/format anomaly, or missing CIK.
+        Validates that requested symbol matches company record's canonical symbol and CIK
+        against authoritative SEC EDGAR ground truth.
+        Fails closed on any mismatch, whitespace/format anomaly, or ungrounded binding.
         """
         if not requested_symbol or not isinstance(requested_symbol, str):
             return False
         clean_sym = requested_symbol.strip().upper()
         if not clean_sym:
             return False
+        if not isinstance(company_data, dict):
+            return False
         f = company_data.get("fundamentals") or {}
+        if not isinstance(f, dict):
+            return False
         canonical_sym = f.get("symbol")
         cik = f.get("cik")
-        return canonical_sym == clean_sym and bool(cik)
+        ident_res = verify_company_identity(clean_sym, canonical_sym, cik)
+        return ident_res.is_valid
 
     def get_company_snapshot(self, symbol: str) -> Optional[Dict[str, Any]]:
         """
         Retrieves full, structured financial evidence snapshot for a company.
-        Fails closed (returns None) if symbol is uncataloged, missing, or mismatched.
+        Fails closed: returns None if symbol is uncataloged.
+        Raises IdentityIntegrityError if an existing record has an identity violation or corrupt data.
         Facts-only: Excludes DCF scenarios, fair values, and investment rankings.
         """
         if not symbol or not isinstance(symbol, str) or not self.is_ready or not self._data:
@@ -184,17 +248,27 @@ class SourcedFundamentalsService:
             return None
 
         cdata = self._data["companies"][clean_sym]
-        f = cdata.get("fundamentals") or {}
-        dm = cdata.get("derived_metrics") or {}
+        if not isinstance(cdata, dict):
+            raise IdentityIntegrityError(f"Corrupt company record for '{clean_sym}' in ledger.")
+
+        f = cdata.get("fundamentals")
+        if not isinstance(f, dict):
+            raise IdentityIntegrityError(f"Missing fundamentals object for '{clean_sym}'.")
+
+        dm = cdata.get("derived_metrics")
+        if not isinstance(dm, dict):
+            raise IdentityIntegrityError(f"Missing derived_metrics object for '{clean_sym}'.")
+
         asmt = cdata.get("assessment") or {}
         cik = f.get("cik")
 
-        # Identity validation (P02): Verify that internal symbol and CIK match
-        if not self.validate_symbol_identity(clean_sym, cdata):
-            logger.warning(f"Identity mismatch in ledger for requested symbol {clean_sym}")
-            return None
+        # Identity validation (F01 / P02): Verify that internal symbol and CIK match ground truth
+        ident_res = verify_company_identity(clean_sym, f.get("symbol"), cik)
+        if not ident_res.is_valid:
+            logger.error(f"Identity integrity error in snapshot for '{clean_sym}': {ident_res.error}")
+            raise IdentityIntegrityError(ident_res.error)
 
-        # 1. Transform reported facts with attributable SEC links and fact types
+        # 1. Transform reported facts with attributable SEC links and fact types (F02)
         reported_facts = []
         raw_facts = f.get("facts", {})
         for metric_key, fact in raw_facts.items():
@@ -208,7 +282,26 @@ class SourcedFundamentalsService:
             if p_start and p_end and p_start != p_end:
                 duration_type = "DURATION"
 
-            fact_type = "PRIMARY_REPORTED" if acc else "DERIVED_CALCULATION"
+            raw_status = fact.get("status")
+            if raw_status == "REPORTED":
+                fact_type = "PRIMARY_REPORTED"
+                fact_status = "REPORTED"
+            elif raw_status == "DERIVED":
+                fact_type = "DERIVED_CALCULATION"
+                fact_status = "DERIVED"
+            elif raw_status == "RESEARCH_ESTIMATE":
+                fact_type = "RESEARCH_ESTIMATE"
+                fact_status = "RESEARCH_ESTIMATE"
+            elif raw_status == "UNAVAILABLE":
+                fact_type = "UNAVAILABLE"
+                fact_status = "UNAVAILABLE"
+            else:
+                if acc and not fact.get("formula"):
+                    fact_type = "PRIMARY_REPORTED"
+                    fact_status = "REPORTED"
+                else:
+                    fact_type = "DERIVED_CALCULATION"
+                    fact_status = "DERIVED"
 
             reported_facts.append({
                 "metric_key": metric_key,
@@ -221,7 +314,7 @@ class SourcedFundamentalsService:
                 "period_end": p_end,
                 "filing_date": fact.get("filing_date"),
                 "retrieval_time": fact.get("retrieval_time"),
-                "status": fact.get("status", "REPORTED"),
+                "status": fact_status,
                 "source_url": sec_url,
                 "formula": fact.get("formula"),
                 "input_references": fact.get("input_references", []),
@@ -232,6 +325,30 @@ class SourcedFundamentalsService:
 
         # Sort facts deterministically by metric_key
         reported_facts.sort(key=lambda x: x["metric_key"])
+
+        # Total debt status and formula (F03)
+        total_debt_fact = raw_facts.get("total_financial_debt", {})
+        if dm.get("total_financial_debt") is None:
+            total_debt_status = "UNAVAILABLE"
+            total_debt_formula = None
+        elif total_debt_fact.get("status") == "DERIVED":
+            total_debt_status = "DERIVED"
+            total_debt_formula = total_debt_fact.get("formula") or "Short-Term Debt + Long-Term Debt"
+        elif total_debt_fact.get("status") == "REPORTED":
+            total_debt_status = "REPORTED"
+            total_debt_formula = None
+        else:
+            total_debt_status = "DERIVED" if (dm.get("short_term_debt") is not None or dm.get("long_term_debt") is not None) else "REPORTED"
+            total_debt_formula = "Short-Term Debt + Long-Term Debt" if total_debt_status == "DERIVED" else None
+
+        # Diluted shares period extraction (F03)
+        diluted_fact = raw_facts.get("diluted_shares_weighted_avg", {})
+        share_period_start = diluted_fact.get("period_start")
+        share_period_end = diluted_fact.get("period_end") or f.get("latest_reported_period")
+        ttm_denom_desc = dm.get("ttm_eps_denominator_period")
+        if not share_period_start and ttm_denom_desc and " to " in ttm_denom_desc:
+            share_period_start = ttm_denom_desc.split(" to ")[0].strip()
+        share_period_type = "ANNUAL_WEIGHTED_AVERAGE" if (clean_sym == "KLAC") else "QUARTERLY_WEIGHTED_AVERAGE"
 
         # 2. Extract derived calculations with explicit basis & formulas (Facts only)
         derived_calculations = {
@@ -320,7 +437,8 @@ class SourcedFundamentalsService:
             "total_financial_debt": {
                 "value": dm.get("total_financial_debt"),
                 "units": "USD",
-                "status": "REPORTED" if dm.get("total_financial_debt") is not None else "UNAVAILABLE",
+                "status": total_debt_status,
+                "formula": total_debt_formula,
                 "period_end": f.get("latest_reported_period"),
                 "notes": (
                     "Fully evidenced total financial debt"
@@ -338,13 +456,20 @@ class SourcedFundamentalsService:
                 "value": dm.get("operating_lease_liabilities"),
                 "units": "USD",
                 "status": "REPORTED" if dm.get("operating_lease_liabilities") is not None else "UNAVAILABLE",
-                "notes": "Contractual operating lease obligation under ASC 842 (treated as operating expense, not financial debt)",
+                "label": "Operating Lease Liabilities (Noncurrent)",
+                "concept": raw_facts.get("operating_lease_liabilities", {}).get("concept"),
+                "period_end": f.get("latest_reported_period"),
+                "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)",
             },
             "diluted_shares_weighted_avg": {
                 "value": dm.get("diluted_shares_weighted_avg"),
                 "units": "shares",
                 "status": "REPORTED" if dm.get("diluted_shares_weighted_avg") is not None else "UNAVAILABLE",
-                "period_start": dm.get("ttm_eps_denominator_period"),
+                "period_start": share_period_start,
+                "period_end": share_period_end,
+                "period_type": share_period_type,
+                "period_description": ttm_denom_desc,
+                "notes": "Reported weighted-average diluted shares from latest periodic filing (not an annual average for quarterly filers).",
             },
             "share_dilution_1y_pct": {
                 "value": dm.get("share_dilution_1y_pct"),

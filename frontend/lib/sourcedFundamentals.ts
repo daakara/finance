@@ -26,7 +26,7 @@ export interface SourcedReportedFact {
   input_references?: string[];
   notes?: string | null;
   duration_type: "INSTANT" | "DURATION";
-  fact_type: "PRIMARY_REPORTED" | "DERIVED_CALCULATION";
+  fact_type: "PRIMARY_REPORTED" | "DERIVED_CALCULATION" | "RESEARCH_ESTIMATE" | "UNAVAILABLE";
 }
 
 export interface SourcedDerivedMetric {
@@ -77,10 +77,21 @@ export interface SourcedCompanySnapshot {
   research_evidence_notes: SourcedResearchEvidenceNotes;
 }
 
-interface SourcedSnapshotFile {
+export interface SourcedSnapshotFile {
   metadata: Record<string, any>;
   companies: Record<string, SourcedCompanySnapshot>;
 }
+
+export const ATTRIBUTABLE_SEC_IDENTITY_MAP: Record<string, string> = {
+  FIX: "0001035983",
+  DUOL: "0001562088",
+  ULTA: "0001403568",
+  MEDP: "0001668397",
+  DECK: "0000910521",
+  KLAC: "0000319201",
+  LULU: "0001397187",
+  CELH: "0001341766",
+};
 
 const typedSnapshot = snapshotData as unknown as SourcedSnapshotFile;
 
@@ -92,8 +103,10 @@ export function getSourcedFundamentals(symbol: string): SourcedCompanySnapshot |
   const clean = symbol.trim().toUpperCase();
   const company = typedSnapshot.companies?.[clean];
   if (!company) return null;
-  // Strict identity verification: company record must match requested symbol
+  // Strict identity verification: company record must match requested symbol and canonical CIK
   if (company.company_identity?.symbol !== clean) return null;
+  const expectedCik = ATTRIBUTABLE_SEC_IDENTITY_MAP[clean];
+  if (expectedCik && company.company_identity?.cik !== expectedCik) return null;
   return company;
 }
 

@@ -19,6 +19,7 @@ from analyst_dashboard.research.sourced_fundamentals.service import (
     get_sourced_fundamentals_service,
     SourcedFundamentalsService,
     SnapshotState,
+    IdentityIntegrityError,
 )
 
 logger = logging.getLogger("api.routes.fundamentals")
@@ -89,7 +90,11 @@ def get_company_fundamentals(
 ) -> Dict[str, Any]:
     """
     Retrieves full structured financial evidence snapshot for a company by symbol.
-    Strictly facts-only. Fails closed with 404 Not Found if uncataloged or identity mismatched.
+    Strictly facts-only.
+    Fails closed with:
+    - 503 if ledger snapshot is missing on disk.
+    - 500 if ledger is malformed or company record violates internal identity integrity.
+    - 404 Not Found if symbol is uncataloged.
     Preserves null values without synthetic zero substitution.
     """
     clean_sym = symbol.strip().upper()
@@ -109,7 +114,14 @@ def get_company_fundamentals(
             detail="Sourced fundamentals snapshot service error: dataset is invalid.",
         )
 
-    snapshot = service.get_company_snapshot(clean_sym)
+    try:
+        snapshot = service.get_company_snapshot(clean_sym)
+    except IdentityIntegrityError as iie:
+        logger.error(f"Internal identity integrity violation for '{clean_sym}': {iie}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal identity integrity violation in sourced fundamentals snapshot: {str(iie)}",
+        )
 
     if snapshot is None:
         available = [c["symbol"] for c in service.list_available_companies()]

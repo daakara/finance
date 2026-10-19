@@ -1263,7 +1263,7 @@ def _get_cumulative_patch_bytes(base_sha: str, repo_root: str) -> bytes:
                 capture_output=True
             )
         return subprocess.check_output(
-            ["git", "diff", base_sha, "HEAD"],
+            ["git", "diff", "--binary", base_sha, "HEAD"],
             cwd=repo_root
         )
     except Exception as e:

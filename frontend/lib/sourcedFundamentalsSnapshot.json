@@ -61,7 +61,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "cash_and_equivalents",
@@ -125,7 +125,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "common_shares_outstanding",
@@ -227,7 +227,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "operating_income_ttm",
@@ -250,7 +250,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "operating_lease_liabilities",
@@ -269,7 +269,7 @@
           "input_references": [],
           "notes": "Concept us-gaap/OperatingLeaseLiability found but no instant observation for period 2026-06-30",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "pretax_income_ttm",
@@ -292,7 +292,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "revenue_ttm",
@@ -315,7 +315,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "sbc_ttm",
@@ -338,7 +338,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "short_term_debt",
@@ -376,7 +376,7 @@
           "input_references": [],
           "notes": "No reported concept found among ['MarketableSecuritiesCurrent', 'ShortTermInvestments', 'AvailableForSaleSecuritiesCurrent', 'AvailableForSaleSecuritiesDebtMaturitiesWithinOneYearAmortizedCost']",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "stockholders_equity",
@@ -418,7 +418,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "total_cash_and_investments",
@@ -437,7 +437,7 @@
           "input_references": [],
           "notes": "Short-term investments concept not reported; complete cash-and-investments aggregate cannot be asserted without primary filing evidence. Cash is reported separately as cash_and_equivalents.",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "total_financial_debt",
@@ -548,7 +548,8 @@
         "total_financial_debt": {
           "value": 674850000.0,
           "units": "USD",
-          "status": "REPORTED",
+          "status": "DERIVED",
+          "formula": "Short-Term Debt (7,000,000) + Long-Term Debt (667,850,000)",
           "period_end": "2026-06-30",
           "notes": "Fully evidenced total financial debt"
         },
@@ -562,13 +563,20 @@
           "value": null,
           "units": "USD",
           "status": "UNAVAILABLE",
-          "notes": "Contractual operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
+          "label": "Operating Lease Liabilities (Noncurrent)",
+          "concept": "us-gaap/OperatingLeaseLiability",
+          "period_end": "2026-06-30",
+          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
         },
         "diluted_shares_weighted_avg": {
           "value": 256933000.0,
           "units": "shares",
           "status": "REPORTED",
-          "period_start": "2026-04-01 to 2026-06-30 (quarterly weighted-average shares)"
+          "period_start": "2026-04-01",
+          "period_end": "2026-06-30",
+          "period_type": "QUARTERLY_WEIGHTED_AVERAGE",
+          "period_description": "2026-04-01 to 2026-06-30 (quarterly weighted-average shares)",
+          "notes": "Reported weighted-average diluted shares from latest periodic filing (not an annual average for quarterly filers)."
         },
         "share_dilution_1y_pct": {
           "value": -1.26,
@@ -661,7 +669,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "cash_and_equivalents",
@@ -725,7 +733,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "common_shares_outstanding",
@@ -782,7 +790,7 @@
           "input_references": [],
           "notes": "No reported concept found among ['LongTermDebtNoncurrent', 'LongTermDebt', 'LongTermDebtAndCapitalLeaseObligations']",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "net_debt",
@@ -801,7 +809,7 @@
           "input_references": [],
           "notes": "Cannot calculate net debt due to unavailable total financial debt or cash",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "net_income_ttm",
@@ -824,7 +832,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "operating_income_ttm",
@@ -847,7 +855,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "operating_lease_liabilities",
@@ -885,7 +893,7 @@
           "input_references": [],
           "notes": "No current YTD observation found starting near expected fiscal start 2018-04-01",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "revenue_ttm",
@@ -908,7 +916,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "sbc_ttm",
@@ -931,7 +939,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "short_term_debt",
@@ -950,7 +958,7 @@
           "input_references": [],
           "notes": "Concept us-gaap/ShortTermBorrowings found but no instant observation for period 2026-06-30",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "short_term_investments",
@@ -969,7 +977,7 @@
           "input_references": [],
           "notes": "Concept us-gaap/ShortTermInvestments found but no instant observation for period 2026-06-30",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "stockholders_equity",
@@ -1011,7 +1019,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "total_cash_and_investments",
@@ -1030,7 +1038,7 @@
           "input_references": [],
           "notes": "Short-term investments concept not reported; complete cash-and-investments aggregate cannot be asserted without primary filing evidence. Cash is reported separately as cash_and_equivalents.",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "total_financial_debt",
@@ -1049,7 +1057,7 @@
           "input_references": [],
           "notes": "Financial debt concepts are unavailable in primary filings.",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         }
       ],
       "derived_calculations": {
@@ -1139,6 +1147,7 @@
           "value": null,
           "units": "USD",
           "status": "UNAVAILABLE",
+          "formula": null,
           "period_end": "2026-06-30",
           "notes": "UNAVAILABLE under aggregate completeness rules: component or tag missing in primary filing XBRL."
         },
@@ -1152,13 +1161,20 @@
           "value": 398976000.0,
           "units": "USD",
           "status": "REPORTED",
-          "notes": "Contractual operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
+          "label": "Operating Lease Liabilities (Noncurrent)",
+          "concept": "us-gaap/OperatingLeaseLiabilityNoncurrent",
+          "period_end": "2026-06-30",
+          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
         },
         "diluted_shares_weighted_avg": {
           "value": 138559000.0,
           "units": "shares",
           "status": "REPORTED",
-          "period_start": "2026-04-01 to 2026-06-30 (quarterly weighted-average shares)"
+          "period_start": "2026-04-01",
+          "period_end": "2026-06-30",
+          "period_type": "QUARTERLY_WEIGHTED_AVERAGE",
+          "period_description": "2026-04-01 to 2026-06-30 (quarterly weighted-average shares)",
+          "notes": "Reported weighted-average diluted shares from latest periodic filing (not an annual average for quarterly filers)."
         },
         "share_dilution_1y_pct": {
           "value": -7.4,
@@ -1251,7 +1267,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "cash_and_equivalents",
@@ -1315,7 +1331,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "common_shares_outstanding",
@@ -1334,7 +1350,7 @@
           "input_references": [],
           "notes": "Concept us-gaap/CommonStockSharesOutstanding found but no instant observation for period 2026-06-30",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "diluted_shares_weighted_avg",
@@ -1372,7 +1388,7 @@
           "input_references": [],
           "notes": "No reported concept found among ['LongTermDebtNoncurrent', 'LongTermDebt', 'LongTermDebtAndCapitalLeaseObligations']",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "net_debt",
@@ -1391,7 +1407,7 @@
           "input_references": [],
           "notes": "Cannot calculate net debt due to unavailable total financial debt or cash",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "net_income_ttm",
@@ -1414,7 +1430,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "operating_income_ttm",
@@ -1437,7 +1453,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "operating_lease_liabilities",
@@ -1479,7 +1495,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "revenue_ttm",
@@ -1502,7 +1518,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "sbc_ttm",
@@ -1525,7 +1541,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "short_term_debt",
@@ -1544,7 +1560,7 @@
           "input_references": [],
           "notes": "No reported concept found among ['ShortTermBorrowings', 'LongTermDebtCurrent', 'DebtCurrent', 'CommercialPaper']",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "short_term_investments",
@@ -1563,7 +1579,7 @@
           "input_references": [],
           "notes": "No reported concept found among ['MarketableSecuritiesCurrent', 'ShortTermInvestments', 'AvailableForSaleSecuritiesCurrent', 'AvailableForSaleSecuritiesDebtMaturitiesWithinOneYearAmortizedCost']",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "stockholders_equity",
@@ -1605,7 +1621,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "total_cash_and_investments",
@@ -1624,7 +1640,7 @@
           "input_references": [],
           "notes": "Short-term investments concept not reported; complete cash-and-investments aggregate cannot be asserted without primary filing evidence. Cash is reported separately as cash_and_equivalents.",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "total_financial_debt",
@@ -1643,7 +1659,7 @@
           "input_references": [],
           "notes": "Financial debt concepts are unavailable in primary filings.",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         }
       ],
       "derived_calculations": {
@@ -1733,6 +1749,7 @@
           "value": null,
           "units": "USD",
           "status": "UNAVAILABLE",
+          "formula": null,
           "period_end": "2026-06-30",
           "notes": "UNAVAILABLE under aggregate completeness rules: component or tag missing in primary filing XBRL."
         },
@@ -1746,13 +1763,20 @@
           "value": 86136000.0,
           "units": "USD",
           "status": "REPORTED",
-          "notes": "Contractual operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
+          "label": "Operating Lease Liabilities (Noncurrent)",
+          "concept": "us-gaap/OperatingLeaseLiabilityNoncurrent",
+          "period_end": "2026-06-30",
+          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
         },
         "diluted_shares_weighted_avg": {
           "value": 50031000.0,
           "units": "shares",
           "status": "REPORTED",
-          "period_start": "2026-04-01 to 2026-06-30 (quarterly weighted-average shares)"
+          "period_start": "2026-04-01",
+          "period_end": "2026-06-30",
+          "period_type": "QUARTERLY_WEIGHTED_AVERAGE",
+          "period_description": "2026-04-01 to 2026-06-30 (quarterly weighted-average shares)",
+          "notes": "Reported weighted-average diluted shares from latest periodic filing (not an annual average for quarterly filers)."
         },
         "share_dilution_1y_pct": {
           "value": 2.1,
@@ -1845,7 +1869,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "cash_and_equivalents",
@@ -1909,7 +1933,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "common_shares_outstanding",
@@ -2011,7 +2035,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "operating_income_ttm",
@@ -2034,7 +2058,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "operating_lease_liabilities",
@@ -2076,7 +2100,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "revenue_ttm",
@@ -2099,7 +2123,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "sbc_ttm",
@@ -2122,7 +2146,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "short_term_debt",
@@ -2160,7 +2184,7 @@
           "input_references": [],
           "notes": "No reported concept found among ['MarketableSecuritiesCurrent', 'ShortTermInvestments', 'AvailableForSaleSecuritiesCurrent', 'AvailableForSaleSecuritiesDebtMaturitiesWithinOneYearAmortizedCost']",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "stockholders_equity",
@@ -2202,7 +2226,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "total_cash_and_investments",
@@ -2221,7 +2245,7 @@
           "input_references": [],
           "notes": "Short-term investments concept not reported; complete cash-and-investments aggregate cannot be asserted without primary filing evidence. Cash is reported separately as cash_and_equivalents.",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "total_financial_debt",
@@ -2332,7 +2356,8 @@
         "total_financial_debt": {
           "value": 54064000.0,
           "units": "USD",
-          "status": "REPORTED",
+          "status": "DERIVED",
+          "formula": "Short-Term Debt (215,000) + Long-Term Debt (53,849,000)",
           "period_end": "2026-06-30",
           "notes": "Fully evidenced total financial debt"
         },
@@ -2346,13 +2371,20 @@
           "value": 315845000.0,
           "units": "USD",
           "status": "REPORTED",
-          "notes": "Contractual operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
+          "label": "Operating Lease Liabilities (Noncurrent)",
+          "concept": "us-gaap/OperatingLeaseLiability",
+          "period_end": "2026-06-30",
+          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
         },
         "diluted_shares_weighted_avg": {
           "value": 35254000.0,
           "units": "shares",
           "status": "REPORTED",
-          "period_start": "2026-04-01 to 2026-06-30 (quarterly weighted-average shares)"
+          "period_start": "2026-04-01",
+          "period_end": "2026-06-30",
+          "period_type": "QUARTERLY_WEIGHTED_AVERAGE",
+          "period_description": "2026-04-01 to 2026-06-30 (quarterly weighted-average shares)",
+          "notes": "Reported weighted-average diluted shares from latest periodic filing (not an annual average for quarterly filers)."
         },
         "share_dilution_1y_pct": {
           "value": -0.33,
@@ -2718,7 +2750,7 @@
           "input_references": [],
           "notes": "Concept us-gaap/LongTermDebtCurrent found but no instant observation for period 2026-06-30",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "short_term_investments",
@@ -2906,6 +2938,7 @@
           "value": 5887415000.0,
           "units": "USD",
           "status": "REPORTED",
+          "formula": null,
           "period_end": "2026-06-30",
           "notes": "Fully evidenced total financial debt"
         },
@@ -2919,13 +2952,20 @@
           "value": 264298000.0,
           "units": "USD",
           "status": "REPORTED",
-          "notes": "Contractual operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
+          "label": "Operating Lease Liabilities (Noncurrent)",
+          "concept": "us-gaap/OperatingLeaseLiability",
+          "period_end": "2026-06-30",
+          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
         },
         "diluted_shares_weighted_avg": {
           "value": 1319633000.0,
           "units": "shares",
           "status": "REPORTED",
-          "period_start": "2025-07-01 to 2026-06-30 (annual weighted-average shares)"
+          "period_start": "2025-07-01",
+          "period_end": "2026-06-30",
+          "period_type": "ANNUAL_WEIGHTED_AVERAGE",
+          "period_description": "2025-07-01 to 2026-06-30 (annual weighted-average shares)",
+          "notes": "Reported weighted-average diluted shares from latest periodic filing (not an annual average for quarterly filers)."
         },
         "share_dilution_1y_pct": {
           "value": -1.34,
@@ -3018,7 +3058,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "cash_and_equivalents",
@@ -3082,7 +3122,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "common_shares_outstanding",
@@ -3139,7 +3179,7 @@
           "input_references": [],
           "notes": "No reported concept found among ['LongTermDebtNoncurrent', 'LongTermDebt', 'LongTermDebtAndCapitalLeaseObligations']",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "net_debt",
@@ -3158,7 +3198,7 @@
           "input_references": [],
           "notes": "Cannot calculate net debt due to unavailable total financial debt or cash",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "net_income_ttm",
@@ -3181,7 +3221,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "operating_income_ttm",
@@ -3204,7 +3244,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "operating_lease_liabilities",
@@ -3246,7 +3286,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "revenue_ttm",
@@ -3269,7 +3309,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "sbc_ttm",
@@ -3292,7 +3332,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "short_term_debt",
@@ -3330,7 +3370,7 @@
           "input_references": [],
           "notes": "No reported concept found among ['MarketableSecuritiesCurrent', 'ShortTermInvestments', 'AvailableForSaleSecuritiesCurrent', 'AvailableForSaleSecuritiesDebtMaturitiesWithinOneYearAmortizedCost']",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "stockholders_equity",
@@ -3372,7 +3412,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "total_cash_and_investments",
@@ -3391,7 +3431,7 @@
           "input_references": [],
           "notes": "Short-term investments concept not reported; complete cash-and-investments aggregate cannot be asserted without primary filing evidence. Cash is reported separately as cash_and_equivalents.",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "total_financial_debt",
@@ -3410,7 +3450,7 @@
           "input_references": [],
           "notes": "Partial debt observation known (Short-term debt=0, Long-term debt unavailable), but complete debt obligations cannot be established without both components or a single comprehensive debt total. Known partial amounts are not presented as total debt.",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         }
       ],
       "derived_calculations": {
@@ -3500,6 +3540,7 @@
           "value": null,
           "units": "USD",
           "status": "UNAVAILABLE",
+          "formula": null,
           "period_end": "2026-08-02",
           "notes": "UNAVAILABLE under aggregate completeness rules: component or tag missing in primary filing XBRL."
         },
@@ -3513,13 +3554,20 @@
           "value": 1774478000.0,
           "units": "USD",
           "status": "REPORTED",
-          "notes": "Contractual operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
+          "label": "Operating Lease Liabilities (Noncurrent)",
+          "concept": "us-gaap/OperatingLeaseLiabilityNoncurrent",
+          "period_end": "2026-08-02",
+          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
         },
         "diluted_shares_weighted_avg": {
           "value": 112919000.0,
           "units": "shares",
           "status": "REPORTED",
-          "period_start": "2026-05-04 to 2026-08-02 (quarterly weighted-average shares)"
+          "period_start": "2026-05-04",
+          "period_end": "2026-08-02",
+          "period_type": "QUARTERLY_WEIGHTED_AVERAGE",
+          "period_description": "2026-05-04 to 2026-08-02 (quarterly weighted-average shares)",
+          "notes": "Reported weighted-average diluted shares from latest periodic filing (not an annual average for quarterly filers)."
         },
         "share_dilution_1y_pct": {
           "value": -5.65,
@@ -3612,7 +3660,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "cash_and_equivalents",
@@ -3676,7 +3724,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "common_shares_outstanding",
@@ -3733,7 +3781,7 @@
           "input_references": [],
           "notes": "Concept us-gaap/LongTermDebtNoncurrent found but no instant observation for period 2026-06-30",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "net_debt",
@@ -3752,7 +3800,7 @@
           "input_references": [],
           "notes": "Cannot calculate net debt due to unavailable total financial debt or cash",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "net_income_ttm",
@@ -3775,7 +3823,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "operating_income_ttm",
@@ -3798,7 +3846,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "operating_lease_liabilities",
@@ -3840,7 +3888,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "revenue_ttm",
@@ -3863,7 +3911,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "sbc_ttm",
@@ -3886,7 +3934,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "short_term_debt",
@@ -3905,7 +3953,7 @@
           "input_references": [],
           "notes": "Concept us-gaap/ShortTermBorrowings found but no instant observation for period 2026-06-30",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "short_term_investments",
@@ -3924,7 +3972,7 @@
           "input_references": [],
           "notes": "No reported concept found among ['MarketableSecuritiesCurrent', 'ShortTermInvestments', 'AvailableForSaleSecuritiesCurrent', 'AvailableForSaleSecuritiesDebtMaturitiesWithinOneYearAmortizedCost']",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "stockholders_equity",
@@ -3966,7 +4014,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "total_cash_and_investments",
@@ -3985,7 +4033,7 @@
           "input_references": [],
           "notes": "Short-term investments concept not reported; complete cash-and-investments aggregate cannot be asserted without primary filing evidence. Cash is reported separately as cash_and_equivalents.",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "total_financial_debt",
@@ -4004,7 +4052,7 @@
           "input_references": [],
           "notes": "Financial debt concepts are unavailable in primary filings.",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         }
       ],
       "derived_calculations": {
@@ -4094,6 +4142,7 @@
           "value": null,
           "units": "USD",
           "status": "UNAVAILABLE",
+          "formula": null,
           "period_end": "2026-06-30",
           "notes": "UNAVAILABLE under aggregate completeness rules: component or tag missing in primary filing XBRL."
         },
@@ -4107,13 +4156,20 @@
           "value": 144112000.0,
           "units": "USD",
           "status": "REPORTED",
-          "notes": "Contractual operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
+          "label": "Operating Lease Liabilities (Noncurrent)",
+          "concept": "us-gaap/OperatingLeaseLiability",
+          "period_end": "2026-06-30",
+          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
         },
         "diluted_shares_weighted_avg": {
           "value": 28554000.0,
           "units": "shares",
           "status": "REPORTED",
-          "period_start": "2026-04-01 to 2026-06-30 (quarterly weighted-average shares)"
+          "period_start": "2026-04-01",
+          "period_end": "2026-06-30",
+          "period_type": "QUARTERLY_WEIGHTED_AVERAGE",
+          "period_description": "2026-04-01 to 2026-06-30 (quarterly weighted-average shares)",
+          "notes": "Reported weighted-average diluted shares from latest periodic filing (not an annual average for quarterly filers)."
         },
         "share_dilution_1y_pct": {
           "value": -2.02,
@@ -4206,7 +4262,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "cash_and_equivalents",
@@ -4270,7 +4326,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "common_shares_outstanding",
@@ -4327,7 +4383,7 @@
           "input_references": [],
           "notes": "Concept us-gaap/LongTermDebtNoncurrent found but no instant observation for period 2026-08-01",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "net_debt",
@@ -4346,7 +4402,7 @@
           "input_references": [],
           "notes": "Cannot calculate net debt due to unavailable total financial debt or cash",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "net_income_ttm",
@@ -4369,7 +4425,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "operating_income_ttm",
@@ -4392,7 +4448,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "operating_lease_liabilities",
@@ -4434,7 +4490,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "revenue_ttm",
@@ -4457,7 +4513,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "sbc_ttm",
@@ -4476,7 +4532,7 @@
           "input_references": [],
           "notes": "No current YTD observation found starting near expected fiscal start 2026-02-01",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         },
         {
           "metric_key": "short_term_debt",
@@ -4556,7 +4612,7 @@
           ],
           "notes": "Non-overlapping TTM calculated using authoritative SEC identity: FY + Current YTD - Prior YTD",
           "duration_type": "DURATION",
-          "fact_type": "PRIMARY_REPORTED"
+          "fact_type": "DERIVED_CALCULATION"
         },
         {
           "metric_key": "total_cash_and_investments",
@@ -4597,7 +4653,7 @@
           "input_references": [],
           "notes": "Partial debt observation known (Short-term debt=339,578,000, Long-term debt unavailable), but complete debt obligations cannot be established without both components or a single comprehensive debt total. Known partial amounts are not presented as total debt.",
           "duration_type": "INSTANT",
-          "fact_type": "DERIVED_CALCULATION"
+          "fact_type": "UNAVAILABLE"
         }
       ],
       "derived_calculations": {
@@ -4687,6 +4743,7 @@
           "value": null,
           "units": "USD",
           "status": "UNAVAILABLE",
+          "formula": null,
           "period_end": "2026-08-01",
           "notes": "UNAVAILABLE under aggregate completeness rules: component or tag missing in primary filing XBRL."
         },
@@ -4700,13 +4757,20 @@
           "value": 1871805000.0,
           "units": "USD",
           "status": "REPORTED",
-          "notes": "Contractual operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
+          "label": "Operating Lease Liabilities (Noncurrent)",
+          "concept": "us-gaap/OperatingLeaseLiabilityNoncurrent",
+          "period_end": "2026-08-01",
+          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
         },
         "diluted_shares_weighted_avg": {
           "value": 43062000.0,
           "units": "shares",
           "status": "REPORTED",
-          "period_start": "2026-05-03 to 2026-08-01 (quarterly weighted-average shares)"
+          "period_start": "2026-05-03",
+          "period_end": "2026-08-01",
+          "period_type": "QUARTERLY_WEIGHTED_AVERAGE",
+          "period_description": "2026-05-03 to 2026-08-01 (quarterly weighted-average shares)",
+          "notes": "Reported weighted-average diluted shares from latest periodic filing (not an annual average for quarterly filers)."
         },
         "share_dilution_1y_pct": {
           "value": -4.54,

@@ -17,29 +17,35 @@ def check_html():
     fix_path = stock_dir / "fix.html"
     assert fix_path.exists(), "fix.html does not exist"
     fix_html = fix_path.read_text(encoding="utf-8")
-    assert "SEC EDGAR Sourced Fundamentals &amp; Evidence" in fix_html or "SEC EDGAR Sourced Fundamentals & Evidence" in fix_html
+    assert "SEC EDGAR Sourced Fundamentals" in fix_html
     assert "TOTAL DEBT FULLY EVIDENCED" in fix_html
-    assert "Research Scenario DCF" in fix_html
     assert "0001035983" in fix_html  # CIK
-    print("[OK] FIX static HTML verified: Total Debt Evidenced & DCF scenario rendered.")
+    assert "REPORTED (XBRL)" in fix_html
+    assert "DERIVED FORMULA" in fix_html
+    # Strictly facts-only: No DCF or valuation rankings
+    assert "Research Scenario DCF" not in fix_html
+    assert "fair_value" not in fix_html
+    print("[OK] FIX static HTML verified: Total Debt Evidenced & Facts-Only disclosures rendered.")
 
     # 2. DUOL
     duol_path = stock_dir / "duol.html"
     assert duol_path.exists(), "duol.html does not exist"
     duol_html = duol_path.read_text(encoding="utf-8")
     assert "TOTAL DEBT UNAVAILABLE IN XBRL" in duol_html
-    assert "Deep Valuation Model Suppressed" in duol_html
     assert "0001562088" in duol_html  # CIK
-    print("[OK] DUOL static HTML verified: Missing Debt warning & Valuation Suppression rendered.")
+    assert "Operating Lease Liabilities (Noncurrent)" in duol_html
+    assert "Deep Valuation Model Suppressed" not in duol_html
+    print("[OK] DUOL static HTML verified: Missing Debt warning & Noncurrent Leases rendered.")
 
     # 3. ULTA
     ulta_path = stock_dir / "ulta.html"
     assert ulta_path.exists(), "ulta.html does not exist"
     ulta_html = ulta_path.read_text(encoding="utf-8")
     assert "TOTAL DEBT UNAVAILABLE IN XBRL" in ulta_html
-    assert "Deep Valuation Model Suppressed" in ulta_html
     assert "0001403568" in ulta_html  # CIK
-    print("[OK] ULTA static HTML verified: Missing Debt warning & Valuation Suppression rendered.")
+    assert "Operating Lease Liabilities (Noncurrent)" in ulta_html
+    assert "Deep Valuation Model Suppressed" not in ulta_html
+    print("[OK] ULTA static HTML verified: Partial Debt warning & Facts-Only disclosures rendered.")
 
     # 4. AAPL (Fallback / Uncataloged in pilot)
     aapl_path = stock_dir / "aapl.html"
