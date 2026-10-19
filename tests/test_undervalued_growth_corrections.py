@@ -47,7 +47,7 @@ def test_archetype_string_alone_does_not_certify_value_garp():
 
 
 def test_quantitative_qualification_grants_value_garp():
-    """Assets meeting established quantitative thresholds qualify for VALUE_GARP."""
+    """Assets meeting approved pre-existing quantitative criteria (PEG <= 1.05, ROIC >= 15%) qualify for VALUE_GARP."""
     # Peter Lynch branch: PEG <= 1.05 and ROIC >= 15.0%
     cats_ulta = derive_canonical_radar_categories(
         expert_model="Deep Value & Capital Return (Decelerating Comp Watch)",
@@ -68,7 +68,7 @@ def test_quantitative_qualification_grants_value_garp():
     )
     assert "VALUE_GARP" in cats_duol
 
-    # Greenblatt Magic Formula branch: ROIC >= 28.0% and PEG <= 1.15
+    # An asset with PEG > 1.05 (even with high ROIC >= 28.0%) must NOT qualify under invented thresholds
     cats_fix = derive_canonical_radar_categories(
         expert_model="Disruptive Rule Breaker",
         peg_ratio=1.15,
@@ -76,7 +76,7 @@ def test_quantitative_qualification_grants_value_garp():
         gross_margin_pct=19.5,
         symbol="FIX",
     )
-    assert "VALUE_GARP" in cats_fix
+    assert "VALUE_GARP" not in cats_fix, "Asset with PEG 1.15 must not qualify under unapproved invented threshold"
 
 
 def test_confirmed_inactive_security_excluded_from_discovery():
@@ -162,6 +162,13 @@ def test_fundamental_evidence_provenance_block_exposed():
         assert ev["metricBasis"] in ["HISTORICAL_CATALOG_VALUE", "HISTORICAL_PRE_ACQUISITION_CATALOG", "MISSING"]
         assert "isAudited" in ev
         assert ev["isAudited"] is False
+        assert "qualificationState" in ev
+        assert ev["qualificationState"] in [
+            "REFERENCE_CRITERIA_MET",
+            "REFERENCE_CRITERIA_UNMET",
+            "UNASSESSED_INSUFFICIENT_EVIDENCE",
+            "INELIGIBLE_INACTIVE",
+        ]
 
 
 def test_radar_capability_contract_discloses_curated_baseline_and_sorting():

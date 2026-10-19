@@ -224,12 +224,9 @@ def derive_canonical_radar_categories(
 
     # VALUE_GARP: Requires quantitative valuation/quality qualification.
     # Descriptive archetype strings alone do NOT certify qualification.
-    # Established quantitative criteria:
-    # 1. Peter Lynch GARP: PEG <= 1.05 and ROIC >= 15.0%
-    # 2. Greenblatt Magic Formula: ROIC >= 28.0% and reasonable PEG <= 1.15
+    # Pre-existing established quantitative criteria: PEG <= 1.05 and ROIC >= 15.0%
+    # No invented replacement thresholds are permitted.
     if peg_ratio is not None and 0.0 < peg_ratio <= 1.05 and roic_pct is not None and roic_pct >= 15.0:
-        cats.append("VALUE_GARP")
-    elif roic_pct is not None and roic_pct >= 28.0 and peg_ratio is not None and 0.0 < peg_ratio <= 1.15:
         cats.append("VALUE_GARP")
 
     # VCP: Backed by deterministic market-wide scanner runner and verified snapshot
@@ -618,6 +615,7 @@ def run_screener_get(
                 "asOfDate": corp_action["effective_date"] if is_delisted else ("CURATED_CATALOG_BASELINE" if sym in screener.KNOWN_GEMS_DATA else None),
                 "listingStatus": corp_action["status"] if is_delisted else ("ACTIVE" if sym in screener.KNOWN_GEMS_DATA else "UNVERIFIED"),
                 "isAudited": False,
+                "qualificationState": "INELIGIBLE_INACTIVE" if is_delisted else ("REFERENCE_CRITERIA_MET" if "VALUE_GARP" in cand_categories else ("REFERENCE_CRITERIA_UNMET" if sym in screener.KNOWN_GEMS_DATA else "UNASSESSED_INSUFFICIENT_EVIDENCE")),
                 "sortingBasis": "TECHNICAL_CONFLUENCE_MOMENTUM" if not is_delisted and execution_status != "UNVERIFIED_ASSET" else "UNAVAILABLE",
             },
             "optimalEntryMin": entry_min,

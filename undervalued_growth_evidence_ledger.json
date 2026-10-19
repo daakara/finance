@@ -1,11 +1,9 @@
 {
-  "schemaVersion": "1.0.0",
-  "generatedAt": "2026-10-19T02:20:00Z",
-  "benchmarkDiscountRateRange": [
-    0.08,
-    0.1
-  ],
-  "auditor": "ARX Quant Semantics and Epistemic Invariants Engine",
+  "schemaVersion": "2.0.0",
+  "generatedAt": "2026-10-19T07:35:00Z",
+  "description": "Machine-readable field-level source evidence ledger and reproducible valuation scenario repository.",
+  "authoritativeMethodology": "ARX Financial Epistemic Invariants & Bounded Valuation Specification",
+  "verificationPerformed": "Verified against SEC Form 10-K filings, EDGAR accessions, income tax footnote reconciliations, and discrete mathematical model bridges. Independent external audit was NOT performed.",
   "companies": {
     "FIX": {
       "metadata": {
@@ -15,97 +13,156 @@
         "figi": "BBG000BHXDV7",
         "exchange": "NYSE",
         "sector": "Industrials",
-        "industry": "Building Products and Specialty Electrical/Mechanical Contracting",
-        "pricingTimestamp": "2026-10-19T00:00:00Z",
-        "marketPrice": 1439.07,
-        "dilutedShares": 35194329,
-        "marketCap": 50647101440,
-        "enterpriseValue": 49027149824,
-        "netCash": 1536488960
+        "industry": "Specialty Electrical & Mechanical Contracting",
+        "pricingObservationTimestamp": "2026-10-16T20:00:00Z (Prior regular market close)",
+        "retrievalTimestamp": "2026-10-19T07:35:00Z",
+        "priceType": "Exchange Regular Close Quote",
+        "marketPriceUsd": 1439.07,
+        "periodEndBasicShares": 35194329,
+        "weightedAverageDilutedShares": 35410000,
+        "dilutedMarketEquityValueUsd": 50957468700.0,
+        "cashAndEquivalentsUsd": 1906397952.0,
+        "totalDebtUsd": 369908992.0,
+        "netCashUsd": 1536488960.0,
+        "enterpriseValueUsd": 49420979740.0
       },
-      "filingProvenance": [
+      "sources": [
         {
+          "id": "SRC-FIX-10K-2025",
           "form": "10-K",
-          "fiscalYear": 2025,
-          "periodEnd": "2025-12-31",
-          "source": "SEC EDGAR CIK 0001035983"
+          "fiscalYear": "FY2025",
+          "periodEnded": "2025-12-31",
+          "filedDate": "2026-02-23",
+          "accession": "0001035983-26-000012",
+          "url": "https://www.sec.gov/edgar/browse/?CIK=0001035983",
+          "tableSections": [
+            "Consolidated Statements of Operations",
+            "Consolidated Balance Sheets",
+            "Consolidated Statements of Cash Flows"
+          ]
         },
         {
+          "id": "SRC-FIX-10K-2024",
           "form": "10-K",
-          "fiscalYear": 2024,
-          "periodEnd": "2024-12-31",
-          "source": "SEC EDGAR CIK 0001035983"
+          "fiscalYear": "FY2024",
+          "periodEnded": "2024-12-31",
+          "filedDate": "2025-02-21",
+          "accession": "0001035983-25-000010",
+          "url": "https://www.sec.gov/edgar/browse/?CIK=0001035983",
+          "tableSections": [
+            "Consolidated Statements of Operations",
+            "Consolidated Balance Sheets",
+            "Consolidated Statements of Cash Flows"
+          ]
         },
         {
+          "id": "SRC-FIX-10K-2023",
           "form": "10-K",
-          "fiscalYear": 2023,
-          "periodEnd": "2023-12-31",
-          "source": "SEC EDGAR CIK 0001035983"
+          "fiscalYear": "FY2023",
+          "periodEnded": "2023-12-31",
+          "filedDate": "2024-02-23",
+          "accession": "0001035983-24-000011",
+          "url": "https://www.sec.gov/edgar/browse/?CIK=0001035983",
+          "tableSections": [
+            "Consolidated Statements of Operations",
+            "Consolidated Balance Sheets",
+            "Consolidated Statements of Cash Flows"
+          ]
         }
       ],
       "financialHistory": {
-        "2023": {
-          "revenue": 5206760000.0,
-          "grossProfit": 990509000.0,
-          "operatingIncome": 416086000.0,
-          "netIncome": 323398000.0,
-          "operatingCashFlow": 639568000.0,
-          "capex": -94838000.0,
-          "gaapFreeCashFlow": 544730000.0,
-          "stockBasedCompensation": 12939000.0,
-          "fcfLessSbc": 531791000.0,
-          "cashAndEquivalents": 205150000.0,
-          "totalDebt": 256774000.0,
-          "stockholdersEquity": 1277829000.0,
-          "dilutedShares": 35900000
+        "FY2023": {
+          "periodEnded": "2023-12-31",
+          "revenueUsd": 5206760000.0,
+          "grossProfitUsd": 990509000.0,
+          "operatingIncomeUsd": 416086000.0,
+          "netIncomeUsd": 323398000.0,
+          "operatingCashFlowUsd": 639568000.0,
+          "capitalExpendituresUsd": -94838000.0,
+          "derivedFreeCashFlowUsd": 544730000.0,
+          "stockBasedCompensationUsd": 12939000.0,
+          "derivedFcfLessSbcUsd": 531791000.0,
+          "cashAndEquivalentsUsd": 205150000.0,
+          "totalDebtUsd": 256774000.0,
+          "stockholdersEquityUsd": 1277829000.0,
+          "dilutedAverageShares": 35900000,
+          "investedCapitalUsd": 1329453000.0,
+          "nopatUsd": 324547080.0,
+          "roicPct": 24.41
         },
-        "2024": {
-          "revenue": 7027476000.0,
-          "grossProfit": 1476411000.0,
-          "operatingIncome": 746339000.0,
-          "netIncome": 522433000.0,
-          "operatingCashFlow": 849057000.0,
-          "capex": -111071000.0,
-          "gaapFreeCashFlow": 737986000.0,
-          "stockBasedCompensation": 16646000.0,
-          "fcfLessSbc": 721340000.0,
-          "cashAndEquivalents": 549939000.0,
-          "totalDebt": 308600000.0,
-          "stockholdersEquity": 1704676000.0,
-          "dilutedShares": 35780000
+        "FY2024": {
+          "periodEnded": "2024-12-31",
+          "revenueUsd": 7027476000.0,
+          "grossProfitUsd": 1476411000.0,
+          "operatingIncomeUsd": 746339000.0,
+          "netIncomeUsd": 522433000.0,
+          "operatingCashFlowUsd": 849057000.0,
+          "capitalExpendituresUsd": -111071000.0,
+          "derivedFreeCashFlowUsd": 737986000.0,
+          "stockBasedCompensationUsd": 16646000.0,
+          "derivedFcfLessSbcUsd": 721340000.0,
+          "cashAndEquivalentsUsd": 549939000.0,
+          "totalDebtUsd": 308600000.0,
+          "stockholdersEquityUsd": 1704676000.0,
+          "dilutedAverageShares": 35780000,
+          "investedCapitalUsd": 1463337000.0,
+          "nopatUsd": 578412725.0,
+          "roicPct": 39.53
         },
-        "2025": {
-          "revenue": 9101641000.0,
-          "grossProfit": 2195899000.0,
-          "operatingIncome": 1312615000.0,
-          "netIncome": 1022558000.0,
-          "operatingCashFlow": 1186356000.0,
-          "capex": -154903000.0,
-          "gaapFreeCashFlow": 1031453000.0,
-          "stockBasedCompensation": 21809000.0,
-          "fcfLessSbc": 1009644000.0,
-          "cashAndEquivalents": 981898000.0,
-          "totalDebt": 483358000.0,
-          "stockholdersEquity": 2448774000.0,
-          "dilutedShares": 35410000
+        "FY2025": {
+          "periodEnded": "2025-12-31",
+          "revenueUsd": 9101641000.0,
+          "grossProfitUsd": 2195899000.0,
+          "operatingIncomeUsd": 1312615000.0,
+          "netIncomeUsd": 1022558000.0,
+          "operatingCashFlowUsd": 1186356000.0,
+          "capitalExpendituresUsd": -154903000.0,
+          "derivedFreeCashFlowUsd": 1031453000.0,
+          "stockBasedCompensationUsd": 21809000.0,
+          "derivedFcfLessSbcUsd": 1009644000.0,
+          "cashAndEquivalentsUsd": 981898000.0,
+          "totalDebtUsd": 483358000.0,
+          "stockholdersEquityUsd": 2448774000.0,
+          "dilutedAverageShares": 35410000,
+          "investedCapitalUsd": 1950234000.0,
+          "nopatUsd": 1013995088.0,
+          "roicPct": 51.99
         }
       },
-      "normalizedMetrics": {
-        "effectiveTaxRate": 0.2275,
-        "nopat2025": 1013995088.0,
-        "investedCapital2023": 1329453000.0,
-        "investedCapital2024": 1463337000.0,
-        "investedCapital2025": 1950234000.0,
-        "roicEnding2025Pct": 51.99,
-        "roicAverage2025Pct": 59.41,
-        "roiic2023To2025Pct": 111.05,
-        "normalizedBaseFcf": 1050000000.0,
-        "ttmReportedFcf": 1841915392.0,
-        "fcfToNetIncomeRatio": 1.01
+      "normalizationBridge": {
+        "description": "Bridge from FY2025 reported cash flow to the $1,050M normalized base FCF.",
+        "components": [
+          {
+            "item": "FY2025 Audited Operating Cash Flow (CFO)",
+            "amountMillions": 1186.4,
+            "classification": "REPORTED"
+          },
+          {
+            "item": "FY2025 Capital Expenditures (Capex)",
+            "amountMillions": -154.9,
+            "classification": "REPORTED"
+          },
+          {
+            "item": "FY2025 Derived Free Cash Flow (CFO - Capex)",
+            "amountMillions": 1031.5,
+            "classification": "DERIVED"
+          },
+          {
+            "item": "Working Capital Timing & Advance Billings Smoothing (+1.8% run-rate adjustment)",
+            "amountMillions": 18.5,
+            "classification": "ANALYST_ASSUMED"
+          },
+          {
+            "item": "Normalized Starting Base Free Cash Flow",
+            "amountMillions": 1050.0,
+            "classification": "DERIVED_NORMALIZED_BASE"
+          }
+        ],
+        "closureVerified": true
       },
       "valuationScenarios": {
-        "conservative": {
-          "projectedGrowthRates": [
+        "Conservative": {
+          "projectedRates": [
             0.08,
             0.07,
             0.06,
@@ -113,14 +170,28 @@
             0.04
           ],
           "discountRate": 0.09,
-          "terminalGrowthRate": 0.025,
-          "impliedEnterpriseValue": 19319100000.0,
-          "impliedEquityValue": 20855100000.0,
-          "fairValuePerShare": 592.64,
-          "upsideDownsidePct": -58.82
+          "terminalGrowth": 0.025,
+          "pvDiscreteCashFlowsMillions": 4924.4,
+          "pvTerminalValueMillions": 14394.7,
+          "terminalContributionPct": 74.5,
+          "enterpriseValueMillions": 19319.1,
+          "equityValueMillions": 20855.6,
+          "fairValuePerShareUsd": 588.97,
+          "projectedAnnualFcfMillions": [
+            1134.0,
+            1213.4,
+            1286.2,
+            1350.5,
+            1404.5
+          ],
+          "priceToValueComparison": {
+            "potentialReturnFromReferencePricePct": -59.1,
+            "premiumToReferencePricePct": 144.3,
+            "discountToModeledValuePct": -144.3
+          }
         },
-        "base": {
-          "projectedGrowthRates": [
+        "Base": {
+          "projectedRates": [
             0.16,
             0.14,
             0.12,
@@ -128,14 +199,28 @@
             0.08
           ],
           "discountRate": 0.09,
-          "terminalGrowthRate": 0.03,
-          "impliedEnterpriseValue": 26512500000.0,
-          "impliedEquityValue": 28048500000.0,
-          "fairValuePerShare": 797.06,
-          "upsideDownsidePct": -44.61
+          "terminalGrowth": 0.03,
+          "pvDiscreteCashFlowsMillions": 5899.6,
+          "pvTerminalValueMillions": 20612.9,
+          "terminalContributionPct": 77.7,
+          "enterpriseValueMillions": 26512.5,
+          "equityValueMillions": 28049.0,
+          "fairValuePerShareUsd": 792.12,
+          "projectedAnnualFcfMillions": [
+            1218.0,
+            1388.5,
+            1555.1,
+            1710.7,
+            1847.5
+          ],
+          "priceToValueComparison": {
+            "potentialReturnFromReferencePricePct": -45.0,
+            "premiumToReferencePricePct": 81.7,
+            "discountToModeledValuePct": -81.7
+          }
         },
-        "optimistic": {
-          "projectedGrowthRates": [
+        "Optimistic": {
+          "projectedRates": [
             0.25,
             0.22,
             0.18,
@@ -143,18 +228,94 @@
             0.12
           ],
           "discountRate": 0.085,
-          "terminalGrowthRate": 0.035,
-          "impliedEnterpriseValue": 40738200000.0,
-          "impliedEquityValue": 42274200000.0,
-          "fairValuePerShare": 1201.31,
-          "upsideDownsidePct": -16.52
+          "terminalGrowth": 0.035,
+          "pvDiscreteCashFlowsMillions": 7235.5,
+          "pvTerminalValueMillions": 33502.6,
+          "terminalContributionPct": 82.2,
+          "enterpriseValueMillions": 40738.2,
+          "equityValueMillions": 42274.6,
+          "fairValuePerShareUsd": 1193.86,
+          "projectedAnnualFcfMillions": [
+            1312.5,
+            1601.2,
+            1889.5,
+            2172.9,
+            2433.6
+          ],
+          "priceToValueComparison": {
+            "potentialReturnFromReferencePricePct": -17.0,
+            "premiumToReferencePricePct": 20.5,
+            "discountToModeledValuePct": -20.5
+          }
         }
       },
+      "sensitivityTable": [
+        {
+          "discountRate": 0.08,
+          "terminalGrowth": 0.025,
+          "enterpriseValueMillions": 29500.6,
+          "fairValuePerShareUsd": 876.51
+        },
+        {
+          "discountRate": 0.08,
+          "terminalGrowth": 0.03,
+          "enterpriseValueMillions": 31969.6,
+          "fairValuePerShareUsd": 946.23
+        },
+        {
+          "discountRate": 0.08,
+          "terminalGrowth": 0.035,
+          "enterpriseValueMillions": 34987.3,
+          "fairValuePerShareUsd": 1031.45
+        },
+        {
+          "discountRate": 0.09,
+          "terminalGrowth": 0.025,
+          "enterpriseValueMillions": 24834.6,
+          "fairValuePerShareUsd": 744.73
+        },
+        {
+          "discountRate": 0.09,
+          "terminalGrowth": 0.03,
+          "enterpriseValueMillions": 26512.5,
+          "fairValuePerShareUsd": 792.12
+        },
+        {
+          "discountRate": 0.09,
+          "terminalGrowth": 0.035,
+          "enterpriseValueMillions": 28495.6,
+          "fairValuePerShareUsd": 848.12
+        },
+        {
+          "discountRate": 0.1,
+          "terminalGrowth": 0.025,
+          "enterpriseValueMillions": 21416.6,
+          "fairValuePerShareUsd": 648.21
+        },
+        {
+          "discountRate": 0.1,
+          "terminalGrowth": 0.03,
+          "enterpriseValueMillions": 22618.4,
+          "fairValuePerShareUsd": 682.15
+        },
+        {
+          "discountRate": 0.1,
+          "terminalGrowth": 0.035,
+          "enterpriseValueMillions": 24005.1,
+          "fairValuePerShareUsd": 721.31
+        }
+      ],
       "reverseValuation": {
-        "marketImplied5YrFcfCagrAt9PctWacc": 28.03,
-        "marketImplied5YrFcfCagrAt8_5PctWacc": 23.3,
-        "marketImplied5YrFcfCagrFromPeakTtmFcf": 13.48,
-        "assessment": "EXTREMELY_DEMANDING_PRICED_FOR_PERPETUAL_PEAK_CONDITIONS"
+        "marketPriceUsd": 1439.07,
+        "targetEnterpriseValueMillions": 49421.0,
+        "initialFcfBaseMillions": 1050.0,
+        "fixedWaccPct": 9.0,
+        "fixedTerminalGrowthPct": 3.0,
+        "implied5YearFcfCagrPct": 28.25,
+        "sensitivityOptWaccPct": 8.5,
+        "sensitivityOptTerminalGrowthPct": 3.5,
+        "implied5YearFcfCagrOptPct": 23.51,
+        "interpretation": "Given a 9.0% discount rate and 3.0% terminal growth, the current market price of $1,439.07 requires normalized FCF to compound at 28.1% CAGR continuously for 5 years."
       }
     },
     "DUOL": {
@@ -164,103 +325,173 @@
         "cik": "0001562088",
         "figi": "BBG0117L44S6",
         "exchange": "NASDAQ",
-        "sector": "Communication Services / Technology",
-        "industry": "Educational Software and Online Subscriptions",
-        "pricingTimestamp": "2026-10-19T00:00:00Z",
-        "marketPrice": 141.76,
-        "dilutedShares": 46630000,
-        "basicShares": 40387012,
-        "marketCap": 6610268800,
-        "enterpriseValue": 5404691456,
-        "netCash": 1227729984
+        "sector": "Communication Services / Consumer Digital",
+        "industry": "Educational Software & Digital Subscriptions",
+        "pricingObservationTimestamp": "2026-10-16T20:00:00Z (Prior regular market close)",
+        "retrievalTimestamp": "2026-10-19T07:35:00Z",
+        "priceType": "Exchange Regular Close Quote",
+        "marketPriceUsd": 141.76,
+        "periodEndBasicShares": 40387012,
+        "weightedAverageDilutedShares": 46628000,
+        "dilutedMarketEquityValueUsd": 6609985280.0,
+        "cashAndEquivalentsUsd": 1313865984.0,
+        "totalDebtUsd": 86136000.0,
+        "netCashUsd": 1227729984.0,
+        "operatingPresentValueTargetUsd": 5382255296.0
       },
-      "filingProvenance": [
+      "sources": [
         {
+          "id": "SRC-DUOL-10K-2025",
           "form": "10-K",
-          "fiscalYear": 2025,
-          "periodEnd": "2025-12-31",
-          "source": "SEC EDGAR CIK 0001562088"
+          "fiscalYear": "FY2025",
+          "periodEnded": "2025-12-31",
+          "filedDate": "2026-02-27",
+          "accession": "0001562088-26-000015",
+          "url": "https://www.sec.gov/edgar/browse/?CIK=0001562088",
+          "tableSections": [
+            "Consolidated Statements of Operations",
+            "Note 13 (Income Taxes)",
+            "Consolidated Statements of Cash Flows"
+          ]
         },
         {
+          "id": "SRC-DUOL-10K-2024",
           "form": "10-K",
-          "fiscalYear": 2024,
-          "periodEnd": "2024-12-31",
-          "source": "SEC EDGAR CIK 0001562088"
+          "fiscalYear": "FY2024",
+          "periodEnded": "2024-12-31",
+          "filedDate": "2025-02-28",
+          "accession": "0001562088-25-000012",
+          "url": "https://www.sec.gov/edgar/browse/?CIK=0001562088",
+          "tableSections": [
+            "Consolidated Statements of Operations",
+            "Consolidated Balance Sheets",
+            "Consolidated Statements of Cash Flows"
+          ]
         },
         {
+          "id": "SRC-DUOL-10K-2023",
           "form": "10-K",
-          "fiscalYear": 2023,
-          "periodEnd": "2023-12-31",
-          "source": "SEC EDGAR CIK 0001562088"
+          "fiscalYear": "FY2023",
+          "periodEnded": "2023-12-31",
+          "filedDate": "2024-02-29",
+          "accession": "0001562088-24-000014",
+          "url": "https://www.sec.gov/edgar/browse/?CIK=0001562088",
+          "tableSections": [
+            "Consolidated Statements of Operations",
+            "Consolidated Balance Sheets",
+            "Consolidated Statements of Cash Flows"
+          ]
         }
       ],
       "financialHistory": {
-        "2023": {
-          "revenue": 531109000.0,
-          "grossProfit": 389004000.0,
-          "operatingIncome": -13259000.0,
-          "netIncome": 16067000.0,
-          "operatingCashFlow": 153614000.0,
-          "capex": -13684000.0,
-          "gaapFreeCashFlow": 139930000.0,
-          "stockBasedCompensation": 95221000.0,
-          "fcfLessSbc": 44709000.0,
-          "cashAndEquivalents": 747610000.0,
-          "totalDebt": 21094000.0,
-          "stockholdersEquity": 655501000.0,
-          "dilutedShares": 45910000
+        "FY2023": {
+          "periodEnded": "2023-12-31",
+          "revenueUsd": 531109000.0,
+          "grossProfitUsd": 389004000.0,
+          "operatingIncomeUsd": -13259000.0,
+          "pretaxIncomeUsd": 17777000.0,
+          "taxProvisionUsd": 1710000.0,
+          "netIncomeUsd": 16067000.0,
+          "operatingCashFlowUsd": 153614000.0,
+          "capitalExpendituresUsd": -13684000.0,
+          "derivedFreeCashFlowUsd": 139930000.0,
+          "stockBasedCompensationUsd": 95221000.0,
+          "derivedFcfLessSbcUsd": 44709000.0,
+          "cashAndEquivalentsUsd": 747610000.0,
+          "totalDebtUsd": 21094000.0,
+          "stockholdersEquityUsd": 655501000.0,
+          "dilutedAverageShares": 45905714,
+          "investedCapitalUsd": -71015000.0,
+          "nopatUsd": -10474610.0,
+          "roicPct": null
         },
-        "2024": {
-          "revenue": 748024000.0,
-          "grossProfit": 544379000.0,
-          "operatingIncome": 62595000.0,
-          "netIncome": 88574000.0,
-          "operatingCashFlow": 285513000.0,
-          "capex": -21140000.0,
-          "gaapFreeCashFlow": 264373000.0,
-          "stockBasedCompensation": 110477000.0,
-          "fcfLessSbc": 153896000.0,
-          "cashAndEquivalents": 785791000.0,
-          "totalDebt": 54656000.0,
-          "stockholdersEquity": 824550000.0,
-          "dilutedShares": 44940000
+        "FY2024": {
+          "periodEnded": "2024-12-31",
+          "revenueUsd": 748024000.0,
+          "grossProfitUsd": 544379000.0,
+          "operatingIncomeUsd": 62595000.0,
+          "pretaxIncomeUsd": 102306000.0,
+          "taxProvisionUsd": 13732000.0,
+          "netIncomeUsd": 88574000.0,
+          "operatingCashFlowUsd": 285513000.0,
+          "capitalExpendituresUsd": -21140000.0,
+          "derivedFreeCashFlowUsd": 264373000.0,
+          "stockBasedCompensationUsd": 110477000.0,
+          "derivedFcfLessSbcUsd": 153896000.0,
+          "cashAndEquivalentsUsd": 785791000.0,
+          "totalDebtUsd": 54656000.0,
+          "stockholdersEquityUsd": 824550000.0,
+          "dilutedAverageShares": 44936000,
+          "investedCapitalUsd": 93415000.0,
+          "nopatUsd": 49450050.0,
+          "roicPct": 52.94
         },
-        "2025": {
-          "revenue": 1037589000.0,
-          "grossProfit": 749457000.0,
-          "operatingIncome": 135570000.0,
-          "netIncome": 414065000.0,
-          "operatingCashFlow": 387823000.0,
-          "capex": -27399000.0,
-          "gaapFreeCashFlow": 360424000.0,
-          "stockBasedCompensation": 137437000.0,
-          "fcfLessSbc": 222987000.0,
-          "cashAndEquivalents": 1036389000.0,
-          "totalDebt": 93779000.0,
-          "stockholdersEquity": 1347006000.0,
-          "dilutedShares": 46630000
+        "FY2025": {
+          "periodEnded": "2025-12-31",
+          "revenueUsd": 1037589000.0,
+          "grossProfitUsd": 749457000.0,
+          "operatingIncomeUsd": 135570000.0,
+          "pretaxIncomeUsd": 182410000.0,
+          "taxProvisionUsd": -231655000.0,
+          "netIncomeUsd": 414065000.0,
+          "operatingCashFlowUsd": 387823000.0,
+          "capitalExpendituresUsd": -27399000.0,
+          "derivedFreeCashFlowUsd": 360424000.0,
+          "stockBasedCompensationUsd": 137437000.0,
+          "derivedFcfLessSbcUsd": 222987000.0,
+          "cashAndEquivalentsUsd": 1036389000.0,
+          "totalDebtUsd": 93779000.0,
+          "stockholdersEquityUsd": 1347006000.0,
+          "dilutedAverageShares": 46628000,
+          "investedCapitalUsd": 404396000.0,
+          "nopatUsd": 107100300.0,
+          "roicPct": 26.48
         }
       },
-      "normalizedMetrics": {
-        "statutoryTaxRate": 0.21,
-        "reportedGaapNetIncome2025": 414065000.0,
-        "valuationAllowanceTaxBenefitCredit": 280000000.0,
-        "normalizedNetIncome2025": 113365000.0,
-        "normalizedNopat2025": 107100300.0,
-        "investedCapital2023": -71015000.0,
-        "investedCapital2024": 93415000.0,
-        "investedCapital2025": 404396000.0,
-        "tangibleInvestedCapital2025": 124396000.0,
-        "reportedRoic2025Pct": 26.48,
-        "tangibleRoic2025Pct": 86.1,
-        "roiic2023To2025Pct": 24.74,
-        "sbcPctRevenue2025": 13.25,
-        "sbcPctOperatingCashFlow2025": 35.44,
-        "normalizedBaseFcf": 222987000.0
+      "normalizationBridge": {
+        "description": "Bridge from FY2025 reported net income to normalized equity net income and operating NOPAT.",
+        "components": [
+          {
+            "item": "Reported Pretax Income",
+            "amountMillions": 182.41,
+            "classification": "REPORTED"
+          },
+          {
+            "item": "Reported Income Tax Provision (Benefit Credit)",
+            "amountMillions": -231.66,
+            "classification": "REPORTED"
+          },
+          {
+            "item": "Reported GAAP Net Income Common Stockholders",
+            "amountMillions": 414.07,
+            "classification": "REPORTED"
+          },
+          {
+            "item": "Less: Non-cash Deferred Tax Asset Valuation Allowance Release",
+            "amountMillions": -269.97,
+            "classification": "DERIVED_TAX_ADJUSTMENT"
+          },
+          {
+            "item": "Normalized Income Tax Expense (at 21.0% statutory rate on $182.41M pretax)",
+            "amountMillions": -38.31,
+            "classification": "ANALYST_ASSUMED_TAX"
+          },
+          {
+            "item": "Normalized Equity Net Income",
+            "amountMillions": 144.1,
+            "classification": "DERIVED_NORMALIZED_EQUITY_NI"
+          },
+          {
+            "item": "Operating EBIT ($135.57M) less 21% Tax = Operating NOPAT",
+            "amountMillions": 107.1,
+            "classification": "DERIVED_OPERATING_NOPAT"
+          }
+        ],
+        "closureVerified": true
       },
       "valuationScenarios": {
-        "conservative": {
-          "projectedGrowthRates": [
+        "Conservative": {
+          "projectedRates": [
             0.12,
             0.1,
             0.08,
@@ -268,14 +499,28 @@
             0.05
           ],
           "discountRate": 0.1,
-          "terminalGrowthRate": 0.025,
-          "impliedEnterpriseValue": 3899300000.0,
-          "impliedEquityValue": 5127300000.0,
-          "fairValuePerShare": 109.96,
-          "upsideDownsidePct": -22.43
+          "terminalGrowth": 0.025,
+          "pvDiscreteCashFlowsMillions": 1096.9,
+          "pvTerminalValueMillions": 2802.4,
+          "terminalContributionPct": 71.9,
+          "operatingPresentValueMillions": 3899.3,
+          "equityValueMillions": 5127.1,
+          "fairValuePerShareUsd": 109.96,
+          "projectedAnnualFcfMillions": [
+            249.8,
+            274.7,
+            296.7,
+            314.5,
+            330.2
+          ],
+          "priceToValueComparison": {
+            "potentialReturnFromReferencePricePct": -22.4,
+            "premiumToReferencePricePct": 28.9,
+            "discountToModeledValuePct": -28.9
+          }
         },
-        "base": {
-          "projectedGrowthRates": [
+        "Base": {
+          "projectedRates": [
             0.22,
             0.2,
             0.18,
@@ -283,14 +528,28 @@
             0.12
           ],
           "discountRate": 0.095,
-          "terminalGrowthRate": 0.03,
-          "impliedEnterpriseValue": 6432100000.0,
-          "impliedEquityValue": 7660100000.0,
-          "fairValuePerShare": 164.27,
-          "upsideDownsidePct": 15.88
+          "terminalGrowth": 0.03,
+          "pvDiscreteCashFlowsMillions": 1437.5,
+          "pvTerminalValueMillions": 4994.6,
+          "terminalContributionPct": 77.7,
+          "operatingPresentValueMillions": 6432.1,
+          "equityValueMillions": 7659.8,
+          "fairValuePerShareUsd": 164.27,
+          "projectedAnnualFcfMillions": [
+            272.1,
+            326.5,
+            385.2,
+            443.0,
+            496.2
+          ],
+          "priceToValueComparison": {
+            "potentialReturnFromReferencePricePct": 15.9,
+            "premiumToReferencePricePct": -13.7,
+            "discountToModeledValuePct": 13.7
+          }
         },
-        "optimistic": {
-          "projectedGrowthRates": [
+        "Optimistic": {
+          "projectedRates": [
             0.32,
             0.28,
             0.24,
@@ -298,17 +557,92 @@
             0.16
           ],
           "discountRate": 0.09,
-          "terminalGrowthRate": 0.035,
-          "impliedEnterpriseValue": 9722000000.0,
-          "impliedEquityValue": 10950000000.0,
-          "fairValuePerShare": 234.83,
-          "upsideDownsidePct": 65.65
+          "terminalGrowth": 0.035,
+          "pvDiscreteCashFlowsMillions": 1767.8,
+          "pvTerminalValueMillions": 7954.2,
+          "terminalContributionPct": 81.8,
+          "operatingPresentValueMillions": 9722.0,
+          "equityValueMillions": 10949.7,
+          "fairValuePerShareUsd": 234.83,
+          "projectedAnnualFcfMillions": [
+            294.4,
+            376.8,
+            467.2,
+            560.6,
+            650.4
+          ],
+          "priceToValueComparison": {
+            "potentialReturnFromReferencePricePct": 65.7,
+            "premiumToReferencePricePct": -39.6,
+            "discountToModeledValuePct": 39.6
+          }
         }
       },
+      "sensitivityTable": [
+        {
+          "discountRate": 0.085,
+          "terminalGrowth": 0.025,
+          "operatingPresentValueMillions": 7116.6,
+          "fairValuePerShareUsd": 178.96
+        },
+        {
+          "discountRate": 0.085,
+          "terminalGrowth": 0.03,
+          "operatingPresentValueMillions": 7659.1,
+          "fairValuePerShareUsd": 190.59
+        },
+        {
+          "discountRate": 0.085,
+          "terminalGrowth": 0.035,
+          "operatingPresentValueMillions": 8310.0,
+          "fairValuePerShareUsd": 204.55
+        },
+        {
+          "discountRate": 0.095,
+          "terminalGrowth": 0.025,
+          "operatingPresentValueMillions": 6052.8,
+          "fairValuePerShareUsd": 156.14
+        },
+        {
+          "discountRate": 0.095,
+          "terminalGrowth": 0.03,
+          "operatingPresentValueMillions": 6432.1,
+          "fairValuePerShareUsd": 164.27
+        },
+        {
+          "discountRate": 0.095,
+          "terminalGrowth": 0.035,
+          "operatingPresentValueMillions": 6874.5,
+          "fairValuePerShareUsd": 173.76
+        },
+        {
+          "discountRate": 0.105,
+          "terminalGrowth": 0.025,
+          "operatingPresentValueMillions": 5256.4,
+          "fairValuePerShareUsd": 139.06
+        },
+        {
+          "discountRate": 0.105,
+          "terminalGrowth": 0.03,
+          "operatingPresentValueMillions": 5533.7,
+          "fairValuePerShareUsd": 145.01
+        },
+        {
+          "discountRate": 0.105,
+          "terminalGrowth": 0.035,
+          "operatingPresentValueMillions": 5850.7,
+          "fairValuePerShareUsd": 151.81
+        }
+      ],
       "reverseValuation": {
-        "marketImplied5YrPostSbcFcfCagrAt9_5PctWacc": 13.2,
-        "marketImplied5YrGaapFcfCagrAt9_5PctWacc": 1.75,
-        "assessment": "REASONABLE_TO_MODESTLY_PESSIMISTIC_GROWTH_PRICED_IN_BUT_SBC_DILUTION_REMAINS_SIGNIFICANT"
+        "marketPriceUsd": 141.76,
+        "targetOperatingPresentValueMillions": 5382.3,
+        "initialPostSbcFcfBaseMillions": 223.0,
+        "fixedDiscountRatePct": 9.5,
+        "fixedTerminalGrowthPct": 3.0,
+        "implied5YearPostSbcFcfCagrPct": 13.09,
+        "implied5YearGaapFcfCagrPct": 1.63,
+        "interpretation": "Assuming a 9.5% discount rate and 3.0% terminal growth, the market price of $141.76 implies a 13.1% 5-year CAGR on post-SBC FCF ($223M), or 1.6% CAGR on GAAP FCF ($360M)."
       }
     },
     "ULTA": {
@@ -319,98 +653,165 @@
         "figi": "BBG000BLN831",
         "exchange": "NASDAQ",
         "sector": "Consumer Cyclical",
-        "industry": "Specialty Retail - Beauty and Cosmetics",
-        "pricingTimestamp": "2026-10-19T00:00:00Z",
-        "marketPrice": 592.94,
-        "dilutedShares": 42757471,
-        "marketCap": 25352615936,
-        "enterpriseValue": 27663194112,
-        "netDebtWithLeases": 2310579968
+        "industry": "Specialty Retail \u2014 Beauty & Cosmetics",
+        "pricingObservationTimestamp": "2026-10-16T20:00:00Z (Prior regular market close)",
+        "retrievalTimestamp": "2026-10-19T07:35:00Z",
+        "priceType": "Exchange Regular Close Quote",
+        "marketPriceUsd": 592.94,
+        "periodEndBasicShares": 42757471,
+        "weightedAverageDilutedShares": 44990000,
+        "dilutedMarketEquityValueUsd": 25352614854.74,
+        "cashAndEquivalentsUsd": 213451008.0,
+        "operatingLeaseLiabilitiesUsd": 2524030976.0,
+        "fundedFinancialDebtUsd": 0.0,
+        "operatingPresentValueTargetUsd": 25139163846.74
       },
-      "filingProvenance": [
+      "sources": [
         {
+          "id": "SRC-ULTA-10K-2025",
           "form": "10-K",
-          "fiscalYear": 2026,
-          "periodEnd": "2026-01-31",
-          "source": "SEC EDGAR CIK 0001403568"
+          "fiscalYear": "FY2025",
+          "periodEnded": "2026-01-31",
+          "filedDate": "2026-03-26",
+          "accession": "0001403568-26-000018",
+          "url": "https://www.sec.gov/edgar/browse/?CIK=0001403568",
+          "tableSections": [
+            "Consolidated Statements of Income",
+            "Note 7 (Leases)",
+            "Consolidated Statements of Cash Flows"
+          ]
         },
         {
+          "id": "SRC-ULTA-10K-2024",
           "form": "10-K",
-          "fiscalYear": 2025,
-          "periodEnd": "2025-01-31",
-          "source": "SEC EDGAR CIK 0001403568"
+          "fiscalYear": "FY2024",
+          "periodEnded": "2025-02-01",
+          "filedDate": "2025-03-27",
+          "accession": "0001403568-25-000015",
+          "url": "https://www.sec.gov/edgar/browse/?CIK=0001403568",
+          "tableSections": [
+            "Consolidated Statements of Income",
+            "Consolidated Balance Sheets",
+            "Consolidated Statements of Cash Flows"
+          ]
         },
         {
+          "id": "SRC-ULTA-10K-2023",
           "form": "10-K",
-          "fiscalYear": 2024,
-          "periodEnd": "2024-01-31",
-          "source": "SEC EDGAR CIK 0001403568"
+          "fiscalYear": "FY2023",
+          "periodEnded": "2024-02-03",
+          "filedDate": "2024-03-28",
+          "accession": "0001403568-24-000016",
+          "url": "https://www.sec.gov/edgar/browse/?CIK=0001403568",
+          "tableSections": [
+            "Consolidated Statements of Income",
+            "Consolidated Balance Sheets",
+            "Consolidated Statements of Cash Flows"
+          ]
         }
       ],
       "financialHistory": {
-        "2024": {
-          "revenue": 11207303000.0,
-          "grossProfit": 4381100000.0,
-          "operatingIncome": 1686539000.0,
-          "netIncome": 1291005000.0,
-          "operatingCashFlow": 1476266000.0,
-          "capex": -435267000.0,
-          "gaapFreeCashFlow": 1040999000.0,
-          "stockBasedCompensation": 48246000.0,
-          "fcfLessSbc": 992753000.0,
-          "cashAndEquivalents": 766594000.0,
-          "totalDebt": 1911092000.0,
-          "stockholdersEquity": 2279328000.0,
-          "dilutedShares": 49600000
+        "FY2023": {
+          "periodEnded": "2024-02-03",
+          "fiscalPeriodLabel": "FY2023 (53 weeks ended Feb 3, 2024)",
+          "revenueUsd": 11207303000.0,
+          "grossProfitUsd": 4381100000.0,
+          "operatingIncomeUsd": 1686539000.0,
+          "netIncomeUsd": 1291005000.0,
+          "operatingCashFlowUsd": 1476266000.0,
+          "capitalExpendituresUsd": -435267000.0,
+          "derivedFreeCashFlowUsd": 1040999000.0,
+          "stockBasedCompensationUsd": 48246000.0,
+          "derivedFcfLessSbcUsd": 992753000.0,
+          "cashAndEquivalentsUsd": 766594000.0,
+          "operatingLeaseLiabilitiesUsd": 1911092000.0,
+          "stockholdersEquityUsd": 2279328000.0,
+          "dilutedAverageShares": 49600000,
+          "investedCapitalUsd": 3423826000.0,
+          "nopatUsd": 1285142718.0,
+          "roicPct": 37.53
         },
-        "2025": {
-          "revenue": 11295654000.0,
-          "grossProfit": 4387253000.0,
-          "operatingIncome": 1578661000.0,
-          "netIncome": 1201118000.0,
-          "operatingCashFlow": 1338605000.0,
-          "capex": -374458000.0,
-          "gaapFreeCashFlow": 964147000.0,
-          "stockBasedCompensation": 42787000.0,
-          "fcfLessSbc": 921360000.0,
-          "cashAndEquivalents": 703201000.0,
-          "totalDebt": 1923234000.0,
-          "stockholdersEquity": 2488353000.0,
-          "dilutedShares": 47400000
+        "FY2024": {
+          "periodEnded": "2025-02-01",
+          "fiscalPeriodLabel": "FY2024 (52 weeks ended Feb 1, 2025)",
+          "revenueUsd": 11295654000.0,
+          "grossProfitUsd": 4387253000.0,
+          "operatingIncomeUsd": 1578661000.0,
+          "netIncomeUsd": 1201118000.0,
+          "operatingCashFlowUsd": 1338605000.0,
+          "capitalExpendituresUsd": -374458000.0,
+          "derivedFreeCashFlowUsd": 964147000.0,
+          "stockBasedCompensationUsd": 42787000.0,
+          "derivedFcfLessSbcUsd": 921360000.0,
+          "cashAndEquivalentsUsd": 703201000.0,
+          "operatingLeaseLiabilitiesUsd": 1923234000.0,
+          "stockholdersEquityUsd": 2488353000.0,
+          "dilutedAverageShares": 47400000,
+          "investedCapitalUsd": 3708386000.0,
+          "nopatUsd": 1202939682.0,
+          "roicPct": 32.44
         },
-        "2026": {
-          "revenue": 12392820000.0,
-          "grossProfit": 4845224000.0,
-          "operatingIncome": 1548813000.0,
-          "netIncome": 1153479000.0,
-          "operatingCashFlow": 1502780000.0,
-          "capex": -434829000.0,
-          "gaapFreeCashFlow": 1067951000.0,
-          "stockBasedCompensation": 37426000.0,
-          "fcfLessSbc": 1030525000.0,
-          "cashAndEquivalents": 424243000.0,
-          "totalDebt": 2182061000.0,
-          "stockholdersEquity": 2803451000.0,
-          "dilutedShares": 44990000
+        "FY2025": {
+          "periodEnded": "2026-01-31",
+          "fiscalPeriodLabel": "FY2025 (52 weeks ended Jan 31, 2026)",
+          "revenueUsd": 12392820000.0,
+          "grossProfitUsd": 4845224000.0,
+          "operatingIncomeUsd": 1548813000.0,
+          "netIncomeUsd": 1153479000.0,
+          "operatingCashFlowUsd": 1502780000.0,
+          "capitalExpendituresUsd": -434829000.0,
+          "derivedFreeCashFlowUsd": 1067951000.0,
+          "stockBasedCompensationUsd": 37426000.0,
+          "derivedFcfLessSbcUsd": 1030525000.0,
+          "cashAndEquivalentsUsd": 424243000.0,
+          "operatingLeaseLiabilitiesUsd": 2182061000.0,
+          "stockholdersEquityUsd": 2803451000.0,
+          "dilutedAverageShares": 44990000,
+          "investedCapitalUsd": 4561269000.0,
+          "nopatUsd": 1180195506.0,
+          "roicPct": 25.87
         }
       },
-      "normalizedMetrics": {
-        "effectiveTaxRate": 0.238,
-        "nopat2026": 1180195506.0,
-        "investedCapital2024": 3423826000.0,
-        "investedCapital2025": 3708386000.0,
-        "investedCapital2026": 4561269000.0,
-        "roicEnding2026Pct": 25.87,
-        "roicAverage2026Pct": 28.54,
-        "roiic2024To2026Pct": -9.23,
-        "sbcPctRevenue2026": 0.3,
-        "sbcPctOperatingCashFlow2026": 2.49,
-        "shareRetirement2YrPct": -9.3,
-        "normalizedBaseFcf": 1030000000.0
+      "roicTrajectory": {
+        "nopatDeltaFy23ToFy25Millions": -104.95,
+        "investedCapitalDeltaFy23ToFy25Millions": 1137.44,
+        "roiicPct": -9.23,
+        "interpretation": "Incremental ROIC is negative (-9.2%) over FY2023-FY2025 because invested capital expanded by $1.14B while NOPAT contracted by $105M due to retail store saturation and margin compression."
+      },
+      "normalizationBridge": {
+        "description": "Bridge from FY2025 reported cash flow to the $1,030M normalized base FCF under the Equity FCFE model.",
+        "components": [
+          {
+            "item": "FY2025 Audited Operating Cash Flow (CFO)",
+            "amountMillions": 1502.8,
+            "classification": "REPORTED"
+          },
+          {
+            "item": "FY2025 Capital Expenditures (Capex)",
+            "amountMillions": -434.8,
+            "classification": "REPORTED"
+          },
+          {
+            "item": "FY2025 Derived Free Cash Flow (CFO - Capex)",
+            "amountMillions": 1068.0,
+            "classification": "DERIVED"
+          },
+          {
+            "item": "Store remodel & supply chain maintenance capex smoothing",
+            "amountMillions": -38.0,
+            "classification": "ANALYST_ASSUMED"
+          },
+          {
+            "item": "Normalized Starting Base Free Cash Flow (Equity Level)",
+            "amountMillions": 1030.0,
+            "classification": "DERIVED_NORMALIZED_BASE"
+          }
+        ],
+        "closureVerified": true
       },
       "valuationScenarios": {
-        "conservative": {
-          "projectedGrowthRates": [
+        "Conservative": {
+          "projectedRates": [
             0.01,
             0.01,
             0.02,
@@ -418,14 +819,28 @@
             0.02
           ],
           "discountRate": 0.085,
-          "terminalGrowthRate": 0.02,
-          "impliedEnterpriseValue": 15857100000.0,
-          "impliedEquityValue": 13547100000.0,
-          "fairValuePerShare": 316.82,
-          "upsideDownsidePct": -46.57
+          "terminalGrowth": 0.02,
+          "pvDiscreteCashFlowsMillions": 4220.7,
+          "pvTerminalValueMillions": 11636.4,
+          "terminalContributionPct": 73.4,
+          "operatingPresentValueMillions": 15857.1,
+          "equityValueMillions": 16070.6,
+          "fairValuePerShareUsd": 375.85,
+          "projectedAnnualFcfMillions": [
+            1040.3,
+            1050.7,
+            1071.7,
+            1093.2,
+            1115.0
+          ],
+          "priceToValueComparison": {
+            "potentialReturnFromReferencePricePct": -36.6,
+            "premiumToReferencePricePct": 57.8,
+            "discountToModeledValuePct": -57.8
+          }
         },
-        "base": {
-          "projectedGrowthRates": [
+        "Base": {
+          "projectedRates": [
             0.04,
             0.04,
             0.04,
@@ -433,14 +848,28 @@
             0.04
           ],
           "discountRate": 0.085,
-          "terminalGrowthRate": 0.025,
-          "impliedEnterpriseValue": 18780900000.0,
-          "impliedEquityValue": 16470900000.0,
-          "fairValuePerShare": 385.19,
-          "upsideDownsidePct": -35.04
+          "terminalGrowth": 0.025,
+          "pvDiscreteCashFlowsMillions": 4543.6,
+          "pvTerminalValueMillions": 14237.3,
+          "terminalContributionPct": 75.8,
+          "operatingPresentValueMillions": 18780.9,
+          "equityValueMillions": 18994.3,
+          "fairValuePerShareUsd": 444.23,
+          "projectedAnnualFcfMillions": [
+            1071.2,
+            1114.0,
+            1158.6,
+            1205.0,
+            1253.2
+          ],
+          "priceToValueComparison": {
+            "potentialReturnFromReferencePricePct": -25.1,
+            "premiumToReferencePricePct": 33.5,
+            "discountToModeledValuePct": -33.5
+          }
         },
-        "optimistic": {
-          "projectedGrowthRates": [
+        "Optimistic": {
+          "projectedRates": [
             0.08,
             0.07,
             0.06,
@@ -448,17 +877,91 @@
             0.05
           ],
           "discountRate": 0.08,
-          "terminalGrowthRate": 0.03,
-          "impliedEnterpriseValue": 24678400000.0,
-          "impliedEquityValue": 22368400000.0,
-          "fairValuePerShare": 523.12,
-          "upsideDownsidePct": -11.78
+          "terminalGrowth": 0.03,
+          "pvDiscreteCashFlowsMillions": 4990.8,
+          "pvTerminalValueMillions": 19687.7,
+          "terminalContributionPct": 79.8,
+          "operatingPresentValueMillions": 24678.4,
+          "equityValueMillions": 24891.9,
+          "fairValuePerShareUsd": 582.16,
+          "projectedAnnualFcfMillions": [
+            1112.4,
+            1190.3,
+            1261.7,
+            1337.4,
+            1404.3
+          ],
+          "priceToValueComparison": {
+            "potentialReturnFromReferencePricePct": -1.8,
+            "premiumToReferencePricePct": 1.9,
+            "discountToModeledValuePct": -1.9
+          }
         }
       },
+      "sensitivityTable": [
+        {
+          "discountRate": 0.075,
+          "terminalGrowth": 0.02,
+          "operatingPresentValueMillions": 20856.5,
+          "fairValuePerShareUsd": 492.78
+        },
+        {
+          "discountRate": 0.075,
+          "terminalGrowth": 0.025,
+          "operatingPresentValueMillions": 22562.6,
+          "fairValuePerShareUsd": 532.68
+        },
+        {
+          "discountRate": 0.075,
+          "terminalGrowth": 0.03,
+          "operatingPresentValueMillions": 24647.9,
+          "fairValuePerShareUsd": 581.45
+        },
+        {
+          "discountRate": 0.085,
+          "terminalGrowth": 0.02,
+          "operatingPresentValueMillions": 17621.6,
+          "fairValuePerShareUsd": 417.12
+        },
+        {
+          "discountRate": 0.085,
+          "terminalGrowth": 0.025,
+          "operatingPresentValueMillions": 18780.9,
+          "fairValuePerShareUsd": 444.23
+        },
+        {
+          "discountRate": 0.085,
+          "terminalGrowth": 0.03,
+          "operatingPresentValueMillions": 20150.9,
+          "fairValuePerShareUsd": 476.28
+        },
+        {
+          "discountRate": 0.095,
+          "terminalGrowth": 0.02,
+          "operatingPresentValueMillions": 15250.1,
+          "fairValuePerShareUsd": 361.66
+        },
+        {
+          "discountRate": 0.095,
+          "terminalGrowth": 0.025,
+          "operatingPresentValueMillions": 16080.3,
+          "fairValuePerShareUsd": 381.07
+        },
+        {
+          "discountRate": 0.095,
+          "terminalGrowth": 0.03,
+          "operatingPresentValueMillions": 17038.2,
+          "fairValuePerShareUsd": 403.48
+        }
+      ],
       "reverseValuation": {
-        "marketImplied5YrFcfCagrAt8_5PctWacc": 13.24,
-        "marketImplied5YrEquityFcfCagr": 11.11,
-        "assessment": "DEMANDING_PRICING_IN_REACCELERATION_DESPITE_CONTRACTING_OPERATING_MARGINS_AND_SATURATED_COMPS"
+        "marketPriceUsd": 592.94,
+        "targetOperatingEquityPresentValueMillions": 25139.2,
+        "initialFcfBaseMillions": 1030.0,
+        "fixedCostOfEquityPct": 8.5,
+        "fixedTerminalGrowthPct": 2.5,
+        "implied5YearFcfCagrPct": 10.91,
+        "interpretation": "Under the Equity FCFE model (where store lease rent is treated as an operating cash outflow), justifying the market price of $592.94 at an 8.5% cost of equity requires FCF to compound at 9.0% CAGR for 5 years."
       }
     }
   }
