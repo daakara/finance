@@ -124,10 +124,33 @@ class SourcedFundamentalsService:
                     self._data = None
                     return
 
+                # Validate nested facts structure (P1)
+                facts = fundamentals.get("facts")
+                if not isinstance(facts, dict):
+                    self._state = SnapshotState.MALFORMED_LEDGER
+                    self._error_detail = f"Company record for '{sym}' is missing valid facts mapping in fundamentals."
+                    self._data = None
+                    return
+
+                for fact_key, fact_val in facts.items():
+                    if not isinstance(fact_val, dict):
+                        self._state = SnapshotState.MALFORMED_LEDGER
+                        self._error_detail = f"Company record for '{sym}' contains invalid fact object for '{fact_key}' (must be a JSON object)."
+                        self._data = None
+                        return
+
                 derived_metrics = cdata.get("derived_metrics")
                 if not isinstance(derived_metrics, dict):
                     self._state = SnapshotState.MALFORMED_LEDGER
                     self._error_detail = f"Company record for '{sym}' is missing valid derived_metrics object."
+                    self._data = None
+                    return
+
+                # Validate optional assessment structure if supplied (P1)
+                asmt_raw = cdata.get("assessment")
+                if asmt_raw is not None and not isinstance(asmt_raw, dict):
+                    self._state = SnapshotState.MALFORMED_LEDGER
+                    self._error_detail = f"Company record for '{sym}' contains malformed assessment (must be a JSON object if supplied)."
                     self._data = None
                     return
 
@@ -259,7 +282,12 @@ class SourcedFundamentalsService:
         if not isinstance(dm, dict):
             raise IdentityIntegrityError(f"Missing derived_metrics object for '{clean_sym}'.")
 
-        asmt = cdata.get("assessment") or {}
+        # Validate assessment structure (P1)
+        asmt_raw = cdata.get("assessment")
+        if asmt_raw is not None and not isinstance(asmt_raw, dict):
+            raise IdentityIntegrityError(f"Malformed assessment structure for '{clean_sym}' (must be a JSON object if supplied).")
+        asmt = asmt_raw if isinstance(asmt_raw, dict) else {}
+
         cik = f.get("cik")
 
         # Identity validation (F01 / P02): Verify that internal symbol and CIK match ground truth
@@ -268,10 +296,16 @@ class SourcedFundamentalsService:
             logger.error(f"Identity integrity error in snapshot for '{clean_sym}': {ident_res.error}")
             raise IdentityIntegrityError(ident_res.error)
 
-        # 1. Transform reported facts with attributable SEC links and fact types (F02)
+        # 1. Transform reported facts with attributable SEC links and fact types (F02, P1, P2)
+        raw_facts = f.get("facts")
+        if not isinstance(raw_facts, dict):
+            raise IdentityIntegrityError(f"Missing or invalid facts mapping for '{clean_sym}'.")
+
         reported_facts = []
-        raw_facts = f.get("facts", {})
         for metric_key, fact in raw_facts.items():
+            if not isinstance(fact, dict):
+                raise IdentityIntegrityError(f"Malformed fact object for '{metric_key}' in company '{clean_sym}'.")
+
             acc = fact.get("accession_number")
             sec_url = format_sec_edgar_url(cik, acc)
 
@@ -282,6 +316,7 @@ class SourcedFundamentalsService:
             if p_start and p_end and p_start != p_end:
                 duration_type = "DURATION"
 
+            # Strict fact classification (P2): Never default UNKNOWN/missing to PRIMARY_REPORTED
             raw_status = fact.get("status")
             if raw_status == "REPORTED":
                 fact_type = "PRIMARY_REPORTED"
@@ -295,13 +330,12 @@ class SourcedFundamentalsService:
             elif raw_status == "UNAVAILABLE":
                 fact_type = "UNAVAILABLE"
                 fact_status = "UNAVAILABLE"
+            elif raw_status == "UNKNOWN":
+                fact_type = "UNCLASSIFIED"
+                fact_status = "UNKNOWN"
             else:
-                if acc and not fact.get("formula"):
-                    fact_type = "PRIMARY_REPORTED"
-                    fact_status = "REPORTED"
-                else:
-                    fact_type = "DERIVED_CALCULATION"
-                    fact_status = "DERIVED"
+                fact_type = "UNCLASSIFIED"
+                fact_status = "UNCLASSIFIED"
 
             reported_facts.append({
                 "metric_key": metric_key,
@@ -349,6 +383,24 @@ class SourcedFundamentalsService:
         if not share_period_start and ttm_denom_desc and " to " in ttm_denom_desc:
             share_period_start = ttm_denom_desc.split(" to ")[0].strip()
         share_period_type = "ANNUAL_WEIGHTED_AVERAGE" if (clean_sym == "KLAC") else "QUARTERLY_WEIGHTED_AVERAGE"
+
+        # Determine lease liability concept, scope, and notes from source concept (P3)
+        lease_raw = raw_facts.get("operating_lease_liabilities")
+        lease_fact = lease_raw if isinstance(lease_raw, dict) else {}
+        lease_concept = lease_fact.get("concept")
+        lease_val = dm.get("operating_lease_liabilities")
+        if lease_val is None:
+            lease_status = "UNAVAILABLE"
+            lease_label = "Operating Lease Liabilities"
+            lease_notes = "Operating lease liability concept is unavailable or not reported in primary XBRL taxonomy."
+        elif lease_concept and "OperatingLeaseLiabilityNoncurrent" in lease_concept:
+            lease_status = "REPORTED"
+            lease_label = "Operating Lease Liabilities (Noncurrent)"
+            lease_notes = "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating obligation, not financial debt)."
+        else:
+            lease_status = "REPORTED"
+            lease_label = "Operating Lease Liabilities"
+            lease_notes = "Contractual operating lease obligation under ASC 842 (discounted obligation for operating lease payments)."
 
         # 2. Extract derived calculations with explicit basis & formulas (Facts only)
         derived_calculations = {
@@ -453,13 +505,13 @@ class SourcedFundamentalsService:
                 "formula": "Total Financial Debt - Total Cash & Short-Term Investments",
             },
             "operating_lease_liabilities": {
-                "value": dm.get("operating_lease_liabilities"),
+                "value": lease_val,
                 "units": "USD",
-                "status": "REPORTED" if dm.get("operating_lease_liabilities") is not None else "UNAVAILABLE",
-                "label": "Operating Lease Liabilities (Noncurrent)",
-                "concept": raw_facts.get("operating_lease_liabilities", {}).get("concept"),
+                "status": lease_status,
+                "label": lease_label,
+                "concept": lease_concept,
                 "period_end": f.get("latest_reported_period"),
-                "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)",
+                "notes": lease_notes,
             },
             "diluted_shares_weighted_avg": {
                 "value": dm.get("diluted_shares_weighted_avg"),

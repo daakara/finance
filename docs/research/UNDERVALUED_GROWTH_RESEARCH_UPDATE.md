@@ -59,8 +59,7 @@ Automated XBRL extraction reported `total_financial_debt: null` for DUOL and ULT
   - Deferred revenue: $505,102,000 (prepaid annual/family subscriptions).
   - Operating lease liabilities (ASC 842): $108,936,000 ($22.80M current + $86.14M non-current).
   - Senior notes, credit facilities, bank debt: **$0.00**.
-- **Forensic Debt Finding**: DUOL holds **zero funded financial debt** ($0.00). It operates as a pure net-cash software business.
-- **Automated Dataset Treatment**: Because zero funded debt means no XBRL concepts (e.g. `us-gaap:LongTermDebtNoncurrent`) are emitted, the automated pipeline preserves `total_financial_debt: null` (`UNAVAILABLE`) under the fail-closed aggregate completeness rule.
+- **Forensic Debt Finding & Qualification**: Form 10-Q (accession `0001628280-26-053603`) discloses accounts payable, accrued liabilities, deferred revenue, and operating leases, with no explicit line items for funded financial debt, senior notes, or credit facility draws. However, missing XBRL debt concepts alone do not definitively establish the total absence of debt or credit agreements without broader legal and credit agreement verification. Because primary XBRL omits funded debt tags, automated extraction preserves `total_financial_debt: null` (`UNAVAILABLE`) under fail-closed aggregate completeness rules.
 - **Valuation Governance**: The DCF model remains officially **`SUPPRESSED_UNAVAILABLE`** in the product contract to prevent synthetic zero fabrication without upstream tag verification.
 
 ### B. Ulta Beauty, Inc. (ULTA — CIK 0001403568)
@@ -72,9 +71,8 @@ Automated XBRL extraction reported `total_financial_debt: null` for DUOL and ULT
   - Current liabilities — Short-term borrowings: **$339,578,000** ($339.58M drawn under revolving credit facility).
   - Current liabilities — Current operating lease liabilities: $312,625,000.
   - Non-current liabilities — Non-current operating lease liabilities: $1,871,805,000 ($1,871.81M).
-  - Non-current liabilities — Long-term debt: **$0.00** (no senior notes or debentures).
-- **Forensic Debt Finding**: ULTA has **$339,578,000** of short-term revolving debt and $0.00 long-term debt, yielding total funded debt of **$339.58M**.
-- **Automated Dataset Treatment**: The automated harvester extracts `short_term_debt = $339,578,000.0`, but because `long_term_debt` was null/omitted in the XBRL taxonomy, `total_financial_debt` cannot be mathematically closed by the engine and is preserved as `UNAVAILABLE`.
+  - Non-current liabilities — Long-term debt: **$0.00** (no senior notes or debentures presented).
+- **Forensic Debt Finding & Qualification**: Form 10-Q reports current short-term borrowings of $339,578,000 ($339.58M drawn under its revolving credit facility) and noncurrent operating lease liabilities of $1,871,805,000 ($1,871.81M). No separate long-term debt line item is presented on the condensed consolidated balance sheet. However, the absence of an explicit long-term debt tag in primary XBRL does not certify that long-term borrowings are definitively $0.00 without primary footnote and debt agreement verification. Thus, automated extraction preserves `total_financial_debt: null` (`UNAVAILABLE`) under the fail-closed aggregate completeness rule, while reporting evidenced short-term borrowings.
 - **Valuation Governance**: Officially **`SUPPRESSED_UNAVAILABLE`** in product contracts. Renders a dynamic partial-debt notice in the UI explaining that short-term credit line is reported while long-term XBRL tags are unavailable.
 
 ---
@@ -95,11 +93,11 @@ Inspection of Note 4 (*Contracts in Progress*) and Consolidated Statements of Ca
    - Beginning balance (2025-06-30): **$1,546,306,000** ($1,546.31M).
    - Ending balance (2026-06-30): **$3,231,104,000** ($3,231.10M), representing a **+$1,684,798,000** (+108.96%) TTM expansion.
    - For the six months ended June 30, 2026, operating cash flows included a direct cash inflow of **+$1,061,506,000** from `us-gaap:IncreaseDecreaseInContractWithCustomerLiability`.
-   - Data center electrical and mechanical projects require significant upfront customer advances for long-lead equipment (chillers, switchgear, generators) and modular off-site capacity reservations.
-   - These customer advance liabilities represent temporary working-capital financing rather than permanent recurring operating margins.
+   - **Period & Accounting Distinctions**: The +$1,061.51M inflow is an interim six-month cash-flow observation and must not be presented as an equivalent TTM observation. In addition, contract-liability balance changes are not automatically identical to operating cash-flow contributions due to billing schedules and non-cash adjustments.
+   - **Customer Financing & Reversal Dynamics**: Data center electrical and mechanical projects require significant upfront customer advances for long-lead equipment and modular capacity reservations. While these advances provide temporary non-debt customer financing, observing customer financing does NOT establish the timing or inevitability of future cash reversal; whether and when advances reverse depends on project execution, backlog conversion, and ongoing order intake.
 
 ### C. Sustainable Cash Flow Normalization Walk
-To derive a sustainable run-rate free cash flow for research valuation scenarios, we separate reported cash flow, observed working capital financing, and explicit analyst assumptions (implemented in `analyst_dashboard/research/sourced_fundamentals/normalization.py`):
+To derive an illustrative sustainable run-rate cash flow for research valuation scenarios, we separate reported cash flow, observed working capital financing, and explicit analyst assumptions (implemented in `analyst_dashboard/research/sourced_fundamentals/normalization.py`):
 
 ```
 + TTM GAAP Operating Income (EBIT):                    $1,849.30M
@@ -113,11 +111,12 @@ To derive a sustainable run-rate free cash flow for research valuation scenarios
 = Normalized Sustainable Cash Flow:                      $885.97M
 ```
 
-#### Exact Arithmetic Check
+#### Arithmetic & Modeling Qualifications
 $$\text{Sustainable Cash Flow} = \$1,443.73\text{M} + \$112.50\text{M} - \$390.26\text{M} - \$280.00\text{M} = \mathbf{\$885.97\text{M}}$$
-- The arithmetic balances exactly to the penny ($1443.73 + 112.50 - 390.26 - 280.00 = 885.97$).
-- This sustainable cash flow ($885.97M) reflects economic reality: while FIX generated $2,159.8M of cash over the trailing year, roughly $710M–$1.06B was working-capital customer advances that will reverse as projects reach completion.
-- Valuation models based on unadjusted $2.16B cash flow would significantly overestimate intrinsic equity value.
+- **Calculation Precision**: Calculations are standardized in millions ($M) rounded to two decimal places; this reflects illustrative research modeling precision rather than audited penny accounting.
+- **Analyst Assumptions**: Assumed normalized D&A ($112.50M) and normalized working-capital reinvestment ($280.00M) are illustrative analyst modeling choices, not audited accounting observations.
+- **Range Clarification**: In earlier exploratory sensitivity modeling, an illustrative range of $710M–$1.06B was evaluated for customer advance adjustments. To be clear: +$1,061.51M is the actual 6-month reported operating cash-flow adjustment from contract liabilities, whereas $710M was an unverified modeling assumption.
+- This normalized cash flow ($885.97M) illustrates that valuation models relying on unadjusted $2.16B cash conversion would significantly overestimate sustainable run-rate equity value.
 
 ---
 
@@ -131,18 +130,18 @@ All metrics below are generated directly from the immutable research ledger (`so
 | **FIX** | COMFORT SYSTEMS USA, INC. | TTM ended 2026-06-30 | $11,228.0 | +46.1% | $1,849.3 | 16.5% | $2,159.8 | $54.1 | $1,854.8 | 35.25 | $1439.07 | `AVAILABLE` |
 | **DUOL** | Duolingo, Inc. | TTM ended 2026-06-30 | $1,145.0 | +29.4% | $157.1 | 13.7% | $407.9 | *UNAVAILABLE* | $1,180.9 | 50.03 | $141.76 | `SUPPRESSED_UNAVAILABLE` |
 | **ULTA** | ULTA BEAUTY, INC. | TTM ended 2026-08-01 | $12,955.5 | +11.2% | $1,614.3 | 12.5% | $1,149.5 | *UNAVAILABLE* | $158.5 | 43.06 | $592.94 | `SUPPRESSED_UNAVAILABLE` |
-| **MEDP** | Medpace Holdings, Inc. | TTM ended 2026-06-30 | $2,782.3 | +24.7% | $583.4 | 21.0% | $706.7 | *UNAVAILABLE* | $502.7 | 28.55 | $618.47 | `SUPPRESSED_UNAVAILABLE` |
-| **DECK** | DECKERS OUTDOOR CORP | TTM ended 2026-06-30 | $5,527.3 | +7.8% | $1,252.9 | 22.7% | $1,117.8 | *UNAVAILABLE* | $1,602.6 | 138.56 | $85.71 | `SUPPRESSED_UNAVAILABLE` |
-| **KLAC** | KLA Corporation | TTM ended 2026-06-30 | $13,579.5 | +11.7% | $5,660.8 | 41.7% | $3,767.1 | $5,887.4 | $1,649.8 | 1319.63 | $165.74 | `SUPPRESSED_UNAVAILABLE` |
-| **LULU** | lululemon athletica inc. | TTM ended 2026-08-02 | $11,094.0 | +1.7% | $1,978.8 | 17.8% | $1,354.3 | *UNAVAILABLE* | $1,389.7 | 112.92 | $97.10 | `SUPPRESSED_UNAVAILABLE` |
-| **CELH** | CELSIUS HOLDINGS, INC. | TTM ended 2026-06-30 | $3,047.3 | +82.9% | $160.3 | 5.3% | $462.8 | $674.9 | $631.2 | 256.93 | $28.19 | `SUPPRESSED_UNAVAILABLE` |
+| **MEDP** | Medpace Holdings, Inc. | TTM ended 2026-06-30 | $2,782.3 | +24.7% | $583.4 | 21.0% | $706.7 | *UNAVAILABLE* | $502.7 | 28.55 | $618.47 | `NOT_EVALUATED` |
+| **DECK** | DECKERS OUTDOOR CORP | TTM ended 2026-06-30 | $5,527.3 | +7.8% | $1,252.9 | 22.7% | $1,117.8 | *UNAVAILABLE* | $1,602.6 | 138.56 | $85.71 | `NOT_EVALUATED` |
+| **KLAC** | KLA Corporation | TTM ended 2026-06-30 | $13,579.5 | +11.7% | $5,660.8 | 41.7% | $3,767.1 | $5,887.4 | $1,649.8 | 1319.63 | $165.74 | `NOT_EVALUATED` |
+| **LULU** | lululemon athletica inc. | TTM ended 2026-08-02 | $11,094.0 | +1.7% | $1,978.8 | 17.8% | $1,354.3 | *UNAVAILABLE* | $1,389.7 | 112.92 | $97.10 | `NOT_EVALUATED` |
+| **CELH** | CELSIUS HOLDINGS, INC. | TTM ended 2026-06-30 | $3,047.3 | +82.9% | $160.3 | 5.3% | $462.8 | $674.9 | $631.2 | 256.93 | $28.19 | `NOT_EVALUATED` |
 
 ### Table 2: Balance Sheet & Debt Completeness Audit
 | Symbol | Cash & Equiv ($M) | Short-Term Debt ($M) | Long-Term Debt ($M) | Total Financial Debt | Lease Liabilities (ASC 842) ($M) | Automated XBRL Status | Primary Filing Finding |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
 | **FIX** | $1,854.8 | $0.22 | $53.85 | $54.06 | $315.8 | `DERIVED` | Funded debt $54.06M ($0.22M ST + $53.85M LT) derived from primary XBRL tags |
-| **DUOL** | $1,180.9 | *null* | *null* | **UNAVAILABLE** | $86.1 | `UNAVAILABLE` | Manual audit confirms $0.00 funded debt; missing XBRL tags preserved as null |
-| **ULTA** | $158.45 | $339.58 | *null* | **UNAVAILABLE** | $1,871.8 | `UNAVAILABLE` | Manual audit confirms $339.58M ST credit facility, $0.00 LT debt; preserved null under aggregate rule |
+| **DUOL** | $1,180.9 | *null* | *null* | **UNAVAILABLE** | $86.1 | `UNAVAILABLE` | Manual audit indicates zero funded debt line items; missing XBRL tags preserved as null |
+| **ULTA** | $158.45 | $339.58 | *null* | **UNAVAILABLE** | $1,871.8 | `UNAVAILABLE` | Manual audit indicates $339.58M ST credit facility, unpopulated LT debt tag; preserved null under aggregate rule |
 | **MEDP** | $502.7 | *null* | *null* | **UNAVAILABLE** | $144.1 | `UNAVAILABLE` | Debt concepts absent in primary XBRL taxonomy; preserved null under fail-closed rule |
 | **DECK** | $1,602.6 | *null* | *null* | **UNAVAILABLE** | $399.0 | `UNAVAILABLE` | Debt concepts absent in primary XBRL taxonomy; preserved null under fail-closed rule |
 | **KLAC** | $1,649.8 | *null* | $5,887.41 | $5,887.41 | $264.3 | `REPORTED` | Funded senior notes $5,887.4M fully evidenced |

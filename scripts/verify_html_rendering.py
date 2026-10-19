@@ -22,10 +22,14 @@ def check_html():
     assert "0001035983" in fix_html  # CIK
     assert "REPORTED (XBRL)" in fix_html
     assert "DERIVED FORMULA" in fix_html
+    # Lease label follows broader concept without noncurrent restriction (P3)
+    assert "Operating Lease Liabilities" in fix_html
+    assert "ASC 842" in fix_html
+    assert "Operating Lease Liabilities (Noncurrent)" not in fix_html
     # Strictly facts-only: No DCF or valuation rankings
     assert "Research Scenario DCF" not in fix_html
     assert "fair_value" not in fix_html
-    print("[OK] FIX static HTML verified: Total Debt Evidenced & Facts-Only disclosures rendered.")
+    print("[OK] FIX static HTML verified: Total Debt Evidenced, Broader Leases & Facts-Only disclosures rendered.")
 
     # 2. DUOL
     duol_path = stock_dir / "duol.html"

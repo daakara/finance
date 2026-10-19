@@ -65,7 +65,8 @@ REQUIRED_FILES = [
     "tests/test_sourced_fundamentals_pilot.py",
 ]
 
-ARCHIVE_NAME = "sourced_fundamentals_integration_targeted_closure_review_package.zip"
+ARCHIVE_NAME = "sourced_fundamentals_integration_final_delta_review_package.zip"
+TARGETED_CLOSURE_NAME = "sourced_fundamentals_integration_targeted_closure_review_package.zip"
 LEGACY_ARCHIVE_NAME = "sourced_fundamentals_integration_corrected_review_package.zip"
 
 
@@ -111,9 +112,10 @@ def main():
     archive_hash = sha256_file(archive_path)
 
     import shutil
+    shutil.copyfile(archive_path, Path(TARGETED_CLOSURE_NAME))
     shutil.copyfile(archive_path, Path(LEGACY_ARCHIVE_NAME))
 
-    print(f"\n[SUCCESS] Successfully created '{ARCHIVE_NAME}' (and '{LEGACY_ARCHIVE_NAME}')")
+    print(f"\n[SUCCESS] Successfully created '{ARCHIVE_NAME}' (and aliases '{TARGETED_CLOSURE_NAME}', '{LEGACY_ARCHIVE_NAME}')")
     print(f"Archive Size: {archive_size} bytes")
     print(f"Archive SHA-256: {archive_hash}")
 

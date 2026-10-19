@@ -162,15 +162,59 @@ def run_verification():
                         assert "Fair Value" not in card_text
                         assert "Accumulation" not in card_text
 
-                        # F07: Table horizontal scrollability on narrow viewports
+                        # 8.A: Meaningful mobile horizontal scrollability and column reachability checks
                         table_container = card.locator(".overflow-x-auto")
                         assert table_container.count() > 0, f"Missing .overflow-x-auto container for {ticker}"
                         if width <= 600:
-                            is_horiz_scrollable = page.evaluate(
-                                "el => el.scrollWidth >= el.clientWidth",
-                                table_container.first.element_handle(),
-                            )
-                            assert is_horiz_scrollable, f"Table in {ticker} is not horizontally scrollable on mobile"
+                            scroll_info = page.evaluate("""el => {
+                                const initialScrollLeft = el.scrollLeft;
+                                const maxScroll = el.scrollWidth - el.clientWidth;
+                                const hasOverflow = maxScroll > 1;
+                                let canScrollRight = false;
+                                let rightColumnsReachable = false;
+
+                                if (hasOverflow) {
+                                    el.scrollLeft = maxScroll;
+                                    canScrollRight = el.scrollLeft > initialScrollLeft;
+                                    const lastCell = el.querySelector('table tr th:last-child, table tr td:last-child');
+                                    if (lastCell) {
+                                        const cRect = el.getBoundingClientRect();
+                                        const cellRect = lastCell.getBoundingClientRect();
+                                        rightColumnsReachable = cellRect.right <= cRect.right + 20 && cellRect.left >= cRect.left - 20;
+                                    } else {
+                                        rightColumnsReachable = canScrollRight;
+                                    }
+                                    el.scrollLeft = initialScrollLeft;
+                                } else {
+                                    const lastCell = el.querySelector('table tr th:last-child, table tr td:last-child');
+                                    if (lastCell) {
+                                        const cRect = el.getBoundingClientRect();
+                                        const cellRect = lastCell.getBoundingClientRect();
+                                        rightColumnsReachable = cellRect.right <= cRect.right + 10;
+                                    } else {
+                                        rightColumnsReachable = true;
+                                    }
+                                }
+                                return {
+                                    scrollWidth: el.scrollWidth,
+                                    clientWidth: el.clientWidth,
+                                    hasOverflow,
+                                    canScrollRight,
+                                    rightColumnsReachable,
+                                };
+                            }""", table_container.first.element_handle())
+
+                            if scroll_info["hasOverflow"]:
+                                assert scroll_info["canScrollRight"], f"Table overflowed ({scroll_info['scrollWidth']} > {scroll_info['clientWidth']}) but scrollLeft failed to scroll right for {ticker}"
+                                assert scroll_info["rightColumnsReachable"], f"Table right-hand columns not reachable via scroll for {ticker}"
+                            else:
+                                assert scroll_info["rightColumnsReachable"], f"Table fit within viewport ({scroll_info['scrollWidth']} <= {scroll_info['clientWidth']}) but rightmost column was not visible for {ticker}"
+
+                            # Verify source-link column remains reachable
+                            table_sec_anchor = table_container.locator("a[href*='sec.gov']").first
+                            assert table_sec_anchor.count() > 0, f"Source link anchor missing in table for {ticker}"
+                            table_sec_anchor.scroll_into_view_if_needed()
+                            assert table_sec_anchor.is_visible(), f"Source link anchor in table is not visible/reachable for {ticker}"
 
                         # F07: Verify primary SEC EDGAR source anchor links
                         sec_anchors = card.locator("a[href*='sec.gov']")

@@ -26,7 +26,7 @@ export interface SourcedReportedFact {
   input_references?: string[];
   notes?: string | null;
   duration_type: "INSTANT" | "DURATION";
-  fact_type: "PRIMARY_REPORTED" | "DERIVED_CALCULATION" | "RESEARCH_ESTIMATE" | "UNAVAILABLE";
+  fact_type: "PRIMARY_REPORTED" | "DERIVED_CALCULATION" | "RESEARCH_ESTIMATE" | "UNAVAILABLE" | "UNCLASSIFIED";
 }
 
 export interface SourcedDerivedMetric {
@@ -34,6 +34,7 @@ export interface SourcedDerivedMetric {
   units?: string;
   status?: string;
   label?: string;
+  concept?: string | null;
   formula?: string;
   notes?: string;
   period_start?: string;

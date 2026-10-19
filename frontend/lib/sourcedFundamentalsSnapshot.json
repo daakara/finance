@@ -563,10 +563,10 @@
           "value": null,
           "units": "USD",
           "status": "UNAVAILABLE",
-          "label": "Operating Lease Liabilities (Noncurrent)",
+          "label": "Operating Lease Liabilities",
           "concept": "us-gaap/OperatingLeaseLiability",
           "period_end": "2026-06-30",
-          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
+          "notes": "Operating lease liability concept is unavailable or not reported in primary XBRL taxonomy."
         },
         "diluted_shares_weighted_avg": {
           "value": 256933000.0,
@@ -1164,7 +1164,7 @@
           "label": "Operating Lease Liabilities (Noncurrent)",
           "concept": "us-gaap/OperatingLeaseLiabilityNoncurrent",
           "period_end": "2026-06-30",
-          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
+          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating obligation, not financial debt)."
         },
         "diluted_shares_weighted_avg": {
           "value": 138559000.0,
@@ -1766,7 +1766,7 @@
           "label": "Operating Lease Liabilities (Noncurrent)",
           "concept": "us-gaap/OperatingLeaseLiabilityNoncurrent",
           "period_end": "2026-06-30",
-          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
+          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating obligation, not financial debt)."
         },
         "diluted_shares_weighted_avg": {
           "value": 50031000.0,
@@ -2371,10 +2371,10 @@
           "value": 315845000.0,
           "units": "USD",
           "status": "REPORTED",
-          "label": "Operating Lease Liabilities (Noncurrent)",
+          "label": "Operating Lease Liabilities",
           "concept": "us-gaap/OperatingLeaseLiability",
           "period_end": "2026-06-30",
-          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
+          "notes": "Contractual operating lease obligation under ASC 842 (discounted obligation for operating lease payments)."
         },
         "diluted_shares_weighted_avg": {
           "value": 35254000.0,
@@ -2952,10 +2952,10 @@
           "value": 264298000.0,
           "units": "USD",
           "status": "REPORTED",
-          "label": "Operating Lease Liabilities (Noncurrent)",
+          "label": "Operating Lease Liabilities",
           "concept": "us-gaap/OperatingLeaseLiability",
           "period_end": "2026-06-30",
-          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
+          "notes": "Contractual operating lease obligation under ASC 842 (discounted obligation for operating lease payments)."
         },
         "diluted_shares_weighted_avg": {
           "value": 1319633000.0,
@@ -3557,7 +3557,7 @@
           "label": "Operating Lease Liabilities (Noncurrent)",
           "concept": "us-gaap/OperatingLeaseLiabilityNoncurrent",
           "period_end": "2026-08-02",
-          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
+          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating obligation, not financial debt)."
         },
         "diluted_shares_weighted_avg": {
           "value": 112919000.0,
@@ -4156,10 +4156,10 @@
           "value": 144112000.0,
           "units": "USD",
           "status": "REPORTED",
-          "label": "Operating Lease Liabilities (Noncurrent)",
+          "label": "Operating Lease Liabilities",
           "concept": "us-gaap/OperatingLeaseLiability",
           "period_end": "2026-06-30",
-          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
+          "notes": "Contractual operating lease obligation under ASC 842 (discounted obligation for operating lease payments)."
         },
         "diluted_shares_weighted_avg": {
           "value": 28554000.0,
@@ -4760,7 +4760,7 @@
           "label": "Operating Lease Liabilities (Noncurrent)",
           "concept": "us-gaap/OperatingLeaseLiabilityNoncurrent",
           "period_end": "2026-08-01",
-          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating expense, not financial debt)"
+          "notes": "Contractual noncurrent operating lease obligation under ASC 842 (treated as operating obligation, not financial debt)."
         },
         "diluted_shares_weighted_avg": {
           "value": 43062000.0,

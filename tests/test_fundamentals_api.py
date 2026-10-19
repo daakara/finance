@@ -25,6 +25,7 @@ from api.main import app
 from analyst_dashboard.research.sourced_fundamentals.service import (
     SourcedFundamentalsService,
     SnapshotState,
+    IdentityIntegrityError,
     reset_sourced_fundamentals_service,
     get_sourced_fundamentals_service,
 )
@@ -36,6 +37,7 @@ from analyst_dashboard.research.sourced_fundamentals.identity import (
 )
 from analyst_dashboard.research.sourced_fundamentals.normalization import (
     calculate_fix_normalized_cash_flow,
+    calculate_fix_sustainable_cash_flow_from_ledger,
     NormalizationAssumptions,
 )
 
@@ -138,8 +140,8 @@ def test_03_fix_snapshot_facts_only_success():
     assert "Short-Term Debt" in derived["total_financial_debt"]["formula"]
     assert "Long-Term Debt" in derived["total_financial_debt"]["formula"]
 
-    # Operating leases labeled as noncurrent
-    assert derived["operating_lease_liabilities"]["label"] == "Operating Lease Liabilities (Noncurrent)"
+    # Operating leases labeled based on concept (FIX uses broader us-gaap/OperatingLeaseLiability)
+    assert derived["operating_lease_liabilities"]["label"] == "Operating Lease Liabilities"
     assert derived["operating_lease_liabilities"]["status"] == "REPORTED"
 
     # Diluted shares expose distinct period_start and period_end ISO dates
@@ -545,3 +547,261 @@ def test_13_route_read_only_side_effects_traps():
 
     assert len(write_traps) == 0, f"Write operations attempted: {write_traps}"
     assert len(network_traps) == 0, f"Network operations attempted: {network_traps}"
+
+
+def test_14_p1_consumed_nested_structures_malformed_handling(tmp_path):
+    """
+    P1: Verify service and API fail closed on malformed consumed structures:
+    Case A: fundamentals.facts = null
+    Case B: fundamentals.facts.revenue_ttm = null
+    Case C: assessment = ["bad"]
+    Ensures SnapshotState.MALFORMED_LEDGER, degraded status, HTTP 500, and zero AttributeError.
+    """
+    base_ledger = json.loads(Path("analyst_dashboard/research/sourced_fundamentals/sourced_fundamentals_ledger.json").read_text(encoding="utf-8"))
+
+    # Case A: fundamentals.facts = null
+    ledger_a = json.loads(json.dumps(base_ledger))
+    ledger_a["companies"]["FIX"]["fundamentals"]["facts"] = None
+    path_a = tmp_path / "ledger_a.json"
+    path_a.write_text(json.dumps(ledger_a), encoding="utf-8")
+
+    service_a = SourcedFundamentalsService(ledger_path=path_a)
+    assert service_a.state == SnapshotState.MALFORMED_LEDGER
+    assert "missing valid facts mapping" in (service_a.error_detail or "")
+    assert service_a.is_ready is False
+    assert service_a.get_company_snapshot("FIX") is None
+
+    # Case B: fundamentals.facts.revenue_ttm = null
+    ledger_b = json.loads(json.dumps(base_ledger))
+    ledger_b["companies"]["FIX"]["fundamentals"]["facts"]["revenue_ttm"] = None
+    path_b = tmp_path / "ledger_b.json"
+    path_b.write_text(json.dumps(ledger_b), encoding="utf-8")
+
+    service_b = SourcedFundamentalsService(ledger_path=path_b)
+    assert service_b.state == SnapshotState.MALFORMED_LEDGER
+    assert "invalid fact object" in (service_b.error_detail or "")
+    assert service_b.is_ready is False
+    assert service_b.get_company_snapshot("FIX") is None
+
+    # Case C: assessment = ["bad"]
+    ledger_c = json.loads(json.dumps(base_ledger))
+    ledger_c["companies"]["FIX"]["assessment"] = ["bad"]
+    path_c = tmp_path / "ledger_c.json"
+    path_c.write_text(json.dumps(ledger_c), encoding="utf-8")
+
+    service_c = SourcedFundamentalsService(ledger_path=path_c)
+    assert service_c.state == SnapshotState.MALFORMED_LEDGER
+    assert "malformed assessment" in (service_c.error_detail or "")
+    assert service_c.is_ready is False
+    assert service_c.get_company_snapshot("FIX") is None
+
+    # Verify API routes behavior under malformed ledger (HTTP 500, zero AttributeError)
+    from unittest.mock import patch
+    with patch("api.routes.fundamentals.get_sourced_fundamentals_service", return_value=service_a):
+        resp_cat = client.get("/api/v1/fundamentals/")
+        assert resp_cat.status_code == 500
+        assert "dataset is invalid" in resp_cat.json()["detail"]
+
+        resp_fix = client.get("/api/v1/fundamentals/FIX")
+        assert resp_fix.status_code == 500
+
+        resp_status = client.get("/api/v1/fundamentals/system/status")
+        assert resp_status.status_code == 200
+        status_data = resp_status.json()
+        assert status_data["status"] == "degraded"
+        assert status_data["snapshot_state"] == "MALFORMED_LEDGER"
+        assert "missing valid facts mapping" in status_data["error"]
+
+
+def test_15_p2_fact_status_classification_and_accession_separation(tmp_path):
+    """
+    P2: Verify strict fact classifications and accession separation:
+    - Recognized reported fact with accession -> REPORTED / PRIMARY_REPORTED
+    - Derived fact with accession -> DERIVED / DERIVED_CALCULATION
+    - Unavailable fact -> UNAVAILABLE / UNAVAILABLE
+    - UNKNOWN status with accession -> UNKNOWN / UNCLASSIFIED (not promoted to REPORTED)
+    - Missing status with accession -> UNCLASSIFIED / UNCLASSIFIED (not promoted to REPORTED)
+    - Unsupported status value -> UNCLASSIFIED / UNCLASSIFIED (not promoted to REPORTED)
+    """
+    base_ledger = json.loads(Path("analyst_dashboard/research/sourced_fundamentals/sourced_fundamentals_ledger.json").read_text(encoding="utf-8"))
+    fix_facts = base_ledger["companies"]["FIX"]["fundamentals"]["facts"]
+
+    # 1. Recognized reported fact with accession
+    fix_facts["test_reported"] = {
+        "value": 100.0,
+        "units": "USD",
+        "status": "REPORTED",
+        "accession_number": "0001104659-26-086258",
+    }
+    # 2. Derived fact with accession
+    fix_facts["test_derived"] = {
+        "value": 200.0,
+        "units": "USD",
+        "status": "DERIVED",
+        "accession_number": "0001104659-26-086258",
+        "formula": "A + B",
+    }
+    # 3. Unavailable fact
+    fix_facts["test_unavailable"] = {
+        "value": None,
+        "units": "USD",
+        "status": "UNAVAILABLE",
+    }
+    # 4. UNKNOWN status with accession
+    fix_facts["test_unknown"] = {
+        "value": 300.0,
+        "units": "USD",
+        "status": "UNKNOWN",
+        "accession_number": "0001104659-26-086258",
+    }
+    # 5. Missing status with accession
+    fix_facts["test_missing_status"] = {
+        "value": 400.0,
+        "units": "USD",
+        "accession_number": "0001104659-26-086258",
+    }
+    # 6. Unsupported status value
+    fix_facts["test_unsupported_status"] = {
+        "value": 500.0,
+        "units": "USD",
+        "status": "UNRECOGNIZED_STATUS_VAL",
+        "accession_number": "0001104659-26-086258",
+    }
+
+    test_path = tmp_path / "test_p2_ledger.json"
+    test_path.write_text(json.dumps(base_ledger), encoding="utf-8")
+
+    service = SourcedFundamentalsService(ledger_path=test_path)
+    snapshot = service.get_company_snapshot("FIX")
+    assert snapshot is not None
+
+    facts_by_key = {f["metric_key"]: f for f in snapshot["reported_facts"]}
+
+    # Case 1: REPORTED
+    f_rep = facts_by_key["test_reported"]
+    assert f_rep["status"] == "REPORTED"
+    assert f_rep["fact_type"] == "PRIMARY_REPORTED"
+    assert f_rep["source_url"] is not None
+
+    # Case 2: DERIVED
+    f_der = facts_by_key["test_derived"]
+    assert f_der["status"] == "DERIVED"
+    assert f_der["fact_type"] == "DERIVED_CALCULATION"
+
+    # Case 3: UNAVAILABLE
+    f_unav = facts_by_key["test_unavailable"]
+    assert f_unav["status"] == "UNAVAILABLE"
+    assert f_unav["fact_type"] == "UNAVAILABLE"
+
+    # Case 4: UNKNOWN (Must NOT be promoted to REPORTED or PRIMARY_REPORTED)
+    f_unk = facts_by_key["test_unknown"]
+    assert f_unk["status"] == "UNKNOWN"
+    assert f_unk["fact_type"] == "UNCLASSIFIED"
+    assert f_unk["source_url"] is not None  # Source URL preserved separately
+    assert "0001104659-26-086258" in f_unk["source_url"]
+
+    # Case 5: Missing status
+    f_miss = facts_by_key["test_missing_status"]
+    assert f_miss["status"] == "UNCLASSIFIED"
+    assert f_miss["fact_type"] == "UNCLASSIFIED"
+    assert f_miss["source_url"] is not None
+
+    # Case 6: Unsupported status
+    f_unsupp = facts_by_key["test_unsupported_status"]
+    assert f_unsupp["status"] == "UNCLASSIFIED"
+    assert f_unsupp["fact_type"] == "UNCLASSIFIED"
+
+
+def test_16_p3_lease_labels_follow_source_concept():
+    """
+    P3: Verify lease liability labels, scope, and notes follow the exact source concept:
+    - FIX broader concept 'us-gaap/OperatingLeaseLiability' -> 'Operating Lease Liabilities'
+    - DUOL & ULTA noncurrent concept 'us-gaap/OperatingLeaseLiabilityNoncurrent' -> 'Operating Lease Liabilities (Noncurrent)'
+    - Unavailable lease observation -> 'Operating Lease Liabilities' (status UNAVAILABLE)
+    """
+    service = get_sourced_fundamentals_service()
+
+    # FIX
+    fix_snap = service.get_company_snapshot("FIX")
+    assert fix_snap is not None
+    fix_lease = fix_snap["derived_calculations"]["operating_lease_liabilities"]
+    assert fix_lease["label"] == "Operating Lease Liabilities"
+    assert "Noncurrent" not in fix_lease["label"]
+    assert "OperatingLeaseLiability" in fix_lease["concept"]
+    assert "discounted obligation for operating lease payments" in fix_lease["notes"]
+    assert fix_lease["status"] == "REPORTED"
+
+    # DUOL
+    duol_snap = service.get_company_snapshot("DUOL")
+    assert duol_snap is not None
+    duol_lease = duol_snap["derived_calculations"]["operating_lease_liabilities"]
+    assert duol_lease["label"] == "Operating Lease Liabilities (Noncurrent)"
+    assert "OperatingLeaseLiabilityNoncurrent" in duol_lease["concept"]
+    assert "Contractual noncurrent operating lease obligation" in duol_lease["notes"]
+    assert duol_lease["status"] == "REPORTED"
+
+    # ULTA
+    ulta_snap = service.get_company_snapshot("ULTA")
+    assert ulta_snap is not None
+    ulta_lease = ulta_snap["derived_calculations"]["operating_lease_liabilities"]
+    assert ulta_lease["label"] == "Operating Lease Liabilities (Noncurrent)"
+    assert "OperatingLeaseLiabilityNoncurrent" in ulta_lease["concept"]
+    assert ulta_lease["status"] == "REPORTED"
+
+    # CELH (Unavailable lease)
+    celh_snap = service.get_company_snapshot("CELH")
+    assert celh_snap is not None
+    celh_lease = celh_snap["derived_calculations"]["operating_lease_liabilities"]
+    assert celh_lease["label"] == "Operating Lease Liabilities"
+    assert celh_lease["status"] == "UNAVAILABLE"
+    assert celh_lease["value"] is None
+
+
+def test_17_r1_dynamic_normalization_engine_and_ledger_adapter():
+    """
+    R1: Verify dynamic normalization engine and ledger adapter:
+    1. Baseline calculation from actual ledger observations produces $885.97M.
+    2. Changed EBIT changes both numeric result and explanatory formula.
+    3. Changed working capital assumption changes both result and formula.
+    4. Missing required input produces an explicit incomplete outcome.
+    """
+    # 1. Baseline calculation consuming actual ledger observations via adapter
+    baseline = calculate_fix_sustainable_cash_flow_from_ledger()
+    assert baseline["status"] == "COMPLETE"
+    assert baseline["normalization_walk"]["sustainable_cash_flow_millions"] == 885.97
+    assert baseline["normalization_walk"]["nopat"] == 1443.73
+    assert baseline["normalization_walk"]["formula"] == (
+        "NOPAT ($1,443.73M) + D&A ($112.50M) - Capex ($390.26M) - Normalized WC Reinvestment ($280.00M) = $885.97M"
+    )
+    assert "illustrative modeling precision" in baseline["calculation_precision"]
+
+    # 2. Changed EBIT changes both result and formula
+    changed_ebit = calculate_fix_normalized_cash_flow(
+        ebit_raw=2000000000.0,
+        effective_tax_rate_pct=21.93106,
+        capex_raw=390259000.0,
+        reported_cfo_raw=2550065000.0,
+    )
+    assert changed_ebit["normalization_walk"]["sustainable_cash_flow_millions"] == 1003.62
+    assert "NOPAT ($1,561.38M)" in changed_ebit["normalization_walk"]["formula"]
+    assert "$1,003.62M" in changed_ebit["normalization_walk"]["formula"]
+
+    # 3. Changed working capital reinvestment assumption changes result and formula
+    changed_wc = calculate_fix_sustainable_cash_flow_from_ledger(
+        assumptions=NormalizationAssumptions(normalized_wc_reinvestment_millions=350.00)
+    )
+    assert changed_wc["normalization_walk"]["sustainable_cash_flow_millions"] == 815.97
+    assert "Normalized WC Reinvestment ($350.00M)" in changed_wc["normalization_walk"]["formula"]
+    assert "$815.97M" in changed_wc["normalization_walk"]["formula"]
+
+    # 4. Missing required input produces an explicit incomplete outcome
+    incomplete = calculate_fix_normalized_cash_flow(
+        ebit_raw=None,
+        effective_tax_rate_pct=21.93,
+        capex_raw=390259000.0,
+        reported_cfo_raw=2550065000.0,
+    )
+    assert incomplete["status"] == "INCOMPLETE"
+    assert "Missing required financial inputs" in incomplete["error"]
+    assert incomplete["sustainable_cash_flow_millions"] is None
+

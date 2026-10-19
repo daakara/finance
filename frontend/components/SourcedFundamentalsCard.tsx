@@ -345,14 +345,14 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
           </div>
         </div>
 
-        {/* Operating Leases Note */}
+        {/* Operating Leases Note (P3) */}
         <div className="text-[11px] text-slate-400 font-sans pt-1 border-t border-[#111722] flex flex-wrap items-center justify-between gap-2">
           <span>
-            Operating Lease Liabilities (Noncurrent) (ASC 842):{" "}
+            {dm.operating_lease_liabilities?.label || "Operating Lease Liabilities"} (ASC 842):{" "}
             <strong className="text-slate-200 font-mono">
               {formatUSD(dm.operating_lease_liabilities?.value)}
             </strong>{" "}
-            (Contractual noncurrent operating lease commitments treated as operating obligations rather than financial debt).
+            ({dm.operating_lease_liabilities?.notes || "Contractual operating lease commitments treated as operating obligations rather than financial debt"}).
           </span>
           {dm.net_debt?.value !== null && dm.net_debt?.value !== undefined && (
             <span>
@@ -421,6 +421,8 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
                           ? "bg-purple-950 text-purple-300 border border-purple-800"
                           : fact.fact_type === "UNAVAILABLE"
                           ? "bg-slate-900 text-slate-500 border border-slate-800"
+                          : fact.fact_type === "UNCLASSIFIED"
+                          ? "bg-amber-950/60 text-amber-300 border border-amber-800/60"
                           : "bg-slate-900 text-slate-400 border border-slate-700"
                       }`}
                     >
@@ -430,6 +432,8 @@ export default function SourcedFundamentalsCard({ symbol }: SourcedFundamentalsC
                         ? "RESEARCH ESTIMATE"
                         : fact.fact_type === "UNAVAILABLE"
                         ? "UNAVAILABLE"
+                        : fact.fact_type === "UNCLASSIFIED"
+                        ? "UNCLASSIFIED"
                         : "DERIVED FORMULA"}
                     </span>
                   </td>
