@@ -12,10 +12,11 @@
 | **1. Invented Strategy Qualification Thresholds** | `derive_canonical_radar_categories()` had added an unapproved secondary rule (`ROIC >= 28% and PEG <= 1.15`). In the base code, only `PEG <= 1.05 and ROIC >= 15%` existed alongside the archetype bypass. | Removed the invented Greenblatt predicate. Preserved removal of archetype whitelist bypass. Sourced quantitative baseline to pre-existing `PEG <= 1.05 and ROIC >= 15%`. Added explicit `qualificationState` ("UNASSESSED_INSUFFICIENT_EVIDENCE", "REFERENCE_CRITERIA_MET", "REFERENCE_CRITERIA_UNMET"). | Unit tests in `test_undervalued_growth_corrections.py` verify unapproved thresholds do not qualify. 37 tests pass. | Static reference catalog metrics remain historical reference snapshots, not dynamic SEC EDGAR statement feeds. |
 | **2. Synthetic Metric Zeroing (PEG 0.0)** | `gem_screener.py` synthesized missing fundamental metrics as `0.0` for uncataloged tickers, which downstream filters could mistake for extreme measured values. | Replaced synthetic `0.0` with explicit `None` across `peg_ratio`, `roic_pct`, and `gross_margin_pct`. Updated composite score sort key to safely handle `None`. | Verified uncataloged tickers serialize as `"N/A"` in API responses and `None` in python models. | Custom tickers without fundamental data display `"N/A"` across fundamental columns. |
 | **3. Inactive / Delisted Security Handling (`CPRX`)** | Catalyst Pharmaceuticals (`CPRX`) was acquired in an all-cash merger by Angelini Pharma at $31.50/share (July 2026), but continued displaying active patterns, discovery categories, and trade levels. | Added authoritative `CONFIRMED_CORPORATE_ACTIONS` registry. Preserved closing price ($31.49) for auditability. Stripped active categories (`categories = []`), set `executionStatus = "DELISTED_SECURITY"`, and set entry/stop/target prices to explicit `None` / `null` (NEVER `0.0`). | API test confirms CPRX has `executionStatus: "DELISTED_SECURITY"`, `categories: []`, `stopLoss: null`, `optimalEntryMin: null`, and `confluenceScore: 0.0`. | Registry is a bounded local containment; general automated ingestion requires an SEC Form 25/15 pipeline. |
-| **4. Confluence Score vs Valuation Ranking Confusion** | Radar sorted `VALUE_GARP` tab by `confluenceScore` (a 25% technical, 25% fundamental, 25% smart money, 25% macro composite), causing users to confuse technical setup proximity with intrinsic valuation discounts. | Added prominent UI disclosure banner in `radar/page.tsx`. Relabeled sort control to `"Score (Confluence)"`. Updated `RADAR_CAPABILITY_CONTRACT["VALUE_GARP"]` to declare `catalogType: "CURATED_REFERENCE_CATALOG"` and `sortingSemantics: "CONFLUENCE_TECHNICAL_FLOW"`. | Verified banner renders in `radar/page.tsx`. Frontend taxonomy and metric cleanup test suites pass. | Intrinsic DCF ranking requires an integrated DCF engine; Radar remains a structural setup discovery scanner. |
+| **4. Confluence Score vs Valuation Ranking Distinction** | Radar sorted `VALUE_GARP` tab by `confluenceScore` (a 4-pillar conviction score combining technical setup, Piotroski solvency, Form 4 insider flow, and macro regime from `confluence_engine.py`), causing users to confuse technical momentum proximity with intrinsic DCF valuation discounts. | Added prominent UI disclosure banner in `radar/page.tsx`. Relabeled sort control to `"Score (Confluence)"`. Updated `RADAR_CAPABILITY_CONTRACT["VALUE_GARP"]` to declare `catalogType: "CURATED_REFERENCE_CATALOG"` and `sortingSemantics: "CONFLUENCE_TECHNICAL_FLOW"`. | Verified banner renders in `radar/page.tsx`. Frontend taxonomy and metric cleanup test suites pass. | Intrinsic DCF ranking requires an integrated DCF engine; Radar remains a structural setup discovery scanner. |
 | **5. Misleading "GAAP FCF" Label & Normalization Bridges** | Previous report labeled $\text{CFO} - \text{Capex}$ as "GAAP FCF" (not a standardized GAAP subtotal) and had arithmetic gaps in DUOL tax normalization and FIX advance billings. | Formally labeled $\text{CFO} - \text{Capex}$ as **Derived Free Cash Flow**. Provided closed mathematical normalization bridges for DUOL ($414M GAAP $\rightarrow$ $144M normalized equity NI $\rightarrow$ $107M operating NOPAT) and FIX ($1,031.5M $\rightarrow$ $1,050M base). | Normalization bridges verified by `scripts/undervalued_growth_model.py`. Math closes exactly to the penny. | Interim working capital float (customer advances) will continue to fluctuate across quarterly filings. |
-| **6. Fiscal Period Inaccuracies (ULTA)** | Ulta Beauty's 52-week year ended January 31, 2026 was mislabeled as "FY2026", when the issuer designates it as **FY2025**. | Corrected all period labels across ledger, tables, and narrative to issuer fiscal years: FY2025 (ended 2026-01-31), FY2024 (ended 2025-02-01), and FY2023 (ended 2024-02-03). Recalculated negative incremental ROIC (-9.2%). | Verified against Ulta Beauty SEC Form 10-K (Accession `0001403568-26-000018`). | Retail same-store sales comps subject to quarterly volatility. |
-| **7. Store Lease Double-Counting in Valuation (ULTA)** | Previous report subtracted $2.18B lease liabilities from operating value while discounting operating cash flows where store rent was already fully expensed. | Implemented **Equity FCFE Framework** for ULTA: since store rent is paid as an operating cash outflow in CFO and funded debt is zero, equity value is modeled directly from equity cash flows without deducting lease debt. | Scenario model generated Base fair value of $444.23 (vs prior distorted $385.19). | Option to capitalize leases under FCFF documented with lease interest add-back reconciliation. |
+| **6. Fiscal Period Inaccuracies (ULTA)** | Ulta Beauty's 52-week year ended January 31, 2026 was mislabeled as "FY2026", when the issuer designates it as **FY2025**. | Corrected all period labels across ledger, tables, and narrative to issuer fiscal years: FY2025 (ended 2026-01-31), FY2024 (ended 2025-02-01), and FY2023 (ended 2024-02-03). Recalculated negative incremental ROIC (-9.2%). | Verified against Ulta Beauty SEC Form 10-K (Accession `0001104659-26-035243`). | Retail same-store sales comps subject to quarterly volatility. |
+| **7. Store Lease Double-Counting in Retail Valuation (ULTA)** | Previous report subtracted $2.18B lease liabilities from operating value while discounting operating cash flows where store rent was already fully expensed. | Implemented **Equity FCFE Framework** for ULTA: since store rent is paid as an operating cash outflow in CFO and funded debt is zero, equity value is modeled directly from equity cash flows without deducting lease debt. | Scenario model generated Base fair value of $444.23 (vs prior distorted $385.19). | Option to capitalize leases under FCFF documented with lease interest add-back reconciliation. |
+| **8. DUOL Interest Income & Net Cash Valuation Double-Counting** | Under US GAAP (ASC 230), CFO ($387.8M) includes interest received from cash/investments ($46.8M pretax, ~$37.0M after-tax). Discounting unadjusted post-SBC flow ($223M) AND adding net cash ($1.23B) counts cash twice (capitalizing interest and adding principal). | Deducted after-tax interest income ($37.0M) from post-SBC cash flow to derive **True Operating Base FCF ($186.0M)**. Adding net cash ($1,227.7M) in the bridge yields a Base fair value of **$141.39** (0.26% variance from market price $141.76). Documented unadjusted flow ($164.27) as dual-benefit upper bound. | Verified by `scripts/undervalued_growth_model.py` and `undervalued_growth_evidence_ledger.json`. Full mathematical closure verified. | Cash yields will fluctuate with Federal Reserve interest rate policy. |
 
 ---
 
@@ -78,25 +79,44 @@ elif peg_ratio is not None and 0.0 < peg_ratio <= 1.05 and roic_pct is not None 
 ## 4. Workstream Separation & Release Identification
 
 ### Category A: Code Corrections Ready for Release Review
-1. [`analyst_dashboard/analyzers/gem_screener.py`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/analyst_dashboard/analyzers/gem_screener.py): Replacement of synthetic `0.0` with `None` for uncataloged fundamentals; safe comparator sort key.
+These changes are bounded, pass all regression suites, protect system truthfulness, and do not introduce new ranking formulas or unapproved thresholds:
+1. [`analyst_dashboard/analyzers/gem_screener.py`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/analyst_dashboard/analyzers/gem_screener.py):
+   - Replacement of synthetic `0.0` with `None` for uncataloged fundamentals (`peg_ratio`, `roic_pct`, `gross_margin_pct`).
+   - Safe comparator sort key handling `None` composite scores.
 2. [`api/routes/screener.py`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/api/routes/screener.py):
    - Removal of archetype whitelist bypass and excision of invented Greenblatt threshold.
-   - Confirmed corporate action registry and `DELISTED_SECURITY` status handling for CPRX.
-   - Level suppression to `None` / `null`.
-   - `fundamentalEvidence` metadata block with explicit `qualificationState`.
-   - `RADAR_CAPABILITY_CONTRACT` truthfulness disclosures.
-3. [`frontend/app/radar/page.tsx`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/frontend/app/radar/page.tsx): Value/GARP disclosure banner, `"Score (Confluence)"` sort label, and `DELISTED_SECURITY` badge styling.
-4. [`tests/test_undervalued_growth_corrections.py`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/tests/test_undervalued_growth_corrections.py): 6 targeted regression tests.
+   - Authoritative corporate action registry and `DELISTED_SECURITY` status handling for CPRX.
+   - Level suppression to explicit `None` / `null` (never `0.0`).
+   - `fundamentalEvidence` metadata block exposing `qualificationState`, `dataIntegrity`, and `provenanceCatalog`.
+   - `RADAR_CAPABILITY_CONTRACT["VALUE_GARP"]` truthfulness disclosures declaring curated reference catalog and confluence sorting semantics.
+3. [`frontend/app/radar/page.tsx`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/frontend/app/radar/page.tsx):
+   - Value/GARP disclosure banner explaining curated baseline and confluence flow sorting.
+   - Relabeled sort control to `"Score (Confluence)"`.
+   - Distinctive `DELISTED_SECURITY` badge styling.
+4. [`tests/test_undervalued_growth_corrections.py`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/tests/test_undervalued_growth_corrections.py):
+   - 6 targeted regression tests enforcing the above contracts.
+
+*Frozen Engine Protection*: [`analyst_dashboard/analyzers/optimal_execution.py`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/analyst_dashboard/analyzers/optimal_execution.py) and [`analyst_dashboard/analyzers/confluence_engine.py`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/analyst_dashboard/analyzers/confluence_engine.py) remain untouched and invariant-verified.
 
 ### Category B: Research Assessments Sufficiently Supported for Discussion
-1. [`THREE_COMPANY_UNDERVALUED_GROWTH_ASSESSMENTS.md`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/THREE_COMPANY_UNDERVALUED_GROWTH_ASSESSMENTS.md): Field-level SEC EDGAR citations, fiscal period integrity (ULTA FY2025 ended Jan 31, 2026), closed normalization bridges for DUOL and FIX, lease accounting consistency, 3-scenario valuations, and bounded sensitivity outputs.
-2. [`undervalued_growth_evidence_ledger.json`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/undervalued_growth_evidence_ledger.json): Machine-readable ledger with field-level accessions, dates, units, and closed normalization bridges.
-3. [`scripts/undervalued_growth_model.py`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/scripts/undervalued_growth_model.py): Deterministic local calculation engine.
+These items represent reproducible, field-level research analysis for David Akara to assess companies, but are NOT code releases or investment recommendations:
+1. [`THREE_COMPANY_UNDERVALUED_GROWTH_ASSESSMENTS.md`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/THREE_COMPANY_UNDERVALUED_GROWTH_ASSESSMENTS.md):
+   - Field-level SEC EDGAR accessions (`0001104659-26-017530`, `0001628280-26-012494`, `0001104659-26-035243`) and direct document URLs.
+   - Exact fiscal period designations (ULTA FY2025 ended Jan 31, 2026; negative incremental ROIC -9.2%).
+   - Closed normalization bridges for DUOL (reconciling tax valuation allowance and interest-income cash double-counting) and FIX (advance billings customer float).
+   - Consistent lease accounting for ULTA under the Equity FCFE model (rent expensed in CFO).
+   - 3-scenario valuations, reverse valuations, and bounded sensitivity tables.
+2. [`undervalued_growth_evidence_ledger.json`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/undervalued_growth_evidence_ledger.json):
+   - Machine-readable ledger generated deterministically with field-level citations, units, dates, and mathematical closure.
+3. [`scripts/undervalued_growth_model.py`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/scripts/undervalued_growth_model.py):
+   - Deterministic calculation engine reproducing all valuation scenarios and reverse DCF rates.
 
-### Category C: Unresolved Strategy-Policy Decisions (Awaiting User/Governance Direction)
-1. **Dynamic Financial Statement Ingestion**: Whether to build an automated SEC EDGAR / financial statement provider pipeline to replace the static `KNOWN_GEMS_DATA` reference catalog.
-2. **Automated Corporate Actions Pipeline**: Whether to ingest SEC Form 25/15 feeds dynamically across the full 8,000+ US equity universe.
-3. **Value / GARP Discovery Strategy**: Whether ARX should introduce a dedicated intrinsic DCF screener tab in Radar alongside the technical confluence scanner.
+### Category C: Concrete Remaining Dependencies & Strategic Decisions
+These items are out of scope for the current local patch and require separate strategic direction:
+1. **Dynamic Financial Statement Ingestion Pipeline**: Whether to build an automated SEC EDGAR / financial data provider feed (replacing the curated static `KNOWN_GEMS_DATA` catalog).
+2. **Automated Corporate Actions Pipeline**: Whether to ingest SEC Form 25/15 delisting feeds dynamically across the full 8,000+ US equity universe.
+3. **Dedicated Intrinsic DCF Radar Capability**: Whether to build an independent DCF screener capability in Radar separate from the multi-factor confluence scanner.
+4. **Independent Expansion Workstream**: The 150-security expansion preparation proceeds on its own independent worktree and branch.
 
 ---
 
@@ -106,7 +126,7 @@ elif peg_ratio is not None and 0.0 < peg_ratio <= 1.05 and roic_pct is not None 
    ```bash
    python -m pytest tests/test_undervalued_growth_corrections.py tests/test_screener_execution.py tests/test_radar_taxonomy_remediation.py tests/test_financial_epistemic_invariants.py -v
    ```
-   **Result**: **37 passed in 26.88s** (100% pass rate).
+   **Result**: **37 passed in 33.72s** (100% pass rate).
 2. **Frontend Metric & Taxonomy Contracts**:
    ```bash
    cmd /c "npx.cmd tsx frontend/tests/radarTaxonomy.test.ts && npx.cmd tsx frontend/tests/radarMetricCleanup.test.ts"
@@ -117,6 +137,22 @@ elif peg_ratio is not None and 0.0 < peg_ratio <= 1.05 and roic_pct is not None 
    python scripts/undervalued_growth_model.py
    ```
    **Result**: Clean execution, 100% bridge closure verified, `undervalued_growth_evidence_ledger.json` generated deterministically.
+
+---
+
+## 6. Cumulative Code Diff Summary (vs Base `2ac200b393dafaaf23fff90f8b5e6824e2c3ef96`)
+
+```text
+A   IMPLEMENTATION_FINDINGS_AND_CORRECTIONS.md
+A   THREE_COMPANY_UNDERVALUED_GROWTH_ASSESSMENTS.md
+M   analyst_dashboard/analyzers/gem_screener.py
+M   api/routes/screener.py
+M   frontend/app/radar/page.tsx
+A   scripts/undervalued_growth_model.py
+M   tests/test_screener_execution.py
+A   tests/test_undervalued_growth_corrections.py
+A   undervalued_growth_evidence_ledger.json
+```
 
 ---
 *Report certified under ARX Financial Epistemic Invariants. No external audit claims manufactured.*

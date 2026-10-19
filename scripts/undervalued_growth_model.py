@@ -165,8 +165,8 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
                 "fiscalYear": "FY2025",
                 "periodEnded": "2025-12-31",
                 "filedDate": "2026-02-23",
-                "accession": "0001035983-26-000012",
-                "url": "https://www.sec.gov/edgar/browse/?CIK=0001035983",
+                "accession": "0001104659-26-017530",
+                "url": "https://www.sec.gov/Archives/edgar/data/1035983/000110465926017530/fix-20251231x10k.htm",
                 "tableSections": ["Consolidated Statements of Operations", "Consolidated Balance Sheets", "Consolidated Statements of Cash Flows"],
             },
             {
@@ -288,17 +288,23 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
     duol_diluted_mcap = duol_shares_diluted * duol_price  # $6,610,037,280
     duol_target_op_pv = duol_diluted_mcap - duol_net_cash   # $5,382,307,296
 
-    # Normalization Bridge (FY2025):
-    # Pretax Income: $182.41M
-    # Tax Provision: -$231.66M
-    # Reported Net Income: $414.07M
-    # Normalized Tax @ 21%: $38.31M
-    # Normalized Net Income: $182.41M - $38.31M = $144.10M
+    # Normalization & Cash Flow Bridge (FY2025):
+    # Pretax Income: $182.41M (includes $46.84M interest & other investment income)
+    # Tax Provision: -$231.66M (Reported Net Income: $414.07M)
+    # Normalized Tax @ 21%: $38.31M -> Normalized Equity Net Income: $144.10M
     # Operating EBIT: $135.57M -> NOPAT @ 21%: $107.10M
-    # GAAP FCF: $360.42M ($387.82M CFO - $27.40M Capex)
-    # SBC: $137.44M -> Post-SBC FCF = $222.99M (~$223.0M)
+    # Reported CFO: $387.82M (includes interest received under US GAAP ASC 230)
+    # Capex: -$27.40M -> Derived FCF: $360.42M
+    # SBC: $137.44M -> Post-SBC FCF (unadjusted): $222.99M (~$223.0M)
+    # Less: After-tax net interest income ($46.84M * (1 - 0.21) = $37.00M)
+    # True Operating Base FCF (Post-SBC, ex-interest): $186.0M
+    # Note on Interest Income / Cash Double Counting:
+    # If unadjusted $223M (including interest from cash) is discounted AND the full cash balance
+    # is added to operating PV, cash is counted twice. The primary model below discounts True Operating FCF ($186M)
+    # and adds net cash ($1,227.7M), closing the bridge without double-counting.
 
-    duol_base_fcf_post_sbc = 223.0  # $M
+    duol_base_op_fcf = 186.0  # $M (True Operating FCF post-SBC)
+    duol_base_unadjusted_fcf = 223.0  # $M (Unadjusted cash flow)
     duol_scenarios_input = {
         "Conservative": {"rates": [0.12, 0.10, 0.08, 0.06, 0.05], "cost_of_capital": 0.100, "g": 0.025},
         "Base": {"rates": [0.22, 0.20, 0.18, 0.15, 0.12], "cost_of_capital": 0.095, "g": 0.030},
@@ -307,7 +313,7 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
 
     duol_scenarios_output = {}
     for sc_name, sc in duol_scenarios_input.items():
-        op_pv, pv_cf, pv_t, cfs = run_dcf(duol_base_fcf_post_sbc, sc["rates"], sc["cost_of_capital"], sc["g"])
+        op_pv, pv_cf, pv_t, cfs = run_dcf(duol_base_op_fcf, sc["rates"], sc["cost_of_capital"], sc["g"])
         eq_val = op_pv + (duol_net_cash / 1e6)
         fv_per_share = (eq_val * 1e6) / duol_shares_diluted
         terminal_contrib_pct = (pv_t / op_pv) * 100.0 if op_pv > 0 else 0.0
@@ -315,6 +321,11 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
         pot_return = (fv_per_share / duol_price) - 1.0
         prem_to_fv = (duol_price / fv_per_share) - 1.0 if fv_per_share > 0 else 0.0
         disc_to_fv = 1.0 - (duol_price / fv_per_share) if fv_per_share > 0 else 0.0
+
+        # Also compute unadjusted comparison (dual-benefit model)
+        op_pv_unadj, _, _, _ = run_dcf(duol_base_unadjusted_fcf, sc["rates"], sc["cost_of_capital"], sc["g"])
+        eq_val_unadj = op_pv_unadj + (duol_net_cash / 1e6)
+        fv_unadj = (eq_val_unadj * 1e6) / duol_shares_diluted
 
         duol_scenarios_output[sc_name] = {
             "projectedRates": sc["rates"],
@@ -331,18 +342,25 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
                 "potentialReturnFromReferencePricePct": round(pot_return * 100.0, 1),
                 "premiumToReferencePricePct": round(prem_to_fv * 100.0, 1),
                 "discountToModeledValuePct": round(disc_to_fv * 100.0, 1),
+            },
+            "unadjustedComparison": {
+                "initialUnadjustedFcfBaseMillions": duol_base_unadjusted_fcf,
+                "unadjustedOperatingPvMillions": round(op_pv_unadj, 1),
+                "unadjustedEquityValueMillions": round(eq_val_unadj, 1),
+                "unadjustedFairValuePerShareUsd": round(fv_unadj, 2),
             }
         }
 
-    duol_rev_cagr_post_sbc = reverse_dcf(duol_target_op_pv / 1e6, duol_base_fcf_post_sbc, 0.095, 0.030)
+    duol_rev_cagr_op_fcf = reverse_dcf(duol_target_op_pv / 1e6, duol_base_op_fcf, 0.095, 0.030)
+    duol_rev_cagr_post_sbc = reverse_dcf(duol_target_op_pv / 1e6, duol_base_unadjusted_fcf, 0.095, 0.030)
     duol_rev_cagr_gaap = reverse_dcf(duol_target_op_pv / 1e6, 360.42, 0.095, 0.030)
 
-    # Sensitivity Table (Base: Cost of Capital 9.5%, g 3.0%, FCF $223M)
+    # Sensitivity Table (Base: Cost of Capital 9.5%, g 3.0%, True Operating FCF $186M)
     duol_sensitivity = []
     for w in [0.085, 0.095, 0.105]:
         for g_t in [0.025, 0.030, 0.035]:
             if w > g_t:
-                op_s, _, _, _ = run_dcf(duol_base_fcf_post_sbc, duol_scenarios_input["Base"]["rates"], w, g_t)
+                op_s, _, _, _ = run_dcf(duol_base_op_fcf, duol_scenarios_input["Base"]["rates"], w, g_t)
                 eq_s = op_s + (duol_net_cash / 1e6)
                 fv_s = (eq_s * 1e6) / duol_shares_diluted
                 duol_sensitivity.append({
@@ -380,8 +398,8 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
                 "fiscalYear": "FY2025",
                 "periodEnded": "2025-12-31",
                 "filedDate": "2026-02-27",
-                "accession": "0001562088-26-000015",
-                "url": "https://www.sec.gov/edgar/browse/?CIK=0001562088",
+                "accession": "0001628280-26-012494",
+                "url": "https://www.sec.gov/Archives/edgar/data/1562088/000162828026012494/duol-20251231.htm",
                 "tableSections": ["Consolidated Statements of Operations", "Note 13 (Income Taxes)", "Consolidated Statements of Cash Flows"],
             },
             {
@@ -471,7 +489,7 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
             }
         },
         "normalizationBridge": {
-            "description": "Bridge from FY2025 reported net income to normalized equity net income and operating NOPAT.",
+            "description": "Bridge from FY2025 reported net income to normalized equity net income and operating NOPAT, and from reported CFO to True Operating Free Cash Flow.",
             "components": [
                 {"item": "Reported Pretax Income", "amountMillions": 182.41, "classification": "REPORTED"},
                 {"item": "Reported Income Tax Provision (Benefit Credit)", "amountMillions": -231.66, "classification": "REPORTED"},
@@ -479,7 +497,14 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
                 {"item": "Less: Non-cash Deferred Tax Asset Valuation Allowance Release", "amountMillions": -269.97, "classification": "DERIVED_TAX_ADJUSTMENT"},
                 {"item": "Normalized Income Tax Expense (at 21.0% statutory rate on $182.41M pretax)", "amountMillions": -38.31, "classification": "ANALYST_ASSUMED_TAX"},
                 {"item": "Normalized Equity Net Income", "amountMillions": 144.10, "classification": "DERIVED_NORMALIZED_EQUITY_NI"},
-                {"item": "Operating EBIT ($135.57M) less 21% Tax = Operating NOPAT", "amountMillions": 107.10, "classification": "DERIVED_OPERATING_NOPAT"}
+                {"item": "Operating EBIT ($135.57M) less 21% Tax = Operating NOPAT", "amountMillions": 107.10, "classification": "DERIVED_OPERATING_NOPAT"},
+                {"item": "FY2025 Reported Operating Cash Flow (CFO)", "amountMillions": 387.82, "classification": "REPORTED"},
+                {"item": "FY2025 Capital Expenditures (Capex)", "amountMillions": -27.40, "classification": "REPORTED"},
+                {"item": "Derived Free Cash Flow (CFO - Capex)", "amountMillions": 360.42, "classification": "DERIVED"},
+                {"item": "Less: Stock-Based Compensation (SBC)", "amountMillions": -137.44, "classification": "REPORTED_COMPENSATION"},
+                {"item": "Derived Post-SBC Free Cash Flow (Unadjusted)", "amountMillions": 222.98, "classification": "DERIVED_UNADJUSTED_POST_SBC"},
+                {"item": "Less: After-tax net interest income in CFO ($46.84M * 0.79)", "amountMillions": -37.00, "classification": "DERIVED_INTEREST_DEDUCTION"},
+                {"item": "True Operating Base Free Cash Flow (Post-SBC, ex-interest)", "amountMillions": 186.0, "classification": "DERIVED_OPERATING_BASE_FCF"}
             ],
             "closureVerified": True
         },
@@ -488,12 +513,14 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
         "reverseValuation": {
             "marketPriceUsd": duol_price,
             "targetOperatingPresentValueMillions": round(duol_target_op_pv / 1e6, 1),
-            "initialPostSbcFcfBaseMillions": duol_base_fcf_post_sbc,
+            "initialOperatingFcfBaseMillions": duol_base_op_fcf,
+            "initialUnadjustedFcfBaseMillions": duol_base_unadjusted_fcf,
             "fixedDiscountRatePct": 9.5,
             "fixedTerminalGrowthPct": 3.0,
-            "implied5YearPostSbcFcfCagrPct": round(duol_rev_cagr_post_sbc * 100.0, 2),
+            "implied5YearOperatingFcfCagrPct": round(duol_rev_cagr_op_fcf * 100.0, 2),
+            "implied5YearUnadjustedFcfCagrPct": round(duol_rev_cagr_post_sbc * 100.0, 2),
             "implied5YearGaapFcfCagrPct": round(duol_rev_cagr_gaap * 100.0, 2),
-            "interpretation": "Assuming a 9.5% discount rate and 3.0% terminal growth, the market price of $141.76 implies a 13.1% 5-year CAGR on post-SBC FCF ($223M), or 1.6% CAGR on GAAP FCF ($360M)."
+            "interpretation": "Assuming a 9.5% discount rate and 3.0% terminal growth, justifying the current market price of $141.76 under the primary True Operating FCF model ($186M base) requires a 17.7% 5-year CAGR (matching current price to Base Fair Value of $141.39). Under the unadjusted cash flow model ($223M base), it implies a 13.1% CAGR, or 1.6% CAGR on unadjusted GAAP FCF ($360M)."
         }
     }
 
@@ -595,8 +622,8 @@ def compute_metrics_and_ledger() -> Dict[str, Any]:
                 "fiscalYear": "FY2025",
                 "periodEnded": "2026-01-31",
                 "filedDate": "2026-03-26",
-                "accession": "0001403568-26-000018",
-                "url": "https://www.sec.gov/edgar/browse/?CIK=0001403568",
+                "accession": "0001104659-26-035243",
+                "url": "https://www.sec.gov/Archives/edgar/data/1403568/000110465926035243/ulta-20260131x10k.htm",
                 "tableSections": ["Consolidated Statements of Income", "Note 7 (Leases)", "Consolidated Statements of Cash Flows"],
             },
             {

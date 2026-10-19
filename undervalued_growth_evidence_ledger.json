@@ -33,8 +33,8 @@
           "fiscalYear": "FY2025",
           "periodEnded": "2025-12-31",
           "filedDate": "2026-02-23",
-          "accession": "0001035983-26-000012",
-          "url": "https://www.sec.gov/edgar/browse/?CIK=0001035983",
+          "accession": "0001104659-26-017530",
+          "url": "https://www.sec.gov/Archives/edgar/data/1035983/000110465926017530/fix-20251231x10k.htm",
           "tableSections": [
             "Consolidated Statements of Operations",
             "Consolidated Balance Sheets",
@@ -346,8 +346,8 @@
           "fiscalYear": "FY2025",
           "periodEnded": "2025-12-31",
           "filedDate": "2026-02-27",
-          "accession": "0001562088-26-000015",
-          "url": "https://www.sec.gov/edgar/browse/?CIK=0001562088",
+          "accession": "0001628280-26-012494",
+          "url": "https://www.sec.gov/Archives/edgar/data/1562088/000162828026012494/duol-20251231.htm",
           "tableSections": [
             "Consolidated Statements of Operations",
             "Note 13 (Income Taxes)",
@@ -449,7 +449,7 @@
         }
       },
       "normalizationBridge": {
-        "description": "Bridge from FY2025 reported net income to normalized equity net income and operating NOPAT.",
+        "description": "Bridge from FY2025 reported net income to normalized equity net income and operating NOPAT, and from reported CFO to True Operating Free Cash Flow.",
         "components": [
           {
             "item": "Reported Pretax Income",
@@ -485,6 +485,41 @@
             "item": "Operating EBIT ($135.57M) less 21% Tax = Operating NOPAT",
             "amountMillions": 107.1,
             "classification": "DERIVED_OPERATING_NOPAT"
+          },
+          {
+            "item": "FY2025 Reported Operating Cash Flow (CFO)",
+            "amountMillions": 387.82,
+            "classification": "REPORTED"
+          },
+          {
+            "item": "FY2025 Capital Expenditures (Capex)",
+            "amountMillions": -27.4,
+            "classification": "REPORTED"
+          },
+          {
+            "item": "Derived Free Cash Flow (CFO - Capex)",
+            "amountMillions": 360.42,
+            "classification": "DERIVED"
+          },
+          {
+            "item": "Less: Stock-Based Compensation (SBC)",
+            "amountMillions": -137.44,
+            "classification": "REPORTED_COMPENSATION"
+          },
+          {
+            "item": "Derived Post-SBC Free Cash Flow (Unadjusted)",
+            "amountMillions": 222.98,
+            "classification": "DERIVED_UNADJUSTED_POST_SBC"
+          },
+          {
+            "item": "Less: After-tax net interest income in CFO ($46.84M * 0.79)",
+            "amountMillions": -37.0,
+            "classification": "DERIVED_INTEREST_DEDUCTION"
+          },
+          {
+            "item": "True Operating Base Free Cash Flow (Post-SBC, ex-interest)",
+            "amountMillions": 186.0,
+            "classification": "DERIVED_OPERATING_BASE_FCF"
           }
         ],
         "closureVerified": true
@@ -500,23 +535,29 @@
           ],
           "discountRate": 0.1,
           "terminalGrowth": 0.025,
-          "pvDiscreteCashFlowsMillions": 1096.9,
-          "pvTerminalValueMillions": 2802.4,
+          "pvDiscreteCashFlowsMillions": 914.9,
+          "pvTerminalValueMillions": 2337.4,
           "terminalContributionPct": 71.9,
-          "operatingPresentValueMillions": 3899.3,
-          "equityValueMillions": 5127.1,
-          "fairValuePerShareUsd": 109.96,
+          "operatingPresentValueMillions": 3252.4,
+          "equityValueMillions": 4480.1,
+          "fairValuePerShareUsd": 96.08,
           "projectedAnnualFcfMillions": [
-            249.8,
-            274.7,
-            296.7,
-            314.5,
-            330.2
+            208.3,
+            229.2,
+            247.5,
+            262.3,
+            275.4
           ],
           "priceToValueComparison": {
-            "potentialReturnFromReferencePricePct": -22.4,
-            "premiumToReferencePricePct": 28.9,
-            "discountToModeledValuePct": -28.9
+            "potentialReturnFromReferencePricePct": -32.2,
+            "premiumToReferencePricePct": 47.5,
+            "discountToModeledValuePct": -47.5
+          },
+          "unadjustedComparison": {
+            "initialUnadjustedFcfBaseMillions": 223.0,
+            "unadjustedOperatingPvMillions": 3899.3,
+            "unadjustedEquityValueMillions": 5127.1,
+            "unadjustedFairValuePerShareUsd": 109.96
           }
         },
         "Base": {
@@ -529,23 +570,29 @@
           ],
           "discountRate": 0.095,
           "terminalGrowth": 0.03,
-          "pvDiscreteCashFlowsMillions": 1437.5,
-          "pvTerminalValueMillions": 4994.6,
+          "pvDiscreteCashFlowsMillions": 1199.0,
+          "pvTerminalValueMillions": 4165.9,
           "terminalContributionPct": 77.7,
-          "operatingPresentValueMillions": 6432.1,
-          "equityValueMillions": 7659.8,
-          "fairValuePerShareUsd": 164.27,
+          "operatingPresentValueMillions": 5364.9,
+          "equityValueMillions": 6592.6,
+          "fairValuePerShareUsd": 141.39,
           "projectedAnnualFcfMillions": [
-            272.1,
-            326.5,
-            385.2,
-            443.0,
-            496.2
+            226.9,
+            272.3,
+            321.3,
+            369.5,
+            413.9
           ],
           "priceToValueComparison": {
-            "potentialReturnFromReferencePricePct": 15.9,
-            "premiumToReferencePricePct": -13.7,
-            "discountToModeledValuePct": 13.7
+            "potentialReturnFromReferencePricePct": -0.3,
+            "premiumToReferencePricePct": 0.3,
+            "discountToModeledValuePct": -0.3
+          },
+          "unadjustedComparison": {
+            "initialUnadjustedFcfBaseMillions": 223.0,
+            "unadjustedOperatingPvMillions": 6432.1,
+            "unadjustedEquityValueMillions": 7659.8,
+            "unadjustedFairValuePerShareUsd": 164.27
           }
         },
         "Optimistic": {
@@ -558,23 +605,29 @@
           ],
           "discountRate": 0.09,
           "terminalGrowth": 0.035,
-          "pvDiscreteCashFlowsMillions": 1767.8,
-          "pvTerminalValueMillions": 7954.2,
+          "pvDiscreteCashFlowsMillions": 1474.5,
+          "pvTerminalValueMillions": 6634.4,
           "terminalContributionPct": 81.8,
-          "operatingPresentValueMillions": 9722.0,
-          "equityValueMillions": 10949.7,
-          "fairValuePerShareUsd": 234.83,
+          "operatingPresentValueMillions": 8108.9,
+          "equityValueMillions": 9336.7,
+          "fairValuePerShareUsd": 200.24,
           "projectedAnnualFcfMillions": [
-            294.4,
-            376.8,
-            467.2,
-            560.6,
-            650.4
+            245.5,
+            314.3,
+            389.7,
+            467.6,
+            542.4
           ],
           "priceToValueComparison": {
-            "potentialReturnFromReferencePricePct": 65.7,
-            "premiumToReferencePricePct": -39.6,
-            "discountToModeledValuePct": 39.6
+            "potentialReturnFromReferencePricePct": 41.3,
+            "premiumToReferencePricePct": -29.2,
+            "discountToModeledValuePct": 29.2
+          },
+          "unadjustedComparison": {
+            "initialUnadjustedFcfBaseMillions": 223.0,
+            "unadjustedOperatingPvMillions": 9722.0,
+            "unadjustedEquityValueMillions": 10949.7,
+            "unadjustedFairValuePerShareUsd": 234.83
           }
         }
       },
@@ -582,67 +635,69 @@
         {
           "discountRate": 0.085,
           "terminalGrowth": 0.025,
-          "operatingPresentValueMillions": 7116.6,
-          "fairValuePerShareUsd": 178.96
+          "operatingPresentValueMillions": 5935.8,
+          "fairValuePerShareUsd": 153.63
         },
         {
           "discountRate": 0.085,
           "terminalGrowth": 0.03,
-          "operatingPresentValueMillions": 7659.1,
-          "fairValuePerShareUsd": 190.59
+          "operatingPresentValueMillions": 6388.3,
+          "fairValuePerShareUsd": 163.34
         },
         {
           "discountRate": 0.085,
           "terminalGrowth": 0.035,
-          "operatingPresentValueMillions": 8310.0,
-          "fairValuePerShareUsd": 204.55
+          "operatingPresentValueMillions": 6931.2,
+          "fairValuePerShareUsd": 174.98
         },
         {
           "discountRate": 0.095,
           "terminalGrowth": 0.025,
-          "operatingPresentValueMillions": 6052.8,
-          "fairValuePerShareUsd": 156.14
+          "operatingPresentValueMillions": 5048.5,
+          "fairValuePerShareUsd": 134.6
         },
         {
           "discountRate": 0.095,
           "terminalGrowth": 0.03,
-          "operatingPresentValueMillions": 6432.1,
-          "fairValuePerShareUsd": 164.27
+          "operatingPresentValueMillions": 5364.9,
+          "fairValuePerShareUsd": 141.39
         },
         {
           "discountRate": 0.095,
           "terminalGrowth": 0.035,
-          "operatingPresentValueMillions": 6874.5,
-          "fairValuePerShareUsd": 173.76
+          "operatingPresentValueMillions": 5733.9,
+          "fairValuePerShareUsd": 149.3
         },
         {
           "discountRate": 0.105,
           "terminalGrowth": 0.025,
-          "operatingPresentValueMillions": 5256.4,
-          "fairValuePerShareUsd": 139.06
+          "operatingPresentValueMillions": 4384.2,
+          "fairValuePerShareUsd": 120.36
         },
         {
           "discountRate": 0.105,
           "terminalGrowth": 0.03,
-          "operatingPresentValueMillions": 5533.7,
-          "fairValuePerShareUsd": 145.01
+          "operatingPresentValueMillions": 4615.6,
+          "fairValuePerShareUsd": 125.32
         },
         {
           "discountRate": 0.105,
           "terminalGrowth": 0.035,
-          "operatingPresentValueMillions": 5850.7,
-          "fairValuePerShareUsd": 151.81
+          "operatingPresentValueMillions": 4879.9,
+          "fairValuePerShareUsd": 130.99
         }
       ],
       "reverseValuation": {
         "marketPriceUsd": 141.76,
         "targetOperatingPresentValueMillions": 5382.3,
-        "initialPostSbcFcfBaseMillions": 223.0,
+        "initialOperatingFcfBaseMillions": 186.0,
+        "initialUnadjustedFcfBaseMillions": 223.0,
         "fixedDiscountRatePct": 9.5,
         "fixedTerminalGrowthPct": 3.0,
-        "implied5YearPostSbcFcfCagrPct": 13.09,
+        "implied5YearOperatingFcfCagrPct": 17.66,
+        "implied5YearUnadjustedFcfCagrPct": 13.09,
         "implied5YearGaapFcfCagrPct": 1.63,
-        "interpretation": "Assuming a 9.5% discount rate and 3.0% terminal growth, the market price of $141.76 implies a 13.1% 5-year CAGR on post-SBC FCF ($223M), or 1.6% CAGR on GAAP FCF ($360M)."
+        "interpretation": "Assuming a 9.5% discount rate and 3.0% terminal growth, justifying the current market price of $141.76 under the primary True Operating FCF model ($186M base) requires a 17.7% 5-year CAGR (matching current price to Base Fair Value of $141.39). Under the unadjusted cash flow model ($223M base), it implies a 13.1% CAGR, or 1.6% CAGR on unadjusted GAAP FCF ($360M)."
       }
     },
     "ULTA": {
@@ -673,8 +728,8 @@
           "fiscalYear": "FY2025",
           "periodEnded": "2026-01-31",
           "filedDate": "2026-03-26",
-          "accession": "0001403568-26-000018",
-          "url": "https://www.sec.gov/edgar/browse/?CIK=0001403568",
+          "accession": "0001104659-26-035243",
+          "url": "https://www.sec.gov/Archives/edgar/data/1403568/000110465926035243/ulta-20260131x10k.htm",
           "tableSections": [
             "Consolidated Statements of Income",
             "Note 7 (Leases)",

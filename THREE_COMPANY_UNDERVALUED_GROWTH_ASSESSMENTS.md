@@ -31,6 +31,8 @@ All underlying values are generated deterministically by [`scripts/undervalued_g
 | Dimension / Metric | Comfort Systems USA (`FIX`) | Duolingo (`DUOL`) | Ulta Beauty (`ULTA`) |
 | :--- | :--- | :--- | :--- |
 | **Market Identity** | NYSE: FIX (CIK: `0001035983`) | NASDAQ: DUOL (CIK: `0001562088`) | NASDAQ: ULTA (CIK: `0001403568`) |
+| **Audited 10-K EDGAR Accession** | `0001104659-26-017530` (FY2025) | `0001628280-26-012494` (FY2025) | `0001104659-26-035243` (FY2025) |
+| **Direct EDGAR Document** | [fix-20251231x10k.htm](https://www.sec.gov/Archives/edgar/data/1035983/000110465926017530/fix-20251231x10k.htm) | [duol-20251231.htm](https://www.sec.gov/Archives/edgar/data/1562088/000162828026012494/duol-20251231.htm) | [ulta-20260131x10k.htm](https://www.sec.gov/Archives/edgar/data/1403568/000110465926035243/ulta-20260131x10k.htm) |
 | **Reference Price Basis** | **$1,439.07** (Oct 16, 2026 Close) | **$141.76** (Oct 16, 2026 Close) | **$592.94** (Oct 16, 2026 Close) |
 | **Share Denominator Basis** | 35.41M Diluted / 35.19M Basic | 46.63M Diluted / 40.39M Basic | 42.76M Basic / 44.99M Diluted |
 | **Market Equity Capitalization** | $50.65B (Basic) / $50.96B (Diluted) | $5.73B (Basic) / $6.61B (Diluted) | $25.35B (Basic) / $26.68B (Diluted) |
@@ -50,18 +52,18 @@ All underlying values are generated deterministically by [`scripts/undervalued_g
 | **FY2025 Capex** | ($154.9M) | ($27.4M) | ($434.8M) |
 | **Derived FCF (CFO - Capex)** | $1,031.5M | $360.4M | $1,068.0M |
 | **FY2025 Stock-Based Comp (SBC)** | $21.8M (0.2% rev / 1.8% CFO) | $137.4M (13.2% rev / 35.4% CFO) | $37.4M (0.3% rev / 2.5% CFO) |
-| **Derived FCF less SBC** | $1,009.6M | $223.0M | $1,030.5M |
+| **Derived FCF less SBC** | $1,009.6M | $223.0M (*includes interest*) | $1,030.5M |
 | **Invested Capital (FY2025 End)**| $1,950.2M | $404.4M | $4,561.3M |
 | **FY2025 ROIC (NOPAT / IC)** | **52.0%** | **26.5%** | **25.9%** |
 | **Incremental ROIC (ROIIC)** | **+111.1%** (FY23 $\rightarrow$ FY25) | **+24.7%** (FY23 $\rightarrow$ FY25) | **-9.2%** (FY23 $\rightarrow$ FY25) |
-| **Valuation Framework Applied** | Enterprise FCFF Model | Enterprise / Firm Cash Flow | Equity FCFE Model (Rent in CFO) |
-| **Normalized Starting Base FCF** | **$1,050.0M** | **$223.0M** (Post-SBC) | **$1,030.0M** (Equity Level) |
-| **Base DCF Modeled Value** | **$792.12** | **$164.27** | **$444.23** |
+| **Valuation Framework Applied** | Enterprise FCFF Model | True Operating DCF (ex-interest) | Equity FCFE Model (Rent in CFO) |
+| **Normalized Starting Base FCF** | **$1,050.0M** | **$186.0M** ([$223.0M] unadjusted) | **$1,030.0M** (Equity Level) |
+| **Base DCF Modeled Value** | **$792.12** | **$141.39** ([$164.27] unadjusted) | **$444.23** |
 | **Base Terminal Value Contribution**| **77.7%** | **77.7%** | **75.8%** |
-| **Potential Return vs Base Value**| **-45.0%** (Value / Price - 1) | **+15.9%** (Value / Price - 1) | **-25.1%** (Value / Price - 1) |
-| **Premium of Price vs Base Value**| **+81.7%** (Price / Value - 1) | **-13.7%** (Price / Value - 1) | **+33.5%** (Price / Value - 1) |
-| **Discount of Price vs Base Value**| **-81.7%** (1 - Price / Value) | **+13.7%** (1 - Price / Value) | **-33.5%** (1 - Price / Value) |
-| **Market-Implied 5-Yr FCF CAGR** | **28.1%** (at 9.0% WACC, 3% g) | **13.1%** (at 9.5% Ke, 3% g) | **9.0%** (at 8.5% Ke, 2.5% g) |
+| **Potential Return vs Base Value**| **-45.0%** (Value / Price - 1) | **-0.3%** ([+15.9%] unadjusted) | **-25.1%** (Value / Price - 1) |
+| **Premium of Price vs Base Value**| **+81.7%** (Price / Value - 1) | **+0.3%** ([-13.7%] unadjusted) | **+33.5%** (Price / Value - 1) |
+| **Discount of Price vs Base Value**| **-81.7%** (1 - Price / Value) | **-0.3%** ([+13.7%] unadjusted) | **-33.5%** (1 - Price / Value) |
+| **Market-Implied 5-Yr FCF CAGR** | **28.1%** (at 9.0% WACC, 3% g) | **17.7%** ([13.1%] unadjusted) | **9.0%** (at 8.5% Ke, 2.5% g) |
 
 ---
 
@@ -164,40 +166,53 @@ graph TD
   - **Operating NOPAT** (EBIT $\$135.57\text{M} \times 0.79$): **$107.10M**
   - *Takeaway*: Trailing P/E on reported GAAP net income is **16.0x**, an accounting artifact. On normalized equity net income ($144.10M), trailing P/E is **45.9x**. On operating NOPAT ($107.10M), EV/NOPAT is **50.3x**.
 
-#### 3.2.3 Shareholder Economics & Stock-Based Compensation
+#### 3.2.3 Shareholder Economics, Stock-Based Compensation & Cash Interest Reconciliation
 - **SBC Impact**: Stock-based compensation was $137.4M in FY2025, consuming **13.2% of revenue** and **35.4% of operating cash flow**.
 - **SBC Modeling Choice**: To avoid double-counting dilution, we treat SBC as an economic employee compensation cost deducted from operating cash flow while keeping share count constant at 46.63M diluted shares:
   - FY2025 Reported CFO: **$387.8M**
   - Capex: **-$27.4M**
   - Derived FCF ($\text{CFO} - \text{Capex}$): **$360.4M**
   - Economic Deduction for SBC: **-$137.4M**
-  - **Normalized Base FCF (Post-SBC)**: **$223.0M**
+  - **Derived FCF less SBC (Unadjusted)**: **$223.0M**
+- **The Interest Income & Cash Double-Counting Reconciliation**:
+  - *Accounting Root Cause*: Under US GAAP (ASC 230), Operating Cash Flow ($387.8M) includes interest received from cash and short-term investment holdings ($46.8M pretax, or ~$37.0M after 21% statutory tax).
+  - *The Valuation Trap*: If an analyst capitalizes the unadjusted post-SBC flow ($223.0M) and then adds the net cash balance ($1.23B) to operating present value in an EV-to-Equity bridge, the cash balance is **double-counted**! Its interest yield is capitalized into operating PV, AND its principal is added as non-operating excess cash at the end.
+  - *Surgical Resolution (True Operating Cash Flow)*:
+    $$\text{True Operating Base FCF} = \text{Unadjusted FCF } (\$222.98\text{M}) - \text{After-Tax Interest Received } (\$37.00\text{M}) = \mathbf{\$186.0M}$$
+    This $186.0M operating flow directly ties to operating NOPAT ($107.1M) and working capital unearned subscription float. Capitalizing this operating flow and then adding net cash ($1,227.7M) closes the enterprise-to-equity bridge cleanly and mathematically without double-counting!
 
 #### 3.2.4 Valuation Framework & Scenario Outputs
-- **Methodology**: Operating Cash Flow Discount Model on Post-SBC FCF ($223M base).
-- **Operating to Equity Bridge**: $\text{Equity Value} = \text{Operating PV} + \text{Net Cash } (\$1,227.7\text{M})$. Per-share values divided by 46.63M diluted shares.
-- **Scenario Table (Base Post-SBC FCF $223M)**:
+- **Methodology**: Enterprise DCF on True Operating Free Cash Flow ($186.0M base post-SBC, ex-interest).
+- **Enterprise to Equity Bridge**: $\text{Equity Value} = \text{Operating PV} + \text{Net Cash } (\$1,227.7\text{M})$. Per-share values divided by 46.63M diluted shares.
+- **Primary Scenario Table (True Operating Base FCF $186.0M)**:
   - *Conservative* (Growth [12%, 10%, 8%, 6%, 5%], Discount Rate 10.0%, g 2.5%):
-    - PV Discrete FCF: $1,096.9M | PV Terminal: $2,802.4M (71.9% of Op PV) | Op PV: $3,899.3M
-    - **Equity Value: $5,127.0M | Fair Value per Share: $109.96**
-    - Potential Return: **-22.4%** | Premium to Value: **+28.9%**
+    - PV Discrete FCF: $914.5M | PV Terminal: $2,337.8M (71.9% of Op PV) | Op PV: $3,252.3M
+    - **Equity Value: $4,480.0M | Fair Value per Share: $96.08**
+    - Potential Return: **-32.2%** | Premium to Value: **+47.5%**
   - *Base* (Growth [22%, 20%, 18%, 15%, 12%], Discount Rate 9.5%, g 3.0%):
-    - PV Discrete FCF: $1,437.5M | PV Terminal: $4,994.6M (77.7% of Op PV) | Op PV: $6,432.1M
-    - **Equity Value: $7,659.8M | Fair Value per Share: $164.27**
-    - Potential Return: **+15.9%** | Discount to Value: **+13.7%**
+    - PV Discrete FCF: $1,199.0M | PV Terminal: $4,165.9M (77.7% of Op PV) | Op PV: $5,364.9M
+    - **Equity Value: $6,592.6M | Fair Value per Share: $141.39**
+    - Potential Return: **-0.3%** | Premium to Value: **+0.3%** | Discount to Value: **-0.3%**
+    - *Remarkable Alignment*: Base modeled fair value ($141.39) essentially matches the current market reference price ($141.76) within -0.26%!
   - *Optimistic* (Growth [32%, 28%, 24%, 20%, 16%], Discount Rate 9.0%, g 3.5%):
-    - PV Discrete FCF: $1,767.8M | PV Terminal: $7,954.2M (81.8% of Op PV) | Op PV: $9,722.0M
-    - **Equity Value: $10,949.7M | Fair Value per Share: $234.83**
-    - Potential Return: **+65.7%** | Discount to Value: **+39.6%**
+    - PV Discrete FCF: $1,474.5M | PV Terminal: $6,634.4M (81.8% of Op PV) | Op PV: $8,108.9M
+    - **Equity Value: $9,336.7M | Fair Value per Share: $200.24**
+    - Potential Return: **+41.3%** | Discount to Value: **+29.2%**
+- **Comparative Unadjusted Framework (Dual-Benefit Approach, $223.0M Base)**:
+  - If interest income is retained in cash flow and full net cash is added:
+    - Base Operating PV: $6,432.1M | Equity Value: $7,659.8M | **Fair Value: $164.27**
+    - Potential Return: **+15.9%** | Discount to Value: **+13.7%**
+    - *Limitation*: As established, this dual-benefit model capitalizes interest yield while liquidating cash principal.
 
 #### 3.2.5 Reverse Valuation & Sensitivity
 - **Reverse Valuation**:
-  - On Post-SBC FCF ($223M), justifying the market price of $141.76 requires a **13.1% 5-year FCF CAGR**.
+  - Under the primary True Operating FCF model ($186M base), justifying the current market price of $141.76 requires a **17.7% 5-year FCF CAGR**.
+  - Under the unadjusted cash flow model ($223M base), justifying $141.76 requires a **13.1% 5-year FCF CAGR**.
   - On unadjusted GAAP FCF ($360.4M), justifying $141.76 requires only a **1.6% 5-year FCF CAGR**.
-- **Discount Rate & Terminal Growth Sensitivity (Base Scenario)**:
-  - Cost of Capital 8.5% / g 3.0%: Op PV $8,284.1M $\rightarrow$ Fair Value **$203.98**
-  - Cost of Capital 9.5% / g 3.0%: Op PV $6,432.1M $\rightarrow$ Fair Value **$164.27**
-  - Cost of Capital 10.5% / g 3.0%: Op PV $5,221.7M $\rightarrow$ Fair Value **$138.31**
+- **Discount Rate & Terminal Growth Sensitivity (Primary True Operating Base $186.0M)**:
+  - Cost of Capital 8.5% / g 3.0%: Op PV $6,388.3M $\rightarrow$ Fair Value **$163.34**
+  - Cost of Capital 9.5% / g 3.0%: Op PV $5,364.9M $\rightarrow$ Fair Value **$141.39**
+  - Cost of Capital 10.5% / g 3.0%: Op PV $4,615.6M $\rightarrow$ Fair Value **$125.32**
 
 ---
 
@@ -266,20 +281,34 @@ xychart-beta
     x-axis ["FIX", "DUOL", "ULTA"]
     y-axis "USD Per Share" 0 --> 1600
     bar [1439.07, 141.76, 592.94]
-    line [792.12, 164.27, 444.23]
+    line [792.12, 141.39, 444.23]
 ```
 
 ### Risk-Adjusted Synthesis Across the Three Candidates
 
-1. **`DUOL` (Duolingo, Inc.) — Trading at Modest Discount to Base Value, High SBC Exposure**:
-   - *Reference Price*: $141.76 | *Base Fair Value*: $164.27 (+15.9% potential return, 13.7% discount).
-   - *Core Takeaway*: DUOL is the only asset in the pilot trading below its Base modeled value. Its top-line momentum (39% CAGR) and 72% gross margins provide strong operating leverage. However, stock-based compensation absorbs $137.4M (35% of operating cash flow), and reported GAAP net income is heavily distorted by the non-cash deferred tax asset release ($414M GAAP vs $144M normalized equity earnings). An investor should weigh whether future product expansion into Math/Music can outpace ongoing dilution.
+1. **`DUOL` (Duolingo, Inc.) — Trading at Fundamental Fair Value under Operating Model, High SBC Exposure**:
+   - *Reference Price*: $141.76 | *Base Fair Value*: **$141.39** (True Operating Framework, -0.3% return) / **$164.27** (Unadjusted Dual-Benefit Framework, +15.9% return).
+   - *Core Takeaway*: When cash double-counting is surgically eliminated (stripping $37.0M after-tax interest income from operating cash flow before adding net cash), DUOL trades essentially right at its fundamental Base fair value ($141.39 vs $141.76, -0.26% variance). Top-line momentum (39% CAGR) and 72% gross margins provide strong operating leverage. However, stock-based compensation absorbs $137.4M (35.4% of operating cash flow), and reported GAAP net income is heavily distorted by the non-cash deferred tax asset release ($414M GAAP vs $144M normalized equity earnings). An investor should weigh whether product expansion into Math/Music can sustain a 17.7% FCF CAGR to outpace ongoing dilution. Under the unadjusted dual-benefit model (retaining interest and adding cash principal), fair value is $164.27.
 2. **`ULTA` (Ulta Beauty, Inc.) — Mature Specialty Retailer Trading at Premium to Fundamental Base**:
-   - *Reference Price*: $592.94 | *Base Fair Value*: $444.23 (-25.1% potential return, 33.5% premium).
+   - *Reference Price*: $592.94 | *Base Fair Value*: **$444.23** (-25.1% potential return, 33.5% premium).
    - *Core Takeaway*: Once the double-counting of store lease debt is corrected, Ulta's modeled base value rises from $385 to $444. However, the stock continues to trade above both Base ($444) and Optimistic ($582) values. Negative incremental ROIC (-9.2%) and decelerating same-store sales (1–2%) indicate that aggressive share buybacks ($900M+/yr) are supporting earnings per share while underlying enterprise cash flow growth has plateaued.
 3. **`FIX` (Comfort Systems USA, Inc.) — Outstanding Execution Trading at Substantial Premium to Fundamental Base**:
-   - *Reference Price*: $1,439.07 | *Base Fair Value*: $792.12 (-45.0% potential return, 81.7% premium).
+   - *Reference Price*: $1,439.07 | *Base Fair Value*: **$792.12** (-45.0% potential return, 81.7% premium).
    - *Core Takeaway*: Comfort Systems displays exceptional operating quality: 52% ROIC, 111% incremental ROIIC, negligible dilution (SBC 0.2% of rev), and record modular backlog. However, at $1,439.07, the market price requires a continuous 28.1% FCF CAGR for 5 years on a normalized $1,050M base. While hyperscaler data center demand remains robust, customer advance billings (+$910M working capital in FY2025) represent balance-sheet financing float that will normalize as contracts complete.
+
+---
+
+### 4.2 Decoupling Radar Confluence Scoring from Intrinsic DCF Valuation
+
+A key finding of this research pilot is why assets that trade at premiums to intrinsic DCF fair value (such as FIX at +81.7% premium or ULTA at +33.5% premium) frequently rank high in ARX Radar's `VALUE_GARP` tab:
+1. **Radar Sorting Semantics**: In `api/routes/screener.py` and `frontend/app/radar/page.tsx`, Radar sorts candidates by **`confluenceScore`** (labeled in the UI as `"Score (Confluence)"`).
+2. **Confluence Composition**: As implemented in [`analyst_dashboard/analyzers/confluence_engine.py`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/analyst_dashboard/analyzers/confluence_engine.py), confluence is an institutional multi-factor conviction score combining:
+   - **Technical Structure & Momentum (25% nominal weight)**: VCP/Breakout pattern, Stage 2 phase, RSI momentum, and execution risk-reward ratio.
+   - **Solvency & Quality Fundamentals (25% nominal weight)**: Piotroski F-Score (out of 9), ROIC, and PEG point tiers.
+   - **Smart Money Order Flow (25% nominal weight)**: SEC Form 4 insider buying, Congressional STOCK Act disclosures, and institutional volume sweeps.
+   - **Macro Regime (25% nominal weight)**: Treasury yield curve and credit spreads.
+3. **The Essential Distinction**: Confluence identifies **tactical execution timing and volume accumulation flow**, NOT intrinsic valuation discount. A stock can exhibit strong multi-factor momentum while being fundamentally overvalued relative to discounted future cash flows.
+4. **Frozen Engine Compliance**: Both [`analyst_dashboard/analyzers/optimal_execution.py`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/analyst_dashboard/analyzers/optimal_execution.py) and [`analyst_dashboard/analyzers/confluence_engine.py`](file:///C:/Users/akara/Documents/Projects/finance-undervalued-growth-pilot/analyst_dashboard/analyzers/confluence_engine.py) remain strictly frozen and unaltered. Truthfulness is enforced through contract disclosures (`RADAR_CAPABILITY_CONTRACT`), UI banners, and clear metric labeling.
 
 ---
 *Report produced deterministically via `scripts/undervalued_growth_model.py`. Epistemic Invariants strictly observed.*
