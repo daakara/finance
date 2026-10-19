@@ -113,7 +113,7 @@ def test_screener_candidate_data_integrity():
         sym = c["symbol"]
         assert c["currentPrice"] > 0, f"{sym}: Price must be positive"
         assert c["gemScore"] >= 0 and c["gemScore"] <= 100, f"{sym}: GemScore out of bounds"
-        if c["executionStatus"] not in ["INSUFFICIENT_HISTORY", "UNVERIFIED_ASSET"]:
+        if c["executionStatus"] not in ["INSUFFICIENT_HISTORY", "UNVERIFIED_ASSET", "DELISTED_SECURITY"]:
             assert c["stopLoss"] < c["optimalEntryMin"] <= c["optimalEntryMax"] < c["takeProfit1"], f"{sym}: Invalid level ladder"
         else:
             assert c["stopLoss"] is None
@@ -149,7 +149,7 @@ def test_screener_custom_tickers_on_demand():
     assert "AAPL" in syms and "AMD" in syms and "META" in syms, "Custom symbols must match parsed input"
     for c in candidates:
         assert c["currentPrice"] > 0
-        if c["executionStatus"] not in ["INSUFFICIENT_HISTORY", "UNVERIFIED_ASSET"]:
+        if c["executionStatus"] not in ["INSUFFICIENT_HISTORY", "UNVERIFIED_ASSET", "DELISTED_SECURITY"]:
             assert c["stopLoss"] < c["optimalEntryMin"] <= c["optimalEntryMax"] < c["takeProfit1"]
         else:
             assert c["stopLoss"] is None

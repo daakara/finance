@@ -72,6 +72,7 @@ function parseCanonicalExecutionStatus(raw: string): ExecutionStatus {
   if (s === 'APPROACHING_TARGET') return s;
   if (s === 'STOPPED_OUT') return s;
   if (s === 'INSUFFICIENT_HISTORY') return s;
+  if (s === 'DELISTED_SECURITY' || s.includes('DELISTED')) return 'DELISTED_SECURITY';
   if (s === 'UNVERIFIED_ASSET') return s;
   if (s === 'STALE_MARKET_DATA') return s;
   if (s.includes('BUY_ZONE') && !s.includes('AWAITING')) return 'IN_BUY_ZONE';
@@ -83,6 +84,8 @@ function parseCanonicalExecutionStatus(raw: string): ExecutionStatus {
 
 function formatRadarExecutionStatus(status: ExecutionStatus): string {
   switch (status) {
+    case 'DELISTED_SECURITY':
+      return 'DELISTED / INACTIVE';
     case 'IN_BUY_ZONE':
       return 'NEAR SCREENING ZONE';
     case 'READY_TO_BUY':
@@ -167,7 +170,7 @@ function RadarContent() {
             ? (gem.categories.filter((c: any) => ["VALUE_GARP", "VCP", "SMART_MONEY"].includes(c)) as CanonicalRadarCategory[])
             : [];
 
-          const rawStatus = (gem.execution_status || gem.factor_verdict || "").toUpperCase();
+          const rawStatus = (gem.executionStatus || gem.execution_status || gem.factor_verdict || "").toUpperCase();
           const executionStatus = parseCanonicalExecutionStatus(rawStatus);
 
           const dryUp = typeof gem.volume_dry_up === 'number' ? gem.volume_dry_up : (typeof gem.volumeDryUpPct === 'number' ? gem.volumeDryUpPct : null);
@@ -182,7 +185,7 @@ function RadarContent() {
           return {
             ticker: cleanTicker,
             name: resolvedName,
-            price: Number((gem.current_price || 0).toFixed(2)),
+            price: Number(((gem.currentPrice ?? gem.current_price) || 0).toFixed(2)),
             rvol: rvolVal,
             riskRewardRatio: rrVal,
             vcpStage: stageStr,
@@ -829,9 +832,10 @@ function RadarContent() {
                 <button
                   type="button"
                   onClick={() => setSortBy('SCORE')}
+                  title="Sort by Confluence Score (Technical execution setup, RSI momentum, and smart money flow — not intrinsic valuation discount)"
                   className={`focus-ring px-2 py-1 rounded ${sortBy === 'SCORE' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
                 >
-                  Score
+                  Score (Confluence)
                 </button>
                 <button
                   type="button"
@@ -925,6 +929,43 @@ function RadarContent() {
         </div>
 
         {/* Scope and Coverage Disclosure Banner */}
+        {activeFilter === 'VALUE_GARP' && (
+          <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs font-mono">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-bold text-cyan-400">💎 Value / GARP</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-slate-300">
+                Baseline: <strong className="text-white">Curated Fundamental Reference Catalog</strong>
+              </span>
+              <span className="text-slate-600">•</span>
+              <span className="text-slate-400">
+                Sorted by: {sortBy === 'SCORE' ? (
+                  <>
+                    <strong className="text-cyan-300">Technical Confluence</strong> (Confluence Score descending), <span className="text-amber-300/90 font-medium">not an intrinsic valuation discount ranking</span>
+                  </>
+                ) : sortBy === 'RVOL' ? (
+                  <>
+                    <strong className="text-cyan-300">Relative Volume</strong> (RVOL descending), <span className="text-amber-300/90 font-medium">not an intrinsic valuation discount ranking</span>
+                  </>
+                ) : (
+                  <>
+                    <strong className="text-cyan-300">Share Price</strong> (Nominal price descending), <span className="text-amber-300/90 font-medium">not an intrinsic valuation discount ranking</span>
+                  </>
+                )}
+              </span>
+              <span className="text-slate-600">•</span>
+              <span className="text-slate-400">
+                {filteredAssets.length} qualifying assets
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 border border-slate-700">
+                REFERENCE CATALOG
+              </span>
+            </div>
+          </div>
+        )}
+
         {activeFilter === 'VCP' && (
           <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs font-mono">
             <div className="flex flex-wrap items-center gap-2">
@@ -1114,7 +1155,9 @@ function RadarContent() {
                         </td>
                         <td className="p-3 whitespace-nowrap">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            isNearZone
+                            asset.executionStatus === 'DELISTED_SECURITY'
+                              ? 'bg-rose-950/80 text-rose-300 border border-rose-700/80'
+                              : isNearZone
                               ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-700/60'
                               : asset.executionStatus === 'IN_BUY_ZONE_AWAITING_TRIGGER'
                               ? 'bg-amber-950 text-amber-300 border border-amber-800'
@@ -1125,9 +1168,15 @@ function RadarContent() {
                             {screeningLabel}
                           </span>
                         </td>
-                        <td className="p-3 font-bold text-white whitespace-nowrap">${asset.price.toFixed(2)}</td>
+                        <td className="p-3 font-bold text-white whitespace-nowrap">
+                          {asset.price > 0 ? `$${asset.price.toFixed(2)}` : '—'}
+                        </td>
                         <td className="p-3 text-center whitespace-nowrap">
-                          <span className="font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-1.5 py-0.5 rounded" title="Screening Snapshot Score">
+                          <span className={`font-bold px-1.5 py-0.5 rounded ${
+                            asset.executionStatus === 'DELISTED_SECURITY'
+                              ? 'text-rose-400 bg-rose-950/60 border border-rose-800/60'
+                              : 'text-emerald-400 bg-emerald-950/60 border border-emerald-800/60'
+                          }`} title="Screening Snapshot Score">
                             {asset.confluenceScore}
                           </span>
                         </td>
