@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "FSLR",
+    "name": "First Solar, Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001274494",
+    "composite_figi": "BBG000BFL116",
+    "share_class_figi": "BBG001S991Z7",
+    "last_updated_utc": "2026-10-18T06:10:11.414933101Z"
+  },
+  "status": "OK"
+}

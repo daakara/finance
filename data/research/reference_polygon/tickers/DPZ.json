@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "DPZ",
+    "name": "Domino's Pizza Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001286681",
+    "composite_figi": "BBG000P458P3",
+    "share_class_figi": "BBG001SL3ZH1",
+    "last_updated_utc": "2026-10-18T06:10:11.414209011Z"
+  },
+  "status": "OK"
+}

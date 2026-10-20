@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "MPWR",
+    "name": "Monolithic Power Systems, Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001280452",
+    "composite_figi": "BBG000C30L48",
+    "share_class_figi": "BBG001SDRGP6",
+    "last_updated_utc": "2026-10-18T06:10:11.415539758Z"
+  },
+  "status": "OK"
+}

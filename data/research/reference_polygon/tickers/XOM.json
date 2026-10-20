@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "XOM",
+    "name": "ExxonMobil Holdings Corporation",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0002115436",
+    "composite_figi": "BBG023CY9MM1",
+    "share_class_figi": "BBG023CY9NL0",
+    "last_updated_utc": "2026-10-18T06:10:11.416257526Z"
+  },
+  "status": "OK"
+}

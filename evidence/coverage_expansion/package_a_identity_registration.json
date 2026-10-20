@@ -1,0 +1,1297 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "package_id": "PKG-EXPANSION-150-A-IDENTITY-REGISTRATION",
+  "title": "Reference Identity Registration Package (133 Launch Candidates)",
+  "description": "Controlled reference identity registration proposal for 133 Radar launch candidates (3 retained pilot + 130 proposed additions) under the approved PO separation of concerns principle.",
+  "governance_status": {
+    "exact_plan_approval": "ABSENT",
+    "application_authorized": false,
+    "is_authorized": false,
+    "authorized_by": null,
+    "production_target_binding": "BOUND_AUTHENTIC_LIVE_PRODUCTION",
+    "target_store_status": "FRESH_LIVE_PRODUCTION_OBSERVATION",
+    "readback_timestamp_utc": "2026-10-20T06:04:36Z",
+    "provenance_notes": "Target state represents authentic read-only export (mode=ro) of live production identity store /root/analyst_dashboard/data/identity.db on Railway container tranquil-radiance query executed at 2026-10-20T06:04:36Z (reconciling earlier local Europe/Berlin wall-clock timestamp 01:27:05). Verified 3 established pilot entities (AAPL, GOOG, GOOGL) registered under historical plan PLAN_ADOPT_3C5D8B5E3D39 with exact matching digest b881778ac5370601174838271c918a1e1dcae7b4522b2bfc7b76a78e622e87e7. Exact plan approval is ABSENT; application is unauthorized."
+  },
+  "target_store": {
+    "environment": "production",
+    "service": "web",
+    "persistent_volume_mount": "/root",
+    "target_db_path": "/root/analyst_dashboard/data/identity.db",
+    "target_state_export_file": "evidence/coverage_expansion/target_identity_state_export.json",
+    "live_target_state_digest": "b881778ac5370601174838271c918a1e1dcae7b4522b2bfc7b76a78e622e87e7",
+    "expected_empty_digest": "ea11990ec0e3790abcb0b4293bfadd7ae4e58ca050e79e949e688a82437a93ee",
+    "production_target_binding": "BOUND_AUTHENTIC_LIVE_PRODUCTION",
+    "replica_consistency_status": "AUTHENTIC_LIVE_PRODUCTION_EXPORT_VERIFIED",
+    "registered_pilot_entities": [
+      {
+        "symbol": "AAPL",
+        "security_id": "ARX_SEC_0B4C728FE0BE",
+        "durable_status": "ESTABLISHED_DURABLE"
+      },
+      {
+        "symbol": "GOOG",
+        "security_id": "ARX_SEC_A11A24D442E2",
+        "durable_status": "ESTABLISHED_DURABLE"
+      },
+      {
+        "symbol": "GOOGL",
+        "security_id": "ARX_SEC_B7EF9ED7A35A",
+        "durable_status": "ESTABLISHED_DURABLE"
+      }
+    ],
+    "pilot_entities_state": "AAPL, GOOG, and GOOGL are established durable registrations in target database /root/analyst_dashboard/data/identity.db. They are preserved, not proposed for duplicate creation."
+  },
+  "candidate_counts": {
+    "total_candidates": 133,
+    "retained_pilot_identities": 3,
+    "new_proposed_identities": 130,
+    "execution_plan_operations": 130,
+    "evidence_resolved_identities": 133,
+    "radar_launch_universe_candidates": 133,
+    "radar_launch_universe_selected": 133,
+    "actual_policy_pass": 122,
+    "actual_policy_unknown": 11,
+    "counterfactual_policy_pass": 122,
+    "radar_launch_policy_pass": 122,
+    "radar_launch_policy_unknown": 11,
+    "observed_turnover_ranked_count": 122
+  },
+  "application_batch_categories": {
+    "existing_matches_count": 3,
+    "existing_matches": [
+      "AAPL",
+      "GOOG",
+      "GOOGL"
+    ],
+    "proposed_new_identities_count": 130,
+    "conflicts_count": 0,
+    "conflicts": [],
+    "unresolved_identity_evidence_count": 0,
+    "candidates_excluded_from_batch_count": 0,
+    "candidates_excluded_from_batch": []
+  },
+  "target_store_safeguards": {
+    "target_state_digest": "b881778ac5370601174838271c918a1e1dcae7b4522b2bfc7b76a78e622e87e7",
+    "target_state_export_file": "evidence/coverage_expansion/target_identity_state_export.json",
+    "target_digest_freshness_status": "AUTHENTIC_LIVE_PRODUCTION_DIGEST_BOUND",
+    "production_target_binding": "BOUND_AUTHENTIC_LIVE_PRODUCTION",
+    "scope_definition": "Controlled adoption plan for 130 new reference identities into /root/analyst_dashboard/data/identity.db while preserving 3 established pilot entities.",
+    "approval_requirements": "Requires explicit operator plan authorization via approval manifest before any database writes.",
+    "approval_manifest_template_file": "evidence/coverage_expansion/package_a_approval_manifest_template.json",
+    "backup_procedure": "Pre-execution backup via create_verified_sqlite_backup using SQLite online backup API (src_conn.backup) in read-only URI mode (?mode=ro) with exclusive target creation: /root/analyst_dashboard/data/identity.db.pre_expansion_backup",
+    "rollback_behavior": "Atomic transaction rollback on any constraint violation; file restore from backup on unexpected error.",
+    "independent_readback_expectations": "Post-execution query verifying exactly 133 registered entities (3 pilot + 130 new) across 132 unique CIKs (with GOOG and GOOGL sharing CIK 0001652044) and 133 unique associations, matching plan digest.",
+    "execution_wrapper_invocation": "python scripts/apply_registration_plan_wrapper.py --reviewed-plan evidence/coverage_expansion/package_a_identity_adoption_plan.json --approval-manifest evidence/coverage_expansion/package_a_approval_manifest.json --db-path /root/analyst_dashboard/data/identity.db --backup-path /root/analyst_dashboard/data/identity.db.pre_expansion_backup --output-applied-plan /root/analyst_dashboard/data/applied_plan_150_expansion.json",
+    "remote_execution_transport": "railway ssh -s web -e production"
+  },
+  "adoption_plan_file": "package_a_identity_adoption_plan.json",
+  "adoption_plan_id": "PLAN_ADOPT_9A2E4E04E878",
+  "adoption_plan_digest": "9a2e4e04e878b667e25a2a75d56292a0b3e679b15890211cef13db96f7a8bfe5",
+  "execution_plan_operations_count": 130,
+  "atomic_guarantees": {
+    "transaction_mode": "BEGIN IMMEDIATE",
+    "rollback_on_failure": true,
+    "fail_closed_on_unauthorized": true,
+    "zero_production_writes_by_preparation": true
+  },
+  "candidates": [
+    {
+      "symbol": "MU",
+      "security_id": "ARX_SEC_C1998195121E",
+      "association_id": "ASSOC_ARX_SEC_C1998195121E_XNAS_MU_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000723125",
+      "company_name": "MICRON TECHNOLOGY INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "NVDA",
+      "security_id": "ARX_SEC_442CE0B25527",
+      "association_id": "ASSOC_ARX_SEC_442CE0B25527_XNAS_NVDA_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001045810",
+      "company_name": "NVIDIA CORP",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "META",
+      "security_id": "ARX_SEC_896111757300",
+      "association_id": "ASSOC_ARX_SEC_896111757300_XNAS_META_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001326801",
+      "company_name": "Meta Platforms, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "TSLA",
+      "security_id": "ARX_SEC_9EC4CE6C2433",
+      "association_id": "ASSOC_ARX_SEC_9EC4CE6C2433_XNAS_TSLA_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001318605",
+      "company_name": "Tesla, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "INTC",
+      "security_id": "ARX_SEC_A09505BB92E4",
+      "association_id": "ASSOC_ARX_SEC_A09505BB92E4_XNAS_INTC_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000050863",
+      "company_name": "INTEL CORP",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "AMD",
+      "security_id": "ARX_SEC_A8DC2F6265AF",
+      "association_id": "ASSOC_ARX_SEC_A8DC2F6265AF_XNAS_AMD_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000002488",
+      "company_name": "ADVANCED MICRO DEVICES INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "AAPL",
+      "security_id": "ARX_SEC_0B4C728FE0BE",
+      "association_id": "ASSOC_ARX_SEC_0B4C728FE0BE_XNAS_AAPL_2026-10-17",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000320193",
+      "company_name": "Apple Inc. Common Stock",
+      "identity_disposition": "PILOT_ESTABLISHED_DURABLE"
+    },
+    {
+      "symbol": "MSFT",
+      "security_id": "ARX_SEC_E602D4F9329C",
+      "association_id": "ASSOC_ARX_SEC_E602D4F9329C_XNAS_MSFT_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000789019",
+      "company_name": "MICROSOFT CORP",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "AMZN",
+      "security_id": "ARX_SEC_6E68C50B3651",
+      "association_id": "ASSOC_ARX_SEC_6E68C50B3651_XNAS_AMZN_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001018724",
+      "company_name": "AMAZON COM INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "GOOGL",
+      "security_id": "ARX_SEC_B7EF9ED7A35A",
+      "association_id": "ASSOC_ARX_SEC_B7EF9ED7A35A_XNAS_GOOGL_2026-10-17",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001652044",
+      "company_name": "Alphabet Inc. Class A Common Stock",
+      "identity_disposition": "PILOT_ESTABLISHED_DURABLE"
+    },
+    {
+      "symbol": "AVGO",
+      "security_id": "ARX_SEC_E017EF93C227",
+      "association_id": "ASSOC_ARX_SEC_E017EF93C227_XNAS_AVGO_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001730168",
+      "company_name": "Broadcom Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "MRVL",
+      "security_id": "ARX_SEC_CA4E1007631E",
+      "association_id": "ASSOC_ARX_SEC_CA4E1007631E_XNAS_MRVL_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001835632",
+      "company_name": "Marvell Technology, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ORCL",
+      "security_id": "ARX_SEC_1511BE18A299",
+      "association_id": "ASSOC_ARX_SEC_1511BE18A299_XNYS_ORCL_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001341439",
+      "company_name": "ORACLE CORP",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "PLTR",
+      "security_id": "ARX_SEC_E3AF4B146077",
+      "association_id": "ASSOC_ARX_SEC_E3AF4B146077_XNAS_PLTR_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001321655",
+      "company_name": "Palantir Technologies Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "MSTR",
+      "security_id": "ARX_SEC_54E15888CC8F",
+      "association_id": "ASSOC_ARX_SEC_54E15888CC8F_XNAS_MSTR_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001050446",
+      "company_name": "Strategy Inc",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "AMAT",
+      "security_id": "ARX_SEC_2C64DA7AEF25",
+      "association_id": "ASSOC_ARX_SEC_2C64DA7AEF25_XNAS_AMAT_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000006951",
+      "company_name": "APPLIED MATERIALS INC /DE",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "LRCX",
+      "security_id": "ARX_SEC_7E8930D0B771",
+      "association_id": "ASSOC_ARX_SEC_7E8930D0B771_XNAS_LRCX_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000707549",
+      "company_name": "LAM RESEARCH CORP",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "LLY",
+      "security_id": "ARX_SEC_5FCB8712F857",
+      "association_id": "ASSOC_ARX_SEC_5FCB8712F857_XNYS_LLY_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000059478",
+      "company_name": "ELI LILLY & Co",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "NFLX",
+      "security_id": "ARX_SEC_B2FA6EFA6D25",
+      "association_id": "ASSOC_ARX_SEC_B2FA6EFA6D25_XNAS_NFLX_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001065280",
+      "company_name": "NETFLIX INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "CRM",
+      "security_id": "ARX_SEC_552E40F24574",
+      "association_id": "ASSOC_ARX_SEC_552E40F24574_XNYS_CRM_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001108524",
+      "company_name": "Salesforce, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "CRWD",
+      "security_id": "ARX_SEC_45815D9E419C",
+      "association_id": "ASSOC_ARX_SEC_45815D9E419C_XNAS_CRWD_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001535527",
+      "company_name": "CrowdStrike Holdings, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "HOOD",
+      "security_id": "ARX_SEC_DC1858ABF8E4",
+      "association_id": "ASSOC_ARX_SEC_DC1858ABF8E4_XNAS_HOOD_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001783879",
+      "company_name": "Robinhood Markets, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "XOM",
+      "security_id": "ARX_SEC_7A9D3E20A5F0",
+      "association_id": "ASSOC_ARX_SEC_7A9D3E20A5F0_XNYS_XOM_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0002115436",
+      "company_name": "ExxonMobil Holdings Corp",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "PANW",
+      "security_id": "ARX_SEC_BE8541A97F58",
+      "association_id": "ASSOC_ARX_SEC_BE8541A97F58_XNAS_PANW_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001327567",
+      "company_name": "Palo Alto Networks Inc",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "COST",
+      "security_id": "ARX_SEC_AB9F37A351C9",
+      "association_id": "ASSOC_ARX_SEC_AB9F37A351C9_XNAS_COST_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000909832",
+      "company_name": "COSTCO WHOLESALE CORP /NEW",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "GEV",
+      "security_id": "ARX_SEC_718CBD21F532",
+      "association_id": "ASSOC_ARX_SEC_718CBD21F532_XNYS_GEV_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001996810",
+      "company_name": "GE Vernova Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "BA",
+      "security_id": "ARX_SEC_82B38D003D55",
+      "association_id": "ASSOC_ARX_SEC_82B38D003D55_XNYS_BA_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000012927",
+      "company_name": "BOEING CO",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "V",
+      "security_id": "ARX_SEC_534470FAF906",
+      "association_id": "ASSOC_ARX_SEC_534470FAF906_XNYS_V_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001403161",
+      "company_name": "VISA INC.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "QCOM",
+      "security_id": "ARX_SEC_38FA279C539E",
+      "association_id": "ASSOC_ARX_SEC_38FA279C539E_XNAS_QCOM_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000804328",
+      "company_name": "QUALCOMM INC/DE",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "CAT",
+      "security_id": "ARX_SEC_FEE752228F9E",
+      "association_id": "ASSOC_ARX_SEC_FEE752228F9E_XNYS_CAT_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000018230",
+      "company_name": "CATERPILLAR INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "IREN",
+      "security_id": "ARX_SEC_5FC8E180F103",
+      "association_id": "ASSOC_ARX_SEC_5FC8E180F103_XNAS_IREN_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001878848",
+      "company_name": "IREN Ltd",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "KLAC",
+      "security_id": "ARX_SEC_FA15DCFF4707",
+      "association_id": "ASSOC_ARX_SEC_FA15DCFF4707_XNAS_KLAC_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000319201",
+      "company_name": "KLA CORP",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "CVX",
+      "security_id": "ARX_SEC_DE522056E821",
+      "association_id": "ASSOC_ARX_SEC_DE522056E821_XNYS_CVX_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000093410",
+      "company_name": "CHEVRON CORP",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "HD",
+      "security_id": "ARX_SEC_888A96812E7C",
+      "association_id": "ASSOC_ARX_SEC_888A96812E7C_XNYS_HD_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000354950",
+      "company_name": "HOME DEPOT, INC.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "COIN",
+      "security_id": "ARX_SEC_5A060BCF72F1",
+      "association_id": "ASSOC_ARX_SEC_5A060BCF72F1_XNAS_COIN_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001679788",
+      "company_name": "Coinbase Global, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "RKLB",
+      "security_id": "ARX_SEC_9B51695DA12B",
+      "association_id": "ASSOC_ARX_SEC_9B51695DA12B_XNAS_RKLB_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001819994",
+      "company_name": "Rocket Lab Corp",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "MA",
+      "security_id": "ARX_SEC_8B948EA8001E",
+      "association_id": "ASSOC_ARX_SEC_8B948EA8001E_XNYS_MA_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001141391",
+      "company_name": "Mastercard Inc",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "NKE",
+      "security_id": "ARX_SEC_693A81069A58",
+      "association_id": "ASSOC_ARX_SEC_693A81069A58_XNYS_NKE_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000320187",
+      "company_name": "NIKE, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "NOW",
+      "security_id": "ARX_SEC_AAE763CDAE89",
+      "association_id": "ASSOC_ARX_SEC_AAE763CDAE89_XNYS_NOW_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001373715",
+      "company_name": "ServiceNow, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "APP",
+      "security_id": "ARX_SEC_F5AEADCE3FA6",
+      "association_id": "ASSOC_ARX_SEC_F5AEADCE3FA6_XNAS_APP_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001751008",
+      "company_name": "AppLovin Corp",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "SNOW",
+      "security_id": "ARX_SEC_4DA645D0D04F",
+      "association_id": "ASSOC_ARX_SEC_4DA645D0D04F_XNYS_SNOW_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001640147",
+      "company_name": "Snowflake Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "GE",
+      "security_id": "ARX_SEC_BF94A2A7C4EC",
+      "association_id": "ASSOC_ARX_SEC_BF94A2A7C4EC_XNYS_GE_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000040545",
+      "company_name": "GENERAL ELECTRIC CO",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "SMCI",
+      "security_id": "ARX_SEC_3F3D1AA38BF7",
+      "association_id": "ASSOC_ARX_SEC_3F3D1AA38BF7_XNAS_SMCI_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001375365",
+      "company_name": "Super Micro Computer, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "TXN",
+      "security_id": "ARX_SEC_46FC2970F92C",
+      "association_id": "ASSOC_ARX_SEC_46FC2970F92C_XNAS_TXN_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000097476",
+      "company_name": "TEXAS INSTRUMENTS INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "TJX",
+      "security_id": "ARX_SEC_F5E86851B3E8",
+      "association_id": "ASSOC_ARX_SEC_F5E86851B3E8_XNYS_TJX_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000109198",
+      "company_name": "TJX COMPANIES INC /DE/",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ABBV",
+      "security_id": "ARX_SEC_BFA51AC4C0B5",
+      "association_id": "ASSOC_ARX_SEC_BFA51AC4C0B5_XNYS_ABBV_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001551152",
+      "company_name": "AbbVie Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "IBM",
+      "security_id": "ARX_SEC_03E964A5076A",
+      "association_id": "ASSOC_ARX_SEC_03E964A5076A_XNYS_IBM_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000051143",
+      "company_name": "INTERNATIONAL BUSINESS MACHINES CORP",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ADBE",
+      "security_id": "ARX_SEC_F2EAD38AA852",
+      "association_id": "ASSOC_ARX_SEC_F2EAD38AA852_XNAS_ADBE_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000796343",
+      "company_name": "ADOBE INC.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "AMGN",
+      "security_id": "ARX_SEC_F529ED410A08",
+      "association_id": "ASSOC_ARX_SEC_F529ED410A08_XNAS_AMGN_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000318154",
+      "company_name": "AMGEN INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "SNPS",
+      "security_id": "ARX_SEC_F630988F9A69",
+      "association_id": "ASSOC_ARX_SEC_F630988F9A69_XNAS_SNPS_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000883241",
+      "company_name": "SYNOPSYS INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ADI",
+      "security_id": "ARX_SEC_93BA3923018A",
+      "association_id": "ASSOC_ARX_SEC_93BA3923018A_XNAS_ADI_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000006281",
+      "company_name": "ANALOG DEVICES INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "VRT",
+      "security_id": "ARX_SEC_0BD3E9A219CB",
+      "association_id": "ASSOC_ARX_SEC_0BD3E9A219CB_XNYS_VRT_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001674101",
+      "company_name": "Vertiv Holdings Co",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "INTU",
+      "security_id": "ARX_SEC_2A443D99E284",
+      "association_id": "ASSOC_ARX_SEC_2A443D99E284_XNAS_INTU_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000896878",
+      "company_name": "INTUIT INC.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "NET",
+      "security_id": "ARX_SEC_CA8529F734CC",
+      "association_id": "ASSOC_ARX_SEC_CA8529F734CC_XNYS_NET_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001477333",
+      "company_name": "Cloudflare, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "MPWR",
+      "security_id": "ARX_SEC_67B6F523B2F0",
+      "association_id": "ASSOC_ARX_SEC_67B6F523B2F0_XNAS_MPWR_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001280452",
+      "company_name": "MONOLITHIC POWER SYSTEMS, INC.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "NEE",
+      "security_id": "ARX_SEC_8C89A2BC55C2",
+      "association_id": "ASSOC_ARX_SEC_8C89A2BC55C2_XNYS_NEE_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000753308",
+      "company_name": "NEXTERA ENERGY INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ANET",
+      "security_id": "ARX_SEC_19F637B205D7",
+      "association_id": "ASSOC_ARX_SEC_19F637B205D7_XNYS_ANET_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001596532",
+      "company_name": "Arista Networks, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "CEG",
+      "security_id": "ARX_SEC_88598B4E3AB4",
+      "association_id": "ASSOC_ARX_SEC_88598B4E3AB4_XNAS_CEG_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001868275",
+      "company_name": "Constellation Energy Corp",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "IONQ",
+      "security_id": "ARX_SEC_B8976BE2E5BC",
+      "association_id": "ASSOC_ARX_SEC_B8976BE2E5BC_XNYS_IONQ_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001824920",
+      "company_name": "IonQ, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ON",
+      "security_id": "ARX_SEC_BF8C569DE4F0",
+      "association_id": "ASSOC_ARX_SEC_BF8C569DE4F0_XNAS_ON_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001097864",
+      "company_name": "ON SEMICONDUCTOR CORP",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "DE",
+      "security_id": "ARX_SEC_4EF3AD410566",
+      "association_id": "ASSOC_ARX_SEC_4EF3AD410566_XNYS_DE_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000315189",
+      "company_name": "DEERE & CO",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ETN",
+      "security_id": "ARX_SEC_455086325187",
+      "association_id": "ASSOC_ARX_SEC_455086325187_XNYS_ETN_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001551182",
+      "company_name": "Eaton Corp plc",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "GILD",
+      "security_id": "ARX_SEC_57D1B2C5CD0B",
+      "association_id": "ASSOC_ARX_SEC_57D1B2C5CD0B_XNAS_GILD_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000882095",
+      "company_name": "GILEAD SCIENCES, INC.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "DDOG",
+      "security_id": "ARX_SEC_0B7CEDD50497",
+      "association_id": "ASSOC_ARX_SEC_0B7CEDD50497_XNAS_DDOG_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001561550",
+      "company_name": "Datadog, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "BSX",
+      "security_id": "ARX_SEC_8F075B93DEBF",
+      "association_id": "ASSOC_ARX_SEC_8F075B93DEBF_XNYS_BSX_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000885725",
+      "company_name": "BOSTON SCIENTIFIC CORP",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "BMY",
+      "security_id": "ARX_SEC_99DFEAF1CF82",
+      "association_id": "ASSOC_ARX_SEC_99DFEAF1CF82_XNYS_BMY_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000014272",
+      "company_name": "BRISTOL MYERS SQUIBB CO",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "CDNS",
+      "security_id": "ARX_SEC_D6CA98435068",
+      "association_id": "ASSOC_ARX_SEC_D6CA98435068_XNAS_CDNS_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000813672",
+      "company_name": "CADENCE DESIGN SYSTEMS INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "SOFI",
+      "security_id": "ARX_SEC_DA8502C94355",
+      "association_id": "ASSOC_ARX_SEC_DA8502C94355_XNAS_SOFI_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001818874",
+      "company_name": "SoFi Technologies, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ISRG",
+      "security_id": "ARX_SEC_C827F9A35C27",
+      "association_id": "ASSOC_ARX_SEC_C827F9A35C27_XNAS_ISRG_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001035267",
+      "company_name": "INTUITIVE SURGICAL INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "CIEN",
+      "security_id": "ARX_SEC_33BD897CA8FA",
+      "association_id": "ASSOC_ARX_SEC_33BD897CA8FA_XNYS_CIEN_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000936395",
+      "company_name": "CIENA CORP",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "VST",
+      "security_id": "ARX_SEC_F85111DD9311",
+      "association_id": "ASSOC_ARX_SEC_F85111DD9311_XNYS_VST_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001692819",
+      "company_name": "Vistra Corp.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "RTX",
+      "security_id": "ARX_SEC_C14429DD1287",
+      "association_id": "ASSOC_ARX_SEC_C14429DD1287_XNYS_RTX_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000101829",
+      "company_name": "RTX Corp",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "SBUX",
+      "security_id": "ARX_SEC_EA7223331010",
+      "association_id": "ASSOC_ARX_SEC_EA7223331010_XNAS_SBUX_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000829224",
+      "company_name": "STARBUCKS CORP",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "NXPI",
+      "security_id": "ARX_SEC_17DA3FE155B3",
+      "association_id": "ASSOC_ARX_SEC_17DA3FE155B3_XNAS_NXPI_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001413447",
+      "company_name": "NXP Semiconductors N.V.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "UNP",
+      "security_id": "ARX_SEC_F839A62DFF4B",
+      "association_id": "ASSOC_ARX_SEC_F839A62DFF4B_XNYS_UNP_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000100885",
+      "company_name": "UNION PACIFIC CORP",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "FTNT",
+      "security_id": "ARX_SEC_ADD1AAC27385",
+      "association_id": "ASSOC_ARX_SEC_ADD1AAC27385_XNAS_FTNT_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001262039",
+      "company_name": "Fortinet, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ZS",
+      "security_id": "ARX_SEC_27324B088572",
+      "association_id": "ASSOC_ARX_SEC_27324B088572_XNAS_ZS_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001713683",
+      "company_name": "Zscaler, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "MCHP",
+      "security_id": "ARX_SEC_19D399D87086",
+      "association_id": "ASSOC_ARX_SEC_19D399D87086_XNAS_MCHP_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000827054",
+      "company_name": "MICROCHIP TECHNOLOGY INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "MDB",
+      "security_id": "ARX_SEC_9AF36A409CD1",
+      "association_id": "ASSOC_ARX_SEC_9AF36A409CD1_XNAS_MDB_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001441816",
+      "company_name": "MongoDB, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "PWR",
+      "security_id": "ARX_SEC_DF5ACADD290D",
+      "association_id": "ASSOC_ARX_SEC_DF5ACADD290D_XNYS_PWR_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001050915",
+      "company_name": "QUANTA SERVICES, INC.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "TGT",
+      "security_id": "ARX_SEC_D38FF8E84F3E",
+      "association_id": "ASSOC_ARX_SEC_D38FF8E84F3E_XNYS_TGT_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000027419",
+      "company_name": "TARGET CORP",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "LMT",
+      "security_id": "ARX_SEC_ABF01803332F",
+      "association_id": "ASSOC_ARX_SEC_ABF01803332F_XNYS_LMT_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000936468",
+      "company_name": "LOCKHEED MARTIN CORP",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "VRTX",
+      "security_id": "ARX_SEC_8882F1460B8E",
+      "association_id": "ASSOC_ARX_SEC_8882F1460B8E_XNAS_VRTX_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000875320",
+      "company_name": "VERTEX PHARMACEUTICALS INC / MA",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "CMG",
+      "security_id": "ARX_SEC_02265A0EF8C1",
+      "association_id": "ASSOC_ARX_SEC_02265A0EF8C1_XNYS_CMG_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001058090",
+      "company_name": "CHIPOTLE MEXICAN GRILL INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "PYPL",
+      "security_id": "ARX_SEC_6C808E5504C8",
+      "association_id": "ASSOC_ARX_SEC_6C808E5504C8_XNAS_PYPL_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001633917",
+      "company_name": "PayPal Holdings, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "FIX",
+      "security_id": "ARX_SEC_8E5D6C214D2D",
+      "association_id": "ASSOC_ARX_SEC_8E5D6C214D2D_XNYS_FIX_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001035983",
+      "company_name": "COMFORT SYSTEMS USA INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "REGN",
+      "security_id": "ARX_SEC_8E6814FE24CD",
+      "association_id": "ASSOC_ARX_SEC_8E6814FE24CD_XNAS_REGN_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000872589",
+      "company_name": "REGENERON PHARMACEUTICALS, INC.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "TEAM",
+      "security_id": "ARX_SEC_02051BB3295D",
+      "association_id": "ASSOC_ARX_SEC_02051BB3295D_XNAS_TEAM_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001650372",
+      "company_name": "Atlassian Corp",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "MARA",
+      "security_id": "ARX_SEC_F082FA5C6F0B",
+      "association_id": "ASSOC_ARX_SEC_F082FA5C6F0B_XNAS_MARA_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001507605",
+      "company_name": "MARA Holdings, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "NOC",
+      "security_id": "ARX_SEC_6250BE495075",
+      "association_id": "ASSOC_ARX_SEC_6250BE495075_XNYS_NOC_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001133421",
+      "company_name": "NORTHROP GRUMMAN CORP /DE/",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ROST",
+      "security_id": "ARX_SEC_27A72A082BAD",
+      "association_id": "ASSOC_ARX_SEC_27A72A082BAD_XNAS_ROST_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000745732",
+      "company_name": "ROSS STORES, INC.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "HON",
+      "security_id": "ARX_SEC_5A590025E17E",
+      "association_id": "ASSOC_ARX_SEC_5A590025E17E_XNAS_HON_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000773840",
+      "company_name": "HONEYWELL INTERNATIONAL INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "LULU",
+      "security_id": "ARX_SEC_B90F7BB3A58C",
+      "association_id": "ASSOC_ARX_SEC_B90F7BB3A58C_XNAS_LULU_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001397187",
+      "company_name": "lululemon athletica inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "TDG",
+      "security_id": "ARX_SEC_22282BB3674F",
+      "association_id": "ASSOC_ARX_SEC_22282BB3674F_XNYS_TDG_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001260221",
+      "company_name": "TransDigm Group INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "MNST",
+      "security_id": "ARX_SEC_AFE834214958",
+      "association_id": "ASSOC_ARX_SEC_AFE834214958_XNAS_MNST_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000865752",
+      "company_name": "Monster Beverage Corp",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "FSLR",
+      "security_id": "ARX_SEC_546084E5CD12",
+      "association_id": "ASSOC_ARX_SEC_546084E5CD12_XNAS_FSLR_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001274494",
+      "company_name": "FIRST SOLAR, INC.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "WDAY",
+      "security_id": "ARX_SEC_23443D139EA4",
+      "association_id": "ASSOC_ARX_SEC_23443D139EA4_XNAS_WDAY_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001327811",
+      "company_name": "Workday, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ONON",
+      "security_id": "ARX_SEC_0856CBDE4B4C",
+      "association_id": "ASSOC_ARX_SEC_0856CBDE4B4C_XNYS_ONON_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001858985",
+      "company_name": "On Holding AG",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "HUBS",
+      "security_id": "ARX_SEC_BA23783A6437",
+      "association_id": "ASSOC_ARX_SEC_BA23783A6437_XNYS_HUBS_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001404655",
+      "company_name": "HUBSPOT INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "DXCM",
+      "security_id": "ARX_SEC_47202947540E",
+      "association_id": "ASSOC_ARX_SEC_47202947540E_XNAS_DXCM_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001093557",
+      "company_name": "DEXCOM INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ALNY",
+      "security_id": "ARX_SEC_64DAB319A432",
+      "association_id": "ASSOC_ARX_SEC_64DAB319A432_XNAS_ALNY_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001178670",
+      "company_name": "ALNYLAM PHARMACEUTICALS, INC.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "EME",
+      "security_id": "ARX_SEC_20F191FAE74D",
+      "association_id": "ASSOC_ARX_SEC_20F191FAE74D_XNYS_EME_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000105634",
+      "company_name": "EMCOR Group, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "AFRM",
+      "security_id": "ARX_SEC_0677B1120327",
+      "association_id": "ASSOC_ARX_SEC_0677B1120327_XNAS_AFRM_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001820953",
+      "company_name": "Affirm Holdings, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "DECK",
+      "security_id": "ARX_SEC_3BA395938C4C",
+      "association_id": "ASSOC_ARX_SEC_3BA395938C4C_XNYS_DECK_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000910521",
+      "company_name": "DECKERS OUTDOOR CORP",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "BIIB",
+      "security_id": "ARX_SEC_6D5C456D8BB5",
+      "association_id": "ASSOC_ARX_SEC_6D5C456D8BB5_XNAS_BIIB_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000875045",
+      "company_name": "BIOGEN INC.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ULTA",
+      "security_id": "ARX_SEC_05F69742132C",
+      "association_id": "ASSOC_ARX_SEC_05F69742132C_XNAS_ULTA_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001403568",
+      "company_name": "Ulta Beauty, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "DPZ",
+      "security_id": "ARX_SEC_196CD0740411",
+      "association_id": "ASSOC_ARX_SEC_196CD0740411_XNAS_DPZ_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001286681",
+      "company_name": "DOMINOS PIZZA INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "NVR",
+      "security_id": "ARX_SEC_C390DA7515C5",
+      "association_id": "ASSOC_ARX_SEC_C390DA7515C5_XNYS_NVR_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000906163",
+      "company_name": "NVR INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "PODD",
+      "security_id": "ARX_SEC_71F0B20DDFC2",
+      "association_id": "ASSOC_ARX_SEC_71F0B20DDFC2_XNAS_PODD_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001145197",
+      "company_name": "INSULET CORP",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "CELH",
+      "security_id": "ARX_SEC_55D0CCEA0064",
+      "association_id": "ASSOC_ARX_SEC_55D0CCEA0064_XNAS_CELH_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001341766",
+      "company_name": "Celsius Holdings, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "MEDP",
+      "security_id": "ARX_SEC_70044A01D17D",
+      "association_id": "ASSOC_ARX_SEC_70044A01D17D_XNAS_MEDP_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001668397",
+      "company_name": "Medpace Holdings, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ENPH",
+      "security_id": "ARX_SEC_D27B889D4694",
+      "association_id": "ASSOC_ARX_SEC_D27B889D4694_XNAS_ENPH_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001463101",
+      "company_name": "Enphase Energy, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "DUOL",
+      "security_id": "ARX_SEC_5FE499FF050D",
+      "association_id": "ASSOC_ARX_SEC_5FE499FF050D_XNAS_DUOL_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001562088",
+      "company_name": "Duolingo, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ELF",
+      "security_id": "ARX_SEC_5ECDFE4C0D61",
+      "association_id": "ASSOC_ARX_SEC_5ECDFE4C0D61_XNYS_ELF_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001600033",
+      "company_name": "e.l.f. Beauty, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "LNTH",
+      "security_id": "ARX_SEC_FB1E08AD4D1F",
+      "association_id": "ASSOC_ARX_SEC_FB1E08AD4D1F_XNAS_LNTH_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001521036",
+      "company_name": "Lantheus Holdings, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ARWR",
+      "security_id": "ARX_SEC_0FC7F0574580",
+      "association_id": "ASSOC_ARX_SEC_0FC7F0574580_XNAS_ARWR_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000879407",
+      "company_name": "ARROWHEAD PHARMACEUTICALS, INC.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "SEDG",
+      "security_id": "ARX_SEC_9430371427D9",
+      "association_id": "ASSOC_ARX_SEC_9430371427D9_XNAS_SEDG_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001419612",
+      "company_name": "SOLAREDGE TECHNOLOGIES, INC.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "CHRD",
+      "security_id": "ARX_SEC_33F83E10EB24",
+      "association_id": "ASSOC_ARX_SEC_33F83E10EB24_XNAS_CHRD_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001486159",
+      "company_name": "Chord Energy Corp",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "CRSP",
+      "security_id": "ARX_SEC_50A0437954AB",
+      "association_id": "ASSOC_ARX_SEC_50A0437954AB_XNAS_CRSP_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001674416",
+      "company_name": "CRISPR Therapeutics AG",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "TMDX",
+      "security_id": "ARX_SEC_F15EDA9A42F0",
+      "association_id": "ASSOC_ARX_SEC_F15EDA9A42F0_XNAS_TMDX_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001756262",
+      "company_name": "TransMedics Group, Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ACLS",
+      "security_id": "ARX_SEC_FD679186E10C",
+      "association_id": "ASSOC_ARX_SEC_FD679186E10C_XNAS_ACLS_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001113232",
+      "company_name": "AXCELIS TECHNOLOGIES INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "POWI",
+      "security_id": "ARX_SEC_AE0212952B79",
+      "association_id": "ASSOC_ARX_SEC_AE0212952B79_XNAS_POWI_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000833640",
+      "company_name": "POWER INTEGRATIONS INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "ABT",
+      "security_id": "ARX_SEC_BA1EA7C591A9",
+      "association_id": "ASSOC_ARX_SEC_BA1EA7C591A9_XNYS_ABT_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000001800",
+      "company_name": "ABBOTT LABORATORIES",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "BAC",
+      "security_id": "ARX_SEC_9213246C9B74",
+      "association_id": "ASSOC_ARX_SEC_9213246C9B74_XNYS_BAC_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000070858",
+      "company_name": "BANK OF AMERICA CORP /DE/",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "CSCO",
+      "security_id": "ARX_SEC_A772C2FA2AF2",
+      "association_id": "ASSOC_ARX_SEC_A772C2FA2AF2_XNAS_CSCO_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000858877",
+      "company_name": "CISCO SYSTEMS, INC.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "DIS",
+      "security_id": "ARX_SEC_124363A43E44",
+      "association_id": "ASSOC_ARX_SEC_124363A43E44_XNYS_DIS_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001744489",
+      "company_name": "Walt Disney Co",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "GOOG",
+      "security_id": "ARX_SEC_A11A24D442E2",
+      "association_id": "ASSOC_ARX_SEC_A11A24D442E2_XNAS_GOOG_2026-10-17",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001652044",
+      "company_name": "Alphabet Inc. Class C Capital Stock",
+      "identity_disposition": "PILOT_ESTABLISHED_DURABLE"
+    },
+    {
+      "symbol": "JNJ",
+      "security_id": "ARX_SEC_A893EE591BCF",
+      "association_id": "ASSOC_ARX_SEC_A893EE591BCF_XNYS_JNJ_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000200406",
+      "company_name": "JOHNSON & JOHNSON",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "JPM",
+      "security_id": "ARX_SEC_55AF67997EC6",
+      "association_id": "ASSOC_ARX_SEC_55AF67997EC6_XNYS_JPM_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000019617",
+      "company_name": "JPMORGAN CHASE & CO",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "MRK",
+      "security_id": "ARX_SEC_90DAA920B8E2",
+      "association_id": "ASSOC_ARX_SEC_90DAA920B8E2_XNYS_MRK_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000310158",
+      "company_name": "Merck & Co., Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "PFE",
+      "security_id": "ARX_SEC_4E8A19CC9BB8",
+      "association_id": "ASSOC_ARX_SEC_4E8A19CC9BB8_XNYS_PFE_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000078003",
+      "company_name": "PFIZER INC",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "PG",
+      "security_id": "ARX_SEC_0EB3697E0866",
+      "association_id": "ASSOC_ARX_SEC_0EB3697E0866_XNYS_PG_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0000080424",
+      "company_name": "PROCTER & GAMBLE Co",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    },
+    {
+      "symbol": "WMT",
+      "security_id": "ARX_SEC_C54A88FF90FC",
+      "association_id": "ASSOC_ARX_SEC_C54A88FF90FC_XNAS_WMT_2026-10-19",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000104169",
+      "company_name": "Walmart Inc.",
+      "identity_disposition": "PROPOSED_UNAPPROVED"
+    }
+  ]
+}

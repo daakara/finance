@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "SMCI",
+    "name": "Super Micro Computer, Inc. Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001375365",
+    "composite_figi": "BBG000MYZDJ3",
+    "share_class_figi": "BBG001SQGH95",
+    "last_updated_utc": "2026-10-18T06:10:11.415950962Z"
+  },
+  "status": "OK"
+}

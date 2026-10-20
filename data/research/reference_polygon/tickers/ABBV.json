@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "ABBV",
+    "name": "ABBVIE INC.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001551152",
+    "composite_figi": "BBG0025Y4RY4",
+    "share_class_figi": "BBG0025Y4RZ3",
+    "last_updated_utc": "2026-10-18T06:10:11.413564151Z"
+  },
+  "status": "OK"
+}

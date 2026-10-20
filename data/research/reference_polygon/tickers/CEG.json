@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "CEG",
+    "name": "Constellation Energy Corporation Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001868275",
+    "composite_figi": "BBG014KFRNP7",
+    "share_class_figi": "BBG014KFRPJ9",
+    "last_updated_utc": "2026-10-18T06:10:11.414024368Z"
+  },
+  "status": "OK"
+}

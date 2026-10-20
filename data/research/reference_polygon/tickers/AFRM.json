@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "AFRM",
+    "name": "Affirm Holdings, Inc. Class A Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001820953",
+    "composite_figi": "BBG00Y7BP8Y1",
+    "share_class_figi": "BBG00Y7BP8Z0",
+    "last_updated_utc": "2026-10-18T06:10:11.413676916Z"
+  },
+  "status": "OK"
+}

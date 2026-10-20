@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "WDAY",
+    "name": "Workday, Inc. Class A Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001327811",
+    "composite_figi": "BBG000VC0T95",
+    "share_class_figi": "BBG001T21KQ7",
+    "last_updated_utc": "2026-10-18T06:10:11.416212711Z"
+  },
+  "status": "OK"
+}

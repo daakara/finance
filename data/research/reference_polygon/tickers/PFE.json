@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "PFE",
+    "name": "Pfizer Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000078003",
+    "composite_figi": "BBG000BR2B91",
+    "share_class_figi": "BBG001S5V466",
+    "last_updated_utc": "2026-10-18T06:10:11.415717908Z"
+  },
+  "status": "OK"
+}

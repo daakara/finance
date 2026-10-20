@@ -1,0 +1,15 @@
+{
+  "results": {
+    "ticker": "IREN",
+    "name": "IREN Limited Ordinary Shares",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001878848",
+    "last_updated_utc": "2026-10-18T06:10:11.415217313Z"
+  },
+  "status": "OK"
+}

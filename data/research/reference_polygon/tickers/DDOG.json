@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "DDOG",
+    "name": "Datadog, Inc. Class A Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001561550",
+    "composite_figi": "BBG003NJHZT9",
+    "share_class_figi": "BBG003NJHZW5",
+    "last_updated_utc": "2026-10-18T06:10:11.414168974Z"
+  },
+  "status": "OK"
+}

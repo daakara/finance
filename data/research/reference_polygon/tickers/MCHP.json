@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "MCHP",
+    "name": "Microchip Technology Inc",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000827054",
+    "composite_figi": "BBG000BHCP19",
+    "share_class_figi": "BBG001S787B5",
+    "last_updated_utc": "2026-10-18T06:10:11.415490254Z"
+  },
+  "status": "OK"
+}

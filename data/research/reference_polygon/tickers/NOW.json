@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "NOW",
+    "name": "SERVICENOW, INC.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001373715",
+    "composite_figi": "BBG000M1R011",
+    "share_class_figi": "BBG001T4JFC0",
+    "last_updated_utc": "2026-10-18T06:10:11.415612988Z"
+  },
+  "status": "OK"
+}

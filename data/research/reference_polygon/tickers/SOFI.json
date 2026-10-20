@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "SOFI",
+    "name": "SoFi Technologies, Inc. Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001818874",
+    "composite_figi": "BBG00YB1ZD58",
+    "share_class_figi": "BBG00YB1ZF08",
+    "last_updated_utc": "2026-10-18T06:10:11.415968145Z"
+  },
+  "status": "OK"
+}

@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "VOO",
+    "name": "Vanguard S&P 500 ETF",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "ARCX",
+    "type": "ETF",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000036405",
+    "composite_figi": "BBG0015VYNT4",
+    "share_class_figi": "BBG001TC6MC1",
+    "last_updated_utc": "2026-10-18T06:10:11.416191831Z"
+  },
+  "status": "OK"
+}

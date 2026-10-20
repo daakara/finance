@@ -1,0 +1,172 @@
+{
+  "generated_at_utc": "2026-10-16T19:37:11.238682+00:00",
+  "acquisition_version": "1.0.0",
+  "overall_outcome": "PARTIAL_ACQUISITION",
+  "production_population_completeness": "NOT_ESTABLISHED",
+  "attempts": [
+    {
+      "source_id": "sec_company_tickers_exchange",
+      "requested_url": "https://www.sec.gov/files/company_tickers_exchange.json",
+      "final_url": "https://www.sec.gov/files/company_tickers_exchange.json",
+      "retrieval_start_utc": "2026-10-16T19:37:09.788949+00:00",
+      "retrieval_end_utc": "2026-10-16T19:37:10.084468+00:00",
+      "http_status": 200,
+      "content_type": "application/json",
+      "byte_length": 523925,
+      "content_sha256": "d04923d674c6d0084dc56e67efd9cb5756f965366affe9d3e18d38b379ffd45f",
+      "etag": null,
+      "last_modified": "Thu, 15 Oct 2026 13:39:20 GMT",
+      "publisher_timestamp": null,
+      "acquisition_version": "1.0.0",
+      "outcome": "SUCCESS",
+      "raw_artifact_path": "C:\\Users\\akara\\Documents\\Projects\\finance-sprint-2-listing-acquisition\\data\\raw_feeds\\2026-10-16\\sec_company_tickers_exchange.json",
+      "metadata_artifact_path": "C:\\Users\\akara\\Documents\\Projects\\finance-sprint-2-listing-acquisition\\data\\raw_feeds\\2026-10-16\\sec_company_tickers_exchange.json.meta.json",
+      "error_message": null
+    },
+    {
+      "source_id": "nasdaq_listed_directory",
+      "requested_url": "https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt",
+      "final_url": "https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt",
+      "retrieval_start_utc": "2026-10-16T19:37:10.119876+00:00",
+      "retrieval_end_utc": "2026-10-16T19:37:10.848134+00:00",
+      "http_status": 200,
+      "content_type": "text/plain",
+      "byte_length": 349723,
+      "content_sha256": "67f42dd0594aff8e29634ec9e42b561319cbb74340829098cbfbf9b4517fe272",
+      "etag": "\"80b07b65985ddd1:0\"",
+      "last_modified": "Fri, 16 Oct 2026 18:01:41 GMT",
+      "publisher_timestamp": "1016202614:01",
+      "acquisition_version": "1.0.0",
+      "outcome": "SUCCESS",
+      "raw_artifact_path": "C:\\Users\\akara\\Documents\\Projects\\finance-sprint-2-listing-acquisition\\data\\raw_feeds\\2026-10-16\\nasdaq_listed_directory.txt",
+      "metadata_artifact_path": "C:\\Users\\akara\\Documents\\Projects\\finance-sprint-2-listing-acquisition\\data\\raw_feeds\\2026-10-16\\nasdaq_listed_directory.txt.meta.json",
+      "error_message": null
+    },
+    {
+      "source_id": "other_listed_directory",
+      "requested_url": "https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt",
+      "final_url": "https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt",
+      "retrieval_start_utc": "2026-10-16T19:37:10.871788+00:00",
+      "retrieval_end_utc": "2026-10-16T19:37:11.182988+00:00",
+      "http_status": 200,
+      "content_type": "text/plain",
+      "byte_length": 543140,
+      "content_sha256": "a0cb851a772098d64830304bf7e7a7d1ca1cbd8421da20a6bfbec9a336243792",
+      "etag": "\"80b07b65985ddd1:0\"",
+      "last_modified": "Fri, 16 Oct 2026 18:01:41 GMT",
+      "publisher_timestamp": "1016202614:01",
+      "acquisition_version": "1.0.0",
+      "outcome": "SUCCESS",
+      "raw_artifact_path": "C:\\Users\\akara\\Documents\\Projects\\finance-sprint-2-listing-acquisition\\data\\raw_feeds\\2026-10-16\\other_listed_directory.txt",
+      "metadata_artifact_path": "C:\\Users\\akara\\Documents\\Projects\\finance-sprint-2-listing-acquisition\\data\\raw_feeds\\2026-10-16\\other_listed_directory.txt.meta.json",
+      "error_message": null
+    }
+  ],
+  "parsed_summaries": {
+    "sec_company_tickers_exchange": {
+      "source_id": "sec_company_tickers_exchange",
+      "feed_type": "SEC_COMPANY_TICKERS_EXCHANGE",
+      "content_sha256": "d04923d674c6d0084dc56e67efd9cb5756f965366affe9d3e18d38b379ffd45f",
+      "physical_line_count": 1,
+      "metadata_row_count": 1,
+      "data_row_count": 10276,
+      "malformed_row_count": 168,
+      "unique_record_count": 10276,
+      "is_usable": false,
+      "metadata_fields": {
+        "fields": [
+          "cik",
+          "name",
+          "ticker",
+          "exchange"
+        ],
+        "total_count": null,
+        "sample_count": null
+      },
+      "sample_malformed_reasons": [
+        "Row contains missing or invalid CIK, ticker, or exchange",
+        "Row contains missing or invalid CIK, ticker, or exchange",
+        "Row contains missing or invalid CIK, ticker, or exchange",
+        "Row contains missing or invalid CIK, ticker, or exchange",
+        "Row contains missing or invalid CIK, ticker, or exchange",
+        "Row contains missing or invalid CIK, ticker, or exchange",
+        "Row contains missing or invalid CIK, ticker, or exchange",
+        "Row contains missing or invalid CIK, ticker, or exchange",
+        "Row contains missing or invalid CIK, ticker, or exchange",
+        "Row contains missing or invalid CIK, ticker, or exchange"
+      ]
+    },
+    "nasdaq_listed_directory": {
+      "source_id": "nasdaq_listed_directory",
+      "feed_type": "NASDAQ_LISTED_DIRECTORY",
+      "content_sha256": "67f42dd0594aff8e29634ec9e42b561319cbb74340829098cbfbf9b4517fe272",
+      "physical_line_count": 5636,
+      "metadata_row_count": 2,
+      "data_row_count": 5634,
+      "malformed_row_count": 0,
+      "unique_record_count": 5634,
+      "is_usable": true,
+      "metadata_fields": {
+        "header": [
+          "Symbol",
+          "Security Name",
+          "Market Category",
+          "Test Issue",
+          "Financial Status",
+          "Round Lot Size",
+          "ETF",
+          "NextShares"
+        ],
+        "footer": {
+          "file_creation_time_raw": "1016202614:01",
+          "footer_line": "File Creation Time: 1016202614:01|||||||"
+        },
+        "file_creation_time": "1016202614:01"
+      },
+      "sample_malformed_reasons": []
+    },
+    "other_listed_directory": {
+      "source_id": "other_listed_directory",
+      "feed_type": "OTHER_LISTED_DIRECTORY",
+      "content_sha256": "a0cb851a772098d64830304bf7e7a7d1ca1cbd8421da20a6bfbec9a336243792",
+      "physical_line_count": 7676,
+      "metadata_row_count": 2,
+      "data_row_count": 7674,
+      "malformed_row_count": 0,
+      "unique_record_count": 7674,
+      "is_usable": true,
+      "metadata_fields": {
+        "header": [
+          "ACT Symbol",
+          "Security Name",
+          "Exchange",
+          "CQS Symbol",
+          "ETF",
+          "Round Lot Size",
+          "Test Issue",
+          "NASDAQ Symbol"
+        ],
+        "footer": {
+          "file_creation_time_raw": "1016202614:01",
+          "footer_line": "File Creation Time: 1016202614:01||||||"
+        },
+        "file_creation_time": "1016202614:01"
+      },
+      "sample_malformed_reasons": []
+    }
+  },
+  "match_diagnostics": null,
+  "coverage_limitations": [
+    "Directory presence does not establish global instrument primary listing or trading suspension status.",
+    "SEC company_tickers_exchange is issuer-level (CIK-based); multiple share classes share one CIK.",
+    "OTC and unlisted securities are excluded from exchange directory feeds.",
+    "Foreign issuers listed on US exchanges (ADRs, ordinary shares) have distinct regulatory reporting requirements.",
+    "Market coverage denominator across full US-listed population is NOT_ESTABLISHED by directory join alone."
+  ],
+  "unresolved_decisions": [
+    "Authoritative venue allowlist definition (NYSE, NASDAQ, AMEX, ARCA, BATS vs OTC/regional).",
+    "Handling of share classes, dual listings, and warrants/units in scanner eligibility.",
+    "Authoritative source for primary listing verification and active trading status.",
+    "OpenFIGI integration model (batch licensing vs free public tier bounds)."
+  ]
+}

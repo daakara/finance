@@ -49,6 +49,19 @@ jobs:
       run: |
         pytest tests/test_fundamentals_api.py tests/test_sourced_fundamentals_pilot.py -v
 
+    - name: Run Historical SIP Ingestion & Registration Expansion Suite
+      env:
+        PYTHONPATH: "."
+      run: |
+        pytest tests/test_bounded_150_candidate_expansion.py \
+               tests/test_identity_adoption_dry_run.py \
+               tests/test_identity_persistence.py \
+               tests/test_three_candidate_registration_plan.py \
+               tests/test_registration_execution_wrapper.py \
+               tests/test_alpaca_historical_sip_ingestion.py \
+               tests/test_market_db.py \
+               tests/test_market_evidence_f13a.py -v
+
     - name: Run Tier 3 Pre-Flight Release Gate
       if: github.base_ref == 'main' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
       env:
@@ -90,6 +103,8 @@ jobs:
         python -m py_compile analyst_dashboard/analyzers/gem_screener.py
         python -m py_compile analyst_dashboard/analyzers/optimal_execution.py
         python -m py_compile analyst_dashboard/analyzers/confluence_engine.py
+        python -m py_compile scripts/ingest_alpaca_historical.py
+        python -m py_compile scripts/apply_registration_plan_wrapper.py
 
   build_and_export:
     name: Static SSG Export & Integrity Gate

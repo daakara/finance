@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "INTC",
+    "name": "Intel Corp",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000050863",
+    "composite_figi": "BBG000C0G1D1",
+    "share_class_figi": "BBG001S5SF65",
+    "last_updated_utc": "2026-10-18T06:10:11.415204038Z"
+  },
+  "status": "OK"
+}

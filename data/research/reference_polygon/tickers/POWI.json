@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "POWI",
+    "name": "Power Integrations Inc",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000833640",
+    "composite_figi": "BBG000BTT3D1",
+    "share_class_figi": "BBG001S73RW3",
+    "last_updated_utc": "2026-10-18T06:10:11.415748075Z"
+  },
+  "status": "OK"
+}

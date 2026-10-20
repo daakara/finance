@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "IWM",
+    "name": "iShares Russell 2000 ETF",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "ARCX",
+    "type": "ETF",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001100663",
+    "composite_figi": "BBG000CGC9C4",
+    "share_class_figi": "BBG001SFC7Y7",
+    "last_updated_utc": "2026-10-18T06:10:11.415231029Z"
+  },
+  "status": "OK"
+}

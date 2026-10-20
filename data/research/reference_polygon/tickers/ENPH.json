@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "ENPH",
+    "name": "Enphase Energy, Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001463101",
+    "composite_figi": "BBG001R3MNY9",
+    "share_class_figi": "BBG001V28NC6",
+    "last_updated_utc": "2026-10-18T06:10:11.414270929Z"
+  },
+  "status": "OK"
+}

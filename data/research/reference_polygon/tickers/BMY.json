@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "BMY",
+    "name": "Bristol-Myers Squibb Co.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000014272",
+    "composite_figi": "BBG000DQLV23",
+    "share_class_figi": "BBG001S8N8J6",
+    "last_updated_utc": "2026-10-18T06:10:11.413909029Z"
+  },
+  "status": "OK"
+}

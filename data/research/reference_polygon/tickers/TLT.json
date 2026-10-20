@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "TLT",
+    "name": "iShares 20+ Year Treasury Bond ETF",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "ETF",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001100663",
+    "composite_figi": "BBG000BJKYW3",
+    "share_class_figi": "BBG001S8MLN3",
+    "last_updated_utc": "2026-10-18T06:10:11.416085999Z"
+  },
+  "status": "OK"
+}

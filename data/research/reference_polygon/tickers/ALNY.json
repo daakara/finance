@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "ALNY",
+    "name": "Alnylam Pharmaceuticals, Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001178670",
+    "composite_figi": "BBG000BFGNJ5",
+    "share_class_figi": "BBG001S7FTC8",
+    "last_updated_utc": "2026-10-18T06:10:11.413740367Z"
+  },
+  "status": "OK"
+}

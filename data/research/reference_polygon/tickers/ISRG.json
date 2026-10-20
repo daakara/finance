@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "ISRG",
+    "name": "Intuitive Surgical Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001035267",
+    "composite_figi": "BBG000BJPDZ1",
+    "share_class_figi": "BBG001S7XR78",
+    "last_updated_utc": "2026-10-18T06:10:11.415222032Z"
+  },
+  "status": "OK"
+}

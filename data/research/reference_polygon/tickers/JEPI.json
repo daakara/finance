@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "JEPI",
+    "name": "JPMorgan Equity Premium Income ETF",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "ARCX",
+    "type": "ETF",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001485894",
+    "composite_figi": "BBG00TSG0RS0",
+    "share_class_figi": "BBG00TSG0SK6",
+    "last_updated_utc": "2026-10-18T06:10:11.415245717Z"
+  },
+  "status": "OK"
+}

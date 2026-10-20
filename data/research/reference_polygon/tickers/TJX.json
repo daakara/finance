@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "TJX",
+    "name": "TJX Companies, Inc. (The)",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000109198",
+    "composite_figi": "BBG000BV8DN6",
+    "share_class_figi": "BBG001S5WQ93",
+    "last_updated_utc": "2026-10-18T06:10:11.416080549Z"
+  },
+  "status": "OK"
+}

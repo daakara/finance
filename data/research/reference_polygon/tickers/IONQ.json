@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "IONQ",
+    "name": "IonQ, Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001824920",
+    "composite_figi": "BBG00XZP0LB4",
+    "share_class_figi": "BBG00XZP0LC3",
+    "last_updated_utc": "2026-10-18T06:10:11.415207705Z"
+  },
+  "status": "OK"
+}

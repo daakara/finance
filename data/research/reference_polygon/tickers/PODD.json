@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "PODD",
+    "name": "Insulet Corporation",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001145197",
+    "composite_figi": "BBG000R7XX87",
+    "share_class_figi": "BBG001SRF439",
+    "last_updated_utc": "2026-10-18T06:10:11.415746011Z"
+  },
+  "status": "OK"
+}

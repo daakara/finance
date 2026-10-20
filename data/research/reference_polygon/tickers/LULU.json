@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "LULU",
+    "name": "lululemon athletica inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001397187",
+    "composite_figi": "BBG000R8ZVD1",
+    "share_class_figi": "BBG001STBM75",
+    "last_updated_utc": "2026-10-18T06:10:11.415423286Z"
+  },
+  "status": "OK"
+}

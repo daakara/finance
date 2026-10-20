@@ -1,0 +1,102 @@
+{
+  "metadata": {
+    "database_identifier": "/root/analyst_dashboard/data/identity.db",
+    "export_format_version": "1.0.0",
+    "production_target_binding": "BOUND_AUTHENTIC_LIVE_PRODUCTION",
+    "freshness_status": "FRESH_LIVE_PRODUCTION_OBSERVATION",
+    "replica_provenance": "LIVE_PRODUCTION_STORE_READ_ONLY_EXPORT",
+    "provenance_notes": "Authentic read-only export (mode=ro) of live production identity store /root/analyst_dashboard/data/identity.db on Railway container tranquil-radiance (service web, environment production) captured at 2026-10-20T06:04:36.729550+00:00 (reconciling earlier local Europe/Berlin wall-clock timestamp 01:27:05). Verified 3 established pilot entities (AAPL, GOOG, GOOGL) registered under historical plan PLAN_ADOPT_3C5D8B5E3D39 with exact matching digest b881778ac5370601174838271c918a1e1dcae7b4522b2bfc7b76a78e622e87e7.",
+    "target_environment": "production",
+    "service": "web",
+    "project_id": "a339a92a-7236-4ac0-9a3a-d7ad440f9690",
+    "serving_release_sha": "b816f773cfbc6481d28413e2758a362ac153e995",
+    "deployment_id": "43601810-dc39-4127-b465-a90caaa31734",
+    "readback_timestamp_utc": "2026-10-20T06:04:36Z",
+    "pilot_entities_count": 3,
+    "pilot_associations_count": 3,
+    "retained_pilot_symbols": [
+      "AAPL",
+      "GOOG",
+      "GOOGL"
+    ],
+    "target_state_digest": "b881778ac5370601174838271c918a1e1dcae7b4522b2bfc7b76a78e622e87e7"
+  },
+  "state": {
+    "security_registry": {
+      "ARX_SEC_0B4C728FE0BE": {
+        "internal_security_id": "ARX_SEC_0B4C728FE0BE",
+        "issuer_cik": "0000320193",
+        "primary_symbol": "AAPL",
+        "share_class": null,
+        "created_at_utc": "2026-10-18T15:53:01.112267+00:00",
+        "status": "ACTIVE",
+        "continuity_basis": "ADOPTED_UNDER_REVIEWED_PLAN",
+        "certifies_continuity": false
+      },
+      "ARX_SEC_A11A24D442E2": {
+        "internal_security_id": "ARX_SEC_A11A24D442E2",
+        "issuer_cik": "0001652044",
+        "primary_symbol": "GOOG",
+        "share_class": "CLASS_C",
+        "created_at_utc": "2026-10-18T15:53:01.112267+00:00",
+        "status": "ACTIVE",
+        "continuity_basis": "ADOPTED_UNDER_REVIEWED_PLAN",
+        "certifies_continuity": false
+      },
+      "ARX_SEC_B7EF9ED7A35A": {
+        "internal_security_id": "ARX_SEC_B7EF9ED7A35A",
+        "issuer_cik": "0001652044",
+        "primary_symbol": "GOOGL",
+        "share_class": "CLASS_A",
+        "created_at_utc": "2026-10-18T15:53:01.112267+00:00",
+        "status": "ACTIVE",
+        "continuity_basis": "ADOPTED_UNDER_REVIEWED_PLAN",
+        "certifies_continuity": false
+      }
+    },
+    "association_ledger": {
+      "ASSOC_ARX_SEC_0B4C728FE0BE_XNAS_AAPL_2026-10-17": {
+        "association_id": "ASSOC_ARX_SEC_0B4C728FE0BE_XNAS_AAPL_2026-10-17",
+        "internal_security_id": "ARX_SEC_0B4C728FE0BE",
+        "symbol": "AAPL",
+        "operating_mic": "XNAS",
+        "effective_from": "2026-10-17",
+        "effective_to": null,
+        "source_reference": "ADOPTED_PLAN_PLAN_ADOPT_3C5D8B5E3D39",
+        "is_disputed": false,
+        "dispute_reason": null
+      },
+      "ASSOC_ARX_SEC_A11A24D442E2_XNAS_GOOG_2026-10-17": {
+        "association_id": "ASSOC_ARX_SEC_A11A24D442E2_XNAS_GOOG_2026-10-17",
+        "internal_security_id": "ARX_SEC_A11A24D442E2",
+        "symbol": "GOOG",
+        "operating_mic": "XNAS",
+        "effective_from": "2026-10-17",
+        "effective_to": null,
+        "source_reference": "ADOPTED_PLAN_PLAN_ADOPT_3C5D8B5E3D39",
+        "is_disputed": false,
+        "dispute_reason": null
+      },
+      "ASSOC_ARX_SEC_B7EF9ED7A35A_XNAS_GOOGL_2026-10-17": {
+        "association_id": "ASSOC_ARX_SEC_B7EF9ED7A35A_XNAS_GOOGL_2026-10-17",
+        "internal_security_id": "ARX_SEC_B7EF9ED7A35A",
+        "symbol": "GOOGL",
+        "operating_mic": "XNAS",
+        "effective_from": "2026-10-17",
+        "effective_to": null,
+        "source_reference": "ADOPTED_PLAN_PLAN_ADOPT_3C5D8B5E3D39",
+        "is_disputed": false,
+        "dispute_reason": null
+      }
+    },
+    "cik_to_securities": {
+      "0000320193": [
+        "ARX_SEC_0B4C728FE0BE"
+      ],
+      "0001652044": [
+        "ARX_SEC_A11A24D442E2",
+        "ARX_SEC_B7EF9ED7A35A"
+      ]
+    }
+  }
+}

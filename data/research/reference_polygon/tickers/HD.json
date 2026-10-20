@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "HD",
+    "name": "Home Depot, Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000354950",
+    "composite_figi": "BBG000BKZB36",
+    "share_class_figi": "BBG001S5RTW7",
+    "last_updated_utc": "2026-10-18T06:10:11.415088648Z"
+  },
+  "status": "OK"
+}
