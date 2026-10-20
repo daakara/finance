@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "CSCO",
+    "name": "Cisco Systems, Inc. Common Stock (DE)",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000858877",
+    "composite_figi": "BBG000C3J3C9",
+    "share_class_figi": "BBG001S6HC62",
+    "last_updated_utc": "2026-10-18T06:10:11.414121884Z"
+  },
+  "status": "OK"
+}

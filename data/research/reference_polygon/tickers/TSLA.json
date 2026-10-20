@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "TSLA",
+    "name": "Tesla, Inc. Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001318605",
+    "composite_figi": "BBG000N9MNX3",
+    "share_class_figi": "BBG001SQKGD7",
+    "last_updated_utc": "2026-10-18T06:10:11.416115105Z"
+  },
+  "status": "OK"
+}

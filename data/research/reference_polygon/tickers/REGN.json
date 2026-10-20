@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "REGN",
+    "name": "Regeneron Pharmaceuticals Inc",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000872589",
+    "composite_figi": "BBG000C734W3",
+    "share_class_figi": "BBG001S6PX49",
+    "last_updated_utc": "2026-10-18T06:10:11.415832616Z"
+  },
+  "status": "OK"
+}

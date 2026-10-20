@@ -1,0 +1,16 @@
+{
+  "results": {
+    "ticker": "GLX",
+    "name": "Corgi GLXY 2x Daily ETF",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "BATS",
+    "type": "ETF",
+    "active": true,
+    "currency_name": "usd",
+    "composite_figi": "BBG02317TDT3",
+    "share_class_figi": "BBG02317TFS9",
+    "last_updated_utc": "2026-10-18T06:10:11.41502184Z"
+  },
+  "status": "OK"
+}

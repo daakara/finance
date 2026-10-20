@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "ADI",
+    "name": "Analog Devices, Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000006281",
+    "composite_figi": "BBG000BB6G37",
+    "share_class_figi": "BBG001S5ND38",
+    "last_updated_utc": "2026-10-18T06:10:11.413585882Z"
+  },
+  "status": "OK"
+}

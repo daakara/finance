@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "MNST",
+    "name": "Monster Beverage Corporation",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000865752",
+    "composite_figi": "BBG008NVB1C0",
+    "share_class_figi": "BBG008NVB1F7",
+    "last_updated_utc": "2026-10-18T06:10:11.415533045Z"
+  },
+  "status": "OK"
+}

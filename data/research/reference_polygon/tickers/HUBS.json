@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "HUBS",
+    "name": "HUBSPOT, INC.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001404655",
+    "composite_figi": "BBG000N7MZ06",
+    "share_class_figi": "BBG001T53670",
+    "last_updated_utc": "2026-10-18T06:10:11.415121621Z"
+  },
+  "status": "OK"
+}

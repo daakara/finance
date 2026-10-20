@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "MA",
+    "name": "Mastercard Incorporated",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001141391",
+    "composite_figi": "BBG000F1ZSQ2",
+    "share_class_figi": "BBG001SKNNS6",
+    "last_updated_utc": "2026-10-18T06:10:11.415429818Z"
+  },
+  "status": "OK"
+}

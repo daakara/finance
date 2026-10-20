@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "artifact_id": "PROD-PROVIDER-ACCESS-VERIFICATION-2026-10-20",
+  "readback_timestamp_utc": "2026-10-20T06:05:00Z",
+  "target_container": "web (tranquil-radiance)",
+  "serving_release_sha": "b816f773cfbc6481d28413e2758a362ac153e995",
+  "polygon_verification": {
+    "production_container_verification": {
+      "key_length": 23,
+      "key_sha256": "2e8fe026e6d1c81dcba83aa0ecbdfdca8fa5958aa2e2fafe8d363984d72ecba7",
+      "endpoints_tested": {
+        "5_day_aapl": {
+          "status_code": 401,
+          "error": "Unauthorized: Unknown API Key"
+        },
+        "2_year_depth": {
+          "status_code": 401,
+          "error": "Unauthorized: Unknown API Key"
+        },
+        "missing_abbv": {
+          "status_code": 401,
+          "error": "Unauthorized: Unknown API Key"
+        }
+      },
+      "diagnosis": "Production container environment variable POLYGON_API_KEY is truncated to 23 characters (missing trailing 9 characters of standard 32-character key). Returns HTTP 401 Unauthorized."
+    },
+    "local_authorized_verification": {
+      "key_length": 32,
+      "key_sha256": "758a311ed940e872d8e48b8772a8fe77cb2c8ea39c05c03a54a72d73f1d8c199",
+      "endpoints_tested": {
+        "aapl_2026_10_16_daily": {
+          "status_code": 200,
+          "close": 248.98,
+          "volume": 59946368.51,
+          "is_consolidated_volume": true
+        }
+      },
+      "finding": "Valid 32-character Polygon key operates normally and returns full consolidated volume."
+    }
+  },
+  "alpaca_verification": {
+    "historical_completed_sessions_sip": {
+      "endpoint": "/v2/stocks/AAPL/bars?timeframe=1Day&start=2025-09-15&end=2026-10-19&feed=sip",
+      "status_code": 200,
+      "feed": "sip",
+      "bars_returned": 276,
+      "covers_builder_60_bars": true,
+      "covers_vcp_benchmark_260_bars": true,
+      "finding": "Alpaca Basic / Free Tier permits historical consolidated SIP daily bars on completed trading sessions (end <= T-1, 2026-10-19). Query returns 276 daily bars across both 60-bar builder and 260-bar benchmark windows."
+    },
+    "current_session_sip": {
+      "endpoint": "/v2/stocks/AAPL/bars?timeframe=1Day&start=2026-10-15&end=2026-10-20&feed=sip",
+      "status_code": 403,
+      "error": "Forbidden",
+      "detail": "{\"message\":\"subscription does not permit querying recent SIP data\"}",
+      "finding": "Querying current/real-time session (>= 2026-10-20) requires paid SIP subscription. HTTP 403 occurs only when request window includes current/real-time session."
+    },
+    "volume_coverage_comparison_2026_10_19": {
+      "iex_volume": 971167,
+      "sip_consolidated_volume": 34869139,
+      "iex_market_share_ratio": 0.027848,
+      "iex_market_share_percentage": "2.78%",
+      "finding": "IEX participant volume represents ~2.78% of consolidated tape volume. Under Selection Rule L04, consolidated 20-day dollar volume (>= $2.0M) is mandatory. IEX volume cannot be substituted for consolidated volume."
+    }
+  },
+  "summary_findings": {
+    "polygon": {
+      "status": "DIAGNOSED_TRUNCATED_KEY_IN_PRODUCTION",
+      "local_key_status": "FUNCTIONAL_32_CHAR_KEY",
+      "action_required": "Update production container POLYGON_API_KEY secret to full 32-character key."
+    },
+    "alpaca": {
+      "status": "HISTORICAL_SIP_AVAILABLE_REALTIME_BLOCKED",
+      "historical_sip_status": "FUNCTIONAL_COMPLETED_SESSIONS",
+      "realtime_sip_status": "BLOCKED_REQUIRES_PAID_OR_DELAYED",
+      "iex_limitation": "IEX covers only ~2.78% of volume, violating Rule L04 consolidated turnover requirement."
+    },
+    "overall_market_data_ingestion_readiness": "HISTORICAL_BACKFILL_FEASIBLE_VIA_ALPACA_SIP_OR_REMEDIED_POLYGON; REALTIME_INSPECTION_REQUIRES_COMPLETED_SESSION_WINDOW"
+  }
+}

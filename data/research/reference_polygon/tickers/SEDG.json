@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "SEDG",
+    "name": "SolarEdge Technologies, Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001419612",
+    "composite_figi": "BBG0084BBZY6",
+    "share_class_figi": "BBG0084BC0P2",
+    "last_updated_utc": "2026-10-18T06:10:11.415910765Z"
+  },
+  "status": "OK"
+}

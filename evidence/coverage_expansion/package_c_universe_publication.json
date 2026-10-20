@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "package_id": "PKG-EXPANSION-150-C-UNIVERSE-PUBLICATION",
+  "title": "Controlled Universe Publication Package (Namespace ARX_US_EQUITIES_EXPANSION_150)",
+  "description": "Non-executable universe publication specification restricted strictly to an isolated namespace for 133 Radar launch candidates.",
+  "governance_status": {
+    "executable": false,
+    "ready_for_publication_count": 0,
+    "publication_authorized": false,
+    "default_universe_switch_authorized": false,
+    "scanner_activation_authorized": false,
+    "is_authorized": false,
+    "authorized_by": null,
+    "blocking_reasons": [
+      "Product Owner exact plan approval is ABSENT",
+      "Publication authorization is FALSE",
+      "Market data backfill across production store is incomplete (61 launch candidates missing in production, 15 stale prior to session 2026-10-19)",
+      "Production identity registration is unauthorized and unapplied for 130 new candidates in /root/analyst_dashboard/data/identity.db",
+      "Consolidated market data provider access is blocked by deficient credentials (Polygon HTTP 401 Unknown Key; Alpaca SIP HTTP 403 Forbidden)"
+    ],
+    "decoupled_safeguards": {
+      "gate_12_decoupled": true,
+      "default_scanner_switch_decoupled": true,
+      "notes": "Gate 12 advancement and default scanner universe switching are operational milestones decoupled from isolated namespace publication readiness."
+    }
+  },
+  "target_namespace": {
+    "universe_id": "ARX_US_EQUITIES_EXPANSION_150",
+    "isolated": true,
+    "prior_published_pilot_namespace": "ARX_US_EQUITIES_PILOT_3C",
+    "default_scanner_universe_preserved": "ARX_US_EQUITIES",
+    "radar_mutation": "STRICTLY_PROHIBITED"
+  },
+  "membership_accounting": {
+    "source_population_count": 133,
+    "counterfactual_eligible_membership_count": 133,
+    "actual_eligible_membership_count": 133,
+    "ineligible_count": 0,
+    "unresolved_count": 0,
+    "ineligible_breakdown": {
+      "R01_ASSET_CLASS_ETFS": 0,
+      "R02_SECURITY_TYPE_ADRS": 0
+    },
+    "scannable_membership_count": 0
+  },
+  "radar_launch_universe_accounting": {
+    "policy_document": "docs/research/radar-us-listed-coverage/RADAR_LAUNCH_UNIVERSE_SELECTION_POLICY.md",
+    "selected_common_equities_count": 133,
+    "actual_policy_pass_count": 122,
+    "actual_policy_unknown_count": 11,
+    "counterfactual_policy_pass_count": 122,
+    "policy_pass_count": 122,
+    "policy_unknown_count": 11,
+    "observed_turnover_ranked_count": 122,
+    "market_data_fresh_local_count": 35,
+    "validation_sample_fresh_local_count": 38,
+    "market_data_fresh_production_count": 57,
+    "ready_for_publication_count": 0,
+    "excluded_count": 28,
+    "deterministic_ranking": "20-day median dollar volume descending, symbol alphabetically for policy-pass candidates; unranked for policy-unknown candidates"
+  },
+  "atomic_guarantees": {
+    "publication_decision": "NON_EXECUTABLE_SPECIFICATION_ONLY",
+    "default_switch_prevented": true,
+    "scanner_scheduler_activation_prevented": true,
+    "zero_production_writes_by_preparation": true
+  }
+}

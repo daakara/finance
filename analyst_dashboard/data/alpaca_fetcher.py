@@ -178,3 +178,88 @@ class AlpacaMarketFetcher:
             logger.warning(f"Alpaca snapshots fetch error: {e}")
 
         return results
+
+    def fetch_historical_bars(
+        self,
+        symbol: str,
+        start: str,
+        end: str,
+        feed: str = "sip",
+        adjustment: str = "split",
+        limit: int = 1000,
+        page_token: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Fetch historical daily OHLCV bars for a single symbol using Alpaca Market Data v2.
+
+        Parameters:
+            symbol: Equities ticker symbol (e.g. 'AAPL', 'ABBV').
+            start: Inclusive start date (YYYY-MM-DD or RFC-3339).
+            end: Inclusive end date (YYYY-MM-DD or RFC-3339).
+            feed: Tape feed ('sip' for consolidated tape, 'iex' for single-venue tape).
+            adjustment: Adjustment convention ('split', 'raw', 'all').
+            limit: Max bars per page (up to 10,000, default 1,000).
+            page_token: Optional pagination token for fetching subsequent pages.
+
+        Returns:
+            Dict containing 'success', 'status_code', 'symbol', 'bars', 'next_page_token', and optionally 'error'.
+        """
+        if not self.is_configured:
+            return {
+                "success": False,
+                "status_code": 401,
+                "symbol": symbol.upper().strip(),
+                "bars": [],
+                "next_page_token": None,
+                "error": "UNCONFIGURED_CREDENTIALS: Missing Alpaca API Key or Secret",
+            }
+
+        clean_symbol = symbol.upper().strip().replace(".US", "").replace("-USD", "")
+        url = f"{self.BASE_URL}/{clean_symbol}/bars"
+        params: Dict[str, Any] = {
+            "timeframe": "1Day",
+            "start": start,
+            "end": end,
+            "feed": feed,
+            "adjustment": adjustment,
+            "limit": limit,
+        }
+        if page_token:
+            params["page_token"] = page_token
+
+        try:
+            resp = self.session.get(url, headers=self._headers(), params=params, timeout=self.timeout)
+            if resp.status_code == 200:
+                data = resp.json()
+                # Preserve provider-returned symbol identity if present in endpoint payload;
+                # do not manufacture or overwrite it by copying the request symbol unconditionally.
+                returned_sym = data.get("symbol")
+                resp_symbol = str(returned_sym).upper().strip() if returned_sym is not None else clean_symbol
+                return {
+                    "success": True,
+                    "status_code": 200,
+                    "symbol": resp_symbol,
+                    "bars": data.get("bars") or [],
+                    "next_page_token": data.get("next_page_token"),
+                }
+            else:
+                err_text = resp.text
+                logger.warning(f"Alpaca historical bars fetch failed ({resp.status_code}) for {clean_symbol}: {err_text}")
+                return {
+                    "success": False,
+                    "status_code": resp.status_code,
+                    "symbol": clean_symbol,
+                    "bars": [],
+                    "next_page_token": None,
+                    "error": err_text,
+                }
+        except Exception as e:
+            logger.warning(f"Alpaca historical bars fetch network/client error for {clean_symbol}: {e}")
+            return {
+                "success": False,
+                "status_code": None,
+                "symbol": clean_symbol,
+                "bars": [],
+                "next_page_token": None,
+                "error": str(e),
+            }
+

@@ -54,6 +54,17 @@ class DeterministicUniverseBuilder:
         self.market_db = market_db or MarketDatabaseEngine()
 
     @classmethod
+    def evaluate_candidate_eligibility(
+        cls,
+        security: SourceSecurity,
+        build_id: str,
+        observed_at: str,
+        release_sha: str = CURRENT_RELEASE_SHA,
+    ) -> EligibilityLedgerRow:
+        """Alias for evaluate_security_eligibility for candidate evaluation."""
+        return cls.evaluate_security_eligibility(security, build_id, observed_at, release_sha)
+
+    @classmethod
     def evaluate_security_eligibility(
         cls,
         security: SourceSecurity,

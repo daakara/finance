@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "ARWR",
+    "name": "Arrowhead Research Corporation",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000879407",
+    "composite_figi": "BBG000BRVKH0",
+    "share_class_figi": "BBG001SGT8G5",
+    "last_updated_utc": "2026-10-18T06:10:11.413792637Z"
+  },
+  "status": "OK"
+}

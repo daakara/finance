@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "VRTX",
+    "name": "Vertex Pharmaceuticals Inc",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000875320",
+    "composite_figi": "BBG000C1S2X2",
+    "share_class_figi": "BBG001S68LJ8",
+    "last_updated_utc": "2026-10-18T06:10:11.416196921Z"
+  },
+  "status": "OK"
+}

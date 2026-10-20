@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "CVX",
+    "name": "Chevron Corporation",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000093410",
+    "composite_figi": "BBG000K4ND22",
+    "share_class_figi": "BBG001S67ZC5",
+    "last_updated_utc": "2026-10-18T06:10:11.414149778Z"
+  },
+  "status": "OK"
+}

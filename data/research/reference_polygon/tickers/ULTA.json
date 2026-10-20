@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "ULTA",
+    "name": "Ulta Beauty, Inc. Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001403568",
+    "composite_figi": "BBG00FWQ4VD6",
+    "share_class_figi": "BBG00FWQ4W44",
+    "last_updated_utc": "2026-10-18T06:10:11.416139892Z"
+  },
+  "status": "OK"
+}

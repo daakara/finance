@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "HON",
+    "name": "Honeywell International, Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000773840",
+    "composite_figi": "BBG000H556T9",
+    "share_class_figi": "BBG001S5X1N1",
+    "last_updated_utc": "2026-10-18T06:10:11.415107955Z"
+  },
+  "status": "OK"
+}

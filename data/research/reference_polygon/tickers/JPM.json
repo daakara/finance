@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "JPM",
+    "name": "JPMorgan Chase & Co.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000019617",
+    "composite_figi": "BBG000DMBXR2",
+    "share_class_figi": "BBG001S8CRC3",
+    "last_updated_utc": "2026-10-18T06:10:11.415259454Z"
+  },
+  "status": "OK"
+}

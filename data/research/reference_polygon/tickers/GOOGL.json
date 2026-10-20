@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "GOOGL",
+    "name": "Alphabet Inc. Class A Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001652044",
+    "composite_figi": "BBG009S39JX6",
+    "share_class_figi": "BBG009S39JY5",
+    "last_updated_utc": "2026-10-18T06:10:11.415031268Z"
+  },
+  "status": "OK"
+}

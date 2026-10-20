@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "CELH",
+    "name": "Celsius Holdings, Inc. Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001341766",
+    "composite_figi": "BBG000NY37X4",
+    "share_class_figi": "BBG001SQSKT3",
+    "last_updated_utc": "2026-10-18T06:10:11.4140249Z"
+  },
+  "status": "OK"
+}

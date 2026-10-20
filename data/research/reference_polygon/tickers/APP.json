@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "APP",
+    "name": "Applovin Corporation Class A Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001751008",
+    "composite_figi": "BBG006HFPX77",
+    "share_class_figi": "BBG006HFPX86",
+    "last_updated_utc": "2026-10-18T06:10:11.413771927Z"
+  },
+  "status": "OK"
+}

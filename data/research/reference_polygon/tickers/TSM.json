@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "TSM",
+    "name": "Taiwan Semiconductor Manufacturing Company Ltd.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "ADRC",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001046179",
+    "composite_figi": "BBG000BD8ZK0",
+    "share_class_figi": "BBG001S5WWW4",
+    "last_updated_utc": "2026-10-18T06:10:11.416116658Z"
+  },
+  "status": "OK"
+}

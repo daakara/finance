@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "AVGO",
+    "name": "Broadcom Inc. Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001730168",
+    "composite_figi": "BBG00KHY5S69",
+    "share_class_figi": "BBG00KHY5SY8",
+    "last_updated_utc": "2026-10-18T06:10:11.413821191Z"
+  },
+  "status": "OK"
+}
