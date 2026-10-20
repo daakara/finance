@@ -17,6 +17,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
@@ -40,6 +42,12 @@ jobs:
         PYTHONPATH: "."
       run: |
         pytest tests/ -m "tier2a or tier2b or tier2c" -v
+
+    - name: Run Focused Fundamentals & Research Invariant Gate
+      env:
+        PYTHONPATH: "."
+      run: |
+        pytest tests/test_fundamentals_api.py tests/test_sourced_fundamentals_pilot.py -v
 
     - name: Run Tier 3 Pre-Flight Release Gate
       if: github.base_ref == 'main' || (github.ref == 'refs/heads/main' && github.event_name == 'push')

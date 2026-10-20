@@ -3,6 +3,7 @@ import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 import ShareTradeCardButton from "../../../components/ShareTradeCardButton";
 import HistoricalEdgeScorecard from "../../../components/HistoricalEdgeScorecard";
+import SourcedFundamentalsCard from "../../../components/SourcedFundamentalsCard";
 import { SHARED_WATCHLIST_ITEMS } from "../../../lib/constants";
 import { getMasterAsset, getAllMasterTickers, getMasterBaselinePrice } from "../../../lib/masterCatalog";
 
@@ -446,6 +447,9 @@ export default function StockDetailPage({ params }: PageProps) {
             </div>
           </div>
         </section>
+
+        {/* 📑 SEC EDGAR SOURCED FUNDAMENTALS & EVIDENCE INSPECTION */}
+        <SourcedFundamentalsCard symbol={sym} />
 
         {/* 📊 QUANTITATIVE BACKTESTED EDGE & SETUP WIN-RATE SCORECARD */}
         <section aria-label="Quantitative Historical Edge Scorecard">
