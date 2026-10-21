@@ -31,9 +31,9 @@ def main() -> int:
     parser.add_argument("--target-db", required=True, help="Path to target SQLite database")
     parser.add_argument("--backup-file", required=True, help="Path to verified SQLite backup file")
     parser.add_argument("--expected-sha256", required=True, help="Expected SHA-256 of backup file")
-    parser.add_argument("--incident-id", required=True, help="Incident reference identifier")
-    parser.add_argument("--operator-auth", required=True, help="Formal operator authorization token (G-S2-...)")
-    parser.add_argument("--maintenance-token", default="MAINT-G-S2-ACT-PILOT-001", help="Maintenance mode authorization token")
+    parser.add_argument("--incident-id", required=True, help="Incident reference identifier (e.g. INC-G-S2-...)")
+    parser.add_argument("--operator-auth", required=True, help="Formal operator authorization token (e.g. G-S2-ACT-...)")
+    parser.add_argument("--maintenance-token", required=True, help="Incident-specific maintenance mode authorization token (e.g. MAINT-INC-...)")
     parser.add_argument("--quarantine-dir", default="/root/incident_quarantine", help="Base quarantine directory")
     parser.add_argument("--receipt-output", default=None, help="Path to save recovery receipt JSON")
 

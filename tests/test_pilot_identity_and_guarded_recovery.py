@@ -22,7 +22,10 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import sqlite3
+import subprocess
+import sys
 import tempfile
 import time
 import pytest
@@ -467,4 +470,192 @@ class TestPilotIdentityAndGuardedRecovery:
                 AlpacaHistoricalSipIngestionAdapter.load_manifest(temp_path)
         finally:
             temp_path.unlink()
+
+    def test_recovery_refused_with_malformed_or_placeholder_tokens(self):
+        """Proves that GuardedRecoveryEngine refuses execution with empty, malformed or placeholder tokens."""
+        with tempfile.TemporaryDirectory() as td:
+            tdp = Path(td)
+            dummy_target = tdp / "dummy_target.db"
+            dummy_target.touch()
+            dummy_backup = tdp / "dummy_backup.db"
+            dummy_backup.touch()
+
+            # 1. Empty incident_id
+            engine = GuardedRecoveryEngine(
+                target_db_path=dummy_target,
+                backup_db_path=dummy_backup,
+                expected_backup_sha256="dummy",
+                incident_id="",
+                operator_authorization="G-S2-ACT",
+                maintenance_mode_token="MAINT-INC-001",
+            )
+            with pytest.raises(ValueError, match="AUTHORIZATION_REJECTED.*Incident ID"):
+                engine.step1_verify_authorization()
+
+            # 2. Invalid operator_authorization
+            engine.incident_id = "INC-TEST-001"
+            engine.operator_authorization = "UNAUTHORIZED_OP"
+            with pytest.raises(ValueError, match="AUTHORIZATION_REJECTED.*Operator authorization"):
+                engine.step1_verify_authorization()
+
+            # 3. Placeholder maintenance token
+            engine.operator_authorization = "G-S2-ACT"
+            engine.maintenance_mode_token = "MAINT-DEFAULT"
+            with pytest.raises(ValueError, match="MAINTENANCE_MODE_REQUIRED.*Generic or placeholder"):
+                engine.step2_verify_maintenance_mode()
+
+            # 4. Maintenance token matching incident ID
+            engine.maintenance_mode_token = "INC-TEST-001"
+            with pytest.raises(ValueError, match="MAINTENANCE_MODE_REQUIRED.*must start with"):
+                engine.step2_verify_maintenance_mode()
+
+    def test_preflight_backup_validation_failure_preserves_target_database_unquarantined(self):
+        """Proves that pre-flight backup validation runs before quarantine and preserves target intact if backup fails."""
+        with tempfile.TemporaryDirectory() as td:
+            tdp = Path(td)
+            target_path = tdp / "target.db"
+            backup_path = tdp / "backup_corrupt.db"
+            quarantine_dir = tdp / "quarantine"
+
+            # Create target DB with valid data
+            conn = sqlite3.connect(str(target_path))
+            conn.execute("CREATE TABLE market_data (symbol TEXT, close REAL);")
+            conn.execute("INSERT INTO market_data VALUES ('AAPL', 150.25);")
+            conn.commit()
+            conn.close()
+
+            # Create backup DB with corrupted/non-matching hash
+            backup_path.write_text("corrupted_content", encoding="utf-8")
+
+            engine = GuardedRecoveryEngine(
+                target_db_path=target_path,
+                backup_db_path=backup_path,
+                expected_backup_sha256="0000000000000000000000000000000000000000000000000000000000000000",
+                incident_id="INC-G-S2-PILOT-001",
+                operator_authorization="G-S2-ACT",
+                maintenance_mode_token="MAINT-INC-G-S2-PILOT-001",
+                quarantine_base_dir=quarantine_dir,
+            )
+
+            # Execution must fail before any file is moved
+            with pytest.raises(ValueError, match="BACKUP_DIGEST_MISMATCH"):
+                engine.execute_guarded_recovery()
+
+            # Target DB must be completely untouched at its original path
+            assert target_path.exists()
+            conn_check = sqlite3.connect(f"{target_path.as_uri()}?mode=ro", uri=True)
+            cur = conn_check.cursor()
+            cur.execute("SELECT symbol, close FROM market_data;")
+            assert cur.fetchall() == [("AAPL", 150.25)]
+            conn_check.close()
+
+            # Quarantine directory must not have any quarantined DB files
+            if quarantine_dir.exists():
+                assert len(list(quarantine_dir.iterdir())) == 0
+
+    def test_recovery_failure_post_quarantine_rolls_back_original_database_files(self):
+        """Proves that if replacement fails post-quarantine, original target files are restored to prevent data loss."""
+        with tempfile.TemporaryDirectory() as td:
+            tdp = Path(td)
+            target_path = tdp / "target.db"
+            backup_path = tdp / "backup.db"
+            quarantine_dir = tdp / "quarantine"
+
+            # Create target DB
+            conn = sqlite3.connect(str(target_path))
+            conn.execute("CREATE TABLE target_marker (id INT);")
+            conn.execute("INSERT INTO target_marker VALUES (42);")
+            conn.commit()
+            conn.close()
+
+            # Create valid backup DB
+            conn_b = sqlite3.connect(str(backup_path))
+            conn_b.execute("CREATE TABLE backup_marker (id INT);")
+            conn_b.execute("INSERT INTO backup_marker VALUES (99);")
+            conn_b.commit()
+            conn_b.close()
+
+            bck_sha = GuardedRecoveryEngine.compute_file_sha256(backup_path)
+
+            engine = GuardedRecoveryEngine(
+                target_db_path=target_path,
+                backup_db_path=backup_path,
+                expected_backup_sha256=bck_sha,
+                incident_id="INC-G-S2-PILOT-001",
+                operator_authorization="G-S2-ACT",
+                maintenance_mode_token="MAINT-INC-G-S2-PILOT-001",
+                quarantine_base_dir=quarantine_dir,
+            )
+
+            # Simulate failure during step 8 (replacement)
+            def fail_step8():
+                raise IOError("Simulated disk write failure during atomic replacement")
+
+            engine.step8_restore_via_candidate_file = fail_step8
+
+            with pytest.raises(IOError, match="Simulated disk write failure"):
+                engine.execute_guarded_recovery()
+
+            # Target DB must have been restored by rollback
+            assert target_path.exists()
+            conn_res = sqlite3.connect(f"{target_path.as_uri()}?mode=ro", uri=True)
+            cur = conn_res.cursor()
+            cur.execute("SELECT id FROM target_marker;")
+            assert cur.fetchall() == [(42,)]
+            conn_res.close()
+
+            # Quarantine evidence directory preserved
+            assert quarantine_dir.exists()
+
+    def test_guarded_recovery_receipt_deterministic_content_hash(self):
+        """Proves that GuardedRecoveryReceipt produces deterministic SHA-256 content hashes for audit integrity."""
+        receipt = GuardedRecoveryReceipt(
+            incident_id="INC-G-S2-PILOT-001",
+            operator_authorization="G-S2-ACT",
+            maintenance_mode_token="MAINT-INC-G-S2-PILOT-001",
+            target_database_path="/tmp/test.db",
+            backup_source_path="/tmp/backup.db",
+            backup_source_sha256="abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+            quarantine_directory="/tmp/quarantine",
+            quarantined_files=[],
+            pre_recovery_state={"status": "ok"},
+            post_recovery_readback={"status": "verified"},
+            recovery_status="SUCCESS",
+        )
+        hash1 = receipt.compute_receipt_sha256()
+        assert len(hash1) == 64
+        assert hash1 == receipt.receipt_sha256
+
+        # Deterministic: computing again gives exact same value
+        hash2 = receipt.compute_receipt_sha256()
+        assert hash1 == hash2
+
+        # Changing field mutates content hash
+        receipt.recovery_status = "FAILED"
+        hash3 = receipt.compute_receipt_sha256()
+        assert hash3 != hash1
+
+        # Export to dict includes content hash
+        d = receipt.to_dict()
+        assert d["receipt_sha256"] == hash3
+        assert "signature" not in d  # Plain content hash, NOT digital/PKI signature
+
+    def test_cli_requires_explicit_maintenance_token(self):
+        """Proves that scripts/guarded_market_recovery.py CLI requires explicit --maintenance-token."""
+        cli_script = Path("scripts/guarded_market_recovery.py").resolve()
+
+        # Invoke without --maintenance-token
+        cmd = [
+            sys.executable,
+            str(cli_script),
+            "--target-db", "dummy.db",
+            "--backup-file", "dummy_bck.db",
+            "--expected-sha256", "abc",
+            "--incident-id", "INC-001",
+            "--operator-auth", "G-S2-ACT",
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode != 0
+        assert "the following arguments are required: --maintenance-token" in result.stderr
+
 

@@ -4,6 +4,20 @@ analyst_dashboard/data/guarded_recovery.py
 Guarded Disaster Recovery Engine for SQLite Stores (ARX Closure Model v2).
 Enforces non-destructive, evidence-preserving, fail-closed database recovery.
 
+AUTHORIZATION & GOVERNANCE CONTRACT:
+The operator authorization token, maintenance mode token, and incident identifier are
+OPERATIONAL AUDIT REFERENCES (correlation identifiers), NOT cryptographic bearer credentials.
+They link the recovery runbook execution to an authorized operational change procedure and
+incident record. These tokens alone DO NOT confer authority.
+Actual recovery safety and authorization are enforced by:
+1. Operational incident correlation (explicit, non-empty, distinct incident and maintenance references).
+2. Mandatory pre-flight cryptographic backup verification (SHA-256 match and PRAGMA integrity_check)
+   BEFORE any target database mutation or quarantine.
+3. System quiescence and handle fencing: Proving zero open file descriptors across all system processes
+   and zero active database readers/writers before database unlinking.
+4. Deterministic content-hashed evidence: GuardedRecoveryReceipt produces a tamper-evident SHA-256
+   digest of the complete execution record (unsigned plain JSON audit record with content hash).
+
 CRITICAL ARCHITECTURAL INVARIANT (WAL Recovery Fence):
 Under SQLite WAL mode, `BEGIN EXCLUSIVE` only blocks competing writers; it DOES NOT
 block or detect active readers. In POSIX/Linux, executing `os.replace` or moving a database
@@ -15,14 +29,14 @@ an active process and handle fence (maintenance-mode isolation, reader closure, 
 Guarded 10-Step Incident Recovery Protocol:
 1. Formal operator incident authorization check (G-S2-ACT / INC-...).
 2. Explicit maintenance-mode authorization token check (MAINT-...).
-3. Fencing of every known database writer (zero active writer processes).
-4. Coordinated closure/isolation of active application readers (handle fence verification).
-5. Quiescent database write lock probe (exclusive transaction probe).
-6. Non-destructive evidence quarantine of .db, .db-wal, and .db-shm state.
-7. Verification of backup SHA-256 digest and PRAGMA integrity_check.
+3. Pre-flight backup integrity and digest verification (BEFORE target DB is touched).
+4. Fencing of every known database writer (zero active writer processes).
+5. Coordinated closure/isolation of active application readers (handle fence verification).
+6. Quiescent database write lock probe (exclusive transaction probe).
+7. Non-destructive evidence quarantine of .db, .db-wal, and .db-shm state.
 8. Staged candidate restoration (.restore_candidate) before controlled atomic replacement.
 9. Full readback verification of restored schema, table counts, and provenance.
-10. Explicit application reopening and signed cryptographic receipt generation.
+10. Explicit application reopening and deterministic content-hashed receipt generation.
 """
 
 from __future__ import annotations
@@ -34,6 +48,7 @@ import json
 import logging
 import os
 from pathlib import Path
+import re
 import shutil
 import sqlite3
 import subprocess
@@ -70,15 +85,24 @@ class GuardedRecoveryReceipt:
         default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     )
     completed_at_utc: Optional[str] = None
+    receipt_sha256: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
+
+    def compute_receipt_sha256(self) -> str:
+        """Computes deterministic SHA-256 digest over the receipt payload."""
+        d = self.to_dict()
+        d.pop("receipt_sha256", None)
+        canonical_bytes = json.dumps(d, sort_keys=True).encode("utf-8")
+        self.receipt_sha256 = hashlib.sha256(canonical_bytes).hexdigest()
+        return self.receipt_sha256
 
 
 class GuardedRecoveryEngine:
     """
     Executes fail-closed guarded disaster recovery of SQLite databases with strict
-    reader/writer handle fencing and non-destructive evidence preservation.
+    reader/writer handle fencing, pre-flight backup validation, and non-destructive evidence preservation.
     """
 
     def __init__(
@@ -88,7 +112,7 @@ class GuardedRecoveryEngine:
         expected_backup_sha256: str,
         incident_id: str,
         operator_authorization: str,
-        maintenance_mode_token: str = "MAINT-G-S2-ACT-PILOT-001",
+        maintenance_mode_token: str,
         quarantine_base_dir: Path | str = "/root/incident_quarantine",
         busy_timeout_ms: int = 2000,
         handle_checker: Optional[Callable[[Path], List[int]]] = None,
@@ -114,24 +138,40 @@ class GuardedRecoveryEngine:
         return h.hexdigest()
 
     def step1_verify_authorization(self) -> None:
-        """Step 1: Check formal operator incident authorization."""
-        if not self.incident_id:
+        """Step 1: Check formal operator incident authorization audit references."""
+        if not self.incident_id or not self.incident_id.strip():
             raise ValueError("AUTHORIZATION_REJECTED: Incident ID must not be empty.")
-        if not self.operator_authorization:
+        inc_clean = self.incident_id.strip()
+        if len(inc_clean) < 6 or not inc_clean.startswith("INC-"):
+            raise ValueError(
+                f"AUTHORIZATION_REJECTED: Incident ID '{self.incident_id}' must follow structured format (INC-xxx)."
+            )
+
+        if not self.operator_authorization or not self.operator_authorization.strip():
             raise ValueError("AUTHORIZATION_REJECTED: Formal operator authorization token must not be empty.")
-        if not (self.operator_authorization.startswith("G-S2-") or self.operator_authorization.startswith("INC-")):
+        auth_clean = self.operator_authorization.strip()
+        if len(auth_clean) < 6 or not (auth_clean.startswith("G-S2-") or auth_clean.startswith("INC-G-S2-")):
             raise ValueError(
                 f"AUTHORIZATION_REJECTED: Operator authorization token '{self.operator_authorization}' "
                 "must reference an authorized operational gate (e.g. G-S2-ACT, INC-G-S2-...)."
             )
 
     def step2_verify_maintenance_mode(self) -> None:
-        """Step 2: Check explicit maintenance mode authorization token."""
-        if not self.maintenance_mode_token:
+        """Step 2: Check explicit maintenance mode authorization audit reference."""
+        if not self.maintenance_mode_token or not self.maintenance_mode_token.strip():
             raise ValueError("MAINTENANCE_MODE_REQUIRED: Maintenance mode authorization token must not be empty.")
-        if not (self.maintenance_mode_token.startswith("MAINT-") or self.maintenance_mode_token.startswith("MAINTENANCE-")):
+        token_clean = self.maintenance_mode_token.strip()
+        if len(token_clean) < 8 or not (token_clean.startswith("MAINT-") or token_clean.startswith("MAINTENANCE-")):
             raise ValueError(
                 f"MAINTENANCE_MODE_REQUIRED: Token '{self.maintenance_mode_token}' must start with MAINT- or MAINTENANCE-."
+            )
+        if token_clean in ("MAINT-", "MAINTENANCE-", "MAINT-DEFAULT", "MAINT-TEST"):
+            raise ValueError(
+                f"MAINTENANCE_MODE_REQUIRED: Generic or placeholder maintenance token '{self.maintenance_mode_token}' is rejected."
+            )
+        if token_clean == self.incident_id.strip():
+            raise ValueError(
+                "MAINTENANCE_MODE_REQUIRED: Maintenance mode token must be distinct from incident ID."
             )
 
     def step3_and_4_verify_reader_writer_fence(self) -> None:
@@ -319,9 +359,43 @@ class GuardedRecoveryEngine:
 
         return readback_info
 
+    @staticmethod
+    def _capture_store_metadata(db_path: Path) -> Dict[str, Any]:
+        """Captures basic table counts for pre-recovery baseline if readable."""
+        uri = f"{db_path.as_uri()}?mode=ro"
+        conn = sqlite3.connect(uri, uri=True, timeout=2.0)
+        meta = {}
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = [r[0] for r in cur.fetchall() if r[0] != "sqlite_sequence"]
+            counts = {}
+            for t in tables:
+                cur.execute(f"SELECT COUNT(*) FROM {t}")
+                counts[t] = cur.fetchone()[0]
+            meta["table_counts"] = counts
+        finally:
+            conn.close()
+        return meta
+
+    def _rollback_quarantine_to_target(self, quarantined: List[QuarantinedEvidenceFile]) -> None:
+        """
+        Restores quarantined target database files back to original paths if recovery fails post-quarantine.
+        """
+        for q in quarantined:
+            src = Path(q.quarantine_path)
+            dst = Path(q.original_path)
+            if src.exists() and not dst.exists():
+                try:
+                    shutil.copy2(src, dst)
+                    logger.warning(f"Rolled back quarantined file '{src.name}' to '{dst}'.")
+                except Exception as rb_err:
+                    logger.error(f"Failed to rollback '{src}' to '{dst}': {rb_err}")
+
     def execute_guarded_recovery(self) -> GuardedRecoveryReceipt:
         """
-        Executes full 10-step guarded disaster recovery runbook with active handle fencing.
+        Executes full 10-step guarded disaster recovery runbook with active handle fencing,
+        pre-flight backup verification, and evidence-preserving rollback protection.
         """
         receipt = GuardedRecoveryReceipt(
             incident_id=self.incident_id,
@@ -337,41 +411,56 @@ class GuardedRecoveryEngine:
             recovery_status="PENDING",
         )
 
+        quarantined: List[QuarantinedEvidenceFile] = []
+
         try:
-            # 1. Authorization
+            # 1. Authorization audit references
             self.step1_verify_authorization()
 
-            # 2. Maintenance mode token check
+            # 2. Maintenance mode audit reference
             self.step2_verify_maintenance_mode()
 
-            # 3 & 4. Handle fence: prove zero active reader/writer connections
+            # 3. CRITICAL PRE-FLIGHT: Verify backup integrity BEFORE touching or quarantining target database
+            self.step7_verify_backup_integrity()
+
+            # 4. Handle fence: prove zero active reader/writer connections
             self.step3_and_4_verify_reader_writer_fence()
 
             # 5. Quiescence write lock probe
             self.step5_verify_quiescence_lock()
+
+            # Capture pre-recovery state if target DB exists and readable
+            if self.target_path.exists():
+                try:
+                    receipt.pre_recovery_state = self._capture_store_metadata(self.target_path)
+                except Exception:
+                    receipt.pre_recovery_state = {"status": "unreadable_or_corrupted"}
 
             # 6. Quarantine affected files non-destructively
             quarantine_dir, quarantined = self.step6_quarantine_affected_database()
             receipt.quarantine_directory = str(quarantine_dir)
             receipt.quarantined_files = [asdict(q) for q in quarantined]
 
-            # 7. Backup integrity verification
-            self.step7_verify_backup_integrity()
-
-            # 8. Staged restore and controlled atomic replacement
+            # 7. Staged restore and controlled atomic replacement
             self.step8_restore_via_candidate_file()
 
-            # 9. Readback & schema verification
+            # 8. Readback & schema verification
             readback = self.step9_readback_and_verify_schema()
             receipt.post_recovery_readback = readback
 
-            # 10. Completed & ready for explicit application reopening
+            # 9. Completed successfully & ready for explicit application reopening
             receipt.recovery_status = "SUCCESS"
             receipt.completed_at_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            receipt.compute_receipt_sha256()
             return receipt
 
         except Exception as e:
             receipt.recovery_status = "FAILED"
             receipt.error_message = str(e)
             receipt.completed_at_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            # If target DB was quarantined but replacement failed, restore original from quarantine to prevent data loss
+            if quarantined and not self.target_path.exists():
+                logger.warning("Recovery aborted post-quarantine. Restoring original database files from quarantine...")
+                self._rollback_quarantine_to_target(quarantined)
+            receipt.compute_receipt_sha256()
             raise

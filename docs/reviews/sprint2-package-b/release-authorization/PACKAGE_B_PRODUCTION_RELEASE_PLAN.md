@@ -19,9 +19,9 @@
 - **Base Commit**: `origin/main` (`f6c5755126059b2f227e28ce90ddaad43997884c`)
 - **Staged File Inventory**:
   1. `scripts/ingest_alpaca_historical.py` (Modified, +107 / -24)
-  2. `analyst_dashboard/data/guarded_recovery.py` (New, 377 lines)
+  2. `analyst_dashboard/data/guarded_recovery.py` (New, 466 lines)
   3. `scripts/guarded_market_recovery.py` (New, 73 lines)
-  4. `tests/test_pilot_identity_and_guarded_recovery.py` (New test, 470 lines)
+  4. `tests/test_pilot_identity_and_guarded_recovery.py` (New test, 642 lines)
   5. `tests/test_package_b_deployment_rehearsal.py` (New test, 385 lines)
   6. `docs/reviews/sprint2-package-b/` (Release documentation & V3 manifest)
 - **Commit Message Convention**:
@@ -30,7 +30,7 @@
 ### 2.2 CI Gates & Protected Branch Controls
 - **Required Pull Request**: Open PR from `fix/sprint2-package-b-canonical-ingestion-release` into `main`.
 - **Required CI Pass**:
-  - `pytest tests/test_package_b_deployment_rehearsal.py tests/test_pilot_identity_and_guarded_recovery.py tests/test_alpaca_historical_sip_ingestion.py` (All green).
+  - `pytest tests/test_package_b_deployment_rehearsal.py tests/test_pilot_identity_and_guarded_recovery.py tests/test_alpaca_historical_sip_ingestion.py` (All 99 green).
 - **Required Approver**: Repository administrator and Sprint 2 Lead under authority `G-S2-ACT`.
 - **Merge Strategy**: Squash-and-merge or merge commit per repository policy.
 
@@ -94,7 +94,7 @@ railway ssh --service web "python3 -c \"import hashlib; from pathlib import Path
 ```
 **Expected Output**:
 - `ADAPTER_SHA256`: `7DA7CFC6BE8717C86EC15568F6D16E7173A44A7F33084653E889800F80C273C7`
-- `RECOVERY_SHA256`: `8BE7D6A69A3D4316C3CF57793C8921C4E36E5E8A5BF6A78DA91281D6C4A6299D`
+- `RECOVERY_SHA256`: `217377EC4BFF02C86B7B7122D39FC77A4112820B9F4BCA2E8C077888EA0DA684`
 
 ### Step 3: Logical Zero-Ingestion Verification
 Compare the post-deployment logical digests against the baseline in Section 3:
