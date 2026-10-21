@@ -143,7 +143,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               (function() {
                 if (typeof window !== 'undefined') {
                   var host = window.location.hostname;
-                  if (host === 'arxterminal.com' || host.endsWith('.pages.dev')) {
+                  if (host === 'arxterminal.com' || (host.endsWith('.pages.dev') && host === 'finance-xp8.pages.dev')) {
                     window.location.replace('https://www.arxterminal.com' + window.location.pathname + window.location.search + window.location.hash);
                   }
                 }

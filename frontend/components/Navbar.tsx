@@ -404,6 +404,17 @@ export default function Navbar({
                     </Link>
                   );
                 })}
+                <Link
+                  href={effectiveSymbol ? `/research?symbol=${encodeURIComponent(effectiveSymbol)}` : "/research"}
+                  aria-current={pathname === "/research" ? "page" : undefined}
+                  className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                    pathname === "/research"
+                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <span>Research</span>
+                </Link>
               </nav>
             </div>
 
@@ -484,6 +495,16 @@ export default function Navbar({
                       <span>Keyboard Shortcuts</span>
                       <kbd className="ml-auto font-mono text-xs px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">?</kbd>
                     </button>
+                    <Link
+                      href={effectiveSymbol ? `/research?symbol=${encodeURIComponent(effectiveSymbol)}` : "/research"}
+                      role="menuitem"
+                      onClick={() => setIsUtilitiesMenuOpen(false)}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[36px] transition-colors"
+                    >
+                      <Microscope className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <span>Opportunity Research</span>
+                      <span className="ml-auto text-[10px] px-1 py-0.5 rounded bg-cyan-950/60 text-cyan-400 border border-cyan-800/40 font-mono">ODP-05</span>
+                    </Link>
                     <button
                       id="onboarding-tour-btn"
                       type="button"

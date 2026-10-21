@@ -140,6 +140,7 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         self.assertIn("/workbench/*", redirects_content)
         self.assertIn("/strategy", redirects_content)
         self.assertIn("301", redirects_content)
+        self.assertNotIn("/research/*", redirects_content, "Active research route must NOT be covered by a redirect to root")
 
         with open(layout_path, "r", encoding="utf-8") as f:
             layout_content = f.read()

@@ -1,0 +1,34 @@
+{
+  "schema_version": "ARX-ODP05-PROVENANCE-MANIFEST-V1",
+  "snapshot_identifier": "ODP05-FINAL-SOURCE-BINDING-2026-10-16",
+  "canonical_ledger_path": "docs/research/opportunity_discovery/odp05_discovery_ledger.json",
+  "canonical_ledger_blob": "dc0ee558309072f4b1206c9aedb40f453feab627",
+  "canonical_ledger_sha256": "a65be3b38cdf988081a29257fb41674c3591b10a666362f351794a7d1c40979d",
+  "canonical_ledger_bytes": 37030,
+  "research_candidate_commit": "de5a942fc29bbe8977bffc1b5d9f640814370dc7",
+  "research_candidate_tree": "62c3ab722e18c1438660444d4f7f67f40fc78958",
+  "market_session_date": "2026-10-16",
+  "filing_availability_cutoff_utc": "2026-10-16T20:00:00Z",
+  "authoring_timestamp_utc": "2026-10-20T14:30:00Z",
+  "cohort_symbols": [
+    "FIX",
+    "DUOL",
+    "IREN",
+    "CORZ",
+    "MU"
+  ],
+  "dispositions": {
+    "FIX": "WATCH_CONDITIONS",
+    "DUOL": "WATCH_CONDITIONS",
+    "IREN": "WATCH_CONDITIONS",
+    "CORZ": "WATCH_CONDITIONS",
+    "MU": "NO_SUPPORTED_OPPORTUNITY"
+  },
+  "valuation_statuses": {
+    "FIX": "COMPUTED_VERIFIED",
+    "DUOL": "COMPUTED_VERIFIED",
+    "IREN": "VALUATION_SUPPRESSED",
+    "CORZ": "VALUATION_SUPPRESSED",
+    "MU": "COMPUTED_QUALIFIED"
+  }
+}

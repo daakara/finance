@@ -1,0 +1,754 @@
+{
+  "schema_version": "ARX-OPPORTUNITY-DOSSIER-V1",
+  "snapshot_metadata": {
+    "snapshot_identifier": "ODP05-FINAL-SOURCE-BINDING-2026-10-16",
+    "source_ledger_path": "docs/research/opportunity_discovery/odp05_discovery_ledger.json",
+    "source_ledger_sha256": "a65be3b38cdf988081a29257fb41674c3591b10a666362f351794a7d1c40979d",
+    "research_candidate_commit": "de5a942fc29bbe8977bffc1b5d9f640814370dc7",
+    "research_candidate_tree": "62c3ab722e18c1438660444d4f7f67f40fc78958",
+    "canonical_ledger_blob": "dc0ee558309072f4b1206c9aedb40f453feab627",
+    "governing_contract": "CONTRACT-ARX-ODP-V1-001-REV2",
+    "market_session_date": "2026-10-16",
+    "filing_availability_cutoff_utc": "2026-10-16T20:00:00Z",
+    "authoring_timestamp_utc": "2026-10-20T14:30:00Z",
+    "review_timestamp_utc": null,
+    "cohort_symbols": [
+      "FIX",
+      "DUOL",
+      "IREN",
+      "CORZ",
+      "MU"
+    ],
+    "is_read_only": true
+  },
+  "cohort": [
+    {
+      "symbol": "FIX",
+      "company_name": "Comfort Systems USA, Inc.",
+      "exchange": "NYSE",
+      "opportunity_route": "UNDERVALUED_GROWTH",
+      "disposition": "WATCH_CONDITIONS",
+      "disposition_label": "Watch — Conditions Required for Entry",
+      "reference_price": 1439.07,
+      "valuation_status": "COMPUTED_VERIFIED"
+    },
+    {
+      "symbol": "DUOL",
+      "company_name": "Duolingo, Inc.",
+      "exchange": "NASDAQ",
+      "opportunity_route": "UNDERVALUED_GROWTH",
+      "disposition": "WATCH_CONDITIONS",
+      "disposition_label": "Watch — Conditions Required for Entry",
+      "reference_price": 141.76,
+      "valuation_status": "COMPUTED_VERIFIED"
+    },
+    {
+      "symbol": "IREN",
+      "company_name": "Iris Energy Limited",
+      "exchange": "NASDAQ",
+      "opportunity_route": "BUSINESS_INFLECTION",
+      "disposition": "WATCH_CONDITIONS",
+      "disposition_label": "Watch — Valuation Suppressed (Fail-Closed)",
+      "reference_price": 26.99,
+      "valuation_status": "VALUATION_SUPPRESSED"
+    },
+    {
+      "symbol": "CORZ",
+      "company_name": "Core Scientific, Inc.",
+      "exchange": "NASDAQ",
+      "opportunity_route": "BUSINESS_INFLECTION",
+      "disposition": "WATCH_CONDITIONS",
+      "disposition_label": "Watch — Valuation Suppressed (Fail-Closed)",
+      "reference_price": 14.85,
+      "valuation_status": "VALUATION_SUPPRESSED"
+    },
+    {
+      "symbol": "MU",
+      "company_name": "Micron Technology, Inc.",
+      "exchange": "NASDAQ",
+      "opportunity_route": "CYCLICAL_RECOVERY",
+      "disposition": "NO_SUPPORTED_OPPORTUNITY",
+      "disposition_label": "Rejected — No Supported Opportunity",
+      "reference_price": 878.84,
+      "valuation_status": "COMPUTED_QUALIFIED"
+    }
+  ],
+  "dossiers": {
+    "FIX": {
+      "identity": {
+        "symbol": "FIX",
+        "company_name": "Comfort Systems USA, Inc.",
+        "cik": "0001035983",
+        "exchange": "NYSE",
+        "opportunity_route": "UNDERVALUED_GROWTH",
+        "sec_edgar_browse_url": "https://www.sec.gov/edgar/browse/?CIK=1035983"
+      },
+      "central_assessment": {
+        "disposition": "WATCH_CONDITIONS",
+        "disposition_label": "Watch — Conditions Required for Entry",
+        "presentation_summary": "Comfort Systems USA presents an exceptional balance sheet ($1.80B net cash) and high capital returns (>28% ROIC), supported by multi-year modular HVAC backlogs for hyperscale data center construction. However, the frozen reference market price of $1439.07 embeds a demanding 30.07% 5-year revenue CAGR at elevated 15.0% operating margins. Retained on watch: await market pullback toward mid-cycle base valuation range ($1,050 - $1,100) or evidence of margin persistence.",
+        "summary_provenance": "DERIVED_SYNTHESIS",
+        "strongest_supporting_evidence": "Exceptional capital efficiency ($2.16B FCF on $1.85B EBIT), massive cash buffer ($1.80B net cash), and contracted multi-year modular backlogs across hyperscalers.",
+        "strongest_opposing_evidence": "Priced for perfection at 30.1% 5Y CAGR; any moderation in data center construction capex or normalization of margins towards historical 12.5% yields -25% to -63% downside.",
+        "main_uncertainty": "Cyclicality of hyperscale cloud capex budgets and customer concentration in top-tier tech clients.",
+        "price_watch_condition": "Priced attractive for entry if share price pulls back to base-case modeled value range ($1,050 - $1,100).",
+        "confidence_assessment": "HIGH confidence in business franchise and balance sheet quality; MODERATE confidence that current price ($1439.07) provides adequate margin of safety.",
+        "financing_dilution_exposure": "None; self-funding operations with net cash balance sheet and negative dilution."
+      },
+      "valuation": {
+        "valuation_status": "COMPUTED_VERIFIED",
+        "valuation_status_label": "Computed & Verified",
+        "model_type": "REVERSE_DCF_FCFF_SINGLE_STAGE",
+        "reference_price": 1439.07,
+        "reference_price_label": "Reference price used in reverse DCF",
+        "reference_date": "2026-10-16",
+        "solved_5y_cagr_pct": 30.07,
+        "reverse_dcf_parameters": {
+          "target_price": 1439.07,
+          "solved_revenue_cagr_pct": 30.07,
+          "operating_margin_pct": 15.0,
+          "wacc_pct": 9.5,
+          "terminal_growth_pct": 2.5,
+          "tax_rate_pct": 21.0,
+          "reinvestment_rate_pct": 15.0,
+          "base_revenue": 11228024000.0,
+          "current_shares": 35254000.0,
+          "net_debt_bridge": -1800730000.0
+        },
+        "roundtrip_value": 1438.85,
+        "roundtrip_delta_cents": -22.34,
+        "convention_summary": "Single-stage Reverse-DCF FCFF (WACC 9.5%, Terminal g 2.5%, Operating Margin 15.0%, Tax Rate 21.0%, Reinvestment Rate 15.0%). Solved 5Y Revenue CAGR: 30.07%.",
+        "qualification_notice": null,
+        "suppression_reason": null,
+        "resume_conditions": [],
+        "scenarios": {
+          "conservative": {
+            "scenario_key": "conservative",
+            "name": "Hyperscale capex moderation; operating margin normalizes toward historical 12.5%.",
+            "per_share_value": 533.46,
+            "potential_return_pct": -62.93,
+            "conditional_wording": "Under stated conservative assumptions, modeled conditional value is $533.46 (-62.9% vs frozen reference price).",
+            "revenue_cagr_pct": 12.0,
+            "operating_margin_pct": 12.5,
+            "wacc_pct": 10.5,
+            "terminal_growth_pct": 2.0,
+            "tax_rate_pct": 21.0,
+            "reinvestment_rate_pct": 15.0,
+            "enterprise_value": 17005832478.1,
+            "equity_value": 18806562478.1
+          },
+          "base": {
+            "scenario_key": "base",
+            "name": "Continued strong modular data center execution; mid-teens margins maintained.",
+            "per_share_value": 1081.99,
+            "potential_return_pct": -24.81,
+            "conditional_wording": "Under stated base assumptions, modeled conditional value is $1081.99 (-24.8% vs frozen reference price).",
+            "revenue_cagr_pct": 22.0,
+            "operating_margin_pct": 15.0,
+            "wacc_pct": 9.5,
+            "terminal_growth_pct": 2.5,
+            "tax_rate_pct": 21.0,
+            "reinvestment_rate_pct": 15.0,
+            "enterprise_value": 36343612310.38,
+            "equity_value": 38144342310.38
+          },
+          "optimistic": {
+            "scenario_key": "optimistic",
+            "name": "Sustained AI infrastructure buildout with modular offsite premium pricing.",
+            "per_share_value": 1996.38,
+            "potential_return_pct": 38.73,
+            "conditional_wording": "Under stated optimistic assumptions, modeled conditional value is $1996.38 (+38.7% vs frozen reference price).",
+            "revenue_cagr_pct": 30.0,
+            "operating_margin_pct": 16.5,
+            "wacc_pct": 8.5,
+            "terminal_growth_pct": 3.0,
+            "tax_rate_pct": 21.0,
+            "reinvestment_rate_pct": 15.0,
+            "enterprise_value": 68579503496.72,
+            "equity_value": 70380233496.72
+          }
+        }
+      },
+      "financial_profile": {
+        "accounting_basis": "US-GAAP",
+        "currency": "USD",
+        "revenue": 11228024000.0,
+        "revenue_display": "$11.23B",
+        "revenue_period": "TTM (Ended 2026-06-30)",
+        "operating_income": 1849300000.0,
+        "operating_margin_pct": 16.47,
+        "cash_and_equivalents": 1854794000.0,
+        "short_term_investments": null,
+        "restricted_cash": null,
+        "total_cash_and_investments": 1854794000.0,
+        "total_cash_and_restricted": null,
+        "total_financial_debt": 54064000.0,
+        "debt_display": "$54.1M",
+        "is_zero_debt": false,
+        "zero_debt_support": null,
+        "operating_lease_liabilities_asc842": null,
+        "lease_convention_treatment": null,
+        "restriction_treatment": null,
+        "digital_assets": null,
+        "total_liquidity_with_digital_assets": null,
+        "net_debt_bridge": -1800730000.0,
+        "capital_structure_position": "NET_CASH",
+        "bridge_note": "Unrestricted cash ($1.85B) less long-term credit ($54.1M) yields $1.80B net cash bridge added to enterprise value in DCF equity bridge.",
+        "selected_share_basis": {
+          "basis_type": "GAAP_DILUTED_WEIGHTED_AVERAGE",
+          "source": "Form 10-Q Q2 2026 ended 2026-06-30 (accn 0001104659-26-086258)",
+          "measurement_period": "2026-06-30",
+          "value": 35254000.0,
+          "rationale": "GAAP diluted weighted-average common shares outstanding for H1 2026, incorporating all dilutive stock awards."
+        },
+        "primary_filings": [
+          {
+            "form": "10-K",
+            "period_end": "2025-12-31",
+            "filing_date": "2026-02-19",
+            "accession_number": "0001104659-26-017530",
+            "url": "https://www.sec.gov/Archives/edgar/data/1035983/000110465926017530/0001104659-26-017530-index.htm",
+            "source_role": "Primary financial disclosures"
+          },
+          {
+            "form": "10-Q",
+            "period_end": "2026-06-30",
+            "filing_date": "2026-07-23",
+            "accession_number": "0001104659-26-086258",
+            "url": "https://www.sec.gov/Archives/edgar/data/1035983/000110465926086258/0001104659-26-086258-index.htm",
+            "source_role": "Primary financial disclosures"
+          }
+        ]
+      },
+      "monitoring": {
+        "observable_invalidation_trigger": "Backlog book-to-bill falling below 0.95x or quarterly operating margin dropping below 13.0%.",
+        "next_monitoring_trigger": "Q3 FY26 earnings release (October 2026) for backlog additions and modular pipeline delivery rate.",
+        "price_watch_condition": "Priced attractive for entry if share price pulls back to base-case modeled value range ($1,050 - $1,100).",
+        "baseline_factual_evidence": "Exceptional capital efficiency ($2.16B FCF on $1.85B EBIT), massive cash buffer ($1.80B net cash), and contracted multi-year modular backlogs across hyperscalers."
+      },
+      "navigation": {
+        "radar_url": "/radar?symbol=FIX",
+        "stock_url": "/stock/FIX",
+        "radar_note": "Opens on-demand technical analysis in Radar console."
+      }
+    },
+    "DUOL": {
+      "identity": {
+        "symbol": "DUOL",
+        "company_name": "Duolingo, Inc.",
+        "cik": "0001562088",
+        "exchange": "NASDAQ",
+        "opportunity_route": "UNDERVALUED_GROWTH",
+        "sec_edgar_browse_url": "https://www.sec.gov/edgar/browse/?CIK=1562088"
+      },
+      "central_assessment": {
+        "disposition": "WATCH_CONDITIONS",
+        "disposition_label": "Watch — Conditions Required for Entry",
+        "presentation_summary": "Duolingo maintains rapid subscription expansion ($1.15B TTM revenue) and a pristine balance sheet ($1.31B cash and documented zero funded debt). However, the frozen reference market price of $141.76 embeds a demanding 22.99% 5-year revenue CAGR at a normalized 22.0% operating margin. Retained on watch: await market pullbacks toward the $125 - $130 range or evidence of sustainable AI monetisation.",
+        "summary_provenance": "DERIVED_SYNTHESIS",
+        "strongest_supporting_evidence": "Exceptional top-line momentum ($1.145B TTM revenue), high gross margins (73%), pristine balance sheet ($1.314B cash/investments, zero funded debt), and strong free cash flow generation.",
+        "strongest_opposing_evidence": "Priced-in 5Y CAGR of 23.0% leaves limited margin of safety against competitive AI LLM language assistants; base scenario indicates $129.33 fair value (-8.77% return).",
+        "main_uncertainty": "Long-term pricing power and churn resistance of language apps as multimodal foundational LLMs become ubiquitous and free.",
+        "price_watch_condition": "Priced attractive for entry on pullbacks toward the $125 - $130 range, aligning with base-case valuation.",
+        "confidence_assessment": "HIGH confidence in operational execution and balance sheet durability; MODERATE confidence that current price ($141.76) offers sufficient risk-adjusted upside.",
+        "financing_dilution_exposure": "SBC dilution spread of 8.5% between basic and diluted shares requires sustained FCF generation to offset net share count creep."
+      },
+      "valuation": {
+        "valuation_status": "COMPUTED_VERIFIED",
+        "valuation_status_label": "Computed & Verified",
+        "model_type": "REVERSE_DCF_FCFF_SINGLE_STAGE",
+        "reference_price": 141.76,
+        "reference_price_label": "Reference price used in reverse DCF",
+        "reference_date": "2026-10-16",
+        "solved_5y_cagr_pct": 22.99,
+        "reverse_dcf_parameters": {
+          "target_price": 141.76,
+          "solved_revenue_cagr_pct": 22.99,
+          "operating_margin_pct": 22.0,
+          "wacc_pct": 10.0,
+          "terminal_growth_pct": 3.0,
+          "tax_rate_pct": 21.0,
+          "reinvestment_rate_pct": 10.0,
+          "base_revenue": 1145002000.0,
+          "current_shares": 50700000.0,
+          "net_debt_bridge": -1313866000.0
+        },
+        "roundtrip_value": 141.74,
+        "roundtrip_delta_cents": -2.14,
+        "convention_summary": "Single-stage Reverse-DCF FCFF (WACC 10.0%, Terminal g 3.0%, Operating Margin 22.0%, Tax Rate 21.0%, Reinvestment Rate 10.0%). Solved 5Y Revenue CAGR: 22.99%.",
+        "qualification_notice": null,
+        "suppression_reason": null,
+        "resume_conditions": [],
+        "scenarios": {
+          "conservative": {
+            "scenario_key": "conservative",
+            "name": "Deceleration in paid subscriber net additions; AI feature investments compress margins.",
+            "per_share_value": 85.08,
+            "potential_return_pct": -39.98,
+            "conditional_wording": "Under stated conservative assumptions, modeled conditional value is $85.08 (-40.0% vs frozen reference price).",
+            "revenue_cagr_pct": 14.0,
+            "operating_margin_pct": 18.0,
+            "wacc_pct": 10.5,
+            "terminal_growth_pct": 2.5,
+            "tax_rate_pct": 21.0,
+            "reinvestment_rate_pct": 10.0,
+            "enterprise_value": 2999615043.83,
+            "equity_value": 4313481043.83
+          },
+          "base": {
+            "scenario_key": "base",
+            "name": "Consistent 20% top-line growth driven by Duolingo Max tier adoption and international expansion.",
+            "per_share_value": 129.33,
+            "potential_return_pct": -8.77,
+            "conditional_wording": "Under stated base assumptions, modeled conditional value is $129.33 (-8.8% vs frozen reference price).",
+            "revenue_cagr_pct": 20.0,
+            "operating_margin_pct": 22.0,
+            "wacc_pct": 10.0,
+            "terminal_growth_pct": 3.0,
+            "tax_rate_pct": 21.0,
+            "reinvestment_rate_pct": 10.0,
+            "enterprise_value": 5243175904.1,
+            "equity_value": 6557041904.1
+          },
+          "optimistic": {
+            "scenario_key": "optimistic",
+            "name": "Accelerated AI tutor monetisation and expansion into mathematics and music subjects.",
+            "per_share_value": 185.43,
+            "potential_return_pct": 30.8,
+            "conditional_wording": "Under stated optimistic assumptions, modeled conditional value is $185.43 (+30.8% vs frozen reference price).",
+            "revenue_cagr_pct": 26.0,
+            "operating_margin_pct": 25.0,
+            "wacc_pct": 9.5,
+            "terminal_growth_pct": 3.0,
+            "tax_rate_pct": 21.0,
+            "reinvestment_rate_pct": 10.0,
+            "enterprise_value": 8087272256.4,
+            "equity_value": 9401138256.4
+          }
+        }
+      },
+      "financial_profile": {
+        "accounting_basis": "US-GAAP",
+        "currency": "USD",
+        "revenue": 1145002000.0,
+        "revenue_display": "$1.15B",
+        "revenue_period": "TTM (Ended 2026-06-30)",
+        "operating_income": 138500000.0,
+        "operating_margin_pct": 12.1,
+        "cash_and_equivalents": 1180887000.0,
+        "short_term_investments": 132979000.0,
+        "restricted_cash": null,
+        "total_cash_and_investments": 1313866000.0,
+        "total_cash_and_restricted": null,
+        "total_financial_debt": 0.0,
+        "debt_display": "$0.00 (Zero Funded Debt Evidenced)",
+        "is_zero_debt": true,
+        "zero_debt_support": "Zero funded credit debt confirmed via Form 10-Q Q2 2026 consolidated balance sheet; no short-term borrowings, revolving credit facilities, senior notes, or term loans outstanding as of June 30, 2026.",
+        "operating_lease_liabilities_asc842": 86136000.0,
+        "lease_convention_treatment": "Lease as operating expense convention applied; rent deducted in operating income; lease liabilities excluded from net debt bridge to avoid double deduction.",
+        "restriction_treatment": null,
+        "digital_assets": null,
+        "total_liquidity_with_digital_assets": null,
+        "net_debt_bridge": -1313866000.0,
+        "capital_structure_position": "NET_CASH",
+        "bridge_note": "Lease as operating expense convention applied; rent deducted in operating income; lease liabilities excluded from net debt bridge to avoid double deduction.",
+        "selected_share_basis": {
+          "basis_type": "MANAGEMENT_ESTIMATED_DILUTED",
+          "source": "Form 10-Q Q2 2026 & Q2 Shareholder Letter forward non-GAAP guidance",
+          "measurement_period": "2026-06-30",
+          "value": 50700000.0,
+          "rationale": "Management forward estimated diluted capital structure incorporating option and RSU dilution conservatism."
+        },
+        "primary_filings": [
+          {
+            "form": "10-K",
+            "period_end": "2025-12-31",
+            "filing_date": "2026-02-27",
+            "accession_number": "0001628280-26-012494",
+            "url": "https://www.sec.gov/Archives/edgar/data/1562088/000162828026012494/0001628280-26-012494-index.htm",
+            "source_role": "Primary financial disclosures"
+          },
+          {
+            "form": "10-Q",
+            "period_end": "2026-06-30",
+            "filing_date": "2026-08-06",
+            "accession_number": "0001628280-26-053603",
+            "url": "https://www.sec.gov/Archives/edgar/data/1562088/000162828026053603/0001628280-26-053603-index.htm",
+            "source_role": "Primary financial disclosures"
+          }
+        ]
+      },
+      "monitoring": {
+        "observable_invalidation_trigger": "Paid subscriber net adds turning negative or annual churn exceeding 20% on core subscription plans.",
+        "next_monitoring_trigger": "Q3 2026 earnings release (expected November 2026) for daily active user (DAU) expansion and Duolingo Max tier conversion rates.",
+        "price_watch_condition": "Priced attractive for entry on pullbacks toward the $125 - $130 range, aligning with base-case valuation.",
+        "baseline_factual_evidence": "Exceptional top-line momentum ($1.145B TTM revenue), high gross margins (73%), pristine balance sheet ($1.314B cash/investments, zero funded debt), and strong free cash flow generation."
+      },
+      "navigation": {
+        "radar_url": "/radar?symbol=DUOL",
+        "stock_url": "/stock/DUOL",
+        "radar_note": "Opens on-demand technical analysis in Radar console."
+      }
+    },
+    "IREN": {
+      "identity": {
+        "symbol": "IREN",
+        "company_name": "Iris Energy Limited",
+        "cik": "0001878848",
+        "exchange": "NASDAQ",
+        "opportunity_route": "BUSINESS_INFLECTION",
+        "sec_edgar_browse_url": "https://www.sec.gov/edgar/browse/?CIK=1878848"
+      },
+      "central_assessment": {
+        "disposition": "WATCH_CONDITIONS",
+        "disposition_label": "Watch — Valuation Suppressed (Fail-Closed)",
+        "presentation_summary": "Iris Energy holds a massive secured power pipeline (>5 GW) transitioning toward AI cloud compute. However, single-stage DCF valuation is strictly suppressed (Fail-Closed) due to $25B-$30B guided capex, multi-layered equipment debt ($7.59B), and ongoing equity dilution. Retained on watch pending transition from upfront prepayments to sustained operating cash flow.",
+        "summary_provenance": "DERIVED_SYNTHESIS",
+        "strongest_supporting_evidence": "Massive contracted power capacity (>5 GW pipeline) and substantial current liquidity ($7.62B cash and restricted cash).",
+        "strongest_opposing_evidence": "Extreme capital intensity ($25B-$30B capex guided for FY2027), heavy structured debt liabilities ($11.6B total liabilities), and ongoing dilution risk.",
+        "main_uncertainty": "Execution risks in high-density substation energization, GPU supply chain timing, and customer contract renewal rates.",
+        "price_watch_condition": "Maintain watch status until construction-phase cash burn converts into recurring compute operating cash flow.",
+        "confidence_assessment": "MODERATE confidence in asset/power pipeline value; LOW confidence that an unhedged valuation model can be defensibly parameterized today.",
+        "financing_dilution_exposure": "HIGH dilution risk: Issued 47.1M shares in FY2026 raising ~$2.49B; multi-billion capex program will require ongoing external financing."
+      },
+      "valuation": {
+        "valuation_status": "VALUATION_SUPPRESSED",
+        "valuation_status_label": "Valuation Suppressed (Fail-Closed)",
+        "model_type": null,
+        "reference_price": 26.99,
+        "reference_price_label": "Research reference price",
+        "reference_date": "2026-10-16",
+        "solved_5y_cagr_pct": null,
+        "reverse_dcf_parameters": null,
+        "roundtrip_value": null,
+        "roundtrip_delta_cents": null,
+        "convention_summary": "Valuation suppressed (Fail-Closed).",
+        "qualification_notice": null,
+        "suppression_reason": "Single-stage DCF suppressed: Hyperscale data center construction with FY2027 capex guidance of $25B–$30B; revenue and operating cash flows are highly dependent on upfront customer prepayments, multi-layered equipment debt, and ongoing equity dilution, rendering steady-state DCF assumptions premature.",
+        "resume_conditions": [
+          "Transition from construction-phase prepayments to sustained operating cash flow from active GPU compute contracts.",
+          "Establishment of steady-state capex and clear visibility into post-expansion maintenance capital requirements.",
+          "Cessation of dilutive ATM equity issuances and stabilization of diluted share count."
+        ],
+        "scenarios": null
+      },
+      "financial_profile": {
+        "accounting_basis": "US-GAAP",
+        "currency": "USD",
+        "revenue": 707007000.0,
+        "revenue_display": "$707.0M",
+        "revenue_period": "FY2026 (Ended 2026-06-30)",
+        "operating_income": null,
+        "operating_margin_pct": null,
+        "cash_and_equivalents": 5895591000.0,
+        "short_term_investments": null,
+        "restricted_cash": 1723900000.0,
+        "total_cash_and_investments": 5895591000.0,
+        "total_cash_and_restricted": 7619527000.0,
+        "total_financial_debt": 7592944000.0,
+        "debt_display": "$7.59B",
+        "is_zero_debt": false,
+        "zero_debt_support": null,
+        "operating_lease_liabilities_asc842": null,
+        "lease_convention_treatment": null,
+        "restriction_treatment": "Restricted cash ($1,723,900,000) consists of customer deposit collateral and escrow balances under construction contracts. Applying prudent credit convention, restricted cash is excluded from the unrestricted net debt bridge, resulting in net financial debt of $1,697,353,000 ($7,592,944,000 debt - $5,895,591,000 unrestricted cash). Capital structure position is NET_DEBT.",
+        "digital_assets": null,
+        "total_liquidity_with_digital_assets": null,
+        "net_debt_bridge": 1697353000.0,
+        "capital_structure_position": "NET_DEBT",
+        "bridge_note": "Restricted cash ($1,723,900,000) consists of customer deposit collateral and escrow balances under construction contracts. Applying prudent credit convention, restricted cash is excluded from the unrestricted net debt bridge, resulting in net financial debt of $1,697,353,000 ($7,592,944,000 debt - $5,895,591,000 unrestricted cash). Capital structure position is NET_DEBT.",
+        "selected_share_basis": {
+          "basis_type": "GAAP_BASIC_WEIGHTED_AVERAGE",
+          "source": "Form 10-K FY2026 ended 2026-06-30 (accn 0001878848-26-000052)",
+          "measurement_period": "2026-06-30",
+          "value": 316123145.0,
+          "rationale": "Weighted-average ordinary shares outstanding for FY2026; equals basic and diluted count in audited financial statements."
+        },
+        "primary_filings": [
+          {
+            "form": "10-K",
+            "period_end": "2026-06-30",
+            "filing_date": "2026-08-27",
+            "accession_number": "0001878848-26-000052",
+            "url": "https://www.sec.gov/Archives/edgar/data/1878848/000187884826000052/0001878848-26-000052-index.htm",
+            "source_role": "Primary financial disclosures"
+          },
+          {
+            "form": "8-K",
+            "period_end": "2026-06-30",
+            "filing_date": "2026-08-27",
+            "accession_number": "0001878848-26-000053",
+            "url": "https://www.sec.gov/Archives/edgar/data/1878848/000187884826000053/0001878848-26-000053-index.htm",
+            "source_role": "Primary financial disclosures"
+          }
+        ]
+      },
+      "monitoring": {
+        "observable_invalidation_trigger": "Substantial delays in Horizon cluster energization or cancellation of anchor hyperscale cloud contracts.",
+        "next_monitoring_trigger": "Q1 FY2027 quarterly results (expected November 2026) to assess customer prepayment utilization, equipment debt additions, and GPU cloud cluster energization.",
+        "price_watch_condition": "Maintain watch status until construction-phase cash burn converts into recurring compute operating cash flow.",
+        "baseline_factual_evidence": "Massive contracted power capacity (>5 GW pipeline) and substantial current liquidity ($7.62B cash and restricted cash)."
+      },
+      "navigation": {
+        "radar_url": "/radar?symbol=IREN",
+        "stock_url": "/stock/IREN",
+        "radar_note": "Opens on-demand technical analysis in Radar console."
+      }
+    },
+    "CORZ": {
+      "identity": {
+        "symbol": "CORZ",
+        "company_name": "Core Scientific, Inc.",
+        "cik": "0001839341",
+        "exchange": "NASDAQ",
+        "opportunity_route": "BUSINESS_INFLECTION",
+        "sec_edgar_browse_url": "https://www.sec.gov/edgar/browse/?CIK=1839341"
+      },
+      "central_assessment": {
+        "disposition": "WATCH_CONDITIONS",
+        "disposition_label": "Watch — Valuation Suppressed (Fail-Closed)",
+        "presentation_summary": "Core Scientific demonstrates rapid post-reorganization industrial colocation delivery (395 MW active billing, $136.7M quarterly colocation revenue under landmark CoreWeave agreements with $6.7B total contracted commitments). However, single-stage DCF valuation is strictly suppressed (Fail-Closed) due to massive quarterly capex ($797.5M), $4.30B carrying debt, and warrant fair value volatility. Retained on watch pending positive post-capex free cash flow.",
+        "summary_provenance": "DERIVED_SYNTHESIS",
+        "strongest_supporting_evidence": "Rapid operational inflection: 395 MW active billing colocation capacity as of June 30, 2026, generating $136.7M quarterly colocation revenue under landmark CoreWeave agreements.",
+        "strongest_opposing_evidence": "Substantial financial leverage ($3.3B senior notes), massive quarterly capex outflows ($797.5M), single-counterparty concentration, and heavy warrant overhang causing $(1.15B) quarterly GAAP net loss.",
+        "main_uncertainty": "Timing and capex efficiency in energizing the remaining 105 MW to reach the 500 MW CoreWeave threshold.",
+        "price_watch_condition": "Maintain watch status until colocation revenue scales past capital expenditures to deliver positive quarterly free cash flow.",
+        "confidence_assessment": "Reassessed from RESEARCH_PRIORITY to WATCH_CONDITIONS. While industrial colocation inflection is confirmed by Q2 2026 disclosures, extreme capex burn and warrant liabilities require observational monitoring.",
+        "financing_dilution_exposure": "Significant dilution and volatility risk from outstanding Tranche 1 and Tranche 2 warrants issued upon reorganization."
+      },
+      "valuation": {
+        "valuation_status": "VALUATION_SUPPRESSED",
+        "valuation_status_label": "Valuation Suppressed (Fail-Closed)",
+        "model_type": null,
+        "reference_price": 14.85,
+        "reference_price_label": "Research reference price",
+        "reference_date": "2026-10-16",
+        "solved_5y_cagr_pct": null,
+        "reverse_dcf_parameters": null,
+        "roundtrip_value": null,
+        "roundtrip_delta_cents": null,
+        "convention_summary": "Valuation suppressed (Fail-Closed).",
+        "qualification_notice": null,
+        "suppression_reason": "Single-stage DCF suppressed: Discontinuous capital structure and massive quarterly capex ($797.5M in Q2 2026) exceed operating cash flow; $4.30B total debt ($4,297,967,000 carrying amount) introduces substantial interest burden; GAAP net loss exhibits extreme volatility due to mark-to-market warrant fair value revaluations. Contracted CoreWeave revenue requires substantial ongoing delivery milestones before generating free cash flow.",
+        "resume_conditions": [
+          "Achieve two consecutive quarters of positive free cash flow post total capital expenditures.",
+          "Completion, delivery, and energization of the full 500 MW contracted CoreWeave fleet.",
+          "Stabilization of capital structure with clear resolution or exercise trajectory for outstanding warrant tranches."
+        ],
+        "scenarios": null
+      },
+      "financial_profile": {
+        "accounting_basis": "US-GAAP",
+        "currency": "USD",
+        "revenue": 164201000.0,
+        "revenue_display": "$164.2M",
+        "revenue_period": "Q2 2026 (Quarter Ended 2026-06-30)",
+        "operating_income": null,
+        "operating_margin_pct": null,
+        "cash_and_equivalents": 1769735000.0,
+        "short_term_investments": null,
+        "restricted_cash": null,
+        "total_cash_and_investments": 1769735000.0,
+        "total_cash_and_restricted": null,
+        "total_financial_debt": 4297967000.0,
+        "debt_display": "$4.30B",
+        "is_zero_debt": false,
+        "zero_debt_support": null,
+        "operating_lease_liabilities_asc842": null,
+        "lease_convention_treatment": null,
+        "restriction_treatment": null,
+        "digital_assets": 49675000.0,
+        "total_liquidity_with_digital_assets": 1819410000.0,
+        "net_debt_bridge": 2528232000.0,
+        "capital_structure_position": "NET_DEBT",
+        "bridge_note": "Unrestricted cash ($1.77B) against carrying debt ($4.30B) leaves $2.53B net debt bridge; digital assets ($49.7M) and mark-to-market warrant liabilities are excluded from fundamental net debt bridge.",
+        "selected_share_basis": {
+          "basis_type": "GAAP_DILUTED_WEIGHTED_AVERAGE",
+          "source": "Form 10-Q Q2 2026 ended 2026-06-30 (accn 0001839341-26-000014)",
+          "measurement_period": "2026-06-30",
+          "value": 325329000.0,
+          "rationale": "Diluted share count incorporating post-emergence warrant and RSA dilution."
+        },
+        "primary_filings": [
+          {
+            "form": "10-Q",
+            "period_end": "2026-06-30",
+            "filing_date": "2026-07-28",
+            "accession_number": "0001839341-26-000014",
+            "url": "https://www.sec.gov/Archives/edgar/data/1839341/000183934126000014/0001839341-26-000014-index.htm",
+            "source_role": "Primary financial disclosures"
+          },
+          {
+            "form": "8-K",
+            "period_end": "2026-07-28",
+            "filing_date": "2026-07-28",
+            "accession_number": "0001839341-26-000013",
+            "url": "https://www.sec.gov/Archives/edgar/data/1839341/000183934126000013/0001839341-26-000013-index.htm",
+            "source_role": "Primary financial disclosures"
+          }
+        ]
+      },
+      "monitoring": {
+        "observable_invalidation_trigger": "Construction cost overruns forcing emergency dilutive equity issuance or default on senior note covenants.",
+        "next_monitoring_trigger": "Q3 2026 Form 10-Q filing and earnings release (expected November 2026) to monitor energized colocation capacity beyond 395 MW and Q3 capex trajectory.",
+        "price_watch_condition": "Maintain watch status until colocation revenue scales past capital expenditures to deliver positive quarterly free cash flow.",
+        "baseline_factual_evidence": "Rapid operational inflection: 395 MW active billing colocation capacity as of June 30, 2026, generating $136.7M quarterly colocation revenue under landmark CoreWeave agreements."
+      },
+      "navigation": {
+        "radar_url": "/radar?symbol=CORZ",
+        "stock_url": "/stock/CORZ",
+        "radar_note": "Opens on-demand technical analysis in Radar console."
+      }
+    },
+    "MU": {
+      "identity": {
+        "symbol": "MU",
+        "company_name": "Micron Technology, Inc.",
+        "cik": "0000723125",
+        "exchange": "NASDAQ",
+        "opportunity_route": "CYCLICAL_RECOVERY",
+        "sec_edgar_browse_url": "https://www.sec.gov/edgar/browse/?CIK=723125"
+      },
+      "central_assessment": {
+        "disposition": "NO_SUPPORTED_OPPORTUNITY",
+        "disposition_label": "Rejected — No Supported Opportunity",
+        "presentation_summary": "Micron Technology is rejected as a supported opportunity under ODP-05 (NO_SUPPORTED_OPPORTUNITY). While FY2026 delivered record revenue ($133.2B) driven by HBM3E pricing, memory remains a fiercely cyclical commodity. At the reference price of $878.84, priced-in growth of 21.29% reflects cyclical exuberance; mid-cycle base valuation is $456.67, indicating -48.0% downside risk. Require cyclical pullback below $500.",
+        "summary_provenance": "DERIVED_SYNTHESIS",
+        "strongest_supporting_evidence": "Record FY2026 revenue ($133.2B) and operating income ($99.3B) driven by HBM3e AI accelerator demand.",
+        "strongest_opposing_evidence": "Priced-in 5Y CAGR of 21.3% on top of peak-cycle revenue reflects cyclical exuberance; mid-cycle normalization indicates $456.67 fair value (-48.0% return).",
+        "main_uncertainty": "Memory cycle peak timing and competitor supply ramp from SK Hynix and Samsung in HBM4.",
+        "price_watch_condition": "No entry supported at current levels; require cyclical downturn pullback below $500.",
+        "confidence_assessment": "HIGH confidence that current price ($878.84) represents a cyclical peak rather than a discovery opportunity.",
+        "financing_dilution_exposure": "Low; strong cash generation and net cash position ($6.39B net cash)."
+      },
+      "valuation": {
+        "valuation_status": "COMPUTED_QUALIFIED",
+        "valuation_status_label": "Computed with Qualification",
+        "model_type": "REVERSE_DCF_FCFF_SINGLE_STAGE",
+        "reference_price": 878.84,
+        "reference_price_label": "Reference price used in reverse DCF",
+        "reference_date": "2026-10-16",
+        "solved_5y_cagr_pct": 21.29,
+        "reverse_dcf_parameters": {
+          "target_price": 878.84,
+          "solved_revenue_cagr_pct": 21.29,
+          "operating_margin_pct": 40.0,
+          "wacc_pct": 9.5,
+          "terminal_growth_pct": 2.5,
+          "tax_rate_pct": 21.0,
+          "reinvestment_rate_pct": 25.0,
+          "base_revenue": 133188000000.0,
+          "current_shares": 1130800000.0,
+          "net_debt_bridge": -6390000000.0
+        },
+        "roundtrip_value": 878.89,
+        "roundtrip_delta_cents": 5.0,
+        "convention_summary": "Single-stage Reverse-DCF FCFF (WACC 9.5%, Terminal g 2.5%, Operating Margin 40.0%, Tax Rate 21.0%, Reinvestment Rate 25.0%). Solved 5Y Revenue CAGR: 21.29%.",
+        "qualification_notice": "Valuation status COMPUTED_QUALIFIED: Reverse-DCF and scenario arithmetic reproduced under stated cyclical recovery assumptions (40.0% operating margin, 25.0% reinvestment rate); qualified by memory cycle volatility and non-steady-state baseline.",
+        "suppression_reason": null,
+        "resume_conditions": [],
+        "scenarios": {
+          "conservative": {
+            "scenario_key": "conservative",
+            "name": "Severe memory cyclical downturn; DRAM/NAND oversupply compresses operating margins to 25%.",
+            "per_share_value": 160.69,
+            "potential_return_pct": -81.72,
+            "conditional_wording": "Under stated conservative assumptions, modeled conditional value is $160.69 (-81.7% vs frozen reference price).",
+            "revenue_cagr_pct": -5.0,
+            "operating_margin_pct": 25.0,
+            "wacc_pct": 10.5,
+            "terminal_growth_pct": 2.0,
+            "tax_rate_pct": 21.0,
+            "reinvestment_rate_pct": 25.0,
+            "enterprise_value": 175317808659.13,
+            "equity_value": 181707808659.13
+          },
+          "base": {
+            "scenario_key": "base",
+            "name": "Mid-cycle normalization with steady AI HBM demand offset by consumer electronics stagnation.",
+            "per_share_value": 456.67,
+            "potential_return_pct": -48.04,
+            "conditional_wording": "Under stated base assumptions, modeled conditional value is $456.67 (-48.0% vs frozen reference price).",
+            "revenue_cagr_pct": 8.0,
+            "operating_margin_pct": 35.0,
+            "wacc_pct": 9.5,
+            "terminal_growth_pct": 2.5,
+            "tax_rate_pct": 21.0,
+            "reinvestment_rate_pct": 25.0,
+            "enterprise_value": 510007946373.72,
+            "equity_value": 516397946373.72
+          },
+          "optimistic": {
+            "scenario_key": "optimistic",
+            "name": "Multi-year AI memory supercycle driven by persistent HBM shortages and pricing power.",
+            "per_share_value": 942.44,
+            "potential_return_pct": 7.24,
+            "conditional_wording": "Under stated optimistic assumptions, modeled conditional value is $942.44 (+7.2% vs frozen reference price).",
+            "revenue_cagr_pct": 18.0,
+            "operating_margin_pct": 45.0,
+            "wacc_pct": 9.0,
+            "terminal_growth_pct": 2.5,
+            "tax_rate_pct": 21.0,
+            "reinvestment_rate_pct": 25.0,
+            "enterprise_value": 1059323773461.62,
+            "equity_value": 1065713773461.62
+          }
+        }
+      },
+      "financial_profile": {
+        "accounting_basis": "US-GAAP",
+        "currency": "USD",
+        "revenue": 133188000000.0,
+        "revenue_display": "$133.19B",
+        "revenue_period": "FY2026 (Ended 2026-09-03)",
+        "operating_income": 99340000000.0,
+        "operating_margin_pct": 74.59,
+        "cash_and_equivalents": 18240000000.0,
+        "short_term_investments": null,
+        "restricted_cash": null,
+        "total_cash_and_investments": 18240000000.0,
+        "total_cash_and_restricted": null,
+        "total_financial_debt": 11850000000.0,
+        "debt_display": "$11.85B",
+        "is_zero_debt": false,
+        "zero_debt_support": null,
+        "operating_lease_liabilities_asc842": null,
+        "lease_convention_treatment": null,
+        "restriction_treatment": null,
+        "digital_assets": null,
+        "total_liquidity_with_digital_assets": null,
+        "net_debt_bridge": -6390000000.0,
+        "capital_structure_position": "NET_CASH",
+        "bridge_note": "Unrestricted cash ($18.24B) less total financial debt ($11.85B) leaves $6.39B net cash bridge added to enterprise value in DCF equity bridge.",
+        "selected_share_basis": {
+          "basis_type": "GAAP_BASIC_WEIGHTED_AVERAGE",
+          "source": "Form 10-K FY2026 ended 2026-09-03 (accn 0000723125-26-000023)",
+          "measurement_period": "2026-09-03",
+          "value": 1130800000.0,
+          "rationale": "GAAP basic weighted-average common shares outstanding for FY2026, consistent with cyclical low-multiple cash-per-share assessment."
+        },
+        "primary_filings": [
+          {
+            "form": "10-K",
+            "period_end": "2026-09-03",
+            "filing_date": "2026-10-09",
+            "accession_number": "0000723125-26-000023",
+            "url": "https://www.sec.gov/Archives/edgar/data/723125/000072312526000023/0000723125-26-000023-index.htm",
+            "source_role": "Primary financial disclosures"
+          }
+        ]
+      },
+      "monitoring": {
+        "observable_invalidation_trigger": "DRAM contract price declines or sequential drop in blended ASPs.",
+        "next_monitoring_trigger": "Q1 FY2027 earnings release (expected December 2026) for bit shipment guidance and HBM capacity booking updates.",
+        "price_watch_condition": "No entry supported at current levels; require cyclical downturn pullback below $500.",
+        "baseline_factual_evidence": "Record FY2026 revenue ($133.2B) and operating income ($99.3B) driven by HBM3e AI accelerator demand."
+      },
+      "navigation": {
+        "radar_url": "/radar?symbol=MU",
+        "stock_url": "/stock/MU",
+        "radar_note": "Opens on-demand technical analysis in Radar console."
+      }
+    }
+  }
+}

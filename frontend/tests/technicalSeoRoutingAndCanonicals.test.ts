@@ -41,6 +41,15 @@ assert.ok(
 );
 console.log("   [OK] Permanent 301 redirects from /screener to /radar are present");
 
+// Must NOT contain legacy catch-all redirect covering active /research route to root
+const researchRedirectCovered = /^\/research\b/m.test(redirectsContent);
+assert.strictEqual(
+  researchRedirectCovered,
+  false,
+  "FAIL: _redirects must NOT contain redirect rules covering active /research route"
+);
+console.log("   [OK] Active /research route is not covered by a redirect to terminal root");
+
 // ---------------------------------------------------------------------------
 // 2. Invariant Check: frontend/public/_headers (Cloudflare Host Crawl Protection)
 // ---------------------------------------------------------------------------
