@@ -13,6 +13,8 @@
  * - Qualified valuation (MU) visibly renders its cyclical recovery qualification banner.
  * - Zero funded debt (DUOL) explicitly distinguished from missing debt.
  * - Excludes simulated technical overlays (RVOL, VCP, Confluence); provides optional Radar deep-links.
+ * - Sourced capital structure & net debt bridge explicitly reconciles liquidity and lease conventions.
+ * - Full scenario assumptions disclosure compares Reverse-DCF solve with forward scenarios.
  * - Accessible controls: touch targets >= 44px, keyboard navigation with cyan focus rings.
  */
 
@@ -98,7 +100,7 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
                 href={identity.sec_edgar_browse_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 hover:underline inline-flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-cyan-400 rounded px-1 min-h-[28px]"
+                className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 hover:underline inline-flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-cyan-400 rounded px-2 min-h-[44px]"
                 title={`Open SEC EDGAR Browse page for CIK ${identity.cik}`}
               >
                 <span>SEC EDGAR Profile</span>
@@ -216,7 +218,7 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
           </div>
         ) : (
           /* Computed Valuation Block */
-          <div className="bg-[#101726] border border-[#233149] rounded-xl p-4 sm:p-5 space-y-3">
+          <div className="bg-[#101726] border border-[#233149] rounded-xl p-4 sm:p-5 space-y-4">
             <div className="flex flex-wrap justify-between items-center gap-2">
               <span className="text-xs text-slate-300">Reverse-DCF Solved 5Y Revenue CAGR:</span>
               <span className="font-mono font-bold text-cyan-400 text-lg">
@@ -247,7 +249,7 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
 
             {/* Multi-Scenario Bracket with Conditional Wording */}
             {valuation.scenarios && Object.keys(valuation.scenarios).length > 0 && (
-              <div className="mt-3 pt-3 border-t border-slate-800 space-y-2.5">
+              <div className="mt-3 pt-3 border-t border-slate-800 space-y-3">
                 <div className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">
                   Conditional Modeled Valuation Range:
                 </div>
@@ -302,13 +304,234 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
                   )}
                 </div>
 
-                <div className="text-[11px] text-slate-400 mt-2 space-y-1">
+                <div className="text-[11px] text-slate-400 space-y-1">
                   {valuation.scenarios.conservative && (
                     <div>• {valuation.scenarios.conservative.conditional_wording}</div>
                   )}
                   {valuation.scenarios.base && (
                     <div>• {valuation.scenarios.base.conditional_wording}</div>
                   )}
+                </div>
+
+                {/* Scenario Assumptions & Model Mechanics Disclosure (Finding B) */}
+                <div className="pt-3 border-t border-slate-800/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                      Scenario Assumptions &amp; Model Mechanics
+                    </span>
+                    <span className="text-[10px] font-mono text-cyan-400">Reverse-DCF Solve vs. Forward Scenarios</span>
+                  </div>
+
+                  <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+                    <strong>Model Distinction:</strong> The Reverse-DCF solves for the 5-year revenue CAGR embedded in the reference close price (${valuation.reference_price.toFixed(2)}), holding margin, WACC, and reinvestment rate fixed. The forward scenarios project explicit cash flows under specified operating assumptions to compute conditional intrinsic equity values.
+                  </p>
+
+                  <div className="overflow-x-auto rounded-lg border border-slate-800">
+                    <table className="w-full text-left text-[11px] font-mono border-collapse">
+                      <thead>
+                        <tr className="bg-[#080d16] text-slate-400 border-b border-slate-800">
+                          <th className="p-2 font-semibold">Assumption / Metric</th>
+                          <th className="p-2 font-semibold text-cyan-300">Reverse-DCF Solve</th>
+                          <th className="p-2 font-semibold text-rose-300">Conservative</th>
+                          <th className="p-2 font-semibold text-slate-200">Base Case</th>
+                          <th className="p-2 font-semibold text-emerald-300">Optimistic</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60 bg-[#0c121e]">
+                        <tr>
+                          <td className="p-2 text-slate-400">Model Role / Purpose</td>
+                          <td className="p-2 text-cyan-400">Price Solve Anchor</td>
+                          <td className="p-2 text-slate-300">Downside Stress</td>
+                          <td className="p-2 text-slate-200">Central Case</td>
+                          <td className="p-2 text-emerald-400">Upside Expansion</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 text-slate-400">5Y Revenue CAGR</td>
+                          <td className="p-2 font-bold text-cyan-400">
+                            {valuation.reverse_dcf_parameters?.solved_revenue_cagr_pct !== undefined
+                              ? `${valuation.reverse_dcf_parameters.solved_revenue_cagr_pct.toFixed(2)}%`
+                              : valuation.solved_5y_cagr_pct !== null
+                              ? `${valuation.solved_5y_cagr_pct.toFixed(2)}%`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.scenarios.conservative?.revenue_cagr_pct !== undefined
+                              ? `${valuation.scenarios.conservative.revenue_cagr_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-200">
+                            {valuation.scenarios.base?.revenue_cagr_pct !== undefined
+                              ? `${valuation.scenarios.base.revenue_cagr_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-emerald-400">
+                            {valuation.scenarios.optimistic?.revenue_cagr_pct !== undefined
+                              ? `${valuation.scenarios.optimistic.revenue_cagr_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 text-slate-400">Target Operating Margin</td>
+                          <td className="p-2 text-cyan-400">
+                            {valuation.reverse_dcf_parameters?.operating_margin_pct !== undefined
+                              ? `${valuation.reverse_dcf_parameters.operating_margin_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.scenarios.conservative?.operating_margin_pct !== undefined
+                              ? `${valuation.scenarios.conservative.operating_margin_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-200">
+                            {valuation.scenarios.base?.operating_margin_pct !== undefined
+                              ? `${valuation.scenarios.base.operating_margin_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-emerald-400">
+                            {valuation.scenarios.optimistic?.operating_margin_pct !== undefined
+                              ? `${valuation.scenarios.optimistic.operating_margin_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 text-slate-400">Discount Rate (WACC)</td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.reverse_dcf_parameters?.wacc_pct !== undefined
+                              ? `${valuation.reverse_dcf_parameters.wacc_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.scenarios.conservative?.wacc_pct !== undefined
+                              ? `${valuation.scenarios.conservative.wacc_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.scenarios.base?.wacc_pct !== undefined
+                              ? `${valuation.scenarios.base.wacc_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.scenarios.optimistic?.wacc_pct !== undefined
+                              ? `${valuation.scenarios.optimistic.wacc_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 text-slate-400">Terminal Growth Rate (g)</td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.reverse_dcf_parameters?.terminal_growth_pct !== undefined
+                              ? `${valuation.reverse_dcf_parameters.terminal_growth_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.scenarios.conservative?.terminal_growth_pct !== undefined
+                              ? `${valuation.scenarios.conservative.terminal_growth_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.scenarios.base?.terminal_growth_pct !== undefined
+                              ? `${valuation.scenarios.base.terminal_growth_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.scenarios.optimistic?.terminal_growth_pct !== undefined
+                              ? `${valuation.scenarios.optimistic.terminal_growth_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 text-slate-400">Effective Tax Rate</td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.reverse_dcf_parameters?.tax_rate_pct !== undefined
+                              ? `${valuation.reverse_dcf_parameters.tax_rate_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.scenarios.conservative?.tax_rate_pct !== undefined
+                              ? `${valuation.scenarios.conservative.tax_rate_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.scenarios.base?.tax_rate_pct !== undefined
+                              ? `${valuation.scenarios.base.tax_rate_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.scenarios.optimistic?.tax_rate_pct !== undefined
+                              ? `${valuation.scenarios.optimistic.tax_rate_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 text-slate-400">Reinvestment (Sales/Cap)</td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.reverse_dcf_parameters?.reinvestment_rate_pct !== undefined
+                              ? `${valuation.reverse_dcf_parameters.reinvestment_rate_pct.toFixed(2)}x`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.scenarios.conservative?.reinvestment_rate_pct !== undefined
+                              ? `${valuation.scenarios.conservative.reinvestment_rate_pct.toFixed(2)}x`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.scenarios.base?.reinvestment_rate_pct !== undefined
+                              ? `${valuation.scenarios.base.reinvestment_rate_pct.toFixed(2)}x`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.scenarios.optimistic?.reinvestment_rate_pct !== undefined
+                              ? `${valuation.scenarios.optimistic.reinvestment_rate_pct.toFixed(2)}x`
+                              : "N/A"}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 text-slate-400">Implied Equity Value</td>
+                          <td className="p-2 text-cyan-400 font-bold">
+                            {valuation.reverse_dcf_parameters?.current_shares
+                              ? `$${((valuation.reference_price * valuation.reverse_dcf_parameters.current_shares) / 1e6).toFixed(0)}M`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-300">
+                            {valuation.scenarios.conservative?.equity_value !== undefined
+                              ? `$${(valuation.scenarios.conservative.equity_value / 1e6).toFixed(0)}M`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-slate-200">
+                            {valuation.scenarios.base?.equity_value !== undefined
+                              ? `$${(valuation.scenarios.base.equity_value / 1e6).toFixed(0)}M`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 text-emerald-400">
+                            {valuation.scenarios.optimistic?.equity_value !== undefined
+                              ? `$${(valuation.scenarios.optimistic.equity_value / 1e6).toFixed(0)}M`
+                              : "N/A"}
+                          </td>
+                        </tr>
+                        <tr className="bg-[#090f1a]">
+                          <td className="p-2 text-slate-300 font-semibold">Modeled Value / Share</td>
+                          <td className="p-2 font-bold text-cyan-300">
+                            ${valuation.reference_price.toFixed(2)} (Anchor)
+                          </td>
+                          <td className="p-2 font-bold text-rose-400">
+                            {valuation.scenarios.conservative?.per_share_value !== undefined
+                              ? `$${valuation.scenarios.conservative.per_share_value.toFixed(2)}`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 font-bold text-white">
+                            {valuation.scenarios.base?.per_share_value !== undefined
+                              ? `$${valuation.scenarios.base.per_share_value.toFixed(2)}`
+                              : "N/A"}
+                          </td>
+                          <td className="p-2 font-bold text-emerald-400">
+                            {valuation.scenarios.optimistic?.per_share_value !== undefined
+                              ? `$${valuation.scenarios.optimistic.per_share_value.toFixed(2)}`
+                              : "N/A"}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
@@ -330,7 +553,7 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
           <span className="text-[10px] text-slate-400 font-mono">US-GAAP Authority</span>
         </div>
 
-        <div className="bg-[#101726] border border-[#233149] rounded-xl p-4 sm:p-5 space-y-3.5 text-xs">
+        <div className="bg-[#101726] border border-[#233149] rounded-xl p-4 sm:p-5 space-y-4 text-xs">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <div className="bg-[#0b1019] p-2.5 rounded-lg border border-slate-800/80">
               <span className="text-slate-500 text-[10px] block">Reported Revenue</span>
@@ -373,11 +596,104 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
             </div>
           </div>
 
-          {financial_profile.is_zero_debt && financial_profile.zero_debt_support && (
-            <div className="p-2.5 rounded bg-emerald-950/30 border border-emerald-900/50 text-[11px] text-emerald-200">
-              <strong>Debt Completeness Note:</strong> {financial_profile.zero_debt_support}
+          {/* Sourced Capital Structure & Net Debt Bridge (Finding C) */}
+          <div className="bg-[#0b1019] rounded-xl border border-slate-800/90 p-3.5 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800">
+              <span className="text-[11px] font-bold text-slate-200 uppercase tracking-wider">
+                Capital Structure &amp; Net Debt Bridge Breakdown
+              </span>
+              <span className="text-[10px] font-mono text-slate-400">
+                Bridge: {financial_profile.net_debt_bridge !== null && financial_profile.net_debt_bridge !== undefined
+                  ? `$${(financial_profile.net_debt_bridge / 1e6).toFixed(1)}M`
+                  : "N/A"}
+              </span>
             </div>
-          )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs font-mono">
+              <div className="p-2 rounded bg-[#0f1624] border border-slate-800">
+                <span className="text-slate-500 text-[10px] block">Cash &amp; Equivalents</span>
+                <span className="text-slate-200 font-semibold">
+                  {financial_profile.cash_and_equivalents !== null && financial_profile.cash_and_equivalents !== undefined
+                    ? `$${(financial_profile.cash_and_equivalents / 1e6).toFixed(1)}M`
+                    : "N/A"}
+                </span>
+              </div>
+
+              <div className="p-2 rounded bg-[#0f1624] border border-slate-800">
+                <span className="text-slate-500 text-[10px] block">Short-Term Investments</span>
+                <span className="text-slate-200 font-semibold">
+                  {financial_profile.short_term_investments !== null && financial_profile.short_term_investments !== undefined
+                    ? `$${(financial_profile.short_term_investments / 1e6).toFixed(1)}M`
+                    : "None / Excluded"}
+                </span>
+              </div>
+
+              <div className="p-2 rounded bg-[#0f1624] border border-slate-800">
+                <span className="text-slate-500 text-[10px] block">Restricted Cash</span>
+                <span className="text-slate-200 font-semibold">
+                  {financial_profile.restricted_cash !== null && financial_profile.restricted_cash !== undefined
+                    ? `$${(financial_profile.restricted_cash / 1e6).toFixed(1)}M`
+                    : "None / Excluded"}
+                </span>
+                {financial_profile.restriction_treatment && (
+                  <span className="text-[9px] text-amber-400 block font-sans truncate" title={financial_profile.restriction_treatment}>
+                    {financial_profile.restriction_treatment}
+                  </span>
+                )}
+              </div>
+
+              {financial_profile.digital_assets !== null && financial_profile.digital_assets !== undefined && (
+                <div className="p-2 rounded bg-[#0f1624] border border-slate-800">
+                  <span className="text-slate-500 text-[10px] block">Digital Assets (Bitcoin)</span>
+                  <span className="text-slate-200 font-semibold">
+                    ${(financial_profile.digital_assets / 1e6).toFixed(1)}M
+                  </span>
+                  <span className="text-[9px] text-cyan-400 block font-sans">
+                    Carried at fair value / impairment basis
+                  </span>
+                </div>
+              )}
+
+              <div className="p-2 rounded bg-[#0f1624] border border-slate-800">
+                <span className="text-slate-500 text-[10px] block">Total Financial Debt</span>
+                <span className="text-slate-200 font-semibold">
+                  {financial_profile.is_zero_debt
+                    ? "$0.00"
+                    : financial_profile.total_financial_debt !== null && financial_profile.total_financial_debt !== undefined
+                    ? `$${(financial_profile.total_financial_debt / 1e6).toFixed(1)}M`
+                    : financial_profile.debt_display}
+                </span>
+              </div>
+
+              <div className="p-2 rounded bg-[#0f1624] border border-slate-800">
+                <span className="text-slate-500 text-[10px] block">Operating Leases (ASC 842)</span>
+                <span className="text-slate-200 font-semibold">
+                  {financial_profile.operating_lease_liabilities_asc842 !== null && financial_profile.operating_lease_liabilities_asc842 !== undefined
+                    ? `$${(financial_profile.operating_lease_liabilities_asc842 / 1e6).toFixed(1)}M`
+                    : "None / N/A"}
+                </span>
+                {financial_profile.lease_convention_treatment && (
+                  <span className="text-[9px] text-slate-400 block font-sans truncate" title={financial_profile.lease_convention_treatment}>
+                    {financial_profile.lease_convention_treatment}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Accounting Bridge Notes */}
+            {financial_profile.bridge_note && (
+              <div className="p-2.5 rounded bg-[#101726] border border-slate-800 text-[11px] text-slate-300 font-sans leading-relaxed">
+                <strong className="text-slate-200 font-semibold">Accounting Bridge Convention:</strong>{" "}
+                {financial_profile.bridge_note}
+              </div>
+            )}
+
+            {financial_profile.is_zero_debt && financial_profile.zero_debt_support && (
+              <div className="p-2.5 rounded bg-emerald-950/30 border border-emerald-900/50 text-[11px] text-emerald-200 font-sans">
+                <strong>Zero Debt Verification:</strong> {financial_profile.zero_debt_support}
+              </div>
+            )}
+          </div>
 
           {/* Selected Share Basis */}
           {financial_profile.selected_share_basis && (
@@ -401,7 +717,7 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
                   href={f.url || `https://www.sec.gov/edgar/browse/?CIK=${identity.cik}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 font-mono text-[10px] transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400 inline-flex items-center gap-1 min-h-[32px]"
+                  className="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 font-mono text-[10px] transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400 inline-flex items-center gap-1 min-h-[44px]"
                   title={`Open SEC EDGAR Filing Form ${f.form} for period ended ${f.period_end}`}
                 >
                   <span>{f.form} ({f.period_end}) • Accn: {f.accession_number}</span>

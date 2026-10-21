@@ -242,8 +242,10 @@ function ResearchContent() {
             </p>
             <div className="pt-2 border-t border-[#151e2e] space-y-1 text-[10px] text-slate-500">
               <div>Contract: ODP-05 Baseline</div>
+              <div>Filing Cutoff: {metadata.filing_availability_cutoff_utc || "Unavailable"}</div>
+              <div>Authored UTC: {metadata.authoring_timestamp_utc || "Unavailable"}</div>
+              <div>Independent Review: Unavailable (Unrecorded)</div>
               <div>Snapshot SHA: {metadata.source_ledger_sha256 ? `${metadata.source_ledger_sha256.substring(0, 12)}…` : "Verified"}</div>
-              <div>Deterministic Generator: Pass</div>
             </div>
           </div>
         </aside>
@@ -252,6 +254,26 @@ function ResearchContent() {
         <section className="lg:col-span-9 space-y-6">
           {isKnown && dossier ? (
             <OpportunityDossierCard dossier={dossier} />
+          ) : isKnown && !dossier ? (
+            /* Explicit Unavailable State for Recognized Cohort Member */
+            <div className="bg-[#0b1019] rounded-2xl border border-rose-900/50 p-6 sm:p-8 space-y-4 shadow-2xl">
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-800 text-rose-400 shrink-0">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div className="space-y-2">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-rose-950/80 text-rose-300 border border-rose-800 text-xs font-mono font-bold">
+                    DOSSIER RECORD UNAVAILABLE
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white font-sans">
+                    Dossier Unavailable for &ldquo;{normalizedSymbol}&rdquo;
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-300 font-sans leading-relaxed">
+                    Although {normalizedSymbol} is a recognized ODP-05 research candidate asset, its detailed assessment record could not be loaded from the bundled snapshot.
+                  </p>
+                </div>
+              </div>
+            </div>
           ) : hasSymbolParam && !isKnown ? (
             /* Explicit Neutral Unsupported State */
             <div className="bg-[#0b1019] rounded-2xl border border-amber-900/50 p-6 sm:p-8 space-y-6 shadow-2xl">

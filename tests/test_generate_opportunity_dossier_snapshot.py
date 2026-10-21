@@ -13,6 +13,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.tier1
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 GENERATOR_SCRIPT = REPO_ROOT / "scripts" / "research" / "generate_opportunity_dossier_snapshot.py"
 SOURCE_LEDGER = REPO_ROOT / "docs" / "research" / "opportunity_discovery" / "odp05_discovery_ledger.json"
@@ -104,8 +106,11 @@ def test_snapshot_content_semantic_invariants():
     assert fix["financial_profile"]["debt_display"] == "$54.1M"
     assert fix["financial_profile"]["is_zero_debt"] is False
     assert fix["financial_profile"]["revenue_period"] == "TTM (Ended 2026-06-30)"
+    assert fix["valuation"]["reverse_dcf_parameters"]["solved_revenue_cagr_pct"] == 30.07
+    assert fix["valuation"]["reverse_dcf_parameters"]["wacc_pct"] == 9.5
+    assert fix["valuation"]["reverse_dcf_parameters"]["net_debt_bridge"] == -1800730000.0
 
-    # DUOL verification (Zero debt semantics)
+    # DUOL verification (Zero debt semantics + Finding C bridge)
     duol = dossiers["DUOL"]
     assert duol["identity"]["cik"] == "0001562088"
     assert duol["central_assessment"]["disposition"] == "WATCH_CONDITIONS"
@@ -114,39 +119,61 @@ def test_snapshot_content_semantic_invariants():
     assert duol["valuation"]["solved_5y_cagr_pct"] == 22.99
     assert duol["financial_profile"]["is_zero_debt"] is True
     assert duol["financial_profile"]["debt_display"] == "$0.00 (Zero Funded Debt Evidenced)"
+    assert duol["financial_profile"]["operating_lease_liabilities_asc842"] == 86136000.0
+    assert duol["financial_profile"]["short_term_investments"] == 132979000.0
+    assert duol["financial_profile"]["net_debt_bridge"] == -1313866000.0
+    assert "operating expense" in duol["financial_profile"]["lease_convention_treatment"]
     assert "WACC 10.0%" in duol["valuation"]["convention_summary"]
     assert "Terminal g 3.0%" in duol["valuation"]["convention_summary"]
+    assert duol["valuation"]["reverse_dcf_parameters"]["operating_margin_pct"] == 22.0
 
-    # IREN verification (Valuation suppression)
+    # IREN verification (Valuation suppression + Finding C restricted cash)
     iren = dossiers["IREN"]
     assert iren["identity"]["cik"] == "0001878848"
     assert iren["central_assessment"]["disposition"] == "WATCH_CONDITIONS"
     assert iren["valuation"]["valuation_status"] == "VALUATION_SUPPRESSED"
     assert iren["valuation"]["solved_5y_cagr_pct"] is None
+    assert iren["valuation"]["reverse_dcf_parameters"] is None
     assert iren["valuation"]["scenarios"] is None
     assert iren["valuation"]["reference_price_label"] == "Research reference price"
     assert "Hyperscale data center construction" in iren["valuation"]["suppression_reason"]
     assert len(iren["valuation"]["resume_conditions"]) == 3
     assert iren["financial_profile"]["revenue_period"] == "FY2026 (Ended 2026-06-30)"
+    assert iren["financial_profile"]["restricted_cash"] == 1723900000.0
+    assert iren["financial_profile"]["total_cash_and_restricted"] == 7619527000.0
+    assert iren["financial_profile"]["net_debt_bridge"] == 1697353000.0
 
-    # CORZ verification (Valuation suppression + CoreWeave $6.7B, not drifted $8.7B)
+    # CORZ verification (Valuation suppression + Finding D revenue parity + Finding C digital assets)
     corz = dossiers["CORZ"]
     assert corz["identity"]["cik"] == "0001839341"
     assert corz["central_assessment"]["disposition"] == "WATCH_CONDITIONS"
     assert corz["valuation"]["valuation_status"] == "VALUATION_SUPPRESSED"
     assert corz["valuation"]["solved_5y_cagr_pct"] is None
+    assert corz["valuation"]["reverse_dcf_parameters"] is None
+    assert corz["valuation"]["scenarios"] is None
+    assert corz["financial_profile"]["revenue"] == 164201000.0
+    assert corz["financial_profile"]["revenue"] != 164200000.0
+    assert corz["financial_profile"]["digital_assets"] == 49675000.0
+    assert corz["financial_profile"]["net_debt_bridge"] == 2528232000.0
     assert "two consecutive quarters of positive free cash flow post total capital expenditures" in corz["valuation"]["resume_conditions"][0]
     assert "Construction cost overruns forcing emergency dilutive equity" in corz["monitoring"]["observable_invalidation_trigger"]
     assert corz["financial_profile"]["revenue_period"] == "Q2 2026 (Quarter Ended 2026-06-30)"
 
-    # MU verification (Qualified negative conclusion)
+    # MU verification (Qualified negative conclusion + Finding D revenue parity + Finding B assumptions)
     mu = dossiers["MU"]
     assert mu["identity"]["cik"] == "0000723125"
     assert mu["central_assessment"]["disposition"] == "NO_SUPPORTED_OPPORTUNITY"
     assert mu["valuation"]["valuation_status"] == "COMPUTED_QUALIFIED"
     assert mu["valuation"]["solved_5y_cagr_pct"] == 21.29
+    assert mu["financial_profile"]["revenue"] == 133188000000.0
     assert mu["valuation"]["qualification_notice"] is not None
     assert "COMPUTED_QUALIFIED" in mu["valuation"]["qualification_notice"]
+    assert mu["valuation"]["reverse_dcf_parameters"]["solved_revenue_cagr_pct"] == 21.29
+    assert mu["valuation"]["reverse_dcf_parameters"]["wacc_pct"] == 9.5
+    assert mu["valuation"]["reverse_dcf_parameters"]["tax_rate_pct"] == 21.0
+    assert mu["valuation"]["scenarios"]["base"]["per_share_value"] == 456.67
+    assert mu["valuation"]["scenarios"]["base"]["revenue_cagr_pct"] == 8.0
+    assert mu["valuation"]["scenarios"]["base"]["enterprise_value"] == 510007946373.72
     assert "DRAM contract price declines or sequential drop in blended ASPs" in mu["monitoring"]["observable_invalidation_trigger"]
     assert "below $500" in mu["monitoring"]["price_watch_condition"]
     assert mu["financial_profile"]["revenue_period"] == "FY2026 (Ended 2026-09-03)"

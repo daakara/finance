@@ -33,6 +33,23 @@ export interface ScenarioProjection {
   operating_margin_pct?: number;
   wacc_pct?: number;
   terminal_growth_pct?: number;
+  tax_rate_pct?: number;
+  reinvestment_rate_pct?: number;
+  enterprise_value?: number;
+  equity_value?: number;
+}
+
+export interface ReverseDcfParameters {
+  target_price: number;
+  solved_revenue_cagr_pct: number;
+  operating_margin_pct: number;
+  wacc_pct: number;
+  terminal_growth_pct: number;
+  tax_rate_pct: number;
+  reinvestment_rate_pct: number;
+  base_revenue: number;
+  current_shares: number;
+  net_debt_bridge: number;
 }
 
 export interface OpportunityDossierIdentity {
@@ -65,6 +82,7 @@ export interface OpportunityValuation {
   reference_price_label: string;
   reference_date: string;
   solved_5y_cagr_pct: number | null;
+  reverse_dcf_parameters?: ReverseDcfParameters | null;
   roundtrip_value: number | null;
   roundtrip_delta_cents: number | null;
   convention_summary: string;
@@ -91,13 +109,22 @@ export interface OpportunityFinancialProfile {
   operating_income: number | null;
   operating_margin_pct: number | null;
   cash_and_equivalents: number | null;
+  short_term_investments?: number | null;
+  restricted_cash?: number | null;
   total_cash_and_investments: number | null;
+  total_cash_and_restricted?: number | null;
   total_financial_debt: number | null;
   debt_display: string;
   is_zero_debt: boolean;
   zero_debt_support: string | null;
+  operating_lease_liabilities_asc842?: number | null;
+  lease_convention_treatment?: string | null;
+  restriction_treatment?: string | null;
+  digital_assets?: number | null;
+  total_liquidity_with_digital_assets?: number | null;
   net_debt_bridge: number | null;
   capital_structure_position: string | null;
+  bridge_note?: string | null;
   selected_share_basis?: SelectedShareBasis;
   primary_filings: PrimaryFilingReference[];
 }

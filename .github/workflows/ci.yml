@@ -47,7 +47,13 @@ jobs:
       env:
         PYTHONPATH: "."
       run: |
-        pytest tests/test_fundamentals_api.py tests/test_sourced_fundamentals_pilot.py -v
+        pytest tests/test_fundamentals_api.py tests/test_sourced_fundamentals_pilot.py tests/test_generate_opportunity_dossier_snapshot.py -v
+
+    - name: Verify Opportunity Dossier Snapshot Determinism
+      env:
+        PYTHONPATH: "."
+      run: |
+        python scripts/research/generate_opportunity_dossier_snapshot.py --check
 
     - name: Run Historical SIP Ingestion & Registration Expansion Suite
       env:
@@ -130,9 +136,13 @@ jobs:
       working-directory: frontend
       run: npm run test:arch
 
+    - name: Enforce Opportunity Dossier Snapshot Integrity Gate
+      working-directory: frontend
+      run: npm run check:dossier
+
     - name: Compile Static SSG Routes (145 Pages)
       working-directory: frontend
-      run: npm run build
+      run: npm run build:verified
 
     - name: Verify Static Export Integrity
       working-directory: frontend

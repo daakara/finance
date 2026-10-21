@@ -202,18 +202,52 @@ def validate_and_project_ledger(source_data: Dict[str, Any], source_sha256: str)
         is_zero_debt = (tot_debt == 0 and sym == "DUOL")
         debt_display = "$0.00 (Zero Funded Debt Evidenced)" if is_zero_debt else format_currency_display(tot_debt)
 
-        # Revenue period labeling
-        rev_period = "TTM (Ended 2026-06-30)"
-        rev_value = fin_prof.get("ttm_revenue")
+        # Revenue period labeling & exact source value (Finding D)
         if sym == "IREN":
             rev_period = "FY2026 (Ended 2026-06-30)"
             rev_value = fin_prof.get("fy2026_revenue")
         elif sym == "CORZ":
             rev_period = "Q2 2026 (Quarter Ended 2026-06-30)"
-            rev_value = 164200000  # Q2 colocation + mining total
+            rev_value = fin_prof.get("q2_2026_revenue")
         elif sym == "MU":
             rev_period = "FY2026 (Ended 2026-09-03)"
-            rev_value = 133188000000
+            rev_value = fin_prof.get("fy2026_revenue")
+        else:
+            rev_period = "TTM (Ended 2026-06-30)"
+            rev_value = fin_prof.get("ttm_revenue")
+
+        if rev_value is None:
+            raise ValueError(f"Missing revenue for cohort symbol {sym}")
+
+        # Bridge treatment note (Finding C)
+        bridge_note = None
+        if sym == "FIX":
+            bridge_note = (
+                "Unrestricted cash ($1.85B) less long-term credit ($54.1M) yields $1.80B net cash bridge "
+                "added to enterprise value in DCF equity bridge."
+            )
+        elif sym == "DUOL":
+            bridge_note = (
+                fin_prof.get("lease_convention_treatment") or
+                "Lease as operating expense convention applied; rent deducted in operating income; "
+                "lease liabilities excluded from net debt bridge to avoid double deduction."
+            )
+        elif sym == "IREN":
+            bridge_note = (
+                fin_prof.get("restriction_treatment") or
+                "Restricted cash ($1.72B) excluded from unrestricted net debt bridge under prudent credit convention, "
+                "resulting in net debt bridge of $1.70B ($7.59B debt - $5.90B unrestricted cash)."
+            )
+        elif sym == "CORZ":
+            bridge_note = (
+                "Unrestricted cash ($1.77B) against carrying debt ($4.30B) leaves $2.53B net debt bridge; "
+                "digital assets ($49.7M) and mark-to-market warrant liabilities are excluded from fundamental net debt bridge."
+            )
+        elif sym == "MU":
+            bridge_note = (
+                "Unrestricted cash ($18.24B) less total financial debt ($11.85B) leaves $6.39B net cash bridge "
+                "added to enterprise value in DCF equity bridge."
+            )
 
         # Valuation block projection
         is_suppressed = (val_status == "VALUATION_SUPPRESSED")
@@ -224,6 +258,7 @@ def validate_and_project_ledger(source_data: Dict[str, Any], source_sha256: str)
 
         convention_summary = "Valuation suppressed (Fail-Closed)."
         scenarios = None
+        reverse_dcf_parameters = None
 
         if not is_suppressed:
             params = val_model.get("parameters", {})
@@ -231,14 +266,30 @@ def validate_and_project_ledger(source_data: Dict[str, Any], source_sha256: str)
             g = params.get("terminal_growth_pct")
             margin = params.get("operating_margin_pct")
             reinvest = params.get("reinvestment_rate_pct")
+            tax_rate = params.get("tax_rate_pct")
             solved_cagr = val_model.get("solved_reverse_dcf_5y_revenue_cagr_pct")
+            
+            # Carry complete reverse model parameters (Finding B)
+            reverse_dcf_parameters = {
+                "target_price": params.get("target_price"),
+                "solved_revenue_cagr_pct": solved_cagr,
+                "operating_margin_pct": margin,
+                "wacc_pct": wacc,
+                "terminal_growth_pct": g,
+                "tax_rate_pct": tax_rate,
+                "reinvestment_rate_pct": reinvest,
+                "base_revenue": params.get("base_revenue"),
+                "current_shares": params.get("current_shares"),
+                "net_debt_bridge": params.get("net_debt_bridge"),
+            }
+
             convention_summary = (
                 f"Single-stage Reverse-DCF FCFF (WACC {wacc:.1f}%, Terminal g {g:.1f}%, "
-                f"Operating Margin {margin:.1f}%, Reinvestment Rate {reinvest:.1f}%). "
+                f"Operating Margin {margin:.1f}%, Tax Rate {tax_rate:.1f}%, Reinvestment Rate {reinvest:.1f}%). "
                 f"Solved 5Y Revenue CAGR: {solved_cagr:.2f}%."
             )
 
-            # Map scenarios
+            # Map scenarios carrying complete parameters (Finding B)
             raw_scenarios = val_model.get("scenarios", {})
             scenarios = {}
             for sc_key, sc_val in raw_scenarios.items():
@@ -271,6 +322,10 @@ def validate_and_project_ledger(source_data: Dict[str, Any], source_sha256: str)
                     "operating_margin_pct": p.get("operating_margin_pct"),
                     "wacc_pct": p.get("wacc_pct"),
                     "terminal_growth_pct": p.get("terminal_growth_pct"),
+                    "tax_rate_pct": p.get("tax_rate_pct"),
+                    "reinvestment_rate_pct": p.get("reinvestment_rate_pct"),
+                    "enterprise_value": sc_val.get("enterprise_value"),
+                    "equity_value": sc_val.get("equity_value"),
                 }
 
         # Company-specific resume conditions
@@ -319,6 +374,7 @@ def validate_and_project_ledger(source_data: Dict[str, Any], source_sha256: str)
                 "reference_price_label": ref_price_label,
                 "reference_date": ref_date,
                 "solved_5y_cagr_pct": val_model.get("solved_reverse_dcf_5y_revenue_cagr_pct") if not is_suppressed else None,
+                "reverse_dcf_parameters": reverse_dcf_parameters,
                 "roundtrip_value": val_model.get("roundtrip_per_share_value") if not is_suppressed else None,
                 "roundtrip_delta_cents": val_model.get("roundtrip_delta_cents") if not is_suppressed else None,
                 "convention_summary": convention_summary,
@@ -333,16 +389,25 @@ def validate_and_project_ledger(source_data: Dict[str, Any], source_sha256: str)
                 "revenue": rev_value,
                 "revenue_display": format_currency_display(rev_value),
                 "revenue_period": rev_period,
-                "operating_income": fin_prof.get("ttm_operating_income_ebit"),
+                "operating_income": fin_prof.get("ttm_operating_income_ebit") or fin_prof.get("fy2026_operating_income_ebit"),
                 "operating_margin_pct": fin_prof.get("operating_margin_pct"),
                 "cash_and_equivalents": fin_prof.get("cash_and_equivalents"),
+                "short_term_investments": fin_prof.get("short_term_investments"),
+                "restricted_cash": fin_prof.get("restricted_cash"),
                 "total_cash_and_investments": fin_prof.get("total_cash_and_investments") or fin_prof.get("cash_and_equivalents"),
+                "total_cash_and_restricted": fin_prof.get("total_cash_and_restricted"),
                 "total_financial_debt": tot_debt,
                 "debt_display": debt_display,
                 "is_zero_debt": is_zero_debt,
                 "zero_debt_support": fin_prof.get("zero_debt_completeness_support") if is_zero_debt else None,
+                "operating_lease_liabilities_asc842": fin_prof.get("operating_lease_liabilities_asc842"),
+                "lease_convention_treatment": fin_prof.get("lease_convention_treatment"),
+                "restriction_treatment": fin_prof.get("restriction_treatment"),
+                "digital_assets": fin_prof.get("digital_assets"),
+                "total_liquidity_with_digital_assets": fin_prof.get("total_liquidity_with_digital_assets"),
                 "net_debt_bridge": fin_prof.get("net_debt_bridge"),
                 "capital_structure_position": fin_prof.get("capital_structure_position"),
+                "bridge_note": bridge_note,
                 "selected_share_basis": fin_prof.get("selected_share_basis"),
                 "primary_filings": filings,
             },
