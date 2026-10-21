@@ -46,6 +46,7 @@ import logging
 import math
 import os
 from pathlib import Path
+import re
 import sqlite3
 import sys
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
@@ -358,32 +359,87 @@ class AlpacaHistoricalSipIngestionAdapter:
             # Package B structure
             scope_type = "PACKAGE_B"
             scope = data["ingestion_scope"]
-            backfill = scope.get("production_target_backfill", {}).get("missing_symbols", [])
+
+            # 1. Process production_target_refresh first
             refresh_items = scope.get("production_target_refresh", {}).get("per_symbol_parameters", [])
             for item in refresh_items:
-                sym = item["symbol"].upper().strip()
-                symbols.append(sym)
-                per_symbol_parameters[sym] = item
+                if isinstance(item, dict):
+                    sym = item.get("symbol", "").upper().strip()
+                    if sym:
+                        symbols.append(sym)
+                        per_symbol_parameters[sym] = dict(item)
 
+            # 2. Process production_target_backfill
+            backfill = scope.get("production_target_backfill", {}).get("missing_symbols", [])
             for sym in backfill:
                 clean_sym = sym.upper().strip()
                 symbols.append(clean_sym)
                 if clean_sym not in per_symbol_parameters:
                     per_symbol_parameters[clean_sym] = {"action": "BACKFILL"}
 
+            # 3. Process candidate_bindings with strict precedence (e.g. action: REPLACE / BACKFILL)
+            candidate_bindings = scope.get("candidate_bindings", {})
+            for sym, binding in candidate_bindings.items():
+                if isinstance(binding, dict):
+                    clean_sym = sym.upper().strip()
+                    if clean_sym.startswith("SEC_") or not re.match(r"^[A-Za-z]{1,5}$", clean_sym):
+                        raise ValueError(f"NONCANONICAL_IDENTITY_ALIAS_REJECTED: Symbol '{clean_sym}' is a noncanonical alias.")
+                    sec_id = binding.get("internal_security_id") or binding.get("durable_security_id") or binding.get("security_id")
+                    if sec_id and not re.match(r"^ARX_SEC_[0-9A-F]{12}$", sec_id):
+                        raise ValueError(f"INVALID_CANONICAL_SECURITY_ID: Security ID '{sec_id}' does not match canonical format ARX_SEC_<12_HEX>.")
+                    assoc_id = binding.get("association_id") or binding.get("listing_association_id")
+                    if assoc_id and not re.match(r"^ASSOC_ARX_SEC_[0-9A-F]{12}_[A-Z]{4}_[A-Z0-9]+_\d{4}-\d{2}-\d{2}$", assoc_id):
+                        raise ValueError(f"INVALID_CANONICAL_ASSOCIATION_ID: Association ID '{assoc_id}' does not match canonical format ASSOC_ARX_SEC_...")
+                    symbols.append(clean_sym)
+                    if clean_sym in per_symbol_parameters:
+                        merged = dict(per_symbol_parameters[clean_sym])
+                        merged.update(binding)
+                        action = binding.get("action") or binding.get("mandated_action")
+                        if action:
+                            merged["action"] = str(action).upper().strip()
+                        per_symbol_parameters[clean_sym] = merged
+                    else:
+                        per_symbol_parameters[clean_sym] = dict(binding)
+
             symbols = sorted(list(set(symbols)))
-        elif "candidates" in data:
-            # candidate_manifest_150 structure
-            scope_type = "CANDIDATE_MANIFEST"
-            symbols = sorted([c["symbol"].upper().strip() for c in data["candidates"] if "symbol" in c])
+        elif "pilot_candidates" in data or "candidates" in data:
+            c_key = "pilot_candidates" if "pilot_candidates" in data else "candidates"
+            scope_type = "PILOT_MANIFEST" if c_key == "pilot_candidates" else "CANDIDATE_MANIFEST"
+            for c in data[c_key]:
+                if not isinstance(c, dict):
+                    continue
+                raw_sym = c.get("symbol", "").strip()
+                if not raw_sym:
+                    continue
+                if raw_sym.upper().startswith("SEC_") or not re.match(r"^[A-Za-z]{1,5}$", raw_sym):
+                    raise ValueError(f"NONCANONICAL_IDENTITY_ALIAS_REJECTED: Symbol '{raw_sym}' is a noncanonical alias.")
+
+                clean_sym = raw_sym.upper()
+                sec_id = c.get("durable_security_id") or c.get("security_id")
+                if sec_id and not re.match(r"^ARX_SEC_[0-9A-F]{12}$", sec_id):
+                    raise ValueError(f"INVALID_CANONICAL_SECURITY_ID: Security ID '{sec_id}' does not match canonical format ARX_SEC_<12_HEX>.")
+
+                assoc_id = c.get("listing_association_id") or c.get("association_id")
+                if assoc_id and not re.match(r"^ASSOC_ARX_SEC_[0-9A-F]{12}_[A-Z]{4}_[A-Z0-9]+_\d{4}-\d{2}-\d{2}$", assoc_id):
+                    raise ValueError(f"INVALID_CANONICAL_ASSOCIATION_ID: Association ID '{assoc_id}' does not match canonical format ASSOC_ARX_SEC_...")
+
+                symbols.append(clean_sym)
+                per_symbol_parameters[clean_sym] = c
+            symbols = sorted(list(set(symbols)))
         elif isinstance(data, list):
             # Plain list of symbols or dicts
             scope_type = "SYMBOL_LIST"
             for item in data:
                 if isinstance(item, str):
-                    symbols.append(item.upper().strip())
+                    clean = item.strip()
+                    if clean.upper().startswith("SEC_") or not re.match(r"^[A-Za-z]{1,5}$", clean):
+                        raise ValueError(f"NONCANONICAL_IDENTITY_ALIAS_REJECTED: Symbol '{clean}' is a noncanonical alias.")
+                    symbols.append(clean.upper())
                 elif isinstance(item, dict) and "symbol" in item:
-                    symbols.append(item["symbol"].upper().strip())
+                    raw_sym = item["symbol"].strip()
+                    if raw_sym.upper().startswith("SEC_") or not re.match(r"^[A-Za-z]{1,5}$", raw_sym):
+                        raise ValueError(f"NONCANONICAL_IDENTITY_ALIAS_REJECTED: Symbol '{raw_sym}' is a noncanonical alias.")
+                    symbols.append(raw_sym.upper())
             symbols = sorted(list(set(symbols)))
         else:
             raise ValueError(f"UNRECOGNIZED_MANIFEST_FORMAT: Could not extract symbols from '{manifest_path}'.")
@@ -394,6 +450,47 @@ class AlpacaHistoricalSipIngestionAdapter:
             scope_type=scope_type,
             per_symbol_parameters=per_symbol_parameters,
         )
+
+    @staticmethod
+    def is_prov_compatible(
+        existing_provenance: List[Dict[str, Any]],
+        existing_candles: Optional[List[Dict[str, Any]]] = None,
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Evaluates whether existing stored provenance is compatible with Alpaca SIP ingestion.
+        Enforces:
+        1. Pure Alpaca lineage: Provider must match ALPACA. No mixing with MASSIVE_POLYGON or other sources.
+        2. Adjustment fidelity: Must be SPLIT_ADJUSTED_ONLY.
+        3. Zero missing sidecars: Every candle must have a corresponding provenance row.
+        Returns: (is_compatible: bool, rejection_reason: Optional[str])
+        """
+        if not existing_provenance:
+            return False, "UNPROVENANCED: No existing provenance records found."
+
+        if existing_candles is not None:
+            if len(existing_provenance) != len(existing_candles):
+                return False, f"ROW_COUNT_MISMATCH: {len(existing_provenance)} provenance rows != {len(existing_candles)} candles."
+            prov_by_date = {p.get("trade_date"): p for p in existing_provenance}
+            missing_dates = [c.get("time") for c in existing_candles if c.get("time") not in prov_by_date]
+            if missing_dates:
+                return False, f"UNPROVENANCED_CANDLES: {len(missing_dates)} candles lack provenance sidecars."
+
+        non_matching_provider = [
+            p.get("trade_date") for p in existing_provenance
+            if str(p.get("provider", "")).upper() not in ("ALPACA", str(Provider.ALPACA).upper())
+        ]
+        if non_matching_provider:
+            providers = sorted(list({str(p.get("provider", "")) for p in existing_provenance}))
+            return False, f"INCOMPATIBLE_PROVIDER: Stored lineage has provider(s) {providers}; Alpaca SIP forbids provider blending."
+
+        non_split = [
+            p.get("trade_date") for p in existing_provenance
+            if p.get("adjustment_state") != AdjustmentState.SPLIT_ADJUSTED_ONLY
+        ]
+        if non_split:
+            return False, f"INCOMPATIBLE_ADJUSTMENT: {len(non_split)} records are not SPLIT_ADJUSTED_ONLY."
+
+        return True, None
 
     @staticmethod
     def validate_bar_series(
@@ -955,18 +1052,9 @@ class AlpacaHistoricalSipIngestionAdapter:
             stored_dates_set = {c["time"] for c in existing_candles}
 
             # R3: Inspect 100% of stored candles and provenance records for 1-to-1 correspondence and purity
-            prov_by_date = {p.get("trade_date"): p for p in existing_provenance}
-            missing_prov_dates = [c["time"] for c in existing_candles if c["time"] not in prov_by_date]
-            non_split_prov_dates = [
-                p.get("trade_date") for p in existing_provenance
-                if p.get("adjustment_state") != AdjustmentState.SPLIT_ADJUSTED_ONLY
-            ]
-            is_prov_compatible = (
-                existing_count > 0
-                and len(missing_prov_dates) == 0
-                and len(non_split_prov_dates) == 0
-                and len(existing_provenance) == len(existing_candles)
-            ) if existing_count > 0 else True
+            is_prov_compatible, prov_incompat_reason = self.is_prov_compatible(
+                existing_provenance, existing_candles
+            ) if existing_count > 0 else (True, None)
             primary_stored_adj = existing_provenance[-1].get("adjustment_state") if existing_provenance else None
 
             # R3: Calendar authority fail-closed check
@@ -1051,8 +1139,12 @@ class AlpacaHistoricalSipIngestionAdapter:
             prefix_expected_sessions = [s for s in expected_window_sessions if start_date <= s <= latest_stored] if latest_stored else []
             prefix_missing = set(prefix_expected_sessions) - stored_dates_set
 
+            manifest_param = manifest_info.per_symbol_parameters.get(sym, {})
+            manifest_action = str(manifest_param.get("action") or manifest_param.get("mandated_action") or "").upper().strip()
+
             can_refresh = (
-                existing_count > 0
+                manifest_action not in ("BACKFILL", "REPLACE")
+                and existing_count > 0
                 and latest_stored is not None
                 and latest_stored < end_date
                 and earliest_stored is not None
@@ -1061,11 +1153,13 @@ class AlpacaHistoricalSipIngestionAdapter:
                 and len(prefix_missing) == 0
             )
 
-            if can_refresh and latest_stored:
+            if manifest_action == "REPLACE":
+                action = "REPLACE"
+                sym_start = start_date
+            elif can_refresh and latest_stored:
                 try:
                     last_d = date.fromisoformat(latest_stored)
                     next_d = date.fromordinal(last_d.toordinal() + 1).isoformat()
-                    manifest_param = manifest_info.per_symbol_parameters.get(sym, {})
                     manifest_start = manifest_param.get("requested_start_session")
                     if manifest_start and manifest_start > next_d:
                         try:
@@ -1097,6 +1191,7 @@ class AlpacaHistoricalSipIngestionAdapter:
                 incompatible_outside = [
                     p for p in outside_prov
                     if p.get("adjustment_state") != AdjustmentState.SPLIT_ADJUSTED_ONLY
+                    or str(p.get("provider", "")).upper() not in ("ALPACA", str(Provider.ALPACA).upper())
                 ]
                 if incompatible_outside or outside_unprovenanced:
                     reason = (
@@ -1236,12 +1331,12 @@ class AlpacaHistoricalSipIngestionAdapter:
                 )
                 try:
                     # Atomic write of bars and sidecar provenance for this candidate
-                    # R2: on BACKFILL, atomically replace existing scope within reviewed bounds to preserve outside-scope data
+                    # R2: on BACKFILL or REPLACE, atomically replace existing scope within reviewed bounds to preserve outside-scope data
                     self.db_engine.save_daily_candles_with_evidence(
                         sym,
                         val_res.validated_bars,
                         prov,
-                        replace_existing_scope=(action == "BACKFILL"),
+                        replace_existing_scope=(action in ("BACKFILL", "REPLACE")),
                         scope_start_date=sym_start,
                         scope_end_date=end_date,
                     )
@@ -1288,7 +1383,7 @@ class AlpacaHistoricalSipIngestionAdapter:
                     break
 
             status = "APPLIED" if apply_writes else "PREPARED_DRY_RUN"
-            if action == "BACKFILL":
+            if action in ("BACKFILL", "REPLACE"):
                 summary.backfilled_count += 1
             else:
                 summary.refreshed_count += 1
