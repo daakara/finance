@@ -62,6 +62,14 @@ jobs:
                tests/test_market_db.py \
                tests/test_market_evidence_f13a.py -v
 
+    - name: Run Sprint 2 Package B Recovery and Admission Safety Gate
+      env:
+        PYTHONPATH: "."
+      run: |
+        pytest tests/test_pilot_identity_and_guarded_recovery.py \
+               tests/test_universe_admission_mappings.py \
+               tests/test_package_b_deployment_rehearsal.py -v
+
     - name: Run Tier 3 Pre-Flight Release Gate
       if: github.base_ref == 'main' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
       env:
