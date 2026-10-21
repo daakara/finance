@@ -155,7 +155,7 @@ function verifySnapshotIntegrity() {
     process.exit(1);
   }
 
-  const expectedPublishedSymbols = ["FIX", "DUOL", "IREN", "CORZ", "ULTA"];
+  const expectedPublishedSymbols = ["FIX", "DUOL", "ULTA"];
   assertArrayEquals(pubManifest.published_symbols, expectedPublishedSymbols, "Published symbols mismatch in manifest");
 
   const ulta = pubManifest.accepted_additions?.ULTA;
@@ -173,6 +173,10 @@ function verifySnapshotIntegrity() {
   }
   if (!pubManifest.excluded_historical_symbols?.includes("MU") || !pubManifest.excluded_draft_symbols?.includes("PLTR")) {
     console.error("❌ Rejected exclusions (MU, PLTR) missing from published watch manifest");
+    process.exit(1);
+  }
+  if (!pubManifest.held_historical_symbols?.includes("IREN") || !pubManifest.held_historical_symbols?.includes("CORZ")) {
+    console.error("❌ Held historical symbols (IREN, CORZ) missing from published watch manifest");
     process.exit(1);
   }
   console.log("✅ [PUBLISHED WATCH MANIFEST VERIFIED] Curated Quality Watch manifest verified successfully.");

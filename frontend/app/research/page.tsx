@@ -28,6 +28,8 @@ import {
   isPilotDraftSymbol,
   getOpportunitySnapshotMetadata,
   getPilotDraftSnapshotMetadata,
+  getDossierProvenance,
+  getCollectionProvenance,
   OpportunityCohortItem,
   IS_PILOT_DRAFTS_BUILD_ENABLED,
 } from "../../lib/opportunityDossiers";
@@ -67,6 +69,46 @@ function DispositionPill({ disposition }: { disposition: string }) {
   }
 }
 
+function ResearchGovernanceBox({
+  dossierProvenance,
+  collectionProvenance,
+  normalizedSymbol,
+}: {
+  dossierProvenance: ReturnType<typeof getDossierProvenance>;
+  collectionProvenance: ReturnType<typeof getCollectionProvenance>;
+  normalizedSymbol: string;
+}) {
+  return (
+    <div className="bg-[#090d14] rounded-2xl border border-[#172030] p-4 space-y-2 text-xs font-mono text-slate-400">
+      <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+        {dossierProvenance ? `${normalizedSymbol} Provenance` : "Collection Governance"}
+      </div>
+      <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+        {dossierProvenance
+          ? `Primary filings authenticated via SEC EDGAR accessions. Governed by ${dossierProvenance.governingContract}.`
+          : collectionProvenance.disclaimer}
+      </p>
+      {dossierProvenance ? (
+        <div className="pt-2 border-t border-[#151e2e] space-y-1 text-[10px] text-slate-500">
+          <div>Authority: <span className="text-slate-300">{dossierProvenance.sourceAuthority}</span></div>
+          <div>Status: <span className="text-cyan-400">{dossierProvenance.lifecycleStatusLabel}</span></div>
+          <div>Review: <span className="text-slate-300">{dossierProvenance.reviewStatusLabel}</span></div>
+          <div>Authored UTC: <span className="text-slate-300">{dossierProvenance.authoringTimestampUtc}</span></div>
+          <div>Filing Cutoff: <span className="text-slate-300">{dossierProvenance.filingCutoffUtc}</span></div>
+          <div>{dossierProvenance.digestLabel}: <span className="text-slate-300 font-mono">{dossierProvenance.contentDigest}</span></div>
+        </div>
+      ) : (
+        <div className="pt-2 border-t border-[#151e2e] space-y-1 text-[10px] text-slate-500">
+          <div>Standard: <span className="text-slate-300">{collectionProvenance.governingStandard}</span></div>
+          <div>Collection: <span className="text-slate-300">{collectionProvenance.publishedCount} Published Assets</span></div>
+          <div>Market Date: <span className="text-slate-300">{collectionProvenance.marketSessionDate} Close</span></div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ResearchContent() {
   const searchParams = useSearchParams();
   const rawSymbol = searchParams.get("symbol") || searchParams.get("ticker");
@@ -89,6 +131,17 @@ function ResearchContent() {
   );
   const isKnown = isDraftPreviewActive ? isPilotDraftSymbol(normalizedSymbol) : isCohortSymbol(normalizedSymbol);
   const dossier = isKnown ? getOpportunityDossier(normalizedSymbol, { previewDrafts: isDraftPreviewActive }) : null;
+
+  const dossierProvenance = useMemo(() => {
+    if (isKnown && dossier) {
+      return getDossierProvenance(normalizedSymbol, { previewDrafts: isDraftPreviewActive });
+    }
+    return null;
+  }, [isKnown, dossier, normalizedSymbol, isDraftPreviewActive]);
+
+  const collectionProvenance = useMemo(() => {
+    return getCollectionProvenance(hasSymbolParam && !isKnown ? displaySymbol : undefined);
+  }, [hasSymbolParam, isKnown, displaySymbol]);
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24">
@@ -282,23 +335,12 @@ function ResearchContent() {
             </div>
           </div>
 
-          {/* Research Cohort Governance Summary */}
-          <div className="bg-[#090d14] rounded-2xl border border-[#172030] p-4 space-y-2 text-xs font-mono text-slate-400">
-            <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              Governance & Provenance
-            </div>
-            <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
-              Evaluated strictly against ODP-05 opportunity discovery standards. Primary filings authenticated via official SEC EDGAR accessions.
-            </p>
-            <div className="pt-2 border-t border-[#151e2e] space-y-1 text-[10px] text-slate-500">
-              <div>Contract: {isDraftPreviewActive ? "Pilot Scaling Draft" : "ODP-05 Baseline"}</div>
-              <div>Filing Cutoff: {metadata.filing_availability_cutoff_utc || "Unavailable"}</div>
-              <div>Authored UTC: {metadata.authoring_timestamp_utc || "Unavailable"}</div>
-              <div>Independent Review: {isDraftPreviewActive ? "Pending Independent Review" : "Unavailable (Unrecorded)"}</div>
-              <div>Snapshot: {metadata.source_ledger_sha256 ? `${metadata.source_ledger_sha256.substring(0, 12)}…` : "Draft Staging"}</div>
-            </div>
-          </div>
+          {/* Research Cohort Governance & Provenance */}
+          <ResearchGovernanceBox
+            dossierProvenance={dossierProvenance}
+            collectionProvenance={collectionProvenance}
+            normalizedSymbol={normalizedSymbol}
+          />
         </aside>
 
         {/* Right Main Column */}
@@ -409,6 +451,14 @@ function ResearchContent() {
               Loading dossier…
             </div>
           )}
+          {/* Mobile Provenance & Collection Governance Section */}
+          <div className="lg:hidden pt-2">
+            <ResearchGovernanceBox
+              dossierProvenance={dossierProvenance}
+              collectionProvenance={collectionProvenance}
+              normalizedSymbol={normalizedSymbol}
+            />
+          </div>
         </section>
       </div>
     </main>

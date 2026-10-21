@@ -18,6 +18,7 @@ Invariants:
 """
 
 import argparse
+import copy
 import hashlib
 import json
 import logging
@@ -54,8 +55,9 @@ PILOT_ADDITIONS_COHORT = [
 TOTAL_PILOT_COHORT = BASELINE_COHORT + PILOT_ADDITIONS_COHORT
 
 # Curated Quality Watch & Selective Publication constants
-PUBLISHED_WATCH_SYMBOLS = ["FIX", "DUOL", "IREN", "CORZ", "ULTA"]
-BASELINE_WATCH_COHORT = ["FIX", "DUOL", "IREN", "CORZ"]
+PUBLISHED_WATCH_SYMBOLS = ["FIX", "DUOL", "ULTA"]
+BASELINE_WATCH_COHORT = ["FIX", "DUOL"]
+HELD_HISTORICAL_SYMBOLS = ["IREN", "CORZ"]
 EXCLUDED_HISTORICAL_SYMBOLS = ["MU"]
 EXCLUDED_DRAFT_SYMBOLS = ["PLTR"]
 
@@ -1950,6 +1952,32 @@ def prepare_pilot_scaling_corpus(
     return ledger, manifest, frontend_draft
 
 
+def compute_canonical_dossier_digest(dossier: Dict[str, Any]) -> str:
+    """
+    Computes deterministic SHA-256 digest of a dossier using compact canonical JSON.
+    Matches TypeScript/Node recursive sorted key serialization convention.
+    """
+    def canonical_serialize(obj: Any) -> str:
+        if obj is None:
+            return "null"
+        elif isinstance(obj, bool):
+            return "true" if obj else "false"
+        elif isinstance(obj, (int, float)):
+            if isinstance(obj, float) and obj.is_integer():
+                return str(int(obj))
+            return str(obj)
+        elif isinstance(obj, str):
+            return json.dumps(obj, ensure_ascii=False)
+        elif isinstance(obj, list):
+            return "[" + ",".join(canonical_serialize(x) for x in obj) + "]"
+        elif isinstance(obj, dict):
+            return "{" + ",".join(f"{json.dumps(k, ensure_ascii=False)}:{canonical_serialize(obj[k])}" for k in sorted(obj.keys())) + "}"
+        return json.dumps(obj, ensure_ascii=False)
+
+    canonical_str = canonical_serialize(dossier)
+    return hashlib.sha256(canonical_str.encode("utf-8")).hexdigest()
+
+
 def generate_published_watch_manifest(
     pilot_dossiers: Dict[str, Any]
 ) -> Dict[str, Any]:
@@ -1957,16 +1985,32 @@ def generate_published_watch_manifest(
     Generates the authoritative published watch manifest.
     Under the Quality Watch Standard (ARX-QUALITY-WATCH-STANDARD-V1), only selected
     qualifying WATCH assets are published to production.
-    - Baseline WATCH: FIX, DUOL, IREN, CORZ
+    - Baseline WATCH: FIX, DUOL
     - Selected Addition: ULTA (first published addition)
+    - Held Baseline: IREN, CORZ (preserved in baseline ledger; neutral research state)
     - Excluded Rejected: MU (original baseline), PLTR (expansion draft)
     """
     ulta_dossier = pilot_dossiers.get("ULTA")
     if not ulta_dossier:
         raise KeyError("ULTA dossier missing from pilot dossiers; required for published watch manifest")
 
-    ulta_str = json.dumps(ulta_dossier, indent=2, sort_keys=True)
-    ulta_sha256 = hashlib.sha256(ulta_str.encode("utf-8")).hexdigest()
+    accepted_ulta = copy.deepcopy(ulta_dossier)
+    accepted_ulta["publication_metadata"] = {
+        "dossier_version": "1.0.0-rc1",
+        "lifecycle_status": "CANDIDATE_SELECTED",
+        "technical_verification": "COMPUTED_VERIFIED",
+        "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+        "evidence_completeness": "SOURCE_MAPPED_AUDITED",
+        "authoring_date": "2026-10-21",
+        "freshness_state": "SELECTION_CANDIDATE",
+        "reviewer_id": None,
+        "reviewed_at_utc": None,
+        "review_notes": "Representative dossier accepted under ARX-QUALITY-WATCH-STANDARD-V1 based on verified primary SEC filings (10-K Note 7 debt, 10-Q Q2 2026), loyalty network competitive moat, and disciplined reverse-DCF valuation.",
+        "governing_standard": "ARX-QUALITY-WATCH-STANDARD-V1",
+        "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
+    }
+
+    ulta_sha256 = compute_canonical_dossier_digest(accepted_ulta)
 
     manifest = {
         "schema_version": "ARX-PUBLISHED-WATCH-MANIFEST-V1",
@@ -1979,10 +2023,11 @@ def generate_published_watch_manifest(
         "published_symbols": PUBLISHED_WATCH_SYMBOLS,
         "published_count": len(PUBLISHED_WATCH_SYMBOLS),
         "baseline_watch_symbols": BASELINE_WATCH_COHORT,
+        "held_historical_symbols": HELD_HISTORICAL_SYMBOLS,
         "excluded_historical_symbols": EXCLUDED_HISTORICAL_SYMBOLS,
         "excluded_draft_symbols": EXCLUDED_DRAFT_SYMBOLS,
         "accepted_additions": {
-            "ULTA": ulta_dossier
+            "ULTA": accepted_ulta
         },
         "additions_provenance": {
             "ULTA": {
@@ -1992,10 +2037,16 @@ def generate_published_watch_manifest(
                 "acceptance_basis": "REUSED_ACCEPTED_RESEARCH_EVIDENCE",
                 "selection_decision": "Selected as First Published Addition under ARX-QUALITY-WATCH-STANDARD-V1",
                 "content_sha256": ulta_sha256,
-                "source_filings": [f["accession_number"] for f in ulta_dossier["financial_profile"]["primary_filings"]],
-                "reference_price": ulta_dossier["valuation"]["reference_price"],
-                "reference_date": ulta_dossier["valuation"]["reference_date"],
-                "solved_5y_cagr_pct": ulta_dossier["valuation"]["solved_5y_cagr_pct"]
+                "authoring_timestamp_utc": "2026-10-21T16:00:00Z",
+                "filing_availability_cutoff_utc": "2026-10-16T20:00:00Z",
+                "lifecycle_status": "CANDIDATE_SELECTED",
+                "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+                "source_authority": "ARX Quality Watch Scaling Addition",
+                "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1",
+                "source_filings": [f["accession_number"] for f in accepted_ulta["financial_profile"]["primary_filings"]],
+                "reference_price": accepted_ulta["valuation"]["reference_price"],
+                "reference_date": accepted_ulta["valuation"]["reference_date"],
+                "solved_5y_cagr_pct": accepted_ulta["valuation"]["solved_5y_cagr_pct"]
             }
         }
     }

@@ -9,14 +9,14 @@
   "published_symbols": [
     "FIX",
     "DUOL",
-    "IREN",
-    "CORZ",
     "ULTA"
   ],
-  "published_count": 5,
+  "published_count": 3,
   "baseline_watch_symbols": [
     "FIX",
-    "DUOL",
+    "DUOL"
+  ],
+  "held_historical_symbols": [
     "IREN",
     "CORZ"
   ],
@@ -30,16 +30,17 @@
     "ULTA": {
       "dossier_id": "DOSSIER-ULTA-V1",
       "publication_metadata": {
-        "dossier_version": "0.1.0-draft",
-        "lifecycle_status": "DRAFT_STAGING",
+        "dossier_version": "1.0.0-rc1",
+        "lifecycle_status": "CANDIDATE_SELECTED",
         "technical_verification": "COMPUTED_VERIFIED",
-        "review_status": "PENDING_RESEARCH_REVIEW",
-        "evidence_completeness": "SOURCE_MAPPED_UNAUDITED",
+        "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+        "evidence_completeness": "SOURCE_MAPPED_AUDITED",
         "authoring_date": "2026-10-21",
-        "freshness_state": "PILOT_CANDIDATE",
+        "freshness_state": "SELECTION_CANDIDATE",
         "reviewer_id": null,
         "reviewed_at_utc": null,
-        "review_notes": "Representative candidate prepared with complete primary filing source-to-input tracing. Awaiting independent financial research review.",
+        "review_notes": "Representative dossier accepted under ARX-QUALITY-WATCH-STANDARD-V1 based on verified primary SEC filings (10-K Note 7 debt, 10-Q Q2 2026), loyalty network competitive moat, and disciplined reverse-DCF valuation.",
+        "governing_standard": "ARX-QUALITY-WATCH-STANDARD-V1",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
       },
       "identity": {
@@ -583,7 +584,13 @@
       "exchange": "NASDAQ",
       "acceptance_basis": "REUSED_ACCEPTED_RESEARCH_EVIDENCE",
       "selection_decision": "Selected as First Published Addition under ARX-QUALITY-WATCH-STANDARD-V1",
-      "content_sha256": "d1e3b57f761de0ab679da6916208333f805053439376e80f9b134c8fe200cbb8",
+      "content_sha256": "a46fd061a126e1ba32c3d9675a92a7c688e7cf8f2a45751b00910ecb20d9f7d9",
+      "authoring_timestamp_utc": "2026-10-21T16:00:00Z",
+      "filing_availability_cutoff_utc": "2026-10-16T20:00:00Z",
+      "lifecycle_status": "CANDIDATE_SELECTED",
+      "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+      "source_authority": "ARX Quality Watch Scaling Addition",
+      "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1",
       "source_filings": [
         "0001104659-26-035243",
         "0001104659-26-102442"

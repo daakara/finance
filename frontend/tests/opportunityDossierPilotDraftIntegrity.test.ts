@@ -187,8 +187,8 @@ if (!IS_PILOT_DRAFTS_BUILD_ENABLED) {
     const draftAttempt = getPilotDraftDossier(sym);
     assert.strictEqual(draftAttempt, null, `getPilotDraftDossier(${sym}) must return null when build flag disabled`);
   }
-  assert.strictEqual(listOpportunityCohort().length, 5, "listOpportunityCohort must return exactly 5 published Quality Watch companies (FIX, DUOL, IREN, CORZ, ULTA)");
-  assert.strictEqual(listPilotDraftCohort().length, 5, "listPilotDraftCohort must fall back to 5 companies when drafts disabled");
+  assert.strictEqual(listOpportunityCohort().length, 3, "listOpportunityCohort must return exactly 3 published Quality Watch companies (FIX, DUOL, ULTA)");
+  assert.strictEqual(listPilotDraftCohort().length, 3, "listPilotDraftCohort must fall back to 3 companies when drafts disabled");
   console.log("[OK] Production baseline isolation verified: unselected draft additions return null from all accessors while ULTA is published");
 
   // Mode B: Execute Subprocess with NEXT_PUBLIC_ENABLE_RESEARCH_PILOT_DRAFTS="true" to verify preview branch
@@ -205,7 +205,7 @@ if (!IS_PILOT_DRAFTS_BUILD_ENABLED) {
   for (const sym of TOTAL_PILOT_SYMBOLS) {
     assert.strictEqual(isPilotDraftSymbol(sym), true, `${sym} must be recognized as pilot symbol when drafts enabled`);
   }
-  // 4 baseline watch + 14 additions = 18 watch assets (MU and PLTR excluded)
+  // 2 baseline watch (FIX, DUOL) + 2 held baseline (IREN, CORZ) + 14 additions = 18 watch assets (MU and PLTR excluded)
   assert.strictEqual(listPilotDraftCohort().length, 18, "listPilotDraftCohort must return 18 when drafts enabled (MU and PLTR excluded)");
 
   // Default accessor without previewDrafts option MUST STILL return null for unselected draft additions!
