@@ -620,9 +620,9 @@ export function getDossierProvenance(
       contentDigest: prov?.content_sha256 ? `${prov.content_sha256.substring(0, 12)}…` : "Verified Addition",
       digestLabel: "Accepted Addition SHA-256",
       lifecycleStatus: pubMeta.lifecycle_status || "CANDIDATE_SELECTED",
-      lifecycleStatusLabel: "Selected for Release (Awaiting Deployment)",
+      lifecycleStatusLabel: "Selected Quality Watch Research",
       reviewStatus: pubMeta.review_status || "RESEARCH_EVIDENCE_ACCEPTED",
-      reviewStatusLabel: "Accepted Research Evidence (SEC Audited)",
+      reviewStatusLabel: "Research checked against SEC filings",
       isAddition: true,
       isPreviewDraft: false,
     };

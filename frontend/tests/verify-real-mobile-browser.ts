@@ -120,73 +120,85 @@ async function runBrowserChecks() {
       // Navigate to Terminal with active symbol context FIX
       const terminalUrl = `http://localhost:${PORT}/?symbol=FIX`;
       console.log(`1. Navigating to ${terminalUrl}...`);
-      await page.goto(terminalUrl, { waitUntil: "networkidle0" });
+      await page.goto(terminalUrl, { waitUntil: "domcontentloaded" });
       // Wait for dock to appear and React hydration to settle
       await page.waitForSelector('[data-testid="mobile-nav-dock"]', { timeout: 10000 });
-      await new Promise((r) => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 1200));
 
-      const dockData = await page.evaluate(() => {
-        const dock = document.querySelector('[data-testid="mobile-nav-dock"]');
-        if (!dock) return null;
-        const dockStyle = window.getComputedStyle(dock);
-        const dockRect = dock.getBoundingClientRect();
-        const isDockVisible = dockStyle.display !== "none" && dockStyle.visibility !== "hidden" && dockRect.height > 0;
+      let dockData: any = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          dockData = await page.evaluate(() => {
+            const dock = document.querySelector('[data-testid="mobile-nav-dock"]');
+            if (!dock) return null;
+            const dockStyle = window.getComputedStyle(dock);
+            const dockRect = dock.getBoundingClientRect();
+            const isDockVisible = dockStyle.display !== "none" && dockStyle.visibility !== "hidden" && dockRect.height > 0;
 
-        const researchLink = dock.querySelector('a[href*="/research"]') as HTMLAnchorElement | null;
-        if (!researchLink) return null;
-        const resStyle = window.getComputedStyle(researchLink);
-        const resRect = researchLink.getBoundingClientRect();
-        const isResearchVisible =
-          resStyle.display !== "none" && resStyle.visibility !== "hidden" && resRect.width > 0 && resRect.height > 0;
+            const researchLink = dock.querySelector('a[href*="/research"]') as HTMLAnchorElement | null;
+            if (!researchLink) return null;
+            const resStyle = window.getComputedStyle(researchLink);
+            const resRect = researchLink.getBoundingClientRect();
+            const isResearchVisible =
+              resStyle.display !== "none" && resStyle.visibility !== "hidden" && resRect.width > 0 && resRect.height > 0;
 
-        const hitArea = {
-          width: Math.round(resRect.width * 10) / 10,
-          height: Math.round(resRect.height * 10) / 10,
-        };
-        const href = researchLink.getAttribute("href") || "";
+            const hitArea = {
+              width: Math.round(resRect.width * 10) / 10,
+              height: Math.round(resRect.height * 10) / 10,
+            };
+            const href = researchLink.getAttribute("href") || "";
 
-        const children = Array.from(dock.querySelectorAll("a, button"));
-        const rects = children.map((c, i) => {
-          const r = c.getBoundingClientRect();
-          return {
-            index: i,
-            left: r.left,
-            right: r.right,
-            top: r.top,
-            bottom: r.bottom,
-            width: r.width,
-            height: r.height,
-          };
-        });
+            const children = Array.from(dock.querySelectorAll("a, button"));
+            const rects = children.map((c, i) => {
+              const r = c.getBoundingClientRect();
+              return {
+                index: i,
+                left: r.left,
+                right: r.right,
+                top: r.top,
+                bottom: r.bottom,
+                width: r.width,
+                height: r.height,
+              };
+            });
 
-        let hasOverlap = false;
-        for (let i = 0; i < rects.length; i++) {
-          for (let j = i + 1; j < rects.length; j++) {
-            const a = rects[i];
-            const b = rects[j];
-            if (a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1) {
-              hasOverlap = true;
+            let hasOverlap = false;
+            for (let i = 0; i < rects.length; i++) {
+              for (let j = i + 1; j < rects.length; j++) {
+                const a = rects[i];
+                const b = rects[j];
+                if (a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1) {
+                  hasOverlap = true;
+                }
+              }
             }
+
+            const docWidth = document.documentElement.clientWidth;
+            const scrollWidth = document.documentElement.scrollWidth;
+            const bodyScrollWidth = document.body.scrollWidth;
+            const hasOverflow = scrollWidth > docWidth || bodyScrollWidth > docWidth;
+
+            return {
+              isDockVisible,
+              isResearchVisible,
+              hitArea,
+              href,
+              itemCount: rects.length,
+              hasOverlap,
+              docWidth,
+              scrollWidth,
+              hasOverflow,
+            };
+          });
+          break;
+        } catch (err: any) {
+          if (err.message?.includes("Execution context was destroyed") && attempt < 2) {
+            await new Promise((r) => setTimeout(r, 600));
+            continue;
           }
+          throw err;
         }
-
-        const docWidth = document.documentElement.clientWidth;
-        const scrollWidth = document.documentElement.scrollWidth;
-        const bodyScrollWidth = document.body.scrollWidth;
-        const hasOverflow = scrollWidth > docWidth || bodyScrollWidth > docWidth;
-
-        return {
-          isDockVisible,
-          isResearchVisible,
-          hitArea,
-          href,
-          itemCount: rects.length,
-          hasOverlap,
-          docWidth,
-          scrollWidth,
-          hasOverflow,
-        };
-      });
+      }
 
       assert.ok(dockData, "Failed to read dock data from DOM");
       assert.strictEqual(dockData.isDockVisible, true, "Dock must be visible");
@@ -264,7 +276,7 @@ async function runBrowserChecks() {
 
         // A. ULTA Corrected Provenance
         console.log("Navigating to /research?symbol=ULTA...");
-        await page.goto(`http://localhost:${PORT}/research?symbol=ULTA`, { waitUntil: "networkidle0" });
+        await page.goto(`http://localhost:${PORT}/research?symbol=ULTA`, { waitUntil: "domcontentloaded" });
         await page.waitForSelector('main', { timeout: 10000 });
         await new Promise((r) => setTimeout(r, 800));
 
@@ -278,8 +290,8 @@ async function runBrowserChecks() {
           return {
             hasUltaProvenanceTitle: text.toUpperCase().includes("ULTA PROVENANCE"),
             hasScalingAdditionAuthority: text.includes("ARX Quality Watch Scaling Addition"),
-            hasCandidateSelectedStatus: text.includes("Selected for Release (Awaiting Deployment)"),
-            hasAcceptedEvidenceReview: text.includes("Accepted Research Evidence (SEC Audited)"),
+            hasCandidateSelectedStatus: text.includes("Selected Quality Watch Research"),
+            hasAcceptedEvidenceReview: text.includes("Research checked against SEC filings"),
             has20261021Timestamp: text.includes("2026-10-21T16:00:00Z"),
             hasFilingCutoff: text.includes("2026-10-16T20:00:00Z"),
             hasBaselineShaLeak: text.includes("a65be3b38cdf"),
@@ -289,8 +301,8 @@ async function runBrowserChecks() {
         console.log("ULTA Provenance checks:", ultaProvData);
         assert.strictEqual(ultaProvData.hasUltaProvenanceTitle, true, "Must display 'ULTA Provenance'");
         assert.strictEqual(ultaProvData.hasScalingAdditionAuthority, true, "Authority must be 'ARX Quality Watch Scaling Addition'");
-        assert.strictEqual(ultaProvData.hasCandidateSelectedStatus, true, "Status must be 'Selected for Release (Awaiting Deployment)'");
-        assert.strictEqual(ultaProvData.hasAcceptedEvidenceReview, true, "Review must be 'Accepted Research Evidence (SEC Audited)'");
+        assert.strictEqual(ultaProvData.hasCandidateSelectedStatus, true, "Status must be 'Selected Quality Watch Research'");
+        assert.strictEqual(ultaProvData.hasAcceptedEvidenceReview, true, "Review must be 'Research checked against SEC filings'");
         assert.strictEqual(ultaProvData.has20261021Timestamp, true, "Authored UTC must be '2026-10-21T16:00:00Z'");
         assert.strictEqual(ultaProvData.hasBaselineShaLeak, false, "ULTA page must NOT display or leak baseline ledger hash (a65be3b...)");
 
@@ -300,7 +312,7 @@ async function runBrowserChecks() {
 
         // B. Excluded Symbol Fallback (MU)
         console.log("\nNavigating to /research?symbol=MU...");
-        await page.goto(`http://localhost:${PORT}/research?symbol=MU`, { waitUntil: "networkidle0" });
+        await page.goto(`http://localhost:${PORT}/research?symbol=MU`, { waitUntil: "domcontentloaded" });
         await page.waitForSelector('main', { timeout: 10000 });
         await new Promise((r) => setTimeout(r, 800));
 
@@ -329,7 +341,7 @@ async function runBrowserChecks() {
 
         // C. Held Symbol Fallback (IREN)
         console.log("\nNavigating to /research?symbol=IREN...");
-        await page.goto(`http://localhost:${PORT}/research?symbol=IREN`, { waitUntil: "networkidle0" });
+        await page.goto(`http://localhost:${PORT}/research?symbol=IREN`, { waitUntil: "domcontentloaded" });
         await page.waitForSelector('main', { timeout: 10000 });
         await new Promise((r) => setTimeout(r, 800));
 
