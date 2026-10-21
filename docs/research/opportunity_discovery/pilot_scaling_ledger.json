@@ -50,8 +50,8 @@
       "disposition_label": "Watch \u2014 Conditions Required for Entry",
       "reference_price": 1439.07,
       "valuation_status": "COMPUTED_VERIFIED",
-      "lifecycle_status": "RELEASED_BASELINE",
-      "review_status": "RESEARCH_REVIEWED"
+      "lifecycle_status": "PUBLISHED_PRODUCTION",
+      "review_status": "RESEARCH_REVIEW_UNRECORDED"
     },
     {
       "symbol": "DUOL",
@@ -62,8 +62,8 @@
       "disposition_label": "Watch \u2014 Conditions Required for Entry",
       "reference_price": 141.76,
       "valuation_status": "COMPUTED_VERIFIED",
-      "lifecycle_status": "RELEASED_BASELINE",
-      "review_status": "RESEARCH_REVIEWED"
+      "lifecycle_status": "PUBLISHED_PRODUCTION",
+      "review_status": "RESEARCH_REVIEW_UNRECORDED"
     },
     {
       "symbol": "IREN",
@@ -74,8 +74,8 @@
       "disposition_label": "Watch \u2014 Valuation Suppressed (Fail-Closed)",
       "reference_price": 26.99,
       "valuation_status": "VALUATION_SUPPRESSED",
-      "lifecycle_status": "RELEASED_BASELINE",
-      "review_status": "RESEARCH_REVIEWED"
+      "lifecycle_status": "PUBLISHED_PRODUCTION",
+      "review_status": "RESEARCH_REVIEW_UNRECORDED"
     },
     {
       "symbol": "CORZ",
@@ -86,8 +86,8 @@
       "disposition_label": "Watch \u2014 Valuation Suppressed (Fail-Closed)",
       "reference_price": 14.85,
       "valuation_status": "VALUATION_SUPPRESSED",
-      "lifecycle_status": "RELEASED_BASELINE",
-      "review_status": "RESEARCH_REVIEWED"
+      "lifecycle_status": "PUBLISHED_PRODUCTION",
+      "review_status": "RESEARCH_REVIEW_UNRECORDED"
     },
     {
       "symbol": "MU",
@@ -98,8 +98,8 @@
       "disposition_label": "Rejected \u2014 No Supported Opportunity",
       "reference_price": 878.84,
       "valuation_status": "COMPUTED_QUALIFIED",
-      "lifecycle_status": "RELEASED_BASELINE",
-      "review_status": "RESEARCH_REVIEWED"
+      "lifecycle_status": "PUBLISHED_PRODUCTION",
+      "review_status": "RESEARCH_REVIEW_UNRECORDED"
     },
     {
       "symbol": "ULTA",
@@ -110,8 +110,9 @@
       "disposition_label": "Watch \u2014 Conditions Required for Entry",
       "reference_price": 592.94,
       "valuation_status": "COMPUTED_VERIFIED",
-      "lifecycle_status": "DRAFT",
-      "review_status": "PENDING_RESEARCH_REVIEW"
+      "lifecycle_status": "DRAFT_STAGING",
+      "review_status": "PENDING_RESEARCH_REVIEW",
+      "evidence_completeness": "SOURCE_MAPPED_UNAUDITED"
     },
     {
       "symbol": "MEDP",
@@ -122,8 +123,9 @@
       "disposition_label": "Watch \u2014 Conditions Required for Entry",
       "reference_price": 618.47,
       "valuation_status": "COMPUTED_VERIFIED",
-      "lifecycle_status": "DRAFT",
-      "review_status": "PENDING_RESEARCH_REVIEW"
+      "lifecycle_status": "DRAFT_STAGING",
+      "review_status": "PENDING_RESEARCH_REVIEW",
+      "evidence_completeness": "DRAFT_SPEC_STAGED"
     },
     {
       "symbol": "DECK",
@@ -134,8 +136,9 @@
       "disposition_label": "Watch \u2014 Conditions Required for Entry",
       "reference_price": 85.72,
       "valuation_status": "COMPUTED_VERIFIED",
-      "lifecycle_status": "DRAFT",
-      "review_status": "PENDING_RESEARCH_REVIEW"
+      "lifecycle_status": "DRAFT_STAGING",
+      "review_status": "PENDING_RESEARCH_REVIEW",
+      "evidence_completeness": "DRAFT_SPEC_STAGED"
     },
     {
       "symbol": "KLAC",
@@ -146,8 +149,9 @@
       "disposition_label": "Watch \u2014 Conditions Required for Entry",
       "reference_price": 165.74,
       "valuation_status": "COMPUTED_QUALIFIED",
-      "lifecycle_status": "DRAFT",
-      "review_status": "PENDING_RESEARCH_REVIEW"
+      "lifecycle_status": "DRAFT_STAGING",
+      "review_status": "PENDING_RESEARCH_REVIEW",
+      "evidence_completeness": "DRAFT_SPEC_STAGED"
     },
     {
       "symbol": "LULU",
@@ -158,8 +162,9 @@
       "disposition_label": "Watch \u2014 Conditions Required for Entry",
       "reference_price": 97.1,
       "valuation_status": "COMPUTED_VERIFIED",
-      "lifecycle_status": "DRAFT",
-      "review_status": "PENDING_RESEARCH_REVIEW"
+      "lifecycle_status": "DRAFT_STAGING",
+      "review_status": "PENDING_RESEARCH_REVIEW",
+      "evidence_completeness": "DRAFT_SPEC_STAGED"
     },
     {
       "symbol": "EME",
@@ -170,8 +175,9 @@
       "disposition_label": "Watch \u2014 Conditions Required for Entry",
       "reference_price": 721.66,
       "valuation_status": "COMPUTED_VERIFIED",
-      "lifecycle_status": "DRAFT",
-      "review_status": "PENDING_RESEARCH_REVIEW"
+      "lifecycle_status": "DRAFT_STAGING",
+      "review_status": "PENDING_RESEARCH_REVIEW",
+      "evidence_completeness": "DRAFT_SPEC_STAGED"
     },
     {
       "symbol": "VRT",
@@ -182,8 +188,9 @@
       "disposition_label": "Watch \u2014 Conditions Required for Entry",
       "reference_price": 206.42,
       "valuation_status": "COMPUTED_VERIFIED",
-      "lifecycle_status": "DRAFT",
-      "review_status": "PENDING_RESEARCH_REVIEW"
+      "lifecycle_status": "DRAFT_STAGING",
+      "review_status": "PENDING_RESEARCH_REVIEW",
+      "evidence_completeness": "DRAFT_SPEC_STAGED"
     },
     {
       "symbol": "ANET",
@@ -194,8 +201,9 @@
       "disposition_label": "Watch \u2014 Conditions Required for Entry",
       "reference_price": 176.99,
       "valuation_status": "COMPUTED_VERIFIED",
-      "lifecycle_status": "DRAFT",
-      "review_status": "PENDING_RESEARCH_REVIEW"
+      "lifecycle_status": "DRAFT_STAGING",
+      "review_status": "PENDING_RESEARCH_REVIEW",
+      "evidence_completeness": "DRAFT_SPEC_STAGED"
     },
     {
       "symbol": "PLTR",
@@ -206,8 +214,9 @@
       "disposition_label": "Rejected \u2014 No Supported Opportunity",
       "reference_price": 186.03,
       "valuation_status": "COMPUTED_QUALIFIED",
-      "lifecycle_status": "DRAFT",
-      "review_status": "PENDING_RESEARCH_REVIEW"
+      "lifecycle_status": "DRAFT_STAGING",
+      "review_status": "PENDING_RESEARCH_REVIEW",
+      "evidence_completeness": "DRAFT_SPEC_STAGED"
     },
     {
       "symbol": "ISRG",
@@ -218,8 +227,9 @@
       "disposition_label": "Watch \u2014 Conditions Required for Entry",
       "reference_price": 426.7,
       "valuation_status": "COMPUTED_VERIFIED",
-      "lifecycle_status": "DRAFT",
-      "review_status": "PENDING_RESEARCH_REVIEW"
+      "lifecycle_status": "DRAFT_STAGING",
+      "review_status": "PENDING_RESEARCH_REVIEW",
+      "evidence_completeness": "DRAFT_SPEC_STAGED"
     },
     {
       "symbol": "CDNS",
@@ -230,8 +240,9 @@
       "disposition_label": "Watch \u2014 Conditions Required for Entry",
       "reference_price": 319.51,
       "valuation_status": "COMPUTED_VERIFIED",
-      "lifecycle_status": "DRAFT",
-      "review_status": "PENDING_RESEARCH_REVIEW"
+      "lifecycle_status": "DRAFT_STAGING",
+      "review_status": "PENDING_RESEARCH_REVIEW",
+      "evidence_completeness": "DRAFT_SPEC_STAGED"
     },
     {
       "symbol": "PWR",
@@ -242,8 +253,9 @@
       "disposition_label": "Watch \u2014 Conditions Required for Entry",
       "reference_price": 631.98,
       "valuation_status": "COMPUTED_VERIFIED",
-      "lifecycle_status": "DRAFT",
-      "review_status": "PENDING_RESEARCH_REVIEW"
+      "lifecycle_status": "DRAFT_STAGING",
+      "review_status": "PENDING_RESEARCH_REVIEW",
+      "evidence_completeness": "DRAFT_SPEC_STAGED"
     },
     {
       "symbol": "SNPS",
@@ -254,8 +266,9 @@
       "disposition_label": "Watch \u2014 Conditions Required for Entry",
       "reference_price": 454.63,
       "valuation_status": "COMPUTED_QUALIFIED",
-      "lifecycle_status": "DRAFT",
-      "review_status": "PENDING_RESEARCH_REVIEW"
+      "lifecycle_status": "DRAFT_STAGING",
+      "review_status": "PENDING_RESEARCH_REVIEW",
+      "evidence_completeness": "DRAFT_SPEC_STAGED"
     },
     {
       "symbol": "NOW",
@@ -266,8 +279,9 @@
       "disposition_label": "Watch \u2014 Conditions Required for Entry",
       "reference_price": 141.95,
       "valuation_status": "COMPUTED_VERIFIED",
-      "lifecycle_status": "DRAFT",
-      "review_status": "PENDING_RESEARCH_REVIEW"
+      "lifecycle_status": "DRAFT_STAGING",
+      "review_status": "PENDING_RESEARCH_REVIEW",
+      "evidence_completeness": "DRAFT_SPEC_STAGED"
     },
     {
       "symbol": "ELF",
@@ -278,8 +292,9 @@
       "disposition_label": "Watch \u2014 Conditions Required for Entry",
       "reference_price": 113.53,
       "valuation_status": "COMPUTED_VERIFIED",
-      "lifecycle_status": "DRAFT",
-      "review_status": "PENDING_RESEARCH_REVIEW"
+      "lifecycle_status": "DRAFT_STAGING",
+      "review_status": "PENDING_RESEARCH_REVIEW",
+      "evidence_completeness": "DRAFT_SPEC_STAGED"
     }
   ],
   "dossiers": {
@@ -442,13 +457,17 @@
       },
       "dossier_id": "DOSSIER-FIX-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-reviewed",
-        "lifecycle_status": "RELEASED_BASELINE",
-        "review_status": "RESEARCH_REVIEWED",
+        "dossier_version": "1.0.0-production",
+        "lifecycle_status": "PUBLISHED_PRODUCTION",
+        "technical_verification": "TECHNICAL_VERIFIED",
+        "review_status": "RESEARCH_REVIEW_UNRECORDED",
         "authoring_date": "2026-10-20",
         "freshness_state": "HISTORICAL_BASELINE",
         "governing_contract": "CONTRACT-ARX-ODP-V1-001-REV2",
-        "provenance_authority": "ODP-05 Canonical Ledger"
+        "provenance_authority": "ODP-05 Canonical Ledger",
+        "reviewer_id": null,
+        "reviewed_at_utc": null,
+        "review_notes": "Released to production under technical verification and contract validation. Independent research peer-review sign-off is unrecorded in canonical archives."
       }
     },
     "DUOL": {
@@ -610,13 +629,17 @@
       },
       "dossier_id": "DOSSIER-DUOL-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-reviewed",
-        "lifecycle_status": "RELEASED_BASELINE",
-        "review_status": "RESEARCH_REVIEWED",
+        "dossier_version": "1.0.0-production",
+        "lifecycle_status": "PUBLISHED_PRODUCTION",
+        "technical_verification": "TECHNICAL_VERIFIED",
+        "review_status": "RESEARCH_REVIEW_UNRECORDED",
         "authoring_date": "2026-10-20",
         "freshness_state": "HISTORICAL_BASELINE",
         "governing_contract": "CONTRACT-ARX-ODP-V1-001-REV2",
-        "provenance_authority": "ODP-05 Canonical Ledger"
+        "provenance_authority": "ODP-05 Canonical Ledger",
+        "reviewer_id": null,
+        "reviewed_at_utc": null,
+        "review_notes": "Released to production under technical verification and contract validation. Independent research peer-review sign-off is unrecorded in canonical archives."
       }
     },
     "IREN": {
@@ -725,13 +748,17 @@
       },
       "dossier_id": "DOSSIER-IREN-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-reviewed",
-        "lifecycle_status": "RELEASED_BASELINE",
-        "review_status": "RESEARCH_REVIEWED",
+        "dossier_version": "1.0.0-production",
+        "lifecycle_status": "PUBLISHED_PRODUCTION",
+        "technical_verification": "TECHNICAL_VERIFIED",
+        "review_status": "RESEARCH_REVIEW_UNRECORDED",
         "authoring_date": "2026-10-20",
         "freshness_state": "HISTORICAL_BASELINE",
         "governing_contract": "CONTRACT-ARX-ODP-V1-001-REV2",
-        "provenance_authority": "ODP-05 Canonical Ledger"
+        "provenance_authority": "ODP-05 Canonical Ledger",
+        "reviewer_id": null,
+        "reviewed_at_utc": null,
+        "review_notes": "Released to production under technical verification and contract validation. Independent research peer-review sign-off is unrecorded in canonical archives."
       }
     },
     "CORZ": {
@@ -840,13 +867,17 @@
       },
       "dossier_id": "DOSSIER-CORZ-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-reviewed",
-        "lifecycle_status": "RELEASED_BASELINE",
-        "review_status": "RESEARCH_REVIEWED",
+        "dossier_version": "1.0.0-production",
+        "lifecycle_status": "PUBLISHED_PRODUCTION",
+        "technical_verification": "TECHNICAL_VERIFIED",
+        "review_status": "RESEARCH_REVIEW_UNRECORDED",
         "authoring_date": "2026-10-20",
         "freshness_state": "HISTORICAL_BASELINE",
         "governing_contract": "CONTRACT-ARX-ODP-V1-001-REV2",
-        "provenance_authority": "ODP-05 Canonical Ledger"
+        "provenance_authority": "ODP-05 Canonical Ledger",
+        "reviewer_id": null,
+        "reviewed_at_utc": null,
+        "review_notes": "Released to production under technical verification and contract validation. Independent research peer-review sign-off is unrecorded in canonical archives."
       }
     },
     "MU": {
@@ -1000,25 +1031,32 @@
       },
       "dossier_id": "DOSSIER-MU-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-reviewed",
-        "lifecycle_status": "RELEASED_BASELINE",
-        "review_status": "RESEARCH_REVIEWED",
+        "dossier_version": "1.0.0-production",
+        "lifecycle_status": "PUBLISHED_PRODUCTION",
+        "technical_verification": "TECHNICAL_VERIFIED",
+        "review_status": "RESEARCH_REVIEW_UNRECORDED",
         "authoring_date": "2026-10-20",
         "freshness_state": "HISTORICAL_BASELINE",
         "governing_contract": "CONTRACT-ARX-ODP-V1-001-REV2",
-        "provenance_authority": "ODP-05 Canonical Ledger"
+        "provenance_authority": "ODP-05 Canonical Ledger",
+        "reviewer_id": null,
+        "reviewed_at_utc": null,
+        "review_notes": "Released to production under technical verification and contract validation. Independent research peer-review sign-off is unrecorded in canonical archives."
       }
     },
     "ULTA": {
       "dossier_id": "DOSSIER-ULTA-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-draft",
-        "lifecycle_status": "DRAFT",
+        "dossier_version": "0.1.0-draft",
+        "lifecycle_status": "DRAFT_STAGING",
+        "technical_verification": "COMPUTED_VERIFIED",
         "review_status": "PENDING_RESEARCH_REVIEW",
+        "evidence_completeness": "SOURCE_MAPPED_UNAUDITED",
         "authoring_date": "2026-10-21",
-        "freshness_state": "CURRENT_DRAFT",
+        "freshness_state": "PILOT_CANDIDATE",
         "reviewer_id": null,
         "reviewed_at_utc": null,
+        "review_notes": "Representative candidate prepared with complete primary filing source-to-input tracing. Awaiting independent financial research review.",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
       },
       "identity": {
@@ -1178,7 +1216,353 @@
             "filing_date": "2026-08-27",
             "url": "https://www.sec.gov/Archives/edgar/data/1403568/000110465926102442/0001104659-26-102442-index.htm"
           }
+        },
+        "source_evidence_tracing": {
+          "representative_status": "REPRESENTATIVE_PILOT_CANDIDATE",
+          "company_identity": {
+            "fact_status": "VERIFIED_REPORTED_FACT",
+            "entity_name": "Ulta Beauty, Inc.",
+            "cik": "0001403568",
+            "sic": "5990",
+            "exchange": "NASDAQ",
+            "source_url": "https://data.sec.gov/submissions/CIK0001403568.json",
+            "filing_accessions": [
+              "0001104659-26-035243",
+              "0001104659-26-102442"
+            ]
+          },
+          "revenue": {
+            "fact_status": "DERIVED_CALCULATION",
+            "reported_ttm_value_usd": 12955517000.0,
+            "derivation_formula": "FY2025 Revenues ($12,392,820,000) - Q2 2025 6M Revenues ($5,636,836,000) + Q2 2026 6M Revenues ($6,199,533,000)",
+            "xbrl_tag": "us-gaap:Revenues",
+            "unit": "USD",
+            "filing_sources": [
+              {
+                "form": "10-K",
+                "period_end": "2026-01-31",
+                "filing_date": "2026-03-26",
+                "accession": "0001104659-26-035243",
+                "location": "Item 8 Consolidated Statements of Income",
+                "reported_value": 12392820000.0
+              },
+              {
+                "form": "10-Q",
+                "period_end": "2026-08-01",
+                "filing_date": "2026-08-27",
+                "accession": "0001104659-26-102442",
+                "location": "Part I Item 1 Consolidated Statements of Income (6 Months Ended)",
+                "reported_value": 6199533000.0
+              }
+            ]
+          },
+          "operating_income": {
+            "fact_status": "DERIVED_CALCULATION",
+            "reported_ttm_value_usd": 1614258000.0,
+            "operating_margin_pct": 12.46,
+            "derivation_formula": "FY2025 Operating Income ($1,532,992,000) - Q2 2025 6M Operating Income ($746,631,000) + Q2 2026 6M Operating Income ($827,897,000)",
+            "xbrl_tag": "us-gaap:OperatingIncomeLoss",
+            "unit": "USD",
+            "filing_sources": [
+              {
+                "form": "10-K",
+                "period_end": "2026-01-31",
+                "filing_date": "2026-03-26",
+                "accession": "0001104659-26-035243",
+                "location": "Item 8 Consolidated Statements of Income",
+                "reported_value": 1532992000.0
+              },
+              {
+                "form": "10-Q",
+                "period_end": "2026-08-01",
+                "filing_date": "2026-08-27",
+                "accession": "0001104659-26-102442",
+                "location": "Part I Item 1 Consolidated Statements of Income (6 Months Ended)",
+                "reported_value": 827897000.0
+              }
+            ]
+          },
+          "cash_and_investments": {
+            "fact_status": "VERIFIED_REPORTED_FACT",
+            "total_cash_and_investments_usd": 213451000.0,
+            "cash_and_equivalents_usd": 158451000.0,
+            "short_term_investments_usd": 55000000.0,
+            "xbrl_tags": [
+              "us-gaap:CashAndCashEquivalentsAtCarryingValue",
+              "us-gaap:ShortTermInvestments"
+            ],
+            "filing_source": {
+              "form": "10-Q",
+              "period_end": "2026-08-01",
+              "filing_date": "2026-08-27",
+              "accession": "0001104659-26-102442",
+              "location": "Part I Item 1 Consolidated Balance Sheets"
+            }
+          },
+          "funded_debt": {
+            "fact_status": "VERIFIED_REPORTED_FACT",
+            "total_financial_debt_usd": 0.0,
+            "is_zero_debt": true,
+            "support_disclosure": "No senior notes or term loans outstanding; $1.0B revolving credit facility completely undrawn at quarter end (Note 8).",
+            "filing_source": {
+              "form": "10-Q",
+              "period_end": "2026-08-01",
+              "filing_date": "2026-08-27",
+              "accession": "0001104659-26-102442",
+              "location": "Part I Item 1 Consolidated Balance Sheets & Note 8"
+            }
+          },
+          "lease_treatment": {
+            "fact_status": "VERIFIED_REPORTED_FACT",
+            "current_operating_lease_liabilities_usd": 312648000.0,
+            "noncurrent_operating_lease_liabilities_usd": 1871805000.0,
+            "total_lease_liabilities_usd": 2184453000.0,
+            "accounting_standard": "ASC 842",
+            "valuation_convention": "Lease-as-Operating-Expense convention: retail store lease expense deducted in operating expenses; excluded from debt bridge to avoid double deduction.",
+            "xbrl_tags": [
+              "us-gaap:OperatingLeaseLiabilityCurrent",
+              "us-gaap:OperatingLeaseLiabilityNoncurrent"
+            ],
+            "filing_source": {
+              "form": "10-Q",
+              "period_end": "2026-08-01",
+              "filing_date": "2026-08-27",
+              "accession": "0001104659-26-102442",
+              "location": "Part I Item 1 Consolidated Balance Sheets"
+            }
+          },
+          "shares_outstanding": {
+            "fact_status": "VERIFIED_REPORTED_FACT",
+            "share_count": 43062000.0,
+            "basis_type": "DILUTED_WEIGHTED_AVERAGE",
+            "measurement_period": "Three months ended 2026-08-01",
+            "xbrl_tag": "us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding",
+            "filing_source": {
+              "form": "10-Q",
+              "period_end": "2026-08-01",
+              "filing_date": "2026-08-27",
+              "accession": "0001104659-26-102442",
+              "location": "Part I Item 1 Consolidated Statements of Income"
+            }
+          },
+          "reference_price": {
+            "fact_status": "VERIFIED_REPORTED_FACT",
+            "reference_price": 592.94,
+            "reference_date": "2026-10-16",
+            "timestamp_utc": "2026-10-16T20:00:00Z",
+            "source_system": "ARX MarketStore regular close tape",
+            "source_store": "data/research/market_data/bounded_150_dev_market_store.db",
+            "table": "asset_ohlcv_daily"
+          },
+          "valuation_model": {
+            "fact_status": "DERIVED_CALCULATION",
+            "model_type": "Single-stage Reverse-DCF FCFF (Gordon Growth Terminal Value)",
+            "solved_5y_revenue_cagr_pct": 15.11,
+            "assumptions": {
+              "fact_status": "ANALYST_ASSUMPTION",
+              "operating_margin_pct": 12.0,
+              "wacc_pct": 9.0,
+              "terminal_growth_pct": 2.0,
+              "tax_rate_pct": 23.5,
+              "reinvestment_rate_pct": 15.0
+            },
+            "roundtrip_value": 592.94,
+            "roundtrip_delta_cents": 0.45
+          },
+          "narrative_claims": [
+            {
+              "claim_type": "SUPPORTING_EVIDENCE",
+              "fact_status": "VERIFIED_REPORTED_FACT",
+              "statement": "Ulta Beauty has over 44 million active loyalty program members, representing over 95% of total sales.",
+              "locator": "Form 10-K for FY ended 2026-01-31, Item 1 Business \u2014 Loyalty Program"
+            },
+            {
+              "claim_type": "OPPOSING_EVIDENCE",
+              "fact_status": "VERIFIED_REPORTED_FACT",
+              "statement": "Prestige category growth has moderated while promotional cadence across prestige beauty and competitive footprint expansion (Sephora at Kohl's) has intensified.",
+              "locator": "Form 10-Q for Q2 ended 2026-08-01, Part I Item 2 MD&A \u2014 Operating Results"
+            },
+            {
+              "claim_type": "MONITORING_CRITERIA",
+              "fact_status": "ANALYST_ASSUMPTION",
+              "statement": "Operating margin compression below 10.0% or negative comparable store sales for two consecutive fiscal quarters triggers thesis invalidation.",
+              "locator": "ARX Analytical Thesis Invalidation Rule"
+            }
+          ]
         }
+      },
+      "source_evidence_tracing": {
+        "representative_status": "REPRESENTATIVE_PILOT_CANDIDATE",
+        "company_identity": {
+          "fact_status": "VERIFIED_REPORTED_FACT",
+          "entity_name": "Ulta Beauty, Inc.",
+          "cik": "0001403568",
+          "sic": "5990",
+          "exchange": "NASDAQ",
+          "source_url": "https://data.sec.gov/submissions/CIK0001403568.json",
+          "filing_accessions": [
+            "0001104659-26-035243",
+            "0001104659-26-102442"
+          ]
+        },
+        "revenue": {
+          "fact_status": "DERIVED_CALCULATION",
+          "reported_ttm_value_usd": 12955517000.0,
+          "derivation_formula": "FY2025 Revenues ($12,392,820,000) - Q2 2025 6M Revenues ($5,636,836,000) + Q2 2026 6M Revenues ($6,199,533,000)",
+          "xbrl_tag": "us-gaap:Revenues",
+          "unit": "USD",
+          "filing_sources": [
+            {
+              "form": "10-K",
+              "period_end": "2026-01-31",
+              "filing_date": "2026-03-26",
+              "accession": "0001104659-26-035243",
+              "location": "Item 8 Consolidated Statements of Income",
+              "reported_value": 12392820000.0
+            },
+            {
+              "form": "10-Q",
+              "period_end": "2026-08-01",
+              "filing_date": "2026-08-27",
+              "accession": "0001104659-26-102442",
+              "location": "Part I Item 1 Consolidated Statements of Income (6 Months Ended)",
+              "reported_value": 6199533000.0
+            }
+          ]
+        },
+        "operating_income": {
+          "fact_status": "DERIVED_CALCULATION",
+          "reported_ttm_value_usd": 1614258000.0,
+          "operating_margin_pct": 12.46,
+          "derivation_formula": "FY2025 Operating Income ($1,532,992,000) - Q2 2025 6M Operating Income ($746,631,000) + Q2 2026 6M Operating Income ($827,897,000)",
+          "xbrl_tag": "us-gaap:OperatingIncomeLoss",
+          "unit": "USD",
+          "filing_sources": [
+            {
+              "form": "10-K",
+              "period_end": "2026-01-31",
+              "filing_date": "2026-03-26",
+              "accession": "0001104659-26-035243",
+              "location": "Item 8 Consolidated Statements of Income",
+              "reported_value": 1532992000.0
+            },
+            {
+              "form": "10-Q",
+              "period_end": "2026-08-01",
+              "filing_date": "2026-08-27",
+              "accession": "0001104659-26-102442",
+              "location": "Part I Item 1 Consolidated Statements of Income (6 Months Ended)",
+              "reported_value": 827897000.0
+            }
+          ]
+        },
+        "cash_and_investments": {
+          "fact_status": "VERIFIED_REPORTED_FACT",
+          "total_cash_and_investments_usd": 213451000.0,
+          "cash_and_equivalents_usd": 158451000.0,
+          "short_term_investments_usd": 55000000.0,
+          "xbrl_tags": [
+            "us-gaap:CashAndCashEquivalentsAtCarryingValue",
+            "us-gaap:ShortTermInvestments"
+          ],
+          "filing_source": {
+            "form": "10-Q",
+            "period_end": "2026-08-01",
+            "filing_date": "2026-08-27",
+            "accession": "0001104659-26-102442",
+            "location": "Part I Item 1 Consolidated Balance Sheets"
+          }
+        },
+        "funded_debt": {
+          "fact_status": "VERIFIED_REPORTED_FACT",
+          "total_financial_debt_usd": 0.0,
+          "is_zero_debt": true,
+          "support_disclosure": "No senior notes or term loans outstanding; $1.0B revolving credit facility completely undrawn at quarter end (Note 8).",
+          "filing_source": {
+            "form": "10-Q",
+            "period_end": "2026-08-01",
+            "filing_date": "2026-08-27",
+            "accession": "0001104659-26-102442",
+            "location": "Part I Item 1 Consolidated Balance Sheets & Note 8"
+          }
+        },
+        "lease_treatment": {
+          "fact_status": "VERIFIED_REPORTED_FACT",
+          "current_operating_lease_liabilities_usd": 312648000.0,
+          "noncurrent_operating_lease_liabilities_usd": 1871805000.0,
+          "total_lease_liabilities_usd": 2184453000.0,
+          "accounting_standard": "ASC 842",
+          "valuation_convention": "Lease-as-Operating-Expense convention: retail store lease expense deducted in operating expenses; excluded from debt bridge to avoid double deduction.",
+          "xbrl_tags": [
+            "us-gaap:OperatingLeaseLiabilityCurrent",
+            "us-gaap:OperatingLeaseLiabilityNoncurrent"
+          ],
+          "filing_source": {
+            "form": "10-Q",
+            "period_end": "2026-08-01",
+            "filing_date": "2026-08-27",
+            "accession": "0001104659-26-102442",
+            "location": "Part I Item 1 Consolidated Balance Sheets"
+          }
+        },
+        "shares_outstanding": {
+          "fact_status": "VERIFIED_REPORTED_FACT",
+          "share_count": 43062000.0,
+          "basis_type": "DILUTED_WEIGHTED_AVERAGE",
+          "measurement_period": "Three months ended 2026-08-01",
+          "xbrl_tag": "us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding",
+          "filing_source": {
+            "form": "10-Q",
+            "period_end": "2026-08-01",
+            "filing_date": "2026-08-27",
+            "accession": "0001104659-26-102442",
+            "location": "Part I Item 1 Consolidated Statements of Income"
+          }
+        },
+        "reference_price": {
+          "fact_status": "VERIFIED_REPORTED_FACT",
+          "reference_price": 592.94,
+          "reference_date": "2026-10-16",
+          "timestamp_utc": "2026-10-16T20:00:00Z",
+          "source_system": "ARX MarketStore regular close tape",
+          "source_store": "data/research/market_data/bounded_150_dev_market_store.db",
+          "table": "asset_ohlcv_daily"
+        },
+        "valuation_model": {
+          "fact_status": "DERIVED_CALCULATION",
+          "model_type": "Single-stage Reverse-DCF FCFF (Gordon Growth Terminal Value)",
+          "solved_5y_revenue_cagr_pct": 15.11,
+          "assumptions": {
+            "fact_status": "ANALYST_ASSUMPTION",
+            "operating_margin_pct": 12.0,
+            "wacc_pct": 9.0,
+            "terminal_growth_pct": 2.0,
+            "tax_rate_pct": 23.5,
+            "reinvestment_rate_pct": 15.0
+          },
+          "roundtrip_value": 592.94,
+          "roundtrip_delta_cents": 0.45
+        },
+        "narrative_claims": [
+          {
+            "claim_type": "SUPPORTING_EVIDENCE",
+            "fact_status": "VERIFIED_REPORTED_FACT",
+            "statement": "Ulta Beauty has over 44 million active loyalty program members, representing over 95% of total sales.",
+            "locator": "Form 10-K for FY ended 2026-01-31, Item 1 Business \u2014 Loyalty Program"
+          },
+          {
+            "claim_type": "OPPOSING_EVIDENCE",
+            "fact_status": "VERIFIED_REPORTED_FACT",
+            "statement": "Prestige category growth has moderated while promotional cadence across prestige beauty and competitive footprint expansion (Sephora at Kohl's) has intensified.",
+            "locator": "Form 10-Q for Q2 ended 2026-08-01, Part I Item 2 MD&A \u2014 Operating Results"
+          },
+          {
+            "claim_type": "MONITORING_CRITERIA",
+            "fact_status": "ANALYST_ASSUMPTION",
+            "statement": "Operating margin compression below 10.0% or negative comparable store sales for two consecutive fiscal quarters triggers thesis invalidation.",
+            "locator": "ARX Analytical Thesis Invalidation Rule"
+          }
+        ]
       },
       "monitoring": {
         "observable_invalidation_trigger": "Operating margin compression below 10.0% or negative comparable store sales for two consecutive fiscal quarters.",
@@ -1195,13 +1579,16 @@
     "MEDP": {
       "dossier_id": "DOSSIER-MEDP-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-draft",
-        "lifecycle_status": "DRAFT",
+        "dossier_version": "0.1.0-draft",
+        "lifecycle_status": "DRAFT_STAGING",
+        "technical_verification": "COMPUTED_VERIFIED",
         "review_status": "PENDING_RESEARCH_REVIEW",
+        "evidence_completeness": "DRAFT_SPEC_STAGED",
         "authoring_date": "2026-10-21",
-        "freshness_state": "CURRENT_DRAFT",
+        "freshness_state": "PILOT_CANDIDATE",
         "reviewer_id": null,
         "reviewed_at_utc": null,
+        "review_notes": "Staged draft generated from curated specifications. Primary filing audit and independent research review pending.",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
       },
       "identity": {
@@ -1361,8 +1748,10 @@
             "filing_date": "2026-07-22",
             "url": "https://www.sec.gov/Archives/edgar/data/1668397/000166839726000048/0001668397-26-000048-index.htm"
           }
-        }
+        },
+        "source_evidence_tracing": null
       },
+      "source_evidence_tracing": null,
       "monitoring": {
         "observable_invalidation_trigger": "Net new business awards book-to-bill ratio declining below 1.0x for consecutive quarters or operating margin breach below 16.0%.",
         "next_monitoring_trigger": "Q3 2026 earnings release and Form 10-Q for trial backlog cancellations and RFP volume.",
@@ -1378,13 +1767,16 @@
     "DECK": {
       "dossier_id": "DOSSIER-DECK-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-draft",
-        "lifecycle_status": "DRAFT",
+        "dossier_version": "0.1.0-draft",
+        "lifecycle_status": "DRAFT_STAGING",
+        "technical_verification": "COMPUTED_VERIFIED",
         "review_status": "PENDING_RESEARCH_REVIEW",
+        "evidence_completeness": "DRAFT_SPEC_STAGED",
         "authoring_date": "2026-10-21",
-        "freshness_state": "CURRENT_DRAFT",
+        "freshness_state": "PILOT_CANDIDATE",
         "reviewer_id": null,
         "reviewed_at_utc": null,
+        "review_notes": "Staged draft generated from curated specifications. Primary filing audit and independent research review pending.",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
       },
       "identity": {
@@ -1544,8 +1936,10 @@
             "filing_date": "2026-07-25",
             "url": "https://www.sec.gov/Archives/edgar/data/910521/000091052126000045/0000910521-26-000045-index.htm"
           }
-        }
+        },
+        "source_evidence_tracing": null
       },
+      "source_evidence_tracing": null,
       "monitoring": {
         "observable_invalidation_trigger": "Gross margin decline below 50.0% or HOKA DTC quarterly revenue deceleration below 10.0%.",
         "next_monitoring_trigger": "Q2 FY27 earnings release (expected October/November 2026) for holiday pre-orders and inventory aging.",
@@ -1561,13 +1955,16 @@
     "KLAC": {
       "dossier_id": "DOSSIER-KLAC-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-draft",
-        "lifecycle_status": "DRAFT",
+        "dossier_version": "0.1.0-draft",
+        "lifecycle_status": "DRAFT_STAGING",
+        "technical_verification": "COMPUTED_QUALIFIED",
         "review_status": "PENDING_RESEARCH_REVIEW",
+        "evidence_completeness": "DRAFT_SPEC_STAGED",
         "authoring_date": "2026-10-21",
-        "freshness_state": "CURRENT_DRAFT",
+        "freshness_state": "PILOT_CANDIDATE",
         "reviewer_id": null,
         "reviewed_at_utc": null,
+        "review_notes": "Staged draft generated from curated specifications. Primary filing audit and independent research review pending.",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
       },
       "identity": {
@@ -1714,8 +2111,10 @@
             "filing_date": "2026-08-08",
             "url": "https://www.sec.gov/Archives/edgar/data/319201/000031920126000035/0000319201-26-000035-index.htm"
           }
-        }
+        },
+        "source_evidence_tracing": null
       },
+      "source_evidence_tracing": null,
       "monitoring": {
         "observable_invalidation_trigger": "Metrology market share loss exceeding 300 bps to competitors (Applied Materials / ASML) or China revenue decline >50% without leading-edge offset.",
         "next_monitoring_trigger": "Q1 FY27 Form 10-Q filing (October 2026) for WFE orders and advanced packaging adoption rates.",
@@ -1731,13 +2130,16 @@
     "LULU": {
       "dossier_id": "DOSSIER-LULU-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-draft",
-        "lifecycle_status": "DRAFT",
+        "dossier_version": "0.1.0-draft",
+        "lifecycle_status": "DRAFT_STAGING",
+        "technical_verification": "COMPUTED_VERIFIED",
         "review_status": "PENDING_RESEARCH_REVIEW",
+        "evidence_completeness": "DRAFT_SPEC_STAGED",
         "authoring_date": "2026-10-21",
-        "freshness_state": "CURRENT_DRAFT",
+        "freshness_state": "PILOT_CANDIDATE",
         "reviewer_id": null,
         "reviewed_at_utc": null,
+        "review_notes": "Staged draft generated from curated specifications. Primary filing audit and independent research review pending.",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
       },
       "identity": {
@@ -1897,8 +2299,10 @@
             "filing_date": "2026-09-05",
             "url": "https://www.sec.gov/Archives/edgar/data/1397187/000139718726000052/0001397187-26-000052-index.htm"
           }
-        }
+        },
+        "source_evidence_tracing": null
       },
+      "source_evidence_tracing": null,
       "monitoring": {
         "observable_invalidation_trigger": "Consolidated operating margin breach below 14.0% or negative international comparable sales growth.",
         "next_monitoring_trigger": "Q3 2026 earnings call (December 2026) for North America product assortment reset and holiday order books.",
@@ -1914,13 +2318,16 @@
     "EME": {
       "dossier_id": "DOSSIER-EME-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-draft",
-        "lifecycle_status": "DRAFT",
+        "dossier_version": "0.1.0-draft",
+        "lifecycle_status": "DRAFT_STAGING",
+        "technical_verification": "COMPUTED_VERIFIED",
         "review_status": "PENDING_RESEARCH_REVIEW",
+        "evidence_completeness": "DRAFT_SPEC_STAGED",
         "authoring_date": "2026-10-21",
-        "freshness_state": "CURRENT_DRAFT",
+        "freshness_state": "PILOT_CANDIDATE",
         "reviewer_id": null,
         "reviewed_at_utc": null,
+        "review_notes": "Staged draft generated from curated specifications. Primary filing audit and independent research review pending.",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
       },
       "identity": {
@@ -2080,8 +2487,10 @@
             "filing_date": "2026-07-30",
             "url": "https://www.sec.gov/Archives/edgar/data/105634/000010563426000042/0000105634-26-000042-index.htm"
           }
-        }
+        },
+        "source_evidence_tracing": null
       },
+      "source_evidence_tracing": null,
       "monitoring": {
         "observable_invalidation_trigger": "Backlog sequential decline >10% or material fixed-price contract loss provisioning exceeding $100M.",
         "next_monitoring_trigger": "Q3 2026 Form 10-Q filing (October 2026) for institutional backlog updates and mechanical margin trends.",
@@ -2097,13 +2506,16 @@
     "VRT": {
       "dossier_id": "DOSSIER-VRT-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-draft",
-        "lifecycle_status": "DRAFT",
+        "dossier_version": "0.1.0-draft",
+        "lifecycle_status": "DRAFT_STAGING",
+        "technical_verification": "COMPUTED_VERIFIED",
         "review_status": "PENDING_RESEARCH_REVIEW",
+        "evidence_completeness": "DRAFT_SPEC_STAGED",
         "authoring_date": "2026-10-21",
-        "freshness_state": "CURRENT_DRAFT",
+        "freshness_state": "PILOT_CANDIDATE",
         "reviewer_id": null,
         "reviewed_at_utc": null,
+        "review_notes": "Staged draft generated from curated specifications. Primary filing audit and independent research review pending.",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
       },
       "identity": {
@@ -2263,8 +2675,10 @@
             "filing_date": "2026-07-28",
             "url": "https://www.sec.gov/Archives/edgar/data/1674101/000167410126000052/0001674101-26-000052-index.htm"
           }
-        }
+        },
+        "source_evidence_tracing": null
       },
+      "source_evidence_tracing": null,
       "monitoring": {
         "observable_invalidation_trigger": "Quarterly organic order intake decline >15% or liquid cooling gross margin deterioration below 30.0%.",
         "next_monitoring_trigger": "Q3 2026 earnings release (October 2026) for direct-to-chip deployment metrics and pipeline backlogs.",
@@ -2280,13 +2694,16 @@
     "ANET": {
       "dossier_id": "DOSSIER-ANET-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-draft",
-        "lifecycle_status": "DRAFT",
+        "dossier_version": "0.1.0-draft",
+        "lifecycle_status": "DRAFT_STAGING",
+        "technical_verification": "COMPUTED_VERIFIED",
         "review_status": "PENDING_RESEARCH_REVIEW",
+        "evidence_completeness": "DRAFT_SPEC_STAGED",
         "authoring_date": "2026-10-21",
-        "freshness_state": "CURRENT_DRAFT",
+        "freshness_state": "PILOT_CANDIDATE",
         "reviewer_id": null,
         "reviewed_at_utc": null,
+        "review_notes": "Staged draft generated from curated specifications. Primary filing audit and independent research review pending.",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
       },
       "identity": {
@@ -2446,8 +2863,10 @@
             "filing_date": "2026-08-04",
             "url": "https://www.sec.gov/Archives/edgar/data/1596532/000159653226000045/0001596532-26-000045-index.htm"
           }
-        }
+        },
+        "source_evidence_tracing": null
       },
+      "source_evidence_tracing": null,
       "monitoring": {
         "observable_invalidation_trigger": "Market share loss in 800G/1.6T switches exceeding 200 bps to Cisco or proprietary ASIC internal fabrics.",
         "next_monitoring_trigger": "Q3 2026 Form 10-Q filing (November 2026) for 800G optical switch volume ramps and cloud capex guidance.",
@@ -2463,13 +2882,16 @@
     "PLTR": {
       "dossier_id": "DOSSIER-PLTR-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-draft",
-        "lifecycle_status": "DRAFT",
+        "dossier_version": "0.1.0-draft",
+        "lifecycle_status": "DRAFT_STAGING",
+        "technical_verification": "COMPUTED_QUALIFIED",
         "review_status": "PENDING_RESEARCH_REVIEW",
+        "evidence_completeness": "DRAFT_SPEC_STAGED",
         "authoring_date": "2026-10-21",
-        "freshness_state": "CURRENT_DRAFT",
+        "freshness_state": "PILOT_CANDIDATE",
         "reviewer_id": null,
         "reviewed_at_utc": null,
+        "review_notes": "Staged draft generated from curated specifications. Primary filing audit and independent research review pending.",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
       },
       "identity": {
@@ -2629,8 +3051,10 @@
             "filing_date": "2026-08-06",
             "url": "https://www.sec.gov/Archives/edgar/data/1321655/000132165526000054/0001321655-26-000054-index.htm"
           }
-        }
+        },
+        "source_evidence_tracing": null
       },
+      "source_evidence_tracing": null,
       "monitoring": {
         "observable_invalidation_trigger": "Deceleration of US commercial revenue growth below 30.0% or government contract renewal friction.",
         "next_monitoring_trigger": "Q3 2026 Form 10-Q filing (November 2026) for US commercial customer count and net retention rate.",
@@ -2646,13 +3070,16 @@
     "ISRG": {
       "dossier_id": "DOSSIER-ISRG-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-draft",
-        "lifecycle_status": "DRAFT",
+        "dossier_version": "0.1.0-draft",
+        "lifecycle_status": "DRAFT_STAGING",
+        "technical_verification": "COMPUTED_VERIFIED",
         "review_status": "PENDING_RESEARCH_REVIEW",
+        "evidence_completeness": "DRAFT_SPEC_STAGED",
         "authoring_date": "2026-10-21",
-        "freshness_state": "CURRENT_DRAFT",
+        "freshness_state": "PILOT_CANDIDATE",
         "reviewer_id": null,
         "reviewed_at_utc": null,
+        "review_notes": "Staged draft generated from curated specifications. Primary filing audit and independent research review pending.",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
       },
       "identity": {
@@ -2812,8 +3239,10 @@
             "filing_date": "2026-07-21",
             "url": "https://www.sec.gov/Archives/edgar/data/1035267/000103526726000045/0001035267-26-000045-index.htm"
           }
-        }
+        },
+        "source_evidence_tracing": null
       },
+      "source_evidence_tracing": null,
       "monitoring": {
         "observable_invalidation_trigger": "Worldwide procedure growth deceleration below 10.0% or da Vinci 5 adoption stagnation.",
         "next_monitoring_trigger": "Q3 2026 Form 10-Q filing (October 2026) for procedure volume growth and system placement breakdown.",
@@ -2829,13 +3258,16 @@
     "CDNS": {
       "dossier_id": "DOSSIER-CDNS-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-draft",
-        "lifecycle_status": "DRAFT",
+        "dossier_version": "0.1.0-draft",
+        "lifecycle_status": "DRAFT_STAGING",
+        "technical_verification": "COMPUTED_VERIFIED",
         "review_status": "PENDING_RESEARCH_REVIEW",
+        "evidence_completeness": "DRAFT_SPEC_STAGED",
         "authoring_date": "2026-10-21",
-        "freshness_state": "CURRENT_DRAFT",
+        "freshness_state": "PILOT_CANDIDATE",
         "reviewer_id": null,
         "reviewed_at_utc": null,
+        "review_notes": "Staged draft generated from curated specifications. Primary filing audit and independent research review pending.",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
       },
       "identity": {
@@ -2995,8 +3427,10 @@
             "filing_date": "2026-07-27",
             "url": "https://www.sec.gov/Archives/edgar/data/813672/000081367226000048/0000813672-26-000048-index.htm"
           }
-        }
+        },
+        "source_evidence_tracing": null
       },
+      "source_evidence_tracing": null,
       "monitoring": {
         "observable_invalidation_trigger": "Backlog decline or gross margin contraction below 80.0%.",
         "next_monitoring_trigger": "Q3 2026 Form 10-Q filing (October 2026) for backlog bookings and emulation shipment updates.",
@@ -3012,13 +3446,16 @@
     "PWR": {
       "dossier_id": "DOSSIER-PWR-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-draft",
-        "lifecycle_status": "DRAFT",
+        "dossier_version": "0.1.0-draft",
+        "lifecycle_status": "DRAFT_STAGING",
+        "technical_verification": "COMPUTED_VERIFIED",
         "review_status": "PENDING_RESEARCH_REVIEW",
+        "evidence_completeness": "DRAFT_SPEC_STAGED",
         "authoring_date": "2026-10-21",
-        "freshness_state": "CURRENT_DRAFT",
+        "freshness_state": "PILOT_CANDIDATE",
         "reviewer_id": null,
         "reviewed_at_utc": null,
+        "review_notes": "Staged draft generated from curated specifications. Primary filing audit and independent research review pending.",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
       },
       "identity": {
@@ -3178,8 +3615,10 @@
             "filing_date": "2026-08-01",
             "url": "https://www.sec.gov/Archives/edgar/data/1050915/000105091526000042/0001050915-26-000042-index.htm"
           }
-        }
+        },
+        "source_evidence_tracing": null
       },
+      "source_evidence_tracing": null,
       "monitoring": {
         "observable_invalidation_trigger": "Electric Power infrastructure segment quarterly organic growth falling below 8.0%.",
         "next_monitoring_trigger": "Q3 2026 Form 10-Q filing (November 2026) for backlog conversion and transmission master service renewals.",
@@ -3195,13 +3634,16 @@
     "SNPS": {
       "dossier_id": "DOSSIER-SNPS-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-draft",
-        "lifecycle_status": "DRAFT",
+        "dossier_version": "0.1.0-draft",
+        "lifecycle_status": "DRAFT_STAGING",
+        "technical_verification": "COMPUTED_QUALIFIED",
         "review_status": "PENDING_RESEARCH_REVIEW",
+        "evidence_completeness": "DRAFT_SPEC_STAGED",
         "authoring_date": "2026-10-21",
-        "freshness_state": "CURRENT_DRAFT",
+        "freshness_state": "PILOT_CANDIDATE",
         "reviewer_id": null,
         "reviewed_at_utc": null,
+        "review_notes": "Staged draft generated from curated specifications. Primary filing audit and independent research review pending.",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
       },
       "identity": {
@@ -3361,8 +3803,10 @@
             "filing_date": "2026-08-28",
             "url": "https://www.sec.gov/Archives/edgar/data/883241/000088324126000052/0000883241-26-000052-index.htm"
           }
-        }
+        },
+        "source_evidence_tracing": null
       },
+      "source_evidence_tracing": null,
       "monitoring": {
         "observable_invalidation_trigger": "Acquisition regulatory block without breakup fee mitigation or core EDA contract retention below 90%.",
         "next_monitoring_trigger": "FY2026 Form 10-K filing (December 2026) for transaction closing status and revised pro forma guidance.",
@@ -3378,13 +3822,16 @@
     "NOW": {
       "dossier_id": "DOSSIER-NOW-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-draft",
-        "lifecycle_status": "DRAFT",
+        "dossier_version": "0.1.0-draft",
+        "lifecycle_status": "DRAFT_STAGING",
+        "technical_verification": "COMPUTED_VERIFIED",
         "review_status": "PENDING_RESEARCH_REVIEW",
+        "evidence_completeness": "DRAFT_SPEC_STAGED",
         "authoring_date": "2026-10-21",
-        "freshness_state": "CURRENT_DRAFT",
+        "freshness_state": "PILOT_CANDIDATE",
         "reviewer_id": null,
         "reviewed_at_utc": null,
+        "review_notes": "Staged draft generated from curated specifications. Primary filing audit and independent research review pending.",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
       },
       "identity": {
@@ -3544,8 +3991,10 @@
             "filing_date": "2026-07-29",
             "url": "https://www.sec.gov/Archives/edgar/data/1373715/000137371526000045/0001373715-26-000045-index.htm"
           }
-        }
+        },
+        "source_evidence_tracing": null
       },
+      "source_evidence_tracing": null,
       "monitoring": {
         "observable_invalidation_trigger": "Subscription revenue renewal rate dropping below 96.0% or net expansion rate falling below 115%.",
         "next_monitoring_trigger": "Q3 2026 Form 10-Q filing (October 2026) for remaining performance obligations (cRPO) growth.",
@@ -3561,13 +4010,16 @@
     "ELF": {
       "dossier_id": "DOSSIER-ELF-V1",
       "publication_metadata": {
-        "dossier_version": "1.0.0-draft",
-        "lifecycle_status": "DRAFT",
+        "dossier_version": "0.1.0-draft",
+        "lifecycle_status": "DRAFT_STAGING",
+        "technical_verification": "COMPUTED_VERIFIED",
         "review_status": "PENDING_RESEARCH_REVIEW",
+        "evidence_completeness": "DRAFT_SPEC_STAGED",
         "authoring_date": "2026-10-21",
-        "freshness_state": "CURRENT_DRAFT",
+        "freshness_state": "PILOT_CANDIDATE",
         "reviewer_id": null,
         "reviewed_at_utc": null,
+        "review_notes": "Staged draft generated from curated specifications. Primary filing audit and independent research review pending.",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
       },
       "identity": {
@@ -3727,8 +4179,10 @@
             "filing_date": "2026-08-07",
             "url": "https://www.sec.gov/Archives/edgar/data/1600033/000160003326000048/0001600033-26-000048-index.htm"
           }
-        }
+        },
+        "source_evidence_tracing": null
       },
+      "source_evidence_tracing": null,
       "monitoring": {
         "observable_invalidation_trigger": "Quarterly net sales growth decelerating below 15.0% or gross margin breach below 65.0%.",
         "next_monitoring_trigger": "Q2 FY27 Form 10-Q filing (November 2026) for holiday cosmetic shelf space allocations and international sales.",

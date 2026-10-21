@@ -47,13 +47,14 @@ jobs:
       env:
         PYTHONPATH: "."
       run: |
-        pytest tests/test_fundamentals_api.py tests/test_sourced_fundamentals_pilot.py tests/test_generate_opportunity_dossier_snapshot.py -v
+        pytest tests/test_fundamentals_api.py tests/test_sourced_fundamentals_pilot.py tests/test_generate_opportunity_dossier_snapshot.py tests/test_prepare_opportunity_dossier.py -v
 
     - name: Verify Opportunity Dossier Snapshot Determinism
       env:
         PYTHONPATH: "."
       run: |
         python scripts/research/generate_opportunity_dossier_snapshot.py --check
+        python scripts/research/prepare_opportunity_dossier.py --check
 
     - name: Run Historical SIP Ingestion & Registration Expansion Suite
       env:

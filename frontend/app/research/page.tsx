@@ -29,6 +29,7 @@ import {
   getOpportunitySnapshotMetadata,
   getPilotDraftSnapshotMetadata,
   OpportunityCohortItem,
+  IS_PILOT_DRAFTS_BUILD_ENABLED,
 } from "../../lib/opportunityDossiers";
 import {
   Microscope,
@@ -69,16 +70,25 @@ function DispositionPill({ disposition }: { disposition: string }) {
 function ResearchContent() {
   const searchParams = useSearchParams();
   const rawSymbol = searchParams.get("symbol") || searchParams.get("ticker");
-  const mode = searchParams.get("mode");
-  const isDraftMode = mode === "draft";
+  const experienceMode = searchParams.get("mode");
+  const previewParam = searchParams.get("preview");
+  const isDraftPreviewActive =
+    IS_PILOT_DRAFTS_BUILD_ENABLED &&
+    (previewParam === "pilot" || searchParams.get("draft") === "true");
   const displaySymbol = (rawSymbol || "").trim().toUpperCase();
   const hasSymbolParam = displaySymbol.length > 0;
   const normalizedSymbol = normalizeSymbol(displaySymbol || "FIX");
 
-  const cohort = useMemo(() => (isDraftMode ? listPilotDraftCohort() : listOpportunityCohort()), [isDraftMode]);
-  const metadata = useMemo(() => (isDraftMode ? getPilotDraftSnapshotMetadata() : getOpportunitySnapshotMetadata()), [isDraftMode]);
-  const isKnown = isDraftMode ? isPilotDraftSymbol(normalizedSymbol) : isCohortSymbol(normalizedSymbol);
-  const dossier = isKnown ? getOpportunityDossier(normalizedSymbol, { previewDrafts: isDraftMode }) : null;
+  const cohort = useMemo(
+    () => (isDraftPreviewActive ? listPilotDraftCohort() : listOpportunityCohort()),
+    [isDraftPreviewActive]
+  );
+  const metadata = useMemo(
+    () => (isDraftPreviewActive ? getPilotDraftSnapshotMetadata() : getOpportunitySnapshotMetadata()),
+    [isDraftPreviewActive]
+  );
+  const isKnown = isDraftPreviewActive ? isPilotDraftSymbol(normalizedSymbol) : isCohortSymbol(normalizedSymbol);
+  const dossier = isKnown ? getOpportunityDossier(normalizedSymbol, { previewDrafts: isDraftPreviewActive }) : null;
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24">
@@ -114,7 +124,7 @@ function ResearchContent() {
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 text-slate-300 border border-slate-700 text-xs font-mono">
                 <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                {isDraftMode ? "Pilot Scaling Draft Evidence" : "ODP-05 Candidate Evidence"}
+                {isDraftPreviewActive ? "Pilot Scaling Draft Evidence" : "ODP-05 Candidate Evidence"}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-sans">
@@ -131,11 +141,11 @@ function ResearchContent() {
               <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Candidate Cohort</div>
               <div className="text-sm font-mono font-bold text-cyan-300">{cohort.length} Research Assets</div>
               <div className="text-[11px] font-mono text-slate-400">
-                {isDraftMode ? "Pilot Draft Staging" : "Single Bundled Snapshot"}
+                {isDraftPreviewActive ? "Pilot Draft Staging" : "Single Bundled Snapshot"}
               </div>
-              {!isDraftMode ? (
+              {IS_PILOT_DRAFTS_BUILD_ENABLED && !isDraftPreviewActive ? (
                 <Link
-                  href={`/research?symbol=${normalizedSymbol}&mode=draft`}
+                  href={`/research?symbol=${normalizedSymbol}&preview=pilot${experienceMode ? `&mode=${experienceMode}` : ""}`}
                   className="inline-block mt-1 text-[10px] font-mono text-amber-400 hover:text-amber-300 underline"
                 >
                   Preview 20-Asset Pilot Drafts
@@ -164,7 +174,7 @@ function ResearchContent() {
       </header>
 
       {/* Draft Staging Preview Mode Banner */}
-      {isDraftMode && (
+      {isDraftPreviewActive && (
         <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-600/70 text-amber-200 text-xs font-mono flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
           <div className="flex items-start sm:items-center gap-2.5">
             <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
@@ -181,7 +191,7 @@ function ResearchContent() {
             </div>
           </div>
           <Link
-            href={`/research?symbol=${isCohortSymbol(normalizedSymbol) ? normalizedSymbol : "FIX"}`}
+            href={`/research?symbol=${isCohortSymbol(normalizedSymbol) ? normalizedSymbol : "FIX"}${experienceMode ? `&mode=${experienceMode}` : ""}`}
             className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-900/80 hover:bg-amber-800 text-amber-200 font-bold border border-amber-700 text-center transition-colors"
           >
             Exit Draft Preview
@@ -200,7 +210,7 @@ function ResearchContent() {
             return (
               <Link
                 key={item.symbol}
-                href={`/research?symbol=${item.symbol}${isDraftMode ? "&mode=draft" : ""}`}
+                href={`/research?symbol=${item.symbol}${isDraftPreviewActive ? "&preview=pilot" : ""}${experienceMode ? `&mode=${experienceMode}` : ""}`}
                 scroll={false}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-mono shrink-0 transition-all min-h-[44px] ${
                   active
@@ -229,7 +239,7 @@ function ResearchContent() {
             <div className="flex items-center justify-between pb-2 border-b border-[#1b2537]">
               <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-cyan-400" />
-                {isDraftMode ? "Pilot Cohort" : "ODP-05 Cohort"} ({cohort.length})
+                {isDraftPreviewActive ? "Pilot Cohort" : "ODP-05 Cohort"} ({cohort.length})
               </span>
               <span className="text-[10px] font-mono text-slate-500">2026-10-16</span>
             </div>
@@ -240,7 +250,7 @@ function ResearchContent() {
                 return (
                   <Link
                     key={item.symbol}
-                    href={`/research?symbol=${item.symbol}${isDraftMode ? "&mode=draft" : ""}`}
+                    href={`/research?symbol=${item.symbol}${isDraftPreviewActive ? "&preview=pilot" : ""}${experienceMode ? `&mode=${experienceMode}` : ""}`}
                     scroll={false}
                     className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all text-left min-h-[44px] group focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                       active
@@ -282,10 +292,10 @@ function ResearchContent() {
               Evaluated strictly against ODP-05 opportunity discovery standards. Primary filings authenticated via official SEC EDGAR accessions.
             </p>
             <div className="pt-2 border-t border-[#151e2e] space-y-1 text-[10px] text-slate-500">
-              <div>Contract: {isDraftMode ? "Pilot Scaling Draft" : "ODP-05 Baseline"}</div>
+              <div>Contract: {isDraftPreviewActive ? "Pilot Scaling Draft" : "ODP-05 Baseline"}</div>
               <div>Filing Cutoff: {metadata.filing_availability_cutoff_utc || "Unavailable"}</div>
               <div>Authored UTC: {metadata.authoring_timestamp_utc || "Unavailable"}</div>
-              <div>Independent Review: {isDraftMode ? "Pending Independent Review" : "Unavailable (Unrecorded)"}</div>
+              <div>Independent Review: {isDraftPreviewActive ? "Pending Independent Review" : "Unavailable (Unrecorded)"}</div>
               <div>Snapshot: {metadata.source_ledger_sha256 ? `${metadata.source_ledger_sha256.substring(0, 12)}…` : "Draft Staging"}</div>
             </div>
           </div>
@@ -327,10 +337,10 @@ function ResearchContent() {
                     UNSUPPORTED RESEARCH SYMBOL
                   </div>
                   <h2 className="text-xl sm:text-2xl font-bold text-white font-sans">
-                    {isDraftMode ? `No Pilot Candidate Draft for “${displaySymbol}”` : `No ODP-05 Research Dossier for “${displaySymbol}”`}
+                    {isDraftPreviewActive ? `No Pilot Candidate Draft for “${displaySymbol}”` : `No ODP-05 Research Dossier for “${displaySymbol}”`}
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-300 font-sans leading-relaxed">
-                    {isDraftMode
+                    {isDraftPreviewActive
                       ? `The ARX Scaling Pilot currently covers 20 candidate assets (5 baseline + 15 expansion drafts). Live tape equities outside this scope do not have assessment drafts.`
                       : `The ARX Opportunity Dossier surface currently hosts the 5 candidate assets evaluated and frozen under the ODP-05 Discovery baseline as of the 2026-10-16 market close. Live tape equities and uncataloged symbols outside this bounded research scope do not have static assessment dossiers.`}
                   </p>
@@ -346,7 +356,7 @@ function ResearchContent() {
                   {cohort.map((item) => (
                     <Link
                       key={item.symbol}
-                      href={`/research?symbol=${item.symbol}${isDraftMode ? "&mode=draft" : ""}`}
+                      href={`/research?symbol=${item.symbol}${isDraftPreviewActive ? "&preview=pilot" : ""}${experienceMode ? `&mode=${experienceMode}` : ""}`}
                       className="p-3 rounded-lg bg-[#0e1624] hover:bg-[#162236] border border-[#1f2c42] hover:border-cyan-500/60 transition-colors flex items-center justify-between text-xs font-mono group"
                     >
                       <div className="flex flex-col">

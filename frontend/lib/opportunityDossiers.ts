@@ -13,7 +13,21 @@
  */
 
 import snapshotData from "./opportunityDossierSnapshot.json";
-import draftSnapshotData from "./opportunityDossierPilotDrafts.json";
+
+// Explicit deployment / build-time separation
+// Pilot drafts are ONLY enabled when NEXT_PUBLIC_ENABLE_RESEARCH_PILOT_DRAFTS is explicitly "true".
+// In standard production builds, draftSnapshot is null and draft JSON is omitted from client bundles.
+export const IS_PILOT_DRAFTS_BUILD_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_RESEARCH_PILOT_DRAFTS === "true";
+
+let typedDraftSnapshot: OpportunityDossierSnapshotFile | null = null;
+if (IS_PILOT_DRAFTS_BUILD_ENABLED) {
+  try {
+    typedDraftSnapshot = require("./opportunityDossierPilotDrafts.json") as OpportunityDossierSnapshotFile;
+  } catch {
+    typedDraftSnapshot = null;
+  }
+}
 
 export interface PrimaryFilingReference {
   form: string;
@@ -223,7 +237,6 @@ export const ATTRIBUTABLE_SEC_CIK_MAP: Record<string, string> = {
 };
 
 const typedSnapshot = snapshotData as unknown as OpportunityDossierSnapshotFile;
-const typedDraftSnapshot = draftSnapshotData as unknown as OpportunityDossierSnapshotFile;
 
 /**
  * Normalizes symbol to uppercase trimmed string.
@@ -243,15 +256,19 @@ export function isCohortSymbol(symbol: string): boolean {
 
 /**
  * Returns true if symbol belongs to the 20-company pilot expansion cohort (drafts included).
+ * In production builds (where IS_PILOT_DRAFTS_BUILD_ENABLED is false), fails closed to standard cohort.
  */
 export function isPilotDraftSymbol(symbol: string): boolean {
+  if (!IS_PILOT_DRAFTS_BUILD_ENABLED || !typedDraftSnapshot) {
+    return isCohortSymbol(symbol);
+  }
   const clean = normalizeSymbol(symbol);
   return (TOTAL_PILOT_SYMBOLS as readonly string[]).includes(clean);
 }
 
 /**
  * Returns the opportunity dossier for a symbol from published production snapshot,
- * or optionally from pilot draft staging when previewDrafts is enabled.
+ * or optionally from pilot draft staging when previewDrafts is enabled and supported by the build.
  */
 export function getOpportunityDossier(
   symbol: string,
@@ -260,7 +277,7 @@ export function getOpportunityDossier(
   const clean = normalizeSymbol(symbol);
   if (!clean) return null;
 
-  if (options?.previewDrafts) {
+  if (options?.previewDrafts && IS_PILOT_DRAFTS_BUILD_ENABLED && typedDraftSnapshot) {
     const draftDossier = typedDraftSnapshot.dossiers?.[clean];
     if (!draftDossier || draftDossier.identity?.symbol !== clean) return null;
     return draftDossier;
@@ -290,9 +307,13 @@ export function listOpportunityCohort(): OpportunityCohortItem[] {
 }
 
 /**
- * Returns the list of 20 pilot cohort companies from draft staging.
+ * Returns the list of 20 pilot cohort companies from draft staging when enabled,
+ * or falls back strictly to the 5 published companies in production builds.
  */
 export function listPilotDraftCohort(): OpportunityCohortItem[] {
+  if (!IS_PILOT_DRAFTS_BUILD_ENABLED || !typedDraftSnapshot) {
+    return listOpportunityCohort();
+  }
   return typedDraftSnapshot.cohort || [];
 }
 
@@ -304,8 +325,12 @@ export function getOpportunitySnapshotMetadata(): OpportunitySnapshotMetadata {
 }
 
 /**
- * Returns top-level draft snapshot metadata.
+ * Returns top-level draft snapshot metadata when enabled,
+ * or falls back to production snapshot metadata in production builds.
  */
 export function getPilotDraftSnapshotMetadata(): OpportunitySnapshotMetadata {
+  if (!IS_PILOT_DRAFTS_BUILD_ENABLED || !typedDraftSnapshot) {
+    return getOpportunitySnapshotMetadata();
+  }
   return typedDraftSnapshot.snapshot_metadata;
 }

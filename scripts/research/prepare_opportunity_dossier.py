@@ -74,6 +74,178 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
         "disposition_label": "Watch — Conditions Required for Entry",
         "valuation_status": "COMPUTED_VERIFIED",
         "valuation_status_label": "Computed & Verified",
+        "evidence_completeness": "SOURCE_MAPPED_UNAUDITED",
+        "review_notes": "Representative candidate prepared with complete primary filing source-to-input tracing. Awaiting independent financial research review.",
+        "source_evidence_tracing": {
+            "representative_status": "REPRESENTATIVE_PILOT_CANDIDATE",
+            "company_identity": {
+                "fact_status": "VERIFIED_REPORTED_FACT",
+                "entity_name": "Ulta Beauty, Inc.",
+                "cik": "0001403568",
+                "sic": "5990",
+                "exchange": "NASDAQ",
+                "source_url": "https://data.sec.gov/submissions/CIK0001403568.json",
+                "filing_accessions": ["0001104659-26-035243", "0001104659-26-102442"]
+            },
+            "revenue": {
+                "fact_status": "DERIVED_CALCULATION",
+                "reported_ttm_value_usd": 12955517000.0,
+                "derivation_formula": "FY2025 Revenues ($12,392,820,000) - Q2 2025 6M Revenues ($5,636,836,000) + Q2 2026 6M Revenues ($6,199,533,000)",
+                "xbrl_tag": "us-gaap:Revenues",
+                "unit": "USD",
+                "filing_sources": [
+                    {
+                        "form": "10-K",
+                        "period_end": "2026-01-31",
+                        "filing_date": "2026-03-26",
+                        "accession": "0001104659-26-035243",
+                        "location": "Item 8 Consolidated Statements of Income",
+                        "reported_value": 12392820000.0
+                    },
+                    {
+                        "form": "10-Q",
+                        "period_end": "2026-08-01",
+                        "filing_date": "2026-08-27",
+                        "accession": "0001104659-26-102442",
+                        "location": "Part I Item 1 Consolidated Statements of Income (6 Months Ended)",
+                        "reported_value": 6199533000.0
+                    }
+                ]
+            },
+            "operating_income": {
+                "fact_status": "DERIVED_CALCULATION",
+                "reported_ttm_value_usd": 1614258000.0,
+                "operating_margin_pct": 12.46,
+                "derivation_formula": "FY2025 Operating Income ($1,532,992,000) - Q2 2025 6M Operating Income ($746,631,000) + Q2 2026 6M Operating Income ($827,897,000)",
+                "xbrl_tag": "us-gaap:OperatingIncomeLoss",
+                "unit": "USD",
+                "filing_sources": [
+                    {
+                        "form": "10-K",
+                        "period_end": "2026-01-31",
+                        "filing_date": "2026-03-26",
+                        "accession": "0001104659-26-035243",
+                        "location": "Item 8 Consolidated Statements of Income",
+                        "reported_value": 1532992000.0
+                    },
+                    {
+                        "form": "10-Q",
+                        "period_end": "2026-08-01",
+                        "filing_date": "2026-08-27",
+                        "accession": "0001104659-26-102442",
+                        "location": "Part I Item 1 Consolidated Statements of Income (6 Months Ended)",
+                        "reported_value": 827897000.0
+                    }
+                ]
+            },
+            "cash_and_investments": {
+                "fact_status": "VERIFIED_REPORTED_FACT",
+                "total_cash_and_investments_usd": 213451000.0,
+                "cash_and_equivalents_usd": 158451000.0,
+                "short_term_investments_usd": 55000000.0,
+                "xbrl_tags": [
+                    "us-gaap:CashAndCashEquivalentsAtCarryingValue",
+                    "us-gaap:ShortTermInvestments"
+                ],
+                "filing_source": {
+                    "form": "10-Q",
+                    "period_end": "2026-08-01",
+                    "filing_date": "2026-08-27",
+                    "accession": "0001104659-26-102442",
+                    "location": "Part I Item 1 Consolidated Balance Sheets"
+                }
+            },
+            "funded_debt": {
+                "fact_status": "VERIFIED_REPORTED_FACT",
+                "total_financial_debt_usd": 0.0,
+                "is_zero_debt": True,
+                "support_disclosure": "No senior notes or term loans outstanding; $1.0B revolving credit facility completely undrawn at quarter end (Note 8).",
+                "filing_source": {
+                    "form": "10-Q",
+                    "period_end": "2026-08-01",
+                    "filing_date": "2026-08-27",
+                    "accession": "0001104659-26-102442",
+                    "location": "Part I Item 1 Consolidated Balance Sheets & Note 8"
+                }
+            },
+            "lease_treatment": {
+                "fact_status": "VERIFIED_REPORTED_FACT",
+                "current_operating_lease_liabilities_usd": 312648000.0,
+                "noncurrent_operating_lease_liabilities_usd": 1871805000.0,
+                "total_lease_liabilities_usd": 2184453000.0,
+                "accounting_standard": "ASC 842",
+                "valuation_convention": "Lease-as-Operating-Expense convention: retail store lease expense deducted in operating expenses; excluded from debt bridge to avoid double deduction.",
+                "xbrl_tags": [
+                    "us-gaap:OperatingLeaseLiabilityCurrent",
+                    "us-gaap:OperatingLeaseLiabilityNoncurrent"
+                ],
+                "filing_source": {
+                    "form": "10-Q",
+                    "period_end": "2026-08-01",
+                    "filing_date": "2026-08-27",
+                    "accession": "0001104659-26-102442",
+                    "location": "Part I Item 1 Consolidated Balance Sheets"
+                }
+            },
+            "shares_outstanding": {
+                "fact_status": "VERIFIED_REPORTED_FACT",
+                "share_count": 43062000.0,
+                "basis_type": "DILUTED_WEIGHTED_AVERAGE",
+                "measurement_period": "Three months ended 2026-08-01",
+                "xbrl_tag": "us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding",
+                "filing_source": {
+                    "form": "10-Q",
+                    "period_end": "2026-08-01",
+                    "filing_date": "2026-08-27",
+                    "accession": "0001104659-26-102442",
+                    "location": "Part I Item 1 Consolidated Statements of Income"
+                }
+            },
+            "reference_price": {
+                "fact_status": "VERIFIED_REPORTED_FACT",
+                "reference_price": 592.94,
+                "reference_date": "2026-10-16",
+                "timestamp_utc": "2026-10-16T20:00:00Z",
+                "source_system": "ARX MarketStore regular close tape",
+                "source_store": "data/research/market_data/bounded_150_dev_market_store.db",
+                "table": "asset_ohlcv_daily"
+            },
+            "valuation_model": {
+                "fact_status": "DERIVED_CALCULATION",
+                "model_type": "Single-stage Reverse-DCF FCFF (Gordon Growth Terminal Value)",
+                "solved_5y_revenue_cagr_pct": 15.11,
+                "assumptions": {
+                    "fact_status": "ANALYST_ASSUMPTION",
+                    "operating_margin_pct": 12.0,
+                    "wacc_pct": 9.0,
+                    "terminal_growth_pct": 2.0,
+                    "tax_rate_pct": 23.5,
+                    "reinvestment_rate_pct": 15.0
+                },
+                "roundtrip_value": 592.94,
+                "roundtrip_delta_cents": 0.45
+            },
+            "narrative_claims": [
+                {
+                    "claim_type": "SUPPORTING_EVIDENCE",
+                    "fact_status": "VERIFIED_REPORTED_FACT",
+                    "statement": "Ulta Beauty has over 44 million active loyalty program members, representing over 95% of total sales.",
+                    "locator": "Form 10-K for FY ended 2026-01-31, Item 1 Business — Loyalty Program"
+                },
+                {
+                    "claim_type": "OPPOSING_EVIDENCE",
+                    "fact_status": "VERIFIED_REPORTED_FACT",
+                    "statement": "Prestige category growth has moderated while promotional cadence across prestige beauty and competitive footprint expansion (Sephora at Kohl's) has intensified.",
+                    "locator": "Form 10-Q for Q2 ended 2026-08-01, Part I Item 2 MD&A — Operating Results"
+                },
+                {
+                    "claim_type": "MONITORING_CRITERIA",
+                    "fact_status": "ANALYST_ASSUMPTION",
+                    "statement": "Operating margin compression below 10.0% or negative comparable store sales for two consecutive fiscal quarters triggers thesis invalidation.",
+                    "locator": "ARX Analytical Thesis Invalidation Rule"
+                }
+            ]
+        },
         "filings": [
             {
                 "form": "10-K",
@@ -1495,16 +1667,26 @@ def build_draft_dossier_record(sym: str, spec: Dict[str, Any]) -> Dict[str, Any]
     tot_debt = fin.get("total_financial_debt")
     debt_display = "$0.00 (Zero Funded Debt Evidenced)" if is_zero else format_currency_display(tot_debt)
 
+    evidence_comp = spec.get("evidence_completeness", "DRAFT_SPEC_STAGED")
+    rev_notes = spec.get(
+        "review_notes",
+        "Staged draft generated from curated specifications. Primary filing audit and independent research review pending."
+    )
+    val_status = val_block.get("valuation_status", "COMPUTED_VERIFIED")
+
     dossier = {
         "dossier_id": f"DOSSIER-{sym}-V1",
         "publication_metadata": {
-            "dossier_version": "1.0.0-draft",
-            "lifecycle_status": "DRAFT",
+            "dossier_version": "0.1.0-draft",
+            "lifecycle_status": "DRAFT_STAGING",
+            "technical_verification": val_status,
             "review_status": "PENDING_RESEARCH_REVIEW",
+            "evidence_completeness": evidence_comp,
             "authoring_date": "2026-10-21",
-            "freshness_state": "CURRENT_DRAFT",
+            "freshness_state": "PILOT_CANDIDATE",
             "reviewer_id": None,
             "reviewed_at_utc": None,
+            "review_notes": rev_notes,
             "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
         },
         "identity": {
@@ -1555,8 +1737,10 @@ def build_draft_dossier_record(sym: str, spec: Dict[str, Any]) -> Dict[str, Any]
             "bridge_note": fin.get("bridge_note"),
             "selected_share_basis": fin.get("selected_share_basis"),
             "primary_filings": filings_list,
-            "material_claims_provenance": claims_provenance
+            "material_claims_provenance": claims_provenance,
+            "source_evidence_tracing": spec.get("source_evidence_tracing"),
         },
+        "source_evidence_tracing": spec.get("source_evidence_tracing"),
         "monitoring": {
             "observable_invalidation_trigger": synth["observable_invalidation_trigger"],
             "next_monitoring_trigger": synth["next_monitoring_trigger"],
@@ -1586,19 +1770,23 @@ def load_baseline_dossiers() -> Dict[str, Any]:
     baseline_snapshot = validate_and_project_ledger(data, FROZEN_ODP05_SHA256)
     baseline_dossiers = baseline_snapshot["dossiers"]
 
-    # Decorate with publication_metadata
+    # Decorate with publication_metadata reflecting unrecorded research review status
     decorated = {}
     for sym in BASELINE_COHORT:
         d = dict(baseline_dossiers[sym])
         d["dossier_id"] = f"DOSSIER-{sym}-V1"
         d["publication_metadata"] = {
-            "dossier_version": "1.0.0-reviewed",
-            "lifecycle_status": "RELEASED_BASELINE",
-            "review_status": "RESEARCH_REVIEWED",
+            "dossier_version": "1.0.0-production",
+            "lifecycle_status": "PUBLISHED_PRODUCTION",
+            "technical_verification": "TECHNICAL_VERIFIED",
+            "review_status": "RESEARCH_REVIEW_UNRECORDED",
             "authoring_date": "2026-10-20",
             "freshness_state": "HISTORICAL_BASELINE",
             "governing_contract": "CONTRACT-ARX-ODP-V1-001-REV2",
-            "provenance_authority": "ODP-05 Canonical Ledger"
+            "provenance_authority": "ODP-05 Canonical Ledger",
+            "reviewer_id": None,
+            "reviewed_at_utc": None,
+            "review_notes": "Released to production under technical verification and contract validation. Independent research peer-review sign-off is unrecorded in canonical archives."
         }
         decorated[sym] = d
 
@@ -1629,8 +1817,8 @@ def prepare_pilot_scaling_corpus(
             "disposition_label": d["central_assessment"]["disposition_label"],
             "reference_price": d["valuation"]["reference_price"],
             "valuation_status": d["valuation"]["valuation_status"],
-            "lifecycle_status": "RELEASED_BASELINE",
-            "review_status": "RESEARCH_REVIEWED"
+            "lifecycle_status": "PUBLISHED_PRODUCTION",
+            "review_status": "RESEARCH_REVIEW_UNRECORDED"
         })
 
     # Add additions
@@ -1651,8 +1839,9 @@ def prepare_pilot_scaling_corpus(
             "disposition_label": d["central_assessment"]["disposition_label"],
             "reference_price": d["valuation"]["reference_price"],
             "valuation_status": d["valuation"]["valuation_status"],
-            "lifecycle_status": "DRAFT",
-            "review_status": "PENDING_RESEARCH_REVIEW"
+            "lifecycle_status": "DRAFT_STAGING",
+            "review_status": "PENDING_RESEARCH_REVIEW",
+            "evidence_completeness": spec.get("evidence_completeness", "DRAFT_SPEC_STAGED")
         })
 
     # 1. Authoritative Pilot Ledger
@@ -1698,12 +1887,17 @@ def prepare_pilot_scaling_corpus(
     }
 
     # 3. Provenance Manifest
+    ledger_str = json.dumps(ledger, indent=2, sort_keys=True)
+    ledger_sha = hashlib.sha256(ledger_str.encode("utf-8")).hexdigest()
+
     manifest = {
         "schema_version": "ARX-PILOT-PROVENANCE-MANIFEST-V1",
         "task": "ARX-TERMINAL-OPPORTUNITY-DOSSIER-SCALING-PILOT",
-        "created_at_utc": datetime.utcnow().isoformat() + "Z",
+        "created_at_utc": AUTHORING_TIMESTAMP_UTC,
         "market_session_date": MARKET_SESSION_DATE,
         "cohort_count": len(pilot_dossiers),
+        "odp05_baseline_sha256": FROZEN_ODP05_SHA256,
+        "pilot_ledger_sha256": ledger_sha,
         "baseline_symbols": BASELINE_COHORT,
         "addition_symbols": symbols_to_process,
         "filing_accessions": {
@@ -1718,48 +1912,95 @@ def prepare_pilot_scaling_corpus(
 def write_pilot_artifacts(
     ledger: Dict[str, Any],
     manifest: Dict[str, Any],
-    frontend_draft: Dict[str, Any]
+    frontend_draft: Dict[str, Any],
+    ledger_path: Optional[Path] = None,
+    manifest_path: Optional[Path] = None,
+    frontend_draft_path: Optional[Path] = None,
 ) -> None:
     """Writes the pilot scaling ledger, manifest, and frontend staging file."""
-    os.makedirs(DEFAULT_PILOT_LEDGER_PATH.parent, exist_ok=True)
-    os.makedirs(DEFAULT_FRONTEND_DRAFT_PATH.parent, exist_ok=True)
+    target_ledger = ledger_path or DEFAULT_PILOT_LEDGER_PATH
+    target_manifest = manifest_path or DEFAULT_PILOT_MANIFEST_PATH
+    target_frontend = frontend_draft_path or DEFAULT_FRONTEND_DRAFT_PATH
 
-    with open(DEFAULT_PILOT_LEDGER_PATH, "w", encoding="utf-8") as f:
+    # Prevent accidental write to production publication paths
+    frozen_prod_snapshot = REPO_ROOT / "frontend/lib/opportunityDossierSnapshot.json"
+    if target_frontend.resolve() == frozen_prod_snapshot.resolve():
+        raise ValueError("Cannot write pilot draft to production snapshot: opportunityDossierSnapshot.json")
+    if target_ledger.resolve() == FROZEN_ODP05_LEDGER_PATH.resolve():
+        raise ValueError("Cannot write pilot draft to canonical baseline: odp05_discovery_ledger.json")
+
+    os.makedirs(target_ledger.parent, exist_ok=True)
+    os.makedirs(target_frontend.parent, exist_ok=True)
+    os.makedirs(target_manifest.parent, exist_ok=True)
+
+    with open(target_ledger, "w", encoding="utf-8") as f:
         json.dump(ledger, f, indent=2)
-    logger.info(f"Wrote pilot scaling ledger to: {DEFAULT_PILOT_LEDGER_PATH}")
+    logger.info(f"Wrote pilot scaling ledger to: {target_ledger}")
 
-    # Compute ledger sha256 for manifest
-    with open(DEFAULT_PILOT_LEDGER_PATH, "rb") as f:
+    # Compute actual on-disk ledger sha256 for manifest
+    with open(target_ledger, "rb") as f:
         ledger_sha = hashlib.sha256(f.read()).hexdigest()
     manifest["pilot_ledger_sha256"] = ledger_sha
 
-    with open(DEFAULT_PILOT_MANIFEST_PATH, "w", encoding="utf-8") as f:
-        json.dump(manifest, f, indent=2)
-    logger.info(f"Wrote pilot manifest to: {DEFAULT_PILOT_MANIFEST_PATH}")
-
-    with open(DEFAULT_FRONTEND_DRAFT_PATH, "w", encoding="utf-8") as f:
+    with open(target_frontend, "w", encoding="utf-8") as f:
         json.dump(frontend_draft, f, indent=2)
-    logger.info(f"Wrote frontend draft staging snapshot to: {DEFAULT_FRONTEND_DRAFT_PATH}")
+    logger.info(f"Wrote frontend draft staging snapshot to: {target_frontend}")
+
+    with open(target_manifest, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2)
+    logger.info(f"Wrote pilot manifest to: {target_manifest}")
 
 
-def validate_existing_pilot_artifacts() -> bool:
-    """Validates that existing pilot artifacts exist, match schemas, and pass all invariants."""
-    if not DEFAULT_PILOT_LEDGER_PATH.exists():
-        logger.error(f"Pilot ledger not found: {DEFAULT_PILOT_LEDGER_PATH}")
+def validate_existing_pilot_artifacts(
+    ledger_path: Optional[Path] = None,
+    manifest_path: Optional[Path] = None,
+    frontend_draft_path: Optional[Path] = None,
+) -> bool:
+    """
+    Validates that existing pilot artifacts exist, match recorded hashes, pass all invariants,
+    and match in-memory deterministic regeneration from authoritative specifications.
+    Read-only: does not modify or repair any files.
+    """
+    target_ledger = ledger_path or DEFAULT_PILOT_LEDGER_PATH
+    target_manifest = manifest_path or DEFAULT_PILOT_MANIFEST_PATH
+    target_frontend = frontend_draft_path or DEFAULT_FRONTEND_DRAFT_PATH
+
+    if not target_ledger.exists():
+        logger.error(f"Pilot ledger not found: {target_ledger}")
         return False
-    if not DEFAULT_PILOT_MANIFEST_PATH.exists():
-        logger.error(f"Pilot manifest not found: {DEFAULT_PILOT_MANIFEST_PATH}")
+    if not target_manifest.exists():
+        logger.error(f"Pilot manifest not found: {target_manifest}")
         return False
-    if not DEFAULT_FRONTEND_DRAFT_PATH.exists():
-        logger.error(f"Frontend draft snapshot not found: {DEFAULT_FRONTEND_DRAFT_PATH}")
+    if not target_frontend.exists():
+        logger.error(f"Frontend draft snapshot not found: {target_frontend}")
         return False
 
-    with open(DEFAULT_PILOT_LEDGER_PATH, "r", encoding="utf-8") as f:
+    # 1. Verify frozen production baseline hash
+    if not FROZEN_ODP05_LEDGER_PATH.exists():
+        logger.error(f"Frozen ODP-05 baseline ledger missing at: {FROZEN_ODP05_LEDGER_PATH}")
+        return False
+    with open(FROZEN_ODP05_LEDGER_PATH, "rb") as f:
+        actual_baseline_sha = hashlib.sha256(f.read()).hexdigest()
+    if actual_baseline_sha != FROZEN_ODP05_SHA256:
+        logger.error(f"Frozen ODP-05 baseline SHA-256 corrupted: {actual_baseline_sha} != {FROZEN_ODP05_SHA256}")
+        return False
+
+    with open(target_manifest, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+    with open(target_ledger, "r", encoding="utf-8") as f:
         ledger = json.load(f)
-    with open(DEFAULT_FRONTEND_DRAFT_PATH, "r", encoding="utf-8") as f:
+    with open(target_frontend, "r", encoding="utf-8") as f:
         frontend_draft = json.load(f)
 
-    # 1. Total cohort count
+    # 2. Manifest hash verification
+    with open(target_ledger, "rb") as f:
+        actual_ledger_sha = hashlib.sha256(f.read()).hexdigest()
+    expected_ledger_sha = manifest.get("pilot_ledger_sha256")
+    if actual_ledger_sha != expected_ledger_sha:
+        logger.error(f"Manifest ledger SHA mismatch: recorded={expected_ledger_sha}, actual={actual_ledger_sha}")
+        return False
+
+    # 3. Total cohort count and symbols
     dossiers = ledger.get("dossiers", {})
     if len(dossiers) != 20:
         logger.error(f"Expected 20 dossiers in pilot ledger, found {len(dossiers)}")
@@ -1770,59 +2011,149 @@ def validate_existing_pilot_artifacts() -> bool:
             logger.error(f"Symbol {sym} missing from pilot ledger")
             return False
 
-    # 2. Frozen baseline preservation
+    # 4. Review status integrity
     for sym in BASELINE_COHORT:
-        meta = dossiers[sym]["publication_metadata"]
-        if meta.get("lifecycle_status") != "RELEASED_BASELINE":
-            logger.error(f"Baseline symbol {sym} lifecycle status altered: {meta}")
+        meta = dossiers[sym].get("publication_metadata", {})
+        if meta.get("lifecycle_status") != "PUBLISHED_PRODUCTION":
+            logger.error(f"Baseline {sym} lifecycle status invalid: {meta.get('lifecycle_status')}")
             return False
-
-    # 3. Additions draft state preservation
-    for sym in PILOT_ADDITIONS_COHORT:
-        d = dossiers[sym]
-        meta = d["publication_metadata"]
-        if meta.get("lifecycle_status") != "DRAFT" or meta.get("review_status") != "PENDING_RESEARCH_REVIEW":
-            logger.error(f"Draft symbol {sym} publication status invalid: {meta}")
+        if meta.get("review_status") != "RESEARCH_REVIEW_UNRECORDED":
+            logger.error(f"Baseline {sym} review status must be RESEARCH_REVIEW_UNRECORDED: {meta.get('review_status')}")
             return False
         if meta.get("reviewer_id") is not None or meta.get("reviewed_at_utc") is not None:
-            logger.error(f"Draft symbol {sym} contains manufactured reviewer metadata: {meta}")
+            logger.error(f"Baseline {sym} contains invented reviewer sign-off: {meta}")
             return False
 
-    # 4. Solved CAGR invariant checks
-    ulta = dossiers["ULTA"]
-    if ulta["valuation"]["solved_5y_cagr_pct"] != 15.11:
-        logger.error(f"ULTA solved CAGR mismatch: {ulta['valuation']['solved_5y_cagr_pct']} != 15.11")
-        return False
+    for sym in PILOT_ADDITIONS_COHORT:
+        d = dossiers[sym]
+        meta = d.get("publication_metadata", {})
+        if meta.get("lifecycle_status") != "DRAFT_STAGING":
+            logger.error(f"Draft addition {sym} lifecycle must be DRAFT_STAGING: {meta.get('lifecycle_status')}")
+            return False
+        if meta.get("review_status") != "PENDING_RESEARCH_REVIEW":
+            logger.error(f"Draft addition {sym} review status must be PENDING_RESEARCH_REVIEW: {meta.get('review_status')}")
+            return False
+        if meta.get("reviewer_id") is not None or meta.get("reviewed_at_utc") is not None:
+            logger.error(f"Draft addition {sym} contains unauthorized reviewer metadata: {meta}")
+            return False
 
-    medp = dossiers["MEDP"]
-    if medp["valuation"]["solved_5y_cagr_pct"] != 29.41:
-        logger.error(f"MEDP solved CAGR mismatch: {medp['valuation']['solved_5y_cagr_pct']} != 29.41")
+    # 5. Evidence mapping verification for representative dossier (ULTA)
+    ulta = dossiers.get("ULTA", {})
+    ulta_fin = ulta.get("financial_profile", {})
+    ulta_tracing = ulta_fin.get("source_evidence_tracing") or ulta.get("source_evidence_tracing")
+    if not ulta_tracing:
+        logger.error("Representative candidate ULTA missing mandatory source_evidence_tracing block")
         return False
+    required_tracing_keys = [
+        "company_identity", "revenue", "operating_income", "cash_and_investments",
+        "funded_debt", "lease_treatment", "shares_outstanding", "reference_price",
+        "valuation_model", "narrative_claims"
+    ]
+    for rk in required_tracing_keys:
+        if rk not in ulta_tracing:
+            logger.error(f"Representative candidate ULTA missing required tracing key: {rk}")
+            return False
+        item = ulta_tracing[rk]
+        if isinstance(item, dict):
+            status = item.get("fact_status")
+            if status not in ("VERIFIED_REPORTED_FACT", "DERIVED_CALCULATION", "ANALYST_ASSUMPTION", "UNVERIFIED_CLAIM"):
+                logger.error(f"Invalid fact_status in ULTA tracing {rk}: {status}")
+                return False
 
-    pltr = dossiers["PLTR"]
-    if pltr["central_assessment"]["disposition"] != "NO_SUPPORTED_OPPORTUNITY":
-        logger.error(f"PLTR disposition must be NO_SUPPORTED_OPPORTUNITY: {pltr['central_assessment']['disposition']}")
-        return False
+    # 6. In-memory deterministic recomputation and tampering detection
+    recomputed_ledger, _, recomputed_frontend = prepare_pilot_scaling_corpus()
+    recomputed_dossiers = recomputed_ledger["dossiers"]
 
-    logger.info("All pilot scaling artifact invariants verified successfully.")
+    for sym in TOTAL_PILOT_COHORT:
+        stored_d = dossiers[sym]
+        rec_d = recomputed_dossiers[sym]
+
+        # Financial profile comparison
+        stored_fin = stored_d.get("financial_profile", {})
+        rec_fin = rec_d.get("financial_profile", {})
+        for f_key in ["revenue", "operating_income", "cash_and_equivalents", "total_financial_debt", "net_debt_bridge"]:
+            if stored_fin.get(f_key) != rec_fin.get(f_key):
+                logger.error(f"Financial profile tampering detected for {sym}.{f_key}: stored={stored_fin.get(f_key)}, expected={rec_fin.get(f_key)}")
+                return False
+
+        # Valuation comparison
+        stored_val = stored_d.get("valuation", {})
+        rec_val = rec_d.get("valuation", {})
+        for v_key in ["reference_price", "solved_5y_cagr_pct", "valuation_status"]:
+            if stored_val.get(v_key) != rec_val.get(v_key):
+                logger.error(f"Valuation tampering detected for {sym}.{v_key}: stored={stored_val.get(v_key)}, expected={rec_val.get(v_key)}")
+                return False
+
+        # Central assessment narrative comparison
+        stored_ca = stored_d.get("central_assessment", {})
+        rec_ca = rec_d.get("central_assessment", {})
+        for ca_key in ["disposition", "presentation_summary", "strongest_supporting_evidence", "strongest_opposing_evidence"]:
+            if stored_ca.get(ca_key) != rec_ca.get(ca_key):
+                logger.error(f"Central assessment tampering detected for {sym}.{ca_key}")
+                return False
+
+        # Frontend draft snapshot parity
+        fe_d = frontend_draft.get("dossiers", {}).get(sym)
+        if not fe_d:
+            logger.error(f"Symbol {sym} missing from frontend draft snapshot")
+            return False
+        if fe_d.get("valuation", {}).get("reference_price") != stored_val.get("reference_price"):
+            logger.error(f"Frontend draft snapshot out of sync with ledger for {sym}")
+            return False
+
+    logger.info("All pilot scaling artifact invariants verified successfully (read-only audit passed).")
     return True
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ARX Terminal Opportunity Dossier Scaling Pilot Preparer")
+    parser = argparse.ArgumentParser(
+        description="ARX Terminal Opportunity Dossier Scaling Pilot Preparer & Validator"
+    )
     parser.add_argument("--symbol", type=str, help="Prepare and inspect a single pilot addition symbol (e.g. ULTA)")
     parser.add_argument("--all-pilot", action="store_true", help="Prepare all 20 pilot cohort dossiers and write outputs")
     parser.add_argument("--validate", action="store_true", help="Validate existing pilot scaling artifacts and invariants")
     parser.add_argument("--check", action="store_true", help="CI check mode: validates existing artifacts, exits 1 on error")
+    parser.add_argument("--dry-run", action="store_true", help="Perform preparation and validation in-memory without modifying disk files")
+    parser.add_argument("--ledger-path", type=str, help="Explicit destination or read path for pilot scaling ledger")
+    parser.add_argument("--manifest-path", type=str, help="Explicit destination or read path for pilot scaling manifest")
+    parser.add_argument("--out", type=str, help="Explicit destination path for frontend draft snapshot JSON")
 
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
+    ledger_path = Path(args.ledger_path) if args.ledger_path else None
+    manifest_path = Path(args.manifest_path) if args.manifest_path else None
+    frontend_path = Path(args.out) if args.out else None
+
+    # Safety boundary: prevent output flag from targeting production snapshot
+    if frontend_path:
+        frozen_prod = REPO_ROOT / "frontend/lib/opportunityDossierSnapshot.json"
+        if frontend_path.resolve() == frozen_prod.resolve():
+            logger.error("Forbidden: --out cannot target production snapshot (opportunityDossierSnapshot.json).")
+            sys.exit(1)
+
     if args.validate or args.check:
-        ok = validate_existing_pilot_artifacts()
+        ok = validate_existing_pilot_artifacts(
+            ledger_path=ledger_path,
+            manifest_path=manifest_path,
+            frontend_draft_path=frontend_path,
+        )
         if not ok:
             sys.exit(1)
         print("PASS: Pilot scaling artifacts verified.")
+        return
+
+    if args.dry_run:
+        logger.info("Executing pilot preparation and validation in DRY-RUN mode (zero disk mutations)...")
+        ledger, manifest, frontend_draft = prepare_pilot_scaling_corpus(single_symbol=args.symbol)
+        dossiers = ledger["dossiers"]
+        logger.info(f"In-memory prepared {len(dossiers)} dossiers.")
+        # Validate in-memory outputs
+        if "ULTA" in dossiers:
+            ulta = dossiers["ULTA"]
+            assert ulta["financial_profile"]["source_evidence_tracing"] is not None
+            assert ulta["valuation"]["reference_price"] == 592.94
+        print(f"PASS (DRY RUN): Prepared {len(dossiers)} dossiers in-memory. Zero disk modifications made.")
         return
 
     if args.symbol:
@@ -1846,8 +2177,19 @@ def main():
     if args.all_pilot:
         logger.info("Preparing complete 20-company Opportunity Dossier pilot cohort...")
         ledger, manifest, frontend_draft = prepare_pilot_scaling_corpus()
-        write_pilot_artifacts(ledger, manifest, frontend_draft)
-        ok = validate_existing_pilot_artifacts()
+        write_pilot_artifacts(
+            ledger,
+            manifest,
+            frontend_draft,
+            ledger_path=ledger_path,
+            manifest_path=manifest_path,
+            frontend_draft_path=frontend_path,
+        )
+        ok = validate_existing_pilot_artifacts(
+            ledger_path=ledger_path,
+            manifest_path=manifest_path,
+            frontend_draft_path=frontend_path,
+        )
         if not ok:
             logger.error("Generated pilot artifacts failed validation gate.")
             sys.exit(1)

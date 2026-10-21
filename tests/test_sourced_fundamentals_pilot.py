@@ -92,7 +92,8 @@ def check_raw_cache_available(request):
     ]
     if any(request.node.name.startswith(p) for p in raw_dependent_prefixes):
         manifest_path = os.path.join(DEFAULT_CACHE_DIR, "manifest.json")
-        if not os.path.exists(manifest_path):
+        fix_facts_path = os.path.join(DEFAULT_CACHE_DIR, "CIK0001035983_companyfacts.json")
+        if not os.path.exists(manifest_path) or not os.path.exists(fix_facts_path):
             pytest.skip("Retained primary SEC source filing cache not present in checkout; full offline replay verified via standalone review package.")
 
 
