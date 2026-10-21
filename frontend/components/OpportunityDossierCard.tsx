@@ -463,25 +463,25 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
                           </td>
                         </tr>
                         <tr>
-                          <td className="p-2 text-slate-400">Reinvestment (Sales/Cap)</td>
+                          <td className="p-2 text-slate-400">Reinvestment (% of NOPAT)</td>
                           <td className="p-2 text-slate-300">
                             {valuation.reverse_dcf_parameters?.reinvestment_rate_pct !== undefined
-                              ? `${valuation.reverse_dcf_parameters.reinvestment_rate_pct.toFixed(2)}x`
+                              ? `${valuation.reverse_dcf_parameters.reinvestment_rate_pct.toFixed(1)}%`
                               : "N/A"}
                           </td>
                           <td className="p-2 text-slate-300">
                             {valuation.scenarios.conservative?.reinvestment_rate_pct !== undefined
-                              ? `${valuation.scenarios.conservative.reinvestment_rate_pct.toFixed(2)}x`
+                              ? `${valuation.scenarios.conservative.reinvestment_rate_pct.toFixed(1)}%`
                               : "N/A"}
                           </td>
                           <td className="p-2 text-slate-300">
                             {valuation.scenarios.base?.reinvestment_rate_pct !== undefined
-                              ? `${valuation.scenarios.base.reinvestment_rate_pct.toFixed(2)}x`
+                              ? `${valuation.scenarios.base.reinvestment_rate_pct.toFixed(1)}%`
                               : "N/A"}
                           </td>
                           <td className="p-2 text-slate-300">
                             {valuation.scenarios.optimistic?.reinvestment_rate_pct !== undefined
-                              ? `${valuation.scenarios.optimistic.reinvestment_rate_pct.toFixed(2)}x`
+                              ? `${valuation.scenarios.optimistic.reinvestment_rate_pct.toFixed(1)}%`
                               : "N/A"}
                           </td>
                         </tr>
@@ -624,7 +624,7 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
                 <span className="text-slate-200 font-semibold">
                   {financial_profile.short_term_investments !== null && financial_profile.short_term_investments !== undefined
                     ? `$${(financial_profile.short_term_investments / 1e6).toFixed(1)}M`
-                    : "None / Excluded"}
+                    : "Not included in this bridge"}
                 </span>
               </div>
 
@@ -633,7 +633,7 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
                 <span className="text-slate-200 font-semibold">
                   {financial_profile.restricted_cash !== null && financial_profile.restricted_cash !== undefined
                     ? `$${(financial_profile.restricted_cash / 1e6).toFixed(1)}M`
-                    : "None / Excluded"}
+                    : "Not included in this bridge"}
                 </span>
                 {financial_profile.restriction_treatment && (
                   <span className="text-[9px] text-amber-400 block font-sans truncate" title={financial_profile.restriction_treatment}>
@@ -647,9 +647,6 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
                   <span className="text-slate-500 text-[10px] block">Digital Assets (Bitcoin)</span>
                   <span className="text-slate-200 font-semibold">
                     ${(financial_profile.digital_assets / 1e6).toFixed(1)}M
-                  </span>
-                  <span className="text-[9px] text-cyan-400 block font-sans">
-                    Carried at fair value / impairment basis
                   </span>
                 </div>
               )}
@@ -670,7 +667,7 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
                 <span className="text-slate-200 font-semibold">
                   {financial_profile.operating_lease_liabilities_asc842 !== null && financial_profile.operating_lease_liabilities_asc842 !== undefined
                     ? `$${(financial_profile.operating_lease_liabilities_asc842 / 1e6).toFixed(1)}M`
-                    : "None / N/A"}
+                    : "Not provided"}
                 </span>
                 {financial_profile.lease_convention_treatment && (
                   <span className="text-[9px] text-slate-400 block font-sans truncate" title={financial_profile.lease_convention_treatment}>

@@ -105,4 +105,39 @@ assert.ok(iren.financial_profile.restriction_treatment.includes("Restricted cash
 assert.strictEqual(corz.financial_profile.digital_assets, 49675000.0, "CORZ digital assets must be 49675000.0");
 console.log("[OK] Finding C: Accounting bridge and capital structure disclosures verified");
 
+// 8. Correction A Regression Assertion: Reinvestment (% of NOPAT) Presentation Units & Clean Accounting Labels
+const cardPath = path.resolve(__dirname, "../components/OpportunityDossierCard.tsx");
+assert.strictEqual(fs.existsSync(cardPath), true, "OpportunityDossierCard.tsx must exist");
+const cardSource = fs.readFileSync(cardPath, "utf-8");
+
+assert.ok(
+  cardSource.includes("Reinvestment (% of NOPAT)"),
+  "OpportunityDossierCard must label the reinvestment assumption row as 'Reinvestment (% of NOPAT)'"
+);
+assert.ok(
+  !cardSource.includes("Reinvestment (Sales/Cap)"),
+  "OpportunityDossierCard must NOT use erroneous sales-to-capital label 'Reinvestment (Sales/Cap)'"
+);
+assert.ok(
+  !cardSource.includes("reinvestment_rate_pct.toFixed(2)}x"),
+  "OpportunityDossierCard must NOT render reinvestment_rate_pct with multiple 'x' suffix"
+);
+assert.ok(
+  cardSource.includes("reinvestment_rate_pct.toFixed(1)}%"),
+  "OpportunityDossierCard must render reinvestment_rate_pct with percentage '%' suffix"
+);
+assert.ok(
+  !cardSource.includes("Carried at fair value / impairment basis"),
+  "OpportunityDossierCard must NOT include unevidenced digital assets accounting-policy caption"
+);
+assert.ok(
+  !cardSource.includes("None / Excluded"),
+  "OpportunityDossierCard must NOT render unprovided balances as 'None / Excluded'"
+);
+assert.ok(
+  !cardSource.includes("None / N/A"),
+  "OpportunityDossierCard must NOT render unprovided balances as 'None / N/A'"
+);
+console.log("[OK] Correction A: Reinvestment (% of NOPAT) presentation units and clean accounting labels verified");
+
 console.log("ALL OPPORTUNITY DOSSIER SNAPSHOT INTEGRITY TESTS PASSED ✅");
