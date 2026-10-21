@@ -1040,13 +1040,13 @@
       "central_assessment": {
         "disposition": "WATCH_CONDITIONS",
         "disposition_label": "Watch \u2014 Conditions Required for Entry",
-        "presentation_summary": "Ulta Beauty demonstrates high capital returns and a pristine zero-debt balance sheet ($213.5M liquidity) supported by 44M+ loyalty members. However, the reference price of $592.94 embeds a demanding 15.11% 5-year revenue CAGR against intense prestige retail competition. Retained on watch for pullbacks toward $430 - $460.",
+        "presentation_summary": "Ulta Beauty demonstrates high capital returns supported by 44M+ loyalty members and strong cash generation. Form 10-Q Note 7 reflects $339.6M in revolving credit facility debt against $213.5M cash/ST investments ($126.1M net debt bridge). At $592.94, the valuation implies a demanding 15.45% 5-year revenue CAGR against intense prestige retail competition. Retained on watch for pullbacks toward base valuation range ($430 - $450).",
         "summary_provenance": "DERIVED_SYNTHESIS",
-        "strongest_supporting_evidence": "Ulta generates dependable operating cash flows ($1.57B TTM CFO) with a pristine balance sheet ($213.5M cash, documented zero funded debt) and 44M+ loyalty members driving >95% of sales.",
-        "strongest_opposing_evidence": "Prestige beauty competitive intensity from Sephora at Kohl's and Amazon Beauty has compressed operating margins from 15.0% peak to 12.5%. At $592.94, market prices in 15.11% revenue CAGR.",
+        "strongest_supporting_evidence": "Ulta generates dependable operating cash flows ($1.57B TTM CFO) with a liquid balance sheet ($213.5M cash and ST investments against $339.6M credit facility borrowings) and 44M+ loyalty members driving >95% of sales.",
+        "strongest_opposing_evidence": "Prestige beauty competitive intensity from Sephora at Kohl's and Amazon Beauty has compressed operating margins from 15.0% peak to 12.5%. At $592.94, market prices in 15.45% revenue CAGR with positive net debt ($126.1M).",
         "main_uncertainty": "Durability of store-level traffic and margin defense against expanding promotional cadence across prestige cosmetic brands.",
-        "price_watch_condition": "Pullback toward mid-cycle base valuation range ($430 - $460) or evidence of sustained comp-store sales acceleration >6%.",
-        "confidence_assessment": "High confidence in accounting and zero-debt capital structure; medium confidence in long-term terminal operating margin floor.",
+        "price_watch_condition": "Pullback toward mid-cycle base valuation range ($430 - $450) or evidence of sustained comp-store sales acceleration >6%.",
+        "confidence_assessment": "High confidence in accounting, Note 7 debt disclosures, and lease classification; medium confidence in long-term terminal operating margin floor.",
         "financing_dilution_exposure": "Negative net dilution; aggressive share buybacks have retired over 13.6% of outstanding shares over the trailing three fiscal years."
       },
       "valuation": {
@@ -1059,10 +1059,10 @@
         "reference_price_source": "ARX MarketStore regular close tape",
         "reference_price_timestamp": "2026-10-16T16:00:00-04:00",
         "reference_date": "2026-10-16",
-        "solved_5y_cagr_pct": 15.11,
+        "solved_5y_cagr_pct": 15.45,
         "reverse_dcf_parameters": {
           "target_price": 592.94,
-          "solved_revenue_cagr_pct": 15.11,
+          "solved_revenue_cagr_pct": 15.45,
           "operating_margin_pct": 12.0,
           "wacc_pct": 9.0,
           "terminal_growth_pct": 2.0,
@@ -1070,11 +1070,11 @@
           "reinvestment_rate_pct": 15.0,
           "base_revenue": 12955517000.0,
           "current_shares": 43062000.0,
-          "net_debt_bridge": -213451000.0
+          "net_debt_bridge": 126127000.0
         },
-        "roundtrip_value": 592.94,
-        "roundtrip_delta_cents": 0.45,
-        "convention_summary": "Single-stage Reverse-DCF FCFF (WACC 9.0%, Terminal g 2.0%, Operating Margin 12.0%, Tax Rate 23.5%, Reinvestment Rate 15.0%). Solved 5Y Revenue CAGR: 15.11%.",
+        "roundtrip_value": 593.0,
+        "roundtrip_delta_cents": 6.33,
+        "convention_summary": "Single-stage Reverse-DCF FCFF (WACC 9.0%, Terminal g 2.0%, Operating Margin 12.0%, Tax Rate 23.5%, Reinvestment Rate 15.0%). Solved 5Y Revenue CAGR: 15.45%.",
         "qualification_notice": null,
         "suppression_reason": null,
         "resume_conditions": [],
@@ -1082,9 +1082,9 @@
           "conservative": {
             "scenario_key": "conservative",
             "name": "Conservative",
-            "per_share_value": 282.56,
-            "potential_return_pct": -52.3,
-            "conditional_wording": "Under stated conservative assumptions, modeled conditional value is $282.56 (-52.3% vs frozen reference price).",
+            "per_share_value": 274.67,
+            "potential_return_pct": -53.7,
+            "conditional_wording": "Under stated conservative assumptions, modeled conditional value is $274.67 (-53.7% vs frozen reference price).",
             "revenue_cagr_pct": 4.0,
             "operating_margin_pct": 10.5,
             "wacc_pct": 9.5,
@@ -1092,14 +1092,14 @@
             "tax_rate_pct": 24.0,
             "reinvestment_rate_pct": 18.0,
             "enterprise_value": 11953990890.98,
-            "equity_value": 12167441890.98
+            "equity_value": 11827863890.98
           },
           "base": {
             "scenario_key": "base",
             "name": "Base",
-            "per_share_value": 445.82,
-            "potential_return_pct": -24.8,
-            "conditional_wording": "Under stated base assumptions, modeled conditional value is $445.82 (-24.8% vs frozen reference price).",
+            "per_share_value": 437.93,
+            "potential_return_pct": -26.1,
+            "conditional_wording": "Under stated base assumptions, modeled conditional value is $437.93 (-26.1% vs frozen reference price).",
             "revenue_cagr_pct": 8.0,
             "operating_margin_pct": 12.0,
             "wacc_pct": 9.0,
@@ -1107,14 +1107,14 @@
             "tax_rate_pct": 23.5,
             "reinvestment_rate_pct": 15.0,
             "enterprise_value": 18984274222.28,
-            "equity_value": 19197725222.28
+            "equity_value": 18858147222.28
           },
           "optimistic": {
             "scenario_key": "optimistic",
             "name": "Optimistic",
-            "per_share_value": 749.67,
-            "potential_return_pct": 26.4,
-            "conditional_wording": "Under stated optimistic assumptions, modeled conditional value is $749.67 (+26.4% vs frozen reference price).",
+            "per_share_value": 741.78,
+            "potential_return_pct": 25.1,
+            "conditional_wording": "Under stated optimistic assumptions, modeled conditional value is $741.78 (+25.1% vs frozen reference price).",
             "revenue_cagr_pct": 14.0,
             "operating_margin_pct": 13.5,
             "wacc_pct": 8.5,
@@ -1122,7 +1122,7 @@
             "tax_rate_pct": 23.0,
             "reinvestment_rate_pct": 14.0,
             "enterprise_value": 32068689175.35,
-            "equity_value": 32282140175.35
+            "equity_value": 31942562175.35
           }
         }
       },
@@ -1139,18 +1139,18 @@
         "restricted_cash": null,
         "total_cash_and_investments": 213451000.0,
         "total_cash_and_restricted": null,
-        "total_financial_debt": 0.0,
-        "debt_display": "$0.00 (Zero Funded Debt Evidenced)",
-        "is_zero_debt": true,
-        "zero_debt_support": "Zero funded interest-bearing senior debt under credit facility; revolving facility fully undrawn.",
+        "total_financial_debt": 339578000.0,
+        "debt_display": "$339.6M",
+        "is_zero_debt": false,
+        "zero_debt_support": null,
         "operating_lease_liabilities_asc842": 1871805000.0,
-        "lease_convention_treatment": "Lease as operating expense convention applied under ASC 842; store rent deducted in SG&A; lease liabilities excluded from net debt bridge to avoid double deduction.",
+        "lease_convention_treatment": "Lease as operating expense convention applied under ASC 842: store and supply chain lease costs are recognized primarily in Cost of Sales and SG&A; lease liabilities ($2,184.5M total, $1,871.8M noncurrent) are excluded from the net debt bridge to avoid double deduction.",
         "restriction_treatment": null,
         "digital_assets": null,
         "total_liquidity_with_digital_assets": null,
-        "net_debt_bridge": -213451000.0,
+        "net_debt_bridge": 126127000.0,
         "capital_structure_position": "Equity Capital Structure",
-        "bridge_note": "Total cash and investments ($213.5M) less zero funded debt leaves $213.5M net cash bridge added to enterprise value in DCF equity bridge.",
+        "bridge_note": "Funded debt of $339.6M (revolving credit facility borrowings under Note 7) less total cash and ST investments ($213.5M) yields positive net debt bridge of $126.1M, deducted from Enterprise Value in DCF equity bridge.",
         "selected_share_basis": {
           "basis_type": "DILUTED_WEIGHTED_AVERAGE",
           "value": 43062000.0,
@@ -1271,15 +1271,17 @@
           },
           "funded_debt": {
             "fact_status": "VERIFIED_REPORTED_FACT",
-            "total_financial_debt_usd": 0.0,
-            "is_zero_debt": true,
-            "support_disclosure": "No senior notes or term loans outstanding; $1.0B revolving credit facility completely undrawn at quarter end (Note 8).",
+            "total_financial_debt_usd": 339578000.0,
+            "is_zero_debt": false,
+            "support_disclosure": "Form 10-Q Part I Item 1 Consolidated Balance Sheets and Note 7 ('Debt') disclose $339,578,000 outstanding under revolving credit facility borrowings (proceeds of $1,358,274,000 and repayments of $1,080,032,000 during 6M ended August 1, 2026).",
+            "xbrl_tag": "us-gaap:ShortTermBorrowings",
             "filing_source": {
               "form": "10-Q",
               "period_end": "2026-08-01",
               "filing_date": "2026-08-27",
               "accession": "0001104659-26-102442",
-              "location": "Part I Item 1 Consolidated Balance Sheets & Note 8"
+              "location": "Part I Item 1 Consolidated Balance Sheets & Note 7 (Debt)",
+              "reported_value": 339578000.0
             }
           },
           "lease_treatment": {
@@ -1288,7 +1290,7 @@
             "noncurrent_operating_lease_liabilities_usd": 1871805000.0,
             "total_lease_liabilities_usd": 2184453000.0,
             "accounting_standard": "ASC 842",
-            "valuation_convention": "Lease-as-Operating-Expense convention: retail store lease expense deducted in operating expenses; excluded from debt bridge to avoid double deduction.",
+            "valuation_convention": "Lease-as-Operating-Expense convention: In primary GAAP filings, retail store and distribution center lease costs are primarily included in Cost of Sales, and corporate store support center lease costs in SG&A. Under the analyst valuation convention, lease operating expenses reduce NOPAT and CFO; operating lease liabilities ($2.18B) are therefore excluded from the net debt bridge to prevent double deduction of lease obligations.",
             "xbrl_tags": [
               "us-gaap:OperatingLeaseLiabilityCurrent",
               "us-gaap:OperatingLeaseLiabilityNoncurrent"
@@ -1298,7 +1300,7 @@
               "period_end": "2026-08-01",
               "filing_date": "2026-08-27",
               "accession": "0001104659-26-102442",
-              "location": "Part I Item 1 Consolidated Balance Sheets"
+              "location": "Part I Item 1 Consolidated Balance Sheets & Note 6 (Leases)"
             }
           },
           "shares_outstanding": {
@@ -1327,7 +1329,7 @@
           "valuation_model": {
             "fact_status": "DERIVED_CALCULATION",
             "model_type": "Single-stage Reverse-DCF FCFF (Gordon Growth Terminal Value)",
-            "solved_5y_revenue_cagr_pct": 15.11,
+            "solved_5y_revenue_cagr_pct": 15.45,
             "assumptions": {
               "fact_status": "ANALYST_ASSUMPTION",
               "operating_margin_pct": 12.0,
@@ -1336,8 +1338,8 @@
               "tax_rate_pct": 23.5,
               "reinvestment_rate_pct": 15.0
             },
-            "roundtrip_value": 592.94,
-            "roundtrip_delta_cents": 0.45
+            "roundtrip_value": 593.0,
+            "roundtrip_delta_cents": 6.33
           },
           "narrative_claims": [
             {
@@ -1445,15 +1447,17 @@
         },
         "funded_debt": {
           "fact_status": "VERIFIED_REPORTED_FACT",
-          "total_financial_debt_usd": 0.0,
-          "is_zero_debt": true,
-          "support_disclosure": "No senior notes or term loans outstanding; $1.0B revolving credit facility completely undrawn at quarter end (Note 8).",
+          "total_financial_debt_usd": 339578000.0,
+          "is_zero_debt": false,
+          "support_disclosure": "Form 10-Q Part I Item 1 Consolidated Balance Sheets and Note 7 ('Debt') disclose $339,578,000 outstanding under revolving credit facility borrowings (proceeds of $1,358,274,000 and repayments of $1,080,032,000 during 6M ended August 1, 2026).",
+          "xbrl_tag": "us-gaap:ShortTermBorrowings",
           "filing_source": {
             "form": "10-Q",
             "period_end": "2026-08-01",
             "filing_date": "2026-08-27",
             "accession": "0001104659-26-102442",
-            "location": "Part I Item 1 Consolidated Balance Sheets & Note 8"
+            "location": "Part I Item 1 Consolidated Balance Sheets & Note 7 (Debt)",
+            "reported_value": 339578000.0
           }
         },
         "lease_treatment": {
@@ -1462,7 +1466,7 @@
           "noncurrent_operating_lease_liabilities_usd": 1871805000.0,
           "total_lease_liabilities_usd": 2184453000.0,
           "accounting_standard": "ASC 842",
-          "valuation_convention": "Lease-as-Operating-Expense convention: retail store lease expense deducted in operating expenses; excluded from debt bridge to avoid double deduction.",
+          "valuation_convention": "Lease-as-Operating-Expense convention: In primary GAAP filings, retail store and distribution center lease costs are primarily included in Cost of Sales, and corporate store support center lease costs in SG&A. Under the analyst valuation convention, lease operating expenses reduce NOPAT and CFO; operating lease liabilities ($2.18B) are therefore excluded from the net debt bridge to prevent double deduction of lease obligations.",
           "xbrl_tags": [
             "us-gaap:OperatingLeaseLiabilityCurrent",
             "us-gaap:OperatingLeaseLiabilityNoncurrent"
@@ -1472,7 +1476,7 @@
             "period_end": "2026-08-01",
             "filing_date": "2026-08-27",
             "accession": "0001104659-26-102442",
-            "location": "Part I Item 1 Consolidated Balance Sheets"
+            "location": "Part I Item 1 Consolidated Balance Sheets & Note 6 (Leases)"
           }
         },
         "shares_outstanding": {
@@ -1501,7 +1505,7 @@
         "valuation_model": {
           "fact_status": "DERIVED_CALCULATION",
           "model_type": "Single-stage Reverse-DCF FCFF (Gordon Growth Terminal Value)",
-          "solved_5y_revenue_cagr_pct": 15.11,
+          "solved_5y_revenue_cagr_pct": 15.45,
           "assumptions": {
             "fact_status": "ANALYST_ASSUMPTION",
             "operating_margin_pct": 12.0,
@@ -1510,8 +1514,8 @@
             "tax_rate_pct": 23.5,
             "reinvestment_rate_pct": 15.0
           },
-          "roundtrip_value": 592.94,
-          "roundtrip_delta_cents": 0.45
+          "roundtrip_value": 593.0,
+          "roundtrip_delta_cents": 6.33
         },
         "narrative_claims": [
           {
@@ -1537,8 +1541,8 @@
       "monitoring": {
         "observable_invalidation_trigger": "Operating margin compression below 10.0% or negative comparable store sales for two consecutive fiscal quarters.",
         "next_monitoring_trigger": "Q3 2026 Form 10-Q filing (expected December 2026) for holiday promotional cadence and loyalty membership growth.",
-        "price_watch_condition": "Pullback toward mid-cycle base valuation range ($430 - $460) or evidence of sustained comp-store sales acceleration >6%.",
-        "baseline_factual_evidence": "Ulta generates dependable operating cash flows ($1.57B TTM CFO) with a pristine balance sheet ($213.5M cash, documented zero funded debt) and 44M+ loyalty members driving >95% of sales."
+        "price_watch_condition": "Pullback toward mid-cycle base valuation range ($430 - $450) or evidence of sustained comp-store sales acceleration >6%.",
+        "baseline_factual_evidence": "Ulta generates dependable operating cash flows ($1.57B TTM CFO) with a liquid balance sheet ($213.5M cash and ST investments against $339.6M credit facility borrowings) and 44M+ loyalty members driving >95% of sales."
       },
       "navigation": {
         "radar_url": "/radar?symbol=ULTA",

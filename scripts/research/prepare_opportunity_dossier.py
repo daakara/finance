@@ -55,6 +55,30 @@ TOTAL_PILOT_COHORT = BASELINE_COHORT + PILOT_ADDITIONS_COHORT
 DEFAULT_PILOT_LEDGER_PATH = REPO_ROOT / "docs/research/opportunity_discovery/pilot_scaling_ledger.json"
 DEFAULT_PILOT_MANIFEST_PATH = REPO_ROOT / "docs/research/opportunity_discovery/pilot_scaling_manifest.json"
 DEFAULT_FRONTEND_DRAFT_PATH = REPO_ROOT / "frontend/lib/opportunityDossierPilotDrafts.json"
+DEFAULT_DOC_MATRIX_PATH = REPO_ROOT / "docs/research/opportunity_discovery/pilot_scaling_cohort_matrix.md"
+
+BASELINE_DESCRIPTIONS: Dict[str, Dict[str, str]] = {
+    "FIX": {
+        "sector_industry": "Industrials / Specialty Contractors",
+        "business_model": "Modular thermal & HVAC infrastructure for data centers",
+    },
+    "DUOL": {
+        "sector_industry": "Technology / Application Software",
+        "business_model": "Subscription language learning & mobile education",
+    },
+    "IREN": {
+        "sector_industry": "Technology / Data Center Infrastructure",
+        "business_model": "Data center power infrastructure & AI cloud transition",
+    },
+    "CORZ": {
+        "sector_industry": "Technology / Data Center Infrastructure",
+        "business_model": "Post-reorganization AI hyperscale colocation",
+    },
+    "MU": {
+        "sector_industry": "Technology / Semiconductors",
+        "business_model": "Cyclical memory (DRAM, HBM3E, NAND) hardware",
+    },
+}
 
 MARKET_SESSION_DATE = "2026-10-16"
 FILING_AVAILABILITY_CUTOFF_UTC = "2026-10-16T20:00:00Z"
@@ -157,15 +181,17 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             },
             "funded_debt": {
                 "fact_status": "VERIFIED_REPORTED_FACT",
-                "total_financial_debt_usd": 0.0,
-                "is_zero_debt": True,
-                "support_disclosure": "No senior notes or term loans outstanding; $1.0B revolving credit facility completely undrawn at quarter end (Note 8).",
+                "total_financial_debt_usd": 339578000.0,
+                "is_zero_debt": False,
+                "support_disclosure": "Form 10-Q Part I Item 1 Consolidated Balance Sheets and Note 7 ('Debt') disclose $339,578,000 outstanding under revolving credit facility borrowings (proceeds of $1,358,274,000 and repayments of $1,080,032,000 during 6M ended August 1, 2026).",
+                "xbrl_tag": "us-gaap:ShortTermBorrowings",
                 "filing_source": {
                     "form": "10-Q",
                     "period_end": "2026-08-01",
                     "filing_date": "2026-08-27",
                     "accession": "0001104659-26-102442",
-                    "location": "Part I Item 1 Consolidated Balance Sheets & Note 8"
+                    "location": "Part I Item 1 Consolidated Balance Sheets & Note 7 (Debt)",
+                    "reported_value": 339578000.0
                 }
             },
             "lease_treatment": {
@@ -174,7 +200,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                 "noncurrent_operating_lease_liabilities_usd": 1871805000.0,
                 "total_lease_liabilities_usd": 2184453000.0,
                 "accounting_standard": "ASC 842",
-                "valuation_convention": "Lease-as-Operating-Expense convention: retail store lease expense deducted in operating expenses; excluded from debt bridge to avoid double deduction.",
+                "valuation_convention": "Lease-as-Operating-Expense convention: In primary GAAP filings, retail store and distribution center lease costs are primarily included in Cost of Sales, and corporate store support center lease costs in SG&A. Under the analyst valuation convention, lease operating expenses reduce NOPAT and CFO; operating lease liabilities ($2.18B) are therefore excluded from the net debt bridge to prevent double deduction of lease obligations.",
                 "xbrl_tags": [
                     "us-gaap:OperatingLeaseLiabilityCurrent",
                     "us-gaap:OperatingLeaseLiabilityNoncurrent"
@@ -184,7 +210,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                     "period_end": "2026-08-01",
                     "filing_date": "2026-08-27",
                     "accession": "0001104659-26-102442",
-                    "location": "Part I Item 1 Consolidated Balance Sheets"
+                    "location": "Part I Item 1 Consolidated Balance Sheets & Note 6 (Leases)"
                 }
             },
             "shares_outstanding": {
@@ -213,7 +239,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             "valuation_model": {
                 "fact_status": "DERIVED_CALCULATION",
                 "model_type": "Single-stage Reverse-DCF FCFF (Gordon Growth Terminal Value)",
-                "solved_5y_revenue_cagr_pct": 15.11,
+                "solved_5y_revenue_cagr_pct": 15.45,
                 "assumptions": {
                     "fact_status": "ANALYST_ASSUMPTION",
                     "operating_margin_pct": 12.0,
@@ -222,8 +248,8 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                     "tax_rate_pct": 23.5,
                     "reinvestment_rate_pct": 15.0
                 },
-                "roundtrip_value": 592.94,
-                "roundtrip_delta_cents": 0.45
+                "roundtrip_value": 593.00,
+                "roundtrip_delta_cents": 6.33
             },
             "narrative_claims": [
                 {
@@ -274,13 +300,13 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             "cash_and_equivalents": 158451000.0,
             "short_term_investments": 55000000.0,
             "total_cash_and_investments": 213451000.0,
-            "total_financial_debt": 0.0,
-            "is_zero_debt": True,
-            "zero_debt_support": "Zero funded interest-bearing senior debt under credit facility; revolving facility fully undrawn.",
+            "total_financial_debt": 339578000.0,
+            "is_zero_debt": False,
+            "zero_debt_support": None,
             "operating_lease_liabilities_asc842": 1871805000.0,
-            "lease_convention_treatment": "Lease as operating expense convention applied under ASC 842; store rent deducted in SG&A; lease liabilities excluded from net debt bridge to avoid double deduction.",
-            "net_debt_bridge": -213451000.0,
-            "bridge_note": "Total cash and investments ($213.5M) less zero funded debt leaves $213.5M net cash bridge added to enterprise value in DCF equity bridge.",
+            "lease_convention_treatment": "Lease as operating expense convention applied under ASC 842: store and supply chain lease costs are recognized primarily in Cost of Sales and SG&A; lease liabilities ($2,184.5M total, $1,871.8M noncurrent) are excluded from the net debt bridge to avoid double deduction.",
+            "net_debt_bridge": 126127000.0,
+            "bridge_note": "Funded debt of $339.6M (revolving credit facility borrowings under Note 7) less total cash and ST investments ($213.5M) yields positive net debt bridge of $126.1M, deducted from Enterprise Value in DCF equity bridge.",
             "diluted_shares": 43062000.0,
             "selected_share_basis": {
                 "basis_type": "DILUTED_WEIGHTED_AVERAGE",
@@ -302,15 +328,15 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             }
         },
         "synthesis": {
-            "strongest_supporting_evidence": "Ulta generates dependable operating cash flows ($1.57B TTM CFO) with a pristine balance sheet ($213.5M cash, documented zero funded debt) and 44M+ loyalty members driving >95% of sales.",
-            "strongest_opposing_evidence": "Prestige beauty competitive intensity from Sephora at Kohl's and Amazon Beauty has compressed operating margins from 15.0% peak to 12.5%. At $592.94, market prices in 15.11% revenue CAGR.",
+            "strongest_supporting_evidence": "Ulta generates dependable operating cash flows ($1.57B TTM CFO) with a liquid balance sheet ($213.5M cash and ST investments against $339.6M credit facility borrowings) and 44M+ loyalty members driving >95% of sales.",
+            "strongest_opposing_evidence": "Prestige beauty competitive intensity from Sephora at Kohl's and Amazon Beauty has compressed operating margins from 15.0% peak to 12.5%. At $592.94, market prices in 15.45% revenue CAGR with positive net debt ($126.1M).",
             "main_uncertainty": "Durability of store-level traffic and margin defense against expanding promotional cadence across prestige cosmetic brands.",
-            "price_watch_condition": "Pullback toward mid-cycle base valuation range ($430 - $460) or evidence of sustained comp-store sales acceleration >6%.",
-            "confidence_assessment": "High confidence in accounting and zero-debt capital structure; medium confidence in long-term terminal operating margin floor.",
+            "price_watch_condition": "Pullback toward mid-cycle base valuation range ($430 - $450) or evidence of sustained comp-store sales acceleration >6%.",
+            "confidence_assessment": "High confidence in accounting, Note 7 debt disclosures, and lease classification; medium confidence in long-term terminal operating margin floor.",
             "financing_dilution_exposure": "Negative net dilution; aggressive share buybacks have retired over 13.6% of outstanding shares over the trailing three fiscal years.",
             "observable_invalidation_trigger": "Operating margin compression below 10.0% or negative comparable store sales for two consecutive fiscal quarters.",
             "next_monitoring_trigger": "Q3 2026 Form 10-Q filing (expected December 2026) for holiday promotional cadence and loyalty membership growth.",
-            "presentation_summary": "Ulta Beauty demonstrates high capital returns and a pristine zero-debt balance sheet ($213.5M liquidity) supported by 44M+ loyalty members. However, the reference price of $592.94 embeds a demanding 15.11% 5-year revenue CAGR against intense prestige retail competition. Retained on watch for pullbacks toward $430 - $460."
+            "presentation_summary": "Ulta Beauty demonstrates high capital returns supported by 44M+ loyalty members and strong cash generation. Form 10-Q Note 7 reflects $339.6M in revolving credit facility debt against $213.5M cash/ST investments ($126.1M net debt bridge). At $592.94, the valuation implies a demanding 15.45% 5-year revenue CAGR against intense prestige retail competition. Retained on watch for pullbacks toward base valuation range ($430 - $450)."
         }
     },
     "MEDP": {
@@ -1909,6 +1935,164 @@ def prepare_pilot_scaling_corpus(
     return ledger, manifest, frontend_draft
 
 
+def generate_cohort_matrix_markdown(ledger: Dict[str, Any]) -> str:
+    """Generates deterministic pilot scaling cohort matrix documentation from ledger."""
+    dossiers = ledger.get("dossiers", {})
+
+    rows: List[str] = []
+    # Baseline 1..5
+    for idx, sym in enumerate(BASELINE_COHORT, start=1):
+        d = dossiers[sym]
+        ident = d["identity"]
+        fp = d["financial_profile"]
+        val = d["valuation"]
+        ca = d["central_assessment"]
+        filings = ", ".join(f"{f['form']} ({f['period_end']})" for f in fp["primary_filings"])
+        ref_p = f"${val['reference_price']:,.2f}"
+        val_status_map = {
+            "COMPUTED_VERIFIED": "Computed & Verified",
+            "COMPUTED_QUALIFIED": "Computed with Qualification",
+            "VALUATION_SUPPRESSED": "Valuation Suppressed",
+        }
+        val_elig = val_status_map.get(val["valuation_status"], val["valuation_status"])
+        sector_ind = BASELINE_DESCRIPTIONS[sym]["sector_industry"]
+        biz_model = BASELINE_DESCRIPTIONS[sym]["business_model"]
+        row = f"| **Baseline {idx}** | `{sym}` | {ident['company_name']} | `{ident['cik']}` | {ident['exchange']} | {sector_ind} | {biz_model} | {filings} | {ref_p} | {val_elig} | `{ca['disposition']}` |"
+        rows.append(row)
+
+    # Addition 1..15
+    for idx, sym in enumerate(PILOT_ADDITIONS_COHORT, start=1):
+        d = dossiers[sym]
+        ident = d["identity"]
+        fp = d["financial_profile"]
+        val = d["valuation"]
+        ca = d["central_assessment"]
+        filings = ", ".join(f"{f['form']} ({f['period_end']})" for f in fp["primary_filings"])
+        ref_p = f"${val['reference_price']:,.2f}"
+        val_status_map = {
+            "COMPUTED_VERIFIED": "Computed & Verified",
+            "COMPUTED_QUALIFIED": "Computed with Qualification",
+            "VALUATION_SUPPRESSED": "Valuation Suppressed",
+        }
+        val_elig = val_status_map.get(val["valuation_status"], val["valuation_status"])
+        spec = PILOT_SPECS[sym]
+        sector_ind = spec.get("sector_industry", ident["opportunity_route"])
+        biz_model = spec.get("business_model", "")
+        row = f"| **Addition {idx}** | `{sym}` | {ident['company_name']} | `{ident['cik']}` | {ident['exchange']} | {sector_ind} | {biz_model} | {filings} | {ref_p} | {val_elig} | `{ca['disposition']}` |"
+        rows.append(row)
+
+    table_body = "\n".join(rows)
+
+    content = f"""# ARX TERMINAL — OPPORTUNITY DOSSIER SCALING PILOT COHORT & ELIGIBILITY MATRIX
+
+**Document Version:** 1.0.0-draft  
+**Date:** 2026-10-21  
+**Governing Contract:** CONTRACT-ARX-OPP-PILOT-SCALING-V1  
+**Pricing Observation Session:** 2026-10-16 (Regular Close)  
+**Target Universe:** 20 Companies Total (5 Baseline Cohort + 15 Pilot Expansion Additions)
+
+---
+
+## 1. Executive Summary
+
+This document establishes the authoritative cohort selection, business model classification, filing accessibility, and valuation eligibility for the **Opportunity Dossier Scaling Pilot**.
+
+The pilot scales the accepted five-company Proof of Concept (`FIX`, `DUOL`, `IREN`, `CORZ`, `MU`) into a repeatable, auditable research preparation pipeline targeting 20 operating companies.
+
+### Core Selection Principles:
+1. **Evidence Accessibility:** All companies must be SEC reporting issuers with accessible Forms 10-K and 10-Q filed via EDGAR.
+2. **Pricing Provenance:** Market pricing is anchored strictly to verified regular close quotes from the frozen `2026-10-16` market session tape.
+3. **Valuation Method Appropriateness:** Companies must operate within business structures where operating income (EBIT), net debt bridges, and free cash flows to the firm (FCFF) or equity (FCFE) can be mathematically modeled or where valuation suppression is formally justified.
+4. **Structural Exclusions:** Financial institutions (banks), insurers, real estate investment trusts (REITs), and pre-revenue clinical biotechs are excluded from standard FCFF models due to structural balance sheet inapplicability.
+5. **Clear Separation:** Pilot draft records are maintained in isolated staging ledgers and do not modify the frozen ODP-05 baseline (`{FROZEN_ODP05_SHA256}`) or production snapshot.
+
+---
+
+## 2. Comprehensive 20-Company Pilot Cohort
+
+| # | Ticker | Company Name | CIK | Primary Exchange | Sector & Industry | Business Classification | Primary Filings | 2026-10-16 Ref Price | Valuation Eligibility | Disposition |
+|---|---|---|---|---|---|---|---|---|---|---|
+{table_body}
+
+---
+
+## 3. Structural Business Sector Groupings
+
+The 20 companies in the scaling pilot are organized into 5 coherent, economically rigorous sectors:
+
+### Sector 1: Specialty Contractors & Critical Infrastructure
+- **Companies:** `FIX`, `EME`, `VRT`, `PWR`
+- **Economic Model:** Modular HVAC, thermal management, liquid cooling, electrical switchgear, and utility grid interconnection. Driven by hyperscale data center electrification and semiconductor fab buildouts.
+- **Valuation Treatment:** Single-stage Reverse-DCF FCFF. Strong cash conversion; working capital swings moderated by milestone prepayments.
+- **Lease / Debt Conventions:** Standard funded senior debt subtracted; unrestricted cash added to EV.
+
+### Sector 2: Cloud, Networking & Workflow Software
+- **Companies:** `DUOL`, `PLTR`, `ANET`, `NOW`
+- **Economic Model:** Subscription recurring revenue, enterprise cloud platforms, AI workflow automation, and high-throughput data center switching.
+- **Valuation Treatment:** Single-stage Reverse-DCF FCFF. High gross margins (65%-85%).
+- **Qualification Factors:** Stock-based compensation (SBC) dilution must be explicitly monitored; `PLTR` priced-in growth evaluated against extreme multiples.
+
+### Sector 3: Semiconductor Equipment & EDA Silicon Design
+- **Companies:** `MU`, `KLAC`, `CDNS`, `SNPS`
+- **Economic Model:** Semiconductor process yield control, silicon design verification, and memory hardware manufacturing.
+- **Valuation Treatment:** Reverse-DCF FCFF.
+- **Qualification Factors:** `MU` is marked `COMPUTED_QUALIFIED` and `NO_SUPPORTED_OPPORTUNITY` due to extreme memory cycle peaks/troughs; `SNPS` qualified by pending debt-funded acquisition structures (Ansys).
+
+### Sector 4: High-Return Healthcare & Clinical Medical Technology
+- **Companies:** `MEDP`, `ISRG`
+- **Economic Model:** Capital-light clinical trial execution (`MEDP`) and recurring razor-and-blade robotic surgical procedures (`ISRG`).
+- **Valuation Treatment:** Single-stage Reverse-DCF FCFF. Pristine net cash balance sheets, high returns on invested capital (>20% ROIC). Zero funded debt.
+
+### Sector 5: Capital-Light Quality Consumer Brands
+- **Companies:** `ULTA`, `DECK`, `LULU`, `ELF`
+- **Economic Model:** Premium footwear, cosmetics retail, and athletic performance apparel.
+- **Valuation Treatment:** Reverse-DCF FCFF under strict **Lease-as-Operating-Expense Convention** (ASC 842). Store operating leases are expensed in operating income and paid in CFO; lease liabilities are excluded from the net debt bridge to prevent double deduction.
+- **Capital Structure Reconciliations:** Form 10-Q Note 7 revolving credit borrowings ($339.6M) and cash/ST investments ($213.5M) form ULTA net debt bridge ($126.1M) deducted from Enterprise Value. `DECK` audited post 6:1 forward stock split.
+
+---
+
+## 4. Documented Exclusions & Rejected Candidates
+
+The following candidate business models were evaluated and rejected from this pilot cohort due to structural method incompatibility:
+
+| Rejected Ticker | Organization | Category | Reason for Rejection | Justified Alternative Method Required |
+|---|---|---|---|---|
+| `BAC` / `JPM` | Bank of America / JPMorgan Chase | Commercial & Investment Banking | **Balance Sheet Debt is Operating Raw Material:** Banks fund earning assets (loans, securities) with liabilities (deposits, repo). Interest expense is an operating cost, not financing. Enterprise Value and FCFF models are mathematically undefined. | Excess Returns Model (ERM) or Dividend Discount Model (DDM) tied to Tier 1 Common Equity (CET1). |
+| `PGR` / `CB` | Progressive / Chubb | Property & Casualty Insurance | **Float and Reserve Dynamics:** Operating cash flow is dominated by premium float timing and statutory loss reserves rather than operating margins. | Return on Equity (ROE) versus Price-to-Tangible Book Value (P/TBV) with combined ratio underwriting audits. |
+| `PLD` / `EQIX` | Prologis / Equinix | Real Estate Investment Trusts (REITs) | **Depreciation Distortion:** Real estate GAAP net income and operating margins are severely distorted by multi-decade non-cash real property depreciation. | Funds From Operations (FFO) / Adjusted Funds From Operations (AFFO) or Net Asset Value (NAV) capitalization. |
+| `ARWR` / `CRSP` | Arrowhead Pharma / CRISPR Therapeutics | Clinical-Stage Pre-Revenue Biotech | **Binary Clinical/Regulatory Pipeline Risk:** Operating cash flows are deeply negative due to R&D burn. Revenue CAGR has zero empirical anchor prior to FDA approval. | Probability-weighted Risk-Adjusted Net Present Value (rNPV) per clinical drug asset. |
+
+---
+
+## 5. Maintenance & Preparation Workflow Analysis
+
+The Opportunity Dossier scaling workflow decouples automated specification solving from human qualitative research review across four auditable gates:
+
+### Reusable Preparation Stages:
+1. **Primary Sourced Disclosure Extraction:**
+   - SEC EDGAR Forms 10-K and 10-Q extraction for income statement, balance sheet, and share count facts.
+   - Tracing accessions, period dates, and XBRL tags to establish complete provenance.
+2. **Capital Structure & Debt Bridge Auditing:**
+   - Classification of debt-bearing liabilities vs documented zero-debt balance sheets.
+   - Separation of ASC 842 operating leases (recognized in Cost of Sales and SG&A under lease-as-operating-expense convention) from funded financial debt to avoid double-deduction.
+3. **Deterministic Reverse-DCF Solving & Scenarios:**
+   - Execution of canonical `solve_reverse_dcf` and `run_fcff_model` engines against frozen market session regular close prices.
+   - Verification of roundtrip model convergence within tight tolerance.
+4. **Invariant Gate & Independent Research Peer Review:**
+   - Deterministic verification of hash manifests, build isolation boundaries, and fail-closed state machines.
+   - Final review sign-off by qualified research analyst before any promotion out of draft staging.
+
+### Archetype Maintenance Protocols:
+| Cohort Archetype | Representative Issuers | Primary Analytical Verification Focus | Maintenance Protocol |
+|---|---|---|---|
+| **Pristine Balance Sheet (Net Cash, Zero Debt)** | `MEDP`, `ANET`, `ISRG`, `DUOL`, `EME`, `DECK` | Credit facility note disclosures confirming zero funded borrowings and undrawn revolver status | Re-verify credit agreement covenants and zero debt disclosures upon each Form 10-Q filing. |
+| **Retail ASC 842 Operating Leases** | `ULTA`, `LULU`, `ELF` | Lease expense allocation between Cost of Sales and SG&A; funded debt vs lease liability bridge reconciliation | Ensure store and supply chain lease commitments remain treated as operating expenses and excluded from net debt bridge. |
+| **Semiconductor Equipment & EDA** | `KLAC`, `CDNS`, `SNPS`, `MU` | Mid-cycle margin sustainability, backlog conversion, and M&A debt financing structures | Model multi-year cyclicality bounds; qualify or suppress valuation when cyclical peak/troughs distort run-rate EBIT. |
+| **Capital-Intensive Infrastructure** | `FIX`, `VRT`, `PWR`, `IREN`, `CORZ` | Hyperscale customer concentration, milestone payment timing, working capital swings, and capital structure stability | Enforce valuation suppression when ongoing restructuring or hyper-dilutive financing makes FCFF unanchored. |
+"""
+    return content.strip() + "\n"
+
+
 def write_pilot_artifacts(
     ledger: Dict[str, Any],
     manifest: Dict[str, Any],
@@ -1916,11 +2100,13 @@ def write_pilot_artifacts(
     ledger_path: Optional[Path] = None,
     manifest_path: Optional[Path] = None,
     frontend_draft_path: Optional[Path] = None,
+    doc_matrix_path: Optional[Path] = None,
 ) -> None:
-    """Writes the pilot scaling ledger, manifest, and frontend staging file."""
+    """Writes the pilot scaling ledger, manifest, frontend staging file, and cohort documentation matrix."""
     target_ledger = ledger_path or DEFAULT_PILOT_LEDGER_PATH
     target_manifest = manifest_path or DEFAULT_PILOT_MANIFEST_PATH
     target_frontend = frontend_draft_path or DEFAULT_FRONTEND_DRAFT_PATH
+    target_doc = doc_matrix_path or DEFAULT_DOC_MATRIX_PATH
 
     # Prevent accidental write to production publication paths
     frozen_prod_snapshot = REPO_ROOT / "frontend/lib/opportunityDossierSnapshot.json"
@@ -1932,6 +2118,7 @@ def write_pilot_artifacts(
     os.makedirs(target_ledger.parent, exist_ok=True)
     os.makedirs(target_frontend.parent, exist_ok=True)
     os.makedirs(target_manifest.parent, exist_ok=True)
+    os.makedirs(target_doc.parent, exist_ok=True)
 
     with open(target_ledger, "w", encoding="utf-8") as f:
         json.dump(ledger, f, indent=2)
@@ -1950,11 +2137,17 @@ def write_pilot_artifacts(
         json.dump(manifest, f, indent=2)
     logger.info(f"Wrote pilot manifest to: {target_manifest}")
 
+    doc_content = generate_cohort_matrix_markdown(ledger)
+    with open(target_doc, "w", encoding="utf-8") as f:
+        f.write(doc_content)
+    logger.info(f"Wrote synchronized cohort matrix doc to: {target_doc}")
+
 
 def validate_existing_pilot_artifacts(
     ledger_path: Optional[Path] = None,
     manifest_path: Optional[Path] = None,
     frontend_draft_path: Optional[Path] = None,
+    doc_matrix_path: Optional[Path] = None,
 ) -> bool:
     """
     Validates that existing pilot artifacts exist, match recorded hashes, pass all invariants,
@@ -1964,6 +2157,7 @@ def validate_existing_pilot_artifacts(
     target_ledger = ledger_path or DEFAULT_PILOT_LEDGER_PATH
     target_manifest = manifest_path or DEFAULT_PILOT_MANIFEST_PATH
     target_frontend = frontend_draft_path or DEFAULT_FRONTEND_DRAFT_PATH
+    target_doc = doc_matrix_path or DEFAULT_DOC_MATRIX_PATH
 
     if not target_ledger.exists():
         logger.error(f"Pilot ledger not found: {target_ledger}")
@@ -1973,6 +2167,9 @@ def validate_existing_pilot_artifacts(
         return False
     if not target_frontend.exists():
         logger.error(f"Frontend draft snapshot not found: {target_frontend}")
+        return False
+    if not target_doc.exists():
+        logger.error(f"Cohort matrix documentation not found: {target_doc}")
         return False
 
     # 1. Verify frozen production baseline hash
@@ -2060,6 +2257,32 @@ def validate_existing_pilot_artifacts(
                 logger.error(f"Invalid fact_status in ULTA tracing {rk}: {status}")
                 return False
 
+    # Explicit verification of ULTA Note 7 funded debt and accounting
+    if ulta_fin.get("is_zero_debt") is not False:
+        logger.error("ULTA is_zero_debt must be False due to Note 7 revolving credit borrowings")
+        return False
+    if ulta_fin.get("total_financial_debt") != 339578000.0:
+        logger.error(f"ULTA total_financial_debt must be $339,578,000.0: {ulta_fin.get('total_financial_debt')}")
+        return False
+    if ulta_fin.get("net_debt_bridge") != 126127000.0:
+        logger.error(f"ULTA net_debt_bridge must be $126,127,000.0: {ulta_fin.get('net_debt_bridge')}")
+        return False
+    if ulta_tracing["funded_debt"]["is_zero_debt"] is not False:
+        logger.error("ULTA source tracing funded_debt is_zero_debt must be False")
+        return False
+    if ulta_tracing["funded_debt"]["total_financial_debt_usd"] != 339578000.0:
+        logger.error("ULTA source tracing total_financial_debt_usd must be 339578000.0")
+        return False
+    if ulta_tracing["lease_treatment"]["total_lease_liabilities_usd"] != 2184453000.0:
+        logger.error("ULTA source tracing total_lease_liabilities_usd must be 2184453000.0")
+        return False
+    if ulta_tracing["valuation_model"]["solved_5y_revenue_cagr_pct"] != 15.45:
+        logger.error(f"ULTA source tracing solved_5y_revenue_cagr_pct must be 15.45%: {ulta_tracing['valuation_model']['solved_5y_revenue_cagr_pct']}")
+        return False
+    if ulta.get("valuation", {}).get("solved_5y_cagr_pct") != 15.45:
+        logger.error(f"ULTA valuation solved_5y_cagr_pct must be 15.45: {ulta.get('valuation', {}).get('solved_5y_cagr_pct')}")
+        return False
+
     # 6. In-memory deterministic recomputation and tampering detection
     recomputed_ledger, _, recomputed_frontend = prepare_pilot_scaling_corpus()
     recomputed_dossiers = recomputed_ledger["dossiers"]
@@ -2071,7 +2294,7 @@ def validate_existing_pilot_artifacts(
         # Financial profile comparison
         stored_fin = stored_d.get("financial_profile", {})
         rec_fin = rec_d.get("financial_profile", {})
-        for f_key in ["revenue", "operating_income", "cash_and_equivalents", "total_financial_debt", "net_debt_bridge"]:
+        for f_key in ["revenue", "operating_income", "cash_and_equivalents", "total_financial_debt", "net_debt_bridge", "is_zero_debt"]:
             if stored_fin.get(f_key) != rec_fin.get(f_key):
                 logger.error(f"Financial profile tampering detected for {sym}.{f_key}: stored={stored_fin.get(f_key)}, expected={rec_fin.get(f_key)}")
                 return False
@@ -2079,7 +2302,7 @@ def validate_existing_pilot_artifacts(
         # Valuation comparison
         stored_val = stored_d.get("valuation", {})
         rec_val = rec_d.get("valuation", {})
-        for v_key in ["reference_price", "solved_5y_cagr_pct", "valuation_status"]:
+        for v_key in ["reference_price", "solved_5y_cagr_pct", "valuation_status", "roundtrip_value", "roundtrip_delta_cents"]:
             if stored_val.get(v_key) != rec_val.get(v_key):
                 logger.error(f"Valuation tampering detected for {sym}.{v_key}: stored={stored_val.get(v_key)}, expected={rec_val.get(v_key)}")
                 return False
@@ -2087,19 +2310,108 @@ def validate_existing_pilot_artifacts(
         # Central assessment narrative comparison
         stored_ca = stored_d.get("central_assessment", {})
         rec_ca = rec_d.get("central_assessment", {})
-        for ca_key in ["disposition", "presentation_summary", "strongest_supporting_evidence", "strongest_opposing_evidence"]:
+        for ca_key in ["disposition", "presentation_summary", "strongest_supporting_evidence", "strongest_opposing_evidence", "main_uncertainty", "price_watch_condition", "confidence_assessment"]:
             if stored_ca.get(ca_key) != rec_ca.get(ca_key):
                 logger.error(f"Central assessment tampering detected for {sym}.{ca_key}")
                 return False
 
-        # Frontend draft snapshot parity
+        # Frontend draft snapshot deep parity
         fe_d = frontend_draft.get("dossiers", {}).get(sym)
         if not fe_d:
             logger.error(f"Symbol {sym} missing from frontend draft snapshot")
             return False
-        if fe_d.get("valuation", {}).get("reference_price") != stored_val.get("reference_price"):
-            logger.error(f"Frontend draft snapshot out of sync with ledger for {sym}")
+
+        # Identity
+        for id_k in ["symbol", "company_name", "cik", "exchange", "opportunity_route"]:
+            if fe_d.get("identity", {}).get(id_k) != stored_d.get("identity", {}).get(id_k):
+                logger.error(f"Frontend identity mismatch for {sym}.{id_k}")
+                return False
+
+        # Publication metadata
+        for pm_k in ["lifecycle_status", "review_status", "evidence_completeness", "dossier_version", "technical_verification"]:
+            if fe_d.get("publication_metadata", {}).get(pm_k) != stored_d.get("publication_metadata", {}).get(pm_k):
+                logger.error(f"Frontend metadata mismatch for {sym}.{pm_k}")
+                return False
+
+        # Central assessment
+        for ca_k in ["disposition", "presentation_summary", "strongest_supporting_evidence", "strongest_opposing_evidence", "main_uncertainty", "price_watch_condition", "confidence_assessment"]:
+            if fe_d.get("central_assessment", {}).get(ca_k) != stored_d.get("central_assessment", {}).get(ca_k):
+                logger.error(f"Frontend central assessment mismatch for {sym}.{ca_k}")
+                return False
+
+        # Valuation
+        for v_k in ["reference_price", "valuation_status", "solved_5y_cagr_pct", "roundtrip_value", "roundtrip_delta_cents"]:
+            if fe_d.get("valuation", {}).get(v_k) != stored_d.get("valuation", {}).get(v_k):
+                logger.error(f"Frontend valuation mismatch for {sym}.{v_k}")
+                return False
+
+        # Valuation Scenarios
+        stored_sc = stored_d.get("valuation", {}).get("scenarios") or {}
+        fe_sc = fe_d.get("valuation", {}).get("scenarios") or {}
+        if set(stored_sc.keys()) != set(fe_sc.keys()):
+            logger.error(f"Frontend scenario keys mismatch for {sym}")
             return False
+        for sc_name, sc_data in stored_sc.items():
+            fe_sc_data = fe_sc[sc_name]
+            for sc_k in ["per_share_value", "potential_return_pct"]:
+                if fe_sc_data.get(sc_k) != sc_data.get(sc_k):
+                    logger.error(f"Frontend scenario value mismatch for {sym}.{sc_name}.{sc_k}: {fe_sc_data.get(sc_k)} != {sc_data.get(sc_k)}")
+                    return False
+
+        # Financial profile
+        fe_fp = fe_d.get("financial_profile", {})
+        for fp_k in ["revenue", "revenue_period", "operating_income", "operating_margin_pct", "cash_and_equivalents", "total_financial_debt", "is_zero_debt", "net_debt_bridge", "diluted_shares"]:
+            if fe_fp.get(fp_k) != stored_fin.get(fp_k):
+                logger.error(f"Frontend financial profile mismatch for {sym}.{fp_k}: {fe_fp.get(fp_k)} != {stored_fin.get(fp_k)}")
+                return False
+
+        # Primary filings
+        stored_filings = stored_fin.get("primary_filings", [])
+        fe_filings = fe_fp.get("primary_filings", [])
+        if len(stored_filings) != len(fe_filings):
+            logger.error(f"Frontend filings length mismatch for {sym}")
+            return False
+        for idx_f, f_s in enumerate(stored_filings):
+            f_fe = fe_filings[idx_f]
+            for f_k in ["form", "accession_number", "period_end", "filing_date"]:
+                if f_s.get(f_k) != f_fe.get(f_k):
+                    logger.error(f"Frontend filing mismatch for {sym}[{idx_f}].{f_k}")
+                    return False
+
+        # Monitoring
+        for m_k in ["observable_invalidation_trigger", "next_monitoring_trigger", "price_watch_condition"]:
+            if fe_d.get("monitoring", {}).get(m_k) != stored_d.get("monitoring", {}).get(m_k):
+                logger.error(f"Frontend monitoring mismatch for {sym}.{m_k}")
+                return False
+
+        # ULTA source evidence tracing in frontend
+        if sym == "ULTA":
+            stored_tr = stored_d.get("source_evidence_tracing") or stored_fin.get("source_evidence_tracing")
+            fe_tr = fe_d.get("source_evidence_tracing") or fe_fp.get("source_evidence_tracing")
+            if stored_tr != fe_tr:
+                logger.error("Frontend source_evidence_tracing mismatch for ULTA")
+                return False
+
+    # Frontend cohort parity
+    fe_cohort = {item["symbol"]: item for item in frontend_draft.get("cohort", [])}
+    stored_cohort = {item["symbol"]: item for item in ledger.get("cohort", [])}
+    if set(fe_cohort.keys()) != set(stored_cohort.keys()):
+        logger.error("Frontend cohort symbols mismatch with ledger cohort")
+        return False
+    for sym, item in stored_cohort.items():
+        fe_item = fe_cohort[sym]
+        for c_k in ["reference_price", "valuation_status", "lifecycle_status", "review_status", "disposition"]:
+            if item.get(c_k) != fe_item.get(c_k):
+                logger.error(f"Frontend cohort mismatch for {sym}.{c_k}")
+                return False
+
+    # 7. Documentation Freshness Check
+    with open(target_doc, "r", encoding="utf-8") as f:
+        actual_doc = f.read()
+    expected_doc = generate_cohort_matrix_markdown(recomputed_ledger)
+    if actual_doc != expected_doc:
+        logger.error(f"Documentation matrix {target_doc} is out of sync with authoritative ledger")
+        return False
 
     logger.info("All pilot scaling artifact invariants verified successfully (read-only audit passed).")
     return True
@@ -2117,6 +2429,7 @@ def main():
     parser.add_argument("--ledger-path", type=str, help="Explicit destination or read path for pilot scaling ledger")
     parser.add_argument("--manifest-path", type=str, help="Explicit destination or read path for pilot scaling manifest")
     parser.add_argument("--out", type=str, help="Explicit destination path for frontend draft snapshot JSON")
+    parser.add_argument("--doc-matrix-path", type=str, help="Explicit destination or read path for cohort matrix documentation")
 
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -2124,6 +2437,7 @@ def main():
     ledger_path = Path(args.ledger_path) if args.ledger_path else None
     manifest_path = Path(args.manifest_path) if args.manifest_path else None
     frontend_path = Path(args.out) if args.out else None
+    doc_matrix_path = Path(args.doc_matrix_path) if args.doc_matrix_path else None
 
     # Safety boundary: prevent output flag from targeting production snapshot
     if frontend_path:
@@ -2137,6 +2451,7 @@ def main():
             ledger_path=ledger_path,
             manifest_path=manifest_path,
             frontend_draft_path=frontend_path,
+            doc_matrix_path=doc_matrix_path,
         )
         if not ok:
             sys.exit(1)
@@ -2184,11 +2499,13 @@ def main():
             ledger_path=ledger_path,
             manifest_path=manifest_path,
             frontend_draft_path=frontend_path,
+            doc_matrix_path=doc_matrix_path,
         )
         ok = validate_existing_pilot_artifacts(
             ledger_path=ledger_path,
             manifest_path=manifest_path,
             frontend_draft_path=frontend_path,
+            doc_matrix_path=doc_matrix_path,
         )
         if not ok:
             logger.error("Generated pilot artifacts failed validation gate.")

@@ -121,19 +121,22 @@ const tracing = ulta.source_evidence_tracing;
 assert.strictEqual(tracing.company_identity.cik, "0001403568", "ULTA CIK must be 0001403568");
 assert.strictEqual(tracing.revenue.reported_ttm_value_usd, 12955517000, "ULTA TTM revenue must match derived fact");
 assert.strictEqual(tracing.operating_income.reported_ttm_value_usd, 1614258000, "ULTA TTM operating income must match derived fact");
-assert.strictEqual(tracing.funded_debt.is_zero_debt, true, "ULTA must be classified as zero funded debt");
-assert.strictEqual(tracing.funded_debt.total_financial_debt_usd, 0, "ULTA total_financial_debt must be 0");
+assert.strictEqual(tracing.funded_debt.is_zero_debt, false, "ULTA must be classified as funded debt under Note 7");
+assert.strictEqual(tracing.funded_debt.total_financial_debt_usd, 339578000, "ULTA total_financial_debt must be $339,578,000");
 assert.strictEqual(tracing.lease_treatment.total_lease_liabilities_usd, 2184453000, "ULTA total ASC 842 lease liabilities must match filing ($2.18B)");
 assert.strictEqual(tracing.reference_price.reference_price, 592.94, "ULTA reference price must be $592.94");
-assert.strictEqual(tracing.valuation_model.solved_5y_revenue_cagr_pct, 15.11, "ULTA solved 5Y revenue CAGR must be 15.11%");
-assert.strictEqual(ulta.financial_profile.is_zero_debt, true, "ULTA financial profile must mark is_zero_debt=true");
+assert.strictEqual(tracing.valuation_model.solved_5y_revenue_cagr_pct, 15.45, "ULTA solved 5Y revenue CAGR must be 15.45%");
+assert.strictEqual(tracing.valuation_model.roundtrip_value, 593.00, "ULTA roundtrip value must be $593.00");
+assert.strictEqual(ulta.financial_profile.is_zero_debt, false, "ULTA financial profile must mark is_zero_debt=false");
+assert.strictEqual(ulta.financial_profile.total_financial_debt, 339578000, "ULTA financial profile total_financial_debt must be 339578000");
+assert.strictEqual(ulta.financial_profile.net_debt_bridge, 126127000, "ULTA financial profile net_debt_bridge must be 126127000");
 assert.strictEqual(ulta.financial_profile.operating_lease_liabilities_asc842, 1871805000, "ULTA financial profile must report noncurrent lease liabilities");
 assert.strictEqual(ulta.valuation.reference_price, 592.94, "ULTA valuation reference price must match");
-assert.strictEqual(ulta.valuation.solved_5y_cagr_pct, 15.11, "ULTA valuation solved CAGR must match");
-console.log("[OK] Representative ULTA deep evidence tracing verified (CIK 0001403568, $592.94 ref price, 15.11% CAGR, ASC 842 lease separated from zero debt)");
+assert.strictEqual(ulta.valuation.solved_5y_cagr_pct, 15.45, "ULTA valuation solved CAGR must match");
+console.log("[OK] Representative ULTA deep evidence tracing verified (CIK 0001403568, $592.94 ref price, 15.45% CAGR, Note 7 debt $339.6M, ASC 842 lease separated)");
 
 // 6. Zero-Debt vs Funded Debt Invariants Across All 20 Assets
-const zeroDebtCohort = ["DUOL", "ULTA", "MEDP", "DECK", "LULU", "EME", "ANET", "PLTR", "ISRG", "CDNS"];
+const zeroDebtCohort = ["DUOL", "MEDP", "DECK", "LULU", "EME", "ANET", "PLTR", "ISRG", "CDNS"];
 for (const sym of zeroDebtCohort) {
   const d = draftData.dossiers[sym];
   assert.ok(d, `Dossier for ${sym} must exist`);
@@ -142,14 +145,14 @@ for (const sym of zeroDebtCohort) {
   assert.ok(d.financial_profile.zero_debt_support, `${sym} must document zero_debt_support`);
 }
 
-const fundedDebtCohort = ["FIX", "KLAC", "VRT", "PWR", "SNPS", "NOW", "ELF", "IREN", "CORZ", "MU"];
+const fundedDebtCohort = ["FIX", "ULTA", "KLAC", "VRT", "PWR", "SNPS", "NOW", "ELF", "IREN", "CORZ", "MU"];
 for (const sym of fundedDebtCohort) {
   const d = draftData.dossiers[sym];
   assert.ok(d, `Dossier for ${sym} must exist`);
   assert.strictEqual(d.financial_profile.is_zero_debt, false, `${sym} must be marked is_zero_debt=false`);
   assert.ok(d.financial_profile.total_financial_debt! > 0, `${sym} total_financial_debt must be positive`);
 }
-console.log("[OK] Capital structure invariants verified: 10 zero-debt vs 10 funded-debt cleanly partitioned");
+console.log("[OK] Capital structure invariants verified: 9 zero-debt vs 11 funded-debt cleanly partitioned");
 
 // 7. Unsupported Symbols Fail-Closed Invariant
 for (const sym of ["AAPL", "NVDA", "JPM", "BAC", "UNKNOWN"]) {
