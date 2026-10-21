@@ -1,7 +1,8 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import PriceChart from "../PriceChart";
+import PriceChart, { normalizeCandleTimestamp, sanitizeCandles } from "../PriceChart";
+import { createChart } from "lightweight-charts";
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
@@ -75,6 +76,22 @@ describe("PriceChart Production Visibility & Self-Healing Resilience", () => {
     expect(screen.getByText(/SYNCHRONIZING AAPL QUANT FEED/i)).toBeTruthy();
   });
 
+  it("does not incorrectly label previously valid candles as unavailable during a subsequent loading request", () => {
+    render(
+      <PriceChart
+        symbol="AAPL"
+        candles={validCandles}
+        loading={true}
+        userRole="LONG_TERM"
+      />
+    );
+
+    // Shows loading synchronizing overlay
+    expect(screen.getByText(/SYNCHRONIZING AAPL QUANT FEED/i)).toBeTruthy();
+    // Does NOT render "Candlestick Telemetry Unavailable" overlay
+    expect(screen.queryByText("Candlestick Telemetry Unavailable")).toBeNull();
+  });
+
   it("renders explicit Candlestick Telemetry Unavailable overlay when loading is false and candles are empty", () => {
     const handleIntervalChange = vi.fn();
     render(
@@ -90,8 +107,7 @@ describe("PriceChart Production Visibility & Self-Healing Resilience", () => {
 
     expect(screen.getByText("Candlestick Telemetry Unavailable")).toBeTruthy();
     expect(screen.getByText(/Historical candle bars for AAPL/i)).toBeTruthy();
-    
-    // Check retry button exists and triggers interval callback
+
     const retryBtn = screen.getByRole("button", { name: /Retry Candle Feed/i });
     expect(retryBtn).toBeTruthy();
     fireEvent.click(retryBtn);
@@ -112,7 +128,7 @@ describe("PriceChart Production Visibility & Self-Healing Resilience", () => {
     expect(screen.queryByText("🏛️ 20 EMA Active")).toBeNull();
   });
 
-  it("displays '🏛️ 20 EMA Active' badge when at least 20 daily candles exist", () => {
+  it("displays '🏛️ 20 EMA Active' badge when at least 20 daily candles exist and are rendered", () => {
     const twentyCandles = Array.from({ length: 25 }, (_, i) => ({
       time: `2026-09-${String(i + 1).padStart(2, "0")}`,
       open: 300 + i,
@@ -191,9 +207,9 @@ describe("PriceChart Production Visibility & Self-Healing Resilience", () => {
     expect(passedCandles[2].time).toBe("2025-10-23");
   });
 
-  it("catches series rendering error and renders self-healing fault overlay with retry button", () => {
+  it("catches series rendering error, sanitizes user error message without stack trace, and displays retry button", () => {
     mockCandleSetData.mockImplementationOnce(() => {
-      throw new Error("Lightweight Charts assertion fault: invalid time format");
+      throw new Error("Internal Lightweight Charts memory fault: 0x00FF4");
     });
 
     render(
@@ -206,7 +222,120 @@ describe("PriceChart Production Visibility & Self-Healing Resilience", () => {
     );
 
     expect(screen.getByText("Chart Visualization Fault")).toBeTruthy();
-    expect(screen.getByText(/invalid time format/i)).toBeTruthy();
+    // Verifies no raw stack trace or internal memory fault is leaked
+    expect(screen.queryByText(/0x00FF4/)).toBeNull();
+    expect(screen.getByText(/Chart series rendering encountered an unexpected issue/i)).toBeTruthy();
     expect(screen.getByRole("button", { name: /Reload Visualization/i })).toBeTruthy();
+  });
+
+  it("catches chart initialization exception, cleans up partial resources, and presents safe error state", () => {
+    const createChartMock = vi.mocked(createChart);
+    createChartMock.mockImplementationOnce(() => {
+      throw new Error("WebGLContextCreationError: canvas unavailable");
+    });
+
+    render(
+      <PriceChart
+        symbol="AAPL"
+        candles={validCandles}
+        loading={false}
+        userRole="LONG_TERM"
+      />
+    );
+
+    expect(screen.getByText("Chart Visualization Fault")).toBeTruthy();
+    // Raw WebGL stack trace is NOT exposed
+    expect(screen.queryByText(/WebGLContextCreationError/)).toBeNull();
+    expect(screen.getByText(/Interactive chart canvas failed to initialize/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Reload Visualization/i })).toBeTruthy();
+  });
+
+  it("indicator status authority: never displays 'Active' when visualization error is present", () => {
+    mockCandleSetData.mockImplementationOnce(() => {
+      throw new Error("Render pipeline error");
+    });
+
+    const twentyCandles = Array.from({ length: 25 }, (_, i) => ({
+      time: `2026-09-${String(i + 1).padStart(2, "0")}`,
+      open: 300 + i,
+      high: 305 + i,
+      low: 298 + i,
+      close: 302 + i,
+      volume: 1000000,
+    }));
+
+    render(
+      <PriceChart
+        symbol="AAPL"
+        candles={twentyCandles}
+        loading={false}
+        userRole="LONG_TERM"
+      />
+    );
+
+    // Indicator must NOT say "20 EMA Active" when rendering failed
+    expect(screen.queryByText("🏛️ 20 EMA Active")).toBeNull();
+    expect(screen.getByText("Chart Telemetry Unavailable")).toBeTruthy();
+  });
+});
+
+describe("Timestamp and OHLC Validation Unit Tests", () => {
+  it("normalizes accepted daily timestamp formats to strict YYYY-MM-DD format", () => {
+    expect(normalizeCandleTimestamp("2026-10-21", false)).toBe("2026-10-21");
+    expect(normalizeCandleTimestamp("2026-10-21T14:30:00Z", false)).toBe("2026-10-21");
+    expect(normalizeCandleTimestamp("2026/10/21", false)).toBe("2026-10-21");
+    expect(normalizeCandleTimestamp(1761091200, false)).toBe("2025-10-22"); // Seconds
+    expect(normalizeCandleTimestamp(1761091200000, false)).toBe("2025-10-22"); // Milliseconds
+  });
+
+  it("rejects invalid, empty, or non-finite timestamps", () => {
+    expect(normalizeCandleTimestamp("not-a-date", false)).toBeNull();
+    expect(normalizeCandleTimestamp("", false)).toBeNull();
+    expect(normalizeCandleTimestamp(null, false)).toBeNull();
+    expect(normalizeCandleTimestamp(undefined, false)).toBeNull();
+    expect(normalizeCandleTimestamp(NaN, false)).toBeNull();
+    expect(normalizeCandleTimestamp(Infinity, false)).toBeNull();
+    expect(normalizeCandleTimestamp(-100, false)).toBeNull();
+  });
+
+  it("normalizes intraday timestamps to positive integer seconds", () => {
+    expect(normalizeCandleTimestamp(1761091200, true)).toBe(1761091200);
+    expect(normalizeCandleTimestamp(1761091200000, true)).toBe(1761091200);
+    expect(normalizeCandleTimestamp("1761091200", true)).toBe(1761091200);
+    expect(normalizeCandleTimestamp("2025-10-21T00:00:00Z", true)).toBe(1761004800);
+  });
+
+  it("rejects structurally invalid bars: non-positive prices, high < low, high < open/close, low > open/close, non-finite values", () => {
+    const corruptBars = [
+      { time: "2026-10-01", open: 0, high: 10, low: 5, close: 8, volume: 100 }, // open is 0
+      { time: "2026-10-02", open: 10, high: 5, low: 8, close: 7, volume: 100 }, // high < low
+      { time: "2026-10-03", open: 10, high: 9, low: 5, close: 8, volume: 100 }, // high < open
+      { time: "2026-10-04", open: 10, high: 15, low: 11, close: 12, volume: 100 }, // low > open
+      { time: "2026-10-05", open: 10, high: 15, low: 8, close: 16, volume: 100 }, // high < close
+      { time: "2026-10-06", open: 10, high: 15, low: 9, close: 8, volume: 100 }, // low > close
+      { time: "2026-10-07", open: -5, high: 15, low: 5, close: 10, volume: 100 }, // negative price
+      { time: "2026-10-08", open: NaN, high: 15, low: 5, close: 10, volume: 100 }, // NaN
+      { time: "2026-10-09", open: 10, high: Infinity, low: 5, close: 10, volume: 100 }, // Infinity
+      { time: "2026-10-10", open: 10, high: 15, low: 5, close: 10, volume: -1 }, // Negative volume
+      { time: "2026-10-11", open: 10, high: 15, low: 5, close: 10, volume: 100 }, // VALID BAR
+    ];
+
+    const sanitized = sanitizeCandles(corruptBars as any, false);
+    expect(sanitized.length).toBe(1);
+    expect(sanitized[0].time).toBe("2026-10-11");
+    expect(sanitized[0].open).toBe(10);
+    expect(sanitized[0].close).toBe(10);
+  });
+
+  it("preserves legitimate corporate-action-adjusted prices", () => {
+    const adjustedBars = [
+      { time: "2026-10-01", open: 260.9154, high: 262.3301, low: 259.8820, close: 261.4500, volume: 45000000 },
+      { time: "2026-10-02", open: 261.5000, high: 264.2000, low: 260.1000, close: 263.8000, volume: 50000000 },
+    ];
+
+    const sanitized = sanitizeCandles(adjustedBars, false);
+    expect(sanitized.length).toBe(2);
+    expect(sanitized[0].open).toBe(260.9154);
+    expect(sanitized[1].close).toBe(263.8000);
   });
 });

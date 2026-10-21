@@ -1,8 +1,148 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createChart, IChartApi, ISeriesApi, IPriceLine, LineStyle } from "lightweight-charts";
+import { createChart, IChartApi, ISeriesApi, IPriceLine, LineStyle, Time } from "lightweight-charts";
 import { CandleData, OptimalExecutionPlan } from "../lib/api";
+
+export interface SanitizedCandle {
+  time: string | number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export function normalizeCandleTimestamp(timeVal: unknown, isIntraday: boolean): string | number | null {
+  if (timeVal === null || timeVal === undefined) return null;
+
+  if (isIntraday) {
+    if (typeof timeVal === "number") {
+      if (!Number.isFinite(timeVal) || timeVal <= 0) return null;
+      const sec = timeVal > 20000000000 ? Math.floor(timeVal / 1000) : Math.floor(timeVal);
+      return Number.isFinite(sec) && sec > 0 ? sec : null;
+    }
+    if (typeof timeVal === "string") {
+      const trimmed = timeVal.trim();
+      if (!trimmed) return null;
+      const num = Number(trimmed);
+      if (Number.isFinite(num) && num > 0) {
+        const sec = num > 20000000000 ? Math.floor(num / 1000) : Math.floor(num);
+        return Number.isFinite(sec) && sec > 0 ? sec : null;
+      }
+      const parsed = new Date(trimmed).getTime();
+      if (Number.isFinite(parsed) && !isNaN(parsed) && parsed > 0) {
+        return Math.floor(parsed / 1000);
+      }
+    }
+    return null;
+  }
+
+  // Daily / Multi-day: strictly YYYY-MM-DD string
+  if (typeof timeVal === "number") {
+    if (!Number.isFinite(timeVal) || timeVal <= 0) return null;
+    const ms = timeVal > 20000000000 ? timeVal : timeVal * 1000;
+    const d = new Date(ms);
+    return !isNaN(d.getTime()) ? d.toISOString().split("T")[0] : null;
+  }
+  if (typeof timeVal === "string") {
+    const trimmed = timeVal.trim();
+    if (!trimmed) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      const d = new Date(trimmed + "T00:00:00Z");
+      return !isNaN(d.getTime()) ? trimmed : null;
+    }
+    if (trimmed.includes("T")) {
+      const datePart = trimmed.split("T")[0];
+      if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+        const d = new Date(datePart + "T00:00:00Z");
+        return !isNaN(d.getTime()) ? datePart : null;
+      }
+    }
+    if (/^\d{4}\/\d{2}\/\d{2}$/.test(trimmed)) {
+      const formatted = trimmed.replace(/\//g, "-");
+      const d = new Date(formatted + "T00:00:00Z");
+      return !isNaN(d.getTime()) ? formatted : null;
+    }
+    const num = Number(trimmed);
+    if (Number.isFinite(num) && num > 0) {
+      const ms = num > 20000000000 ? num : num * 1000;
+      const d = new Date(ms);
+      return !isNaN(d.getTime()) ? d.toISOString().split("T")[0] : null;
+    }
+    const parsed = new Date(trimmed);
+    if (!isNaN(parsed.getTime())) {
+      return parsed.toISOString().split("T")[0];
+    }
+  }
+  return null;
+}
+
+export function sanitizeCandles(rawCandles: CandleData[], isIntraday: boolean): SanitizedCandle[] {
+  if (!rawCandles || rawCandles.length === 0) return [];
+
+  const validBars: SanitizedCandle[] = [];
+
+  for (const c of rawCandles) {
+    if (!c) continue;
+    const time = normalizeCandleTimestamp(c.time, isIntraday);
+    if (time === null) continue;
+
+    const open = typeof c.open === "number" ? c.open : Number(c.open);
+    const high = typeof c.high === "number" ? c.high : Number(c.high);
+    const low = typeof c.low === "number" ? c.low : Number(c.low);
+    const close = typeof c.close === "number" ? c.close : Number(c.close);
+    const volume = typeof c.volume === "number" ? c.volume : Number(c.volume ?? 0);
+
+    // Rule 1: All values must be finite numbers
+    if (
+      !Number.isFinite(open) ||
+      !Number.isFinite(high) ||
+      !Number.isFinite(low) ||
+      !Number.isFinite(close) ||
+      !Number.isFinite(volume)
+    ) {
+      continue;
+    }
+
+    // Rule 2: Non-positive prices rejected, non-negative volume
+    if (open <= 0 || high <= 0 || low <= 0 || close <= 0 || volume < 0) {
+      continue;
+    }
+
+    // Rule 3: Structural candle invariants
+    // High cannot be below Low
+    if (high < low) continue;
+    // High cannot be below Open or Close
+    if (high < open || high < close) continue;
+    // Low cannot be above Open or Close
+    if (low > open || low > close) continue;
+
+    validBars.push({
+      time,
+      open,
+      high,
+      low,
+      close,
+      volume,
+    });
+  }
+
+  // Rule 4: Stable chronological ordering
+  validBars.sort((a, b) => {
+    const tA = typeof a.time === "number" ? a.time : new Date(a.time + "T00:00:00Z").getTime();
+    const tB = typeof b.time === "number" ? b.time : new Date(b.time + "T00:00:00Z").getTime();
+    return tA - tB;
+  });
+
+  // Rule 5: Deterministic duplicate handling (preserve latest occurrence)
+  const candleMap = new Map<string | number, SanitizedCandle>();
+  for (const bar of validBars) {
+    candleMap.set(bar.time, bar);
+  }
+
+  return Array.from(candleMap.values());
+}
 
 interface PriceChartProps {
   symbol: string;
@@ -82,7 +222,21 @@ export default function PriceChart({
   const candlestickSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const overlayLineSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const priceLinesRef = useRef<IPriceLine[]>([]);
+  const [initEpoch, setInitEpoch] = useState<number>(0);
   const [renderError, setRenderError] = useState<string | null>(null);
+  const [chartTelemetry, setChartTelemetry] = useState<{
+    candlesAvailable: boolean;
+    seriesInitialized: boolean;
+    candlesAssigned: boolean;
+    overlayAssigned: boolean;
+    candleCount: number;
+  }>({
+    candlesAvailable: false,
+    seriesInitialized: false,
+    candlesAssigned: false,
+    overlayAssigned: false,
+    candleCount: 0,
+  });
 
   const activeIntervalList = userRole === "DAY_TRADER" ? DAY_TRADER_INTERVALS : LONG_TERM_INTERVALS;
   const isIntraday = userRole === "DAY_TRADER";
@@ -98,158 +252,201 @@ export default function PriceChart({
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
-    chartContainerRef.current.innerHTML = "";
-
-    const width = chartContainerRef.current.clientWidth || 800;
-    const height = chartContainerRef.current.clientHeight || 340;
-
-    const isPaperTheme = typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") === "paper";
-
-    const chart = createChart(chartContainerRef.current, {
-      width: width,
-      height: height,
-      layout: {
-        background: { color: isPaperTheme ? "#ffffff" : "#0b0f19" },
-        textColor: isPaperTheme ? "#475569" : "#94a3b8",
-      },
-      grid: {
-        vertLines: { color: isPaperTheme ? "#f1f5f9" : "#162032" },
-        horzLines: { color: isPaperTheme ? "#f1f5f9" : "#162032" },
-      },
-      crosshair: {
-        mode: 1,
-      },
-      rightPriceScale: {
-        borderColor: isPaperTheme ? "#e2e8f0" : "#243044",
-        autoScale: true,
-      },
-      timeScale: {
-        borderColor: isPaperTheme ? "#e2e8f0" : "#243044",
-        timeVisible: isIntraday,
-        secondsVisible: false,
-      },
-    });
-
-    // Candlestick Series
-    const candleSeries = chart.addCandlestickSeries({
-      upColor: "#10b981",
-      downColor: "#f43f5e",
-      borderUpColor: "#10b981",
-      borderDownColor: "#f43f5e",
-      wickUpColor: "#10b981",
-      wickDownColor: "#f43f5e",
-    });
-
-    // Indicator Overlay Line (VWAP or 20 EMA)
-    const overlayLine = chart.addLineSeries({
-      color: isIntraday ? "#f59e0b" : "#38bdf8",
-      lineWidth: 2,
-      lineStyle: LineStyle.Solid,
-      title: isIntraday ? "VWAP" : "20 EMA",
-      priceLineVisible: false,
-    });
-
-    candlestickSeriesRef.current = candleSeries;
-    overlayLineSeriesRef.current = overlayLine;
-    chartRef.current = chart;
-
-    const handleResize = () => {
-      if (chartContainerRef.current && chartRef.current) {
-        chartRef.current.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-          height: chartContainerRef.current.clientHeight,
-        });
-      }
-    };
-
-    // Container-aware ResizeObserver for responsive refit without window resize
+    let chart: IChartApi | null = null;
     let resizeObserver: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== "undefined" && chartContainerRef.current) {
-      resizeObserver = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          const width = entry.contentRect.width;
-          const height = entry.contentRect.height;
-          if (chartRef.current && width > 0 && height > 0) {
-            chartRef.current.applyOptions({
-              width,
-              height,
-            });
-            chartRef.current.timeScale().fitContent();
+    let observer: MutationObserver | null = null;
+    let tvObserver: MutationObserver | null = null;
+
+    try {
+      chartContainerRef.current.innerHTML = "";
+
+      const width = chartContainerRef.current.clientWidth || 800;
+      const height = chartContainerRef.current.clientHeight || 340;
+
+      const isPaperTheme = typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") === "paper";
+
+      chart = createChart(chartContainerRef.current, {
+        width,
+        height,
+        layout: {
+          background: { color: isPaperTheme ? "#ffffff" : "#0b0f19" },
+          textColor: isPaperTheme ? "#475569" : "#94a3b8",
+        },
+        grid: {
+          vertLines: { color: isPaperTheme ? "#f1f5f9" : "#162032" },
+          horzLines: { color: isPaperTheme ? "#f1f5f9" : "#162032" },
+        },
+        crosshair: {
+          mode: 1,
+        },
+        rightPriceScale: {
+          borderColor: isPaperTheme ? "#e2e8f0" : "#243044",
+          autoScale: true,
+        },
+        timeScale: {
+          borderColor: isPaperTheme ? "#e2e8f0" : "#243044",
+          timeVisible: isIntraday,
+          secondsVisible: false,
+        },
+      });
+
+      // Candlestick Series
+      const candleSeries = chart.addCandlestickSeries({
+        upColor: "#10b981",
+        downColor: "#f43f5e",
+        borderUpColor: "#10b981",
+        borderDownColor: "#f43f5e",
+        wickUpColor: "#10b981",
+        wickDownColor: "#f43f5e",
+      });
+
+      // Indicator Overlay Line (VWAP or 20 EMA)
+      const overlayLine = chart.addLineSeries({
+        color: isIntraday ? "#f59e0b" : "#38bdf8",
+        lineWidth: 2,
+        lineStyle: LineStyle.Solid,
+        title: isIntraday ? "VWAP" : "20 EMA",
+        priceLineVisible: false,
+      });
+
+      candlestickSeriesRef.current = candleSeries;
+      overlayLineSeriesRef.current = overlayLine;
+      chartRef.current = chart;
+      setRenderError(null);
+      setChartTelemetry((prev) => ({ ...prev, seriesInitialized: true }));
+
+      const handleResize = () => {
+        if (chartContainerRef.current && chartRef.current) {
+          chartRef.current.applyOptions({
+            width: chartContainerRef.current.clientWidth,
+            height: chartContainerRef.current.clientHeight,
+          });
+        }
+      };
+
+      if (typeof ResizeObserver !== "undefined" && chartContainerRef.current) {
+        resizeObserver = new ResizeObserver((entries) => {
+          for (const entry of entries) {
+            const w = entry.contentRect.width;
+            const h = entry.contentRect.height;
+            if (chartRef.current && w > 0 && h > 0) {
+              chartRef.current.applyOptions({
+                width: w,
+                height: h,
+              });
+              chartRef.current.timeScale().fitContent();
+            }
+          }
+        });
+        resizeObserver.observe(chartContainerRef.current);
+      }
+
+      const handleThemeChange = () => {
+        const isLight = document.documentElement.getAttribute("data-theme") === "paper";
+        if (chartRef.current) {
+          chartRef.current.applyOptions({
+            layout: {
+              background: { color: isLight ? "#ffffff" : "#0b0f19" },
+              textColor: isLight ? "#475569" : "#94a3b8",
+            },
+            grid: {
+              vertLines: { color: isLight ? "#f1f5f9" : "#162032" },
+              horzLines: { color: isLight ? "#f1f5f9" : "#162032" },
+            },
+            rightPriceScale: {
+              borderColor: isLight ? "#e2e8f0" : "#243044",
+            },
+            timeScale: {
+              borderColor: isLight ? "#e2e8f0" : "#243044",
+            },
+          });
+        }
+      };
+
+      window.addEventListener("resize", handleResize);
+      window.addEventListener("finance:theme-change", handleThemeChange);
+
+      observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          if (mutation.type === "attributes" && mutation.attributeName === "data-theme") {
+            handleThemeChange();
           }
         }
       });
-      resizeObserver.observe(chartContainerRef.current);
-    }
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
-    const handleThemeChange = () => {
-      const isLight = document.documentElement.getAttribute("data-theme") === "paper";
-      if (chartRef.current) {
-        chartRef.current.applyOptions({
-          layout: {
-            background: { color: isLight ? "#ffffff" : "#0b0f19" },
-            textColor: isLight ? "#475569" : "#94a3b8",
-          },
-          grid: {
-            vertLines: { color: isLight ? "#f1f5f9" : "#162032" },
-            horzLines: { color: isLight ? "#f1f5f9" : "#162032" },
-          },
-          rightPriceScale: {
-            borderColor: isLight ? "#e2e8f0" : "#243044",
-          },
-          timeScale: {
-            borderColor: isLight ? "#e2e8f0" : "#243044",
-          },
-        });
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("finance:theme-change", handleThemeChange);
-
-    const observer = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        if (mutation.type === "attributes" && mutation.attributeName === "data-theme") {
-          handleThemeChange();
+      const ensureAccessibleAttribution = () => {
+        if (chartContainerRef.current) {
+          const tvLinks = chartContainerRef.current.querySelectorAll("a");
+          tvLinks.forEach((a) => {
+            if (!a.getAttribute("aria-label")) {
+              a.setAttribute("aria-label", "TradingView Charts");
+            }
+          });
         }
-      }
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-
-    const ensureAccessibleAttribution = () => {
-      if (chartContainerRef.current) {
-        const tvLinks = chartContainerRef.current.querySelectorAll("a");
-        tvLinks.forEach((a) => {
-          if (!a.getAttribute("aria-label")) {
-            a.setAttribute("aria-label", "TradingView Charts");
-          }
-        });
-      }
-    };
-    ensureAccessibleAttribution();
-    const tvObserver = new MutationObserver(ensureAccessibleAttribution);
-    if (chartContainerRef.current) {
+      };
+      ensureAccessibleAttribution();
+      tvObserver = new MutationObserver(ensureAccessibleAttribution);
       tvObserver.observe(chartContainerRef.current, { childList: true, subtree: true });
-    }
 
-    return () => {
-      if (resizeObserver) {
-        resizeObserver.disconnect();
+      return () => {
+        if (resizeObserver) resizeObserver.disconnect();
+        window.removeEventListener("resize", handleResize);
+        window.removeEventListener("finance:theme-change", handleThemeChange);
+        if (observer) observer.disconnect();
+        if (tvObserver) tvObserver.disconnect();
+        if (chart) {
+          try {
+            chart.remove();
+          } catch {}
+        }
+        chartRef.current = null;
+        candlestickSeriesRef.current = null;
+        overlayLineSeriesRef.current = null;
+        priceLinesRef.current = [];
+        setChartTelemetry((prev) => ({
+          ...prev,
+          seriesInitialized: false,
+          candlesAssigned: false,
+          overlayAssigned: false,
+        }));
+      };
+    } catch (initErr) {
+      console.warn("Chart initialization failed:", initErr);
+      if (chart) {
+        try {
+          chart.remove();
+        } catch {}
       }
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("finance:theme-change", handleThemeChange);
-      observer.disconnect();
-      tvObserver.disconnect();
-      chart.remove();
       chartRef.current = null;
       candlestickSeriesRef.current = null;
       overlayLineSeriesRef.current = null;
       priceLinesRef.current = [];
-    };
-  }, [isIntraday]);
+      if (chartContainerRef.current) {
+        chartContainerRef.current.innerHTML = "";
+      }
+      setRenderError("Interactive chart canvas failed to initialize. Please reload the visualization.");
+      setChartTelemetry((prev) => ({
+        ...prev,
+        seriesInitialized: false,
+        candlesAssigned: false,
+        overlayAssigned: false,
+      }));
+    }
+  }, [isIntraday, initEpoch]);
 
   // 2. Feed Data to Candlestick and Line Overlay Series whenever candles or interval changes
   useEffect(() => {
-    if (!candlestickSeriesRef.current || !overlayLineSeriesRef.current) return;
+    if (!candlestickSeriesRef.current || !overlayLineSeriesRef.current) {
+      setChartTelemetry((prev) => ({
+        ...prev,
+        candlesAvailable: !!(candles && candles.length > 0),
+        candlesAssigned: false,
+        overlayAssigned: false,
+        candleCount: 0,
+      }));
+      return;
+    }
 
     if (!candles || candles.length === 0) {
       try {
@@ -259,85 +456,30 @@ export default function PriceChart({
       } catch {
         // Safe clear
       }
+      setChartTelemetry((prev) => ({
+        ...prev,
+        candlesAvailable: false,
+        candlesAssigned: false,
+        overlayAssigned: false,
+        candleCount: 0,
+      }));
       return;
     }
 
     try {
-      // Format timestamps according to Lightweight Charts rules
-      const sanitized = candles
-        .map((c) => {
-          let timeVal: any = c.time;
-
-          if (isIntraday) {
-            // Numeric epoch in seconds
-            if (typeof timeVal === "string") {
-              if (timeVal.includes("-") || timeVal.includes("T") || timeVal.includes("/")) {
-                const parsed = new Date(timeVal).getTime();
-                timeVal = !isNaN(parsed) ? Math.floor(parsed / 1000) : null;
-              } else {
-                const num = Number(timeVal);
-                timeVal = !isNaN(num) ? (num > 20000000000 ? Math.floor(num / 1000) : Math.floor(num)) : null;
-              }
-            } else if (typeof timeVal === "number") {
-              timeVal = timeVal > 20000000000 ? Math.floor(timeVal / 1000) : Math.floor(timeVal);
-            }
-          } else {
-            // YYYY-MM-DD date string
-            if (typeof timeVal === "number") {
-              const ms = timeVal > 20000000000 ? timeVal : timeVal * 1000;
-              const d = new Date(ms);
-              timeVal = !isNaN(d.getTime()) ? d.toISOString().split("T")[0] : null;
-            } else if (typeof timeVal === "string") {
-              if (timeVal.includes("T")) {
-                timeVal = timeVal.split("T")[0];
-              } else if (!timeVal.includes("-") && !isNaN(Number(timeVal))) {
-                const num = Number(timeVal);
-                const ms = num > 20000000000 ? num : num * 1000;
-                const d = new Date(ms);
-                timeVal = !isNaN(d.getTime()) ? d.toISOString().split("T")[0] : null;
-              }
-            }
-          }
-
-          const open = Number(c.open);
-          const high = Number(c.high);
-          const low = Number(c.low);
-          const close = Number(c.close);
-          const volume = Number(c.volume ?? 0);
-
-          return {
-            time: timeVal,
-            open,
-            high,
-            low,
-            close,
-            volume,
-          };
-        })
-        .filter((c) => {
-          if (!c.time) return false;
-          if (isNaN(c.open) || isNaN(c.close) || isNaN(c.high) || isNaN(c.low)) return false;
-          if (c.open <= 0 || c.close <= 0) return false;
-          return true;
-        })
-        .sort((a, b) => {
-          const tA = typeof a.time === "number" ? a.time : new Date(a.time).getTime();
-          const tB = typeof b.time === "number" ? b.time : new Date(b.time).getTime();
-          return tA - tB;
-        });
-
-      // Deduplicate sorted timestamps preserving the latest candle update
-      const candleMap = new Map<string | number, any>();
-      for (const item of sanitized) {
-        candleMap.set(item.time, item);
-      }
-      const uniqueCandles = Array.from(candleMap.values());
+      const uniqueCandles = sanitizeCandles(candles, isIntraday);
 
       if (uniqueCandles.length > 0) {
         // Set Candlestick Data
-        candlestickSeriesRef.current.setData(uniqueCandles.map(({ time, open, high, low, close }) => ({
-          time, open, high, low, close
-        })));
+        candlestickSeriesRef.current.setData(
+          uniqueCandles.map((c) => ({
+            time: c.time as Time,
+            open: c.open,
+            high: c.high,
+            low: c.low,
+            close: c.close,
+          }))
+        );
 
         // Generate Overlay Line Data (VWAP for Intraday, 20 EMA for Long Term)
         if (isIntraday) {
@@ -349,7 +491,7 @@ export default function PriceChart({
             cumVP += typical * c.volume;
             const val = cumVol > 0 ? cumVP / cumVol : c.close;
             return {
-              time: c.time,
+              time: c.time as Time,
               value: Number(val.toFixed(2)),
             };
           });
@@ -359,14 +501,14 @@ export default function PriceChart({
             const slice = arr.slice(Math.max(0, idx - 19), idx + 1);
             const avg = slice.reduce((sum, item) => sum + item.close, 0) / slice.length;
             return {
-              time: c.time,
+              time: c.time as Time,
               value: Number(avg.toFixed(2)),
             };
           });
           overlayLineSeriesRef.current.setData(maPoints);
         }
 
-        // Attach Deep Trade Timestamp Markers (Congressional Trades, SEC Form 4, Options Sweeps)
+        // Attach Deep Trade Timestamp Markers (Guarded)
         if (candlestickSeriesRef.current) {
           if (tradeMarkers && tradeMarkers.length > 0) {
             const markers: any[] = [];
@@ -376,13 +518,11 @@ export default function PriceChart({
               if (!tm.date) return;
               const targetDateStr = tm.date.split("T")[0];
 
-              // Find matching candle time
               let matchedTime = candleTimes.find((ct) => {
                 if (typeof ct === "string") return ct === targetDateStr;
                 return false;
               });
 
-              // If not exact match, find closest past candle within 14 days
               if (!matchedTime && candleTimes.length > 0) {
                 const targetMs = new Date(targetDateStr).getTime();
                 let closest = candleTimes[0];
@@ -404,7 +544,7 @@ export default function PriceChart({
                 const isCongress = tm.type === "CONGRESS";
                 const isOptions = tm.type === "OPTIONS";
                 markers.push({
-                  time: matchedTime,
+                  time: matchedTime as Time,
                   position: isCongress ? "aboveBar" : "belowBar",
                   color: isCongress ? "#06b6d4" : isOptions ? "#f59e0b" : "#10b981",
                   shape: isCongress ? "arrowDown" : "arrowUp",
@@ -413,7 +553,6 @@ export default function PriceChart({
               }
             });
 
-            // Sort markers by timestamp ascending (required by Lightweight Charts)
             markers.sort((a, b) => {
               const tA = typeof a.time === "number" ? a.time : new Date(a.time).getTime();
               const tB = typeof b.time === "number" ? b.time : new Date(b.time).getTime();
@@ -424,10 +563,14 @@ export default function PriceChart({
               candlestickSeriesRef.current.setMarkers(markers);
             } catch (markerErr) {
               console.warn("Failed to set trade markers:", markerErr);
-              candlestickSeriesRef.current.setMarkers([]);
+              try {
+                candlestickSeriesRef.current.setMarkers([]);
+              } catch {}
             }
           } else {
-            candlestickSeriesRef.current.setMarkers([]);
+            try {
+              candlestickSeriesRef.current.setMarkers([]);
+            } catch {}
           }
         }
 
@@ -443,15 +586,34 @@ export default function PriceChart({
           }
         }
         setRenderError(null);
+        setChartTelemetry({
+          candlesAvailable: true,
+          seriesInitialized: true,
+          candlesAssigned: true,
+          overlayAssigned: true,
+          candleCount: uniqueCandles.length,
+        });
       } else {
         candlestickSeriesRef.current.setData([]);
         overlayLineSeriesRef.current.setData([]);
+        setChartTelemetry({
+          candlesAvailable: false,
+          seriesInitialized: true,
+          candlesAssigned: false,
+          overlayAssigned: false,
+          candleCount: 0,
+        });
       }
     } catch (err) {
       console.warn("Error rendering chart series:", err);
-      setRenderError(err instanceof Error ? err.message : "Error rendering chart series");
+      setRenderError("Chart series rendering encountered an unexpected issue. Please reload the visualization.");
+      setChartTelemetry((prev) => ({
+        ...prev,
+        candlesAssigned: false,
+        overlayAssigned: false,
+      }));
     }
-  }, [candles, isIntraday, interval, tradeMarkers]);
+  }, [candles, isIntraday, interval, tradeMarkers, initEpoch]);
 
   // 3. Execution Level Overlays (CHART-001 through CHART-010: Parity with OptimalExecutionPlan)
   useEffect(() => {
@@ -639,17 +801,29 @@ export default function PriceChart({
               {dynamicTimeframeLabel}
             </span>
           </span>
-          {candles && candles.length > 0 ? (
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border hidden sm:inline ${
-              isIntraday ? "bg-amber-950/80 text-amber-300 border-amber-800" : "bg-cyan-950/80 text-cyan-300 border-cyan-800"
-            }`}>
-              {isIntraday ? "⚡ VWAP Active" : (candles.length >= 20 ? "🏛️ 20 EMA Active" : "🏛️ Moving Avg Active")}
-            </span>
-          ) : (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700 bg-slate-900/80 text-slate-400 hidden sm:inline">
-              Chart Telemetry Pending
-            </span>
-          )}
+          {(() => {
+            if (renderError !== null) {
+              return (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-rose-800 bg-rose-950/80 text-rose-300 hidden sm:inline">
+                  Chart Telemetry Unavailable
+                </span>
+              );
+            }
+            if (loading || !chartTelemetry.seriesInitialized || !chartTelemetry.candlesAssigned || !chartTelemetry.overlayAssigned || chartTelemetry.candleCount === 0) {
+              return (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700 bg-slate-900/80 text-slate-400 hidden sm:inline">
+                  Chart Telemetry Pending
+                </span>
+              );
+            }
+            return (
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border hidden sm:inline ${
+                isIntraday ? "bg-amber-950/80 text-amber-300 border-amber-800" : "bg-cyan-950/80 text-cyan-300 border-cyan-800"
+              }`}>
+                {isIntraday ? "⚡ VWAP Active" : (chartTelemetry.candleCount >= 20 ? "🏛️ 20 EMA Active" : "🏛️ Moving Avg Active")}
+              </span>
+            );
+          })()}
           {smartMoneyHeadline && (
               <span className="hidden xl:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/80 animate-pulse">
                 <span>🏛️ Smart Money:</span>
@@ -754,6 +928,7 @@ export default function PriceChart({
               type="button"
               onClick={() => {
                 setRenderError(null);
+                setInitEpoch((prev) => prev + 1);
                 if (typeof window !== "undefined") {
                   window.dispatchEvent(new CustomEvent("finance:cache-purge"));
                 }
