@@ -129,6 +129,7 @@ class GuardedRecoveryEngine:
         self._custom_handle_checker = handle_checker
         self.operator_confirmed_maintenance = operator_confirmed_maintenance
         self._active_reader_registry: Set[Any] = set()
+        self.last_receipt: Optional[GuardedRecoveryReceipt] = None
 
     @staticmethod
     def compute_file_sha256(path: Path) -> str:
@@ -449,19 +450,78 @@ class GuardedRecoveryEngine:
             conn.close()
         return meta
 
-    def _rollback_quarantine_to_target(self, quarantined: List[QuarantinedEvidenceFile]) -> None:
+    def _rollback_quarantine_to_target(
+        self,
+        quarantined: List[QuarantinedEvidenceFile],
+        quarantine_dir: Optional[Path] = None,
+    ) -> bool:
         """
         Restores quarantined target database files back to original paths if recovery fails post-quarantine.
+        Handles both:
+        1. Pre-swap failure (target does not exist -> copy back from quarantine).
+        2. Post-swap failure (target exists with failed replacement -> isolate failed replacement to quarantine evidence,
+           then copy back original files from quarantine and verify readback integrity).
+
+        Returns True if rollback completely succeeded and restored database passed integrity check;
+        Returns False if rollback failed or was incomplete.
         """
-        for q in quarantined:
-            src = Path(q.quarantine_path)
-            dst = Path(q.original_path)
-            if src.exists() and not dst.exists():
-                try:
+        try:
+            # 1. If target_path currently exists (e.g. post-swap failure where replacement was installed but readback failed),
+            # isolate the failed replacement file into quarantine evidence before restoring original.
+            if self.target_path.exists():
+                q_base = quarantine_dir or self.quarantine_base_dir
+                failed_evidence_dir = q_base / "failed_replacement_evidence"
+                failed_evidence_dir.mkdir(parents=True, exist_ok=True)
+
+                # Move target and any companion WAL/SHM to failed evidence dir
+                for companion in [
+                    self.target_path,
+                    self.target_path.with_name(self.target_path.name + "-wal"),
+                    self.target_path.with_name(self.target_path.name + "-shm"),
+                ]:
+                    if companion.exists():
+                        target_ev_name = f"failed_swap_{companion.name}"
+                        dst_ev = failed_evidence_dir / target_ev_name
+                        if dst_ev.exists():
+                            dst_ev.unlink()
+                        shutil.move(str(companion), str(dst_ev))
+                        logger.warning(f"Isolated failed post-swap file '{companion.name}' to '{dst_ev}'.")
+
+            # 2. Now restore every file recorded in quarantine back to its original path
+            for q in quarantined:
+                src = Path(q.quarantine_path)
+                dst = Path(q.original_path)
+                if src.exists():
                     shutil.copy2(src, dst)
-                    logger.warning(f"Rolled back quarantined file '{src.name}' to '{dst}'.")
-                except Exception as rb_err:
-                    logger.error(f"Failed to rollback '{src}' to '{dst}': {rb_err}")
+                    # Verify digest of restored file matches quarantine manifest
+                    restored_sha = self.compute_file_sha256(dst)
+                    if restored_sha != q.sha256:
+                        raise ValueError(
+                            f"ROLLBACK_VERIFICATION_FAILED: Restored file '{dst}' SHA-256 '{restored_sha}' "
+                            f"does not match original '{q.sha256}'."
+                        )
+                    logger.warning(f"Rolled back quarantined file '{src.name}' to '{dst}' (verified SHA-256).")
+                else:
+                    raise FileNotFoundError(f"ROLLBACK_SOURCE_MISSING: Quarantine source file '{src}' missing.")
+
+            # 3. If target_path is restored, run PRAGMA integrity_check on the restored target database
+            if self.target_path.exists():
+                uri = f"{self.target_path.as_uri()}?mode=ro"
+                conn = sqlite3.connect(uri, uri=True, timeout=5.0)
+                try:
+                    cur = conn.cursor()
+                    cur.execute("PRAGMA integrity_check;")
+                    rows = cur.fetchall()
+                    if not rows or rows[0][0] != "ok":
+                        raise ValueError(f"ROLLBACK_TARGET_CORRUPT: Restored database failed integrity check: {rows}")
+                finally:
+                    conn.close()
+
+            logger.info("Rollback of original database files completed and verified successfully.")
+            return True
+        except Exception as rb_err:
+            logger.critical(f"CRITICAL: Failed to rollback original database from quarantine: {rb_err}")
+            return False
 
     def execute_guarded_recovery(self) -> GuardedRecoveryReceipt:
         """
@@ -481,6 +541,7 @@ class GuardedRecoveryEngine:
             post_recovery_readback={},
             recovery_status="PENDING",
         )
+        self.last_receipt = receipt
 
         quarantined: List[QuarantinedEvidenceFile] = []
 
@@ -526,12 +587,26 @@ class GuardedRecoveryEngine:
             return receipt
 
         except Exception as e:
-            receipt.recovery_status = "FAILED"
-            receipt.error_message = str(e)
             receipt.completed_at_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-            # If target DB was quarantined but replacement failed, restore original from quarantine to prevent data loss
-            if quarantined and not self.target_path.exists():
-                logger.warning("Recovery aborted post-quarantine. Restoring original database files from quarantine...")
-                self._rollback_quarantine_to_target(quarantined)
+
+            # If target DB was quarantined, attempt safe rollback to restore original state
+            if quarantined:
+                logger.warning(
+                    f"Recovery aborted post-quarantine ({e}). Initiating evidence-preserving rollback to original state..."
+                )
+                q_dir = Path(receipt.quarantine_directory) if receipt.quarantine_directory else None
+                rollback_ok = self._rollback_quarantine_to_target(quarantined, quarantine_dir=q_dir)
+                if rollback_ok:
+                    receipt.recovery_status = "FAILED_ROLLED_BACK"
+                    receipt.error_message = f"RECOVERY_FAILED_SAFELY_ROLLED_BACK: {e}"
+                else:
+                    receipt.recovery_status = "RECOVERY_ROLLBACK_FAILED_OPERATOR_INTERVENTION_REQUIRED"
+                    receipt.error_message = (
+                        f"CRITICAL_FAILURE: Recovery failed ({e}) AND rollback failed. Operator intervention required."
+                    )
+            else:
+                receipt.recovery_status = "FAILED"
+                receipt.error_message = str(e)
+
             receipt.compute_receipt_sha256()
             raise

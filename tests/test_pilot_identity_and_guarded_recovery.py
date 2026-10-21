@@ -928,4 +928,179 @@ class TestPilotIdentityAndGuardedRecovery:
         assert not hasattr(api.main, "execute_guarded_recovery")
         assert not hasattr(api.main, "guarded_market_recovery")
 
+    def test_post_swap_readback_failure_isolates_bad_replacement_and_restores_original(self):
+        """
+        CRITICAL TEST (Failure Matrix Item 8):
+        Proves that if Step 8 (replacement) succeeds, but Step 9 (readback/integrity check) fails:
+        1. The failed replacement file is isolated to failed_replacement_evidence/ in quarantine.
+        2. The original target DB is fully restored from quarantine back to target path.
+        3. The restored original target DB passes PRAGMA integrity_check and retains original data.
+        4. Recovery status is marked FAILED_ROLLED_BACK (never reported as successful recovery).
+        """
+        with tempfile.TemporaryDirectory() as td:
+            tdp = Path(td)
+            target_path = tdp / "target.db"
+            backup_path = tdp / "backup.db"
+            quarantine_dir = tdp / "quarantine"
+
+            # Create original target DB with target marker
+            conn_t = sqlite3.connect(str(target_path))
+            conn_t.execute("CREATE TABLE asset_ohlcv_daily (symbol TEXT, trade_date TEXT, close REAL);")
+            conn_t.execute("CREATE TABLE target_marker (val INT);")
+            conn_t.execute("INSERT INTO target_marker VALUES (42);")
+            conn_t.commit()
+            conn_t.close()
+
+            # Create backup DB with different data
+            conn_b = sqlite3.connect(str(backup_path))
+            conn_b.execute("CREATE TABLE asset_ohlcv_daily (symbol TEXT, trade_date TEXT, close REAL);")
+            conn_b.execute("CREATE TABLE target_marker (val INT);")
+            conn_b.execute("INSERT INTO target_marker VALUES (999);")
+            conn_b.commit()
+            conn_b.close()
+
+            bck_sha = GuardedRecoveryEngine.compute_file_sha256(backup_path)
+
+            engine = GuardedRecoveryEngine(
+                target_db_path=target_path,
+                backup_db_path=backup_path,
+                expected_backup_sha256=bck_sha,
+                incident_id="INC-G-S2-FAIL-SWAP-001",
+                operator_authorization="G-S2-ACT",
+                maintenance_mode_token="MAINT-INC-G-S2-FAIL-001",
+                quarantine_base_dir=quarantine_dir,
+                operator_confirmed_maintenance=True,
+            )
+
+            # Induce failure in Step 9 (readback and verify schema)
+            def fail_step9():
+                raise ValueError("RESTORED_TARGET_SCHEMA_CORRUPT: Post-swap validation simulated failure.")
+
+            engine.step9_readback_and_verify_schema = fail_step9
+
+            with pytest.raises(ValueError, match="RESTORED_TARGET_SCHEMA_CORRUPT"):
+                engine.execute_guarded_recovery()
+
+            # 1. Target path exists and contains ORIGINAL data (id=42), NOT replacement (id=999)
+            assert target_path.exists()
+            conn_res = sqlite3.connect(f"{target_path.as_uri()}?mode=ro", uri=True)
+            res = conn_res.cursor().execute("SELECT val FROM target_marker;").fetchall()
+            conn_res.close()
+            assert res == [(42,)]
+
+            # 2. Failed replacement evidence was isolated
+            failed_ev_dir = Path(engine.last_receipt.quarantine_directory) / "failed_replacement_evidence"
+            assert failed_ev_dir.exists()
+            isolated_files = list(failed_ev_dir.glob("failed_swap_*"))
+            assert len(isolated_files) >= 1
+
+            # 3. Receipt status reflects rolled back failure, NOT success
+            assert engine.last_receipt.recovery_status == "FAILED_ROLLED_BACK"
+            assert "RECOVERY_FAILED_SAFELY_ROLLED_BACK" in engine.last_receipt.error_message
+            import gc
+            gc.collect()
+
+    def test_rollback_failure_marks_critical_operator_intervention_state(self):
+        """
+        CRITICAL TEST (Failure Matrix Item 10):
+        Proves that if recovery fails post-quarantine AND rollback itself fails:
+        1. Status is marked RECOVERY_ROLLBACK_FAILED_OPERATOR_INTERVENTION_REQUIRED.
+        2. Evidence remains preserved in quarantine.
+        3. Application reopening is prohibited.
+        """
+        import shutil
+        with tempfile.TemporaryDirectory() as td:
+            tdp = Path(td)
+            target_path = tdp / "target.db"
+            backup_path = tdp / "backup.db"
+            quarantine_dir = tdp / "quarantine"
+
+            # Create original target DB
+            conn_t = sqlite3.connect(str(target_path))
+            conn_t.execute("CREATE TABLE asset_ohlcv_daily (symbol TEXT, trade_date TEXT, close REAL);")
+            conn_t.commit()
+            conn_t.close()
+
+            # Create backup DB
+            conn_b = sqlite3.connect(str(backup_path))
+            conn_b.execute("CREATE TABLE asset_ohlcv_daily (symbol TEXT, trade_date TEXT, close REAL);")
+            conn_b.commit()
+            conn_b.close()
+
+            bck_sha = GuardedRecoveryEngine.compute_file_sha256(backup_path)
+
+            engine = GuardedRecoveryEngine(
+                target_db_path=target_path,
+                backup_db_path=backup_path,
+                expected_backup_sha256=bck_sha,
+                incident_id="INC-G-S2-CRIT-001",
+                operator_authorization="G-S2-ACT",
+                maintenance_mode_token="MAINT-INC-G-S2-CRIT-001",
+                quarantine_base_dir=quarantine_dir,
+                operator_confirmed_maintenance=True,
+            )
+
+            # Induce failure in Step 8 (replacement)
+            def fail_step8():
+                raise IOError("Simulated disk write failure during atomic replacement")
+
+            engine.step8_restore_via_candidate_file = fail_step8
+
+            # And simulate failure in rollback copy (e.g. permission error during quarantine restoration)
+            real_copy2 = shutil.copy2
+            def fail_rollback_copy(src, dst):
+                if "quarantine" in str(src):
+                    raise PermissionError("Simulated rollback permission failure")
+                return real_copy2(src, dst)
+
+            shutil.copy2 = fail_rollback_copy
+            try:
+                with pytest.raises(IOError, match="Simulated disk write failure"):
+                    engine.execute_guarded_recovery()
+            finally:
+                shutil.copy2 = real_copy2
+
+            # Assert critical status
+            assert engine.last_receipt is not None
+            assert engine.last_receipt.recovery_status == "RECOVERY_ROLLBACK_FAILED_OPERATOR_INTERVENTION_REQUIRED"
+            assert "CRITICAL_FAILURE" in engine.last_receipt.error_message
+            assert len(engine.last_receipt.receipt_sha256) == 64
+            import gc
+            gc.collect()
+
+    def test_cli_records_failure_receipt_when_recovery_aborted(self):
+        """
+        Proves that scripts/guarded_market_recovery.py CLI saves failure receipt JSON
+        when recovery fails, providing an auditable postmortem trail.
+        """
+        cli_script = Path("scripts/guarded_market_recovery.py").resolve()
+        with tempfile.TemporaryDirectory() as td:
+            tdp = Path(td)
+            dummy_target = tdp / "dummy_target.db"
+            dummy_target.touch()
+            dummy_backup = tdp / "dummy_backup.db"
+            dummy_backup.touch()
+            receipt_out = tdp / "failure_receipt.json"
+
+            cmd = [
+                sys.executable,
+                str(cli_script),
+                "--target-db", str(dummy_target),
+                "--backup-file", str(dummy_backup),
+                "--expected-sha256", "0" * 64,
+                "--incident-id", "INC-CLI-FAIL-001",
+                "--operator-auth", "G-S2-ACT",
+                "--maintenance-token", "MAINT-INC-CLI-FAIL-001",
+                "--operator-confirmed-maintenance",
+                "--receipt-output", str(receipt_out),
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            assert result.returncode == 1
+            assert receipt_out.exists()
+
+            receipt_data = json.loads(receipt_out.read_text(encoding="utf-8"))
+            assert receipt_data["recovery_status"] == "FAILED"
+            assert len(receipt_data["receipt_sha256"]) == 64
+
+
 

@@ -73,6 +73,14 @@ def main() -> int:
         return 0
     except Exception as e:
         logger.error(f"Guarded disaster recovery FAILED: {e}")
+        if engine.last_receipt and args.receipt_output:
+            try:
+                out_p = Path(args.receipt_output).resolve()
+                out_p.parent.mkdir(parents=True, exist_ok=True)
+                out_p.write_text(json.dumps(engine.last_receipt.to_dict(), indent=2), encoding="utf-8")
+                logger.info(f"Failure audit receipt written to '{out_p}'.")
+            except Exception as w_err:
+                logger.error(f"Failed to write failure receipt: {w_err}")
         return 1
 
 
