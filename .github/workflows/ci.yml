@@ -76,6 +76,14 @@ jobs:
                tests/test_universe_admission_mappings.py \
                tests/test_package_b_deployment_rehearsal.py -v
 
+    - name: Run Sprint 2 Package C Canonical Contract & Governance Gate
+      env:
+        PYTHONPATH: "."
+      run: |
+        pytest tests/test_package_b_v3_canonical_consumer.py \
+               tests/test_strategy_governance_adversarial.py \
+               tests/test_lookback_threshold_boundaries.py -v
+
     - name: Run Tier 3 Pre-Flight Release Gate
       if: github.base_ref == 'main' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
       env:
