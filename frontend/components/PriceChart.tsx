@@ -82,6 +82,7 @@ export default function PriceChart({
   const candlestickSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const overlayLineSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const priceLinesRef = useRef<IPriceLine[]>([]);
+  const [renderError, setRenderError] = useState<string | null>(null);
 
   const activeIntervalList = userRole === "DAY_TRADER" ? DAY_TRADER_INTERVALS : LONG_TERM_INTERVALS;
   const isIntraday = userRole === "DAY_TRADER";
@@ -248,7 +249,18 @@ export default function PriceChart({
 
   // 2. Feed Data to Candlestick and Line Overlay Series whenever candles or interval changes
   useEffect(() => {
-    if (!candlestickSeriesRef.current || !overlayLineSeriesRef.current || !candles || candles.length === 0) return;
+    if (!candlestickSeriesRef.current || !overlayLineSeriesRef.current) return;
+
+    if (!candles || candles.length === 0) {
+      try {
+        candlestickSeriesRef.current.setData([]);
+        overlayLineSeriesRef.current.setData([]);
+        candlestickSeriesRef.current.setMarkers([]);
+      } catch {
+        // Safe clear
+      }
+      return;
+    }
 
     try {
       // Format timestamps according to Lightweight Charts rules
@@ -259,34 +271,55 @@ export default function PriceChart({
           if (isIntraday) {
             // Numeric epoch in seconds
             if (typeof timeVal === "string") {
-              if (timeVal.includes("-") || timeVal.includes("T")) {
-                timeVal = Math.floor(new Date(timeVal).getTime() / 1000);
+              if (timeVal.includes("-") || timeVal.includes("T") || timeVal.includes("/")) {
+                const parsed = new Date(timeVal).getTime();
+                timeVal = !isNaN(parsed) ? Math.floor(parsed / 1000) : null;
               } else {
-                timeVal = Math.floor(Number(timeVal));
+                const num = Number(timeVal);
+                timeVal = !isNaN(num) ? (num > 20000000000 ? Math.floor(num / 1000) : Math.floor(num)) : null;
               }
-            } else if (typeof timeVal === "number" && timeVal > 20000000000) {
-              timeVal = Math.floor(timeVal / 1000);
+            } else if (typeof timeVal === "number") {
+              timeVal = timeVal > 20000000000 ? Math.floor(timeVal / 1000) : Math.floor(timeVal);
             }
           } else {
             // YYYY-MM-DD date string
             if (typeof timeVal === "number") {
               const ms = timeVal > 20000000000 ? timeVal : timeVal * 1000;
-              timeVal = new Date(ms).toISOString().split("T")[0];
-            } else if (typeof timeVal === "string" && timeVal.includes("T")) {
-              timeVal = timeVal.split("T")[0];
+              const d = new Date(ms);
+              timeVal = !isNaN(d.getTime()) ? d.toISOString().split("T")[0] : null;
+            } else if (typeof timeVal === "string") {
+              if (timeVal.includes("T")) {
+                timeVal = timeVal.split("T")[0];
+              } else if (!timeVal.includes("-") && !isNaN(Number(timeVal))) {
+                const num = Number(timeVal);
+                const ms = num > 20000000000 ? num : num * 1000;
+                const d = new Date(ms);
+                timeVal = !isNaN(d.getTime()) ? d.toISOString().split("T")[0] : null;
+              }
             }
           }
 
+          const open = Number(c.open);
+          const high = Number(c.high);
+          const low = Number(c.low);
+          const close = Number(c.close);
+          const volume = Number(c.volume ?? 0);
+
           return {
             time: timeVal,
-            open: Number(c.open),
-            high: Number(c.high),
-            low: Number(c.low),
-            close: Number(c.close),
-            volume: Number(c.volume ?? 0),
+            open,
+            high,
+            low,
+            close,
+            volume,
           };
         })
-        .filter((c) => !isNaN(c.open) && !isNaN(c.close) && c.open > 0 && c.close > 0 && c.time)
+        .filter((c) => {
+          if (!c.time) return false;
+          if (isNaN(c.open) || isNaN(c.close) || isNaN(c.high) || isNaN(c.low)) return false;
+          if (c.open <= 0 || c.close <= 0) return false;
+          return true;
+        })
         .sort((a, b) => {
           const tA = typeof a.time === "number" ? a.time : new Date(a.time).getTime();
           const tB = typeof b.time === "number" ? b.time : new Date(b.time).getTime();
@@ -387,7 +420,12 @@ export default function PriceChart({
               return tA - tB;
             });
 
-            candlestickSeriesRef.current.setMarkers(markers);
+            try {
+              candlestickSeriesRef.current.setMarkers(markers);
+            } catch (markerErr) {
+              console.warn("Failed to set trade markers:", markerErr);
+              candlestickSeriesRef.current.setMarkers([]);
+            }
           } else {
             candlestickSeriesRef.current.setMarkers([]);
           }
@@ -396,10 +434,22 @@ export default function PriceChart({
         // Refresh chart view and auto-fit timeScale immediately
         if (chartRef.current) {
           chartRef.current.timeScale().fitContent();
+          if (typeof window !== "undefined" && window.requestAnimationFrame) {
+            window.requestAnimationFrame(() => {
+              if (chartRef.current) {
+                chartRef.current.timeScale().fitContent();
+              }
+            });
+          }
         }
+        setRenderError(null);
+      } else {
+        candlestickSeriesRef.current.setData([]);
+        overlayLineSeriesRef.current.setData([]);
       }
     } catch (err) {
       console.warn("Error rendering chart series:", err);
+      setRenderError(err instanceof Error ? err.message : "Error rendering chart series");
     }
   }, [candles, isIntraday, interval, tradeMarkers]);
 
@@ -589,11 +639,17 @@ export default function PriceChart({
               {dynamicTimeframeLabel}
             </span>
           </span>
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border hidden sm:inline ${
-            isIntraday ? "bg-amber-950/80 text-amber-300 border-amber-800" : "bg-cyan-950/80 text-cyan-300 border-cyan-800"
-          }`}>
-            {isIntraday ? "⚡ VWAP Active" : "🏛️ 20 EMA Active"}
-          </span>
+          {candles && candles.length > 0 ? (
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border hidden sm:inline ${
+              isIntraday ? "bg-amber-950/80 text-amber-300 border-amber-800" : "bg-cyan-950/80 text-cyan-300 border-cyan-800"
+            }`}>
+              {isIntraday ? "⚡ VWAP Active" : (candles.length >= 20 ? "🏛️ 20 EMA Active" : "🏛️ Moving Avg Active")}
+            </span>
+          ) : (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700 bg-slate-900/80 text-slate-400 hidden sm:inline">
+              Chart Telemetry Pending
+            </span>
+          )}
           {smartMoneyHeadline && (
               <span className="hidden xl:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/80 animate-pulse">
                 <span>🏛️ Smart Money:</span>
@@ -667,6 +723,7 @@ export default function PriceChart({
         className="flex-1 w-full min-h-[320px] h-[320px] sm:h-[380px] xl:h-[430px] mt-2 relative rounded-lg overflow-hidden border border-[#1b2434]"
       >
         <div ref={chartContainerRef} className="w-full h-full" />
+        {/* State 1: Synchronizing / Loading Overlay */}
         {loading && (
           <div className="absolute inset-0 bg-[#0b0f19]/80 backdrop-blur-[2px] flex flex-col items-center justify-center space-y-3 z-10 transition-opacity">
             <div className="flex items-center space-x-2">
@@ -678,6 +735,65 @@ export default function PriceChart({
               <span>⚡</span>
               <span>SYNCHRONIZING {symbol} QUANT FEED...</span>
             </div>
+          </div>
+        )}
+
+        {/* State 2: Series Initialization Fault Overlay */}
+        {!loading && renderError && (
+          <div className="absolute inset-0 bg-[#0b0f19]/95 flex flex-col items-center justify-center p-6 text-center z-10">
+            <div className="w-10 h-10 rounded-full bg-rose-950/80 border border-rose-800/80 flex items-center justify-center text-lg mb-3">
+              ⚠️
+            </div>
+            <h3 className="text-sm font-bold text-rose-300 mb-1">
+              Chart Visualization Fault
+            </h3>
+            <p className="text-xs text-slate-400 max-w-sm mb-4 leading-relaxed font-mono">
+              {renderError}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setRenderError(null);
+                if (typeof window !== "undefined") {
+                  window.dispatchEvent(new CustomEvent("finance:cache-purge"));
+                }
+                if (onIntervalChange) onIntervalChange(interval);
+              }}
+              className="px-3.5 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-800/80 text-rose-300 text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+            >
+              <span>🔄</span>
+              <span>Reload Visualization</span>
+            </button>
+          </div>
+        )}
+
+        {/* State 3: Empty / Unavailable Candles Overlay */}
+        {!loading && !renderError && (!candles || candles.length === 0) && (
+          <div className="absolute inset-0 bg-[#0b0f19]/95 flex flex-col items-center justify-center p-6 text-center z-10">
+            <div className="w-10 h-10 rounded-full bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-lg mb-3">
+              📊
+            </div>
+            <h3 className="text-sm font-bold text-slate-200 mb-1">
+              Candlestick Telemetry Unavailable
+            </h3>
+            <p className="text-xs text-slate-400 max-w-sm mb-4 leading-relaxed">
+              Historical candle bars for {symbol} ({dynamicTimeframeLabel}) are not currently populated from market feeds.
+            </p>
+            {onIntervalChange && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    window.dispatchEvent(new CustomEvent("finance:cache-purge"));
+                  }
+                  onIntervalChange(interval);
+                }}
+                className="px-3.5 py-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-800/80 text-cyan-300 text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+              >
+                <span>🔄</span>
+                <span>Retry Candle Feed</span>
+              </button>
+            )}
           </div>
         )}
       </div>
