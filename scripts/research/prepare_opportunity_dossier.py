@@ -2143,6 +2143,40 @@ def write_pilot_artifacts(
     logger.info(f"Wrote synchronized cohort matrix doc to: {target_doc}")
 
 
+def find_structural_differences(expected: Any, actual: Any, path: str = "$") -> List[str]:
+    """
+    Recursively compares two JSON-deserialized structures for exact structural equality.
+    Returns a list of concise strings describing all differences (type mismatch,
+    missing keys, unexpected extra keys, array length/ordering differences, value mismatches).
+    Preserves array order and does not normalize or ignore any fields.
+    """
+    diffs = []
+    if type(expected) != type(actual):
+        diffs.append(f"{path}: type mismatch (expected {type(expected).__name__}, got {type(actual).__name__})")
+        return diffs
+
+    if isinstance(expected, dict):
+        exp_keys = set(expected.keys())
+        act_keys = set(actual.keys())
+        for missing in sorted(exp_keys - act_keys):
+            diffs.append(f"{path}.{missing}: missing field in actual")
+        for extra in sorted(act_keys - exp_keys):
+            diffs.append(f"{path}.{extra}: unexpected extra field in actual")
+        for k in sorted(exp_keys & act_keys):
+            diffs.extend(find_structural_differences(expected[k], actual[k], f"{path}.{k}"))
+    elif isinstance(expected, list):
+        if len(expected) != len(actual):
+            diffs.append(f"{path}: length mismatch (expected {len(expected)}, got {len(actual)})")
+        min_len = min(len(expected), len(actual))
+        for idx in range(min_len):
+            diffs.extend(find_structural_differences(expected[idx], actual[idx], f"{path}[{idx}]"))
+    else:
+        if expected != actual:
+            diffs.append(f"{path}: value mismatch (expected {expected!r}, got {actual!r})")
+
+    return diffs
+
+
 def validate_existing_pilot_artifacts(
     ledger_path: Optional[Path] = None,
     manifest_path: Optional[Path] = None,
@@ -2315,97 +2349,16 @@ def validate_existing_pilot_artifacts(
                 logger.error(f"Central assessment tampering detected for {sym}.{ca_key}")
                 return False
 
-        # Frontend draft snapshot deep parity
-        fe_d = frontend_draft.get("dossiers", {}).get(sym)
-        if not fe_d:
-            logger.error(f"Symbol {sym} missing from frontend draft snapshot")
-            return False
-
-        # Identity
-        for id_k in ["symbol", "company_name", "cik", "exchange", "opportunity_route"]:
-            if fe_d.get("identity", {}).get(id_k) != stored_d.get("identity", {}).get(id_k):
-                logger.error(f"Frontend identity mismatch for {sym}.{id_k}")
-                return False
-
-        # Publication metadata
-        for pm_k in ["lifecycle_status", "review_status", "evidence_completeness", "dossier_version", "technical_verification"]:
-            if fe_d.get("publication_metadata", {}).get(pm_k) != stored_d.get("publication_metadata", {}).get(pm_k):
-                logger.error(f"Frontend metadata mismatch for {sym}.{pm_k}")
-                return False
-
-        # Central assessment
-        for ca_k in ["disposition", "presentation_summary", "strongest_supporting_evidence", "strongest_opposing_evidence", "main_uncertainty", "price_watch_condition", "confidence_assessment"]:
-            if fe_d.get("central_assessment", {}).get(ca_k) != stored_d.get("central_assessment", {}).get(ca_k):
-                logger.error(f"Frontend central assessment mismatch for {sym}.{ca_k}")
-                return False
-
-        # Valuation
-        for v_k in ["reference_price", "valuation_status", "solved_5y_cagr_pct", "roundtrip_value", "roundtrip_delta_cents"]:
-            if fe_d.get("valuation", {}).get(v_k) != stored_d.get("valuation", {}).get(v_k):
-                logger.error(f"Frontend valuation mismatch for {sym}.{v_k}")
-                return False
-
-        # Valuation Scenarios
-        stored_sc = stored_d.get("valuation", {}).get("scenarios") or {}
-        fe_sc = fe_d.get("valuation", {}).get("scenarios") or {}
-        if set(stored_sc.keys()) != set(fe_sc.keys()):
-            logger.error(f"Frontend scenario keys mismatch for {sym}")
-            return False
-        for sc_name, sc_data in stored_sc.items():
-            fe_sc_data = fe_sc[sc_name]
-            for sc_k in ["per_share_value", "potential_return_pct"]:
-                if fe_sc_data.get(sc_k) != sc_data.get(sc_k):
-                    logger.error(f"Frontend scenario value mismatch for {sym}.{sc_name}.{sc_k}: {fe_sc_data.get(sc_k)} != {sc_data.get(sc_k)}")
-                    return False
-
-        # Financial profile
-        fe_fp = fe_d.get("financial_profile", {})
-        for fp_k in ["revenue", "revenue_period", "operating_income", "operating_margin_pct", "cash_and_equivalents", "total_financial_debt", "is_zero_debt", "net_debt_bridge", "diluted_shares"]:
-            if fe_fp.get(fp_k) != stored_fin.get(fp_k):
-                logger.error(f"Frontend financial profile mismatch for {sym}.{fp_k}: {fe_fp.get(fp_k)} != {stored_fin.get(fp_k)}")
-                return False
-
-        # Primary filings
-        stored_filings = stored_fin.get("primary_filings", [])
-        fe_filings = fe_fp.get("primary_filings", [])
-        if len(stored_filings) != len(fe_filings):
-            logger.error(f"Frontend filings length mismatch for {sym}")
-            return False
-        for idx_f, f_s in enumerate(stored_filings):
-            f_fe = fe_filings[idx_f]
-            for f_k in ["form", "accession_number", "period_end", "filing_date"]:
-                if f_s.get(f_k) != f_fe.get(f_k):
-                    logger.error(f"Frontend filing mismatch for {sym}[{idx_f}].{f_k}")
-                    return False
-
-        # Monitoring
-        for m_k in ["observable_invalidation_trigger", "next_monitoring_trigger", "price_watch_condition"]:
-            if fe_d.get("monitoring", {}).get(m_k) != stored_d.get("monitoring", {}).get(m_k):
-                logger.error(f"Frontend monitoring mismatch for {sym}.{m_k}")
-                return False
-
-        # ULTA source evidence tracing in frontend
-        if sym == "ULTA":
-            stored_tr = stored_d.get("source_evidence_tracing") or stored_fin.get("source_evidence_tracing")
-            fe_tr = fe_d.get("source_evidence_tracing") or fe_fp.get("source_evidence_tracing")
-            if stored_tr != fe_tr:
-                logger.error("Frontend source_evidence_tracing mismatch for ULTA")
-                return False
-
-    # Frontend cohort parity
-    fe_cohort = {item["symbol"]: item for item in frontend_draft.get("cohort", [])}
-    stored_cohort = {item["symbol"]: item for item in ledger.get("cohort", [])}
-    if set(fe_cohort.keys()) != set(stored_cohort.keys()):
-        logger.error("Frontend cohort symbols mismatch with ledger cohort")
+    # 7. Complete Deterministic Frontend Draft Projection Parity
+    fe_diffs = find_structural_differences(recomputed_frontend, frontend_draft, path="$")
+    if fe_diffs:
+        for diff in fe_diffs[:10]:
+            logger.error(f"Frontend draft projection mismatch at {diff}")
+        if len(fe_diffs) > 10:
+            logger.error(f"... and {len(fe_diffs) - 10} more frontend draft projection differences")
         return False
-    for sym, item in stored_cohort.items():
-        fe_item = fe_cohort[sym]
-        for c_k in ["reference_price", "valuation_status", "lifecycle_status", "review_status", "disposition"]:
-            if item.get(c_k) != fe_item.get(c_k):
-                logger.error(f"Frontend cohort mismatch for {sym}.{c_k}")
-                return False
 
-    # 7. Documentation Freshness Check
+    # 8. Documentation Freshness Check
     with open(target_doc, "r", encoding="utf-8") as f:
         actual_doc = f.read()
     expected_doc = generate_cohort_matrix_markdown(recomputed_ledger)

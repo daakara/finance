@@ -24,6 +24,7 @@ Verifies:
 import copy
 import hashlib
 import json
+import shutil
 import pytest
 from pathlib import Path
 
@@ -48,6 +49,30 @@ from analyst_dashboard.research.sourced_fundamentals.valuation import (
 )
 
 
+@pytest.fixture
+def valid_pilot_artifacts(tmp_path):
+    """
+    Creates a valid, isolated sandbox containing unmodified pilot artifacts
+    with exact matching hashes and documentation.
+    """
+    ledger_path = tmp_path / "pilot_scaling_ledger.json"
+    manifest_path = tmp_path / "pilot_scaling_manifest.json"
+    frontend_path = tmp_path / "opportunityDossierPilotDrafts.json"
+    doc_path = tmp_path / "pilot_scaling_cohort_matrix.md"
+
+    shutil.copyfile(DEFAULT_PILOT_LEDGER_PATH, ledger_path)
+    shutil.copyfile(DEFAULT_PILOT_MANIFEST_PATH, manifest_path)
+    shutil.copyfile(DEFAULT_FRONTEND_DRAFT_PATH, frontend_path)
+    shutil.copyfile(DEFAULT_DOC_MATRIX_PATH, doc_path)
+
+    return {
+        "ledger_path": ledger_path,
+        "manifest_path": manifest_path,
+        "frontend_draft_path": frontend_path,
+        "doc_matrix_path": doc_path,
+    }
+
+
 def test_1_frozen_odp05_baseline_unmodified():
     """Verify that ODP-05 canonical ledger is untouched and matches accepted SHA-256 digest."""
     assert FROZEN_ODP05_LEDGER_PATH.exists(), f"ODP-05 ledger missing at {FROZEN_ODP05_LEDGER_PATH}"
@@ -67,7 +92,7 @@ def test_2_cohort_completeness_and_sizing():
 
 
 def test_3_reverse_dcf_roundtrip_verification():
-    """Verify that every numeric valuation in the 15 additions solves and roundtrips within $0.05."""
+    """Verify that every numeric valuation in the 15 additions solves and roundtrips within canonical tolerance (max(0.05, ref_price * 0.0005))."""
     for sym, spec in PILOT_SPECS.items():
         val_status = spec.get("valuation_status")
         if val_status == "VALUATION_SUPPRESSED":
@@ -449,158 +474,149 @@ def test_15_negative_missing_evidence_mapping(tmp_path):
     assert result is False, "Validation must fail when ULTA evidence mapping is missing"
 
 
-def test_16_negative_frontend_financial_tampering(tmp_path):
+def test_16_negative_frontend_financial_tampering(valid_pilot_artifacts):
     """Negative test: Tampering with financial metrics in opportunityDossierPilotDrafts.json fails validation."""
-    with open(DEFAULT_PILOT_LEDGER_PATH, "r", encoding="utf-8") as f:
-        ledger = json.load(f)
-    with open(DEFAULT_PILOT_MANIFEST_PATH, "r", encoding="utf-8") as f:
-        manifest = json.load(f)
-    with open(DEFAULT_FRONTEND_DRAFT_PATH, "r", encoding="utf-8") as f:
-        frontend = json.load(f)
+    fe_path = valid_pilot_artifacts["frontend_draft_path"]
+    with open(fe_path, "r", encoding="utf-8") as f:
+        fe = json.load(f)
+    fe["dossiers"]["ULTA"]["financial_profile"]["total_financial_debt"] = 0.0
+    with open(fe_path, "w", encoding="utf-8") as f:
+        json.dump(fe, f)
 
-    tampered_frontend = copy.deepcopy(frontend)
-    # Tamper with ULTA financial debt in frontend projection
-    tampered_frontend["dossiers"]["ULTA"]["financial_profile"]["total_financial_debt"] = 0.0
-
-    t_ledger_path = tmp_path / "pilot_scaling_ledger.json"
-    t_manifest_path = tmp_path / "pilot_scaling_manifest.json"
-    t_fe_path = tmp_path / "opportunityDossierPilotDrafts.json"
-
-    with open(t_ledger_path, "w", encoding="utf-8") as f:
-        json.dump(ledger, f)
-    with open(t_manifest_path, "w", encoding="utf-8") as f:
-        json.dump(manifest, f)
-    with open(t_fe_path, "w", encoding="utf-8") as f:
-        json.dump(tampered_frontend, f)
-
-    result = validate_existing_pilot_artifacts(
-        ledger_path=t_ledger_path,
-        manifest_path=t_manifest_path,
-        frontend_draft_path=t_fe_path,
-    )
-    assert result is False, "Validation must fail when frontend financial debt is tampered"
+    assert validate_existing_pilot_artifacts(**valid_pilot_artifacts) is False
 
 
-def test_17_negative_frontend_narrative_tampering(tmp_path):
+def test_17_negative_frontend_narrative_tampering(valid_pilot_artifacts):
     """Negative test: Tampering with narrative synthesis in opportunityDossierPilotDrafts.json fails validation."""
-    with open(DEFAULT_PILOT_LEDGER_PATH, "r", encoding="utf-8") as f:
-        ledger = json.load(f)
-    with open(DEFAULT_PILOT_MANIFEST_PATH, "r", encoding="utf-8") as f:
-        manifest = json.load(f)
-    with open(DEFAULT_FRONTEND_DRAFT_PATH, "r", encoding="utf-8") as f:
-        frontend = json.load(f)
+    fe_path = valid_pilot_artifacts["frontend_draft_path"]
+    with open(fe_path, "r", encoding="utf-8") as f:
+        fe = json.load(f)
+    fe["dossiers"]["ULTA"]["central_assessment"]["presentation_summary"] = "Tampered summary."
+    with open(fe_path, "w", encoding="utf-8") as f:
+        json.dump(fe, f)
 
-    tampered_frontend = copy.deepcopy(frontend)
-    tampered_frontend["dossiers"]["ULTA"]["central_assessment"]["presentation_summary"] = "Tampered summary."
-
-    t_ledger_path = tmp_path / "pilot_scaling_ledger.json"
-    t_manifest_path = tmp_path / "pilot_scaling_manifest.json"
-    t_fe_path = tmp_path / "opportunityDossierPilotDrafts.json"
-
-    with open(t_ledger_path, "w", encoding="utf-8") as f:
-        json.dump(ledger, f)
-    with open(t_manifest_path, "w", encoding="utf-8") as f:
-        json.dump(manifest, f)
-    with open(t_fe_path, "w", encoding="utf-8") as f:
-        json.dump(tampered_frontend, f)
-
-    result = validate_existing_pilot_artifacts(
-        ledger_path=t_ledger_path,
-        manifest_path=t_manifest_path,
-        frontend_draft_path=t_fe_path,
-    )
-    assert result is False, "Validation must fail when frontend narrative is tampered"
+    assert validate_existing_pilot_artifacts(**valid_pilot_artifacts) is False
 
 
-def test_18_negative_frontend_scenario_tampering(tmp_path):
+def test_18_negative_frontend_scenario_tampering(valid_pilot_artifacts):
     """Negative test: Tampering with valuation scenario in opportunityDossierPilotDrafts.json fails validation."""
-    with open(DEFAULT_PILOT_LEDGER_PATH, "r", encoding="utf-8") as f:
-        ledger = json.load(f)
-    with open(DEFAULT_PILOT_MANIFEST_PATH, "r", encoding="utf-8") as f:
-        manifest = json.load(f)
-    with open(DEFAULT_FRONTEND_DRAFT_PATH, "r", encoding="utf-8") as f:
-        frontend = json.load(f)
+    fe_path = valid_pilot_artifacts["frontend_draft_path"]
+    with open(fe_path, "r", encoding="utf-8") as f:
+        fe = json.load(f)
+    fe["dossiers"]["ULTA"]["valuation"]["scenarios"]["base"]["per_share_value"] = 999.99
+    with open(fe_path, "w", encoding="utf-8") as f:
+        json.dump(fe, f)
 
-    tampered_frontend = copy.deepcopy(frontend)
-    tampered_frontend["dossiers"]["ULTA"]["valuation"]["scenarios"]["base"]["per_share_value"] = 999.99
-
-    t_ledger_path = tmp_path / "pilot_scaling_ledger.json"
-    t_manifest_path = tmp_path / "pilot_scaling_manifest.json"
-    t_fe_path = tmp_path / "opportunityDossierPilotDrafts.json"
-
-    with open(t_ledger_path, "w", encoding="utf-8") as f:
-        json.dump(ledger, f)
-    with open(t_manifest_path, "w", encoding="utf-8") as f:
-        json.dump(manifest, f)
-    with open(t_fe_path, "w", encoding="utf-8") as f:
-        json.dump(tampered_frontend, f)
-
-    result = validate_existing_pilot_artifacts(
-        ledger_path=t_ledger_path,
-        manifest_path=t_manifest_path,
-        frontend_draft_path=t_fe_path,
-    )
-    assert result is False, "Validation must fail when frontend scenario per-share value is tampered"
+    assert validate_existing_pilot_artifacts(**valid_pilot_artifacts) is False
 
 
-def test_19_negative_frontend_review_status_tampering(tmp_path):
+def test_19_negative_frontend_review_status_tampering(valid_pilot_artifacts):
     """Negative test: Unauthorized review status promotion in opportunityDossierPilotDrafts.json fails validation."""
-    with open(DEFAULT_PILOT_LEDGER_PATH, "r", encoding="utf-8") as f:
-        ledger = json.load(f)
-    with open(DEFAULT_PILOT_MANIFEST_PATH, "r", encoding="utf-8") as f:
-        manifest = json.load(f)
-    with open(DEFAULT_FRONTEND_DRAFT_PATH, "r", encoding="utf-8") as f:
-        frontend = json.load(f)
+    fe_path = valid_pilot_artifacts["frontend_draft_path"]
+    with open(fe_path, "r", encoding="utf-8") as f:
+        fe = json.load(f)
+    fe["dossiers"]["ULTA"]["publication_metadata"]["review_status"] = "RESEARCH_REVIEWED"
+    with open(fe_path, "w", encoding="utf-8") as f:
+        json.dump(fe, f)
 
-    tampered_frontend = copy.deepcopy(frontend)
-    tampered_frontend["dossiers"]["ULTA"]["publication_metadata"]["review_status"] = "RESEARCH_REVIEWED"
-
-    t_ledger_path = tmp_path / "pilot_scaling_ledger.json"
-    t_manifest_path = tmp_path / "pilot_scaling_manifest.json"
-    t_fe_path = tmp_path / "opportunityDossierPilotDrafts.json"
-
-    with open(t_ledger_path, "w", encoding="utf-8") as f:
-        json.dump(ledger, f)
-    with open(t_manifest_path, "w", encoding="utf-8") as f:
-        json.dump(manifest, f)
-    with open(t_fe_path, "w", encoding="utf-8") as f:
-        json.dump(tampered_frontend, f)
-
-    result = validate_existing_pilot_artifacts(
-        ledger_path=t_ledger_path,
-        manifest_path=t_manifest_path,
-        frontend_draft_path=t_fe_path,
-    )
-    assert result is False, "Validation must fail when frontend review status is upgraded without authorization"
+    assert validate_existing_pilot_artifacts(**valid_pilot_artifacts) is False
 
 
-def test_20_negative_docs_freshness_mismatch(tmp_path):
+def test_20_negative_docs_freshness_mismatch(valid_pilot_artifacts):
     """Negative test: Tampering with pilot_scaling_cohort_matrix.md fails doc freshness check."""
-    with open(DEFAULT_PILOT_LEDGER_PATH, "r", encoding="utf-8") as f:
-        ledger = json.load(f)
-    with open(DEFAULT_PILOT_MANIFEST_PATH, "r", encoding="utf-8") as f:
-        manifest = json.load(f)
-    with open(DEFAULT_FRONTEND_DRAFT_PATH, "r", encoding="utf-8") as f:
-        frontend = json.load(f)
-
-    t_ledger_path = tmp_path / "pilot_scaling_ledger.json"
-    t_manifest_path = tmp_path / "pilot_scaling_manifest.json"
-    t_fe_path = tmp_path / "opportunityDossierPilotDrafts.json"
-    t_doc_path = tmp_path / "pilot_scaling_cohort_matrix.md"
-
-    with open(t_ledger_path, "w", encoding="utf-8") as f:
-        json.dump(ledger, f)
-    with open(t_manifest_path, "w", encoding="utf-8") as f:
-        json.dump(manifest, f)
-    with open(t_fe_path, "w", encoding="utf-8") as f:
-        json.dump(frontend, f)
-    with open(t_doc_path, "w", encoding="utf-8") as f:
+    doc_path = valid_pilot_artifacts["doc_matrix_path"]
+    with open(doc_path, "w", encoding="utf-8") as f:
         f.write("# Tampered Doc Matrix\n")
 
-    result = validate_existing_pilot_artifacts(
-        ledger_path=t_ledger_path,
-        manifest_path=t_manifest_path,
-        frontend_draft_path=t_fe_path,
-        doc_matrix_path=t_doc_path,
-    )
-    assert result is False, "Validation must fail when doc matrix markdown does not match authoritative ledger"
+    assert validate_existing_pilot_artifacts(**valid_pilot_artifacts) is False
+
+
+def test_21_negative_frontend_primary_filing_url_mutation(valid_pilot_artifacts):
+    """Negative test: Mutating primary filing URL in frontend projection fails validation."""
+    fe_path = valid_pilot_artifacts["frontend_draft_path"]
+    with open(fe_path, "r", encoding="utf-8") as f:
+        fe = json.load(f)
+    fe["dossiers"]["ULTA"]["financial_profile"]["primary_filings"][0]["url"] = "https://tampered.sec.gov/filing"
+    with open(fe_path, "w", encoding="utf-8") as f:
+        json.dump(fe, f)
+
+    assert validate_existing_pilot_artifacts(**valid_pilot_artifacts) is False
+
+
+def test_22_negative_frontend_wacc_mutation(valid_pilot_artifacts):
+    """Negative test: Mutating reverse-DCF WACC in frontend projection fails validation."""
+    fe_path = valid_pilot_artifacts["frontend_draft_path"]
+    with open(fe_path, "r", encoding="utf-8") as f:
+        fe = json.load(f)
+    fe["dossiers"]["ULTA"]["valuation"]["reverse_dcf_parameters"]["wacc_pct"] = 90.0
+    with open(fe_path, "w", encoding="utf-8") as f:
+        json.dump(fe, f)
+
+    assert validate_existing_pilot_artifacts(**valid_pilot_artifacts) is False
+
+
+def test_23_negative_frontend_scenario_revenue_growth_mutation(valid_pilot_artifacts):
+    """Negative test: Mutating scenario revenue growth assumption in frontend projection fails validation."""
+    fe_path = valid_pilot_artifacts["frontend_draft_path"]
+    with open(fe_path, "r", encoding="utf-8") as f:
+        fe = json.load(f)
+    fe["dossiers"]["ULTA"]["valuation"]["scenarios"]["base"]["revenue_cagr_pct"] = 80.0
+    with open(fe_path, "w", encoding="utf-8") as f:
+        json.dump(fe, f)
+
+    assert validate_existing_pilot_artifacts(**valid_pilot_artifacts) is False
+
+
+def test_24_negative_frontend_unexpected_added_field(valid_pilot_artifacts):
+    """Negative test: Injecting an unexpected extra field into frontend projection fails validation."""
+    fe_path = valid_pilot_artifacts["frontend_draft_path"]
+    with open(fe_path, "r", encoding="utf-8") as f:
+        fe = json.load(f)
+    fe["dossiers"]["ULTA"]["unexpected_extra_field"] = "injected"
+    with open(fe_path, "w", encoding="utf-8") as f:
+        json.dump(fe, f)
+
+    assert validate_existing_pilot_artifacts(**valid_pilot_artifacts) is False
+
+
+def test_25_negative_frontend_missing_field(valid_pilot_artifacts):
+    """Negative test: Deleting a required field from frontend projection fails validation."""
+    fe_path = valid_pilot_artifacts["frontend_draft_path"]
+    with open(fe_path, "r", encoding="utf-8") as f:
+        fe = json.load(f)
+    del fe["dossiers"]["ULTA"]["financial_profile"]["primary_filings"]
+    with open(fe_path, "w", encoding="utf-8") as f:
+        json.dump(fe, f)
+
+    assert validate_existing_pilot_artifacts(**valid_pilot_artifacts) is False
+
+
+def test_26_negative_validation_failure_leaves_artifact_bytes_unchanged(valid_pilot_artifacts):
+    """Negative test: Validation failure leaves all artifact files strictly byte-identical (read-only guarantee)."""
+    # Mutate frontend projection
+    fe_path = valid_pilot_artifacts["frontend_draft_path"]
+    with open(fe_path, "r", encoding="utf-8") as f:
+        fe = json.load(f)
+    fe["dossiers"]["ULTA"]["valuation"]["reverse_dcf_parameters"]["wacc_pct"] = 90.0
+    with open(fe_path, "w", encoding="utf-8") as f:
+        json.dump(fe, f)
+
+    # Compute hashes of all 4 artifacts before validation call
+    hashes_before = {}
+    for key, path in valid_pilot_artifacts.items():
+        with open(path, "rb") as f:
+            hashes_before[key] = hashlib.sha256(f.read()).hexdigest()
+
+    result = validate_existing_pilot_artifacts(**valid_pilot_artifacts)
+    assert result is False
+
+    # Verify hashes after validation call are 100% byte-identical
+    for key, path in valid_pilot_artifacts.items():
+        with open(path, "rb") as f:
+            hash_after = hashlib.sha256(f.read()).hexdigest()
+        assert hash_after == hashes_before[key], f"Artifact {path} was modified during failed validation!"
+
+
+def test_27_control_valid_pilot_artifacts_passes(valid_pilot_artifacts):
+    """Control test: Unmodified complete pilot artifacts pass validation cleanly."""
+    assert validate_existing_pilot_artifacts(**valid_pilot_artifacts) is True
