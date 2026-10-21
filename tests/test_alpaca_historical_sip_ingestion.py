@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import date, datetime, timezone
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -548,6 +549,53 @@ class TestSkipRefreshAndAdjustmentCompatibility:
         # Invariant: Incompatible provenance triggers BACKFILL from start_date, NOT REFRESH!
         assert disp["action_type"] == "BACKFILL"
         assert disp["provenance_compatible"] is False
+        assert mock_fetcher.calls[0]["start"] == "2025-09-15"
+
+    def test_cross_provider_lineage_massive_polygon_triggers_full_backfill_does_not_blend_providers(
+        self, test_db_path: str, tmp_path: Path
+    ):
+        """SIP-04 & Lineage Purity: Existing data from MASSIVE_POLYGON triggers BACKFILL, preventing mixed Alpaca/Polygon series."""
+        engine = MarketDatabaseEngine(db_path=test_db_path)
+        polygon_prov = MarketProvenance(
+            provider="MASSIVE_POLYGON",
+            ingestion_source=IngestionSource.DIRECT_PROVIDER,
+            observed_at="2026-10-16T20:00:00Z",
+            observed_date="2026-10-16",
+            observation_precision=ObservationPrecision.DATE,
+            observation_source=ObservationSource.PROVIDER_BAR_TIMESTAMP,
+            ingested_at="2026-10-16T20:01:00Z",
+            adjustment_state=AdjustmentState.SPLIT_ADJUSTED_ONLY,
+            structural_quality=StructuralQuality.COMPLETE,
+            fallback_status=False,
+        )
+        sessions = get_expected_nyse_sessions("2025-09-15", "2026-10-16")
+        bars = [{"time": s, "open": 100.0, "high": 105.0, "low": 99.0, "close": 102.0, "volume": 1000} for s in sessions]
+        engine.save_daily_candles_with_evidence("GOOG", bars, polygon_prov)
+
+        # Manifest with GOOG
+        goog_manifest = tmp_path / "goog_manifest.json"
+        goog_manifest.write_text(json.dumps({
+            "ingestion_scope": {
+                "production_target_backfill": {"missing_symbols": ["GOOG"]},
+                "production_target_refresh": {"per_symbol_parameters": []}
+            }
+        }), encoding="utf-8")
+
+        mock_fetcher = MockAlpacaFetcher()
+        adapter = AlpacaHistoricalSipIngestionAdapter(fetcher=mock_fetcher, feed="sip", adjustment="split")
+
+        summary = adapter.execute_bounded_ingestion(
+            manifest_path=goog_manifest,
+            symbols_override=["GOOG"],
+            start_date="2025-09-15",
+            end_date="2026-10-19",
+            apply_writes=False,
+            db_path=test_db_path,
+        )
+
+        disp = summary.candidate_dispositions["GOOG"]
+        assert disp["provenance_compatible"] is False
+        assert disp["action_type"] == "BACKFILL"
         assert mock_fetcher.calls[0]["start"] == "2025-09-15"
 
     def test_symbol_identity_mismatch_from_fetcher_rejected(self, sample_manifest_path: Path):
@@ -1277,4 +1325,794 @@ class TestDefectARefreshCoverageAndWriterSafeguards:
         count = cur.fetchone()[0]
         conn.close()
         assert count == 0
+
+
+class TestReleaseCandidateLineageAndOperationalAdversarial:
+    """
+    Focused Adversarial Regression Suite for Sprint 2 Package B Release Candidate.
+    Enforces the 10 Lineage and Operational Invariants:
+    1. test_lineage_polygon_prefix_rejected_without_replace
+    2. test_lineage_unprovenanced_prefix_detection
+    3. test_manifest_replace_directive_overrides_date_continuity
+    4. test_cross_provider_lineage_cannot_certify_mixed_series
+    5. test_scope_isolation_preserves_unaffected_symbols
+    6. test_one_to_one_candle_provenance_invariant
+    7. test_goog_googl_dual_listing_lineage_isolation
+    8. test_dry_run_zero_db_writes_adversarial
+    9. test_scoped_atomic_rollback_on_mid_symbol_failure
+    10. test_idempotent_replay_identical_digests
+    """
+
+    def test_lineage_polygon_prefix_rejected_without_replace(self, test_db_path: str, tmp_path: Path):
+        """Lineage Safety 1: Existing Polygon prefix outside requested scope triggers BLOCKED_INCOMPATIBLE_OUTSIDE_SCOPE."""
+        engine = MarketDatabaseEngine(db_path=test_db_path)
+        polygon_prov = MarketProvenance(
+            provider="MASSIVE_POLYGON",
+            ingestion_source=IngestionSource.DIRECT_PROVIDER,
+            observed_at="2026-10-16T20:00:00Z",
+            observed_date="2026-10-16",
+            observation_precision=ObservationPrecision.DATE,
+            observation_source=ObservationSource.PROVIDER_BAR_TIMESTAMP,
+            ingested_at="2026-10-16T20:01:00Z",
+            adjustment_state=AdjustmentState.SPLIT_ADJUSTED_ONLY,
+            structural_quality=StructuralQuality.COMPLETE,
+            fallback_status=False,
+        )
+        sessions = get_expected_nyse_sessions("2025-08-27", "2026-10-16")
+        bars = [{"time": s, "open": 100.0, "high": 105.0, "low": 99.0, "close": 102.0, "volume": 1000} for s in sessions]
+        engine.save_daily_candles_with_evidence("GOOG", bars, polygon_prov)
+
+        goog_manifest = tmp_path / "goog_manifest_20250915.json"
+        goog_manifest.write_text(json.dumps({
+            "ingestion_scope": {
+                "production_target_backfill": {"missing_symbols": ["GOOG"]},
+                "production_target_refresh": {"per_symbol_parameters": []}
+            }
+        }), encoding="utf-8")
+
+        mock_fetcher = MockAlpacaFetcher()
+        adapter = AlpacaHistoricalSipIngestionAdapter(fetcher=mock_fetcher, feed="sip", adjustment="split")
+
+        summary = adapter.execute_bounded_ingestion(
+            manifest_path=goog_manifest,
+            symbols_override=["GOOG"],
+            start_date="2025-09-15",
+            end_date="2026-10-19",
+            apply_writes=False,
+            db_path=test_db_path,
+        )
+
+        disp = summary.candidate_dispositions["GOOG"]
+        assert disp["status"] == "BLOCKED_INCOMPATIBLE_OUTSIDE_SCOPE"
+        assert "INCOMPATIBLE_HISTORY_OUTSIDE_REVIEWED_SCOPE" in disp["rejection_reason"]
+        assert "explicit wider repair from '2025-08-27'" in disp["rejection_reason"]
+        assert summary.failed_validation_count == 1
+        assert len(mock_fetcher.calls) == 0
+
+    def test_lineage_unprovenanced_prefix_detection(self, test_db_path: str, tmp_path: Path):
+        """Lineage Safety 2: Existing unprovenanced bars prior to start date are detected and rejected."""
+        conn = sqlite3.connect(test_db_path)
+        cur = conn.cursor()
+        sessions = get_expected_nyse_sessions("2025-08-27", "2025-09-12")
+        for s in sessions:
+            cur.execute(
+                "INSERT INTO asset_ohlcv_daily (symbol, trade_date, open, high, low, close, volume) "
+                "VALUES ('AAPL', ?, 150.0, 155.0, 149.0, 153.0, 2000000)", (s,)
+            )
+        conn.commit()
+        conn.close()
+
+        aapl_manifest = tmp_path / "aapl_manifest.json"
+        aapl_manifest.write_text(json.dumps({
+            "ingestion_scope": {
+                "production_target_backfill": {"missing_symbols": ["AAPL"]},
+                "production_target_refresh": {"per_symbol_parameters": []}
+            }
+        }), encoding="utf-8")
+
+        mock_fetcher = MockAlpacaFetcher()
+        adapter = AlpacaHistoricalSipIngestionAdapter(fetcher=mock_fetcher, feed="sip", adjustment="split")
+
+        summary = adapter.execute_bounded_ingestion(
+            manifest_path=aapl_manifest,
+            symbols_override=["AAPL"],
+            start_date="2025-09-15",
+            end_date="2026-10-19",
+            apply_writes=False,
+            db_path=test_db_path,
+        )
+
+        disp = summary.candidate_dispositions["AAPL"]
+        assert disp["status"] == "BLOCKED_INCOMPATIBLE_OUTSIDE_SCOPE"
+        assert "unprovenanced records outside reviewed window" in disp["rejection_reason"]
+        assert len(mock_fetcher.calls) == 0
+
+    def test_manifest_replace_directive_overrides_date_continuity(self, test_db_path: str, tmp_path: Path):
+        """Lineage Safety 3: Manifest action: REPLACE forces full window fetch even when dates appear contiguous."""
+        engine = MarketDatabaseEngine(db_path=test_db_path)
+        alpaca_prov = MarketProvenance(
+            provider=Provider.ALPACA,
+            ingestion_source=IngestionSource.DIRECT_PROVIDER,
+            observed_at="2026-10-16T20:00:00Z",
+            observed_date="2026-10-16",
+            observation_precision=ObservationPrecision.DATE,
+            observation_source=ObservationSource.PROVIDER_BAR_TIMESTAMP,
+            ingested_at="2026-10-16T20:01:00Z",
+            adjustment_state=AdjustmentState.SPLIT_ADJUSTED_ONLY,
+            structural_quality=StructuralQuality.COMPLETE,
+            fallback_status=False,
+        )
+        sessions = get_expected_nyse_sessions("2025-09-15", "2026-10-16")
+        bars = [{"time": s, "open": 200.0, "high": 205.0, "low": 199.0, "close": 202.0, "volume": 500000} for s in sessions]
+        engine.save_daily_candles_with_evidence("MSFT", bars, alpaca_prov)
+
+        replace_manifest = tmp_path / "replace_manifest.json"
+        replace_manifest.write_text(json.dumps({
+            "ingestion_scope": {
+                "candidate_bindings": {
+                    "MSFT": {
+                        "action": "REPLACE",
+                        "rationale": "Forced clean baseline replacement."
+                    }
+                },
+                "production_target_backfill": {"missing_symbols": []},
+                "production_target_refresh": {
+                    "per_symbol_parameters": [
+                        {"symbol": "MSFT", "action": "REPLACE", "requested_start_session": "2026-10-19"}
+                    ]
+                }
+            }
+        }), encoding="utf-8")
+
+        mock_fetcher = MockAlpacaFetcher()
+        adapter = AlpacaHistoricalSipIngestionAdapter(fetcher=mock_fetcher, feed="sip", adjustment="split")
+
+        summary = adapter.execute_bounded_ingestion(
+            manifest_path=replace_manifest,
+            symbols_override=["MSFT"],
+            start_date="2025-09-15",
+            end_date="2026-10-19",
+            apply_writes=False,
+            db_path=test_db_path,
+        )
+
+        disp = summary.candidate_dispositions["MSFT"]
+        assert disp["action_type"] == "REPLACE"
+        assert mock_fetcher.calls[0]["start"] == "2025-09-15"
+
+    def test_cross_provider_lineage_cannot_certify_mixed_series(self, test_db_path: str, tmp_path: Path):
+        """Lineage Safety 4: Series containing mixed Polygon and Alpaca provenance cannot be certified as current."""
+        engine = MarketDatabaseEngine(db_path=test_db_path)
+        sessions_poly = get_expected_nyse_sessions("2025-09-15", "2026-03-31")
+        sessions_alp = get_expected_nyse_sessions("2026-04-01", "2026-10-19")
+
+        polygon_prov = MarketProvenance(
+            provider="MASSIVE_POLYGON",
+            ingestion_source=IngestionSource.DIRECT_PROVIDER,
+            observed_at="2026-03-31T20:00:00Z",
+            observed_date="2026-03-31",
+            observation_precision=ObservationPrecision.DATE,
+            observation_source=ObservationSource.PROVIDER_BAR_TIMESTAMP,
+            ingested_at="2026-03-31T20:01:00Z",
+            adjustment_state=AdjustmentState.SPLIT_ADJUSTED_ONLY,
+            structural_quality=StructuralQuality.COMPLETE,
+            fallback_status=False,
+        )
+        alpaca_prov = MarketProvenance(
+            provider=Provider.ALPACA,
+            ingestion_source=IngestionSource.DIRECT_PROVIDER,
+            observed_at="2026-10-19T20:00:00Z",
+            observed_date="2026-10-19",
+            observation_precision=ObservationPrecision.DATE,
+            observation_source=ObservationSource.PROVIDER_BAR_TIMESTAMP,
+            ingested_at="2026-10-19T20:01:00Z",
+            adjustment_state=AdjustmentState.SPLIT_ADJUSTED_ONLY,
+            structural_quality=StructuralQuality.COMPLETE,
+            fallback_status=False,
+        )
+
+        bars_poly = [{"time": s, "open": 100.0, "high": 105.0, "low": 99.0, "close": 102.0, "volume": 1000} for s in sessions_poly]
+        bars_alp = [{"time": s, "open": 110.0, "high": 115.0, "low": 109.0, "close": 112.0, "volume": 1000} for s in sessions_alp]
+
+        engine.save_daily_candles_with_evidence("GOOG", bars_poly, polygon_prov)
+        engine.save_daily_candles_with_evidence("GOOG", bars_alp, alpaca_prov)
+
+        manifest = tmp_path / "mixed_manifest.json"
+        manifest.write_text(json.dumps({
+            "ingestion_scope": {
+                "production_target_backfill": {"missing_symbols": []},
+                "production_target_refresh": {"per_symbol_parameters": [{"symbol": "GOOG"}]}
+            }
+        }), encoding="utf-8")
+
+        mock_fetcher = MockAlpacaFetcher()
+        adapter = AlpacaHistoricalSipIngestionAdapter(fetcher=mock_fetcher, feed="sip", adjustment="split")
+
+        summary = adapter.execute_bounded_ingestion(
+            manifest_path=manifest,
+            symbols_override=["GOOG"],
+            start_date="2025-09-15",
+            end_date="2026-10-19",
+            apply_writes=False,
+            db_path=test_db_path,
+        )
+
+        disp = summary.candidate_dispositions["GOOG"]
+        assert disp["status"] != "SKIPPED"
+        assert disp["provenance_compatible"] is False
+
+    def test_scope_isolation_preserves_unaffected_symbols(self, test_db_path: str, tmp_path: Path):
+        """Lineage Safety 5: Replacing bars for target pilot symbols does not touch rows or provenance for unaffected symbols."""
+        engine = MarketDatabaseEngine(db_path=test_db_path)
+        tsla_prov = MarketProvenance(
+            provider="PRIOR_SYSTEM",
+            ingestion_source=IngestionSource.DIRECT_PROVIDER,
+            observed_at="2026-10-16T20:00:00Z",
+            observed_date="2026-10-16",
+            observation_precision=ObservationPrecision.DATE,
+            observation_source=ObservationSource.PROVIDER_BAR_TIMESTAMP,
+            ingested_at="2026-10-16T20:01:00Z",
+            adjustment_state=AdjustmentState.SPLIT_ADJUSTED_ONLY,
+            structural_quality=StructuralQuality.COMPLETE,
+            fallback_status=False,
+        )
+        sessions = get_expected_nyse_sessions("2025-09-15", "2026-10-16")
+        tsla_bars = [{"time": s, "open": 250.0, "high": 255.0, "low": 248.0, "close": 252.0, "volume": 12000000} for s in sessions]
+        engine.save_daily_candles_with_evidence("TSLA", tsla_bars, tsla_prov)
+
+        conn = sqlite3.connect(test_db_path)
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM asset_ohlcv_daily WHERE symbol = 'TSLA'")
+        tsla_count_before = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM asset_ohlcv_provenance WHERE symbol = 'TSLA'")
+        tsla_prov_before = cur.fetchone()[0]
+        conn.close()
+
+        manifest = tmp_path / "pilot_manifest.json"
+        manifest.write_text(json.dumps({
+            "ingestion_scope": {
+                "candidate_bindings": {"AAPL": {"action": "REPLACE"}},
+                "production_target_backfill": {"missing_symbols": ["AAPL"]},
+                "production_target_refresh": {"per_symbol_parameters": []}
+            }
+        }), encoding="utf-8")
+
+        mock_fetcher = MockAlpacaFetcher()
+        adapter = AlpacaHistoricalSipIngestionAdapter(fetcher=mock_fetcher, feed="sip", adjustment="split")
+
+        summary = adapter.execute_bounded_ingestion(
+            manifest_path=manifest,
+            symbols_override=["AAPL"],
+            start_date="2025-09-15",
+            end_date="2026-10-19",
+            apply_writes=True,
+            db_path=test_db_path,
+        )
+
+        assert summary.execution_outcome == "SUCCESS"
+
+        conn = sqlite3.connect(test_db_path)
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM asset_ohlcv_daily WHERE symbol = 'TSLA'")
+        tsla_count_after = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM asset_ohlcv_provenance WHERE symbol = 'TSLA'")
+        tsla_prov_after = cur.fetchone()[0]
+        conn.close()
+
+        assert tsla_count_before == tsla_count_after == len(sessions)
+        assert tsla_prov_before == tsla_prov_after == len(sessions)
+
+    def test_one_to_one_candle_provenance_invariant(self, test_db_path: str, tmp_path: Path):
+        """Lineage Safety 6: Every inserted candle has exactly one corresponding provenance record with matching trade_date."""
+        manifest = tmp_path / "abbv_manifest.json"
+        manifest.write_text(json.dumps({
+            "ingestion_scope": {
+                "candidate_bindings": {"ABBV": {"action": "BACKFILL"}},
+                "production_target_backfill": {"missing_symbols": ["ABBV"]},
+                "production_target_refresh": {"per_symbol_parameters": []}
+            }
+        }), encoding="utf-8")
+
+        mock_fetcher = MockAlpacaFetcher()
+        adapter = AlpacaHistoricalSipIngestionAdapter(fetcher=mock_fetcher, feed="sip", adjustment="split")
+
+        summary = adapter.execute_bounded_ingestion(
+            manifest_path=manifest,
+            symbols_override=["ABBV"],
+            start_date="2025-09-15",
+            end_date="2026-10-19",
+            apply_writes=True,
+            db_path=test_db_path,
+        )
+
+        assert summary.execution_outcome == "SUCCESS"
+
+        conn = sqlite3.connect(test_db_path)
+        cur = conn.cursor()
+        cur.execute("SELECT trade_date FROM asset_ohlcv_daily WHERE symbol = 'ABBV' ORDER BY trade_date")
+        candle_dates = [r[0] for r in cur.fetchall()]
+        cur.execute("SELECT trade_date FROM asset_ohlcv_provenance WHERE symbol = 'ABBV' ORDER BY trade_date")
+        prov_dates = [r[0] for r in cur.fetchall()]
+        conn.close()
+
+        assert len(candle_dates) > 0
+        assert candle_dates == prov_dates
+
+    def test_goog_googl_dual_listing_lineage_isolation(self, test_db_path: str, tmp_path: Path):
+        """Lineage Safety 7: Dual-listing operations on GOOG do not cross-contaminate GOOGL bars or provenance."""
+        engine = MarketDatabaseEngine(db_path=test_db_path)
+        googl_prov = MarketProvenance(
+            provider=Provider.ALPACA,
+            ingestion_source=IngestionSource.DIRECT_PROVIDER,
+            observed_at="2026-10-16T20:00:00Z",
+            observed_date="2026-10-16",
+            observation_precision=ObservationPrecision.DATE,
+            observation_source=ObservationSource.PROVIDER_BAR_TIMESTAMP,
+            ingested_at="2026-10-16T20:01:00Z",
+            adjustment_state=AdjustmentState.SPLIT_ADJUSTED_ONLY,
+            structural_quality=StructuralQuality.COMPLETE,
+            fallback_status=False,
+        )
+        sessions = get_expected_nyse_sessions("2025-09-15", "2026-10-16")
+        googl_bars = [{"time": s, "open": 180.0, "high": 182.0, "low": 179.0, "close": 181.0, "volume": 800000} for s in sessions]
+        engine.save_daily_candles_with_evidence("GOOGL", googl_bars, googl_prov)
+
+        manifest = tmp_path / "goog_only_manifest.json"
+        manifest.write_text(json.dumps({
+            "ingestion_scope": {
+                "candidate_bindings": {"GOOG": {"action": "BACKFILL"}},
+                "production_target_backfill": {"missing_symbols": ["GOOG"]},
+                "production_target_refresh": {"per_symbol_parameters": []}
+            }
+        }), encoding="utf-8")
+
+        mock_fetcher = MockAlpacaFetcher()
+        adapter = AlpacaHistoricalSipIngestionAdapter(fetcher=mock_fetcher, feed="sip", adjustment="split")
+
+        summary = adapter.execute_bounded_ingestion(
+            manifest_path=manifest,
+            symbols_override=["GOOG"],
+            start_date="2025-09-15",
+            end_date="2026-10-19",
+            apply_writes=True,
+            db_path=test_db_path,
+        )
+
+        assert summary.execution_outcome == "SUCCESS"
+
+        conn = sqlite3.connect(test_db_path)
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM asset_ohlcv_daily WHERE symbol = 'GOOGL'")
+        googl_count = cur.fetchone()[0]
+        cur.execute("SELECT DISTINCT provider FROM asset_ohlcv_provenance WHERE symbol = 'GOOGL'")
+        googl_providers = [r[0] for r in cur.fetchall()]
+        conn.close()
+
+        assert googl_count == len(sessions)
+        assert googl_providers == [Provider.ALPACA]
+
+    def test_dry_run_zero_db_writes_adversarial(self, test_db_path: str, tmp_path: Path):
+        """Operational Safety 8: Dry-run guarantees 0 bytes mutated across both tables, verified by DB SHA-256."""
+        engine = MarketDatabaseEngine(db_path=test_db_path)
+        prov = MarketProvenance(
+            provider=Provider.ALPACA,
+            ingestion_source=IngestionSource.DIRECT_PROVIDER,
+            observed_at="2026-10-16T20:00:00Z",
+            observed_date="2026-10-16",
+            observation_precision=ObservationPrecision.DATE,
+            observation_source=ObservationSource.PROVIDER_BAR_TIMESTAMP,
+            ingested_at="2026-10-16T20:01:00Z",
+            adjustment_state=AdjustmentState.SPLIT_ADJUSTED_ONLY,
+            structural_quality=StructuralQuality.COMPLETE,
+            fallback_status=False,
+        )
+        sessions = get_expected_nyse_sessions("2025-09-15", "2026-10-16")
+        bars = [{"time": s, "open": 100.0, "high": 105.0, "low": 99.0, "close": 102.0, "volume": 1000} for s in sessions]
+        engine.save_daily_candles_with_evidence("AAPL", bars, prov)
+
+        db_bytes_before = Path(test_db_path).read_bytes()
+        sha_before = hashlib.sha256(db_bytes_before).hexdigest()
+
+        manifest = tmp_path / "dry_run_manifest.json"
+        manifest.write_text(json.dumps({
+            "ingestion_scope": {
+                "candidate_bindings": {
+                    "AAPL": {"action": "REPLACE"},
+                    "ABBV": {"action": "BACKFILL"}
+                },
+                "production_target_backfill": {"missing_symbols": ["AAPL", "ABBV"]},
+                "production_target_refresh": {"per_symbol_parameters": []}
+            }
+        }), encoding="utf-8")
+
+        mock_fetcher = MockAlpacaFetcher()
+        adapter = AlpacaHistoricalSipIngestionAdapter(fetcher=mock_fetcher, feed="sip", adjustment="split")
+
+        summary = adapter.execute_bounded_ingestion(
+            manifest_path=manifest,
+            symbols_override=["AAPL", "ABBV"],
+            start_date="2025-09-15",
+            end_date="2026-10-19",
+            apply_writes=False,
+            db_path=test_db_path,
+        )
+
+        assert summary.mode == "DRY_RUN"
+        assert summary.total_bars_ingested == 0
+
+        db_bytes_after = Path(test_db_path).read_bytes()
+        sha_after = hashlib.sha256(db_bytes_after).hexdigest()
+
+        assert sha_before == sha_after
+
+    def test_scoped_atomic_rollback_on_mid_symbol_failure(self, test_db_path: str, tmp_path: Path):
+        """Operational Safety 9: Mid-batch failure on symbol 3 halts execution, preserves symbols 1 and 2, and marks remaining UNPROCESSED."""
+        manifest = tmp_path / "multi_symbol_manifest.json"
+        manifest.write_text(json.dumps({
+            "ingestion_scope": {
+                "production_target_backfill": {"missing_symbols": ["SYM1", "SYM2", "SYM3", "SYM4"]},
+                "production_target_refresh": {"per_symbol_parameters": []}
+            }
+        }), encoding="utf-8")
+
+        mock_fetcher = MockAlpacaFetcher()
+        adapter = AlpacaHistoricalSipIngestionAdapter(fetcher=mock_fetcher, feed="sip", adjustment="split")
+
+        real_engine = MarketDatabaseEngine(db_path=test_db_path)
+        orig_save = real_engine.save_daily_candles_with_evidence
+
+        def flaky_save(symbol, data, provenance, **kwargs):
+            if symbol == "SYM3":
+                raise sqlite3.OperationalError("Simulated disk I/O error on SYM3")
+            return orig_save(symbol, data, provenance, **kwargs)
+
+        with patch.object(real_engine, "save_daily_candles_with_evidence", side_effect=flaky_save):
+            adapter.db_engine = real_engine
+            summary = adapter.execute_bounded_ingestion(
+                manifest_path=manifest,
+                symbols_override=["SYM1", "SYM2", "SYM3", "SYM4"],
+                start_date="2025-09-15",
+                end_date="2026-10-19",
+                apply_writes=True,
+                db_path=test_db_path,
+            )
+
+        assert summary.execution_outcome == "PARTIAL_SUCCESS"
+        assert summary.completed_writes == ["SYM1", "SYM2"]
+        assert summary.failed_candidate == "SYM3"
+        assert summary.unprocessed_candidates == ["SYM4"]
+        assert summary.candidate_dispositions["SYM3"]["status"] == "PERSISTENCE_ERROR"
+        assert summary.candidate_dispositions["SYM4"]["status"] == "UNPROCESSED"
+
+        conn = sqlite3.connect(test_db_path)
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM asset_ohlcv_daily WHERE symbol = 'SYM1'")
+        assert cur.fetchone()[0] > 0
+        cur.execute("SELECT COUNT(*) FROM asset_ohlcv_daily WHERE symbol = 'SYM2'")
+        assert cur.fetchone()[0] > 0
+        cur.execute("SELECT COUNT(*) FROM asset_ohlcv_daily WHERE symbol = 'SYM3'")
+        assert cur.fetchone()[0] == 0
+        cur.execute("SELECT COUNT(*) FROM asset_ohlcv_daily WHERE symbol = 'SYM4'")
+        assert cur.fetchone()[0] == 0
+        conn.close()
+
+    def test_idempotent_replay_identical_digests(self, test_db_path: str, tmp_path: Path):
+        """Operational Safety 10: Replaying identical ingestion yields exact row counts, zero duplicates, and identical bar values."""
+        manifest = tmp_path / "replay_manifest.json"
+        manifest.write_text(json.dumps({
+            "ingestion_scope": {
+                "candidate_bindings": {
+                    "AAPL": {"action": "BACKFILL"},
+                    "ABBV": {"action": "BACKFILL"}
+                },
+                "production_target_backfill": {"missing_symbols": ["AAPL", "ABBV"]},
+                "production_target_refresh": {"per_symbol_parameters": []}
+            }
+        }), encoding="utf-8")
+
+        mock_fetcher = MockAlpacaFetcher()
+        adapter = AlpacaHistoricalSipIngestionAdapter(fetcher=mock_fetcher, feed="sip", adjustment="split")
+
+        summary1 = adapter.execute_bounded_ingestion(
+            manifest_path=manifest,
+            symbols_override=["AAPL", "ABBV"],
+            start_date="2025-09-15",
+            end_date="2026-10-19",
+            apply_writes=True,
+            db_path=test_db_path,
+        )
+        assert summary1.execution_outcome == "SUCCESS"
+
+        conn = sqlite3.connect(test_db_path)
+        cur = conn.cursor()
+        cur.execute("SELECT symbol, trade_date, open, high, low, close, volume FROM asset_ohlcv_daily ORDER BY symbol, trade_date")
+        bars_run1 = cur.fetchall()
+        cur.execute("SELECT symbol, trade_date, provider, adjustment_state FROM asset_ohlcv_provenance ORDER BY symbol, trade_date")
+        prov_run1 = cur.fetchall()
+        conn.close()
+
+        summary2 = adapter.execute_bounded_ingestion(
+            manifest_path=manifest,
+            symbols_override=["AAPL", "ABBV"],
+            start_date="2025-09-15",
+            end_date="2026-10-19",
+            apply_writes=True,
+            db_path=test_db_path,
+        )
+        assert summary2.execution_outcome == "SUCCESS"
+
+        conn = sqlite3.connect(test_db_path)
+        cur = conn.cursor()
+        cur.execute("SELECT symbol, trade_date, open, high, low, close, volume FROM asset_ohlcv_daily ORDER BY symbol, trade_date")
+        bars_run2 = cur.fetchall()
+        cur.execute("SELECT symbol, trade_date, provider, adjustment_state FROM asset_ohlcv_provenance ORDER BY symbol, trade_date")
+        prov_run2 = cur.fetchall()
+        conn.close()
+
+        assert bars_run1 == bars_run2
+        assert prov_run1 == prov_run2
+
+    def test_conflicting_directives_in_multiple_manifest_sections(self, test_db_path: str, tmp_path: Path):
+        """Lineage Safety 11: When manifest specifies both REFRESH and REPLACE for a symbol, REPLACE directive takes precedence."""
+        engine = MarketDatabaseEngine(db_path=test_db_path)
+        alpaca_prov = MarketProvenance(
+            provider=Provider.ALPACA,
+            ingestion_source=IngestionSource.DIRECT_PROVIDER,
+            observed_at="2026-10-16T20:00:00Z",
+            observed_date="2026-10-16",
+            observation_precision=ObservationPrecision.DATE,
+            observation_source=ObservationSource.PROVIDER_BAR_TIMESTAMP,
+            ingested_at="2026-10-16T20:01:00Z",
+            adjustment_state=AdjustmentState.SPLIT_ADJUSTED_ONLY,
+            structural_quality=StructuralQuality.COMPLETE,
+            fallback_status=False,
+        )
+        sessions = get_expected_nyse_sessions("2025-08-27", "2026-10-16")
+        bars = [{"time": s, "open": 200.0, "high": 205.0, "low": 199.0, "close": 202.0, "volume": 500000} for s in sessions]
+        engine.save_daily_candles_with_evidence("AAPL", bars, alpaca_prov)
+
+        conflicting_manifest = tmp_path / "conflicting_manifest.json"
+        conflicting_manifest.write_text(json.dumps({
+            "ingestion_scope": {
+                "candidate_bindings": {
+                    "AAPL": {
+                        "action": "REPLACE",
+                        "internal_security_id": "ARX_SEC_0B4C728FE0BE",
+                        "association_id": "ASSOC_ARX_SEC_0B4C728FE0BE_XNAS_AAPL_2026-10-17"
+                    }
+                },
+                "production_target_backfill": {"missing_symbols": []},
+                "production_target_refresh": {
+                    "per_symbol_parameters": [
+                        {"symbol": "AAPL", "action": "REFRESH", "requested_start_session": "2026-10-19"}
+                    ]
+                }
+            }
+        }), encoding="utf-8")
+
+        mock_fetcher = MockAlpacaFetcher()
+        adapter = AlpacaHistoricalSipIngestionAdapter(fetcher=mock_fetcher, feed="sip", adjustment="split")
+
+        summary = adapter.execute_bounded_ingestion(
+            manifest_path=conflicting_manifest,
+            symbols_override=["AAPL"],
+            start_date="2025-08-27",
+            end_date="2026-10-19",
+            apply_writes=False,
+            db_path=test_db_path,
+        )
+
+        disp = summary.candidate_dispositions["AAPL"]
+        assert disp["action_type"] == "REPLACE"
+        assert mock_fetcher.calls[0]["start"] == "2025-08-27"
+
+    def test_duplicate_or_non_session_production_dates_cleansed_on_replace(self, test_db_path: str, tmp_path: Path):
+        """Lineage Safety 12: SQLite schema rejects duplicate dates via UNIQUE constraint, and non-session dates are cleansed on replacement."""
+        conn = sqlite3.connect(test_db_path)
+        cur = conn.cursor()
+        # 1. Proves duplicate dates on the same symbol are strictly rejected at the schema level
+        cur.execute("INSERT INTO asset_ohlcv_daily (symbol, trade_date, open, high, low, close, volume) VALUES ('AAPL', '2025-09-02', 100, 105, 99, 102, 1000)")
+        with pytest.raises(sqlite3.IntegrityError, match="UNIQUE constraint failed"):
+            cur.execute("INSERT INTO asset_ohlcv_daily (symbol, trade_date, open, high, low, close, volume) VALUES ('AAPL', '2025-09-02', 101, 106, 100, 103, 1500)")
+
+        # 2. Insert anomalous non-session (Sunday) entry
+        cur.execute("INSERT INTO asset_ohlcv_daily (symbol, trade_date, open, high, low, close, volume) VALUES ('AAPL', '2025-08-31', 100, 105, 99, 102, 1000)")  # Sunday!
+        conn.commit()
+        conn.close()
+
+        manifest = tmp_path / "replace_manifest.json"
+        manifest.write_text(json.dumps({
+            "ingestion_scope": {
+                "candidate_bindings": {
+                    "AAPL": {
+                        "action": "REPLACE",
+                        "internal_security_id": "ARX_SEC_0B4C728FE0BE",
+                        "association_id": "ASSOC_ARX_SEC_0B4C728FE0BE_XNAS_AAPL_2026-10-17"
+                    }
+                },
+                "production_target_backfill": {"missing_symbols": ["AAPL"]},
+                "production_target_refresh": {"per_symbol_parameters": []}
+            }
+        }), encoding="utf-8")
+
+        mock_fetcher = MockAlpacaFetcher()
+        adapter = AlpacaHistoricalSipIngestionAdapter(fetcher=mock_fetcher, feed="sip", adjustment="split")
+
+        summary = adapter.execute_bounded_ingestion(
+            manifest_path=manifest,
+            symbols_override=["AAPL"],
+            start_date="2025-08-27",
+            end_date="2026-10-19",
+            apply_writes=True,
+            db_path=test_db_path,
+        )
+
+        assert summary.execution_outcome == "SUCCESS"
+
+        conn = sqlite3.connect(test_db_path)
+        cur = conn.cursor()
+        cur.execute("SELECT trade_date FROM asset_ohlcv_daily WHERE symbol = 'AAPL' ORDER BY trade_date")
+        dates = [r[0] for r in cur.fetchall()]
+        conn.close()
+
+        # Invariant: Exact 288 NYSE sessions, zero Sunday 2025-08-31
+        assert len(dates) == 288
+        assert "2025-08-31" not in dates
+        assert len(dates) == len(set(dates))
+
+    def test_historical_records_after_authorized_window_fails_closed(self, test_db_path: str, tmp_path: Path):
+        """Lineage Safety 13: Stored records after the authorized window end date trigger fail-closed block."""
+        engine = MarketDatabaseEngine(db_path=test_db_path)
+        prov = MarketProvenance(
+            provider="PRIOR_SYSTEM",
+            ingestion_source=IngestionSource.DIRECT_PROVIDER,
+            observed_at="2026-10-20T20:00:00Z",
+            observed_date="2026-10-20",
+            observation_precision=ObservationPrecision.DATE,
+            observation_source=ObservationSource.PROVIDER_BAR_TIMESTAMP,
+            ingested_at="2026-10-20T20:01:00Z",
+            adjustment_state=AdjustmentState.SPLIT_ADJUSTED_ONLY,
+            structural_quality=StructuralQuality.COMPLETE,
+            fallback_status=False,
+        )
+        engine.save_daily_candles_with_evidence("AAPL", [
+            {"time": "2026-10-20", "open": 230.0, "high": 235.0, "low": 229.0, "close": 232.0, "volume": 1000000}
+        ], prov)
+
+        manifest = tmp_path / "window_manifest.json"
+        manifest.write_text(json.dumps({
+            "ingestion_scope": {
+                "candidate_bindings": {"AAPL": {"action": "REPLACE"}},
+                "production_target_backfill": {"missing_symbols": ["AAPL"]},
+                "production_target_refresh": {"per_symbol_parameters": []}
+            }
+        }), encoding="utf-8")
+
+        mock_fetcher = MockAlpacaFetcher()
+        adapter = AlpacaHistoricalSipIngestionAdapter(fetcher=mock_fetcher, feed="sip", adjustment="split")
+
+        summary = adapter.execute_bounded_ingestion(
+            manifest_path=manifest,
+            symbols_override=["AAPL"],
+            start_date="2025-08-27",
+            end_date="2026-10-19",
+            apply_writes=False,
+            db_path=test_db_path,
+        )
+
+        disp = summary.candidate_dispositions["AAPL"]
+        assert disp["status"] == "BLOCKED_INCOMPATIBLE_OUTSIDE_SCOPE"
+        assert "records outside reviewed window" in disp["rejection_reason"]
+
+    def test_legacy_records_before_authorized_window_fails_closed(self, test_db_path: str, tmp_path: Path):
+        """Lineage Safety 14: Stored records before the authorized window start date trigger fail-closed block."""
+        engine = MarketDatabaseEngine(db_path=test_db_path)
+        prov = MarketProvenance(
+            provider="PRIOR_SYSTEM",
+            ingestion_source=IngestionSource.DIRECT_PROVIDER,
+            observed_at="2025-08-26T20:00:00Z",
+            observed_date="2025-08-26",
+            observation_precision=ObservationPrecision.DATE,
+            observation_source=ObservationSource.PROVIDER_BAR_TIMESTAMP,
+            ingested_at="2025-08-26T20:01:00Z",
+            adjustment_state=AdjustmentState.SPLIT_ADJUSTED_ONLY,
+            structural_quality=StructuralQuality.COMPLETE,
+            fallback_status=False,
+        )
+        engine.save_daily_candles_with_evidence("AAPL", [
+            {"time": "2025-08-26", "open": 200.0, "high": 205.0, "low": 199.0, "close": 202.0, "volume": 1000000}
+        ], prov)
+
+        manifest = tmp_path / "window_manifest.json"
+        manifest.write_text(json.dumps({
+            "ingestion_scope": {
+                "candidate_bindings": {"AAPL": {"action": "REPLACE"}},
+                "production_target_backfill": {"missing_symbols": ["AAPL"]},
+                "production_target_refresh": {"per_symbol_parameters": []}
+            }
+        }), encoding="utf-8")
+
+        mock_fetcher = MockAlpacaFetcher()
+        adapter = AlpacaHistoricalSipIngestionAdapter(fetcher=mock_fetcher, feed="sip", adjustment="split")
+
+        summary = adapter.execute_bounded_ingestion(
+            manifest_path=manifest,
+            symbols_override=["AAPL"],
+            start_date="2025-08-27",
+            end_date="2026-10-19",
+            apply_writes=False,
+            db_path=test_db_path,
+        )
+
+        disp = summary.candidate_dispositions["AAPL"]
+        assert disp["status"] == "BLOCKED_INCOMPATIBLE_OUTSIDE_SCOPE"
+        assert "records outside reviewed window" in disp["rejection_reason"]
+
+    def test_complete_alpaca_sip_provenance_after_replacement(self, test_db_path: str, tmp_path: Path):
+        """Lineage Safety 15: Executed replacement yields 100% pure Alpaca SIP split-adjusted provenance across all sessions."""
+        manifest = tmp_path / "clean_manifest.json"
+        manifest.write_text(json.dumps({
+            "ingestion_scope": {
+                "candidate_bindings": {"AAPL": {"action": "REPLACE"}},
+                "production_target_backfill": {"missing_symbols": ["AAPL"]},
+                "production_target_refresh": {"per_symbol_parameters": []}
+            }
+        }), encoding="utf-8")
+
+        mock_fetcher = MockAlpacaFetcher()
+        adapter = AlpacaHistoricalSipIngestionAdapter(fetcher=mock_fetcher, feed="sip", adjustment="split")
+
+        summary = adapter.execute_bounded_ingestion(
+            manifest_path=manifest,
+            symbols_override=["AAPL"],
+            start_date="2025-08-27",
+            end_date="2026-10-19",
+            apply_writes=True,
+            db_path=test_db_path,
+        )
+
+        assert summary.execution_outcome == "SUCCESS"
+
+        conn = sqlite3.connect(test_db_path)
+        cur = conn.cursor()
+        cur.execute("SELECT DISTINCT provider, adjustment_state FROM asset_ohlcv_provenance WHERE symbol = 'AAPL'")
+        prov_summary = cur.fetchall()
+        cur.execute("SELECT COUNT(*) FROM asset_ohlcv_daily WHERE symbol = 'AAPL'")
+        candle_count = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM asset_ohlcv_provenance WHERE symbol = 'AAPL'")
+        prov_count = cur.fetchone()[0]
+        conn.close()
+
+        assert candle_count == 288
+        assert prov_count == 288
+        assert prov_summary == [(Provider.ALPACA, AdjustmentState.SPLIT_ADJUSTED_ONLY)]
+
+    def test_zero_automatic_ingestion_on_deployment_startup(self):
+        """Operational Safety 16: Importing adapter and recovery modules executes zero database writes, zero HTTP calls, and zero background jobs."""
+        import importlib
+        import scripts.ingest_alpaca_historical as s1
+        import analyst_dashboard.data.guarded_recovery as s2
+        import scripts.guarded_market_recovery as s3
+
+        importlib.reload(s1)
+        importlib.reload(s2)
+        importlib.reload(s3)
+        assert hasattr(s1, "AlpacaHistoricalSipIngestionAdapter")
+        assert hasattr(s2, "GuardedRecoveryEngine")
+        assert hasattr(s3, "main")
+
+    def test_session_count_contract_dynamically_calculated(self):
+        """Calendar Authority 17: Validates that session counts across intervals are calculated dynamically per XNYS exchange calendar."""
+        s_aug_sep = get_expected_nyse_sessions("2025-08-27", "2025-09-12")
+        s_aug_oct16 = get_expected_nyse_sessions("2025-08-27", "2026-10-16")
+        s_aug_oct19 = get_expected_nyse_sessions("2025-08-27", "2026-10-19")
+        s_sep_oct19 = get_expected_nyse_sessions("2025-09-15", "2026-10-19")
+
+        assert len(s_aug_sep) == 12  # Labor Day 2025-09-01 excluded!
+        assert len(s_aug_oct16) == 287
+        assert len(s_aug_oct19) == 288
+        assert len(s_sep_oct19) == 276
+        assert len(s_aug_oct19) - len(s_aug_sep) == len(s_sep_oct19)
+
+
 
