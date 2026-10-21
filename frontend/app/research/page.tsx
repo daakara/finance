@@ -22,9 +22,12 @@ import OpportunityDossierCard from "../../components/OpportunityDossierCard";
 import {
   getOpportunityDossier,
   listOpportunityCohort,
+  listPilotDraftCohort,
   normalizeSymbol,
   isCohortSymbol,
+  isPilotDraftSymbol,
   getOpportunitySnapshotMetadata,
+  getPilotDraftSnapshotMetadata,
   OpportunityCohortItem,
 } from "../../lib/opportunityDossiers";
 import {
@@ -66,14 +69,16 @@ function DispositionPill({ disposition }: { disposition: string }) {
 function ResearchContent() {
   const searchParams = useSearchParams();
   const rawSymbol = searchParams.get("symbol") || searchParams.get("ticker");
+  const mode = searchParams.get("mode");
+  const isDraftMode = mode === "draft";
   const displaySymbol = (rawSymbol || "").trim().toUpperCase();
   const hasSymbolParam = displaySymbol.length > 0;
   const normalizedSymbol = normalizeSymbol(displaySymbol || "FIX");
 
-  const cohort = useMemo(() => listOpportunityCohort(), []);
-  const metadata = useMemo(() => getOpportunitySnapshotMetadata(), []);
-  const isKnown = isCohortSymbol(normalizedSymbol);
-  const dossier = isKnown ? getOpportunityDossier(normalizedSymbol) : null;
+  const cohort = useMemo(() => (isDraftMode ? listPilotDraftCohort() : listOpportunityCohort()), [isDraftMode]);
+  const metadata = useMemo(() => (isDraftMode ? getPilotDraftSnapshotMetadata() : getOpportunitySnapshotMetadata()), [isDraftMode]);
+  const isKnown = isDraftMode ? isPilotDraftSymbol(normalizedSymbol) : isCohortSymbol(normalizedSymbol);
+  const dossier = isKnown ? getOpportunityDossier(normalizedSymbol, { previewDrafts: isDraftMode }) : null;
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24">
@@ -109,7 +114,7 @@ function ResearchContent() {
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 text-slate-300 border border-slate-700 text-xs font-mono">
                 <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                ODP-05 Candidate Evidence
+                {isDraftMode ? "Pilot Scaling Draft Evidence" : "ODP-05 Candidate Evidence"}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-sans">
@@ -125,7 +130,17 @@ function ResearchContent() {
             <div className="p-3 rounded-xl bg-[#080c13] border border-[#1f293d] space-y-1 text-right">
               <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Candidate Cohort</div>
               <div className="text-sm font-mono font-bold text-cyan-300">{cohort.length} Research Assets</div>
-              <div className="text-[11px] font-mono text-slate-400">Single Bundled Snapshot</div>
+              <div className="text-[11px] font-mono text-slate-400">
+                {isDraftMode ? "Pilot Draft Staging" : "Single Bundled Snapshot"}
+              </div>
+              {!isDraftMode ? (
+                <Link
+                  href={`/research?symbol=${normalizedSymbol}&mode=draft`}
+                  className="inline-block mt-1 text-[10px] font-mono text-amber-400 hover:text-amber-300 underline"
+                >
+                  Preview 20-Asset Pilot Drafts
+                </Link>
+              ) : null}
             </div>
           </div>
         </div>
@@ -148,6 +163,32 @@ function ResearchContent() {
         </div>
       </header>
 
+      {/* Draft Staging Preview Mode Banner */}
+      {isDraftMode && (
+        <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-600/70 text-amber-200 text-xs font-mono flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+          <div className="flex items-start sm:items-center gap-2.5">
+            <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
+            <div className="space-y-0.5">
+              <div className="font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
+                <span>DRAFT STAGING PREVIEW — 20-COMPANY SCALING PILOT</span>
+                <span className="px-1.5 py-0.5 rounded bg-amber-900 text-[10px] text-amber-200 border border-amber-700">
+                  PEER REVIEW ONLY
+                </span>
+              </div>
+              <p className="text-[11px] text-amber-200/80 font-sans">
+                Reviewing draft dossiers generated for the Scaling Pilot ({cohort.length} assets). These records are strictly isolated from production publication and pending independent research acceptance.
+              </p>
+            </div>
+          </div>
+          <Link
+            href={`/research?symbol=${isCohortSymbol(normalizedSymbol) ? normalizedSymbol : "FIX"}`}
+            className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-900/80 hover:bg-amber-800 text-amber-200 font-bold border border-amber-700 text-center transition-colors"
+          >
+            Exit Draft Preview
+          </Link>
+        </div>
+      )}
+
       {/* Mobile Cohort Selector Rail (Horizontal Scrollable) */}
       <div className="lg:hidden space-y-2">
         <div className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider px-1">
@@ -159,7 +200,7 @@ function ResearchContent() {
             return (
               <Link
                 key={item.symbol}
-                href={`/research?symbol=${item.symbol}`}
+                href={`/research?symbol=${item.symbol}${isDraftMode ? "&mode=draft" : ""}`}
                 scroll={false}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-mono shrink-0 transition-all min-h-[44px] ${
                   active
@@ -188,7 +229,7 @@ function ResearchContent() {
             <div className="flex items-center justify-between pb-2 border-b border-[#1b2537]">
               <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-cyan-400" />
-                ODP-05 Cohort ({cohort.length})
+                {isDraftMode ? "Pilot Cohort" : "ODP-05 Cohort"} ({cohort.length})
               </span>
               <span className="text-[10px] font-mono text-slate-500">2026-10-16</span>
             </div>
@@ -199,7 +240,7 @@ function ResearchContent() {
                 return (
                   <Link
                     key={item.symbol}
-                    href={`/research?symbol=${item.symbol}`}
+                    href={`/research?symbol=${item.symbol}${isDraftMode ? "&mode=draft" : ""}`}
                     scroll={false}
                     className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all text-left min-h-[44px] group focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                       active
@@ -241,11 +282,11 @@ function ResearchContent() {
               Evaluated strictly against ODP-05 opportunity discovery standards. Primary filings authenticated via official SEC EDGAR accessions.
             </p>
             <div className="pt-2 border-t border-[#151e2e] space-y-1 text-[10px] text-slate-500">
-              <div>Contract: ODP-05 Baseline</div>
+              <div>Contract: {isDraftMode ? "Pilot Scaling Draft" : "ODP-05 Baseline"}</div>
               <div>Filing Cutoff: {metadata.filing_availability_cutoff_utc || "Unavailable"}</div>
               <div>Authored UTC: {metadata.authoring_timestamp_utc || "Unavailable"}</div>
-              <div>Independent Review: Unavailable (Unrecorded)</div>
-              <div>Snapshot SHA: {metadata.source_ledger_sha256 ? `${metadata.source_ledger_sha256.substring(0, 12)}…` : "Verified"}</div>
+              <div>Independent Review: {isDraftMode ? "Pending Independent Review" : "Unavailable (Unrecorded)"}</div>
+              <div>Snapshot: {metadata.source_ledger_sha256 ? `${metadata.source_ledger_sha256.substring(0, 12)}…` : "Draft Staging"}</div>
             </div>
           </div>
         </aside>
@@ -286,12 +327,12 @@ function ResearchContent() {
                     UNSUPPORTED RESEARCH SYMBOL
                   </div>
                   <h2 className="text-xl sm:text-2xl font-bold text-white font-sans">
-                    No ODP-05 Research Dossier for &ldquo;{displaySymbol}&rdquo;
+                    {isDraftMode ? `No Pilot Candidate Draft for “${displaySymbol}”` : `No ODP-05 Research Dossier for “${displaySymbol}”`}
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-300 font-sans leading-relaxed">
-                    The ARX Opportunity Dossier surface currently hosts the 5 candidate assets evaluated and frozen under the
-                    ODP-05 Discovery baseline as of the <strong>2026-10-16 market close</strong>.
-                    Live tape equities and uncataloged symbols outside this bounded research scope do not have static assessment dossiers.
+                    {isDraftMode
+                      ? `The ARX Scaling Pilot currently covers 20 candidate assets (5 baseline + 15 expansion drafts). Live tape equities outside this scope do not have assessment drafts.`
+                      : `The ARX Opportunity Dossier surface currently hosts the 5 candidate assets evaluated and frozen under the ODP-05 Discovery baseline as of the 2026-10-16 market close. Live tape equities and uncataloged symbols outside this bounded research scope do not have static assessment dossiers.`}
                   </p>
                 </div>
               </div>
@@ -305,7 +346,7 @@ function ResearchContent() {
                   {cohort.map((item) => (
                     <Link
                       key={item.symbol}
-                      href={`/research?symbol=${item.symbol}`}
+                      href={`/research?symbol=${item.symbol}${isDraftMode ? "&mode=draft" : ""}`}
                       className="p-3 rounded-lg bg-[#0e1624] hover:bg-[#162236] border border-[#1f2c42] hover:border-cyan-500/60 transition-colors flex items-center justify-between text-xs font-mono group"
                     >
                       <div className="flex flex-col">

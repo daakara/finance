@@ -13,6 +13,7 @@
  */
 
 import snapshotData from "./opportunityDossierSnapshot.json";
+import draftSnapshotData from "./opportunityDossierPilotDrafts.json";
 
 export interface PrimaryFilingReference {
   form: string;
@@ -187,15 +188,42 @@ export interface OpportunityDossierSnapshotFile {
 
 export const ODP05_COHORT_SYMBOLS = ["FIX", "DUOL", "IREN", "CORZ", "MU"] as const;
 
+export const PILOT_EXPANSION_SYMBOLS = [
+  "ULTA", "MEDP", "DECK", "KLAC", "LULU",
+  "EME", "VRT", "ANET", "PLTR", "ISRG",
+  "CDNS", "PWR", "SNPS", "NOW", "ELF"
+] as const;
+
+export const TOTAL_PILOT_SYMBOLS = [
+  ...ODP05_COHORT_SYMBOLS,
+  ...PILOT_EXPANSION_SYMBOLS
+] as const;
+
 export const ATTRIBUTABLE_SEC_CIK_MAP: Record<string, string> = {
   FIX: "0001035983",
   DUOL: "0001562088",
   IREN: "0001878848",
   CORZ: "0001839341",
   MU: "0000723125",
+  ULTA: "0001403568",
+  MEDP: "0001668397",
+  DECK: "0000910521",
+  KLAC: "0000319201",
+  LULU: "0001397187",
+  EME: "0000105634",
+  VRT: "0001674101",
+  ANET: "0001596532",
+  PLTR: "0001321655",
+  ISRG: "0001035267",
+  CDNS: "0000813672",
+  PWR: "0001050915",
+  SNPS: "0000883241",
+  NOW: "0001373715",
+  ELF: "0001600033",
 };
 
 const typedSnapshot = snapshotData as unknown as OpportunityDossierSnapshotFile;
+const typedDraftSnapshot = draftSnapshotData as unknown as OpportunityDossierSnapshotFile;
 
 /**
  * Normalizes symbol to uppercase trimmed string.
@@ -214,11 +242,30 @@ export function isCohortSymbol(symbol: string): boolean {
 }
 
 /**
- * Returns the opportunity dossier for a symbol, or null if outside cohort or uncataloged.
+ * Returns true if symbol belongs to the 20-company pilot expansion cohort (drafts included).
  */
-export function getOpportunityDossier(symbol: string): OpportunityDossier | null {
+export function isPilotDraftSymbol(symbol: string): boolean {
+  const clean = normalizeSymbol(symbol);
+  return (TOTAL_PILOT_SYMBOLS as readonly string[]).includes(clean);
+}
+
+/**
+ * Returns the opportunity dossier for a symbol from published production snapshot,
+ * or optionally from pilot draft staging when previewDrafts is enabled.
+ */
+export function getOpportunityDossier(
+  symbol: string,
+  options?: { previewDrafts?: boolean }
+): OpportunityDossier | null {
   const clean = normalizeSymbol(symbol);
   if (!clean) return null;
+
+  if (options?.previewDrafts) {
+    const draftDossier = typedDraftSnapshot.dossiers?.[clean];
+    if (!draftDossier || draftDossier.identity?.symbol !== clean) return null;
+    return draftDossier;
+  }
+
   const dossier = typedSnapshot.dossiers?.[clean];
   if (!dossier) return null;
 
@@ -229,10 +276,24 @@ export function getOpportunityDossier(symbol: string): OpportunityDossier | null
 }
 
 /**
- * Returns the list of available cohort companies.
+ * Returns the opportunity dossier from the draft staging file.
+ */
+export function getPilotDraftDossier(symbol: string): OpportunityDossier | null {
+  return getOpportunityDossier(symbol, { previewDrafts: true });
+}
+
+/**
+ * Returns the list of available published cohort companies.
  */
 export function listOpportunityCohort(): OpportunityCohortItem[] {
   return typedSnapshot.cohort || [];
+}
+
+/**
+ * Returns the list of 20 pilot cohort companies from draft staging.
+ */
+export function listPilotDraftCohort(): OpportunityCohortItem[] {
+  return typedDraftSnapshot.cohort || [];
 }
 
 /**
@@ -240,4 +301,11 @@ export function listOpportunityCohort(): OpportunityCohortItem[] {
  */
 export function getOpportunitySnapshotMetadata(): OpportunitySnapshotMetadata {
   return typedSnapshot.snapshot_metadata;
+}
+
+/**
+ * Returns top-level draft snapshot metadata.
+ */
+export function getPilotDraftSnapshotMetadata(): OpportunitySnapshotMetadata {
+  return typedDraftSnapshot.snapshot_metadata;
 }
