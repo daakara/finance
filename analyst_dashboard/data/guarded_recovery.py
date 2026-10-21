@@ -116,6 +116,7 @@ class GuardedRecoveryEngine:
         quarantine_base_dir: Path | str = "/root/incident_quarantine",
         busy_timeout_ms: int = 2000,
         handle_checker: Optional[Callable[[Path], List[int]]] = None,
+        operator_confirmed_maintenance: bool = False,
     ) -> None:
         self.target_path = Path(target_db_path).resolve()
         self.backup_path = Path(backup_db_path).resolve()
@@ -126,6 +127,7 @@ class GuardedRecoveryEngine:
         self.quarantine_base_dir = Path(quarantine_base_dir).resolve()
         self.busy_timeout_ms = busy_timeout_ms
         self._custom_handle_checker = handle_checker
+        self.operator_confirmed_maintenance = operator_confirmed_maintenance
         self._active_reader_registry: Set[Any] = set()
 
     @staticmethod
@@ -142,7 +144,12 @@ class GuardedRecoveryEngine:
         if not self.incident_id or not self.incident_id.strip():
             raise ValueError("AUTHORIZATION_REJECTED: Incident ID must not be empty.")
         inc_clean = self.incident_id.strip()
-        if len(inc_clean) < 6 or not inc_clean.startswith("INC-"):
+        if inc_clean in ("INC-", "INC-FAKE", "INC-TEST", "INC-DEFAULT", "INC-PLACEHOLDER"):
+            raise ValueError(
+                f"AUTHORIZATION_REJECTED: Prefix-only or fabricated incident ID '{self.incident_id}' is rejected."
+            )
+        inc_pattern = re.compile(r"^INC-[A-Z0-9_-]{3,64}$")
+        if not inc_pattern.match(inc_clean):
             raise ValueError(
                 f"AUTHORIZATION_REJECTED: Incident ID '{self.incident_id}' must follow structured format (INC-xxx)."
             )
@@ -150,24 +157,42 @@ class GuardedRecoveryEngine:
         if not self.operator_authorization or not self.operator_authorization.strip():
             raise ValueError("AUTHORIZATION_REJECTED: Formal operator authorization token must not be empty.")
         auth_clean = self.operator_authorization.strip()
-        if len(auth_clean) < 6 or not (auth_clean.startswith("G-S2-") or auth_clean.startswith("INC-G-S2-")):
+        if auth_clean in ("G-S2-", "INC-G-S2-", "G-S2-FAKE", "INC-FAKE", "G-S2-TEST", "G-S2-DEFAULT"):
+            raise ValueError(
+                f"AUTHORIZATION_REJECTED: Prefix-only or fabricated authorization token '{self.operator_authorization}' is rejected."
+            )
+        auth_pattern = re.compile(r"^(G-S2-ACT(\-[A-Z0-9_]+)?|INC-G-S2-[A-Z0-9_]{3,32})$")
+        if not auth_pattern.match(auth_clean):
             raise ValueError(
                 f"AUTHORIZATION_REJECTED: Operator authorization token '{self.operator_authorization}' "
                 "must reference an authorized operational gate (e.g. G-S2-ACT, INC-G-S2-...)."
             )
 
     def step2_verify_maintenance_mode(self) -> None:
-        """Step 2: Check explicit maintenance mode authorization audit reference."""
+        """Step 2: Check explicit maintenance mode authorization audit reference and operator confirmation."""
+        if not self.operator_confirmed_maintenance:
+            raise ValueError(
+                "MAINTENANCE_MODE_UNCONFIRMED: Operator must explicitly confirm application maintenance mode is active before recovery."
+            )
         if not self.maintenance_mode_token or not self.maintenance_mode_token.strip():
             raise ValueError("MAINTENANCE_MODE_REQUIRED: Maintenance mode authorization token must not be empty.")
         token_clean = self.maintenance_mode_token.strip()
-        if len(token_clean) < 8 or not (token_clean.startswith("MAINT-") or token_clean.startswith("MAINTENANCE-")):
-            raise ValueError(
-                f"MAINTENANCE_MODE_REQUIRED: Token '{self.maintenance_mode_token}' must start with MAINT- or MAINTENANCE-."
-            )
-        if token_clean in ("MAINT-", "MAINTENANCE-", "MAINT-DEFAULT", "MAINT-TEST"):
+        if token_clean in (
+            "MAINT-",
+            "MAINTENANCE-",
+            "MAINT-DEFAULT",
+            "MAINT-TEST",
+            "MAINT-FAKE",
+            "MAINTENANCE-FAKE",
+            "MAINT-PLACEHOLDER",
+        ):
             raise ValueError(
                 f"MAINTENANCE_MODE_REQUIRED: Generic or placeholder maintenance token '{self.maintenance_mode_token}' is rejected."
+            )
+        maint_pattern = re.compile(r"^(MAINT|MAINTENANCE)-[A-Z0-9_-]{4,64}$")
+        if not maint_pattern.match(token_clean):
+            raise ValueError(
+                f"MAINTENANCE_MODE_REQUIRED: Token '{self.maintenance_mode_token}' must follow structured format (e.g. MAINT-xxx)."
             )
         if token_clean == self.incident_id.strip():
             raise ValueError(
@@ -288,7 +313,9 @@ class GuardedRecoveryEngine:
 
     def step7_verify_backup_integrity(self) -> None:
         """
-        Step 7: Verify backup file exists, matches expected SHA-256, and passes SQLite integrity_check.
+        Step 7: Verify backup file exists, matches expected SHA-256, passes SQLite integrity_check,
+        and contains required schema/tables.
+        CRITICAL: This method MUST execute before any target database files are moved or quarantined.
         """
         if not self.backup_path.is_file():
             raise FileNotFoundError(f"BACKUP_FILE_NOT_FOUND: Backup '{self.backup_path}' does not exist.")
@@ -308,12 +335,43 @@ class GuardedRecoveryEngine:
             rows = cur.fetchall()
             if not rows or rows[0][0] != "ok":
                 raise ValueError(f"BACKUP_CORRUPTED: PRAGMA integrity_check failed on backup: {rows}")
+
+            # Verify table schema
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")
+            backup_tables = {r[0] for r in cur.fetchall()}
+            if not backup_tables:
+                raise ValueError("BACKUP_CORRUPTED: Backup database contains no tables.")
+
+            # If market database is being restored, verify required market schema
+            if "market" in self.target_path.name.lower() or "market" in self.backup_path.name.lower():
+                if "asset_ohlcv_daily" not in backup_tables:
+                    raise ValueError(
+                        "BACKUP_SCHEMA_INVALID: Market backup database is missing required table 'asset_ohlcv_daily'."
+                    )
+
+            # If target database exists and has readable schema, verify backup covers all target tables
+            if self.target_path.exists():
+                try:
+                    t_conn = sqlite3.connect(f"{self.target_path.as_uri()}?mode=ro", uri=True, timeout=2.0)
+                    t_cur = t_conn.cursor()
+                    t_cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")
+                    target_tables = {r[0] for r in t_cur.fetchall()}
+                    t_conn.close()
+                    missing_tables = target_tables - backup_tables
+                    if missing_tables:
+                        raise ValueError(
+                            f"BACKUP_SCHEMA_INVALID: Backup database is missing required tables present in target: {sorted(missing_tables)}"
+                        )
+                except (sqlite3.DatabaseError, sqlite3.OperationalError):
+                    # Target may be corrupt or unreadable prior to recovery, which is normal for disaster recovery
+                    pass
         finally:
             conn.close()
 
     def step8_restore_via_candidate_file(self) -> Path:
         """
-        Step 8: Stage restore into candidate file, verify candidate, then atomically move to target.
+        Step 8: Stage restore into candidate file, run secondary pre-replacement integrity verification,
+        then atomically move to target.
         """
         candidate_path = self.target_path.with_name(self.target_path.name + ".restore_candidate")
         if candidate_path.exists():
@@ -321,10 +379,23 @@ class GuardedRecoveryEngine:
 
         shutil.copy2(self.backup_path, candidate_path)
 
+        # Secondary verification on staged candidate file immediately prior to atomic replacement
         candidate_sha = self.compute_file_sha256(candidate_path)
         if candidate_sha != self.expected_backup_sha256:
             candidate_path.unlink()
             raise ValueError("CANDIDATE_VERIFICATION_FAILED: Candidate file digest corrupted during copy.")
+
+        cand_uri = f"{candidate_path.as_uri()}?mode=ro"
+        cand_conn = sqlite3.connect(cand_uri, uri=True, timeout=5.0)
+        try:
+            cand_cur = cand_conn.cursor()
+            cand_cur.execute("PRAGMA integrity_check;")
+            rows = cand_cur.fetchall()
+            if not rows or rows[0][0] != "ok":
+                candidate_path.unlink()
+                raise ValueError(f"CANDIDATE_VERIFICATION_FAILED: Candidate SQLite integrity check failed: {rows}")
+        finally:
+            cand_conn.close()
 
         os.replace(candidate_path, self.target_path)
         return self.target_path

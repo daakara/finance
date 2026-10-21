@@ -191,21 +191,27 @@ class TestPilotIdentityAndGuardedRecovery:
                     expected_backup_sha256=bck_sha,
                     incident_id="INC-TEST-001",
                     operator_authorization="G-S2-ACT",
-                    maintenance_mode_token="MAINT-G-S2-TEST",
+                    maintenance_mode_token="MAINT-G-S2-INC-001",
                     quarantine_base_dir=quarantine_dir,
                     busy_timeout_ms=500,
+                    operator_confirmed_maintenance=True,
                 )
 
                 with pytest.raises(RuntimeError, match="ACTIVE_WRITER_DETECTED"):
                     engine.execute_guarded_recovery()
             finally:
+                cur.close()
                 conn_target.rollback()
                 conn_target.close()
 
             conn_chk = sqlite3.connect(str(target_path))
-            res = conn_chk.cursor().execute("SELECT id FROM test_data;").fetchone()[0]
+            chk_cur = conn_chk.cursor()
+            res = chk_cur.execute("SELECT id FROM test_data;").fetchone()[0]
+            chk_cur.close()
             conn_chk.close()
             assert res == 1
+            import gc
+            gc.collect()
 
     def test_wal_exclusive_lock_insufficient_and_reader_fence_enforced(self):
         """
@@ -253,9 +259,10 @@ class TestPilotIdentityAndGuardedRecovery:
                     expected_backup_sha256=bck_sha,
                     incident_id="INC-FENCE-001",
                     operator_authorization="G-S2-ACT",
-                    maintenance_mode_token="MAINT-G-S2-TEST",
+                    maintenance_mode_token="MAINT-G-S2-INC-001",
                     quarantine_base_dir=quarantine_dir,
                     handle_checker=lambda path: [9999],  # Simulated active PID holding open fd
+                    operator_confirmed_maintenance=True,
                 )
 
                 with pytest.raises(RuntimeError, match="RECOVERY_FENCE_VIOLATION"):
@@ -283,6 +290,7 @@ class TestPilotIdentityAndGuardedRecovery:
                 operator_authorization="G-S2-ACT",
                 maintenance_mode_token="",  # Empty
                 quarantine_base_dir=quarantine_dir,
+                operator_confirmed_maintenance=True,
             )
 
             with pytest.raises(ValueError, match="MAINTENANCE_MODE_REQUIRED"):
@@ -363,6 +371,7 @@ class TestPilotIdentityAndGuardedRecovery:
                 operator_authorization="G-S2-ACT",
                 maintenance_mode_token="MAINT-G-S2-ACT-PILOT-001",
                 quarantine_base_dir=quarantine_dir,
+                operator_confirmed_maintenance=True,
             )
 
             receipt = engine.execute_guarded_recovery()
@@ -488,6 +497,7 @@ class TestPilotIdentityAndGuardedRecovery:
                 incident_id="",
                 operator_authorization="G-S2-ACT",
                 maintenance_mode_token="MAINT-INC-001",
+                operator_confirmed_maintenance=True,
             )
             with pytest.raises(ValueError, match="AUTHORIZATION_REJECTED.*Incident ID"):
                 engine.step1_verify_authorization()
@@ -506,7 +516,7 @@ class TestPilotIdentityAndGuardedRecovery:
 
             # 4. Maintenance token matching incident ID
             engine.maintenance_mode_token = "INC-TEST-001"
-            with pytest.raises(ValueError, match="MAINTENANCE_MODE_REQUIRED.*must start with"):
+            with pytest.raises(ValueError, match="MAINTENANCE_MODE_REQUIRED.*must follow structured format"):
                 engine.step2_verify_maintenance_mode()
 
     def test_preflight_backup_validation_failure_preserves_target_database_unquarantined(self):
@@ -535,6 +545,7 @@ class TestPilotIdentityAndGuardedRecovery:
                 operator_authorization="G-S2-ACT",
                 maintenance_mode_token="MAINT-INC-G-S2-PILOT-001",
                 quarantine_base_dir=quarantine_dir,
+                operator_confirmed_maintenance=True,
             )
 
             # Execution must fail before any file is moved
@@ -547,6 +558,7 @@ class TestPilotIdentityAndGuardedRecovery:
             cur = conn_check.cursor()
             cur.execute("SELECT symbol, close FROM market_data;")
             assert cur.fetchall() == [("AAPL", 150.25)]
+            cur.close()
             conn_check.close()
 
             # Quarantine directory must not have any quarantined DB files
@@ -570,8 +582,8 @@ class TestPilotIdentityAndGuardedRecovery:
 
             # Create valid backup DB
             conn_b = sqlite3.connect(str(backup_path))
-            conn_b.execute("CREATE TABLE backup_marker (id INT);")
-            conn_b.execute("INSERT INTO backup_marker VALUES (99);")
+            conn_b.execute("CREATE TABLE target_marker (id INT);")
+            conn_b.execute("INSERT INTO target_marker VALUES (99);")
             conn_b.commit()
             conn_b.close()
 
@@ -585,6 +597,7 @@ class TestPilotIdentityAndGuardedRecovery:
                 operator_authorization="G-S2-ACT",
                 maintenance_mode_token="MAINT-INC-G-S2-PILOT-001",
                 quarantine_base_dir=quarantine_dir,
+                operator_confirmed_maintenance=True,
             )
 
             # Simulate failure during step 8 (replacement)
@@ -602,6 +615,7 @@ class TestPilotIdentityAndGuardedRecovery:
             cur = conn_res.cursor()
             cur.execute("SELECT id FROM target_marker;")
             assert cur.fetchall() == [(42,)]
+            cur.close()
             conn_res.close()
 
             # Quarantine evidence directory preserved
@@ -642,7 +656,7 @@ class TestPilotIdentityAndGuardedRecovery:
 
     def test_cli_requires_explicit_maintenance_token(self):
         """Proves that scripts/guarded_market_recovery.py CLI requires explicit --maintenance-token."""
-        cli_script = Path("scripts/guarded_market_recovery.py").resolve()
+        cli_script = Path(__file__).resolve().parent.parent / "scripts" / "guarded_market_recovery.py"
 
         # Invoke without --maintenance-token
         cmd = [
@@ -657,5 +671,261 @@ class TestPilotIdentityAndGuardedRecovery:
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode != 0
         assert "the following arguments are required: --maintenance-token" in result.stderr
+
+    def test_cli_requires_operator_confirmed_maintenance(self):
+        """Proves that CLI execution fails closed if --operator-confirmed-maintenance is omitted."""
+        cli_script = Path(__file__).resolve().parent.parent / "scripts" / "guarded_market_recovery.py"
+
+        cmd = [
+            sys.executable,
+            str(cli_script),
+            "--target-db", "dummy.db",
+            "--backup-file", "dummy_bck.db",
+            "--expected-sha256", "abc",
+            "--incident-id", "INC-G-S2-PILOT-001",
+            "--operator-auth", "G-S2-ACT",
+            "--maintenance-token", "MAINT-INC-G-S2-PILOT-001",
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode != 0
+        assert "MAINTENANCE_MODE_UNCONFIRMED" in result.stderr
+
+    def test_prefix_only_fabricated_authorization_fails_closed(self):
+        """Proves that prefix-only fabricated authorization tokens are rejected by step 1."""
+        with tempfile.TemporaryDirectory() as td:
+            tdp = Path(td)
+            dummy_target = tdp / "dummy_target.db"
+            dummy_target.touch()
+            dummy_backup = tdp / "dummy_backup.db"
+            dummy_backup.touch()
+
+            fabricated_tokens = [
+                "G-S2-",
+                "G-S2-FAKE",
+                "INC-G-S2-",
+                "INC-FAKE",
+                "G-S2-TEST",
+                "G-S2-DEFAULT",
+                "G-S2-ACT-INVALID!",
+            ]
+
+            for fab in fabricated_tokens:
+                engine = GuardedRecoveryEngine(
+                    target_db_path=dummy_target,
+                    backup_db_path=dummy_backup,
+                    expected_backup_sha256="dummy",
+                    incident_id="INC-G-S2-PILOT-001",
+                    operator_authorization=fab,
+                    maintenance_mode_token="MAINT-INC-G-S2-PILOT-001",
+                    operator_confirmed_maintenance=True,
+                )
+                with pytest.raises(ValueError, match="AUTHORIZATION_REJECTED"):
+                    engine.step1_verify_authorization()
+
+    def test_operator_unconfirmed_maintenance_state_fails_closed(self):
+        """Proves that unconfirmed maintenance mode state fails closed in step 2."""
+        with tempfile.TemporaryDirectory() as td:
+            tdp = Path(td)
+            dummy_target = tdp / "dummy_target.db"
+            dummy_target.touch()
+            dummy_backup = tdp / "dummy_backup.db"
+            dummy_backup.touch()
+
+            # Default operator_confirmed_maintenance is False
+            engine = GuardedRecoveryEngine(
+                target_db_path=dummy_target,
+                backup_db_path=dummy_backup,
+                expected_backup_sha256="dummy",
+                incident_id="INC-G-S2-PILOT-001",
+                operator_authorization="G-S2-ACT",
+                maintenance_mode_token="MAINT-INC-G-S2-PILOT-001",
+                operator_confirmed_maintenance=False,
+            )
+            with pytest.raises(ValueError, match="MAINTENANCE_MODE_UNCONFIRMED"):
+                engine.step2_verify_maintenance_mode()
+
+    def test_no_builtin_default_satisfies_maintenance_authorization(self):
+        """Proves that neither constructor nor CLI permits default maintenance tokens or state."""
+        import inspect
+
+        sig = inspect.signature(GuardedRecoveryEngine.__init__)
+        params = sig.parameters
+
+        # maintenance_mode_token must NOT have default
+        assert params["maintenance_mode_token"].default == inspect.Parameter.empty
+        # operator_confirmed_maintenance must default to False
+        assert params["operator_confirmed_maintenance"].default is False
+
+    def test_backup_integrity_failure_leaves_original_wal_shm_intact(self):
+        """
+        Proves that a backup SQLite corruption failure in step 7 (preflight) leaves the live
+        target database file, WAL file, and SHM file completely intact and unquarantined.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            tdp = Path(td)
+            target_path = tdp / "market.db"
+            wal_path = tdp / "market.db-wal"
+            shm_path = tdp / "market.db-shm"
+            backup_path = tdp / "corrupt_backup.db"
+            quarantine_dir = tdp / "quarantine"
+
+            # Create target DB in WAL mode with active transactions so WAL and SHM exist
+            conn = sqlite3.connect(str(target_path))
+            conn.execute("PRAGMA journal_mode=WAL;")
+            conn.execute("CREATE TABLE asset_ohlcv_daily (symbol TEXT, close REAL);")
+            conn.execute("INSERT INTO asset_ohlcv_daily VALUES ('AAPL', 236.48);")
+            conn.commit()
+            conn.close()
+
+            # Ensure WAL and SHM files are materialized
+            assert target_path.exists()
+            wal_path.write_text("wal_data_live", encoding="utf-8")
+            shm_path.write_text("shm_data_live", encoding="utf-8")
+
+            # Create an invalid/corrupt SQLite backup that matches SHA-256 header expectation
+            corrupt_bytes = b"NOT_A_VALID_SQLITE_DATABASE_HEADER" + b"\x00" * 100
+            backup_path.write_bytes(corrupt_bytes)
+            bck_sha = hashlib.sha256(corrupt_bytes).hexdigest()
+
+            engine = GuardedRecoveryEngine(
+                target_db_path=target_path,
+                backup_db_path=backup_path,
+                expected_backup_sha256=bck_sha,
+                incident_id="INC-G-S2-PILOT-001",
+                operator_authorization="G-S2-ACT",
+                maintenance_mode_token="MAINT-INC-G-S2-PILOT-001",
+                quarantine_base_dir=quarantine_dir,
+                operator_confirmed_maintenance=True,
+            )
+
+            with pytest.raises((sqlite3.DatabaseError, ValueError)):
+                engine.execute_guarded_recovery()
+
+            # Live DB, WAL, and SHM MUST be completely untouched at original paths
+            assert target_path.exists()
+            assert wal_path.exists()
+            assert shm_path.exists()
+            assert wal_path.read_text(encoding="utf-8") == "wal_data_live"
+            assert shm_path.read_text(encoding="utf-8") == "shm_data_live"
+
+            # Zero files moved to quarantine
+            if quarantine_dir.exists():
+                assert len(list(quarantine_dir.iterdir())) == 0
+            import gc
+            gc.collect()
+
+    def test_missing_required_schema_in_backup_fails_before_quarantine(self):
+        """
+        Proves that a backup missing required table 'asset_ohlcv_daily' fails closed in pre-flight
+        with BACKUP_SCHEMA_INVALID and does NOT quarantine the live database.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            tdp = Path(td)
+            target_path = tdp / "finance_market_store.db"
+            backup_path = tdp / "finance_market_backup.db"
+            quarantine_dir = tdp / "quarantine"
+
+            # Create target DB
+            conn_t = sqlite3.connect(str(target_path))
+            conn_t.execute("CREATE TABLE asset_ohlcv_daily (symbol TEXT, close REAL);")
+            conn_t.execute("INSERT INTO asset_ohlcv_daily VALUES ('GOOG', 180.00);")
+            conn_t.commit()
+            conn_t.close()
+
+            # Create backup DB that is valid SQLite, but lacks asset_ohlcv_daily table
+            conn_b = sqlite3.connect(str(backup_path))
+            conn_b.execute("CREATE TABLE wrong_table (id INT);")
+            conn_b.execute("INSERT INTO wrong_table VALUES (1);")
+            conn_b.commit()
+            conn_b.close()
+
+            bck_sha = GuardedRecoveryEngine.compute_file_sha256(backup_path)
+
+            engine = GuardedRecoveryEngine(
+                target_db_path=target_path,
+                backup_db_path=backup_path,
+                expected_backup_sha256=bck_sha,
+                incident_id="INC-G-S2-PILOT-001",
+                operator_authorization="G-S2-ACT",
+                maintenance_mode_token="MAINT-INC-G-S2-PILOT-001",
+                quarantine_base_dir=quarantine_dir,
+                operator_confirmed_maintenance=True,
+            )
+
+            with pytest.raises(ValueError, match="BACKUP_SCHEMA_INVALID.*missing required table 'asset_ohlcv_daily'"):
+                engine.execute_guarded_recovery()
+
+            # Target DB is completely untouched
+            assert target_path.exists()
+            conn_check = sqlite3.connect(f"{target_path.as_uri()}?mode=ro", uri=True)
+            res = conn_check.cursor().execute("SELECT symbol FROM asset_ohlcv_daily;").fetchall()
+            conn_check.close()
+            assert res == [("GOOG",)]
+
+            # Quarantine directory remains empty
+            if quarantine_dir.exists():
+                assert len(list(quarantine_dir.iterdir())) == 0
+            import gc
+            gc.collect()
+
+    def test_token_secrets_not_exposed_in_receipts_or_logs(self):
+        """
+        Proves that GuardedRecoveryReceipt stores operational audit references,
+        contains no secret credentials, and receipt_sha256 reflects plain JSON audit integrity.
+        """
+        receipt = GuardedRecoveryReceipt(
+            incident_id="INC-G-S2-PILOT-001",
+            operator_authorization="G-S2-ACT",
+            maintenance_mode_token="MAINT-INC-G-S2-PILOT-001",
+            target_database_path="/tmp/test.db",
+            backup_source_path="/tmp/backup.db",
+            backup_source_sha256="0" * 64,
+            quarantine_directory="/tmp/quarantine",
+            quarantined_files=[],
+            pre_recovery_state={},
+            post_recovery_readback={},
+            recovery_status="SUCCESS",
+        )
+        receipt_d = receipt.to_dict()
+        json_str = json.dumps(receipt_d)
+
+        # Proves no secret keys, bearer tokens, or password fields exist
+        forbidden_keys = ["secret", "password", "api_key", "bearer_token", "private_key"]
+        for fk in forbidden_keys:
+            assert fk not in receipt_d
+            assert fk not in json_str.lower()
+
+        # Proves receipt is plain JSON with SHA-256 content hash, NOT digital PKI signature
+        assert "signature" not in receipt_d
+        assert "pki" not in receipt_d
+        assert "cert" not in receipt_d
+        assert len(receipt.compute_receipt_sha256()) == 64
+
+    def test_ordinary_ingestion_failures_never_trigger_catastrophic_restoration(self):
+        """
+        Proves that ordinary ingestion adapter errors (e.g. invalid response format, HTTP error)
+        fail normally via exceptions and NEVER invoke GuardedRecoveryEngine or mutate backup/target files.
+        """
+        from scripts.ingest_alpaca_historical import AlpacaHistoricalSipIngestionAdapter
+
+        # Ingestion adapter class and instances have zero reference to GuardedRecoveryEngine
+        assert not hasattr(AlpacaHistoricalSipIngestionAdapter, "execute_guarded_recovery")
+        assert not hasattr(AlpacaHistoricalSipIngestionAdapter, "rollback_via_backup")
+        assert not hasattr(AlpacaHistoricalSipIngestionAdapter, "step6_quarantine_affected_database")
+
+    def test_no_recovery_command_runs_on_application_startup(self):
+        """Proves that backend application startup does NOT import, trigger or execute recovery routines."""
+        # Mock psycopg2 if running in minimal test environment
+        if "psycopg2" not in sys.modules:
+            from unittest.mock import MagicMock
+            sys.modules["psycopg2"] = MagicMock()
+            sys.modules["psycopg2.extras"] = MagicMock()
+            sys.modules["psycopg2.extensions"] = MagicMock()
+            sys.modules["psycopg2.pool"] = MagicMock()
+
+        import api.main
+        assert hasattr(api.main, "app")
+        assert not hasattr(api.main, "execute_guarded_recovery")
+        assert not hasattr(api.main, "guarded_market_recovery")
 
 

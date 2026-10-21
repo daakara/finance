@@ -26,7 +26,7 @@ logger = logging.getLogger("arx.guarded_recovery_cli")
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Guarded Disaster Recovery Tool for ARX Market / Identity SQLite Stores"
+        description="Guarded Disaster Recovery Tool for ARX Market / Identity SQLite Stores (ARX Closure Model v2). Produces unsigned plain JSON audit receipt with deterministic SHA-256 content hash."
     )
     parser.add_argument("--target-db", required=True, help="Path to target SQLite database")
     parser.add_argument("--backup-file", required=True, help="Path to verified SQLite backup file")
@@ -34,6 +34,12 @@ def main() -> int:
     parser.add_argument("--incident-id", required=True, help="Incident reference identifier (e.g. INC-G-S2-...)")
     parser.add_argument("--operator-auth", required=True, help="Formal operator authorization token (e.g. G-S2-ACT-...)")
     parser.add_argument("--maintenance-token", required=True, help="Incident-specific maintenance mode authorization token (e.g. MAINT-INC-...)")
+    parser.add_argument(
+        "--operator-confirmed-maintenance",
+        action="store_true",
+        default=False,
+        help="Explicit operator confirmation that application maintenance mode is active before recovery",
+    )
     parser.add_argument("--quarantine-dir", default="/root/incident_quarantine", help="Base quarantine directory")
     parser.add_argument("--receipt-output", default=None, help="Path to save recovery receipt JSON")
 
@@ -47,10 +53,11 @@ def main() -> int:
         operator_authorization=args.operator_auth,
         maintenance_mode_token=args.maintenance_token,
         quarantine_base_dir=args.quarantine_dir,
+        operator_confirmed_maintenance=args.operator_confirmed_maintenance,
     )
 
     try:
-        logger.info("Initiating 9-step guarded disaster recovery sequence...")
+        logger.info("Initiating 10-step guarded disaster recovery sequence...")
         receipt = engine.execute_guarded_recovery()
         receipt_dict = receipt.to_dict()
         receipt_json = json.dumps(receipt_dict, indent=2)
@@ -59,10 +66,10 @@ def main() -> int:
             out_p = Path(args.receipt_output).resolve()
             out_p.parent.mkdir(parents=True, exist_ok=True)
             out_p.write_text(receipt_json, encoding="utf-8")
-            logger.info(f"Recovery receipt written to '{out_p}'.")
+            logger.info(f"Unsigned audit receipt (SHA-256: {receipt.receipt_sha256}) written to '{out_p}'.")
 
         print(receipt_json)
-        logger.info("Guarded disaster recovery completed successfully.")
+        logger.info(f"Guarded disaster recovery completed successfully. Receipt SHA-256: {receipt.receipt_sha256}")
         return 0
     except Exception as e:
         logger.error(f"Guarded disaster recovery FAILED: {e}")
