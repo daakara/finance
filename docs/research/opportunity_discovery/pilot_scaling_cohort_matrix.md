@@ -4,7 +4,7 @@
 **Date:** 2026-10-21  
 **Governing Contract:** CONTRACT-ARX-OPP-PILOT-SCALING-V1  
 **Pricing Observation Session:** 2026-10-16 (Regular Close)  
-**Target Universe:** 20 Companies Total (5 Baseline Cohort + 15 Pilot Expansion Additions)
+**Target Universe:** 19 Companies Total (5 Baseline Cohort + 14 Pilot Expansion Additions)
 
 ---
 
@@ -12,7 +12,7 @@
 
 This document establishes the authoritative cohort selection, business model classification, filing accessibility, and valuation eligibility for the **Opportunity Dossier Scaling Pilot**.
 
-The pilot scales the accepted five-company Proof of Concept (`FIX`, `DUOL`, `IREN`, `CORZ`, `MU`) into a repeatable, auditable research preparation pipeline targeting 20 operating companies.
+The pilot scales the accepted five-company Proof of Concept (`FIX`, `DUOL`, `IREN`, `CORZ`, `MU`) into a repeatable, auditable research preparation pipeline targeting 19 operating companies.
 
 ### Core Selection Principles:
 1. **Evidence Accessibility:** All companies must be SEC reporting issuers with accessible Forms 10-K and 10-Q filed via EDGAR.
@@ -23,7 +23,7 @@ The pilot scales the accepted five-company Proof of Concept (`FIX`, `DUOL`, `IRE
 
 ---
 
-## 2. Comprehensive 20-Company Pilot Cohort
+## 2. Comprehensive 19-Company Pilot Cohort
 
 | # | Ticker | Company Name | CIK | Primary Exchange | Sector & Industry | Business Classification | Primary Filings | 2026-10-16 Ref Price | Valuation Eligibility | Disposition |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -40,19 +40,18 @@ The pilot scales the accepted five-company Proof of Concept (`FIX`, `DUOL`, `IRE
 | **Addition 6** | `EME` | EMCOR Group, Inc. | `0000105634` | NYSE | Industrials / Specialty Contractors | Electrical, mechanical construction, and facilities services supporting hyperscale data center buildouts | 10-K (2025-12-31), 10-Q (2026-06-30) | $721.66 | Computed & Verified | `WATCH_CONDITIONS` |
 | **Addition 7** | `VRT` | Vertiv Holdings Co | `0001674101` | NYSE | Industrials / Electrical Equipment | Critical digital infrastructure technologies: liquid cooling, power distribution, and thermal management for AI data centers | 10-K (2025-12-31), 10-Q (2026-06-30) | $206.42 | Computed & Verified | `WATCH_CONDITIONS` |
 | **Addition 8** | `ANET` | Arista Networks, Inc. | `0001596532` | NYSE | Technology / Computer Hardware | Cloud and AI data center networking platforms: high-performance Ethernet switching systems and EOS software | 10-K (2025-12-31), 10-Q (2026-06-30) | $176.99 | Computed & Verified | `WATCH_CONDITIONS` |
-| **Addition 9** | `PLTR` | Palantir Technologies Inc. | `0001321655` | NASDAQ | Technology / Software Infrastructure | Enterprise artificial intelligence platform (AIP), defense analytics, and ontology operating systems | 10-K (2025-12-31), 10-Q (2026-06-30) | $186.03 | Computed with Qualification | `NO_SUPPORTED_OPPORTUNITY` |
-| **Addition 10** | `ISRG` | Intuitive Surgical, Inc. | `0001035267` | NASDAQ | Healthcare / Medical Instruments | Robotic-assisted minimally invasive surgical systems (da Vinci 5, Ion) and recurring instruments/accessories | 10-K (2025-12-31), 10-Q (2026-06-30) | $426.70 | Computed & Verified | `WATCH_CONDITIONS` |
-| **Addition 11** | `CDNS` | Cadence Design Systems, Inc. | `0000813672` | NASDAQ | Technology / Software Application | Electronic design automation (EDA) software, hardware emulation, and silicon intellectual property | 10-K (2025-12-31), 10-Q (2026-06-30) | $319.51 | Computed & Verified | `WATCH_CONDITIONS` |
-| **Addition 12** | `PWR` | Quanta Services, Inc. | `0001050915` | NYSE | Industrials / Engineering & Construction | Specialized contracting services for electric power grid, renewable energy, and communications infrastructure | 10-K (2025-12-31), 10-Q (2026-06-30) | $631.98 | Computed & Verified | `WATCH_CONDITIONS` |
-| **Addition 13** | `SNPS` | Synopsys, Inc. | `0000883241` | NASDAQ | Technology / Software Application | Electronic design automation (EDA) software, semiconductor IP, and system design simulation | 10-K (2025-10-31), 10-Q (2026-07-31) | $454.63 | Computed with Qualification | `WATCH_CONDITIONS` |
-| **Addition 14** | `NOW` | ServiceNow, Inc. | `0001373715` | NYSE | Technology / Software Infrastructure | Enterprise cloud platform providing digital workflow automation, IT service management, and generative AI enterprise integrations | 10-K (2025-12-31), 10-Q (2026-06-30) | $141.95 | Computed & Verified | `WATCH_CONDITIONS` |
-| **Addition 15** | `ELF` | e.l.f. Beauty, Inc. | `0001600033` | NYSE | Consumer Defensive / Household & Personal Products | High-growth clean, vegan color cosmetics and premium skincare distributed via retail and DTC channels | 10-K (2026-03-31), 10-Q (2026-06-30) | $113.53 | Computed & Verified | `WATCH_CONDITIONS` |
+| **Addition 9** | `ISRG` | Intuitive Surgical, Inc. | `0001035267` | NASDAQ | Healthcare / Medical Instruments | Robotic-assisted minimally invasive surgical systems (da Vinci 5, Ion) and recurring instruments/accessories | 10-K (2025-12-31), 10-Q (2026-06-30) | $426.70 | Computed & Verified | `WATCH_CONDITIONS` |
+| **Addition 10** | `CDNS` | Cadence Design Systems, Inc. | `0000813672` | NASDAQ | Technology / Software Application | Electronic design automation (EDA) software, hardware emulation, and silicon intellectual property | 10-K (2025-12-31), 10-Q (2026-06-30) | $319.51 | Computed & Verified | `WATCH_CONDITIONS` |
+| **Addition 11** | `PWR` | Quanta Services, Inc. | `0001050915` | NYSE | Industrials / Engineering & Construction | Specialized contracting services for electric power grid, renewable energy, and communications infrastructure | 10-K (2025-12-31), 10-Q (2026-06-30) | $631.98 | Computed & Verified | `WATCH_CONDITIONS` |
+| **Addition 12** | `SNPS` | Synopsys, Inc. | `0000883241` | NASDAQ | Technology / Software Application | Electronic design automation (EDA) software, semiconductor IP, and system design simulation | 10-K (2025-10-31), 10-Q (2026-07-31) | $454.63 | Computed with Qualification | `WATCH_CONDITIONS` |
+| **Addition 13** | `NOW` | ServiceNow, Inc. | `0001373715` | NYSE | Technology / Software Infrastructure | Enterprise cloud platform providing digital workflow automation, IT service management, and generative AI enterprise integrations | 10-K (2025-12-31), 10-Q (2026-06-30) | $141.95 | Computed & Verified | `WATCH_CONDITIONS` |
+| **Addition 14** | `ELF` | e.l.f. Beauty, Inc. | `0001600033` | NYSE | Consumer Defensive / Household & Personal Products | High-growth clean, vegan color cosmetics and premium skincare distributed via retail and DTC channels | 10-K (2026-03-31), 10-Q (2026-06-30) | $113.53 | Computed & Verified | `WATCH_CONDITIONS` |
 
 ---
 
 ## 3. Structural Business Sector Groupings
 
-The 20 companies in the scaling pilot are organized into 5 coherent, economically rigorous sectors:
+The 19 companies in the scaling pilot are organized into 5 coherent, economically rigorous sectors:
 
 ### Sector 1: Specialty Contractors & Critical Infrastructure
 - **Companies:** `FIX`, `EME`, `VRT`, `PWR`
@@ -61,10 +60,10 @@ The 20 companies in the scaling pilot are organized into 5 coherent, economicall
 - **Lease / Debt Conventions:** Standard funded senior debt subtracted; unrestricted cash added to EV.
 
 ### Sector 2: Cloud, Networking & Workflow Software
-- **Companies:** `DUOL`, `PLTR`, `ANET`, `NOW`
+- **Companies:** `DUOL`, `ANET`, `NOW`
 - **Economic Model:** Subscription recurring revenue, enterprise cloud platforms, AI workflow automation, and high-throughput data center switching.
 - **Valuation Treatment:** Single-stage Reverse-DCF FCFF. High gross margins (65%-85%).
-- **Qualification Factors:** Stock-based compensation (SBC) dilution must be explicitly monitored; `PLTR` priced-in growth evaluated against extreme multiples.
+- **Qualification Factors:** Stock-based compensation (SBC) dilution must be explicitly monitored.
 
 ### Sector 3: Semiconductor Equipment & EDA Silicon Design
 - **Companies:** `MU`, `KLAC`, `CDNS`, `SNPS`

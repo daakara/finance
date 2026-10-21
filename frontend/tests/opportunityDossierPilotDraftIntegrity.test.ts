@@ -47,17 +47,17 @@ const EXPECTED_ODP05_LEDGER_SHA256 = "a65be3b38cdf988081a29257fb41674c3591b10a66
 assert.strictEqual(fs.existsSync(draftSnapshotPath), true, "Draft staging snapshot file must exist in frontend/lib/");
 const rawDraft = fs.readFileSync(draftSnapshotPath, "utf-8");
 const draftData = JSON.parse(rawDraft);
-assert.strictEqual(draftData.snapshot_metadata.cohort_count, 20, "Draft staging snapshot must contain exactly 20 companies");
+assert.strictEqual(draftData.snapshot_metadata.cohort_count, 19, "Draft staging snapshot must contain exactly 19 companies");
 assert.strictEqual(draftData.snapshot_metadata.is_draft_staging, true, "is_draft_staging must be true");
 assert.strictEqual(draftData.snapshot_metadata.review_gate, "PENDING_INDEPENDENT_RESEARCH_REVIEW", "review_gate must be PENDING_INDEPENDENT_RESEARCH_REVIEW");
-console.log("[OK] Draft snapshot loaded and verified (20 companies, review_gate=PENDING_INDEPENDENT_RESEARCH_REVIEW)");
+console.log("[OK] Draft snapshot loaded and verified (19 companies, review_gate=PENDING_INDEPENDENT_RESEARCH_REVIEW)");
 
 // 2. Verify Manifest References Canonical Baseline
 if (fs.existsSync(manifestPath)) {
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
   assert.strictEqual(manifest.odp05_baseline_sha256, EXPECTED_ODP05_LEDGER_SHA256, "Manifest must reference canonical ODP-05 ledger hash");
   assert.ok(manifest.pilot_ledger_sha256, "Manifest must record pilot_ledger_sha256");
-  assert.strictEqual(manifest.cohort_count, 20, "Manifest cohort_count must be 20");
+  assert.strictEqual(manifest.cohort_count, 19, "Manifest cohort_count must be 19");
   console.log("[OK] Pilot manifest verified against canonical baseline ODP-05 hash");
 }
 
@@ -135,8 +135,8 @@ assert.strictEqual(ulta.valuation.reference_price, 592.94, "ULTA valuation refer
 assert.strictEqual(ulta.valuation.solved_5y_cagr_pct, 15.45, "ULTA valuation solved CAGR must match");
 console.log("[OK] Representative ULTA deep evidence tracing verified (CIK 0001403568, $592.94 ref price, 15.45% CAGR, Note 7 debt $339.6M, ASC 842 lease separated)");
 
-// 6. Zero-Debt vs Funded Debt Invariants Across All 20 Assets
-const zeroDebtCohort = ["DUOL", "MEDP", "DECK", "LULU", "EME", "ANET", "PLTR", "ISRG", "CDNS"];
+// 6. Zero-Debt vs Funded Debt Invariants Across All 19 Assets
+const zeroDebtCohort = ["DUOL", "MEDP", "DECK", "LULU", "EME", "ANET", "ISRG", "CDNS"];
 for (const sym of zeroDebtCohort) {
   const d = draftData.dossiers[sym];
   assert.ok(d, `Dossier for ${sym} must exist`);
@@ -152,33 +152,44 @@ for (const sym of fundedDebtCohort) {
   assert.strictEqual(d.financial_profile.is_zero_debt, false, `${sym} must be marked is_zero_debt=false`);
   assert.ok(d.financial_profile.total_financial_debt! > 0, `${sym} total_financial_debt must be positive`);
 }
-console.log("[OK] Capital structure invariants verified: 9 zero-debt vs 11 funded-debt cleanly partitioned");
+console.log("[OK] Capital structure invariants verified: 8 zero-debt vs 11 funded-debt cleanly partitioned");
 
-// 7. Unsupported Symbols Fail-Closed Invariant
-for (const sym of ["AAPL", "NVDA", "JPM", "BAC", "UNKNOWN"]) {
-  assert.strictEqual(isCohortSymbol(sym), false, `${sym} must not be in published cohort`);
+// 7. Unsupported and Excluded Symbols Fail-Closed Invariant
+for (const sym of ["AAPL", "NVDA", "JPM", "BAC", "UNKNOWN", "MU", "PLTR"]) {
+  assert.strictEqual(isCohortSymbol(sym), false, `${sym} must not be in published Quality Watch cohort`);
   if (!IS_PILOT_DRAFTS_BUILD_ENABLED) {
     assert.strictEqual(isPilotDraftSymbol(sym), false, `${sym} must not be in pilot cohort`);
   }
   assert.strictEqual(getOpportunityDossier(sym), null, `Default accessor must return null for ${sym}`);
   assert.strictEqual(getOpportunityDossier(sym, { previewDrafts: true }), null, `Draft accessor must return null for ${sym}`);
 }
-console.log("[OK] Truly unsupported symbols fail-closed to null across both production and draft modes");
+console.log("[OK] Truly unsupported and excluded symbols (including MU and PLTR) fail-closed to null across both production and draft modes");
 
 // 8. Runtime Behavior & Isolation Branches
+const unselectedDrafts = PILOT_EXPANSION_SYMBOLS.filter(s => s !== "ULTA");
+
 if (!IS_PILOT_DRAFTS_BUILD_ENABLED) {
   // Mode A: Default Production Mode (NEXT_PUBLIC_ENABLE_RESEARCH_PILOT_DRAFTS is unset or false)
-  for (const sym of PILOT_EXPANSION_SYMBOLS) {
-    assert.strictEqual(isCohortSymbol(sym), false, `${sym} must NOT be in published ODP-05 cohort`);
+  // Verify ULTA is published as accepted addition
+  assert.strictEqual(isCohortSymbol("ULTA"), true, "ULTA must be in published Quality Watch cohort");
+  const ultaPublished = getOpportunityDossier("ULTA");
+  assert.ok(ultaPublished, "Default getOpportunityDossier(ULTA) must return published dossier");
+  assert.strictEqual(ultaPublished.identity.symbol, "ULTA");
+  assert.strictEqual(ultaPublished.valuation.solved_5y_cagr_pct, 15.45);
+  assert.strictEqual(ultaPublished.valuation.reference_price, 592.94);
+
+  // Verify unselected draft additions remain isolated
+  for (const sym of unselectedDrafts) {
+    assert.strictEqual(isCohortSymbol(sym), false, `${sym} must NOT be in published Quality Watch cohort`);
     assert.strictEqual(isPilotDraftSymbol(sym), false, `${sym} must NOT be recognized as pilot symbol when drafts disabled`);
     const publishedDossier = getOpportunityDossier(sym);
     assert.strictEqual(publishedDossier, null, `Default getOpportunityDossier(${sym}) must return null in production mode`);
     const draftAttempt = getPilotDraftDossier(sym);
     assert.strictEqual(draftAttempt, null, `getPilotDraftDossier(${sym}) must return null when build flag disabled`);
   }
-  assert.strictEqual(listOpportunityCohort().length, 5, "listOpportunityCohort must return exactly 5 published companies");
+  assert.strictEqual(listOpportunityCohort().length, 5, "listOpportunityCohort must return exactly 5 published Quality Watch companies (FIX, DUOL, IREN, CORZ, ULTA)");
   assert.strictEqual(listPilotDraftCohort().length, 5, "listPilotDraftCohort must fall back to 5 companies when drafts disabled");
-  console.log("[OK] Production baseline isolation verified: draft additions return null from all accessors");
+  console.log("[OK] Production baseline isolation verified: unselected draft additions return null from all accessors while ULTA is published");
 
   // Mode B: Execute Subprocess with NEXT_PUBLIC_ENABLE_RESEARCH_PILOT_DRAFTS="true" to verify preview branch
   console.log("Spawning subprocess to verify preview mode under NEXT_PUBLIC_ENABLE_RESEARCH_PILOT_DRAFTS=true...");
@@ -194,16 +205,17 @@ if (!IS_PILOT_DRAFTS_BUILD_ENABLED) {
   for (const sym of TOTAL_PILOT_SYMBOLS) {
     assert.strictEqual(isPilotDraftSymbol(sym), true, `${sym} must be recognized as pilot symbol when drafts enabled`);
   }
-  assert.strictEqual(listPilotDraftCohort().length, 20, "listPilotDraftCohort must return 20 when drafts enabled");
+  // 4 baseline watch + 14 additions = 18 watch assets (MU and PLTR excluded)
+  assert.strictEqual(listPilotDraftCohort().length, 18, "listPilotDraftCohort must return 18 when drafts enabled (MU and PLTR excluded)");
 
-  // Default accessor without previewDrafts option MUST STILL return null for draft additions!
-  for (const sym of PILOT_EXPANSION_SYMBOLS) {
+  // Default accessor without previewDrafts option MUST STILL return null for unselected draft additions!
+  for (const sym of unselectedDrafts) {
     assert.strictEqual(getOpportunityDossier(sym), null, `Default getOpportunityDossier(${sym}) must STILL return null even when build flag is active`);
     const preview = getOpportunityDossier(sym, { previewDrafts: true });
     assert.ok(preview, `Preview getOpportunityDossier(${sym}, { previewDrafts: true }) must return dossier`);
     assert.strictEqual(preview.identity.symbol, sym);
   }
-  console.log("[OK] Preview-enabled accessor verified for all 20 dossiers while default path remains isolated");
+  console.log("[OK] Preview-enabled accessor verified for all 18 watch dossiers while unselected drafts remain isolated from default accessor");
 }
 
 console.log("ALL OPPORTUNITY DOSSIER PILOT DRAFT INTEGRITY TESTS PASSED ✅");

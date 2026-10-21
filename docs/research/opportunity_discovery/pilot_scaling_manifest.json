@@ -3,9 +3,9 @@
   "task": "ARX-TERMINAL-OPPORTUNITY-DOSSIER-SCALING-PILOT",
   "created_at_utc": "2026-10-21T16:00:00Z",
   "market_session_date": "2026-10-16",
-  "cohort_count": 20,
+  "cohort_count": 19,
   "odp05_baseline_sha256": "a65be3b38cdf988081a29257fb41674c3591b10a666362f351794a7d1c40979d",
-  "pilot_ledger_sha256": "9733c15ea3f380ae3465497a9d808fc9633f83671e76fdb86197025baef53b49",
+  "pilot_ledger_sha256": "32f18fe21cecec36e3d6a9e104027f6102b7eab61119cfb7af98496bc464c0a1",
   "baseline_symbols": [
     "FIX",
     "DUOL",
@@ -22,7 +22,6 @@
     "EME",
     "VRT",
     "ANET",
-    "PLTR",
     "ISRG",
     "CDNS",
     "PWR",
@@ -80,10 +79,6 @@
     "ANET": [
       "0001596532-26-000012",
       "0001596532-26-000045"
-    ],
-    "PLTR": [
-      "0001321655-26-000015",
-      "0001321655-26-000054"
     ],
     "ISRG": [
       "0001035267-26-000018",

@@ -35,10 +35,16 @@ from scripts.research.prepare_opportunity_dossier import (
     BASELINE_COHORT,
     PILOT_ADDITIONS_COHORT,
     TOTAL_PILOT_COHORT,
+    PUBLISHED_WATCH_SYMBOLS,
+    BASELINE_WATCH_COHORT,
+    EXCLUDED_HISTORICAL_SYMBOLS,
+    EXCLUDED_DRAFT_SYMBOLS,
     DEFAULT_PILOT_LEDGER_PATH,
     DEFAULT_PILOT_MANIFEST_PATH,
     DEFAULT_FRONTEND_DRAFT_PATH,
     DEFAULT_DOC_MATRIX_PATH,
+    DEFAULT_PUBLISHED_MANIFEST_PATH,
+    DEFAULT_FRONTEND_PUBLISHED_MANIFEST_PATH,
     prepare_pilot_scaling_corpus,
     validate_existing_pilot_artifacts,
     PILOT_SPECS,
@@ -59,17 +65,23 @@ def valid_pilot_artifacts(tmp_path):
     manifest_path = tmp_path / "pilot_scaling_manifest.json"
     frontend_path = tmp_path / "opportunityDossierPilotDrafts.json"
     doc_path = tmp_path / "pilot_scaling_cohort_matrix.md"
+    pub_manifest_path = tmp_path / "published_watch_manifest.json"
+    fe_pub_manifest_path = tmp_path / "publishedWatchManifest.json"
 
     shutil.copyfile(DEFAULT_PILOT_LEDGER_PATH, ledger_path)
     shutil.copyfile(DEFAULT_PILOT_MANIFEST_PATH, manifest_path)
     shutil.copyfile(DEFAULT_FRONTEND_DRAFT_PATH, frontend_path)
     shutil.copyfile(DEFAULT_DOC_MATRIX_PATH, doc_path)
+    shutil.copyfile(DEFAULT_PUBLISHED_MANIFEST_PATH, pub_manifest_path)
+    shutil.copyfile(DEFAULT_FRONTEND_PUBLISHED_MANIFEST_PATH, fe_pub_manifest_path)
 
     return {
         "ledger_path": ledger_path,
         "manifest_path": manifest_path,
         "frontend_draft_path": frontend_path,
         "doc_matrix_path": doc_path,
+        "published_manifest_path": pub_manifest_path,
+        "frontend_published_manifest_path": fe_pub_manifest_path,
     }
 
 
@@ -82,11 +94,11 @@ def test_1_frozen_odp05_baseline_unmodified():
 
 
 def test_2_cohort_completeness_and_sizing():
-    """Verify that the scaling pilot cohort defines exactly 20 companies (5 baseline + 15 additions)."""
+    """Verify that the scaling pilot cohort defines exactly 19 companies (5 baseline + 14 additions, with PLTR excluded per product owner direction)."""
     assert len(BASELINE_COHORT) == 5
-    assert len(PILOT_ADDITIONS_COHORT) == 15
-    assert len(TOTAL_PILOT_COHORT) == 20
-    assert len(set(TOTAL_PILOT_COHORT)) == 20, "Cohort symbols must be unique"
+    assert len(PILOT_ADDITIONS_COHORT) == 14
+    assert len(TOTAL_PILOT_COHORT) == 19
+    assert len(set(TOTAL_PILOT_COHORT)) == 19, "Cohort symbols must be unique"
     for sym in PILOT_ADDITIONS_COHORT:
         assert sym in PILOT_SPECS, f"Addition {sym} missing from PILOT_SPECS"
 
@@ -158,7 +170,7 @@ def test_5_capital_structure_and_zero_debt_mechanics():
     dossiers = ledger["dossiers"]
 
     # Documented zero-debt companies
-    zero_debt_symbols = ["DUOL", "MEDP", "DECK", "LULU", "EME", "ANET", "PLTR", "ISRG", "CDNS"]
+    zero_debt_symbols = ["DUOL", "MEDP", "DECK", "LULU", "EME", "ANET", "ISRG", "CDNS"]
     for sym in zero_debt_symbols:
         d = dossiers[sym]
         fp = d["financial_profile"]
@@ -202,7 +214,7 @@ def test_7_valuation_suppression_and_qualification_reasons():
         assert len(v["resume_conditions"]) >= 1
 
     # Qualified
-    for sym in ["MU", "PLTR", "KLAC", "SNPS"]:
+    for sym in ["MU", "KLAC", "SNPS"]:
         d = dossiers[sym]
         v = d["valuation"]
         assert v["valuation_status"] == "COMPUTED_QUALIFIED"
@@ -622,3 +634,29 @@ def test_26_negative_validation_failure_leaves_artifact_bytes_unchanged(valid_pi
 def test_27_control_valid_pilot_artifacts_passes(valid_pilot_artifacts):
     """Control test: Unmodified complete pilot artifacts pass validation cleanly."""
     assert validate_existing_pilot_artifacts(**valid_pilot_artifacts) is True
+
+
+def test_28_published_watch_manifest_integrity():
+    """Verify that published watch manifest contains exactly 5 published WATCH assets (FIX, DUOL, IREN, CORZ, ULTA) and excludes MU and PLTR."""
+    assert DEFAULT_PUBLISHED_MANIFEST_PATH.exists(), f"Published manifest missing at {DEFAULT_PUBLISHED_MANIFEST_PATH}"
+    assert DEFAULT_FRONTEND_PUBLISHED_MANIFEST_PATH.exists(), f"Frontend published manifest missing at {DEFAULT_FRONTEND_PUBLISHED_MANIFEST_PATH}"
+
+    with open(DEFAULT_PUBLISHED_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        m1 = json.load(f)
+    with open(DEFAULT_FRONTEND_PUBLISHED_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        m2 = json.load(f)
+
+    assert m1 == m2, "Docs and frontend published watch manifests must be identical"
+    assert m1["schema_version"] == "ARX-PUBLISHED-WATCH-MANIFEST-V1"
+    assert m1["governing_standard"] == "ARX-QUALITY-WATCH-STANDARD-V1"
+    assert m1["published_symbols"] == ["FIX", "DUOL", "IREN", "CORZ", "ULTA"]
+    assert m1["baseline_watch_symbols"] == ["FIX", "DUOL", "IREN", "CORZ"]
+    assert m1["excluded_historical_symbols"] == ["MU"]
+    assert m1["excluded_draft_symbols"] == ["PLTR"]
+    assert "ULTA" in m1["accepted_additions"]
+    assert m1["accepted_additions"]["ULTA"]["valuation"]["solved_5y_cagr_pct"] == 15.45
+    assert m1["accepted_additions"]["ULTA"]["financial_profile"]["total_financial_debt"] == 339578000.0
+    assert m1["accepted_additions"]["ULTA"]["financial_profile"]["is_zero_debt"] is False
+    assert m1["additions_provenance"]["ULTA"]["acceptance_basis"] == "REUSED_ACCEPTED_RESEARCH_EVIDENCE"
+    assert m1["additions_provenance"]["ULTA"]["reference_price"] == 592.94
+

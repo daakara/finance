@@ -141,7 +141,50 @@ function verifySnapshotIntegrity() {
     process.exit(1);
   }
 
-  console.log("✅ [INTEGRITY GATE PASSED] All Opportunity Dossier snapshot invariants verified successfully.");
+  // 6. Verify Published Watch Manifest (Selective Publication)
+  const publishedManifestPath = path.resolve(__dirname, "../lib/publishedWatchManifest.json");
+  if (!fs.existsSync(publishedManifestPath)) {
+    console.error(`❌ FATAL: Published Watch Manifest missing at ${publishedManifestPath}`);
+    process.exit(1);
+  }
+  let pubManifest: any;
+  try {
+    pubManifest = JSON.parse(fs.readFileSync(publishedManifestPath, "utf-8"));
+  } catch (err: any) {
+    console.error(`❌ FATAL: Failed to parse published watch manifest JSON: ${err.message}`);
+    process.exit(1);
+  }
+
+  const expectedPublishedSymbols = ["FIX", "DUOL", "IREN", "CORZ", "ULTA"];
+  assertArrayEquals(pubManifest.published_symbols, expectedPublishedSymbols, "Published symbols mismatch in manifest");
+
+  const ulta = pubManifest.accepted_additions?.ULTA;
+  if (!ulta) {
+    console.error("❌ FATAL: ULTA missing from published watch manifest accepted_additions");
+    process.exit(1);
+  }
+  if (ulta.valuation.reference_price !== 592.94 || ulta.valuation.solved_5y_cagr_pct !== 15.45) {
+    console.error("❌ ULTA valuation in published watch manifest failed parity check");
+    process.exit(1);
+  }
+  if (ulta.financial_profile.is_zero_debt !== false || ulta.financial_profile.total_financial_debt !== 339578000.0) {
+    console.error("❌ ULTA Note 7 debt in published watch manifest failed parity check");
+    process.exit(1);
+  }
+  if (!pubManifest.excluded_historical_symbols?.includes("MU") || !pubManifest.excluded_draft_symbols?.includes("PLTR")) {
+    console.error("❌ Rejected exclusions (MU, PLTR) missing from published watch manifest");
+    process.exit(1);
+  }
+  console.log("✅ [PUBLISHED WATCH MANIFEST VERIFIED] Curated Quality Watch manifest verified successfully.");
+
+  console.log("✅ [INTEGRITY GATE PASSED] All Opportunity Dossier snapshot and published watch invariants verified successfully.");
+}
+
+function assertArrayEquals(a: any[], b: any[], msg: string) {
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length || !a.every((v, i) => v === b[i])) {
+    console.error(`❌ ${msg}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`);
+    process.exit(1);
+  }
 }
 
 verifySnapshotIntegrity();

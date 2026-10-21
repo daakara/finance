@@ -44,18 +44,27 @@ FROZEN_ODP05_LEDGER_PATH = REPO_ROOT / "docs/research/opportunity_discovery/odp0
 FROZEN_ODP05_SHA256 = "a65be3b38cdf988081a29257fb41674c3591b10a666362f351794a7d1c40979d"
 BASELINE_COHORT = ["FIX", "DUOL", "IREN", "CORZ", "MU"]
 
+# Pilot additions cohort: 14 candidates (excluding rejected PLTR per product owner direction)
 PILOT_ADDITIONS_COHORT = [
     "ULTA", "MEDP", "DECK", "KLAC", "LULU",
-    "EME", "VRT", "ANET", "PLTR", "ISRG",
+    "EME", "VRT", "ANET", "ISRG",
     "CDNS", "PWR", "SNPS", "NOW", "ELF"
 ]
 
 TOTAL_PILOT_COHORT = BASELINE_COHORT + PILOT_ADDITIONS_COHORT
 
+# Curated Quality Watch & Selective Publication constants
+PUBLISHED_WATCH_SYMBOLS = ["FIX", "DUOL", "IREN", "CORZ", "ULTA"]
+BASELINE_WATCH_COHORT = ["FIX", "DUOL", "IREN", "CORZ"]
+EXCLUDED_HISTORICAL_SYMBOLS = ["MU"]
+EXCLUDED_DRAFT_SYMBOLS = ["PLTR"]
+
 DEFAULT_PILOT_LEDGER_PATH = REPO_ROOT / "docs/research/opportunity_discovery/pilot_scaling_ledger.json"
 DEFAULT_PILOT_MANIFEST_PATH = REPO_ROOT / "docs/research/opportunity_discovery/pilot_scaling_manifest.json"
 DEFAULT_FRONTEND_DRAFT_PATH = REPO_ROOT / "frontend/lib/opportunityDossierPilotDrafts.json"
 DEFAULT_DOC_MATRIX_PATH = REPO_ROOT / "docs/research/opportunity_discovery/pilot_scaling_cohort_matrix.md"
+DEFAULT_PUBLISHED_MANIFEST_PATH = REPO_ROOT / "docs/research/opportunity_discovery/published_watch_manifest.json"
+DEFAULT_FRONTEND_PUBLISHED_MANIFEST_PATH = REPO_ROOT / "frontend/lib/publishedWatchManifest.json"
 
 BASELINE_DESCRIPTIONS: Dict[str, Dict[str, str]] = {
     "FIX": {
@@ -1941,6 +1950,58 @@ def prepare_pilot_scaling_corpus(
     return ledger, manifest, frontend_draft
 
 
+def generate_published_watch_manifest(
+    pilot_dossiers: Dict[str, Any]
+) -> Dict[str, Any]:
+    """
+    Generates the authoritative published watch manifest.
+    Under the Quality Watch Standard (ARX-QUALITY-WATCH-STANDARD-V1), only selected
+    qualifying WATCH assets are published to production.
+    - Baseline WATCH: FIX, DUOL, IREN, CORZ
+    - Selected Addition: ULTA (first published addition)
+    - Excluded Rejected: MU (original baseline), PLTR (expansion draft)
+    """
+    ulta_dossier = pilot_dossiers.get("ULTA")
+    if not ulta_dossier:
+        raise KeyError("ULTA dossier missing from pilot dossiers; required for published watch manifest")
+
+    ulta_str = json.dumps(ulta_dossier, indent=2, sort_keys=True)
+    ulta_sha256 = hashlib.sha256(ulta_str.encode("utf-8")).hexdigest()
+
+    manifest = {
+        "schema_version": "ARX-PUBLISHED-WATCH-MANIFEST-V1",
+        "task": "ARX-TERMINAL-CURATED-QUALITY-WATCH",
+        "governing_standard": "ARX-QUALITY-WATCH-STANDARD-V1",
+        "standard_doc_path": "docs/research/opportunity_discovery/QUALITY_WATCH_SELECTION_STANDARD.md",
+        "created_at_utc": AUTHORING_TIMESTAMP_UTC,
+        "market_session_date": MARKET_SESSION_DATE,
+        "filing_availability_cutoff_utc": FILING_AVAILABILITY_CUTOFF_UTC,
+        "published_symbols": PUBLISHED_WATCH_SYMBOLS,
+        "published_count": len(PUBLISHED_WATCH_SYMBOLS),
+        "baseline_watch_symbols": BASELINE_WATCH_COHORT,
+        "excluded_historical_symbols": EXCLUDED_HISTORICAL_SYMBOLS,
+        "excluded_draft_symbols": EXCLUDED_DRAFT_SYMBOLS,
+        "accepted_additions": {
+            "ULTA": ulta_dossier
+        },
+        "additions_provenance": {
+            "ULTA": {
+                "company_name": "Ulta Beauty, Inc.",
+                "cik": "0001403568",
+                "exchange": "NASDAQ",
+                "acceptance_basis": "REUSED_ACCEPTED_RESEARCH_EVIDENCE",
+                "selection_decision": "Selected as First Published Addition under ARX-QUALITY-WATCH-STANDARD-V1",
+                "content_sha256": ulta_sha256,
+                "source_filings": [f["accession_number"] for f in ulta_dossier["financial_profile"]["primary_filings"]],
+                "reference_price": ulta_dossier["valuation"]["reference_price"],
+                "reference_date": ulta_dossier["valuation"]["reference_date"],
+                "solved_5y_cagr_pct": ulta_dossier["valuation"]["solved_5y_cagr_pct"]
+            }
+        }
+    }
+    return manifest
+
+
 def generate_cohort_matrix_markdown(ledger: Dict[str, Any]) -> str:
     """Generates deterministic pilot scaling cohort matrix documentation from ledger."""
     dossiers = ledger.get("dossiers", {})
@@ -1966,7 +2027,7 @@ def generate_cohort_matrix_markdown(ledger: Dict[str, Any]) -> str:
         row = f"| **Baseline {idx}** | `{sym}` | {ident['company_name']} | `{ident['cik']}` | {ident['exchange']} | {sector_ind} | {biz_model} | {filings} | {ref_p} | {val_elig} | `{ca['disposition']}` |"
         rows.append(row)
 
-    # Addition 1..15
+    # Addition 1..14
     for idx, sym in enumerate(PILOT_ADDITIONS_COHORT, start=1):
         d = dossiers[sym]
         ident = d["identity"]
@@ -1995,7 +2056,7 @@ def generate_cohort_matrix_markdown(ledger: Dict[str, Any]) -> str:
 **Date:** 2026-10-21  
 **Governing Contract:** CONTRACT-ARX-OPP-PILOT-SCALING-V1  
 **Pricing Observation Session:** 2026-10-16 (Regular Close)  
-**Target Universe:** 20 Companies Total (5 Baseline Cohort + 15 Pilot Expansion Additions)
+**Target Universe:** 19 Companies Total (5 Baseline Cohort + 14 Pilot Expansion Additions)
 
 ---
 
@@ -2003,7 +2064,7 @@ def generate_cohort_matrix_markdown(ledger: Dict[str, Any]) -> str:
 
 This document establishes the authoritative cohort selection, business model classification, filing accessibility, and valuation eligibility for the **Opportunity Dossier Scaling Pilot**.
 
-The pilot scales the accepted five-company Proof of Concept (`FIX`, `DUOL`, `IREN`, `CORZ`, `MU`) into a repeatable, auditable research preparation pipeline targeting 20 operating companies.
+The pilot scales the accepted five-company Proof of Concept (`FIX`, `DUOL`, `IREN`, `CORZ`, `MU`) into a repeatable, auditable research preparation pipeline targeting 19 operating companies.
 
 ### Core Selection Principles:
 1. **Evidence Accessibility:** All companies must be SEC reporting issuers with accessible Forms 10-K and 10-Q filed via EDGAR.
@@ -2014,7 +2075,7 @@ The pilot scales the accepted five-company Proof of Concept (`FIX`, `DUOL`, `IRE
 
 ---
 
-## 2. Comprehensive 20-Company Pilot Cohort
+## 2. Comprehensive 19-Company Pilot Cohort
 
 | # | Ticker | Company Name | CIK | Primary Exchange | Sector & Industry | Business Classification | Primary Filings | 2026-10-16 Ref Price | Valuation Eligibility | Disposition |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -2024,7 +2085,7 @@ The pilot scales the accepted five-company Proof of Concept (`FIX`, `DUOL`, `IRE
 
 ## 3. Structural Business Sector Groupings
 
-The 20 companies in the scaling pilot are organized into 5 coherent, economically rigorous sectors:
+The 19 companies in the scaling pilot are organized into 5 coherent, economically rigorous sectors:
 
 ### Sector 1: Specialty Contractors & Critical Infrastructure
 - **Companies:** `FIX`, `EME`, `VRT`, `PWR`
@@ -2033,10 +2094,10 @@ The 20 companies in the scaling pilot are organized into 5 coherent, economicall
 - **Lease / Debt Conventions:** Standard funded senior debt subtracted; unrestricted cash added to EV.
 
 ### Sector 2: Cloud, Networking & Workflow Software
-- **Companies:** `DUOL`, `PLTR`, `ANET`, `NOW`
+- **Companies:** `DUOL`, `ANET`, `NOW`
 - **Economic Model:** Subscription recurring revenue, enterprise cloud platforms, AI workflow automation, and high-throughput data center switching.
 - **Valuation Treatment:** Single-stage Reverse-DCF FCFF. High gross margins (65%-85%).
-- **Qualification Factors:** Stock-based compensation (SBC) dilution must be explicitly monitored; `PLTR` priced-in growth evaluated against extreme multiples.
+- **Qualification Factors:** Stock-based compensation (SBC) dilution must be explicitly monitored.
 
 ### Sector 3: Semiconductor Equipment & EDA Silicon Design
 - **Companies:** `MU`, `KLAC`, `CDNS`, `SNPS`
@@ -2107,12 +2168,16 @@ def write_pilot_artifacts(
     manifest_path: Optional[Path] = None,
     frontend_draft_path: Optional[Path] = None,
     doc_matrix_path: Optional[Path] = None,
+    published_manifest_path: Optional[Path] = None,
+    frontend_published_manifest_path: Optional[Path] = None,
 ) -> None:
-    """Writes the pilot scaling ledger, manifest, frontend staging file, and cohort documentation matrix."""
+    """Writes the pilot scaling ledger, manifest, frontend staging file, cohort documentation matrix, and published watch manifest."""
     target_ledger = ledger_path or DEFAULT_PILOT_LEDGER_PATH
     target_manifest = manifest_path or DEFAULT_PILOT_MANIFEST_PATH
     target_frontend = frontend_draft_path or DEFAULT_FRONTEND_DRAFT_PATH
     target_doc = doc_matrix_path or DEFAULT_DOC_MATRIX_PATH
+    target_published = published_manifest_path or DEFAULT_PUBLISHED_MANIFEST_PATH
+    target_fe_published = frontend_published_manifest_path or DEFAULT_FRONTEND_PUBLISHED_MANIFEST_PATH
 
     # Prevent accidental write to production publication paths
     frozen_prod_snapshot = REPO_ROOT / "frontend/lib/opportunityDossierSnapshot.json"
@@ -2125,6 +2190,8 @@ def write_pilot_artifacts(
     os.makedirs(target_frontend.parent, exist_ok=True)
     os.makedirs(target_manifest.parent, exist_ok=True)
     os.makedirs(target_doc.parent, exist_ok=True)
+    os.makedirs(target_published.parent, exist_ok=True)
+    os.makedirs(target_fe_published.parent, exist_ok=True)
 
     with open(target_ledger, "w", encoding="utf-8") as f:
         json.dump(ledger, f, indent=2)
@@ -2147,6 +2214,16 @@ def write_pilot_artifacts(
     with open(target_doc, "w", encoding="utf-8") as f:
         f.write(doc_content)
     logger.info(f"Wrote synchronized cohort matrix doc to: {target_doc}")
+
+    # Authoritative published watch manifest (selective publication)
+    published_manifest = generate_published_watch_manifest(ledger["dossiers"])
+    with open(target_published, "w", encoding="utf-8") as f:
+        json.dump(published_manifest, f, indent=2)
+    logger.info(f"Wrote published watch manifest to: {target_published}")
+
+    with open(target_fe_published, "w", encoding="utf-8") as f:
+        json.dump(published_manifest, f, indent=2)
+    logger.info(f"Wrote frontend published watch manifest to: {target_fe_published}")
 
 
 def find_structural_differences(expected: Any, actual: Any, path: str = "$") -> List[str]:
@@ -2188,6 +2265,8 @@ def validate_existing_pilot_artifacts(
     manifest_path: Optional[Path] = None,
     frontend_draft_path: Optional[Path] = None,
     doc_matrix_path: Optional[Path] = None,
+    published_manifest_path: Optional[Path] = None,
+    frontend_published_manifest_path: Optional[Path] = None,
 ) -> bool:
     """
     Validates that existing pilot artifacts exist, match recorded hashes, pass all invariants,
@@ -2198,6 +2277,8 @@ def validate_existing_pilot_artifacts(
     target_manifest = manifest_path or DEFAULT_PILOT_MANIFEST_PATH
     target_frontend = frontend_draft_path or DEFAULT_FRONTEND_DRAFT_PATH
     target_doc = doc_matrix_path or DEFAULT_DOC_MATRIX_PATH
+    target_published = published_manifest_path or DEFAULT_PUBLISHED_MANIFEST_PATH
+    target_fe_published = frontend_published_manifest_path or DEFAULT_FRONTEND_PUBLISHED_MANIFEST_PATH
 
     if not target_ledger.exists():
         logger.error(f"Pilot ledger not found: {target_ledger}")
@@ -2210,6 +2291,12 @@ def validate_existing_pilot_artifacts(
         return False
     if not target_doc.exists():
         logger.error(f"Cohort matrix documentation not found: {target_doc}")
+        return False
+    if not target_published.exists():
+        logger.error(f"Published watch manifest not found: {target_published}")
+        return False
+    if not target_fe_published.exists():
+        logger.error(f"Frontend published watch manifest not found: {target_fe_published}")
         return False
 
     # 1. Verify frozen production baseline hash
@@ -2239,8 +2326,8 @@ def validate_existing_pilot_artifacts(
 
     # 3. Total cohort count and symbols
     dossiers = ledger.get("dossiers", {})
-    if len(dossiers) != 20:
-        logger.error(f"Expected 20 dossiers in pilot ledger, found {len(dossiers)}")
+    if len(dossiers) != len(TOTAL_PILOT_COHORT):
+        logger.error(f"Expected {len(TOTAL_PILOT_COHORT)} dossiers in pilot ledger, found {len(dossiers)}")
         return False
 
     for sym in TOTAL_PILOT_COHORT:
@@ -2378,7 +2465,33 @@ def validate_existing_pilot_artifacts(
         logger.error(f"Documentation matrix {target_doc} is out of sync with authoritative ledger")
         return False
 
-    logger.info("All pilot scaling artifact invariants verified successfully (read-only audit passed).")
+    # 9. Published Watch Manifest Verification
+    if not target_published.exists():
+        logger.error(f"Published watch manifest not found: {target_published}")
+        return False
+    if not target_fe_published.exists():
+        logger.error(f"Frontend published watch manifest not found: {target_fe_published}")
+        return False
+
+    with open(target_published, "r", encoding="utf-8") as f:
+        actual_pub_manifest = json.load(f)
+    with open(target_fe_published, "r", encoding="utf-8") as f:
+        actual_fe_pub_manifest = json.load(f)
+
+    expected_pub_manifest = generate_published_watch_manifest(recomputed_dossiers)
+    pub_diffs = find_structural_differences(expected_pub_manifest, actual_pub_manifest, path="$.published_manifest")
+    if pub_diffs:
+        for diff in pub_diffs[:5]:
+            logger.error(f"Published watch manifest mismatch at {diff}")
+        return False
+
+    fe_diffs = find_structural_differences(expected_pub_manifest, actual_fe_pub_manifest, path="$.fe_published_manifest")
+    if fe_diffs:
+        for diff in fe_diffs[:5]:
+            logger.error(f"Frontend published watch manifest mismatch at {diff}")
+        return False
+
+    logger.info("All pilot scaling and published watch artifact invariants verified successfully (read-only audit passed).")
     return True
 
 
@@ -2387,7 +2500,7 @@ def main():
         description="ARX Terminal Opportunity Dossier Scaling Pilot Preparer & Validator"
     )
     parser.add_argument("--symbol", type=str, help="Prepare and inspect a single pilot addition symbol (e.g. ULTA)")
-    parser.add_argument("--all-pilot", action="store_true", help="Prepare all 20 pilot cohort dossiers and write outputs")
+    parser.add_argument("--all-pilot", action="store_true", help="Prepare all pilot cohort dossiers, publish watch manifest, and write outputs")
     parser.add_argument("--validate", action="store_true", help="Validate existing pilot scaling artifacts and invariants")
     parser.add_argument("--check", action="store_true", help="CI check mode: validates existing artifacts, exits 1 on error")
     parser.add_argument("--dry-run", action="store_true", help="Perform preparation and validation in-memory without modifying disk files")
@@ -2395,6 +2508,8 @@ def main():
     parser.add_argument("--manifest-path", type=str, help="Explicit destination or read path for pilot scaling manifest")
     parser.add_argument("--out", type=str, help="Explicit destination path for frontend draft snapshot JSON")
     parser.add_argument("--doc-matrix-path", type=str, help="Explicit destination or read path for cohort matrix documentation")
+    parser.add_argument("--published-manifest-path", type=str, help="Explicit destination or read path for published watch manifest")
+    parser.add_argument("--fe-published-manifest-path", type=str, help="Explicit destination or read path for frontend published watch manifest")
 
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -2403,6 +2518,8 @@ def main():
     manifest_path = Path(args.manifest_path) if args.manifest_path else None
     frontend_path = Path(args.out) if args.out else None
     doc_matrix_path = Path(args.doc_matrix_path) if args.doc_matrix_path else None
+    published_manifest_path = Path(args.published_manifest_path) if args.published_manifest_path else None
+    frontend_published_manifest_path = Path(args.fe_published_manifest_path) if args.fe_published_manifest_path else None
 
     # Safety boundary: prevent output flag from targeting production snapshot
     if frontend_path:
@@ -2417,6 +2534,8 @@ def main():
             manifest_path=manifest_path,
             frontend_draft_path=frontend_path,
             doc_matrix_path=doc_matrix_path,
+            published_manifest_path=published_manifest_path,
+            frontend_published_manifest_path=frontend_published_manifest_path,
         )
         if not ok:
             sys.exit(1)
@@ -2455,7 +2574,7 @@ def main():
         return
 
     if args.all_pilot:
-        logger.info("Preparing complete 20-company Opportunity Dossier pilot cohort...")
+        logger.info("Preparing complete 19-company Opportunity Dossier pilot cohort and published watch manifest...")
         ledger, manifest, frontend_draft = prepare_pilot_scaling_corpus()
         write_pilot_artifacts(
             ledger,
@@ -2465,17 +2584,21 @@ def main():
             manifest_path=manifest_path,
             frontend_draft_path=frontend_path,
             doc_matrix_path=doc_matrix_path,
+            published_manifest_path=published_manifest_path,
+            frontend_published_manifest_path=frontend_published_manifest_path,
         )
         ok = validate_existing_pilot_artifacts(
             ledger_path=ledger_path,
             manifest_path=manifest_path,
             frontend_draft_path=frontend_path,
             doc_matrix_path=doc_matrix_path,
+            published_manifest_path=published_manifest_path,
+            frontend_published_manifest_path=frontend_published_manifest_path,
         )
         if not ok:
             logger.error("Generated pilot artifacts failed validation gate.")
             sys.exit(1)
-        print("SUCCESS: 20-company Opportunity Dossier pilot scaling corpus prepared and validated.")
+        print("SUCCESS: Opportunity Dossier pilot scaling corpus and curated Quality Watch manifest prepared and validated.")
         return
 
     parser.print_help()

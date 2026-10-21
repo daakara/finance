@@ -13,6 +13,7 @@
  */
 
 import snapshotData from "./opportunityDossierSnapshot.json";
+import publishedWatchManifest from "./publishedWatchManifest.json";
 
 // Explicit deployment / build-time separation
 // Pilot drafts are ONLY enabled when NEXT_PUBLIC_ENABLE_RESEARCH_PILOT_DRAFTS is explicitly "true".
@@ -200,16 +201,37 @@ export interface OpportunityDossierSnapshotFile {
   dossiers: Record<string, OpportunityDossier>;
 }
 
+export interface PublishedWatchManifestFile {
+  schema_version: string;
+  task: string;
+  governing_standard: string;
+  standard_doc_path?: string;
+  created_at_utc: string;
+  market_session_date: string;
+  filing_availability_cutoff_utc: string;
+  published_symbols: string[];
+  published_count: number;
+  baseline_watch_symbols: string[];
+  excluded_historical_symbols: string[];
+  excluded_draft_symbols: string[];
+  accepted_additions: Record<string, OpportunityDossier>;
+  additions_provenance: Record<string, any>;
+}
+
 export const ODP05_COHORT_SYMBOLS = ["FIX", "DUOL", "IREN", "CORZ", "MU"] as const;
+
+export const PUBLISHED_WATCH_SYMBOLS = ["FIX", "DUOL", "IREN", "CORZ", "ULTA"] as const;
+export const BASELINE_WATCH_SYMBOLS = ["FIX", "DUOL", "IREN", "CORZ"] as const;
+export const EXCLUDED_REJECTED_SYMBOLS = ["MU", "PLTR"] as const;
 
 export const PILOT_EXPANSION_SYMBOLS = [
   "ULTA", "MEDP", "DECK", "KLAC", "LULU",
-  "EME", "VRT", "ANET", "PLTR", "ISRG",
+  "EME", "VRT", "ANET", "ISRG",
   "CDNS", "PWR", "SNPS", "NOW", "ELF"
 ] as const;
 
 export const TOTAL_PILOT_SYMBOLS = [
-  ...ODP05_COHORT_SYMBOLS,
+  ...BASELINE_WATCH_SYMBOLS,
   ...PILOT_EXPANSION_SYMBOLS
 ] as const;
 
@@ -237,6 +259,7 @@ export const ATTRIBUTABLE_SEC_CIK_MAP: Record<string, string> = {
 };
 
 const typedSnapshot = snapshotData as unknown as OpportunityDossierSnapshotFile;
+const typedPublishedManifest = publishedWatchManifest as unknown as PublishedWatchManifestFile;
 
 /**
  * Normalizes symbol to uppercase trimmed string.
@@ -247,28 +270,40 @@ export function normalizeSymbol(symbol: string): string {
 }
 
 /**
- * Returns true if symbol belongs to the frozen 5-company ODP-05 research cohort.
+ * Returns true if symbol belongs to the published Quality Watch research collection.
+ * Only qualifying WATCH assets (FIX, DUOL, IREN, CORZ, ULTA) return true.
+ * Excluded rejected records (MU, PLTR) return false.
  */
 export function isCohortSymbol(symbol: string): boolean {
   const clean = normalizeSymbol(symbol);
-  return (ODP05_COHORT_SYMBOLS as readonly string[]).includes(clean);
+  return (PUBLISHED_WATCH_SYMBOLS as readonly string[]).includes(clean);
+}
+
+export function isPublishedWatchSymbol(symbol: string): boolean {
+  return isCohortSymbol(symbol);
+}
+
+export function isExcludedRejectedSymbol(symbol: string): boolean {
+  const clean = normalizeSymbol(symbol);
+  return (EXCLUDED_REJECTED_SYMBOLS as readonly string[]).includes(clean);
 }
 
 /**
- * Returns true if symbol belongs to the 20-company pilot expansion cohort (drafts included).
- * In production builds (where IS_PILOT_DRAFTS_BUILD_ENABLED is false), fails closed to standard cohort.
+ * Returns true if symbol belongs to the pilot staging cohort (preview only).
+ * Excludes rejected records (MU, PLTR). In production builds, falls closed to published WATCH cohort.
  */
 export function isPilotDraftSymbol(symbol: string): boolean {
+  const clean = normalizeSymbol(symbol);
   if (!IS_PILOT_DRAFTS_BUILD_ENABLED || !typedDraftSnapshot) {
     return isCohortSymbol(symbol);
   }
-  const clean = normalizeSymbol(symbol);
   return (TOTAL_PILOT_SYMBOLS as readonly string[]).includes(clean);
 }
 
 /**
- * Returns the opportunity dossier for a symbol from published production snapshot,
+ * Returns the opportunity dossier for a symbol from published Quality Watch collection,
  * or optionally from pilot draft staging when previewDrafts is enabled and supported by the build.
+ * Fails closed (returns null) for excluded rejected symbols (MU, PLTR) and uncataloged symbols.
  */
 export function getOpportunityDossier(
   symbol: string,
@@ -277,19 +312,33 @@ export function getOpportunityDossier(
   const clean = normalizeSymbol(symbol);
   if (!clean) return null;
 
+  // Rejected records strictly excluded from active research
+  if ((EXCLUDED_REJECTED_SYMBOLS as readonly string[]).includes(clean)) {
+    return null;
+  }
+
+  // Preview branch for draft staging
   if (options?.previewDrafts && IS_PILOT_DRAFTS_BUILD_ENABLED && typedDraftSnapshot) {
     const draftDossier = typedDraftSnapshot.dossiers?.[clean];
     if (!draftDossier || draftDossier.identity?.symbol !== clean) return null;
     return draftDossier;
   }
 
-  const dossier = typedSnapshot.dossiers?.[clean];
-  if (!dossier) return null;
+  // 1. Published Additions from manifest (e.g., ULTA)
+  const acceptedAddition = typedPublishedManifest.accepted_additions?.[clean];
+  if (acceptedAddition && acceptedAddition.identity?.symbol === clean) {
+    return acceptedAddition;
+  }
 
-  // Identity verification: ensure internal symbol matches requested
-  if (dossier.identity?.symbol !== clean) return null;
+  // 2. Baseline Published Watch assets (FIX, DUOL, IREN, CORZ)
+  if ((BASELINE_WATCH_SYMBOLS as readonly string[]).includes(clean)) {
+    const dossier = typedSnapshot.dossiers?.[clean];
+    if (dossier && dossier.identity?.symbol === clean) {
+      return dossier;
+    }
+  }
 
-  return dossier;
+  return null;
 }
 
 /**
@@ -300,21 +349,48 @@ export function getPilotDraftDossier(symbol: string): OpportunityDossier | null 
 }
 
 /**
- * Returns the list of available published cohort companies.
+ * Returns the list of 5 published Quality Watch cohort companies.
  */
 export function listOpportunityCohort(): OpportunityCohortItem[] {
-  return typedSnapshot.cohort || [];
+  const baselineItems = (typedSnapshot.cohort || []).filter(item =>
+    (BASELINE_WATCH_SYMBOLS as readonly string[]).includes(item.symbol)
+  );
+
+  const ultaDossier = typedPublishedManifest.accepted_additions?.["ULTA"];
+  const ultaItem: OpportunityCohortItem = ultaDossier ? {
+    symbol: "ULTA",
+    company_name: ultaDossier.identity.company_name,
+    exchange: ultaDossier.identity.exchange,
+    opportunity_route: ultaDossier.identity.opportunity_route,
+    disposition: ultaDossier.central_assessment.disposition,
+    disposition_label: ultaDossier.central_assessment.disposition_label,
+    reference_price: ultaDossier.valuation.reference_price,
+    valuation_status: ultaDossier.valuation.valuation_status,
+  } : {
+    symbol: "ULTA",
+    company_name: "Ulta Beauty, Inc.",
+    exchange: "NASDAQ",
+    opportunity_route: "Consumer Cyclical / Specialty Retail",
+    disposition: "WATCH_CONDITIONS",
+    disposition_label: "Watch — Conditions Required for Entry",
+    reference_price: 592.94,
+    valuation_status: "COMPUTED_VERIFIED",
+  };
+
+  return [...baselineItems, ultaItem];
 }
 
 /**
- * Returns the list of 20 pilot cohort companies from draft staging when enabled,
- * or falls back strictly to the 5 published companies in production builds.
+ * Returns the list of pilot cohort companies from draft staging when enabled (excluding rejected MU and PLTR),
+ * or falls back strictly to the 5 published Quality Watch companies in production builds.
  */
 export function listPilotDraftCohort(): OpportunityCohortItem[] {
   if (!IS_PILOT_DRAFTS_BUILD_ENABLED || !typedDraftSnapshot) {
     return listOpportunityCohort();
   }
-  return typedDraftSnapshot.cohort || [];
+  return (typedDraftSnapshot.cohort || []).filter(item =>
+    !(EXCLUDED_REJECTED_SYMBOLS as readonly string[]).includes(item.symbol)
+  );
 }
 
 /**
@@ -333,4 +409,8 @@ export function getPilotDraftSnapshotMetadata(): OpportunitySnapshotMetadata {
     return getOpportunitySnapshotMetadata();
   }
   return typedDraftSnapshot.snapshot_metadata;
+}
+
+export function getPublishedWatchManifest(): PublishedWatchManifestFile {
+  return typedPublishedManifest;
 }

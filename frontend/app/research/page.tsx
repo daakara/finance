@@ -116,39 +116,39 @@ function ResearchContent() {
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-950/80 text-cyan-400 border border-cyan-800 text-xs font-mono font-bold">
                 <Microscope className="w-3.5 h-3.5" />
-                ARX OPPORTUNITY DOSSIER
+                ARX QUALITY WATCH RESEARCH
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 text-slate-300 border border-slate-700 text-xs font-mono">
                 <Calendar className="w-3 h-3 text-cyan-400" />
-                Frozen Baseline: {metadata.market_session_date || "2026-10-16"} Close
+                Reference Date: {metadata.market_session_date || "2026-10-16"} Close
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 text-slate-300 border border-slate-700 text-xs font-mono">
                 <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                {isDraftPreviewActive ? "Pilot Scaling Draft Evidence" : "ODP-05 Candidate Evidence"}
+                {isDraftPreviewActive ? "Scaling Pilot Draft Evidence" : "Curated Quality Watch Selection"}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-sans">
-              Investment Assessment & Invalidation Dossiers
+              Curated Quality Watch Research & Invalidation Dossiers
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 font-sans max-w-3xl leading-relaxed">
-              Why does this asset merit further research, monitoring, or rejection at the stated reference price?
-              Examines primary SEC filings, reverse-DCF implied expectations, balance-sheet safety, and explicit invalidation thresholds.
+              Why does this business deserve continuous monitoring at the stated reference price?
+              Examines primary SEC filings, business quality moats, reverse-DCF valuation conditions, balance sheet resilience, and observable invalidation triggers.
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0">
             <div className="p-3 rounded-xl bg-[#080c13] border border-[#1f293d] space-y-1 text-right">
-              <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Candidate Cohort</div>
-              <div className="text-sm font-mono font-bold text-cyan-300">{cohort.length} Research Assets</div>
+              <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Research Collection</div>
+              <div className="text-sm font-mono font-bold text-cyan-300">{cohort.length} Quality Watch Assets</div>
               <div className="text-[11px] font-mono text-slate-400">
-                {isDraftPreviewActive ? "Pilot Draft Staging" : "Single Bundled Snapshot"}
+                {isDraftPreviewActive ? "Pilot Draft Staging" : "Curated Published Collection"}
               </div>
               {IS_PILOT_DRAFTS_BUILD_ENABLED && !isDraftPreviewActive ? (
                 <Link
                   href={`/research?symbol=${normalizedSymbol}&preview=pilot${experienceMode ? `&mode=${experienceMode}` : ""}`}
                   className="inline-block mt-1 text-[10px] font-mono text-amber-400 hover:text-amber-300 underline"
                 >
-                  Preview 20-Asset Pilot Drafts
+                  Preview Draft Expansion ({cohort.length > 5 ? cohort.length : 18} Assets)
                 </Link>
               ) : null}
             </div>
@@ -239,7 +239,7 @@ function ResearchContent() {
             <div className="flex items-center justify-between pb-2 border-b border-[#1b2537]">
               <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-cyan-400" />
-                {isDraftPreviewActive ? "Pilot Cohort" : "ODP-05 Cohort"} ({cohort.length})
+                {isDraftPreviewActive ? "Draft Expansion" : "Quality Watch"} ({cohort.length})
               </span>
               <span className="text-[10px] font-mono text-slate-500">2026-10-16</span>
             </div>
@@ -334,15 +334,13 @@ function ResearchContent() {
                 </div>
                 <div className="space-y-2">
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800 text-xs font-mono font-bold">
-                    UNSUPPORTED RESEARCH SYMBOL
+                    NO PUBLISHED WATCH DOSSIER
                   </div>
                   <h2 className="text-xl sm:text-2xl font-bold text-white font-sans">
-                    {isDraftPreviewActive ? `No Pilot Candidate Draft for “${displaySymbol}”` : `No ODP-05 Research Dossier for “${displaySymbol}”`}
+                    No Published Watch Dossier for &ldquo;{displaySymbol}&rdquo;
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-300 font-sans leading-relaxed">
-                    {isDraftPreviewActive
-                      ? `The ARX Scaling Pilot currently covers 20 candidate assets (5 baseline + 15 expansion drafts). Live tape equities outside this scope do not have assessment drafts.`
-                      : `The ARX Opportunity Dossier surface currently hosts the 5 candidate assets evaluated and frozen under the ODP-05 Discovery baseline as of the 2026-10-16 market close. Live tape equities and uncataloged symbols outside this bounded research scope do not have static assessment dossiers.`}
+                    ARX Research focuses strictly on a curated collection of high-conviction Quality Watch companies meeting explicit business resilience, observable entry triggers, and valuation discipline standards. &ldquo;{displaySymbol}&rdquo; does not currently have an active published watch dossier.
                   </p>
                 </div>
               </div>
@@ -350,7 +348,7 @@ function ResearchContent() {
               {/* Quick Jump to Valid Cohort Assets */}
               <div className="bg-[#090d14] rounded-xl border border-[#1b2537] p-4 space-y-3">
                 <div className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
-                  Available ODP-05 Candidate Dossiers:
+                  Available Published Quality Watch Dossiers:
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                   {cohort.map((item) => (
@@ -382,8 +380,15 @@ function ResearchContent() {
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs font-mono">
                   <Link
-                    href={`/?symbol=${encodeURIComponent(displaySymbol)}`}
+                    href={`/stock/${encodeURIComponent(displaySymbol.toLowerCase())}`}
                     className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-transform active:scale-95 inline-flex items-center gap-1.5"
+                  >
+                    <span>View Fundamentals Page ({displaySymbol})</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                  <Link
+                    href={`/?symbol=${encodeURIComponent(displaySymbol)}`}
+                    className="px-4 py-2 rounded-xl bg-[#111722] hover:bg-[#182232] text-slate-300 border border-[#243044] transition-colors inline-flex items-center gap-1.5"
                   >
                     <span>Launch Terminal for {displaySymbol}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -394,13 +399,6 @@ function ResearchContent() {
                   >
                     <span>Inspect Radar for {displaySymbol}</span>
                     <ExternalLink className="w-3.5 h-3.5" />
-                  </Link>
-                  <Link
-                    href={`/stock/${encodeURIComponent(displaySymbol.toLowerCase())}`}
-                    className="px-4 py-2 rounded-xl bg-[#111722] hover:bg-[#182232] text-slate-300 border border-[#243044] transition-colors inline-flex items-center gap-1.5"
-                  >
-                    <span>View Fundamentals Page</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               </div>
