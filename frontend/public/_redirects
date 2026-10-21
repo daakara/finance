@@ -1,7 +1,6 @@
 # Cloudflare Pages Redirects
 # Legacy Stubs & Removed Routes Edge Redirects (Permanent 301)
 /workbench/*  /  301
-/research/*   /  301
 /cockpit/*    /  301
 /me/*         /  301
 /committee    /smart-money  301

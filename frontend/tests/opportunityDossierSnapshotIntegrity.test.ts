@@ -140,4 +140,15 @@ assert.ok(
 );
 console.log("[OK] Correction A: Reinvestment (% of NOPAT) presentation units and clean accounting labels verified");
 
+// 9. Hosted Route Invariant: Active /research route must not be covered by a redirect to root
+const redirectsPath = path.resolve(__dirname, "../public/_redirects");
+assert.strictEqual(fs.existsSync(redirectsPath), true, "public/_redirects must exist");
+const redirectsRaw = fs.readFileSync(redirectsPath, "utf-8");
+assert.strictEqual(
+  /^\/research\b/m.test(redirectsRaw),
+  false,
+  "public/_redirects must NOT contain legacy redirect covering active /research route"
+);
+console.log("[OK] Hosted Route Invariant: Active /research route is not covered by a redirect to terminal root");
+
 console.log("ALL OPPORTUNITY DOSSIER SNAPSHOT INTEGRITY TESTS PASSED ✅");
