@@ -259,10 +259,16 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                     "locator": "Form 10-K for FY ended 2026-01-31, Item 1 Business — Loyalty Program"
                 },
                 {
+                    "claim_type": "SUPPORTING_EVIDENCE",
+                    "fact_status": "DERIVED_CALCULATION",
+                    "statement": "TTM operating cash flow of $1,567.8M ($1.57B) derived from FY25 operating cash flow ($1,502.8M) less prior-year 6M ($316.5M) plus current-year 6M ($381.6M).",
+                    "locator": "Form 10-K Item 8 & Form 10-Q Part I Item 1 Consolidated Statements of Cash Flows"
+                },
+                {
                     "claim_type": "OPPOSING_EVIDENCE",
                     "fact_status": "VERIFIED_REPORTED_FACT",
-                    "statement": "Prestige category growth has moderated while promotional cadence across prestige beauty and competitive footprint expansion (Sephora at Kohl's) has intensified.",
-                    "locator": "Form 10-Q for Q2 ended 2026-08-01, Part I Item 2 MD&A — Operating Results"
+                    "statement": "Quarterly comparable sales growth slowed to 3.8% from 6.7% a year earlier, while gross margin declined to 39.1% from 39.2%, primarily reflecting Space NK business mix. Operating margin nevertheless improved to 12.5% from 12.4%.",
+                    "locator": "Form 10-Q for Q2 ended 2026-08-01, Part I Item 2 MD&A — Results of Operations"
                 },
                 {
                     "claim_type": "MONITORING_CRITERIA",
@@ -311,7 +317,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             "selected_share_basis": {
                 "basis_type": "DILUTED_WEIGHTED_AVERAGE",
                 "value": 43062000.0,
-                "measurement_period": "TTM ended 2026-08-01",
+                "measurement_period": "Three months ended 2026-08-01",
                 "rationale": "Diluted weighted average shares outstanding reported in Q2 10-Q."
             }
         },
@@ -328,8 +334,8 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             }
         },
         "synthesis": {
-            "strongest_supporting_evidence": "Ulta generates dependable operating cash flows ($1.57B TTM CFO) with a liquid balance sheet ($213.5M cash and ST investments against $339.6M credit facility borrowings) and 44M+ loyalty members driving >95% of sales.",
-            "strongest_opposing_evidence": "Prestige beauty competitive intensity from Sephora at Kohl's and Amazon Beauty has compressed operating margins from 15.0% peak to 12.5%. At $592.94, market prices in 15.45% revenue CAGR with positive net debt ($126.1M).",
+            "strongest_supporting_evidence": "Ulta generates dependable operating cash flows ($1.57B TTM operating cash flow) with a liquid balance sheet ($213.5M cash and ST investments against $339.6M credit facility borrowings) and 44M+ loyalty members driving >95% of sales.",
+            "strongest_opposing_evidence": "Quarterly comparable sales growth slowed to 3.8% from 6.7% a year earlier, while gross margin declined to 39.1% from 39.2%, primarily reflecting Space NK business mix. Operating margin nevertheless improved to 12.5% from 12.4%. Under the stated valuation assumptions, the reference price implies 15.45% five-year revenue CAGR.",
             "main_uncertainty": "Durability of store-level traffic and margin defense against expanding promotional cadence across prestige cosmetic brands.",
             "price_watch_condition": "Pullback toward mid-cycle base valuation range ($430 - $450) or evidence of sustained comp-store sales acceleration >6%.",
             "confidence_assessment": "High confidence in accounting, Note 7 debt disclosures, and lease classification; medium confidence in long-term terminal operating margin floor.",
@@ -2309,6 +2315,12 @@ def validate_existing_pilot_artifacts(
         return False
     if ulta_tracing["lease_treatment"]["total_lease_liabilities_usd"] != 2184453000.0:
         logger.error("ULTA source tracing total_lease_liabilities_usd must be 2184453000.0")
+        return False
+    if ulta_tracing["shares_outstanding"].get("measurement_period") != "Three months ended 2026-08-01":
+        logger.error("ULTA source tracing shares_outstanding measurement_period must be 'Three months ended 2026-08-01'")
+        return False
+    if ulta_fin.get("selected_share_basis", {}).get("measurement_period") != "Three months ended 2026-08-01":
+        logger.error("ULTA selected_share_basis measurement_period must be 'Three months ended 2026-08-01'")
         return False
     if ulta_tracing["valuation_model"]["solved_5y_revenue_cagr_pct"] != 15.45:
         logger.error(f"ULTA source tracing solved_5y_revenue_cagr_pct must be 15.45%: {ulta_tracing['valuation_model']['solved_5y_revenue_cagr_pct']}")

@@ -274,6 +274,8 @@ def test_10_representative_dossier_ulta_evidence_tracing():
     # 6. Diluted share count
     assert tracing["shares_outstanding"]["fact_status"] == "VERIFIED_REPORTED_FACT"
     assert tracing["shares_outstanding"]["share_count"] == 43062000.0
+    assert tracing["shares_outstanding"]["measurement_period"] == "Three months ended 2026-08-01"
+    assert ulta["financial_profile"]["selected_share_basis"]["measurement_period"] == "Three months ended 2026-08-01"
 
     # 7. Reference price
     assert tracing["reference_price"]["fact_status"] == "VERIFIED_REPORTED_FACT"
