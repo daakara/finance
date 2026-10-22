@@ -8,7 +8,7 @@ Methodological Disclaimer on Verification Scope:
 - Schema checks establish internal structural compliance of JSON ledgers; they do not establish economic validity.
 - Date and accession format checks verify syntactic presence of required disclosures; they do not independently confirm external factual accuracy.
 - Offline calculation checks verify arithmetic consistency between reported components and derived metrics.
-- Synthetic example checks verify process documentation integrity; they do not represent real company valuations.
+- Synthetic example checks verify template documentation cleanliness; they do not represent real company valuations.
 - Frontend isolation checks verify architectural decoupling; they do not establish investment merit.
 """
 
@@ -140,12 +140,22 @@ def verify_pilot(repo_root: Path) -> dict:
                 f"Record {symbol} violates publication eligibility invariant: {dim.get('public_publication_eligibility')}"
             )
 
-        # Check evidence citation
+        # Check expectation_gap_status is qualified as unresolved
+        if dim.get("expectation_gap_status") != "VALUATION_EXPECTATION_GAP_UNRESOLVED":
+            results["passed"] = False
+            results["errors"].append(
+                f"Record {symbol} must qualify expectation_gap_status as VALUATION_EXPECTATION_GAP_UNRESOLVED"
+            )
+
+        # Check evidence citation and SEC Archives URL
         dev = rec.get("observable_development", {})
         evidence_str = dev.get("primary_filing_evidence", "")
         if "10-K" not in evidence_str or "Form" not in evidence_str:
             results["passed"] = False
             results["errors"].append(f"Record {symbol} lacks explicit Form 10-K primary evidence reference")
+        if "https://www.sec.gov/Archives/edgar/data/" not in evidence_str:
+            results["passed"] = False
+            results["errors"].append(f"Record {symbol} primary evidence must use canonical SEC Archives URL")
 
         # Check that expectations acknowledge unresolved consensus where applicable
         expectations = rec.get("price_and_expectations", {}).get("expectation_disaggregation", {})
@@ -265,6 +275,12 @@ def verify_pilot(repo_root: Path) -> dict:
         if "July 17, 2025" not in triage_text:
             results["passed"] = False
             results["errors"].append("SEARCH_UNIVERSE_AND_TRIAGE_MATRIX.md lacks primary Form 8-K July 17, 2025 merger date for SNPS")
+        if "https://www.sec.gov/Archives/edgar/data/" not in triage_text:
+            results["passed"] = False
+            results["errors"].append("SEARCH_UNIVERSE_AND_TRIAGE_MATRIX.md must use canonical SEC Archives URLs")
+        if "meta 26%" in triage_text.lower() or "msft 16%" in triage_text.lower():
+            results["passed"] = False
+            results["errors"].append("SEARCH_UNIVERSE_AND_TRIAGE_MATRIX.md must attribute ANET concentration to 'two customers, combined 42%' without inferring identities")
 
     # 8. Verify Evaluation Report Consistency and Removal of Unsupported Phrases
     eval_path = repo_root / "docs" / "research" / "evidence_led_discovery" / "PILOT_EVALUATION_REPORT.md"
@@ -279,6 +295,9 @@ def verify_pilot(repo_root: Path) -> dict:
         if "proved signal value" in eval_text:
             results["passed"] = False
             results["errors"].append("PILOT_EVALUATION_REPORT.md contains improper 'proved signal value' phrase")
+        if "meta/msft" in eval_text:
+            results["passed"] = False
+            results["errors"].append("PILOT_EVALUATION_REPORT.md must attribute ANET concentration to two customers without inferring identities")
 
     return results
 

@@ -36,7 +36,7 @@
 - **Evaluation:** **RECONCILED TO AUDITED PRIMARY SOURCES.**
 - Initial drafts relied on stale 2023/2024 citations and erroneous assumptions (e.g., Ansys merger pending, Vertiv permanently distressed).
 - Reconciliation updated all 14 triage entries to October 2026 information cutoff, citing audited Form 10-K (FY2025) and interim Form 10-Q (1H 2026) filings with exact accession numbers and table locators.
-- Factual errors were corrected: SNPS merger completion date confirmed as July 17, 2025 via Form 8-K; Vertiv deleveraging from $2.8B net debt to $129M verified via Form 10-K/10-Q; Arista customer concentration verified at 42% (Meta 26%, MSFT 16%).
+- Factual errors were corrected: SNPS merger completion date confirmed as July 17, 2025 via Form 8-K; Vertiv deleveraging from $2.8B net debt to $129M verified via Form 10-K/10-Q; Arista customer concentration verified at 42% across two customers (Customer A 26%, Customer B 16%).
 
 ### 3. Useful Questions Surfaced
 - **Evaluation:** **HIGH INFORMATIONAL VALUE.**
@@ -86,7 +86,7 @@ The table below contrasts the three deeper investigations using audited FY2025 a
 | **Funded Long-Term Debt** | **$0.0M** | $2,939.8M | **$0.0M** |
 | **Cash & Liquid Investments** | $2,290.2M cash (plus ST investments) | **$2,810.6M cash** | $1,005.6M cash/ST investments |
 | **Net Funded Debt** | **Net Cash** | **$129.2M (Near Net Cash)** | **Net Cash** |
-| **Primary Operational Uncertainty** | **42% Customer Concentration (Meta/MSFT)** | Competitive Supply Ramp & Project Execution | GPU Vendor Multi-Sourcing & Analog Pricing |
+| **Primary Operational Uncertainty** | **42% Customer Concentration (Two Customers: 26% and 16%)** | Competitive Supply Ramp & Project Execution | GPU Vendor Multi-Sourcing & Analog Pricing |
 | **Triage Classification** | `PRIORITIZED_FOR_INTERNAL_MONITORING` | `ACTIVE_QUALITY_WATCH_CANDIDATE` | `PRIORITIZED_FOR_INTERNAL_MONITORING` |
 
 ---

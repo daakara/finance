@@ -33,7 +33,7 @@ flowchart LR
     subgraph ANET_Profile["ANET: High-Throughput Cloud & AI Networking"]
         Dev["Observable Development:<br/>Ethernet Backend AI Clusters (800G/1.6T)"]
         Econ["Consolidated Results (FY25):<br/>$9,005.7M Rev | 42.8% GAAP OpMargin<br/>$4,261.9M FCF (97.5% of CFO)"]
-        Cap["Value Capture & Risk Context:<br/>Zero Funded Debt | $2.3B+ Cash<br/><b>Concentration: Meta 26% + MSFT 16% = 42%</b>"]
+        Cap["Value Capture & Risk Context:<br/>Zero Funded Debt | $2.3B+ Cash<br/><b>Concentration: Two Customers (26% + 16%) = Combined 42%</b>"]
     end
     Dev --> Econ --> Cap
 ```
@@ -43,8 +43,8 @@ flowchart LR
 - **Timing & Baseline:** FY2025 revenue reached $9,005.7M (+53.7% vs FY2023 baseline of $5,860.2M). Momentum continued in 1H 2026 with revenue reaching $5,744.7M (Q2 2026 quarterly revenue of $3,035.7M).
 - **Classification:** **Structural Networking Protocol Shift** within a multi-year hyperscaler capex expansion.
 - **Primary Source Evidence:**
-  - *Form 10-K FY2025:* For period ended December 31, 2025, filed February 17, 2026 (CIK: `0001596532`, Accession: `0001596532-26-000013`, [SEC EDGAR URL](https://www.sec.gov/edgar/data/1596532/000159653226000013/anet-20251231.htm)). Item 7 MD&A; Item 8 Financial Statements (Statements of Operations p. 68).
-  - *Form 10-Q Q2 2026:* For period ended June 30, 2026, filed August 5, 2026 (Accession: `0001596532-26-000175`, [SEC EDGAR URL](https://www.sec.gov/edgar/data/1596532/000159653226000175/anet-20260630.htm)).
+  - *Form 10-K FY2025:* For period ended December 31, 2025, filed February 17, 2026 (CIK: `0001596532`, Accession: `0001596532-26-000013`, [SEC EDGAR URL](https://www.sec.gov/Archives/edgar/data/1596532/000159653226000013/anet-20251231.htm)). Item 7 MD&A; Item 8 Financial Statements (Statements of Operations p. 68).
+  - *Form 10-Q Q2 2026:* For period ended June 30, 2026, filed August 5, 2026 (Accession: `0001596532-26-000175`, [SEC EDGAR URL](https://www.sec.gov/Archives/edgar/data/1596532/000159653226000175/anet-20260630.htm)).
 
 ### B. Economic Significance
 - **Consolidated Materiality:** High. Cloud and enterprise switching represents >85% of consolidated revenue.
@@ -57,18 +57,18 @@ flowchart LR
 ### C. Value Capture & Limitations
 - **Competition & Moat:** Competes with Nvidia (Spectrum-X and Quantum InfiniBand), Cisco Systems, and white-box ODM assemblers. Moat is anchored in its single-binary EOS operating system and carrier-grade reliability.
 - **Customer Bargaining Power (Material Uncertainty):**
-  - *Primary Fact:* In FY2025, two customers accounted for **26%** (Customer A / Meta) and **16%** (Customer B / Microsoft) of consolidated revenue, representing a **combined customer concentration of 42%** (Form 10-K FY25, Note on Concentration). This represents an increase from 39% in FY23 and 35% in FY24.
+  - *Primary Fact:* In FY2025, two customers accounted for **26%** (Customer A) and **16%** (Customer B) of consolidated revenue, representing a **combined customer concentration of 42%** (Form 10-K FY25, Note on Concentration). Specific customer names are not disclosed in the primary filing note; identities are not inferred from historical patterns.
   - *Contextual Assessment:* While customer concentration is high, it is balanced by high customer switching costs and deep network integration. However, it subjects Arista to procurement lumpiness and dual-sourcing pressure.
 - **Capex Intensity:** Highly asset-light fabless model. FY2025 capex was $110.0M (1.2% of revenue).
 - **Funded Debt & Solvency:** **Pristine.** Zero funded long-term debt, zero credit facility drawings. Cash and cash equivalents totaled $2,290.2M as of June 30, 2026 (plus substantial marketable securities).
 - **Dilution & SBC:** FY2025 stock-based compensation was $439.2M (4.9% of revenue), fully offset by ongoing share buyback programs.
 
 ### D. Price & Expectations
-- **Market Valuation Context:** Valuation reflects market expectations of sustained Ethernet share gains in AI clusters.
+- **Market Valuation Context:** Valuation / expectation gap unresolved (dated market multiple and consensus expectations not independently established via primary broker feeds; unresolved expectations are not used as an established reason to promote or downgrade).
 - **Expectation Disaggregation:**
   - *Company Guidance:* Management targets sustained AI networking expansion across enterprise and tier-2 cloud accounts.
   - *Sourced Consensus:* `UNRESOLVED_CONSENSUS` (Primary broker consensus feeds are not accessible in the current research environment; numerical consensus estimates are omitted rather than invented).
-  - *ARX Hypothesis:* Ethernet share gains in backend GPU clusters are structural, but 42% customer concentration and hyperscaler internal silicon initiatives will constrain gross margin expansion beyond current ~64%.
+  - *ARX Hypothesis:* Ethernet share gains in backend GPU clusters are structural, but two customers accounting for combined 42% of revenue and hyperscaler internal silicon initiatives will constrain gross margin expansion beyond current ~64%.
 
 ### E. Downside & Survival Capacity
 - **Downside Scenario:** Hyperscaler capex digestion pause or selective procurement shifts to white-box switches could temporarily reduce revenue growth to mid-single digits.
@@ -76,11 +76,11 @@ flowchart LR
 
 ### F. Assessment Changes & Falsification Triggers
 - **Strengthening Criteria:** Top-2 customer concentration falling below 35% through broader tier-2 cloud adoption while GAAP operating margin remains >40.0%.
-- **Invalidation Criteria:** Loss of tier-1 reference design status at Meta or Microsoft, or GAAP operating margin compressing below 34.0% for two consecutive quarters.
+- **Invalidation Criteria:** Loss of primary supplier allocation at either of its two primary customers (Customer A or Customer B), or GAAP operating margin compressing below 34.0% for two consecutive quarters.
 
 ### G. Research Priority & Disposition
 - **Priority Classification:** `PRIORITIZED_FOR_INTERNAL_MONITORING`.
-- **Disposition:** Retained in internal research monitoring queue. Arista exhibits elite business quality and self-funding cash generation, but public Quality-Watch publication is held pending observation of customer concentration dynamics, avoiding arbitrary or automatic disqualifiers.
+- **Disposition:** Retained in internal research monitoring queue. Arista exhibits elite business quality and self-funding cash generation, but public Quality-Watch publication is held pending observation of customer concentration dynamics, avoiding arbitrary or automatic disqualifiers. Valuation / expectation gap remains unresolved.
 
 ---
 
@@ -101,8 +101,8 @@ flowchart LR
 - **Timing & Baseline:** FY2025 revenue reached $10,229.9M (+49.1% vs FY2023 baseline of $6,863.0M). 1H 2026 revenue expanded to $5,923.8M (Q2 2026 quarterly revenue of $3,274.3M).
 - **Classification:** **Structural Physical Infrastructure Expansion** supported by strong multi-year order backlogs.
 - **Primary Source Evidence:**
-  - *Form 10-K FY2025:* For period ended December 31, 2025, filed February 13, 2026 (CIK: `0001674101`, Accession: `0001628280-26-005612`, [SEC EDGAR URL](https://www.sec.gov/edgar/data/1674101/000162828026005612/vrt-20251231.htm)). Item 7 MD&A; Item 8 Financial Statements (Statements of Cash Flows p. 71; Note on Debt).
-  - *Form 10-Q Q2 2026:* For period ended June 30, 2026, filed July 29, 2026 (Accession: `0001628280-26-050609`, [SEC EDGAR URL](https://www.sec.gov/edgar/data/1674101/000162828026050609/vrt-20260630.htm)).
+  - *Form 10-K FY2025:* For period ended December 31, 2025, filed February 13, 2026 (CIK: `0001674101`, Accession: `0001628280-26-005612`, [SEC EDGAR URL](https://www.sec.gov/Archives/edgar/data/1674101/000162828026005612/vrt-20251231.htm)). Item 7 MD&A; Item 8 Financial Statements (Statements of Cash Flows p. 71; Note on Debt).
+  - *Form 10-Q Q2 2026:* For period ended June 30, 2026, filed July 29, 2026 (Accession: `0001628280-26-050609`, [SEC EDGAR URL](https://www.sec.gov/Archives/edgar/data/1674101/000162828026050609/vrt-20260630.htm)).
 
 ### B. Economic Significance
 - **Consolidated Materiality:** High. Data center power, thermal, and modular infrastructure comprise 100% of operations.
@@ -124,7 +124,7 @@ flowchart LR
 - **Dilution & Warrants:** Warrants have been retired; diluted share count is stable (~385M shares).
 
 ### D. Price & Expectations
-- **Market Valuation Context:** Valuation embeds market expectations of sustained ~18-20% operating margins and leading market share in AI data center cooling through 2028.
+- **Market Valuation Context:** Valuation / expectation gap unresolved (formal expectation gap is unresolved pending dedicated reverse-DCF modeling; not used as an established reason to alter quality candidate status).
 - **Expectation Disaggregation:**
   - *Company Guidance:* Targets organic revenue growth and continuous operating margin expansion via modular manufacturing efficiencies.
   - *Sourced Consensus:* `UNRESOLVED_CONSENSUS` (Primary broker consensus feeds omitted).
@@ -161,8 +161,8 @@ flowchart LR
 - **Timing & Baseline:** FY2025 revenue reached $2,790.5M (+53.2% vs FY2023 baseline of $1,821.1M). 1H 2026 revenue expanded to $1,784.8M (Q2 2026 quarterly revenue of $980.6M).
 - **Classification:** **Structural Silicon-Level Architectural Content Growth** within a broader semiconductor expansion.
 - **Primary Source Evidence:**
-  - *Form 10-K FY2025:* For period ended December 31, 2025, filed February 27, 2026 (CIK: `0001280452`, Accession: `0001437749-26-006113`, [SEC EDGAR URL](https://www.sec.gov/edgar/data/1280452/000143774926006113/mpwr-20251231.htm)). Item 7 MD&A; Item 8 Financial Statements (Statements of Cash Flows p. 69; Note on Segment Reporting).
-  - *Form 10-Q Q2 2026:* For period ended June 30, 2026, filed August 5, 2026 (Accession: `0001628280-26-053275`, [SEC EDGAR URL](https://www.sec.gov/edgar/data/1280452/000162828026053275/mpwr-20260630.htm)).
+  - *Form 10-K FY2025:* For period ended December 31, 2025, filed February 27, 2026 (CIK: `0001280452`, Accession: `0001437749-26-006113`, [SEC EDGAR URL](https://www.sec.gov/Archives/edgar/data/1280452/000143774926006113/mpwr-20251231.htm)). Item 7 MD&A; Item 8 Financial Statements (Statements of Cash Flows p. 69; Note on Segment Reporting).
+  - *Form 10-Q Q2 2026:* For period ended June 30, 2026, filed August 5, 2026 (Accession: `0001628280-26-053275`, [SEC EDGAR URL](https://www.sec.gov/Archives/edgar/data/1280452/000162828026053275/mpwr-20260630.htm)).
 
 ### B. Economic Significance
 - **Consolidated Materiality:** High. Enterprise Data power management is MPWR's primary growth driver, rising to >25% of consolidated revenue and transforming overall corporate growth.
@@ -184,7 +184,7 @@ flowchart LR
 - **Dilution & SBC:** FY2025 stock-based compensation was $227.5M (8.2% of revenue), partially offset by ongoing share repurchase programs.
 
 ### D. Price & Expectations
-- **Market Valuation Context:** Premium valuation multiple reflects strong market expectations of continued content growth per accelerator.
+- **Market Valuation Context:** Valuation / expectation gap unresolved (not used as an established reason to alter queue priority).
 - **Expectation Disaggregation:**
   - *Company Guidance:* Targets enterprise data share expansion while maintaining steady gross margins.
   - *Sourced Consensus:* `UNRESOLVED_CONSENSUS` (Primary broker consensus feeds omitted).
@@ -200,7 +200,7 @@ flowchart LR
 
 ### G. Research Priority & Disposition
 - **Priority Classification:** `PRIORITIZED_FOR_INTERNAL_MONITORING`.
-- **Disposition:** High-growth enabler with zero debt and strong cash generation. Evaluated contextually alongside facility-level enablers without claims of categorical superiority.
+- **Disposition:** High-growth enabler with zero debt and strong cash generation. Evaluated contextually alongside facility-level enablers without claims of categorical superiority; valuation / expectation gap remains unresolved.
 
 ---
 
@@ -223,5 +223,5 @@ The table below contrasts the three deeper investigations using audited FY2025 a
 | **Cash & Liquid Assets** | $2,290.2M (plus investments) | **$2,810.6M** | $1,005.6M |
 | **Net Funded Debt** | **-$2,290.2M (Net Cash)** | **$129.2M (Near Net Cash)** | **-$1,005.6M (Net Cash)** |
 | **FY25 Interest Burden** | $0.0M | **$86.1M (4.7% of OpIncome)** | $0.0M |
-| **Primary Operational Risk** | **42% Customer Concentration (Meta/MSFT)** | Competitive Supply Ramp & Project Execution | GPU Vendor Multi-Sourcing & Analog Pricing |
+| **Primary Operational Risk** | **42% Customer Concentration (Two Customers: 26% and 16%)** | Competitive Supply Ramp & Project Execution | GPU Vendor Multi-Sourcing & Analog Pricing |
 | **Research Classification** | `PRIORITIZED_FOR_INTERNAL_MONITORING` | `ACTIVE_QUALITY_WATCH_CANDIDATE` | `PRIORITIZED_FOR_INTERNAL_MONITORING` |

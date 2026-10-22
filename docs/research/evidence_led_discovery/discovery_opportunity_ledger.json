@@ -57,7 +57,7 @@
       "dimensional_classification": {
         "research_maturity": "EXPLORATORY_HYPOTHESIS",
         "opportunity_mechanism": "ETHERNET_AI_BACKEND_NETWORKING_INFLECTION",
-        "expectation_gap_status": "HIGH_GROWTH_EMBEDDED_IN_VALUATION",
+        "expectation_gap_status": "VALUATION_EXPECTATION_GAP_UNRESOLVED",
         "financial_resilience": "PRISTINE_SELF_FUNDING",
         "public_publication_eligibility": "INTERNAL_PILOT_RECORD_NOT_ELIGIBLE"
       },
@@ -65,7 +65,7 @@
         "nature": "Adoption of 800G and 1.6T high-throughput Ethernet switching in hyperscale AI GPU backend clusters",
         "baseline_comparison": "FY2025 revenue reached $9,005.7M (+53.7% vs FY23 baseline of $5,860.2M); 1H 2026 revenue reached $5,744.7M; Q2 2026 quarterly revenue was $3,035.7M",
         "characterization": "Structural networking protocol shift within large-scale hyperscaler infrastructure capex cycle",
-        "primary_filing_evidence": "Form 10-K FY2025 filed 2026-02-17 (Accession 0001596532-26-000013, https://www.sec.gov/edgar/data/1596532/000159653226000013/anet-20251231.htm); Form 10-Q Q2 2026 filed 2026-08-05 (Accession 0001596532-26-000175, https://www.sec.gov/edgar/data/1596532/000159653226000175/anet-20260630.htm)"
+        "primary_filing_evidence": "Form 10-K FY2025 filed 2026-02-17 (Accession 0001596532-26-000013, https://www.sec.gov/Archives/edgar/data/1596532/000159653226000013/anet-20251231.htm); Form 10-Q Q2 2026 filed 2026-08-05 (Accession 0001596532-26-000175, https://www.sec.gov/Archives/edgar/data/1596532/000159653226000175/anet-20260630.htm)"
       },
       "economic_significance": {
         "consolidated_materiality": "Core networking hardware and EOS software represent >85% of revenue",
@@ -79,24 +79,24 @@
         "dilution_and_sbc": "FY2025 stock-based compensation of $439.2M (4.9% of revenue), mitigated by active share repurchase programs"
       },
       "price_and_expectations": {
-        "market_pricing_context": "Elevated valuation reflects strong market expectations of sustained Ethernet market share gains in AI clusters",
+        "market_pricing_context": "valuation/expectation gap unresolved (dated market multiple and consensus expectations not independently established via primary broker feeds; unresolved expectations are not used as an established reason to promote or downgrade)",
         "expectation_disaggregation": {
           "company_guidance": "Management targets continued AI networking expansion across top cloud and enterprise tiers",
           "sourced_analyst_consensus": "UNRESOLVED_CONSENSUS (Primary broker consensus data not accessible in current environment)",
-          "arx_hypothesis": "Ethernet adoption is structural, but hyperscaler dual-sourcing and 42% customer concentration pose periodic pricing and digestion risks"
+          "arx_hypothesis": "Ethernet adoption is structural, but hyperscaler dual-sourcing and two customers accounting for combined 42% of revenue pose periodic pricing and digestion risks"
         }
       },
       "downside_and_survival": {
-        "slowdown_scenario": "Hyperscaler procurement digestion pause or accelerated adoption of Nvidia Spectrum-X could slow revenue growth",
+        "slowdown_scenario": "Hyperscaler procurement digestion pause or accelerated adoption of competing fabrics could slow revenue growth",
         "survival_capacity": "Exceptional: Zero debt, liquid cash hoard, fabless variable cost structure"
       },
       "assessment_changes": {
         "strengthening_criteria": "Customer concentration diversifying with non-top-2 revenue growing >30% YoY while GAAP operating margins remain >40.0%",
-        "invalidation_criteria": "Loss of primary switching tier allocation at Meta or Microsoft, or GAAP operating margin compressing below 34.0%"
+        "invalidation_criteria": "Loss of primary switching tier allocation at either of its two primary customers (Customer A or Customer B), or GAAP operating margin compressing below 34.0%"
       },
       "research_priority": {
         "rank": "PRIORITIZED_FOR_INTERNAL_MONITORING",
-        "rationale": "Elite balance sheet and cash generation. Held in internal monitoring queue due to 42% customer concentration and elevated valuation, avoiding automatic disqualification."
+        "rationale": "Elite balance sheet and cash generation. Held in internal monitoring queue due to two customers accounting for combined 42% of revenue; valuation/expectation gap remains unresolved."
       }
     },
     "VRT": {
@@ -110,7 +110,7 @@
       "dimensional_classification": {
         "research_maturity": "EXPLORATORY_HYPOTHESIS",
         "opportunity_mechanism": "FACILITY_LEVEL_POWER_AND_LIQUID_COOLING_INFRASTRUCTURE",
-        "expectation_gap_status": "STRONG_DEMAND_REFLECTED_IN_PRICE",
+        "expectation_gap_status": "VALUATION_EXPECTATION_GAP_UNRESOLVED",
         "financial_resilience": "DELEVERAGED_BALANCE_SHEET_WITH_RESIDUAL_INTANGIBLES",
         "public_publication_eligibility": "INTERNAL_PILOT_RECORD_NOT_ELIGIBLE"
       },
@@ -118,7 +118,7 @@
         "nature": "Escalation in data center power density driving adoption of direct-to-chip liquid cooling systems, coolant distribution units (CDUs), and high-density modular power infrastructure",
         "baseline_comparison": "FY2025 revenue reached $10,229.9M (+49.1% vs FY23 baseline of $6,863.0M); 1H 2026 revenue reached $5,923.8M; Q2 2026 quarterly revenue was $3,274.3M",
         "characterization": "Structural physical infrastructure buildout combined with high organic order backlog",
-        "primary_filing_evidence": "Form 10-K FY2025 filed 2026-02-13 (Accession 0001628280-26-005612, https://www.sec.gov/edgar/data/1674101/000162828026005612/vrt-20251231.htm); Form 10-Q Q2 2026 filed 2026-07-29 (Accession 0001628280-26-050609, https://www.sec.gov/edgar/data/1674101/000162828026050609/vrt-20260630.htm)"
+        "primary_filing_evidence": "Form 10-K FY2025 filed 2026-02-13 (Accession 0001628280-26-005612, https://www.sec.gov/Archives/edgar/data/1674101/000162828026005612/vrt-20251231.htm); Form 10-Q Q2 2026 filed 2026-07-29 (Accession 0001628280-26-050609, https://www.sec.gov/Archives/edgar/data/1674101/000162828026050609/vrt-20260630.htm)"
       },
       "economic_significance": {
         "consolidated_materiality": "Facility power, thermal, and modular management represent 100% of operations",
@@ -132,7 +132,7 @@
         "balance_sheet_quality": "Goodwill ($2,283.3M) and intangibles ($1,800.8M) remain significant on the balance sheet, but solvency risk has sharply receded due to $2.8B cash position"
       },
       "price_and_expectations": {
-        "market_pricing_context": "Valuation reflects strong market expectation of sustained ~18-20% operating margins and leadership in AI thermal buildouts",
+        "market_pricing_context": "valuation/expectation gap unresolved (formal expectation gap is unresolved pending dedicated reverse-DCF modeling; not used as an established reason to alter quality candidate status)",
         "expectation_disaggregation": {
           "company_guidance": "Management targets organic growth and operating margin expansion through modular manufacturing efficiency",
           "sourced_analyst_consensus": "UNRESOLVED_CONSENSUS (Primary broker consensus data not accessible in current environment)",
@@ -149,7 +149,7 @@
       },
       "research_priority": {
         "rank": "ACTIVE_QUALITY_WATCH_CANDIDATE",
-        "rationale": "Removed previous automatic disqualification. Rapid balance sheet deleveraging (net debt reduced to $129M) and strong cash generation warrant formal Quality-Watch evaluation in a subsequent cycle."
+        "rationale": "Removed previous automatic disqualification. Rapid balance sheet deleveraging (net debt reduced to $129M) and strong cash generation warrant formal Quality-Watch evaluation in a subsequent cycle; valuation/expectation gap remains unresolved."
       }
     },
     "MPWR": {
@@ -163,7 +163,7 @@
       "dimensional_classification": {
         "research_maturity": "EXPLORATORY_HYPOTHESIS",
         "opportunity_mechanism": "SILICON_LEVEL_POWER_MANAGEMENT_IC_INNOVATION",
-        "expectation_gap_status": "PREMIUM_VALUATION_EMBEDDING_RAPID_SHARE_GAINS",
+        "expectation_gap_status": "VALUATION_EXPECTATION_GAP_UNRESOLVED",
         "financial_resilience": "PRISTINE_SELF_FUNDING",
         "public_publication_eligibility": "INTERNAL_PILOT_RECORD_NOT_ELIGIBLE"
       },
@@ -171,7 +171,7 @@
         "nature": "Rising power delivery content per accelerator (transitioning from 12V to 48V multiphase power management ICs) on high-performance compute boards",
         "baseline_comparison": "FY2025 revenue reached $2,790.5M (+53.2% vs FY23 baseline of $1,821.1M); 1H 2026 revenue reached $1,784.8M; Q2 2026 quarterly revenue was $980.6M",
         "characterization": "Structural power content increase within cyclical semiconductor recovery",
-        "primary_filing_evidence": "Form 10-K FY2025 filed 2026-02-27 (Accession 0001437749-26-006113, https://www.sec.gov/edgar/data/1280452/000143774926006113/mpwr-20251231.htm); Form 10-Q Q2 2026 filed 2026-08-05 (Accession 0001628280-26-053275, https://www.sec.gov/edgar/data/1280452/000162828026053275/mpwr-20260630.htm)"
+        "primary_filing_evidence": "Form 10-K FY2025 filed 2026-02-27 (Accession 0001437749-26-006113, https://www.sec.gov/Archives/edgar/data/1280452/000143774926006113/mpwr-20251231.htm); Form 10-Q Q2 2026 filed 2026-08-05 (Accession 0001628280-26-053275, https://www.sec.gov/Archives/edgar/data/1280452/000162828026053275/mpwr-20260630.htm)"
       },
       "economic_significance": {
         "consolidated_materiality": "Enterprise Data segment is MPWR's primary growth driver, expanding to >25% of consolidated revenue",
@@ -186,7 +186,7 @@
         "dilution_and_sbc": "FY2025 stock-based compensation of $227.5M (8.2% of revenue), partially offset by ongoing share buybacks"
       },
       "price_and_expectations": {
-        "market_pricing_context": "Premium valuation multiple reflects strong market expectations of continued content growth per accelerator",
+        "market_pricing_context": "valuation/expectation gap unresolved (not used as an established reason to alter queue priority)",
         "expectation_disaggregation": {
           "company_guidance": "Management targets enterprise data market share expansion and steady gross margins",
           "sourced_analyst_consensus": "UNRESOLVED_CONSENSUS (Primary broker consensus data not accessible in current environment)",
@@ -203,7 +203,7 @@
       },
       "research_priority": {
         "rank": "PRIORITIZED_FOR_INTERNAL_MONITORING",
-        "rationale": "High-growth enabler with zero debt and strong cash generation. Evaluated contextually alongside facility-level enablers without claims of categorical superiority."
+        "rationale": "High-growth enabler with zero debt and strong cash generation. Evaluated contextually alongside facility-level enablers without claims of categorical superiority; valuation/expectation gap remains unresolved."
       }
     }
   }
