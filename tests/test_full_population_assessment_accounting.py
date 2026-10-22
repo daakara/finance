@@ -376,3 +376,34 @@ def test_summary_json_serializable(sample_150_population):
     assert reloaded["closure_delta"] == 0
     assert reloaded["telemetry"]["duration_ms"] == 120.5
     assert reloaded["telemetry"]["queue_wait_ms"] == "NOT_MEASURED"
+
+
+def test_explicit_zero_preservation_for_population_pipeline_counts(sample_150_population):
+    """
+    Verifies that explicit zero values (e.g., committed_published_members=0) are preserved
+    and not coerced to n_population by truthiness fallbacks.
+    """
+    outcomes = [
+        SecurityAssessmentOutcome(
+            security_id=f"ARX_SEC_{s}",
+            symbol=s,
+            outcome=AssessmentTerminalOutcome.COMPLETED_NONMATCH,
+        )
+        for s in sample_150_population
+    ]
+
+    summary = FullPopulationAssessmentEngine.evaluate_outcomes(
+        defined_population=sample_150_population,
+        individual_outcomes=outcomes,
+        committed_published_members=0,
+        scanner_enrolled_members=0,
+        policy_eligible_candidates=0,
+    )
+
+    assert summary.committed_published_members == 0
+    assert summary.scanner_enrolled_members == 0
+    assert summary.policy_eligible_candidates == 0
+    # Omitted ones still default to n_population
+    assert summary.total_source_observations == 150
+    assert summary.distinct_lookup_keys == 150
+

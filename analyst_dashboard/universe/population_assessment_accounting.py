@@ -257,12 +257,12 @@ class FullPopulationAssessmentEngine:
     def evaluate_outcomes(
         defined_population: List[str],
         individual_outcomes: List[SecurityAssessmentOutcome],
-        total_source_observations: int = 0,
-        distinct_lookup_keys: int = 0,
-        validated_security_identities: int = 0,
-        policy_eligible_candidates: int = 0,
-        committed_published_members: int = 0,
-        scanner_enrolled_members: int = 0,
+        total_source_observations: Optional[int] = None,
+        distinct_lookup_keys: Optional[int] = None,
+        validated_security_identities: Optional[int] = None,
+        policy_eligible_candidates: Optional[int] = None,
+        committed_published_members: Optional[int] = None,
+        scanner_enrolled_members: Optional[int] = None,
         frontend_displayed_results: Optional[int] = None,
         telemetry: Optional[AssessmentTelemetryEnvelope] = None,
     ) -> FullPopulationAssessmentSummary:
@@ -361,12 +361,36 @@ class FullPopulationAssessmentEngine:
 
         # Final Summary
         summary = FullPopulationAssessmentSummary(
-            total_source_observations=total_source_observations or n_population,
-            distinct_lookup_keys=distinct_lookup_keys or n_population,
-            validated_security_identities=validated_security_identities or n_population,
-            policy_eligible_candidates=policy_eligible_candidates or n_population,
-            committed_published_members=committed_published_members or n_population,
-            scanner_enrolled_members=scanner_enrolled_members or n_population,
+            total_source_observations=(
+                total_source_observations
+                if total_source_observations is not None
+                else n_population
+            ),
+            distinct_lookup_keys=(
+                distinct_lookup_keys
+                if distinct_lookup_keys is not None
+                else n_population
+            ),
+            validated_security_identities=(
+                validated_security_identities
+                if validated_security_identities is not None
+                else n_population
+            ),
+            policy_eligible_candidates=(
+                policy_eligible_candidates
+                if policy_eligible_candidates is not None
+                else n_population
+            ),
+            committed_published_members=(
+                committed_published_members
+                if committed_published_members is not None
+                else n_population
+            ),
+            scanner_enrolled_members=(
+                scanner_enrolled_members
+                if scanner_enrolled_members is not None
+                else n_population
+            ),
             dispatch_attempted_members=dispatch_attempted,
             assessment_completed_members=n_completed,
             assessment_failed_or_excluded_members=n_failed_or_excluded,
