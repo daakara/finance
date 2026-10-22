@@ -156,6 +156,10 @@ class IdentityRegistrationEvidence:
                 "Must match accepted canonical Package A format."
             )
 
+    def validate(self) -> None:
+        """Explicit validation method conforming to evidence protocol."""
+        self.__post_init__()
+
 
 @dataclass(frozen=True)
 class ProviderResolutionEvidence:
@@ -305,9 +309,18 @@ class PublicationAttestationEvidence:
                 f"Publication decision is '{self.publication_decision}' for build {self.universe_build_id}. "
                 "Must be 'PUBLISH'."
             )
-        if not self.publication_digest or len(self.publication_digest) != 64:
+        if (
+            not self.publication_digest
+            or len(self.publication_digest) != 64
+            or not re.match(r"^[0-9a-fA-F]{64}$", self.publication_digest)
+        ):
             raise EvidenceMissingError(
-                f"Invalid or missing SHA-256 publication_digest: '{self.publication_digest}'."
+                f"Invalid or missing SHA-256 publication_digest: '{self.publication_digest}'. "
+                "Must be a 64-character hexadecimal string."
+            )
+        if not self.universe_id.strip() or not re.match(r"^ARX_[A-Z0-9_]+$", self.universe_id):
+            raise PolicyViolationError(
+                f"Invalid universe_id '{self.universe_id}'. Must match '^ARX_[A-Z0-9_]+$'."
             )
         if not self.authorized_by.strip():
             raise EvidenceMissingError("authorized_by must be explicitly specified.")
