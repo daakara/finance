@@ -1575,12 +1575,12 @@
       "central_assessment": {
         "disposition": "WATCH_CONDITIONS",
         "disposition_label": "Watch \u2014 Conditions Required for Entry",
-        "presentation_summary": "Medpace Holdings delivers pristine capital returns (>25% ROIC) and zero-debt balance sheet strength ($502.7M cash). However, the frozen market price of $618.47 requires an aggressive 29.41% 5-year revenue CAGR. Retained on watch pending market pullbacks toward $440 - $480.",
+        "presentation_summary": "Medpace Holdings delivers pristine capital returns (>25% ROIC) and zero-debt balance sheet strength ($502.7M cash). However, the frozen market price of $618.47 requires an aggressive 29.41% 5-year revenue CAGR. Retained on watch pending market pullbacks toward $380 - $440.",
         "summary_provenance": "DERIVED_SYNTHESIS",
         "strongest_supporting_evidence": "Medpace delivers industry-leading capital efficiency (>25% ROIC) and operating margins (>20%), insulated by proprietary full-service clinical execution and $502.7M net cash.",
         "strongest_opposing_evidence": "Biopharma venture funding cycles and small-cap clinical trial cancellation rates create volatility in net book-to-bill ratios. At $618.47, market embeds a demanding 29.41% revenue CAGR.",
         "main_uncertainty": "Sustained clinical trial contract backlog conversion amidst fluctuating early-stage biotech liquidity.",
-        "price_watch_condition": "Pullback toward mid-cycle base valuation range ($440 - $480) or net new business awards sustaining book-to-bill > 1.25x.",
+        "price_watch_condition": "Pullback toward mid-cycle base valuation range ($380 - $440) or net new business awards sustaining book-to-bill > 1.25x.",
         "confidence_assessment": "High confidence in operational execution and balance sheet conservatism; moderate valuation headroom.",
         "financing_dilution_exposure": "Share repurchases offset stock compensation, reducing share count by ~9.6% over 3 years."
       },
@@ -1696,30 +1696,30 @@
           {
             "form": "10-K",
             "period_end": "2025-12-31",
-            "filing_date": "2026-02-18",
-            "accession_number": "0001668397-26-000012",
-            "url": "https://www.sec.gov/Archives/edgar/data/1668397/000166839726000012/0001668397-26-000012-index.htm",
+            "filing_date": "2026-02-10",
+            "accession_number": "0001668397-26-000006",
+            "url": "https://www.sec.gov/Archives/edgar/data/1668397/000166839726000006/0001668397-26-000006-index.htm",
             "source_role": "Annual audited financial disclosures"
           },
           {
             "form": "10-Q",
             "period_end": "2026-06-30",
-            "filing_date": "2026-07-22",
-            "accession_number": "0001668397-26-000048",
-            "url": "https://www.sec.gov/Archives/edgar/data/1668397/000166839726000048/0001668397-26-000048-index.htm",
+            "filing_date": "2026-07-23",
+            "accession_number": "0001668397-26-000025",
+            "url": "https://www.sec.gov/Archives/edgar/data/1668397/000166839726000025/0001668397-26-000025-index.htm",
             "source_role": "Quarterly financial report (Q2)"
           }
         ],
         "material_claims_provenance": {
           "10-K_2025-12-31": {
-            "accession_number": "0001668397-26-000012",
-            "filing_date": "2026-02-18",
-            "url": "https://www.sec.gov/Archives/edgar/data/1668397/000166839726000012/0001668397-26-000012-index.htm"
+            "accession_number": "0001668397-26-000006",
+            "filing_date": "2026-02-10",
+            "url": "https://www.sec.gov/Archives/edgar/data/1668397/000166839726000006/0001668397-26-000006-index.htm"
           },
           "10-Q_2026-06-30": {
-            "accession_number": "0001668397-26-000048",
-            "filing_date": "2026-07-22",
-            "url": "https://www.sec.gov/Archives/edgar/data/1668397/000166839726000048/0001668397-26-000048-index.htm"
+            "accession_number": "0001668397-26-000025",
+            "filing_date": "2026-07-23",
+            "url": "https://www.sec.gov/Archives/edgar/data/1668397/000166839726000025/0001668397-26-000025-index.htm"
           }
         },
         "source_evidence_tracing": null
@@ -1728,7 +1728,7 @@
       "monitoring": {
         "observable_invalidation_trigger": "Net new business awards book-to-bill ratio declining below 1.0x for consecutive quarters or operating margin breach below 16.0%.",
         "next_monitoring_trigger": "Q3 2026 earnings release and Form 10-Q for trial backlog cancellations and RFP volume.",
-        "price_watch_condition": "Pullback toward mid-cycle base valuation range ($440 - $480) or net new business awards sustaining book-to-bill > 1.25x.",
+        "price_watch_condition": "Pullback toward mid-cycle base valuation range ($380 - $440) or net new business awards sustaining book-to-bill > 1.25x.",
         "baseline_factual_evidence": "Medpace delivers industry-leading capital efficiency (>25% ROIC) and operating margins (>20%), insulated by proprietary full-service clinical execution and $502.7M net cash."
       },
       "navigation": {
@@ -1866,8 +1866,8 @@
         "debt_display": "$0.00 (Zero Funded Debt Evidenced)",
         "is_zero_debt": true,
         "zero_debt_support": "Zero funded debt; credit facility undrawn; audited post 6:1 forward stock split (September 2024).",
-        "operating_lease_liabilities_asc842": 248900000.0,
-        "lease_convention_treatment": "Lease as operating expense convention applied; store and distribution leases expensed in operating income; lease liabilities excluded from net debt bridge.",
+        "operating_lease_liabilities_asc842": 472334000.0,
+        "lease_convention_treatment": "Lease as operating expense convention applied; store and distribution leases expensed in operating income; lease liabilities ($472.33M) excluded from net debt bridge.",
         "restriction_treatment": null,
         "digital_assets": null,
         "total_liquidity_with_digital_assets": null,
@@ -1885,29 +1885,29 @@
             "form": "10-K",
             "period_end": "2026-03-31",
             "filing_date": "2026-05-22",
-            "accession_number": "0000910521-26-000028",
-            "url": "https://www.sec.gov/Archives/edgar/data/910521/000091052126000028/0000910521-26-000028-index.htm",
+            "accession_number": "0001628280-26-037664",
+            "url": "https://www.sec.gov/Archives/edgar/data/910521/000162828026037664/0001628280-26-037664-index.htm",
             "source_role": "Annual audited financial disclosures"
           },
           {
             "form": "10-Q",
             "period_end": "2026-06-30",
-            "filing_date": "2026-07-25",
-            "accession_number": "0000910521-26-000045",
-            "url": "https://www.sec.gov/Archives/edgar/data/910521/000091052126000045/0000910521-26-000045-index.htm",
+            "filing_date": "2026-07-30",
+            "accession_number": "0000910521-26-000022",
+            "url": "https://www.sec.gov/Archives/edgar/data/910521/000091052126000022/0000910521-26-000022-index.htm",
             "source_role": "Quarterly financial report (Q1 FY27)"
           }
         ],
         "material_claims_provenance": {
           "10-K_2026-03-31": {
-            "accession_number": "0000910521-26-000028",
+            "accession_number": "0001628280-26-037664",
             "filing_date": "2026-05-22",
-            "url": "https://www.sec.gov/Archives/edgar/data/910521/000091052126000028/0000910521-26-000028-index.htm"
+            "url": "https://www.sec.gov/Archives/edgar/data/910521/000162828026037664/0001628280-26-037664-index.htm"
           },
           "10-Q_2026-06-30": {
-            "accession_number": "0000910521-26-000045",
-            "filing_date": "2026-07-25",
-            "url": "https://www.sec.gov/Archives/edgar/data/910521/000091052126000045/0000910521-26-000045-index.htm"
+            "accession_number": "0000910521-26-000022",
+            "filing_date": "2026-07-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/910521/000091052126000022/0000910521-26-000022-index.htm"
           }
         },
         "source_evidence_tracing": null
@@ -2878,12 +2878,12 @@
       "central_assessment": {
         "disposition": "WATCH_CONDITIONS",
         "disposition_label": "Watch \u2014 Conditions Required for Entry",
-        "presentation_summary": "Intuitive Surgical maintains an unassailable surgical robotics ecosystem (>80% recurring revenue) and $5.22B net cash. Market pricing of $426.70 embeds 36.87% 5Y CAGR expectations for the da Vinci 5 upgrade cycle. Retained on watch for pullbacks toward $280 - $310.",
+        "presentation_summary": "Intuitive Surgical maintains an unassailable surgical robotics ecosystem (>80% recurring revenue) and $5.22B net cash. Market pricing of $426.70 embeds 36.87% 5Y CAGR expectations for the da Vinci 5 upgrade cycle. Retained on watch for pullbacks toward $220 - $260.",
         "summary_provenance": "DERIVED_SYNTHESIS",
         "strongest_supporting_evidence": "da Vinci 5 system replacement cycle accelerating installed base procedure growth (>17% YoY), supported by high recurring revenue (>80% razor-and-blade instruments/services) and $5.22B net cash.",
         "strongest_opposing_evidence": "Capital spending constraints across regional hospitals and international competitive entries. Solved reverse DCF requires 36.87% revenue CAGR at $426.70.",
         "main_uncertainty": "Hospital capital budget allocation timelines for multi-million dollar da Vinci 5 console upgrades.",
-        "price_watch_condition": "Market pullback toward mid-cycle base valuation range ($280 - $310) or procedure growth acceleration above 20%.",
+        "price_watch_condition": "Market pullback toward mid-cycle base valuation range ($220 - $260) or procedure growth acceleration above 20%.",
         "confidence_assessment": "High confidence in surgical procedure moat and recurring cash flow predictability; valuation currently fully priced.",
         "financing_dilution_exposure": "Minimal net dilution; steady share repurchases offset employee stock options."
       },
@@ -2981,8 +2981,8 @@
         "debt_display": "$0.00 (Zero Funded Debt Evidenced)",
         "is_zero_debt": true,
         "zero_debt_support": "Zero funded debt; zero debt obligations; $5.22B total cash and marketable investments.",
-        "operating_lease_liabilities_asc842": 110000000.0,
-        "lease_convention_treatment": "Lease liabilities excluded from net debt bridge under standard lease convention.",
+        "operating_lease_liabilities_asc842": 170900000.0,
+        "lease_convention_treatment": "Lease as operating expense convention applied; facility and distribution leases expensed in operating costs; lease liabilities ($170.9M) excluded from net debt bridge.",
         "restriction_treatment": null,
         "digital_assets": null,
         "total_liquidity_with_digital_assets": null,
@@ -2999,30 +2999,30 @@
           {
             "form": "10-K",
             "period_end": "2025-12-31",
-            "filing_date": "2026-02-05",
-            "accession_number": "0001035267-26-000018",
-            "url": "https://www.sec.gov/Archives/edgar/data/1035267/000103526726000018/0001035267-26-000018-index.htm",
+            "filing_date": "2026-02-03",
+            "accession_number": "0001035267-26-000010",
+            "url": "https://www.sec.gov/Archives/edgar/data/1035267/000103526726000010/0001035267-26-000010-index.htm",
             "source_role": "Annual audited financial disclosures"
           },
           {
             "form": "10-Q",
             "period_end": "2026-06-30",
             "filing_date": "2026-07-21",
-            "accession_number": "0001035267-26-000045",
-            "url": "https://www.sec.gov/Archives/edgar/data/1035267/000103526726000045/0001035267-26-000045-index.htm",
+            "accession_number": "0001035267-26-000058",
+            "url": "https://www.sec.gov/Archives/edgar/data/1035267/000103526726000058/0001035267-26-000058-index.htm",
             "source_role": "Quarterly financial report (Q2)"
           }
         ],
         "material_claims_provenance": {
           "10-K_2025-12-31": {
-            "accession_number": "0001035267-26-000018",
-            "filing_date": "2026-02-05",
-            "url": "https://www.sec.gov/Archives/edgar/data/1035267/000103526726000018/0001035267-26-000018-index.htm"
+            "accession_number": "0001035267-26-000010",
+            "filing_date": "2026-02-03",
+            "url": "https://www.sec.gov/Archives/edgar/data/1035267/000103526726000010/0001035267-26-000010-index.htm"
           },
           "10-Q_2026-06-30": {
-            "accession_number": "0001035267-26-000045",
+            "accession_number": "0001035267-26-000058",
             "filing_date": "2026-07-21",
-            "url": "https://www.sec.gov/Archives/edgar/data/1035267/000103526726000045/0001035267-26-000045-index.htm"
+            "url": "https://www.sec.gov/Archives/edgar/data/1035267/000103526726000058/0001035267-26-000058-index.htm"
           }
         },
         "source_evidence_tracing": null
@@ -3031,7 +3031,7 @@
       "monitoring": {
         "observable_invalidation_trigger": "Worldwide procedure growth deceleration below 10.0% or da Vinci 5 adoption stagnation.",
         "next_monitoring_trigger": "Q3 2026 Form 10-Q filing (October 2026) for procedure volume growth and system placement breakdown.",
-        "price_watch_condition": "Market pullback toward mid-cycle base valuation range ($280 - $310) or procedure growth acceleration above 20%.",
+        "price_watch_condition": "Market pullback toward mid-cycle base valuation range ($220 - $260) or procedure growth acceleration above 20%.",
         "baseline_factual_evidence": "da Vinci 5 system replacement cycle accelerating installed base procedure growth (>17% YoY), supported by high recurring revenue (>80% razor-and-blade instruments/services) and $5.22B net cash."
       },
       "navigation": {

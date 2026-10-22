@@ -637,7 +637,7 @@ def test_27_control_valid_pilot_artifacts_passes(valid_pilot_artifacts):
 
 
 def test_28_published_watch_manifest_integrity():
-    """Verify that published watch manifest contains exactly 3 published WATCH assets (FIX, DUOL, ULTA), holds IREN and CORZ, and excludes MU and PLTR."""
+    """Verify that published watch manifest contains exactly 6 published WATCH assets (FIX, DUOL, ULTA, MEDP, ISRG, DECK), holds IREN and CORZ, and excludes MU and PLTR."""
     assert DEFAULT_PUBLISHED_MANIFEST_PATH.exists(), f"Published manifest missing at {DEFAULT_PUBLISHED_MANIFEST_PATH}"
     assert DEFAULT_FRONTEND_PUBLISHED_MANIFEST_PATH.exists(), f"Frontend published manifest missing at {DEFAULT_FRONTEND_PUBLISHED_MANIFEST_PATH}"
 
@@ -649,12 +649,14 @@ def test_28_published_watch_manifest_integrity():
     assert m1 == m2, "Docs and frontend published watch manifests must be identical"
     assert m1["schema_version"] == "ARX-PUBLISHED-WATCH-MANIFEST-V1"
     assert m1["governing_standard"] == "ARX-QUALITY-WATCH-STANDARD-V1"
-    assert m1["published_symbols"] == ["FIX", "DUOL", "ULTA"]
-    assert m1["published_count"] == 3
+    assert m1["published_symbols"] == ["FIX", "DUOL", "ULTA", "MEDP", "ISRG", "DECK"]
+    assert m1["published_count"] == 6
     assert m1["baseline_watch_symbols"] == ["FIX", "DUOL"]
     assert m1["held_historical_symbols"] == ["IREN", "CORZ"]
     assert m1["excluded_historical_symbols"] == ["MU"]
     assert m1["excluded_draft_symbols"] == ["PLTR"]
+
+    # ULTA
     assert "ULTA" in m1["accepted_additions"]
     assert m1["accepted_additions"]["ULTA"]["publication_metadata"]["lifecycle_status"] == "CANDIDATE_SELECTED"
     assert m1["accepted_additions"]["ULTA"]["publication_metadata"]["dossier_version"] == "1.0.0-rc1"
@@ -665,4 +667,35 @@ def test_28_published_watch_manifest_integrity():
     assert m1["additions_provenance"]["ULTA"]["acceptance_basis"] == "REUSED_ACCEPTED_RESEARCH_EVIDENCE"
     assert m1["additions_provenance"]["ULTA"]["reference_price"] == 592.94
     assert len(m1["additions_provenance"]["ULTA"]["content_sha256"]) == 64
+
+    # MEDP
+    assert "MEDP" in m1["accepted_additions"]
+    assert m1["accepted_additions"]["MEDP"]["publication_metadata"]["lifecycle_status"] == "CANDIDATE_SELECTED"
+    assert m1["accepted_additions"]["MEDP"]["publication_metadata"]["review_status"] == "RESEARCH_EVIDENCE_ACCEPTED"
+    assert m1["accepted_additions"]["MEDP"]["valuation"]["solved_5y_cagr_pct"] == 29.41
+    assert m1["accepted_additions"]["MEDP"]["financial_profile"]["total_financial_debt"] == 0.0
+    assert m1["accepted_additions"]["MEDP"]["financial_profile"]["is_zero_debt"] is True
+    assert m1["additions_provenance"]["MEDP"]["reference_price"] == 618.47
+    assert len(m1["additions_provenance"]["MEDP"]["content_sha256"]) == 64
+
+    # ISRG
+    assert "ISRG" in m1["accepted_additions"]
+    assert m1["accepted_additions"]["ISRG"]["publication_metadata"]["lifecycle_status"] == "CANDIDATE_SELECTED"
+    assert m1["accepted_additions"]["ISRG"]["publication_metadata"]["review_status"] == "RESEARCH_EVIDENCE_ACCEPTED"
+    assert m1["accepted_additions"]["ISRG"]["valuation"]["solved_5y_cagr_pct"] == 36.87
+    assert m1["accepted_additions"]["ISRG"]["financial_profile"]["total_financial_debt"] == 0.0
+    assert m1["accepted_additions"]["ISRG"]["financial_profile"]["is_zero_debt"] is True
+    assert m1["additions_provenance"]["ISRG"]["reference_price"] == 426.70
+    assert len(m1["additions_provenance"]["ISRG"]["content_sha256"]) == 64
+
+    # DECK
+    assert "DECK" in m1["accepted_additions"]
+    assert m1["accepted_additions"]["DECK"]["publication_metadata"]["lifecycle_status"] == "CANDIDATE_SELECTED"
+    assert m1["accepted_additions"]["DECK"]["publication_metadata"]["review_status"] == "RESEARCH_EVIDENCE_ACCEPTED"
+    assert m1["accepted_additions"]["DECK"]["valuation"]["solved_5y_cagr_pct"] == -2.34
+    assert m1["accepted_additions"]["DECK"]["financial_profile"]["total_financial_debt"] == 0.0
+    assert m1["accepted_additions"]["DECK"]["financial_profile"]["is_zero_debt"] is True
+    assert m1["accepted_additions"]["DECK"]["financial_profile"]["operating_lease_liabilities_asc842"] == 472334000.0
+    assert m1["additions_provenance"]["DECK"]["reference_price"] == 85.72
+    assert len(m1["additions_provenance"]["DECK"]["content_sha256"]) == 64
 

@@ -166,17 +166,18 @@ for (const sym of ["AAPL", "NVDA", "JPM", "BAC", "UNKNOWN", "MU", "PLTR"]) {
 console.log("[OK] Truly unsupported and excluded symbols (including MU and PLTR) fail-closed to null across both production and draft modes");
 
 // 8. Runtime Behavior & Isolation Branches
-const unselectedDrafts = PILOT_EXPANSION_SYMBOLS.filter(s => s !== "ULTA");
+const publishedAdditions = ["ULTA", "MEDP", "ISRG", "DECK"];
+const unselectedDrafts = PILOT_EXPANSION_SYMBOLS.filter(s => !publishedAdditions.includes(s));
 
 if (!IS_PILOT_DRAFTS_BUILD_ENABLED) {
   // Mode A: Default Production Mode (NEXT_PUBLIC_ENABLE_RESEARCH_PILOT_DRAFTS is unset or false)
-  // Verify ULTA is published as accepted addition
-  assert.strictEqual(isCohortSymbol("ULTA"), true, "ULTA must be in published Quality Watch cohort");
-  const ultaPublished = getOpportunityDossier("ULTA");
-  assert.ok(ultaPublished, "Default getOpportunityDossier(ULTA) must return published dossier");
-  assert.strictEqual(ultaPublished.identity.symbol, "ULTA");
-  assert.strictEqual(ultaPublished.valuation.solved_5y_cagr_pct, 15.45);
-  assert.strictEqual(ultaPublished.valuation.reference_price, 592.94);
+  // Verify published additions are active
+  for (const sym of publishedAdditions) {
+    assert.strictEqual(isCohortSymbol(sym), true, `${sym} must be in published Quality Watch cohort`);
+    const publishedDossier = getOpportunityDossier(sym);
+    assert.ok(publishedDossier, `Default getOpportunityDossier(${sym}) must return published dossier`);
+    assert.strictEqual(publishedDossier.identity.symbol, sym);
+  }
 
   // Verify unselected draft additions remain isolated
   for (const sym of unselectedDrafts) {
@@ -187,9 +188,9 @@ if (!IS_PILOT_DRAFTS_BUILD_ENABLED) {
     const draftAttempt = getPilotDraftDossier(sym);
     assert.strictEqual(draftAttempt, null, `getPilotDraftDossier(${sym}) must return null when build flag disabled`);
   }
-  assert.strictEqual(listOpportunityCohort().length, 3, "listOpportunityCohort must return exactly 3 published Quality Watch companies (FIX, DUOL, ULTA)");
-  assert.strictEqual(listPilotDraftCohort().length, 3, "listPilotDraftCohort must fall back to 3 companies when drafts disabled");
-  console.log("[OK] Production baseline isolation verified: unselected draft additions return null from all accessors while ULTA is published");
+  assert.strictEqual(listOpportunityCohort().length, 6, "listOpportunityCohort must return exactly 6 published Quality Watch companies (FIX, DUOL, ULTA, MEDP, ISRG, DECK)");
+  assert.strictEqual(listPilotDraftCohort().length, 6, "listPilotDraftCohort must fall back to 6 companies when drafts disabled");
+  console.log("[OK] Production baseline isolation verified: unselected draft additions return null from all accessors while additions are published");
 
   // Mode B: Execute Subprocess with NEXT_PUBLIC_ENABLE_RESEARCH_PILOT_DRAFTS="true" to verify preview branch
   console.log("Spawning subprocess to verify preview mode under NEXT_PUBLIC_ENABLE_RESEARCH_PILOT_DRAFTS=true...");

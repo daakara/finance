@@ -9,9 +9,12 @@
   "published_symbols": [
     "FIX",
     "DUOL",
-    "ULTA"
+    "ULTA",
+    "MEDP",
+    "ISRG",
+    "DECK"
   ],
-  "published_count": 3,
+  "published_count": 6,
   "baseline_watch_symbols": [
     "FIX",
     "DUOL"
@@ -575,6 +578,573 @@
         "stock_url": "/stock/ULTA",
         "radar_note": "Opens on-demand technical analysis in Radar console."
       }
+    },
+    "MEDP": {
+      "dossier_id": "DOSSIER-MEDP-V1",
+      "publication_metadata": {
+        "dossier_version": "1.0.0-rc1",
+        "lifecycle_status": "CANDIDATE_SELECTED",
+        "technical_verification": "COMPUTED_VERIFIED",
+        "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+        "evidence_completeness": "SOURCE_MAPPED_AUDITED",
+        "authoring_date": "2026-10-22",
+        "freshness_state": "SELECTION_CANDIDATE",
+        "reviewer_id": null,
+        "reviewed_at_utc": null,
+        "review_notes": "Scaling addition dossier accepted under ARX-QUALITY-WATCH-STANDARD-V1 based on verified primary SEC filings (10-K FY25, 10-Q Q2 2026), full-service clinical CRO model, >25% ROIC, zero funded debt, and disciplined reverse-DCF valuation.",
+        "governing_standard": "ARX-QUALITY-WATCH-STANDARD-V1",
+        "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
+      },
+      "identity": {
+        "symbol": "MEDP",
+        "company_name": "Medpace Holdings, Inc.",
+        "cik": "0001668397",
+        "exchange": "NASDAQ",
+        "opportunity_route": "Healthcare / Medical Research",
+        "sec_edgar_browse_url": "https://www.sec.gov/edgar/browse/?CIK=1668397"
+      },
+      "central_assessment": {
+        "disposition": "WATCH_CONDITIONS",
+        "disposition_label": "Watch \u2014 Conditions Required for Entry",
+        "presentation_summary": "Medpace Holdings delivers pristine capital returns (>25% ROIC) and zero-debt balance sheet strength ($502.7M cash). However, the frozen market price of $618.47 requires an aggressive 29.41% 5-year revenue CAGR. Retained on watch pending market pullbacks toward $380 - $440.",
+        "summary_provenance": "DERIVED_SYNTHESIS",
+        "strongest_supporting_evidence": "Medpace delivers industry-leading capital efficiency (>25% ROIC) and operating margins (>20%), insulated by proprietary full-service clinical execution and $502.7M net cash.",
+        "strongest_opposing_evidence": "Biopharma venture funding cycles and small-cap clinical trial cancellation rates create volatility in net book-to-bill ratios. At $618.47, market embeds a demanding 29.41% revenue CAGR.",
+        "main_uncertainty": "Sustained clinical trial contract backlog conversion amidst fluctuating early-stage biotech liquidity.",
+        "price_watch_condition": "Pullback toward mid-cycle base valuation range ($380 - $440) or net new business awards sustaining book-to-bill > 1.25x.",
+        "confidence_assessment": "High confidence in operational execution and balance sheet conservatism; moderate valuation headroom.",
+        "financing_dilution_exposure": "Share repurchases offset stock compensation, reducing share count by ~9.6% over 3 years."
+      },
+      "valuation": {
+        "valuation_status": "COMPUTED_VERIFIED",
+        "valuation_status_label": "Computed & Verified",
+        "model_type": "Single-stage Reverse-DCF FCFF",
+        "calculation_version": "ARX-VALUATION-ENGINE-V1.0",
+        "reference_price": 618.47,
+        "reference_price_label": "Reference price used in reverse DCF",
+        "reference_price_source": "ARX MarketStore regular close tape",
+        "reference_price_timestamp": "2026-10-16T16:00:00-04:00",
+        "reference_date": "2026-10-16",
+        "solved_5y_cagr_pct": 29.41,
+        "reverse_dcf_parameters": {
+          "target_price": 618.47,
+          "solved_revenue_cagr_pct": 29.41,
+          "operating_margin_pct": 21.0,
+          "wacc_pct": 9.5,
+          "terminal_growth_pct": 2.5,
+          "tax_rate_pct": 21.0,
+          "reinvestment_rate_pct": 12.0,
+          "base_revenue": 2782288000.0,
+          "current_shares": 28554000.0,
+          "net_debt_bridge": -502688000.0
+        },
+        "roundtrip_value": 618.56,
+        "roundtrip_delta_cents": 8.53,
+        "convention_summary": "Single-stage Reverse-DCF FCFF (WACC 9.5%, Terminal g 2.5%, Operating Margin 21.0%, Tax Rate 21.0%, Reinvestment Rate 12.0%). Solved 5Y Revenue CAGR: 29.41%.",
+        "qualification_notice": null,
+        "suppression_reason": null,
+        "resume_conditions": [],
+        "scenarios": {
+          "conservative": {
+            "scenario_key": "conservative",
+            "name": "Conservative",
+            "per_share_value": 224.01,
+            "potential_return_pct": -63.8,
+            "conditional_wording": "Under stated conservative assumptions, modeled conditional value is $224.01 (-63.8% vs frozen reference price).",
+            "revenue_cagr_pct": 10.0,
+            "operating_margin_pct": 18.0,
+            "wacc_pct": 10.0,
+            "terminal_growth_pct": 2.0,
+            "tax_rate_pct": 22.0,
+            "reinvestment_rate_pct": 15.0,
+            "enterprise_value": 5893678936.08,
+            "equity_value": 6396366936.08
+          },
+          "base": {
+            "scenario_key": "base",
+            "name": "Base",
+            "per_share_value": 380.36,
+            "potential_return_pct": -38.5,
+            "conditional_wording": "Under stated base assumptions, modeled conditional value is $380.36 (-38.5% vs frozen reference price).",
+            "revenue_cagr_pct": 16.0,
+            "operating_margin_pct": 21.0,
+            "wacc_pct": 9.5,
+            "terminal_growth_pct": 2.5,
+            "tax_rate_pct": 21.0,
+            "reinvestment_rate_pct": 12.0,
+            "enterprise_value": 10358104420.5,
+            "equity_value": 10860792420.5
+          },
+          "optimistic": {
+            "scenario_key": "optimistic",
+            "name": "Optimistic",
+            "per_share_value": 690.99,
+            "potential_return_pct": 11.7,
+            "conditional_wording": "Under stated optimistic assumptions, modeled conditional value is $690.99 (+11.7% vs frozen reference price).",
+            "revenue_cagr_pct": 25.0,
+            "operating_margin_pct": 23.0,
+            "wacc_pct": 9.0,
+            "terminal_growth_pct": 3.0,
+            "tax_rate_pct": 20.0,
+            "reinvestment_rate_pct": 10.0,
+            "enterprise_value": 19227893070.87,
+            "equity_value": 19730581070.87
+          }
+        }
+      },
+      "financial_profile": {
+        "accounting_basis": "US-GAAP",
+        "currency": "USD",
+        "revenue": 2782288000.0,
+        "revenue_display": "$2.78B",
+        "revenue_period": "TTM (Ended 2026-06-30)",
+        "operating_income": 583404000.0,
+        "operating_margin_pct": 20.97,
+        "cash_and_equivalents": 502688000.0,
+        "short_term_investments": 0.0,
+        "restricted_cash": null,
+        "total_cash_and_investments": 502688000.0,
+        "total_cash_and_restricted": null,
+        "total_financial_debt": 0.0,
+        "debt_display": "$0.00 (Zero Funded Debt Evidenced)",
+        "is_zero_debt": true,
+        "zero_debt_support": "Zero funded senior debt on consolidated balance sheet; revolving credit line fully undrawn.",
+        "operating_lease_liabilities_asc842": 144112000.0,
+        "lease_convention_treatment": "Lease as operating expense convention applied; clinical facility leases expensed in operating costs; lease liabilities excluded from net debt bridge.",
+        "restriction_treatment": null,
+        "digital_assets": null,
+        "total_liquidity_with_digital_assets": null,
+        "net_debt_bridge": -502688000.0,
+        "capital_structure_position": "Equity Capital Structure",
+        "bridge_note": "Unrestricted cash ($502.7M) against zero funded debt yields $502.7M net cash added to enterprise value in DCF equity bridge.",
+        "selected_share_basis": {
+          "basis_type": "DILUTED_WEIGHTED_AVERAGE",
+          "value": 28554000.0,
+          "measurement_period": "TTM ended 2026-06-30",
+          "rationale": "Diluted share count from Q2 10-Q."
+        },
+        "primary_filings": [
+          {
+            "form": "10-K",
+            "period_end": "2025-12-31",
+            "filing_date": "2026-02-10",
+            "accession_number": "0001668397-26-000006",
+            "url": "https://www.sec.gov/Archives/edgar/data/1668397/000166839726000006/0001668397-26-000006-index.htm",
+            "source_role": "Annual audited financial disclosures"
+          },
+          {
+            "form": "10-Q",
+            "period_end": "2026-06-30",
+            "filing_date": "2026-07-23",
+            "accession_number": "0001668397-26-000025",
+            "url": "https://www.sec.gov/Archives/edgar/data/1668397/000166839726000025/0001668397-26-000025-index.htm",
+            "source_role": "Quarterly financial report (Q2)"
+          }
+        ],
+        "material_claims_provenance": {
+          "10-K_2025-12-31": {
+            "accession_number": "0001668397-26-000006",
+            "filing_date": "2026-02-10",
+            "url": "https://www.sec.gov/Archives/edgar/data/1668397/000166839726000006/0001668397-26-000006-index.htm"
+          },
+          "10-Q_2026-06-30": {
+            "accession_number": "0001668397-26-000025",
+            "filing_date": "2026-07-23",
+            "url": "https://www.sec.gov/Archives/edgar/data/1668397/000166839726000025/0001668397-26-000025-index.htm"
+          }
+        },
+        "source_evidence_tracing": null
+      },
+      "source_evidence_tracing": null,
+      "monitoring": {
+        "observable_invalidation_trigger": "Net new business awards book-to-bill ratio declining below 1.0x for consecutive quarters or operating margin breach below 16.0%.",
+        "next_monitoring_trigger": "Q3 2026 earnings release and Form 10-Q for trial backlog cancellations and RFP volume.",
+        "price_watch_condition": "Pullback toward mid-cycle base valuation range ($380 - $440) or net new business awards sustaining book-to-bill > 1.25x.",
+        "baseline_factual_evidence": "Medpace delivers industry-leading capital efficiency (>25% ROIC) and operating margins (>20%), insulated by proprietary full-service clinical execution and $502.7M net cash."
+      },
+      "navigation": {
+        "radar_url": "/radar?symbol=MEDP",
+        "stock_url": "/stock/MEDP",
+        "radar_note": "Opens on-demand technical analysis in Radar console."
+      }
+    },
+    "ISRG": {
+      "dossier_id": "DOSSIER-ISRG-V1",
+      "publication_metadata": {
+        "dossier_version": "1.0.0-rc1",
+        "lifecycle_status": "CANDIDATE_SELECTED",
+        "technical_verification": "COMPUTED_VERIFIED",
+        "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+        "evidence_completeness": "SOURCE_MAPPED_AUDITED",
+        "authoring_date": "2026-10-22",
+        "freshness_state": "SELECTION_CANDIDATE",
+        "reviewer_id": null,
+        "reviewed_at_utc": null,
+        "review_notes": "Scaling addition dossier accepted under ARX-QUALITY-WATCH-STANDARD-V1 based on verified primary SEC filings (10-K FY25, 10-Q Q2 2026), surgical robotics ecosystem (>80% recurring instruments/services revenue), $5.22B cash & liquid investments, zero funded debt, and disciplined reverse-DCF valuation.",
+        "governing_standard": "ARX-QUALITY-WATCH-STANDARD-V1",
+        "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
+      },
+      "identity": {
+        "symbol": "ISRG",
+        "company_name": "Intuitive Surgical, Inc.",
+        "cik": "0001035267",
+        "exchange": "NASDAQ",
+        "opportunity_route": "Healthcare / Medical Research",
+        "sec_edgar_browse_url": "https://www.sec.gov/edgar/browse/?CIK=1035267"
+      },
+      "central_assessment": {
+        "disposition": "WATCH_CONDITIONS",
+        "disposition_label": "Watch \u2014 Conditions Required for Entry",
+        "presentation_summary": "Intuitive Surgical maintains an unassailable surgical robotics ecosystem (>80% recurring revenue) and $5.22B net cash. Market pricing of $426.70 embeds 36.87% 5Y CAGR expectations for the da Vinci 5 upgrade cycle. Retained on watch for pullbacks toward $220 - $260.",
+        "summary_provenance": "DERIVED_SYNTHESIS",
+        "strongest_supporting_evidence": "da Vinci 5 system replacement cycle accelerating installed base procedure growth (>17% YoY), supported by high recurring revenue (>80% razor-and-blade instruments/services) and $5.22B net cash.",
+        "strongest_opposing_evidence": "Capital spending constraints across regional hospitals and international competitive entries. Solved reverse DCF requires 36.87% revenue CAGR at $426.70.",
+        "main_uncertainty": "Hospital capital budget allocation timelines for multi-million dollar da Vinci 5 console upgrades.",
+        "price_watch_condition": "Market pullback toward mid-cycle base valuation range ($220 - $260) or procedure growth acceleration above 20%.",
+        "confidence_assessment": "High confidence in surgical procedure moat and recurring cash flow predictability; valuation currently fully priced.",
+        "financing_dilution_exposure": "Minimal net dilution; steady share repurchases offset employee stock options."
+      },
+      "valuation": {
+        "valuation_status": "COMPUTED_VERIFIED",
+        "valuation_status_label": "Computed & Verified",
+        "model_type": "Single-stage Reverse-DCF FCFF",
+        "calculation_version": "ARX-VALUATION-ENGINE-V1.0",
+        "reference_price": 426.7,
+        "reference_price_label": "Reference price used in reverse DCF",
+        "reference_price_source": "ARX MarketStore regular close tape",
+        "reference_price_timestamp": "2026-10-16T16:00:00-04:00",
+        "reference_date": "2026-10-16",
+        "solved_5y_cagr_pct": 36.87,
+        "reverse_dcf_parameters": {
+          "target_price": 426.7,
+          "solved_revenue_cagr_pct": 36.87,
+          "operating_margin_pct": 31.0,
+          "wacc_pct": 9.0,
+          "terminal_growth_pct": 3.0,
+          "tax_rate_pct": 18.0,
+          "reinvestment_rate_pct": 18.0,
+          "base_revenue": 11034400000.0,
+          "current_shares": 357300000.0,
+          "net_debt_bridge": -5216200000.0
+        },
+        "roundtrip_value": 426.66,
+        "roundtrip_delta_cents": 3.73,
+        "convention_summary": "Single-stage Reverse-DCF FCFF (WACC 9.0%, Terminal g 3.0%, Operating Margin 31.0%, Tax Rate 18.0%, Reinvestment Rate 18.0%). Solved 5Y Revenue CAGR: 36.87%.",
+        "qualification_notice": null,
+        "suppression_reason": null,
+        "resume_conditions": [],
+        "scenarios": {
+          "conservative": {
+            "scenario_key": "conservative",
+            "name": "Conservative",
+            "per_share_value": 126.94,
+            "potential_return_pct": -70.3,
+            "conditional_wording": "Under stated conservative assumptions, modeled conditional value is $126.94 (-70.3% vs frozen reference price).",
+            "revenue_cagr_pct": 10.0,
+            "operating_margin_pct": 28.0,
+            "wacc_pct": 9.5,
+            "terminal_growth_pct": 2.5,
+            "tax_rate_pct": 19.0,
+            "reinvestment_rate_pct": 20.0,
+            "enterprise_value": 40140028193.18,
+            "equity_value": 45356228193.18
+          },
+          "base": {
+            "scenario_key": "base",
+            "name": "Base",
+            "per_share_value": 220.0,
+            "potential_return_pct": -48.4,
+            "conditional_wording": "Under stated base assumptions, modeled conditional value is $220.00 (-48.4% vs frozen reference price).",
+            "revenue_cagr_pct": 18.0,
+            "operating_margin_pct": 31.0,
+            "wacc_pct": 9.0,
+            "terminal_growth_pct": 3.0,
+            "tax_rate_pct": 18.0,
+            "reinvestment_rate_pct": 18.0,
+            "enterprise_value": 73391241641.22,
+            "equity_value": 78607441641.22
+          },
+          "optimistic": {
+            "scenario_key": "optimistic",
+            "name": "Optimistic",
+            "per_share_value": 427.49,
+            "potential_return_pct": 0.2,
+            "conditional_wording": "Under stated optimistic assumptions, modeled conditional value is $427.49 (+0.2% vs frozen reference price).",
+            "revenue_cagr_pct": 28.0,
+            "operating_margin_pct": 34.0,
+            "wacc_pct": 8.5,
+            "terminal_growth_pct": 3.5,
+            "tax_rate_pct": 17.0,
+            "reinvestment_rate_pct": 15.0,
+            "enterprise_value": 147524612535.6,
+            "equity_value": 152740812535.6
+          }
+        }
+      },
+      "financial_profile": {
+        "accounting_basis": "US-GAAP",
+        "currency": "USD",
+        "revenue": 11034400000.0,
+        "revenue_display": "$11.03B",
+        "revenue_period": "TTM (Ended 2026-06-30)",
+        "operating_income": 3451200000.0,
+        "operating_margin_pct": 31.28,
+        "cash_and_equivalents": 2760400000.0,
+        "short_term_investments": 2455800000.0,
+        "restricted_cash": null,
+        "total_cash_and_investments": 5216200000.0,
+        "total_cash_and_restricted": null,
+        "total_financial_debt": 0.0,
+        "debt_display": "$0.00 (Zero Funded Debt Evidenced)",
+        "is_zero_debt": true,
+        "zero_debt_support": "Zero funded debt; zero debt obligations; $5.22B total cash and marketable investments.",
+        "operating_lease_liabilities_asc842": 170900000.0,
+        "lease_convention_treatment": "Lease as operating expense convention applied; facility and distribution leases expensed in operating costs; lease liabilities ($170.9M) excluded from net debt bridge.",
+        "restriction_treatment": null,
+        "digital_assets": null,
+        "total_liquidity_with_digital_assets": null,
+        "net_debt_bridge": -5216200000.0,
+        "capital_structure_position": "Equity Capital Structure",
+        "bridge_note": "Total cash and investments ($5.22B) against zero funded debt yields $5.22B net cash added to enterprise value in DCF equity bridge.",
+        "selected_share_basis": {
+          "basis_type": "DILUTED_WEIGHTED_AVERAGE",
+          "value": 357300000.0,
+          "measurement_period": "TTM ended 2026-06-30",
+          "rationale": "Diluted share count reported in Q2 10-Q."
+        },
+        "primary_filings": [
+          {
+            "form": "10-K",
+            "period_end": "2025-12-31",
+            "filing_date": "2026-02-03",
+            "accession_number": "0001035267-26-000010",
+            "url": "https://www.sec.gov/Archives/edgar/data/1035267/000103526726000010/0001035267-26-000010-index.htm",
+            "source_role": "Annual audited financial disclosures"
+          },
+          {
+            "form": "10-Q",
+            "period_end": "2026-06-30",
+            "filing_date": "2026-07-21",
+            "accession_number": "0001035267-26-000058",
+            "url": "https://www.sec.gov/Archives/edgar/data/1035267/000103526726000058/0001035267-26-000058-index.htm",
+            "source_role": "Quarterly financial report (Q2)"
+          }
+        ],
+        "material_claims_provenance": {
+          "10-K_2025-12-31": {
+            "accession_number": "0001035267-26-000010",
+            "filing_date": "2026-02-03",
+            "url": "https://www.sec.gov/Archives/edgar/data/1035267/000103526726000010/0001035267-26-000010-index.htm"
+          },
+          "10-Q_2026-06-30": {
+            "accession_number": "0001035267-26-000058",
+            "filing_date": "2026-07-21",
+            "url": "https://www.sec.gov/Archives/edgar/data/1035267/000103526726000058/0001035267-26-000058-index.htm"
+          }
+        },
+        "source_evidence_tracing": null
+      },
+      "source_evidence_tracing": null,
+      "monitoring": {
+        "observable_invalidation_trigger": "Worldwide procedure growth deceleration below 10.0% or da Vinci 5 adoption stagnation.",
+        "next_monitoring_trigger": "Q3 2026 Form 10-Q filing (October 2026) for procedure volume growth and system placement breakdown.",
+        "price_watch_condition": "Market pullback toward mid-cycle base valuation range ($220 - $260) or procedure growth acceleration above 20%.",
+        "baseline_factual_evidence": "da Vinci 5 system replacement cycle accelerating installed base procedure growth (>17% YoY), supported by high recurring revenue (>80% razor-and-blade instruments/services) and $5.22B net cash."
+      },
+      "navigation": {
+        "radar_url": "/radar?symbol=ISRG",
+        "stock_url": "/stock/ISRG",
+        "radar_note": "Opens on-demand technical analysis in Radar console."
+      }
+    },
+    "DECK": {
+      "dossier_id": "DOSSIER-DECK-V1",
+      "publication_metadata": {
+        "dossier_version": "1.0.0-rc1",
+        "lifecycle_status": "CANDIDATE_SELECTED",
+        "technical_verification": "COMPUTED_VERIFIED",
+        "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+        "evidence_completeness": "SOURCE_MAPPED_AUDITED",
+        "authoring_date": "2026-10-22",
+        "freshness_state": "SELECTION_CANDIDATE",
+        "reviewer_id": null,
+        "reviewed_at_utc": null,
+        "review_notes": "Scaling addition dossier accepted under ARX-QUALITY-WATCH-STANDARD-V1 based on verified primary SEC filings (10-K FY26, 10-Q Q1 FY27), HOKA brand growth, 6:1 split-adjusted capital structure, zero funded debt ($1.60B net cash), ASC 842 lease operating expense convention ($472.33M lease liabilities excluded from net debt bridge), and disciplined reverse-DCF valuation.",
+        "governing_standard": "ARX-QUALITY-WATCH-STANDARD-V1",
+        "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
+      },
+      "identity": {
+        "symbol": "DECK",
+        "company_name": "Deckers Outdoor Corp.",
+        "cik": "0000910521",
+        "exchange": "NYSE",
+        "opportunity_route": "Consumer Cyclical / Footwear",
+        "sec_edgar_browse_url": "https://www.sec.gov/edgar/browse/?CIK=910521"
+      },
+      "central_assessment": {
+        "disposition": "WATCH_CONDITIONS",
+        "disposition_label": "Watch \u2014 Conditions Required for Entry",
+        "presentation_summary": "Deckers Outdoor displays pristine financial health ($1.60B net cash, zero debt) propelled by HOKA's expansion. Market pricing of $85.72 embeds conservative -2.34% implied growth due to wholesale normalization. Retained on watch for international DTC confirmation.",
+        "summary_provenance": "DERIVED_SYNTHESIS",
+        "strongest_supporting_evidence": "HOKA brand momentum continues rapid global wholesale and DTC market share gains (>25% YoY), complemented by $1.60B cash reserves and zero debt.",
+        "strongest_opposing_evidence": "High seasonal concentration in UGG winter demand and elevated wholesale inventory across athletic channels. Solved 5Y CAGR is -2.34%, indicating market reflects mature apparel normalization.",
+        "main_uncertainty": "Sustainability of premium DTC full-price sell-through rates as HOKA expands into broader lifestyle footwear categories.",
+        "price_watch_condition": "Confirmation of international DTC growth above 20% while maintaining consolidated gross margin above 55.0%.",
+        "confidence_assessment": "High confidence in brand equity and net cash asset backing; moderate concern regarding cyclical consumer discretionary headwinds.",
+        "financing_dilution_exposure": "Clean share capital structure; forward 6:1 split successfully resolved historical comparability issues with zero phantom dilution."
+      },
+      "valuation": {
+        "valuation_status": "COMPUTED_VERIFIED",
+        "valuation_status_label": "Computed & Verified",
+        "model_type": "Single-stage Reverse-DCF FCFF",
+        "calculation_version": "ARX-VALUATION-ENGINE-V1.0",
+        "reference_price": 85.72,
+        "reference_price_label": "Reference price used in reverse DCF",
+        "reference_price_source": "ARX MarketStore regular close tape",
+        "reference_price_timestamp": "2026-10-16T16:00:00-04:00",
+        "reference_date": "2026-10-16",
+        "solved_5y_cagr_pct": -2.34,
+        "reverse_dcf_parameters": {
+          "target_price": 85.72,
+          "solved_revenue_cagr_pct": -2.34,
+          "operating_margin_pct": 22.0,
+          "wacc_pct": 9.0,
+          "terminal_growth_pct": 2.5,
+          "tax_rate_pct": 22.0,
+          "reinvestment_rate_pct": 15.0,
+          "base_revenue": 5527289000.0,
+          "current_shares": 138559000.0,
+          "net_debt_bridge": -1602589000.0
+        },
+        "roundtrip_value": 85.72,
+        "roundtrip_delta_cents": 0.05,
+        "convention_summary": "Single-stage Reverse-DCF FCFF (WACC 9.0%, Terminal g 2.5%, Operating Margin 22.0%, Tax Rate 22.0%, Reinvestment Rate 15.0%). Solved 5Y Revenue CAGR: -2.34%.",
+        "qualification_notice": null,
+        "suppression_reason": null,
+        "resume_conditions": [],
+        "scenarios": {
+          "conservative": {
+            "scenario_key": "conservative",
+            "name": "Conservative",
+            "per_share_value": 73.22,
+            "potential_return_pct": -14.6,
+            "conditional_wording": "Under stated conservative assumptions, modeled conditional value is $73.22 (-14.6% vs frozen reference price).",
+            "revenue_cagr_pct": 2.0,
+            "operating_margin_pct": 18.0,
+            "wacc_pct": 9.5,
+            "terminal_growth_pct": 2.0,
+            "tax_rate_pct": 23.0,
+            "reinvestment_rate_pct": 18.0,
+            "enterprise_value": 8543349312.22,
+            "equity_value": 10145938312.22
+          },
+          "base": {
+            "scenario_key": "base",
+            "name": "Base",
+            "per_share_value": 127.49,
+            "potential_return_pct": 48.7,
+            "conditional_wording": "Under stated base assumptions, modeled conditional value is $127.49 (+48.7% vs frozen reference price).",
+            "revenue_cagr_pct": 8.0,
+            "operating_margin_pct": 22.0,
+            "wacc_pct": 9.0,
+            "terminal_growth_pct": 2.5,
+            "tax_rate_pct": 22.0,
+            "reinvestment_rate_pct": 15.0,
+            "enterprise_value": 16062193879.0,
+            "equity_value": 17664782879.0
+          },
+          "optimistic": {
+            "scenario_key": "optimistic",
+            "name": "Optimistic",
+            "per_share_value": 209.87,
+            "potential_return_pct": 144.8,
+            "conditional_wording": "Under stated optimistic assumptions, modeled conditional value is $209.87 (+144.8% vs frozen reference price).",
+            "revenue_cagr_pct": 14.0,
+            "operating_margin_pct": 24.0,
+            "wacc_pct": 8.5,
+            "terminal_growth_pct": 3.0,
+            "tax_rate_pct": 21.0,
+            "reinvestment_rate_pct": 12.0,
+            "enterprise_value": 27476357286.96,
+            "equity_value": 29078946286.96
+          }
+        }
+      },
+      "financial_profile": {
+        "accounting_basis": "US-GAAP",
+        "currency": "USD",
+        "revenue": 5527289000.0,
+        "revenue_display": "$5.53B",
+        "revenue_period": "TTM (Ended 2026-06-30)",
+        "operating_income": 1252917000.0,
+        "operating_margin_pct": 22.67,
+        "cash_and_equivalents": 1602589000.0,
+        "short_term_investments": 0.0,
+        "restricted_cash": null,
+        "total_cash_and_investments": 1602589000.0,
+        "total_cash_and_restricted": null,
+        "total_financial_debt": 0.0,
+        "debt_display": "$0.00 (Zero Funded Debt Evidenced)",
+        "is_zero_debt": true,
+        "zero_debt_support": "Zero funded debt; credit facility undrawn; audited post 6:1 forward stock split (September 2024).",
+        "operating_lease_liabilities_asc842": 472334000.0,
+        "lease_convention_treatment": "Lease as operating expense convention applied; store and distribution leases expensed in operating income; lease liabilities ($472.33M) excluded from net debt bridge.",
+        "restriction_treatment": null,
+        "digital_assets": null,
+        "total_liquidity_with_digital_assets": null,
+        "net_debt_bridge": -1602589000.0,
+        "capital_structure_position": "Equity Capital Structure",
+        "bridge_note": "Total cash of $1.60B against zero funded debt yields $1.60B net cash bridge added to enterprise value in DCF equity bridge.",
+        "selected_share_basis": {
+          "basis_type": "SPLIT_ADJUSTED_DILUTED",
+          "value": 138559000.0,
+          "measurement_period": "TTM ended 2026-06-30",
+          "rationale": "Post-split diluted share count reflecting the 6-for-1 forward split executed in September 2024."
+        },
+        "primary_filings": [
+          {
+            "form": "10-K",
+            "period_end": "2026-03-31",
+            "filing_date": "2026-05-22",
+            "accession_number": "0001628280-26-037664",
+            "url": "https://www.sec.gov/Archives/edgar/data/910521/000162828026037664/0001628280-26-037664-index.htm",
+            "source_role": "Annual audited financial disclosures"
+          },
+          {
+            "form": "10-Q",
+            "period_end": "2026-06-30",
+            "filing_date": "2026-07-30",
+            "accession_number": "0000910521-26-000022",
+            "url": "https://www.sec.gov/Archives/edgar/data/910521/000091052126000022/0000910521-26-000022-index.htm",
+            "source_role": "Quarterly financial report (Q1 FY27)"
+          }
+        ],
+        "material_claims_provenance": {
+          "10-K_2026-03-31": {
+            "accession_number": "0001628280-26-037664",
+            "filing_date": "2026-05-22",
+            "url": "https://www.sec.gov/Archives/edgar/data/910521/000162828026037664/0001628280-26-037664-index.htm"
+          },
+          "10-Q_2026-06-30": {
+            "accession_number": "0000910521-26-000022",
+            "filing_date": "2026-07-30",
+            "url": "https://www.sec.gov/Archives/edgar/data/910521/000091052126000022/0000910521-26-000022-index.htm"
+          }
+        },
+        "source_evidence_tracing": null
+      },
+      "source_evidence_tracing": null,
+      "monitoring": {
+        "observable_invalidation_trigger": "Gross margin decline below 50.0% or HOKA DTC quarterly revenue deceleration below 10.0%.",
+        "next_monitoring_trigger": "Q2 FY27 earnings release (expected October/November 2026) for holiday pre-orders and inventory aging.",
+        "price_watch_condition": "Confirmation of international DTC growth above 20% while maintaining consolidated gross margin above 55.0%.",
+        "baseline_factual_evidence": "HOKA brand momentum continues rapid global wholesale and DTC market share gains (>25% YoY), complemented by $1.60B cash reserves and zero debt."
+      },
+      "navigation": {
+        "radar_url": "/radar?symbol=DECK",
+        "stock_url": "/stock/DECK",
+        "radar_note": "Opens on-demand technical analysis in Radar console."
+      }
     }
   },
   "additions_provenance": {
@@ -598,6 +1168,69 @@
       "reference_price": 592.94,
       "reference_date": "2026-10-16",
       "solved_5y_cagr_pct": 15.45
+    },
+    "MEDP": {
+      "company_name": "Medpace Holdings, Inc.",
+      "cik": "0001668397",
+      "exchange": "NASDAQ",
+      "acceptance_basis": "PRIMARY_SEC_EDGAR_VERIFIED_RESEARCH",
+      "selection_decision": "Selected as Scaling Addition under ARX-QUALITY-WATCH-STANDARD-V1",
+      "content_sha256": "8f27f9024adcbd3ff57131a801710f247ef85e0732374ad3a1fece48239f9344",
+      "authoring_timestamp_utc": "2026-10-22T08:00:00Z",
+      "filing_availability_cutoff_utc": "2026-10-16T20:00:00Z",
+      "lifecycle_status": "CANDIDATE_SELECTED",
+      "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+      "source_authority": "ARX Quality Watch Scaling Addition",
+      "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1",
+      "source_filings": [
+        "0001668397-26-000006",
+        "0001668397-26-000025"
+      ],
+      "reference_price": 618.47,
+      "reference_date": "2026-10-16",
+      "solved_5y_cagr_pct": 29.41
+    },
+    "ISRG": {
+      "company_name": "Intuitive Surgical, Inc.",
+      "cik": "0001035267",
+      "exchange": "NASDAQ",
+      "acceptance_basis": "PRIMARY_SEC_EDGAR_VERIFIED_RESEARCH",
+      "selection_decision": "Selected as Scaling Addition under ARX-QUALITY-WATCH-STANDARD-V1",
+      "content_sha256": "aeefc0e2f1a7343c4f6082a61da466b63cda4b982046d59447c436e759977814",
+      "authoring_timestamp_utc": "2026-10-22T08:00:00Z",
+      "filing_availability_cutoff_utc": "2026-10-16T20:00:00Z",
+      "lifecycle_status": "CANDIDATE_SELECTED",
+      "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+      "source_authority": "ARX Quality Watch Scaling Addition",
+      "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1",
+      "source_filings": [
+        "0001035267-26-000010",
+        "0001035267-26-000058"
+      ],
+      "reference_price": 426.7,
+      "reference_date": "2026-10-16",
+      "solved_5y_cagr_pct": 36.87
+    },
+    "DECK": {
+      "company_name": "Deckers Outdoor Corp.",
+      "cik": "0000910521",
+      "exchange": "NYSE",
+      "acceptance_basis": "PRIMARY_SEC_EDGAR_VERIFIED_RESEARCH",
+      "selection_decision": "Selected as Scaling Addition under ARX-QUALITY-WATCH-STANDARD-V1",
+      "content_sha256": "7a8ebec1e3fc5dd9936dfa85de79134aed666ec8c4a8492770ebed8b124ed9a3",
+      "authoring_timestamp_utc": "2026-10-22T08:00:00Z",
+      "filing_availability_cutoff_utc": "2026-10-16T20:00:00Z",
+      "lifecycle_status": "CANDIDATE_SELECTED",
+      "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+      "source_authority": "ARX Quality Watch Scaling Addition",
+      "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1",
+      "source_filings": [
+        "0001628280-26-037664",
+        "0000910521-26-000022"
+      ],
+      "reference_price": 85.72,
+      "reference_date": "2026-10-16",
+      "solved_5y_cagr_pct": -2.34
     }
   }
 }

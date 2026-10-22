@@ -55,7 +55,7 @@ PILOT_ADDITIONS_COHORT = [
 TOTAL_PILOT_COHORT = BASELINE_COHORT + PILOT_ADDITIONS_COHORT
 
 # Curated Quality Watch & Selective Publication constants
-PUBLISHED_WATCH_SYMBOLS = ["FIX", "DUOL", "ULTA"]
+PUBLISHED_WATCH_SYMBOLS = ["FIX", "DUOL", "ULTA", "MEDP", "ISRG", "DECK"]
 BASELINE_WATCH_COHORT = ["FIX", "DUOL"]
 HELD_HISTORICAL_SYMBOLS = ["IREN", "CORZ"]
 EXCLUDED_HISTORICAL_SYMBOLS = ["MU"]
@@ -372,17 +372,17 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             {
                 "form": "10-K",
                 "period_end": "2025-12-31",
-                "filing_date": "2026-02-18",
-                "accession_number": "0001668397-26-000012",
-                "doc_name": "medp-20251231x10k.htm",
+                "filing_date": "2026-02-10",
+                "accession_number": "0001668397-26-000006",
+                "doc_name": "medp-20251231.htm",
                 "source_role": "Annual audited financial disclosures"
             },
             {
                 "form": "10-Q",
                 "period_end": "2026-06-30",
-                "filing_date": "2026-07-22",
-                "accession_number": "0001668397-26-000048",
-                "doc_name": "medp-20260630x10q.htm",
+                "filing_date": "2026-07-23",
+                "accession_number": "0001668397-26-000025",
+                "doc_name": "medp-20260630.htm",
                 "source_role": "Quarterly financial report (Q2)"
             }
         ],
@@ -427,12 +427,12 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             "strongest_supporting_evidence": "Medpace delivers industry-leading capital efficiency (>25% ROIC) and operating margins (>20%), insulated by proprietary full-service clinical execution and $502.7M net cash.",
             "strongest_opposing_evidence": "Biopharma venture funding cycles and small-cap clinical trial cancellation rates create volatility in net book-to-bill ratios. At $618.47, market embeds a demanding 29.41% revenue CAGR.",
             "main_uncertainty": "Sustained clinical trial contract backlog conversion amidst fluctuating early-stage biotech liquidity.",
-            "price_watch_condition": "Pullback toward mid-cycle base valuation range ($440 - $480) or net new business awards sustaining book-to-bill > 1.25x.",
+            "price_watch_condition": "Pullback toward mid-cycle base valuation range ($380 - $440) or net new business awards sustaining book-to-bill > 1.25x.",
             "confidence_assessment": "High confidence in operational execution and balance sheet conservatism; moderate valuation headroom.",
             "financing_dilution_exposure": "Share repurchases offset stock compensation, reducing share count by ~9.6% over 3 years.",
             "observable_invalidation_trigger": "Net new business awards book-to-bill ratio declining below 1.0x for consecutive quarters or operating margin breach below 16.0%.",
             "next_monitoring_trigger": "Q3 2026 earnings release and Form 10-Q for trial backlog cancellations and RFP volume.",
-            "presentation_summary": "Medpace Holdings delivers pristine capital returns (>25% ROIC) and zero-debt balance sheet strength ($502.7M cash). However, the frozen market price of $618.47 requires an aggressive 29.41% 5-year revenue CAGR. Retained on watch pending market pullbacks toward $440 - $480."
+            "presentation_summary": "Medpace Holdings delivers pristine capital returns (>25% ROIC) and zero-debt balance sheet strength ($502.7M cash). However, the frozen market price of $618.47 requires an aggressive 29.41% 5-year revenue CAGR. Retained on watch pending market pullbacks toward $380 - $440."
         }
     },
     "DECK": {
@@ -452,16 +452,16 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                 "form": "10-K",
                 "period_end": "2026-03-31",
                 "filing_date": "2026-05-22",
-                "accession_number": "0000910521-26-000028",
-                "doc_name": "deck-20260331x10k.htm",
+                "accession_number": "0001628280-26-037664",
+                "doc_name": "deck-20260331.htm",
                 "source_role": "Annual audited financial disclosures"
             },
             {
                 "form": "10-Q",
                 "period_end": "2026-06-30",
-                "filing_date": "2026-07-25",
-                "accession_number": "0000910521-26-000045",
-                "doc_name": "deck-20260630x10q.htm",
+                "filing_date": "2026-07-30",
+                "accession_number": "0000910521-26-000022",
+                "doc_name": "deck-20260630.htm",
                 "source_role": "Quarterly financial report (Q1 FY27)"
             }
         ],
@@ -478,8 +478,8 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             "total_financial_debt": 0.0,
             "is_zero_debt": True,
             "zero_debt_support": "Zero funded debt; credit facility undrawn; audited post 6:1 forward stock split (September 2024).",
-            "operating_lease_liabilities_asc842": 248900000.0,
-            "lease_convention_treatment": "Lease as operating expense convention applied; store and distribution leases expensed in operating income; lease liabilities excluded from net debt bridge.",
+            "operating_lease_liabilities_asc842": 472334000.0,
+            "lease_convention_treatment": "Lease as operating expense convention applied; store and distribution leases expensed in operating income; lease liabilities ($472.33M) excluded from net debt bridge.",
             "net_debt_bridge": -1602589000.0,
             "bridge_note": "Total cash of $1.60B against zero funded debt yields $1.60B net cash bridge added to enterprise value in DCF equity bridge.",
             "diluted_shares": 138559000.0,
@@ -998,17 +998,17 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             {
                 "form": "10-K",
                 "period_end": "2025-12-31",
-                "filing_date": "2026-02-05",
-                "accession_number": "0001035267-26-000018",
-                "doc_name": "isrg-20251231x10k.htm",
+                "filing_date": "2026-02-03",
+                "accession_number": "0001035267-26-000010",
+                "doc_name": "isrg-20251231.htm",
                 "source_role": "Annual audited financial disclosures"
             },
             {
                 "form": "10-Q",
                 "period_end": "2026-06-30",
                 "filing_date": "2026-07-21",
-                "accession_number": "0001035267-26-000045",
-                "doc_name": "isrg-20260630x10q.htm",
+                "accession_number": "0001035267-26-000058",
+                "doc_name": "isrg-20260630.htm",
                 "source_role": "Quarterly financial report (Q2)"
             }
         ],
@@ -1025,8 +1025,8 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             "total_financial_debt": 0.0,
             "is_zero_debt": True,
             "zero_debt_support": "Zero funded debt; zero debt obligations; $5.22B total cash and marketable investments.",
-            "operating_lease_liabilities_asc842": 110000000.0,
-            "lease_convention_treatment": "Lease liabilities excluded from net debt bridge under standard lease convention.",
+            "operating_lease_liabilities_asc842": 170900000.0,
+            "lease_convention_treatment": "Lease as operating expense convention applied; facility and distribution leases expensed in operating costs; lease liabilities ($170.9M) excluded from net debt bridge.",
             "net_debt_bridge": -5216200000.0,
             "bridge_note": "Total cash and investments ($5.22B) against zero funded debt yields $5.22B net cash added to enterprise value in DCF equity bridge.",
             "diluted_shares": 357300000.0,
@@ -1053,12 +1053,12 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             "strongest_supporting_evidence": "da Vinci 5 system replacement cycle accelerating installed base procedure growth (>17% YoY), supported by high recurring revenue (>80% razor-and-blade instruments/services) and $5.22B net cash.",
             "strongest_opposing_evidence": "Capital spending constraints across regional hospitals and international competitive entries. Solved reverse DCF requires 36.87% revenue CAGR at $426.70.",
             "main_uncertainty": "Hospital capital budget allocation timelines for multi-million dollar da Vinci 5 console upgrades.",
-            "price_watch_condition": "Market pullback toward mid-cycle base valuation range ($280 - $310) or procedure growth acceleration above 20%.",
+            "price_watch_condition": "Market pullback toward mid-cycle base valuation range ($220 - $260) or procedure growth acceleration above 20%.",
             "confidence_assessment": "High confidence in surgical procedure moat and recurring cash flow predictability; valuation currently fully priced.",
             "financing_dilution_exposure": "Minimal net dilution; steady share repurchases offset employee stock options.",
             "observable_invalidation_trigger": "Worldwide procedure growth deceleration below 10.0% or da Vinci 5 adoption stagnation.",
             "next_monitoring_trigger": "Q3 2026 Form 10-Q filing (October 2026) for procedure volume growth and system placement breakdown.",
-            "presentation_summary": "Intuitive Surgical maintains an unassailable surgical robotics ecosystem (>80% recurring revenue) and $5.22B net cash. Market pricing of $426.70 embeds 36.87% 5Y CAGR expectations for the da Vinci 5 upgrade cycle. Retained on watch for pullbacks toward $280 - $310."
+            "presentation_summary": "Intuitive Surgical maintains an unassailable surgical robotics ecosystem (>80% recurring revenue) and $5.22B net cash. Market pricing of $426.70 embeds 36.87% 5Y CAGR expectations for the da Vinci 5 upgrade cycle. Retained on watch for pullbacks toward $220 - $260."
         }
     },
     "CDNS": {
@@ -1986,13 +1986,22 @@ def generate_published_watch_manifest(
     Under the Quality Watch Standard (ARX-QUALITY-WATCH-STANDARD-V1), only selected
     qualifying WATCH assets are published to production.
     - Baseline WATCH: FIX, DUOL
-    - Selected Addition: ULTA (first published addition)
+    - Selected Additions: ULTA, MEDP, ISRG, DECK
     - Held Baseline: IREN, CORZ (preserved in baseline ledger; neutral research state)
     - Excluded Rejected: MU (original baseline), PLTR (expansion draft)
     """
     ulta_dossier = pilot_dossiers.get("ULTA")
     if not ulta_dossier:
         raise KeyError("ULTA dossier missing from pilot dossiers; required for published watch manifest")
+    medp_dossier = pilot_dossiers.get("MEDP")
+    if not medp_dossier:
+        raise KeyError("MEDP dossier missing from pilot dossiers; required for published watch manifest")
+    isrg_dossier = pilot_dossiers.get("ISRG")
+    if not isrg_dossier:
+        raise KeyError("ISRG dossier missing from pilot dossiers; required for published watch manifest")
+    deck_dossier = pilot_dossiers.get("DECK")
+    if not deck_dossier:
+        raise KeyError("DECK dossier missing from pilot dossiers; required for published watch manifest")
 
     accepted_ulta = copy.deepcopy(ulta_dossier)
     accepted_ulta["publication_metadata"] = {
@@ -2010,7 +2019,58 @@ def generate_published_watch_manifest(
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
     }
 
+    accepted_medp = copy.deepcopy(medp_dossier)
+    accepted_medp["publication_metadata"] = {
+        "dossier_version": "1.0.0-rc1",
+        "lifecycle_status": "CANDIDATE_SELECTED",
+        "technical_verification": "COMPUTED_VERIFIED",
+        "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+        "evidence_completeness": "SOURCE_MAPPED_AUDITED",
+        "authoring_date": "2026-10-22",
+        "freshness_state": "SELECTION_CANDIDATE",
+        "reviewer_id": None,
+        "reviewed_at_utc": None,
+        "review_notes": "Scaling addition dossier accepted under ARX-QUALITY-WATCH-STANDARD-V1 based on verified primary SEC filings (10-K FY25, 10-Q Q2 2026), full-service clinical CRO model, >25% ROIC, zero funded debt, and disciplined reverse-DCF valuation.",
+        "governing_standard": "ARX-QUALITY-WATCH-STANDARD-V1",
+        "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
+    }
+
+    accepted_isrg = copy.deepcopy(isrg_dossier)
+    accepted_isrg["publication_metadata"] = {
+        "dossier_version": "1.0.0-rc1",
+        "lifecycle_status": "CANDIDATE_SELECTED",
+        "technical_verification": "COMPUTED_VERIFIED",
+        "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+        "evidence_completeness": "SOURCE_MAPPED_AUDITED",
+        "authoring_date": "2026-10-22",
+        "freshness_state": "SELECTION_CANDIDATE",
+        "reviewer_id": None,
+        "reviewed_at_utc": None,
+        "review_notes": "Scaling addition dossier accepted under ARX-QUALITY-WATCH-STANDARD-V1 based on verified primary SEC filings (10-K FY25, 10-Q Q2 2026), surgical robotics ecosystem (>80% recurring instruments/services revenue), $5.22B cash & liquid investments, zero funded debt, and disciplined reverse-DCF valuation.",
+        "governing_standard": "ARX-QUALITY-WATCH-STANDARD-V1",
+        "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
+    }
+
+    accepted_deck = copy.deepcopy(deck_dossier)
+    accepted_deck["publication_metadata"] = {
+        "dossier_version": "1.0.0-rc1",
+        "lifecycle_status": "CANDIDATE_SELECTED",
+        "technical_verification": "COMPUTED_VERIFIED",
+        "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+        "evidence_completeness": "SOURCE_MAPPED_AUDITED",
+        "authoring_date": "2026-10-22",
+        "freshness_state": "SELECTION_CANDIDATE",
+        "reviewer_id": None,
+        "reviewed_at_utc": None,
+        "review_notes": "Scaling addition dossier accepted under ARX-QUALITY-WATCH-STANDARD-V1 based on verified primary SEC filings (10-K FY26, 10-Q Q1 FY27), HOKA brand growth, 6:1 split-adjusted capital structure, zero funded debt ($1.60B net cash), ASC 842 lease operating expense convention ($472.33M lease liabilities excluded from net debt bridge), and disciplined reverse-DCF valuation.",
+        "governing_standard": "ARX-QUALITY-WATCH-STANDARD-V1",
+        "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
+    }
+
     ulta_sha256 = compute_canonical_dossier_digest(accepted_ulta)
+    medp_sha256 = compute_canonical_dossier_digest(accepted_medp)
+    isrg_sha256 = compute_canonical_dossier_digest(accepted_isrg)
+    deck_sha256 = compute_canonical_dossier_digest(accepted_deck)
 
     manifest = {
         "schema_version": "ARX-PUBLISHED-WATCH-MANIFEST-V1",
@@ -2027,7 +2087,10 @@ def generate_published_watch_manifest(
         "excluded_historical_symbols": EXCLUDED_HISTORICAL_SYMBOLS,
         "excluded_draft_symbols": EXCLUDED_DRAFT_SYMBOLS,
         "accepted_additions": {
-            "ULTA": accepted_ulta
+            "ULTA": accepted_ulta,
+            "MEDP": accepted_medp,
+            "ISRG": accepted_isrg,
+            "DECK": accepted_deck,
         },
         "additions_provenance": {
             "ULTA": {
@@ -2047,6 +2110,60 @@ def generate_published_watch_manifest(
                 "reference_price": accepted_ulta["valuation"]["reference_price"],
                 "reference_date": accepted_ulta["valuation"]["reference_date"],
                 "solved_5y_cagr_pct": accepted_ulta["valuation"]["solved_5y_cagr_pct"]
+            },
+            "MEDP": {
+                "company_name": "Medpace Holdings, Inc.",
+                "cik": "0001668397",
+                "exchange": "NASDAQ",
+                "acceptance_basis": "PRIMARY_SEC_EDGAR_VERIFIED_RESEARCH",
+                "selection_decision": "Selected as Scaling Addition under ARX-QUALITY-WATCH-STANDARD-V1",
+                "content_sha256": medp_sha256,
+                "authoring_timestamp_utc": "2026-10-22T08:00:00Z",
+                "filing_availability_cutoff_utc": "2026-10-16T20:00:00Z",
+                "lifecycle_status": "CANDIDATE_SELECTED",
+                "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+                "source_authority": "ARX Quality Watch Scaling Addition",
+                "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1",
+                "source_filings": [f["accession_number"] for f in accepted_medp["financial_profile"]["primary_filings"]],
+                "reference_price": accepted_medp["valuation"]["reference_price"],
+                "reference_date": accepted_medp["valuation"]["reference_date"],
+                "solved_5y_cagr_pct": accepted_medp["valuation"]["solved_5y_cagr_pct"]
+            },
+            "ISRG": {
+                "company_name": "Intuitive Surgical, Inc.",
+                "cik": "0001035267",
+                "exchange": "NASDAQ",
+                "acceptance_basis": "PRIMARY_SEC_EDGAR_VERIFIED_RESEARCH",
+                "selection_decision": "Selected as Scaling Addition under ARX-QUALITY-WATCH-STANDARD-V1",
+                "content_sha256": isrg_sha256,
+                "authoring_timestamp_utc": "2026-10-22T08:00:00Z",
+                "filing_availability_cutoff_utc": "2026-10-16T20:00:00Z",
+                "lifecycle_status": "CANDIDATE_SELECTED",
+                "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+                "source_authority": "ARX Quality Watch Scaling Addition",
+                "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1",
+                "source_filings": [f["accession_number"] for f in accepted_isrg["financial_profile"]["primary_filings"]],
+                "reference_price": accepted_isrg["valuation"]["reference_price"],
+                "reference_date": accepted_isrg["valuation"]["reference_date"],
+                "solved_5y_cagr_pct": accepted_isrg["valuation"]["solved_5y_cagr_pct"]
+            },
+            "DECK": {
+                "company_name": "Deckers Outdoor Corp.",
+                "cik": "0000910521",
+                "exchange": "NYSE",
+                "acceptance_basis": "PRIMARY_SEC_EDGAR_VERIFIED_RESEARCH",
+                "selection_decision": "Selected as Scaling Addition under ARX-QUALITY-WATCH-STANDARD-V1",
+                "content_sha256": deck_sha256,
+                "authoring_timestamp_utc": "2026-10-22T08:00:00Z",
+                "filing_availability_cutoff_utc": "2026-10-16T20:00:00Z",
+                "lifecycle_status": "CANDIDATE_SELECTED",
+                "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+                "source_authority": "ARX Quality Watch Scaling Addition",
+                "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1",
+                "source_filings": [f["accession_number"] for f in accepted_deck["financial_profile"]["primary_filings"]],
+                "reference_price": accepted_deck["valuation"]["reference_price"],
+                "reference_date": accepted_deck["valuation"]["reference_date"],
+                "solved_5y_cagr_pct": accepted_deck["valuation"]["solved_5y_cagr_pct"]
             }
         }
     }
