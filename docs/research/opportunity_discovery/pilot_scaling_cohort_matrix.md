@@ -73,14 +73,14 @@ The 19 companies in the scaling pilot are organized into 5 coherent, economicall
 
 ### Sector 4: High-Return Healthcare & Clinical Medical Technology
 - **Companies:** `MEDP`, `ISRG`
-- **Economic Model:** Capital-light clinical trial execution (`MEDP`) and recurring razor-and-blade robotic surgical procedures (`ISRG`).
-- **Valuation Treatment:** Single-stage Reverse-DCF FCFF. Pristine net cash balance sheets, high returns on invested capital (>20% ROIC). Zero funded debt.
+- **Economic Model:** Capital-light clinical trial execution with 20.97% operating margin, positive operating cash generation, and zero funded debt (`MEDP`) and recurring razor-and-blade robotic surgical procedures with 85% recurring revenue (`ISRG`).
+- **Valuation Treatment:** Single-stage Reverse-DCF FCFF. Pristine net cash balance sheets, high operating profitability, positive operating cash generation, and zero funded debt.
 
 ### Sector 5: Capital-Light Quality Consumer Brands
 - **Companies:** `ULTA`, `DECK`, `LULU`, `ELF`
 - **Economic Model:** Premium footwear, cosmetics retail, and athletic performance apparel.
 - **Valuation Treatment:** Reverse-DCF FCFF under strict **Lease-as-Operating-Expense Convention** (ASC 842). Store operating leases are expensed in operating income and paid in CFO; lease liabilities are excluded from the net debt bridge to prevent double deduction.
-- **Capital Structure Reconciliations:** Form 10-Q Note 7 revolving credit borrowings ($339.6M) and cash/ST investments ($213.5M) form ULTA net debt bridge ($126.1M) deducted from Enterprise Value. `DECK` audited post 6:1 forward stock split.
+- **Capital Structure Reconciliations:** Form 10-Q Note 7 revolving credit borrowings ($339.6M) and cash/ST investments ($213.5M) form ULTA net debt bridge ($126.1M) deducted from Enterprise Value. `DECK` audited post 6:1 forward stock split with reported Q1 FY27 brand/channel growth (wholesale +2.9%, DTC +17.3%, total HOKA +7.7%).
 
 ---
 
@@ -122,3 +122,32 @@ The Opportunity Dossier scaling workflow decouples automated specification solvi
 | **Retail ASC 842 Operating Leases** | `ULTA`, `LULU`, `ELF` | Lease expense allocation between Cost of Sales and SG&A; funded debt vs lease liability bridge reconciliation | Ensure store and supply chain lease commitments remain treated as operating expenses and excluded from net debt bridge. |
 | **Semiconductor Equipment & EDA** | `KLAC`, `CDNS`, `SNPS`, `MU` | Mid-cycle margin sustainability, backlog conversion, and M&A debt financing structures | Model multi-year cyclicality bounds; qualify or suppress valuation when cyclical peak/troughs distort run-rate EBIT. |
 | **Capital-Intensive Infrastructure** | `FIX`, `VRT`, `PWR`, `IREN`, `CORZ` | Hyperscale customer concentration, milestone payment timing, working capital swings, and capital structure stability | Enforce valuation suppression when ongoing restructuring or hyper-dilutive financing makes FCFF unanchored. |
+
+---
+
+## 6. Expansion Queue & Publication Selection Policy
+
+Under the ARX Quality Watch Standard (`ARX-QUALITY-WATCH-STANDARD-V1`), research focuses exclusively on qualifying `WATCH` candidates supported by primary source evidence. There is no artificial cohort size cap or publication quota.
+
+### Published Quality Watch Collection:
+- **Baseline Watch:** `FIX`, `DUOL`
+- **Selected Expansion Additions:** `ULTA`, `MEDP`, `ISRG`, `DECK`
+
+### Held Outside Active Publication:
+- `IREN`, `CORZ` (preserved in baseline ledger; neutral research state)
+
+### Excluded from Active Research:
+- `MU` (cyclical semiconductor commodity peak), `PLTR` (extreme valuation multiple requirement)
+
+### Remaining Expansion Queue (For Subsequent Assessment):
+The following 10 candidate business models remain queued for subsequent assessment and will be published only if and when supported by primary filing verification and meeting Quality Watch criteria:
+- `KLAC` (KLA Corporation — Semiconductor Process Control)
+- `LULU` (lululemon athletica inc. — Technical Athletic Apparel Retail)
+- `EME` (EMCOR Group, Inc. — Electrical & Mechanical Construction Infrastructure)
+- `VRT` (Vertiv Holdings Co — AI Data Center Liquid Cooling & Power Distribution)
+- `ANET` (Arista Networks, Inc. — Data Center Cloud Networking)
+- `CDNS` (Cadence Design Systems, Inc. — Electronic Design Automation)
+- `PWR` (Quanta Services, Inc. — Electric Power Grid & Renewable Infrastructure)
+- `SNPS` (Synopsys, Inc. — Semiconductor IP & EDA Software)
+- `NOW` (ServiceNow, Inc. — Enterprise Digital Workflow Automation)
+- `ELF` (e.l.f. Beauty, Inc. — Clean Color Cosmetics & Skincare)

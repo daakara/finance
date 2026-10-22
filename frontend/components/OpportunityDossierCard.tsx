@@ -182,6 +182,75 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
         </div>
       </section>
 
+      {/* 2B. Structured Quality Watch Selection Record (Questions A-F) */}
+      {dossier.selection_rationale && (
+        <section className="bg-[#101726] border border-[#233149] rounded-xl p-4 sm:p-5 space-y-3" aria-label="Quality Watch Selection Record">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400" aria-hidden="true"></span>
+              Quality Watch Selection Record (Questions A–F)
+            </h2>
+            <span className="text-[10px] font-mono text-slate-400">ARX-QUALITY-WATCH-V1</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div className="bg-slate-900/60 border border-slate-800 p-3 rounded-lg space-y-1">
+              <h3 className="text-slate-200 font-semibold text-[11px] flex items-center gap-1">
+                <span className="text-amber-400 font-mono">A.</span> Why This Business?
+              </h3>
+              <p className="text-slate-300 text-xs leading-relaxed">
+                {dossier.selection_rationale.why_this_business}
+              </p>
+            </div>
+
+            <div className="bg-slate-900/60 border border-slate-800 p-3 rounded-lg space-y-1">
+              <h3 className="text-slate-200 font-semibold text-[11px] flex items-center gap-1">
+                <span className="text-amber-400 font-mono">B.</span> Why Research It Now?
+              </h3>
+              <p className="text-slate-300 text-xs leading-relaxed">
+                {dossier.selection_rationale.why_research_now}
+              </p>
+            </div>
+
+            <div className="bg-slate-900/60 border border-slate-800 p-3 rounded-lg space-y-1">
+              <h3 className="text-slate-200 font-semibold text-[11px] flex items-center gap-1">
+                <span className="text-amber-400 font-mono">C.</span> What Does The Price Require?
+              </h3>
+              <p className="text-slate-300 text-xs leading-relaxed">
+                {dossier.selection_rationale.price_requirements}
+              </p>
+            </div>
+
+            <div className="bg-slate-900/60 border border-slate-800 p-3 rounded-lg space-y-1">
+              <h3 className="text-slate-200 font-semibold text-[11px] flex items-center gap-1">
+                <span className="text-amber-400 font-mono">D.</span> What Might ARX See Differently?
+              </h3>
+              <p className="text-slate-300 text-xs leading-relaxed">
+                {dossier.selection_rationale.differentiated_view}
+              </p>
+            </div>
+
+            <div className="bg-slate-900/60 border border-slate-800 p-3 rounded-lg space-y-1">
+              <h3 className="text-slate-200 font-semibold text-[11px] flex items-center gap-1">
+                <span className="text-amber-400 font-mono">E.</span> What Would Change The Assessment?
+              </h3>
+              <p className="text-slate-300 text-xs leading-relaxed">
+                {dossier.selection_rationale.assessment_changes}
+              </p>
+            </div>
+
+            <div className="bg-slate-900/60 border border-slate-800 p-3 rounded-lg space-y-1">
+              <h3 className="text-slate-200 font-semibold text-[11px] flex items-center gap-1">
+                <span className="text-amber-400 font-mono">F.</span> Why Prioritize Research Attention?
+              </h3>
+              <p className="text-slate-300 text-xs leading-relaxed">
+                {dossier.selection_rationale.queue_priority}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* 3. Valuation Support & Priced-in Expectations */}
       <section className="space-y-2.5" aria-label="Valuation Support">
         <h2 className="text-xs font-semibold text-amber-300 uppercase tracking-wider flex items-center gap-2">
@@ -699,8 +768,13 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
               <span className="font-mono text-slate-200">
                 {(financial_profile.selected_share_basis.value / 1e6).toFixed(2)}M shares
               </span>{" "}
-              ({financial_profile.selected_share_basis.basis_type}) • Source:{" "}
-              <span className="italic">{financial_profile.selected_share_basis.source}</span>
+              ({financial_profile.selected_share_basis.basis_type})
+              {financial_profile.selected_share_basis.measurement_period && (
+                <> • Period: <span className="text-slate-300">{financial_profile.selected_share_basis.measurement_period}</span></>
+              )}
+              {financial_profile.selected_share_basis.source && (
+                <> • Source: <span className="italic">{financial_profile.selected_share_basis.source}</span></>
+              )}
             </div>
           )}
 

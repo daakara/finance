@@ -133,7 +133,83 @@ assert.strictEqual(ulta.financial_profile.net_debt_bridge, 126127000, "ULTA fina
 assert.strictEqual(ulta.financial_profile.operating_lease_liabilities_asc842, 1871805000, "ULTA financial profile must report noncurrent lease liabilities");
 assert.strictEqual(ulta.valuation.reference_price, 592.94, "ULTA valuation reference price must match");
 assert.strictEqual(ulta.valuation.solved_5y_cagr_pct, 15.45, "ULTA valuation solved CAGR must match");
+assert.ok(ulta.source_evidence_tracing.selection_rationale, "ULTA must include structured selection rationale");
+assert.ok(ulta.source_evidence_tracing.selection_rationale.why_this_business, "ULTA must answer why_this_business");
 console.log("[OK] Representative ULTA deep evidence tracing verified (CIK 0001403568, $592.94 ref price, 15.45% CAGR, Note 7 debt $339.6M, ASC 842 lease separated)");
+
+// 5B. Expansion Additions (MEDP, ISRG, DECK) Evidence Tracing & Share Measurement Period
+const expectedQ2Period = "Three months ended June 30, 2026";
+
+// MEDP
+const medp = draftData.dossiers["MEDP"];
+assert.ok(medp, "MEDP draft dossier must exist in staging snapshot");
+assert.ok(medp.source_evidence_tracing, "MEDP must include explicit source_evidence_tracing");
+assert.strictEqual(medp.financial_profile.selected_share_basis.measurement_period, expectedQ2Period, "MEDP share basis measurement period must be Q2");
+assert.strictEqual(medp.source_evidence_tracing.shares_outstanding.measurement_period, expectedQ2Period, "MEDP source tracing share measurement period must be Q2");
+assert.strictEqual(medp.financial_profile.is_zero_debt, true, "MEDP is_zero_debt must be true");
+assert.strictEqual(medp.financial_profile.total_financial_debt, 0, "MEDP total_financial_debt must be 0");
+assert.strictEqual(medp.financial_profile.revenue, 2782288000, "MEDP TTM revenue must be $2,782,288,000");
+assert.strictEqual(medp.financial_profile.operating_income, 583404000, "MEDP TTM operating income must be $583,404,000");
+assert.strictEqual(medp.financial_profile.operating_margin_pct, 20.97, "MEDP operating margin must be 20.97%");
+assert.strictEqual(medp.financial_profile.total_cash_and_investments, 502688000, "MEDP cash must be $502,688,000");
+assert.strictEqual(medp.financial_profile.selected_share_basis.value, 28554000, "MEDP diluted shares must be 28,554,000");
+assert.strictEqual(medp.valuation.reference_price, 618.47, "MEDP reference price must be $618.47");
+assert.strictEqual(medp.valuation.solved_5y_cagr_pct, 29.41, "MEDP solved CAGR must be 29.41%");
+assert.strictEqual(medp.valuation.roundtrip_value, 618.56, "MEDP roundtrip value must be 618.56");
+assert.strictEqual(medp.valuation.roundtrip_delta_cents, 8.53, "MEDP roundtrip delta must be 8.53 cents");
+assert.ok(medp.source_evidence_tracing.selection_rationale.why_this_business, "MEDP must answer why_this_business");
+assert.ok(!medp.central_assessment.strongest_supporting_evidence.includes("ROIC"), "MEDP strongest_supporting_evidence must not make unsupported ROIC claims");
+assert.ok(!medp.central_assessment.strongest_supporting_evidence.includes("100% self-funded"), "MEDP strongest_supporting_evidence must not cite 100% self-funded");
+assert.ok(medp.central_assessment.strongest_supporting_evidence.includes("positive operating cash generation"), "MEDP strongest_supporting_evidence must cite positive operating cash generation");
+assert.ok(!JSON.stringify(medp.source_evidence_tracing).includes("1,114.6"), "MEDP source tracing must not cite non-existent $1,114.6M equity");
+
+// ISRG
+const isrg = draftData.dossiers["ISRG"];
+assert.ok(isrg, "ISRG draft dossier must exist in staging snapshot");
+assert.ok(isrg.source_evidence_tracing, "ISRG must include explicit source_evidence_tracing");
+assert.strictEqual(isrg.financial_profile.selected_share_basis.measurement_period, expectedQ2Period, "ISRG share basis measurement period must be Q2");
+assert.strictEqual(isrg.source_evidence_tracing.shares_outstanding.measurement_period, expectedQ2Period, "ISRG source tracing share measurement period must be Q2");
+assert.strictEqual(isrg.financial_profile.is_zero_debt, true, "ISRG is_zero_debt must be true");
+assert.strictEqual(isrg.financial_profile.total_financial_debt, 0, "ISRG total_financial_debt must be 0");
+assert.strictEqual(isrg.financial_profile.revenue, 11034400000, "ISRG TTM revenue must be $11,034,400,000");
+assert.strictEqual(isrg.financial_profile.operating_income, 3451200000, "ISRG TTM operating income must be $3,451,200,000");
+assert.strictEqual(isrg.financial_profile.operating_margin_pct, 31.28, "ISRG operating margin must be 31.28%");
+assert.strictEqual(isrg.financial_profile.total_cash_and_investments, 5216200000, "ISRG total cash and investments must be $5,216,200,000");
+assert.strictEqual(isrg.financial_profile.selected_share_basis.value, 357300000, "ISRG diluted shares must be 357,300,000");
+assert.strictEqual(isrg.valuation.reference_price, 426.70, "ISRG reference price must be $426.70");
+assert.strictEqual(isrg.valuation.solved_5y_cagr_pct, 36.87, "ISRG solved CAGR must be 36.87%");
+assert.strictEqual(isrg.valuation.roundtrip_value, 426.66, "ISRG roundtrip value must be 426.66");
+assert.strictEqual(isrg.valuation.roundtrip_delta_cents, 3.73, "ISRG roundtrip delta must be 3.73 cents");
+assert.ok(!isrg.central_assessment.presentation_summary.includes("unassailable"), "ISRG must not use hyperbolic language 'unassailable'");
+assert.ok(isrg.central_assessment.strongest_supporting_evidence.includes("85%"), "ISRG must state 85% recurring revenue definition");
+assert.ok(isrg.source_evidence_tracing.selection_rationale.why_this_business, "ISRG must answer why_this_business");
+
+// DECK
+const deck = draftData.dossiers["DECK"];
+assert.ok(deck, "DECK draft dossier must exist in staging snapshot");
+assert.ok(deck.source_evidence_tracing, "DECK must include explicit source_evidence_tracing");
+assert.strictEqual(deck.financial_profile.selected_share_basis.measurement_period, expectedQ2Period, "DECK share basis measurement period must be Q2");
+assert.strictEqual(deck.source_evidence_tracing.shares_outstanding.measurement_period, expectedQ2Period, "DECK source tracing share measurement period must be Q2");
+assert.strictEqual(deck.financial_profile.is_zero_debt, true, "DECK is_zero_debt must be true");
+assert.strictEqual(deck.financial_profile.total_financial_debt, 0, "DECK total_financial_debt must be 0");
+assert.strictEqual(deck.financial_profile.revenue, 5527289000, "DECK TTM revenue must be $5,527,289,000");
+assert.strictEqual(deck.financial_profile.operating_income, 1252917000, "DECK TTM operating income must be $1,252,917,000");
+assert.strictEqual(deck.financial_profile.operating_margin_pct, 22.67, "DECK operating margin must be 22.67%");
+assert.strictEqual(deck.financial_profile.total_cash_and_investments, 1602589000, "DECK total cash must be $1,602,589,000");
+assert.strictEqual(deck.financial_profile.selected_share_basis.value, 138559000, "DECK diluted shares must be 138,559,000");
+assert.strictEqual(deck.valuation.reference_price, 85.72, "DECK reference price must be $85.72");
+assert.strictEqual(deck.valuation.solved_5y_cagr_pct, -2.34, "DECK solved CAGR must be -2.34%");
+assert.strictEqual(deck.valuation.roundtrip_value, 85.72, "DECK roundtrip value must be 85.72");
+assert.strictEqual(deck.valuation.roundtrip_delta_cents, 0.05, "DECK roundtrip delta must be 0.05 cents");
+assert.ok(!deck.central_assessment.strongest_supporting_evidence.includes("market share gains (>25% YoY)"), "DECK must not claim market share gains >25% without data");
+assert.ok(deck.central_assessment.strongest_supporting_evidence.includes("17.3%"), "DECK must cite HOKA DTC +17.3% YoY");
+assert.ok(deck.central_assessment.strongest_supporting_evidence.includes("703.5M"), "DECK must cite verified $703.5M HOKA net sales");
+assert.ok(deck.central_assessment.strongest_supporting_evidence.includes("1,019.5M"), "DECK must cite verified $1,019.5M consolidated net sales");
+for (const stale of ["545.0M", "151.0M", "394.0M", "825.3M"]) {
+  assert.ok(!deck.central_assessment.strongest_supporting_evidence.includes(stale), `DECK must not contain stale figure ${stale}`);
+}
+assert.ok(deck.source_evidence_tracing.selection_rationale.why_this_business, "DECK must answer why_this_business");
+console.log("[OK] Expansion additions (MEDP, ISRG, DECK) deep evidence tracing and share measurement periods verified");
 
 // 6. Zero-Debt vs Funded Debt Invariants Across All 19 Assets
 const zeroDebtCohort = ["DUOL", "MEDP", "DECK", "LULU", "EME", "ANET", "ISRG", "CDNS"];
@@ -166,17 +242,18 @@ for (const sym of ["AAPL", "NVDA", "JPM", "BAC", "UNKNOWN", "MU", "PLTR"]) {
 console.log("[OK] Truly unsupported and excluded symbols (including MU and PLTR) fail-closed to null across both production and draft modes");
 
 // 8. Runtime Behavior & Isolation Branches
-const unselectedDrafts = PILOT_EXPANSION_SYMBOLS.filter(s => s !== "ULTA");
+const publishedAdditions = ["ULTA", "MEDP", "ISRG", "DECK"];
+const unselectedDrafts = PILOT_EXPANSION_SYMBOLS.filter(s => !publishedAdditions.includes(s));
 
 if (!IS_PILOT_DRAFTS_BUILD_ENABLED) {
   // Mode A: Default Production Mode (NEXT_PUBLIC_ENABLE_RESEARCH_PILOT_DRAFTS is unset or false)
-  // Verify ULTA is published as accepted addition
-  assert.strictEqual(isCohortSymbol("ULTA"), true, "ULTA must be in published Quality Watch cohort");
-  const ultaPublished = getOpportunityDossier("ULTA");
-  assert.ok(ultaPublished, "Default getOpportunityDossier(ULTA) must return published dossier");
-  assert.strictEqual(ultaPublished.identity.symbol, "ULTA");
-  assert.strictEqual(ultaPublished.valuation.solved_5y_cagr_pct, 15.45);
-  assert.strictEqual(ultaPublished.valuation.reference_price, 592.94);
+  // Verify published additions are active
+  for (const sym of publishedAdditions) {
+    assert.strictEqual(isCohortSymbol(sym), true, `${sym} must be in published Quality Watch cohort`);
+    const publishedDossier = getOpportunityDossier(sym);
+    assert.ok(publishedDossier, `Default getOpportunityDossier(${sym}) must return published dossier`);
+    assert.strictEqual(publishedDossier.identity.symbol, sym);
+  }
 
   // Verify unselected draft additions remain isolated
   for (const sym of unselectedDrafts) {
@@ -187,9 +264,9 @@ if (!IS_PILOT_DRAFTS_BUILD_ENABLED) {
     const draftAttempt = getPilotDraftDossier(sym);
     assert.strictEqual(draftAttempt, null, `getPilotDraftDossier(${sym}) must return null when build flag disabled`);
   }
-  assert.strictEqual(listOpportunityCohort().length, 3, "listOpportunityCohort must return exactly 3 published Quality Watch companies (FIX, DUOL, ULTA)");
-  assert.strictEqual(listPilotDraftCohort().length, 3, "listPilotDraftCohort must fall back to 3 companies when drafts disabled");
-  console.log("[OK] Production baseline isolation verified: unselected draft additions return null from all accessors while ULTA is published");
+  assert.strictEqual(listOpportunityCohort().length, 6, "listOpportunityCohort must return exactly 6 published Quality Watch companies (FIX, DUOL, ULTA, MEDP, ISRG, DECK)");
+  assert.strictEqual(listPilotDraftCohort().length, 6, "listPilotDraftCohort must fall back to 6 companies when drafts disabled");
+  console.log("[OK] Production baseline isolation verified: unselected draft additions return null from all accessors while additions are published");
 
   // Mode B: Execute Subprocess with NEXT_PUBLIC_ENABLE_RESEARCH_PILOT_DRAFTS="true" to verify preview branch
   console.log("Spawning subprocess to verify preview mode under NEXT_PUBLIC_ENABLE_RESEARCH_PILOT_DRAFTS=true...");

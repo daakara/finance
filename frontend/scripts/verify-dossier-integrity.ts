@@ -155,7 +155,7 @@ function verifySnapshotIntegrity() {
     process.exit(1);
   }
 
-  const expectedPublishedSymbols = ["FIX", "DUOL", "ULTA"];
+  const expectedPublishedSymbols = ["FIX", "DUOL", "ULTA", "MEDP", "ISRG", "DECK"];
   assertArrayEquals(pubManifest.published_symbols, expectedPublishedSymbols, "Published symbols mismatch in manifest");
 
   const ulta = pubManifest.accepted_additions?.ULTA;
@@ -169,6 +169,64 @@ function verifySnapshotIntegrity() {
   }
   if (ulta.financial_profile.is_zero_debt !== false || ulta.financial_profile.total_financial_debt !== 339578000.0) {
     console.error("❌ ULTA Note 7 debt in published watch manifest failed parity check");
+    process.exit(1);
+  }
+
+  const medp = pubManifest.accepted_additions?.MEDP;
+  if (!medp) {
+    console.error("❌ FATAL: MEDP missing from published watch manifest accepted_additions");
+    process.exit(1);
+  }
+  if (medp.valuation.reference_price !== 618.47 || medp.valuation.solved_5y_cagr_pct !== 29.41) {
+    console.error("❌ MEDP valuation in published watch manifest failed parity check");
+    process.exit(1);
+  }
+  if (medp.financial_profile.is_zero_debt !== true || medp.financial_profile.total_financial_debt !== 0.0) {
+    console.error("❌ MEDP zero-debt status failed parity check");
+    process.exit(1);
+  }
+  if (medp.financial_profile.cash_and_equivalents !== 502688000.0) {
+    console.error("❌ MEDP cash failed parity check");
+    process.exit(1);
+  }
+
+  const isrg = pubManifest.accepted_additions?.ISRG;
+  if (!isrg) {
+    console.error("❌ FATAL: ISRG missing from published watch manifest accepted_additions");
+    process.exit(1);
+  }
+  if (isrg.valuation.reference_price !== 426.70 || isrg.valuation.solved_5y_cagr_pct !== 36.87) {
+    console.error("❌ ISRG valuation in published watch manifest failed parity check");
+    process.exit(1);
+  }
+  if (isrg.financial_profile.is_zero_debt !== true || isrg.financial_profile.total_financial_debt !== 0.0) {
+    console.error("❌ ISRG zero-debt status failed parity check");
+    process.exit(1);
+  }
+  if (isrg.financial_profile.total_cash_and_investments !== 5216200000.0) {
+    console.error("❌ ISRG cash and investments failed parity check");
+    process.exit(1);
+  }
+
+  const deck = pubManifest.accepted_additions?.DECK;
+  if (!deck) {
+    console.error("❌ FATAL: DECK missing from published watch manifest accepted_additions");
+    process.exit(1);
+  }
+  if (deck.valuation.reference_price !== 85.72 || deck.valuation.solved_5y_cagr_pct !== -2.34) {
+    console.error("❌ DECK valuation in published watch manifest failed parity check");
+    process.exit(1);
+  }
+  if (deck.financial_profile.is_zero_debt !== true || deck.financial_profile.total_financial_debt !== 0.0) {
+    console.error("❌ DECK zero-debt status failed parity check");
+    process.exit(1);
+  }
+  if (deck.financial_profile.cash_and_equivalents !== 1602589000.0) {
+    console.error("❌ DECK cash failed parity check");
+    process.exit(1);
+  }
+  if (deck.financial_profile.operating_lease_liabilities_asc842 !== 472334000.0) {
+    console.error("❌ DECK lease liabilities failed parity check");
     process.exit(1);
   }
   if (!pubManifest.excluded_historical_symbols?.includes("MU") || !pubManifest.excluded_draft_symbols?.includes("PLTR")) {

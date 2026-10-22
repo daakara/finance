@@ -77,6 +77,15 @@ export interface OpportunityDossierIdentity {
   sec_edgar_browse_url: string | null;
 }
 
+export interface SelectionRationale {
+  why_this_business?: string;
+  why_research_now?: string;
+  price_requirements?: string;
+  differentiated_view?: string;
+  assessment_changes?: string;
+  queue_priority?: string;
+}
+
 export interface OpportunityCentralAssessment {
   disposition: "WATCH_CONDITIONS" | "NO_SUPPORTED_OPPORTUNITY" | "RESEARCH_FURTHER" | string;
   disposition_label: string;
@@ -88,6 +97,7 @@ export interface OpportunityCentralAssessment {
   price_watch_condition: string;
   confidence_assessment: string;
   financing_dilution_exposure?: string;
+  selection_rationale?: SelectionRationale | null;
 }
 
 export interface OpportunityValuation {
@@ -143,6 +153,8 @@ export interface OpportunityFinancialProfile {
   bridge_note?: string | null;
   selected_share_basis?: SelectedShareBasis;
   primary_filings: PrimaryFilingReference[];
+  source_evidence_tracing?: Record<string, any>;
+  selection_rationale?: SelectionRationale | null;
 }
 
 export interface OpportunityMonitoring {
@@ -165,6 +177,9 @@ export interface OpportunityDossier {
   financial_profile: OpportunityFinancialProfile;
   monitoring: OpportunityMonitoring;
   navigation: OpportunityNavigation;
+  publication_metadata?: Record<string, any>;
+  source_evidence_tracing?: Record<string, any>;
+  selection_rationale?: SelectionRationale | null;
 }
 
 export interface OpportunityCohortItem {
@@ -217,6 +232,8 @@ export interface PublishedWatchManifestFile {
   excluded_draft_symbols: string[];
   accepted_additions: Record<string, OpportunityDossier>;
   additions_provenance: Record<string, any>;
+  remaining_expansion_queue?: string[];
+  queue_policy?: string;
 }
 
 export const ODP05_COHORT_SYMBOLS = ["FIX", "DUOL", "IREN", "CORZ", "MU"] as const;
