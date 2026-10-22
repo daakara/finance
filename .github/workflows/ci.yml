@@ -189,6 +189,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Warm Up Render Backend
+      if: env.ENABLE_LEGACY_RENDER_WARMUP == 'true'
       run: |
         echo "Pinging Render backend API health endpoint..."
         curl -s -X POST "https://finance-backend-api-qis0.onrender.com/api/v1/cache/clear" || echo "Backend warming up..."

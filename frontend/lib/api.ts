@@ -12,9 +12,26 @@ export type { CanonicalInstrumentEnvelope };
 const DEFAULT_ORIGIN_API_URL = "https://web-production-e370b.up.railway.app/api/v1";
 const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || DEFAULT_ORIGIN_API_URL;
 
+/**
+ * Determines whether the current browser host is a verified Cloudflare Pages deployment
+ * of ARX Terminal (canonical arxterminal.com, www.arxterminal.com, or the official
+ * finance-xp8.pages.dev project domain and its deployment-preview subdomains).
+ */
+export function isCloudflarePagesHost(hostname: string): boolean {
+  if (!hostname) return false;
+  if (hostname === "arxterminal.com" || hostname === "www.arxterminal.com") {
+    return true;
+  }
+  if (hostname === "finance-xp8.pages.dev" || hostname.endsWith(".finance-xp8.pages.dev")) {
+    return true;
+  }
+  return false;
+}
+
 export function getApiBaseUrl(): string {
-  // In production browser environments on the canonical domain, route through Cloudflare edge proxy to shield origin
-  if (typeof window !== "undefined" && window.location.hostname.includes("arxterminal.com")) {
+  // In Cloudflare-hosted browser environments (canonical domain or official finance-xp8.pages.dev preview deployments),
+  // route through same-origin Cloudflare edge proxy (/api/backend) to shield the origin and satisfy Content Security Policy.
+  if (typeof window !== "undefined" && isCloudflarePagesHost(window.location.hostname)) {
     return "/api/backend";
   }
   return RAW_API_URL.endsWith("/api/v1")
@@ -1257,7 +1274,7 @@ export async function fetchAssetAnalytics(
     const cleanRole = userRole === "DAY_TRADER" ? "DAY_TRADER" : "LONG_TERM";
     const res = await fetch(`${baseUrl}/analytics/${encodeURIComponent(symbol)}?period=${period}&interval=${interval}&user_role=${cleanRole}`, {
       headers: ARX_API_HEADERS,
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(6000),
     });
     if (res.ok) {
       const data = await res.json();
