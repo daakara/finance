@@ -16,7 +16,7 @@ flowchart LR
     subgraph TMDX_Model["TMDX: Organ Perfusion & Aviation Logistics Transformation"]
         OCS["Clinical Platform:<br/>Organ Care System (Warm Perfusion)<br/>FDA Approvals: Lung, Heart, Liver"]
         NOP["Logistics Transformation:<br/>National OCS Program (NOP)<br/>Dedicated Aviation Transport Network"]
-        Cash["Financial Delivery (FY25):<br/>$605.5M Rev (+37.1%) | $192.8M CFO | $133.6M FCF<br/>Debt Bridge: $472.7M Cash vs $867.7M Total Debt & Leases"]
+        Cash["Financial Delivery (FY25):<br/>$605.5M Rev (+37.1%) | $192.8M CFO | $133.6M FCF<br/>Debt Bridge (Q2 26): Net Debt +$395.0M incl. leases / +$47.3M excl. leases"]
     end
     OCS --> NOP --> Cash
 ```
@@ -33,22 +33,22 @@ flowchart LR
 - **Research Maturity:** `EXPLORATORY_DISCOVERY_CANDIDATE`
 - **Opportunity Mechanism:** `OPERATING_MODEL_INFLECTION`
 - **Expectation Gap Status:** `VALUATION_EXPECTATION_GAP_UNRESOLVED` (Dated consensus growth projections not independently established via verified primary broker feeds; unresolved expectations are not used as an established reason to alter queue priority).
-- **Financial Resilience:** `OPERATIONALLY_SELF_FUNDING_WITH_FINANCING_LEASES` (Operating cash flow of $192.8M covers cash PP&E purchases of $59.3M, but the balance sheet carries $460.0M principal convertible notes, $60.0M other borrowings, and $347.7M aircraft finance lease liabilities against $472.7M gross cash and equivalents, resulting in a net debt position of -$395.0M including finance leases or -$47.3M excluding leases).
+- **Financial Resilience:** `OPERATIONALLY_SELF_FUNDING_WITH_FINANCING_LEASES` (Operating cash flow of $192.8M covers cash PP&E purchases of $59.3M; under the standard convention where net debt equals included debt minus cash, net debt is +$47.321M excluding finance leases and +$394.981M including finance leases).
 - **Public Publication Eligibility:** `INTERNAL_PILOT_RECORD_NOT_ELIGIBLE` (Strictly internal exploratory research record; not authorized for public Quality Watch publication).
 
 ### 3. Observable Business Change
 - **Filing References:**
   - *Form 10-K FY2025:* Filed February 24, 2026 (Accession: `0001193125-26-067032`, [SEC EDGAR Archives URL](https://www.sec.gov/Archives/edgar/data/1756262/000119312526067032/tmdx-20251231.htm)). Item 7 MD&A; Item 8 Consolidated Statements of Operations (p. 74), Consolidated Balance Sheets (p. 73), and Consolidated Statements of Cash Flows (p. 77).
-  - *Form 10-Q Q2 2026:* Filed August 4, 2026 (Accession: `0001193125-26-332843`, [SEC EDGAR Archives URL](https://www.sec.gov/Archives/edgar/data/1756262/000119312526332843/tmdx-20260630.htm)). Item 1 Condensed Financial Statements (p. 3-6) and Note 7 (Debt and Lease Obligations).
+  - *Form 10-Q Q2 2026:* Filed August 4, 2026 (Accession: `0001193125-26-332843`, [SEC EDGAR Archives URL](https://www.sec.gov/Archives/edgar/data/1756262/000119312526332843/tmdx-20260630.htm)). Item 1 Condensed Consolidated Financial Statements (p. 3-6) and Note 7 (Debt and Lease Obligations).
 - **Reported Facts:**
   - Consolidated FY2025 revenue reached **$605.494M** ($605.5M), expanding 37.1% YoY from $441.527M in FY2024 and 150.6% from $241.625M in FY2023.
   - Cost of revenue was $242.688M, yielding gross profit of **$362.806M** (59.9% gross margin), reflecting the blended economics of medical disposable cassettes and aviation logistics services.
   - Operating income expanded to **$108.583M** (17.9% operating margin). Operating profitability was achieved in FY2024 ($37.496M operating income, 8.5% margin) and accelerated in FY2025, rather than inflecting for the first time in FY2025.
   - Net income was **$190.291M**, which included an $82.769M net tax benefit driven by a **$103.3M valuation allowance release** on deferred tax assets in Q4 2025 (pre-tax income was $107.522M).
-  - Operating cash flow (CFO) was **$192.840M**, covering cash purchases of PP&E of **$59.251M** to generate Free Cash Flow of **$133.589M** (69.3% conversion of CFO). Non-cash aircraft additions financed under finance leases were $251.2M in FY2025, meaning gross fleet additions exceeded cash PP&E.
+  - Operating cash flow (CFO) was **$192.840M**, covering cash purchases of PP&E of **$59.251M** to generate Free Cash Flow of **$133.589M** (69.3% conversion of CFO).
   - Momentum sustained in 1H 2026: Q2 2026 revenue reached **$189.9M** (+21% YoY), with service revenue (NOP logistics) reaching **$78.8M** (41.5% of sales) and GAAP net income reaching **$14.7M**.
-  - Total cash and cash equivalents stood at **$472.675M** as of June 30, 2026.
-  - Debt and lease obligations as of June 30, 2026 comprised $459.996M principal of 1.50% convertible senior notes, $60.000M of other borrowings, and $347.660M in finance lease liabilities (aircraft), for total funded debt and finance leases of **$867.656M**. Net debt position was -$47.321M excluding finance leases, or -$394.981M including finance leases.
+  - In the six months ended June 30, 2026, noncash finance-lease additions of right-of-use aircraft were **$340.040M** (as disclosed in the interim statement of cash flows supplemental disclosure). Finance lease liabilities outstanding at June 30, 2026 totaled **$347.660M**.
+  - Liquidity and Debt Bridge (as of June 30, 2026): Gross cash and equivalents was **$472.675M**. Principal debt comprises $459.996M of 1.50% convertible senior notes and $60.000M of other borrowings ($519.996M funded debt excl. leases). Under the standard convention (net debt = included debt minus cash), net debt excluding finance leases is **+$47.321M**. Including finance lease liabilities of $347.660M ($867.656M debt and finance leases), net debt is **+$394.981M**.
 
 ### 4. Economic Mechanism & Value Capture
 - **Mechanism:** Traditional static cold storage (packing donor organs on ice in coolers) causes ischemic cell death within 4-6 hours, resulting in severe organ wastage (~70-80% of donor lungs and hearts are discarded). TransMedics' proprietary warm machine perfusion (Organ Care System - OCS) keeps donor organs functioning at normal body temperature, perfusing them with oxygenated, nutrient-enriched blood.
@@ -56,15 +56,18 @@ flowchart LR
 - **Value Capture Defensibility:** High switching costs. Once transplant center surgical teams incorporate NOP protocols into clinical workflows, returning to static cold storage or coordinating fragmented third-party charters introduces operational liability.
 
 ### 5. Balance Sheet & Downside Resilience
-- **Liquidity & Debt Structure:**
-  - Cash and cash equivalents: **$472.675M** as of June 30, 2026.
-  - Convertible Senior Notes (1.50% due 2028): **$459.996M** principal ($454.4M carrying value).
-  - Other Borrowings: **$60.000M** principal ($58.7M carrying value).
-  - Finance Lease Liabilities (Aircraft): **$347.660M** ($28.3M current, $319.4M noncurrent).
-  - Total Debt + Finance Leases: **$867.656M**.
-  - Net Position: Cash does not exceed total contractual debt obligations (-$395.0M net debt incl. leases; -$47.3M excl. leases). Prior characterization as "net cash positive" is rejected.
+- **Liquidity & Debt Structure (June 30, 2026):**
+  - Cash and cash equivalents: **$472.675M**.
+  - Convertible Senior Notes (1.50% due 2028): **$459.996M** principal ($454.260M carrying value).
+  - Other Borrowings: **$60.000M** principal ($20.0M current portion + $39.743M noncurrent carrying value).
+  - Funded Debt (excluding finance leases): **$519.996M** principal.
+  - Net Debt (excluding finance leases): **+$47.321M** ($519.996M - $472.675M).
+  - Finance Lease Liabilities: **$347.660M** (noncurrent liability for right-of-use aircraft).
+  - Total Debt and Finance Leases: **$867.656M**.
+  - Net Debt (including finance leases): **+$394.981M** ($867.656M - $472.675M).
+  - *Accounting Note:* Net debt is positive because included obligations exceed liquid cash. Positive CFO covers cash PP&E, but aircraft fleet expansion introduces substantial financing lease commitments.
 - **Dilution & SBC:** FY2025 stock-based compensation was $44.5M (7.3% of revenue). Weighted average diluted share count stood at 36.2M shares.
-- **Downside Under Slowdown:** High gross margin contribution from single-use OCS disposable cassettes; however, owned aircraft fleet maintenance and lease service create fixed operating and debt-service commitments.
+- **Downside Under Slowdown:** High gross margin contribution from single-use OCS disposable cassettes; however, owned aircraft fleet maintenance and lease debt service create fixed operating commitments.
 
 ### 6. Price & Expectation Disaggregation
 - **Market Pricing Context:** Valuation / expectation gap unresolved (dated market multiple and consensus expectations not independently established via primary broker feeds; unresolved expectations are not used as an established reason to alter queue priority).
@@ -100,7 +103,7 @@ flowchart LR
     subgraph ETN_Model["ETN: High-Voltage Electrical Infrastructure & Datacenter Enabler"]
         Grid["Macro Bottleneck:<br/>Utility Interconnect & Transformer Deficit<br/>3-5 Year Lead Times for Substation Gear"]
         ETN_Pos["Competitive Position:<br/>Electrical Americas & Global Market Share<br/>Proprietary Switchgear Lineups & UPS"]
-        Cash_Gen["Consolidated Results (FY25):<br/>$27.4B Net Sales (+10.1%) | $4,472M CFO | $3,553M FCF<br/>79.5% FCF Conversion | 'A-' Credit | $9.1B Net Debt"]
+        Cash_Gen["Consolidated Results (FY25):<br/>$27.4B Net Sales (+10.1%) | $4,472M CFO | $3,553M FCF<br/>79.5% FCF Conversion | 'A-' Credit | Net Debt +$9.1B"]
     end
     Grid --> ETN_Pos --> Cash_Gen
 ```
@@ -117,7 +120,7 @@ flowchart LR
 - **Research Maturity:** `ACTIVE_QUALITY_WATCH_CANDIDATE`
 - **Opportunity Mechanism:** `VALUE_CHAIN_STRUCTURAL_SHIFT`
 - **Expectation Gap Status:** `VALUATION_EXPECTATION_GAP_UNRESOLVED` (Dated consensus expectations not independently established via primary broker feeds; unresolved expectations are not used as an established reason to alter queue priority).
-- **Financial Resilience:** `INVESTMENT_GRADE_RESILIENT` (Net debt of $9,092M represents ~1.6x EBITDA; $4,472M operating cash flow; 'A-' / 'A3' credit rating).
+- **Financial Resilience:** `INVESTMENT_GRADE_RESILIENT` (Net debt of +$9,092M represents ~1.6x EBITDA; $4,472M operating cash flow; 'A-' / 'A3' credit rating).
 - **Public Publication Eligibility:** `INTERNAL_PILOT_RECORD_NOT_ELIGIBLE` (Internal research evaluation; prospective public candidate queue only).
 
 ### 3. Observable Business Change
@@ -128,10 +131,11 @@ flowchart LR
   - Consolidated FY2025 net sales reached **$27,448M** (+10.1% YoY, with 8% organic sales growth).
   - Cost of products sold was $17,131M, yielding gross profit of **$10,317M** (37.6% gross margin).
   - Electrical Americas net sales reached **$13,276M** with segment operating profit of **$3,972M** (29.9% segment operating margin), driven by data center and utility megaprojects.
-  - Consolidated segment operating profit was **$6,713M** (24.5% margin), and net income attributable to Eaton ordinary shareholders reached **$4,087M** (consolidated net income $4,090M).
+  - Consolidated **total segment operating profit** was **$6,713M** (24.5% segment operating margin), which is before corporate reconciling items (not consolidated GAAP operating income).
+  - GAAP net income attributable to Eaton ordinary shareholders reached **$4,087M** (consolidated net income $4,090M).
   - Operating cash flow reached **$4,472M**, with capital expenditures for PP&E of **$919M** (3.3% of net sales), delivering Free Cash Flow of **$3,553M** (**79.5% FCF / CFO conversion**).
   - Record multi-year backlog in Electrical Americas with order intake accelerating across data centers, electrical grid infrastructure, and industrial megaprojects.
-  - Total debt stood at **$9,895M** ($1M short term, $1,136M current portion of long-term debt, $8,758M noncurrent long-term debt). Cash and short-term investments totaled **$803M** ($622M cash and equivalents + $181M short-term investments), resulting in net debt of **$9,092M** (~1.6x EBITDA).
+  - Total debt stood at **$9,895M** ($1M short term, $1,136M current portion of long-term debt, $8,758M noncurrent long-term debt). Cash and short-term investments totaled **$803M** ($622M cash and equivalents + $181M short-term investments), resulting in net debt of **+$9,092M** (~1.6x EBITDA).
 
 ### 4. Economic Mechanism & Value Capture
 - **Mechanism:** Artificial intelligence clusters demand unprecedented localized electrical power (100 MW to 1 GW per campus). The critical path bottleneck is not the GPU chip alone, but the high-voltage substation switchgear, medium-voltage distribution transformers, busway trunking, and battery UPS architectures required to deliver grid power to compute racks.
@@ -140,7 +144,7 @@ flowchart LR
 
 ### 5. Balance Sheet & Downside Resilience
 - **Debt Profile & Covenants:**
-  - Total Debt: **$9,895M**; Cash and Short-Term Investments: **$803M** (Net debt: **$9,092M**).
+  - Total Debt: **$9,895M**; Cash and Short-Term Investments: **$803M** (Net debt: **+$9,092M**).
   - Net debt / EBITDA remained conservative at ~1.6x, supporting investment-grade credit ratings (`A-` by S&P / `A3` by Moody's).
   - Debt maturities are staggered across long-term horizons, mitigating near-term refinancing cliffs.
 - **Downside Under Cyclical Pause:** Broad exposure across aerospace, vehicle, e-mobility, and electrical utility end-markets provides diversification against localized datacenter construction delays.
@@ -178,8 +182,8 @@ flowchart LR
 | **Market Role** | Organ Perfusion Logistics | Clinical Trial CRO | Electrical Power Distribution | White-Space Datacenter Cooling |
 | **Moat Basis** | Proprietary OCS + Owned Fleet | Full-Service Physician Model | Entrenched Spec-In Switchgear | Liquid Cooling & Precision Power |
 | **Revenue (FY25)** | $605.5M (+37.1%) | $2,059.2M (+9.2%) | $27,448.0M (+10.1%) | $8,200.0M (+19.5%) |
-| **Operating Margin** | 17.9% ($108.6M) | 21.6% | 24.5% segment / 29.9% Americas | 18.5% |
+| **Operating Margin** | 17.9% GAAP Op Income ($108.6M) | 21.6% | 24.5% Total Segment ($6,713M) / 29.9% Americas | 18.5% |
 | **FCF / CFO Conv.** | 69.3% ($133.6M / $192.8M) | 97.5% | 79.5% ($3,553M / $4,472M) | 88.0% |
-| **Funded Debt / Net Cash** | Net Debt -$395.0M incl. leases | Pristine Net Cash (+$480M) | 1.6x Net Debt / EBITDA ($9,092M) | 1.9x Net Debt / EBITDA |
+| **Funded Debt / Net Debt** | Net Debt +$395.0M incl. leases / +$47.3M excl. leases | Net Cash -$480M | Net Debt +$9,092M (1.6x EBITDA) | Net Debt +$3,950M (1.9x EBITDA) |
 | **Customer Concentration**| Dispersed US Transplant Centers | Dispersed Biotech / Pharma | Broad Global Industrial Base | High Hyperscaler Exposure |
 | **Queue Priority** | `PRIORITIZED_FOR_MONITORING` | `PUBLISHED_QUALITY_WATCH` | `ACTIVE_QUALITY_WATCH_CANDIDATE`| `ACTIVE_QUALITY_WATCH_CANDIDATE`|

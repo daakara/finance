@@ -100,7 +100,7 @@
       },
       "value_capture": {
         "competitive_moat": "FDA-approved multi-organ warm machine perfusion platform (OCS Heart, Lung, Liver) integrated with dedicated National OCS Program aviation logistics network, creating high transplant center switching costs.",
-        "capex_and_reinvestment": "Cash PP&E purchases of $59.3M in FY25 supplemented by $251.2M of aircraft additions financed through finance lease obligations.",
+        "capex_and_reinvestment": "Cash PP&E purchases were $59.3M in FY2025. In the six months ended June 30, 2026, noncash finance-lease additions of right-of-use aircraft were $340.0M, resulting in a finance lease liability of $347.7M as of June 30, 2026.",
         "dilution_and_sbc": "FY2025 stock-based compensation was $44.5M (7.3% of revenue)."
       },
       "price_and_expectations": {
@@ -116,12 +116,13 @@
           "cash_and_equivalents_usd_m": 472.675,
           "convertible_notes_principal_usd_m": 459.996,
           "other_borrowings_principal_usd_m": 60.000,
+          "funded_debt_excl_leases_usd_m": 519.996,
           "finance_lease_liabilities_usd_m": 347.660,
           "total_debt_and_leases_usd_m": 867.656,
-          "net_debt_excl_leases_usd_m": -47.321,
-          "net_debt_incl_leases_usd_m": -394.981
+          "net_debt_excl_leases_usd_m": 47.321,
+          "net_debt_incl_leases_usd_m": 394.981
         },
-        "solvency_assessment": "Operating cash flow covers cash PP&E; however, contractual obligations exceed cash reserves (-$395.0M net debt including $347.7M aircraft finance leases; -$47.3M excluding leases). Net cash positive claim is rejected."
+        "solvency_assessment": "Under the standard convention (net debt = included debt obligations minus cash), net debt is +$47.321M excluding finance leases ($519.996M funded debt less $472.675M cash) and +$394.981M including finance leases ($867.656M debt and finance leases less $472.675M cash). Operating cash flow covers cash PP&E, but obligations exceed liquid reserves."
       },
       "assessment_changes": {
         "disconfirmation_criteria": [
@@ -163,8 +164,8 @@
           "fy2025_revenue_usd_m": 27448.0,
           "fy2025_gross_profit_usd_m": 10317.0,
           "fy2025_gross_margin_pct": 37.587,
-          "fy2025_operating_income_usd_m": 6713.0,
-          "fy2025_operating_margin_pct": 24.457,
+          "fy2025_total_segment_operating_profit_usd_m": 6713.0,
+          "fy2025_total_segment_operating_margin_pct": 24.457,
           "fy2025_net_income_usd_m": 4087.0,
           "fy2025_cfo_usd_m": 4472.0,
           "fy2025_capex_usd_m": 919.0,
@@ -195,7 +196,7 @@
           "net_debt_usd_m": 9092.0,
           "net_debt_to_ebitda": 1.6
         },
-        "solvency_assessment": "Investment-grade balance sheet ('A-' / 'A3') with ~1.6x net debt / EBITDA, >14x interest coverage, and staggered multi-decade debt maturities."
+        "solvency_assessment": "Investment-grade balance sheet ('A-' / 'A3') with net debt of +$9,092.0M (~1.6x net debt / EBITDA), >14x interest coverage, and staggered multi-decade debt maturities."
       },
       "assessment_changes": {
         "disconfirmation_criteria": [

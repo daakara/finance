@@ -13,7 +13,7 @@ from verify_discovery_cycle_2 import (
     verify_cycle_2,
     FROZEN_BASELINE_LEDGER_SHA256,
     AUTHORIZED_PUBLISHED_SYMBOLS,
-    CYCLE_2_OFFLINE_ARITHMETIC_FIXTURES
+    CYCLE_2_PRIMARY_SOURCE_FIXTURES
 )
 
 
@@ -22,18 +22,148 @@ class TestEvidenceLedDiscoveryCycle2(unittest.TestCase):
     Verification Suite for Evidence-Led Discovery Cycle 2 (BACKLOG-RESEARCH-EVIDENCE-DISCOVERY-046).
 
     Test Scope & Epistemic Boundaries:
-    - Schema assertions verify internal JSON document structure, not external market validity.
-    - Checksum checks verify file immutability, not predictive investment alpha.
-    - Arithmetic checks reconcile derived metrics to reported components using offline fixtures.
-    - Source reconciliation tests cross-verify primary filings, ledger data, and markdown records.
-    - Negative tests enforce detection of corrupted inputs, incomplete debt bridges, and ungrounded claims.
-    - Separation of internal exploratory research from authorized public Quality Watch publications.
+    - Exercises the real verification path (verify_cycle_2) for both control and mutated cases.
+    - Demonstrates that source fidelity checks reject altered inputs even with internally consistent arithmetic.
+    - Demonstrates enforcement of the standard net-debt sign convention (net debt = debt - cash).
+    - Verifies exclusion of unsupported solved-DCF conditions and metric identity validation.
+    - Enforces invariant immutability and separation of internal research from public manifests.
     """
 
-    def test_cycle_2_verification(self):
+    def test_a_corrected_control_records_pass(self):
+        """A. Corrected control records pass through the real verifier."""
         res = verify_cycle_2(repo_root)
-        self.assertTrue(res["passed"], f"Verification failed: {res['errors']}")
-        self.assertGreaterEqual(res["records_verified"], 1)
+        self.assertTrue(res["passed"], f"Verification failed with errors: {res.get('errors')}")
+        self.assertEqual(res["records_verified"], 2)
+
+    def test_b_consistently_altered_financial_inputs_fail(self):
+        """B. Consistently altered financial inputs fail: arithmetic consistent but source fidelity broken."""
+        ledger_path = repo_root / "docs" / "research" / "discovery_cycle_2" / "discovery_cycle_2_ledger.json"
+        with open(ledger_path, "r", encoding="utf-8") as f:
+            ledger = json.load(f)
+
+        mutated = copy.deepcopy(ledger)
+        fin = mutated["deep_investigations"]["TMDX"]["economic_significance"]["financial_reconciliation"]
+        # Consistent arithmetic: CFO=999, Capex=499, FCF=500, Conv=50.05%
+        fin["fy2025_cfo_usd_m"] = 999.0
+        fin["fy2025_capex_usd_m"] = 499.0
+        fin["fy2025_fcf_usd_m"] = 500.0
+        fin["fy2025_fcf_cfo_conversion_pct"] = round((500.0 / 999.0) * 100, 2)
+
+        res = verify_cycle_2(repo_root, ledger_data=mutated)
+        self.assertFalse(res["passed"], "Real verifier must fail on altered reported CFO/Capex despite consistent arithmetic")
+        self.assertTrue(
+            any("does not match primary source fixture" in err for err in res["errors"]),
+            f"Expected source fidelity mismatch error, got: {res['errors']}"
+        )
+
+    def test_c_missing_other_borrowings_fails(self):
+        """C. Missing other borrowings fail: omit TMDX other borrowing component."""
+        ledger_path = repo_root / "docs" / "research" / "discovery_cycle_2" / "discovery_cycle_2_ledger.json"
+        with open(ledger_path, "r", encoding="utf-8") as f:
+            ledger = json.load(f)
+
+        mutated = copy.deepcopy(ledger)
+        bridge = mutated["deep_investigations"]["TMDX"]["downside_and_survival"]["debt_bridge_q2_2026"]
+        del bridge["other_borrowings_principal_usd_m"]
+
+        res = verify_cycle_2(repo_root, ledger_data=mutated)
+        self.assertFalse(res["passed"], "Real verifier must fail when other borrowings component is missing")
+        self.assertTrue(
+            any("missing required field: other_borrowings_principal_usd_m" in err for err in res["errors"]),
+            f"Expected missing field error, got: {res['errors']}"
+        )
+
+    def test_d_incorrect_other_borrowings_fails(self):
+        """D. Incorrect other borrowings fail: set to zero and consistently recalculate totals."""
+        ledger_path = repo_root / "docs" / "research" / "discovery_cycle_2" / "discovery_cycle_2_ledger.json"
+        with open(ledger_path, "r", encoding="utf-8") as f:
+            ledger = json.load(f)
+
+        mutated = copy.deepcopy(ledger)
+        bridge = mutated["deep_investigations"]["TMDX"]["downside_and_survival"]["debt_bridge_q2_2026"]
+        bridge["other_borrowings_principal_usd_m"] = 0.0
+        # Consistently recalculate dependent arithmetic
+        bridge["funded_debt_excl_leases_usd_m"] = 459.996
+        bridge["total_debt_and_leases_usd_m"] = 807.656
+        bridge["net_debt_excl_leases_usd_m"] = -12.679
+        bridge["net_debt_incl_leases_usd_m"] = 334.981
+
+        res = verify_cycle_2(repo_root, ledger_data=mutated)
+        self.assertFalse(res["passed"], "Real verifier must fail when other borrowings value is altered")
+        self.assertTrue(
+            any("TMDX other borrowings mismatch" in err for err in res["errors"]),
+            f"Expected other borrowings fixture mismatch error, got: {res['errors']}"
+        )
+
+    def test_e_reversed_net_debt_signs_fail(self):
+        """E. Reversed net-debt signs fail: negative net debt asserted despite obligations exceeding cash."""
+        ledger_path = repo_root / "docs" / "research" / "discovery_cycle_2" / "discovery_cycle_2_ledger.json"
+        with open(ledger_path, "r", encoding="utf-8") as f:
+            ledger = json.load(f)
+
+        mutated = copy.deepcopy(ledger)
+        bridge = mutated["deep_investigations"]["TMDX"]["downside_and_survival"]["debt_bridge_q2_2026"]
+        # Invert sign to negative despite total debt ($867.7M) exceeding cash ($472.7M)
+        bridge["net_debt_incl_leases_usd_m"] = -394.981
+
+        res = verify_cycle_2(repo_root, ledger_data=mutated)
+        self.assertFalse(res["passed"], "Real verifier must fail on reversed net debt sign")
+        self.assertTrue(
+            any("Sign reversal error" in err for err in res["errors"]),
+            f"Expected sign reversal error, got: {res['errors']}"
+        )
+
+    def test_f_correct_positive_net_debt_passes(self):
+        """F. Correct positive net debt passes without disqualifying indebted companies."""
+        ledger_path = repo_root / "docs" / "research" / "discovery_cycle_2" / "discovery_cycle_2_ledger.json"
+        with open(ledger_path, "r", encoding="utf-8") as f:
+            ledger = json.load(f)
+
+        bridge_tmdx = ledger["deep_investigations"]["TMDX"]["downside_and_survival"]["debt_bridge_q2_2026"]
+        bridge_etn = ledger["deep_investigations"]["ETN"]["downside_and_survival"]["debt_bridge_fy2025"]
+
+        # Standard convention: net debt = debt - cash. When debt > cash, net debt is positive.
+        self.assertEqual(bridge_tmdx["net_debt_incl_leases_usd_m"], 394.981)
+        self.assertEqual(bridge_tmdx["net_debt_excl_leases_usd_m"], 47.321)
+        self.assertEqual(bridge_etn["net_debt_usd_m"], 9092.0)
+
+        res = verify_cycle_2(repo_root, ledger_data=ledger)
+        self.assertTrue(res["passed"], "Valid positive net debt must pass cleanly without arbitrary penalty")
+
+    def test_g_unsupported_solved_dcf_assertions_fail(self):
+        """G. Unsupported solved-DCF assertions fail through the real verification path."""
+        ledger_path = repo_root / "docs" / "research" / "discovery_cycle_2" / "discovery_cycle_2_ledger.json"
+        with open(ledger_path, "r", encoding="utf-8") as f:
+            ledger = json.load(f)
+
+        mutated = copy.deepcopy(ledger)
+        exp = mutated["deep_investigations"]["TMDX"]["price_and_expectations"]["expectation_disaggregation"]
+        exp["reverse_dcf_solved_condition"] = "High volume expansion across US donor pools required to justify 10% hurdle rate"
+
+        res = verify_cycle_2(repo_root, ledger_data=mutated)
+        self.assertFalse(res["passed"], "Real verifier must fail when solved DCF assertions lack explicit model evidence")
+        self.assertTrue(
+            any("asserts reverse_dcf_solved_condition without explicit qualification" in err for err in res["errors"]),
+            f"Expected ungrounded solved DCF error, got: {res['errors']}"
+        )
+
+    def test_h_eaton_total_segment_profit_identity_validation(self):
+        """H. Enforce correct metric identity: reject total segment operating profit labeled as operating income."""
+        ledger_path = repo_root / "docs" / "research" / "discovery_cycle_2" / "discovery_cycle_2_ledger.json"
+        with open(ledger_path, "r", encoding="utf-8") as f:
+            ledger = json.load(f)
+
+        # Mutate to old defect: storing segment profit as operating income
+        mutated = copy.deepcopy(ledger)
+        fin = mutated["deep_investigations"]["ETN"]["economic_significance"]["financial_reconciliation"]
+        fin["fy2025_operating_income_usd_m"] = 6713.0
+
+        res = verify_cycle_2(repo_root, ledger_data=mutated)
+        self.assertFalse(res["passed"], "Real verifier must reject segment profit mislabeled as consolidated operating income")
+        self.assertTrue(
+            any("incorrectly stores total segment operating profit as fy2025_operating_income_usd_m" in err for err in res["errors"]),
+            f"Expected segment profit mislabel error, got: {res['errors']}"
+        )
 
     def test_public_publication_ineligibility(self):
         ledger_path = repo_root / "docs" / "research" / "discovery_cycle_2" / "discovery_cycle_2_ledger.json"
@@ -78,102 +208,18 @@ class TestEvidenceLedDiscoveryCycle2(unittest.TestCase):
             ledger_data = json.load(f)
         records_md = records_path.read_text(encoding="utf-8")
 
-        for sym, fixture in CYCLE_2_OFFLINE_ARITHMETIC_FIXTURES.items():
+        for sym, fixture in CYCLE_2_PRIMARY_SOURCE_FIXTURES.items():
             if sym not in ledger_data["deep_investigations"]:
                 continue
             rec = ledger_data["deep_investigations"][sym]
             fin = rec["economic_significance"]["financial_reconciliation"]
+            annual_comps = fixture["measurement_periods"]["annual_fy2025"]["reported_components"]
 
-            # 1. Match ledger to authoritative primary fixture
             self.assertEqual(rec["cik"], fixture["cik"])
-            self.assertAlmostEqual(fin["fy2025_cfo_usd_m"], fixture["cfo"], places=2)
-            self.assertAlmostEqual(fin["fy2025_capex_usd_m"], fixture["capex"], places=2)
-            self.assertAlmostEqual(fin["fy2025_fcf_usd_m"], fixture["expected_fcf"], places=2)
-            self.assertAlmostEqual(fin["fy2025_revenue_usd_m"], fixture["revenue"], places=1)
-
-            # 2. Check narrative representation in markdown
+            self.assertAlmostEqual(fin["fy2025_cfo_usd_m"], annual_comps["cfo"], places=2)
+            self.assertAlmostEqual(fin["fy2025_capex_usd_m"], annual_comps["capex"], places=2)
+            self.assertAlmostEqual(fin["fy2025_revenue_usd_m"], annual_comps.get("revenue", annual_comps.get("net_sales")), places=1)
             self.assertIn(fixture["cik"], records_md, f"CIK {fixture['cik']} for {sym} missing from markdown")
-
-    def test_negative_materially_altered_reported_financial_input(self):
-        """Fails when reported input is altered even if dependent arithmetic is internally consistent."""
-        def evaluate_ledger_financials(fin_data, symbol):
-            fixture = CYCLE_2_OFFLINE_ARITHMETIC_FIXTURES[symbol]
-            # Verify primary source fidelity
-            if abs(fin_data["fy2025_cfo_usd_m"] - fixture["cfo"]) > 0.05:
-                raise ValueError(f"Material alteration of CFO for {symbol}: expected {fixture['cfo']}, got {fin_data['fy2025_cfo_usd_m']}")
-            if abs(fin_data["fy2025_capex_usd_m"] - fixture["capex"]) > 0.05:
-                raise ValueError(f"Material alteration of Capex for {symbol}: expected {fixture['capex']}, got {fin_data['fy2025_capex_usd_m']}")
-
-        # Altered input with internally consistent arithmetic: CFO=999, Capex=499, FCF=500 (999-499=500)
-        altered_fin = {
-            "fy2025_cfo_usd_m": 999.0,
-            "fy2025_capex_usd_m": 499.0,
-            "fy2025_fcf_usd_m": 500.0,
-            "fy2025_fcf_cfo_conversion_pct": 50.05
-        }
-        with self.assertRaises(ValueError) as ctx:
-            evaluate_ledger_financials(altered_fin, "TMDX")
-        self.assertIn("Material alteration of CFO", str(ctx.exception))
-
-    def test_negative_incomplete_debt_bridge_for_tmdx(self):
-        """Fails when TMDX debt bridge omits other borrowings or aircraft finance lease liabilities."""
-        def validate_tmdx_debt_bridge(bridge):
-            required = [
-                "cash_and_equivalents_usd_m",
-                "convertible_notes_principal_usd_m",
-                "other_borrowings_principal_usd_m",
-                "finance_lease_liabilities_usd_m",
-                "total_debt_and_leases_usd_m",
-                "net_debt_incl_leases_usd_m"
-            ]
-            for key in required:
-                if key not in bridge:
-                    raise KeyError(f"Missing required debt bridge component: {key}")
-            # Ensure net debt cannot be asserted as positive when obligations exceed cash
-            if bridge["net_debt_incl_leases_usd_m"] > 0:
-                raise ValueError("TMDX cannot be represented as net cash positive with obligations exceeding cash")
-
-        # Incomplete bridge omitting aircraft finance leases
-        incomplete_bridge = {
-            "cash_and_equivalents_usd_m": 472.675,
-            "convertible_notes_principal_usd_m": 459.996,
-            "other_borrowings_principal_usd_m": 60.000,
-            "total_debt_and_leases_usd_m": 519.996,
-            "net_debt_incl_leases_usd_m": -47.321
-        }
-        with self.assertRaises(KeyError) as ctx:
-            validate_tmdx_debt_bridge(incomplete_bridge)
-        self.assertIn("finance_lease_liabilities_usd_m", str(ctx.exception))
-
-        # Faulty bridge asserting positive net cash
-        faulty_net_cash_bridge = {
-            "cash_and_equivalents_usd_m": 472.675,
-            "convertible_notes_principal_usd_m": 459.996,
-            "other_borrowings_principal_usd_m": 60.000,
-            "finance_lease_liabilities_usd_m": 347.660,
-            "total_debt_and_leases_usd_m": 867.656,
-            "net_debt_incl_leases_usd_m": 22.7
-        }
-        with self.assertRaises(ValueError) as ctx:
-            validate_tmdx_debt_bridge(faulty_net_cash_bridge)
-        self.assertIn("net cash positive", str(ctx.exception))
-
-    def test_negative_asserted_reverse_dcf_without_model(self):
-        """Fails when a solved reverse-DCF condition is asserted without a dated model."""
-        def validate_reverse_dcf(expectation_dict):
-            condition = expectation_dict.get("reverse_dcf_solved_condition")
-            if condition is None or condition == "":
-                return
-            valid_unresolved_tokens = ["UNRESOLVED", "NOT_SOLVED", "UNGROUNDED", "HYPOTHESIS"]
-            if not any(token in str(condition).upper() for token in valid_unresolved_tokens):
-                raise ValueError(f"Ungrounded solved DCF assertion detected without dated model evidence: '{condition}'")
-
-        ungrounded_assertion = {
-            "reverse_dcf_solved_condition": "High volume expansion across US donor pools required to justify 10% hurdle rate"
-        }
-        with self.assertRaises(ValueError) as ctx:
-            validate_reverse_dcf(ungrounded_assertion)
-        self.assertIn("Ungrounded solved DCF assertion detected", str(ctx.exception))
 
     def test_cycle_2_evaluation_effort_and_epistemic_discipline(self):
         eval_path = repo_root / "docs" / "research" / "discovery_cycle_2" / "CYCLE_2_EVALUATION_REPORT.md"

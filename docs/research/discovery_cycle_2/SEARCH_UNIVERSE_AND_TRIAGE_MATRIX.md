@@ -57,9 +57,9 @@ flowchart LR
   - Total borrowing principal: **$519.996M** (carrying value: $517.2M).
   - Finance lease liabilities: **$347.660M** (reflecting aircraft financing arrangements).
   - Total debt + finance lease obligations: **$867.656M**.
-  - Net Position: Gross cash of $472.675M less total borrowings of $519.996M yields **-$47.321M net debt** (excluding finance leases), or **-$394.981M net debt** (including finance lease liabilities). Gross cash must not be labeled net cash.
+  - Net Position: Under the standard convention (net debt = included debt obligations minus included cash), total borrowings ($519.996M) less gross cash ($472.675M) yields **+$47.321M net debt** (excluding finance leases). Including finance lease liabilities of $347.660M ($867.656M total), net debt is **+$394.981M**. Obligations exceed cash, resulting in positive net debt.
 - **Economic Mechanism:** Dynamic warm machine perfusion preserves donor organs in a functioning state, expanding retrieval yield. NOP air logistics removes surgical center transport friction.
-- **Capital Intensity Disclosure:** Simple cash CFO minus cash PP&E ($59.251M in FY25) does not reflect all asset additions; material aircraft were added under noncash finance lease agreements ($347.66M liabilities at Q2 2026).
+- **Capital Intensity Disclosure:** Simple cash CFO minus cash PP&E ($59.251M in FY25) does not reflect all asset additions; material aircraft were added under noncash finance lease agreements ($340.040M noncash additions in 1H 2026, resulting in $347.660M finance lease liabilities at Q2 2026).
 - **Strongest Counter-Explanation (Bear Case):** Operating an owned aviation fleet introduces asset-heavy transportation economics: pilot salary inflation, jet fuel price volatility, FAA maintenance groundings, and aircraft lease debt service.
 - **Decisive Unresolved Question:** Can TransMedics sustain gross margins near 60% and cover aircraft finance lease commitments if US donor organ volume decelerates?
 - **Triage Disposition:** **`ADVANCED_TO_DEEP_INVESTIGATION`** (Significant business transformation; complex capital structure warrants deep primary analysis).
