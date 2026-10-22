@@ -83,3 +83,28 @@ The occurrence of any of the following material events mandates a transition of 
 
 3. **Explicit Labeling:**
    - Preview surfaces must visibly display `[DRAFT — PENDING INDEPENDENT RESEARCH REVIEW]` for any non-production record.
+
+---
+
+## 6. Decision-Focused Research Process Standard Integration
+
+In accordance with Product Owner Directive (October 22, 2026), all ongoing dossier maintenance, re-assessments triggered under Section 4, and candidate intake evaluations prospectively adhere to the canonical **Decision-Focused Research Process Standard** ([`docs/research/DECISION_FOCUSED_RESEARCH_PROCESS.md`](file:///docs/research/DECISION_FOCUSED_RESEARCH_PROCESS.md)):
+
+1. **Triggered Review Execution:** When a Section 4 event triggers a transition to `DRAFT`, the reassessment executes the 6 canonical steps:
+   - *Step A (Define Decision):* State whether the action is to maintain, revise, or withdraw the dossier.
+   - *Step B (Decisive Uncertainties):* Isolate the specific material question altered by the trigger event.
+   - *Step C (Connect Outcomes):* Trace consequences to cash flow, capital structure, debt service, and dilution.
+   - *Step D (Investigate Proportionately):* Verify against primary Form 10-K/10-Q/8-K disclosures; seek counter-evidence.
+   - *Step E (Make Assessment):* Record supported findings, unresolved questions, and the resulting lifecycle state.
+   - *Step F (Review Triggers & Stop):* Define next observable falsification checkpoint and cease investigation.
+
+2. **Prospective Adoption Invariant:**
+   - New research immediately uses this decision process.
+   - Existing published dossiers adopt it prospectively during their next material review or Section 4 trigger.
+   - Completed releases (PR #39, PR #41) remain immutable and are **not** reopened solely for template compliance.
+   - No retrospective decision records may be fabricated.
+
+3. **Governance & Performance Disclaimer:**
+   - Different research decisions require different depths of evidence.
+   - Deterministic technical verification (cryptographic hashes, schema compliance) confirms evidence integrity, but does **not** establish investment performance, predictive skill, or investment alpha.
+   - No fixed asset-count publication quota applies.

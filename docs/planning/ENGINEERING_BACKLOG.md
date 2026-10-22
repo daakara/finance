@@ -261,6 +261,21 @@
     7. Research priority relative to examined universe.
   - Strict separation of dimensions: research maturity, opportunity mechanism, expectation-gap status, financial resilience, and public publication eligibility.
   - Concludes with an evidence-based evaluation report delivering a binding process decision: `CONTINUE`, `SIMPLIFY`, or `STOP`.
+- **Standardized Decision-Focused Research Process**:
+  - Authoritative process standard codified in [`docs/research/DECISION_FOCUSED_RESEARCH_PROCESS.md`](file:///docs/research/DECISION_FOCUSED_RESEARCH_PROCESS.md) (`ARX-DECISION-RESEARCH-PROCESS-V1`).
+  - Enforces universal 6-step decision workflow across discovery, quality-watch preparation, and dossier maintenance:
+    - Step A: Define the Decision (Investigate Further, Prioritize Queue, Prepare Quality-WATCH, Maintain/Revise, Deeper Analysis).
+    - Step B: Identify Decisive Uncertainties (few questions capable of changing outcome; no universal risk checklists).
+    - Step C: Connect Outcomes to Consequences (cash generation, debt service, dilution, downside resilience).
+    - Step D: Investigate Proportionately (primary SEC evidence, facts vs management statements vs calculations, counter-evidence).
+    - Step E: Make the Assessment (supported conclusions, unresolved items, explicit next action).
+    - Step F: Set Review Triggers and Stop (observable falsification events, clear stopping rule).
+  - Business-specific illustrative questions documented for `DECK`, `FIX`, `DUOL`, `ULTA`, `MEDP`, `ISRG`.
+  - Canonical 9-field reusable research record template established.
+  - Prospectively integrated into `QUALITY_WATCH_SELECTION_STANDARD.md` and `PILOT_MAINTENANCE_POLICY.md` (completed releases remain closed; no retrospective records fabricated).
+- **Delivered Milestones**:
+  - **Draft Pull Request**: [daakara/finance#45](https://github.com/daakara/finance/pull/45) (`feat/research-evidence-led-discovery-pilot`).
+  - **Discovery Pilot Evaluation**: `CONTINUE` decision rendered in [`docs/research/evidence_led_discovery/PILOT_EVALUATION_REPORT.md`](file:///docs/research/evidence_led_discovery/PILOT_EVALUATION_REPORT.md).
 - **Operational Boundaries & Invariants**:
   - Internal research pilot only: no public publication, no manifest additions, no production deployment.
   - Zero scanner activation, universe expansion, or live market-data ingestion changes.

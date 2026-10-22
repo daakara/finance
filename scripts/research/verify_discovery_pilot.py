@@ -163,6 +163,47 @@ def verify_pilot(repo_root: Path) -> dict:
             except Exception as e:
                 results["warnings"].append(f"Could not read {path}: {e}")
 
+    # 5. Verify Standardized Decision-Focused Research Process
+    std_process_path = repo_root / "docs" / "research" / "DECISION_FOCUSED_RESEARCH_PROCESS.md"
+    if not std_process_path.exists():
+        results["passed"] = False
+        results["errors"].append(f"Missing canonical decision process standard: {std_process_path}")
+    else:
+        text = std_process_path.read_text(encoding="utf-8", errors="ignore")
+        required_sections = [
+            "Step A: Define the Decision",
+            "Step B: Identify Decision-Relevant Uncertainties",
+            "Step C: Connect Outcomes to Consequences",
+            "Step D: Investigate Proportionately",
+            "Step E: Make the Assessment",
+            "Step F: Set Review Triggers and Stop",
+            "DECK", "FIX", "DUOL", "ULTA", "MEDP", "ISRG",
+            "Decision Sought",
+            "Review Triggers & Stopping Rationale"
+        ]
+        for sec in required_sections:
+            if sec not in text:
+                results["passed"] = False
+                results["errors"].append(f"DECISION_FOCUSED_RESEARCH_PROCESS.md missing required section/example: {sec}")
+
+    # Verify standard is referenced in quality watch standard and maintenance policy
+    qw_path = repo_root / "docs" / "research" / "opportunity_discovery" / "QUALITY_WATCH_SELECTION_STANDARD.md"
+    if qw_path.exists():
+        qw_text = qw_path.read_text(encoding="utf-8", errors="ignore")
+        if "DECISION_FOCUSED_RESEARCH_PROCESS.md" not in qw_text:
+            results["passed"] = False
+            results["errors"].append("QUALITY_WATCH_SELECTION_STANDARD.md does not reference DECISION_FOCUSED_RESEARCH_PROCESS.md")
+        if "6 Quality Watch dossiers" not in qw_text:
+            results["passed"] = False
+            results["errors"].append("QUALITY_WATCH_SELECTION_STANDARD.md does not reflect 6 Quality Watch dossiers")
+
+    maint_path = repo_root / "docs" / "research" / "opportunity_discovery" / "PILOT_MAINTENANCE_POLICY.md"
+    if maint_path.exists():
+        maint_text = maint_path.read_text(encoding="utf-8", errors="ignore")
+        if "DECISION_FOCUSED_RESEARCH_PROCESS.md" not in maint_text:
+            results["passed"] = False
+            results["errors"].append("PILOT_MAINTENANCE_POLICY.md does not reference DECISION_FOCUSED_RESEARCH_PROCESS.md")
+
     return results
 
 

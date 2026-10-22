@@ -44,6 +44,20 @@ class TestEvidenceLedDiscoveryPilot(unittest.TestCase):
             actual_sha = hashlib.sha256(f.read()).hexdigest()
         self.assertEqual(actual_sha, FROZEN_BASELINE_LEDGER_SHA256)
 
+    def test_standardized_decision_process_specification(self):
+        proc_path = repo_root / "docs" / "research" / "DECISION_FOCUSED_RESEARCH_PROCESS.md"
+        self.assertTrue(proc_path.exists(), "DECISION_FOCUSED_RESEARCH_PROCESS.md must exist")
+        text = proc_path.read_text(encoding="utf-8")
+        # Assert the 6 steps exist
+        for step in ["Step A", "Step B", "Step C", "Step D", "Step E", "Step F"]:
+            self.assertIn(step, text)
+        # Assert illustrative business examples exist
+        for ticker in ["DECK", "FIX", "DUOL", "ULTA", "MEDP", "ISRG"]:
+            self.assertIn(ticker, text)
+        # Assert prospective adoption invariants
+        self.assertIn("Prospective-Only Application", text)
+        self.assertIn("WATCH is not BUY", text)
+
 
 if __name__ == "__main__":
     unittest.main()
