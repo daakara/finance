@@ -39,6 +39,26 @@ A candidate qualifies for published Quality Watch status if and only if it satis
 
 ---
 
+## 1.1 Decision-Focused Research Process Standard Integration
+
+In accordance with Product Owner Directive (October 22, 2026), all ARX candidate evaluations, queue prioritization, and dossier maintenance prospectively adhere to the canonical **Decision-Focused Research Process Standard** ([`docs/research/DECISION_FOCUSED_RESEARCH_PROCESS.md`](file:///docs/research/DECISION_FOCUSED_RESEARCH_PROCESS.md)):
+
+1. **Step A: Define the Decision:** Explicitly state the operational decision (Investigate Further, Prioritize Queue, Prepare Quality-WATCH, Maintain/Revise, Deeper Analysis) with analytical horizon (3–5 years provisional) and information cutoff.
+2. **Step B: Identify Decisive Uncertainties:** Isolate the few questions most capable of altering the outcome; no universal or arbitrary risk checklists.
+3. **Step C: Connect Outcomes to Consequences:** Trace operational scenarios to cash generation, capex (growth vs maintenance), debt service, dilution, and downside resilience. Standard reverse-DCF is optional and suppressed for unsuitable business models.
+4. **Step D: Investigate Proportionately:** Reconcile facts to primary SEC filings; classify facts, management commentary, derived calculations, and analyst assumptions; actively seek counter-evidence.
+5. **Step E: Make the Assessment:** Document supported conclusions, unresolved items, and priority changes (`No differentiated expectation established` and `Insufficient evidence` are valid outcomes).
+6. **Step F: Set Review Triggers and Stop:** Specify observable falsification events; cease research immediately when the decision is supported or evidence is unobtainable.
+
+### Prospective Application & Governance Invariants:
+- **Prospective Application:** New research strictly applies this 6-step process. Existing published dossiers adopt it prospectively during their next material trigger reviews.
+- **Completed Releases Closed:** Completed production releases (PR #39, PR #41) remain immutable and are **not** reopened solely for template compliance.
+- **Evidence Proportionality:** Different research decisions require different depths of evidence.
+- **Separation of Invariants:** Technical verification does not establish investment performance; WATCH is not BUY; publication readiness and investment attractiveness remain separate questions.
+- **No Publication Quotas:** No fixed asset-count release quotas apply to research publication.
+
+---
+
 ## 2. Comprehensive Cohort Triage & Preparation Priority Matrix
 
 All original baseline records and expansion candidates evaluated under the Quality Watch standard:
@@ -50,9 +70,9 @@ All original baseline records and expansion candidates evaluated under the Quali
 | **`IREN`** | Iris Energy Limited | Scaled next-generation data center footprint (>5 GW secured power pipeline) for AI cloud compute. | Demonstration of steady-state compute operating cash flow covering ongoing capex without equity dilution. | Primary 20-F/6-K in ODP-05 baseline. | $11.60B liabilities; $25B–$30B guided FY27 capex; ATM equity dilution (47.1M shares issued in FY26); DCF suppressed. | **Held** | Bounded check: Fails Pillar B (Financial Resilience). Extreme capital intensity ($25B-$30B capex) and dilutive external financing dependence mean it does not currently fit the quality compounder collection. Direct research URL displays neutral unavailable state; stock page remains 100% active. |
 | **`CORZ`** | Core Scientific, Inc. | High-density data center infrastructure hosting hyperscale AI under 12-year CoreWeave contract (395 MW active). | Completion of full 500 MW CoreWeave fleet and achievement of positive quarterly free cash flow post-capex. | Primary 10-K/10-Q in ODP-05 baseline. | $4.30B debt ($3.3B 7.75% senior notes); $797.5M Q2 2026 capex exceeds CFO; $(1.15B) net loss from warrant revaluations; DCF suppressed. | **Held** | Bounded check: Fails Pillar B (Financial Resilience). Massive debt service, capex burn exceeding operating cash flow, and warrant dilution risk mean it does not currently fit the quality compounder collection. Direct research URL displays neutral unavailable state; stock page remains 100% active. |
 | **`ULTA`** | Ulta Beauty, Inc. | Elite specialty beauty retailer; >44M loyalty members (>95% sales); $1.57B TTM operating cash flow. | Pullback toward base corridor ($430–$450) or sustained comp-store sales acceleration >6%. | Primary 10-K/10-Q direct inspection completed; Note 7 debt audited. | ASC 842 store leases expensed in EBIT; $339.6M funded debt vs $213.5M cash ($126.1M net funded debt bridge). | **Selected** | First Published Expansion Addition; verified loyalty moat facing demanding 15.45% 5Y CAGR hurdle at $592.94. |
-| **`MEDP`** | Medpace Holdings, Inc. | Full-service clinical contract research organization (CRO); ~20-22% operating margins; zero debt; >30% ROIC. | Small-to-midsize biotech funding stabilization (XBI index recovery) or pullback to base intrinsic value. | High; audited Form 10-K and 10-Q available. | Pristine zero-debt balance sheet; clean GAAP cash flows. | **Next to Prepare** | Priority 1 for next wave; exceptional capital efficiency, zero debt, and minimal accounting ambiguity. |
-| **`ISRG`** | Intuitive Surgical, Inc. | Da Vinci robotic surgical monopoly; >80% recurring procedure/service revenue; massive net cash. | da Vinci 5 adoption ramp and procedure growth vs. demanding >50x P/E multiple. | High; audited Form 10-K and 10-Q available. | High multiple requires careful reverse-DCF terminal growth boundary testing. | **Next to Prepare** | Priority 2 for next wave; quintessential high-quality moat with clear valuation discipline. |
-| **`DECK`** | Deckers Outdoor Corp. | Hoka and UGG brand momentum driving >20% operating margins and zero funded debt. | Wholesale inventory channel health and Hoka growth durability vs. running footwear competition. | Moderate; requires 6:1 forward stock split post-audit reconciliation. | Retail ASC 842 lease treatment and split restatements. | **Next to Prepare** | Priority 3 for next wave; strong consumer brand quality, pending split-adjusted share verification. |
+| **`MEDP`** | Medpace Holdings, Inc. | Full-service clinical contract research organization (CRO); ~20-22% operating margins; zero debt; >30% ROIC. | Small-to-midsize biotech funding stabilization (XBI index recovery) or pullback to base intrinsic value. | High; audited Form 10-K and 10-Q verified. | Pristine zero-debt balance sheet; clean GAAP cash flows. | **Selected (PR #41)** | Published Expansion Addition; exceptional capital efficiency, zero debt, and minimal accounting ambiguity. |
+| **`ISRG`** | Intuitive Surgical, Inc. | Da Vinci robotic surgical monopoly; >80% recurring procedure/service revenue; massive net cash. | da Vinci 5 adoption ramp and procedure growth vs. demanding >50x P/E multiple. | High; audited Form 10-K and 10-Q verified. | High multiple requires careful reverse-DCF terminal growth boundary testing. | **Selected (PR #41)** | Published Expansion Addition; quintessential high-quality moat with clear valuation discipline. |
+| **`DECK`** | Deckers Outdoor Corp. | Hoka and UGG brand momentum driving >20% operating margins and zero funded debt. | Wholesale inventory channel health and Hoka growth durability vs. running footwear competition. | High; 6:1 forward stock split post-audit reconciliation completed. | Retail ASC 842 lease treatment and split restatements verified. | **Selected (PR #41)** | Published Expansion Addition; strong consumer brand quality, verified split-adjusted share count. |
 | **`KLAC`** | KLA Corp. | Semiconductor process diagnostic and yield control monopoly (>50% optical inspection market share). | Wafer fab equipment (WFE) cycle inflection and China export restriction exposure. | Moderate; June fiscal year end (10-K June 30). | Funded debt bridge and quarterly fiscal calendar offset. | **Held** | Top tier business, but capital structure and cycle normalization need deep inspection. |
 | **`CDNS`** | Cadence Design Systems, Inc. | Electronic Design Automation (EDA) software duopoly; high recurring software maintenance; deep lock-in. | Valuation multiple (~45x P/E) vs. AI chip design complexity growth. | Moderate; requires SBC dilution schedule verification. | Acquired intangibles amortization and deferred revenue recognition. | **Held** | High quality, but SBC schedule and acquisition adjustments require dedicated reconciliation. |
 | **`ANET`** | Arista Networks, Inc. | High-throughput cloud networking EOS software and 800G/1.6T AI switches; zero debt; >40% margins. | Cloud customer concentration (Meta & Microsoft >35% revenue) and White-box switch competition. | Moderate; customer concentration disclosures need verification. | Nil; pristine cash balance. | **Held** | Elite business; customer concentration risks require specific filing verification. |
@@ -70,12 +90,15 @@ All original baseline records and expansion candidates evaluated under the Quali
 
 ## 3. Effective Published Quality Watch Collection
 
-Under this selective publication model, the active published Research collection comprises exactly **3 Quality Watch dossiers**:
+Under this selective publication model, the active published Research collection comprises exactly **6 Quality Watch dossiers** (authorized and released via PR #39 and PR #41):
 
 1. **`FIX`** — Comfort Systems USA, Inc. (`WATCH_CONDITIONS` — Baseline)
 2. **`DUOL`** — Duolingo, Inc. (`WATCH_CONDITIONS` — Baseline)
-3. **`ULTA`** — Ulta Beauty, Inc. (`WATCH_CONDITIONS` — First Published Addition)
+3. **`ULTA`** — Ulta Beauty, Inc. (`WATCH_CONDITIONS` — First Published Addition, PR #39)
+4. **`MEDP`** — Medpace Holdings, Inc. (`WATCH_CONDITIONS` — Published Addition, PR #41)
+5. **`ISRG`** — Intuitive Surgical, Inc. (`WATCH_CONDITIONS` — Published Addition, PR #41)
+6. **`DECK`** — Deckers Outdoor Corp. (`WATCH_CONDITIONS` — Published Addition, PR #41)
 
-All 3 published companies represent genuine business quality with explicit, observable watch conditions.
+All 6 published companies represent genuine business quality with explicit, observable watch conditions.
 - **Held Baseline Assets (`IREN`, `CORZ`)**: Retain full historical source preservation in the baseline ledger; their research URLs render the neutral "No Published Watch Dossier" state, and their stock detail pages remain 100% operational on the Terminal without research badges.
 - **Excluded Records (`MU`, `PLTR`)**: Completely removed from active research discovery, navigation rails, and stock-detail badges, but remain fully functional within the wider Terminal and stock fundamental pages.
