@@ -291,8 +291,9 @@
 - **Category**: Research / Opportunity Discovery & Hypothesis Tracking
 - **Priority**: **P2 (Strategic Discovery / Evaluation)**
 - **Priority Rationale**: Tests whether a reproducible search process can surface research-worthy opportunities beyond ARX's existing manually selected cohort, establishing whether ongoing discovery justifies effort vs relying on manual queue additions.
-- **Status**: `IN_PROGRESS` (Active Branch: `feat/research-evidence-led-discovery-cycle-2`)
-- **Assigned Sprint**: Research Sprint 3 (Discovery Capability Track)
+- **Governing PR**: [daakara/finance#46](https://github.com/daakara/finance/pull/46)
+- **Status**: `COMPLETED_AND_ADOPTED` (Adopted into Mainline via PR #46, Commit `404a566734306a9e51b442c10dfe5fe028e7d19f`, Tree `caab46d1e93c44aa34994bbb76a4e6c0a7605423`)
+- **Assigned Sprint**: Research Sprint 3 (Completed & Adopted)
 - **Owner**: ARX Terminal Core Team
 - **Completed Prerequisites**:
   - Process Standard `ARX-DECISION-RESEARCH-PROCESS-V1` adopted into `main` via PR #45 (Commit `9d74ea903098e6c3628f8fab433de425a82b024c`).
@@ -310,6 +311,28 @@
   - Baseline ledger (`odp05_discovery_ledger.json`) SHA-256 (`a65be3b...`) remains strictly immutable.
   - Internal records remain completely outside frontend import paths and bundles.
   - Discloses explicit limitations; no claims of predictive alpha or guaranteed returns.
+
+---
+
+### `BACKLOG-RESEARCH-PRIORITY-REASSESSMENT-047`: Candidate Priority Reassessment After Discovery Cycle 2
+- **Category**: Research / Opportunity Discovery & Queue Governance
+- **Priority**: **P2 (Strategic Priority & Queue Discipline)**
+- **Priority Rationale**: Reassesses candidate prioritization following Discovery Cycle 2 to resolve the specific concern of premature TMDX prioritization, establishing a disciplined four-dimensional priority framework (business relevance, research urgency, setup readiness, public eligibility) and constructing an evidence-supported research queue across all 14 candidates.
+- **Governing PR**: Active Draft PR (`feat/research-candidate-priority-reassessment`)
+- **Status**: `IN_PROGRESS` (Active Branch: `feat/research-candidate-priority-reassessment`)
+- **Assigned Sprint**: Research Sprint 3 (Priority Reassessment & Queue Discipline)
+- **Owner**: ARX Terminal Core Team
+- **Completed Prerequisites**:
+  - Discovery Cycle 2 merged into `main` via PR #46 (Commit `404a566734306a9e51b442c10dfe5fe028e7d19f`, Tree `caab46d1e93c44aa34994bbb76a4e6c0a7605423`).
+  - Active published Quality Watch collection: `FIX`, `DUOL`, `ULTA`, `MEDP`, `ISRG`, `DECK` (6 symbols intact).
+- **Scope & Methodological Core**:
+  - Resolves TMDX prioritization by re-evaluating reported 1H 2026 interim financials (CFO decline of -52.9% YoY to $41.8M, simple cash FCF turning negative to -$1.9M, $347.7M aircraft finance lease liabilities, and operating margin compression to 12.5% vs 23.2% in Q2 2025) and broken technical setup (-25.4% below 200-day SMA at $72.06).
+  - Demotes TMDX from active monitoring to `WAIT_FOR_EVENT` pending Form 10-Q Q3 2026 filing and base formation.
+  - Forensically evaluates full 14-candidate cohort across business direction, technical state, valuation state, decisive question, immediate action, review trigger, and relative priority.
+  - Codifies 4-tier evidence-supported research queue: Tier 1 (Active Research: ETN), Tier 2 (Wait-for-Event: TMDX, PODD, CEG), Tier 3 (Wait-for-Setup: TDG, HUBB), Tier 4 (Deferred: NVR, APP, LNTH, POWI, GEV).
+- **Operational Boundaries & Invariants**:
+  - Internal research queue governance only: zero public publication, zero manifest changes, zero production deployment.
+  - Frozen ODP-05 baseline ledger SHA-256 strictly preserved.
 
 ---
 

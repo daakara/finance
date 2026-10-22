@@ -6,6 +6,9 @@
 **Governing Standard:** `ARX-DECISION-RESEARCH-PROCESS-V1` (Six-Step Universal Workflow)  
 **Applicability:** Internal Research Experiment Only (Non-Production / Non-Public)  
 
+> [!NOTE] Priority Reassessment Notice (October 22, 2026)
+> In accordance with the post-Cycle 2 priority review in [`CANDIDATE_PRIORITY_REASSESSMENT.md`](file:///docs/research/discovery_cycle_2/CANDIDATE_PRIORITY_REASSESSMENT.md), `TMDX`'s active research priority has been formally demoted to **`WAIT_FOR_EVENT`** (Tier 2) due to 1H 2026 operating cash flow deterioration (-52.9% YoY), negative simple cash FCF (-$1.9M), $340.0M of noncash aircraft lease commitments ($347.7M lease liabilities), and an unestablished technical setup (-25.4% below 200-day SMA). Eaton (`ETN`) is maintained as the sole Tier 1 active research candidate.
+
 ---
 
 ## 1. Triage Methodology & Principles
