@@ -243,8 +243,8 @@
 - **Priority**: **P2 (Strategic Discovery / Evaluation)**
 - **Priority Rationale**: Tests whether evidence-led discovery beyond the initial 10-candidate shortlist improves ARX's research prioritization enough to justify ongoing preparation and maintenance effort.
 - **Governing Issue**: [daakara/finance#43](https://github.com/daakara/finance/issues/43)
-- **Status**: `IN_PROGRESS` (Authorized Internal Pilot; Active Branch: `feat/research-evidence-led-discovery-pilot`)
-- **Assigned Sprint**: Research Sprint 2 (Discovery Capability Track)
+- **Status**: `COMPLETED_AND_ADOPTED` (Adopted into Mainline via PR #45; Issue #43 Closed as Completed)
+- **Assigned Sprint**: Research Sprint 2 (Completed & Closed)
 - **Owner**: ARX Terminal Core Team
 - **Completed Prerequisites**:
   - PR #41 merged to `main` at commit `b9e9fe3a801f42e8a93d9f090ec67ec76a515bf3` (Tree `53ed31419e172ed4b309bbba6bb4e4e3eda90c9b`).
@@ -260,7 +260,7 @@
     6. Assessment changes (observable disconfirmation criteria).
     7. Research priority relative to examined universe.
   - Strict separation of dimensions: research maturity, opportunity mechanism, expectation-gap status, financial resilience, and public publication eligibility.
-  - Concludes with an evidence-based evaluation report delivering a binding process decision: `CONTINUE`, `SIMPLIFY`, or `STOP`.
+  - Concludes with an evidence-based evaluation report delivering a qualified process decision: `CONTINUE`.
 - **Standardized Decision-Focused Research Process**:
   - Authoritative process standard codified in [`docs/research/DECISION_FOCUSED_RESEARCH_PROCESS.md`](file:///docs/research/DECISION_FOCUSED_RESEARCH_PROCESS.md) (`ARX-DECISION-RESEARCH-PROCESS-V1`).
   - Enforces universal 6-step decision workflow across discovery, quality-watch preparation, and dossier maintenance:
@@ -274,14 +274,42 @@
   - Canonical 9-field reusable research record template established.
   - Prospectively integrated into `QUALITY_WATCH_SELECTION_STANDARD.md` and `PILOT_MAINTENANCE_POLICY.md` (completed releases remain closed; no retrospective records fabricated).
 - **Delivered Milestones**:
-  - **Draft Pull Request**: [daakara/finance#45](https://github.com/daakara/finance/pull/45) (`feat/research-evidence-led-discovery-pilot`).
-  - **Discovery Pilot Evaluation**: `CONTINUE` decision rendered in [`docs/research/evidence_led_discovery/PILOT_EVALUATION_REPORT.md`](file:///docs/research/evidence_led_discovery/PILOT_EVALUATION_REPORT.md).
+  - **Merged Pull Request**: [daakara/finance#45](https://github.com/daakara/finance/pull/45) (Merge Commit: `9d74ea903098e6c3628f8fab433de425a82b024c`, Candidate Commit: `12cd34671cd04acaea457173b8a0a1db50943dec`, Tree: `98178b045f9a7e992b804e9870cd404283872921`).
+  - **Adopted Standard**: `ARX-DECISION-RESEARCH-PROCESS-V1` codified in [`docs/research/DECISION_FOCUSED_RESEARCH_PROCESS.md`](file:///docs/research/DECISION_FOCUSED_RESEARCH_PROCESS.md).
+  - **Discovery Pilot Evaluation**: Qualified `CONTINUE` decision rendered in [`docs/research/evidence_led_discovery/PILOT_EVALUATION_REPORT.md`](file:///docs/research/evidence_led_discovery/PILOT_EVALUATION_REPORT.md).
+  - **Closed Governing Issue**: [daakara/finance#43](https://github.com/daakara/finance/issues/43) closed as completed.
 - **Operational Boundaries & Invariants**:
   - Internal research pilot only: no public publication, no manifest additions, no production deployment.
   - Zero scanner activation, universe expansion, or live market-data ingestion changes.
   - Baseline ledger (`odp05_discovery_ledger.json`) SHA-256 (`a65be3b...`) remains strictly immutable.
   - Keep internal pilot records completely outside frontend import paths and bundles.
   - Do not promise identification of future multibaggers or claim proven investment alpha.
+
+---
+
+### `BACKLOG-RESEARCH-EVIDENCE-DISCOVERY-046`: Evidence-Led Opportunity Discovery Cycle 2
+- **Category**: Research / Opportunity Discovery & Hypothesis Tracking
+- **Priority**: **P2 (Strategic Discovery / Evaluation)**
+- **Priority Rationale**: Tests whether a reproducible search process can surface research-worthy opportunities beyond ARX's existing manually selected cohort, establishing whether ongoing discovery justifies effort vs relying on manual queue additions.
+- **Status**: `IN_PROGRESS` (Active Branch: `feat/research-evidence-led-discovery-cycle-2`)
+- **Assigned Sprint**: Research Sprint 3 (Discovery Capability Track)
+- **Owner**: ARX Terminal Core Team
+- **Completed Prerequisites**:
+  - Process Standard `ARX-DECISION-RESEARCH-PROCESS-V1` adopted into `main` via PR #45 (Commit `9d74ea903098e6c3628f8fab433de425a82b024c`).
+  - Active published Quality Watch collection: `FIX`, `DUOL`, `ULTA`, `MEDP`, `ISRG`, `DECK` (6 symbols intact).
+- **Scope & Methodological Core**:
+  - Tests 2 reproducible discovery routes across an examined universe of 14 operating companies:
+    - Route A: Company-Led Operating / Cash-Conversion Change & Transition to Self-Funding (`TMDX`, `PODD`, `NVR`, `APP`, `LNTH`, `TDG`, `MEDP`).
+    - Route B: Industry-Led Structural Change & Value-Chain Constraint Tracing (`ETN`, `CEG`, `POWI`, `HUBB`, `GEV`, `PWR`, `VRT`).
+  - Bounded active-work budget with honest stage effort logging.
+  - 6-step decision workflow applied proportionately to triage candidates and investigate deep records (`TMDX`, `ETN`).
+  - Evaluates search reproducibility, coverage achieved, candidate novelty, questions surfaced, priority defensibility, upkeep effort, and publication readiness.
+- **Operational Boundaries & Invariants**:
+  - Internal research experiment only: no public publication, no manifest additions, no production deployment.
+  - Zero scanner activation, universe expansion, or live market-data ingestion changes.
+  - Baseline ledger (`odp05_discovery_ledger.json`) SHA-256 (`a65be3b...`) remains strictly immutable.
+  - Internal records remain completely outside frontend import paths and bundles.
+  - Discloses explicit limitations; no claims of predictive alpha or guaranteed returns.
 
 ---
 
