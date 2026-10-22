@@ -302,6 +302,10 @@ def test_10_representative_dossier_ulta_evidence_tracing():
     # 9. Narrative claims
     assert len(tracing["narrative_claims"]) >= 3
 
+    # 10. Selection rationale
+    assert "selection_rationale" in tracing
+    assert len(tracing["selection_rationale"]) == 6
+
 
 def test_11_negative_financial_input_tampering(tmp_path):
     """Negative test: Tampering with financial metrics on disk fails validation."""
@@ -698,4 +702,115 @@ def test_28_published_watch_manifest_integrity():
     assert m1["accepted_additions"]["DECK"]["financial_profile"]["operating_lease_liabilities_asc842"] == 472334000.0
     assert m1["additions_provenance"]["DECK"]["reference_price"] == 85.72
     assert len(m1["additions_provenance"]["DECK"]["content_sha256"]) == 64
+
+    # Remaining expansion queue & selection rationale in manifest
+    assert "remaining_expansion_queue" in m1
+    assert len(m1["remaining_expansion_queue"]) == 10
+    assert "KLAC" in m1["remaining_expansion_queue"]
+    assert "ELF" in m1["remaining_expansion_queue"]
+    for sym in ["ULTA", "MEDP", "ISRG", "DECK"]:
+        assert "selection_rationale" in m1["additions_provenance"][sym]
+        assert len(m1["additions_provenance"][sym]["selection_rationale"]) == 6
+
+
+def test_29_expansion_additions_evidence_tracing_and_share_periods():
+    """Verify that expansion additions MEDP, ISRG, and DECK contain complete evidence tracing and exact quarterly share measurement periods."""
+    ledger, _, _ = prepare_pilot_scaling_corpus()
+    dossiers = ledger["dossiers"]
+
+    for sym in ["MEDP", "ISRG", "DECK"]:
+        d = dossiers[sym]
+        tracing = d["financial_profile"].get("source_evidence_tracing")
+        assert tracing is not None, f"{sym} missing source_evidence_tracing"
+        assert tracing["shares_outstanding"]["measurement_period"] == "Three months ended June 30, 2026"
+        assert d["financial_profile"]["selected_share_basis"]["measurement_period"] == "Three months ended June 30, 2026"
+        assert "diluted" in d["financial_profile"]["selected_share_basis"]["rationale"].lower()
+
+
+def test_30_deck_growth_claim_accuracy():
+    """Verify that DECK brand and channel growth claims cite primary Q1 FY27 disclosures without unsupported market share claims."""
+    ledger, _, _ = prepare_pilot_scaling_corpus()
+    deck = ledger["dossiers"]["DECK"]
+    supp = deck["central_assessment"]["strongest_supporting_evidence"]
+
+    assert "market share gains (>25% YoY)" not in supp, "DECK must not claim market share gains >25% YoY without market data"
+    assert "17.3%" in supp, "DECK must cite HOKA DTC net sales growth (+17.3% YoY)"
+    assert "2.9%" in supp, "DECK must cite HOKA wholesale net sales growth (+2.9% YoY)"
+    assert "545.0M" in supp, "DECK must cite total HOKA net sales ($545.0M)"
+
+
+def test_31_isrg_recurring_revenue_and_measured_language():
+    """Verify that ISRG recurring revenue definition includes operating leases (85%) and avoids hyperbolic adjectives."""
+    ledger, _, _ = prepare_pilot_scaling_corpus()
+    isrg = ledger["dossiers"]["ISRG"]
+    summary = isrg["central_assessment"]["presentation_summary"]
+    supp = isrg["central_assessment"]["strongest_supporting_evidence"]
+
+    assert "unassailable" not in summary.lower(), "ISRG presentation_summary must not use 'unassailable'"
+    assert "unassailable" not in supp.lower(), "ISRG strongest_supporting_evidence must not use 'unassailable'"
+    assert "85%" in supp or "85%" in summary, "ISRG must state 85% recurring revenue definition"
+
+
+def test_32_medp_roic_evidence_and_calculation():
+    """Verify that MEDP provides explicit reproducible derivation for ROIC >25% and 20.97% operating margin."""
+    ledger, _, _ = prepare_pilot_scaling_corpus()
+    medp = ledger["dossiers"]["MEDP"]
+    tracing = medp["financial_profile"]["source_evidence_tracing"]
+
+    claims = tracing["narrative_claims"]
+    roic_claim = next((c for c in claims if "ROIC" in c["statement"]), None)
+    assert roic_claim is not None, "MEDP must include ROIC claim with formula/locator in source_evidence_tracing"
+    assert "NOPAT" in roic_claim["statement"], "ROIC claim must explain NOPAT derivation"
+    assert "75.3%" in roic_claim["statement"] or "41.3%" in roic_claim["statement"]
+
+
+def test_33_structured_selection_rationale_completeness():
+    """Verify that all published additions (ULTA, MEDP, ISRG, DECK) contain structured selection records answering A-F."""
+    ledger, _, _ = prepare_pilot_scaling_corpus()
+    dossiers = ledger["dossiers"]
+
+    required_keys = ["why_this_business", "why_research_now", "price_requirements", "differentiated_view", "assessment_changes", "queue_priority"]
+    for sym in ["ULTA", "MEDP", "ISRG", "DECK"]:
+        d = dossiers[sym]
+        rationale = d.get("selection_rationale")
+        assert rationale is not None, f"{sym} missing selection_rationale"
+        for k in required_keys:
+            assert rationale.get(k), f"{sym} selection_rationale missing {k}"
+
+
+def test_34_negative_deck_growth_claim_tampering(valid_pilot_artifacts):
+    """Negative test: Tampering with DECK narrative to restore unsupported >25% market share claim fails validation."""
+    fe_path = valid_pilot_artifacts["frontend_draft_path"]
+    with open(fe_path, "r", encoding="utf-8") as f:
+        fe = json.load(f)
+    fe["dossiers"]["DECK"]["central_assessment"]["strongest_supporting_evidence"] = "HOKA brand momentum continues rapid global wholesale and DTC market share gains (>25% YoY)."
+    with open(fe_path, "w", encoding="utf-8") as f:
+        json.dump(fe, f)
+
+    assert validate_existing_pilot_artifacts(**valid_pilot_artifacts) is False
+
+
+def test_35_negative_share_measurement_period_tampering(valid_pilot_artifacts):
+    """Negative test: Mislabeling MEDP share measurement period as TTM fails validation."""
+    fe_path = valid_pilot_artifacts["frontend_draft_path"]
+    with open(fe_path, "r", encoding="utf-8") as f:
+        fe = json.load(f)
+    fe["dossiers"]["MEDP"]["financial_profile"]["selected_share_basis"]["measurement_period"] = "TTM ended 2026-06-30"
+    with open(fe_path, "w", encoding="utf-8") as f:
+        json.dump(fe, f)
+
+    assert validate_existing_pilot_artifacts(**valid_pilot_artifacts) is False
+
+
+def test_36_negative_isrg_hyperbolic_wording(valid_pilot_artifacts):
+    """Negative test: Injecting 'unassailable' hyperbole into ISRG presentation summary fails validation."""
+    fe_path = valid_pilot_artifacts["frontend_draft_path"]
+    with open(fe_path, "r", encoding="utf-8") as f:
+        fe = json.load(f)
+    fe["dossiers"]["ISRG"]["central_assessment"]["presentation_summary"] = "Intuitive Surgical maintains an unassailable surgical robotics ecosystem."
+    with open(fe_path, "w", encoding="utf-8") as f:
+        json.dump(fe, f)
+
+    assert validate_existing_pilot_artifacts(**valid_pilot_artifacts) is False
+
 

@@ -133,7 +133,53 @@ assert.strictEqual(ulta.financial_profile.net_debt_bridge, 126127000, "ULTA fina
 assert.strictEqual(ulta.financial_profile.operating_lease_liabilities_asc842, 1871805000, "ULTA financial profile must report noncurrent lease liabilities");
 assert.strictEqual(ulta.valuation.reference_price, 592.94, "ULTA valuation reference price must match");
 assert.strictEqual(ulta.valuation.solved_5y_cagr_pct, 15.45, "ULTA valuation solved CAGR must match");
+assert.ok(ulta.source_evidence_tracing.selection_rationale, "ULTA must include structured selection rationale");
+assert.ok(ulta.source_evidence_tracing.selection_rationale.why_this_business, "ULTA must answer why_this_business");
 console.log("[OK] Representative ULTA deep evidence tracing verified (CIK 0001403568, $592.94 ref price, 15.45% CAGR, Note 7 debt $339.6M, ASC 842 lease separated)");
+
+// 5B. Expansion Additions (MEDP, ISRG, DECK) Evidence Tracing & Share Measurement Period
+const expectedQ2Period = "Three months ended June 30, 2026";
+
+// MEDP
+const medp = draftData.dossiers["MEDP"];
+assert.ok(medp, "MEDP draft dossier must exist in staging snapshot");
+assert.ok(medp.source_evidence_tracing, "MEDP must include explicit source_evidence_tracing");
+assert.strictEqual(medp.financial_profile.selected_share_basis.measurement_period, expectedQ2Period, "MEDP share basis measurement period must be Q2");
+assert.strictEqual(medp.source_evidence_tracing.shares_outstanding.measurement_period, expectedQ2Period, "MEDP source tracing share measurement period must be Q2");
+assert.strictEqual(medp.financial_profile.is_zero_debt, true, "MEDP is_zero_debt must be true");
+assert.strictEqual(medp.financial_profile.total_financial_debt, 0, "MEDP total_financial_debt must be 0");
+assert.strictEqual(medp.valuation.reference_price, 618.47, "MEDP reference price must be $618.47");
+assert.strictEqual(medp.valuation.solved_5y_cagr_pct, 29.41, "MEDP solved CAGR must be 29.41%");
+assert.ok(medp.source_evidence_tracing.selection_rationale.why_this_business, "MEDP must answer why_this_business");
+
+// ISRG
+const isrg = draftData.dossiers["ISRG"];
+assert.ok(isrg, "ISRG draft dossier must exist in staging snapshot");
+assert.ok(isrg.source_evidence_tracing, "ISRG must include explicit source_evidence_tracing");
+assert.strictEqual(isrg.financial_profile.selected_share_basis.measurement_period, expectedQ2Period, "ISRG share basis measurement period must be Q2");
+assert.strictEqual(isrg.source_evidence_tracing.shares_outstanding.measurement_period, expectedQ2Period, "ISRG source tracing share measurement period must be Q2");
+assert.strictEqual(isrg.financial_profile.is_zero_debt, true, "ISRG is_zero_debt must be true");
+assert.strictEqual(isrg.financial_profile.total_financial_debt, 0, "ISRG total_financial_debt must be 0");
+assert.strictEqual(isrg.valuation.reference_price, 426.70, "ISRG reference price must be $426.70");
+assert.strictEqual(isrg.valuation.solved_5y_cagr_pct, 36.87, "ISRG solved CAGR must be 36.87%");
+assert.ok(!isrg.central_assessment.presentation_summary.includes("unassailable"), "ISRG must not use hyperbolic language 'unassailable'");
+assert.ok(isrg.central_assessment.strongest_supporting_evidence.includes("85%"), "ISRG must state 85% recurring revenue definition");
+assert.ok(isrg.source_evidence_tracing.selection_rationale.why_this_business, "ISRG must answer why_this_business");
+
+// DECK
+const deck = draftData.dossiers["DECK"];
+assert.ok(deck, "DECK draft dossier must exist in staging snapshot");
+assert.ok(deck.source_evidence_tracing, "DECK must include explicit source_evidence_tracing");
+assert.strictEqual(deck.financial_profile.selected_share_basis.measurement_period, expectedQ2Period, "DECK share basis measurement period must be Q2");
+assert.strictEqual(deck.source_evidence_tracing.shares_outstanding.measurement_period, expectedQ2Period, "DECK source tracing share measurement period must be Q2");
+assert.strictEqual(deck.financial_profile.is_zero_debt, true, "DECK is_zero_debt must be true");
+assert.strictEqual(deck.financial_profile.total_financial_debt, 0, "DECK total_financial_debt must be 0");
+assert.strictEqual(deck.valuation.reference_price, 85.72, "DECK reference price must be $85.72");
+assert.strictEqual(deck.valuation.solved_5y_cagr_pct, -2.34, "DECK solved CAGR must be -2.34%");
+assert.ok(!deck.central_assessment.strongest_supporting_evidence.includes("market share gains (>25% YoY)"), "DECK must not claim market share gains >25% without data");
+assert.ok(deck.central_assessment.strongest_supporting_evidence.includes("17.3%"), "DECK must cite HOKA DTC +17.3% YoY");
+assert.ok(deck.source_evidence_tracing.selection_rationale.why_this_business, "DECK must answer why_this_business");
+console.log("[OK] Expansion additions (MEDP, ISRG, DECK) deep evidence tracing and share measurement periods verified");
 
 // 6. Zero-Debt vs Funded Debt Invariants Across All 19 Assets
 const zeroDebtCohort = ["DUOL", "MEDP", "DECK", "LULU", "EME", "ANET", "ISRG", "CDNS"];
