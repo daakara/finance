@@ -1,25 +1,23 @@
 # ARX Terminal — Candidate Priority Reassessment After Discovery Cycle 2
 
 **Document ID:** `ARX-CANDIDATE-PRIORITY-REASSESSMENT-V1`  
-**Effective Date:** October 22, 2026  
+**Effective Date:** October 22, 2026 (Reconciled & Corrected)  
 **Governing Authority:** Product Owner Authorization — Candidate Priority Reassessment after Discovery Cycle 2  
 **Governing Standard:** `ARX-DECISION-RESEARCH-PROCESS-V1` & ARX Closure Model v2  
 **Applicability:** Internal Research Experiment Only (Non-Production / Non-Public)  
 
 ---
 
-## 1. Executive Summary & Epistemic Framework
+## 1. Executive Summary & Epistemic Boundaries
 
-Following the controlled mainline adoption of Discovery Cycle 2 via PR #46 (Commit `404a566734306a9e51b442c10dfe5fe028e7d19f`), this document resolves the Product Owner's specific operational concern:
-
-> **Why was `TMDX` prioritized despite an unestablished technical setup and weakening recent operating/cash-flow comparisons? If those facts weaken `TMDX`'s priority, what should its priority actually be, how does this reasoning apply across the remaining Cycle 2 candidates, and what research queue should ARX maintain right now?**
+Following the mainline adoption of Discovery Cycle 2 via PR #46 (Commit `404a566734306a9e51b442c10dfe5fe028e7d19f`), this document resolves outstanding material questions regarding internal candidate prioritization following Discovery Cycle 2.
 
 ```mermaid
 flowchart TD
     subgraph EpistemicDistinctions["Mandatory Four-Dimensional Evaluation Matrix"]
         A["<b>A. Business Research Relevance</b><br/>Is there a consequential economic or business question here?"]
         B["<b>B. Research Urgency</b><br/>Why spend analyst hours investigating this company NOW vs others?"]
-        C["<b>C. Market / Setup Readiness</b><br/>Do technical and valuation conditions create a timely inflection?"]
+        C["<b>C. Market / Setup Readiness</b><br/>Do technical and valuation conditions create a timely decision?"]
         D["<b>D. Public Publication Eligibility</b><br/>Does the candidate satisfy Quality Watch Selection Standards?"]
     end
     A -.->|Does NOT Imply| B
@@ -27,197 +25,179 @@ flowchart TD
     C -.->|Does NOT Imply| D
 ```
 
-### Core Decisions & Direct Answers to Product Owner Questions
+### Mandatory Epistemic Boundaries
+In accordance with `ARX-DECISION-RESEARCH-PROCESS-V1`, research prioritization requires strict separation across four distinct dimensions:
+1. **Business Research Relevance:** Identifies whether a consequential economic mechanism or structural business transformation exists.
+2. **Research Urgency:** Evaluates whether immediate analyst hours are justified relative to alternative internal tasks.
+3. **Market / Setup Readiness:** Examines whether observable market pricing, technical structure, or valuation conditions make research actionable.
+4. **Public Publication Eligibility:** Evaluates whether the candidate meets the strict, published Quality Watch Selection Standard.
 
-1. **Why `TMDX` was prioritized earlier:**  
-   Prioritization in Discovery Cycle 2 was anchored on audited full-year FY2025 financial statements ($605.5M revenue, +37.1% YoY, $108.6M operating income, $192.8M CFO, $133.6M FCF). The triage suffered from **Annual Reporting Lag Bias**, **Thesis Momentum**, and an **Epistemic Conflation** of *Business Research Relevance* with *Research Urgency*. It underweighted the fact that during the first six months of 2026 (1H 2026), operating income fell -42.1% YoY, operating cash flow dropped -52.9% YoY, simple cash FCF turned negative (-$1.9M), $340.0M of noncash aircraft lease debt was added, and the stock entered an entrenched downtrend (-25.4% below its 200-day moving average).
-
-2. **`TMDX`'s Corrected Priority:**  
-   `TMDX` is formally demoted from active monitoring priority to **`WAIT_FOR_EVENT`** (Tier 2). Research effort is suspended until two observable conditions occur: (1) the Form 10-Q Q3 2026 filing confirms operating cash flow stabilization and gross margin resilience above 58% despite European PAD Aviation integration, and (2) price reclaims the 50-day moving average and establishes a consolidation base.
-
-3. **Systemic Application Across Cohort:**  
-   The same four-dimensional standard applied across all 14 Cycle 2 candidates reveals that macro theme resonance (e.g. power grid bottlenecks, AI advertising) often obscures cyclical peak risk (`PWR`, `NVR`), regulatory binary risk (`CEG`), or structural customer/platform risk (`APP`, `LNTH`).
-
-4. **The Active Research Queue Now:**  
-   - **Tier 1 (Active Research — Exactly 1 Candidate):** **`ETN` (Eaton Corporation plc)** — The only candidate possessing both profound business relevance (upstream high-voltage datacenter substation bottleneck) and immediate research urgency (evaluating Electrical Americas non-cancellable megaproject backlog ahead of Q3 earnings).
-   - **Tier 2 (Wait-for-Event / Filing — 3 Candidates):** **`TMDX`** (Form 10-Q Q3 2026 filing), **`PODD`** (Form 10-Q Q3 2026 filing), **`CEG`** (FERC behind-the-meter colocation order).
-   - **Tier 3 (Wait-for-Setup / Valuation — 2 Candidates):** **`TDG`** (basing and FY26 10-K), **`HUBB`** (valuation compression relative to Eaton).
-   - **Tier 4 (Deferred / Inactive — 5 Candidates):** **`NVR`** (cyclical mortgage cap), **`APP`** (counterparty risk), **`LNTH`** (patent cliff), **`POWI`** (inventory overhang), **`GEV`** (wind loss provisions).
-   - **Reference Benchmarks (3 Assets):** **`MEDP`** (Quality Watch reference), **`PWR`** (contractor benchmark), **`VRT`** (cooling benchmark).
+A positive finding in one dimension does not establish the others. Business relevance does not create research urgency, nor does market volatility establish an attractive setup.
 
 ---
 
-## 2. Forensic Resolution of the TMDX Decision
+## 2. Reconciled TMDX Financial Analysis
 
-```mermaid
-flowchart LR
-    subgraph TMDX_Decline["TMDX 1H 2026 Operating & Financial Trajectory"]
-        Rev["Revenue Growth<br/>FY25: +37.1% YoY<br/>1H26: +20.9% YoY<br/>(Decelerating)"]
-        OpInc["Operating Margin<br/>Q2 25: 23.2% ($36.6M)<br/>Q2 26: 12.5% ($23.7M)<br/>(-1,074 bps Collapse)"]
-        CashFlow["Cash Flow from Ops<br/>1H 25: $88.8M<br/>1H 26: $41.8M<br/>(-52.9% Drop)"]
-        FCF["Simple Cash FCF<br/>1H 25: +$52.6M<br/>1H 26: -$1.9M<br/>(Turned Negative)"]
-        Debt["Aircraft Leases & Debt<br/>1H26 Leases: +$340.0M<br/>Total Debt+Leases: $867.7M<br/>Net Debt: +$395.0M"]
-    end
-    Rev --> OpInc --> CashFlow --> FCF --> Debt
-```
+### Primary-Source SEC Filing Authorities
+- **Form 10-K FY2025:** Period ended December 31, 2025, filed February 24, 2026 (CIK: `0001756262`, Accession: `0001193125-26-067032`, [SEC EDGAR URL](https://www.sec.gov/Archives/edgar/data/1756262/000119312526067032/tmdx-20251231.htm)).
+- **Form 10-Q Q2 2026:** Period ended June 30, 2026, filed August 4, 2026 (CIK: `0001756262`, Accession: `0001193125-26-332843`, [SEC EDGAR URL](https://www.sec.gov/Archives/edgar/data/1756262/000119312526332843/tmdx-20260630.htm)).
+- **Form 8-K Earnings Release (Ex 99.1):** Filed August 4, 2026 (CIK: `0001756262`, Accession: `0001193125-26-332767`, [SEC EDGAR URL](https://www.sec.gov/Archives/edgar/data/1756262/000119312526332767/tmdx-ex99_1.htm)).
 
-### A. Primary-Source SEC Filing Evidence
+### Reconciled Statement of Operations & Cash Flow Comparison
 
-An examination of TransMedics Group, Inc.'s (`TMDX`, CIK: `0001756262`) most recent primary filings—Form 10-K FY2025 (filed Feb 24, 2026) and Form 10-Q Q2 2026 (filed Aug 4, 2026)—reveals a stark divergence between the trailing annual narrative and the reported interim reality:
+The following table presents verified reported metrics from TransMedics Group, Inc.'s primary SEC filings across comparable annual and interim periods:
 
-#### Comprehensive Financial Comparison Table
-
-| Metric | FY2025 Full Year (Audited) | 1H 2025 (Six Months Ended Jun 30, 2025) | 1H 2026 (Six Months Ended Jun 30, 2026) | 1H YoY Change (%) | Q2 2025 (Three Months Ended Jun 30, 2025) | Q2 2026 (Three Months Ended Jun 30, 2026) | Q2 YoY Change (%) |
+| Metric (in USD Millions) | FY2025 Full Year (Audited) | 1H 2025 (Six Months Ended Jun 30, 2025) | 1H 2026 (Six Months Ended Jun 30, 2026) | 1H YoY Change (%) | Q2 2025 (Three Months Ended Jun 30, 2025) | Q2 2026 (Three Months Ended Jun 30, 2026) | Q2 YoY Change (%) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Consolidated Revenue** | $605.494M | $300.907M | $363.881M | **+20.9%** | $157.370M | $189.948M | **+20.7%** |
-| **Gross Profit** | $362.806M | $184.817M | $214.359M | +16.0% | $96.589M | $113.198M | +17.2% |
+| **Product Revenue** | $446.510M | $184.334M | $219.130M | +18.88% | $96.100M | $111.158M | +15.67% |
+| **Service Revenue** | $158.984M | $116.573M | $144.751M | +24.17% | $61.270M | $78.790M | +28.59% |
+| **Total Revenue** | **$605.494M** | **$300.907M** | **$363.881M** | **+20.93%** | **$157.370M** | **$189.948M** | **+20.70%** |
+| **Cost of Revenue** | $242.688M | $116.090M | $149.522M | +28.80% | $60.781M | $76.750M | +26.27% |
+| **Gross Profit** | **$362.806M** | **$184.817M** | **$214.359M** | **+15.98%** | **$96.589M** | **$113.198M** | **+17.20%** |
 | **Gross Margin (%)** | 59.92% | 61.42% | 58.91% | -251 bps | 61.38% | 59.59% | -179 bps |
-| **Operating Income (Loss)** | $108.583M | $64.010M | $37.033M | **-42.1%** | $36.567M | $23.736M | **-35.1%** |
-| **Operating Margin (%)** | 17.93% | 21.27% | 10.18% | **-1,109 bps** | 23.24% | 12.50% | **-1,074 bps** |
-| **GAAP Net Income** | $190.291M* | $49.726M | $21.997M | -55.8% | $34.907M | $14.682M | -57.9% |
-| **Cash from Operations (CFO)** | $192.840M | $88.754M | $41.842M | **-52.9%** | — | — | — |
-| **Cash PP&E Purchases (Capex)** | $59.251M | $36.113M | $43.749M | **+21.1%** | — | — | — |
-| **Simple Free Cash Flow (FCF)** | $133.589M | $52.641M | **-$1.907M** | **-$54.548M (Deficit)** | — | — | — |
+| **Research & Development (R&D)** | $69.1M | $33.094M | $56.511M | +70.76% | $15.934M | $31.632M | +98.52% |
+| **Selling, General & Admin (SG&A)** | $185.1M | $87.713M | $120.815M | +37.74% | $44.088M | $57.830M | +31.17% |
+| **Total Operating Expenses** | **$254.223M** | **$120.807M** | **$177.326M** | **+46.78%** | **$60.022M** | **$89.462M** | **+49.05%** |
+| **Operating Income (Loss)** | **$108.583M** | **$64.010M** | **$37.033M** | **-42.14%** | **$36.567M** | **$23.736M** | **-35.09%** |
+| **Operating Margin (%)** | 17.93% | 21.27% | 10.18% | -1,109 bps | 23.24% | 12.50% | -1,074 bps |
+| **Total Other Expense, Net** | -$1.1M | -$1.152M | -$9.143M | N/A | -$0.385M | -$4.331M | N/A |
+| **Provision for Income Taxes** | +$82.769M* | -$2.269M | -$5.893M | N/A | -$1.275M | -$4.723M | N/A |
+| **GAAP Net Income** | **$190.291M\*** | **$60.589M** | **$21.997M** | **-63.70%** | **$34.907M** | **$14.682M** | **-57.94%** |
+| **Cash from Operations (CFO)** | **$192.840M** | **$88.754M** | **$41.842M** | **-52.86%** | — | — | — |
+| **Cash Purchases of PP&E** | **$59.251M** | **$36.113M** | **$43.749M** | **+21.14%** | — | — | — |
+| **Simple Cash FCF (CFO - Cash PP&E)**| **+$133.589M** | **+$52.641M** | **-$1.907M** | **Deficit** | — | — | — |
 | **Noncash Aircraft Lease Additions**| $0.0M | $0.0M | **$340.040M** | N/A | — | — | — |
-| **Total Debt & Finance Leases** | $518.2M | $519.0M | **$867.656M** | **+67.2%** | — | — | — |
-| **Cash & Cash Equivalents** | $462.8M | $395.2M | $472.675M | +19.6% | — | — | — |
-| **Net Debt (incl. Leases)** | +$55.4M | +$123.8M | **+$394.981M** | **+$271.2M** | — | — | — |
 
-*\*Includes nonrecurring tax valuation allowance release of $103.3M.*
+*\*Includes a nonrecurring income tax benefit in Q4 2025 primarily resulting from a $103.3M valuation allowance release on deferred tax assets.*
 
-#### Primary Filing Insights:
-1. **Growth Deceleration:** Revenue growth slowed from +37.1% YoY in FY25 to +20.7% YoY in Q2 2026. While 20%+ growth remains robust in absolute terms, it represents a substantial deceleration from the hyper-growth rates that commanded peak valuation multiples.
-2. **Severe Operating Margin Compression:** In Q2 2026, GAAP operating income dropped from $36.567M to $23.736M (-35.1% YoY). Operating margin was cut almost in half, from **23.24% to 12.50%** (-1,074 bps), driven by operating expenses increasing +40.8% YoY ($122.9M vs $87.3M) as aviation maintenance, pilot staffing, and infrastructure overhead scaled faster than procedure volume.
-3. **Cash Flow Breakdown & FCF Deficit:** For the six months ended June 30, 2026, CFO fell by -$46.912M (-52.9% YoY) from $88.754M to $41.842M. With cash capital expenditures rising to $43.749M, **simple cash Free Cash Flow turned negative (-$1.907M)** compared to positive +$52.641M in 1H 2025.
-4. **Refutation of the "Self-Funding Compounder" Thesis:** The thesis that TMDX is an organically self-funding compounding machine is contradicted by 1H 2026 filings. Operating cash flow did not cover cash capex, let alone fleet growth. In 1H 2026, TMDX incurred **$340.040M in noncash finance lease additions** for right-of-use aircraft. Total debt and lease liabilities jumped to $867.656M, leaving net debt at +$394.981M. Rather than operating asset-light, TransMedics has assumed the balance-sheet profile of a regional airline operator.
+### Reconciled Balance Sheet & Capital Structure Comparison
 
----
+The table below reconciles cash and debt components, separating principal from carrying value and isolating finance lease liabilities:
 
-### B. Technical and Market State
+| Balance Sheet Item (in USD Millions) | December 31, 2025 (Audited 10-K) | June 30, 2026 (Unaudited 10-Q) | Reported Change | Classification / Note Locator |
+| :--- | :---: | :---: | :---: | :--- |
+| **Cash and Cash Equivalents** | **$488.366M** | **$472.675M** | -$15.691M | Unrestricted cash reserves (Item 1, p. 1) |
+| **Restricted Cash** | $0.500M | $18.438M | +$17.938M | Escrow / restricted collateral |
+| **Total Cash, Equivalents & Restricted Cash**| **$488.866M** | **$491.113M** | +$2.247M | Total cash reported on cash-flow statement (Item 1, p. 5) |
+| **1.50% Convertible Notes (Principal)** | $460.000M | $460.000M | $0.0M | Face value due 2028 (Note 7, p. 11) |
+| **1.50% Convertible Notes (Carrying Value)**| $452.804M | $454.260M | +$1.456M | Net of unamortized issuance costs (Item 1, p. 1) |
+| **Other Borrowings (Principal)** | $60.000M | $60.000M | $0.0M | $20.0M current / $40.0M noncurrent (Note 7, p. 11) |
+| **Other Borrowings (Carrying Value)** | $59.587M | $59.743M | +$0.156M | $20.0M current / $39.743M noncurrent (Item 1, p. 1) |
+| **Total Borrowings Principal (Excl. Leases)**| **$520.000M** | **$520.000M** | **$0.0M** | Total contractual borrowing principal |
+| **Total Borrowings Carrying Value (Excl. Leases)**| **$512.391M** | **$514.003M** | **+$1.612M** | Total carrying debt on balance sheet |
+| **Finance Lease Liabilities (Noncurrent)** | **$0.0M** | **$347.660M** | **+$347.660M** | Obligations for right-of-use aircraft (Note 7, p. 13) |
+| **Total Obligations Principal (Incl. Leases)**| **$520.000M** | **$867.660M** | **+$347.660M** | Principal debt + finance lease liability |
+| **Total Obligations Carrying Value (Incl. Leases)**| **$512.391M** | **$861.663M** | **+$349.272M** | Carrying debt + finance lease liability |
+| **Net Debt: Principal Excl. Leases** | **+$31.634M** | **+$47.325M** | +$15.691M | Total Borrowings Principal less Cash ($472.675M) |
+| **Net Debt: Carrying Value Excl. Leases**| **+$24.025M** | **+$41.328M** | +$17.303M | Total Borrowings Carrying Value less Cash |
+| **Net Debt: Principal Incl. Leases** | **+$31.634M** | **+$394.985M** | **+$363.351M** | Total Obligations Principal less Cash |
+| **Net Debt: Carrying Value Incl. Leases**| **+$24.025M** | **+$388.988M** | **+$364.963M** | Total Obligations Carrying Value less Cash |
 
-Primary market data as of October 22, 2026 establishes the following technical profile for `TMDX`:
-
-- **Current Market Price:** **$72.06**
-- **200-Session Daily SMA:** **$96.58** (Distance: **-25.39%**)
-- **50-Session Daily SMA:** **$84.27** (Distance: **-14.49%**)
-- **52-Week High / Low:** **$156.00** / **$60.11** (Drawdown from High: **-53.81%**)
-- **Technical Structure:** Active, entrenched downtrend. The stock is printing lower highs and lower lows below downward-sloping 50-day and 200-day moving averages (`Price < 50d SMA < 200d SMA`).
-
-#### Market Psychology & Skepticism:
-The market's sharp de-rating (-53.8% from peak) is not an irrational dislocation or emotional overshoot on an intact compounder; **the market is rationally pricing in the deceleration in revenue, the severe compression in operating margin, and the surge in debt obligations.** There is no base formation, no volume accumulation shelf, and no evidence that institutional distribution has completed. Entering or prioritizing active research now is premature because the market has not yet found an equilibrium valuation for TransMedics' asset-heavy aviation logistics model.
-
----
-
-### C. Root Cause of Prior Prioritization
-
-Why did Discovery Cycle 2 advance `TMDX` to a deep investigation and rank it second in the next-action queue?
-
-1. **Annual Reporting Lag Bias:** The initial screening relied heavily on audited full-year FY2025 numbers. FY25 was an exceptional milestone year ($605.5M rev, $192.8M CFO, $133.6M FCF), creating a trailing halo effect that obscured the interim deterioration already visible in the Q2 2026 Form 10-Q.
-2. **Thesis Momentum & Conceptual Attractiveness:** The conceptual narrative—transforming organ transplant logistics via FDA-approved warm perfusion cassettes and a proprietary aviation network—is intellectually compelling. The analyst allowed the elegance of the business concept to overpower the financial data.
-3. **Epistemic Conflation:** The triage conflated *Business Research Relevance* with *Research Urgency*. While TransMedics presents a fascinating business question (can perfusion logistics scale profitably?), it possessed zero research urgency given its negative 1H26 simple FCF, pending European aviation integration, and broken technical profile.
-4. **Underweighting Noncash Lease Debt:** Early analysis focused on simple cash PP&E ($59.3M in FY25) and underweighted noncash aircraft finance leases ($340.0M in 1H26), treating lease obligations as secondary balance-sheet footnote items rather than fixed claims on future cash flows.
+*Note on Sign Convention:* Under the standard corporate finance convention (`Net Debt = Debt Obligations - Cash`), positive net debt indicates that obligations exceed cash reserves.
 
 ---
 
-### D. Consequence for Prioritization
+## 3. Causal Attribution & Balanced Assessment
 
-- **Decision:** **DEMOTE `TMDX` FROM ACTIVE MONITORING TO `WAIT_FOR_EVENT` (Tier 2).**
-- **Immediate Action:** Cease active modeling and monitoring. Do not prepare a public Quality Watch dossier.
-- **Specific Observable Review Triggers:**
-  1. **Filing Trigger:** Publication of SEC Form 10-Q for Q3 2026 (expected early November 2026). ARX will inspect:
-     - Consolidated operating cash flow rebounding above $50.0M for the quarter.
-     - Consolidated gross margin holding above 58.0%, proving that European aviation rollout (PAD Aviation) does not dilute unit economics.
-     - Plateauing of aircraft finance lease obligations.
-  2. **Technical Trigger:** Price reclaiming the 50-day moving average and completing a minimum 4-week base consolidation without setting new cycle lows.
+To avoid replacing an uncritical bullish thesis with an equally unsupported bearish narrative, the observed financial trajectory is evaluated through four structured steps:
 
----
+### A. Reported Financial Changes
+1. **Revenue Growth Deceleration:** Consolidated revenue grew +20.93% YoY in 1H 2026 ($363.881M vs $300.907M in 1H 2025), down from +37.1% YoY in FY2025.
+2. **Operating Expense Expansion:** Operating expenses rose +46.78% YoY in 1H 2026 ($177.326M vs $120.807M). In Q2 2026, operating expenses grew +49.05% YoY ($89.462M vs $60.022M), driven by R&D increasing +98.52% ($31.632M vs $15.934M) and SG&A increasing +31.17% ($57.830M vs $44.088M).
+3. **Margin Compression:** Operating margin contracted from 21.27% in 1H 2025 to 10.18% in 1H 2026 (-1,109 bps). In Q2 2026, operating margin fell from 23.24% to 12.50% (-1,074 bps).
+4. **Interim Cash Flow Trajectory:** Cash provided by operating activities dropped -52.86% YoY in 1H 2026 to $41.842M (vs $88.754M in 1H 2025). Simple cash FCF (CFO minus cash PP&E purchases of $43.749M) was negative -$1.907M, compared to positive +$52.641M in 1H 2025.
+5. **Financing Commitments:** TMDX recognized $340.040M in noncash finance lease additions for right-of-use aircraft, establishing a $347.660M noncurrent lease liability as of June 30, 2026.
 
-## 3. Comprehensive Evaluation of the Full Cycle 2 Cohort (14 Candidates)
+### B. Management's Disclosed Explanation (Commentary)
+In the Q2 2026 earnings release (Form 8-K Ex 99.1) and Form 10-Q MD&A, management attributed the operating expense increase primarily to:
+- Planned investment in **OCS Kidney** development and pre-commercial infrastructure.
+- Investment in the next-generation **Gen 3.0** perfusion platform.
+- Expansion of **clinical programs**, including the ENHANCE Part B and DENOVO clinical trials.
+- Selected corporate and support infrastructure investments to support procedural scale.
+- Management noted that stock-based compensation within operating expenses was $8.2M in Q2 2026 compared to $9.0M in Q2 2025.
 
-The table below applies the four-dimensional evaluation framework across all 14 candidates examined or benchmarked in Discovery Cycle 2.
+### C. Plausible Alternative Explanations
+While management identifies pipeline and trial investments as the primary expense driver, operating a dedicated nationwide aviation logistics network involves asset-heavy transportation economics:
+- Aviation operating costs, including pilot compensation, fuel price volatility, routine maintenance, and FAA safety compliance, expand the company's fixed operating cost structure.
+- Adding aircraft under finance leases creates multi-year debt service and maintenance obligations.
+- If procedure growth decelerates, fixed flight overhead could create negative operating leverage, constraining margin expansion.
 
-### Comprehensive Candidate Triage & Priority Reassessment Table
+### D. Evidence Still Needed
+Distinguishing between productive clinical investment and structural operational drag requires forthcoming disclosures:
+- Form 10-Q Q3 2026 disclosures on gross margin stability and whether R&D and SG&A expense growth moderates relative to revenue.
+- Disclosure on the initial financial impact of the European PAD Aviation integration (completed July 1, 2026).
+- Evidence on whether operating cash flow rebounds to cover cash capital expenditures and contractual lease commitments.
 
-| Symbol | Company Name | Route | Business Direction | Technical State (Price / 200d SMA / Dist) | Valuation State | Decisive Research Question | Immediate Action | Review Trigger | Priority Rank & Rationale |
-| :--- | :--- | :---: | :---: | :---: | :---: | :--- | :---: | :--- | :--- |
-| **`ETN`** | Eaton Corporation plc | Route B | **Strengthening** | $368.99 / $395.34 (**-6.67%**)<br/>Consolidating near 50d ($418) | **Fair**<br/>(~25x Fwd P/E) | What % of Electrical Americas backlog is non-cancellable datacenter substations vs cyclical commercial building? | **`ACTIVE_RESEARCH`** | Form 10-Q Q3 2026 (Nov 2026) | **Rank 1 (Queue Leader):** Essential upstream datacenter power bottleneck, 79.5% FCF conversion, 'A-' credit, high margin resilience (29.9% Americas margin). |
-| **`TMDX`** | TransMedics Group, Inc. | Route A | **Weakening** (Interim) | $72.06 / $96.58 (**-25.39%**)<br/>Entrenched downtrend (-53.8% high) | **Speculative**<br/>(Aviation drag) | Can operating cash flow cover aircraft lease debt service without gross margins falling below 55%? | **`WAIT_FOR_EVENT`** | Form 10-Q Q3 2026 (Nov 2026) | **Rank 2 (Tier 2):** High business relevance demoted due to negative 1H26 simple FCF (-$1.9M), $347.7M lease debt, and broken technical setup. |
-| **`PODD`** | Insulet Corporation | Route A | **Strengthening** | $148.12 / $182.91 (**-19.02%**)<br/>Basing above 50d ($140.45) | **Compressed**<br/>(~23x Fwd P/E) | Does pharmacy benefit adoption sustain >18% operating margins as international expansion scales? | **`WAIT_FOR_EVENT`** | Form 10-Q Q3 2026 (Nov 2026) | **Rank 3 (Tier 2):** High-margin recurring consumable revenue (>85% recurring); superior cash conversion to TMDX, but awaiting international validation. |
-| **`CEG`** | Constellation Energy Corp | Route B | **Strengthening** (Contracted) | $255.21 / $282.31 (**-9.60%**)<br/>Pullback from $406 high | **Stretched**<br/>(PPA premium) | Will FERC approve behind-the-meter nuclear colocation tariffs without transmission penalties? | **`WAIT_FOR_EVENT`** | FERC Colocation Ruling | **Rank 4 (Tier 2):** Exceptional long-term baseload moat (Microsoft 20-yr PPA), but binary regulatory tariffs make near-term financial modeling premature. |
-| **`TDG`** | TransDigm Group, Inc. | Route A | **Stable / Strong** | $1,141.74 / $1,233.84 (**-7.46%**)<br/>Consolidating at 50d ($1,140) | **Fair / Premium**<br/>(Debt-adjusted) | Can proprietary aftermarket pricing power sustain >45% EBITDA margins under higher refinancing costs? | **`WAIT_FOR_SETUP`** | Technical Base & Form 10-K FY26 (Nov 2026) | **Rank 5 (Tier 3):** World-class aftermarket pricing power, but $22B+ funded debt violates Quality Watch capital resilience standards; internal benchmark only. |
-| **`HUBB`** | Hubbell Incorporated | Route B | **Stable** | $445.80 / $489.10 (**-8.85%**)<br/>Consolidating near 50d ($465) | **Fair**<br/>(~24x Fwd P/E) | What is Hubbell's relative growth rate in high-voltage utility switchgear vs standard pole-top distribution? | **`WAIT_FOR_SETUP`** | Valuation Compression vs ETN | **Rank 6 (Tier 3):** High quality utility grid supplier, but lower direct high-voltage datacenter substation leverage than Eaton; secondary priority. |
-| **`NVR`** | NVR, Inc. | Route A | **Stable** (Cyclical) | $6,110.63 / $6,587.80 (**-7.24%**)<br/>Consolidating range | **Compressed**<br/>(~13x P/E) | Can lot option margins withstand sustained 6.5%+ mortgage rates and land developer cost inflation? | **`DEFERRED`** | Mortgage Rate Drop < 6% | **Rank 7 (Tier 4):** Elite capital returns (>35% ROIC, zero debt), but business model is subordinated to macro mortgage rate cycle; deferred. |
-| **`APP`** | AppLovin Corporation | Route A | **Strengthening** (Cash) | $264.28 / $427.39 (**-38.16%**)<br/>Broken steep downtrend | **Speculative**<br/>(Regulatory risk) | How durable is AXON 2.0 eCPM monetization if Apple/Google alter mobile attribution and privacy rules? | **`DEFERRED`** | Platform Privacy Policy Audit | **Rank 8 (Tier 4):** High cash generation offset by unacceptable platform counterparty dependence and governance opacity; deferred. |
-| **`LNTH`** | Lantheus Holdings, Inc. | Route A | **Weakening** (Terminal) | $100.10 / $90.40 (**+10.74%**)<br/>Above 200d SMA | **Compressed**<br/>(~9x P/E) | What percentage of Pylarify diagnostic volume survives imminent generic radiopharmaceutical alternatives? | **`DEFERRED`** | Patent Dispute Settlement | **Rank 9 (Tier 4):** Severe patent cliff and single-product concentration (>70% rev) destroy terminal value certainty; deferred. |
-| **`POWI`** | Power Integrations, Inc. | Route B | **Weakening** (Cyclical) | $47.12 / $58.67 (**-19.69%**)<br/>Downtrend (-48% high) | **Stretched**<br/>(Depressed earnings) | When will non-datacenter channel inventories normalize to allow GaN datacenter ICs to drive margins? | **`DEFERRED`** | Channel Inventory Normalization | **Rank 10 (Tier 4):** Datacenter GaN is <15% of revenue; remaining 85% is burdened by severe industrial/consumer inventory overhang; deferred. |
-| **`GEV`** | GE Vernova Inc. | Route B | **Mixed** (Turnaround) | $827.42 / $937.94 (**-11.78%**)<br/>Post-spin correction | **Speculative**<br/>(Turnaround multiple) | When will legacy offshore wind loss provisions terminate to allow Power/Electrification cash flow through? | **`DEFERRED`** | Wind Loss Provision Cessation | **Rank 11 (Tier 4):** Strong electrification positioning overshadowed by volatile legacy offshore wind contract liabilities; deferred. |
-| **`MEDP`** | Medpace Holdings, Inc. | Reference | **Strengthening** | $653.96 / $527.32 (**+24.01%**)<br/>Strong uptrend near 52w high | **Fair / Premium**<br/>(High ROIC) | Full-service biotech CRO reference asset (Zero debt, 97.5% FCF conversion). | **`PUBLISHED_ASSET`** | Quarterly Watch Maintenance | **Baseline Benchmark:** Published Quality Watch asset; sets the bar for debt-free cash conversion. |
-| **`PWR`** | Quanta Services, Inc. | Reference | **Stable / Cyclical** | $552.44 / $621.41 (**-11.10%**)<br/>Pullback from $788 high | **Fair**<br/>(~28x Fwd P/E) | EPC infrastructure contractor benchmark (8-9% operating margin, execution risk vs equipment makers). | **`BENCHMARK_ONLY`** | Quarterly Peer Tracking | **Expansion Benchmark:** Demonstrates strong grid backlog, but lower margin and fixed-price risk compared to ETN. |
-| **`VRT`** | Vertiv Holdings Co | Reference | **Strengthening** (High Cap) | $195.59 / $268.96 (**-27.28%**)<br/>Sharp correction (-48.5% high) | **Stretched**<br/>(AI Multiple) | White-space thermal cooling benchmark (Higher customer concentration, lower gross margins than ETN). | **`BENCHMARK_ONLY`** | Quarterly Peer Tracking | **Cycle 1 Benchmark:** Essential cooling supplier, but higher valuation volatility and leverage than Eaton. |
-
----
-
-## 4. The Evidence-Supported Research Queue (Four Structured Tiers)
-
-```mermaid
-flowchart TD
-    subgraph ActiveQueue["The Four-Tier Internal Research Queue"]
-        Tier1["<b>TIER 1: ACTIVE RESEARCH (0-2 Candidates)</b><br/>• ETN (Eaton Corporation plc) — Datacenter Substation Backlog Audit"]
-        Tier2["<b>TIER 2: WAIT-FOR-EVENT / FILING</b><br/>• TMDX — Form 10-Q Q3 2026 (Cash Flow & Lease Debt Stabilization)<br/>• PODD — Form 10-Q Q3 2026 (International Omnipod 5 Margin Resilience)<br/>• CEG — FERC Order on Behind-the-Meter Nuclear Colocation Tariffs"]
-        Tier3["<b>TIER 3: WAIT-FOR-SETUP / VALUATION</b><br/>• TDG — Technical Base Formation & Form 10-K FY26 Aftermarket Audit<br/>• HUBB — Valuation Compression Relative to High-Voltage Peers"]
-        Tier4["<b>TIER 4: DEFERRED / INACTIVE</b><br/>• NVR (Mortgage Rate Cap) | APP (Counterparty Risk)<br/>• LNTH (Patent Cliff) | POWI (Inventory Overhang) | GEV (Wind Losses)"]
-    end
-    Tier1 --> Tier2 --> Tier3 --> Tier4
-```
-
-### TIER 1: ACTIVE RESEARCH (Queue Leader)
-- **Asset Authorized:** **`ETN` (Eaton Corporation plc)**
-- **Why Investigated Now:** Eaton is the only Cycle 2 candidate where both **Business Research Relevance** (entrenched spec-in position in high-voltage utility substations and datacenter switchgear) and **Research Urgency** (auditing Electrical Americas megaproject backlog composition prior to Q3 earnings disclosures) coincide with a resilient investment-grade balance sheet (1.6x Net Debt / EBITDA, 79.5% FCF conversion).
-- **Decisive Investigation Scope:** Perform deep backlog disaggregation: quantify what percentage of the multi-year Electrical Americas order book is comprised of non-cancellable, binding utility substation and hyperscaler switchgear contracts versus cyclical commercial real estate projects subject to deferral.
-
-### TIER 2: WAIT-FOR-EVENT / FILING (Active Monitoring Suspended)
-- **`TMDX` (TransMedics Group, Inc.):**
-  - *Status:* Demoted from active priority.
-  - *Decisive Event:* Form 10-Q Q3 2026 filing (November 2026).
-  - *Pass Condition:* Quarterly CFO > $50.0M, consolidated gross margins > 58.0%, and stabilized aircraft lease commitments.
-- **`PODD` (Insulet Corporation):**
-  - *Status:* Prioritized for event review.
-  - *Decisive Event:* Form 10-Q Q3 2026 filing (November 2026).
-  - *Pass Condition:* International Omnipod 5 revenue growth exceeding +25% YoY and operating margin holding >18.0%.
-- **`CEG` (Constellation Energy Corp):**
-  - *Status:* Prioritized for regulatory resolution.
-  - *Decisive Event:* Federal Energy Regulatory Commission (FERC) formal order on behind-the-meter datacenter colocation tariffs.
-  - *Pass Condition:* FERC order permitting direct nuclear colocation without punitive grid transmission surcharges.
-
-### TIER 3: WAIT-FOR-SETUP / VALUATION (Market Inopportune)
-- **`TDG` (TransDigm Group, Inc.):** Retained strictly as an internal benchmark for sole-source proprietary pricing power. Research inactive until price establishes a constructive multi-month base and Form 10-K FY2026 confirms debt coverage.
-- **`HUBB` (Hubbell Incorporated):** Solid grid equipment franchise; inactive until relative valuation compresses toward broader industrial medians.
-
-### TIER 4: DEFERRED / INACTIVE (Zero Research Resource Allocation)
-- **`NVR`:** Deferred due to macro mortgage rate sensitivity.
-- **`APP`:** Deferred due to platform counterparty and app store policy risks.
-- **`LNTH`:** Deferred due to Pylarify patent expiration and terminal value uncertainty.
-- **`POWI`:** Deferred due to non-datacenter consumer/industrial inventory overhang.
-- **`GEV`:** Deferred due to legacy offshore wind contract loss provisions and restructuring volatility.
+### Live Hypotheses Maintained
+- **Hypothesis 1 (Productive Reinvestment):** The interim margin compression reflects a planned, front-loaded investment cycle in OCS Kidney, Gen 3.0, and clinical trials that will expand addressable organ indications and restore operating leverage.
+- **Hypothesis 2 (Structural Capital Intensity):** Vertically integrating air logistics introduces transportation-sector cost dynamics and fixed lease debt commitments that structurally dampen long-term cash conversion per share.
 
 ---
 
-## 5. Cross-Reference & Discovery Cycle 2 Document Relationship
+## 4. Technical & Valuation Evidence Standards
 
-This reassessment formally clarifies the standing of prior internal artifacts produced during Discovery Cycle 2:
+### Technical State Qualification
+- **Observed Market Fact:** As of the regular session close on October 21, 2026, TransMedics (`TMDX`) closed at **$72.06**, which is below its trailing 200-session unadjusted simple moving average of **$96.58** (Source: S&P / Yahoo Finance market store, retrieval date October 22, 2026).
+- **Unresolved Technical Dimensions:** Daily moving average slope, comparative relative strength against medtech benchmarks, chart pattern consolidation, and volume accumulation/distribution are not independently metered with reproducible audit trails in the current environment and are formally classified as **`TECHNICAL_STATE_UNRESOLVED`**.
+- Subjective interpretations regarding "why market participants sold" or assertions of "institutional distribution" are withdrawn.
 
-1. **`SEARCH_UNIVERSE_AND_TRIAGE_MATRIX.md`:** Serves as the historical record of the 14 candidates screened during the execution of Cycle 2. Its initial triage disposition for `TMDX` (`ADVANCED_TO_DEEP_INVESTIGATION`) reflected the starting triage phase, which is now formally superseded by Section 2 and Section 4 of this reassessment.
-2. **`DISCOVERY_OPPORTUNITY_RECORDS.md`:** The factual financial reconciliations for FY2025 (audited) and Q2 2026 (unaudited) remain authoritative and fully verified. However, `TMDX`'s operational priority is updated from active internal monitoring to **`WAIT_FOR_EVENT`**.
-3. **`CYCLE_2_EVALUATION_REPORT.md`:** The process verdict (`CONTINUE`) and effort logs (~2.20 hours) remain valid. The next-action queue in Section 4 is formally updated to place `ETN` as the sole Tier 1 candidate, with `TMDX`, `PODD`, and `CEG` placed in Tier 2 pending discrete observable triggers.
+### Valuation State Qualification
+- In the absence of live, primary-source broker consensus feeds and explicit dated discounted cash flow models with published terminal assumptions, forward P/E and multiple labels ("fair," "stretched," "compressed") are unverified.
+- All candidate valuation assessments are classified as **`VALUATION_EXPECTATION_GAP_UNRESOLVED`** or **`VALUATION_NOT_ASSESSED`**.
 
 ---
 
-## 6. Governance, Backlog Reconciliation & Verification
+## 5. Disposition & Concrete Action for Eaton (`ETN`)
 
-- **Engineering Backlog Update:** In `docs/planning/ENGINEERING_BACKLOG.md`:
-  - `BACKLOG-RESEARCH-EVIDENCE-DISCOVERY-046` is marked **`COMPLETED_AND_ADOPTED`** (citing merge commit `404a566734306a9e51b442c10dfe5fe028e7d19f`, tree `caab46d1e93c44aa34994bbb76a4e6c0a7605423`).
-  - `BACKLOG-RESEARCH-PRIORITY-REASSESSMENT-047` is registered as **`IN_PROGRESS`** on branch `feat/research-candidate-priority-reassessment`.
+Eaton Corporation plc (`ETN`, CIK: `0001551182`) was surfaced in Cycle 2 based on its market leadership in electrical distribution and high-voltage substation switchgear.
+
+### Primary Disclosures Regarding Backlog (Form 10-K FY2025, Note 3 & Item 7)
+- Eaton reports total backlog of **$19.8 billion** as of December 31, 2025 (with approximately 69% targeted for delivery within 12 months).
+- Electrical Americas backlog was **$13,246 million** (representing +31% total growth and +19% organic growth YoY, with an organic book-to-bill ratio of 1.2).
+- Note 3 defines backlog as unsatisfied or partially satisfied obligations where "only the amount of orders to which customers are firmly committed are included."
+
+### Bounded Investigation Result: `NOT_DISCLOSED / UNRESOLVED`
+A focused audit of Eaton's Form 10-K FY2025 reveals that **Eaton does not disclose the detailed percentage breakdown of Electrical Americas backlog between datacenter high-voltage switchgear versus commercial construction**, nor does it publish customer-specific contract cancellation penalty clauses.
+
+### Concrete Disposition: `REVIEW_ON_EVENT`
+Because the detailed sub-segment backlog composition cannot be extracted from accessible primary SEC filings prior to the next quarterly release, maintaining ETN as an urgent active investigation before earnings is unjustified.
+- **Action:** Transition ETN to **`REVIEW_ON_EVENT`**.
+- **Review Trigger:** Publication of SEC Form 10-Q for Q3 2026 (expected early November 2026).
+- **Evidence to Inspect:** Electrical Americas quarterly book-to-bill ratio, organic order growth, and segment operating profit margin resilience.
+
+---
+
+## 6. Proportionate Internal Research Queue
+
+The compact matrix below establishes the internal research disposition across all 14 examined and benchmarked candidates, avoiding arbitrary numerical quotas or artificial rank ordering:
+
+| Candidate Symbol | Company Name | Decision-Relevant Supported Evidence | Important Unresolved Evidence | Internal Disposition | Specific Review Trigger / Action | Relative Allocation Rationale |
+| :--- | :--- | :--- | :--- | :---: | :--- | :--- |
+| **`ETN`** | Eaton Corporation plc | Leader in electrical distribution; Electrical Americas segment margin 29.9% ($3,972M); 79.5% FCF conversion; 'A-' credit rating. | Detailed backlog split (datacenter substations vs commercial construction) is `NOT_DISCLOSED`. | **`REVIEW_ON_EVENT`** | Form 10-Q Q3 2026 (Nov 2026) | Strong upstream positioning, but detailed backlog mix cannot be resolved prior to quarterly disclosure. |
+| **`TMDX`** | TransMedics Group, Inc. | FY25 revenue $605.5M; 1H26 revenue +20.9%; 1H26 operating income -42.1%; 1H26 simple cash FCF -$1.9M; $347.7M aircraft lease debt. | Productive clinical investment (OCS Kidney/Gen 3.0) vs fixed aviation logistics drag. | **`REVIEW_ON_EVENT`** | Form 10-Q Q3 2026 (Nov 2026) | Research effort deferred pending observable gross margin stability and cash conversion trajectory. |
+| **`PODD`** | Insulet Corporation | FY25 revenue $2.71B (+30.7%); operating income $473.8M (17.5% margin); >85% recurring pharmacy channel revenue. | International Omnipod 5 commercial adoption rate and gross margin sustainability. | **`REVIEW_ON_EVENT`** | Form 10-Q Q3 2026 (Nov 2026) | High recurring consumable revenue; review on Q3 international expansion metrics. |
+| **`CEG`** | Constellation Energy Corp | Largest US merchant nuclear fleet; 20-year Microsoft PPA for Three Mile Island Unit 1 restart. | FERC regulatory tariff ruling on behind-the-meter datacenter colocation dockets. | **`REVIEW_ON_EVENT`** | FERC Colocation Docket Ruling | Strategic baseload power asset, but binary regulatory cost-allocation decision dominates near-term modeling. |
+| **`TDG`** | TransDigm Group, Inc. | Proprietary commercial/military aerospace aftermarket parts (>45% EBITDA margin). | High financial leverage ($22B+ funded debt) sensitivity to debt refinancing rates. | **`INACTIVE`** | Form 10-K FY2026 (Nov 2026) | Pricing power benchmark; elevated leverage warrants monitoring rather than public research. |
+| **`HUBB`** | Hubbell Incorporated | Consistent utility grid transmission and distribution components; ~20% operating margin. | Lower direct leverage to hyperscale high-voltage datacenter substations than Eaton. | **`INACTIVE`** | Relative multiple compression | Quality utility equipment play; secondary priority behind Eaton on datacenter power exposure. |
+| **`NVR`** | NVR, Inc. | High ROIC (>35%) land-light homebuilding option model; zero funded debt. | Sensitivity of homebuilding absorption and lot option margins to elevated mortgage rates. | **`INACTIVE`** | Macro mortgage rate inflection | Disciplined capital allocator, but structural thesis is subordinate to macro interest rate cycle. |
+| **`APP`** | AppLovin Corporation | Cash-generative mobile advertising recommendation engine (AXON 2.0). | Vulnerability to Apple / Google mobile app store privacy and attribution policy changes. | **`INACTIVE`** | Mobile platform policy review | Strong reported cash flows offset by extreme platform counterparty dependence and governance opacity. |
+| **`LNTH`** | Lantheus Holdings, Inc. | High cash generation from Pylarify PSMA PET prostate cancer imaging diagnostic. | Multi-year terminal value durability given single-product concentration and generic entry. | **`INACTIVE`** | Patent litigation resolution | Diagnostic cash flow is vulnerable to medium-term generic competition; terminal certainty low. |
+| **`POWI`** | Power Integrations, Inc. | High-voltage Gallium Nitride (GaN) ICs for datacenter power supplies and industrial power. | GaN datacenter growth overshadowed by consumer and industrial channel inventory overhang. | **`INACTIVE`** | Industrial channel inventory cycle | High technology quality, but consolidated results remain dominated by broader cyclical headwinds. |
+| **`GEV`** | GE Vernova Inc. | Global power generation and grid electrification equipment post-spin from General Electric. | Magnitude and duration of legacy offshore wind contract loss provisions. | **`INACTIVE`** | Cessation of wind contract losses | Grid positioning offset by legacy contract liabilities and restructuring volatility. |
+| **`MEDP`** | Medpace Holdings, Inc. | Published Quality Watch asset; full-service biotech CRO; zero funded debt; >95% FCF conversion. | Quarterly trial cancellation rates and biotech funding trends. | **`REFERENCE_BENCHMARK`** | Quarterly Watch Maintenance | Baseline quality benchmark to calibrate CRO and healthcare capital return standards. |
+| **`PWR`** | Quanta Services, Inc. | Electric utility and renewable infrastructure contractor from initial expansion cohort. | Execution risks on fixed-price projects and lower operating margins (8-9%). | **`REFERENCE_BENCHMARK`** | Quarterly Peer Tracking | Infrastructure contractor benchmark to contrast against equipment manufacturers. |
+| **`VRT`** | Vertiv Holdings Co | White-space datacenter liquid cooling and power distribution benchmark from Cycle 1. | Customer concentration among hyperscalers and higher financial leverage than Eaton. | **`REFERENCE_BENCHMARK`** | Quarterly Peer Tracking | Thermal cooling benchmark to monitor datacenter infrastructure buildout trends. |
+
+---
+
+## 7. Governance, Invariant Adherence & Verification
+
 - **System Invariants Maintained:**
-  - Public watch manifest remains exactly 6 approved symbols: `FIX, DUOL, ULTA, MEDP, ISRG, DECK`.
-  - Baseline discovery ledger `odp05_discovery_ledger.json` SHA-256 (`a65be3b...`) remains strictly untouched and verified.
-  - Zero live ingestion, scanner activation, or frontend bundle changes.
+  - Published watch collection remains exactly 6 approved symbols (`FIX, DUOL, ULTA, MEDP, ISRG, DECK`).
+  - Production snapshots remain unchanged and unreferenced by internal records.
+  - Frozen ODP-05 discovery ledger SHA-256 (`a65be3b38cdf988081a29257fb41674c3591b10a666362f351794a7d1c40979d`) is untouched.
+  - Zero scanner activation, universe expansion, live ingestion, or frontend code mutations.
+- **Backlog Tracking Reconciled:**
+  - `docs/planning/ENGINEERING_BACKLOG.md` maintains `BACKLOG-RESEARCH-EVIDENCE-DISCOVERY-046` as `COMPLETED_AND_ADOPTED` and `BACKLOG-RESEARCH-PRIORITY-REASSESSMENT-047` as `IN_PROGRESS` on branch `feat/research-candidate-priority-reassessment`.
+- **Cross-Reference Synchronization:**
+  - Priority notice callouts in `DISCOVERY_OPPORTUNITY_RECORDS.md`, `SEARCH_UNIVERSE_AND_TRIAGE_MATRIX.md`, and `CYCLE_2_EVALUATION_REPORT.md` are synchronized to reflect this reconciled reassessment.
