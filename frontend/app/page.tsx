@@ -363,13 +363,13 @@ function TerminalContent() {
 
                   <PriceChart
                     symbol={selectedSymbol}
-                    candles={data?.candles || []}
-                    currentPrice={data?.currentPrice}
-                    liveSpotPrice={data?.liveSpotPrice}
-                    analysisReferencePrice={data?.analysisReferencePrice}
-                    optimalExecution={data?.optimalExecution}
-                    marketPriceState={data?.marketPriceState}
-                    priceChangePct={data?.priceChangePct24h}
+                    candles={data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? (data?.candles || []) : []}
+                    currentPrice={data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data?.currentPrice : undefined}
+                    liveSpotPrice={data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data?.liveSpotPrice : undefined}
+                    analysisReferencePrice={data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data?.analysisReferencePrice : undefined}
+                    optimalExecution={data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data?.optimalExecution : undefined}
+                    marketPriceState={data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data?.marketPriceState : undefined}
+                    priceChangePct={data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data?.priceChangePct24h : undefined}
                     interval={interval}
                     userRole={userRole}
                     onRoleChange={handleRoleChange}
@@ -411,7 +411,7 @@ function TerminalContent() {
                         : undefined
                     }
                     loading={loading}
-                    technicals={data?.technicals}
+                    technicals={data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data?.technicals : undefined}
                   />
                 </div>
               }
