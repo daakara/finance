@@ -669,6 +669,10 @@ class VCPScannerRunner:
         matched_count = rec.get("matched_count")
         results = rec.get("results")
 
+        # Invariant: Reject boolean, non-int, or negative matched_count values
+        if type(matched_count) is bool or (matched_count is not None and type(matched_count) is not int) or (type(matched_count) is int and matched_count < 0):
+            return True
+
         # Inconsistent null matched_count on AVAILABLE/STALE snapshot
         if matched_count is None and (results is None or len(results) == 0):
             return True
