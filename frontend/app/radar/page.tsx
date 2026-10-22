@@ -11,6 +11,9 @@ import {
   CanonicalRadarCategory,
   RadarCapabilities,
   RadarCapabilityStatus,
+  DEFAULT_RADAR_CAPABILITIES,
+  normalizeRadarCapabilities,
+  getPublicationIntegrityLabel,
 } from '../../lib/api';
 import { trackRadarAssetClick } from '../../lib/matomo';
 import { MASTER_ASSET_CATALOG } from '../../lib/masterCatalog';
@@ -43,26 +46,6 @@ interface RadarAsset {
 
 type CategoryFilter = 'ALL' | CanonicalRadarCategory;
 
-const DEFAULT_RADAR_CAPABILITIES: RadarCapabilities = {
-  VALUE_GARP: {
-    status: "AVAILABLE",
-    universeScreening: "AVAILABLE",
-    singleAssetAnalysis: "AVAILABLE",
-    rationale: "Authentic multi-factor fundamental screening active across known candidate universe.",
-  },
-  VCP: {
-    status: "PIPELINE_PENDING",
-    universeScreening: "PIPELINE_PENDING",
-    singleAssetAnalysis: "AVAILABLE",
-    rationale: "Single-asset volatility contraction geometry active on /setups and /analytics; universe-level batch scanning pipeline is pending deployment.",
-  },
-  SMART_MONEY: {
-    status: "PIPELINE_PENDING",
-    universeScreening: "PIPELINE_PENDING",
-    singleAssetAnalysis: "AVAILABLE",
-    rationale: "Single-asset SEC Form 4 and Congressional STOCK Act disclosures active on /smart-money; universe-level institutional accumulation screener pipeline is pending deployment.",
-  },
-};
 
 function parseCanonicalExecutionStatus(raw: string): ExecutionStatus {
   const s = raw.trim().toUpperCase();
@@ -121,6 +104,19 @@ function RadarContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isOnDemandLoading, setIsOnDemandLoading] = useState(false);
   const [onDemandError, setOnDemandError] = useState<string | null>(null);
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  const latestRequestIdRef = React.useRef(0);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).__arxTriggerRadarScan = () => setRefreshNonce((n) => n + 1);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete (window as any).__arxTriggerRadarScan;
+      }
+    };
+  }, []);
 
   const {
     isVerified: isPortfolioVerified,
@@ -157,15 +153,13 @@ function RadarContent() {
 
   useEffect(() => {
     let isMounted = true;
+    const reqId = ++latestRequestIdRef.current;
+    setIsLoading(true);
+
     fetchScreenerGems("all")
       .then((res) => {
-        if (!isMounted) return;
-        if (res.capabilities) {
-          setCapabilities((prev) => ({
-            ...prev,
-            ...res.capabilities,
-          }));
-        }
+        if (!isMounted || reqId !== latestRequestIdRef.current) return;
+        setCapabilities(normalizeRadarCapabilities(res.capabilities));
         const mapped: RadarAsset[] = (res.results || []).map((gem: any) => {
           // Canonical typed categories: strictly consume explicit backend categories.
           // Zero substring-based inference from arbitrary strings (e.g. "Smart Growth" or "Flow Traders").
@@ -214,13 +208,15 @@ function RadarContent() {
         setIsLoading(false);
       })
       .catch(() => {
-        if (!isMounted) return;
+        if (!isMounted || reqId !== latestRequestIdRef.current) return;
+        setCapabilities(DEFAULT_RADAR_CAPABILITIES);
+        setAllAssets([]);
         setIsLoading(false);
       });
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [refreshNonce]);
 
   // Category Counts & Invariant Enforcement
   // Zero Semantics Invariant: Numerical count (including 0) is permitted ONLY when
@@ -1055,9 +1051,32 @@ function RadarContent() {
                 }
                 return null;
               })()}
-              <div className="text-[11px] text-slate-500 font-mono">
-                Publication Integrity: Verified
-              </div>
+              {(() => {
+                const cap = capabilities.VCP;
+                const label = getPublicationIntegrityLabel(cap);
+                if (cap?.isRollback || cap?.publicationIntegrity === 'ROLLBACK') {
+                  return (
+                    <div className="text-[11px] text-amber-400/90 font-mono flex items-center gap-1.5" data-testid="publication-integrity-badge">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                      {label}
+                    </div>
+                  );
+                }
+                if (cap?.publicationIntegrity === 'VERIFIED' || cap?.publicationIntegrityVerified === true) {
+                  return (
+                    <div className="text-[11px] text-emerald-400 font-mono flex items-center gap-1.5" data-testid="publication-integrity-badge">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                      {label}
+                    </div>
+                  );
+                }
+                return (
+                  <div className="text-[11px] text-slate-500 font-mono flex items-center gap-1.5" data-testid="publication-integrity-badge">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                    {label}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}

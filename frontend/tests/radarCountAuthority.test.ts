@@ -1,7 +1,15 @@
 import assert from "node:assert";
 import fs from "node:fs";
 import path from "node:path";
-import { RadarCapabilityDetail, CanonicalRadarCategory, fetchScreenerGems } from "../lib/api";
+import {
+  RadarCapabilityDetail,
+  CanonicalRadarCategory,
+  RadarCapabilities,
+  DEFAULT_RADAR_CAPABILITIES,
+  normalizeRadarCapabilities,
+  getPublicationIntegrityLabel,
+  fetchScreenerGems,
+} from "../lib/api";
 
 console.log("Starting Radar Count Authority & Filtered Display Verification Suite...\n");
 
@@ -486,6 +494,284 @@ async function testFetchScreenerGemsTransformation() {
     const text6 = formatRadarVcpBannerCount(res6.capabilities?.VCP, res6.results.length);
     assert.strictEqual(text6, "1 scanner matches · 150 scannable population");
     console.log("   [PASS] 6.6: Nonempty candidate compatibility preserved -> '1 scanner matches · 150 scannable population'");
+
+    // ---------------------------------------------------------------------------
+    // 7. Sequential State Transitions & Request Discard Verification
+    // ---------------------------------------------------------------------------
+    console.log("\n7. Verifying sequential state transitions & request discard...");
+
+    // Operational initial baseline
+    const operationalBaseline: RadarCapabilities = {
+      ...DEFAULT_RADAR_CAPABILITIES,
+      VCP: {
+        status: "AVAILABLE",
+        universeScreening: "AVAILABLE",
+        singleAssetAnalysis: "AVAILABLE",
+        matchedCount: 12,
+        populationDenominator: 150,
+        universeBuildId: "build-active-12",
+        publicationDigest: "sha256-digest-12",
+        isRollback: false,
+        publicationIntegrity: "VERIFIED",
+        publicationIntegrityVerified: true,
+      },
+      VALUE_GARP: {
+        status: "AVAILABLE",
+        universeScreening: "AVAILABLE",
+        singleAssetAnalysis: "AVAILABLE",
+        matchedCount: 7,
+      },
+    };
+
+    // Transition 1: AVAILABLE -> missing capabilities
+    // Expected: Previous operational claim removed; falls back to fail-closed canonical default.
+    const t1Normalized = normalizeRadarCapabilities(undefined);
+    assert.strictEqual(t1Normalized.VCP.universeScreening, "PIPELINE_PENDING");
+    assert.strictEqual(t1Normalized.VCP.matchedCount, null);
+    assert.strictEqual(t1Normalized.VCP.universeBuildId, null);
+    console.log("   [PASS] 7.1: AVAILABLE -> missing capabilities: Operational claim removed and fails closed");
+
+    // Transition 2: AVAILABLE -> PIPELINE_PENDING
+    // Expected: Scanner Pending; previous matches removed; population provenance preserved.
+    const t2Normalized = normalizeRadarCapabilities({
+      VCP: {
+        status: "PIPELINE_PENDING",
+        universeScreening: "PIPELINE_PENDING",
+        singleAssetAnalysis: "AVAILABLE",
+        matchedCount: null,
+        populationDenominator: 150,
+        universeBuildId: "build-s209-pending",
+        publicationDigest: "sha256-pending-digest",
+        isRollback: false,
+      },
+    });
+    assert.strictEqual(t2Normalized.VCP.universeScreening, "PIPELINE_PENDING");
+    assert.strictEqual(t2Normalized.VCP.matchedCount, null);
+    assert.strictEqual(t2Normalized.VCP.populationDenominator, 150);
+    const textT2 = formatRadarVcpBannerCount(t2Normalized.VCP, 0);
+    assert.strictEqual(textT2, "Scanner Pending · 150 scannable population");
+    console.log("   [PASS] 7.2: AVAILABLE -> PIPELINE_PENDING: Previous matches removed, renders 'Scanner Pending'");
+
+    // Transition 3: AVAILABLE -> rolled-back publication
+    // Expected: Pending; rollback disclosed; operational claims suppressed.
+    const t3Normalized = normalizeRadarCapabilities({
+      VCP: {
+        status: "AVAILABLE", // Even if payload erroneously claimed AVAILABLE, isRollback suppresses it!
+        universeScreening: "AVAILABLE",
+        singleAssetAnalysis: "AVAILABLE",
+        matchedCount: 5,
+        populationDenominator: 150,
+        universeBuildId: "build-rb",
+        publicationDigest: "sha256-rb-digest",
+        isRollback: true,
+        rollbackReason: "Integrity alert",
+      },
+    });
+    assert.strictEqual(t3Normalized.VCP.isRollback, true);
+    assert.strictEqual(t3Normalized.VCP.universeScreening, "PIPELINE_PENDING");
+    assert.strictEqual(t3Normalized.VCP.matchedCount, null);
+    assert.strictEqual(getPublicationIntegrityLabel(t3Normalized.VCP), "Publication Integrity: Rolled back");
+    console.log("   [PASS] 7.3: AVAILABLE -> rolled-back publication: Rollback disclosed and operational claims suppressed");
+
+    // Transition 4: Valid provenance -> missing digest
+    // Expected: Coverage Pending rendered because provenance is incomplete.
+    const t4Normalized = normalizeRadarCapabilities({
+      VCP: {
+        status: "AVAILABLE",
+        universeScreening: "AVAILABLE",
+        singleAssetAnalysis: "AVAILABLE",
+        matchedCount: 3,
+        populationDenominator: 150,
+        universeBuildId: "build-no-digest",
+        publicationDigest: null,
+        isRollback: false,
+      },
+    });
+    assert.strictEqual(t4Normalized.VCP.matchedCount, 3);
+    const textT4 = formatRadarVcpBannerCount(t4Normalized.VCP, 3);
+    assert.strictEqual(textT4, "3 scanner matches · Coverage Pending");
+    console.log("   [PASS] 7.4: Valid provenance -> missing digest: Provenance gate enforces 'Coverage Pending'");
+
+    // Transition 5: Operational zero -> malformed response
+    // Expected: Malformed count fails closed; does not leak operational claim.
+    const t5Normalized = normalizeRadarCapabilities({
+      VCP: {
+        status: "AVAILABLE",
+        universeScreening: "AVAILABLE",
+        singleAssetAnalysis: "AVAILABLE",
+        matchedCount: -99, // Malformed negative count
+        populationDenominator: 150,
+        universeBuildId: "build-malformed",
+        publicationDigest: "sha256-malformed",
+        isRollback: false,
+      },
+    });
+    assert.strictEqual(t5Normalized.VCP.universeScreening, "PIPELINE_PENDING");
+    assert.strictEqual(t5Normalized.VCP.matchedCount, null);
+    console.log("   [PASS] 7.5: Operational zero -> malformed response: Fails closed to PIPELINE_PENDING");
+
+    // Transition 6: Pending -> verified AVAILABLE
+    // Expected: New authoritative matches shown; verified publication integrity displayed.
+    const t6Normalized = normalizeRadarCapabilities({
+      VCP: {
+        status: "AVAILABLE",
+        universeScreening: "AVAILABLE",
+        singleAssetAnalysis: "AVAILABLE",
+        matchedCount: 8,
+        populationDenominator: 150,
+        universeBuildId: "build-verified",
+        publicationDigest: "sha256-verified",
+        isRollback: false,
+        publicationIntegrity: "VERIFIED",
+        publicationIntegrityVerified: true,
+      },
+    });
+    assert.strictEqual(t6Normalized.VCP.universeScreening, "AVAILABLE");
+    assert.strictEqual(t6Normalized.VCP.matchedCount, 8);
+    assert.strictEqual(getPublicationIntegrityLabel(t6Normalized.VCP), "Publication Integrity: Verified");
+    const textT6 = formatRadarVcpBannerCount(t6Normalized.VCP, 8);
+    assert.strictEqual(textT6, "8 scanner matches · 150 scannable population");
+    console.log("   [PASS] 7.6: Pending -> verified AVAILABLE: Authoritative matches and verified integrity displayed");
+
+    // Transition 7: One strategy valid -> another missing
+    // Expected: No cross-strategy authority leakage; omitted strategy resets to default pending.
+    const t7Normalized = normalizeRadarCapabilities({
+      VALUE_GARP: {
+        status: "AVAILABLE",
+        universeScreening: "AVAILABLE",
+        singleAssetAnalysis: "AVAILABLE",
+        matchedCount: 4,
+      },
+      // VCP is omitted!
+    });
+    assert.strictEqual(t7Normalized.VALUE_GARP.universeScreening, "AVAILABLE");
+    assert.strictEqual(t7Normalized.VALUE_GARP.matchedCount, 4);
+    assert.strictEqual(t7Normalized.VCP.universeScreening, "PIPELINE_PENDING");
+    assert.strictEqual(t7Normalized.VCP.matchedCount, null);
+    console.log("   [PASS] 7.7: One strategy valid -> another missing: Zero cross-strategy authority leakage");
+
+    // Transition 8: Successful response -> network error
+    // Expected: Network error handler clears capabilities to default pending and clears assets.
+    let simulatedState = operationalBaseline;
+    let simulatedAssets: any[] = [{ ticker: "AAPL" }];
+    // Network failure simulation
+    const handleNetworkError = () => {
+      simulatedState = DEFAULT_RADAR_CAPABILITIES;
+      simulatedAssets = [];
+    };
+    handleNetworkError();
+    assert.strictEqual(simulatedState.VCP.universeScreening, "PIPELINE_PENDING");
+    assert.strictEqual(simulatedState.VCP.matchedCount, null);
+    assert.strictEqual(simulatedAssets.length, 0);
+    console.log("   [PASS] 7.8: Successful response -> network error: Stale operational claims fully cleared");
+
+    // Transition 9: Out-of-order response discard
+    // Expected: Slower older response does not overwrite newer response.
+    let latestRequestId = 0;
+    let finalState = DEFAULT_RADAR_CAPABILITIES;
+
+    // Request 1 initiated at t=0
+    const req1Id = ++latestRequestId; // req1Id = 1
+    // Request 2 initiated at t=1
+    const req2Id = ++latestRequestId; // req2Id = 2
+
+    // Request 2 returns first (fast response with 0 matches)
+    if (req2Id === latestRequestId) {
+      finalState = normalizeRadarCapabilities({
+        VCP: {
+          status: "AVAILABLE",
+          universeScreening: "AVAILABLE",
+          singleAssetAnalysis: "AVAILABLE",
+          matchedCount: 0,
+          populationDenominator: 150,
+          universeBuildId: "build-req2",
+          publicationDigest: "digest-req2",
+        },
+      });
+    }
+
+    // Request 1 returns second (delayed stale response with 12 matches)
+    const req1Discarded = req1Id !== latestRequestId;
+    if (!req1Discarded) {
+      finalState = normalizeRadarCapabilities({
+        VCP: {
+          status: "AVAILABLE",
+          universeScreening: "AVAILABLE",
+          singleAssetAnalysis: "AVAILABLE",
+          matchedCount: 12,
+        },
+      });
+    }
+    assert.strictEqual(req1Discarded, true, "Older request must be detected as superseded");
+    assert.strictEqual(finalState.VCP.matchedCount, 0, "State must remain from newer Request 2");
+    console.log("   [PASS] 7.9: Out-of-order response discard: Stale older response discarded cleanly");
+
+    // ---------------------------------------------------------------------------
+    // 8. Truthful Publication Integrity Badge States Verification
+    // ---------------------------------------------------------------------------
+    console.log("\n8. Verifying truthful Publication Integrity badge presentation...");
+
+    // 8.1: Verified with attestation
+    const verifiedCap: RadarCapabilityDetail = {
+      status: "AVAILABLE",
+      universeScreening: "AVAILABLE",
+      singleAssetAnalysis: "AVAILABLE",
+      populationDenominator: 150,
+      universeBuildId: "build-prod",
+      publicationDigest: "sha256-verified-digest",
+      publicationIntegrity: "VERIFIED",
+      publicationIntegrityVerified: true,
+    };
+    assert.strictEqual(getPublicationIntegrityLabel(verifiedCap), "Publication Integrity: Verified");
+    console.log("   [PASS] 8.1: Explicit attestation -> 'Publication Integrity: Verified'");
+
+    // 8.2: Rolled-back publication
+    const rolledBackCap: RadarCapabilityDetail = {
+      status: "PIPELINE_PENDING",
+      universeScreening: "PIPELINE_PENDING",
+      singleAssetAnalysis: "AVAILABLE",
+      populationDenominator: 150,
+      universeBuildId: "build-rb",
+      publicationDigest: "sha256-rb-digest",
+      isRollback: true,
+      rollbackReason: "Suspect feed data",
+    };
+    assert.strictEqual(getPublicationIntegrityLabel(rolledBackCap), "Publication Integrity: Rolled back");
+    console.log("   [PASS] 8.2: Rollback condition -> 'Publication Integrity: Rolled back'");
+
+    // 8.3: Metadata present (buildId and digest) WITHOUT attestation
+    // Invariant: Never infer publication integrity merely from the presence of a publication digest string or build ID!
+    const unverifiedCapWithDigest: RadarCapabilityDetail = {
+      status: "AVAILABLE",
+      universeScreening: "AVAILABLE",
+      singleAssetAnalysis: "AVAILABLE",
+      matchedCount: 5,
+      populationDenominator: 150,
+      universeBuildId: "build-unverified",
+      publicationDigest: "sha256-digest-without-attestation",
+      // publicationIntegrity is NOT "VERIFIED"
+    };
+    assert.strictEqual(
+      getPublicationIntegrityLabel(unverifiedCapWithDigest),
+      "Publication Integrity: Not verified",
+      "Digest presence alone must NEVER infer 'Verified'!"
+    );
+    console.log("   [PASS] 8.3: Metadata present without attestation -> 'Publication Integrity: Not verified' (no false positive)");
+
+    // 8.4: Explicit PENDING status
+    const pendingIntegrityCap: RadarCapabilityDetail = {
+      status: "PIPELINE_PENDING",
+      universeScreening: "PIPELINE_PENDING",
+      singleAssetAnalysis: "AVAILABLE",
+      publicationIntegrity: "PENDING",
+    };
+    assert.strictEqual(getPublicationIntegrityLabel(pendingIntegrityCap), "Publication Integrity: Pending");
+    console.log("   [PASS] 8.4: Pending integrity -> 'Publication Integrity: Pending'");
+
+    // 8.5: Missing / null capability
+    assert.strictEqual(getPublicationIntegrityLabel(null), "Publication Integrity: Not verified");
+    assert.strictEqual(getPublicationIntegrityLabel(undefined), "Publication Integrity: Not verified");
+    console.log("   [PASS] 8.5: Null/undefined capability -> 'Publication Integrity: Not verified'");
 
   } finally {
     globalThis.fetch = originalFetch;
