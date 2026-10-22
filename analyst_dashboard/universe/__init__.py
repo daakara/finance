@@ -219,7 +219,24 @@ __all__ = [
     "PACKAGE_B_V3_RECONCILED_DIGEST",
     "PACKAGE_B_V3_REFERENCE_DIGEST",
     "PackageBV3Consumer",
+    # S2-08 Full-Population Assessment & Outcome Accounting
+    "AssessmentTerminalOutcome",
+    "OUTCOME_PRECEDENCE",
+    "SecurityAssessmentOutcome",
+    "AssessmentTelemetryEnvelope",
+    "FullPopulationAssessmentSummary",
+    "FullPopulationAssessmentEngine",
 ]
+
+from .population_assessment_accounting import (
+    AssessmentTerminalOutcome,
+    OUTCOME_PRECEDENCE,
+    SecurityAssessmentOutcome,
+    AssessmentTelemetryEnvelope,
+    FullPopulationAssessmentSummary,
+    FullPopulationAssessmentEngine,
+)
+
 
 
 
