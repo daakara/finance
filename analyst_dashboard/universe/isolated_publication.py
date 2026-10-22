@@ -143,6 +143,7 @@ class AccountingClosureSummary:
     data_unresolved_count: int
     scannable_count: int
     published_count: int = 0
+    projected_published_count: int = 0
     strategy_admitted_count: int = 0
     scanner_enrolled_count: int = 0
     is_closed: bool = True
@@ -475,11 +476,20 @@ class IsolatedPublicationEngine:
         cls,
         evaluations: List[CandidateEvaluationResult],
         source_count: int,
+        is_active_publication: bool = False,
+        active_pointer_count: int = 0,
     ) -> AccountingClosureSummary:
         """
         Verifies arithmetic accounting invariants:
         1. source_count == eligible + ineligible + unresolved
         2. eligible == data_ready + data_unavailable + data_unresolved
+
+        Contextual Publication Semantics:
+        - When evaluated during candidate inspection or dry-run, published_count reflects
+          the currently committed publication pointer count (or 0 if uncommitted),
+          while projected_published_count reports candidates qualifying for State 5.
+        - When evaluated during active publication commit, published_count reports the
+          newly published candidate count.
         """
         eligible = [e for e in evaluations if e.eligibility_decision == "ELIGIBLE"]
         ineligible = [e for e in evaluations if e.eligibility_decision == "INELIGIBLE"]
@@ -499,7 +509,13 @@ class IsolatedPublicationEngine:
         data_unresolved_count = len(data_unres)
         # scannable_count denotes POTENTIAL eligibility (DATA_READY eligible securities)
         scannable_count = data_ready_count
-        published_count = data_ready_count
+        projected_published_count = data_ready_count
+
+        if is_active_publication:
+            published_count = data_ready_count
+        else:
+            published_count = active_pointer_count
+
         strategy_admitted_count = 0
         scanner_enrolled_count = 0
 
@@ -532,6 +548,7 @@ class IsolatedPublicationEngine:
             data_unresolved_count=data_unresolved_count,
             scannable_count=scannable_count,
             published_count=published_count,
+            projected_published_count=projected_published_count,
             strategy_admitted_count=strategy_admitted_count,
             scanner_enrolled_count=scanner_enrolled_count,
             is_closed=is_closed,
@@ -549,7 +566,10 @@ class IsolatedPublicationEngine:
         """
         deduped, exclusions = self.normalize_and_deduplicate(candidates)
         evaluations = [self.evaluate_candidate(c, as_of_date) for c in deduped]
-        accounting = self.evaluate_accounting_closure(evaluations, len(deduped))
+        active_count = len(self._publication_pointer.published_symbols) if self._publication_pointer else 0
+        accounting = self.evaluate_accounting_closure(
+            evaluations, len(deduped), is_active_publication=False, active_pointer_count=active_count
+        )
         digest = self.compute_publication_digest(deduped)
 
         published_candidates = [
@@ -589,7 +609,9 @@ class IsolatedPublicationEngine:
         """
         deduped, exclusions = self.normalize_and_deduplicate(candidates)
         evaluations = [self.evaluate_candidate(c, as_of_date) for c in deduped]
-        accounting = self.evaluate_accounting_closure(evaluations, len(deduped))
+        accounting = self.evaluate_accounting_closure(
+            evaluations, len(deduped), is_active_publication=True
+        )
 
         if not accounting.is_closed:
             raise PolicyViolationError(
