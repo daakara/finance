@@ -1286,9 +1286,9 @@ class ScannerPublicationMembershipConsumer:
         # Tier 4: Scanner authorized and operational
         snapshot_status = active_snapshot.get("status") if active_snapshot else None
         raw_matched_count = active_snapshot.get("matched_count") if active_snapshot else None
-        # Strict Invariants 1 & 3: matchedCount must be sourced from completed scanner result (int >= 0).
-        # Incomplete / missing matched_count cannot fabricate 0.
-        if snapshot_status == "AVAILABLE" and isinstance(raw_matched_count, int) and raw_matched_count >= 0:
+        # Strict Invariants 1, 3, 4: matchedCount must be sourced from completed scanner result (int >= 0, not bool).
+        # Incomplete, boolean, negative, or malformed matched_count cannot fabricate 0.
+        if snapshot_status == "AVAILABLE" and type(raw_matched_count) is int and raw_matched_count >= 0:
             freshness_info = active_snapshot.get("freshness", {})
             return {
                 "status": "AVAILABLE",

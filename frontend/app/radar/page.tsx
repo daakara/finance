@@ -978,29 +978,42 @@ function RadarContent() {
               </span>
               <span className="text-slate-600">•</span>
               <span className="text-slate-400">
-                {capabilities.VCP?.universeScreening === 'AVAILABLE' ? (
-                  <>
-                    {typeof capabilities.VCP?.matchedCount === 'number' ? (
-                      filteredAssets.length !== capabilities.VCP.matchedCount ? (
+                {(() => {
+                  const hasValidProvenance = Boolean(
+                    typeof capabilities.VCP?.populationDenominator === 'number' &&
+                    capabilities.VCP.populationDenominator > 0 &&
+                    capabilities.VCP?.universeBuildId &&
+                    capabilities.VCP?.publicationDigest
+                  );
+                  const coverageText = hasValidProvenance
+                    ? `${capabilities.VCP?.populationDenominator} scannable population`
+                    : 'Coverage Pending';
+
+                  const authMatches = typeof capabilities.VCP?.matchedCount === 'number' && !capabilities.VCP?.isRollback
+                    ? capabilities.VCP.matchedCount
+                    : null;
+
+                  if (capabilities.VCP?.universeScreening === 'AVAILABLE' && authMatches !== null) {
+                    if (filteredAssets.length !== authMatches) {
+                      return (
                         <>
-                          Showing <strong className="text-white">{filteredAssets.length}</strong> of <strong className="text-white">{capabilities.VCP.matchedCount}</strong> scanner matches · {capabilities.VCP?.populationDenominator ? `${capabilities.VCP.populationDenominator} scannable population` : '100% coverage'}
+                          Showing <strong className="text-white">{filteredAssets.length}</strong> of <strong className="text-white">{authMatches}</strong> scanner matches · {coverageText}
                         </>
-                      ) : (
-                        <>
-                          <strong className="text-white">{capabilities.VCP.matchedCount}</strong> scanner matches · {capabilities.VCP?.populationDenominator ? `${capabilities.VCP.populationDenominator} scannable population` : '100% coverage'}
-                        </>
-                      )
-                    ) : (
+                      );
+                    }
+                    return (
                       <>
-                        Scanner Pending · {capabilities.VCP?.populationDenominator ? `${capabilities.VCP.populationDenominator} scannable population` : 'Universe Pending'}
+                        <strong className="text-white">{authMatches}</strong> scanner matches · {coverageText}
                       </>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    Scanner Pending · {capabilities.VCP?.populationDenominator ? `${capabilities.VCP.populationDenominator} scannable population` : 'Universe Pending'}
-                  </>
-                )}
+                    );
+                  }
+
+                  return (
+                    <>
+                      Scanner Pending · {coverageText}
+                    </>
+                  );
+                })()}
               </span>
               {capabilities.VCP?.universeBuildId && (
                 <>
@@ -1103,12 +1116,12 @@ function RadarContent() {
                               : ownershipFilter === 'NEW_OPPORTUNITIES' && !isPortfolioVerified
                               ? "Filtering for new opportunities requires verified portfolio state. Currently running in degraded UNKNOWN mode."
                               : activeFilter === 'VCP' && categoryMeta.VCP.status === 'PIPELINE_PENDING'
-                              ? (capabilities.VCP?.populationDenominator
-                                  ? `${capabilities.VCP.populationDenominator} securities registered in universe build ${capabilities.VCP.universeBuildId || ''}. Automated market-wide volatility contraction screening is pending operational activation.`
+                              ? (capabilities.VCP?.populationDenominator && capabilities.VCP?.universeBuildId && capabilities.VCP?.publicationDigest
+                                  ? `${capabilities.VCP.populationDenominator} securities registered in universe build ${capabilities.VCP.universeBuildId}. Automated market-wide volatility contraction screening is pending operational activation.`
                                   : "Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs.")
                               : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
-                              ? (capabilities.SMART_MONEY?.populationDenominator
-                                  ? `${capabilities.SMART_MONEY.populationDenominator} securities registered in universe build ${capabilities.SMART_MONEY.universeBuildId || ''}. Automated market-wide institutional-flow screening is pending operational activation.`
+                              ? (capabilities.SMART_MONEY?.populationDenominator && capabilities.SMART_MONEY?.universeBuildId && capabilities.SMART_MONEY?.publicationDigest
+                                  ? `${capabilities.SMART_MONEY.populationDenominator} securities registered in universe build ${capabilities.SMART_MONEY.universeBuildId}. Automated market-wide institutional-flow screening is pending operational activation.`
                                   : "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money.")
                               : `Try switching to "All Confluences" to view all active setups.`}
                           </p>

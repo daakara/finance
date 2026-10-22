@@ -13,6 +13,30 @@ console.log("1. Verifying static count authority invariants in frontend/app/rada
 const radarPath = path.join(__dirname, "../app/radar/page.tsx");
 const radarSource = fs.readFileSync(radarPath, "utf8");
 
+// Requirement 1 Check: Unsupported '100% coverage' fallback text must be completely removed from Radar
+const has100PercentCoverage = radarSource.includes("100% coverage");
+assert.strictEqual(
+  has100PercentCoverage,
+  false,
+  "FAIL: '100% coverage' fallback must be completely removed from frontend/app/radar/page.tsx"
+);
+console.log("   [PASS] 1.1: Unsupported '100% coverage' fallback text eliminated");
+
+// Requirement 2 & 3 Check: Provenance-gated scannable population and 'Coverage Pending'
+assert.ok(
+  radarSource.includes("const hasValidProvenance = Boolean("),
+  "FAIL: Radar must define hasValidProvenance gate for population denominator"
+);
+assert.ok(
+  radarSource.includes("capabilities.VCP?.universeBuildId &&\n                    capabilities.VCP?.publicationDigest"),
+  "FAIL: Radar must require both universeBuildId and publicationDigest to display population count"
+);
+assert.ok(
+  radarSource.includes(": 'Coverage Pending';"),
+  "FAIL: Radar must display 'Coverage Pending' when population provenance is incomplete"
+);
+console.log("   [PASS] 1.2: Population count strictly gated on buildId and publicationDigest, with 'Coverage Pending' fallback");
+
 // Invariant 2 Check: filteredAssets.length alone cannot be labeled as "{filteredAssets.length} matches" in the VCP banner
 const hasConflatedMatchCount = radarSource.includes("{filteredAssets.length} matches ·");
 assert.strictEqual(
@@ -20,57 +44,67 @@ assert.strictEqual(
   false,
   "FAIL: VCP banner must NOT conflate filteredAssets.length with authoritative scanner matches ('{filteredAssets.length} matches')"
 );
-console.log("   [PASS] 1.1: Conflation of filteredAssets.length with scanner matches eliminated");
+console.log("   [PASS] 1.3: Conflation of filteredAssets.length with scanner matches eliminated");
 
 // Invariant 2 & 7 Check: Display count vs Scanner matches distinction is rendered when filters reduce the count
 assert.ok(
-  radarSource.includes("Showing <strong className=\"text-white\">{filteredAssets.length}</strong> of <strong className=\"text-white\">{capabilities.VCP.matchedCount}</strong> scanner matches"),
-  "FAIL: VCP banner must render 'Showing {filteredAssets.length} of {capabilities.VCP.matchedCount} scanner matches' when filters reduce count"
+  radarSource.includes("Showing <strong className=\"text-white\">{filteredAssets.length}</strong> of <strong className=\"text-white\">{authMatches}</strong> scanner matches · {coverageText}"),
+  "FAIL: VCP banner must render 'Showing {filteredAssets.length} of {authMatches} scanner matches · {coverageText}' when filters reduce count"
 );
-console.log("   [PASS] 1.2: Filtered display count clearly distinguished from authoritative scanner match count");
+console.log("   [PASS] 1.4: Filtered display count clearly distinguished from authoritative scanner match count");
 
-// Invariant 4 Check: When all matches are displayed, rendered as "{capabilities.VCP.matchedCount} scanner matches"
+// Invariant 4 Check: When all matches are displayed, rendered as "{authMatches} scanner matches · {coverageText}"
 assert.ok(
-  radarSource.includes("<strong className=\"text-white\">{capabilities.VCP.matchedCount}</strong> scanner matches"),
-  "FAIL: VCP banner must render '{capabilities.VCP.matchedCount} scanner matches' when all matches are displayed"
+  radarSource.includes("<strong className=\"text-white\">{authMatches}</strong> scanner matches · {coverageText}"),
+  "FAIL: VCP banner must render '{authMatches} scanner matches · {coverageText}' when all matches are displayed"
 );
-console.log("   [PASS] 1.3: Authoritative scanner matches displayed when no reducing filter is applied");
+console.log("   [PASS] 1.5: Authoritative scanner matches displayed when no reducing filter is applied");
 
 // Invariant 3 Check: In pending/unauthorized states, renders 'Scanner Pending', never fabricated 0 matches
 assert.ok(
-  radarSource.includes("Scanner Pending · {capabilities.VCP?.populationDenominator ? `${capabilities.VCP.populationDenominator} scannable population` : 'Universe Pending'}"),
-  "FAIL: VCP banner must render 'Scanner Pending' when scanner is pending or matchedCount is null"
+  radarSource.includes("Scanner Pending · {coverageText}"),
+  "FAIL: VCP banner must render 'Scanner Pending · {coverageText}' when scanner is pending or matchedCount is null"
 );
-console.log("   [PASS] 1.4: Pending states render 'Scanner Pending', never fabricated zero matches");
+console.log("   [PASS] 1.6: Pending states render 'Scanner Pending', never fabricated zero matches");
 
 
 // ---------------------------------------------------------------------------
-// 2. Behavioral Simulation: Scanner Matches vs Filtered Display Counts
+// 2. Behavioral Simulation: Scanner Matches vs Filtered Display Counts & Provenance
 // ---------------------------------------------------------------------------
-console.log("\n2. Simulating Radar banner count formatting logic across filter states...");
+console.log("\n2. Simulating Radar banner count formatting logic across filter states & provenance...");
 
 function formatRadarVcpBannerCount(
   vcpCap: RadarCapabilityDetail | undefined,
   displayedCount: number
 ): string {
-  if (vcpCap?.universeScreening !== "AVAILABLE") {
-    const denom = vcpCap?.populationDenominator ? `${vcpCap.populationDenominator} scannable population` : "Universe Pending";
-    return `Scanner Pending · ${denom}`;
-  }
+  const hasValidProvenance = Boolean(
+    typeof vcpCap?.populationDenominator === "number" &&
+    vcpCap.populationDenominator > 0 &&
+    vcpCap?.universeBuildId &&
+    vcpCap?.publicationDigest
+  );
+  const coverageText = hasValidProvenance
+    ? `${vcpCap?.populationDenominator} scannable population`
+    : "Coverage Pending";
 
-  if (typeof vcpCap?.matchedCount === "number") {
-    const denom = vcpCap?.populationDenominator ? `${vcpCap.populationDenominator} scannable population` : "100% coverage";
-    if (displayedCount !== vcpCap.matchedCount) {
-      return `Showing ${displayedCount} of ${vcpCap.matchedCount} scanner matches · ${denom}`;
+  const rawMatches = vcpCap?.matchedCount;
+  // Strict backend count validation: only authentic non-negative integers (no bool, no negative, no float)
+  const isAuthenticInt = typeof rawMatches === "number" && Number.isInteger(rawMatches) && rawMatches >= 0 && typeof rawMatches !== "boolean";
+  const authMatches = isAuthenticInt && !vcpCap?.isRollback
+    ? rawMatches
+    : null;
+
+  if (vcpCap?.universeScreening === "AVAILABLE" && authMatches !== null) {
+    if (displayedCount !== authMatches) {
+      return `Showing ${displayedCount} of ${authMatches} scanner matches · ${coverageText}`;
     }
-    return `${vcpCap.matchedCount} scanner matches · ${denom}`;
+    return `${authMatches} scanner matches · ${coverageText}`;
   }
 
-  const denom = vcpCap?.populationDenominator ? `${vcpCap.populationDenominator} scannable population` : "Universe Pending";
-  return `Scanner Pending · ${denom}`;
+  return `Scanner Pending · ${coverageText}`;
 }
 
-// Case A: Operational scanner with 12 matches, no user filter applied (displayedCount = 12)
+// Case A: Operational scanner with 12 matches, valid provenance, no user filter applied
 const vcpOpCap: RadarCapabilityDetail = {
   status: "AVAILABLE",
   universeScreening: "AVAILABLE",
@@ -100,18 +134,29 @@ assert.strictEqual(
 assert.strictEqual(vcpOpCap.matchedCount, 12, "Authoritative matchedCount must remain untouched by user filter");
 console.log("   [PASS] 2.2: User search filter: 'Showing 1 of 12 scanner matches · 150 scannable population' (matchedCount=12 intact)");
 
-// Case C: User applies restrictive filter matching 0 items
-const textFilteredZero = formatRadarVcpBannerCount(vcpOpCap, 0);
+// Case C: Operational scanner with missing buildId/digest (incomplete provenance)
+const vcpNoProvCap: RadarCapabilityDetail = {
+  status: "AVAILABLE",
+  universeScreening: "AVAILABLE",
+  singleAssetAnalysis: "AVAILABLE",
+  matchedCount: 12,
+  populationDenominator: 150,
+  universeBuildId: null, // missing build identity!
+  publicationDigest: null, // missing digest!
+  isRollback: false,
+};
+
+const textNoProv = formatRadarVcpBannerCount(vcpNoProvCap, 12);
 assert.strictEqual(
-  textFilteredZero,
-  "Showing 0 of 12 scanner matches · 150 scannable population",
-  "Must show 'Showing 0 of 12 scanner matches' without claiming scanner found 0"
+  textNoProv,
+  "12 scanner matches · Coverage Pending",
+  "Must replace denominator with 'Coverage Pending' when buildId or digest is absent"
 );
-console.log("   [PASS] 2.3: Restrictive filter: 'Showing 0 of 12 scanner matches' (distinguished from scanner zero-match)");
+console.log("   [PASS] 2.3: Incomplete provenance yields '12 scanner matches · Coverage Pending'");
 
 
 // ---------------------------------------------------------------------------
-// 3. Invariants 3 & 4: Truthful Operational Zero vs Pending States
+// 3. Invariants 3, 4, 5: Truthful Operational Zero vs Pending States
 // ---------------------------------------------------------------------------
 console.log("\n3. Testing truthful operational zero matches vs pending states...");
 
@@ -156,25 +201,45 @@ assert.strictEqual(
 assert.ok(!textPending.includes("0 scanner matches") && !textPending.includes("0 matches"), "Pending banner text must not contain fabricated 0 matches");
 console.log("   [PASS] 3.2: Pending scanner: 'Scanner Pending · 150 scannable population' (zero fabricated 0)");
 
-// Case F: Incomplete snapshot claiming AVAILABLE but matchedCount is null
-const vcpIncompleteCap: RadarCapabilityDetail = {
+// Case F: Boolean matched_count (e.g. True or False) must fail closed to Scanner Pending
+const vcpBoolCap: any = {
   status: "AVAILABLE",
   universeScreening: "AVAILABLE",
   singleAssetAnalysis: "AVAILABLE",
-  matchedCount: null,
+  matchedCount: true as any,
   populationDenominator: 150,
   universeBuildId: "ubuild-150-prod",
   publicationDigest: "sha256-abcdef",
   isRollback: false,
 };
 
-const textIncomplete = formatRadarVcpBannerCount(vcpIncompleteCap, 0);
+const textBool = formatRadarVcpBannerCount(vcpBoolCap, 0);
 assert.strictEqual(
-  textIncomplete,
+  textBool,
   "Scanner Pending · 150 scannable population",
-  "Incomplete snapshot missing matchedCount must fail-closed to 'Scanner Pending'"
+  "Boolean matchedCount must fail-closed to 'Scanner Pending'"
 );
-console.log("   [PASS] 3.3: Incomplete snapshot fail-closed to 'Scanner Pending'");
+console.log("   [PASS] 3.3: Boolean matchedCount rejected and fails closed to 'Scanner Pending'");
+
+// Case G: Negative matched_count (e.g. -1) must fail closed to Scanner Pending
+const vcpNegCap: RadarCapabilityDetail = {
+  status: "AVAILABLE",
+  universeScreening: "AVAILABLE",
+  singleAssetAnalysis: "AVAILABLE",
+  matchedCount: -1 as any,
+  populationDenominator: 150,
+  universeBuildId: "ubuild-150-prod",
+  publicationDigest: "sha256-abcdef",
+  isRollback: false,
+};
+
+const textNeg = formatRadarVcpBannerCount(vcpNegCap, 0);
+assert.strictEqual(
+  textNeg,
+  "Scanner Pending · 150 scannable population",
+  "Negative matchedCount must fail-closed to 'Scanner Pending'"
+);
+console.log("   [PASS] 3.4: Negative matchedCount rejected and fails closed to 'Scanner Pending'");
 
 
 // ---------------------------------------------------------------------------

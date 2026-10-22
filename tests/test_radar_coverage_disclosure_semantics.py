@@ -538,3 +538,130 @@ def test_api_get_radar_capabilities_count_authority_and_rollback_containment(sam
     assert caps_rb["VCP"]["universeScreening"] == "PIPELINE_PENDING"
     assert caps_rb["VCP"]["matchedCount"] is None
     assert caps_rb["VCP"]["lifecycleState"] == "STALE_OR_ROLLED_BACK_PUBLICATION"
+
+
+# ─── 9. Phase 1 Edge Cases: Boolean, Negative, Malformed, Stale, & Provenance ─
+
+def test_boolean_and_negative_matched_count_rejection(sample_aapl_candidate, sample_goog_candidate):
+    """
+    Requirement 4 & 5: Reject boolean matched_count values (True/False) and negative counts.
+    In Python, isinstance(True, int) is True, so type() is int must be enforced.
+    Boolean, negative, float, string, or malformed counts must fail closed.
+    """
+    engine = IsolatedPublicationEngine(universe_id="ARX_PILOT_EXPANSION_150")
+    pointer = engine.publish_universe(
+        [sample_aapl_candidate, sample_goog_candidate],
+        as_of_date="2026-10-19",
+        authorized_by="OPERATOR_ARX_SPRINT2_OFFLINE",
+        build_id="ubuild-test-150-01",
+    )
+
+    vcp_strat_evidence = StrategyAdmissionEvidence(
+        symbol="AAPL",
+        strategy_id="MINERVINI_VCP",
+        min_price_floor=5.0,
+        min_history_bars=260,
+        admission_approved=True,
+        approved_by="VCP_EPOCH_002_AUTHORITY",
+        g_vcp_012_certified=True,
+    )
+
+    dispatch_evidence = ScannerDispatchEvidence(
+        symbol="AAPL",
+        scanner_id="MINERVINI_VCP",
+        g_s2_act_authorized=True,
+        schedule_active=True,
+        operational_dispatch_authorized=True,
+    )
+
+    # Subcase A: Boolean True (must NOT evaluate to 1)
+    snap_bool_true = {"status": "AVAILABLE", "matched_count": True}
+    res_bool_true = ScannerPublicationMembershipConsumer.build_radar_coverage_disclosure(
+        pointer=pointer,
+        scanner_id="MINERVINI_VCP",
+        strategy_admission_evidence=vcp_strat_evidence,
+        scanner_dispatch_evidence=dispatch_evidence,
+        active_snapshot=snap_bool_true,
+        deployment_hold=False,
+    )
+    assert res_bool_true["matchedCount"] is None
+    assert res_bool_true["universeScreening"] == "PIPELINE_PENDING"
+
+    # Subcase B: Boolean False (must NOT evaluate to 0)
+    snap_bool_false = {"status": "AVAILABLE", "matched_count": False}
+    res_bool_false = ScannerPublicationMembershipConsumer.build_radar_coverage_disclosure(
+        pointer=pointer,
+        scanner_id="MINERVINI_VCP",
+        strategy_admission_evidence=vcp_strat_evidence,
+        scanner_dispatch_evidence=dispatch_evidence,
+        active_snapshot=snap_bool_false,
+        deployment_hold=False,
+    )
+    assert res_bool_false["matchedCount"] is None
+    assert res_bool_false["universeScreening"] == "PIPELINE_PENDING"
+
+    # Subcase C: Negative count (e.g. -1)
+    snap_neg = {"status": "AVAILABLE", "matched_count": -1}
+    res_neg = ScannerPublicationMembershipConsumer.build_radar_coverage_disclosure(
+        pointer=pointer,
+        scanner_id="MINERVINI_VCP",
+        strategy_admission_evidence=vcp_strat_evidence,
+        scanner_dispatch_evidence=dispatch_evidence,
+        active_snapshot=snap_neg,
+        deployment_hold=False,
+    )
+    assert res_neg["matchedCount"] is None
+    assert res_neg["universeScreening"] == "PIPELINE_PENDING"
+
+    # Subcase D: String / float count (e.g. "10", 3.14)
+    snap_str = {"status": "AVAILABLE", "matched_count": "10"}
+    res_str = ScannerPublicationMembershipConsumer.build_radar_coverage_disclosure(
+        pointer=pointer,
+        scanner_id="MINERVINI_VCP",
+        strategy_admission_evidence=vcp_strat_evidence,
+        scanner_dispatch_evidence=dispatch_evidence,
+        active_snapshot=snap_str,
+        deployment_hold=False,
+    )
+    assert res_str["matchedCount"] is None
+    assert res_str["universeScreening"] == "PIPELINE_PENDING"
+
+    # Subcase E: Valid integer 0 is preserved as an authentic operational count
+    snap_zero = {"status": "AVAILABLE", "matched_count": 0}
+    res_zero = ScannerPublicationMembershipConsumer.build_radar_coverage_disclosure(
+        pointer=pointer,
+        scanner_id="MINERVINI_VCP",
+        strategy_admission_evidence=vcp_strat_evidence,
+        scanner_dispatch_evidence=dispatch_evidence,
+        active_snapshot=snap_zero,
+        deployment_hold=False,
+    )
+    assert res_zero["matchedCount"] == 0
+    assert res_zero["universeScreening"] == "AVAILABLE"
+
+
+def test_api_route_rejects_boolean_and_negative_matched_counts():
+    """
+    Verifies that api/routes/screener.py get_radar_capabilities rejects boolean
+    and negative counts across AVAILABLE and STALE snapshot statuses.
+    """
+    # 1. AVAILABLE with boolean True
+    caps_bool = get_radar_capabilities(vcp_snapshot={"status": "AVAILABLE", "matched_count": True})
+    assert caps_bool["VCP"]["universeScreening"] == "PIPELINE_PENDING"
+    assert caps_bool["VCP"]["matchedCount"] is None
+
+    # 2. AVAILABLE with negative count
+    caps_neg = get_radar_capabilities(vcp_snapshot={"status": "AVAILABLE", "matched_count": -5})
+    assert caps_neg["VCP"]["universeScreening"] == "PIPELINE_PENDING"
+    assert caps_neg["VCP"]["matchedCount"] is None
+
+    # 3. STALE with boolean False
+    caps_stale_bool = get_radar_capabilities(vcp_snapshot={"status": "STALE", "matched_count": False})
+    assert caps_stale_bool["VCP"]["universeScreening"] == "PIPELINE_PENDING"
+    assert caps_stale_bool["VCP"]["matchedCount"] is None
+
+    # 4. STALE with valid integer 8
+    caps_stale_valid = get_radar_capabilities(vcp_snapshot={"status": "STALE", "matched_count": 8})
+    assert caps_stale_valid["VCP"]["universeScreening"] == "AVAILABLE"
+    assert caps_stale_valid["VCP"]["matchedCount"] == 8
+

@@ -212,8 +212,8 @@ def get_radar_capabilities(
 
         if snap_status == "AVAILABLE":
             raw_matched = vcp_snapshot.get("matched_count")
-            matched_count = raw_matched if isinstance(raw_matched, int) and raw_matched >= 0 else None
-            is_valid_op = matched_count is not None
+            is_valid_op = type(raw_matched) is int and raw_matched >= 0
+            matched_count = raw_matched if is_valid_op else None
             caps["VCP"] = {
                 "status": "AVAILABLE" if is_valid_op else "PIPELINE_PENDING",
                 "universeScreening": "AVAILABLE" if is_valid_op else "PIPELINE_PENDING",
@@ -277,11 +277,14 @@ def get_radar_capabilities(
                 "rationale": vcp_snapshot.get("detail", "VCP scanner snapshot store error."),
             }
         elif snap_status == "STALE":
+            raw_matched = vcp_snapshot.get("matched_count")
+            is_valid_count = type(raw_matched) is int and raw_matched >= 0
+            matched_count = raw_matched if is_valid_count else None
             caps["VCP"] = {
-                "status": "AVAILABLE",
-                "universeScreening": "AVAILABLE",
+                "status": "AVAILABLE" if is_valid_count else "PIPELINE_PENDING",
+                "universeScreening": "AVAILABLE" if is_valid_count else "PIPELINE_PENDING",
                 "singleAssetAnalysis": "AVAILABLE",
-                "matchedCount": vcp_snapshot.get("matched_count", 0),
+                "matchedCount": matched_count,
                 "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
                 "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
                 "snapshotId": vcp_snapshot.get("snapshot_id"),
