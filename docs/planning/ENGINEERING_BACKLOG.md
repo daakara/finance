@@ -238,6 +238,38 @@
 
 ---
 
+### `BACKLOG-RESEARCH-EVIDENCE-DISCOVERY-043`: Evidence-Led Opportunity Discovery Pilot (Issue #43)
+- **Category**: Research / Opportunity Discovery & Hypothesis Tracking
+- **Priority**: **P2 (Strategic Discovery / Evaluation)**
+- **Priority Rationale**: Tests whether evidence-led discovery beyond the initial 10-candidate shortlist improves ARX's research prioritization enough to justify ongoing preparation and maintenance effort.
+- **Governing Issue**: [daakara/finance#43](https://github.com/daakara/finance/issues/43)
+- **Status**: `IN_PROGRESS` (Authorized Internal Pilot; Active Branch: `feat/research-evidence-led-discovery-pilot`)
+- **Assigned Sprint**: Research Sprint 2 (Discovery Capability Track)
+- **Owner**: ARX Terminal Core Team
+- **Completed Prerequisites**:
+  - PR #41 merged to `main` at commit `b9e9fe3a801f42e8a93d9f090ec67ec76a515bf3` (Tree `53ed31419e172ed4b309bbba6bb4e4e3eda90c9b`).
+  - Active published Quality Watch collection: `FIX`, `DUOL`, `ULTA`, `MEDP`, `ISRG`, `DECK`.
+- **Scope & Methodological Core**:
+  - Combines multiple candidate-generation routes (company financial change, company operating change, industry constraints, price-vs-business divergence, customer/supplier tracing) beyond the initial 10-candidate shortlist (`KLAC, LULU, EME, VRT, ANET, CDNS, PWR, SNPS, NOW, ELF`).
+  - Implements compact reusable opportunity record answering:
+    1. Observable development (structural, cyclical, acquisition, accounting, temporary).
+    2. Economic significance (materiality to consolidated cash flows).
+    3. Value capture (capex, competition, debt service, SBC/dilution, explicit limitations).
+    4. Price and expectations (reconciled to primary filings and conservative valuation bounds).
+    5. Downside and survival (debt covenants, financial resilience under slowdown).
+    6. Assessment changes (observable disconfirmation criteria).
+    7. Research priority relative to examined universe.
+  - Strict separation of dimensions: research maturity, opportunity mechanism, expectation-gap status, financial resilience, and public publication eligibility.
+  - Concludes with an evidence-based evaluation report delivering a binding process decision: `CONTINUE`, `SIMPLIFY`, or `STOP`.
+- **Operational Boundaries & Invariants**:
+  - Internal research pilot only: no public publication, no manifest additions, no production deployment.
+  - Zero scanner activation, universe expansion, or live market-data ingestion changes.
+  - Baseline ledger (`odp05_discovery_ledger.json`) SHA-256 (`a65be3b...`) remains strictly immutable.
+  - Keep internal pilot records completely outside frontend import paths and bundles.
+  - Do not promise identification of future multibaggers or claim proven investment alpha.
+
+---
+
 ## 3. Governance & System Traceability
 
 - **Registration State**: Reconciled and integrated on PR branch (`docs/sprint-1-closeout`), pending PR merge and Product Owner review.

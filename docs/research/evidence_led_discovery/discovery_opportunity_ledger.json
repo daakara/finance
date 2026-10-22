@@ -1,0 +1,210 @@
+{
+  "schema_version": "ARX-DISCOVERY-OPPORTUNITY-LEDGER-V1",
+  "task": "ARX-TERMINAL-EVIDENCE-LED-DISCOVERY-PILOT",
+  "governing_backlog_item": "BACKLOG-RESEARCH-EVIDENCE-DISCOVERY-043",
+  "governing_issue": "https://github.com/daakara/finance/issues/43",
+  "created_at_utc": "2026-10-22T16:30:00Z",
+  "information_cutoff_date": "2026-10-22",
+  "provisional_analytical_horizon_years": "3-5",
+  "examined_universe": {
+    "population_baseline_ref": "docs/research/radar-us-listed-coverage/coverage_capacity_baseline.json",
+    "total_multi_feed_keys": 16448,
+    "provisional_operating_common_stock_count": 5871,
+    "diagnostic_sample_examined": 14,
+    "comparison_queue_count": 10,
+    "newly_surfaced_count": 4,
+    "deep_investigations_count": 3
+  },
+  "candidate_generation_routes": [
+    {
+      "route_id": "ROUTE-1-FINANCIAL-OPERATING-RESILIENCE",
+      "route_type": "Company-Level",
+      "signal": "Operating cash flow conversion >90%, ROIC >20%, zero net debt, and margin expansion",
+      "baseline": "FY2023 vs FY2024 / TTM filings",
+      "sources": "SEC EDGAR Form 10-K / 10-Q (Cash flows, Balance Sheets, MD&A)",
+      "limitations": "Working capital fluctuations and non-recurring tax items can temporarily distort cash conversion"
+    },
+    {
+      "route_id": "ROUTE-2-INFRASTRUCTURE-THERMAL-CONSTRAINT",
+      "route_type": "Industry-Level",
+      "signal": "Physical bottlenecks (grid interconnect queues, 100kW+ rack thermal density)",
+      "baseline": "2023-2026 deployment schedules, utility queues, hyperscaler capex notes",
+      "sources": "Hyperscaler 10-K capex notes, equipment manufacturer backlog disclosures",
+      "limitations": "Fixed-price project cost overruns, debt service, and working capital build can destroy equity cash flow"
+    },
+    {
+      "route_id": "ROUTE-3-CUSTOMER-SUPPLIER-TRACING",
+      "route_type": "Value-Chain Tracing",
+      "signal": "Tracing hyperscaler capex line items down to specialized tier-1/tier-2 component enablers",
+      "baseline": "FY2023-FY2024 customer concentration notes and major customer disclosures",
+      "sources": "Customer 10-K Item 1 & Supplier 10-K Note on Segment Reporting",
+      "limitations": "High customer concentration (>30% of revenue) grants hyperscalers monopsony pricing leverage"
+    }
+  ],
+  "triage_summary": {
+    "selected_for_deep_investigation": ["ANET", "VRT", "MPWR"],
+    "deferred": ["KLAC", "CDNS", "EME", "PWR", "NOW", "ODFL", "HUBB", "FICO"],
+    "discontinued_current_cycle": ["SNPS", "LULU", "ELF"]
+  },
+  "deep_investigations": {
+    "ANET": {
+      "symbol": "ANET",
+      "company_name": "Arista Networks, Inc.",
+      "cik": "0001596532",
+      "discovery_provenance": {
+        "routes": ["ROUTE-2-INFRASTRUCTURE-THERMAL-CONSTRAINT", "ROUTE-3-CUSTOMER-SUPPLIER-TRACING"],
+        "origin": "Existing Curated Expansion Queue (Prioritized via Dual Routes)"
+      },
+      "dimensional_classification": {
+        "research_maturity": "EXPLORATORY_HYPOTHESIS",
+        "opportunity_mechanism": "ETHERNET_AI_FABRIC_EXPANSION_AND_SCALE_MOAT",
+        "expectation_gap_status": "HIGH_GROWTH_DEMANDED_BY_CURRENT_MULTIPLE",
+        "financial_resilience": "PRISTINE_SELF_FUNDING",
+        "public_publication_eligibility": "INTERNAL_PILOT_RECORD_NOT_ELIGIBLE"
+      },
+      "observable_development": {
+        "nature": "Structural transition from proprietary InfiniBand to open high-throughput Ethernet (800G/1.6T) in hyperscale backend AI GPU clusters",
+        "baseline_comparison": "FY2022 to FY2023 revenue grew 33.8% ($4,381.3M to $5,860.2M); Q2 2024 revenue reached $1,690.1M (+15.9% YoY)",
+        "characterization": "Structural architectural shift combined with cyclical hyperscaler capex waves",
+        "primary_filing_evidence": "Form 10-K FY2023 (Item 7 MD&A; Item 8 Financial Statements) filed Feb 13, 2024"
+      },
+      "economic_significance": {
+        "consolidated_materiality": "Core networking represents >85% of revenue; enterprise & cloud AI switching directly moves the consolidated entity",
+        "margins_and_returns": "FY2023 GAAP operating margin of 37.3% ($2,185.3M operating income) and >42% non-GAAP; ROIC exceeds 35%"
+      },
+      "value_capture": {
+        "competitive_dynamics": "Competes with Nvidia (Quantum InfiniBand & Spectrum-X) and white-box ODM switches; software EOS operating system provides deep customer lock-in",
+        "customer_bargaining_power": "Severe concentration: Microsoft accounted for 21% and Meta Platforms accounted for 18% of FY2023 revenue (combined 39%); creates procurement pricing pressure",
+        "capex_and_capital_intensity": "Asset-light fabless model; FY2023 capex was $61.4M (1.0% of revenue); virtually zero maintenance capex burden",
+        "funded_debt_and_obligations": "Zero long-term debt; zero credit facility borrowings; $5,258.9M in cash, equivalents, and marketable securities as of Dec 31, 2023 ($6,036.7M as of June 30, 2024)",
+        "dilution_and_sbc": "FY2023 stock-based compensation of $243.6M (~4.2% of revenue); fully covered by share repurchases ($670.7M in FY23) without per-share dilution"
+      },
+      "price_and_expectations": {
+        "market_pricing_context": "Trades at ~38x-42x P/E; requires sustained ~20% top-line CAGR to meet hurdle",
+        "expectation_disaggregation": {
+          "company_guidance": "Management targets >$750M in AI networking revenue in 2025",
+          "sourced_analyst_consensus": "Consensus models ~18-22% EPS growth over the next 3 years",
+          "arx_hypothesis": "Ethernet adoption in backend clusters is structural, but hyperscaler dual-sourcing and internal silicon will limit long-term pricing expansion"
+        }
+      },
+      "downside_and_survival": {
+        "slowdown_scenario": "If hyperscaler capex pauses or shifts to Nvidia Spectrum-X, revenue could stagnate for 2-4 quarters",
+        "survival_capacity": "Exceptional: Zero debt, $6B+ cash cushion, flexible fabless cost structure; can operate cash-flow positive even during severe down-cycles"
+      },
+      "assessment_changes": {
+        "strengthening_criteria": "Customer concentration of top 2 falling below 30% while Tier-2 cloud / enterprise AI networking grows >40% YoY",
+        "invalidation_criteria": "Meta or Microsoft shifting backend cluster deployments wholesale to Nvidia Spectrum-X, or GAAP operating margin compressing below 30.0%"
+      },
+      "research_priority": {
+        "rank": "HIGH_MONITORING_PRIORITY",
+        "rationale": "Elite business resilience, but blocked from Quality Watch publication due to 39% customer concentration and demanding valuation multiple"
+      }
+    },
+    "VRT": {
+      "symbol": "VRT",
+      "company_name": "Vertiv Holdings Co",
+      "cik": "0001674101",
+      "discovery_provenance": {
+        "routes": ["ROUTE-2-INFRASTRUCTURE-THERMAL-CONSTRAINT"],
+        "origin": "Existing Curated Expansion Queue (Prioritized via Industry Constraint Route)"
+      },
+      "dimensional_classification": {
+        "research_maturity": "EXPLORATORY_HYPOTHESIS",
+        "opportunity_mechanism": "DATA_CENTER_LIQUID_COOLING_THERMAL_BOTTLENECK",
+        "expectation_gap_status": "PERFECT_EXECUTION_PRICED_IN_HIGH_MULTIPLE",
+        "financial_resilience": "LEVERAGED_CAPITAL_STRUCTURE_AND_GOODWILL",
+        "public_publication_eligibility": "INTERNAL_PILOT_RECORD_NOT_ELIGIBLE"
+      },
+      "observable_development": {
+        "nature": "Data center rack power densities escalating from 10-20 kW to 100 kW+ with Nvidia Blackwell/B200, mandating direct-to-chip liquid cooling systems and coolant distribution units (CDUs)",
+        "baseline_comparison": "FY2022 to FY2023 revenue increased 20.6% ($5,691.8M to $6,863.0M); organic order intake rose significantly with book-to-bill >1.2x; Q2 2024 revenue reached $1,953.3M (+14.0% YoY)",
+        "characterization": "Structural physical infrastructure inflection facing traditional equipment manufacturing execution constraints",
+        "primary_filing_evidence": "Form 10-K FY2023 (Item 7 MD&A; Note 6 Debt) filed Feb 27, 2024"
+      },
+      "economic_significance": {
+        "consolidated_materiality": "Thermal and power management equipment comprises 100% of operations; high direct transmission to consolidated revenue",
+        "margins_and_returns": "FY2023 GAAP operating margin of 12.6% ($861.8M operating income); adjusted non-GAAP margin ~15.3%"
+      },
+      "value_capture": {
+        "competitive_dynamics": "Competes with Schneider Electric, Eaton, and specialized cooling startups; high engineering service switching costs",
+        "customer_bargaining_power": "Major hyperscalers and co-location providers (Equinix, Digital Realty) demand customized modular units with penalty clauses for delivery delays",
+        "capex_and_capital_intensity": "Manufacturing and assembly requires expanding plant footprint; FY2023 capex was $154.5M (2.3% of revenue) and rising",
+        "funded_debt_and_obligations": "Heavy funded debt: $3,088.3M total long-term debt ($2.1B Term Loan, $850M Senior Notes); net funded debt ~$2.8B; annual interest expense of $184.2M consumes >20% of operating income",
+        "balance_sheet_quality": "Goodwill of $2,536.8M and intangibles of $1,472.3M represent ~49% of total assets ($8,142.0M), reflecting post-SPAC Platinum Equity legacy"
+      },
+      "price_and_expectations": {
+        "market_pricing_context": "Trades at >45x P/E; price embeds aggressive market share dominance in liquid cooling through 2028",
+        "expectation_disaggregation": {
+          "company_guidance": "Management targets 12-14% organic growth and 17-18% adjusted operating margins by 2026",
+          "sourced_analyst_consensus": "Consensus models rapid liquid cooling adoption driving ~25% EPS CAGR",
+          "arx_hypothesis": "Physical demand is indisputable, but fixed-price contract risks, working capital absorption, and $184M interest expense severely impair free cash flow generation per share"
+        }
+      },
+      "downside_and_survival": {
+        "slowdown_scenario": "Supply chain component shortages or hyperscaler project pushouts could compress operating margins back toward 8-10%",
+        "survival_capacity": "Moderate: Net debt of $2.8B and $184M annual interest expense leave limited margin of safety if gross margins compress"
+      },
+      "assessment_changes": {
+        "strengthening_criteria": "Net debt reduced below $1.5B (Net Debt / EBITDA < 1.0x) and GAAP operating margin exceeding 18.0% sustainably",
+        "invalidation_criteria": "Fixed-price project margin write-downs, inventory obsolescence, or failure to reduce term loan principal"
+      },
+      "research_priority": {
+        "rank": "DEFERRED_WATCH",
+        "rationale": "High thematic interest, but fails Quality Watch Pillar B (Financial Resilience) due to $3.1B funded debt and heavy goodwill capitalization"
+      }
+    },
+    "MPWR": {
+      "symbol": "MPWR",
+      "company_name": "Monolithic Power Systems, Inc.",
+      "cik": "0001280452",
+      "discovery_provenance": {
+        "routes": ["ROUTE-3-CUSTOMER-SUPPLIER-TRACING", "ROUTE-1-FINANCIAL-OPERATING-RESILIENCE"],
+        "origin": "Newly Surfaced Beyond Shortlist via Hyperscaler/AI Accelerator Supplier Value-Chain Tracing"
+      },
+      "dimensional_classification": {
+        "research_maturity": "EXPLORATORY_HYPOTHESIS",
+        "opportunity_mechanism": "SILICON_LEVEL_POWER_DENSITY_BOTTLENECK_SOLVER",
+        "expectation_gap_status": "HIGH_VALUATION_OFFSETTING_STRUCTURAL_GROWTH",
+        "financial_resilience": "PRISTINE_SELF_FUNDING",
+        "public_publication_eligibility": "INTERNAL_PILOT_RECORD_NOT_ELIGIBLE"
+      },
+      "observable_development": {
+        "nature": "AI accelerator thermal and power requirements (Nvidia H100/H200/B200 drawing 700W to 1,000W+) require specialized 48V-to-core multiphase power management ICs; MPWR's proprietary monolithic BCD (Bipolar-CMOS-DMOS) process delivers higher power density in smaller footprint",
+        "baseline_comparison": "Enterprise Data segment expanded from $238.6M (13.1% of revenue) in FY2023 to >24% of consolidated revenue in 1H 2024; Q2 2024 revenue reached $507.4M (+15.0% YoY)",
+        "characterization": "Structural architectural shift in power delivery combined with semiconductor cyclical inflection",
+        "primary_filing_evidence": "Form 10-K FY2023 (Item 7 MD&A; Note 13 Segment Disclosures) filed Feb 26, 2024; Form 10-Q Q2 2024 filed Aug 6, 2024"
+      },
+      "economic_significance": {
+        "consolidated_materiality": "Enterprise Data is the fastest-growing segment, rising to >25% of consolidated revenue and transforming overall revenue growth and gross margins",
+        "margins_and_returns": "FY2023 GAAP operating margin of 27.0% ($492.3M operating income) and 55.3% gross margin; ROIC exceeds 25%"
+      },
+      "value_capture": {
+        "competitive_dynamics": "Competes with Texas Instruments, Renesas, Infineon, and Analog Devices; proprietary monolithic BCD process integrates power transistors, analog control, and digital logic on a single die, creating packaging and power density advantages",
+        "customer_bargaining_power": "AI accelerator boards (Nvidia, AMD) and cloud hyperscalers (custom ASICs) require multi-sourcing, but MPWR maintains dominant initial share in 48V power stages",
+        "capex_and_capital_intensity": "Fab-lite model utilizing third-party foundries (TSMC) with proprietary process technology; FY2023 capex was $56.7M (3.1% of revenue)",
+        "funded_debt_and_obligations": "Pristine capital structure: Zero funded debt; zero long-term notes; $1,110.4M in cash, equivalents, and short-term investments as of Dec 31, 2023 ($1,288.7M as of June 30, 2024)",
+        "dilution_and_sbc": "FY2023 stock-based compensation of $132.7M (~7.3% of revenue); diluted share count grew modestly (+1.7% in FY23), partially mitigated by $76.8M in buybacks"
+      },
+      "price_and_expectations": {
+        "market_pricing_context": "Trades at ~55x-60x P/E; reflects strong optimism regarding AI server power content expansion",
+        "expectation_disaggregation": {
+          "company_guidance": "Management targets enterprise data market share expansion and steady ~55% gross margins",
+          "sourced_analyst_consensus": "Consensus projects >20% revenue CAGR through 2026 driven by accelerator power content growth from ~$50/board to >$150/board",
+          "arx_hypothesis": "MPWR's power density moat is real, but secondary sourcing by Nvidia and aggressive price competition from Renesas/Infineon will cap peak share at ~60-70%"
+        }
+      },
+      "downside_and_survival": {
+        "slowdown_scenario": "If Nvidia dual-sources power stages to Renesas or Infineon, Enterprise Data growth could decelerate sharply",
+        "survival_capacity": "Exceptional: Zero debt, $1.3B net cash, and >50% gross margins ensure resilience even during a deep semiconductor downturn"
+      },
+      "assessment_changes": {
+        "strengthening_criteria": "Securing sole-source or primary supplier allocation for next-generation 1,000W+ architectures (GB200) with gross margins remaining above 55.0%",
+        "invalidation_criteria": "Losing primary tier-1 power stage sockets to Infineon/Renesas, or Enterprise Data segment revenue contracting sequentially"
+      },
+      "research_priority": {
+        "rank": "TOP_DISCOVERY_CANDIDATE",
+        "rationale": "Directly validates evidence-led discovery. Identifies a candidate solving the exact same power/cooling constraint as VRT at the silicon level, but with zero debt, >25% ROIC, and pristine cash generation."
+      }
+    }
+  }
+}
