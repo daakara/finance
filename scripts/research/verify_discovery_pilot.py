@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ARX Terminal — Evidence-Led Discovery Pilot Verification Script (Corrected)
+ARX Terminal — Evidence-Led Discovery Pilot Verification Script (Reconciled)
 Task: ARX-TERMINAL-EVIDENCE-LED-DISCOVERY-PILOT (Issue #43)
 Governing Item: BACKLOG-RESEARCH-EVIDENCE-DISCOVERY-043
 
@@ -8,6 +8,7 @@ Methodological Disclaimer on Verification Scope:
 - Schema checks establish internal structural compliance of JSON ledgers; they do not establish economic validity.
 - Date and accession format checks verify syntactic presence of required disclosures; they do not independently confirm external factual accuracy.
 - Offline calculation checks verify arithmetic consistency between reported components and derived metrics.
+- Synthetic example checks verify process documentation integrity; they do not represent real company valuations.
 - Frontend isolation checks verify architectural decoupling; they do not establish investment merit.
 """
 
@@ -214,7 +215,7 @@ def verify_pilot(repo_root: Path) -> dict:
             except Exception as e:
                 results["warnings"].append(f"Could not read {path}: {e}")
 
-    # 6. Verify Standardized Decision-Focused Research Process
+    # 6. Verify Standardized Decision-Focused Research Process & Clean Synthetic Example
     std_process_path = repo_root / "docs" / "research" / "DECISION_FOCUSED_RESEARCH_PROCESS.md"
     if not std_process_path.exists():
         results["passed"] = False
@@ -237,6 +238,23 @@ def verify_pilot(repo_root: Path) -> dict:
                 results["passed"] = False
                 results["errors"].append(f"DECISION_FOCUSED_RESEARCH_PROCESS.md missing required section/example: {sec}")
 
+        # Check synthetic example requirements
+        if "SYNTHETIC DEMONSTRATION EXAMPLE — NOT INVESTMENT RESEARCH" not in text:
+            results["passed"] = False
+            results["errors"].append("DECISION_FOCUSED_RESEARCH_PROCESS.md missing synthetic demonstration example header")
+        if '"symbol": "SYNTH"' not in text:
+            results["passed"] = False
+            results["errors"].append("DECISION_FOCUSED_RESEARCH_PROCESS.md must use synthetic symbol 'SYNTH'")
+        if '"reference_price": null' not in text:
+            results["passed"] = False
+            results["errors"].append("DECISION_FOCUSED_RESEARCH_PROCESS.md synthetic example must demonstrate reference_price: null")
+        if "REC-ANET-20261022-V1" in text:
+            results["passed"] = False
+            results["errors"].append("DECISION_FOCUSED_RESEARCH_PROCESS.md must not retain company-specific ANET record in example")
+        if "Form 10-Q Q3 2024" in text:
+            results["passed"] = False
+            results["errors"].append("DECISION_FOCUSED_RESEARCH_PROCESS.md must not describe expired Q3 2024 event as future trigger")
+
     # 7. Verify Triage Matrix Factual Freshness & SNPS Correction
     triage_path = repo_root / "docs" / "research" / "evidence_led_discovery" / "SEARCH_UNIVERSE_AND_TRIAGE_MATRIX.md"
     if triage_path.exists():
@@ -247,6 +265,20 @@ def verify_pilot(repo_root: Path) -> dict:
         if "July 17, 2025" not in triage_text:
             results["passed"] = False
             results["errors"].append("SEARCH_UNIVERSE_AND_TRIAGE_MATRIX.md lacks primary Form 8-K July 17, 2025 merger date for SNPS")
+
+    # 8. Verify Evaluation Report Consistency and Removal of Unsupported Phrases
+    eval_path = repo_root / "docs" / "research" / "evidence_led_discovery" / "PILOT_EVALUATION_REPORT.md"
+    if eval_path.exists():
+        eval_text = eval_path.read_text(encoding="utf-8", errors="ignore").lower()
+        if "binding continue" in eval_text:
+            results["passed"] = False
+            results["errors"].append("PILOT_EVALUATION_REPORT.md contains improper 'binding continue' phrase")
+        if "fundamentally superior" in eval_text:
+            results["passed"] = False
+            results["errors"].append("PILOT_EVALUATION_REPORT.md contains improper 'fundamentally superior' phrase")
+        if "proved signal value" in eval_text:
+            results["passed"] = False
+            results["errors"].append("PILOT_EVALUATION_REPORT.md contains improper 'proved signal value' phrase")
 
     return results
 

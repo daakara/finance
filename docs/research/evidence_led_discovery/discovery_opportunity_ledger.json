@@ -65,7 +65,7 @@
         "nature": "Adoption of 800G and 1.6T high-throughput Ethernet switching in hyperscale AI GPU backend clusters",
         "baseline_comparison": "FY2025 revenue reached $9,005.7M (+53.7% vs FY23 baseline of $5,860.2M); 1H 2026 revenue reached $5,744.7M; Q2 2026 quarterly revenue was $3,035.7M",
         "characterization": "Structural networking protocol shift within large-scale hyperscaler infrastructure capex cycle",
-        "primary_filing_evidence": "Form 10-K FY2025 filed 2026-02-17 (Accession 0001596532-26-000013); Form 10-Q Q2 2026 filed 2026-08-05 (Accession 0001596532-26-000175)"
+        "primary_filing_evidence": "Form 10-K FY2025 filed 2026-02-17 (Accession 0001596532-26-000013, https://www.sec.gov/edgar/data/1596532/000159653226000013/anet-20251231.htm); Form 10-Q Q2 2026 filed 2026-08-05 (Accession 0001596532-26-000175, https://www.sec.gov/edgar/data/1596532/000159653226000175/anet-20260630.htm)"
       },
       "economic_significance": {
         "consolidated_materiality": "Core networking hardware and EOS software represent >85% of revenue",
@@ -118,7 +118,7 @@
         "nature": "Escalation in data center power density driving adoption of direct-to-chip liquid cooling systems, coolant distribution units (CDUs), and high-density modular power infrastructure",
         "baseline_comparison": "FY2025 revenue reached $10,229.9M (+49.1% vs FY23 baseline of $6,863.0M); 1H 2026 revenue reached $5,923.8M; Q2 2026 quarterly revenue was $3,274.3M",
         "characterization": "Structural physical infrastructure buildout combined with high organic order backlog",
-        "primary_filing_evidence": "Form 10-K FY2025 filed 2026-02-13 (Accession 0001628280-26-005612); Form 10-Q Q2 2026 filed 2026-07-29 (Accession 0001628280-26-050609)"
+        "primary_filing_evidence": "Form 10-K FY2025 filed 2026-02-13 (Accession 0001628280-26-005612, https://www.sec.gov/edgar/data/1674101/000162828026005612/vrt-20251231.htm); Form 10-Q Q2 2026 filed 2026-07-29 (Accession 0001628280-26-050609, https://www.sec.gov/edgar/data/1674101/000162828026050609/vrt-20260630.htm)"
       },
       "economic_significance": {
         "consolidated_materiality": "Facility power, thermal, and modular management represent 100% of operations",
@@ -171,7 +171,7 @@
         "nature": "Rising power delivery content per accelerator (transitioning from 12V to 48V multiphase power management ICs) on high-performance compute boards",
         "baseline_comparison": "FY2025 revenue reached $2,790.5M (+53.2% vs FY23 baseline of $1,821.1M); 1H 2026 revenue reached $1,784.8M; Q2 2026 quarterly revenue was $980.6M",
         "characterization": "Structural power content increase within cyclical semiconductor recovery",
-        "primary_filing_evidence": "Form 10-K FY2025 filed 2026-02-27 (Accession 0001437749-26-006113); Form 10-Q Q2 2026 filed 2026-08-05 (Accession 0001628280-26-053275)"
+        "primary_filing_evidence": "Form 10-K FY2025 filed 2026-02-27 (Accession 0001437749-26-006113, https://www.sec.gov/edgar/data/1280452/000143774926006113/mpwr-20251231.htm); Form 10-Q Q2 2026 filed 2026-08-05 (Accession 0001628280-26-053275, https://www.sec.gov/edgar/data/1280452/000162828026053275/mpwr-20260630.htm)"
       },
       "economic_significance": {
         "consolidated_materiality": "Enterprise Data segment is MPWR's primary growth driver, expanding to >25% of consolidated revenue",

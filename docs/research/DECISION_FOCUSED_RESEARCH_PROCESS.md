@@ -69,10 +69,10 @@ Describe plausible alternative outcomes for the decisive uncertainties and trace
 Conduct evidence collection proportional to the decision's importance:
 - **Primary Source Grounding:** Reconcile material assertions to SEC EDGAR filings (Forms 10-K, 10-Q, 8-K), audited financial notes, and regulatory records.
 - **Strict Epistemic Classification:** Rigorously categorize every claim:
-  - *Reported Fact:* Audited financial line item or regulatory filing.
-  - *Management Statement:* Executive commentary (treated as management evidence, not independent confirmation).
-  - *Derived Calculation:* Deterministic mathematical formula applied to verified inputs.
-  - *Analyst Assumption:* Forward-looking modeling input.
+  - *Reported Fact:* Primary regulatory filing or financial statement line item (distinguishing audited annual statements, e.g. Form 10-K, from unaudited interim reports, e.g. Form 10-Q or regulatory notices Form 8-K; "reported fact" does not imply every SEC filing or quarterly statement is audited).
+  - *Management Statement:* Executive commentary and earnings call statements (treated as management evidence, not independent confirmation).
+  - *Derived Calculation:* Deterministic mathematical formula applied to verified reported inputs.
+  - *Analyst Assumption:* Forward-looking modeling input or third-party projection.
   - *Hypothesis:* Falsifiable internal conjecture undergoing testing.
 - **Counter-Evidence Seeking:** Actively search for evidence contradicting the preferred thesis (e.g., customer concentration, deferred capex, aggressive revenue recognition).
 - **Explicit Limitations:** If data is undisclosed or unavailable, explicitly record it as an unknown rather than substituting unverified industry estimates.
@@ -110,6 +110,12 @@ The following short examples demonstrate how decisive uncertainties vary by busi
 
 All future research dossiers, discovery notes, and material update logs must implement the following compact schema:
 
+> **Template Usage Invariants:**
+> - **Reference Price:** May be `null` or omitted when market price is not decision-relevant to the immediate action.
+> - **Distinct Time Dimensions:** Evidence cutoff date, measurement period, and future review trigger events are strictly distinct fields.
+> - **Valid Terminal States:** `UNRESOLVED_EVIDENCE` and `INSUFFICIENT_EVIDENCE` are valid, supported states; no data should be invented to fill unknowns.
+> - **No Mandatory Universal Thresholds:** Illustrative figures or examples in this template do not become mandatory screening rules or universal hurdles.
+
 ```markdown
 # [Symbol] — Decision-Focused Research Record
 
@@ -118,7 +124,7 @@ All future research dossiers, discovery notes, and material update logs must imp
 **CIK:** [SEC EDGAR CIK]  
 **Analytical Horizon:** [e.g., 3–5 Years (Provisional Pilot Horizon)]  
 **Information Cutoff Date:** [YYYY-MM-DD]  
-**Reference Price & Session:** [Reference Price (e.g., $XXX.XX as of YYYY-MM-DD Close), or N/A]  
+**Reference Price & Session:** [Reference Price (e.g., $XXX.XX as of YYYY-MM-DD Close), or null / N/A when not decision-relevant]  
 **Research Author / Agent:** [Name / Role]  
 
 ---
@@ -154,12 +160,12 @@ All future research dossiers, discovery notes, and material update logs must imp
 
 ### 4. Evidence, Counter-Evidence & Limitations
 - **Supporting Primary Evidence:**
-  - `[FACT]` [Item, Period, Amount, Form, Accession No., Note/Table Locator]
+  - `[FACT]` [Item, Period, Amount, Form, Accession No., Note/Table Locator — distinguishing audited annual from unaudited interim]
   - `[CALCULATION]` [Formula applied to verified facts]
 - **Counter-Evidence & Conflicting Observations:**
   - `[RISK/FRICTION]` [Customer concentration, inventory build, margin compression]
 - **Explicit Limitations & Unknowns:**
-  - `[LIMITATION]` [Unreported unit economics, non-disclosed customer churn, etc.]
+  - `[LIMITATION / UNRESOLVED]` [Unreported unit economics, non-disclosed customer churn, etc.]
 
 ---
 
@@ -173,6 +179,7 @@ All future research dossiers, discovery notes, and material update logs must imp
 
 ### 6. Review Triggers & Stopping Rationale
 - **Next Review Trigger Event:** [Specific future filing, metric threshold, or calendar checkpoint]
+- **Measurement Period:** [Specific reporting period to evaluate, distinct from cutoff date]
 - **Stopping Rationale:** [Reason research is complete now; evidence sufficient to resolve decision or uncertainty unresolvable via public data]
 ```
 
@@ -180,44 +187,70 @@ All future research dossiers, discovery notes, and material update logs must imp
 
 ## 5. Machine-Readable Schema Representation
 
-To facilitate programmatic verification, internal ledgers (such as `discovery_opportunity_ledger.json`) map to this standard via the following standardized structure:
+To facilitate programmatic verification, internal ledgers map to this standard using the schema illustrated below.
+
+> **Governance Notice:** The following JSON block is a **SYNTHETIC DEMONSTRATION EXAMPLE — NOT INVESTMENT RESEARCH**. It uses an illustrative synthetic entity (`SYNTH`) to demonstrate valid fields, distinct temporal horizons, `null` reference pricing, and valid unresolved evidence states without prescribing mandatory screening thresholds.
 
 ```json
 {
-  "record_id": "REC-ANET-20261022-V1",
-  "symbol": "ANET",
+  "_comment": "SYNTHETIC DEMONSTRATION EXAMPLE — NOT INVESTMENT RESEARCH",
+  "record_id": "REC-SYNTH-20261022-V1",
+  "symbol": "SYNTH",
+  "company_name": "Synthetic Industrial Systems Inc.",
+  "cik": "0000000000",
   "decision_sought": {
     "action": "PRIORITIZE_RELATIVE_TO_ALTERNATIVES",
-    "horizon": "3-5_YEARS_PROVISIONAL",
-    "cutoff_date": "2026-10-22",
-    "reference_price": 385.50
+    "provisional_analytical_horizon": "3-5_YEARS",
+    "information_cutoff_date": "2026-10-22",
+    "reference_price": null
   },
   "decision_relevant_uncertainties": [
     {
-      "uncertainty": "Customer concentration (Meta + Microsoft comprise 39% of sales)",
-      "decisive_impact": "Monopsony pricing pressure could cap gross margin expansion",
+      "uncertainty": "Durability of contract renewal terms with primary distribution partner",
+      "decisive_impact": "Could alter gross margin baseline by +/- 300 bps",
       "resolvable_via_public_data": true
     }
   ],
   "plausible_outcomes_and_consequences": {
-    "base_case": "Ethernet share gains in AI clusters sustain >35% operating margins",
-    "downside_case": "Hyperscalers dual-source to white-box ODMs, compressing growth to low teens",
-    "resilience_profile": "Pristine: zero debt, $6B+ cash provides total liquidity survival"
+    "base_case": "Standard contract renewal preserves operating margins near recent operating levels",
+    "downside_case": "Margin compression absorbs organic cash generation and requires working capital draw",
+    "resilience_profile": "Sufficient liquidity and zero short-term maturities provide downside cushion"
   },
   "evidence_synthesis": {
-    "facts": ["Form 10-K FY23: $5,860.2M rev, $2,185.3M GAAP op income, 318.5M shares"],
-    "counter_evidence": ["Note 14: Meta 18%, Microsoft 21% of consolidated revenue"],
-    "limitations": ["Hyperscaler internal silicon roadmap unobservable via public filings"]
+    "reported_facts": [
+      {
+        "source": "SEC Form 10-K (audited annual)",
+        "period": "FY2025",
+        "fact": "Reported operating income and debt terms as stated in Note 8"
+      },
+      {
+        "source": "SEC Form 10-Q (unaudited interim)",
+        "period": "Q2 2026",
+        "fact": "Operating cash flow and cash balance as stated in unaudited cash flow statement"
+      }
+    ],
+    "unresolved_evidence": [
+      "Segment-level customer retention rate is not disclosed in public filings"
+    ],
+    "counter_evidence": [
+      "Inventory growth outpaced revenue in latest interim period"
+    ],
+    "limitations": [
+      "Private commercial contract renewal discussions are confidential prior to public filing"
+    ]
   },
   "assessment": {
-    "status": "SUPPORTED_HIGH_PRIORITY_MONITORING",
-    "watch_eligibility": "INTERNAL_ONLY_CUSTOMER_CONCENTRATION_BLOCKER",
+    "status": "PRIORITIZED_FOR_INTERNAL_MONITORING",
+    "decision_outcome": "RETAIN_IN_QUEUE",
+    "priority_change": "UNPROMOTED_PENDING_NEXT_FILING",
     "next_action": "HOLD_IN_INTERNAL_MONITORING_QUEUE"
   },
   "review_triggers": {
-    "trigger_event": "Form 10-Q Q3 2024 customer concentration disclosure or GAAP op margin <32%"
+    "trigger_event": "Filing of Form 10-Q for Q3 2026 (expected Nov 2026) or announcement of master contract renewal",
+    "measurement_period": "Q3 2026",
+    "evidence_cutoff_date": "2026-10-22"
   },
-  "stopping_rationale": "Sufficient evidence collected to establish business quality and customer concentration boundary; further research cannot predict private hyperscaler procurement negotiations."
+  "stopping_rationale": "Sufficient evidence collected to determine current queue priority; further research cannot resolve private commercial negotiations ahead of public disclosure."
 }
 ```
 

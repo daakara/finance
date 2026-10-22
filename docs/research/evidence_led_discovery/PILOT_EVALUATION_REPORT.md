@@ -1,6 +1,6 @@
-# ARX Terminal — Evidence-Led Discovery Pilot: Evaluation Report (Corrected)
+# ARX Terminal — Evidence-Led Discovery Pilot: Evaluation Report (Reconciled)
 
-**Document ID:** `ARX-DISCOVERY-PILOT-EVALUATION-REPORT-V2`  
+**Document ID:** `ARX-DISCOVERY-PILOT-EVALUATION-REPORT-V3`  
 **Governing Authority:** [daakara/finance#43](https://github.com/daakara/finance/issues/43) (`BACKLOG-RESEARCH-EVIDENCE-DISCOVERY-043`)  
 **Methodological Context:** ARX Closure Model v2 (Decision-First, Minimum Sufficient Evidence)  
 **Evaluation Date:** October 22, 2026  
@@ -13,75 +13,100 @@
 
 ### Process Recommendation: **`CONTINUE`**
 > **Recommendation:** Proceed with another bounded discovery experiment, subject to separate product owner authorization.  
-> The pilot demonstrated that structured, decision-focused research successfully separates operational enablers, traces primary financial filings, and uncovers critical differences in capital structure, cash generation, and customer concentration across data center infrastructure providers.
+> The pilot demonstrated that structured, decision-focused research successfully uncovers critical differences in capital structure, cash generation, customer concentration, and architectural layers across infrastructure providers.
 
-### Epistemic Qualifications & Honest Governance Boundaries
-- **Candidate-Generation Status:** Automated candidate-generation effectiveness was **not established** in this pilot. The 14 evaluated companies represent an **exploratory manually selected comparison cohort**, not an automated full-market scan.
-- **No Claims of Investment Alpha:** This evaluation assesses **research process usefulness**, not demonstrated investment skill, predictive alpha, or backtested stock performance.
-- **Process Recommendation $\neq$ Automatic Authorization:** A `CONTINUE` recommendation indicates that the methodological approach warrants further bounded testing; it does **not** constitute automatic authorization to begin another cycle or deploy resources without prior approval.
-- **Zero Public Surface Mutation:** All records remain internal pilot artifacts. The published Quality-Watch collection remains frozen at exactly six approved assets: `FIX`, `DUOL`, `ULTA`, `MEDP`, `ISRG`, `DECK`.
-
----
-
-## 2. Universe Examined & Discovery Scope
-
-### Population Lineage vs. Actual Examination
-- **Reference Population Baseline:** Sprint 2 Package 1 Multi-Feed Baseline (`coverage_capacity_baseline.json`), identifying 16,448 distinct join keys and ~5,871 provisional operating common stocks.
-- **Actual Examined Universe:** Bounded diagnostic sample of **14 operating companies**:
-  - *10 comparison candidates from previous queue:* `KLAC`, `LULU`, `EME`, `VRT`, `ANET`, `CDNS`, `PWR`, `SNPS`, `NOW`, `ELF`.
-  - *4 additional exploratory candidates:* `MPWR`, `ODFL`, `HUBB`, `FICO`.
-- **Primary Source Grounding:** All material factual claims reconciled to audited SEC EDGAR Form 10-K (FY2025) and Form 10-Q (1H 2026 / Q2 2026 / Q3 2026) filings.
+### Epistemic Qualifications & Governance Boundaries
+- **Not Proof of Discovery Skill:** A `CONTINUE` recommendation reflects that the structured research format helped surface decision-relevant differences; it does not prove algorithmic or proprietary discovery skill.
+- **Not Binding Authorization:** A `CONTINUE` recommendation is an evaluative finding, not an automatic authorization to begin another cycle or deploy resources.
+- **Does Not Start Another Cycle:** No further discovery tasks or dossier drafting will commence without explicit, separate Product Owner instructions.
+- **Zero Public Surface Mutation:** Published Quality-Watch collection remains frozen at exactly six approved assets: `FIX`, `DUOL`, `ULTA`, `MEDP`, `ISRG`, `DECK`.
 
 ---
 
-## 3. Findings Across Evaluated Candidates
+## 2. Seven-Dimensional Pilot Evaluation
 
-### A. What Useful Research Findings Were Actually Demonstrated?
-1. **`VRT` (Substantial Balance Sheet Deleveraging Uncovered):**
-   - *Previous Error:* Prior drafts permanently disqualified Vertiv based on stale FY2023 figures ($2.8B net debt, interest consuming >20% of op income).
-   - *Current Audited Reality:* Vertiv generated **$2,113.8M in CFO** and **$1,893.8M in FCF** in FY2025. By Q2 2026, cash reached **$2,810.6M** against long-term debt of **$2,939.8M**, reducing **Net Funded Debt to $129.2M** (near net cash). FY2025 interest expense fell to **$86.1M** (only 4.7% of GAAP operating income).
-   - *Result:* Corrected triage from disqualified to **`ACTIVE_QUALITY_WATCH_CANDIDATE`** for subsequent formal Quality-Watch evaluation.
-2. **`ANET` (Customer Concentration Clarified):**
-   - Form 10-K FY2025 disclosures established that two customers accounted for 26% and 16% of sales, representing **42% consolidated revenue concentration** (up from 39% in FY23). While Arista’s balance sheet is pristine ($2.3B+ cash, zero debt, 42.8% op margin), this concentration represents a critical operational uncertainty that justifies internal monitoring before public publication.
-3. **`MPWR` & `VRT` (Contextual Role Clarification):**
-   - Replaced previous inaccurate claims that MPWR "solves the exact same bottleneck" or is "categorically superior" to VRT.
-   - *Clarification:* MPWR addresses silicon-level DC-DC power delivery on accelerator boards; Vertiv addresses facility-level modular cooling and power infrastructure. These are complementary systems, not identical bottlenecks. Having zero debt does not inherently establish superior shareholder outcomes at respective market prices.
-4. **`SNPS` (Factual Error Corrected):**
-   - Corrected earlier inaccurate assertion that the Ansys acquisition was pending. Form 8-K establishes merger completion on **July 17, 2025**.
-   - Deferred due to post-merger integration complexity, $9.0B in funded debt, and the need to observe multi-quarter post-merger cash flow and debt paydown.
-5. **Removal of Unsupported Automatic Disqualifiers:**
-   - Removed blanket disqualifications based on debt, customer concentration, or consumer focus (e.g., `LULU`). Candidates are evaluated contextually on financial resilience, competitive moat durability, and capital allocation.
+### 1. Research Structure and Isolation
+- **Evaluation:** **SUCCESSFUL.**
+- The pilot strictly isolates internal exploratory records (`docs/research/evidence_led_discovery/`) from the public research surface.
+- All records enforce `public_publication_eligibility: INTERNAL_PILOT_RECORD_NOT_ELIGIBLE`.
+- Codebase grep audits confirm zero import or bundle references in `frontend/`.
+- The canonical published manifest (`published_watch_manifest.json`) and baseline ledger (`odp05_discovery_ledger.json`) remained completely unmutated.
+
+### 2. Source Accuracy
+- **Evaluation:** **RECONCILED TO AUDITED PRIMARY SOURCES.**
+- Initial drafts relied on stale 2023/2024 citations and erroneous assumptions (e.g., Ansys merger pending, Vertiv permanently distressed).
+- Reconciliation updated all 14 triage entries to October 2026 information cutoff, citing audited Form 10-K (FY2025) and interim Form 10-Q (1H 2026) filings with exact accession numbers and table locators.
+- Factual errors were corrected: SNPS merger completion date confirmed as July 17, 2025 via Form 8-K; Vertiv deleveraging from $2.8B net debt to $129M verified via Form 10-K/10-Q; Arista customer concentration verified at 42% (Meta 26%, MSFT 16%).
+
+### 3. Useful Questions Surfaced
+- **Evaluation:** **HIGH INFORMATIONAL VALUE.**
+- The pilot successfully moved research inquiry away from generic operational summaries toward decisive uncertainties:
+  - *ANET:* Can high GAAP operating margins (>40%) withstand 42% customer concentration if hyperscalers push for white-box or custom silicon solutions?
+  - *VRT:* Can Vertiv maintain ~18% operating margins as global electrical conglomerates (Schneider, Eaton) expand modular liquid cooling capacity?
+  - *MPWR:* Does proprietary BCD packaging protect silicon-level 48V power stages against multi-sourcing policies from major GPU and ASIC customers?
+
+### 4. Defensible Priority Changes
+- **Evaluation:** **SUPPORTED BY EVIDENCE.**
+- **`VRT`:** Promoted from invalid automatic disqualification to `ACTIVE_QUALITY_WATCH_CANDIDATE` based on verified $1.89B FCF in FY25, net debt reduction to $129M, and interest expense declining to 4.7% of operating income.
+- **`ANET`:** Maintained in internal monitoring queue (`PRIORITIZED_FOR_INTERNAL_MONITORING`) rather than promoted to public watch, appropriately recognizing that 42% customer concentration warrants observation.
+- **`MPWR`:** Retained in internal monitoring queue (`PRIORITIZED_FOR_INTERNAL_MONITORING`), recognizing its silicon-level role as complementary to facility infrastructure without claiming inherent investment superiority.
+- **`SNPS`:** Deferred based on post-merger integration complexity and $9.0B long-term debt burden, rather than a false "pending" status.
+- **Contextual Deferrals:** Removed unsupported blanket disqualifiers for consumer exposure (`LULU`) or single-digit contractor margins (`PWR`, `EME`), deferring them contextually.
+
+### 5. Candidate-Generation Effectiveness
+- **Evaluation:** **INCONCLUSIVE / NOT ESTABLISHED.**
+- The 14 evaluated companies represent an **exploratory manually selected comparison cohort**, not an automated full-market scan.
+- The pilot did not test automated screening algorithms across the broader US-listed operating equity universe (~5,871 stocks).
+- A future separately authorized discovery experiment is required to evaluate automated candidate generation, with prospective logging of search queries, timestamps, and filter cutoffs.
+
+### 6. Effort Measurement
+- **Evaluation:** **ESTIMATED / UNMEASURED.**
+- Active research effort is estimated at approximately ~4.5 hours for initial cohort review and deep record preparation, with prospective maintenance estimated at ~30–45 minutes per candidate quarterly.
+- No automated timecards or stopwatch logs were recorded; effort claims are explicitly disclosed as estimates rather than empirical measurements.
+
+### 7. Investment Performance
+- **Evaluation:** **OUT OF SCOPE / NOT CLAIMED.**
+- This pilot evaluates research process and evidentiary discipline. It does not measure stock returns, claim predictive alpha, or promise outperformance.
 
 ---
 
-## 4. Process Effort & Maintenance Analysis
+## 3. Comparative Synthesis: Data Center Infrastructure Candidates
 
-| Metric Category | Observed / Estimated Value | Methodological Basis |
-| :--- | :--- | :--- |
-| **Initial Full-Queue Screening (14 Companies)** | ~2.5 hours | **ESTIMATED Active Work** (Manual SEC filing lookup, note extraction, triage authoring) |
-| **Deep Investigation Preparation (3 Candidates)** | ~2.0 hours | **ESTIMATED Active Work** (Statements of cash flows, debt bridge, customer note reconciliation) |
-| **Total Task Active Effort** | ~4.5 hours | **ESTIMATED Active Work** (No automated timecard maintained) |
-| **Quarterly Monitoring Upkeep per Candidate** | ~30–45 minutes | **PROVISIONAL ESTIMATE** (Projected quarterly 10-Q review against review triggers) |
-| **Historical Multi-Cycle Maintenance Burden** | N/A | **EXPLICITLY UNMEASURED** (Requires multi-quarter tracking to measure empirically) |
+The table below contrasts the three deeper investigations using audited FY2025 and 1H 2026 SEC filings:
 
----
-
-## 5. Verification & Safety Attestations
-
-- **Automated Verification Script (`scripts/research/verify_discovery_pilot.py`):** Verified schema compliance, invariant preservation, and standard references.
-- **Regression Unit Suite (`tests/test_evidence_led_discovery_pilot.py`):** Verified offline calculation reconciliation ($FCF = CFO - Capex$), baseline hash immutability, and standard references (**5/5 tests pass**).
-- **Public Publication Invariant:** All internal pilot records enforce `public_publication_eligibility: INTERNAL_PILOT_RECORD_NOT_ELIGIBLE`.
-- **Zero Public Mutation:** Published collection remains frozen at exactly 6 approved assets: `FIX`, `DUOL`, `ULTA`, `MEDP`, `ISRG`, `DECK`.
-- **Baseline Immutability:** [`odp05_discovery_ledger.json`](file:///docs/research/opportunity_discovery/odp05_discovery_ledger.json) canonical SHA-256 (`a65be3b...`) verified intact.
-- **Frontend Isolation:** Zero internal research records referenced in `frontend/`.
-- **Operational Invariants:** Scanner execution, universe publication, and ingestion remain strictly inactive.
+| Dimension | Arista Networks (`ANET`) | Vertiv Holdings (`VRT`) | Monolithic Power Systems (`MPWR`) |
+| :--- | :--- | :--- | :--- |
+| **Architectural Layer** | Network Fabric (800G/1.6T Ethernet) | Facility-Level Power & Modular Cooling | Board-Level Silicon Power Management (48V ICs) |
+| **System Relationship** | Data Center Interconnect Fabric | Data Center Facility Thermal Management | Server Accelerator Board Power Conversion |
+| **FY2025 GAAP Revenue** | $9,005.7M | $10,229.9M | $2,790.5M |
+| **FY2025 GAAP OpMargin** | **42.8%** ($3,856.1M) | **17.9%** ($1,829.7M) | **26.1%** ($728.6M) |
+| **1H 2026 GAAP OpMargin** | **44.1%** ($2,535.8M) | **18.2%** ($1,078.0M) | **30.5%** ($545.0M) |
+| **FY2025 Free Cash Flow** | **$4,261.9M** (CFO $4,371.9M - Capex $110.0M) | **$1,893.8M** (CFO $2,113.8M - Capex $220.0M) | **$666.2M** (CFO $838.2M - Capex $172.0M) |
+| **FCF Conversion (FCF/CFO)** | **97.5%** | **89.6%** | **79.5%** |
+| **Funded Long-Term Debt** | **$0.0M** | $2,939.8M | **$0.0M** |
+| **Cash & Liquid Investments** | $2,290.2M cash (plus ST investments) | **$2,810.6M cash** | $1,005.6M cash/ST investments |
+| **Net Funded Debt** | **Net Cash** | **$129.2M (Near Net Cash)** | **Net Cash** |
+| **Primary Operational Uncertainty** | **42% Customer Concentration (Meta/MSFT)** | Competitive Supply Ramp & Project Execution | GPU Vendor Multi-Sourcing & Analog Pricing |
+| **Triage Classification** | `PRIORITIZED_FOR_INTERNAL_MONITORING` | `ACTIVE_QUALITY_WATCH_CANDIDATE` | `PRIORITIZED_FOR_INTERNAL_MONITORING` |
 
 ---
 
-## 6. Next Bounded Action Supported by Evidence
+## 4. Verification & Release Boundary Attestations
 
-Under the **`CONTINUE`** recommendation:
+```ini
+[ARX_RESEARCH_SAFETY_INVARIANTS]
+PUBLISHED_COLLECTION = UNMUTED (FIX, DUOL, ULTA, MEDP, ISRG, DECK - exactly 6 symbols)
+BASELINE_LEDGER_SHA256 = a65be3b38cdf988081a29257fb41674c3591b10a666362f351794a7d1c40979d (INTACT)
+SCANNER_EXECUTION = NOT_ACTIVATED
+UNIVERSE_PUBLICATION = NOT_PERFORMED
+FRONTEND_BUNDLE_IMPORTS = ZERO_CROSS_BOUNDARY_LEAKS
+```
+
+---
+
+## 5. Next Steps
+
 1. Maintain Draft PR [#45](https://github.com/daakara/finance/pull/45) as the delivery record for this corrected pilot and standardization task.
-2. In a future separately authorized cycle, evaluate `VRT` formally against the six Quality-Watch pillars using its deleveraged FY2025/1H2026 financial baseline.
-3. Design a prospective provenance tracking mechanism for automated candidate discovery before attempting broader universe scanning.
-4. Enforce stopping rule: Cease active execution upon delivery of this report without premature operational activations or public manifest changes.
+2. In a future separately authorized cycle, evaluate `VRT` formally against the six Quality-Watch pillars using its deleveraged financial baseline.
+3. If an automated candidate-generation experiment is authorized in the future, prospectively record search logs and timestamps.
+4. Cease active execution under the stopping rule of ARX Closure Model v2.

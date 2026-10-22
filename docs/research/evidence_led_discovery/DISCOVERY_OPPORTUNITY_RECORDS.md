@@ -43,8 +43,8 @@ flowchart LR
 - **Timing & Baseline:** FY2025 revenue reached $9,005.7M (+53.7% vs FY2023 baseline of $5,860.2M). Momentum continued in 1H 2026 with revenue reaching $5,744.7M (Q2 2026 quarterly revenue of $3,035.7M).
 - **Classification:** **Structural Networking Protocol Shift** within a multi-year hyperscaler capex expansion.
 - **Primary Source Evidence:**
-  - *Form 10-K FY2025:* For period ended December 31, 2025, filed February 17, 2026 (CIK: `0001596532`, Accession: `0001596532-26-000013`). Item 7 MD&A; Item 8 Financial Statements (Statements of Operations p. 68).
-  - *Form 10-Q Q2 2026:* For period ended June 30, 2026, filed August 5, 2026 (Accession: `0001596532-26-000175`).
+  - *Form 10-K FY2025:* For period ended December 31, 2025, filed February 17, 2026 (CIK: `0001596532`, Accession: `0001596532-26-000013`, [SEC EDGAR URL](https://www.sec.gov/edgar/data/1596532/000159653226000013/anet-20251231.htm)). Item 7 MD&A; Item 8 Financial Statements (Statements of Operations p. 68).
+  - *Form 10-Q Q2 2026:* For period ended June 30, 2026, filed August 5, 2026 (Accession: `0001596532-26-000175`, [SEC EDGAR URL](https://www.sec.gov/edgar/data/1596532/000159653226000175/anet-20260630.htm)).
 
 ### B. Economic Significance
 - **Consolidated Materiality:** High. Cloud and enterprise switching represents >85% of consolidated revenue.
@@ -101,8 +101,8 @@ flowchart LR
 - **Timing & Baseline:** FY2025 revenue reached $10,229.9M (+49.1% vs FY2023 baseline of $6,863.0M). 1H 2026 revenue expanded to $5,923.8M (Q2 2026 quarterly revenue of $3,274.3M).
 - **Classification:** **Structural Physical Infrastructure Expansion** supported by strong multi-year order backlogs.
 - **Primary Source Evidence:**
-  - *Form 10-K FY2025:* For period ended December 31, 2025, filed February 13, 2026 (CIK: `0001674101`, Accession: `0001628280-26-005612`). Item 7 MD&A; Item 8 Financial Statements (Statements of Cash Flows p. 71; Note on Debt).
-  - *Form 10-Q Q2 2026:* For period ended June 30, 2026, filed July 29, 2026 (Accession: `0001628280-26-050609`).
+  - *Form 10-K FY2025:* For period ended December 31, 2025, filed February 13, 2026 (CIK: `0001674101`, Accession: `0001628280-26-005612`, [SEC EDGAR URL](https://www.sec.gov/edgar/data/1674101/000162828026005612/vrt-20251231.htm)). Item 7 MD&A; Item 8 Financial Statements (Statements of Cash Flows p. 71; Note on Debt).
+  - *Form 10-Q Q2 2026:* For period ended June 30, 2026, filed July 29, 2026 (Accession: `0001628280-26-050609`, [SEC EDGAR URL](https://www.sec.gov/edgar/data/1674101/000162828026050609/vrt-20260630.htm)).
 
 ### B. Economic Significance
 - **Consolidated Materiality:** High. Data center power, thermal, and modular infrastructure comprise 100% of operations.
@@ -161,8 +161,8 @@ flowchart LR
 - **Timing & Baseline:** FY2025 revenue reached $2,790.5M (+53.2% vs FY2023 baseline of $1,821.1M). 1H 2026 revenue expanded to $1,784.8M (Q2 2026 quarterly revenue of $980.6M).
 - **Classification:** **Structural Silicon-Level Architectural Content Growth** within a broader semiconductor expansion.
 - **Primary Source Evidence:**
-  - *Form 10-K FY2025:* For period ended December 31, 2025, filed February 27, 2026 (CIK: `0001280452`, Accession: `0001437749-26-006113`). Item 7 MD&A; Item 8 Financial Statements (Statements of Cash Flows p. 69; Note on Segment Reporting).
-  - *Form 10-Q Q2 2026:* For period ended June 30, 2026, filed August 5, 2026 (Accession: `0001628280-26-053275`).
+  - *Form 10-K FY2025:* For period ended December 31, 2025, filed February 27, 2026 (CIK: `0001280452`, Accession: `0001437749-26-006113`, [SEC EDGAR URL](https://www.sec.gov/edgar/data/1280452/000143774926006113/mpwr-20251231.htm)). Item 7 MD&A; Item 8 Financial Statements (Statements of Cash Flows p. 69; Note on Segment Reporting).
+  - *Form 10-Q Q2 2026:* For period ended June 30, 2026, filed August 5, 2026 (Accession: `0001628280-26-053275`, [SEC EDGAR URL](https://www.sec.gov/edgar/data/1280452/000162828026053275/mpwr-20260630.htm)).
 
 ### B. Economic Significance
 - **Consolidated Materiality:** High. Enterprise Data power management is MPWR's primary growth driver, rising to >25% of consolidated revenue and transforming overall corporate growth.
