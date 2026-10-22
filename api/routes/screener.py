@@ -155,21 +155,82 @@ VALUE_GARP_MODELS = {
 }
 
 
-def get_radar_capabilities(vcp_snapshot: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def get_radar_capabilities(
+    vcp_snapshot: Optional[Dict[str, Any]] = None,
+    publication_pointer: Optional[Any] = None,
+) -> Dict[str, Any]:
     caps = {k: dict(v) for k, v in RADAR_CAPABILITY_CONTRACT.items()}
+
+    # Resolve publication identity & population denominator if pointer or snapshot provided
+    pop_denom = None
+    build_id = None
+    univ_id = None
+    pub_digest = None
+    is_rollback = False
+    rollback_reason = None
+    membership_status = "UNAVAILABLE"
+
+    if publication_pointer is not None and hasattr(publication_pointer, "published_symbols"):
+        pop_denom = len(publication_pointer.published_symbols)
+        build_id = getattr(publication_pointer, "build_id", None)
+        univ_id = getattr(publication_pointer, "universe_id", None)
+        pub_digest = getattr(publication_pointer, "publication_digest", None)
+        is_rollback = getattr(publication_pointer, "is_rollback", False)
+        rollback_reason = getattr(publication_pointer, "rollback_reason", None)
+        membership_status = "AVAILABLE" if pop_denom else "UNAVAILABLE"
+
+    # Invariant 6: Stale or rolled-back pointers cannot imply operational scanner availability
+    if is_rollback:
+        caps["VCP"] = {
+            "status": "PIPELINE_PENDING",
+            "universeScreening": "PIPELINE_PENDING",
+            "singleAssetAnalysis": "AVAILABLE",
+            "matchedCount": None,
+            "populationDenominator": pop_denom,
+            "universeBuildId": build_id,
+            "universeId": univ_id,
+            "publicationDigest": pub_digest,
+            "isRollback": True,
+            "rollbackReason": rollback_reason,
+            "membershipStatus": membership_status,
+            "lifecycleState": "STALE_OR_ROLLED_BACK_PUBLICATION",
+            "reason": "ROLLED_BACK_PUBLICATION_POINTER",
+            "rationale": f"Publication build '{build_id}' was rolled back ({rollback_reason or 'No reason specified'}). Scanner execution is suspended.",
+        }
+        return caps
+
     if vcp_snapshot:
         snap_status = vcp_snapshot.get("status")
         freshness_info = vcp_snapshot.get("freshness", {})
+        u_meta = vcp_snapshot.get("universe", {})
+        if u_meta:
+            pop_denom = pop_denom or u_meta.get("eligible_universe_count") or vcp_snapshot.get("snapshot", {}).get("universe_size")
+            build_id = build_id or u_meta.get("universe_build_id")
+            univ_id = univ_id or u_meta.get("scope_class") or "ARX_US_EQUITIES"
+            pub_digest = pub_digest or u_meta.get("membership_hash")
+            membership_status = "AVAILABLE" if pop_denom else membership_status
+
         if snap_status == "AVAILABLE":
+            raw_matched = vcp_snapshot.get("matched_count")
+            is_valid_op = type(raw_matched) is int and raw_matched >= 0
+            matched_count = raw_matched if is_valid_op else None
             caps["VCP"] = {
-                "status": "AVAILABLE",
-                "universeScreening": "AVAILABLE",
+                "status": "AVAILABLE" if is_valid_op else "PIPELINE_PENDING",
+                "universeScreening": "AVAILABLE" if is_valid_op else "PIPELINE_PENDING",
                 "singleAssetAnalysis": "AVAILABLE",
-                "matchedCount": vcp_snapshot.get("matched_count", 0),
+                "matchedCount": matched_count,
                 "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
                 "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
                 "snapshotId": vcp_snapshot.get("snapshot_id"),
                 "freshnessStatus": freshness_info.get("status", "LIVE"),
+                "populationDenominator": pop_denom,
+                "universeBuildId": build_id,
+                "universeId": univ_id,
+                "publicationDigest": pub_digest,
+                "isRollback": False,
+                "rollbackReason": None,
+                "membershipStatus": membership_status,
+                "lifecycleState": "SCANNER_OPERATIONAL" if is_valid_op else "SCANNER_OUTPUT_INCOMPLETE",
                 "rationale": "Authentic Minervini Volatility Contraction Pattern universe screening active with deterministic publication integrity.",
             }
         elif snap_status == "PIPELINE_PENDING":
@@ -184,6 +245,14 @@ def get_radar_capabilities(vcp_snapshot: Optional[Dict[str, Any]] = None) -> Dic
                 "snapshotId": vcp_snapshot.get("snapshot_id"),
                 "freshnessStatus": freshness_info.get("status", "UNKNOWN"),
                 "reason": reason,
+                "populationDenominator": pop_denom,
+                "universeBuildId": build_id,
+                "universeId": univ_id,
+                "publicationDigest": pub_digest,
+                "isRollback": is_rollback,
+                "rollbackReason": rollback_reason,
+                "membershipStatus": membership_status,
+                "lifecycleState": "COMMITTED_PUBLICATION_SCANNER_NOT_ENROLLED" if pop_denom else "NO_COMMITTED_PUBLICATION",
                 "rationale": vcp_snapshot.get("detail") or "Automated market-wide volatility contraction screening is pending authoritative classifier integration.",
             }
         elif snap_status == "ERROR":
@@ -197,20 +266,57 @@ def get_radar_capabilities(vcp_snapshot: Optional[Dict[str, Any]] = None) -> Dic
                 "snapshotId": None,
                 "freshnessStatus": "UNKNOWN",
                 "reason": vcp_snapshot.get("reason", "STORAGE_ERROR"),
+                "populationDenominator": pop_denom,
+                "universeBuildId": build_id,
+                "universeId": univ_id,
+                "publicationDigest": pub_digest,
+                "isRollback": is_rollback,
+                "rollbackReason": rollback_reason,
+                "membershipStatus": membership_status,
+                "lifecycleState": "ERROR",
                 "rationale": vcp_snapshot.get("detail", "VCP scanner snapshot store error."),
             }
         elif snap_status == "STALE":
+            raw_matched = vcp_snapshot.get("matched_count")
+            is_valid_count = type(raw_matched) is int and raw_matched >= 0
+            matched_count = raw_matched if is_valid_count else None
             caps["VCP"] = {
-                "status": "AVAILABLE",
-                "universeScreening": "AVAILABLE",
+                "status": "AVAILABLE" if is_valid_count else "PIPELINE_PENDING",
+                "universeScreening": "AVAILABLE" if is_valid_count else "PIPELINE_PENDING",
                 "singleAssetAnalysis": "AVAILABLE",
-                "matchedCount": vcp_snapshot.get("matched_count", 0),
+                "matchedCount": matched_count,
                 "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
                 "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
                 "snapshotId": vcp_snapshot.get("snapshot_id"),
                 "freshnessStatus": "STALE",
+                "populationDenominator": pop_denom,
+                "universeBuildId": build_id,
+                "universeId": univ_id,
+                "publicationDigest": pub_digest,
+                "isRollback": is_rollback,
+                "rollbackReason": rollback_reason,
+                "membershipStatus": membership_status,
+                "lifecycleState": "SCANNER_OPERATIONAL",
                 "rationale": "VCP scanner snapshot is stale past freshness policy cutoff.",
             }
+    elif pop_denom:
+        # No active scanner snapshot, but publication pointer exists at membership layer
+        caps["VCP"] = {
+            "status": "PIPELINE_PENDING",
+            "universeScreening": "PIPELINE_PENDING",
+            "singleAssetAnalysis": "AVAILABLE",
+            "matchedCount": None,
+            "populationDenominator": pop_denom,
+            "universeBuildId": build_id,
+            "universeId": univ_id,
+            "publicationDigest": pub_digest,
+            "isRollback": is_rollback,
+            "rollbackReason": rollback_reason,
+            "membershipStatus": "AVAILABLE",
+            "lifecycleState": "COMMITTED_PUBLICATION_SCANNER_NOT_ENROLLED",
+            "reason": "SCANNER_NOT_ENROLLED",
+            "rationale": f"Universe publication '{build_id}' active with {pop_denom} scannable symbols; batch scanner pipeline is pending operational activation.",
+        }
     return caps
 
 
