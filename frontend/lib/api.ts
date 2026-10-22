@@ -1419,60 +1419,72 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
     });
     if (res.ok) {
       const data = await res.json();
-      const rawCandidates = data.candidates || data.results || [];
-      if (Array.isArray(rawCandidates) && rawCandidates.length > 0) {
-        const capabilities: RadarCapabilities | undefined = data.capabilities;
-        const candidates: GemCandidate[] = rawCandidates.map((r: any) => {
-          const confluenceVal = typeof r.confluenceScore === "number" && Number.isFinite(r.confluenceScore)
-            ? Math.round(r.confluenceScore)
-            : null;
-          const gemVal = typeof r.gemScore === "number" && Number.isFinite(r.gemScore)
-            ? Math.round(r.gemScore)
-            : null;
+      const rawCandidates = Array.isArray(data?.candidates)
+        ? data.candidates
+        : Array.isArray(data?.results)
+        ? data.results
+        : [];
+      const capabilities: RadarCapabilities | undefined =
+        data &&
+        typeof data === "object" &&
+        data.capabilities &&
+        typeof data.capabilities === "object" &&
+        !Array.isArray(data.capabilities) &&
+        Object.keys(data.capabilities).length > 0
+          ? (data.capabilities as RadarCapabilities)
+          : undefined;
 
-          return {
-            ticker: r.ticker || r.symbol || r.companyName || "UNKNOWN",
-            composite_score: confluenceVal,
-            confluenceScore: confluenceVal,
-            gemScore: gemVal,
-            companyName: r.companyName || r.name || null,
-            expert_model: r.expertArchetype || null,
-            categories: Array.isArray(r.categories)
-              ? (r.categories.filter((c: any) => ["VALUE_GARP", "VCP", "SMART_MONEY"].includes(c)) as CanonicalRadarCategory[])
-              : [],
-            categoryEvidence: (r.categoryEvidence && typeof r.categoryEvidence === "object") ? r.categoryEvidence : {},
-            peg_ratio: r.peg_ratio,
-            roic_pct: r.roic_pct,
-            gross_margin_pct: r.gross_margin_pct,
-            risk_rating: r.confluenceRating || "Medium",
-            investment_thesis: r.entryThesis || "",
-            primary_catalyst: r.catalyst || "",
-            factor_verdict: r.executionStatus || "WAITING_PULLBACK",
-            dna_verdict: r.confluenceRating || "",
-            current_price: r.currentPrice || r.current_price,
-            execution_status: r.executionStatus || r.execution_status,
-            screeningStatus: r.screeningStatus || (r.executionStatus === "IN_BUY_ZONE" ? "SCREENING_ZONE" : (r.executionStatus || "PULLBACK_PENDING")),
-            screeningGeometry: r.screeningGeometry || (r.executionStatus === "IN_BUY_ZONE" ? "WITHIN_TOLERANCE" : "OUTSIDE_TOLERANCE"),
-            screeningEligible: typeof r.screeningEligible === "boolean" ? r.screeningEligible : Boolean(r.executionStatus === "IN_BUY_ZONE"),
-            rvol: typeof r.rvol === "string" ? r.rvol : null,
-            riskRewardRatio: typeof r.riskRewardRatio === "number" ? r.riskRewardRatio : null,
-            decisionState: r.decisionState || "VALID_SETUP",
-            decisionStateLabel: r.decisionStateLabel || "Discovery Candidate — Analyze for Trigger",
-            // Invariant: Screener output is discovery-only. Canonical actionability strictly requires Single-Asset DecisionTrace.
-            isActionable: false,
-            canSizeTrade: false,
-            allowedActions: Array.isArray(r.allowedActions) ? r.allowedActions : ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"],
-            disqualificationReason: r.disqualificationReason ?? "Discovery candidate: Open in Analysis hub to evaluate canonical DecisionTrace.",
-            decisionContextId: r.decisionContextId,
-          };
-        });
+      const candidates: GemCandidate[] = rawCandidates.map((r: any) => {
+        const confluenceVal = typeof r.confluenceScore === "number" && Number.isFinite(r.confluenceScore)
+          ? Math.round(r.confluenceScore)
+          : null;
+        const gemVal = typeof r.gemScore === "number" && Number.isFinite(r.gemScore)
+          ? Math.round(r.gemScore)
+          : null;
+
         return {
-          total_candidates: candidates.length,
-          gems_found: candidates.length,
-          capabilities,
-          results: candidates,
+          ticker: r.ticker || r.symbol || r.companyName || "UNKNOWN",
+          composite_score: confluenceVal,
+          confluenceScore: confluenceVal,
+          gemScore: gemVal,
+          companyName: r.companyName || r.name || null,
+          expert_model: r.expertArchetype || null,
+          categories: Array.isArray(r.categories)
+            ? (r.categories.filter((c: any) => ["VALUE_GARP", "VCP", "SMART_MONEY"].includes(c)) as CanonicalRadarCategory[])
+            : [],
+          categoryEvidence: (r.categoryEvidence && typeof r.categoryEvidence === "object") ? r.categoryEvidence : {},
+          peg_ratio: r.peg_ratio,
+          roic_pct: r.roic_pct,
+          gross_margin_pct: r.gross_margin_pct,
+          risk_rating: r.confluenceRating || "Medium",
+          investment_thesis: r.entryThesis || "",
+          primary_catalyst: r.catalyst || "",
+          factor_verdict: r.executionStatus || "WAITING_PULLBACK",
+          dna_verdict: r.confluenceRating || "",
+          current_price: r.currentPrice || r.current_price,
+          execution_status: r.executionStatus || r.execution_status,
+          screeningStatus: r.screeningStatus || (r.executionStatus === "IN_BUY_ZONE" ? "SCREENING_ZONE" : (r.executionStatus || "PULLBACK_PENDING")),
+          screeningGeometry: r.screeningGeometry || (r.executionStatus === "IN_BUY_ZONE" ? "WITHIN_TOLERANCE" : "OUTSIDE_TOLERANCE"),
+          screeningEligible: typeof r.screeningEligible === "boolean" ? r.screeningEligible : Boolean(r.executionStatus === "IN_BUY_ZONE"),
+          rvol: typeof r.rvol === "string" ? r.rvol : null,
+          riskRewardRatio: typeof r.riskRewardRatio === "number" ? r.riskRewardRatio : null,
+          decisionState: r.decisionState || "VALID_SETUP",
+          decisionStateLabel: r.decisionStateLabel || "Discovery Candidate — Analyze for Trigger",
+          // Invariant: Screener output is discovery-only. Canonical actionability strictly requires Single-Asset DecisionTrace.
+          isActionable: false,
+          canSizeTrade: false,
+          allowedActions: Array.isArray(r.allowedActions) ? r.allowedActions : ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"],
+          disqualificationReason: r.disqualificationReason ?? "Discovery candidate: Open in Analysis hub to evaluate canonical DecisionTrace.",
+          decisionContextId: r.decisionContextId,
         };
-      }
+      });
+
+      return {
+        total_candidates: candidates.length,
+        gems_found: candidates.length,
+        ...(capabilities ? { capabilities } : {}),
+        results: candidates,
+      };
     }
   } catch (err) {
     console.warn("Screener API error:", err);

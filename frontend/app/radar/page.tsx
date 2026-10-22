@@ -161,7 +161,10 @@ function RadarContent() {
       .then((res) => {
         if (!isMounted) return;
         if (res.capabilities) {
-          setCapabilities(res.capabilities);
+          setCapabilities((prev) => ({
+            ...prev,
+            ...res.capabilities,
+          }));
         }
         const mapped: RadarAsset[] = (res.results || []).map((gem: any) => {
           // Canonical typed categories: strictly consume explicit backend categories.
