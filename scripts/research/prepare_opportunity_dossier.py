@@ -377,7 +377,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
         "valuation_status": "COMPUTED_VERIFIED",
         "valuation_status_label": "Computed & Verified",
         "evidence_completeness": "SOURCE_MAPPED_AUDITED",
-        "review_notes": "Scaling addition candidate prepared with complete primary filing source-to-input tracing, verified operating profitability and self-funding organic cash flow, and structured selection record.",
+        "review_notes": "Scaling addition candidate prepared with complete primary filing source-to-input tracing, verified operating profitability, positive operating cash generation, zero funded debt, and structured selection record.",
         "source_evidence_tracing": {
             "representative_status": "EXPANSION_PILOT_CANDIDATE",
             "company_identity": {
@@ -553,7 +553,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                 {
                     "claim_type": "SUPPORTING_EVIDENCE",
                     "fact_status": "DERIVED_CALCULATION",
-                    "statement": "Medpace generates high operating profitability and 100% self-funded organic cash flow: TTM operating margin is 20.97% ($583.4M operating income on $2,782.3M revenue), supported by $502.7M in cash and cash equivalents against zero funded financial debt.",
+                    "statement": "Medpace delivers high operating profitability, positive operating cash generation, and zero funded debt: TTM operating margin is 20.97% ($583.4M operating income on $2,782.3M revenue), supported by $502.7M in cash and cash equivalents against zero funded financial debt.",
                     "locator": "Form 10-K Item 8 Consolidated Statements of Operations and Form 10-Q Part I Item 1 Condensed Consolidated Financial Statements (Balance Sheets & Statements of Operations)."
                 },
                 {
@@ -570,7 +570,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                 }
             ],
             "selection_rationale": {
-                "why_this_business": "Medpace operates a full-service Phase I-IV clinical contract research organization (CRO) focused on small-to-midsize biopharma sponsors. Its unified operational delivery model yields an operating margin of 20.97% and self-funding organic cash flow. It carries a pristine zero-debt balance sheet with $502.7M in cash and an undrawn $500M credit facility.",
+                "why_this_business": "Medpace operates a full-service Phase I-IV clinical contract research organization (CRO) focused on small-to-midsize biopharma sponsors. Its unified operational delivery model yields an operating margin of 20.97%, positive operating cash generation, and zero funded debt. It carries a pristine balance sheet with $502.7M in cash and an undrawn $500M credit facility.",
                 "why_research_now": "Small-to-midsize biopharma funding stabilized following the 2023-2024 contraction, creating a divergence between steady RFP volumes and conservative equity market expectations. At $618.47, understanding whether the business can sustain >20% EBIT margins through biotech funding cycles justifies active research tracking.",
                 "price_requirements": "At a reference price of $618.47, assuming a 21.0% operating margin, 9.5% WACC, 2.5% terminal growth, 21.0% tax rate, and 12.0% reinvestment rate, the single-stage reverse-DCF model implies a 5-year revenue CAGR of 29.41% ($618.56 per-share roundtrip value, 8.53 cents delta). This reflects aggressive growth assumptions rather than observed consensus.",
                 "differentiated_view": "No differentiated expectation established yet. The candidate is maintained as a disciplined watch until either a valuation compression toward base scenario levels ($380 - $440) or sustained book-to-bill acceleration >1.25x clarifies upside skew.",
@@ -634,7 +634,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             }
         },
         "synthesis": {
-            "strongest_supporting_evidence": "Medpace delivers high operating profitability (20.97% TTM operating margin: $583.4M operating income on $2,782.3M revenue) and 100% self-funded cash generation, supported by an organic full-service clinical execution model and $502.7M in cash with zero funded debt.",
+            "strongest_supporting_evidence": "Medpace delivers high operating profitability (20.97% TTM operating margin: $583.4M operating income on $2,782.3M revenue), positive operating cash generation, and zero funded debt, supported by an organic full-service clinical execution model and $502.7M in cash.",
             "strongest_opposing_evidence": "Biopharma venture funding cycles and small-cap clinical trial cancellation rates create volatility in net book-to-bill ratios. At $618.47, market embeds a demanding 29.41% revenue CAGR.",
             "main_uncertainty": "Sustained clinical trial contract backlog conversion amidst fluctuating early-stage biotech liquidity.",
             "price_watch_condition": "Pullback toward mid-cycle base valuation range ($380 - $440) or net new business awards sustaining book-to-bill > 1.25x.",
@@ -2648,7 +2648,7 @@ def generate_published_watch_manifest(
         "freshness_state": "SELECTION_CANDIDATE",
         "reviewer_id": None,
         "reviewed_at_utc": None,
-        "review_notes": "Scaling addition dossier accepted under ARX-QUALITY-WATCH-STANDARD-V1 based on verified primary SEC filings (10-K FY25, 10-Q Q2 2026), full-service clinical CRO model, verified 20.97% operating margin and self-funding organic cash flow, zero funded debt ($502.7M cash), corrected quarterly share measurement period (three months ended June 30, 2026), and disciplined reverse-DCF valuation.",
+        "review_notes": "Scaling addition dossier accepted under ARX-QUALITY-WATCH-STANDARD-V1 based on verified primary SEC filings (10-K FY25, 10-Q Q2 2026), full-service clinical CRO model, verified 20.97% operating margin, positive operating cash generation, zero funded debt ($502.7M cash), corrected quarterly share measurement period (three months ended June 30, 2026), and disciplined reverse-DCF valuation.",
         "governing_standard": "ARX-QUALITY-WATCH-STANDARD-V1",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
     }
@@ -2901,8 +2901,8 @@ The 19 companies in the scaling pilot are organized into 5 coherent, economicall
 
 ### Sector 4: High-Return Healthcare & Clinical Medical Technology
 - **Companies:** `MEDP`, `ISRG`
-- **Economic Model:** Capital-light clinical trial execution with 20.97% operating margin and self-funding organic cash flow (`MEDP`) and recurring razor-and-blade robotic surgical procedures with 85% recurring revenue (`ISRG`).
-- **Valuation Treatment:** Single-stage Reverse-DCF FCFF. Pristine net cash balance sheets, high operating profitability, and 100% self-funded cash generation. Zero funded debt.
+- **Economic Model:** Capital-light clinical trial execution with 20.97% operating margin, positive operating cash generation, and zero funded debt (`MEDP`) and recurring razor-and-blade robotic surgical procedures with 85% recurring revenue (`ISRG`).
+- **Valuation Treatment:** Single-stage Reverse-DCF FCFF. Pristine net cash balance sheets, high operating profitability, positive operating cash generation, and zero funded debt.
 
 ### Sector 5: Capital-Light Quality Consumer Brands
 - **Companies:** `ULTA`, `DECK`, `LULU`, `ELF`

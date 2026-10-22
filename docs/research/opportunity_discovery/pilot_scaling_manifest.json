@@ -5,7 +5,7 @@
   "market_session_date": "2026-10-16",
   "cohort_count": 19,
   "odp05_baseline_sha256": "a65be3b38cdf988081a29257fb41674c3591b10a666362f351794a7d1c40979d",
-  "pilot_ledger_sha256": "3fa958fd5a5327955c776c64f69edd0fcdc1f1827acd0495c81cbb81c2dcb86c",
+  "pilot_ledger_sha256": "04d7da924c86eb66822760c3b833e5dd49e01c8340977e0c134e069a21ad7e3a",
   "baseline_symbols": [
     "FIX",
     "DUOL",

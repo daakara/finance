@@ -766,11 +766,14 @@ def test_32_medp_operating_profitability_and_cash_generation():
     assert "20.97%" in supp, "MEDP must cite verified 20.97% operating margin in supporting evidence"
     assert "$502.7M" in supp, "MEDP must cite $502.7M cash in supporting evidence"
     assert "zero funded debt" in supp.lower(), "MEDP must cite zero funded debt"
+    assert "positive operating cash generation" in supp.lower(), "MEDP must cite positive operating cash generation"
     assert "20.97%" in why, "MEDP why_this_business must cite 20.97% operating margin"
 
-    # Negative assertions: Unsupported ROIC and unsupported equity claims removed
+    # Negative assertions: Unsupported ROIC and unsupported equity/funding claims removed
     assert "ROIC" not in supp, "MEDP strongest_supporting_evidence must not make unsupported ROIC claims"
     assert "75.3%" not in supp and "41.3%" not in supp, "MEDP must not cite unverified ROIC percentages"
+    assert "100% self-funded" not in supp, "MEDP strongest_supporting_evidence must not make unsupported '100% self-funded' claims"
+    assert "100% self-funded" not in str(medp), "MEDP dossier must not cite '100% self-funded'"
     assert "ROIC" not in why, "MEDP why_this_business must not cite unsupported ROIC"
     assert "1,114.6" not in str(tracing), "MEDP tracing must not cite non-existent $1,114.6M equity"
 

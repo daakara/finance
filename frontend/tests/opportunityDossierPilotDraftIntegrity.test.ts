@@ -159,6 +159,8 @@ assert.strictEqual(medp.valuation.roundtrip_value, 618.56, "MEDP roundtrip value
 assert.strictEqual(medp.valuation.roundtrip_delta_cents, 8.53, "MEDP roundtrip delta must be 8.53 cents");
 assert.ok(medp.source_evidence_tracing.selection_rationale.why_this_business, "MEDP must answer why_this_business");
 assert.ok(!medp.central_assessment.strongest_supporting_evidence.includes("ROIC"), "MEDP strongest_supporting_evidence must not make unsupported ROIC claims");
+assert.ok(!medp.central_assessment.strongest_supporting_evidence.includes("100% self-funded"), "MEDP strongest_supporting_evidence must not cite 100% self-funded");
+assert.ok(medp.central_assessment.strongest_supporting_evidence.includes("positive operating cash generation"), "MEDP strongest_supporting_evidence must cite positive operating cash generation");
 assert.ok(!JSON.stringify(medp.source_evidence_tracing).includes("1,114.6"), "MEDP source tracing must not cite non-existent $1,114.6M equity");
 
 // ISRG
