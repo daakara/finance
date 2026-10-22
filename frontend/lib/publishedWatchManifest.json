@@ -1,0 +1,603 @@
+{
+  "schema_version": "ARX-PUBLISHED-WATCH-MANIFEST-V1",
+  "task": "ARX-TERMINAL-CURATED-QUALITY-WATCH",
+  "governing_standard": "ARX-QUALITY-WATCH-STANDARD-V1",
+  "standard_doc_path": "docs/research/opportunity_discovery/QUALITY_WATCH_SELECTION_STANDARD.md",
+  "created_at_utc": "2026-10-21T16:00:00Z",
+  "market_session_date": "2026-10-16",
+  "filing_availability_cutoff_utc": "2026-10-16T20:00:00Z",
+  "published_symbols": [
+    "FIX",
+    "DUOL",
+    "ULTA"
+  ],
+  "published_count": 3,
+  "baseline_watch_symbols": [
+    "FIX",
+    "DUOL"
+  ],
+  "held_historical_symbols": [
+    "IREN",
+    "CORZ"
+  ],
+  "excluded_historical_symbols": [
+    "MU"
+  ],
+  "excluded_draft_symbols": [
+    "PLTR"
+  ],
+  "accepted_additions": {
+    "ULTA": {
+      "dossier_id": "DOSSIER-ULTA-V1",
+      "publication_metadata": {
+        "dossier_version": "1.0.0-rc1",
+        "lifecycle_status": "CANDIDATE_SELECTED",
+        "technical_verification": "COMPUTED_VERIFIED",
+        "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+        "evidence_completeness": "SOURCE_MAPPED_AUDITED",
+        "authoring_date": "2026-10-21",
+        "freshness_state": "SELECTION_CANDIDATE",
+        "reviewer_id": null,
+        "reviewed_at_utc": null,
+        "review_notes": "Representative dossier accepted under ARX-QUALITY-WATCH-STANDARD-V1 based on verified primary SEC filings (10-K Note 7 debt, 10-Q Q2 2026), loyalty network competitive moat, and disciplined reverse-DCF valuation.",
+        "governing_standard": "ARX-QUALITY-WATCH-STANDARD-V1",
+        "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
+      },
+      "identity": {
+        "symbol": "ULTA",
+        "company_name": "Ulta Beauty, Inc.",
+        "cik": "0001403568",
+        "exchange": "NASDAQ",
+        "opportunity_route": "Consumer Cyclical / Specialty Retail",
+        "sec_edgar_browse_url": "https://www.sec.gov/edgar/browse/?CIK=1403568"
+      },
+      "central_assessment": {
+        "disposition": "WATCH_CONDITIONS",
+        "disposition_label": "Watch \u2014 Conditions Required for Entry",
+        "presentation_summary": "Ulta Beauty demonstrates high capital returns supported by 44M+ loyalty members and strong cash generation. Form 10-Q Note 7 reflects $339.6M in revolving credit facility debt against $213.5M cash/ST investments ($126.1M net debt bridge). At $592.94, the valuation implies a demanding 15.45% 5-year revenue CAGR against intense prestige retail competition. Retained on watch for pullbacks toward base valuation range ($430 - $450).",
+        "summary_provenance": "DERIVED_SYNTHESIS",
+        "strongest_supporting_evidence": "Ulta generates dependable operating cash flows ($1.57B TTM operating cash flow) with a liquid balance sheet ($213.5M cash and ST investments against $339.6M credit facility borrowings) and 44M+ loyalty members driving >95% of sales.",
+        "strongest_opposing_evidence": "Quarterly comparable sales growth slowed to 3.8% from 6.7% a year earlier, while gross margin declined to 39.1% from 39.2%, primarily reflecting Space NK business mix. Operating margin nevertheless improved to 12.5% from 12.4%. Under the stated valuation assumptions, the reference price implies 15.45% five-year revenue CAGR.",
+        "main_uncertainty": "Durability of store-level traffic and margin defense against expanding promotional cadence across prestige cosmetic brands.",
+        "price_watch_condition": "Pullback toward mid-cycle base valuation range ($430 - $450) or evidence of sustained comp-store sales acceleration >6%.",
+        "confidence_assessment": "High confidence in accounting, Note 7 debt disclosures, and lease classification; medium confidence in long-term terminal operating margin floor.",
+        "financing_dilution_exposure": "Negative net dilution; aggressive share buybacks have retired over 13.6% of outstanding shares over the trailing three fiscal years."
+      },
+      "valuation": {
+        "valuation_status": "COMPUTED_VERIFIED",
+        "valuation_status_label": "Computed & Verified",
+        "model_type": "Single-stage Reverse-DCF FCFF",
+        "calculation_version": "ARX-VALUATION-ENGINE-V1.0",
+        "reference_price": 592.94,
+        "reference_price_label": "Reference price used in reverse DCF",
+        "reference_price_source": "ARX MarketStore regular close tape",
+        "reference_price_timestamp": "2026-10-16T16:00:00-04:00",
+        "reference_date": "2026-10-16",
+        "solved_5y_cagr_pct": 15.45,
+        "reverse_dcf_parameters": {
+          "target_price": 592.94,
+          "solved_revenue_cagr_pct": 15.45,
+          "operating_margin_pct": 12.0,
+          "wacc_pct": 9.0,
+          "terminal_growth_pct": 2.0,
+          "tax_rate_pct": 23.5,
+          "reinvestment_rate_pct": 15.0,
+          "base_revenue": 12955517000.0,
+          "current_shares": 43062000.0,
+          "net_debt_bridge": 126127000.0
+        },
+        "roundtrip_value": 593.0,
+        "roundtrip_delta_cents": 6.33,
+        "convention_summary": "Single-stage Reverse-DCF FCFF (WACC 9.0%, Terminal g 2.0%, Operating Margin 12.0%, Tax Rate 23.5%, Reinvestment Rate 15.0%). Solved 5Y Revenue CAGR: 15.45%.",
+        "qualification_notice": null,
+        "suppression_reason": null,
+        "resume_conditions": [],
+        "scenarios": {
+          "conservative": {
+            "scenario_key": "conservative",
+            "name": "Conservative",
+            "per_share_value": 274.67,
+            "potential_return_pct": -53.7,
+            "conditional_wording": "Under stated conservative assumptions, modeled conditional value is $274.67 (-53.7% vs frozen reference price).",
+            "revenue_cagr_pct": 4.0,
+            "operating_margin_pct": 10.5,
+            "wacc_pct": 9.5,
+            "terminal_growth_pct": 1.5,
+            "tax_rate_pct": 24.0,
+            "reinvestment_rate_pct": 18.0,
+            "enterprise_value": 11953990890.98,
+            "equity_value": 11827863890.98
+          },
+          "base": {
+            "scenario_key": "base",
+            "name": "Base",
+            "per_share_value": 437.93,
+            "potential_return_pct": -26.1,
+            "conditional_wording": "Under stated base assumptions, modeled conditional value is $437.93 (-26.1% vs frozen reference price).",
+            "revenue_cagr_pct": 8.0,
+            "operating_margin_pct": 12.0,
+            "wacc_pct": 9.0,
+            "terminal_growth_pct": 2.0,
+            "tax_rate_pct": 23.5,
+            "reinvestment_rate_pct": 15.0,
+            "enterprise_value": 18984274222.28,
+            "equity_value": 18858147222.28
+          },
+          "optimistic": {
+            "scenario_key": "optimistic",
+            "name": "Optimistic",
+            "per_share_value": 741.78,
+            "potential_return_pct": 25.1,
+            "conditional_wording": "Under stated optimistic assumptions, modeled conditional value is $741.78 (+25.1% vs frozen reference price).",
+            "revenue_cagr_pct": 14.0,
+            "operating_margin_pct": 13.5,
+            "wacc_pct": 8.5,
+            "terminal_growth_pct": 2.5,
+            "tax_rate_pct": 23.0,
+            "reinvestment_rate_pct": 14.0,
+            "enterprise_value": 32068689175.35,
+            "equity_value": 31942562175.35
+          }
+        }
+      },
+      "financial_profile": {
+        "accounting_basis": "US-GAAP",
+        "currency": "USD",
+        "revenue": 12955517000.0,
+        "revenue_display": "$12.96B",
+        "revenue_period": "TTM (Ended 2026-08-01)",
+        "operating_income": 1614258000.0,
+        "operating_margin_pct": 12.46,
+        "cash_and_equivalents": 158451000.0,
+        "short_term_investments": 55000000.0,
+        "restricted_cash": null,
+        "total_cash_and_investments": 213451000.0,
+        "total_cash_and_restricted": null,
+        "total_financial_debt": 339578000.0,
+        "debt_display": "$339.6M",
+        "is_zero_debt": false,
+        "zero_debt_support": null,
+        "operating_lease_liabilities_asc842": 1871805000.0,
+        "lease_convention_treatment": "Lease as operating expense convention applied under ASC 842: store and supply chain lease costs are recognized primarily in Cost of Sales and SG&A; lease liabilities ($2,184.5M total, $1,871.8M noncurrent) are excluded from the net debt bridge to avoid double deduction.",
+        "restriction_treatment": null,
+        "digital_assets": null,
+        "total_liquidity_with_digital_assets": null,
+        "net_debt_bridge": 126127000.0,
+        "capital_structure_position": "Equity Capital Structure",
+        "bridge_note": "Funded debt of $339.6M (revolving credit facility borrowings under Note 7) less total cash and ST investments ($213.5M) yields positive net debt bridge of $126.1M, deducted from Enterprise Value in DCF equity bridge.",
+        "selected_share_basis": {
+          "basis_type": "DILUTED_WEIGHTED_AVERAGE",
+          "value": 43062000.0,
+          "measurement_period": "Three months ended 2026-08-01",
+          "rationale": "Diluted weighted average shares outstanding reported in Q2 10-Q."
+        },
+        "primary_filings": [
+          {
+            "form": "10-K",
+            "period_end": "2026-01-31",
+            "filing_date": "2026-03-26",
+            "accession_number": "0001104659-26-035243",
+            "url": "https://www.sec.gov/Archives/edgar/data/1403568/000110465926035243/0001104659-26-035243-index.htm",
+            "source_role": "Annual audited financial disclosures"
+          },
+          {
+            "form": "10-Q",
+            "period_end": "2026-08-01",
+            "filing_date": "2026-08-27",
+            "accession_number": "0001104659-26-102442",
+            "url": "https://www.sec.gov/Archives/edgar/data/1403568/000110465926102442/0001104659-26-102442-index.htm",
+            "source_role": "Quarterly financial report (Q2)"
+          }
+        ],
+        "material_claims_provenance": {
+          "10-K_2026-01-31": {
+            "accession_number": "0001104659-26-035243",
+            "filing_date": "2026-03-26",
+            "url": "https://www.sec.gov/Archives/edgar/data/1403568/000110465926035243/0001104659-26-035243-index.htm"
+          },
+          "10-Q_2026-08-01": {
+            "accession_number": "0001104659-26-102442",
+            "filing_date": "2026-08-27",
+            "url": "https://www.sec.gov/Archives/edgar/data/1403568/000110465926102442/0001104659-26-102442-index.htm"
+          }
+        },
+        "source_evidence_tracing": {
+          "representative_status": "REPRESENTATIVE_PILOT_CANDIDATE",
+          "company_identity": {
+            "fact_status": "VERIFIED_REPORTED_FACT",
+            "entity_name": "Ulta Beauty, Inc.",
+            "cik": "0001403568",
+            "sic": "5990",
+            "exchange": "NASDAQ",
+            "source_url": "https://data.sec.gov/submissions/CIK0001403568.json",
+            "filing_accessions": [
+              "0001104659-26-035243",
+              "0001104659-26-102442"
+            ]
+          },
+          "revenue": {
+            "fact_status": "DERIVED_CALCULATION",
+            "reported_ttm_value_usd": 12955517000.0,
+            "derivation_formula": "FY2025 Revenues ($12,392,820,000) - Q2 2025 6M Revenues ($5,636,836,000) + Q2 2026 6M Revenues ($6,199,533,000)",
+            "xbrl_tag": "us-gaap:Revenues",
+            "unit": "USD",
+            "filing_sources": [
+              {
+                "form": "10-K",
+                "period_end": "2026-01-31",
+                "filing_date": "2026-03-26",
+                "accession": "0001104659-26-035243",
+                "location": "Item 8 Consolidated Statements of Income",
+                "reported_value": 12392820000.0
+              },
+              {
+                "form": "10-Q",
+                "period_end": "2026-08-01",
+                "filing_date": "2026-08-27",
+                "accession": "0001104659-26-102442",
+                "location": "Part I Item 1 Consolidated Statements of Income (6 Months Ended)",
+                "reported_value": 6199533000.0
+              }
+            ]
+          },
+          "operating_income": {
+            "fact_status": "DERIVED_CALCULATION",
+            "reported_ttm_value_usd": 1614258000.0,
+            "operating_margin_pct": 12.46,
+            "derivation_formula": "FY2025 Operating Income ($1,532,992,000) - Q2 2025 6M Operating Income ($746,631,000) + Q2 2026 6M Operating Income ($827,897,000)",
+            "xbrl_tag": "us-gaap:OperatingIncomeLoss",
+            "unit": "USD",
+            "filing_sources": [
+              {
+                "form": "10-K",
+                "period_end": "2026-01-31",
+                "filing_date": "2026-03-26",
+                "accession": "0001104659-26-035243",
+                "location": "Item 8 Consolidated Statements of Income",
+                "reported_value": 1532992000.0
+              },
+              {
+                "form": "10-Q",
+                "period_end": "2026-08-01",
+                "filing_date": "2026-08-27",
+                "accession": "0001104659-26-102442",
+                "location": "Part I Item 1 Consolidated Statements of Income (6 Months Ended)",
+                "reported_value": 827897000.0
+              }
+            ]
+          },
+          "cash_and_investments": {
+            "fact_status": "VERIFIED_REPORTED_FACT",
+            "total_cash_and_investments_usd": 213451000.0,
+            "cash_and_equivalents_usd": 158451000.0,
+            "short_term_investments_usd": 55000000.0,
+            "xbrl_tags": [
+              "us-gaap:CashAndCashEquivalentsAtCarryingValue",
+              "us-gaap:ShortTermInvestments"
+            ],
+            "filing_source": {
+              "form": "10-Q",
+              "period_end": "2026-08-01",
+              "filing_date": "2026-08-27",
+              "accession": "0001104659-26-102442",
+              "location": "Part I Item 1 Consolidated Balance Sheets"
+            }
+          },
+          "funded_debt": {
+            "fact_status": "VERIFIED_REPORTED_FACT",
+            "total_financial_debt_usd": 339578000.0,
+            "is_zero_debt": false,
+            "support_disclosure": "Form 10-Q Part I Item 1 Consolidated Balance Sheets and Note 7 ('Debt') disclose $339,578,000 outstanding under revolving credit facility borrowings (proceeds of $1,358,274,000 and repayments of $1,080,032,000 during 6M ended August 1, 2026).",
+            "xbrl_tag": "us-gaap:ShortTermBorrowings",
+            "filing_source": {
+              "form": "10-Q",
+              "period_end": "2026-08-01",
+              "filing_date": "2026-08-27",
+              "accession": "0001104659-26-102442",
+              "location": "Part I Item 1 Consolidated Balance Sheets & Note 7 (Debt)",
+              "reported_value": 339578000.0
+            }
+          },
+          "lease_treatment": {
+            "fact_status": "VERIFIED_REPORTED_FACT",
+            "current_operating_lease_liabilities_usd": 312648000.0,
+            "noncurrent_operating_lease_liabilities_usd": 1871805000.0,
+            "total_lease_liabilities_usd": 2184453000.0,
+            "accounting_standard": "ASC 842",
+            "valuation_convention": "Lease-as-Operating-Expense convention: In primary GAAP filings, retail store and distribution center lease costs are primarily included in Cost of Sales, and corporate store support center lease costs in SG&A. Under the analyst valuation convention, lease operating expenses reduce NOPAT and CFO; operating lease liabilities ($2.18B) are therefore excluded from the net debt bridge to prevent double deduction of lease obligations.",
+            "xbrl_tags": [
+              "us-gaap:OperatingLeaseLiabilityCurrent",
+              "us-gaap:OperatingLeaseLiabilityNoncurrent"
+            ],
+            "filing_source": {
+              "form": "10-Q",
+              "period_end": "2026-08-01",
+              "filing_date": "2026-08-27",
+              "accession": "0001104659-26-102442",
+              "location": "Part I Item 1 Consolidated Balance Sheets & Note 6 (Leases)"
+            }
+          },
+          "shares_outstanding": {
+            "fact_status": "VERIFIED_REPORTED_FACT",
+            "share_count": 43062000.0,
+            "basis_type": "DILUTED_WEIGHTED_AVERAGE",
+            "measurement_period": "Three months ended 2026-08-01",
+            "xbrl_tag": "us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding",
+            "filing_source": {
+              "form": "10-Q",
+              "period_end": "2026-08-01",
+              "filing_date": "2026-08-27",
+              "accession": "0001104659-26-102442",
+              "location": "Part I Item 1 Consolidated Statements of Income"
+            }
+          },
+          "reference_price": {
+            "fact_status": "VERIFIED_REPORTED_FACT",
+            "reference_price": 592.94,
+            "reference_date": "2026-10-16",
+            "timestamp_utc": "2026-10-16T20:00:00Z",
+            "source_system": "ARX MarketStore regular close tape",
+            "source_store": "data/research/market_data/bounded_150_dev_market_store.db",
+            "table": "asset_ohlcv_daily"
+          },
+          "valuation_model": {
+            "fact_status": "DERIVED_CALCULATION",
+            "model_type": "Single-stage Reverse-DCF FCFF (Gordon Growth Terminal Value)",
+            "solved_5y_revenue_cagr_pct": 15.45,
+            "assumptions": {
+              "fact_status": "ANALYST_ASSUMPTION",
+              "operating_margin_pct": 12.0,
+              "wacc_pct": 9.0,
+              "terminal_growth_pct": 2.0,
+              "tax_rate_pct": 23.5,
+              "reinvestment_rate_pct": 15.0
+            },
+            "roundtrip_value": 593.0,
+            "roundtrip_delta_cents": 6.33
+          },
+          "narrative_claims": [
+            {
+              "claim_type": "SUPPORTING_EVIDENCE",
+              "fact_status": "VERIFIED_REPORTED_FACT",
+              "statement": "Ulta Beauty has over 44 million active loyalty program members, representing over 95% of total sales.",
+              "locator": "Form 10-K for FY ended 2026-01-31, Item 1 Business \u2014 Loyalty Program"
+            },
+            {
+              "claim_type": "SUPPORTING_EVIDENCE",
+              "fact_status": "DERIVED_CALCULATION",
+              "statement": "TTM operating cash flow of $1,567.8M ($1.57B) derived from FY25 operating cash flow ($1,502.8M) less prior-year 6M ($316.5M) plus current-year 6M ($381.6M).",
+              "locator": "Form 10-K Item 8 & Form 10-Q Part I Item 1 Consolidated Statements of Cash Flows"
+            },
+            {
+              "claim_type": "OPPOSING_EVIDENCE",
+              "fact_status": "VERIFIED_REPORTED_FACT",
+              "statement": "Quarterly comparable sales growth slowed to 3.8% from 6.7% a year earlier, while gross margin declined to 39.1% from 39.2%, primarily reflecting Space NK business mix. Operating margin nevertheless improved to 12.5% from 12.4%.",
+              "locator": "Form 10-Q for Q2 ended 2026-08-01, Part I Item 2 MD&A \u2014 Results of Operations"
+            },
+            {
+              "claim_type": "MONITORING_CRITERIA",
+              "fact_status": "ANALYST_ASSUMPTION",
+              "statement": "Operating margin compression below 10.0% or negative comparable store sales for two consecutive fiscal quarters triggers thesis invalidation.",
+              "locator": "ARX Analytical Thesis Invalidation Rule"
+            }
+          ]
+        }
+      },
+      "source_evidence_tracing": {
+        "representative_status": "REPRESENTATIVE_PILOT_CANDIDATE",
+        "company_identity": {
+          "fact_status": "VERIFIED_REPORTED_FACT",
+          "entity_name": "Ulta Beauty, Inc.",
+          "cik": "0001403568",
+          "sic": "5990",
+          "exchange": "NASDAQ",
+          "source_url": "https://data.sec.gov/submissions/CIK0001403568.json",
+          "filing_accessions": [
+            "0001104659-26-035243",
+            "0001104659-26-102442"
+          ]
+        },
+        "revenue": {
+          "fact_status": "DERIVED_CALCULATION",
+          "reported_ttm_value_usd": 12955517000.0,
+          "derivation_formula": "FY2025 Revenues ($12,392,820,000) - Q2 2025 6M Revenues ($5,636,836,000) + Q2 2026 6M Revenues ($6,199,533,000)",
+          "xbrl_tag": "us-gaap:Revenues",
+          "unit": "USD",
+          "filing_sources": [
+            {
+              "form": "10-K",
+              "period_end": "2026-01-31",
+              "filing_date": "2026-03-26",
+              "accession": "0001104659-26-035243",
+              "location": "Item 8 Consolidated Statements of Income",
+              "reported_value": 12392820000.0
+            },
+            {
+              "form": "10-Q",
+              "period_end": "2026-08-01",
+              "filing_date": "2026-08-27",
+              "accession": "0001104659-26-102442",
+              "location": "Part I Item 1 Consolidated Statements of Income (6 Months Ended)",
+              "reported_value": 6199533000.0
+            }
+          ]
+        },
+        "operating_income": {
+          "fact_status": "DERIVED_CALCULATION",
+          "reported_ttm_value_usd": 1614258000.0,
+          "operating_margin_pct": 12.46,
+          "derivation_formula": "FY2025 Operating Income ($1,532,992,000) - Q2 2025 6M Operating Income ($746,631,000) + Q2 2026 6M Operating Income ($827,897,000)",
+          "xbrl_tag": "us-gaap:OperatingIncomeLoss",
+          "unit": "USD",
+          "filing_sources": [
+            {
+              "form": "10-K",
+              "period_end": "2026-01-31",
+              "filing_date": "2026-03-26",
+              "accession": "0001104659-26-035243",
+              "location": "Item 8 Consolidated Statements of Income",
+              "reported_value": 1532992000.0
+            },
+            {
+              "form": "10-Q",
+              "period_end": "2026-08-01",
+              "filing_date": "2026-08-27",
+              "accession": "0001104659-26-102442",
+              "location": "Part I Item 1 Consolidated Statements of Income (6 Months Ended)",
+              "reported_value": 827897000.0
+            }
+          ]
+        },
+        "cash_and_investments": {
+          "fact_status": "VERIFIED_REPORTED_FACT",
+          "total_cash_and_investments_usd": 213451000.0,
+          "cash_and_equivalents_usd": 158451000.0,
+          "short_term_investments_usd": 55000000.0,
+          "xbrl_tags": [
+            "us-gaap:CashAndCashEquivalentsAtCarryingValue",
+            "us-gaap:ShortTermInvestments"
+          ],
+          "filing_source": {
+            "form": "10-Q",
+            "period_end": "2026-08-01",
+            "filing_date": "2026-08-27",
+            "accession": "0001104659-26-102442",
+            "location": "Part I Item 1 Consolidated Balance Sheets"
+          }
+        },
+        "funded_debt": {
+          "fact_status": "VERIFIED_REPORTED_FACT",
+          "total_financial_debt_usd": 339578000.0,
+          "is_zero_debt": false,
+          "support_disclosure": "Form 10-Q Part I Item 1 Consolidated Balance Sheets and Note 7 ('Debt') disclose $339,578,000 outstanding under revolving credit facility borrowings (proceeds of $1,358,274,000 and repayments of $1,080,032,000 during 6M ended August 1, 2026).",
+          "xbrl_tag": "us-gaap:ShortTermBorrowings",
+          "filing_source": {
+            "form": "10-Q",
+            "period_end": "2026-08-01",
+            "filing_date": "2026-08-27",
+            "accession": "0001104659-26-102442",
+            "location": "Part I Item 1 Consolidated Balance Sheets & Note 7 (Debt)",
+            "reported_value": 339578000.0
+          }
+        },
+        "lease_treatment": {
+          "fact_status": "VERIFIED_REPORTED_FACT",
+          "current_operating_lease_liabilities_usd": 312648000.0,
+          "noncurrent_operating_lease_liabilities_usd": 1871805000.0,
+          "total_lease_liabilities_usd": 2184453000.0,
+          "accounting_standard": "ASC 842",
+          "valuation_convention": "Lease-as-Operating-Expense convention: In primary GAAP filings, retail store and distribution center lease costs are primarily included in Cost of Sales, and corporate store support center lease costs in SG&A. Under the analyst valuation convention, lease operating expenses reduce NOPAT and CFO; operating lease liabilities ($2.18B) are therefore excluded from the net debt bridge to prevent double deduction of lease obligations.",
+          "xbrl_tags": [
+            "us-gaap:OperatingLeaseLiabilityCurrent",
+            "us-gaap:OperatingLeaseLiabilityNoncurrent"
+          ],
+          "filing_source": {
+            "form": "10-Q",
+            "period_end": "2026-08-01",
+            "filing_date": "2026-08-27",
+            "accession": "0001104659-26-102442",
+            "location": "Part I Item 1 Consolidated Balance Sheets & Note 6 (Leases)"
+          }
+        },
+        "shares_outstanding": {
+          "fact_status": "VERIFIED_REPORTED_FACT",
+          "share_count": 43062000.0,
+          "basis_type": "DILUTED_WEIGHTED_AVERAGE",
+          "measurement_period": "Three months ended 2026-08-01",
+          "xbrl_tag": "us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding",
+          "filing_source": {
+            "form": "10-Q",
+            "period_end": "2026-08-01",
+            "filing_date": "2026-08-27",
+            "accession": "0001104659-26-102442",
+            "location": "Part I Item 1 Consolidated Statements of Income"
+          }
+        },
+        "reference_price": {
+          "fact_status": "VERIFIED_REPORTED_FACT",
+          "reference_price": 592.94,
+          "reference_date": "2026-10-16",
+          "timestamp_utc": "2026-10-16T20:00:00Z",
+          "source_system": "ARX MarketStore regular close tape",
+          "source_store": "data/research/market_data/bounded_150_dev_market_store.db",
+          "table": "asset_ohlcv_daily"
+        },
+        "valuation_model": {
+          "fact_status": "DERIVED_CALCULATION",
+          "model_type": "Single-stage Reverse-DCF FCFF (Gordon Growth Terminal Value)",
+          "solved_5y_revenue_cagr_pct": 15.45,
+          "assumptions": {
+            "fact_status": "ANALYST_ASSUMPTION",
+            "operating_margin_pct": 12.0,
+            "wacc_pct": 9.0,
+            "terminal_growth_pct": 2.0,
+            "tax_rate_pct": 23.5,
+            "reinvestment_rate_pct": 15.0
+          },
+          "roundtrip_value": 593.0,
+          "roundtrip_delta_cents": 6.33
+        },
+        "narrative_claims": [
+          {
+            "claim_type": "SUPPORTING_EVIDENCE",
+            "fact_status": "VERIFIED_REPORTED_FACT",
+            "statement": "Ulta Beauty has over 44 million active loyalty program members, representing over 95% of total sales.",
+            "locator": "Form 10-K for FY ended 2026-01-31, Item 1 Business \u2014 Loyalty Program"
+          },
+          {
+            "claim_type": "SUPPORTING_EVIDENCE",
+            "fact_status": "DERIVED_CALCULATION",
+            "statement": "TTM operating cash flow of $1,567.8M ($1.57B) derived from FY25 operating cash flow ($1,502.8M) less prior-year 6M ($316.5M) plus current-year 6M ($381.6M).",
+            "locator": "Form 10-K Item 8 & Form 10-Q Part I Item 1 Consolidated Statements of Cash Flows"
+          },
+          {
+            "claim_type": "OPPOSING_EVIDENCE",
+            "fact_status": "VERIFIED_REPORTED_FACT",
+            "statement": "Quarterly comparable sales growth slowed to 3.8% from 6.7% a year earlier, while gross margin declined to 39.1% from 39.2%, primarily reflecting Space NK business mix. Operating margin nevertheless improved to 12.5% from 12.4%.",
+            "locator": "Form 10-Q for Q2 ended 2026-08-01, Part I Item 2 MD&A \u2014 Results of Operations"
+          },
+          {
+            "claim_type": "MONITORING_CRITERIA",
+            "fact_status": "ANALYST_ASSUMPTION",
+            "statement": "Operating margin compression below 10.0% or negative comparable store sales for two consecutive fiscal quarters triggers thesis invalidation.",
+            "locator": "ARX Analytical Thesis Invalidation Rule"
+          }
+        ]
+      },
+      "monitoring": {
+        "observable_invalidation_trigger": "Operating margin compression below 10.0% or negative comparable store sales for two consecutive fiscal quarters.",
+        "next_monitoring_trigger": "Q3 2026 Form 10-Q filing (expected December 2026) for holiday promotional cadence and loyalty membership growth.",
+        "price_watch_condition": "Pullback toward mid-cycle base valuation range ($430 - $450) or evidence of sustained comp-store sales acceleration >6%.",
+        "baseline_factual_evidence": "Ulta generates dependable operating cash flows ($1.57B TTM operating cash flow) with a liquid balance sheet ($213.5M cash and ST investments against $339.6M credit facility borrowings) and 44M+ loyalty members driving >95% of sales."
+      },
+      "navigation": {
+        "radar_url": "/radar?symbol=ULTA",
+        "stock_url": "/stock/ULTA",
+        "radar_note": "Opens on-demand technical analysis in Radar console."
+      }
+    }
+  },
+  "additions_provenance": {
+    "ULTA": {
+      "company_name": "Ulta Beauty, Inc.",
+      "cik": "0001403568",
+      "exchange": "NASDAQ",
+      "acceptance_basis": "REUSED_ACCEPTED_RESEARCH_EVIDENCE",
+      "selection_decision": "Selected as First Published Addition under ARX-QUALITY-WATCH-STANDARD-V1",
+      "content_sha256": "a46fd061a126e1ba32c3d9675a92a7c688e7cf8f2a45751b00910ecb20d9f7d9",
+      "authoring_timestamp_utc": "2026-10-21T16:00:00Z",
+      "filing_availability_cutoff_utc": "2026-10-16T20:00:00Z",
+      "lifecycle_status": "CANDIDATE_SELECTED",
+      "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+      "source_authority": "ARX Quality Watch Scaling Addition",
+      "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1",
+      "source_filings": [
+        "0001104659-26-035243",
+        "0001104659-26-102442"
+      ],
+      "reference_price": 592.94,
+      "reference_date": "2026-10-16",
+      "solved_5y_cagr_pct": 15.45
+    }
+  }
+}

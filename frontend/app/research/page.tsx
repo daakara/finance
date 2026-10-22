@@ -22,10 +22,16 @@ import OpportunityDossierCard from "../../components/OpportunityDossierCard";
 import {
   getOpportunityDossier,
   listOpportunityCohort,
+  listPilotDraftCohort,
   normalizeSymbol,
   isCohortSymbol,
+  isPilotDraftSymbol,
   getOpportunitySnapshotMetadata,
+  getPilotDraftSnapshotMetadata,
+  getDossierProvenance,
+  getCollectionProvenance,
   OpportunityCohortItem,
+  IS_PILOT_DRAFTS_BUILD_ENABLED,
 } from "../../lib/opportunityDossiers";
 import {
   Microscope,
@@ -63,17 +69,79 @@ function DispositionPill({ disposition }: { disposition: string }) {
   }
 }
 
+function ResearchGovernanceBox({
+  dossierProvenance,
+  collectionProvenance,
+  normalizedSymbol,
+}: {
+  dossierProvenance: ReturnType<typeof getDossierProvenance>;
+  collectionProvenance: ReturnType<typeof getCollectionProvenance>;
+  normalizedSymbol: string;
+}) {
+  return (
+    <div className="bg-[#090d14] rounded-2xl border border-[#172030] p-4 space-y-2 text-xs font-mono text-slate-400">
+      <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+        {dossierProvenance ? `${normalizedSymbol} Provenance` : "Collection Governance"}
+      </div>
+      <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+        {dossierProvenance
+          ? `Primary filings authenticated via SEC EDGAR accessions. Governed by ${dossierProvenance.governingContract}.`
+          : collectionProvenance.disclaimer}
+      </p>
+      {dossierProvenance ? (
+        <div className="pt-2 border-t border-[#151e2e] space-y-1 text-[10px] text-slate-500">
+          <div>Authority: <span className="text-slate-300">{dossierProvenance.sourceAuthority}</span></div>
+          <div>Status: <span className="text-cyan-400">{dossierProvenance.lifecycleStatusLabel}</span></div>
+          <div>Review: <span className="text-slate-300">{dossierProvenance.reviewStatusLabel}</span></div>
+          <div>Authored UTC: <span className="text-slate-300">{dossierProvenance.authoringTimestampUtc}</span></div>
+          <div>Filing Cutoff: <span className="text-slate-300">{dossierProvenance.filingCutoffUtc}</span></div>
+          <div>{dossierProvenance.digestLabel}: <span className="text-slate-300 font-mono">{dossierProvenance.contentDigest}</span></div>
+        </div>
+      ) : (
+        <div className="pt-2 border-t border-[#151e2e] space-y-1 text-[10px] text-slate-500">
+          <div>Standard: <span className="text-slate-300">{collectionProvenance.governingStandard}</span></div>
+          <div>Collection: <span className="text-slate-300">{collectionProvenance.publishedCount} Published Assets</span></div>
+          <div>Market Date: <span className="text-slate-300">{collectionProvenance.marketSessionDate} Close</span></div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ResearchContent() {
   const searchParams = useSearchParams();
   const rawSymbol = searchParams.get("symbol") || searchParams.get("ticker");
+  const experienceMode = searchParams.get("mode");
+  const previewParam = searchParams.get("preview");
+  const isDraftPreviewActive =
+    IS_PILOT_DRAFTS_BUILD_ENABLED &&
+    (previewParam === "pilot" || searchParams.get("draft") === "true");
   const displaySymbol = (rawSymbol || "").trim().toUpperCase();
   const hasSymbolParam = displaySymbol.length > 0;
   const normalizedSymbol = normalizeSymbol(displaySymbol || "FIX");
 
-  const cohort = useMemo(() => listOpportunityCohort(), []);
-  const metadata = useMemo(() => getOpportunitySnapshotMetadata(), []);
-  const isKnown = isCohortSymbol(normalizedSymbol);
-  const dossier = isKnown ? getOpportunityDossier(normalizedSymbol) : null;
+  const cohort = useMemo(
+    () => (isDraftPreviewActive ? listPilotDraftCohort() : listOpportunityCohort()),
+    [isDraftPreviewActive]
+  );
+  const metadata = useMemo(
+    () => (isDraftPreviewActive ? getPilotDraftSnapshotMetadata() : getOpportunitySnapshotMetadata()),
+    [isDraftPreviewActive]
+  );
+  const isKnown = isDraftPreviewActive ? isPilotDraftSymbol(normalizedSymbol) : isCohortSymbol(normalizedSymbol);
+  const dossier = isKnown ? getOpportunityDossier(normalizedSymbol, { previewDrafts: isDraftPreviewActive }) : null;
+
+  const dossierProvenance = useMemo(() => {
+    if (isKnown && dossier) {
+      return getDossierProvenance(normalizedSymbol, { previewDrafts: isDraftPreviewActive });
+    }
+    return null;
+  }, [isKnown, dossier, normalizedSymbol, isDraftPreviewActive]);
+
+  const collectionProvenance = useMemo(() => {
+    return getCollectionProvenance(hasSymbolParam && !isKnown ? displaySymbol : undefined);
+  }, [hasSymbolParam, isKnown, displaySymbol]);
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24">
@@ -101,31 +169,41 @@ function ResearchContent() {
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-950/80 text-cyan-400 border border-cyan-800 text-xs font-mono font-bold">
                 <Microscope className="w-3.5 h-3.5" />
-                ARX OPPORTUNITY DOSSIER
+                ARX QUALITY WATCH RESEARCH
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 text-slate-300 border border-slate-700 text-xs font-mono">
                 <Calendar className="w-3 h-3 text-cyan-400" />
-                Frozen Baseline: {metadata.market_session_date || "2026-10-16"} Close
+                Reference Date: {metadata.market_session_date || "2026-10-16"} Close
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 text-slate-300 border border-slate-700 text-xs font-mono">
                 <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                ODP-05 Candidate Evidence
+                {isDraftPreviewActive ? "Scaling Pilot Draft Evidence" : "Curated Quality Watch Selection"}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-sans">
-              Investment Assessment & Invalidation Dossiers
+              Curated Quality Watch Research & Invalidation Dossiers
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 font-sans max-w-3xl leading-relaxed">
-              Why does this asset merit further research, monitoring, or rejection at the stated reference price?
-              Examines primary SEC filings, reverse-DCF implied expectations, balance-sheet safety, and explicit invalidation thresholds.
+              Why does this business deserve continuous monitoring at the stated reference price?
+              Examines primary SEC filings, business quality moats, reverse-DCF valuation conditions, balance sheet resilience, and observable invalidation triggers.
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0">
             <div className="p-3 rounded-xl bg-[#080c13] border border-[#1f293d] space-y-1 text-right">
-              <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Candidate Cohort</div>
-              <div className="text-sm font-mono font-bold text-cyan-300">{cohort.length} Research Assets</div>
-              <div className="text-[11px] font-mono text-slate-400">Single Bundled Snapshot</div>
+              <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Research Collection</div>
+              <div className="text-sm font-mono font-bold text-cyan-300">{cohort.length} Quality Watch Assets</div>
+              <div className="text-[11px] font-mono text-slate-400">
+                {isDraftPreviewActive ? "Pilot Draft Staging" : "Curated Published Collection"}
+              </div>
+              {IS_PILOT_DRAFTS_BUILD_ENABLED && !isDraftPreviewActive ? (
+                <Link
+                  href={`/research?symbol=${normalizedSymbol}&preview=pilot${experienceMode ? `&mode=${experienceMode}` : ""}`}
+                  className="inline-block mt-1 text-[10px] font-mono text-amber-400 hover:text-amber-300 underline"
+                >
+                  Preview Draft Expansion ({cohort.length > 5 ? cohort.length : 18} Assets)
+                </Link>
+              ) : null}
             </div>
           </div>
         </div>
@@ -148,6 +226,32 @@ function ResearchContent() {
         </div>
       </header>
 
+      {/* Draft Staging Preview Mode Banner */}
+      {isDraftPreviewActive && (
+        <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-600/70 text-amber-200 text-xs font-mono flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+          <div className="flex items-start sm:items-center gap-2.5">
+            <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
+            <div className="space-y-0.5">
+              <div className="font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
+                <span>DRAFT STAGING PREVIEW — 20-COMPANY SCALING PILOT</span>
+                <span className="px-1.5 py-0.5 rounded bg-amber-900 text-[10px] text-amber-200 border border-amber-700">
+                  PEER REVIEW ONLY
+                </span>
+              </div>
+              <p className="text-[11px] text-amber-200/80 font-sans">
+                Reviewing draft dossiers generated for the Scaling Pilot ({cohort.length} assets). These records are strictly isolated from production publication and pending independent research acceptance.
+              </p>
+            </div>
+          </div>
+          <Link
+            href={`/research?symbol=${isCohortSymbol(normalizedSymbol) ? normalizedSymbol : "FIX"}${experienceMode ? `&mode=${experienceMode}` : ""}`}
+            className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-900/80 hover:bg-amber-800 text-amber-200 font-bold border border-amber-700 text-center transition-colors"
+          >
+            Exit Draft Preview
+          </Link>
+        </div>
+      )}
+
       {/* Mobile Cohort Selector Rail (Horizontal Scrollable) */}
       <div className="lg:hidden space-y-2">
         <div className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider px-1">
@@ -159,7 +263,7 @@ function ResearchContent() {
             return (
               <Link
                 key={item.symbol}
-                href={`/research?symbol=${item.symbol}`}
+                href={`/research?symbol=${item.symbol}${isDraftPreviewActive ? "&preview=pilot" : ""}${experienceMode ? `&mode=${experienceMode}` : ""}`}
                 scroll={false}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-mono shrink-0 transition-all min-h-[44px] ${
                   active
@@ -188,7 +292,7 @@ function ResearchContent() {
             <div className="flex items-center justify-between pb-2 border-b border-[#1b2537]">
               <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-cyan-400" />
-                ODP-05 Cohort ({cohort.length})
+                {isDraftPreviewActive ? "Draft Expansion" : "Quality Watch"} ({cohort.length})
               </span>
               <span className="text-[10px] font-mono text-slate-500">2026-10-16</span>
             </div>
@@ -199,7 +303,7 @@ function ResearchContent() {
                 return (
                   <Link
                     key={item.symbol}
-                    href={`/research?symbol=${item.symbol}`}
+                    href={`/research?symbol=${item.symbol}${isDraftPreviewActive ? "&preview=pilot" : ""}${experienceMode ? `&mode=${experienceMode}` : ""}`}
                     scroll={false}
                     className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all text-left min-h-[44px] group focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                       active
@@ -231,23 +335,12 @@ function ResearchContent() {
             </div>
           </div>
 
-          {/* Research Cohort Governance Summary */}
-          <div className="bg-[#090d14] rounded-2xl border border-[#172030] p-4 space-y-2 text-xs font-mono text-slate-400">
-            <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              Governance & Provenance
-            </div>
-            <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
-              Evaluated strictly against ODP-05 opportunity discovery standards. Primary filings authenticated via official SEC EDGAR accessions.
-            </p>
-            <div className="pt-2 border-t border-[#151e2e] space-y-1 text-[10px] text-slate-500">
-              <div>Contract: ODP-05 Baseline</div>
-              <div>Filing Cutoff: {metadata.filing_availability_cutoff_utc || "Unavailable"}</div>
-              <div>Authored UTC: {metadata.authoring_timestamp_utc || "Unavailable"}</div>
-              <div>Independent Review: Unavailable (Unrecorded)</div>
-              <div>Snapshot SHA: {metadata.source_ledger_sha256 ? `${metadata.source_ledger_sha256.substring(0, 12)}…` : "Verified"}</div>
-            </div>
-          </div>
+          {/* Research Cohort Governance & Provenance */}
+          <ResearchGovernanceBox
+            dossierProvenance={dossierProvenance}
+            collectionProvenance={collectionProvenance}
+            normalizedSymbol={normalizedSymbol}
+          />
         </aside>
 
         {/* Right Main Column */}
@@ -283,15 +376,13 @@ function ResearchContent() {
                 </div>
                 <div className="space-y-2">
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800 text-xs font-mono font-bold">
-                    UNSUPPORTED RESEARCH SYMBOL
+                    NO PUBLISHED WATCH DOSSIER
                   </div>
                   <h2 className="text-xl sm:text-2xl font-bold text-white font-sans">
-                    No ODP-05 Research Dossier for &ldquo;{displaySymbol}&rdquo;
+                    No Published Watch Dossier for &ldquo;{displaySymbol}&rdquo;
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-300 font-sans leading-relaxed">
-                    The ARX Opportunity Dossier surface currently hosts the 5 candidate assets evaluated and frozen under the
-                    ODP-05 Discovery baseline as of the <strong>2026-10-16 market close</strong>.
-                    Live tape equities and uncataloged symbols outside this bounded research scope do not have static assessment dossiers.
+                    ARX Research focuses strictly on a curated collection of high-conviction Quality Watch companies meeting explicit business resilience, observable entry triggers, and valuation discipline standards. &ldquo;{displaySymbol}&rdquo; does not currently have an active published watch dossier.
                   </p>
                 </div>
               </div>
@@ -299,13 +390,13 @@ function ResearchContent() {
               {/* Quick Jump to Valid Cohort Assets */}
               <div className="bg-[#090d14] rounded-xl border border-[#1b2537] p-4 space-y-3">
                 <div className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
-                  Available ODP-05 Candidate Dossiers:
+                  Available Published Quality Watch Dossiers:
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                   {cohort.map((item) => (
                     <Link
                       key={item.symbol}
-                      href={`/research?symbol=${item.symbol}`}
+                      href={`/research?symbol=${item.symbol}${isDraftPreviewActive ? "&preview=pilot" : ""}${experienceMode ? `&mode=${experienceMode}` : ""}`}
                       className="p-3 rounded-lg bg-[#0e1624] hover:bg-[#162236] border border-[#1f2c42] hover:border-cyan-500/60 transition-colors flex items-center justify-between text-xs font-mono group"
                     >
                       <div className="flex flex-col">
@@ -331,8 +422,15 @@ function ResearchContent() {
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs font-mono">
                   <Link
-                    href={`/?symbol=${encodeURIComponent(displaySymbol)}`}
+                    href={`/stock/${encodeURIComponent(displaySymbol.toLowerCase())}`}
                     className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-transform active:scale-95 inline-flex items-center gap-1.5"
+                  >
+                    <span>View Fundamentals Page ({displaySymbol})</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                  <Link
+                    href={`/?symbol=${encodeURIComponent(displaySymbol)}`}
+                    className="px-4 py-2 rounded-xl bg-[#111722] hover:bg-[#182232] text-slate-300 border border-[#243044] transition-colors inline-flex items-center gap-1.5"
                   >
                     <span>Launch Terminal for {displaySymbol}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -344,13 +442,6 @@ function ResearchContent() {
                     <span>Inspect Radar for {displaySymbol}</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </Link>
-                  <Link
-                    href={`/stock/${encodeURIComponent(displaySymbol.toLowerCase())}`}
-                    className="px-4 py-2 rounded-xl bg-[#111722] hover:bg-[#182232] text-slate-300 border border-[#243044] transition-colors inline-flex items-center gap-1.5"
-                  >
-                    <span>View Fundamentals Page</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
                 </div>
               </div>
             </div>
@@ -360,6 +451,14 @@ function ResearchContent() {
               Loading dossier…
             </div>
           )}
+          {/* Mobile Provenance & Collection Governance Section */}
+          <div className="lg:hidden pt-2">
+            <ResearchGovernanceBox
+              dossierProvenance={dossierProvenance}
+              collectionProvenance={collectionProvenance}
+              normalizedSymbol={normalizedSymbol}
+            />
+          </div>
         </section>
       </div>
     </main>

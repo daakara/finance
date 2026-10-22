@@ -6,7 +6,7 @@ import HistoricalEdgeScorecard from "../../../components/HistoricalEdgeScorecard
 import SourcedFundamentalsCard from "../../../components/SourcedFundamentalsCard";
 import { SHARED_WATCHLIST_ITEMS } from "../../../lib/constants";
 import { getMasterAsset, getAllMasterTickers, getMasterBaselinePrice } from "../../../lib/masterCatalog";
-import { isCohortSymbol, ODP05_COHORT_SYMBOLS } from "../../../lib/opportunityDossiers";
+import { isCohortSymbol, ODP05_COHORT_SYMBOLS, PUBLISHED_WATCH_SYMBOLS } from "../../../lib/opportunityDossiers";
 
 interface PageProps {
   params: {
@@ -67,7 +67,10 @@ export function generateStaticParams() {
   const stockSymbols = SHARED_WATCHLIST_ITEMS.map((item) => ({
     ticker: item.symbol.toLowerCase(),
   }));
-  const cohortTickers = ODP05_COHORT_SYMBOLS.map((s) => ({ ticker: s.toLowerCase() }));
+  const cohortTickers = [
+    ...ODP05_COHORT_SYMBOLS.map((s) => ({ ticker: s.toLowerCase() })),
+    ...PUBLISHED_WATCH_SYMBOLS.map((s) => ({ ticker: s.toLowerCase() })),
+  ];
   
   const unique = Array.from(new Set([
     ...masterTickers.map(s => s.ticker),
@@ -235,9 +238,9 @@ export default function StockDetailPage({ params }: PageProps) {
                   <Link
                     href={`/research?symbol=${encodeURIComponent(sym)}`}
                     className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-cyan-950/90 text-cyan-300 border border-cyan-600/80 hover:bg-cyan-900/90 hover:border-cyan-400 text-[11px] font-mono transition-colors shadow-sm"
-                    title="View ODP-05 research assessment dossier"
+                    title="View Quality Watch dossier"
                   >
-                    <span>View ODP-05 Research Dossier</span>
+                    <span>View Quality Watch Dossier</span>
                     <span aria-hidden="true">→</span>
                   </Link>
                 )}

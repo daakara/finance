@@ -18,7 +18,7 @@ import MarketCommandRibbon from "./nav/MarketCommandRibbon";
 import ExperienceModeToggle from "./experience/ExperienceModeToggle";
 import WatchlistDrawerTrigger from "./drawers/WatchlistDrawerTrigger";
 import { CANONICAL_HUBS, buildHubHref, isHubActive, extractActiveSymbol } from "../lib/canonicalNav";
-import { HelpCircle, Compass, Shield, RefreshCw, Zap, Landmark, Radar, Microscope, Briefcase } from "lucide-react";
+import { HelpCircle, Compass, Shield, RefreshCw, Zap, Landmark, Radar, Microscope, Briefcase, FileSearch } from "lucide-react";
 
 interface NavbarProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
@@ -405,10 +405,10 @@ export default function Navbar({
                   );
                 })}
                 <Link
-                  href={effectiveSymbol ? `/research?symbol=${encodeURIComponent(effectiveSymbol)}` : "/research"}
-                  aria-current={pathname === "/research" ? "page" : undefined}
+                  href={effectiveSymbol ? `/research/?symbol=${encodeURIComponent(effectiveSymbol)}` : "/research/"}
+                  aria-current={pathname === "/research" || pathname === "/research/" || pathname?.startsWith("/research/") ? "page" : undefined}
                   className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                    pathname === "/research"
+                    pathname === "/research" || pathname === "/research/" || pathname?.startsWith("/research/")
                       ? "bg-[#1b2434] text-cyan-400 font-semibold"
                       : "text-slate-400 hover:text-slate-200"
                   }`}
@@ -495,16 +495,6 @@ export default function Navbar({
                       <span>Keyboard Shortcuts</span>
                       <kbd className="ml-auto font-mono text-xs px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">?</kbd>
                     </button>
-                    <Link
-                      href={effectiveSymbol ? `/research?symbol=${encodeURIComponent(effectiveSymbol)}` : "/research"}
-                      role="menuitem"
-                      onClick={() => setIsUtilitiesMenuOpen(false)}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[36px] transition-colors"
-                    >
-                      <Microscope className="w-4 h-4 text-cyan-400 shrink-0" />
-                      <span>Opportunity Research</span>
-                      <span className="ml-auto text-[10px] px-1 py-0.5 rounded bg-cyan-950/60 text-cyan-400 border border-cyan-800/40 font-mono">ODP-05</span>
-                    </Link>
                     <button
                       id="onboarding-tour-btn"
                       type="button"
@@ -661,6 +651,20 @@ export default function Navbar({
             </Link>
           );
         })}
+
+        {/* Research Hub Link for Mobile */}
+        <Link
+          href={effectiveSymbol ? `/research/?symbol=${encodeURIComponent(effectiveSymbol)}` : "/research/"}
+          aria-current={pathname === "/research" || pathname === "/research/" || pathname?.startsWith("/research/") ? "page" : undefined}
+          className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-colors min-w-[44px] sm:min-w-[48px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+            pathname === "/research" || pathname === "/research/" || pathname?.startsWith("/research/")
+              ? "bg-[#1b2434] text-cyan-400 font-bold"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <FileSearch className="w-4 h-4 mb-0.5 leading-none shrink-0" aria-hidden="true" />
+          <span className="text-[10px] sm:text-xs tracking-tight">Research</span>
+        </Link>
 
         {/* Quick Horizon Toggle on Mobile Dock */}
         <button
