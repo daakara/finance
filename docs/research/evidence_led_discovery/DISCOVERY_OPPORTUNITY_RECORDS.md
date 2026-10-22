@@ -1,22 +1,28 @@
-# ARX Terminal — Evidence-Led Discovery Pilot: Compact Opportunity Records
+# ARX Terminal — Evidence-Led Discovery Pilot: Compact Opportunity Records (Corrected)
 
-**Document ID:** `ARX-DISCOVERY-OPPORTUNITY-RECORDS-V1`  
+**Document ID:** `ARX-DISCOVERY-OPPORTUNITY-RECORDS-V2`  
 **Governing Backlog Item:** [daakara/finance#43](https://github.com/daakara/finance/issues/43) (`BACKLOG-RESEARCH-EVIDENCE-DISCOVERY-043`)  
 **Methodological Context:** ARX Closure Model v2 (Decision-First, Minimum Sufficient Evidence)  
-**Creation Date:** October 22, 2026  
-**Information Cutoff Date:** October 22, 2026 (Audited SEC EDGAR Form 10-K and Form 10-Q disclosures)  
+**Information Cutoff Date:** October 22, 2026  
+**Primary Source Evidence Basis:** Audited SEC EDGAR Form 10-K (FY2025) and Form 10-Q (1H 2026 / Q2 2026) filings  
 **Classification:** Internal Research Pilot Record (Strictly Isolated from Public Surface & Frontend Import Paths)
 
 ---
 
-## Dimensional Separation Framework
+## 1. Dimensional Separation Framework
 
 In accordance with ARX research invariants, all internal discovery evaluations strictly distinguish five analytical dimensions:
-1. **Research Maturity:** `EXPLORATORY_HYPOTHESIS` — An internal research inquiry undergoing evidence collection, distinct from a verified `QUALITY_WATCH` dossier.
-2. **Opportunity Mechanism:** The specific economic or industrial driver (e.g., Ethernet backend AI cluster adoption, rack-level thermal liquid cooling, monolithic silicon power management).
-3. **Expectation-Gap Status:** The divergence between market pricing, company guidance, sourced analyst consensus, and conservative fundamental hurdles.
-4. **Financial Resilience:** The structural solvency, debt covenants, and cash-flow self-funding capacity of the enterprise.
-5. **Public Publication Eligibility:** `INTERNAL_PILOT_RECORD_NOT_ELIGIBLE` — None of these records are authorized for public surface release or addition to `published_watch_manifest.json`.
+1. **Research Maturity:** `EXPLORATORY_HYPOTHESIS` — An internal research inquiry undergoing testing, distinct from a verified `QUALITY_WATCH` dossier.
+2. **Opportunity Mechanism:** The specific operational driver (e.g., high-throughput Ethernet AI backend fabrics, facility-level modular liquid cooling, silicon-level 48V power management ICs).
+3. **Expectation-Gap Status:** The divergence between market valuation, company guidance, sourced analyst consensus (or explicit unresolved status), and conservative fundamental hurdles.
+4. **Financial Resilience:** The structural solvency, debt covenants, liquidity cushion, and organic cash-flow self-funding capacity.
+5. **Public Publication Eligibility:** `INTERNAL_PILOT_RECORD_NOT_ELIGIBLE` — None of these internal records are authorized for public release or manifest inclusion.
+
+### Standardized Cash-Conversion Definitions
+To avoid metric interchangeability, all calculations in these records are explicitly defined:
+- **Free Cash Flow (FCF):** $\text{GAAP Cash Flow from Operations (CFO)} - \text{Payments for Property, Plant, and Equipment (Capex)}$.
+- **FCF Conversion:** $\text{FCF} / \text{CFO}$.
+- **Operating Cash Conversion:** $\text{CFO} / \text{GAAP Net Income}$.
 
 ---
 
@@ -24,61 +30,57 @@ In accordance with ARX research invariants, all internal discovery evaluations s
 
 ```mermaid
 flowchart LR
-    subgraph ANET_Profile["ANET: High-Throughput Cloud Networking"]
+    subgraph ANET_Profile["ANET: High-Throughput Cloud & AI Networking"]
         Dev["Observable Development:<br/>Ethernet Backend AI Clusters (800G/1.6T)"]
-        Econ["Consolidated Impact:<br/>37.3% GAAP OpMargin | >35% ROIC"]
-        Cap["Value Capture:<br/>Zero Funded Debt | $6.0B+ Cash<br/><b>Vulnerability: 39% Meta+MSFT Concentration</b>"]
+        Econ["Consolidated Results (FY25):<br/>$9,005.7M Rev | 42.8% GAAP OpMargin<br/>$4,261.9M FCF (97.5% of CFO)"]
+        Cap["Value Capture & Risk Context:<br/>Zero Funded Debt | $2.3B+ Cash<br/><b>Concentration: Meta 26% + MSFT 16% = 42%</b>"]
     end
     Dev --> Econ --> Cap
 ```
 
 ### A. Observable Development
-- **Specific Change:** Hyperscale data center operators are actively deploying high-throughput 800G and 1.6T Ethernet switching fabrics into backend AI GPU clusters, challenging proprietary InfiniBand (Nvidia Quantum) interconnects. Arista's Extensible Operating System (EOS) software layer provides unified telemetry and management across front-end and back-end networks.
-- **Timing & Baseline:** FY2022 to FY2023 revenue expanded 33.8% ($4,381.3M to $5,860.2M). Momentum continued in Q2 2024 with revenue reaching $1,690.1M (+15.9% YoY).
-- **Classification:** **Structural Architectural Inflection** (transition to open Ethernet standards in AI clusters) combined with **Cyclical Hyperscaler Capex Surges**.
+- **Specific Change:** Hyperscale cloud operators are deploying open 800G and 1.6T Ethernet switching into backend AI accelerator clusters, complementing or replacing proprietary InfiniBand fabrics. Arista's EOS software provides a single unified operating system across leaf-spine architectures.
+- **Timing & Baseline:** FY2025 revenue reached $9,005.7M (+53.7% vs FY2023 baseline of $5,860.2M). Momentum continued in 1H 2026 with revenue reaching $5,744.7M (Q2 2026 quarterly revenue of $3,035.7M).
+- **Classification:** **Structural Networking Protocol Shift** within a multi-year hyperscaler capex expansion.
 - **Primary Source Evidence:**
-  - *Source:* SEC EDGAR Form 10-K for FY ended December 31, 2023 (CIK: `0001596532`, Accession: `0001596532-24-000007`, filed Feb 13, 2024).
-  - *Locators:* Item 7 MD&A (pp. 42–48); Consolidated Statements of Operations (p. 66).
-  - *Interim Source:* Form 10-Q for period ended June 30, 2024 (Accession: `0001596532-24-000030`, filed Aug 1, 2024).
+  - *Form 10-K FY2025:* For period ended December 31, 2025, filed February 17, 2026 (CIK: `0001596532`, Accession: `0001596532-26-000013`). Item 7 MD&A; Item 8 Financial Statements (Statements of Operations p. 68).
+  - *Form 10-Q Q2 2026:* For period ended June 30, 2026, filed August 5, 2026 (Accession: `0001596532-26-000175`).
 
 ### B. Economic Significance
-- **Consolidated Materiality:** High. Cloud and enterprise switching accounts for >85% of consolidated revenues. Accelerated adoption of 800G/1.6T switches directly expands Arista’s addressable market and consolidated gross margins.
+- **Consolidated Materiality:** High. Cloud and enterprise switching represents >85% of consolidated revenue.
 - **Operating Leverage & Returns:**
-  - FY2023 GAAP Gross Profit: $3,628.9M (61.9% gross margin).
-  - FY2023 GAAP Operating Income: $2,185.3M (37.3% operating margin); Non-GAAP operating margin >42%.
-  - Return on Invested Capital (ROIC): Exceeds 35%, driven by asset-light software architecture and merchant silicon deployment.
+  - FY2025 GAAP Gross Profit: $5,782.1M (64.2% gross margin).
+  - FY2025 GAAP Operating Income: $3,856.1M (42.8% operating margin).
+  - 1H 2026 GAAP Operating Income: $2,535.8M (44.1% operating margin).
+  - Free Cash Flow Conversion: FY2025 CFO was $4,371.9M; Payments for PP&E were $110.0M $\implies \text{FCF} = \$4,261.9M$ ($97.5\%$ of CFO).
 
 ### C. Value Capture & Limitations
-- **Competition & Moat:** Competes against Cisco Systems and white-box ODMs (Celestica) in traditional switching, and Nvidia (Quantum-2 InfiniBand and Spectrum-X Ethernet) in AI clustering. Arista's competitive moat rests on its single-binary EOS Linux-based software architecture and deep API integration with cloud management stacks.
-- **Customer Bargaining Power (Material Limitation):** **Severe Concentration Risk.**
-  - *Primary Fact:* In FY2023, Microsoft accounted for **21%** of total revenue, and Meta Platforms accounted for **18%** of total revenue (Combined: **39% of consolidated sales**; Note 14, Form 10-K).
-  - *Implication:* Hyperscalers possess substantial monopsony purchasing power, cyclic digestion pauses, and the ability to dual-source hardware or sponsor open-source white-box designs.
-- **Capex & Reinvestment Intensity:** Highly asset-light fabless model. FY2023 capital expenditures were $61.4M (only 1.0% of revenue). Reinvestment is driven by R&D operating expenses ($904.5M in FY23, 15.4% of revenue) rather than capital-intensive plant and equipment.
-- **Funded Debt & Solvency:** **Pristine.** Zero funded long-term debt, zero credit facility borrowings. Cash, cash equivalents, and marketable securities totaled $5,258.9M as of Dec 31, 2023, expanding to $6,036.7M as of June 30, 2024.
-- **Equity Dilution & Stock-Based Compensation:** FY2023 stock-based compensation (SBC) was $243.6M (4.2% of revenue). SBC dilution was comfortably absorbed by $670.7M in share repurchases, with diluted share count remaining stable (~318.5M shares).
+- **Competition & Moat:** Competes with Nvidia (Spectrum-X and Quantum InfiniBand), Cisco Systems, and white-box ODM assemblers. Moat is anchored in its single-binary EOS operating system and carrier-grade reliability.
+- **Customer Bargaining Power (Material Uncertainty):**
+  - *Primary Fact:* In FY2025, two customers accounted for **26%** (Customer A / Meta) and **16%** (Customer B / Microsoft) of consolidated revenue, representing a **combined customer concentration of 42%** (Form 10-K FY25, Note on Concentration). This represents an increase from 39% in FY23 and 35% in FY24.
+  - *Contextual Assessment:* While customer concentration is high, it is balanced by high customer switching costs and deep network integration. However, it subjects Arista to procurement lumpiness and dual-sourcing pressure.
+- **Capex Intensity:** Highly asset-light fabless model. FY2025 capex was $110.0M (1.2% of revenue).
+- **Funded Debt & Solvency:** **Pristine.** Zero funded long-term debt, zero credit facility drawings. Cash and cash equivalents totaled $2,290.2M as of June 30, 2026 (plus substantial marketable securities).
+- **Dilution & SBC:** FY2025 stock-based compensation was $439.2M (4.9% of revenue), fully offset by ongoing share buyback programs.
 
 ### D. Price & Expectations
-- **Market Pricing Context:** Trades at ~38x–42x P/E. Market pricing embeds sustained >20% revenue growth and dominant market share in AI backend networking.
+- **Market Valuation Context:** Valuation reflects market expectations of sustained Ethernet share gains in AI clusters.
 - **Expectation Disaggregation:**
-  - *Company Guidance:* Management has targeted >$750M in dedicated AI networking revenue for 2025.
-  - *Sourced Consensus:* Sell-side consensus models ~18–22% EPS CAGR over 2024–2026.
-  - *ARX Hypothesis:* Ethernet share gains in AI clusters are structural, but customer concentration (39%) and hyperscaler dual-sourcing will compress incremental pricing power, preventing gross margins from expanding beyond current ~62%.
+  - *Company Guidance:* Management targets sustained AI networking expansion across enterprise and tier-2 cloud accounts.
+  - *Sourced Consensus:* `UNRESOLVED_CONSENSUS` (Primary broker consensus feeds are not accessible in the current research environment; numerical consensus estimates are omitted rather than invented).
+  - *ARX Hypothesis:* Ethernet share gains in backend GPU clusters are structural, but 42% customer concentration and hyperscaler internal silicon initiatives will constrain gross margin expansion beyond current ~64%.
 
 ### E. Downside & Survival Capacity
-- **Downside Scenario:** A synchronized hyperscaler capex pause or an accelerated transition by Meta/Microsoft to Nvidia Spectrum-X could trigger a multi-quarter revenue stagnation.
-- **Survival Capacity:** **Exceptional.** With zero debt, >$6.0B in liquid cash/investments, and a variable fabless cost structure, Arista would remain highly profitable and cash-generative even during a severe 30% revenue down-cycle.
+- **Downside Scenario:** Hyperscaler capex digestion pause or selective procurement shifts to white-box switches could temporarily reduce revenue growth to mid-single digits.
+- **Survival Capacity:** **Exceptional.** Zero debt, liquid cash cushion, and a flexible fabless operating model ensure robust solvency and positive cash generation under any plausible cyclical slowdown.
 
 ### F. Assessment Changes & Falsification Triggers
-- **Strengthening Criteria:**
-  - Combined customer concentration of Meta and Microsoft dropping below 30% via expansion into Tier-2 cloud providers, sovereign AI clouds, and enterprise accounts.
-  - Sustained quarterly revenue growth exceeding 25% YoY with GAAP operating margins remaining above 38.0%.
-- **Invalidation Criteria:**
-  - Either Microsoft or Meta reducing Arista procurement by >25% in favor of white-box/in-house switches or Nvidia Spectrum-X.
-  - GAAP operating margin compressing below 32.0% for two consecutive quarters.
+- **Strengthening Criteria:** Top-2 customer concentration falling below 35% through broader tier-2 cloud adoption while GAAP operating margin remains >40.0%.
+- **Invalidation Criteria:** Loss of tier-1 reference design status at Meta or Microsoft, or GAAP operating margin compressing below 34.0% for two consecutive quarters.
 
 ### G. Research Priority & Disposition
-- **Priority Classification:** `HIGH_MONITORING_PRIORITY` (Internal Pilot Record).
-- **Public Publication Disposition:** **Held Outside Public Collection.** Despite outstanding capital efficiency and balance sheet resilience, Arista's 39% customer concentration and elevated valuation multiple (~40x P/E) fail the conservative margin-of-safety threshold required for public Quality Watch publication.
+- **Priority Classification:** `PRIORITIZED_FOR_INTERNAL_MONITORING`.
+- **Disposition:** Retained in internal research monitoring queue. Arista exhibits elite business quality and self-funding cash generation, but public Quality-Watch publication is held pending observation of customer concentration dynamics, avoiding arbitrary or automatic disqualifiers.
 
 ---
 
@@ -86,63 +88,59 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    subgraph VRT_Profile["VRT: Data Center Thermal & Liquid Cooling"]
-        Dev["Observable Development:<br/>100kW+ Rack Density | Liquid Cooling Transition"]
-        Econ["Consolidated Impact:<br/>12.6% GAAP OpMargin | Book-to-Bill >1.2x"]
-        Cap["Value Capture Bottlenecks:<br/><b>$3.1B Funded Debt | $184M Interest Expense<br/>$2.5B Goodwill | Fixed-Price Project Margin Risk</b>"]
+    subgraph VRT_Profile["VRT: Facility-Level Data Center Thermal & Power"]
+        Dev["Observable Development:<br/>100kW+ Liquid Cooling & High-Density Power"]
+        Econ["Consolidated Results (FY25):<br/>$10,229.9M Rev | 17.9% GAAP OpMargin<br/>$1,893.8M FCF (89.6% of CFO)"]
+        Cap["Deleveraging & Value Capture:<br/><b>Net Debt Down to $129.2M | Cash $2,810.6M<br/>Interest Expense Down to 4.7% of OpIncome</b>"]
     end
     Dev --> Econ --> Cap
 ```
 
 ### A. Observable Development
-- **Specific Change:** Hyperscale data center power densities are transitioning from 10–20 kW per rack (supported by traditional air cooling) to 100 kW+ per rack with next-generation accelerators (e.g., Nvidia Blackwell B200/GB200), necessitating direct-to-chip liquid cooling, coolant distribution units (CDUs), and chilled-water loops.
-- **Timing & Baseline:** FY2022 to FY2023 revenue increased 20.6% ($5,691.8M to $6,863.0M), driven by expanding order backlog and a book-to-bill ratio >1.2x. Q2 2024 revenue reached $1,953.3M (+14.0% YoY).
-- **Classification:** **Structural Physical Infrastructure Inflection** confronting **Traditional Industrial Equipment Manufacturing Execution**.
+- **Specific Change:** Escalation of AI accelerator thermal dissipation (approaching 1,000W+ per processor) is driving data center operators to implement direct-to-chip liquid cooling loops, coolant distribution units (CDUs), and high-density modular power infrastructure.
+- **Timing & Baseline:** FY2025 revenue reached $10,229.9M (+49.1% vs FY2023 baseline of $6,863.0M). 1H 2026 revenue expanded to $5,923.8M (Q2 2026 quarterly revenue of $3,274.3M).
+- **Classification:** **Structural Physical Infrastructure Expansion** supported by strong multi-year order backlogs.
 - **Primary Source Evidence:**
-  - *Source:* SEC EDGAR Form 10-K for FY ended December 31, 2023 (CIK: `0001674101`, Accession: `0001674101-24-000012`, filed Feb 27, 2024).
-  - *Locators:* Item 7 MD&A (pp. 38–46); Note 6 Debt (pp. 77–81); Consolidated Balance Sheets (p. 67).
-  - *Interim Source:* Form 10-Q for period ended June 30, 2024 (Accession: `0001674101-24-000057`, filed July 25, 2024).
+  - *Form 10-K FY2025:* For period ended December 31, 2025, filed February 13, 2026 (CIK: `0001674101`, Accession: `0001628280-26-005612`). Item 7 MD&A; Item 8 Financial Statements (Statements of Cash Flows p. 71; Note on Debt).
+  - *Form 10-Q Q2 2026:* For period ended June 30, 2026, filed July 29, 2026 (Accession: `0001628280-26-050609`).
 
 ### B. Economic Significance
-- **Consolidated Materiality:** High. Power management, thermal management, and integrated modular solutions represent 100% of Vertiv's business. Surging demand directly inflates order intake, book-to-bill, and factory capacity utilization.
+- **Consolidated Materiality:** High. Data center power, thermal, and modular infrastructure comprise 100% of operations.
 - **Operating Leverage & Returns:**
-  - FY2023 GAAP Gross Profit: $2,398.2M (34.9% gross margin).
-  - FY2023 GAAP Operating Income: $861.8M (12.6% operating margin). Adjusted non-GAAP operating margin reached ~15.3%.
-  - Return on Invested Capital (ROIC): Modest (~11–13% GAAP) due to heavy post-SPAC invested capital base ($4.0B+ in intangibles and goodwill).
+  - FY2025 GAAP Gross Profit: $3,618.4M (35.4% gross margin).
+  - FY2025 GAAP Operating Income: $1,829.7M (17.9% operating margin, up from 12.6% in FY23).
+  - 1H 2026 GAAP Operating Income: $1,078.0M (18.2% operating margin).
+  - Free Cash Flow Conversion: FY2025 CFO was $2,113.8M; Payments for PP&E were $220.0M $\implies \text{FCF} = \$1,893.8M$ ($89.6\%$ of CFO).
 
 ### C. Value Capture & Limitations
-- **Competition & Moat:** Competes with global electrical giants (Schneider Electric, Eaton, Legrand) and specialized thermal startups. Vertiv benefits from global service technician coverage, factory pre-integration, and existing data center footprint, but products rely on standard mechanical components subject to competitor imitation.
-- **Customer Bargaining Power:** Customers are sophisticated hyperscalers (Microsoft, AWS, Google) and co-location operators (Equinix, Digital Realty) that enforce aggressive competitive bidding, standardized component architectures, and strict on-time delivery liquidated damages.
-- **Capex & Working Capital Intensity:** High capital intensity relative to software/semiconductor enablers. FY2023 capex was $154.5M (2.3% of revenue) and scaling rapidly to build dedicated liquid cooling capacity. Working capital requires substantial absorption: Accounts receivable totaled $1,765.2M and inventories totaled $1,053.8M as of Dec 31, 2023.
-- **Funded Debt & Capital Structure (Severe Blocker):**
-  - *Primary Fact:* Total funded long-term debt was **$3,088.3M** as of Dec 31, 2023, consisting of a **$2,143.0M Term Loan due 2027** and **$850.0M in 4.125% Senior Secured Notes due 2028** (Note 6 Debt).
-  - *Net Funded Debt:* $2,807.7M (against cash of $280.6M).
-  - *Interest Expense Burden:* FY2023 interest expense was **$184.2M**, consuming **21.4% of consolidated GAAP operating income**.
-  - *Balance Sheet Quality:* Goodwill of **$2,536.8M** and other intangible assets of **$1,472.3M** account for **49.2% of total assets** ($8,142.0M), representing non-amortizable legacy assets from the 2020 SPAC transaction with Platinum Equity.
-- **Equity Dilution & Warrants:** Warrants have largely been redeemed, but historical dilution from executive stock plans and post-SPAC equity issuances resulted in 382.7M diluted shares.
+- **Competition & Moat:** Competes with global electrical conglomerates (Schneider Electric, Eaton, Legrand) and specialized cooling innovators. Vertiv's competitive moat is reinforced by global factory pre-fabrication, certified engineering field support, and an extensive installed base.
+- **Customer Bargaining Power:** Customers are sophisticated hyperscalers and co-location operators who utilize competitive multi-vendor bidding and impose liquidated damages for project delivery delays.
+- **Capex & Working Capital:** FY2025 capex was $220.0M (2.1% of revenue). Modular assembly requires disciplined supply chain and inventory coordination.
+- **Funded Debt & Balance Sheet Deleveraging (Major Correction):**
+  - *Corrected Finding:* Previous evaluations claimed Vertiv was permanently disqualified by a $2.8B net debt burden and interest consuming >20% of operating income based on stale 2023 figures.
+  - *Actual Current Facts:* As of June 30, 2026, cash and cash equivalents totaled **$2,810.6M** against total funded long-term debt of **$2,939.8M**, reducing **Net Funded Debt to $129.2M** (nearly net cash).
+  - *Interest Burden:* FY2025 interest expense fell to **$86.1M**, representing only **4.7% of GAAP operating income** ($1,829.7M).
+  - *Intangible Assets:* Goodwill ($2,283.3M) and intangibles ($1,800.8M) remain significant on the balance sheet, but solvency risk has fundamentally receded.
+- **Dilution & Warrants:** Warrants have been retired; diluted share count is stable (~385M shares).
 
 ### D. Price & Expectations
-- **Market Pricing Context:** Trades at >45x trailing P/E. Valuation assumes Vertiv captures an unchallenged >40% market share in liquid cooling with expanding operating margins (>18%) through 2028.
+- **Market Valuation Context:** Valuation embeds market expectations of sustained ~18-20% operating margins and leading market share in AI data center cooling through 2028.
 - **Expectation Disaggregation:**
-  - *Company Guidance:* Targets 12–14% organic revenue CAGR and 17–18% adjusted operating margins by 2026.
-  - *Sourced Consensus:* Analysts model aggressive EPS growth (>25% CAGR) driven by AI thermal demand.
-  - *ARX Hypothesis:* While demand is robust, fixed-price contract risks, manufacturing expansion capex, and $184M in annual interest obligations severely constrain per-share equity cash flow generation.
+  - *Company Guidance:* Targets organic revenue growth and continuous operating margin expansion via modular manufacturing efficiencies.
+  - *Sourced Consensus:* `UNRESOLVED_CONSENSUS` (Primary broker consensus feeds omitted).
+  - *ARX Hypothesis:* Demand is verified, but modular project execution risks and competitive supply additions from Schneider and Eaton require ongoing monitoring.
 
 ### E. Downside & Survival Capacity
-- **Downside Scenario:** Execution delays on modular liquid cooling systems, component shortages, or margin write-downs on fixed-price installations would rapidly depress operating margins below 8.0%.
-- **Survival Capacity:** **Moderate to Constrained.** With $2.8B in net debt and heavy debt service obligations, Vertiv possesses limited buffer against operational missteps or credit market tightening.
+- **Downside Scenario:** Modular project construction pushouts or competitor capacity additions could cause operating margins to contract back toward mid-teens.
+- **Survival Capacity:** **Strongly Improved.** With $2.8B in cash, low net debt ($129M), and $2.1B in FY25 operating cash flow, Vertiv possesses robust liquidity to navigate cyclical fluctuations.
 
 ### F. Assessment Changes & Falsification Triggers
-- **Strengthening Criteria:**
-  - Accelerated debt paydown reducing net debt below $1.5B (Net Debt / EBITDA < 1.0x).
-  - Sustained quarterly GAAP operating margins exceeding 17.0% with positive operating cash flow conversion >90%.
-- **Invalidation Criteria:**
-  - Project execution write-downs on liquid cooling deployments reducing gross margins below 30.0%.
-  - Debt refinancing at substantially higher coupon rates increasing annual interest expense above $220M.
+- **Strengthening Criteria:** Transition to a sustained net-cash balance sheet and GAAP operating margins exceeding 19.0% across two consecutive quarters.
+- **Invalidation Criteria:** Project warranty write-downs on liquid cooling deployments, or operating cash flow conversion falling below 70%.
 
 ### G. Research Priority & Disposition
-- **Priority Classification:** `DEFERRED_WATCH` (Fails Quality Watch Pillar B).
-- **Public Publication Disposition:** **Disqualified from Public Collection.** Fails Quality Watch Pillar B (Financial Resilience) and Pillar F (Appropriate Valuation Treatment). Severe debt leverage ($3.1B funded debt), high interest expense, and post-SPAC goodwill prevent Vertiv from meeting the standards of high-quality compounders.
+- **Priority Classification:** `ACTIVE_QUALITY_WATCH_CANDIDATE`.
+- **Disposition:** Removed previous definitive disqualification. Vertiv’s substantial deleveraging, strong cash conversion ($1.89B FCF in FY25), and margin expansion warrant formal evaluation against the six Quality-Watch pillars in a subsequent cycle.
 
 ---
 
@@ -151,80 +149,79 @@ flowchart LR
 ```mermaid
 flowchart LR
     subgraph MPWR_Profile["MPWR: Silicon-Level Power Management ICs"]
-        Dev["Observable Development:<br/>48V-to-Core Multiphase Power Stages for AI GPUs"]
-        Econ["Consolidated Impact:<br/>Enterprise Data Surging to >25% Rev | 27% GAAP OpMargin"]
-        Cap["Value Capture Strengths:<br/><b>Zero Funded Debt | $1.3B Cash/ST Investments<br/>ROIC >25% | Monolithic BCD Process IP</b>"]
+        Dev["Observable Development:<br/>48V Multiphase Power Stages for AI Accelerators"]
+        Econ["Consolidated Results (FY25):<br/>$2,790.5M Rev | 26.1% GAAP OpMargin<br/>$666.2M FCF (79.5% of CFO)"]
+        Cap["Contextual Infrastructure Role:<br/>Zero Funded Debt | $1.0B+ Cash<br/><b>Complementary to, not identical to, facility cooling</b>"]
     end
     Dev --> Econ --> Cap
 ```
 
 ### A. Observable Development
-- **Specific Change:** High-performance AI accelerators (e.g., Nvidia Hopper H100/H200, Blackwell B200) require 700W to 1,000W+ of direct-current electrical power delivered at sub-1.0V with extreme transient response. Power architecture is shifting from traditional 12V multi-stage converters to high-density **48V-to-core multiphase power management ICs**. MPWR's proprietary monolithic BCD (Bipolar-CMOS-DMOS) process technology integrates high-voltage power devices, high-speed analog control, and digital logic onto a single silicon die, reducing board area and power dissipation.
-- **Timing & Baseline:** FY2023 consolidated revenue dipped 1.5% ($1,848.4M to $1,821.1M) due to broad semiconductor inventory destocking. However, the **Enterprise Data segment** surged to $238.6M (13.1% of revenue) in FY2023 and accelerated past **24% of consolidated revenue in 1H 2024**, driving Q2 2024 revenue to $507.4M (+15.0% YoY).
-- **Classification:** **Structural Silicon-Level Architectural Inflection** (rising power delivery content per accelerator) within a **Cyclical Semiconductor Recovery**.
+- **Specific Change:** High-performance AI compute dies require low-voltage (sub-1.0V), high-current (1,000A+) power conversion directly on the accelerator board. Power delivery is transitioning from legacy 12V architectures to 48V multiphase power management ICs. MPWR's proprietary monolithic BCD (Bipolar-CMOS-DMOS) process integrates power switches, analog control, and digital logic onto a single die, providing high power density and transient response.
+- **Timing & Baseline:** FY2025 revenue reached $2,790.5M (+53.2% vs FY2023 baseline of $1,821.1M). 1H 2026 revenue expanded to $1,784.8M (Q2 2026 quarterly revenue of $980.6M).
+- **Classification:** **Structural Silicon-Level Architectural Content Growth** within a broader semiconductor expansion.
 - **Primary Source Evidence:**
-  - *Source:* SEC EDGAR Form 10-K for FY ended December 31, 2023 (CIK: `0001280452`, Accession: `0001280452-24-000012`, filed Feb 26, 2024).
-  - *Locators:* Item 7 MD&A (pp. 43–50); Note 13 Segment Reporting (p. 82); Consolidated Statements of Operations (p. 66).
-  - *Interim Source:* Form 10-Q for period ended June 30, 2024 (Accession: `0001280452-24-000047`, filed Aug 6, 2024).
+  - *Form 10-K FY2025:* For period ended December 31, 2025, filed February 27, 2026 (CIK: `0001280452`, Accession: `0001437749-26-006113`). Item 7 MD&A; Item 8 Financial Statements (Statements of Cash Flows p. 69; Note on Segment Reporting).
+  - *Form 10-Q Q2 2026:* For period ended June 30, 2026, filed August 5, 2026 (Accession: `0001628280-26-053275`).
 
 ### B. Economic Significance
-- **Consolidated Materiality:** High and rising. Enterprise Data power management is MPWR's highest-growth segment, expanding from 13.1% of sales in FY23 to >25% in 2024. Power stage content per server is increasing from ~$50–$80 in standard CPU servers to **$150–$300+ in AI accelerator boards**, fundamentally transforming consolidated top-line growth and operating margins.
+- **Consolidated Materiality:** High. Enterprise Data power management is MPWR's primary growth driver, rising to >25% of consolidated revenue and transforming overall corporate growth.
 - **Operating Leverage & Returns:**
-  - FY2023 GAAP Gross Profit: $1,007.8M (55.3% gross margin).
-  - FY2023 GAAP Operating Income: $492.3M (27.0% operating margin).
-  - Return on Invested Capital (ROIC): Exceeds **25%**, supported by a fab-lite manufacturing model and highly differentiated analog intellectual property.
+  - FY2025 GAAP Gross Profit: $1,502.8M (53.8% gross margin).
+  - FY2025 GAAP Operating Income: $728.6M (26.1% operating margin).
+  - 1H 2026 GAAP Operating Income: $545.0M (30.5% operating margin).
+  - Free Cash Flow Conversion: FY2025 CFO was $838.2M; Payments for PP&E were $172.0M $\implies \text{FCF} = \$666.2M$ ($79.5\%$ of CFO).
 
 ### C. Value Capture & Limitations
-- **Competition & Moat:** Competes with large integrated device manufacturers (Texas Instruments, Infineon Technologies, Renesas Electronics, Analog Devices). MPWR's competitive moat is protected by its proprietary BCD process node (developed in-house and implemented at third-party foundries like TSMC), enabling superior power density, lower thermal dissipation, and monolithic package integration.
-- **Customer Bargaining Power:** Primary customers include GPU manufacturers (Nvidia, AMD) and cloud hyperscalers designing custom ASICs (Google TPU, Amazon Trainium). While Nvidia actively seeks dual-sourcing to mitigate supply risk, MPWR has historically captured the lion's share of primary reference designs due to superior transient response.
-- **Capex & Capital Intensity:** **Fab-lite model.** MPWR invests in proprietary packaging and testing while outsourcing raw wafer fabrication to leading commercial foundries. FY2023 capital expenditures were $56.7M (only 3.1% of revenue). Free cash flow conversion was $466.9M (89.2% of GAAP operating cash flow of $523.6M).
-- **Funded Debt & Solvency:** **Pristine.** Zero funded long-term debt, zero revolving credit facility borrowings. Cash, cash equivalents, and short-term investments totaled **$1,110.4M** as of Dec 31, 2023, expanding to **$1,288.7M** as of June 30, 2024.
-- **Equity Dilution & Stock-Based Compensation:** FY2023 stock-based compensation was $132.7M (7.3% of revenue). Diluted share count expanded by 1.7% in FY23 (47.9M to 48.7M shares), partially offset by $76.8M in opportunistic share repurchases.
+- **Competition & Moat:** Competes with Renesas Electronics, Infineon Technologies, Texas Instruments, and Analog Devices. Proprietary BCD process technology enables higher integration and lower board thermal footprint than multi-chip modules.
+- **Contextual Infrastructure Clarification (Major Correction):**
+  - *Differentiation:* MPWR addresses **silicon-level DC-DC power delivery** on accelerator printed circuit boards. Vertiv addresses **facility-level cooling systems, CDUs, and modular power infrastructure**.
+  - *Complementary, Not Identical:* These technologies operate at different layers of data center architecture; they are complementary rather than competing or solving the "exact same bottleneck."
+  - *No Inherent Investment Superiority:* Having zero funded debt and higher gross margins does not automatically make MPWR a "superior investment" compared to Vertiv; investment attractiveness depends on relative valuation multiples, competitive multi-sourcing, and execution risks.
+- **Customer Bargaining Power:** GPU and custom ASIC manufacturers maintain multi-sourcing policies, which constrains MPWR's pricing leverage over full product cycles.
+- **Capex Intensity:** Fab-lite model. FY2025 capex was $172.0M (6.2% of revenue).
+- **Funded Debt & Solvency:** **Pristine.** Zero funded long-term debt, zero credit facility drawings. Cash, cash equivalents, and short-term investments totaled $1,005.6M as of June 30, 2026.
+- **Dilution & SBC:** FY2025 stock-based compensation was $227.5M (8.2% of revenue), partially offset by ongoing share repurchase programs.
 
 ### D. Price & Expectations
-- **Market Pricing Context:** Trades at ~55x–60x P/E. Valuation reflects intense market optimism regarding AI accelerator power management content growth through 2026.
+- **Market Valuation Context:** Premium valuation multiple reflects strong market expectations of continued content growth per accelerator.
 - **Expectation Disaggregation:**
-  - *Company Guidance:* Management targets continued market share expansion in Enterprise Data while maintaining stable ~55% corporate gross margins.
-  - *Sourced Consensus:* Analysts model ~20–25% revenue CAGR through 2026, driven by accelerator board content expansion.
-  - *ARX Hypothesis:* MPWR’s technological lead in 48V multiphase power is genuine, but secondary sourcing by Nvidia (allocating share to Renesas/Infineon) and pricing pressure from Texas Instruments will prevent MPWR from monopolizing the market, capping sustainable market share at ~60–65%.
+  - *Company Guidance:* Targets enterprise data share expansion while maintaining steady gross margins.
+  - *Sourced Consensus:* `UNRESOLVED_CONSENSUS` (Primary broker consensus feeds omitted).
+  - *ARX Hypothesis:* MPWR’s power density advantage is real, but secondary sourcing by major accelerator customers will prevent full market monopolization.
 
 ### E. Downside & Survival Capacity
-- **Downside Scenario:** If competitors catch up in BCD packaging efficiency or Nvidia allocates a major share of next-generation GPU power stages to secondary suppliers, Enterprise Data revenue growth could decelerate sharply.
-- **Survival Capacity:** **Exceptional.** Backed by $1.3B in net cash, zero funded debt, 55% gross margins, and a flexible fab-lite operating model, MPWR possesses supreme balance sheet resilience to withstand semiconductor down-cycles.
+- **Downside Scenario:** Reference design share losses to Renesas or Infineon on next-generation accelerators could slow revenue growth.
+- **Survival Capacity:** **Exceptional.** Zero funded debt, $1.0B in liquid cash, and high gross margins ensure financial resilience.
 
 ### F. Assessment Changes & Falsification Triggers
-- **Strengthening Criteria:**
-  - Securing sole-source or dominant tier-1 design wins on upcoming 1,000W+ architectures (e.g., Nvidia GB200 and custom hyperscaler ASICs) with gross margins remaining above 55.0%.
-  - Non-enterprise industrial and automotive revenue re-accelerating past 15% YoY growth, demonstrating broad-based analog franchise expansion.
-- **Invalidation Criteria:**
-  - Loss of primary power stage socket share on flagship AI accelerator boards to Renesas or Infineon.
-  - Gross margins compressing below 52.0%, signaling severe price concessions or process commoditization.
+- **Strengthening Criteria:** Securing primary power stage allocation on next-generation accelerator architectures while maintaining GAAP operating margins >28%.
+- **Invalidation Criteria:** Loss of primary reference design sockets to analog competitors or GAAP gross margin compression below 50%.
 
 ### G. Research Priority & Disposition
-- **Priority Classification:** `TOP_DISCOVERY_CANDIDATE` (Internal Pilot Record).
-- **Process Verification Rationale:** MPWR represents the **single most successful demonstration of evidence-led discovery in this pilot**. By tracing the data center power and thermal bottleneck upstream to silicon-level power management, MPWR surfaced a company addressing the exact same physical constraint as `VRT`, but with **zero funded debt**, **>25% ROIC**, **pristine cash generation**, and **proprietary silicon process IP**.
-- **Public Publication Disposition:** **Held Outside Public Collection.** Requires extended monitoring of secondary-sourcing share allocation on next-generation GPU architectures and valuation multiple normalization before qualifying for public Quality Watch release.
+- **Priority Classification:** `PRIORITIZED_FOR_INTERNAL_MONITORING`.
+- **Disposition:** High-growth enabler with zero debt and strong cash generation. Evaluated contextually alongside facility-level enablers without claims of categorical superiority.
 
 ---
 
-## 7. Informational Synthesis & Cross-Candidate Comparison
+## 2. Reconciled Comparative Ledger
 
-The table below contrasts the three deeper investigations across their core financial and structural dimensions:
+The table below contrasts the three deeper investigations using audited FY2025 and 1H 2026 SEC filings:
 
 | Dimension | Arista Networks (`ANET`) | Vertiv Holdings (`VRT`) | Monolithic Power Systems (`MPWR`) |
 | :--- | :--- | :--- | :--- |
-| **Discovery Route** | Route 2 (Infra Constraint) & Route 3 (Tracing) | Route 2 (Thermal Bottleneck) | Route 3 (Supplier Tracing) & Route 1 (Resilience) |
-| **Origin** | Existing Expansion Shortlist | Existing Expansion Shortlist | **Newly Discovered Outside Shortlist** |
-| **Target Bottleneck** | Hyperscale Backend AI Networking (800G/1.6T) | Data Center Facility Power & Cooling (CDUs) | AI GPU Board Silicon-Level 48V Power Delivery |
-| **Funded Debt** | **$0.00 (Zero)** | **$3,088.3M ($2.8B Net Debt)** | **$0.00 (Zero)** |
-| **Cash & Liquid Assets** | **$6,036.7M** | $280.6M | **$1,288.7M** |
-| **GAAP Operating Margin**| **37.3%** | 12.6% | **27.0%** |
-| **ROIC** | **>35%** | ~11–13% | **>25%** |
-| **Free Cash Flow Conversion**| >95% of Operating Cash Flow | ~85% of Operating Cash Flow | ~89% of Operating Cash Flow |
-| **Annual Interest Burden**| $0.00 | **$184.2M (21% of OpIncome)** | $0.00 |
-| **Balance Sheet Quality**| Pristine tangible assets | **49.2% Goodwill & Intangibles** | Pristine tangible assets |
-| **Material Risk Factor** | **39% Customer Concentration (Meta/MSFT)** | **Debt Service & Project Execution** | Valuation (~60x P/E) & Dual-Sourcing |
-| **Quality Watch Pillar B**| Pass (Pristine resilience) | **Fail (Heavy debt leverage)** | Pass (Pristine resilience) |
-| **Internal Priority** | `HIGH_MONITORING_PRIORITY` | `DEFERRED_WATCH` | `TOP_DISCOVERY_CANDIDATE` |
-
-This structural comparison confirms that candidate generation beyond the existing shortlist (`MPWR`) identified an asset with superior financial resilience and value capture compared to the shortlist's thematic pure-play (`VRT`).
+| **Operational Focus** | Hyperscale Backend AI Networking (800G/1.6T) | Data Center Facility Power & Cooling (CDUs) | AI GPU Board Silicon-Level 48V Power Delivery |
+| **System Layer** | Network Fabric Layer | Facility & Row Infrastructure Layer | Chip & Printed Circuit Board Layer |
+| **FY2025 GAAP Revenue** | $9,005.7M (+53.7% vs FY23) | $10,229.9M (+49.1% vs FY23) | $2,790.5M (+53.2% vs FY23) |
+| **FY2025 GAAP OpMargin** | **42.8%** ($3,856.1M) | **17.9%** ($1,829.7M) | **26.1%** ($728.6M) |
+| **1H 2026 GAAP OpMargin** | **44.1%** ($2,535.8M) | **18.2%** ($1,078.0M) | **30.5%** ($545.0M) |
+| **FY2025 Operating Cash Flow**| $4,371.9M | $2,113.8M | $838.2M |
+| **FY2025 Capex (PP&E)** | $110.0M (1.2% of rev) | $220.0M (2.1% of rev) | $172.0M (6.2% of rev) |
+| **FY2025 Free Cash Flow** | **$4,261.9M** | **$1,893.8M** | **$666.2M** |
+| **FCF Conversion (FCF/CFO)** | **97.5%** | **89.6%** | **79.5%** |
+| **Funded Long-Term Debt** | **$0.0M** | $2,939.8M | **$0.0M** |
+| **Cash & Liquid Assets** | $2,290.2M (plus investments) | **$2,810.6M** | $1,005.6M |
+| **Net Funded Debt** | **-$2,290.2M (Net Cash)** | **$129.2M (Near Net Cash)** | **-$1,005.6M (Net Cash)** |
+| **FY25 Interest Burden** | $0.0M | **$86.1M (4.7% of OpIncome)** | $0.0M |
+| **Primary Operational Risk** | **42% Customer Concentration (Meta/MSFT)** | Competitive Supply Ramp & Project Execution | GPU Vendor Multi-Sourcing & Analog Pricing |
+| **Research Classification** | `PRIORITIZED_FOR_INTERNAL_MONITORING` | `ACTIVE_QUALITY_WATCH_CANDIDATE` | `PRIORITIZED_FOR_INTERNAL_MONITORING` |

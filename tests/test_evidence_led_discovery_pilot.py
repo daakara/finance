@@ -8,7 +8,12 @@ import sys
 repo_root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(repo_root / "scripts" / "research"))
 
-from verify_discovery_pilot import verify_pilot, FROZEN_BASELINE_LEDGER_SHA256, AUTHORIZED_PUBLISHED_SYMBOLS
+from verify_discovery_pilot import (
+    verify_pilot,
+    FROZEN_BASELINE_LEDGER_SHA256,
+    AUTHORIZED_PUBLISHED_SYMBOLS,
+    OFFLINE_ARITHMETIC_FIXTURES
+)
 
 
 class TestEvidenceLedDiscoveryPilot(unittest.TestCase):
@@ -49,7 +54,7 @@ class TestEvidenceLedDiscoveryPilot(unittest.TestCase):
         self.assertTrue(proc_path.exists(), "DECISION_FOCUSED_RESEARCH_PROCESS.md must exist")
         text = proc_path.read_text(encoding="utf-8")
         # Assert the 6 steps exist
-        for step in ["Step A", "Step B", "Step C", "Step D", "Step E", "Step F"]:
+        for step in ["Step A: Define the Decision", "Step B: Identify Decisive Uncertainties", "Step C: Connect Outcomes to Consequences", "Step D: Investigate Proportionately", "Step E: Make the Assessment", "Step F: Set Review Triggers and Stop"]:
             self.assertIn(step, text)
         # Assert illustrative business examples exist
         for ticker in ["DECK", "FIX", "DUOL", "ULTA", "MEDP", "ISRG"]:
@@ -57,6 +62,19 @@ class TestEvidenceLedDiscoveryPilot(unittest.TestCase):
         # Assert prospective adoption invariants
         self.assertIn("Prospective-Only Application", text)
         self.assertIn("WATCH is not BUY", text)
+
+    def test_fcf_offline_arithmetic_reconciliation(self):
+        for sym, fixture in OFFLINE_ARITHMETIC_FIXTURES.items():
+            fcf = fixture["cfo"] - fixture["capex"]
+            self.assertAlmostEqual(fcf, fixture["expected_fcf"], places=2)
+            conv = fcf / fixture["cfo"]
+            self.assertAlmostEqual(conv, fixture["expected_conversion"], places=3)
+
+    def test_snps_merger_completion_reconciliation(self):
+        triage_path = repo_root / "docs" / "research" / "evidence_led_discovery" / "SEARCH_UNIVERSE_AND_TRIAGE_MATRIX.md"
+        text = triage_path.read_text(encoding="utf-8")
+        self.assertIn("July 17, 2025", text)
+        self.assertNotIn("pending $35B", text.lower())
 
 
 if __name__ == "__main__":

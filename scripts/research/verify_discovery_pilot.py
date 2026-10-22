@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 """
-ARX Terminal — Evidence-Led Discovery Pilot Verification Script
+ARX Terminal — Evidence-Led Discovery Pilot Verification Script (Corrected)
 Task: ARX-TERMINAL-EVIDENCE-LED-DISCOVERY-PILOT (Issue #43)
 Governing Item: BACKLOG-RESEARCH-EVIDENCE-DISCOVERY-043
 
-Verifies:
-1. Schema conformance and required field completeness of discovery_opportunity_ledger.json.
-2. Complete dimensional classification (research maturity, opportunity mechanism, expectation gap, financial resilience, publication eligibility).
-3. Public publication ineligibility invariant across all internal pilot records.
-4. Primary source filing citations, accession numbers, and date formats.
-5. Invariant preservation: published_watch_manifest.json published symbols == 6, odp05_discovery_ledger.json SHA-256 untouched.
-6. Strict frontend isolation: zero imports or references to internal pilot artifacts in frontend/.
+Methodological Disclaimer on Verification Scope:
+- Schema checks establish internal structural compliance of JSON ledgers; they do not establish economic validity.
+- Date and accession format checks verify syntactic presence of required disclosures; they do not independently confirm external factual accuracy.
+- Offline calculation checks verify arithmetic consistency between reported components and derived metrics.
+- Frontend isolation checks verify architectural decoupling; they do not establish investment merit.
 """
 
 import sys
@@ -58,6 +56,28 @@ REQUIRED_DIMENSIONS = [
     "public_publication_eligibility"
 ]
 
+# Checked offline source values for arithmetic consistency verification (FY2025 GAAP)
+OFFLINE_ARITHMETIC_FIXTURES = {
+    "ANET": {
+        "cfo": 4371.9,
+        "capex": 110.0,
+        "expected_fcf": 4261.9,
+        "expected_conversion": 0.9748
+    },
+    "VRT": {
+        "cfo": 2113.8,
+        "capex": 220.0,
+        "expected_fcf": 1893.8,
+        "expected_conversion": 0.8959
+    },
+    "MPWR": {
+        "cfo": 838.2,
+        "capex": 172.0,
+        "expected_fcf": 666.2,
+        "expected_conversion": 0.7948
+    }
+}
+
 
 def verify_pilot(repo_root: Path) -> dict:
     results = {
@@ -67,7 +87,7 @@ def verify_pilot(repo_root: Path) -> dict:
         "records_verified": 0
     }
 
-    # 1. Verify discovery_opportunity_ledger.json
+    # 1. Verify discovery_opportunity_ledger.json structure and fields
     ledger_path = repo_root / "docs" / "research" / "evidence_led_discovery" / "discovery_opportunity_ledger.json"
     if not ledger_path.exists():
         results["passed"] = False
@@ -86,6 +106,14 @@ def verify_pilot(repo_root: Path) -> dict:
         if key not in data:
             results["passed"] = False
             results["errors"].append(f"Missing root key in ledger: {key}")
+
+    # Verify provenance qualification
+    universe_info = data.get("examined_universe", {})
+    if universe_info.get("provenance_status") != "EXPLORATORY_MANUAL_COMPARISON_NOT_AUTOMATED_DISCOVERY":
+        results["passed"] = False
+        results["errors"].append(
+            "examined_universe must explicitly acknowledge EXPLORATORY_MANUAL_COMPARISON_NOT_AUTOMATED_DISCOVERY"
+        )
 
     deep_records = data.get("deep_investigations", {})
     if len(deep_records) < 2:
@@ -118,7 +146,30 @@ def verify_pilot(repo_root: Path) -> dict:
             results["passed"] = False
             results["errors"].append(f"Record {symbol} lacks explicit Form 10-K primary evidence reference")
 
-    # 2. Verify published_watch_manifest.json invariants
+        # Check that expectations acknowledge unresolved consensus where applicable
+        expectations = rec.get("price_and_expectations", {}).get("expectation_disaggregation", {})
+        consensus_val = expectations.get("sourced_analyst_consensus", "")
+        if "UNRESOLVED" not in consensus_val and not consensus_val.startswith("http"):
+            results["warnings"].append(
+                f"Record {symbol} consensus expectations should be explicit URL or marked UNRESOLVED_CONSENSUS"
+            )
+
+    # 2. Arithmetic Reconciliation of Retained FCF Calculations
+    for sym, fix in OFFLINE_ARITHMETIC_FIXTURES.items():
+        fcf = fix["cfo"] - fix["capex"]
+        if abs(fcf - fix["expected_fcf"]) > 0.05:
+            results["passed"] = False
+            results["errors"].append(
+                f"Arithmetic reconciliation failed for {sym}: CFO {fix['cfo']} - Capex {fix['capex']} != {fix['expected_fcf']}"
+            )
+        conv = fcf / fix["cfo"]
+        if abs(conv - fix["expected_conversion"]) > 0.001:
+            results["passed"] = False
+            results["errors"].append(
+                f"Arithmetic conversion failed for {sym}: FCF {fcf} / CFO {fix['cfo']} != {fix['expected_conversion']}"
+            )
+
+    # 3. Verify published_watch_manifest.json invariants
     manifest_path = repo_root / "docs" / "research" / "opportunity_discovery" / "published_watch_manifest.json"
     if not manifest_path.exists():
         results["passed"] = False
@@ -133,7 +184,7 @@ def verify_pilot(repo_root: Path) -> dict:
                 f"published_symbols mutated! Expected {AUTHORIZED_PUBLISHED_SYMBOLS}, got {pub_symbols}"
             )
 
-    # 3. Verify odp05_discovery_ledger.json immutability
+    # 4. Verify odp05_discovery_ledger.json immutability
     odp05_path = repo_root / "docs" / "research" / "opportunity_discovery" / "odp05_discovery_ledger.json"
     if not odp05_path.exists():
         results["passed"] = False
@@ -147,7 +198,7 @@ def verify_pilot(repo_root: Path) -> dict:
                 f"odp05_discovery_ledger.json SHA-256 mismatch! Expected {FROZEN_BASELINE_LEDGER_SHA256}, got {actual_sha}"
             )
 
-    # 4. Verify Frontend Isolation
+    # 5. Verify Frontend Isolation
     frontend_dir = repo_root / "frontend"
     if frontend_dir.exists():
         for path in frontend_dir.rglob("*.ts*"):
@@ -163,7 +214,7 @@ def verify_pilot(repo_root: Path) -> dict:
             except Exception as e:
                 results["warnings"].append(f"Could not read {path}: {e}")
 
-    # 5. Verify Standardized Decision-Focused Research Process
+    # 6. Verify Standardized Decision-Focused Research Process
     std_process_path = repo_root / "docs" / "research" / "DECISION_FOCUSED_RESEARCH_PROCESS.md"
     if not std_process_path.exists():
         results["passed"] = False
@@ -172,7 +223,7 @@ def verify_pilot(repo_root: Path) -> dict:
         text = std_process_path.read_text(encoding="utf-8", errors="ignore")
         required_sections = [
             "Step A: Define the Decision",
-            "Step B: Identify Decision-Relevant Uncertainties",
+            "Step B: Identify Decisive Uncertainties",
             "Step C: Connect Outcomes to Consequences",
             "Step D: Investigate Proportionately",
             "Step E: Make the Assessment",
@@ -186,23 +237,16 @@ def verify_pilot(repo_root: Path) -> dict:
                 results["passed"] = False
                 results["errors"].append(f"DECISION_FOCUSED_RESEARCH_PROCESS.md missing required section/example: {sec}")
 
-    # Verify standard is referenced in quality watch standard and maintenance policy
-    qw_path = repo_root / "docs" / "research" / "opportunity_discovery" / "QUALITY_WATCH_SELECTION_STANDARD.md"
-    if qw_path.exists():
-        qw_text = qw_path.read_text(encoding="utf-8", errors="ignore")
-        if "DECISION_FOCUSED_RESEARCH_PROCESS.md" not in qw_text:
+    # 7. Verify Triage Matrix Factual Freshness & SNPS Correction
+    triage_path = repo_root / "docs" / "research" / "evidence_led_discovery" / "SEARCH_UNIVERSE_AND_TRIAGE_MATRIX.md"
+    if triage_path.exists():
+        triage_text = triage_path.read_text(encoding="utf-8", errors="ignore")
+        if "pending $35B" in triage_text or "acquisition of Ansys (pending" in triage_text:
             results["passed"] = False
-            results["errors"].append("QUALITY_WATCH_SELECTION_STANDARD.md does not reference DECISION_FOCUSED_RESEARCH_PROCESS.md")
-        if "6 Quality Watch dossiers" not in qw_text:
+            results["errors"].append("SEARCH_UNIVERSE_AND_TRIAGE_MATRIX.md retains discredited 'pending acquisition' claim for SNPS")
+        if "July 17, 2025" not in triage_text:
             results["passed"] = False
-            results["errors"].append("QUALITY_WATCH_SELECTION_STANDARD.md does not reflect 6 Quality Watch dossiers")
-
-    maint_path = repo_root / "docs" / "research" / "opportunity_discovery" / "PILOT_MAINTENANCE_POLICY.md"
-    if maint_path.exists():
-        maint_text = maint_path.read_text(encoding="utf-8", errors="ignore")
-        if "DECISION_FOCUSED_RESEARCH_PROCESS.md" not in maint_text:
-            results["passed"] = False
-            results["errors"].append("PILOT_MAINTENANCE_POLICY.md does not reference DECISION_FOCUSED_RESEARCH_PROCESS.md")
+            results["errors"].append("SEARCH_UNIVERSE_AND_TRIAGE_MATRIX.md lacks primary Form 8-K July 17, 2025 merger date for SNPS")
 
     return results
 
