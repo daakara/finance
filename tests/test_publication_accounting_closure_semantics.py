@@ -329,3 +329,56 @@ def test_category_d_identity_registration_evidence_validation():
             operating_mic="XNAS",
         )
         invalid_symbol_evidence.validate()
+
+
+def test_failed_publication_aborts_commitment_and_does_not_report_published(
+    sample_aapl_candidate, sample_goog_candidate
+):
+    """
+    Test 9: Aborted or failed publication (missing authorization, invalid universe namespace)
+    must fail closed without mutating the publication pointer, and subsequent accounting
+    must not report newly published securities.
+    """
+    # Scenario A: Initial publish fails due to missing authorization
+    engine = IsolatedPublicationEngine(universe_id="ARX_PILOT_EXPANSION_150")
+    with pytest.raises(EvidenceMissingError, match="authorized_by must be explicitly specified"):
+        engine.publish_universe(
+            [sample_aapl_candidate, sample_goog_candidate],
+            as_of_date="2026-10-19",
+            authorized_by="   ",  # Blank authorization
+            build_id="ubuild-abort-001",
+        )
+    assert engine._publication_pointer is None
+    dry1 = engine.execute_dry_run([sample_aapl_candidate, sample_goog_candidate], "2026-10-19")
+    assert dry1["accounting"]["published_count"] == 0
+    assert dry1["accounting"]["projected_published_count"] == 2
+
+    # Scenario B: Second publish fails after a successful initial publish
+    # Step 1: Successfully commit initial 1-symbol universe (AAPL)
+    engine.publish_universe(
+        [sample_aapl_candidate],
+        as_of_date="2026-10-19",
+        authorized_by="OPERATOR_ARX_SPRINT2_OFFLINE",
+        build_id="ubuild-initial-001",
+    )
+    assert engine._publication_pointer is not None
+    assert engine._publication_pointer.published_symbols == ["AAPL"]
+
+    # Step 2: Attempt to publish new 2-symbol universe but fail validation (blank authorized_by)
+    with pytest.raises(EvidenceMissingError, match="authorized_by must be explicitly specified"):
+        engine.publish_universe(
+            [sample_aapl_candidate, sample_goog_candidate],
+            as_of_date="2026-10-19",
+            authorized_by="",  # Missing authorization
+            build_id="ubuild-abort-002",
+        )
+
+    # Step 3: Assert pointer remains at the previous authoritative state (AAPL only)
+    assert engine._publication_pointer.build_id == "ubuild-initial-001"
+    assert engine._publication_pointer.published_symbols == ["AAPL"]
+
+    # Step 4: Subsequent dry-run must report published_count == 1 (not 2, and not 0)
+    dry2 = engine.execute_dry_run([sample_aapl_candidate, sample_goog_candidate], "2026-10-19")
+    assert dry2["accounting"]["published_count"] == 1
+    assert dry2["accounting"]["projected_published_count"] == 2
+
