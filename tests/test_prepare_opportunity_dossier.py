@@ -728,7 +728,7 @@ def test_29_expansion_additions_evidence_tracing_and_share_periods():
 
 
 def test_30_deck_growth_claim_accuracy():
-    """Verify that DECK brand and channel growth claims cite primary Q1 FY27 disclosures without unsupported market share claims."""
+    """Verify that DECK brand and channel growth claims cite primary Q1 FY27 disclosures ($703.5M total HOKA, $1,019.5M net sales) without stale or unsupported claims."""
     ledger, _, _ = prepare_pilot_scaling_corpus()
     deck = ledger["dossiers"]["DECK"]
     supp = deck["central_assessment"]["strongest_supporting_evidence"]
@@ -736,7 +736,10 @@ def test_30_deck_growth_claim_accuracy():
     assert "market share gains (>25% YoY)" not in supp, "DECK must not claim market share gains >25% YoY without market data"
     assert "17.3%" in supp, "DECK must cite HOKA DTC net sales growth (+17.3% YoY)"
     assert "2.9%" in supp, "DECK must cite HOKA wholesale net sales growth (+2.9% YoY)"
-    assert "545.0M" in supp, "DECK must cite total HOKA net sales ($545.0M)"
+    assert "703.5M" in supp, "DECK must cite verified total HOKA net sales ($703.5M)"
+    assert "1,019.5M" in supp, "DECK must cite verified consolidated net sales ($1,019.5M)"
+    for stale in ["545.0M", "151.0M", "394.0M", "825.3M"]:
+        assert stale not in supp, f"DECK must not contain stale dollar figure: {stale}"
 
 
 def test_31_isrg_recurring_revenue_and_measured_language():
@@ -751,17 +754,25 @@ def test_31_isrg_recurring_revenue_and_measured_language():
     assert "85%" in supp or "85%" in summary, "ISRG must state 85% recurring revenue definition"
 
 
-def test_32_medp_roic_evidence_and_calculation():
-    """Verify that MEDP provides explicit reproducible derivation for ROIC >25% and 20.97% operating margin."""
+def test_32_medp_operating_profitability_and_cash_generation():
+    """Verify that MEDP grounds its quality moat in verified 20.97% operating margin and $502.7M net cash, with unsupported ROIC claims removed."""
     ledger, _, _ = prepare_pilot_scaling_corpus()
     medp = ledger["dossiers"]["MEDP"]
     tracing = medp["financial_profile"]["source_evidence_tracing"]
+    supp = medp["central_assessment"]["strongest_supporting_evidence"]
+    why = medp["selection_rationale"]["why_this_business"]
 
-    claims = tracing["narrative_claims"]
-    roic_claim = next((c for c in claims if "ROIC" in c["statement"]), None)
-    assert roic_claim is not None, "MEDP must include ROIC claim with formula/locator in source_evidence_tracing"
-    assert "NOPAT" in roic_claim["statement"], "ROIC claim must explain NOPAT derivation"
-    assert "75.3%" in roic_claim["statement"] or "41.3%" in roic_claim["statement"]
+    # Positive assertions on verified facts
+    assert "20.97%" in supp, "MEDP must cite verified 20.97% operating margin in supporting evidence"
+    assert "$502.7M" in supp, "MEDP must cite $502.7M cash in supporting evidence"
+    assert "zero funded debt" in supp.lower(), "MEDP must cite zero funded debt"
+    assert "20.97%" in why, "MEDP why_this_business must cite 20.97% operating margin"
+
+    # Negative assertions: Unsupported ROIC and unsupported equity claims removed
+    assert "ROIC" not in supp, "MEDP strongest_supporting_evidence must not make unsupported ROIC claims"
+    assert "75.3%" not in supp and "41.3%" not in supp, "MEDP must not cite unverified ROIC percentages"
+    assert "ROIC" not in why, "MEDP why_this_business must not cite unsupported ROIC"
+    assert "1,114.6" not in str(tracing), "MEDP tracing must not cite non-existent $1,114.6M equity"
 
 
 def test_33_structured_selection_rationale_completeness():
@@ -812,5 +823,144 @@ def test_36_negative_isrg_hyperbolic_wording(valid_pilot_artifacts):
         json.dump(fe, f)
 
     assert validate_existing_pilot_artifacts(**valid_pilot_artifacts) is False
+
+
+def test_37_financial_reconciliation_primary_sources_to_derived_metrics():
+    """Verify that expansion additions MEDP, ISRG, and DECK reconcile perfectly against independent primary source fixtures."""
+    from scripts.research.prepare_opportunity_dossier import run_fcff_model
+
+    fixtures = {
+        "MEDP": {
+            "rev_10k": 2530234000.0,
+            "rev_prior_10q": 1161881000.0,
+            "rev_current_10q": 1413935000.0,
+            "opinc_10k": 534935000.0,
+            "opinc_prior_10q": 239858000.0,
+            "opinc_current_10q": 288327000.0,
+            "cash": 502688000.0,
+            "st_investments": 0.0,
+            "funded_debt": 0.0,
+            "lease_liabilities": 144112000.0,
+            "diluted_shares": 28554000.0,
+            "expected_cagr": 29.41,
+        },
+        "ISRG": {
+            "rev_10k": 10064700000.0,
+            "rev_prior_10q": 4693400000.0,
+            "rev_current_10q": 5663100000.0,
+            "opinc_10k": 2945500000.0,
+            "opinc_prior_10q": 1321500000.0,
+            "opinc_current_10q": 1827200000.0,
+            "cash": 2760400000.0,
+            "st_investments": 2455800000.0,
+            "funded_debt": 0.0,
+            "lease_liabilities": 170900000.0,
+            "diluted_shares": 357300000.0,
+            "expected_cagr": 36.87,
+        },
+        "DECK": {
+            "rev_10k": 5472296000.0,
+            "rev_prior_10q": 964538000.0,
+            "rev_current_10q": 1019531000.0,
+            "opinc_10k": 1262903000.0,
+            "opinc_prior_10q": 165287000.0,
+            "opinc_current_10q": 155301000.0,
+            "cash": 1602589000.0,
+            "st_investments": 0.0,
+            "funded_debt": 0.0,
+            "lease_liabilities": 472334000.0,
+            "diluted_shares": 138559000.0,
+            "expected_cagr": -2.34,
+        },
+    }
+
+    ledger, _, _ = prepare_pilot_scaling_corpus()
+    dossiers = ledger["dossiers"]
+
+    for sym, fix in fixtures.items():
+        d = dossiers[sym]
+        fin = d["financial_profile"]
+        tracing = fin["source_evidence_tracing"]
+
+        # Independent arithmetic derivation
+        calc_ttm_rev = fix["rev_10k"] - fix["rev_prior_10q"] + fix["rev_current_10q"]
+        calc_ttm_opinc = fix["opinc_10k"] - fix["opinc_prior_10q"] + fix["opinc_current_10q"]
+        calc_margin = round((calc_ttm_opinc / calc_ttm_rev) * 100, 2)
+        calc_total_cash = fix["cash"] + fix["st_investments"]
+        calc_net_debt = fix["funded_debt"] - calc_total_cash
+
+        # Dossier and financial profile reconciliation
+        assert fin["revenue"] == calc_ttm_rev, f"{sym} revenue mismatch: {fin['revenue']} vs {calc_ttm_rev}"
+        assert fin["operating_income"] == calc_ttm_opinc, f"{sym} operating income mismatch: {fin['operating_income']} vs {calc_ttm_opinc}"
+        assert fin["operating_margin_pct"] == calc_margin, f"{sym} margin mismatch: {fin['operating_margin_pct']} vs {calc_margin}"
+        assert fin["total_cash_and_investments"] == calc_total_cash, f"{sym} cash mismatch"
+        assert fin["total_financial_debt"] == fix["funded_debt"], f"{sym} debt mismatch"
+        assert fin["net_debt_bridge"] == calc_net_debt, f"{sym} net debt bridge mismatch"
+        assert fin["selected_share_basis"]["value"] == fix["diluted_shares"], f"{sym} shares mismatch"
+
+        # Source evidence tracing reconciliation
+        rev_sources = tracing["revenue"]["filing_sources"]
+        assert len(rev_sources) == 3, f"{sym} revenue tracing must include 3 filing sources (10-K, prior 10-Q, current 10-Q)"
+        assert rev_sources[0]["reported_value"] == fix["rev_10k"]
+        assert rev_sources[1]["reported_value"] == fix["rev_prior_10q"]
+        assert rev_sources[2]["reported_value"] == fix["rev_current_10q"]
+
+        opinc_sources = tracing["operating_income"]["filing_sources"]
+        assert len(opinc_sources) == 3, f"{sym} operating income tracing must include 3 filing sources"
+        assert opinc_sources[0]["reported_value"] == fix["opinc_10k"]
+        assert opinc_sources[1]["reported_value"] == fix["opinc_prior_10q"]
+        assert opinc_sources[2]["reported_value"] == fix["opinc_current_10q"]
+
+        assert tracing["lease_treatment"]["total_lease_liabilities_usd"] == fix["lease_liabilities"]
+        assert tracing["shares_outstanding"]["share_count"] == fix["diluted_shares"]
+
+
+def test_38_negative_financial_component_tampering(valid_pilot_artifacts):
+    """Negative test: Tampering with any filing source component in source_evidence_tracing fails artifact validation."""
+    fe_path = valid_pilot_artifacts["frontend_draft_path"]
+    with open(fe_path, "r", encoding="utf-8") as f:
+        fe = json.load(f)
+
+    # Tamper with DECK 10-K reported revenue
+    fe["dossiers"]["DECK"]["financial_profile"]["source_evidence_tracing"]["revenue"]["filing_sources"][0]["reported_value"] = 9999999999.0
+    with open(fe_path, "w", encoding="utf-8") as f:
+        json.dump(fe, f)
+
+    assert validate_existing_pilot_artifacts(**valid_pilot_artifacts) is False
+
+
+def test_39_valuation_forward_model_roundtrip_verification():
+    """Verify that all additions (ULTA, MEDP, ISRG, DECK) execute forward FCFF model roundtrip matching machine model output."""
+    from scripts.research.prepare_opportunity_dossier import run_fcff_model, PILOT_SPECS
+
+    ledger, _, _ = prepare_pilot_scaling_corpus()
+    dossiers = ledger["dossiers"]
+
+    for sym in ["ULTA", "MEDP", "ISRG", "DECK"]:
+        d = dossiers[sym]
+        fin = d["financial_profile"]
+        val = d["valuation"]
+        val_spec = PILOT_SPECS[sym]["valuation_spec"]
+
+        shares = fin["selected_share_basis"]["value"]
+        rt = run_fcff_model(
+            base_revenue=fin["revenue"],
+            current_shares=shares,
+            net_debt_bridge=fin["net_debt_bridge"],
+            growth_5y_pct=val["solved_5y_cagr_pct"],
+            operating_margin_pct=val_spec["margin"],
+            wacc_pct=val_spec["wacc"],
+            terminal_growth_pct=val_spec["terminal_g"],
+            tax_rate_pct=val_spec["tax_rate"],
+            reinvestment_rate_pct=val_spec["reinvestment_rate"],
+        )
+
+        model_per_share = rt["per_share"]
+        model_delta_cents = round(abs(model_per_share - val["reference_price"]) * 100, 2)
+
+        assert val["roundtrip_value"] == round(model_per_share, 2), f"{sym} roundtrip_value must equal machine model per_share rounded to 2 decimal places"
+        assert val["roundtrip_delta_cents"] == model_delta_cents, f"{sym} roundtrip_delta_cents must match machine calculation"
+        assert model_delta_cents < 10.0, f"{sym} roundtrip delta ({model_delta_cents} cents) must be within 10 cent tolerance"
+
 
 

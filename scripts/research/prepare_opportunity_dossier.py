@@ -377,7 +377,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
         "valuation_status": "COMPUTED_VERIFIED",
         "valuation_status_label": "Computed & Verified",
         "evidence_completeness": "SOURCE_MAPPED_AUDITED",
-        "review_notes": "Scaling addition candidate prepared with complete primary filing source-to-input tracing, reproducible ROIC derivation, and structured selection record.",
+        "review_notes": "Scaling addition candidate prepared with complete primary filing source-to-input tracing, verified operating profitability and self-funding organic cash flow, and structured selection record.",
         "source_evidence_tracing": {
             "representative_status": "EXPANSION_PILOT_CANDIDATE",
             "company_identity": {
@@ -395,8 +395,8 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             "revenue": {
                 "fact_status": "DERIVED_CALCULATION",
                 "reported_ttm_value_usd": 2782288000.0,
-                "derivation_formula": "FY2025 Revenues ($2,389,010,000) - Q2 2025 6M Revenues ($1,058,118,000) + Q2 2026 6M Revenues ($1,451,396,000)",
-                "xbrl_tag": "us-gaap:Revenues",
+                "derivation_formula": "FY2025 Revenues ($2,530,234,000) - Q2 2025 6M Revenues ($1,161,881,000) + Q2 2026 6M Revenues ($1,413,935,000)",
+                "xbrl_tag": "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax",
                 "unit": "USD",
                 "filing_sources": [
                     {
@@ -405,7 +405,15 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                         "filing_date": "2026-02-10",
                         "accession": "0001668397-26-000006",
                         "location": "Item 8 Consolidated Statements of Operations",
-                        "reported_value": 2389010000.0
+                        "reported_value": 2530234000.0
+                    },
+                    {
+                        "form": "10-Q",
+                        "period_end": "2025-06-30",
+                        "filing_date": "2026-07-23",
+                        "accession": "0001668397-26-000025",
+                        "location": "Part I Item 1 Condensed Consolidated Statements of Operations (6 Months Ended)",
+                        "reported_value": 1161881000.0
                     },
                     {
                         "form": "10-Q",
@@ -413,7 +421,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                         "filing_date": "2026-07-23",
                         "accession": "0001668397-26-000025",
                         "location": "Part I Item 1 Condensed Consolidated Statements of Operations (6 Months Ended)",
-                        "reported_value": 1451396000.0
+                        "reported_value": 1413935000.0
                     }
                 ]
             },
@@ -421,7 +429,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                 "fact_status": "DERIVED_CALCULATION",
                 "reported_ttm_value_usd": 583404000.0,
                 "operating_margin_pct": 20.97,
-                "derivation_formula": "FY2025 Operating Income ($526,380,000) - Q2 2025 6M Operating Income ($247,479,000) + Q2 2026 6M Operating Income ($304,503,000)",
+                "derivation_formula": "FY2025 Operating Income ($534,935,000) - Q2 2025 6M Operating Income ($239,858,000) + Q2 2026 6M Operating Income ($288,327,000)",
                 "xbrl_tag": "us-gaap:OperatingIncomeLoss",
                 "unit": "USD",
                 "filing_sources": [
@@ -431,7 +439,15 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                         "filing_date": "2026-02-10",
                         "accession": "0001668397-26-000006",
                         "location": "Item 8 Consolidated Statements of Operations",
-                        "reported_value": 526380000.0
+                        "reported_value": 534935000.0
+                    },
+                    {
+                        "form": "10-Q",
+                        "period_end": "2025-06-30",
+                        "filing_date": "2026-07-23",
+                        "accession": "0001668397-26-000025",
+                        "location": "Part I Item 1 Condensed Consolidated Statements of Operations (6 Months Ended)",
+                        "reported_value": 239858000.0
                     },
                     {
                         "form": "10-Q",
@@ -439,7 +455,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                         "filing_date": "2026-07-23",
                         "accession": "0001668397-26-000025",
                         "location": "Part I Item 1 Condensed Consolidated Statements of Operations (6 Months Ended)",
-                        "reported_value": 304503000.0
+                        "reported_value": 288327000.0
                     }
                 ]
             },
@@ -477,8 +493,8 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             },
             "lease_treatment": {
                 "fact_status": "VERIFIED_REPORTED_FACT",
-                "current_operating_lease_liabilities_usd": 23803000.0,
-                "noncurrent_operating_lease_liabilities_usd": 120309000.0,
+                "current_operating_lease_liabilities_usd": 24012000.0,
+                "noncurrent_operating_lease_liabilities_usd": 120100000.0,
                 "total_lease_liabilities_usd": 144112000.0,
                 "accounting_standard": "ASC 842",
                 "valuation_convention": "Lease-as-Operating-Expense convention: Operating lease costs for clinical research facilities are recognized in operating costs; lease liabilities ($144.11M total) are excluded from the net debt bridge to avoid double deduction.",
@@ -530,15 +546,15 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                     "tax_rate_pct": 21.0,
                     "reinvestment_rate_pct": 12.0
                 },
-                "roundtrip_value": 618.47,
-                "roundtrip_delta_cents": 0.0
+                "roundtrip_value": 618.56,
+                "roundtrip_delta_cents": 8.53
             },
             "narrative_claims": [
                 {
                     "claim_type": "SUPPORTING_EVIDENCE",
                     "fact_status": "DERIVED_CALCULATION",
-                    "statement": "Medpace delivers high return on invested capital (>25% ROIC): TTM operating income of $583.4M yields $460.9M NOPAT at a 21.0% effective tax rate; against $611.9M tangible invested capital (Stockholders' Equity of $1,114.6M + Debt of $0 - Cash of $502.7M), ROIC is 75.3% (or NOPAT / Total Equity = 41.3%).",
-                    "locator": "Form 10-K Item 8 Consolidated Balance Sheets and Form 10-Q Part I Item 1 Condensed Consolidated Balance Sheets and Statements of Operations."
+                    "statement": "Medpace generates high operating profitability and 100% self-funded organic cash flow: TTM operating margin is 20.97% ($583.4M operating income on $2,782.3M revenue), supported by $502.7M in cash and cash equivalents against zero funded financial debt.",
+                    "locator": "Form 10-K Item 8 Consolidated Statements of Operations and Form 10-Q Part I Item 1 Condensed Consolidated Financial Statements (Balance Sheets & Statements of Operations)."
                 },
                 {
                     "claim_type": "SUPPORTING_EVIDENCE",
@@ -554,9 +570,9 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                 }
             ],
             "selection_rationale": {
-                "why_this_business": "Medpace operates a full-service Phase I-IV clinical contract research organization (CRO) focused on small-to-midsize biopharma sponsors. Its unified operational delivery model yields an operating margin of 20.97% and high return on invested capital (>25% ROIC, calculated as 75.3% NOPAT on tangible invested capital or 41.3% NOPAT on total equity). It carries a pristine zero-debt balance sheet with $502.7M in cash and an undrawn $500M credit facility.",
+                "why_this_business": "Medpace operates a full-service Phase I-IV clinical contract research organization (CRO) focused on small-to-midsize biopharma sponsors. Its unified operational delivery model yields an operating margin of 20.97% and self-funding organic cash flow. It carries a pristine zero-debt balance sheet with $502.7M in cash and an undrawn $500M credit facility.",
                 "why_research_now": "Small-to-midsize biopharma funding stabilized following the 2023-2024 contraction, creating a divergence between steady RFP volumes and conservative equity market expectations. At $618.47, understanding whether the business can sustain >20% EBIT margins through biotech funding cycles justifies active research tracking.",
-                "price_requirements": "At a reference price of $618.47, assuming a 21.0% operating margin, 9.5% WACC, 2.5% terminal growth, 21.0% tax rate, and 12.0% reinvestment rate, the single-stage reverse-DCF model implies a 5-year revenue CAGR of 29.41% ($618.47 per-share roundtrip value). This reflects aggressive growth assumptions rather than observed consensus.",
+                "price_requirements": "At a reference price of $618.47, assuming a 21.0% operating margin, 9.5% WACC, 2.5% terminal growth, 21.0% tax rate, and 12.0% reinvestment rate, the single-stage reverse-DCF model implies a 5-year revenue CAGR of 29.41% ($618.56 per-share roundtrip value, 8.53 cents delta). This reflects aggressive growth assumptions rather than observed consensus.",
                 "differentiated_view": "No differentiated expectation established yet. The candidate is maintained as a disciplined watch until either a valuation compression toward base scenario levels ($380 - $440) or sustained book-to-bill acceleration >1.25x clarifies upside skew.",
                 "assessment_changes": "Strengthening: Net new business awards book-to-bill ratio sustaining >1.25x alongside cancellation rates below historical averages (<10%). Weakening/Invalidation: Net book-to-bill falling below 1.0x for two consecutive quarters or operating margin compressing below 16.0%.",
                 "queue_priority": "Among healthcare candidates in the expansion queue, MEDP provides an exceptional capital-light profile with zero debt and superior cash conversion relative to capital-intensive facility operators. Tracking it establishes an authoritative benchmark for CRO capital efficiency."
@@ -618,7 +634,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             }
         },
         "synthesis": {
-            "strongest_supporting_evidence": "Medpace delivers strong capital efficiency (ROIC >25%, derived as 75.3% NOPAT on tangible invested capital or 41.3% NOPAT on total equity) and high operating profitability (20.97% TTM operating margin), supported by an organic full-service clinical execution model and $502.7M in cash with zero funded debt.",
+            "strongest_supporting_evidence": "Medpace delivers high operating profitability (20.97% TTM operating margin: $583.4M operating income on $2,782.3M revenue) and 100% self-funded cash generation, supported by an organic full-service clinical execution model and $502.7M in cash with zero funded debt.",
             "strongest_opposing_evidence": "Biopharma venture funding cycles and small-cap clinical trial cancellation rates create volatility in net book-to-bill ratios. At $618.47, market embeds a demanding 29.41% revenue CAGR.",
             "main_uncertainty": "Sustained clinical trial contract backlog conversion amidst fluctuating early-stage biotech liquidity.",
             "price_watch_condition": "Pullback toward mid-cycle base valuation range ($380 - $440) or net new business awards sustaining book-to-bill > 1.25x.",
@@ -626,7 +642,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             "financing_dilution_exposure": "Share repurchases offset stock compensation, reducing share count by ~9.6% over 3 years.",
             "observable_invalidation_trigger": "Net new business awards book-to-bill ratio declining below 1.0x for consecutive quarters or operating margin breach below 16.0%.",
             "next_monitoring_trigger": "Q3 2026 earnings release and Form 10-Q for trial backlog cancellations and RFP volume.",
-            "presentation_summary": "Medpace Holdings delivers superior capital returns (ROIC >25%, TTM operating margin 20.97%) and zero-debt balance sheet strength ($502.7M cash). At $618.47, the reverse-DCF model implies an aggressive 29.41% 5-year revenue CAGR under base assumptions. Retained on watch pending market pullbacks toward mid-cycle base valuation range ($380 - $440)."
+            "presentation_summary": "Medpace Holdings delivers high operating profitability (TTM operating margin 20.97%) and zero-debt balance sheet strength ($502.7M cash). At $618.47, the reverse-DCF model implies an aggressive 29.41% 5-year revenue CAGR under base assumptions. Retained on watch pending market pullbacks toward mid-cycle base valuation range ($380 - $440)."
         }
     },
     "DECK": {
@@ -660,8 +676,8 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             "revenue": {
                 "fact_status": "DERIVED_CALCULATION",
                 "reported_ttm_value_usd": 5527289000.0,
-                "derivation_formula": "FY2026 Revenues ($5,377,772,000) - Q1 FY2026 Revenues ($675,796,000) + Q1 FY2027 Revenues ($825,313,000)",
-                "xbrl_tag": "us-gaap:Revenues",
+                "derivation_formula": "FY2026 Revenues ($5,472,296,000) - Q1 FY2026 Revenues ($964,538,000) + Q1 FY2027 Revenues ($1,019,531,000)",
+                "xbrl_tag": "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax",
                 "unit": "USD",
                 "filing_sources": [
                     {
@@ -670,7 +686,15 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                         "filing_date": "2026-05-22",
                         "accession": "0001628280-26-037664",
                         "location": "Item 8 Consolidated Statements of Income",
-                        "reported_value": 5377772000.0
+                        "reported_value": 5472296000.0
+                    },
+                    {
+                        "form": "10-Q",
+                        "period_end": "2025-06-30",
+                        "filing_date": "2026-07-30",
+                        "accession": "0000910521-26-000022",
+                        "location": "Part I Item 1 Condensed Consolidated Statements of Operations (3 Months Ended)",
+                        "reported_value": 964538000.0
                     },
                     {
                         "form": "10-Q",
@@ -678,7 +702,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                         "filing_date": "2026-07-30",
                         "accession": "0000910521-26-000022",
                         "location": "Part I Item 1 Condensed Consolidated Statements of Operations (3 Months Ended)",
-                        "reported_value": 825313000.0
+                        "reported_value": 1019531000.0
                     }
                 ]
             },
@@ -686,7 +710,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                 "fact_status": "DERIVED_CALCULATION",
                 "reported_ttm_value_usd": 1252917000.0,
                 "operating_margin_pct": 22.67,
-                "derivation_formula": "FY2026 Operating Income ($1,210,034,000) - Q1 FY2026 Operating Income ($90,783,000) + Q1 FY2027 Operating Income ($133,666,000)",
+                "derivation_formula": "FY2026 Operating Income ($1,262,903,000) - Q1 FY2026 Operating Income ($165,287,000) + Q1 FY2027 Operating Income ($155,301,000)",
                 "xbrl_tag": "us-gaap:OperatingIncomeLoss",
                 "unit": "USD",
                 "filing_sources": [
@@ -696,7 +720,15 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                         "filing_date": "2026-05-22",
                         "accession": "0001628280-26-037664",
                         "location": "Item 8 Consolidated Statements of Income",
-                        "reported_value": 1210034000.0
+                        "reported_value": 1262903000.0
+                    },
+                    {
+                        "form": "10-Q",
+                        "period_end": "2025-06-30",
+                        "filing_date": "2026-07-30",
+                        "accession": "0000910521-26-000022",
+                        "location": "Part I Item 1 Condensed Consolidated Statements of Operations (3 Months Ended)",
+                        "reported_value": 165287000.0
                     },
                     {
                         "form": "10-Q",
@@ -704,7 +736,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                         "filing_date": "2026-07-30",
                         "accession": "0000910521-26-000022",
                         "location": "Part I Item 1 Condensed Consolidated Statements of Operations (3 Months Ended)",
-                        "reported_value": 133666000.0
+                        "reported_value": 155301000.0
                     }
                 ]
             },
@@ -742,8 +774,8 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             },
             "lease_treatment": {
                 "fact_status": "VERIFIED_REPORTED_FACT",
-                "current_operating_lease_liabilities_usd": 89166000.0,
-                "noncurrent_operating_lease_liabilities_usd": 383168000.0,
+                "current_operating_lease_liabilities_usd": 73358000.0,
+                "noncurrent_operating_lease_liabilities_usd": 398976000.0,
                 "total_lease_liabilities_usd": 472334000.0,
                 "accounting_standard": "ASC 842",
                 "valuation_convention": "Lease-as-Operating-Expense convention: Store and distribution facility operating leases are recognized in Cost of Sales and SG&A under ASC 842; operating lease liabilities ($472.33M) are excluded from the net debt bridge to avoid double deduction.",
@@ -796,14 +828,14 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                     "reinvestment_rate_pct": 15.0
                 },
                 "roundtrip_value": 85.72,
-                "roundtrip_delta_cents": 0.0
+                "roundtrip_delta_cents": 0.05
             },
             "narrative_claims": [
                 {
                     "claim_type": "SUPPORTING_EVIDENCE",
                     "fact_status": "VERIFIED_REPORTED_FACT",
-                    "statement": "In Q1 FY27 (three months ended June 30, 2026), HOKA brand net sales grew 7.7% YoY to $545.0M, with direct-to-consumer (DTC) net sales growing 17.3% YoY to $151.0M and wholesale net sales growing 2.9% YoY to $394.0M, compared to historical FY26 HOKA growth of 27.9% YoY.",
-                    "locator": "Form 10-Q Part I Item 1 Note 7 (Segment Information and Net Sales by Brand and Channel) and Form 10-K Item 8 Note 12."
+                    "statement": "In Q1 FY27 (three months ended June 30, 2026), HOKA brand net sales grew 7.7% YoY to $703.5M ($703,538 thousand), with direct-to-consumer (DTC) net sales growing 17.3% YoY to $256.8M ($256,775 thousand) and wholesale net sales growing 2.9% YoY to $446.8M ($446,763 thousand); consolidated net sales reached $1,019.5M ($1,019,531 thousand, +5.7% YoY).",
+                    "locator": "Form 10-Q Part I Item 1 Note 7 (Segment Information and Net Sales by Brand and Channel) and Item 2 MD&A (Results of Operations)."
                 },
                 {
                     "claim_type": "SUPPORTING_EVIDENCE",
@@ -883,7 +915,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             }
         },
         "synthesis": {
-            "strongest_supporting_evidence": "In Q1 FY27 (ended June 30, 2026), HOKA direct-to-consumer (DTC) net sales grew 17.3% YoY to $151.0M and wholesale net sales grew 2.9% YoY to $394.0M (total HOKA net sales +7.7% YoY to $545.0M; consolidated net sales +22.1% YoY to $825.3M), demonstrating brand pull in direct channels while wholesale growth normalizes. Supported by $1.60B in cash and zero funded debt.",
+            "strongest_supporting_evidence": "In Q1 FY27 (ended June 30, 2026), HOKA direct-to-consumer (DTC) net sales grew 17.3% YoY to $256.8M and wholesale net sales grew 2.9% YoY to $446.8M (total HOKA net sales +7.7% YoY to $703.5M; consolidated net sales +5.7% YoY to $1,019.5M), demonstrating brand pull in direct channels while wholesale growth normalizes. Supported by $1.60B in cash and zero funded debt.",
             "strongest_opposing_evidence": "High seasonal concentration in UGG winter demand and wholesale channel growth moderation (HOKA wholesale up 2.9% in Q1 FY27 vs 27.9% in FY26). Under the stated valuation assumptions (22% margin, 9% WACC, 2.5% terminal g), the solved 5Y CAGR is -2.34%, reflecting conditional model mechanics rather than a market prediction of contraction or definitive undervaluation.",
             "main_uncertainty": "Sustainability of premium DTC full-price sell-through rates as HOKA expands into broader lifestyle footwear categories.",
             "price_watch_condition": "Confirmation of international DTC growth above 20% while maintaining consolidated gross margin above 55.0%.",
@@ -891,7 +923,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             "financing_dilution_exposure": "Clean share capital structure; forward 6:1 split successfully resolved historical comparability issues with zero phantom dilution.",
             "observable_invalidation_trigger": "Gross margin decline below 50.0% or HOKA DTC quarterly revenue deceleration below 10.0%.",
             "next_monitoring_trigger": "Q2 FY27 earnings release (expected October/November 2026) for holiday pre-orders and inventory aging.",
-            "presentation_summary": "Deckers Outdoor displays strong balance sheet health ($1.60B net cash, zero funded debt). In Q1 FY27, HOKA net sales reached $545.0M (+7.7% YoY), led by DTC (+17.3%) while wholesale moderated (+2.9%). Under conditional model assumptions (22% margin, 9% WACC), the reference price of $85.72 yields an implied 5-year revenue CAGR of -2.34%. Retained on watch for international DTC expansion and gross margin defense."
+            "presentation_summary": "Deckers Outdoor displays strong balance sheet health ($1.60B net cash, zero funded debt). In Q1 FY27, HOKA net sales reached $703.5M (+7.7% YoY), led by DTC (+17.3% to $256.8M) while wholesale moderated (+2.9% to $446.8M); consolidated net sales grew 5.7% to $1,019.5M. Under conditional model assumptions (22% margin, 9% WACC), the reference price of $85.72 yields an implied 5-year revenue CAGR of -2.34%. Retained on watch for international DTC expansion and gross margin defense."
         }
     },
     "KLAC": {
@@ -1393,8 +1425,8 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             "revenue": {
                 "fact_status": "DERIVED_CALCULATION",
                 "reported_ttm_value_usd": 11034400000.0,
-                "derivation_formula": "FY2025 Revenues ($9,683,600,000) - Q2 2025 6M Revenues ($4,339,700,000) + Q2 2026 6M Revenues ($5,690,500,000)",
-                "xbrl_tag": "us-gaap:Revenues",
+                "derivation_formula": "FY2025 Revenues ($10,064,700,000) - Q2 2025 6M Revenues ($4,693,400,000) + Q2 2026 6M Revenues ($5,663,100,000)",
+                "xbrl_tag": "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax",
                 "unit": "USD",
                 "filing_sources": [
                     {
@@ -1403,7 +1435,15 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                         "filing_date": "2026-02-03",
                         "accession": "0001035267-26-000010",
                         "location": "Item 8 Consolidated Statements of Income",
-                        "reported_value": 9683600000.0
+                        "reported_value": 10064700000.0
+                    },
+                    {
+                        "form": "10-Q",
+                        "period_end": "2025-06-30",
+                        "filing_date": "2026-07-21",
+                        "accession": "0001035267-26-000058",
+                        "location": "Part I Item 1 Consolidated Statements of Income (6 Months Ended)",
+                        "reported_value": 4693400000.0
                     },
                     {
                         "form": "10-Q",
@@ -1411,7 +1451,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                         "filing_date": "2026-07-21",
                         "accession": "0001035267-26-000058",
                         "location": "Part I Item 1 Consolidated Statements of Income (6 Months Ended)",
-                        "reported_value": 5690500000.0
+                        "reported_value": 5663100000.0
                     }
                 ]
             },
@@ -1419,7 +1459,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                 "fact_status": "DERIVED_CALCULATION",
                 "reported_ttm_value_usd": 3451200000.0,
                 "operating_margin_pct": 31.28,
-                "derivation_formula": "FY2025 Operating Income ($3,040,100,000) - Q2 2025 6M Operating Income ($1,349,900,000) + Q2 2026 6M Operating Income ($1,761,000,000)",
+                "derivation_formula": "FY2025 Operating Income ($2,945,500,000) - Q2 2025 6M Operating Income ($1,321,500,000) + Q2 2026 6M Operating Income ($1,827,200,000)",
                 "xbrl_tag": "us-gaap:OperatingIncomeLoss",
                 "unit": "USD",
                 "filing_sources": [
@@ -1429,7 +1469,15 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                         "filing_date": "2026-02-03",
                         "accession": "0001035267-26-000010",
                         "location": "Item 8 Consolidated Statements of Income",
-                        "reported_value": 3040100000.0
+                        "reported_value": 2945500000.0
+                    },
+                    {
+                        "form": "10-Q",
+                        "period_end": "2025-06-30",
+                        "filing_date": "2026-07-21",
+                        "accession": "0001035267-26-000058",
+                        "location": "Part I Item 1 Consolidated Statements of Income (6 Months Ended)",
+                        "reported_value": 1321500000.0
                     },
                     {
                         "form": "10-Q",
@@ -1437,7 +1485,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                         "filing_date": "2026-07-21",
                         "accession": "0001035267-26-000058",
                         "location": "Part I Item 1 Consolidated Statements of Income (6 Months Ended)",
-                        "reported_value": 1761000000.0
+                        "reported_value": 1827200000.0
                     }
                 ]
             },
@@ -1448,7 +1496,7 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                 "short_term_investments_usd": 2455800000.0,
                 "xbrl_tags": [
                     "us-gaap:CashAndCashEquivalentsAtCarryingValue",
-                    "us-gaap:ShortTermInvestments"
+                    "us-gaap:MarketableSecuritiesCurrent"
                 ],
                 "filing_source": {
                     "form": "10-Q",
@@ -1476,21 +1524,21 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
             },
             "lease_treatment": {
                 "fact_status": "VERIFIED_REPORTED_FACT",
-                "current_operating_lease_liabilities_usd": 44800000.0,
-                "noncurrent_operating_lease_liabilities_usd": 126100000.0,
+                "current_operating_lease_liabilities_usd": 39000000.0,
+                "noncurrent_operating_lease_liabilities_usd": 131900000.0,
                 "total_lease_liabilities_usd": 170900000.0,
                 "accounting_standard": "ASC 842",
-                "valuation_convention": "Lease-as-Operating-Expense convention: Operating leases for facilities and equipment are recognized in operating expenses; lease liabilities ($170.9M total) are excluded from the net debt bridge to prevent double deduction.",
+                "valuation_convention": "Lease-as-Operating-Expense convention: Operating leases for facilities and equipment are recognized in operating expenses; lease liabilities ($170.9M total reported in Form 10-K Note on Leases; bundled in Other accrued and Other long-term liabilities on interim balance sheet) are excluded from the net debt bridge to prevent double deduction.",
                 "xbrl_tags": [
                     "us-gaap:OperatingLeaseLiabilityCurrent",
                     "us-gaap:OperatingLeaseLiabilityNoncurrent"
                 ],
                 "filing_source": {
-                    "form": "10-Q",
-                    "period_end": "2026-06-30",
-                    "filing_date": "2026-07-21",
-                    "accession": "0001035267-26-000058",
-                    "location": "Part I Item 1 Consolidated Balance Sheets"
+                    "form": "10-K",
+                    "period_end": "2025-12-31",
+                    "filing_date": "2026-02-03",
+                    "accession": "0001035267-26-000010",
+                    "location": "Item 8 Note on Leases and Consolidated Balance Sheets"
                 }
             },
             "shares_outstanding": {
@@ -1529,8 +1577,8 @@ PILOT_SPECS: Dict[str, Dict[str, Any]] = {
                     "tax_rate_pct": 18.0,
                     "reinvestment_rate_pct": 18.0
                 },
-                "roundtrip_value": 426.70,
-                "roundtrip_delta_cents": 0.0
+                "roundtrip_value": 426.66,
+                "roundtrip_delta_cents": 3.73
             },
             "narrative_claims": [
                 {
@@ -2600,7 +2648,7 @@ def generate_published_watch_manifest(
         "freshness_state": "SELECTION_CANDIDATE",
         "reviewer_id": None,
         "reviewed_at_utc": None,
-        "review_notes": "Scaling addition dossier accepted under ARX-QUALITY-WATCH-STANDARD-V1 based on verified primary SEC filings (10-K FY25, 10-Q Q2 2026), full-service clinical CRO model, reproducible >25% ROIC derivation, zero funded debt ($502.7M cash), corrected quarterly share measurement period (three months ended June 30, 2026), and disciplined reverse-DCF valuation.",
+        "review_notes": "Scaling addition dossier accepted under ARX-QUALITY-WATCH-STANDARD-V1 based on verified primary SEC filings (10-K FY25, 10-Q Q2 2026), full-service clinical CRO model, verified 20.97% operating margin and self-funding organic cash flow, zero funded debt ($502.7M cash), corrected quarterly share measurement period (three months ended June 30, 2026), and disciplined reverse-DCF valuation.",
         "governing_standard": "ARX-QUALITY-WATCH-STANDARD-V1",
         "governing_contract": "CONTRACT-ARX-OPP-PILOT-SCALING-V1"
     }
@@ -2853,8 +2901,8 @@ The 19 companies in the scaling pilot are organized into 5 coherent, economicall
 
 ### Sector 4: High-Return Healthcare & Clinical Medical Technology
 - **Companies:** `MEDP`, `ISRG`
-- **Economic Model:** Capital-light clinical trial execution with >25% ROIC (`MEDP`) and recurring razor-and-blade robotic surgical procedures with 85% recurring revenue (`ISRG`).
-- **Valuation Treatment:** Single-stage Reverse-DCF FCFF. Pristine net cash balance sheets, high returns on invested capital (>20% ROIC). Zero funded debt.
+- **Economic Model:** Capital-light clinical trial execution with 20.97% operating margin and self-funding organic cash flow (`MEDP`) and recurring razor-and-blade robotic surgical procedures with 85% recurring revenue (`ISRG`).
+- **Valuation Treatment:** Single-stage Reverse-DCF FCFF. Pristine net cash balance sheets, high operating profitability, and 100% self-funded cash generation. Zero funded debt.
 
 ### Sector 5: Capital-Light Quality Consumer Brands
 - **Companies:** `ULTA`, `DECK`, `LULU`, `ELF`
@@ -3186,8 +3234,11 @@ def validate_existing_pilot_artifacts(
     if "market share gains (>25% YoY)" in deck_supp:
         logger.error("DECK strongest_supporting_evidence must not make unsupported market share claims")
         return False
-    if "17.3%" not in deck_supp or "2.9%" not in deck_supp:
-        logger.error("DECK strongest_supporting_evidence must state exact reported Q1 FY27 brand/channel growth")
+    if "17.3%" not in deck_supp or "2.9%" not in deck_supp or "703.5M" not in deck_supp or "1,019.5M" not in deck_supp:
+        logger.error("DECK strongest_supporting_evidence must state exact reported Q1 FY27 brand/channel growth, $703.5M HOKA sales, and $1,019.5M net sales")
+        return False
+    if any(stale in deck_supp for stale in ["545.0M", "151.0M", "394.0M", "825.3M"]):
+        logger.error("DECK strongest_supporting_evidence must not contain stale or unverified dollar amounts")
         return False
 
     # ISRG specific recurring revenue verification
@@ -3201,11 +3252,14 @@ def validate_existing_pilot_artifacts(
         logger.error("ISRG must accurately state 85% recurring revenue definition")
         return False
 
-    # MEDP specific ROIC verification
+    # MEDP specific operating profitability and cash flow verification (unsupported ROIC removed)
     medp_d = dossiers["MEDP"]
     medp_supp = medp_d["central_assessment"]["strongest_supporting_evidence"]
-    if ">25% ROIC" not in medp_supp and "ROIC >25%" not in medp_supp:
-        logger.error("MEDP strongest_supporting_evidence must support >25% ROIC")
+    if "20.97%" not in medp_supp or "$502.7M" not in medp_supp:
+        logger.error("MEDP strongest_supporting_evidence must state verified 20.97% operating margin and $502.7M cash")
+        return False
+    if "ROIC" in medp_supp or "75.3%" in medp_supp or "41.3%" in medp_supp:
+        logger.error("MEDP strongest_supporting_evidence must not contain unsupported ROIC claims")
         return False
 
     ulta = dossiers.get("ULTA", {})

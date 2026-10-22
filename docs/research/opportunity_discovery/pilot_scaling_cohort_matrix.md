@@ -73,8 +73,8 @@ The 19 companies in the scaling pilot are organized into 5 coherent, economicall
 
 ### Sector 4: High-Return Healthcare & Clinical Medical Technology
 - **Companies:** `MEDP`, `ISRG`
-- **Economic Model:** Capital-light clinical trial execution with >25% ROIC (`MEDP`) and recurring razor-and-blade robotic surgical procedures with 85% recurring revenue (`ISRG`).
-- **Valuation Treatment:** Single-stage Reverse-DCF FCFF. Pristine net cash balance sheets, high returns on invested capital (>20% ROIC). Zero funded debt.
+- **Economic Model:** Capital-light clinical trial execution with 20.97% operating margin and self-funding organic cash flow (`MEDP`) and recurring razor-and-blade robotic surgical procedures with 85% recurring revenue (`ISRG`).
+- **Valuation Treatment:** Single-stage Reverse-DCF FCFF. Pristine net cash balance sheets, high operating profitability, and 100% self-funded cash generation. Zero funded debt.
 
 ### Sector 5: Capital-Light Quality Consumer Brands
 - **Companies:** `ULTA`, `DECK`, `LULU`, `ELF`
