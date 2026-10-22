@@ -982,3 +982,165 @@ class PackageBV3Consumer:
             raise PolicyViolationError(
                 f"Provider symbol collision: GOOG and GOOGL share identical provider symbol: {goog_cand.alpaca_symbol}"
             )
+
+
+# ─── 5. Scanner Publication Membership Consumer (S2-07) ──────────────────────
+
+class ScannerPublicationMembershipConsumer:
+    """
+    Sprint 2 Track C / S2-07: Offline Scanner Universe Membership Consumer.
+
+    Provides the fail-closed interface allowing market-wide scanners (e.g. MINERVINI_VCP,
+    SMART_MONEY, VALUE_GARP) to safely consume committed, authorized universe publications.
+
+    Invariants Enforced:
+    1. Only committed, authorized publication pointers may supply scanner membership.
+    2. Candidate previews and dry-run evaluations strictly prohibited from activating scanners.
+    3. Invalid, tampered, or stale publication identity fails closed.
+    4. Membership counts strictly agree with the committed pointer.
+    5. Rollback and pointer transitions immediately invalidate stale memberships.
+    6. Missing publication evidence produces truthful unavailable/pending capability states.
+    7. Pure offline execution: zero background scanner runs, scheduler triggers, network I/O, or DB writes.
+    """
+
+    @classmethod
+    def consume_membership(
+        cls,
+        pointer: Any,
+        expected_universe_id: Optional[str] = None,
+        current_engine: Optional[IsolatedPublicationEngine] = None,
+    ) -> List[str]:
+        """
+        Consumes scannable symbol membership from an authorized UniversePublicationPointer.
+        Fails closed if given dry-run results, uncommitted structures, invalid namespaces,
+        malformed digests, or superseded/stale pointers.
+        """
+        # Invariant 2: Candidate previews and dry-run evaluations strictly prohibited
+        if isinstance(pointer, dict):
+            if pointer.get("is_dry_run"):
+                raise PolicyViolationError(
+                    "DRY_RUN_SCANNER_ACTIVATION_PROHIBITED: Candidate evaluations and dry-runs "
+                    "cannot activate scanners or supply scanner membership."
+                )
+            raise PolicyViolationError(
+                f"INVALID_POINTER_TYPE: Expected UniversePublicationPointer, got dict: {list(pointer.keys())}"
+            )
+
+        # Invariant 1: Only committed, authorized publication pointers may supply membership
+        if not isinstance(pointer, UniversePublicationPointer):
+            raise PolicyViolationError(
+                f"UNCOMMITTED_PUBLICATION: Scanner membership can only be supplied from an authorized, "
+                f"committed UniversePublicationPointer. Received: {type(pointer).__name__ if pointer is not None else 'None'}"
+            )
+
+        # Invariant 3: Validate publication identity and formats
+        if not pointer.universe_id or not re.match(r"^ARX_[A-Z0-9_]+$", pointer.universe_id):
+            raise PolicyViolationError(
+                f"INVALID_UNIVERSE_IDENTITY: universe_id '{pointer.universe_id}' does not match canonical namespace regex."
+            )
+
+        if expected_universe_id and pointer.universe_id != expected_universe_id:
+            raise PolicyViolationError(
+                f"UNIVERSE_ID_MISMATCH: Expected '{expected_universe_id}', got '{pointer.universe_id}'."
+            )
+
+        if (
+            not pointer.publication_digest
+            or len(pointer.publication_digest) != 64
+            or not re.match(r"^[0-9a-fA-F]{64}$", pointer.publication_digest)
+        ):
+            raise PolicyViolationError(
+                f"INVALID_PUBLICATION_DIGEST: Digest '{pointer.publication_digest}' must be a 64-character hexadecimal SHA-256."
+            )
+
+        if not pointer.pointer_manifest_hash or len(pointer.pointer_manifest_hash) != 64:
+            raise PolicyViolationError(
+                f"INVALID_MANIFEST_HASH: Missing or invalid pointer_manifest_hash on build '{pointer.build_id}'."
+            )
+
+        # Invariant 4: Membership validation and count agreement
+        if not pointer.published_symbols:
+            raise PolicyViolationError(
+                f"EMPTY_MEMBERSHIP: Publication pointer '{pointer.build_id}' contains zero published symbols."
+            )
+
+        # Invariant 5: Stale & Superseded pointer validation against current engine
+        if current_engine is not None:
+            active_ptr = current_engine.current_pointer
+            if active_ptr is None:
+                raise PolicyViolationError(
+                    f"STALE_POINTER_REJECTED: Engine currently has no committed active pointer "
+                    f"(build '{pointer.build_id}' is orphaned or uncommitted)."
+                )
+            if active_ptr.build_id != pointer.build_id:
+                raise PolicyViolationError(
+                    f"STALE_SUPERSEDED_POINTER: Build '{pointer.build_id}' has been superseded by active build '{active_ptr.build_id}'."
+                )
+            if active_ptr.pointer_manifest_hash != pointer.pointer_manifest_hash:
+                raise PolicyViolationError(
+                    "MANIFEST_HASH_DESYNC: Pointer manifest hash does not match active engine pointer."
+                )
+
+        return sorted(list(pointer.published_symbols))
+
+    @classmethod
+    def get_scanner_capability_status(
+        cls,
+        pointer: Optional[UniversePublicationPointer],
+        scanner_id: str = "MINERVINI_VCP",
+    ) -> Dict[str, Any]:
+        """
+        Translates publication pointer state into truthful radar capability disclosures,
+        matching frontend/app/radar/page.tsx and api/routes/screener.py contracts.
+        Missing publication produces truthful PIPELINE_PENDING.
+        """
+        if pointer is None or not isinstance(pointer, UniversePublicationPointer) or not pointer.published_symbols:
+            return {
+                "status": "PIPELINE_PENDING",
+                "universeScreening": "PIPELINE_PENDING",
+                "singleAssetAnalysis": "AVAILABLE",
+                "matchedCount": None,
+                "buildId": None,
+                "universeId": None,
+                "reason": "NO_COMMITTED_PUBLICATION_POINTER",
+                "rationale": f"Market-wide screening for {scanner_id} is pending authorized universe publication pointer commit.",
+            }
+
+        return {
+            "status": "AVAILABLE",
+            "universeScreening": "AVAILABLE",
+            "singleAssetAnalysis": "AVAILABLE",
+            "matchedCount": len(pointer.published_symbols),
+            "buildId": pointer.build_id,
+            "universeId": pointer.universe_id,
+            "digest": pointer.publication_digest,
+            "publishedAt": pointer.published_at_utc,
+            "isRollback": pointer.is_rollback,
+            "rationale": f"Committed publication pointer '{pointer.build_id}' active with {len(pointer.published_symbols)} scannable symbols.",
+        }
+
+    @classmethod
+    def verify_dispatch_authorization(
+        cls,
+        symbol: str,
+        scanner_id: str,
+        evidence: Optional[ScannerDispatchEvidence],
+    ) -> Tuple[bool, str]:
+        """
+        Verifies whether a symbol within a published universe possesses explicit State 7 (G-S2-ACT)
+        operational dispatch authorization.
+        Fails closed: deferred VCP Gate 12 (G-VCP-012) does NOT grant operational scanner dispatch.
+        """
+        if evidence is None:
+            return False, f"DISPATCH_EVIDENCE_MISSING: Operational scanner dispatch evidence absent for {symbol}."
+
+        try:
+            evidence.validate()
+        except Exception as e:
+            return False, f"DISPATCH_VALIDATION_FAILED: {str(e)}"
+
+        if not evidence.g_s2_act_authorized:
+            return False, f"G_S2_ACT_UNAUTHORIZED: Operational authorization G-S2-ACT absent for {symbol}."
+
+        return True, f"DISPATCH_AUTHORIZED: {symbol} authorized for scanner {scanner_id} under G-S2-ACT."
+

@@ -78,6 +78,7 @@ from .isolated_publication import (
     PACKAGE_B_V3_RECONCILED_DIGEST,
     PACKAGE_B_V3_REFERENCE_DIGEST,
     PackageBV3Consumer,
+    ScannerPublicationMembershipConsumer,
 )
 from .offline_build_coverage import (
     OfflineCandidateRecord,
