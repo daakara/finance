@@ -179,6 +179,26 @@ def get_radar_capabilities(
         rollback_reason = getattr(publication_pointer, "rollback_reason", None)
         membership_status = "AVAILABLE" if pop_denom else "UNAVAILABLE"
 
+    # Invariant 6: Stale or rolled-back pointers cannot imply operational scanner availability
+    if is_rollback:
+        caps["VCP"] = {
+            "status": "PIPELINE_PENDING",
+            "universeScreening": "PIPELINE_PENDING",
+            "singleAssetAnalysis": "AVAILABLE",
+            "matchedCount": None,
+            "populationDenominator": pop_denom,
+            "universeBuildId": build_id,
+            "universeId": univ_id,
+            "publicationDigest": pub_digest,
+            "isRollback": True,
+            "rollbackReason": rollback_reason,
+            "membershipStatus": membership_status,
+            "lifecycleState": "STALE_OR_ROLLED_BACK_PUBLICATION",
+            "reason": "ROLLED_BACK_PUBLICATION_POINTER",
+            "rationale": f"Publication build '{build_id}' was rolled back ({rollback_reason or 'No reason specified'}). Scanner execution is suspended.",
+        }
+        return caps
+
     if vcp_snapshot:
         snap_status = vcp_snapshot.get("status")
         freshness_info = vcp_snapshot.get("freshness", {})
@@ -191,11 +211,14 @@ def get_radar_capabilities(
             membership_status = "AVAILABLE" if pop_denom else membership_status
 
         if snap_status == "AVAILABLE":
+            raw_matched = vcp_snapshot.get("matched_count")
+            matched_count = raw_matched if isinstance(raw_matched, int) and raw_matched >= 0 else None
+            is_valid_op = matched_count is not None
             caps["VCP"] = {
-                "status": "AVAILABLE",
-                "universeScreening": "AVAILABLE",
+                "status": "AVAILABLE" if is_valid_op else "PIPELINE_PENDING",
+                "universeScreening": "AVAILABLE" if is_valid_op else "PIPELINE_PENDING",
                 "singleAssetAnalysis": "AVAILABLE",
-                "matchedCount": vcp_snapshot.get("matched_count", 0),
+                "matchedCount": matched_count,
                 "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
                 "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
                 "snapshotId": vcp_snapshot.get("snapshot_id"),
@@ -204,10 +227,10 @@ def get_radar_capabilities(
                 "universeBuildId": build_id,
                 "universeId": univ_id,
                 "publicationDigest": pub_digest,
-                "isRollback": is_rollback,
-                "rollbackReason": rollback_reason,
+                "isRollback": False,
+                "rollbackReason": None,
                 "membershipStatus": membership_status,
-                "lifecycleState": "SCANNER_OPERATIONAL",
+                "lifecycleState": "SCANNER_OPERATIONAL" if is_valid_op else "SCANNER_OUTPUT_INCOMPLETE",
                 "rationale": "Authentic Minervini Volatility Contraction Pattern universe screening active with deterministic publication integrity.",
             }
         elif snap_status == "PIPELINE_PENDING":

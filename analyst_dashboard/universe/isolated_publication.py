@@ -1195,6 +1195,28 @@ class ScannerPublicationMembershipConsumer:
         is_rollback = pointer.is_rollback
         rollback_reason = pointer.rollback_reason
 
+        # Tier 5 / Degraded: Rolled-back publication pointer cannot imply operational scanner availability (Invariant 6)
+        if is_rollback:
+            return {
+                "status": "PIPELINE_PENDING",
+                "universeScreening": "PIPELINE_PENDING",
+                "singleAssetAnalysis": "AVAILABLE",
+                "matchedCount": None,
+                "populationDenominator": population_denominator,
+                "universeBuildId": build_id,
+                "universeId": universe_id,
+                "publicationDigest": digest,
+                "isRollback": True,
+                "rollbackReason": rollback_reason,
+                "membershipStatus": "AVAILABLE",
+                "lifecycleState": "STALE_OR_ROLLED_BACK_PUBLICATION",
+                "reason": "ROLLED_BACK_PUBLICATION_POINTER",
+                "rationale": (
+                    f"Universe publication '{build_id}' was rolled back ({rollback_reason or 'No reason specified'}). "
+                    f"Scanner {scanner_id} operational screening is suspended pending fresh publication authorization."
+                ),
+            }
+
         # Tier 2: Committed publication pointer with valid membership, but scanner not admitted (State 5 -> State 6 pending)
         is_strategy_admitted = False
         if strategy_admission_evidence is not None:
@@ -1263,19 +1285,22 @@ class ScannerPublicationMembershipConsumer:
 
         # Tier 4: Scanner authorized and operational
         snapshot_status = active_snapshot.get("status") if active_snapshot else None
-        if snapshot_status == "AVAILABLE":
+        raw_matched_count = active_snapshot.get("matched_count") if active_snapshot else None
+        # Strict Invariants 1 & 3: matchedCount must be sourced from completed scanner result (int >= 0).
+        # Incomplete / missing matched_count cannot fabricate 0.
+        if snapshot_status == "AVAILABLE" and isinstance(raw_matched_count, int) and raw_matched_count >= 0:
             freshness_info = active_snapshot.get("freshness", {})
             return {
                 "status": "AVAILABLE",
                 "universeScreening": "AVAILABLE",
                 "singleAssetAnalysis": "AVAILABLE",
-                "matchedCount": active_snapshot.get("matched_count", 0),
+                "matchedCount": raw_matched_count,
                 "populationDenominator": population_denominator,
                 "universeBuildId": build_id,
                 "universeId": universe_id,
                 "publicationDigest": digest,
-                "isRollback": is_rollback,
-                "rollbackReason": rollback_reason,
+                "isRollback": False,
+                "rollbackReason": None,
                 "membershipStatus": "AVAILABLE",
                 "lifecycleState": "SCANNER_OPERATIONAL",
                 "snapshotId": active_snapshot.get("snapshot_id"),

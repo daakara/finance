@@ -367,3 +367,174 @@ def test_api_route_get_radar_capabilities_integration(sample_aapl_candidate, sam
     assert vcp_cap["isRollback"] is False
     assert vcp_cap["membershipStatus"] == "AVAILABLE"
     assert vcp_cap["lifecycleState"] == "COMMITTED_PUBLICATION_SCANNER_NOT_ENROLLED"
+
+
+# ─── 8. Invariants 1, 3, 4: Count Authority & Zero Semantics Verification ────
+
+def test_matched_count_sourced_from_completed_scanner_result(sample_aapl_candidate, sample_goog_candidate):
+    """
+    Invariant 1 & 3: matchedCount is sourced from a completed, authorized scanner result.
+    If active_snapshot claims AVAILABLE but does not provide an integer matched_count,
+    it must NOT fabricate a 0-match result. It must fail closed to matchedCount=None.
+    """
+    engine = IsolatedPublicationEngine(universe_id="ARX_PILOT_EXPANSION_150")
+    pointer = engine.publish_universe(
+        [sample_aapl_candidate, sample_goog_candidate],
+        as_of_date="2026-10-19",
+        authorized_by="OPERATOR_ARX_SPRINT2_OFFLINE",
+        build_id="ubuild-test-150-01",
+    )
+
+    vcp_strat_evidence = StrategyAdmissionEvidence(
+        symbol="AAPL",
+        strategy_id="MINERVINI_VCP",
+        min_price_floor=5.0,
+        min_history_bars=260,
+        admission_approved=True,
+        approved_by="VCP_EPOCH_002_AUTHORITY",
+        g_vcp_012_certified=True,
+    )
+
+    dispatch_evidence = ScannerDispatchEvidence(
+        symbol="AAPL",
+        scanner_id="MINERVINI_VCP",
+        g_s2_act_authorized=True,
+        schedule_active=True,
+        operational_dispatch_authorized=True,
+    )
+
+    # Incomplete snapshot without matched_count
+    incomplete_snapshot = {
+        "status": "AVAILABLE",
+        "snapshot_id": "snap-incomplete-001",
+        # matched_count missing!
+    }
+
+    disclosure = ScannerPublicationMembershipConsumer.build_radar_coverage_disclosure(
+        pointer=pointer,
+        scanner_id="MINERVINI_VCP",
+        strategy_admission_evidence=vcp_strat_evidence,
+        scanner_dispatch_evidence=dispatch_evidence,
+        active_snapshot=incomplete_snapshot,
+        deployment_hold=False,
+    )
+
+    # Invariant 3: Must NOT fabricate a zero-match result!
+    assert disclosure["matchedCount"] is None
+    assert disclosure["universeScreening"] == "PIPELINE_PENDING"
+    assert disclosure["lifecycleState"] == "SCANNER_ENROLLED_AWAITING_FIRST_RUN"
+
+
+def test_rolled_back_pointer_strictly_blocks_operational_availability(sample_aapl_candidate, sample_goog_candidate):
+    """
+    Invariant 6: Stale or rolled-back pointers cannot imply operational scanner availability.
+    Even with valid strategy admission, dispatch evidence, and an AVAILABLE snapshot,
+    a rolled-back pointer MUST fail closed to PIPELINE_PENDING and matchedCount=None.
+    """
+    engine = IsolatedPublicationEngine(universe_id="ARX_PILOT_EXPANSION_150")
+    engine.publish_universe(
+        [sample_aapl_candidate],
+        as_of_date="2026-10-19",
+        authorized_by="OPERATOR_ARX_SPRINT2_OFFLINE",
+        build_id="ubuild-v1",
+    )
+    engine.publish_universe(
+        [sample_aapl_candidate, sample_goog_candidate],
+        as_of_date="2026-10-19",
+        authorized_by="OPERATOR_ARX_SPRINT2_OFFLINE",
+        build_id="ubuild-v2",
+    )
+
+    rollback_ptr = engine.rollback_publication("Reverting due to test")
+    assert rollback_ptr.is_rollback is True
+
+    vcp_strat_evidence = StrategyAdmissionEvidence(
+        symbol="AAPL",
+        strategy_id="MINERVINI_VCP",
+        min_price_floor=5.0,
+        min_history_bars=260,
+        admission_approved=True,
+        approved_by="VCP_EPOCH_002_AUTHORITY",
+        g_vcp_012_certified=True,
+    )
+
+    dispatch_evidence = ScannerDispatchEvidence(
+        symbol="AAPL",
+        scanner_id="MINERVINI_VCP",
+        g_s2_act_authorized=True,
+        schedule_active=True,
+        operational_dispatch_authorized=True,
+    )
+
+    mock_snapshot = {
+        "status": "AVAILABLE",
+        "matched_count": 5,
+        "snapshot_id": "snap-vcp-002",
+    }
+
+    # Pass all operational evidence with rolled back pointer
+    disclosure = ScannerPublicationMembershipConsumer.build_radar_coverage_disclosure(
+        pointer=rollback_ptr,
+        scanner_id="MINERVINI_VCP",
+        strategy_admission_evidence=vcp_strat_evidence,
+        scanner_dispatch_evidence=dispatch_evidence,
+        active_snapshot=mock_snapshot,
+        deployment_hold=False,
+    )
+
+    # Invariant 6: Rolled-back pointer CANNOT imply operational scanner availability!
+    assert disclosure["isRollback"] is True
+    assert disclosure["lifecycleState"] == "STALE_OR_ROLLED_BACK_PUBLICATION"
+    assert disclosure["universeScreening"] == "PIPELINE_PENDING"
+    assert disclosure["matchedCount"] is None
+
+
+def test_api_get_radar_capabilities_count_authority_and_rollback_containment(sample_aapl_candidate, sample_goog_candidate):
+    """
+    Verifies that api/routes/screener.py get_radar_capabilities enforces:
+    1. Operational zero matches preserved when snapshot has matched_count=0.
+    2. Missing/None matched_count does not fabricate 0.
+    3. Rolled back pointer strictly demotes to PIPELINE_PENDING and matchedCount=None.
+    """
+    engine = IsolatedPublicationEngine(universe_id="ARX_PILOT_EXPANSION_150")
+    engine.publish_universe(
+        [sample_aapl_candidate],
+        as_of_date="2026-10-19",
+        authorized_by="OPERATOR_ARX_SPRINT2_OFFLINE",
+        build_id="ubuild-v1",
+    )
+    engine.publish_universe(
+        [sample_aapl_candidate, sample_goog_candidate],
+        as_of_date="2026-10-19",
+        authorized_by="OPERATOR_ARX_SPRINT2_OFFLINE",
+        build_id="ubuild-v2",
+    )
+    rollback_ptr = engine.rollback_publication("Containment test")
+
+    # Case 1: Operational zero matches
+    zero_snap = {
+        "status": "AVAILABLE",
+        "matched_count": 0,
+        "snapshot_id": "snap-zero",
+        "freshness": {"status": "LIVE"},
+    }
+    caps_zero = get_radar_capabilities(vcp_snapshot=zero_snap)
+    assert caps_zero["VCP"]["universeScreening"] == "AVAILABLE"
+    assert caps_zero["VCP"]["matchedCount"] == 0
+
+    # Case 2: Incomplete snapshot missing matched_count
+    incomplete_snap = {
+        "status": "AVAILABLE",
+        "snapshot_id": "snap-incomplete",
+        "freshness": {"status": "LIVE"},
+    }
+    caps_inc = get_radar_capabilities(vcp_snapshot=incomplete_snap)
+    assert caps_inc["VCP"]["universeScreening"] == "PIPELINE_PENDING"
+    assert caps_inc["VCP"]["matchedCount"] is None
+
+    # Case 3: Rolled back pointer with active snapshot
+    caps_rb = get_radar_capabilities(vcp_snapshot=zero_snap, publication_pointer=rollback_ptr)
+    assert caps_rb["VCP"]["isRollback"] is True
+    assert caps_rb["VCP"]["universeScreening"] == "PIPELINE_PENDING"
+    assert caps_rb["VCP"]["matchedCount"] is None
+    assert caps_rb["VCP"]["lifecycleState"] == "STALE_OR_ROLLED_BACK_PUBLICATION"

@@ -233,7 +233,9 @@ function RadarContent() {
         status: capabilities.VALUE_GARP?.status || 'AVAILABLE',
       },
       VCP: {
-        count: isAvailable('VCP') ? allAssets.filter((a) => a.categories.includes('VCP')).length : null,
+        count: isAvailable('VCP')
+          ? (typeof capabilities.VCP?.matchedCount === 'number' ? capabilities.VCP.matchedCount : allAssets.filter((a) => a.categories.includes('VCP')).length)
+          : null,
         badge: isAvailable('VCP') ? `${allAssets.filter((a) => a.categories.includes('VCP')).length}` : 'Universe Scanner Pending',
         status: capabilities.VCP?.status || 'PIPELINE_PENDING',
       },
@@ -978,7 +980,21 @@ function RadarContent() {
               <span className="text-slate-400">
                 {capabilities.VCP?.universeScreening === 'AVAILABLE' ? (
                   <>
-                    {filteredAssets.length} matches · {capabilities.VCP?.populationDenominator ? `${capabilities.VCP.populationDenominator} scannable population` : '100% coverage'}
+                    {typeof capabilities.VCP?.matchedCount === 'number' ? (
+                      filteredAssets.length !== capabilities.VCP.matchedCount ? (
+                        <>
+                          Showing <strong className="text-white">{filteredAssets.length}</strong> of <strong className="text-white">{capabilities.VCP.matchedCount}</strong> scanner matches · {capabilities.VCP?.populationDenominator ? `${capabilities.VCP.populationDenominator} scannable population` : '100% coverage'}
+                        </>
+                      ) : (
+                        <>
+                          <strong className="text-white">{capabilities.VCP.matchedCount}</strong> scanner matches · {capabilities.VCP?.populationDenominator ? `${capabilities.VCP.populationDenominator} scannable population` : '100% coverage'}
+                        </>
+                      )
+                    ) : (
+                      <>
+                        Scanner Pending · {capabilities.VCP?.populationDenominator ? `${capabilities.VCP.populationDenominator} scannable population` : 'Universe Pending'}
+                      </>
+                    )}
                   </>
                 ) : (
                   <>
