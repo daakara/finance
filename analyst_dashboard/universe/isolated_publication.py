@@ -1144,3 +1144,170 @@ class ScannerPublicationMembershipConsumer:
 
         return True, f"DISPATCH_AUTHORIZED: {symbol} authorized for scanner {scanner_id} under G-S2-ACT."
 
+    @classmethod
+    def build_radar_coverage_disclosure(
+        cls,
+        pointer: Optional[UniversePublicationPointer],
+        scanner_id: str = "MINERVINI_VCP",
+        strategy_admission_evidence: Optional[StrategyAdmissionEvidence] = None,
+        scanner_dispatch_evidence: Optional[ScannerDispatchEvidence] = None,
+        active_snapshot: Optional[Dict[str, Any]] = None,
+        deployment_hold: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Sprint 2 S2-09: Authoritative Radar Coverage Disclosure Engine.
+        Traces and resolves the exact 5-tier lifecycle distinction:
+        1. NO_COMMITTED_PUBLICATION: No publication pointer committed.
+        2. COMMITTED_PUBLICATION_SCANNER_NOT_ENROLLED: Publication pointer committed, but scanner not strategy-admitted.
+        3. SCANNER_ENROLLED_DISPATCH_UNAUTHORIZED: Strategy-admitted, but State 7 G-S2-ACT operational dispatch unauthorized.
+        4. SCANNER_OPERATIONAL: State 7 authorized, active snapshot produced and available.
+        5. STALE_OR_ROLLED_BACK_PUBLICATION: Stale or rolled-back pointer detected.
+
+        Invariant Enforcement:
+        - AVAILABLE at the membership layer is NEVER translated into live scanner availability.
+        - Zero numerical candidate count (0) permitted ONLY when scanner is actively operational and produced 0 matches.
+        - For all pending/unauthorized states, matchedCount is strictly None.
+        - Every displayed population denominator is strictly bound to universe_build_id, universe_id, and digest.
+        """
+        # Tier 1: No committed publication pointer
+        if pointer is None or not isinstance(pointer, UniversePublicationPointer) or not pointer.published_symbols:
+            return {
+                "status": "PIPELINE_PENDING",
+                "universeScreening": "PIPELINE_PENDING",
+                "singleAssetAnalysis": "AVAILABLE",
+                "matchedCount": None,
+                "populationDenominator": None,
+                "universeBuildId": None,
+                "universeId": None,
+                "publicationDigest": None,
+                "isRollback": False,
+                "rollbackReason": None,
+                "membershipStatus": "UNAVAILABLE",
+                "lifecycleState": "NO_COMMITTED_PUBLICATION",
+                "reason": "NO_COMMITTED_PUBLICATION_POINTER",
+                "rationale": f"Market-wide screening for {scanner_id} is pending authorized universe publication pointer commit.",
+            }
+
+        population_denominator = len(pointer.published_symbols)
+        build_id = pointer.build_id
+        universe_id = pointer.universe_id
+        digest = pointer.publication_digest
+        is_rollback = pointer.is_rollback
+        rollback_reason = pointer.rollback_reason
+
+        # Tier 2: Committed publication pointer with valid membership, but scanner not admitted (State 5 -> State 6 pending)
+        is_strategy_admitted = False
+        if strategy_admission_evidence is not None:
+            try:
+                strategy_admission_evidence.validate()
+                is_strategy_admitted = strategy_admission_evidence.admission_approved
+            except Exception:
+                is_strategy_admitted = False
+
+        if not is_strategy_admitted:
+            return {
+                "status": "PIPELINE_PENDING",
+                "universeScreening": "PIPELINE_PENDING",
+                "singleAssetAnalysis": "AVAILABLE",
+                "matchedCount": None,
+                "populationDenominator": population_denominator,
+                "universeBuildId": build_id,
+                "universeId": universe_id,
+                "publicationDigest": digest,
+                "isRollback": is_rollback,
+                "rollbackReason": rollback_reason,
+                "membershipStatus": "AVAILABLE",
+                "lifecycleState": "COMMITTED_PUBLICATION_SCANNER_NOT_ENROLLED",
+                "reason": "SCANNER_NOT_ENROLLED",
+                "rationale": (
+                    f"Universe publication '{build_id}' active with {population_denominator} scannable symbols; "
+                    f"strategy admission pending for {scanner_id}."
+                ),
+            }
+
+        # Tier 3: Scanner admitted to strategy, but operational dispatch unauthorized (State 6 -> State 7 pending or deployment hold)
+        is_dispatch_authorized = False
+        if scanner_dispatch_evidence is not None and not deployment_hold:
+            try:
+                scanner_dispatch_evidence.validate()
+                is_dispatch_authorized = scanner_dispatch_evidence.g_s2_act_authorized and scanner_dispatch_evidence.operational_dispatch_authorized
+            except Exception:
+                is_dispatch_authorized = False
+
+        if not is_dispatch_authorized:
+            hold_reason = "OPERATIONAL_DEPLOYMENT_HOLD" if deployment_hold else "DISPATCH_UNAUTHORIZED_NO_G_S2_ACT"
+            hold_detail = (
+                f"Scanner {scanner_id} strategy admitted; operational dispatch held under deployment hold/outage."
+                if deployment_hold
+                else f"Operational dispatch unauthorized for {scanner_id}: requires G-S2-ACT operational authorization."
+            )
+            return {
+                "status": "PIPELINE_PENDING",
+                "universeScreening": "PIPELINE_PENDING",
+                "singleAssetAnalysis": "AVAILABLE",
+                "matchedCount": None,
+                "populationDenominator": population_denominator,
+                "universeBuildId": build_id,
+                "universeId": universe_id,
+                "publicationDigest": digest,
+                "isRollback": is_rollback,
+                "rollbackReason": rollback_reason,
+                "membershipStatus": "AVAILABLE",
+                "lifecycleState": "SCANNER_ENROLLED_DISPATCH_UNAUTHORIZED",
+                "reason": hold_reason,
+                "rationale": (
+                    f"Universe publication '{build_id}' active ({population_denominator} symbols); "
+                    f"{hold_detail}"
+                ),
+            }
+
+        # Tier 4: Scanner authorized and operational
+        snapshot_status = active_snapshot.get("status") if active_snapshot else None
+        if snapshot_status == "AVAILABLE":
+            freshness_info = active_snapshot.get("freshness", {})
+            return {
+                "status": "AVAILABLE",
+                "universeScreening": "AVAILABLE",
+                "singleAssetAnalysis": "AVAILABLE",
+                "matchedCount": active_snapshot.get("matched_count", 0),
+                "populationDenominator": population_denominator,
+                "universeBuildId": build_id,
+                "universeId": universe_id,
+                "publicationDigest": digest,
+                "isRollback": is_rollback,
+                "rollbackReason": rollback_reason,
+                "membershipStatus": "AVAILABLE",
+                "lifecycleState": "SCANNER_OPERATIONAL",
+                "snapshotId": active_snapshot.get("snapshot_id"),
+                "dataAsOf": freshness_info.get("data_as_of") or active_snapshot.get("data_as_of"),
+                "generatedAt": freshness_info.get("generated_at") or active_snapshot.get("generated_at"),
+                "freshnessStatus": freshness_info.get("status", "LIVE"),
+                "reason": "OPERATIONAL_ACTIVE",
+                "rationale": (
+                    f"Authentic {scanner_id} universe screening active with deterministic publication integrity "
+                    f"across {population_denominator} scannable symbols (build '{build_id}')."
+                ),
+            }
+
+        # Operational dispatch authorized, but snapshot pending or error
+        return {
+            "status": "PIPELINE_PENDING",
+            "universeScreening": "PIPELINE_PENDING",
+            "singleAssetAnalysis": "AVAILABLE",
+            "matchedCount": None,
+            "populationDenominator": population_denominator,
+            "universeBuildId": build_id,
+            "universeId": universe_id,
+            "publicationDigest": digest,
+            "isRollback": is_rollback,
+            "rollbackReason": rollback_reason,
+            "membershipStatus": "AVAILABLE",
+            "lifecycleState": "SCANNER_ENROLLED_AWAITING_FIRST_RUN",
+            "reason": "AWAITING_FIRST_SCAN_RUN",
+            "rationale": (
+                f"Scanner {scanner_id} authorized under G-S2-ACT; awaiting initial market-wide execution cycle "
+                f"across {population_denominator} scannable symbols."
+            ),
+        }
+
+

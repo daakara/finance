@@ -972,12 +972,29 @@ function RadarContent() {
               <span className="font-bold text-cyan-400">⚡ Minervini VCP</span>
               <span className="text-slate-600">•</span>
               <span className="text-slate-300">
-                Scope: <strong className="text-white">ARX-eligible US equities</strong>
+                Scope: <strong className="text-white">{capabilities.VCP?.universeId || 'ARX-eligible US equities'}</strong>
               </span>
               <span className="text-slate-600">•</span>
               <span className="text-slate-400">
-                {filteredAssets.length} matches · 100% coverage
+                {capabilities.VCP?.universeScreening === 'AVAILABLE' ? (
+                  <>
+                    {filteredAssets.length} matches · {capabilities.VCP?.populationDenominator ? `${capabilities.VCP.populationDenominator} scannable population` : '100% coverage'}
+                  </>
+                ) : (
+                  <>
+                    Scanner Pending · {capabilities.VCP?.populationDenominator ? `${capabilities.VCP.populationDenominator} scannable population` : 'Universe Pending'}
+                  </>
+                )}
               </span>
+              {capabilities.VCP?.universeBuildId && (
+                <>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-slate-400" title={capabilities.VCP?.publicationDigest ? `Digest: ${capabilities.VCP.publicationDigest}` : undefined}>
+                    Build: <strong className="text-slate-200">{capabilities.VCP.universeBuildId}</strong>
+                    {capabilities.VCP?.isRollback && <span className="ml-1 text-amber-400 font-bold">(Rollback)</span>}
+                  </span>
+                </>
+              )}
               {capabilities.VCP?.dataAsOf && (
                 <>
                   <span className="text-slate-600">•</span>
@@ -1070,9 +1087,13 @@ function RadarContent() {
                               : ownershipFilter === 'NEW_OPPORTUNITIES' && !isPortfolioVerified
                               ? "Filtering for new opportunities requires verified portfolio state. Currently running in degraded UNKNOWN mode."
                               : activeFilter === 'VCP' && categoryMeta.VCP.status === 'PIPELINE_PENDING'
-                              ? "Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs."
+                              ? (capabilities.VCP?.populationDenominator
+                                  ? `${capabilities.VCP.populationDenominator} securities registered in universe build ${capabilities.VCP.universeBuildId || ''}. Automated market-wide volatility contraction screening is pending operational activation.`
+                                  : "Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs.")
                               : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
-                              ? "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money."
+                              ? (capabilities.SMART_MONEY?.populationDenominator
+                                  ? `${capabilities.SMART_MONEY.populationDenominator} securities registered in universe build ${capabilities.SMART_MONEY.universeBuildId || ''}. Automated market-wide institutional-flow screening is pending operational activation.`
+                                  : "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money.")
                               : `Try switching to "All Confluences" to view all active setups.`}
                           </p>
                         </div>

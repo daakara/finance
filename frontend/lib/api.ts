@@ -706,12 +706,20 @@ export interface RadarCapabilityDetail {
   universeScreening: RadarCapabilityStatus;
   singleAssetAnalysis: RadarCapabilityStatus;
   rationale?: string;
-  matchedCount?: number;
+  matchedCount?: number | null;
   dataAsOf?: string;
   generatedAt?: string;
   snapshotId?: string;
   freshnessStatus?: string;
   subsignal?: string;
+  populationDenominator?: number | null;
+  universeBuildId?: string | null;
+  universeId?: string | null;
+  publicationDigest?: string | null;
+  isRollback?: boolean;
+  rollbackReason?: string | null;
+  membershipStatus?: "AVAILABLE" | "PENDING" | "UNAVAILABLE";
+  lifecycleState?: string;
 }
 
 export type RadarCapabilities = Record<CanonicalRadarCategory, RadarCapabilityDetail>;
