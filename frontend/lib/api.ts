@@ -28,11 +28,22 @@ export function isCloudflarePagesHost(hostname: string): boolean {
   return false;
 }
 
+export function isLocalPreviewHost(hostname?: string | null): boolean {
+  if (!hostname) return false;
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "0.0.0.0";
+}
+
 export function getApiBaseUrl(): string {
   // In Cloudflare-hosted browser environments (canonical domain or official finance-xp8.pages.dev preview deployments),
   // route through same-origin Cloudflare edge proxy (/api/backend) to shield the origin and satisfy Content Security Policy.
-  if (typeof window !== "undefined" && isCloudflarePagesHost(window.location.hostname)) {
-    return "/api/backend";
+  if (typeof window !== "undefined") {
+    if (isCloudflarePagesHost(window.location.hostname)) {
+      return "/api/backend";
+    }
+    // Local development and preview environment: route same-origin to local preview backend
+    if (isLocalPreviewHost(window.location.hostname)) {
+      return "/api/v1";
+    }
   }
   return RAW_API_URL.endsWith("/api/v1")
     ? RAW_API_URL
@@ -984,6 +995,8 @@ export interface ScreenerResponse {
   gems_found: number;
   capabilities?: RadarCapabilities;
   results: GemCandidate[];
+  error?: string | null;
+  status?: "SUCCESS" | "ERROR" | "TIMEOUT";
 }
 
 // 🧠 Global Spot Price & Metadata Registry (Enforces 100% price parity across all timeframes)
@@ -1689,10 +1702,32 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
         gems_found: candidates.length,
         ...(capabilities ? { capabilities } : {}),
         results: candidates,
+        status: "SUCCESS",
+        error: null,
+      };
+    } else {
+      console.warn(`Screener API HTTP error: ${res.status} ${res.statusText}`);
+      return {
+        total_candidates: 0,
+        gems_found: 0,
+        results: [],
+        status: "ERROR",
+        error: `HTTP ${res.status}: ${res.statusText || "Screener service error"}`,
       };
     }
-  } catch (err) {
-    console.warn("Screener API error:", err);
+  } catch (err: any) {
+    const isTimeout = err?.name === "AbortError" || (err instanceof Error && err.name === "AbortError");
+    const errMsg = isTimeout
+      ? "Screener API request timed out (deadline 6000ms exceeded)"
+      : (err instanceof Error ? err.message : "Failed to connect to screener service");
+    console.warn("Screener API error:", errMsg);
+    return {
+      total_candidates: 0,
+      gems_found: 0,
+      results: [],
+      status: isTimeout ? "TIMEOUT" : "ERROR",
+      error: errMsg,
+    };
   }
 
   // Epistemic Invariant: Zero synthetic fallback catalog data
@@ -1700,6 +1735,8 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
     total_candidates: 0,
     gems_found: 0,
     results: [],
+    status: "ERROR",
+    error: "Screener API unavailable",
   };
 }
 
