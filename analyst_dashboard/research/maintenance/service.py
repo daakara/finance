@@ -32,7 +32,6 @@ from .packet_generator import PacketGenerator
 
 logger = logging.getLogger(__name__)
 
-# Default file authorities
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 DEFAULT_REGISTER_PATH = REPO_ROOT / "docs/research/maintenance/event_register.json"
 DEFAULT_PACKETS_DIR = REPO_ROOT / "docs/research/maintenance/packets"
@@ -53,6 +52,7 @@ PUBLISHED_SYMBOLS_CIK = {
 class ResearchMaintenanceService:
     """
     Orchestrates the bounded research-maintenance pilot for ARX Terminal.
+    Enforces atomic stage progression and safe failure recovery.
     """
 
     def __init__(
@@ -104,6 +104,7 @@ class ResearchMaintenanceService:
         cutoff_date: str = "2026-10-16",
         is_replay: bool = False,
         facts_data: Optional[Dict[str, Any]] = None,
+        force_refresh: bool = False,
     ) -> Tuple[Optional[ReviewPacket], Optional[MaintenanceEvent], List[str]]:
         """
         Executes complete maintenance path for one published company:
@@ -118,7 +119,11 @@ class ResearchMaintenanceService:
         company_name = meta_info["name"]
 
         # Step 1: Load accepted baseline dossier
-        baseline_dossier = self.load_accepted_baseline_dossier(clean_sym)
+        try:
+            baseline_dossier = self.load_accepted_baseline_dossier(clean_sym)
+        except Exception as e:
+            return None, None, [f"Failed to load accepted baseline for {clean_sym}: {e}"]
+
         baseline_profile = baseline_dossier.get("financial_profile", {})
 
         # Step 2: Poll / Discover filing event
@@ -129,6 +134,7 @@ class ResearchMaintenanceService:
             cutoff_date=cutoff_date,
             target_accession=target_accession,
             is_replay=is_replay,
+            force_refresh=force_refresh,
         )
 
         if event is None:
@@ -139,68 +145,119 @@ class ResearchMaintenanceService:
             self.register.register_event(event, fail_if_duplicate=False)
             return None, event, poll_warnings
 
-        # Step 3: Register event (enforcing duplicate accession prevention)
-        if self.register.has_event(clean_sym, event.accession_number):
-            existing = self.register.get_event(clean_sym, event.accession_number)
-            msg = f"Duplicate accession prevented: Filing {event.accession_number} for {clean_sym} is already registered."
-            logger.info(msg)
-            return None, existing, [msg]
+        # Step 3: Register event (with duplicate prevention and retry support)
+        if self.register.has_event(clean_sym, event.accession_number, is_replay=is_replay):
+            if not self.register.can_retry(clean_sym, event.accession_number, is_replay=is_replay):
+                existing = self.register.get_event(clean_sym, event.accession_number, is_replay=is_replay)
+                msg = f"Duplicate accession prevented: Filing {event.accession_number} for {clean_sym} is already completed."
+                logger.info(msg)
+                return None, existing, [msg]
 
-        self.register.register_event(event, fail_if_duplicate=True)
+        self.register.register_event(event, fail_if_duplicate=False)
 
         # Step 4: Reconcile financial facts
-        reconciled_profile, changes, exceptions, undisclosed = self.reconciler.reconcile_filing(
-            symbol=clean_sym,
-            cik=cik,
-            accession_number=event.accession_number,
-            reporting_period=event.reporting_period,
-            baseline_profile=baseline_profile,
-            facts_data=facts_data,
-        )
-
-        self.register.update_event_state(
-            symbol=clean_sym,
-            accession_number=event.accession_number,
-            state=EventProcessingState.RECONCILED,
-            reconciliation_summary={"changes_count": len(changes), "reporting_period": event.reporting_period},
-        )
+        try:
+            reconciled_profile, changes, exceptions, undisclosed = self.reconciler.reconcile_filing(
+                symbol=clean_sym,
+                cik=cik,
+                accession_number=event.accession_number,
+                reporting_period=event.reporting_period,
+                baseline_profile=baseline_profile,
+                facts_data=facts_data,
+            )
+            self.register.update_event_state(
+                symbol=clean_sym,
+                accession_number=event.accession_number,
+                state=EventProcessingState.RECONCILED,
+                is_replay=is_replay,
+                reconciliation_summary={"changes_count": len(changes), "reporting_period": event.reporting_period},
+            )
+        except Exception as e:
+            logger.error(f"Reconciliation failed for {clean_sym} {event.accession_number}: {e}")
+            self.register.update_event_state(
+                symbol=clean_sym,
+                accession_number=event.accession_number,
+                state=EventProcessingState.FAILED,
+                is_replay=is_replay,
+                failed_stage="RECONCILING",
+                error_message=str(e),
+            )
+            return None, event, [f"FAILED during reconciliation: {e}"]
 
         # Step 5: Assess research decision consequences
-        effects, val_comp, disposition, rationale, questions, stopping_rule = self.assessor.assess_consequences(
-            symbol=clean_sym,
-            baseline_dossier=baseline_dossier,
-            reconciled_profile=reconciled_profile,
-            changes=changes,
-            accounting_exceptions=exceptions,
-            undisclosed_info=undisclosed,
-        )
-
-        self.register.update_event_state(
-            symbol=clean_sym,
-            accession_number=event.accession_number,
-            state=EventProcessingState.ASSESSED,
-        )
+        try:
+            effects, val_comp, disposition, rationale, questions, stopping_rule = self.assessor.assess_consequences(
+                symbol=clean_sym,
+                baseline_dossier=baseline_dossier,
+                reconciled_profile=reconciled_profile,
+                changes=changes,
+                accounting_exceptions=exceptions,
+                undisclosed_info=undisclosed,
+            )
+            self.register.update_event_state(
+                symbol=clean_sym,
+                accession_number=event.accession_number,
+                state=EventProcessingState.ASSESSED,
+                is_replay=is_replay,
+            )
+        except Exception as e:
+            logger.error(f"Assessment failed for {clean_sym} {event.accession_number}: {e}")
+            self.register.update_event_state(
+                symbol=clean_sym,
+                accession_number=event.accession_number,
+                state=EventProcessingState.FAILED,
+                is_replay=is_replay,
+                failed_stage="ASSESSING",
+                error_message=str(e),
+            )
+            return None, event, [f"FAILED during assessment: {e}"]
 
         # Step 6: Generate Review Packet
-        packet, json_path, md_path = self.packet_generator.generate_packet(
-            event=event,
-            baseline_dossier=baseline_dossier,
-            reconciled_changes=changes,
-            assessment_effects=effects,
-            accounting_exceptions=exceptions,
-            undisclosed_info=undisclosed,
-            valuation_comparison=val_comp,
-            proposed_disposition=disposition,
-            disposition_rationale=rationale,
-            questions=questions,
-            stopping_rule=stopping_rule,
-        )
+        try:
+            packet, json_path, md_path = self.packet_generator.generate_packet(
+                event=event,
+                baseline_dossier=baseline_dossier,
+                reconciled_changes=changes,
+                assessment_effects=effects,
+                accounting_exceptions=exceptions,
+                undisclosed_info=undisclosed,
+                valuation_comparison=val_comp,
+                proposed_disposition=disposition,
+                disposition_rationale=rationale,
+                questions=questions,
+                stopping_rule=stopping_rule,
+            )
+        except Exception as e:
+            logger.error(f"Packet generation failed for {clean_sym} {event.accession_number}: {e}")
+            self.register.update_event_state(
+                symbol=clean_sym,
+                accession_number=event.accession_number,
+                state=EventProcessingState.FAILED,
+                is_replay=is_replay,
+                failed_stage="GENERATING_PACKET",
+                error_message=str(e),
+            )
+            return None, event, [f"FAILED during packet generation: {e}"]
+
+        # Verify artifacts exist before marking REVIEW_PENDING
+        if not (json_path.exists() and md_path.exists()):
+            err_msg = f"Packet generation failed: Expected files {json_path} and {md_path} do not exist."
+            self.register.update_event_state(
+                symbol=clean_sym,
+                accession_number=event.accession_number,
+                state=EventProcessingState.FAILED,
+                is_replay=is_replay,
+                failed_stage="VERIFYING_ARTIFACTS",
+                error_message=err_msg,
+            )
+            return None, event, [err_msg]
 
         # Update event record with packet pointers
         self.register.update_event_state(
             symbol=clean_sym,
             accession_number=event.accession_number,
             state=EventProcessingState.REVIEW_PENDING,
+            is_replay=is_replay,
             successor_draft_id=packet.draft_successor_id,
             review_packet_id=packet.packet_id,
         )

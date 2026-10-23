@@ -2,7 +2,13 @@
 analyst_dashboard/research/maintenance/cli.py
 
 CLI runner for the ARX Research-Maintenance Pilot.
-Provides manually executable event-check commands, suitable for later scheduling.
+Provides manually executable event-check commands, returning distinct documented outcomes:
+- Exit Code 0: SUCCESS_PACKET_GENERATED or ALREADY_COMPLETED
+- Exit Code 1: PROCESSING_FAILED
+- Exit Code 2: REJECTED_NON_PERIODIC (e.g. Form 8-K)
+- Exit Code 3: NO_NEW_FILING
+
+Governed by ARX Closure Model v2 and ARX-DECISION-RESEARCH-PROCESS-V1.
 """
 
 import argparse
@@ -11,6 +17,7 @@ import logging
 import sys
 from pathlib import Path
 
+from .contracts import EventProcessingState
 from .service import ResearchMaintenanceService
 
 logging.basicConfig(
@@ -28,6 +35,7 @@ def main() -> int:
     parser.add_argument("--accession", type=str, default=None, help="Target specific SEC accession number")
     parser.add_argument("--cutoff-date", type=str, default="2026-10-16", help="Evidence cutoff date (YYYY-MM-DD)")
     parser.add_argument("--replay", action="store_true", help="Explicitly label run as replay (preserves freshness boundaries)")
+    parser.add_argument("--force-refresh", action="store_true", help="Force fresh retrieval bypassing local cache")
     parser.add_argument("--offline", action="store_true", help="Run in offline mode using local cache")
     parser.add_argument("--register-path", type=str, default=None, help="Custom path for event_register.json")
     parser.add_argument("--packets-dir", type=str, default=None, help="Custom directory for generated review packets")
@@ -50,6 +58,7 @@ def main() -> int:
         target_accession=args.accession,
         cutoff_date=args.cutoff_date,
         is_replay=args.replay,
+        force_refresh=args.force_refresh,
     )
 
     if warnings:
@@ -58,7 +67,7 @@ def main() -> int:
 
     if packet:
         print("\n" + "=" * 80)
-        print(f"SUCCESS: Review packet generated for {symbol}!")
+        print(f"OUTCOME: SUCCESS_PACKET_GENERATED for {symbol}")
         print(f"Packet ID:           {packet.packet_id}")
         print(f"Accepted Baseline:   {packet.accepted_baseline_id}")
         print(f"Draft Successor:     {packet.draft_successor_id}")
@@ -68,14 +77,34 @@ def main() -> int:
         print(f"Changes Reconciled:  {len(packet.material_financial_changes)}")
         print("=" * 80 + "\n")
         return 0
-    elif event:
-        print(f"\nEvent processed with status: {event.processing_state.value}")
-        if event.error_message:
+
+    if event:
+        if event.processing_state == EventProcessingState.REJECTED_MISIDENTIFIED:
+            print("\n" + "=" * 80)
+            print(f"OUTCOME: REJECTED_NON_PERIODIC for {symbol} (accession {event.accession_number})")
             print(f"Detail: {event.error_message}")
-        return 0
-    else:
-        print(f"\nNo qualifying events processed for {symbol}.")
-        return 1
+            print("=" * 80 + "\n")
+            return 2
+        elif event.processing_state in (EventProcessingState.REVIEW_PENDING, EventProcessingState.REVIEW_ACCEPTED):
+            print("\n" + "=" * 80)
+            print(f"OUTCOME: ALREADY_COMPLETED for {symbol} (accession {event.accession_number})")
+            print(f"State: {event.processing_state.value}")
+            print("=" * 80 + "\n")
+            return 0
+        elif event.processing_state == EventProcessingState.FAILED:
+            print("\n" + "=" * 80)
+            print(f"OUTCOME: PROCESSING_FAILED for {symbol} (accession {event.accession_number})")
+            print(f"Failed Stage: {event.failed_stage}")
+            print(f"Error: {event.error_message}")
+            print("=" * 80 + "\n")
+            return 1
+
+    if any("NO_NEW_FILING" in w for w in warnings):
+        print(f"\nOUTCOME: NO_NEW_FILING for {symbol}.")
+        return 3
+
+    print(f"\nOUTCOME: PROCESSING_FAILED for {symbol} (no event or packet returned).")
+    return 1
 
 
 if __name__ == "__main__":

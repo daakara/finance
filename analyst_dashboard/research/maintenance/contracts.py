@@ -9,6 +9,7 @@ Invariants:
 - Strict separation of event publication time, reporting period, retrieval time, and processing state.
 - Tracks source evidence with exact locators, units, scale, and accounting context.
 - Distinguishes missing data (UNRESOLVED) from explicit numeric zero.
+- Preserves honest omission without inventing fallbacks.
 - Reusable across all Quality Watch assets.
 """
 
@@ -18,6 +19,7 @@ from enum import Enum
 import json
 import os
 from pathlib import Path
+import tempfile
 from typing import Dict, List, Optional, Any, Union
 
 
@@ -34,12 +36,15 @@ class EventProcessingState(str, Enum):
     REJECTED_MISIDENTIFIED = "REJECTED_MISIDENTIFIED"
     REJECTED_DUPLICATE = "REJECTED_DUPLICATE"
     REJECTED_VALIDATION_FAILED = "REJECTED_VALIDATION_FAILED"
+    FAILED = "FAILED"
 
 
 class ProposedDisposition(str, Enum):
     """Research review disposition outcome under Step A of decision process."""
     MAINTAIN = "MAINTAIN"
     REVISE = "REVISE"
+    INVALIDATE = "INVALIDATE"
+    UNRESOLVED = "UNRESOLVED"
     CONSIDER_WITHDRAWAL = "CONSIDER_WITHDRAWAL"
 
 
@@ -57,6 +62,7 @@ class FactStatus(str, Enum):
     DERIVED = "DERIVED"
     UNRESOLVED = "UNRESOLVED"
     EXPLICIT_ZERO = "EXPLICIT_ZERO"
+    VALIDATION_CONFLICT = "VALIDATION_CONFLICT"
 
 
 @dataclass
@@ -76,12 +82,18 @@ class MaintenanceEvent:
     retrieval_time_utc: str  # Ingestion timestamp
     source_url: str
     primary_document: str
+    acceptance_datetime_utc: Optional[str] = None
+    index_url: Optional[str] = None
+    index_sha256: Optional[str] = None
+    submissions_url: Optional[str] = None
+    company_facts_url: Optional[str] = None
     processing_state: EventProcessingState = EventProcessingState.REGISTERED
     is_replay: bool = False
     sha256: Optional[str] = None
     successor_draft_id: Optional[str] = None
     review_packet_id: Optional[str] = None
     error_message: Optional[str] = None
+    failed_stage: Optional[str] = None
     reconciliation_summary: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
@@ -122,6 +134,8 @@ class ReconciledFinancialChange:
     accounting_context: str
     status: FactStatus = FactStatus.REPORTED
     is_missing_unresolved: bool = False
+    source_accessions: List[str] = field(default_factory=list)
+    derivation_formula: Optional[str] = None
     notes: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
@@ -205,6 +219,7 @@ class EventRegister:
     """
     Durable event register keyed by issuer symbol and accession number.
     Ensures repeated processing of the same accession does not create duplicate events.
+    Supports atomic persistence and safe retry of incomplete / failed processing.
     """
 
     def __init__(self, register_path: Optional[Union[str, Path]] = None):
@@ -213,32 +228,63 @@ class EventRegister:
         if self.register_path and self.register_path.exists():
             self.load()
 
-    def _make_key(self, symbol: str, accession_number: str) -> str:
+    def _make_key(self, symbol: str, accession_number: str, is_replay: bool = False) -> str:
         clean_sym = symbol.strip().upper()
         clean_acc = accession_number.strip()
-        return f"{clean_sym}:{clean_acc}"
+        prefix = "REPLAY:" if is_replay else ""
+        return f"{prefix}{clean_sym}:{clean_acc}"
 
-    def has_event(self, symbol: str, accession_number: str) -> bool:
-        key = self._make_key(symbol, accession_number)
+    def has_event(self, symbol: str, accession_number: str, is_replay: bool = False) -> bool:
+        key = self._make_key(symbol, accession_number, is_replay=is_replay)
         return key in self.events
 
-    def get_event(self, symbol: str, accession_number: str) -> Optional[MaintenanceEvent]:
-        key = self._make_key(symbol, accession_number)
+    def get_event(self, symbol: str, accession_number: str, is_replay: bool = False) -> Optional[MaintenanceEvent]:
+        key = self._make_key(symbol, accession_number, is_replay=is_replay)
         return self.events.get(key)
+
+    def is_completed(self, symbol: str, accession_number: str, is_replay: bool = False) -> bool:
+        evt = self.get_event(symbol, accession_number, is_replay=is_replay)
+        if not evt:
+            return False
+        return evt.processing_state in (
+            EventProcessingState.REVIEW_PENDING,
+            EventProcessingState.REVIEW_ACCEPTED,
+            EventProcessingState.REJECTED_MISIDENTIFIED,
+        )
+
+    def can_retry(self, symbol: str, accession_number: str, is_replay: bool = False) -> bool:
+        evt = self.get_event(symbol, accession_number, is_replay=is_replay)
+        if not evt:
+            return True
+        return evt.processing_state in (
+            EventProcessingState.FAILED,
+            EventProcessingState.REGISTERED,
+            EventProcessingState.RECONCILED,
+            EventProcessingState.ASSESSED,
+        )
 
     def register_event(
         self,
         event: MaintenanceEvent,
         fail_if_duplicate: bool = True,
     ) -> MaintenanceEvent:
-        key = self._make_key(event.symbol, event.accession_number)
+        key = self._make_key(event.symbol, event.accession_number, is_replay=event.is_replay)
         if key in self.events:
+            existing = self.events[key]
+            # If the event previously failed or was interrupted, allow safe retry
+            if self.can_retry(event.symbol, event.accession_number, is_replay=event.is_replay):
+                self.events[key] = event
+                if self.register_path:
+                    self.save()
+                return event
+
             if fail_if_duplicate:
                 raise ValueError(
                     f"Duplicate accession error: Filing {event.accession_number} for {event.symbol} "
-                    f"is already registered (event_id: {self.events[key].event_id}, state: {self.events[key].processing_state.value})."
+                    f"is already registered (event_id: {existing.event_id}, state: {existing.processing_state.value})."
                 )
-            return self.events[key]
+            return existing
+
         self.events[key] = event
         if self.register_path:
             self.save()
@@ -249,12 +295,14 @@ class EventRegister:
         symbol: str,
         accession_number: str,
         state: EventProcessingState,
+        is_replay: bool = False,
         successor_draft_id: Optional[str] = None,
         review_packet_id: Optional[str] = None,
         error_message: Optional[str] = None,
+        failed_stage: Optional[str] = None,
         reconciliation_summary: Optional[Dict[str, Any]] = None,
     ) -> MaintenanceEvent:
-        key = self._make_key(symbol, accession_number)
+        key = self._make_key(symbol, accession_number, is_replay=is_replay)
         if key not in self.events:
             raise KeyError(f"Event not found in register: {key}")
         evt = self.events[key]
@@ -265,17 +313,22 @@ class EventRegister:
             evt.review_packet_id = review_packet_id
         if error_message:
             evt.error_message = error_message
+        if failed_stage:
+            evt.failed_stage = failed_stage
         if reconciliation_summary:
             evt.reconciliation_summary = reconciliation_summary
         if self.register_path:
             self.save()
         return evt
 
-    def list_events(self, symbol: Optional[str] = None) -> List[MaintenanceEvent]:
+    def list_events(self, symbol: Optional[str] = None, include_replays: bool = True) -> List[MaintenanceEvent]:
+        evts = list(self.events.values())
+        if not include_replays:
+            evts = [e for e in evts if not e.is_replay]
         if symbol:
             clean_sym = symbol.strip().upper()
-            return [e for e in self.events.values() if e.symbol == clean_sym]
-        return list(self.events.values())
+            return [e for e in evts if e.symbol == clean_sym]
+        return evts
 
     def load(self, path: Optional[Union[str, Path]] = None) -> None:
         target = Path(path) if path else self.register_path
@@ -288,6 +341,7 @@ class EventRegister:
             self.events[key] = MaintenanceEvent.from_dict(evt_data)
 
     def save(self, path: Optional[Union[str, Path]] = None) -> None:
+        """Atomically saves register payload using a temporary file to prevent corruption."""
         target = Path(path) if path else self.register_path
         if not target:
             raise ValueError("No register path specified for saving.")
@@ -299,5 +353,9 @@ class EventRegister:
             "total_events": len(self.events),
             "events": {k: v.to_dict() for k, v in self.events.items()},
         }
-        with open(target, "w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=2)
+        # Atomic file write
+        temp_dir = target.parent
+        with tempfile.NamedTemporaryFile("w", dir=temp_dir, delete=False, encoding="utf-8") as tf:
+            json.dump(payload, tf, indent=2)
+            temp_path = Path(tf.name)
+        os.replace(temp_path, target)

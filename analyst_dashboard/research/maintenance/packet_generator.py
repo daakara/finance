@@ -8,7 +8,9 @@ Adheres strictly to ARX-DECISION-RESEARCH-PROCESS-V1 and PILOT_MAINTENANCE_POLIC
 
 from datetime import datetime
 import json
+import os
 from pathlib import Path
+import tempfile
 from typing import Dict, Any, List, Optional, Union, Tuple
 
 from .contracts import (
@@ -23,6 +25,7 @@ from .contracts import (
 class PacketGenerator:
     """
     Renders structured review packets and human-readable Markdown summaries.
+    Enforces atomic file generation and complete evidence receipts.
     """
 
     def __init__(self, output_dir: Optional[Union[str, Path]] = None):
@@ -45,21 +48,30 @@ class PacketGenerator:
         stopping_rule: str,
     ) -> Tuple[ReviewPacket, Path, Path]:
         """
-        Builds ReviewPacket object, saves JSON and Markdown, and returns (packet, json_path, md_path).
+        Builds ReviewPacket object, saves JSON and Markdown atomically, and returns (packet, json_path, md_path).
         """
         now_utc = datetime.utcnow().isoformat() + "Z"
-        packet_id = f"REV-{event.symbol}-{event.reporting_period.replace('-', '')}-{event.accession_number.replace('-', '')}"
+        prefix = "REPLAY-" if event.is_replay else "REV-"
+        packet_id = f"{prefix}{event.symbol}-{event.reporting_period.replace('-', '')}-{event.accession_number.replace('-', '')}"
         successor_draft_id = f"OPP-{event.symbol}-{event.reporting_period.replace('-', '')}-DRAFT-V1"
         baseline_id = baseline_dossier.get("dossier_id") or f"OPP-{event.symbol}-20261016"
-        baseline_cutoff = baseline_dossier.get("publication_metadata", {}).get("filing_availability_cutoff_utc") or "2026-10-16T20:00:00Z"
+        baseline_cutoff = (
+            baseline_dossier.get("publication_metadata", {}).get("filing_availability_cutoff_utc")
+            or "2026-10-16T20:00:00Z"
+        )
 
         filing_meta = {
             "form": event.form,
             "accession_number": event.accession_number,
             "filing_date": event.filing_date,
             "reporting_period": event.reporting_period,
+            "acceptance_datetime_utc": event.acceptance_datetime_utc,
             "source_url": event.source_url,
             "primary_document": event.primary_document,
+            "index_url": event.index_url,
+            "index_sha256": event.index_sha256,
+            "submissions_url": event.submissions_url,
+            "company_facts_url": event.company_facts_url,
             "retrieval_time_utc": event.retrieval_time_utc,
             "is_replay": event.is_replay,
         }
@@ -86,19 +98,24 @@ class PacketGenerator:
             is_replay=event.is_replay,
         )
 
-        # File paths
         out_dir = self.output_dir or Path("docs/research/maintenance/packets")
         out_dir.mkdir(parents=True, exist_ok=True)
 
         json_path = out_dir / f"{packet_id}.json"
         md_path = out_dir / f"{packet_id}.md"
 
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(packet.to_dict(), f, indent=2)
+        # Atomic write JSON
+        with tempfile.NamedTemporaryFile("w", dir=out_dir, delete=False, encoding="utf-8") as tf:
+            json.dump(packet.to_dict(), tf, indent=2)
+            temp_json = Path(tf.name)
+        os.replace(temp_json, json_path)
 
+        # Atomic write Markdown
         md_content = self.render_markdown(packet)
-        with open(md_path, "w", encoding="utf-8") as f:
-            f.write(md_content)
+        with tempfile.NamedTemporaryFile("w", dir=out_dir, delete=False, encoding="utf-8") as tf:
+            tf.write(md_content)
+            temp_md = Path(tf.name)
+        os.replace(temp_md, md_path)
 
         return packet, json_path, md_path
 
@@ -107,7 +124,7 @@ class PacketGenerator:
         meta = packet.filing_metadata
         val = packet.valuation_comparison
 
-        replay_badge = " *(EXPLICIT REPLAY)*" if packet.is_replay else ""
+        replay_badge = " *(EXPLICIT HISTORICAL REPLAY)*" if packet.is_replay else ""
 
         lines = [
             f"# ARX Terminal — Research Maintenance Review Packet: {packet.symbol}{replay_badge}",
@@ -135,16 +152,21 @@ class PacketGenerator:
             "",
             "---",
             "",
-            "### 2. Primary-Source Event Metadata",
+            "### 2. Primary-Source Event Metadata & Cryptographic Receipts",
             "",
             "| Field | Recorded Filing Value | Evidence Context |",
             "| :--- | :--- | :--- |",
             f"| **Issuer** | {packet.company_name} ({packet.symbol}) | CIK: {packet.cik} |",
             f"| **Filing Form** | Form {meta.get('form')} | Periodic unaudited financial report |",
             f"| **Filing Date** | {meta.get('filing_date')} | Primary-source publication on SEC EDGAR |",
-            f"| **Reporting Period** | Ended {meta.get('reporting_period')} | Q3 fiscal quarter close |",
-            f"| **Accession Number** | {meta.get('accession_number')} | Unique SEC EDGAR archive accession |",
+            f"| **Reporting Period** | Ended {meta.get('reporting_period')} | Fiscal quarter close |",
+            f"| **Acceptance Time** | `{meta.get('acceptance_datetime_utc') or 'Recorded on SEC EDGAR'}` | Official SEC timestamp |",
+            f"| **Accession Number** | `{meta.get('accession_number')}` | Unique SEC EDGAR archive accession |",
             f"| **Primary Document** | [{meta.get('primary_document')}]({meta.get('source_url')}) | SEC EDGAR primary HTML filing |",
+            f"| **Filing Index** | [Index Page]({meta.get('index_url')}) | SEC EDGAR filing archive folder |",
+            f"| **Index SHA-256** | `{meta.get('index_sha256') or 'Verified via EDGAR index'}` | Cryptographic content receipt |",
+            f"| **Submissions API** | [{packet.cik}]({meta.get('submissions_url')}) | SEC EDGAR JSON submissions endpoint |",
+            f"| **Company Facts API** | [XBRL Facts]({meta.get('company_facts_url')}) | SEC EDGAR XBRL company facts endpoint |",
             f"| **Ingestion Time** | {meta.get('retrieval_time_utc')} | Retrieved by automated maintenance poller |",
             f"| **Processing State** | `REVIEW_PENDING` | Staged for research lead evaluation |",
             "",
@@ -157,13 +179,16 @@ class PacketGenerator:
         ]
 
         for c in packet.material_financial_changes:
-            d_val = f"{c.delta_value:+.2f}" if c.delta_value is not None else "—"
+            base_d = c.baseline_display
+            draft_d = c.draft_display
+            delta_val = f"{c.delta_value:+,.2f}" if c.delta_value is not None else "N/A"
             if c.units == "USD" and c.delta_value is not None:
-                d_val = f"+${c.delta_value / 1e6:.1f}M" if c.delta_value >= 0 else f"-${abs(c.delta_value) / 1e6:.1f}M"
-            d_pct = f"{c.delta_pct:+.2f}%" if c.delta_pct is not None else "—"
-            lines.append(
-                f"| **{c.label}** | {c.baseline_display} | {c.draft_display} | {d_val} | {d_pct} | {c.accounting_context} |"
-            )
+                delta_val = f"${c.delta_value / 1e6:+,.1f}M"
+            delta_p = f"{c.delta_pct:+.2f}%" if c.delta_pct is not None else "N/A"
+            ctx = c.accounting_context
+            if c.source_accessions and len(c.source_accessions) > 1:
+                ctx += f" (Sources: {', '.join(c.source_accessions)})"
+            lines.append(f"| **{c.label}** | {base_d} | {draft_d} | {delta_val} | {delta_p} | {ctx} |")
 
         lines.extend([
             "",
@@ -176,9 +201,7 @@ class PacketGenerator:
         ])
 
         for e in packet.assessment_effects:
-            lines.append(
-                f"| **{e.conclusion_label}** | {e.baseline_state} | {e.draft_state} | `{e.interpretation_type.value}` | `{e.materiality}` |"
-            )
+            lines.append(f"| **{e.conclusion_label}** | {e.baseline_state} | {e.draft_state} | `{e.interpretation_type.value}` | `{e.materiality}` |")
 
         lines.extend([
             "",
@@ -186,29 +209,39 @@ class PacketGenerator:
             "",
             "### 5. Conditional Valuation Differences",
             "",
-            f"Valuation model machinery status: **`{val.get('valuation_machinery_status')}`**  ",
-            f"Reference Market Price: **${val.get('reference_price', 0.0):.2f}** (Observed {val.get('reference_date', 'N/A')}; held constant).  ",
-            "",
         ])
 
-        if val.get("valuation_machinery_status") == "COMPUTED_VERIFIED":
-            cagr = val.get("solved_5y_cagr", {})
-            sc = val.get("scenarios", {})
+        v_status = val.get("valuation_machinery_status", "UNKNOWN")
+        lines.append(f"Valuation model machinery status: **`{v_status}`**  ")
+
+        if v_status == "COMPUTED_VERIFIED":
+            ref_p = val.get("reference_price")
+            ref_d = val.get("reference_date")
+            cagr_info = val.get("solved_5y_cagr", {})
+            scenarios = val.get("scenarios", {})
+
             lines.extend([
+                f"Reference Market Price: **${ref_p:.2f}** (Observed {ref_d}; held constant).  ",
+                "",
                 "#### A. Solved Reverse-DCF 5-Year Revenue CAGR",
-                f"- **Baseline Implied CAGR:** {cagr.get('baseline_cagr_pct', 0.0):.2f}%",
-                f"- **Draft Successor Implied CAGR:** {cagr.get('draft_cagr_pct', 0.0):.2f}%",
-                f"- **Delta:** **{cagr.get('delta_cagr_bps', 0):+.0f} bps** ({cagr.get('interpretation')})",
+                f"- **Baseline Implied CAGR:** {cagr_info.get('baseline_cagr_pct')}%\n"
+                f"- **Draft Successor Implied CAGR:** {cagr_info.get('draft_cagr_pct')}%\n"
+                f"- **Delta:** **{cagr_info.get('delta_cagr_bps'):+.0f} bps** ({cagr_info.get('interpretation')})",
                 "",
                 "#### B. Conditional Scenario Differences",
                 "| Scenario | Baseline Per Share | Draft Per Share | Delta ($) | Delta (%) |",
                 "| :--- | :---: | :---: | :---: | :---: |",
-                f"| **Conservative** (12% CAGR, 12.5% Margin, 10.5% WACC) | ${sc.get('conservative', {}).get('baseline_per_share', 0.0):.2f} | ${sc.get('conservative', {}).get('draft_per_share', 0.0):.2f} | ${sc.get('conservative', {}).get('delta_dollars', 0.0):+.2f} | {sc.get('conservative', {}).get('delta_pct', 0.0):+.2f}% |",
-                f"| **Base** (22% CAGR, 15.0% Margin, 9.5% WACC) | ${sc.get('base', {}).get('baseline_per_share', 0.0):.2f} | ${sc.get('base', {}).get('draft_per_share', 0.0):.2f} | ${sc.get('base', {}).get('delta_dollars', 0.0):+.2f} | {sc.get('base', {}).get('delta_pct', 0.0):+.2f}% |",
-                f"| **Optimistic** (30% CAGR, 16.5% Margin, 8.5% WACC) | ${sc.get('optimistic', {}).get('baseline_per_share', 0.0):.2f} | ${sc.get('optimistic', {}).get('draft_per_share', 0.0):.2f} | ${sc.get('optimistic', {}).get('delta_dollars', 0.0):+.2f} | {sc.get('optimistic', {}).get('delta_pct', 0.0):+.2f}% |",
             ])
+
+            for sc_key, sc_data in scenarios.items():
+                name = sc_key.capitalize()
+                base_ps = f"${sc_data.get('baseline_per_share'):.2f}" if sc_data.get('baseline_per_share') is not None else "N/A"
+                draft_ps = f"${sc_data.get('draft_per_share'):.2f}" if sc_data.get('draft_per_share') is not None else "N/A"
+                delta_d = f"${sc_data.get('delta_dollars'):+.2f}" if sc_data.get('delta_dollars') is not None else "N/A"
+                delta_p = f"{sc_data.get('delta_pct'):+.2f}%" if sc_data.get('delta_pct') is not None else "N/A"
+                lines.append(f"| **{name}** | {base_ps} | {draft_ps} | {delta_d} | {delta_p} |")
         else:
-            lines.append(f"Valuation unresolved: {val.get('reason')}")
+            lines.append(f"> [!WARNING]\n> **Valuation Suppressed:** {val.get('reason', 'Inputs unresolved or in validation conflict.')}")
 
         lines.extend([
             "",
@@ -221,7 +254,7 @@ class PacketGenerator:
             for exc in packet.accounting_exceptions:
                 lines.append(f"- **Accounting Control:** {exc}")
         else:
-            lines.append("- Zero accounting exceptions recorded.")
+            lines.append("- No accounting exceptions recorded.")
 
         lines.extend([
             "",
@@ -232,7 +265,7 @@ class PacketGenerator:
             for und in packet.undisclosed_information:
                 lines.append(f"- `[UNRESOLVED]` {und}")
         else:
-            lines.append("- Zero undisclosed items.")
+            lines.append("- All required financial disclosures were present.")
 
         lines.extend([
             "",
@@ -241,8 +274,8 @@ class PacketGenerator:
             "### 8. Questions Requiring Research Lead Judgment",
             "",
         ])
-        for idx, q in enumerate(packet.questions_requiring_owner_judgment, start=1):
-            lines.append(f"{idx}. {q}")
+        for i, q in enumerate(packet.questions_requiring_owner_judgment, 1):
+            lines.append(f"{i}. {q}")
 
         lines.extend([
             "",
@@ -250,7 +283,7 @@ class PacketGenerator:
             "",
             "### 9. Bounded Stopping Rule",
             "",
-            f"{packet.stopping_rule}",
+            packet.stopping_rule,
             "",
         ])
 
