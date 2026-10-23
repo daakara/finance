@@ -14,6 +14,7 @@ import {
   DEFAULT_RADAR_CAPABILITIES,
   normalizeRadarCapabilities,
   getPublicationIntegrityLabel,
+  formatPriceObservationDate,
 } from '../../lib/api';
 import { trackRadarAssetClick } from '../../lib/matomo';
 import { MASTER_ASSET_CATALOG } from '../../lib/masterCatalog';
@@ -25,6 +26,8 @@ interface RadarAsset {
   ticker: string;
   name: string;
   price: number;
+  priceBasis?: "DAILY_CLOSE" | null;
+  priceDate?: string | null;
   rvol?: string | null;
   riskRewardRatio?: number | null;
   vcpStage: string;
@@ -183,6 +186,8 @@ function RadarContent() {
             ticker: cleanTicker,
             name: resolvedName,
             price: Number(((gem.currentPrice ?? gem.current_price) || 0).toFixed(2)),
+            priceBasis: gem.priceBasis ?? (gem.price_basis as any) ?? null,
+            priceDate: gem.priceDate ?? gem.price_date ?? null,
             rvol: rvolVal,
             riskRewardRatio: rrVal,
             vcpStage: stageStr,
@@ -227,8 +232,16 @@ function RadarContent() {
     return {
       ALL: { count: allAssets.length, badge: `${allAssets.length}`, status: 'AVAILABLE' as RadarCapabilityStatus },
       VALUE_GARP: {
-        count: isAvailable('VALUE_GARP') ? allAssets.filter((a) => a.categories.includes('VALUE_GARP')).length : null,
-        badge: isAvailable('VALUE_GARP') ? `${allAssets.filter((a) => a.categories.includes('VALUE_GARP')).length}` : 'Pending',
+        count: isAvailable('VALUE_GARP')
+          ? (typeof capabilities.VALUE_GARP?.matchedCount === 'number'
+              ? capabilities.VALUE_GARP.matchedCount
+              : allAssets.filter((a) => a.categories.includes('VALUE_GARP')).length)
+          : null,
+        badge: isAvailable('VALUE_GARP')
+          ? `${typeof capabilities.VALUE_GARP?.matchedCount === 'number'
+              ? capabilities.VALUE_GARP.matchedCount
+              : allAssets.filter((a) => a.categories.includes('VALUE_GARP')).length}`
+          : 'Pending',
         status: capabilities.VALUE_GARP?.status || 'AVAILABLE',
       },
       VCP: {
@@ -589,9 +602,15 @@ function RadarContent() {
                 )}
 
                 <div className="flex flex-wrap items-center gap-4 text-xs font-mono pt-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-400">Price:</span>
+                  <div
+                    className="flex items-center gap-1.5"
+                    title={heroAsset.priceDate ? `Daily Close · ${heroAsset.priceDate}. Live spot quotes active in Analysis hub.` : "Batch screening price from daily session close. Live spot quotes active in Analysis hub."}
+                  >
+                    <span className="text-slate-400">Screen Price:</span>
                     <span className="text-white font-bold">${heroAsset.price.toFixed(2)}</span>
+                    <span className="text-[10px] text-slate-400 font-sans">
+                      · {formatPriceObservationDate(heroAsset.priceDate)}
+                    </span>
                   </div>
                   <span className="text-slate-700">•</span>
                   <div className="flex items-center gap-1.5" title="Pre-screened multi-factor confluence conviction score (0-100) from batch screener pipeline">
@@ -635,7 +654,7 @@ function RadarContent() {
                     <Link
                       href={`/?symbol=${heroAsset.ticker}`}
                       onClick={() => trackRadarAssetClick(heroAsset.ticker, 1)}
-                      className={`px-5 py-2.5 rounded-xl text-xs font-mono font-black tracking-tight transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] ${
+                      className={`px-5 py-2.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-mono font-black tracking-tight transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] ${
                         isHeroHeld
                           ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-950/50'
                           : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-cyan-950/50'
@@ -650,7 +669,7 @@ function RadarContent() {
                 <Link
                   href={`/setups?symbol=${heroAsset.ticker}`}
                   onClick={() => trackRadarAssetClick(heroAsset.ticker, 1)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-all border border-slate-700 flex items-center justify-center gap-1.5 hover:border-slate-600"
+                  className="px-4 py-2.5 min-h-[44px] min-w-[44px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-all border border-slate-700 flex items-center justify-center gap-1.5 hover:border-slate-600 active:scale-95"
                 >
                   <span>Inspect Setup in /setups</span>
                   <span>→</span>
@@ -792,9 +811,9 @@ function RadarContent() {
                     setSearchQuery(e.target.value);
                     setOnDemandError(null);
                   }}
-                  className="focus-ring w-full bg-[#0b1019] border border-slate-800 rounded-lg pl-3 pr-20 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
+                  className="focus-ring w-full bg-[#0b1019] border border-slate-800 rounded-lg pl-3 pr-20 py-2.5 min-h-[44px] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
                 />
-                <div className="absolute right-2 top-1.5 flex items-center gap-1">
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                   {searchQuery && (
                     <button
                       type="button"
@@ -802,7 +821,7 @@ function RadarContent() {
                         setSearchQuery('');
                         setOnDemandError(null);
                       }}
-                      className="focus-ring text-xs text-slate-500 hover:text-slate-300 font-mono px-1 rounded"
+                      className="focus-ring text-xs text-slate-500 hover:text-slate-300 font-mono px-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded cursor-pointer"
                       title="Clear filter"
                       aria-label="Clear search"
                     >
@@ -813,7 +832,7 @@ function RadarContent() {
                     <button
                       type="submit"
                       disabled={isOnDemandLoading}
-                      className="focus-ring text-[10px] bg-cyan-900/80 hover:bg-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono font-bold border border-cyan-700 cursor-pointer disabled:opacity-50"
+                      className="focus-ring text-[10px] bg-cyan-900/80 hover:bg-cyan-800 text-cyan-300 px-2 py-1 min-h-[36px] min-w-[44px] flex items-center justify-center rounded font-mono font-bold border border-cyan-700 cursor-pointer disabled:opacity-50"
                       title="Scan on-demand"
                     >
                       {isOnDemandLoading ? "..." : "Scan ↵"}
@@ -828,27 +847,27 @@ function RadarContent() {
                 </span>
               )}
 
-              <div className="flex items-center gap-1 bg-[#0b1019] border border-slate-800 rounded-lg p-0.5 text-xs font-mono shrink-0">
+              <div className="flex flex-wrap items-center gap-1 bg-[#0b1019] border border-slate-800 rounded-lg p-1 text-xs font-mono shrink-0">
                 <span className="text-[10px] text-slate-500 px-2 uppercase">Sort:</span>
                 <button
                   type="button"
                   onClick={() => setSortBy('SCORE')}
                   title="Sort by Confluence Score (Technical execution setup, RSI momentum, and smart money flow — not intrinsic valuation discount)"
-                  className={`focus-ring px-2 py-1 rounded ${sortBy === 'SCORE' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+                  className={`focus-ring px-3 py-2 min-h-[44px] inline-flex items-center justify-center rounded ${sortBy === 'SCORE' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
                 >
                   Score (Confluence)
                 </button>
                 <button
                   type="button"
                   onClick={() => setSortBy('RVOL')}
-                  className={`focus-ring px-2 py-1 rounded ${sortBy === 'RVOL' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+                  className={`focus-ring px-3 py-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded ${sortBy === 'RVOL' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
                 >
                   RVOL
                 </button>
                 <button
                   type="button"
                   onClick={() => setSortBy('PRICE')}
-                  className={`focus-ring px-2 py-1 rounded ${sortBy === 'PRICE' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+                  className={`focus-ring px-3 py-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded ${sortBy === 'PRICE' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
                 >
                   Price
                 </button>
@@ -1095,13 +1114,18 @@ function RadarContent() {
                 <tr>
                   <th className="p-3 sticky left-0 bg-slate-950 z-10 min-w-[130px]">Asset</th>
                   <th className="p-3 min-w-[140px]">Screening Status</th>
-                  <th className="p-3 min-w-[80px]">Price</th>
+                  <th
+                    className="p-3 min-w-[100px]"
+                    title="Batch screening reference price from daily session close. Live spot quotes active in Analysis hub."
+                  >
+                    Screen Price <span className="text-[9px] font-normal text-slate-500 normal-case">· Daily Close</span>
+                  </th>
                   <th className="p-3 text-center min-w-[70px]" title="Screening Snapshot Confluence Conviction Score">Screen Score</th>
                   <th className="p-3 text-center min-w-[70px]">RVOL</th>
                   <th className="p-3 min-w-[120px]">VCP / Base Setup</th>
                   <th className="p-3 text-center min-w-[80px]">R:R Ratio</th>
                   <th className="p-3 min-w-[200px]">Catalyst Rationale</th>
-                  <th className="p-3 text-right min-w-[80px]">Action</th>
+                  <th className="p-3 text-right min-w-[90px]">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
@@ -1161,7 +1185,7 @@ function RadarContent() {
                               type="button"
                               onClick={() => handleOnDemandScan(cleanQ)}
                               disabled={isOnDemandLoading}
-                              className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold font-mono transition-transform active:scale-95 shadow-lg shadow-cyan-950/50 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                              className="px-4 py-2.5 min-h-[44px] rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold font-mono transition-transform active:scale-95 shadow-lg shadow-cyan-950/50 inline-flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                             >
                               <span>{isOnDemandLoading ? "⏳ Scanning Tape..." : "⚡ Scan " + cleanQ + " On-Demand"}</span>
                             </button>
@@ -1170,7 +1194,7 @@ function RadarContent() {
                           {isTickerQuery && (
                             <Link
                               href={`/setups?ticker=${cleanQ}`}
-                              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-bold font-mono border border-slate-700"
+                              className="px-3.5 py-2.5 min-h-[44px] rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-bold font-mono border border-slate-700 inline-flex items-center justify-center"
                             >
                               Inspect in /setups →
                             </Link>
@@ -1179,7 +1203,7 @@ function RadarContent() {
                           {isTickerQuery && (
                             <Link
                               href={`/?symbol=${cleanQ}`}
-                              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold font-mono border border-slate-700"
+                              className="px-3.5 py-2.5 min-h-[44px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold font-mono border border-slate-700 inline-flex items-center justify-center"
                             >
                               Open in Terminal →
                             </Link>
@@ -1191,7 +1215,7 @@ function RadarContent() {
                               setSearchQuery('');
                               setOnDemandError(null);
                             }}
-                            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-bold font-mono border border-slate-700 cursor-pointer"
+                            className="px-3.5 py-2.5 min-h-[44px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-bold font-mono border border-slate-700 inline-flex items-center justify-center cursor-pointer"
                           >
                             ✕ Clear Filter (Show All {allAssets.length})
                           </button>
@@ -1212,7 +1236,7 @@ function RadarContent() {
                             <Link
                               href={`/?symbol=${asset.ticker}`}
                               onClick={() => trackRadarAssetClick(asset.ticker)}
-                              className="font-black text-white text-sm tracking-tight hover:text-cyan-400 transition-colors block focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded"
+                              className="font-black text-white text-sm tracking-tight hover:text-cyan-400 transition-colors inline-flex items-center min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded"
                             >
                               {asset.ticker}
                             </Link>
@@ -1240,8 +1264,16 @@ function RadarContent() {
                             {screeningLabel}
                           </span>
                         </td>
-                        <td className="p-3 font-bold text-white whitespace-nowrap">
-                          {asset.price > 0 ? `$${asset.price.toFixed(2)}` : '—'}
+                        <td
+                          className="p-3 font-bold text-white whitespace-nowrap"
+                          title={asset.priceDate ? `Daily Close · ${asset.priceDate}. Open Analysis hub for live tape.` : "Batch screening reference price (Daily Close). Open Analysis hub for live tape."}
+                        >
+                          <div>{asset.price > 0 ? `$${asset.price.toFixed(2)}` : '—'}</div>
+                          {asset.priceDate && (
+                            <div className="text-[9px] font-normal text-slate-500 font-mono">
+                              {asset.priceDate}
+                            </div>
+                          )}
                         </td>
                         <td className="p-3 text-center whitespace-nowrap">
                           <span className={`font-bold px-1.5 py-0.5 rounded ${
@@ -1269,7 +1301,7 @@ function RadarContent() {
                               <Link
                                 href={`/?symbol=${asset.ticker}`}
                                 onClick={() => trackRadarAssetClick(asset.ticker)}
-                                className={`px-2.5 py-1 rounded text-[10px] font-bold font-mono transition-colors inline-block focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none border ${
+                                className={`px-3 py-2 min-h-[44px] min-w-[44px] rounded text-[11px] font-bold font-mono transition-colors inline-flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none border ${
                                   isAssetHeld
                                     ? 'bg-indigo-950/80 hover:bg-indigo-600 text-indigo-200 hover:text-white border-indigo-700/80 hover:border-indigo-500'
                                     : 'bg-slate-800 hover:bg-cyan-600 hover:text-white text-cyan-300 border-slate-700 hover:border-cyan-500'
