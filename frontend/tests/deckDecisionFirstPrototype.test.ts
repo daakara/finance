@@ -1,330 +1,313 @@
 /**
  * frontend/tests/deckDecisionFirstPrototype.test.ts
  *
- * Comprehensive Behavioral & Contract Test Suite for the DECK Decision-First Research Page Prototype.
+ * Comprehensive Behavioral & Rendered Component Test Suite for the
+ * DECK Decision-First Research Page Prototype.
  * Governed by ARX Closure Model v2.
  *
- * Verifies:
- * 1. Accurate mapping and preservation of authoritative DECK dossier data:
+ * Enforces:
+ * 1. Authoritative Data Integrity with Control DECK Payload:
  *    - Reference price: $85.72 as of 2026-10-16
  *    - Reverse-DCF solved 5Y revenue CAGR: -2.34%
- *    - Bear / Base / Bull scenario values ($73.22, $127.49, $209.87) and diffs (-14.6%, +48.7%, +144.8%)
- *    - Scenario ordering: Bear <= Base <= Bull
- *    - Zero funded debt ($0.00), $1.60B cash buffer, -$1,602.6M net cash bridge
- *    - ASC 842 operating leases ($472.33M) excluded from net debt bridge
- *    - Split-adjusted diluted shares (138.56M) from Form 10-Q Q1 FY27
- * 2. Strict adherence to epistemic boundaries:
- *    - Strict WATCH disposition preserved (zero BUY, INVEST, or PASS recommendations)
- *    - Zero invented consensus estimates, price targets, or shareholder returns
- *    - Optional Section H ("What could this become?") omitted
- * 3. Component isolation & fallback preservation:
- *    - DECK is routed to DeckDecisionFirstView in OpportunityDossierCard
- *    - All other published dossiers (FIX, DUOL, ULTA, MEDP, ISRG) retain accepted standard presentation
- *    - Uncataloged symbols fail closed to neutral fallback (null)
- * 4. Accessibility & interactive semantics:
- *    - Controls satisfy touch target >= 44px
- *    - Buttons have visible focus ring classes and semantic aria attributes (aria-expanded, aria-controls)
+ *    - Bear / Base / Bull scenario values ($73.22, $127.49, $209.87) and differences (-14.6%, +48.7%, +144.8%)
+ *    - Strict scenario ordering: Bear case precedes Base case, Base case precedes Bull case
+ * 2. Complete Elimination of Invented Fallbacks & Hardcoded Numbers:
+ *    - Missing solved CAGR renders "Unavailable" (never -2.34%)
+ *    - Missing scenarios render "Unavailable" (never $73.22, etc.)
+ *    - Nonfinite numbers (NaN, Infinity) render "Unavailable"
+ *    - Valid numeric zero is preserved ("0.00%", "$0.00")
+ *    - Changing valid financial inputs in the payload dynamically updates rendered UI
+ *    - Valuation suppression renders "Valuation Suppressed" and prevents numeric fair values
+ *    - Complete absence of historical fallback strings when fields are omitted
+ * 3. Corrected Approved Research Interpretation:
+ *    - DTC deceleration <10% is treated as a monitored weakening threshold requiring investigation, not proof of brand fatigue
+ *    - Margin deterioration <50% is treated as monitored invalidation requiring investigation, not proof of brand equity loss
+ *    - Wholesale channel contraction is NOT invented as a third formal invalidation condition
+ *    - Gross margin thresholds keep distinct meanings (strengthening >55%, invalidation <50%)
+ *    - Review trigger correctly identifies Q2 FY27 earnings release
+ *    - Rejection of process tags ("A. Verdict", "Primary Research Disposition", etc.)
+ * 4. Component Isolation & Disposition Contracts:
+ *    - OpportunityDossierCard routes DECK with WATCH_CONDITIONS to DeckDecisionFirstView
+ *    - Non-WATCH disposition safely falls back to standard OpportunityDossierCard presentation
+ *    - DeckDecisionFirstView renders dynamic disposition badge without hardcoding WATCH
+ *    - Non-DECK published dossiers (FIX, ULTA, etc.) strictly retain standard presentation
+ *    - Unpublished symbols fail closed to null
+ * 5. Accessibility & Semantics:
+ *    - Interactive touch targets satisfy >= 44px (min-h-[44px])
+ *    - Visible focus ring classes present (focus:ring-2 focus:ring-cyan-400)
+ *    - Accordions contain aria-expanded and aria-controls attributes
  */
 
 import assert from "node:assert";
-import fs from "node:fs";
-import path from "node:path";
+import React from "react";
+// @ts-ignore - react-dom/server type declaration mapping under node16
+import { renderToStaticMarkup } from "react-dom/server";
+import OpportunityDossierCard from "../components/OpportunityDossierCard";
+import DeckDecisionFirstView from "../components/DeckDecisionFirstView";
 import {
   getOpportunityDossier,
   listOpportunityCohort,
-  isCohortSymbol,
   calculateScenarioPriceDiffPct,
   OpportunityDossier,
 } from "../lib/opportunityDossiers";
 
-console.log("Starting DECK Decision-First Prototype Behavioral Test Suite...");
+console.log("Starting DECK Decision-First Prototype Comprehensive Behavioral Test Suite...");
 
 // =========================================================================
-// 1. Authoritative Data Integrity for DECK
+// 1. Control Test: Authoritative DECK Research Dossier Payload
 // =========================================================================
-console.log("1. Verifying authoritative DECK research dossier payload...");
+console.log("1. Verifying authoritative DECK research dossier control payload...");
 
 const deckDossier = getOpportunityDossier("DECK");
 assert.ok(deckDossier, "DECK must be available as an accepted Quality Watch dossier");
 
-// A. Identity Context
 assert.strictEqual(deckDossier.identity.symbol, "DECK");
 assert.strictEqual(deckDossier.identity.company_name, "Deckers Outdoor Corp.");
-assert.strictEqual(deckDossier.identity.cik, "0000910521");
-assert.strictEqual(deckDossier.identity.exchange, "NYSE");
-assert.strictEqual(deckDossier.identity.opportunity_route, "Consumer Cyclical / Footwear");
+assert.strictEqual(deckDossier.central_assessment.disposition, "WATCH_CONDITIONS");
+assert.strictEqual(deckDossier.valuation.reference_price, 85.72);
+assert.strictEqual(deckDossier.valuation.reference_date, "2026-10-16");
+assert.strictEqual(deckDossier.valuation.solved_5y_cagr_pct, -2.34);
 
-// B. Disposition & WATCH Semantics
-assert.strictEqual(
-  deckDossier.central_assessment.disposition,
-  "WATCH_CONDITIONS",
-  "DECK disposition must strictly be WATCH_CONDITIONS (no BUY or INVEST)"
+const scenarios = deckDossier.valuation.scenarios!;
+assert.strictEqual(scenarios.conservative.per_share_value, 73.22);
+assert.strictEqual(scenarios.base.per_share_value, 127.49);
+assert.strictEqual(scenarios.optimistic.per_share_value, 209.87);
+
+// Render control DECK through OpportunityDossierCard
+const controlMarkup = renderToStaticMarkup(
+  React.createElement(OpportunityDossierCard, { dossier: deckDossier })
+);
+
+// A. Core values rendered
+assert.ok(controlMarkup.includes("$85.72"), "Must render reference price $85.72");
+assert.ok(controlMarkup.includes("-2.34%"), "Must render solved 5Y CAGR -2.34%");
+assert.ok(controlMarkup.includes("$73.22"), "Must render Bear case value $73.22");
+assert.ok(controlMarkup.includes("-14.6%"), "Must render Bear difference -14.6%");
+assert.ok(controlMarkup.includes("$127.49"), "Must render Base case value $127.49");
+assert.ok(controlMarkup.includes("+48.7%"), "Must render Base difference +48.7%");
+assert.ok(controlMarkup.includes("$209.87"), "Must render Bull case value $209.87");
+assert.ok(controlMarkup.includes("+144.8%"), "Must render Bull difference +144.8%");
+
+// B. Scenario ordering check: Bear case < Base case < Bull case in rendered DOM
+const bearIdx = controlMarkup.indexOf("Bear case");
+const baseIdx = controlMarkup.indexOf("Base case");
+const bullIdx = controlMarkup.indexOf("Bull case");
+assert.ok(bearIdx !== -1 && baseIdx !== -1 && bullIdx !== -1, "All three scenario labels must be rendered");
+assert.ok(bearIdx < baseIdx, "Bear case must appear before Base case in DOM");
+assert.ok(baseIdx < bullIdx, "Base case must appear before Bull case in DOM");
+
+// C. Rejection of unapproved wording and process labels
+assert.strictEqual(controlMarkup.includes("A. Verdict"), false, "Must not include 'A. Verdict' process label");
+assert.strictEqual(controlMarkup.includes("B. One-Sentence Thesis"), false, "Must not include 'B. One-Sentence Thesis' label");
+assert.strictEqual(controlMarkup.includes("C. What Is Priced In?"), false, "Must not include 'C. What Is Priced In?' label");
+assert.strictEqual(controlMarkup.includes("Primary Research Disposition"), false, "Must not include 'Primary Research Disposition'");
+assert.strictEqual(controlMarkup.includes("Disciplined Expectation Check"), false, "Must not include 'Disciplined Expectation Check'");
+assert.strictEqual(controlMarkup.includes("3. Wholesale Channel Contraction"), false, "Must not invent third invalidation trigger");
+assert.strictEqual(controlMarkup.includes("Wholesale revenue turning negative"), false, "Must not invent wholesale revenue turning negative invalidation threshold");
+assert.strictEqual(controlMarkup.includes("insufficient margin of safety"), false, "Must not include unsupported claim of insufficient margin of safety");
+assert.strictEqual(controlMarkup.includes("brand fatigue"), false, "Must not claim DTC deceleration proves brand fatigue");
+assert.strictEqual(controlMarkup.includes("must hold above 50.0%–55.0%"), false, "Must not merge gross margin thresholds into ambiguous range");
+assert.strictEqual(controlMarkup.includes("with strong gross margin contribution"), false, "Must not assert unevidenced channel gross margin contribution");
+assert.strictEqual(controlMarkup.includes("What Could This Become?"), false, "Section H ('What Could This Become?') must remain omitted");
+
+// D. Approved interpretation confirmed
+assert.ok(
+  controlMarkup.includes("Growth below the existing 10.0% YoY monitoring threshold would weaken the thesis and require reassessment; the underlying cause would need investigation."),
+  "Must include approved non-causal meaning for DTC deceleration"
 );
 assert.ok(
-  deckDossier.central_assessment.disposition_label.toLowerCase().includes("watch"),
-  "Disposition label must indicate WATCH"
+  controlMarkup.includes("Consolidated gross margin falling below 50.0% is a monitored invalidation condition that would weaken the thesis and require investigation of underlying cost, inventory, and pricing drivers."),
+  "Must include approved non-causal meaning for margin deterioration"
 );
-
-// C. Valuation Reference & Reverse-DCF Parameters
-assert.strictEqual(deckDossier.valuation.reference_price, 85.72, "Reference price must be $85.72");
-assert.strictEqual(deckDossier.valuation.reference_date, "2026-10-16", "Reference date must be 2026-10-16");
-assert.strictEqual(deckDossier.valuation.solved_5y_cagr_pct, -2.34, "Solved 5Y CAGR must be -2.34%");
-assert.strictEqual(deckDossier.valuation.roundtrip_value, 85.72, "Roundtrip value must equal $85.72");
-
-const rDcf = deckDossier.valuation.reverse_dcf_parameters;
-assert.ok(rDcf, "Reverse-DCF parameters must be defined");
-assert.strictEqual(rDcf.operating_margin_pct, 22);
-assert.strictEqual(rDcf.wacc_pct, 9);
-assert.strictEqual(rDcf.terminal_growth_pct, 2.5);
-assert.strictEqual(rDcf.tax_rate_pct, 22);
-assert.strictEqual(rDcf.reinvestment_rate_pct, 15);
-assert.strictEqual(rDcf.current_shares, 138559000);
-assert.strictEqual(rDcf.net_debt_bridge, -1602589000);
-
-// D. Scenario Hierarchy & Calculation Integrity
-const scenarios = deckDossier.valuation.scenarios;
-assert.ok(scenarios, "Scenarios must be defined");
-assert.ok(scenarios.conservative, "Bear case (conservative) must exist");
-assert.ok(scenarios.base, "Base case must exist");
-assert.ok(scenarios.optimistic, "Bull case (optimistic) must exist");
-
-const bearVal = scenarios.conservative.per_share_value;
-const baseVal = scenarios.base.per_share_value;
-const bullVal = scenarios.optimistic.per_share_value;
-
-assert.strictEqual(bearVal, 73.22, "Bear case value must be $73.22");
-assert.strictEqual(baseVal, 127.49, "Base case value must be $127.49");
-assert.strictEqual(bullVal, 209.87, "Bull case value must be $209.87");
-
-// Hierarchy: Bear < Base < Bull
-assert.ok(bearVal < baseVal, "Bear value must be less than Base value");
-assert.ok(baseVal < bullVal, "Base value must be less than Bull value");
-
-// Safe percentage difference checks
-const bearDiff = calculateScenarioPriceDiffPct(bearVal, deckDossier.valuation.reference_price);
-const baseDiff = calculateScenarioPriceDiffPct(baseVal, deckDossier.valuation.reference_price);
-const bullDiff = calculateScenarioPriceDiffPct(bullVal, deckDossier.valuation.reference_price);
-
-assert.ok(bearDiff !== null && Math.abs(bearDiff - -14.6) < 0.1, `Bear diff should be ~ -14.6%, got ${bearDiff}`);
-assert.ok(baseDiff !== null && Math.abs(baseDiff - 48.7) < 0.1, `Base diff should be ~ +48.7%, got ${baseDiff}`);
-assert.ok(bullDiff !== null && Math.abs(bullDiff - 144.8) < 0.1, `Bull diff should be ~ +144.8%, got ${bullDiff}`);
-
-// E. Sourced Financial Facts & Capital Structure
-const fin = deckDossier.financial_profile;
-assert.strictEqual(fin.is_zero_debt, true, "DECK must be evidenced as zero funded debt");
-assert.strictEqual(fin.total_financial_debt, 0, "Total financial debt must be 0");
-assert.strictEqual(fin.cash_and_equivalents, 1602589000, "Cash must be $1,602.589M");
-assert.strictEqual(fin.net_debt_bridge, -1602589000, "Net debt bridge must be -$1,602.589M (net cash)");
-assert.strictEqual(fin.operating_lease_liabilities_asc842, 472334000, "ASC 842 leases must be $472.334M");
 assert.ok(
-  fin.lease_convention_treatment?.includes("excluded from net debt bridge"),
-  "Leases must be documented as excluded from net debt bridge"
+  controlMarkup.includes("Q2 FY27 earnings release"),
+  "Must correctly state Q2 FY27 earnings release as next monitoring trigger"
 );
-assert.strictEqual(fin.selected_share_basis?.value, 138559000);
-assert.strictEqual(fin.selected_share_basis?.basis_type, "SPLIT_ADJUSTED_DILUTED");
+assert.ok(
+  controlMarkup.includes("Decision-First Prototype (DECK)"),
+  "Must display clear prototype badge"
+);
 
-console.log("[OK] Authoritative DECK payload verified with 100% precision.");
+console.log("[OK] Control DECK rendering and approved interpretations verified.");
 
 // =========================================================================
-// 2. Component Isolation & Dispatch Rules
+// 2. Controlled Fixture Tests: No Invented Fallbacks & Dynamic Data Binding
 // =========================================================================
-console.log("2. Verifying component isolation and dispatch in OpportunityDossierCard...");
+console.log("2. Running controlled fixture tests for fallback elimination and edge cases...");
 
-const dossierCardPath = path.resolve(__dirname, "../components/OpportunityDossierCard.tsx");
-const dossierCardSource = fs.readFileSync(dossierCardPath, "utf-8");
+function cloneDossier(d: OpportunityDossier): OpportunityDossier {
+  return JSON.parse(JSON.stringify(d));
+}
 
-// A. Isolation check: DECK routes to DeckDecisionFirstView
-assert.ok(
-  dossierCardSource.includes("import DeckDecisionFirstView from \"./DeckDecisionFirstView\";"),
-  "OpportunityDossierCard must import DeckDecisionFirstView"
-);
-assert.ok(
-  dossierCardSource.includes('if (dossier.identity.symbol === "DECK")'),
-  "OpportunityDossierCard must condition DeckDecisionFirstView exclusively on DECK symbol"
-);
-assert.ok(
-  dossierCardSource.includes("<DeckDecisionFirstView dossier={dossier} />"),
-  "OpportunityDossierCard must render DeckDecisionFirstView for DECK"
-);
+// A. Missing solved CAGR
+{
+  const fixture = cloneDossier(deckDossier);
+  fixture.valuation.solved_5y_cagr_pct = null;
+  const html = renderToStaticMarkup(React.createElement(DeckDecisionFirstView, { dossier: fixture }));
+  assert.ok(html.includes("Unavailable"), "Missing solved CAGR must render 'Unavailable'");
+  assert.strictEqual(html.includes("-2.34%"), false, "Must not substitute historical -2.34% when CAGR is null");
+}
 
-// B. Non-DECK preservation check: All other published assets retain standard card
-const otherSymbols = ["FIX", "DUOL", "ULTA", "MEDP", "ISRG"];
-for (const sym of otherSymbols) {
-  const otherDossier = getOpportunityDossier(sym);
-  assert.ok(otherDossier, `${sym} must load from published collection`);
+// B. Missing scenario (conservative missing)
+{
+  const fixture = cloneDossier(deckDossier);
+  delete (fixture.valuation.scenarios as any).conservative;
+  const html = renderToStaticMarkup(React.createElement(DeckDecisionFirstView, { dossier: fixture }));
+  assert.ok(html.includes("Unavailable"), "Missing conservative scenario must render 'Unavailable'");
+  assert.strictEqual(html.includes("$73.22"), false, "Must not substitute historical $73.22 when scenario is missing");
+  assert.strictEqual(html.includes("-14.6%"), false, "Must not substitute historical -14.6% when scenario is missing");
+}
+
+// C. Nonfinite / Invalid Reference Price
+{
+  const fixture = cloneDossier(deckDossier);
+  fixture.valuation.reference_price = NaN;
+  const html = renderToStaticMarkup(React.createElement(DeckDecisionFirstView, { dossier: fixture }));
+  assert.ok(html.includes("Unavailable"), "NaN reference price must render 'Unavailable'");
+  assert.strictEqual(html.includes("NaN"), false, "Must never render literal NaN");
+  assert.strictEqual(html.includes("Infinity"), false, "Must never render literal Infinity");
+}
+
+// D. Valid Numeric Zero Preservation
+{
+  const fixture = cloneDossier(deckDossier);
+  fixture.valuation.solved_5y_cagr_pct = 0;
+  fixture.valuation.scenarios!.conservative.per_share_value = 0;
+  fixture.financial_profile.total_financial_debt = 0;
+  fixture.financial_profile.is_zero_debt = false;
+
+  const html = renderToStaticMarkup(React.createElement(DeckDecisionFirstView, { dossier: fixture }));
+  assert.ok(html.includes("0.00%"), "Valid numeric 0 CAGR must render as '0.00%', not 'Unavailable'");
+  assert.ok(html.includes("$0.00"), "Valid numeric 0 per share value must render as '$0.00', not 'Unavailable'");
+}
+
+// E. Changed Valid Financial Inputs (Proving Dynamic Data Binding)
+{
+  const fixture = cloneDossier(deckDossier);
+  fixture.valuation.reference_price = 100.0;
+  fixture.valuation.reference_date = "2026-11-15";
+  fixture.valuation.solved_5y_cagr_pct = 5.5;
+  fixture.valuation.scenarios!.conservative.per_share_value = 90.0;
+  fixture.valuation.scenarios!.base.per_share_value = 140.0;
+  fixture.valuation.scenarios!.optimistic.per_share_value = 220.0;
+
+  const html = renderToStaticMarkup(React.createElement(DeckDecisionFirstView, { dossier: fixture }));
+  assert.ok(html.includes("$100.00"), "Must render updated reference price $100.00");
+  assert.ok(html.includes("2026-11-15"), "Must render updated reference date 2026-11-15");
+  assert.ok(html.includes("5.50%"), "Must render updated solved CAGR 5.50%");
+  assert.ok(html.includes("$90.00"), "Must render updated Bear value $90.00");
+  assert.ok(html.includes("-10.0%"), "Must render calculated Bear diff -10.0%");
+  assert.ok(html.includes("$140.00"), "Must render updated Base value $140.00");
+  assert.ok(html.includes("+40.0%"), "Must render calculated Base diff +40.0%");
+  assert.ok(html.includes("$220.00"), "Must render updated Bull value $220.00");
+  assert.ok(html.includes("+120.0%"), "Must render calculated Bull diff +120.0%");
+
+  // Historical DECK values must not be rendered when replaced
+  assert.strictEqual(html.includes("$85.72"), false, "Old reference price $85.72 must not appear");
+  assert.strictEqual(html.includes("-2.34%"), false, "Old CAGR -2.34% must not appear");
+  assert.strictEqual(html.includes("$73.22"), false, "Old Bear value $73.22 must not appear");
+  assert.strictEqual(html.includes("$127.49"), false, "Old Base value $127.49 must not appear");
+  assert.strictEqual(html.includes("$209.87"), false, "Old Bull value $209.87 must not appear");
+}
+
+// F. Valuation Suppression
+{
+  const fixture = cloneDossier(deckDossier);
+  fixture.valuation.valuation_status = "VALUATION_SUPPRESSED";
+  fixture.valuation.suppression_reason = "Model suppressed due to restructuring";
+
+  const html = renderToStaticMarkup(React.createElement(DeckDecisionFirstView, { dossier: fixture }));
+  assert.ok(html.includes("Valuation Suppressed"), "Must render 'Valuation Suppressed' when status is suppressed");
+  // Numeric fair values must be suppressed
+  assert.strictEqual(html.includes("$73.22"), false, "Must not render numeric Bear value when suppressed");
+  assert.strictEqual(html.includes("$127.49"), false, "Must not render numeric Base value when suppressed");
+  assert.strictEqual(html.includes("$209.87"), false, "Must not render numeric Bull value when suppressed");
+}
+
+// G. Total Absence of Fallback Numbers when Scenarios & Solved CAGR are Missing
+{
+  const fixture = cloneDossier(deckDossier);
+  fixture.valuation.solved_5y_cagr_pct = null;
+  fixture.valuation.scenarios = null;
+
+  const html = renderToStaticMarkup(React.createElement(DeckDecisionFirstView, { dossier: fixture }));
+  assert.strictEqual(html.includes("73.22"), false, "73.22 must not appear as a fallback");
+  assert.strictEqual(html.includes("127.49"), false, "127.49 must not appear as a fallback");
+  assert.strictEqual(html.includes("209.87"), false, "209.87 must not appear as a fallback");
+  assert.strictEqual(html.includes("-2.34%"), false, "-2.34% must not appear as a fallback");
+  assert.strictEqual(html.includes("-14.6%"), false, "-14.6% must not appear as a fallback");
+  assert.strictEqual(html.includes("+48.7%"), false, "+48.7% must not appear as a fallback");
+  assert.strictEqual(html.includes("+144.8%"), false, "+144.8% must not appear as a fallback");
+}
+
+console.log("[OK] Controlled fixture and fallback elimination tests passed.");
+
+// =========================================================================
+// 3. Component Isolation & Non-WATCH Disposition Handling
+// =========================================================================
+console.log("3. Verifying component isolation and non-WATCH disposition contracts...");
+
+// A. Non-WATCH disposition in OpportunityDossierCard: Falls back to standard card
+{
+  const fixture = cloneDossier(deckDossier);
+  fixture.central_assessment.disposition = "NO_SUPPORTED_OPPORTUNITY";
+  fixture.central_assessment.disposition_label = "No Opportunity Supported";
+
+  const html = renderToStaticMarkup(React.createElement(OpportunityDossierCard, { dossier: fixture }));
   assert.strictEqual(
-    otherDossier.identity.symbol === "DECK",
+    html.includes("Decision-First Prototype (DECK)"),
     false,
-    `${sym} must not be identified as DECK`
+    "Non-WATCH disposition must not render DeckDecisionFirstView prototype badge"
+  );
+  assert.ok(
+    html.includes("No Opportunity Supported") || html.includes("NO_SUPPORTED_OPPORTUNITY"),
+    "Standard card must render the real disposition label"
   );
 }
 
-// C. Unpublished fallback check: Uncataloged symbol returns null
-const nullDossier = getOpportunityDossier("UNKNOWN_TICKER");
-assert.strictEqual(nullDossier, null, "Uncataloged symbol must fail closed to null");
+// B. Non-WATCH disposition in DeckDecisionFirstView directly: Dynamically renders badge, no hardcoded WATCH
+{
+  const fixture = cloneDossier(deckDossier);
+  fixture.central_assessment.disposition = "RESEARCH_FURTHER";
+  fixture.central_assessment.disposition_label = "Research Further Required";
 
-console.log("[OK] Component isolation and fallback preservation verified.");
-
-// =========================================================================
-// 3. Epistemic Content Rules & Semantic Verification
-// =========================================================================
-console.log("3. Verifying DeckDecisionFirstView content rules and structure...");
-
-const deckViewPath = path.resolve(__dirname, "../components/DeckDecisionFirstView.tsx");
-const deckViewSource = fs.readFileSync(deckViewPath, "utf-8");
-
-// A. Verdict & Decisive Reason
-assert.ok(
-  deckViewSource.includes("A. Verdict &amp; Decisive Reason"),
-  "Must include Section A: Verdict & Decisive Reason"
-);
-assert.ok(
-  deckViewSource.includes("WATCH"),
-  "Must prominently display WATCH verdict"
-);
-assert.ok(
-  deckViewSource.includes("Status: WATCH (Conditions required for entry • Not a BUY recommendation)"),
-  "Must include explicit non-recommendation boundary"
-);
-
-// B. One-Sentence Thesis
-assert.ok(
-  deckViewSource.includes("B. One-Sentence Thesis"),
-  "Must include Section B: One-Sentence Thesis"
-);
-assert.ok(
-  deckViewSource.includes("Can HOKA and UGG sustain direct-to-consumer momentum and operating margins above 20%"),
-  "Must include verified one-sentence thesis"
-);
-
-// C. What Is Priced In?
-assert.ok(
-  deckViewSource.includes("C. What Is Priced In?"),
-  "Must include Section C: What Is Priced In?"
-);
-assert.ok(
-  deckViewSource.includes("The implied growth rate depends on the model assumptions"),
-  "Must include required explanation that implied growth depends on model assumptions"
-);
-assert.ok(
-  deckViewSource.includes("Bear case") &&
-  deckViewSource.includes("Base case") &&
-  deckViewSource.includes("Bull case"),
-  "Must use standardized Bear case, Base case, Bull case labels"
-);
-
-// D. Key Drivers
-assert.ok(
-  deckViewSource.includes("D. What Must Be True?"),
-  "Must include Section D: What Must Be True?"
-);
-assert.ok(
-  deckViewSource.includes("1. DTC Velocity &amp; International Expansion") &&
-  deckViewSource.includes("2. Gross Margin &amp; Operating Defense") &&
-  deckViewSource.includes("3. Zero-Debt Balance Sheet Strength"),
-  "Must present the three decisive evidence-backed drivers"
-);
-
-// E. Invalidation Triggers
-assert.ok(
-  deckViewSource.includes("E. What Breaks The Thesis?"),
-  "Must include Section E: What Breaks The Thesis?"
-);
-assert.ok(
-  deckViewSource.includes("1. Gross Margin Breach Below 50.0%") &&
-  deckViewSource.includes("2. HOKA DTC Deceleration Below 10.0%") &&
-  deckViewSource.includes("3. Wholesale Channel Contraction"),
-  "Must present the three specific invalidation conditions"
-);
-
-// F. Potential Expectation Gap
-assert.ok(
-  deckViewSource.includes("F. Potential Expectation Gap"),
-  "Must include Section F: Potential Expectation Gap"
-);
-assert.ok(
-  deckViewSource.includes("An expectation gap has not yet been established beyond observed brand channel divergence"),
-  "Must adhere to prompt rule: explicitly declare no unestablished consensus gap"
-);
-
-// G. What Would Change The Decision?
-assert.ok(
-  deckViewSource.includes("G. What Would Change The Decision?"),
-  "Must include Section G: What Would Change The Decision?"
-);
-assert.ok(
-  deckViewSource.includes("Next Review Trigger:"),
-  "Must include Next Review Trigger"
-);
-assert.ok(
-  deckViewSource.includes("Decisive Unknown:"),
-  "Must include Decisive Unknown"
-);
-
-// H. Optional Section Omission
-assert.strictEqual(
-  deckViewSource.includes("What Could This Become?"),
-  false,
-  "Section H ('What Could This Become?') must be omitted as unsupported by current dossier"
-);
-
-// I. Progressive Disclosure Sections
-assert.ok(
-  deckViewSource.includes("Valuation Mechanics, Parameters &amp; Full Scenario Comparison"),
-  "Must include progressive disclosure section 1 for valuation mechanics"
-);
-assert.ok(
-  deckViewSource.includes("Financial Resilience, Capital Structure &amp; Sourced Net Debt Bridge"),
-  "Must include progressive disclosure section 2 for financial resilience"
-);
-assert.ok(
-  deckViewSource.includes("Full Dossier Baseline &amp; Quality Watch Selection Record (Questions A–F)"),
-  "Must include progressive disclosure section 3 for full dossier baseline"
-);
-
-// J. Accessibility attributes
-assert.ok(
-  deckViewSource.includes("aria-expanded="),
-  "Progressive disclosure buttons must have aria-expanded attribute"
-);
-assert.ok(
-  deckViewSource.includes("aria-controls="),
-  "Progressive disclosure buttons must have aria-controls attribute"
-);
-assert.ok(
-  deckViewSource.includes("min-h-[44px]"),
-  "Interactive controls must satisfy minimum 44px touch target requirement"
-);
-assert.ok(
-  deckViewSource.includes("focus:ring-2 focus:ring-cyan-400"),
-  "Interactive controls must render visible cyan focus ring"
-);
-
-console.log("[OK] DeckDecisionFirstView semantic and structural requirements verified.");
-
-// =========================================================================
-// 4. Verification across all Published Cohort Assets
-// =========================================================================
-console.log("4. Verifying cohort collection integrity (6 published assets)...");
-
-const cohort = listOpportunityCohort();
-assert.strictEqual(cohort.length, 6, "Must have exactly 6 published Quality Watch assets");
-const cohortSymbols = cohort.map((c) => c.symbol);
-assert.deepStrictEqual(
-  cohortSymbols.sort(),
-  ["DECK", "DUOL", "FIX", "ISRG", "MEDP", "ULTA"].sort(),
-  "Cohort must comprise FIX, DUOL, ULTA, MEDP, ISRG, DECK"
-);
-
-for (const item of cohort) {
-  const d = getOpportunityDossier(item.symbol);
-  assert.ok(d, `Dossier for ${item.symbol} must exist`);
-  assert.strictEqual(d.central_assessment.disposition, "WATCH_CONDITIONS");
-  assert.ok(d.valuation.reference_price > 0, "Reference price must be positive");
+  const html = renderToStaticMarkup(React.createElement(DeckDecisionFirstView, { dossier: fixture }));
+  assert.ok(html.includes("Research Further Required"), "Must dynamically display custom disposition label");
 }
 
-console.log("[OK] Cohort collection verified.");
+// C. Non-DECK published assets retain standard card
+const otherSymbols = ["FIX", "DUOL", "ULTA", "MEDP", "ISRG"];
+for (const sym of otherSymbols) {
+  const d = getOpportunityDossier(sym);
+  assert.ok(d, `${sym} must load from published collection`);
+  const html = renderToStaticMarkup(React.createElement(OpportunityDossierCard, { dossier: d }));
+  assert.strictEqual(
+    html.includes("Decision-First Prototype (DECK)"),
+    false,
+    `${sym} must never render DECK decision-first prototype badge`
+  );
+}
+
+// D. Unpublished symbol returns null
+const nullDossier = getOpportunityDossier("UNKNOWN_SYMBOL_XYZ");
+assert.strictEqual(nullDossier, null, "Unpublished symbol must return null");
+
+console.log("[OK] Component isolation and disposition contracts verified.");
+
+// =========================================================================
+// 4. Accessibility & Interactive Semantics
+// =========================================================================
+console.log("4. Verifying accessibility, touch targets, and ARIA state...");
+
+assert.ok(controlMarkup.includes("min-h-[44px]"), "Interactive controls must enforce >= 44px touch targets");
+assert.ok(controlMarkup.includes("focus:ring-2 focus:ring-cyan-400"), "Controls must have visible focus rings");
+assert.ok(controlMarkup.includes("aria-expanded="), "Progressive disclosure controls must have aria-expanded");
+assert.ok(controlMarkup.includes("aria-controls="), "Progressive disclosure controls must have aria-controls");
+
+// Cohort size check
+const cohort = listOpportunityCohort();
+assert.strictEqual(cohort.length, 6, "Must have exactly 6 published Quality Watch assets");
 
 console.log("===============================================================================");
-console.log("ALL DECK DECISION-FIRST PROTOTYPE TESTS PASSED SUCCESSFULLY! ✅");
+console.log("ALL BEHAVIORAL AND FIXTURE TESTS PASSED SUCCESSFULLY! ✅");
 console.log("===============================================================================");

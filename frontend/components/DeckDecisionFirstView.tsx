@@ -4,31 +4,24 @@
  * frontend/components/DeckDecisionFirstView.tsx
  *
  * Decision-First Research Page Prototype for DECK (Deckers Outdoor Corp.).
- * Designed under ARX Closure Model v2 to enable an investor to understand the
- * WATCH decision within 60–90 seconds.
+ * Governed by ARX Closure Model v2.
  *
- * Key Architecture:
- * - Decision Surface (Immediate 60-90s understanding):
- *   A. Verdict & Decisive Reason: Lead with WATCH, clear reason for monitoring, reference price.
- *   B. One-Sentence Thesis: Core investment hypothesis connecting brand durability to valuation.
- *   C. What Is Priced In?: Model-implied expectations (-2.34% CAGR), Bear / Base / Bull comparisons.
- *   D. What Must Be True?: Up to 3 evidence-backed drivers (DTC velocity, gross margin defense, net cash).
- *   E. What Breaks The Thesis?: Up to 3 failure conditions (margin breach <50%, DTC deceleration <10%, wholesale slowing).
- *   F. Potential Expectation Gap: Model implication vs hypothesis vs reality (explicitly notes no consensus gap established).
- *   G. What Would Change The Decision?: Strengthening conditions, weakening conditions, next review trigger, decisive unknown.
- *   H. Optional Section ("What could this become?"): Omitted per standard (unsupported by current dossier).
- * - Progressive Disclosure (Collapsible supporting details below decision surface):
- *   1. Valuation Mechanics & Scenario Assumptions (Reverse-DCF solve vs Bear / Base / Bull full comparative table).
- *   2. Financial Resilience, Sourced Facts & Net Debt Bridge (Cash $1.60B, zero debt, ASC 842 lease convention, SEC XBRL).
- *   3. Full Dossier Baseline & Research Provenance (Quality Watch Selection Record A-F, governance metadata).
- * - Footer: On-demand Technical Radar navigation (/radar?symbol=DECK).
- *
- * Epistemic & Behavioral Invariants:
- * - Isolated exclusively to DECK; other published dossiers retain accepted layout.
- * - Pure read-only presentation grounded in the frozen 2026-10-16 market close ledger ($85.72 reference price).
- * - Zero BUY / INVEST recommendations; preserves strict WATCH status.
- * - Zero invented consensus estimates, price targets, shareholder returns, or synthetic scores.
- * - Full accessibility: min 44px touch targets, visible focus rings, zero horizontal overflow across 360px-1280px.
+ * Core Objectives:
+ * 1. Zero numerical fallbacks: All financial values, assumptions, and comparisons
+ *    are strictly read from the authoritative dossier payload. Missing or invalid
+ *    data renders "Unavailable" or is omitted; valid numeric zeros are preserved;
+ *    nonfinite values are rejected; valuation suppression suppresses fair values.
+ * 2. Unaltered approved research interpretation: Distinguishes monitored conditions
+ *    from unproven causal claims (e.g. margin deterioration or DTC deceleration are
+ *    monitored thresholds requiring investigation, not definitive proof of brand fatigue).
+ *    Wholesale contraction is not invented as a third formal invalidation condition.
+ *    Review trigger uses the approved Q2 FY27 earnings release.
+ * 3. Substantially shorter default reading experience: Compact decision surface
+ *    covering Verdict & Decisive Reason, Thesis, Expectations & Scenarios,
+ *    What Must Be True (3 drivers), What Breaks The Thesis (2 supported conditions),
+ *    and Next Review. Detailed WACC/margin mechanics are housed in progressive disclosures.
+ * 4. Progressive disclosures: Collapsed by default, touch targets >= 44px, full accessibility.
+ * 5. Strictly isolated to DECK; other dossiers retain accepted presentation.
  */
 
 import React, { useState } from "react";
@@ -42,6 +35,26 @@ interface DeckDecisionFirstViewProps {
   dossier: OpportunityDossier;
 }
 
+const isFiniteNumber = (val: unknown): val is number =>
+  typeof val === "number" && Number.isFinite(val);
+
+const formatCurrency = (val: number | null | undefined): string => {
+  if (!isFiniteNumber(val)) return "Unavailable";
+  return `$${val.toFixed(2)}`;
+};
+
+const formatPercent = (val: number | null | undefined, includeSign = false): string => {
+  if (!isFiniteNumber(val)) return "Unavailable";
+  const sign = includeSign && val > 0 ? "+" : "";
+  return `${sign}${val.toFixed(2)}%`;
+};
+
+const formatDiffPercent = (diff: number | null | undefined): string => {
+  if (!isFiniteNumber(diff)) return "Unavailable";
+  const sign = diff > 0 ? "+" : "";
+  return `${sign}${diff.toFixed(1)}%`;
+};
+
 export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstViewProps) {
   const { identity, central_assessment, valuation, financial_profile, monitoring, navigation } = dossier;
   const rationale = dossier.selection_rationale;
@@ -51,27 +64,42 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
   const [financialsOpen, setFinancialsOpen] = useState(false);
   const [provenanceOpen, setProvenanceOpen] = useState(false);
 
-  // Authoritative scenarios and differences
-  const conservativeScenario = valuation.scenarios?.conservative;
-  const baseScenario = valuation.scenarios?.base;
-  const optimisticScenario = valuation.scenarios?.optimistic;
+  // Check valuation suppression status
+  const isSuppressed = valuation.valuation_status === "VALUATION_SUPPRESSED";
 
-  const bearDiff = calculateScenarioPriceDiffPct(
-    conservativeScenario?.per_share_value,
-    valuation.reference_price
-  );
-  const baseDiff = calculateScenarioPriceDiffPct(
-    baseScenario?.per_share_value,
-    valuation.reference_price
-  );
-  const bullDiff = calculateScenarioPriceDiffPct(
-    optimisticScenario?.per_share_value,
-    valuation.reference_price
-  );
+  // Authoritative scenarios and differences (suppressed if valuation is suppressed)
+  const conservativeScenario = !isSuppressed ? valuation.scenarios?.conservative : null;
+  const baseScenario = !isSuppressed ? valuation.scenarios?.base : null;
+  const optimisticScenario = !isSuppressed ? valuation.scenarios?.optimistic : null;
+
+  const bearDiff = !isSuppressed
+    ? calculateScenarioPriceDiffPct(
+        conservativeScenario?.per_share_value,
+        valuation.reference_price
+      )
+    : null;
+  const baseDiff = !isSuppressed
+    ? calculateScenarioPriceDiffPct(
+        baseScenario?.per_share_value,
+        valuation.reference_price
+      )
+    : null;
+  const bullDiff = !isSuppressed
+    ? calculateScenarioPriceDiffPct(
+        optimisticScenario?.per_share_value,
+        valuation.reference_price
+      )
+    : null;
+
+  // Handle disposition safely without hardcoding WATCH if supplied payload changes
+  const isWatch = central_assessment.disposition === "WATCH_CONDITIONS";
+  const dispositionBadgeText = isWatch
+    ? "WATCH"
+    : (central_assessment.disposition_label || central_assessment.disposition || "MONITOR");
 
   return (
     <article
-      className="bg-[#0b1019] border border-[#1e293b] rounded-2xl p-4 sm:p-6 shadow-xl space-y-6 text-slate-100 transition-all"
+      className="bg-[#0b1019] border border-[#1e293b] rounded-2xl p-4 sm:p-6 shadow-xl space-y-5 text-slate-100 transition-all"
       aria-labelledby={`decision-first-heading-${identity.symbol}`}
     >
       {/* =========================================================================
@@ -99,7 +127,7 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
               {identity.opportunity_route}
             </span>
             <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-medium bg-[#141c2e] text-amber-300 border border-amber-900/60">
-              Decision-First Research Prototype (DECK)
+              Decision-First Prototype (DECK)
             </span>
             {identity.sec_edgar_browse_url && (
               <a
@@ -116,67 +144,61 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
           </div>
         </div>
 
-        {/* Reference Price & WATCH Disposition */}
+        {/* Reference Price & Disposition Badge */}
         <div className="text-right flex flex-col items-end gap-1.5">
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl sm:text-3xl font-mono font-bold text-white tracking-tight">
-              ${valuation.reference_price.toFixed(2)}
+              {isFiniteNumber(valuation.reference_price) ? `$${valuation.reference_price.toFixed(2)}` : "Unavailable"}
             </span>
             <span className="text-xs text-slate-400 font-mono">USD</span>
           </div>
           <div className="text-[11px] text-slate-400 font-mono">
-            Reference Close: {valuation.reference_date}
+            Reference Close: {valuation.reference_date || "Unavailable"}
           </div>
           <span className="px-3 py-1 rounded text-xs font-mono font-bold bg-amber-950/90 text-amber-300 border border-amber-600/80 shadow-sm inline-flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-            WATCH
+            {dispositionBadgeText}
           </span>
         </div>
       </header>
 
       {/* =========================================================================
-          DECISION SURFACE (Fast 60-90s Understanding)
+          DEFAULT DECISION SURFACE (Concise Reading Experience)
          ========================================================================= */}
 
-      {/* A. Verdict & Decisive Reason */}
+      {/* A. WATCH — Decisive Reason */}
       <section
-        className="bg-[#0e172a] border border-amber-700/60 rounded-xl p-4 sm:p-5 space-y-3 shadow-md"
-        aria-label="Verdict and Decisive Reason"
+        className="bg-[#0e172a] border border-amber-700/60 rounded-xl p-4 sm:p-5 space-y-2.5 shadow-md"
+        aria-label="WATCH Decisive Reason"
       >
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-900/40 pb-2">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400" aria-hidden="true"></span>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-amber-300">
-              A. Verdict &amp; Decisive Reason
-            </h2>
-          </div>
-          <span className="text-[10px] font-mono text-amber-400/90 bg-amber-950/70 border border-amber-800 px-2 py-0.5 rounded">
-            Primary Research Disposition
-          </span>
+        <div className="flex items-center gap-2 border-b border-amber-900/40 pb-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-400" aria-hidden="true"></span>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-amber-300">
+            WATCH — Decisive Reason
+          </h2>
         </div>
 
-        <div className="space-y-2">
-          <p className="text-sm text-slate-100 leading-relaxed font-sans font-medium">
-            Deckers Outdoor displays exceptional balance sheet strength ($1.60B net cash, zero funded senior debt) and continued brand momentum in HOKA direct-to-consumer (+17.3% YoY in Q1 FY27), but high seasonal concentration in UGG winter demand and wholesale channel growth moderation (HOKA wholesale slowed to +2.9% YoY vs +27.9% in FY26) prevent a stronger conclusion. Retained on WATCH for evidence of international DTC acceleration and sustained gross margin defense.
-          </p>
-          <div className="pt-2 border-t border-amber-950/60 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-amber-300/90">
-            <span>Status: WATCH (Conditions required for entry • Not a BUY recommendation)</span>
-            <span className="text-slate-400 font-sans text-[10px]">
-              Grounded in Form 10-K FY26 &amp; Form 10-Q Q1 FY27 filings
-            </span>
-          </div>
+        <p className="text-sm text-slate-100 leading-relaxed font-sans font-medium">
+          Deckers Outdoor displays exceptional balance sheet strength ($1.60B net cash, zero funded senior debt) and continued brand momentum in HOKA direct-to-consumer (+17.3% YoY in Q1 FY27). It remains on WATCH because wholesale growth has moderated (+2.9% YoY) and seasonal concentration in UGG winter demand requires ongoing monitoring before considering an entry.
+        </p>
+
+        <div className="pt-2 border-t border-amber-950/60 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-amber-300/90">
+          <span>Status: WATCH (Conditions required for entry • Not a BUY recommendation)</span>
+          <span className="text-slate-400 font-sans text-[10px]">
+            Grounded in Form 10-K FY26 &amp; Form 10-Q Q1 FY27 filings
+          </span>
         </div>
       </section>
 
-      {/* B. One-Sentence Thesis */}
+      {/* B. Thesis */}
       <section
-        className="bg-[#080d16] border border-cyan-900/60 rounded-xl p-4 sm:p-5 space-y-2.5 shadow-sm"
-        aria-label="One-Sentence Thesis"
+        className="bg-[#080d16] border border-cyan-900/60 rounded-xl p-4 sm:p-5 space-y-2 shadow-sm"
+        aria-label="Thesis"
       >
-        <div className="flex items-center gap-2 border-b border-cyan-950/80 pb-2">
+        <div className="flex items-center gap-2 border-b border-cyan-950/80 pb-1.5">
           <span className="w-2 h-2 rounded-full bg-cyan-400" aria-hidden="true"></span>
           <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-300">
-            B. One-Sentence Thesis
+            Thesis
           </h2>
         </div>
         <div className="p-3 bg-[#0d1422] rounded-lg border border-cyan-950">
@@ -184,26 +206,18 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
             &ldquo;Can HOKA and UGG sustain direct-to-consumer momentum and operating margins above 20% without aggressive promotional discounting as consumer footwear spending normalizes?&rdquo;
           </p>
         </div>
-        <p className="text-[11px] text-slate-400 font-sans">
-          Connects the durability of brand pricing power directly to the reverse-DCF valuation boundary.
-        </p>
       </section>
 
-      {/* C. What Is Priced In? (Model Expectations & Scenarios) */}
+      {/* C. Expectations & Scenarios */}
       <section
         className="bg-[#0f172a]/95 border border-cyan-800/60 rounded-xl p-4 sm:p-5 space-y-4 shadow-md"
-        aria-label="What Is Priced In"
+        aria-label="Expectations and Scenarios"
       >
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400" aria-hidden="true"></span>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-300">
-              C. What Is Priced In? (Model Expectations &amp; Scenario Values)
-            </h2>
-          </div>
-          <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950/80 border border-cyan-800 px-2 py-0.5 rounded">
-            Reverse-DCF &amp; DCF Present Values
-          </span>
+        <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+          <span className="w-2 h-2 rounded-full bg-cyan-400" aria-hidden="true"></span>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+            Expectations &amp; Scenarios
+          </h2>
         </div>
 
         {/* Reverse-DCF Implication Banner */}
@@ -213,17 +227,21 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
               Reference Price Solved 5-Year Revenue CAGR:
             </span>
             <span className="font-mono font-bold text-cyan-400 text-xl sm:text-2xl">
-              {valuation.solved_5y_cagr_pct !== null ? `${valuation.solved_5y_cagr_pct.toFixed(2)}%` : "-2.34%"}
+              {isSuppressed
+                ? "Valuation Suppressed"
+                : formatPercent(valuation.solved_5y_cagr_pct)}
             </span>
           </div>
           <div className="text-xs text-slate-400 space-y-1">
             <div>
-              <strong>Model Inputs:</strong> Solved at reference price of{" "}
-              <span className="text-slate-200 font-mono font-semibold">${valuation.reference_price.toFixed(2)}</span>{" "}
-              as of {valuation.reference_date} (22.0% operating margin, 9.0% WACC, 2.5% terminal growth, 22.0% tax rate, 15.0% reinvestment rate).
+              <strong>Model Anchor:</strong> Solved at reference price of{" "}
+              <span className="text-slate-200 font-mono font-semibold">
+                {formatCurrency(valuation.reference_price)}
+              </span>{" "}
+              as of {valuation.reference_date || "Unavailable"}.
             </div>
             <p className="text-[11px] text-amber-300/90 italic font-sans pt-0.5">
-              The implied growth rate depends on the model assumptions. A negative solved growth rate reflects conditional model mechanics rather than a verified market expectation of contraction or definitive proof of undervaluation.
+              The implied growth rate depends on model assumptions. A negative solved growth rate reflects conditional model mechanics rather than a verified market consensus of contraction or definitive proof of undervaluation.
             </p>
           </div>
         </div>
@@ -252,27 +270,15 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
                   Modeled Value per Share
                 </span>
                 <div className="font-mono font-bold text-rose-400 text-xl sm:text-2xl tracking-tight">
-                  ${conservativeScenario?.per_share_value.toFixed(2) || "73.22"}
+                  {isSuppressed
+                    ? "Valuation Suppressed"
+                    : formatCurrency(conservativeScenario?.per_share_value)}
                 </div>
                 <div className="bg-[#0d1422] rounded-md p-2 border border-slate-800/80 space-y-0.5 text-xs">
                   <div className="text-[10px] text-slate-400">Difference from reference price:</div>
                   <div className="font-mono font-semibold text-rose-400">
-                    {bearDiff !== null ? `${bearDiff > 0 ? "+" : ""}${bearDiff.toFixed(1)}%` : "-14.6%"}
+                    {isSuppressed ? "—" : formatDiffPercent(bearDiff)}
                   </div>
-                </div>
-              </div>
-              <div className="pt-2 border-t border-slate-800/80 text-[10px] font-mono text-slate-400 space-y-0.5">
-                <div className="flex justify-between">
-                  <span>5Y Rev CAGR:</span>
-                  <span className="text-slate-200">2.0%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Op Margin:</span>
-                  <span className="text-slate-200">18.0%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>WACC:</span>
-                  <span className="text-slate-200">9.5%</span>
                 </div>
               </div>
             </div>
@@ -295,27 +301,15 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
                   Modeled Value per Share
                 </span>
                 <div className="font-mono font-bold text-white text-xl sm:text-2xl tracking-tight">
-                  ${baseScenario?.per_share_value.toFixed(2) || "127.49"}
+                  {isSuppressed
+                    ? "Valuation Suppressed"
+                    : formatCurrency(baseScenario?.per_share_value)}
                 </div>
                 <div className="bg-[#0d1422] rounded-md p-2 border border-slate-800/80 space-y-0.5 text-xs">
                   <div className="text-[10px] text-slate-400">Difference from reference price:</div>
                   <div className="font-mono font-semibold text-cyan-300">
-                    {baseDiff !== null ? `${baseDiff > 0 ? "+" : ""}${baseDiff.toFixed(1)}%` : "+48.7%"}
+                    {isSuppressed ? "—" : formatDiffPercent(baseDiff)}
                   </div>
-                </div>
-              </div>
-              <div className="pt-2 border-t border-slate-800/80 text-[10px] font-mono text-slate-400 space-y-0.5">
-                <div className="flex justify-between">
-                  <span>5Y Rev CAGR:</span>
-                  <span className="text-slate-200">8.0%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Op Margin:</span>
-                  <span className="text-slate-200">22.0%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>WACC:</span>
-                  <span className="text-slate-200">9.0%</span>
                 </div>
               </div>
             </div>
@@ -338,131 +332,84 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
                   Modeled Value per Share
                 </span>
                 <div className="font-mono font-bold text-emerald-400 text-xl sm:text-2xl tracking-tight">
-                  ${optimisticScenario?.per_share_value.toFixed(2) || "209.87"}
+                  {isSuppressed
+                    ? "Valuation Suppressed"
+                    : formatCurrency(optimisticScenario?.per_share_value)}
                 </div>
                 <div className="bg-[#0d1422] rounded-md p-2 border border-slate-800/80 space-y-0.5 text-xs">
                   <div className="text-[10px] text-slate-400">Difference from reference price:</div>
                   <div className="font-mono font-semibold text-emerald-400">
-                    {bullDiff !== null ? `${bullDiff > 0 ? "+" : ""}${bullDiff.toFixed(1)}%` : "+144.8%"}
+                    {isSuppressed ? "—" : formatDiffPercent(bullDiff)}
                   </div>
-                </div>
-              </div>
-              <div className="pt-2 border-t border-slate-800/80 text-[10px] font-mono text-slate-400 space-y-0.5">
-                <div className="flex justify-between">
-                  <span>5Y Rev CAGR:</span>
-                  <span className="text-slate-200">14.0%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Op Margin:</span>
-                  <span className="text-slate-200">24.0%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>WACC:</span>
-                  <span className="text-slate-200">8.5%</span>
                 </div>
               </div>
             </div>
           </div>
 
           <div className="text-[10px] text-slate-400 italic font-mono pt-1">
-            Modeled values represent discounted cash flow intrinsic present equity values per share based on conditional operating assumptions, not future price targets, guaranteed returns, or assigned probabilities.
+            Modeled values represent discounted cash flow intrinsic present equity values based on conditional operating assumptions, not future price targets or guaranteed returns. Full parameters are detailed in the disclosure below.
           </div>
         </div>
       </section>
 
       {/* D. What Must Be True? — Up to Three Drivers */}
       <section
-        className="bg-[#0e1726] border border-[#233149] rounded-xl p-4 sm:p-5 space-y-3.5"
+        className="bg-[#0e1726] border border-[#233149] rounded-xl p-4 sm:p-5 space-y-3"
         aria-label="What Must Be True"
       >
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400" aria-hidden="true"></span>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-300">
-              D. What Must Be True? (Key Drivers That Could Support Entry)
-            </h2>
-          </div>
-          <span className="text-[10px] font-mono text-slate-400">3 Evidence-Supported Drivers</span>
+        <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-400" aria-hidden="true"></span>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+            What Must Be True?
+          </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
           {/* Driver 1 */}
-          <div className="bg-[#080d16] border border-emerald-950/80 rounded-lg p-3.5 space-y-2 flex flex-col justify-between">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5 text-emerald-300 font-semibold text-[11px] uppercase tracking-wider">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" aria-hidden="true"></span>
-                <h3>1. DTC Velocity &amp; International Expansion</h3>
-              </div>
-              <p className="text-slate-300 leading-relaxed">
-                <strong className="text-slate-200">Condition Required:</strong> HOKA direct-to-consumer sales must sustain double-digit growth and overseas adoption expand without margin-diluting promotional spend.
-              </p>
-              <div className="text-slate-400 text-[11px] pt-1">
-                <strong className="text-emerald-400">Current Evidence:</strong> In Q1 FY27, HOKA DTC net sales grew 17.3% YoY to $256.8M, outpacing wholesale (+2.9%) and driving brand pull.
-              </div>
-            </div>
-            <div className="pt-2 border-t border-slate-800/80 text-[10px] text-slate-400 font-sans">
-              <strong>Uncertainty:</strong> Sustainability of premium DTC full-price sell-through rates across non-running categories.
-            </div>
+          <div className="bg-[#080d16] border border-emerald-950/80 rounded-lg p-3 space-y-1.5">
+            <h3 className="text-emerald-300 font-semibold text-[11px] uppercase tracking-wider">
+              1. DTC Velocity &amp; International Scaling
+            </h3>
+            <p className="text-slate-300 leading-relaxed">
+              HOKA direct-to-consumer sales sustain double-digit growth (+17.3% YoY in Q1 FY27) and international adoption scales without margin-diluting promotional spend.
+            </p>
           </div>
 
           {/* Driver 2 */}
-          <div className="bg-[#080d16] border border-emerald-950/80 rounded-lg p-3.5 space-y-2 flex flex-col justify-between">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5 text-emerald-300 font-semibold text-[11px] uppercase tracking-wider">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" aria-hidden="true"></span>
-                <h3>2. Gross Margin &amp; Operating Defense</h3>
-              </div>
-              <p className="text-slate-300 leading-relaxed">
-                <strong className="text-slate-200">Condition Required:</strong> Consolidated gross margin must hold above 50.0%–55.0% and operating margin hold near ~22% despite wholesale moderation.
-              </p>
-              <div className="text-slate-400 text-[11px] pt-1">
-                <strong className="text-emerald-400">Current Evidence:</strong> Reported TTM operating margin was 22.67% ($1.25B EBIT on $5.53B revenue) with disciplined pricing.
-              </div>
-            </div>
-            <div className="pt-2 border-t border-slate-800/80 text-[10px] text-slate-400 font-sans">
-              <strong>Uncertainty:</strong> Wholesale channel inventory aging and retail promotional discounting pressure.
-            </div>
+          <div className="bg-[#080d16] border border-emerald-950/80 rounded-lg p-3 space-y-1.5">
+            <h3 className="text-emerald-300 font-semibold text-[11px] uppercase tracking-wider">
+              2. Gross Margin &amp; Operating Defense
+            </h3>
+            <p className="text-slate-300 leading-relaxed">
+              Consolidated gross margins sustain above 55.0% alongside operating margins near ~22% despite wholesale channel moderation (+2.9% YoY in Q1 FY27).
+            </p>
           </div>
 
           {/* Driver 3 */}
-          <div className="bg-[#080d16] border border-emerald-950/80 rounded-lg p-3.5 space-y-2 flex flex-col justify-between">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5 text-emerald-300 font-semibold text-[11px] uppercase tracking-wider">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" aria-hidden="true"></span>
-                <h3>3. Zero-Debt Balance Sheet Strength</h3>
-              </div>
-              <p className="text-slate-300 leading-relaxed">
-                <strong className="text-slate-200">Condition Required:</strong> Deckers must preserve its net cash cushion to self-fund international footprint expansion without debt or equity dilution.
-              </p>
-              <div className="text-slate-400 text-[11px] pt-1">
-                <strong className="text-emerald-400">Current Evidence:</strong> $1.60B in cash reserves, zero funded senior debt, and undrawn credit facility under clean 6:1 split structure.
-              </div>
-            </div>
-            <div className="pt-2 border-t border-slate-800/80 text-[10px] text-slate-400 font-sans">
-              <strong>Uncertainty:</strong> Capital allocation discipline between share buybacks and brand infrastructure.
-            </div>
+          <div className="bg-[#080d16] border border-emerald-950/80 rounded-lg p-3 space-y-1.5">
+            <h3 className="text-emerald-300 font-semibold text-[11px] uppercase tracking-wider">
+              3. Zero-Debt Balance Sheet Strength
+            </h3>
+            <p className="text-slate-300 leading-relaxed">
+              Preservation of net cash cushion ($1.60B cash reserves, zero funded debt) to self-fund international footprint expansion without debt or equity dilution.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* E. What Breaks The Thesis? — Up to Three Conditions */}
+      {/* E. What Breaks The Thesis? — Supported Invalidation Conditions */}
       <section
-        className="bg-[#140f1a] border border-rose-900/60 rounded-xl p-4 sm:p-5 space-y-3.5"
+        className="bg-[#140f1a] border border-rose-900/60 rounded-xl p-4 sm:p-5 space-y-3"
         aria-label="What Breaks The Thesis"
       >
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rose-900/40 pb-2">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-rose-400" aria-hidden="true"></span>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-rose-300">
-              E. What Breaks The Thesis? (Invalidation &amp; Thesis Killers)
-            </h2>
-          </div>
-          <span className="text-[10px] font-mono text-rose-400 bg-rose-950/80 border border-rose-800 px-2 py-0.5 rounded">
-            Observable Invalidation Triggers
-          </span>
+        <div className="flex items-center gap-2 border-b border-rose-900/40 pb-2">
+          <span className="w-2 h-2 rounded-full bg-rose-400" aria-hidden="true"></span>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-rose-300">
+            What Breaks The Thesis?
+          </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
           {/* Invalidation 1 */}
           <div className="bg-[#080d16] border border-rose-950/80 rounded-lg p-3.5 space-y-1.5">
             <div className="flex items-center gap-1.5 text-rose-300 font-semibold text-[11px] uppercase tracking-wider">
@@ -470,10 +417,10 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
               <h3>1. Gross Margin Breach Below 50.0%</h3>
             </div>
             <p className="text-slate-300 leading-relaxed">
-              Consolidated gross margin falling below 50.0% due to wholesale inventory accumulation or retail discounting would indicate brand equity erosion and loss of pricing power.
+              Consolidated gross margin falling below 50.0% is a monitored invalidation condition that would weaken the thesis and require investigation of underlying cost, inventory, and pricing drivers.
             </p>
             <div className="text-[10px] text-rose-400/90 font-mono pt-1">
-              Threshold: &lt; 50.0% consolidated gross margin
+              Monitored Trigger: &lt; 50.0% consolidated gross margin
             </div>
           </div>
 
@@ -484,150 +431,82 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
               <h3>2. HOKA DTC Deceleration Below 10.0%</h3>
             </div>
             <p className="text-slate-300 leading-relaxed">
-              Quarterly HOKA DTC net sales growth slowing below 10.0% YoY would signal consumer brand fatigue or market saturation in core running and lifestyle franchises.
+              Growth below the existing 10.0% YoY monitoring threshold would weaken the thesis and require reassessment; the underlying cause would need investigation.
             </p>
             <div className="text-[10px] text-rose-400/90 font-mono pt-1">
-              Threshold: &lt; 10.0% YoY quarterly DTC growth
-            </div>
-          </div>
-
-          {/* Invalidation 3 */}
-          <div className="bg-[#080d16] border border-rose-950/80 rounded-lg p-3.5 space-y-1.5">
-            <div className="flex items-center gap-1.5 text-rose-300 font-semibold text-[11px] uppercase tracking-wider">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-400" aria-hidden="true"></span>
-              <h3>3. Wholesale Channel Contraction</h3>
-            </div>
-            <p className="text-slate-300 leading-relaxed">
-              Wholesale net sales growth (which moderated to +2.9% in Q1 FY27 vs 27.9% in FY26) turning negative across major accounts, indicating channel inventory destocking.
-            </p>
-            <div className="text-[10px] text-rose-400/90 font-mono pt-1">
-              Threshold: Wholesale revenue turning negative YoY
+              Monitored Trigger: &lt; 10.0% YoY quarterly DTC net sales growth
             </div>
           </div>
         </div>
       </section>
 
-      {/* F. Potential Expectation Gap */}
+      {/* F. Next Review & Key Unknown */}
       <section
-        className="bg-[#0c121e] border border-purple-900/50 rounded-xl p-4 sm:p-5 space-y-3"
-        aria-label="Potential Expectation Gap"
+        className="bg-[#101726] border border-[#233149] rounded-xl p-4 sm:p-5 space-y-3"
+        aria-label="Next Review and Key Unknown"
       >
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-purple-900/40 pb-2">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-purple-400" aria-hidden="true"></span>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-purple-300">
-              F. Potential Expectation Gap (What Might The Prevailing View Be Missing?)
-            </h2>
-          </div>
-          <span className="text-[10px] font-mono text-purple-400">Disciplined Expectation Check</span>
+        <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+          <span className="w-2 h-2 rounded-full bg-cyan-400" aria-hidden="true"></span>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+            Next Review &amp; Key Unknown
+          </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
-          <div className="bg-[#080d16] border border-purple-950 p-3.5 rounded-lg space-y-1.5">
-            <h3 className="text-purple-300 font-semibold text-[11px] uppercase tracking-wider">
-              1. What The Model Implies
-            </h3>
-            <p className="text-slate-300 leading-relaxed">
-              At $85.72, the Reverse-DCF solves for an implied 5-year revenue CAGR of -2.34% (under 22.0% margin and 9.0% WACC), indicating modest baseline operational expectations.
-            </p>
-          </div>
-
-          <div className="bg-[#080d16] border border-purple-950 p-3.5 rounded-lg space-y-1.5">
-            <h3 className="text-purple-300 font-semibold text-[11px] uppercase tracking-wider">
-              2. The Alternative Hypothesis
-            </h3>
-            <p className="text-slate-300 leading-relaxed">
-              DTC channel momentum (+17.3% YoY in Q1 FY27) indicates enduring brand pull that may outlast wholesale channel destocking, potentially supporting consolidated revenue expansion above the negative reverse-DCF solve.
-            </p>
-          </div>
-
-          <div className="bg-[#080d16] border border-purple-950 p-3.5 rounded-lg space-y-1.5">
-            <h3 className="text-purple-300 font-semibold text-[11px] uppercase tracking-wider">
-              3. Supporting vs. Challenging Evidence
-            </h3>
-            <p className="text-slate-300 leading-relaxed">
-              <strong>Supporting:</strong> HOKA DTC revenue expanded to $256.8M with strong gross margin contribution. <strong className="text-rose-300">Challenging:</strong> HOKA wholesale growth slowed sharply to +2.9% and seasonal UGG concentration persists.
-            </p>
-          </div>
-
-          <div className="bg-[#080d16] border border-purple-950 p-3.5 rounded-lg space-y-1.5">
-            <h3 className="text-purple-300 font-semibold text-[11px] uppercase tracking-wider">
-              4. Unresolved Boundary &amp; Consensus Status
-            </h3>
-            <p className="text-slate-300 leading-relaxed font-sans">
-              <em className="text-amber-300 font-normal">An expectation gap has not yet been established beyond observed brand channel divergence.</em> No dated external consensus estimate is modeled.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* G. What Would Change The Decision? */}
-      <section
-        className="bg-[#101726] border border-[#233149] rounded-xl p-4 sm:p-5 space-y-3.5"
-        aria-label="What Would Change The Decision"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400" aria-hidden="true"></span>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-300">
-              G. What Would Change The Decision?
-            </h2>
-          </div>
-          <span className="text-[10px] font-mono text-slate-400">Monitoring &amp; Review Triggers</span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
-          {/* Strengthening conditions */}
-          <div className="bg-emerald-950/20 border border-emerald-900/50 p-3.5 rounded-lg space-y-1.5">
-            <h3 className="text-emerald-400 font-semibold text-xs flex items-center gap-1.5">
-              <span aria-hidden="true">&#10003;</span>
-              Evidence That Would Strengthen The Case:
-            </h3>
-            <p className="text-slate-300 leading-relaxed">
-              Confirmation of international HOKA DTC net sales growth exceeding 20% YoY alongside consolidated gross margins sustaining above 55.0%.
-            </p>
-          </div>
-
-          {/* Weakening conditions */}
-          <div className="bg-rose-950/20 border border-rose-900/50 p-3.5 rounded-lg space-y-1.5">
-            <h3 className="text-rose-400 font-semibold text-xs flex items-center gap-1.5">
-              <span aria-hidden="true">&#9888;</span>
-              Evidence That Would Weaken / Invalidate:
-            </h3>
-            <p className="text-slate-300 leading-relaxed">
-              Consolidated gross margin breach below 50.0% or HOKA DTC quarterly net sales growth falling below 10.0% YoY.
-            </p>
-          </div>
-
-          {/* Next review trigger */}
-          <div className="bg-[#0b1019] border border-slate-800 p-3.5 rounded-lg space-y-1 sm:col-span-1">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          {/* Review Trigger */}
+          <div className="bg-[#080d16] border border-slate-800 p-3 rounded-lg space-y-1">
             <div className="text-[11px] font-semibold text-cyan-300 uppercase tracking-wider">
               Next Review Trigger:
             </div>
             <p className="text-slate-300 leading-relaxed">
-              Form 10-Q for Q2 FY27 earnings release (expected October/November 2026) for holiday pre-orders, international expansion metrics, and inventory aging.
+              {monitoring.next_monitoring_trigger || "Q2 FY27 earnings release (expected October/November 2026) for holiday pre-orders and inventory aging."}
             </p>
           </div>
 
-          {/* Decisive unknown */}
-          <div className="bg-[#0b1019] border border-slate-800 p-3.5 rounded-lg space-y-1 sm:col-span-1">
+          {/* Decisive Unknown */}
+          <div className="bg-[#080d16] border border-slate-800 p-3 rounded-lg space-y-1">
             <div className="text-[11px] font-semibold text-amber-300 uppercase tracking-wider">
               Decisive Unknown:
             </div>
             <p className="text-slate-300 leading-relaxed">
-              Sustainability of premium DTC full-price sell-through rates as HOKA expands into broader lifestyle footwear categories outside core running.
+              {central_assessment.main_uncertainty || "Sustainability of premium DTC full-price sell-through rates as HOKA expands into broader lifestyle footwear categories."}
+            </p>
+          </div>
+
+          {/* Strengthening Condition */}
+          <div className="bg-[#080d16] border border-slate-800 p-3 rounded-lg space-y-1">
+            <div className="text-[11px] font-semibold text-emerald-300 uppercase tracking-wider">
+              Strengthening Condition:
+            </div>
+            <p className="text-slate-300 leading-relaxed">
+              {monitoring.price_watch_condition || "Confirmation of international DTC growth above 20% while maintaining consolidated gross margin above 55.0%."}
             </p>
           </div>
         </div>
       </section>
 
-      {/* Note: Section H ("What could this become?") is intentionally omitted because
-          the current accepted DECK dossier does not support an approved transformation hypothesis. */}
+      {/* G. Expectation Context (Compact) */}
+      <section
+        className="bg-[#0c121e] border border-purple-900/50 rounded-xl p-3.5 sm:p-4 space-y-2 text-xs"
+        aria-label="Expectation Context"
+      >
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-purple-400" aria-hidden="true"></span>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-purple-300">
+            Expectation Context
+          </h2>
+        </div>
+        <p className="text-slate-300 leading-relaxed font-sans">
+          A market-consensus expectation gap has not been established. While the reverse-DCF implies a{" "}
+          <span className="font-mono text-purple-300">{formatPercent(valuation.solved_5y_cagr_pct)}</span> 5-year revenue CAGR at the reference price of{" "}
+          <span className="font-mono text-slate-200">{formatCurrency(valuation.reference_price)}</span> under assumed parameters (22.0% operating margin, 9.0% WACC), neither this conditional model solve nor observed DTC/wholesale channel divergence establishes proof of market mispricing or investment attractiveness.
+        </p>
+      </section>
 
       {/* =========================================================================
           PROGRESSIVE DISCLOSURE (Detailed Supporting Evidence Below Decision Surface)
          ========================================================================= */}
-      <section className="pt-2 border-t border-[#1e293b] space-y-4" aria-label="Progressive Disclosures">
+      <section className="pt-2 border-t border-[#1e293b] space-y-3.5" aria-label="Progressive Disclosures">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
@@ -662,14 +541,14 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
             <div id="disclosure-valuation-deck" className="p-4 sm:p-5 border-t border-slate-800 space-y-4 text-xs font-sans">
               <div className="space-y-1.5 text-slate-300 leading-relaxed">
                 <p>
-                  <strong>Model Specification:</strong> {valuation.model_type || "Single-stage Reverse-DCF FCFF"}. Reverse-DCF solves for the 5-year revenue CAGR implied by the reference close tape ($85.72), holding margin, WACC, and reinvestment rate fixed. Forward scenarios project explicit cash flows to compute conditional intrinsic equity values.
+                  <strong>Model Specification:</strong> {valuation.model_type || "Single-stage Reverse-DCF FCFF"}. Reverse-DCF solves for the 5-year revenue CAGR implied by the reference close tape, holding margin, WACC, and reinvestment rate fixed. Forward scenarios project explicit cash flows to compute conditional intrinsic equity values.
                 </p>
-                <div className="p-3 bg-[#080d16] rounded-lg border border-slate-800 font-mono text-[11px] text-slate-300">
-                  <div>• Model Anchor: ${valuation.reference_price.toFixed(2)} USD (ARX MarketStore regular close: {valuation.reference_date})</div>
-                  <div>• Base Revenue: ${(valuation.reverse_dcf_parameters?.base_revenue ? valuation.reverse_dcf_parameters.base_revenue / 1e9 : 5.53).toFixed(2)}B</div>
-                  <div>• Diluted Share Count: {(valuation.reverse_dcf_parameters?.current_shares ? valuation.reverse_dcf_parameters.current_shares / 1e6 : 138.56).toFixed(2)}M (6:1 split-adjusted)</div>
-                  <div>• Net Debt Bridge: -$1,602.6M (Net cash buffer added to Enterprise Value)</div>
-                  <div>• Solved 5Y Revenue CAGR: {valuation.solved_5y_cagr_pct?.toFixed(2)}% (Roundtrip value: ${valuation.roundtrip_value?.toFixed(2)})</div>
+                <div className="p-3 bg-[#080d16] rounded-lg border border-slate-800 font-mono text-[11px] text-slate-300 space-y-0.5">
+                  <div>• Model Anchor: {formatCurrency(valuation.reference_price)} USD ({valuation.reference_date || "Unavailable"})</div>
+                  <div>• Base Revenue: {isFiniteNumber(valuation.reverse_dcf_parameters?.base_revenue) ? `$${(valuation.reverse_dcf_parameters.base_revenue / 1e9).toFixed(2)}B` : "Unavailable"}</div>
+                  <div>• Diluted Share Count: {isFiniteNumber(valuation.reverse_dcf_parameters?.current_shares) ? `${(valuation.reverse_dcf_parameters.current_shares / 1e6).toFixed(2)}M (6:1 split-adjusted)` : "Unavailable"}</div>
+                  <div>• Net Debt Bridge: {isFiniteNumber(valuation.reverse_dcf_parameters?.net_debt_bridge) ? `-$${(Math.abs(valuation.reverse_dcf_parameters.net_debt_bridge) / 1e6).toFixed(1)}M (Net Cash Buffer)` : "Unavailable"}</div>
+                  <div>• Solved 5Y Revenue CAGR: {formatPercent(valuation.solved_5y_cagr_pct)} (Roundtrip: {formatCurrency(valuation.roundtrip_value)})</div>
                 </div>
               </div>
 
@@ -695,65 +574,59 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
                     </tr>
                     <tr>
                       <td className="p-2 text-slate-400">5Y Revenue CAGR</td>
-                      <td className="p-2 font-bold text-cyan-400">{valuation.solved_5y_cagr_pct?.toFixed(2)}%</td>
-                      <td className="p-2 text-slate-300">2.0%</td>
-                      <td className="p-2 text-slate-200">8.0%</td>
-                      <td className="p-2 text-emerald-400">14.0%</td>
+                      <td className="p-2 font-bold text-cyan-400">{formatPercent(valuation.solved_5y_cagr_pct)}</td>
+                      <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.revenue_cagr_pct)}</td>
+                      <td className="p-2 text-slate-200">{formatPercent(baseScenario?.revenue_cagr_pct)}</td>
+                      <td className="p-2 text-emerald-400">{formatPercent(optimisticScenario?.revenue_cagr_pct)}</td>
                     </tr>
                     <tr>
                       <td className="p-2 text-slate-400">Target Operating Margin</td>
-                      <td className="p-2 text-cyan-400">22.0%</td>
-                      <td className="p-2 text-slate-300">18.0%</td>
-                      <td className="p-2 text-slate-200">22.0%</td>
-                      <td className="p-2 text-emerald-400">24.0%</td>
+                      <td className="p-2 text-cyan-400">{formatPercent(valuation.reverse_dcf_parameters?.operating_margin_pct)}</td>
+                      <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.operating_margin_pct)}</td>
+                      <td className="p-2 text-slate-200">{formatPercent(baseScenario?.operating_margin_pct)}</td>
+                      <td className="p-2 text-emerald-400">{formatPercent(optimisticScenario?.operating_margin_pct)}</td>
                     </tr>
                     <tr>
                       <td className="p-2 text-slate-400">Discount Rate (WACC)</td>
-                      <td className="p-2 text-slate-300">9.0%</td>
-                      <td className="p-2 text-slate-300">9.5%</td>
-                      <td className="p-2 text-slate-300">9.0%</td>
-                      <td className="p-2 text-slate-300">8.5%</td>
+                      <td className="p-2 text-slate-300">{formatPercent(valuation.reverse_dcf_parameters?.wacc_pct)}</td>
+                      <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.wacc_pct)}</td>
+                      <td className="p-2 text-slate-300">{formatPercent(baseScenario?.wacc_pct)}</td>
+                      <td className="p-2 text-slate-300">{formatPercent(optimisticScenario?.wacc_pct)}</td>
                     </tr>
                     <tr>
                       <td className="p-2 text-slate-400">Terminal Growth Rate (g)</td>
-                      <td className="p-2 text-slate-300">2.5%</td>
-                      <td className="p-2 text-slate-300">2.0%</td>
-                      <td className="p-2 text-slate-300">2.5%</td>
-                      <td className="p-2 text-slate-300">3.0%</td>
+                      <td className="p-2 text-slate-300">{formatPercent(valuation.reverse_dcf_parameters?.terminal_growth_pct)}</td>
+                      <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.terminal_growth_pct)}</td>
+                      <td className="p-2 text-slate-300">{formatPercent(baseScenario?.terminal_growth_pct)}</td>
+                      <td className="p-2 text-slate-300">{formatPercent(optimisticScenario?.terminal_growth_pct)}</td>
                     </tr>
                     <tr>
                       <td className="p-2 text-slate-400">Effective Tax Rate</td>
-                      <td className="p-2 text-slate-300">22.0%</td>
-                      <td className="p-2 text-slate-300">23.0%</td>
-                      <td className="p-2 text-slate-300">22.0%</td>
-                      <td className="p-2 text-slate-300">21.0%</td>
+                      <td className="p-2 text-slate-300">{formatPercent(valuation.reverse_dcf_parameters?.tax_rate_pct)}</td>
+                      <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.tax_rate_pct)}</td>
+                      <td className="p-2 text-slate-300">{formatPercent(baseScenario?.tax_rate_pct)}</td>
+                      <td className="p-2 text-slate-300">{formatPercent(optimisticScenario?.tax_rate_pct)}</td>
                     </tr>
                     <tr>
                       <td className="p-2 text-slate-400">Reinvestment Rate</td>
-                      <td className="p-2 text-slate-300">15.0%</td>
-                      <td className="p-2 text-slate-300">18.0%</td>
-                      <td className="p-2 text-slate-300">15.0%</td>
-                      <td className="p-2 text-slate-300">12.0%</td>
+                      <td className="p-2 text-slate-300">{formatPercent(valuation.reverse_dcf_parameters?.reinvestment_rate_pct)}</td>
+                      <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.reinvestment_rate_pct)}</td>
+                      <td className="p-2 text-slate-300">{formatPercent(baseScenario?.reinvestment_rate_pct)}</td>
+                      <td className="p-2 text-slate-300">{formatPercent(optimisticScenario?.reinvestment_rate_pct)}</td>
                     </tr>
                     <tr className="bg-[#090f1a]">
                       <td className="p-2 text-slate-300 font-semibold">Modeled Value per Share</td>
-                      <td className="p-2 font-bold text-cyan-300">${valuation.reference_price.toFixed(2)}</td>
-                      <td className="p-2 font-bold text-rose-400">${conservativeScenario?.per_share_value.toFixed(2) || "73.22"}</td>
-                      <td className="p-2 font-bold text-white">${baseScenario?.per_share_value.toFixed(2) || "127.49"}</td>
-                      <td className="p-2 font-bold text-emerald-400">${optimisticScenario?.per_share_value.toFixed(2) || "209.87"}</td>
+                      <td className="p-2 font-bold text-cyan-300">{formatCurrency(valuation.reference_price)}</td>
+                      <td className="p-2 font-bold text-rose-400">{formatCurrency(conservativeScenario?.per_share_value)}</td>
+                      <td className="p-2 font-bold text-white">{formatCurrency(baseScenario?.per_share_value)}</td>
+                      <td className="p-2 font-bold text-emerald-400">{formatCurrency(optimisticScenario?.per_share_value)}</td>
                     </tr>
                     <tr className="bg-[#080d16]">
                       <td className="p-2 text-slate-400">Difference from Reference Price</td>
                       <td className="p-2 text-slate-500 font-mono">Anchor (0.0%)</td>
-                      <td className="p-2 text-rose-400 font-semibold">
-                        {bearDiff !== null ? `${bearDiff > 0 ? "+" : ""}${bearDiff.toFixed(1)}%` : "-14.6%"}
-                      </td>
-                      <td className="p-2 text-slate-200 font-semibold">
-                        {baseDiff !== null ? `${baseDiff > 0 ? "+" : ""}${baseDiff.toFixed(1)}%` : "+48.7%"}
-                      </td>
-                      <td className="p-2 text-emerald-400 font-semibold">
-                        {bullDiff !== null ? `${bullDiff > 0 ? "+" : ""}${bullDiff.toFixed(1)}%` : "+144.8%"}
-                      </td>
+                      <td className="p-2 text-rose-400 font-semibold">{formatDiffPercent(bearDiff)}</td>
+                      <td className="p-2 text-slate-200 font-semibold">{formatDiffPercent(baseDiff)}</td>
+                      <td className="p-2 text-emerald-400 font-semibold">{formatDiffPercent(bullDiff)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -784,17 +657,17 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
                 <div className="bg-[#080d16] p-2.5 rounded-lg border border-slate-800">
                   <span className="text-slate-500 text-[10px] block">Reported Revenue</span>
                   <span className="font-mono text-slate-100 font-semibold text-sm">
-                    {financial_profile.revenue_display}
+                    {financial_profile.revenue_display || (isFiniteNumber(financial_profile.revenue) ? `$${(financial_profile.revenue / 1e9).toFixed(2)}B` : "Unavailable")}
                   </span>
                   <span className="text-[9px] text-slate-400 font-mono block">
-                    {financial_profile.revenue_period}
+                    {financial_profile.revenue_period || "Unavailable"}
                   </span>
                 </div>
 
                 <div className="bg-[#080d16] p-2.5 rounded-lg border border-slate-800">
                   <span className="text-slate-500 text-[10px] block">Operating Margin</span>
                   <span className="font-mono text-slate-100 font-semibold text-sm">
-                    {financial_profile.operating_margin_pct?.toFixed(1)}%
+                    {formatPercent(financial_profile.operating_margin_pct)}
                   </span>
                   <span className="text-[9px] text-slate-400 font-mono block">Reported EBIT / Rev</span>
                 </div>
@@ -802,7 +675,11 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
                 <div className="bg-[#080d16] p-2.5 rounded-lg border border-slate-800">
                   <span className="text-slate-500 text-[10px] block">Total Cash Buffer</span>
                   <span className="font-mono text-slate-100 font-semibold text-sm">
-                    ${((financial_profile.total_cash_and_investments || 1602589000) / 1e6).toFixed(1)}M
+                    {isFiniteNumber(financial_profile.total_cash_and_investments)
+                      ? `$${(financial_profile.total_cash_and_investments / 1e6).toFixed(1)}M`
+                      : (isFiniteNumber(financial_profile.cash_and_equivalents)
+                        ? `$${(financial_profile.cash_and_equivalents / 1e6).toFixed(1)}M`
+                        : "Unavailable")}
                   </span>
                   <span className="text-[9px] text-slate-400 font-mono block">Cash &amp; Equivalents</span>
                 </div>
@@ -810,9 +687,15 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
                 <div className="bg-[#080d16] p-2.5 rounded-lg border border-slate-800">
                   <span className="text-slate-500 text-[10px] block">Total Financial Debt</span>
                   <span className="font-mono text-emerald-400 font-semibold text-sm">
-                    $0.00
+                    {financial_profile.is_zero_debt
+                      ? "$0.00"
+                      : (isFiniteNumber(financial_profile.total_financial_debt)
+                        ? formatCurrency(financial_profile.total_financial_debt)
+                        : "Unavailable")}
                   </span>
-                  <span className="text-[9px] text-slate-400 font-mono block">Zero Senior Debt</span>
+                  <span className="text-[9px] text-slate-400 font-mono block">
+                    {financial_profile.is_zero_debt ? "Zero Senior Debt" : "Financial Debt"}
+                  </span>
                 </div>
               </div>
 
@@ -823,43 +706,81 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
                     Sourced Capital Structure &amp; Net Debt Bridge Breakdown
                   </span>
                   <span className="text-[10px] font-mono text-cyan-400">
-                    Net Cash Bridge: -$1,602.6M
+                    Net Debt Bridge: {isFiniteNumber(financial_profile.net_debt_bridge)
+                      ? (financial_profile.net_debt_bridge < 0
+                        ? `-$${(Math.abs(financial_profile.net_debt_bridge) / 1e6).toFixed(1)}M (Net Cash)`
+                        : `$${(financial_profile.net_debt_bridge / 1e6).toFixed(1)}M`)
+                      : "Unavailable"}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs font-mono">
                   <div className="p-2 rounded bg-[#0f1624] border border-slate-800">
                     <span className="text-slate-500 text-[10px] block">Cash &amp; Equivalents</span>
-                    <span className="text-slate-200 font-semibold">$1,602.6M</span>
+                    <span className="text-slate-200 font-semibold">
+                      {isFiniteNumber(financial_profile.cash_and_equivalents)
+                        ? `$${(financial_profile.cash_and_equivalents / 1e6).toFixed(1)}M`
+                        : "Unavailable"}
+                    </span>
                   </div>
                   <div className="p-2 rounded bg-[#0f1624] border border-slate-800">
                     <span className="text-slate-500 text-[10px] block">Short-Term Investments</span>
-                    <span className="text-slate-200 font-semibold">$0.0M</span>
+                    <span className="text-slate-200 font-semibold">
+                      {isFiniteNumber(financial_profile.short_term_investments)
+                        ? `$${(financial_profile.short_term_investments / 1e6).toFixed(1)}M`
+                        : "Unavailable"}
+                    </span>
                   </div>
                   <div className="p-2 rounded bg-[#0f1624] border border-slate-800">
                     <span className="text-slate-500 text-[10px] block">Restricted Cash</span>
-                    <span className="text-slate-200 font-semibold">$0.0M</span>
+                    <span className="text-slate-200 font-semibold">
+                      {isFiniteNumber(financial_profile.restricted_cash)
+                        ? `$${(financial_profile.restricted_cash / 1e6).toFixed(1)}M`
+                        : "$0.0M"}
+                    </span>
                   </div>
                   <div className="p-2 rounded bg-[#0f1624] border border-slate-800">
                     <span className="text-slate-500 text-[10px] block">Total Financial Debt</span>
-                    <span className="text-emerald-400 font-semibold">$0.00 (Zero Funded Debt)</span>
+                    <span className="text-emerald-400 font-semibold">
+                      {financial_profile.is_zero_debt
+                        ? "$0.00 (Zero Funded Debt)"
+                        : (isFiniteNumber(financial_profile.total_financial_debt)
+                          ? formatCurrency(financial_profile.total_financial_debt)
+                          : "Unavailable")}
+                    </span>
                   </div>
                   <div className="p-2 rounded bg-[#0f1624] border border-slate-800">
                     <span className="text-slate-500 text-[10px] block">Operating Leases (ASC 842)</span>
-                    <span className="text-slate-200 font-semibold">$472.3M</span>
+                    <span className="text-slate-200 font-semibold">
+                      {isFiniteNumber(financial_profile.operating_lease_liabilities_asc842)
+                        ? `$${(financial_profile.operating_lease_liabilities_asc842 / 1e6).toFixed(1)}M`
+                        : "Unavailable"}
+                    </span>
                   </div>
                   <div className="p-2 rounded bg-[#0f1624] border border-slate-800">
                     <span className="text-slate-500 text-[10px] block">Net Debt Bridge</span>
-                    <span className="text-cyan-400 font-semibold">-$1,602.6M (Net Cash)</span>
+                    <span className="text-cyan-400 font-semibold">
+                      {isFiniteNumber(financial_profile.net_debt_bridge)
+                        ? (financial_profile.net_debt_bridge < 0
+                          ? `-$${(Math.abs(financial_profile.net_debt_bridge) / 1e6).toFixed(1)}M (Net Cash)`
+                          : `$${(financial_profile.net_debt_bridge / 1e6).toFixed(1)}M`)
+                        : "Unavailable"}
+                    </span>
                   </div>
                 </div>
 
                 <div className="p-2.5 rounded bg-[#101726] border border-slate-800 text-[11px] text-slate-300 font-sans leading-relaxed">
-                  <strong>Accounting Bridge Convention:</strong> Total cash of $1.60B against zero funded debt yields $1.60B net cash bridge added to enterprise value in DCF equity bridge. Store and distribution leases ($472.33M) are treated as operating expenses under ASC 842 and excluded from the net debt bridge to avoid double-counting against operating income.
+                  <strong>Accounting Bridge Convention:</strong> {financial_profile.bridge_note || financial_profile.lease_convention_treatment || "Lease liabilities are expensed in operating income under ASC 842 and excluded from the net debt bridge to avoid double-counting."}
                 </div>
 
                 <div className="text-[11px] text-slate-400 pt-1">
-                  <strong>Selected Share Basis:</strong> <span className="font-mono text-slate-200">138.56M shares</span> (SPLIT_ADJUSTED_DILUTED) • Period: Three months ended June 30, 2026 (Form 10-Q Q1 FY27).
+                  <strong>Selected Share Basis:</strong>{" "}
+                  <span className="font-mono text-slate-200">
+                    {isFiniteNumber(financial_profile.selected_share_basis?.value)
+                      ? `${(financial_profile.selected_share_basis.value / 1e6).toFixed(2)}M shares`
+                      : "Unavailable"}
+                  </span>{" "}
+                  ({financial_profile.selected_share_basis?.basis_type || "Unavailable"}) • Period: {financial_profile.selected_share_basis?.measurement_period || "Unavailable"}.
                 </div>
               </div>
 
@@ -899,7 +820,7 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
           >
             <div className="flex items-center gap-2">
               <span className="text-purple-400 font-mono">3.</span>
-              <span>Full Dossier Baseline &amp; Quality Watch Selection Record (Questions A–F)</span>
+              <span>Full Dossier Baseline &amp; Quality Watch Selection Record</span>
             </div>
             <span className="text-slate-400 font-mono text-xs">{provenanceOpen ? "▲ Collapse" : "▼ Expand"}</span>
           </button>
@@ -908,45 +829,45 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
             <div id="disclosure-provenance-deck" className="p-4 sm:p-5 border-t border-slate-800 space-y-4 text-xs font-sans">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="bg-[#080d16] border border-slate-800 p-3 rounded-lg space-y-1">
-                  <h3 className="text-slate-200 font-semibold text-[11px] flex items-center gap-1">
-                    <span className="text-amber-400 font-mono">A.</span> Why This Business?
+                  <h3 className="text-slate-200 font-semibold text-[11px]">
+                    Why This Business?
                   </h3>
-                  <p className="text-slate-300 leading-relaxed">{rationale?.why_this_business}</p>
+                  <p className="text-slate-300 leading-relaxed">{rationale?.why_this_business || "Unavailable"}</p>
                 </div>
 
                 <div className="bg-[#080d16] border border-slate-800 p-3 rounded-lg space-y-1">
-                  <h3 className="text-slate-200 font-semibold text-[11px] flex items-center gap-1">
-                    <span className="text-amber-400 font-mono">B.</span> Why Research It Now?
+                  <h3 className="text-slate-200 font-semibold text-[11px]">
+                    Why Research It Now?
                   </h3>
-                  <p className="text-slate-300 leading-relaxed">{rationale?.why_research_now}</p>
+                  <p className="text-slate-300 leading-relaxed">{rationale?.why_research_now || "Unavailable"}</p>
                 </div>
 
                 <div className="bg-[#080d16] border border-slate-800 p-3 rounded-lg space-y-1">
-                  <h3 className="text-slate-200 font-semibold text-[11px] flex items-center gap-1">
-                    <span className="text-amber-400 font-mono">C.</span> What Does The Price Require?
+                  <h3 className="text-slate-200 font-semibold text-[11px]">
+                    What Does The Price Require?
                   </h3>
-                  <p className="text-slate-300 leading-relaxed">{rationale?.price_requirements}</p>
+                  <p className="text-slate-300 leading-relaxed">{rationale?.price_requirements || "Unavailable"}</p>
                 </div>
 
                 <div className="bg-[#080d16] border border-slate-800 p-3 rounded-lg space-y-1">
-                  <h3 className="text-slate-200 font-semibold text-[11px] flex items-center gap-1">
-                    <span className="text-amber-400 font-mono">D.</span> What Might ARX See Differently?
+                  <h3 className="text-slate-200 font-semibold text-[11px]">
+                    What Might ARX See Differently?
                   </h3>
-                  <p className="text-slate-300 leading-relaxed">{rationale?.differentiated_view}</p>
+                  <p className="text-slate-300 leading-relaxed">{rationale?.differentiated_view || "Unavailable"}</p>
                 </div>
 
                 <div className="bg-[#080d16] border border-slate-800 p-3 rounded-lg space-y-1">
-                  <h3 className="text-slate-200 font-semibold text-[11px] flex items-center gap-1">
-                    <span className="text-amber-400 font-mono">E.</span> What Would Change The Assessment?
+                  <h3 className="text-slate-200 font-semibold text-[11px]">
+                    What Would Change The Assessment?
                   </h3>
-                  <p className="text-slate-300 leading-relaxed">{rationale?.assessment_changes}</p>
+                  <p className="text-slate-300 leading-relaxed">{rationale?.assessment_changes || "Unavailable"}</p>
                 </div>
 
                 <div className="bg-[#080d16] border border-slate-800 p-3 rounded-lg space-y-1">
-                  <h3 className="text-slate-200 font-semibold text-[11px] flex items-center gap-1">
-                    <span className="text-amber-400 font-mono">F.</span> Why Prioritize Research Attention?
+                  <h3 className="text-slate-200 font-semibold text-[11px]">
+                    Why Prioritize Research Attention?
                   </h3>
-                  <p className="text-slate-300 leading-relaxed">{rationale?.queue_priority}</p>
+                  <p className="text-slate-300 leading-relaxed">{rationale?.queue_priority || "Unavailable"}</p>
                 </div>
               </div>
 
@@ -955,12 +876,12 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
                 <div className="text-slate-300 font-bold uppercase tracking-wider">
                   Governance Record:
                 </div>
-                <div>Standard: {dossier.publication_metadata?.governing_standard}</div>
-                <div>Contract: {dossier.publication_metadata?.governing_contract}</div>
-                <div>Lifecycle Status: {dossier.publication_metadata?.lifecycle_status}</div>
-                <div>Review Status: {dossier.publication_metadata?.review_status}</div>
-                <div>Technical Verification: {dossier.publication_metadata?.technical_verification}</div>
-                <div>Authoring Date: {dossier.publication_metadata?.authoring_date}</div>
+                <div>Standard: {dossier.publication_metadata?.governing_standard || "Unavailable"}</div>
+                <div>Contract: {dossier.publication_metadata?.governing_contract || "Unavailable"}</div>
+                <div>Lifecycle Status: {dossier.publication_metadata?.lifecycle_status || "Unavailable"}</div>
+                <div>Review Status: {dossier.publication_metadata?.review_status || "Unavailable"}</div>
+                <div>Technical Verification: {dossier.publication_metadata?.technical_verification || "Unavailable"}</div>
+                <div>Authoring Date: {dossier.publication_metadata?.authoring_date || "Unavailable"}</div>
               </div>
             </div>
           )}
@@ -972,7 +893,7 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
          ========================================================================= */}
       <footer className="pt-2 border-t border-[#1e293b] flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="text-slate-400 text-[11px] max-w-lg">
-          <strong>Technical Analysis Notice:</strong> {navigation.radar_note} Strategy timing confirmation is distinct from multi-year fundamental compounder thesis.
+          <strong>Technical Analysis Notice:</strong> {navigation.radar_note || "Opens on-demand technical analysis in Radar console."} Strategy timing confirmation is distinct from multi-year fundamental compounder thesis.
         </div>
         <div className="flex items-center gap-2">
           <Link

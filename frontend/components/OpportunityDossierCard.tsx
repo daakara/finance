@@ -33,9 +33,12 @@ interface OpportunityDossierCardProps {
 }
 
 export default function OpportunityDossierCard({ dossier }: OpportunityDossierCardProps) {
-  // Bounded presentation prototype: Render decision-first view exclusively for DECK
+  // Bounded presentation prototype: Render decision-first view exclusively for DECK when disposition supports WATCH
   if (dossier.identity.symbol === "DECK") {
-    return <DeckDecisionFirstView dossier={dossier} />;
+    if (dossier.central_assessment.disposition === "WATCH_CONDITIONS") {
+      return <DeckDecisionFirstView dossier={dossier} />;
+    }
+    // Safely fall back to standard presentation if disposition no longer supports WATCH
   }
 
   const { identity, central_assessment, valuation, financial_profile, monitoring, navigation } = dossier;

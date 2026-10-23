@@ -1,7 +1,7 @@
 /**
  * frontend/scripts/verify-deck-prototype.mjs
  *
- * Automated Browser & DOM Verification for DECK Decision-First Research Prototype.
+ * Automated Browser & DOM Verification for Corrected DECK Decision-First Prototype.
  * Governed by ARX Closure Model v2.
  *
  * Serves the static export (frontend/out) and drives Puppeteer across viewports:
@@ -11,16 +11,20 @@
  *
  * Enforces:
  * 1. Zero horizontal page overflow across all viewports.
- * 2. Immediate identifiability of WATCH verdict and decisive reason.
- * 3. Prominent one-sentence thesis and Reverse-DCF priced-in expectations ($85.72, -2.34% CAGR).
- * 4. Strict Bear -> Base -> Bull scenario cards ordering and verified values ($73.22, $127.49, $209.87).
- * 5. Presence of 3 decisive drivers and 3 invalidation conditions.
- * 6. Explicit expectation gap statement ("An expectation gap has not yet been established...").
- * 7. Progressive disclosure behavior: expand/collapse works, aria-expanded updates, touch targets >= 44px.
- * 8. Preservation of standard presentation on non-DECK published assets (FIX, ULTA).
- * 9. Neutral fail-closed fallback on unpublished symbols (IREN).
- * 10. Guaranteed screenshot capture across all viewports.
- * 11. Fail-closed: exits with code 1 if any condition fails.
+ * 2. Immediate identifiability of WATCH verdict, decisive reason, and non-BUY notice.
+ * 3. Concise one-sentence thesis without meta-explanatory fluff.
+ * 4. Reverse-DCF priced-in expectations ($85.72, -2.34% CAGR) and assumption qualification.
+ * 5. Strict Bear -> Base -> Bull scenario cards ordering and verified values ($73.22, $127.49, $209.87).
+ * 6. Exactly 3 concise drivers ("What Must Be True?").
+ * 7. Exactly 2 supported invalidation conditions ("What Breaks The Thesis?"), with NO invented wholesale contraction.
+ * 8. Correct review trigger: Q2 FY27 earnings release.
+ * 9. Explicit expectation gap statement without fake consensus claims.
+ * 10. Progressive disclosure behavior: expand/collapse works, aria-expanded updates, touch targets >= 44px.
+ * 11. Preservation of standard presentation on non-DECK published assets (FIX, ULTA).
+ * 12. Neutral fail-closed fallback on unpublished symbols (IREN).
+ * 13. Dismissal of onboarding overlay before layout evaluation.
+ * 14. Guaranteed screenshot capture across all viewports.
+ * 15. Fail-closed: exits with code 1 if any check fails.
  */
 
 import http from "node:http";
@@ -35,14 +39,11 @@ const __dirname = path.dirname(__filename);
 const PORT = 3337;
 const OUT_DIR = path.resolve(__dirname, "../out");
 
-// Screenshot directories (persisted artifact directory + local worktree directory)
+// Screenshot directories (persisted artifact directory)
 const ARTIFACT_SCREENSHOT_DIR = "C:/Users/akara/.gemini/antigravity/brain/c2788363-bf19-461b-8a58-6423c773a359/screenshots";
-const LOCAL_SCREENSHOT_DIR = path.resolve(__dirname, "../../artifacts/screenshots");
 
-for (const dir of [ARTIFACT_SCREENSHOT_DIR, LOCAL_SCREENSHOT_DIR]) {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+if (!fs.existsSync(ARTIFACT_SCREENSHOT_DIR)) {
+  fs.mkdirSync(ARTIFACT_SCREENSHOT_DIR, { recursive: true });
 }
 
 function startServer() {
@@ -132,17 +133,34 @@ async function runVerification() {
 
     const page = await browser.newPage();
 
+    // Ensure onboarding modal is dismissed via localStorage before navigation
+    await page.evaluateOnNewDocument(() => {
+      try {
+        localStorage.setItem("FINANCE_ONBOARDING_COMPLETED", "true");
+      } catch {}
+    });
+
     // =========================================================================
     // A. DECK Decision-First Prototype Verification
     // =========================================================================
     console.log("\n========================================================================");
-    console.log("Testing DECK Decision-First Prototype Across Viewports");
+    console.log("Testing Corrected DECK Decision-First Prototype Across Viewports");
     console.log("========================================================================");
 
     for (const vp of viewports) {
       await page.setViewport(vp);
       const url = `http://localhost:${PORT}/research?symbol=DECK`;
       await page.goto(url, { waitUntil: "networkidle0" });
+
+      // Ensure any modal overlay is dismissed
+      await page.evaluate(() => {
+        const dialog = document.querySelector('[role="dialog"]');
+        if (dialog) {
+          const closeBtn = dialog.querySelector('button');
+          if (closeBtn) closeBtn.click();
+        }
+      });
+      await new Promise((r) => setTimeout(r, 100));
 
       // 1. Zero Horizontal Overflow
       const overflow = await page.evaluate(() => {
@@ -164,11 +182,12 @@ async function runVerification() {
       const verdictCheck = await page.evaluate(() => {
         const text = document.body.innerText.toUpperCase();
         const hasWatchBadge = text.includes("WATCH");
-        const hasVerdictHeading = text.includes("A. VERDICT & DECISIVE REASON") || text.includes("VERDICT & DECISIVE REASON");
+        const hasHeading = text.includes("WATCH — DECISIVE REASON") || text.includes("DECISIVE REASON");
         const hasNonBuyNotice = text.includes("STATUS: WATCH") && text.includes("NOT A BUY RECOMMENDATION");
         const hasDecisiveReason = text.includes("DECKERS OUTDOOR DISPLAYS EXCEPTIONAL BALANCE SHEET STRENGTH") ||
           text.includes("BALANCE SHEET STRENGTH");
-        return { hasWatchBadge, hasVerdictHeading, hasNonBuyNotice, hasDecisiveReason };
+        const noProcessTag = !text.includes("A. VERDICT") && !text.includes("PRIMARY RESEARCH DISPOSITION");
+        return { hasWatchBadge, hasHeading, hasNonBuyNotice, hasDecisiveReason, noProcessTag };
       });
 
       recordCheck(
@@ -181,44 +200,49 @@ async function runVerification() {
       recordCheck(
         "DECK",
         vp.name,
-        "Decisive Reason Present",
-        verdictCheck.hasVerdictHeading && verdictCheck.hasDecisiveReason,
-        "Decisive reason text missing"
+        "Decisive Reason Cleanly Rendered (No Process Prefixes)",
+        verdictCheck.hasHeading && verdictCheck.hasDecisiveReason && verdictCheck.noProcessTag,
+        "Decisive reason missing or process tag found"
       );
 
-      // 3. One-Sentence Thesis Check
+      // 3. One-Sentence Thesis Check (Without Meta-Explanatory Sentence)
       const thesisCheck = await page.evaluate(() => {
         const text = document.body.innerText.toUpperCase();
-        return text.includes("B. ONE-SENTENCE THESIS") &&
-          text.includes("CAN HOKA AND UGG SUSTAIN DIRECT-TO-CONSUMER MOMENTUM AND OPERATING MARGINS ABOVE 20%");
+        const hasHeading = text.includes("THESIS");
+        const hasThesis = text.includes("CAN HOKA AND UGG SUSTAIN DIRECT-TO-CONSUMER MOMENTUM AND OPERATING MARGINS ABOVE 20%");
+        const noMetaExplanation = !text.includes("CONNECTS THE DURABILITY OF BRAND PRICING POWER DIRECTLY");
+        const noSectionPrefix = !text.includes("B. ONE-SENTENCE THESIS");
+        return { hasHeading, hasThesis, noMetaExplanation, noSectionPrefix };
       });
       recordCheck(
         "DECK",
         vp.name,
-        "One-Sentence Thesis Rendered",
-        thesisCheck,
-        "One-sentence thesis section or exact text missing"
+        "One-Sentence Thesis Rendered (No Meta-Fluff)",
+        thesisCheck.hasHeading && thesisCheck.hasThesis && thesisCheck.noMetaExplanation && thesisCheck.noSectionPrefix,
+        "Thesis missing, section prefix present, or meta-explanatory sentence retained"
       );
 
-      // 4. What Is Priced In? (Reverse-DCF & Scenario Values)
+      // 4. Expectations & Scenarios
       const pricedInCheck = await page.evaluate(() => {
         const text = document.body.innerText.toUpperCase();
-        const hasHeader = text.includes("C. WHAT IS PRICED IN?");
+        const hasHeader = text.includes("EXPECTATIONS & SCENARIOS");
         const hasCagr = text.includes("-2.34%");
         const hasRefPrice = text.includes("$85.72");
-        const hasExplanation = text.includes("THE IMPLIED GROWTH RATE DEPENDS ON THE MODEL ASSUMPTIONS");
+        const hasQualification = text.includes("THE IMPLIED GROWTH RATE DEPENDS ON MODEL ASSUMPTIONS") ||
+          text.includes("IMPLIED GROWTH RATE IS CONDITIONAL");
         const hasBear = text.includes("BEAR CASE") && text.includes("$73.22") && text.includes("-14.6%");
         const hasBase = text.includes("BASE CASE") && text.includes("$127.49") && text.includes("+48.7%");
         const hasBull = text.includes("BULL CASE") && text.includes("$209.87") && text.includes("+144.8%");
-        return { hasHeader, hasCagr, hasRefPrice, hasExplanation, hasBear, hasBase, hasBull };
+        const noPrefix = !text.includes("C. WHAT IS PRICED IN?");
+        return { hasHeader, hasCagr, hasRefPrice, hasQualification, hasBear, hasBase, hasBull, noPrefix };
       });
 
       recordCheck(
         "DECK",
         vp.name,
-        "Reverse-DCF Solve & Assumption Explanation",
-        pricedInCheck.hasHeader && pricedInCheck.hasCagr && pricedInCheck.hasRefPrice && pricedInCheck.hasExplanation,
-        "Reverse-DCF parameters or required assumption explanation missing"
+        "Reverse-DCF Solve & Assumption Qualification",
+        pricedInCheck.hasHeader && pricedInCheck.hasCagr && pricedInCheck.hasRefPrice && pricedInCheck.hasQualification && pricedInCheck.noPrefix,
+        "Reverse-DCF parameters or required qualification missing or prefix present"
       );
       recordCheck(
         "DECK",
@@ -228,62 +252,76 @@ async function runVerification() {
         "Scenario values ($73.22, $127.49, $209.87) or diff percentages missing/incorrect"
       );
 
-      // 5. Drivers & Invalidation Check
+      // 5. Drivers & Invalidation Check (Exactly 2 Invalidation Conditions, No Wholesale Contraction)
       const driversCheck = await page.evaluate(() => {
         const text = document.body.innerText.toUpperCase();
-        const hasDrivers = text.includes("D. WHAT MUST BE TRUE?") &&
-          text.includes("1. DTC VELOCITY") &&
-          text.includes("2. GROSS MARGIN") &&
-          text.includes("3. ZERO-DEBT BALANCE SHEET STRENGTH");
-        const hasKillers = text.includes("E. WHAT BREAKS THE THESIS?") &&
-          text.includes("1. GROSS MARGIN BREACH BELOW 50.0%") &&
-          text.includes("2. HOKA DTC DECELERATION BELOW 10.0%") &&
-          text.includes("3. WHOLESALE CHANNEL CONTRACTION");
-        return { hasDrivers, hasKillers };
+        const hasDriversHeader = text.includes("WHAT MUST BE TRUE?");
+        const hasDriver1 = text.includes("1. DTC VELOCITY & INTERNATIONAL SCALING");
+        const hasDriver2 = text.includes("2. GROSS MARGIN & OPERATING DEFENSE");
+        const hasDriver3 = text.includes("3. ZERO-DEBT BALANCE SHEET STRENGTH");
+
+        const hasKillersHeader = text.includes("WHAT BREAKS THE THESIS?");
+        const hasKiller1 = text.includes("1. GROSS MARGIN BREACH BELOW 50.0%");
+        const hasKiller2 = text.includes("2. HOKA DTC DECELERATION BELOW 10.0%");
+        const noThirdKiller = !text.includes("3. WHOLESALE CHANNEL CONTRACTION") && !text.includes("WHOLESALE REVENUE TURNING NEGATIVE");
+        const noBrandFatigue = !text.includes("BRAND FATIGUE");
+
+        return {
+          driversValid: hasDriversHeader && hasDriver1 && hasDriver2 && hasDriver3,
+          killersValid: hasKillersHeader && hasKiller1 && hasKiller2 && noThirdKiller && noBrandFatigue,
+        };
       });
 
       recordCheck(
         "DECK",
         vp.name,
-        "Three Decisive Drivers Present",
-        driversCheck.hasDrivers,
+        "Three Decisive Drivers Present (Concise)",
+        driversCheck.driversValid,
         "Drivers section or required driver cards missing"
       );
       recordCheck(
         "DECK",
         vp.name,
-        "Three Invalidation Conditions Present",
-        driversCheck.hasKillers,
-        "Thesis killers section or invalidation triggers missing"
+        "Exactly Two Supported Invalidation Conditions (No Invented Third)",
+        driversCheck.killersValid,
+        "Invalidation conditions missing or third unapproved condition detected"
       );
 
-      // 6. Expectation Gap & Review Trigger Check
-      const gapAndTriggerCheck = await page.evaluate(() => {
+      // 6. Next Review & Key Unknown
+      const reviewCheck = await page.evaluate(() => {
         const text = document.body.innerText.toUpperCase();
-        const hasGap = text.includes("F. POTENTIAL EXPECTATION GAP") &&
-          text.includes("AN EXPECTATION GAP HAS NOT YET BEEN ESTABLISHED BEYOND OBSERVED BRAND CHANNEL DIVERGENCE");
-        const hasTrigger = text.includes("G. WHAT WOULD CHANGE THE DECISION?") &&
-          text.includes("NEXT REVIEW TRIGGER:") &&
-          text.includes("DECISIVE UNKNOWN:");
-        return { hasGap, hasTrigger };
+        const hasHeader = text.includes("NEXT REVIEW & KEY UNKNOWN");
+        const hasTrigger = text.includes("Q2 FY27 EARNINGS RELEASE");
+        const hasUnknown = text.includes("SUSTAINABILITY OF PREMIUM DTC FULL-PRICE SELL-THROUGH RATES");
+        const hasStrengthen = text.includes("CONFIRMATION OF INTERNATIONAL DTC GROWTH ABOVE 20%");
+        return hasHeader && hasTrigger && hasUnknown && hasStrengthen;
       });
 
       recordCheck(
         "DECK",
         vp.name,
-        "Expectation Gap Declaration (No Fake Consensus)",
-        gapAndTriggerCheck.hasGap,
-        "Unestablished expectation gap declaration missing"
+        "Next Review Trigger (Q2 FY27) & Decisive Unknown",
+        reviewCheck,
+        "Next review section, Q2 FY27 trigger, or key unknown missing"
       );
+
+      // 7. Expectation Context Check
+      const gapCheck = await page.evaluate(() => {
+        const text = document.body.innerText.toUpperCase();
+        const hasHeader = text.includes("EXPECTATION CONTEXT");
+        const hasDeclaration = text.includes("A MARKET-CONSENSUS EXPECTATION GAP HAS NOT BEEN ESTABLISHED");
+        return hasHeader && hasDeclaration;
+      });
+
       recordCheck(
         "DECK",
         vp.name,
-        "Review Triggers & Decisive Unknown",
-        gapAndTriggerCheck.hasTrigger,
-        "Next review trigger or decisive unknown missing"
+        "Expectation Context Declaration (No Fake Consensus)",
+        gapCheck,
+        "Expectation context declaration missing"
       );
 
-      // 7. Progressive Disclosure Interactive Behavior
+      // 8. Progressive Disclosure Interactive Behavior
       const interactiveCheck = await page.evaluate(async () => {
         const btnValuation = document.querySelector('button[aria-controls="disclosure-valuation-deck"]');
         if (!btnValuation) return { exists: false };
@@ -309,7 +347,7 @@ async function runVerification() {
       );
 
       // Verify that after click, disclosure content rendered
-      await page.waitForTimeout ? page.waitForTimeout(100) : new Promise((r) => setTimeout(r, 100));
+      await new Promise((r) => setTimeout(r, 100));
       const expandedCheck = await page.evaluate(() => {
         const btnValuation = document.querySelector('button[aria-controls="disclosure-valuation-deck"]');
         const container = document.getElementById("disclosure-valuation-deck");
@@ -328,17 +366,14 @@ async function runVerification() {
 
       // Capture screenshot
       const shotName = `deck_prototype_${vp.name}.png`;
-      for (const dir of [ARTIFACT_SCREENSHOT_DIR, LOCAL_SCREENSHOT_DIR]) {
-        await page.screenshot({
-          path: path.join(dir, shotName),
-          fullPage: true,
-        });
-      }
+      await page.screenshot({
+        path: path.join(ARTIFACT_SCREENSHOT_DIR, shotName),
+        fullPage: true,
+      });
       console.log(`  📸 Captured screenshot: ${shotName}`);
 
       // On desktop, also capture screenshot with disclosure expanded
       if (vp.name === "desktop_1280") {
-        // Expand financial resilience disclosure too
         await page.evaluate(() => {
           const btnFin = document.querySelector('button[aria-controls="disclosure-financials-deck"]');
           if (btnFin) btnFin.click();
@@ -346,12 +381,10 @@ async function runVerification() {
         await new Promise((r) => setTimeout(r, 100));
 
         const expandedShot = "deck_prototype_expanded_desktop_1280.png";
-        for (const dir of [ARTIFACT_SCREENSHOT_DIR, LOCAL_SCREENSHOT_DIR]) {
-          await page.screenshot({
-            path: path.join(dir, expandedShot),
-            fullPage: true,
-          });
-        }
+        await page.screenshot({
+          path: path.join(ARTIFACT_SCREENSHOT_DIR, expandedShot),
+          fullPage: true,
+        });
         console.log(`  📸 Captured screenshot: ${expandedShot}`);
       }
     }
@@ -368,13 +401,13 @@ async function runVerification() {
       const url = `http://localhost:${PORT}/research?symbol=${sym}`;
       await page.goto(url, { waitUntil: "networkidle0" });
 
-      const check = await page.evaluate((s) => {
+      const check = await page.evaluate(() => {
         const text = document.body.innerText.toUpperCase();
         const hasSummarySection = document.querySelector('section[aria-label="Investment Research Summary"]') !== null;
         const hasStandardHeader = text.includes("INVESTMENT RESEARCH SUMMARY") && text.includes("WHY THIS BUSINESS DESERVES ATTENTION");
-        const isNotDeckPrototype = !text.includes("DECISION-FIRST RESEARCH PROTOTYPE (DECK)");
+        const isNotDeckPrototype = !text.includes("DECISION-FIRST PROTOTYPE (DECK)");
         return { hasSummarySection, hasStandardHeader, isNotDeckPrototype };
-      }, sym);
+      });
 
       recordCheck(
         sym,
@@ -385,12 +418,10 @@ async function runVerification() {
       );
 
       if (sym === "FIX") {
-        for (const dir of [ARTIFACT_SCREENSHOT_DIR, LOCAL_SCREENSHOT_DIR]) {
-          await page.screenshot({
-            path: path.join(dir, "fix_preserved_desktop_1280.png"),
-            fullPage: true,
-          });
-        }
+        await page.screenshot({
+          path: path.join(ARTIFACT_SCREENSHOT_DIR, "fix_preserved_desktop_1280.png"),
+          fullPage: true,
+        });
         console.log(`  📸 Captured screenshot: fix_preserved_desktop_1280.png`);
       }
     }
@@ -410,7 +441,7 @@ async function runVerification() {
       const hasFallbackBadge = text.includes("NO PUBLISHED WATCH DOSSIER");
       const hasSummary = document.querySelector('section[aria-label="Investment Research Summary"]') !== null;
       const hasBearCard = document.querySelector('div[aria-label="Bear case scenario card"]') !== null;
-      const hasDeckView = text.includes("Decision-First Research Prototype (DECK)");
+      const hasDeckView = text.includes("Decision-First Prototype (DECK)");
       return { hasFallbackBadge, hasSummary, hasBearCard, hasDeckView };
     });
 
@@ -422,12 +453,10 @@ async function runVerification() {
       "Fallback missing or published card/prototype leaked"
     );
 
-    for (const dir of [ARTIFACT_SCREENSHOT_DIR, LOCAL_SCREENSHOT_DIR]) {
-      await page.screenshot({
-        path: path.join(dir, "iren_fallback_desktop_1280.png"),
-        fullPage: true,
-      });
-    }
+    await page.screenshot({
+      path: path.join(ARTIFACT_SCREENSHOT_DIR, "iren_fallback_desktop_1280.png"),
+      fullPage: true,
+    });
     console.log(`  📸 Captured screenshot: iren_fallback_desktop_1280.png`);
 
   } catch (err) {
