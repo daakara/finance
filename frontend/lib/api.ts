@@ -803,23 +803,42 @@ export function getPublicationIntegrityLabel(cap?: RadarCapabilityDetail | null)
   return "Publication Integrity: Not verified";
 }
 
-export function formatPriceObservationDate(dateStr?: string | null): string {
-  if (!dateStr) return "Daily Close";
-  try {
-    const parts = dateStr.split("-");
-    if (parts.length === 3) {
-      const year = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const day = parseInt(parts[2], 10);
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      if (month >= 0 && month < 12 && !isNaN(day) && !isNaN(year)) {
-        return `Daily Close · ${months[month]} ${day}, ${year}`;
+export function formatPriceObservationDate(
+  dateStr?: string | null,
+  priceBasis?: "DAILY_CLOSE" | string | null
+): string {
+  const basisLabel = priceBasis === "DAILY_CLOSE" || !priceBasis ? "Daily Close" : "Price";
+  if (!dateStr || typeof dateStr !== "string" || !dateStr.trim()) {
+    return `${basisLabel} · Date Unverified`;
+  }
+
+  const trimmed = dateStr.trim();
+  const parts = trimmed.split("-");
+  if (parts.length === 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    // Validate calendar components strictly (no fabricated dates, reject invalid dates like Feb 31)
+    if (
+      !isNaN(year) && year >= 1900 && year <= 2100 &&
+      !isNaN(month) && month >= 0 && month < 12 &&
+      !isNaN(day) && day >= 1 && day <= 31
+    ) {
+      // Use Date.UTC to prevent any browser timezone-induced trading-day shifts
+      const utcDate = new Date(Date.UTC(year, month, day));
+      if (
+        utcDate.getUTCFullYear() === year &&
+        utcDate.getUTCMonth() === month &&
+        utcDate.getUTCDate() === day
+      ) {
+        return `${basisLabel} · ${months[month]} ${day}, ${year}`;
       }
     }
-    return `Daily Close · ${dateStr}`;
-  } catch {
-    return "Daily Close";
+    return `${basisLabel} · Invalid Date`;
   }
+  return `${basisLabel} · Date Unverified`;
 }
 
 export function normalizeRadarCapabilities(
@@ -1678,7 +1697,9 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
           // Invariant: Screener output is discovery-only. Canonical actionability strictly requires Single-Asset DecisionTrace.
           isActionable: false,
           canSizeTrade: false,
-          allowedActions: Array.isArray(r.allowedActions) ? r.allowedActions : ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"],
+          allowedActions: Array.isArray(r.allowedActions)
+            ? r.allowedActions
+            : (Array.isArray(r.allowed_actions) ? r.allowed_actions : []),
           disqualificationReason: r.disqualificationReason ?? "Discovery candidate: Open in Analysis hub to evaluate canonical DecisionTrace.",
           decisionContextId: r.decisionContextId,
         };

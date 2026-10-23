@@ -46,25 +46,25 @@ assert.strictEqual(
 // Missing observation date (null, undefined, empty string)
 assert.strictEqual(
   formatPriceObservationDate(null),
-  "Daily Close",
-  "Null observation date must fall back gracefully to 'Daily Close'"
+  "Daily Close · Date Unverified",
+  "Null observation date must display explicit provenance warning"
 );
 assert.strictEqual(
   formatPriceObservationDate(undefined),
-  "Daily Close",
-  "Undefined observation date must fall back gracefully to 'Daily Close'"
+  "Daily Close · Date Unverified",
+  "Undefined observation date must display explicit provenance warning"
 );
 assert.strictEqual(
   formatPriceObservationDate(""),
-  "Daily Close",
-  "Empty observation date must fall back gracefully to 'Daily Close'"
+  "Daily Close · Date Unverified",
+  "Empty observation date must display explicit provenance warning"
 );
 
-// Malformed date string
+// Malformed / invalid calendar date string
 assert.strictEqual(
   formatPriceObservationDate("2026-99-99"),
-  "Daily Close · 2026-99-99",
-  "Malformed date string must degrade gracefully without throwing"
+  "Daily Close · Invalid Date",
+  "Malformed date string must be rejected with Invalid Date without throwing"
 );
 
 console.log("   [PASS] 1.1: All formatPriceObservationDate trading day contexts verified");
@@ -145,7 +145,7 @@ assert.ok(unpriced);
 assert.strictEqual(unpriced.current_price, undefined);
 assert.strictEqual(unpriced.priceBasis, null);
 assert.strictEqual(unpriced.priceDate, null);
-assert.strictEqual(formatPriceObservationDate(unpriced.priceDate), "Daily Close");
+assert.strictEqual(formatPriceObservationDate(unpriced.priceDate), "Daily Close · Date Unverified");
 
 console.log("   [PASS] 2.1: Multi-asset price observation date distinction and unpriced fail-closed verified");
 
