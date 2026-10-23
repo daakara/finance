@@ -26,12 +26,18 @@ import {
   getStandardizedScenarioLabel,
   isDescriptiveScenarioName,
 } from "../lib/opportunityDossiers";
+import DeckDecisionFirstView from "./DeckDecisionFirstView";
 
 interface OpportunityDossierCardProps {
   dossier: OpportunityDossier;
 }
 
 export default function OpportunityDossierCard({ dossier }: OpportunityDossierCardProps) {
+  // Bounded presentation prototype: Render decision-first view exclusively for DECK
+  if (dossier.identity.symbol === "DECK") {
+    return <DeckDecisionFirstView dossier={dossier} />;
+  }
+
   const { identity, central_assessment, valuation, financial_profile, monitoring, navigation } = dossier;
 
   const isSuppressed = valuation.valuation_status === "VALUATION_SUPPRESSED";
