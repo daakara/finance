@@ -43,6 +43,7 @@ import {
   Search,
   ExternalLink,
   ChevronRight,
+  ChevronDown,
   Info,
 } from "lucide-react";
 
@@ -143,8 +144,10 @@ function ResearchContent() {
     return getCollectionProvenance(hasSymbolParam && !isKnown ? displaySymbol : undefined);
   }, [hasSymbolParam, isKnown, displaySymbol]);
 
+  const isDeckPrototype = normalizedSymbol === "DECK" && dossier?.central_assessment?.disposition === "WATCH_CONDITIONS";
+
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24">
+    <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 ${isDeckPrototype ? "space-y-4 sm:space-y-6" : "space-y-6"}`}>
       {/* Breadcrumb Navigation */}
       <nav aria-label="Breadcrumb" className="text-xs font-mono text-slate-500 flex items-center space-x-2">
         <Link href="/" className="hover:text-cyan-400 transition-colors">
@@ -163,68 +166,181 @@ function ResearchContent() {
       </nav>
 
       {/* Surface Header Banner */}
-      <header className="bg-gradient-to-r from-[#0b1019] via-[#0e1624] to-[#0b1019] p-5 sm:p-6 rounded-2xl border border-[#1e293b] space-y-4 shadow-xl">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-950/80 text-cyan-400 border border-cyan-800 text-xs font-mono font-bold">
-                <Microscope className="w-3.5 h-3.5" />
-                ARX QUALITY WATCH RESEARCH
-              </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 text-slate-300 border border-slate-700 text-xs font-mono">
-                <Calendar className="w-3 h-3 text-cyan-400" />
-                Reference Date: {metadata.market_session_date || "2026-10-16"} Close
-              </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 text-slate-300 border border-slate-700 text-xs font-mono">
-                <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                {isDraftPreviewActive ? "Scaling Pilot Draft Evidence" : "Curated Quality Watch Selection"}
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-sans">
-              Curated Quality Watch Research & Invalidation Dossiers
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-300 font-sans max-w-3xl leading-relaxed">
-              Why does this business deserve continuous monitoring at the stated reference price?
-              Examines primary SEC filings, business quality moats, reverse-DCF valuation conditions, balance sheet resilience, and observable invalidation triggers.
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0">
-            <div className="p-3 rounded-xl bg-[#080c13] border border-[#1f293d] space-y-1 text-right">
-              <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Research Collection</div>
-              <div className="text-sm font-mono font-bold text-cyan-300">{cohort.length} Quality Watch Assets</div>
-              <div className="text-[11px] font-mono text-slate-400">
-                {isDraftPreviewActive ? "Pilot Draft Staging" : "Curated Published Collection"}
+      {isDeckPrototype ? (
+        <>
+          {/* Desktop Surface Header (Preserves Accepted Full Presentation) */}
+          <header className="hidden lg:block bg-gradient-to-r from-[#0b1019] via-[#0e1624] to-[#0b1019] p-5 sm:p-6 rounded-2xl border border-[#1e293b] space-y-4 shadow-xl">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-950/80 text-cyan-400 border border-cyan-800 text-xs font-mono font-bold">
+                    <Microscope className="w-3.5 h-3.5" />
+                    ARX QUALITY WATCH RESEARCH
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 text-slate-300 border border-slate-700 text-xs font-mono">
+                    <Calendar className="w-3 h-3 text-cyan-400" />
+                    Reference Date: {metadata.market_session_date || "2026-10-16"} Close
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 text-slate-300 border border-slate-700 text-xs font-mono">
+                    <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                    {isDraftPreviewActive ? "Scaling Pilot Draft Evidence" : "Curated Quality Watch Selection"}
+                  </span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-sans">
+                  Curated Quality Watch Research & Invalidation Dossiers
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-300 font-sans max-w-3xl leading-relaxed">
+                  Why does this business deserve continuous monitoring at the stated reference price?
+                  Examines primary SEC filings, business quality moats, reverse-DCF valuation conditions, balance sheet resilience, and observable invalidation triggers.
+                </p>
               </div>
-              {IS_PILOT_DRAFTS_BUILD_ENABLED && !isDraftPreviewActive ? (
-                <Link
-                  href={`/research?symbol=${normalizedSymbol}&preview=pilot${experienceMode ? `&mode=${experienceMode}` : ""}`}
-                  className="inline-block mt-1 text-[10px] font-mono text-amber-400 hover:text-amber-300 underline"
-                >
-                  Preview Draft Expansion ({cohort.length > 5 ? cohort.length : 18} Assets)
-                </Link>
-              ) : null}
+
+              <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0">
+                <div className="p-3 rounded-xl bg-[#080c13] border border-[#1f293d] space-y-1 text-right">
+                  <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Research Collection</div>
+                  <div className="text-sm font-mono font-bold text-cyan-300">{cohort.length} Quality Watch Assets</div>
+                  <div className="text-[11px] font-mono text-slate-400">
+                    {isDraftPreviewActive ? "Pilot Draft Staging" : "Curated Published Collection"}
+                  </div>
+                  {IS_PILOT_DRAFTS_BUILD_ENABLED && !isDraftPreviewActive ? (
+                    <Link
+                      href={`/research?symbol=${normalizedSymbol}&preview=pilot${experienceMode ? `&mode=${experienceMode}` : ""}`}
+                      className="inline-block mt-1 text-[10px] font-mono text-amber-400 hover:text-amber-300 underline"
+                    >
+                      Preview Draft Expansion ({cohort.length > 5 ? cohort.length : 18} Assets)
+                    </Link>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            {/* Global Qualification Note */}
+            <div className="pt-3 border-t border-[#1a2538] flex items-center justify-between gap-3 text-[11px] font-mono text-slate-400">
+              <div className="flex items-center gap-2">
+                <Info className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span>
+                  Read-only research artifact. Model reference prices represent valuation anchors, not price targets.
+                </span>
+              </div>
+              <Link
+                href="/radar"
+                className="hidden sm:inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors shrink-0"
+              >
+                <span>Launch Live Radar</span>
+                <ExternalLink className="w-3 h-3" />
+              </Link>
+            </div>
+          </header>
+
+          {/* Compact Mobile Surface Header for DECK Prototype */}
+          <header className="lg:hidden bg-[#0b1019] p-3.5 rounded-xl border border-[#1e293b] space-y-2.5 shadow-md">
+            <div className="flex flex-wrap items-center justify-between gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 text-[10px] font-mono font-bold">
+                  <Microscope className="w-3 h-3" />
+                  QUALITY WATCH
+                </span>
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-700 text-[10px] font-mono">
+                  <Calendar className="w-2.5 h-2.5 text-cyan-400" />
+                  {metadata.market_session_date || "2026-10-16"} Close
+                </span>
+              </div>
+              <span className="text-[10px] font-mono text-slate-400">
+                {cohort.length} Assets
+              </span>
+            </div>
+
+            <div className="flex items-start gap-1.5 text-[11px] font-mono text-slate-400">
+              <Info className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+              <span>
+                Read-only research artifact. Model reference prices represent valuation anchors, not price targets.
+              </span>
+            </div>
+
+            {/* Accessible Collapsed Collection Scope & Methodology Disclosure */}
+            <details className="group border-t border-[#172234] pt-1">
+              <summary className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 cursor-pointer list-none flex items-center justify-between py-1 focus:outline-none focus:ring-1 focus:ring-cyan-400 rounded min-h-[44px]">
+                <span className="font-semibold">Collection Scope &amp; Methodology</span>
+                <ChevronDown className="w-3.5 h-3.5 transition-transform group-open:rotate-180 text-slate-400" />
+              </summary>
+              <div className="pt-2 pb-1 space-y-2 text-xs text-slate-300 font-sans leading-relaxed border-t border-[#151e2e] mt-1">
+                <p>
+                  Why does this business deserve continuous monitoring at the stated reference price?
+                  Examines primary SEC filings, business quality moats, reverse-DCF valuation conditions, balance sheet resilience, and observable invalidation triggers.
+                </p>
+                <div className="p-2.5 rounded-lg bg-[#080c13] border border-[#1f293d] flex items-center justify-between text-[10px] font-mono text-slate-400">
+                  <span>Published Curated Watch Collection</span>
+                  <span className="text-cyan-300 font-bold">{cohort.length} Assets</span>
+                </div>
+              </div>
+            </details>
+          </header>
+        </>
+      ) : (
+        /* Standard Header Banner for Non-DECK Assets */
+        <header className="bg-gradient-to-r from-[#0b1019] via-[#0e1624] to-[#0b1019] p-5 sm:p-6 rounded-2xl border border-[#1e293b] space-y-4 shadow-xl">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-950/80 text-cyan-400 border border-cyan-800 text-xs font-mono font-bold">
+                  <Microscope className="w-3.5 h-3.5" />
+                  ARX QUALITY WATCH RESEARCH
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 text-slate-300 border border-slate-700 text-xs font-mono">
+                  <Calendar className="w-3 h-3 text-cyan-400" />
+                  Reference Date: {metadata.market_session_date || "2026-10-16"} Close
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 text-slate-300 border border-slate-700 text-xs font-mono">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                  {isDraftPreviewActive ? "Scaling Pilot Draft Evidence" : "Curated Quality Watch Selection"}
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-sans">
+                Curated Quality Watch Research & Invalidation Dossiers
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-300 font-sans max-w-3xl leading-relaxed">
+                Why does this business deserve continuous monitoring at the stated reference price?
+                Examines primary SEC filings, business quality moats, reverse-DCF valuation conditions, balance sheet resilience, and observable invalidation triggers.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0">
+              <div className="p-3 rounded-xl bg-[#080c13] border border-[#1f293d] space-y-1 text-right">
+                <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Research Collection</div>
+                <div className="text-sm font-mono font-bold text-cyan-300">{cohort.length} Quality Watch Assets</div>
+                <div className="text-[11px] font-mono text-slate-400">
+                  {isDraftPreviewActive ? "Pilot Draft Staging" : "Curated Published Collection"}
+                </div>
+                {IS_PILOT_DRAFTS_BUILD_ENABLED && !isDraftPreviewActive ? (
+                  <Link
+                    href={`/research?symbol=${normalizedSymbol}&preview=pilot${experienceMode ? `&mode=${experienceMode}` : ""}`}
+                    className="inline-block mt-1 text-[10px] font-mono text-amber-400 hover:text-amber-300 underline"
+                  >
+                    Preview Draft Expansion ({cohort.length > 5 ? cohort.length : 18} Assets)
+                  </Link>
+                ) : null}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Global Qualification Note */}
-        <div className="pt-3 border-t border-[#1a2538] flex items-center justify-between gap-3 text-[11px] font-mono text-slate-400">
-          <div className="flex items-center gap-2">
-            <Info className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-            <span>
-              Read-only research artifact. Model reference prices represent valuation anchors, not price targets.
-            </span>
+          {/* Global Qualification Note */}
+          <div className="pt-3 border-t border-[#1a2538] flex items-center justify-between gap-3 text-[11px] font-mono text-slate-400">
+            <div className="flex items-center gap-2">
+              <Info className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <span>
+                Read-only research artifact. Model reference prices represent valuation anchors, not price targets.
+              </span>
+            </div>
+            <Link
+              href="/radar"
+              className="hidden sm:inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors shrink-0"
+            >
+              <span>Launch Live Radar</span>
+              <ExternalLink className="w-3 h-3" />
+            </Link>
           </div>
-          <Link
-            href="/radar"
-            className="hidden sm:inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors shrink-0"
-          >
-            <span>Launch Live Radar</span>
-            <ExternalLink className="w-3 h-3" />
-          </Link>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Draft Staging Preview Mode Banner */}
       {isDraftPreviewActive && (
