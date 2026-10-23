@@ -213,6 +213,8 @@ def get_radar_capabilities(
 
         if snap_status == "AVAILABLE":
             raw_matched = vcp_snapshot.get("matched_count")
+            if raw_matched is None and isinstance(vcp_snapshot.get("snapshot"), dict):
+                raw_matched = vcp_snapshot["snapshot"].get("matched_count")
             is_valid_op = type(raw_matched) is int and raw_matched >= 0
             matched_count = raw_matched if is_valid_op else None
             caps["VCP"] = {
@@ -222,7 +224,7 @@ def get_radar_capabilities(
                 "matchedCount": matched_count,
                 "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
                 "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
-                "snapshotId": vcp_snapshot.get("snapshot_id"),
+                "snapshotId": vcp_snapshot.get("snapshot_id") or (vcp_snapshot.get("snapshot", {}).get("snapshot_id") if isinstance(vcp_snapshot.get("snapshot"), dict) else None),
                 "freshnessStatus": freshness_info.get("status", "LIVE"),
                 "populationDenominator": pop_denom,
                 "universeBuildId": build_id,
