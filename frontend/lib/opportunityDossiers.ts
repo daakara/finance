@@ -55,6 +55,87 @@ export interface ScenarioProjection {
   equity_value?: number;
 }
 
+/**
+ * Computes the percentage difference between a scenario modeled value and the reference price:
+ * ((modeledValue / referencePrice) - 1) * 100
+ *
+ * Requirements:
+ * - Requires finite numeric inputs (Number.isFinite for both inputs).
+ * - Requires a strictly positive reference price (referencePrice > 0).
+ * - Correctly handles zero modeled equity value (returns -100.0, representing -100%).
+ * - Correctly computes mathematically consistent finite differences for negative modeled values (e.g. -20 vs 100 -> -120%).
+ * - Rejects any nonfinite calculated result (returns null).
+ * - Safely returns null for missing, non-numeric, zero/negative reference prices, or infinite values.
+ */
+export function calculateScenarioPriceDiffPct(
+  modeledValue: number | undefined | null,
+  referencePrice: number | undefined | null
+): number | null {
+  if (
+    modeledValue === undefined ||
+    modeledValue === null ||
+    typeof modeledValue !== "number" ||
+    !Number.isFinite(modeledValue)
+  ) {
+    return null;
+  }
+  if (
+    referencePrice === undefined ||
+    referencePrice === null ||
+    typeof referencePrice !== "number" ||
+    !Number.isFinite(referencePrice) ||
+    referencePrice <= 0
+  ) {
+    return null;
+  }
+  const diff = ((modeledValue / referencePrice) - 1) * 100;
+  if (!Number.isFinite(diff)) {
+    return null;
+  }
+  return diff;
+}
+
+/**
+ * Standardizes scenario keys into consistent presentation labels:
+ * Conservative -> Bear case
+ * Base / Base Case -> Base case
+ * Optimistic -> Bull case
+ */
+export function getStandardizedScenarioLabel(key: string): string {
+  if (!key || typeof key !== "string") return "";
+  const lower = key.trim().toLowerCase();
+  if (lower === "conservative" || lower.includes("conservative") || lower.includes("bear")) {
+    return "Bear case";
+  }
+  if (lower === "base" || lower === "base case" || lower.includes("base")) {
+    return "Base case";
+  }
+  if (lower === "optimistic" || lower.includes("optimistic") || lower.includes("bull")) {
+    return "Bull case";
+  }
+  return key;
+}
+
+/**
+ * Determines whether a scenario name contains a descriptive business narrative
+ * rather than a generic classification label (e.g. "Conservative", "Base", "Optimistic").
+ */
+export function isDescriptiveScenarioName(name?: string | null): boolean {
+  if (!name || typeof name !== "string") return false;
+  const lower = name.trim().toLowerCase();
+  const genericLabels = new Set([
+    "conservative",
+    "base",
+    "base case",
+    "optimistic",
+    "bear",
+    "bull",
+    "bear case",
+    "bull case",
+  ]);
+  return !genericLabels.has(lower);
+}
+
 export interface ReverseDcfParameters {
   target_price: number;
   solved_revenue_cagr_pct: number;

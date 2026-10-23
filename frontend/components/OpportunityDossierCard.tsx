@@ -20,7 +20,12 @@
 
 import React from "react";
 import Link from "next/link";
-import { OpportunityDossier } from "../lib/opportunityDossiers";
+import {
+  OpportunityDossier,
+  calculateScenarioPriceDiffPct,
+  getStandardizedScenarioLabel,
+  isDescriptiveScenarioName,
+} from "../lib/opportunityDossiers";
 
 interface OpportunityDossierCardProps {
   dossier: OpportunityDossier;
@@ -125,7 +130,82 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
         </div>
       </header>
 
-      {/* 2. Central Assessment Task */}
+      {/* 2. Compact Investment Research Summary */}
+      <section
+        className="bg-[#0f172a]/90 border border-cyan-900/60 rounded-xl p-4 sm:p-5 space-y-4 shadow-md"
+        aria-label="Investment Research Summary"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-cyan-400" aria-hidden="true"></span>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+              Investment Research Summary
+            </h2>
+          </div>
+          <span className="text-[10px] font-mono text-slate-400">
+            Decision-Focused Quality Watch Standard
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
+          {/* A. Why Business Deserves Attention */}
+          <div className="bg-[#080d16] border border-cyan-950/80 rounded-lg p-3.5 space-y-1.5 flex flex-col justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5 text-cyan-300 font-semibold text-[11px] uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" aria-hidden="true"></span>
+                <h3>Why This Business Deserves Attention</h3>
+              </div>
+              <p className="text-slate-300 text-xs leading-relaxed">
+                {dossier.selection_rationale?.why_this_business || central_assessment.presentation_summary}
+              </p>
+            </div>
+          </div>
+
+          {/* B. Central Investment Debate */}
+          <div className="bg-[#080d16] border border-purple-950/80 rounded-lg p-3.5 space-y-1.5 flex flex-col justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5 text-purple-300 font-semibold text-[11px] uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400" aria-hidden="true"></span>
+                <h3>Central Investment Debate</h3>
+              </div>
+              <p className="text-slate-300 text-xs leading-relaxed">
+                {central_assessment.main_uncertainty}
+              </p>
+            </div>
+          </div>
+
+          {/* C. Why It Remains WATCH */}
+          <div className="bg-[#080d16] border border-amber-950/80 rounded-lg p-3.5 space-y-1.5 flex flex-col justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5 text-amber-300 font-semibold text-[11px] uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" aria-hidden="true"></span>
+                <h3>Why It Remains WATCH</h3>
+              </div>
+              <p className="text-slate-300 text-xs leading-relaxed">
+                {central_assessment.price_watch_condition}
+              </p>
+            </div>
+            <div className="pt-2 border-t border-amber-950/60 text-[10px] text-amber-300/80 font-mono">
+              Status: WATCH (Conditions required for entry • Not a BUY recommendation)
+            </div>
+          </div>
+
+          {/* D. Observable Evidence That Could Change Assessment */}
+          <div className="bg-[#080d16] border border-emerald-950/80 rounded-lg p-3.5 space-y-1.5 flex flex-col justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5 text-emerald-300 font-semibold text-[11px] uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" aria-hidden="true"></span>
+                <h3>Observable Evidence That Could Change Assessment</h3>
+              </div>
+              <p className="text-slate-300 text-xs leading-relaxed">
+                {dossier.selection_rationale?.assessment_changes || monitoring.observable_invalidation_trigger}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Central Assessment Task */}
       <section className="bg-[#101726] border border-[#233149] rounded-xl p-4 sm:p-5 space-y-3" aria-label="Central Assessment">
         <div className="flex items-center justify-between border-b border-slate-800 pb-2">
           <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
@@ -316,70 +396,278 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
               </div>
             )}
 
-            {/* Multi-Scenario Bracket with Conditional Wording */}
+            {/* Multi-Scenario Bracket with Standardized Terminology & Comparison */}
             {valuation.scenarios && Object.keys(valuation.scenarios).length > 0 && (
-              <div className="mt-3 pt-3 border-t border-slate-800 space-y-3">
-                <div className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">
-                  Conditional Modeled Valuation Range:
+              <div className="mt-4 pt-4 border-t border-slate-800 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                      Conditional Scenario Comparison
+                    </h3>
+                    <p className="text-[11px] text-slate-400 font-sans mt-0.5">
+                      Scenarios reflect different operating assumptions, not assigned probabilities or price targets.
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950/60 border border-cyan-800 px-2 py-0.5 rounded">
+                    Discounted Cash Flow (FCFF) Present Values
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-center text-xs">
-                  {/* Conservative */}
+                {/* 3 Scenario Cards in strict order: Bear -> Base -> Bull */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-left">
+                  {/* Bear case */}
                   {valuation.scenarios.conservative && (
-                    <div className="bg-[#0b1019] border border-slate-800 p-3 rounded-lg space-y-1">
-                      <div className="text-slate-400 text-[10px] uppercase font-semibold">
-                        {valuation.scenarios.conservative.name}
+                    <div
+                      className="bg-[#080d16] border border-rose-900/40 rounded-xl p-3.5 space-y-2.5 flex flex-col justify-between"
+                      aria-label="Bear case scenario card"
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-rose-950 text-rose-300 border border-rose-800">
+                            Bear case
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-500">
+                            Downside Stress
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-medium">
+                            Modeled Value per Share
+                          </span>
+                          <div className="font-mono font-bold text-rose-400 text-xl sm:text-2xl tracking-tight">
+                            ${valuation.scenarios.conservative.per_share_value.toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="bg-[#0d1422] rounded-md p-2 border border-slate-800/80 space-y-0.5">
+                          <div className="text-[10px] text-slate-400">
+                            Difference from reference price:
+                          </div>
+                          <div className="font-mono text-xs font-semibold text-rose-400">
+                            {(() => {
+                              const diff = calculateScenarioPriceDiffPct(
+                                valuation.scenarios.conservative.per_share_value,
+                                valuation.reference_price
+                              );
+                              return diff !== null ? `${diff > 0 ? "+" : ""}${diff.toFixed(1)}%` : "N/A";
+                            })()}
+                          </div>
+                          <div className="text-[9px] text-slate-500 font-mono">
+                            Reference price as of {valuation.reference_date}: ${valuation.reference_price.toFixed(2)}
+                          </div>
+                        </div>
+                        {isDescriptiveScenarioName(valuation.scenarios.conservative.name) && (
+                          <p className="text-[11px] text-slate-300 leading-relaxed font-sans italic">
+                            {valuation.scenarios.conservative.name}
+                          </p>
+                        )}
                       </div>
-                      <div className="font-mono font-bold text-rose-400 text-base">
-                        ${valuation.scenarios.conservative.per_share_value.toFixed(2)}
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-mono">
-                        {valuation.scenarios.conservative.potential_return_pct > 0 ? "+" : ""}
-                        {valuation.scenarios.conservative.potential_return_pct.toFixed(1)}% modeled return
+
+                      {/* Principal assumptions */}
+                      <div className="pt-2 border-t border-slate-800/80 text-[10px] font-mono text-slate-400 space-y-0.5">
+                        <div className="text-[10px] font-sans font-semibold text-slate-300 uppercase tracking-wider">
+                          Key Drivers:
+                        </div>
+                        <div className="flex justify-between">
+                          <span>5Y Revenue CAGR:</span>
+                          <span className="text-slate-200">
+                            {valuation.scenarios.conservative.revenue_cagr_pct !== undefined
+                              ? `${valuation.scenarios.conservative.revenue_cagr_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Target Operating Margin:</span>
+                          <span className="text-slate-200">
+                            {valuation.scenarios.conservative.operating_margin_pct !== undefined
+                              ? `${valuation.scenarios.conservative.operating_margin_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Discount Rate (WACC):</span>
+                          <span className="text-slate-200">
+                            {valuation.scenarios.conservative.wacc_pct !== undefined
+                              ? `${valuation.scenarios.conservative.wacc_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Base */}
+                  {/* Base case */}
                   {valuation.scenarios.base && (
-                    <div className="bg-[#0b1019] border border-cyan-800/80 p-3 rounded-lg space-y-1 shadow-sm ring-1 ring-cyan-800/40">
-                      <div className="text-cyan-300 text-[10px] uppercase font-semibold">
-                        {valuation.scenarios.base.name}
+                    <div
+                      className="bg-[#080d16] border border-cyan-800/80 ring-1 ring-cyan-800/40 rounded-xl p-3.5 space-y-2.5 flex flex-col justify-between shadow-sm"
+                      aria-label="Base case scenario card"
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-cyan-950 text-cyan-300 border border-cyan-800">
+                            Base case
+                          </span>
+                          <span className="text-[10px] font-mono text-cyan-400">
+                            Central Case
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-medium">
+                            Modeled Value per Share
+                          </span>
+                          <div className="font-mono font-bold text-white text-xl sm:text-2xl tracking-tight">
+                            ${valuation.scenarios.base.per_share_value.toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="bg-[#0d1422] rounded-md p-2 border border-slate-800/80 space-y-0.5">
+                          <div className="text-[10px] text-slate-400">
+                            Difference from reference price:
+                          </div>
+                          <div className="font-mono text-xs font-semibold text-slate-200">
+                            {(() => {
+                              const diff = calculateScenarioPriceDiffPct(
+                                valuation.scenarios.base.per_share_value,
+                                valuation.reference_price
+                              );
+                              return diff !== null ? `${diff > 0 ? "+" : ""}${diff.toFixed(1)}%` : "N/A";
+                            })()}
+                          </div>
+                          <div className="text-[9px] text-slate-500 font-mono">
+                            Reference price as of {valuation.reference_date}: ${valuation.reference_price.toFixed(2)}
+                          </div>
+                        </div>
+                        {isDescriptiveScenarioName(valuation.scenarios.base.name) && (
+                          <p className="text-[11px] text-slate-300 leading-relaxed font-sans italic">
+                            {valuation.scenarios.base.name}
+                          </p>
+                        )}
                       </div>
-                      <div className="font-mono font-bold text-white text-base">
-                        ${valuation.scenarios.base.per_share_value.toFixed(2)}
-                      </div>
-                      <div className="text-[10px] text-slate-400 font-mono">
-                        {valuation.scenarios.base.potential_return_pct > 0 ? "+" : ""}
-                        {valuation.scenarios.base.potential_return_pct.toFixed(1)}% modeled return
+
+                      {/* Principal assumptions */}
+                      <div className="pt-2 border-t border-slate-800/80 text-[10px] font-mono text-slate-400 space-y-0.5">
+                        <div className="text-[10px] font-sans font-semibold text-slate-300 uppercase tracking-wider">
+                          Key Drivers:
+                        </div>
+                        <div className="flex justify-between">
+                          <span>5Y Revenue CAGR:</span>
+                          <span className="text-slate-200">
+                            {valuation.scenarios.base.revenue_cagr_pct !== undefined
+                              ? `${valuation.scenarios.base.revenue_cagr_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Target Operating Margin:</span>
+                          <span className="text-slate-200">
+                            {valuation.scenarios.base.operating_margin_pct !== undefined
+                              ? `${valuation.scenarios.base.operating_margin_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Discount Rate (WACC):</span>
+                          <span className="text-slate-200">
+                            {valuation.scenarios.base.wacc_pct !== undefined
+                              ? `${valuation.scenarios.base.wacc_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Optimistic */}
+                  {/* Bull case */}
                   {valuation.scenarios.optimistic && (
-                    <div className="bg-[#0b1019] border border-slate-800 p-3 rounded-lg space-y-1">
-                      <div className="text-slate-400 text-[10px] uppercase font-semibold">
-                        {valuation.scenarios.optimistic.name}
+                    <div
+                      className="bg-[#080d16] border border-emerald-900/40 rounded-xl p-3.5 space-y-2.5 flex flex-col justify-between"
+                      aria-label="Bull case scenario card"
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-950 text-emerald-300 border border-emerald-800">
+                            Bull case
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-500">
+                            Upside Expansion
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-medium">
+                            Modeled Value per Share
+                          </span>
+                          <div className="font-mono font-bold text-emerald-400 text-xl sm:text-2xl tracking-tight">
+                            ${valuation.scenarios.optimistic.per_share_value.toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="bg-[#0d1422] rounded-md p-2 border border-slate-800/80 space-y-0.5">
+                          <div className="text-[10px] text-slate-400">
+                            Difference from reference price:
+                          </div>
+                          <div className="font-mono text-xs font-semibold text-emerald-400">
+                            {(() => {
+                              const diff = calculateScenarioPriceDiffPct(
+                                valuation.scenarios.optimistic.per_share_value,
+                                valuation.reference_price
+                              );
+                              return diff !== null ? `${diff > 0 ? "+" : ""}${diff.toFixed(1)}%` : "N/A";
+                            })()}
+                          </div>
+                          <div className="text-[9px] text-slate-500 font-mono">
+                            Reference price as of {valuation.reference_date}: ${valuation.reference_price.toFixed(2)}
+                          </div>
+                        </div>
+                        {isDescriptiveScenarioName(valuation.scenarios.optimistic.name) && (
+                          <p className="text-[11px] text-slate-300 leading-relaxed font-sans italic">
+                            {valuation.scenarios.optimistic.name}
+                          </p>
+                        )}
                       </div>
-                      <div className="font-mono font-bold text-emerald-400 text-base">
-                        ${valuation.scenarios.optimistic.per_share_value.toFixed(2)}
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-mono">
-                        {valuation.scenarios.optimistic.potential_return_pct > 0 ? "+" : ""}
-                        {valuation.scenarios.optimistic.potential_return_pct.toFixed(1)}% modeled return
+
+                      {/* Principal assumptions */}
+                      <div className="pt-2 border-t border-slate-800/80 text-[10px] font-mono text-slate-400 space-y-0.5">
+                        <div className="text-[10px] font-sans font-semibold text-slate-300 uppercase tracking-wider">
+                          Key Drivers:
+                        </div>
+                        <div className="flex justify-between">
+                          <span>5Y Revenue CAGR:</span>
+                          <span className="text-slate-200">
+                            {valuation.scenarios.optimistic.revenue_cagr_pct !== undefined
+                              ? `${valuation.scenarios.optimistic.revenue_cagr_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Target Operating Margin:</span>
+                          <span className="text-slate-200">
+                            {valuation.scenarios.optimistic.operating_margin_pct !== undefined
+                              ? `${valuation.scenarios.optimistic.operating_margin_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Discount Rate (WACC):</span>
+                          <span className="text-slate-200">
+                            {valuation.scenarios.optimistic.wacc_pct !== undefined
+                              ? `${valuation.scenarios.optimistic.wacc_pct.toFixed(1)}%`
+                              : "N/A"}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div className="text-[11px] text-slate-400 space-y-1">
-                  {valuation.scenarios.conservative && (
-                    <div>• {valuation.scenarios.conservative.conditional_wording}</div>
-                  )}
-                  {valuation.scenarios.base && (
-                    <div>• {valuation.scenarios.base.conditional_wording}</div>
-                  )}
+                {/* Scenario Explanatory Notes & Probability Boundary */}
+                <div className="bg-[#0b1019] border border-slate-800/80 rounded-lg p-3 text-[11px] text-slate-400 space-y-1.5 font-sans">
+                  <div className="text-slate-300 font-semibold flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" aria-hidden="true"></span>
+                    <span>Scenario Interpretation &amp; Model Boundaries</span>
+                  </div>
+                  <p className="text-slate-300 text-xs leading-relaxed">
+                    Bear, base, and bull cases use the assumptions shown below. Their modeled values are conditional estimates, not assigned probabilities or future price targets.
+                  </p>
+                  <div className="text-[10px] text-slate-400 pt-1 italic font-mono">
+                    Modeled values represent discounted cash flow intrinsic present equity values per share based on conditional operating assumptions, not future price targets, guaranteed returns, or live market quotes. Scenarios reflect different assumptions, not assigned probabilities.
+                  </div>
                 </div>
 
                 {/* Scenario Assumptions & Model Mechanics Disclosure (Finding B) */}
@@ -401,9 +689,9 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
                         <tr className="bg-[#080d16] text-slate-400 border-b border-slate-800">
                           <th className="p-2 font-semibold">Assumption / Metric</th>
                           <th className="p-2 font-semibold text-cyan-300">Reverse-DCF Solve</th>
-                          <th className="p-2 font-semibold text-rose-300">Conservative</th>
-                          <th className="p-2 font-semibold text-slate-200">Base Case</th>
-                          <th className="p-2 font-semibold text-emerald-300">Optimistic</th>
+                          <th className="p-2 font-semibold text-rose-300">Bear case</th>
+                          <th className="p-2 font-semibold text-slate-200">Base case</th>
+                          <th className="p-2 font-semibold text-emerald-300">Bull case</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800/60 bg-[#0c121e]">
@@ -578,7 +866,7 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
                           </td>
                         </tr>
                         <tr className="bg-[#090f1a]">
-                          <td className="p-2 text-slate-300 font-semibold">Modeled Value / Share</td>
+                          <td className="p-2 text-slate-300 font-semibold">Modeled Value per Share</td>
                           <td className="p-2 font-bold text-cyan-300">
                             ${valuation.reference_price.toFixed(2)} (Anchor)
                           </td>
@@ -596,6 +884,37 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
                             {valuation.scenarios.optimistic?.per_share_value !== undefined
                               ? `$${valuation.scenarios.optimistic.per_share_value.toFixed(2)}`
                               : "N/A"}
+                          </td>
+                        </tr>
+                        <tr className="bg-[#080d16]">
+                          <td className="p-2 text-slate-400">Difference from Reference Price</td>
+                          <td className="p-2 text-slate-500 font-mono">Anchor (0.0%)</td>
+                          <td className="p-2 text-rose-400 font-mono font-semibold">
+                            {(() => {
+                              const diff = calculateScenarioPriceDiffPct(
+                                valuation.scenarios.conservative?.per_share_value,
+                                valuation.reference_price
+                              );
+                              return diff !== null ? `${diff > 0 ? "+" : ""}${diff.toFixed(1)}%` : "N/A";
+                            })()}
+                          </td>
+                          <td className="p-2 text-slate-300 font-mono font-semibold">
+                            {(() => {
+                              const diff = calculateScenarioPriceDiffPct(
+                                valuation.scenarios.base?.per_share_value,
+                                valuation.reference_price
+                              );
+                              return diff !== null ? `${diff > 0 ? "+" : ""}${diff.toFixed(1)}%` : "N/A";
+                            })()}
+                          </td>
+                          <td className="p-2 text-emerald-400 font-mono font-semibold">
+                            {(() => {
+                              const diff = calculateScenarioPriceDiffPct(
+                                valuation.scenarios.optimistic?.per_share_value,
+                                valuation.reference_price
+                              );
+                              return diff !== null ? `${diff > 0 ? "+" : ""}${diff.toFixed(1)}%` : "N/A";
+                            })()}
                           </td>
                         </tr>
                       </tbody>
