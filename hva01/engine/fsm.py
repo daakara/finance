@@ -70,6 +70,7 @@ class ResponseLockingFSM:
             SessionState.RESPONSE_DRAFT,
             SessionState.RESPONSE_SUBMITTED,
             SessionState.CORRECTION_REQUESTED,
+            SessionState.SESSION_CLOSED,  # Permitted under formal withdrawal
         },
         SessionState.RESPONSE_SUBMITTED: {SessionState.RESPONSE_LOCKED, SessionState.RESPONSE_DRAFT},
         SessionState.RESPONSE_LOCKED: {
@@ -147,6 +148,7 @@ class ResponseLockingFSM:
         case_id: Optional[str] = None,
         event_code: Optional[str] = None,
         details: Optional[Dict[str, Any]] = None,
+        is_withdrawal: bool = False,
     ) -> AuditEvent:
         """
         Attempt a state transition. Raises StateTransitionError on any forbidden or backward step.
@@ -203,11 +205,25 @@ class ResponseLockingFSM:
 
         # If closing session
         if target_state == SessionState.SESSION_CLOSED:
-            if len(self._locked_cases) < self.total_cases:
-                raise StateTransitionError(
-                    f"Cannot close session: only {len(self._locked_cases)} of {self.total_cases} cases locked."
-                )
-            code = "EVT_SESSION_SEALED"
+            if is_withdrawal:
+                code = "EVT_WITHDRAWAL_SEAL"
+            else:
+                if len(self._locked_cases) < self.total_cases:
+                    self._emit_event(
+                        event_code="EVT_SEAL_REJECTED",
+                        actor=actor,
+                        from_state=from_state,
+                        to_state=from_state,
+                        details={
+                            "locked_cases": len(self._locked_cases),
+                            "total_cases": self.total_cases,
+                            "reason": f"Cannot close session: only {len(self._locked_cases)} of {self.total_cases} cases locked.",
+                        },
+                    )
+                    raise StateTransitionError(
+                        f"Cannot close session: only {len(self._locked_cases)} of {self.total_cases} cases locked."
+                    )
+                code = "EVT_SESSION_SEALED"
 
         self._current_state = target_state
         return self._emit_event(

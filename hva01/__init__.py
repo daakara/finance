@@ -1,5 +1,5 @@
 """
-HVA-01 Wave 1 - Core Intake Runner Engine
+HVA-01 Wave 2 - Core Intake Runner Engine
 Authoritative local implementation for HVA-00 V2.1 Operational Hardening.
 Protected by fail-closed invariants under ARX Closure Model v2.
 """
@@ -18,7 +18,12 @@ from .models.response import (
     VCPQualification,
 )
 from .models.session import SessionModel, SessionState, ValidationError
-from .runner import IntakeRunner
+from .runner import (
+    IntakeRunner,
+    PackageAccessViolation,
+    RestrictedLabelAccessError,
+    StorageExhaustedError,
+)
 from .storage.append_store import (
     AppendOnlyStore,
     ConflictingDuplicateSubmissionError,
@@ -28,7 +33,7 @@ from .storage.append_store import (
     StorageCorruptionError,
 )
 
-__version__ = "1.0.0-wave1"
+__version__ = "1.1.0-wave2"
 
 __all__ = [
     "AbstentionCode",
@@ -43,16 +48,19 @@ __all__ = [
     "FileLockError",
     "HashChainVerificationError",
     "IntakeRunner",
+    "PackageAccessViolation",
     "PriorFamiliarity",
     "RatingsPayload",
     "ResponseLockingFSM",
     "ResponseRecord",
     "ResponseValidationError",
+    "RestrictedLabelAccessError",
     "SessionModel",
     "SessionState",
     "StageClassification",
     "StateTransitionError",
     "StorageCorruptionError",
+    "StorageExhaustedError",
     "VCPQualification",
     "ValidationError",
 ]

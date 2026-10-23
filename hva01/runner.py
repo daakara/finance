@@ -5,6 +5,7 @@ Orchestrates FSM state transitions, cryptographic hashing, and transactional app
 
 from __future__ import annotations
 
+import errno
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -23,6 +24,21 @@ from .storage.append_store import (
     CorrectionRecord,
     StorageCorruptionError,
 )
+
+
+class PackageAccessViolation(PermissionError):
+    """Raised when an attempt is made to access assets outside the assigned package boundary (SC-10)."""
+    pass
+
+
+class RestrictedLabelAccessError(PermissionError):
+    """Raised when an attempt is made to access restricted or unblinded evaluation labels (SC-11)."""
+    pass
+
+
+class StorageExhaustedError(OSError):
+    """Raised when custody storage runs out of disk space during append (SC-19)."""
+    pass
 
 
 class IntakeRunner:
@@ -52,11 +68,28 @@ class IntakeRunner:
         package_sha256: str,
         base_dir: Union[str, Path],
         total_cases: int = 59,
+        expected_protocol_sha256: Optional[str] = None,
+        expected_package_sha256: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> IntakeRunner:
         """
         Create a new evaluation session with transactional storage and genesis hash computation.
+        Enforces SC-14 (protocol hash match) and SC-15 (package hash match).
         """
+        if expected_protocol_sha256 is not None:
+            if protocol_document_sha256.lower().strip() != expected_protocol_sha256.lower().strip():
+                raise ValidationError(
+                    f"PROTOCOL_VERSION_DIGEST_MISMATCH: protocol document SHA-256 "
+                    f"'{protocol_document_sha256}' does not match approved '{expected_protocol_sha256}'."
+                )
+
+        if expected_package_sha256 is not None:
+            if package_sha256.lower().strip() != expected_package_sha256.lower().strip():
+                raise ValidationError(
+                    f"PACKAGE_INTEGRITY_VERIFICATION_FAILED: package manifest SHA-256 "
+                    f"'{package_sha256}' does not match sealed digest '{expected_package_sha256}'."
+                )
+
         now_utc = datetime.now(timezone.utc).isoformat()
         session = SessionModel(
             session_id=session_id,
@@ -104,16 +137,21 @@ class IntakeRunner:
         fsm = ResponseLockingFSM(session)
         locked_sequences = {rec.sequence_index for rec in records}
 
-        committed_count = len(records)
-        if committed_count >= session.total_cases:
+        # Check if session was formally withdrawn
+        if session.metadata.get("is_withdrawn", False):
             restored_state = SessionState.SESSION_CLOSED
-            restored_sequence = session.total_cases
-        elif committed_count > 0:
-            restored_state = SessionState.RESPONSE_DRAFT
-            restored_sequence = committed_count + 1
+            restored_sequence = len(records)
         else:
-            restored_state = session.current_state
-            restored_sequence = session.current_sequence
+            committed_count = len(records)
+            if committed_count >= session.total_cases:
+                restored_state = SessionState.SESSION_CLOSED
+                restored_sequence = session.total_cases
+            elif committed_count > 0:
+                restored_state = SessionState.RESPONSE_DRAFT
+                restored_sequence = committed_count + 1
+            else:
+                restored_state = session.current_state
+                restored_sequence = session.current_sequence
 
         fsm.restore_state(
             locked_cases=locked_sequences,
@@ -145,7 +183,7 @@ class IntakeRunner:
         runner._record_audit_event(
             event_code="EVT_SESSION_RESUMED",
             details={
-                "committed_count": committed_count,
+                "committed_count": len(records),
                 "latest_hash": latest_hash,
                 "restored_sequence": restored_sequence,
                 "restored_state": restored_state.value,
@@ -189,6 +227,75 @@ class IntakeRunner:
         self.store.append_audit_event(self.session.session_id, event)
         return event
 
+    def resolve_case_asset(self, case_id: str, relative_path: Optional[str] = None) -> Path:
+        """
+        Verify case and asset adherence to package assignment and blinding security rules.
+        Enforces SC-10 (Package boundary confinement) and SC-11 (Restricted label isolation).
+        """
+        # Path traversal guard (checked first to prevent traversal attacks)
+        if relative_path:
+            norm = relative_path.replace("\\", "/")
+            if (
+                ".." in norm
+                or norm.startswith("/")
+                or norm.startswith("\\")
+                or Path(relative_path).is_absolute()
+                or bool(Path(relative_path).drive)
+            ):
+                self._record_audit_event(
+                    event_code="EVT_ACCESS_VIOLATION",
+                    case_id=case_id,
+                    details={"reason": "Path traversal attempt", "path": relative_path},
+                )
+                raise PackageAccessViolation(f"Path traversal access violation: '{relative_path}'")
+
+        # SC-11: Restricted label access check
+        prohibited_terms = [
+            "RESTRICTED",
+            "UNBLIND",
+            "MAPPING",
+            "ANSWER_KEY",
+            "GROUND_TRUTH",
+            "ID_MAP",
+        ]
+        target_str = f"{case_id} {relative_path or ''}".upper()
+        for term in prohibited_terms:
+            if term in target_str:
+                self._record_audit_event(
+                    event_code="EVT_CUSTODY_BREACH",
+                    case_id=case_id,
+                    details={"requested": target_str, "reason": "Restricted label access attempt blocked."},
+                )
+                raise RestrictedLabelAccessError(
+                    f"Restricted label access violation: '{term}' access prohibited during blinded evaluation."
+                )
+
+        # SC-10: Cross-package boundary check
+        # PACKAGE_A reviewers can only evaluate HVA2-A-* cases from charts_a
+        # PACKAGE_B reviewers can only evaluate HVA2-B-* cases from charts_b
+        if self.session.assigned_package == "PACKAGE_A":
+            if case_id.startswith("HVA2-B-") or (relative_path and "charts_b" in relative_path.lower()):
+                self._record_audit_event(
+                    event_code="EVT_ACCESS_VIOLATION",
+                    case_id=case_id,
+                    details={"assigned": "PACKAGE_A", "attempted": case_id, "path": relative_path},
+                )
+                raise PackageAccessViolation(
+                    f"Package access violation: Reviewer assigned to PACKAGE_A cannot access '{case_id}' or PACKAGE_B assets."
+                )
+        elif self.session.assigned_package == "PACKAGE_B":
+            if case_id.startswith("HVA2-A-") or (relative_path and "charts_a" in relative_path.lower()):
+                self._record_audit_event(
+                    event_code="EVT_ACCESS_VIOLATION",
+                    case_id=case_id,
+                    details={"assigned": "PACKAGE_B", "attempted": case_id, "path": relative_path},
+                )
+                raise PackageAccessViolation(
+                    f"Package access violation: Reviewer assigned to PACKAGE_B cannot access '{case_id}' or PACKAGE_A assets."
+                )
+
+        return Path(relative_path or f"{case_id}.svg")
+
     def authorize(self) -> None:
         """
         Authorize the session to begin evaluation:
@@ -218,13 +325,17 @@ class IntakeRunner:
     ) -> ResponseRecord:
         """
         Submit and lock a case evaluation:
-        1. Validates FSM is in RESPONSE_DRAFT.
-        2. Enters in-flight RESPONSE_SUBMITTED.
-        3. Computes idempotency key, previous hash, and record hash.
-        4. Writes to staging buffer, atomic append to master.jsonl, and fsync.
-        5. Enters RESPONSE_LOCKED.
-        6. Advances to next case (RESPONSE_DRAFT) or closes session (SESSION_CLOSED).
+        1. Validates package boundary and blinding (SC-10, SC-11).
+        2. Validates FSM is in RESPONSE_DRAFT.
+        3. Enters in-flight RESPONSE_SUBMITTED.
+        4. Computes idempotency key, previous hash, and record hash.
+        5. Writes to staging buffer, atomic append to master.jsonl, and fsync.
+        6. Enters RESPONSE_LOCKED.
+        7. Advances to next case (RESPONSE_DRAFT) or closes session (SESSION_CLOSED).
         """
+        # Validate package boundary and blinding
+        self.resolve_case_asset(case_id)
+
         # Validate sequence matches FSM current sequence
         if sequence_index != self.fsm.current_sequence:
             raise ResponseValidationError(
@@ -320,11 +431,16 @@ class IntakeRunner:
         except Exception as exc:
             # Rollback to RESPONSE_DRAFT if submission validation failed before commit
             if self.fsm.current_state == SessionState.RESPONSE_SUBMITTED:
+                is_enospc = (
+                    isinstance(exc, StorageExhaustedError)
+                    or (isinstance(exc, OSError) and getattr(exc, "errno", None) == errno.ENOSPC)
+                )
+                err_code = "EVT_STORAGE_EXHAUSTED" if is_enospc else "EVT_SUBMISSION_ROLLBACK"
                 event_rollback = self.fsm.transition_to(
                     SessionState.RESPONSE_DRAFT,
                     actor=self.session.reviewer_pseudonym,
                     case_id=case_id,
-                    event_code="EVT_SUBMISSION_ROLLBACK",
+                    event_code=err_code,
                     details={"error": str(exc)},
                 )
                 self.store.append_audit_event(self.session.session_id, event_rollback)
@@ -341,8 +457,7 @@ class IntakeRunner:
                 target_sequence=target_sequence,
                 actor=self.session.reviewer_pseudonym,
             )
-        except StateTransitionError as exc:
-            # Audit event is already emitted inside attempt_backtrack_to_case
+        except StateTransitionError:
             latest_audit = self.fsm.audit_log[-1]
             self.store.append_audit_event(self.session.session_id, latest_audit)
             raise
@@ -357,9 +472,9 @@ class IntakeRunner:
     ) -> CorrectionRecord:
         """
         Submit a formal correction petition:
-        1. Transitions RESPONSE_LOCKED -> CORRECTION_REQUESTED.
+        1. Transitions to CORRECTION_REQUESTED.
         2. Verifies target record and appends to exceptions.jsonl.
-        3. Transitions CORRECTION_REQUESTED -> CORRECTION_RECORDED -> RESPONSE_LOCKED.
+        3. Transitions CORRECTION_REQUESTED -> CORRECTION_RECORDED -> prior state.
         Master log is NEVER modified.
         """
         petition_id = f"PET-{self.session.session_id}-{target_sequence_index:02d}"
@@ -416,7 +531,6 @@ class IntakeRunner:
             return correction
 
         except Exception as exc:
-            # Deny petition / return to prior state
             event_deny = self.fsm.transition_to(
                 prior_state,
                 actor=self.session.reviewer_pseudonym,
@@ -427,6 +541,50 @@ class IntakeRunner:
             self.store.append_audit_event(self.session.session_id, event_deny)
             self._sync_session_state()
             raise
+
+    def withdraw_session(self, justification: str) -> Dict[str, Any]:
+        """
+        Formally withdraw the session, freezing all already committed cases and sealing the log.
+        Enforces Scenario SC-20.
+        """
+        if self.fsm.current_state == SessionState.SESSION_CLOSED:
+            raise StateTransitionError("Session is already closed.")
+
+        now_utc = datetime.now(timezone.utc).isoformat()
+        committed_count = len(self.fsm.locked_cases)
+        coverage_str = f"{committed_count}/{self.session.total_cases}"
+
+        details = {
+            "committed_cases": committed_count,
+            "coverage_ratio": coverage_str,
+            "justification": justification,
+            "withdrawal_timestamp_utc": now_utc,
+        }
+
+        event_seal = self.fsm.transition_to(
+            SessionState.SESSION_CLOSED,
+            actor=self.session.reviewer_pseudonym,
+            event_code="EVT_WITHDRAWAL_SEAL",
+            details=details,
+            is_withdrawal=True,
+        )
+        self.store.append_audit_event(self.session.session_id, event_seal)
+
+        # Update session metadata
+        self.session.metadata["is_withdrawn"] = True
+        self.session.metadata["withdrawal_justification"] = justification
+        self.session.metadata["withdrawal_timestamp_utc"] = now_utc
+        self.session.metadata["coverage_ratio"] = coverage_str
+        self._sync_session_state()
+
+        return {
+            "session_id": self.session.session_id,
+            "status": "WITHDRAWN",
+            "committed_cases": committed_count,
+            "coverage_ratio": coverage_str,
+            "withdrawal_timestamp_utc": now_utc,
+            "is_sealed": True,
+        }
 
     def verify_integrity(self) -> Dict[str, Any]:
         """
@@ -454,4 +612,5 @@ class IntakeRunner:
             "corrections_count": len(corrections),
             "audit_events_count": len(audit_events),
             "is_sealed": self.fsm.current_state == SessionState.SESSION_CLOSED,
+            "is_withdrawn": self.session.metadata.get("is_withdrawn", False),
         }

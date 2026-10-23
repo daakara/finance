@@ -21,12 +21,15 @@ from hva01 import (
     ConfidenceLevel,
     EvidenceSufficiency,
     IntakeRunner,
+    PackageAccessViolation,
     PriorFamiliarity,
     RatingsPayload,
     ResponseValidationError,
+    RestrictedLabelAccessError,
     StageClassification,
     StateTransitionError,
     StorageCorruptionError,
+    StorageExhaustedError,
     VCPQualification,
     ValidationError,
 )
@@ -43,6 +46,8 @@ def cmd_init(args: argparse.Namespace) -> int:
             package_sha256=args.package_sha,
             base_dir=args.store_dir,
             total_cases=args.total_cases,
+            expected_protocol_sha256=getattr(args, "expected_protocol_sha", None),
+            expected_package_sha256=getattr(args, "expected_package_sha", None),
         )
         print(f"[OK] Session initialized: {runner.session.session_id}")
         print(f"     Reviewer Pseudonym:  {runner.session.reviewer_pseudonym}")
@@ -102,6 +107,20 @@ def cmd_submit(args: argparse.Namespace) -> int:
         return 1
 
 
+def cmd_withdraw(args: argparse.Namespace) -> int:
+    try:
+        runner = IntakeRunner.resume_session(args.session_id, base_dir=args.store_dir)
+        result = runner.withdraw_session(justification=args.justification)
+        print(f"[OK] Session withdrawn: {args.session_id}")
+        print(f"     Committed Cases: {result['committed_cases']}")
+        print(f"     Coverage Ratio:  {result['coverage_ratio']}")
+        print(f"     Status:          SEALED (WITHDRAWN)")
+        return 0
+    except Exception as exc:
+        print(f"[ERROR] Failed to withdraw session: {exc}", file=sys.stderr)
+        return 1
+
+
 def cmd_verify(args: argparse.Namespace) -> int:
     try:
         runner = IntakeRunner.resume_session(args.session_id, base_dir=args.store_dir)
@@ -136,6 +155,8 @@ def main() -> int:
     p_init.add_argument("--protocol-version", default="2.1.0", help="Protocol version")
     p_init.add_argument("--protocol-sha", required=True, help="64-char hex SHA-256 of ratified protocol document")
     p_init.add_argument("--package-sha", required=True, help="64-char hex SHA-256 of package manifest")
+    p_init.add_argument("--expected-protocol-sha", default=None, help="Expected protocol SHA for verification")
+    p_init.add_argument("--expected-package-sha", default=None, help="Expected package SHA for verification")
     p_init.add_argument("--store-dir", default="./hva01_sessions", help="Base storage directory")
     p_init.add_argument("--total-cases", type=int, default=59, help="Total cases in evaluation sequence")
     p_init.set_defaults(func=cmd_init)
@@ -165,6 +186,13 @@ def main() -> int:
     p_submit.add_argument("--composite-score", type=int, default=None, help="Composite score (0..100)")
     p_submit.add_argument("--store-dir", default="./hva01_sessions", help="Base storage directory")
     p_submit.set_defaults(func=cmd_submit)
+
+    # Subcommand: withdraw
+    p_withdraw = subparsers.add_parser("withdraw", help="Formally withdraw session and seal log")
+    p_withdraw.add_argument("--session-id", required=True, help="Session identifier")
+    p_withdraw.add_argument("--justification", required=True, help="Reason for withdrawal")
+    p_withdraw.add_argument("--store-dir", default="./hva01_sessions", help="Base storage directory")
+    p_withdraw.set_defaults(func=cmd_withdraw)
 
     # Subcommand: verify
     p_verify = subparsers.add_parser("verify", help="Verify session hash chain and integrity")
