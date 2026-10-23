@@ -15,6 +15,13 @@ from .contracts import (
     FinancialFact,
     CompanyFundamentals,
     MetricStatus,
+    LeaseAccountingConvention,
+    AccountingFramework,
+    LeaseComponentFact,
+    LeaseLiabilityMetadata,
+    LeaseAggregationConflictError,
+    LeaseIncompatibleComponentsError,
+    LeaseDoubleCountingError,
 )
 
 logger = logging.getLogger(__name__)
@@ -85,6 +92,24 @@ DEBT_TOTAL_CONCEPTS = [
 TOTAL_CASH_CONCEPTS = [
     "CashCashEquivalentsAndShortTermInvestments",
     "CashAndShortTermInvestments",
+]
+
+LEASE_AGGREGATE_CONCEPTS = [
+    "OperatingLeaseLiability",
+]
+
+LEASE_CURRENT_CONCEPTS = [
+    "OperatingLeaseLiabilityCurrent",
+]
+
+LEASE_NONCURRENT_CONCEPTS = [
+    "OperatingLeaseLiabilityNoncurrent",
+]
+
+FINANCE_LEASE_CONCEPTS = [
+    "FinanceLeaseLiability",
+    "FinanceLeaseLiabilityNoncurrent",
+    "CapitalLeaseObligationsNoncurrent",
 ]
 
 LEASE_LIABILITY_CONCEPTS = [
@@ -318,6 +343,188 @@ class SecFactNormalizer:
             status=MetricStatus.REPORTED,
             notes=f"Directly reported in {best_item.get('form')} filed {best_item.get('filed')}"
         )
+
+    def _extract_lease_liabilities_with_precedence(
+        self,
+        us_gaap: Dict[str, Any],
+        target_end: str,
+        as_of_date: Optional[str] = None,
+        debt_concept: Optional[str] = None,
+    ) -> Tuple[FinancialFact, LeaseLiabilityMetadata]:
+        """
+        Extracts operating and finance lease liabilities enforcing the 5-point
+        P0-B Aggregation Precedence Matrix.
+        """
+        # 1. Extract raw balance sheet facts
+        agg_fact = self._extract_instant_fact(
+            us_gaap, LEASE_AGGREGATE_CONCEPTS, "operating_lease_liability_aggregate", target_end, as_of_date=as_of_date
+        )
+        cur_fact = self._extract_instant_fact(
+            us_gaap, LEASE_CURRENT_CONCEPTS, "operating_lease_liability_current", target_end, as_of_date=as_of_date
+        )
+        non_fact = self._extract_instant_fact(
+            us_gaap, LEASE_NONCURRENT_CONCEPTS, "operating_lease_liability_noncurrent", target_end, as_of_date=as_of_date
+        )
+        fin_fact = self._extract_instant_fact(
+            us_gaap, FINANCE_LEASE_CONCEPTS, "finance_lease_liabilities", target_end, as_of_date=as_of_date
+        )
+
+        def _to_comp(f: FinancialFact) -> LeaseComponentFact:
+            return LeaseComponentFact(
+                value=f.value,
+                concept=f.concept,
+                units=f.units or "USD",
+                period_end=f.period_end,
+                accession_number=f.accession_number,
+                filing_date=f.filing_date,
+                form=f.form,
+                status=f.status.value if isinstance(f.status, MetricStatus) else str(f.status),
+                notes=f.notes,
+            )
+
+        comp_agg = _to_comp(agg_fact)
+        comp_cur = _to_comp(cur_fact)
+        comp_non = _to_comp(non_fact)
+
+        has_agg = agg_fact.value is not None
+        has_cur = cur_fact.value is not None
+        has_non = non_fact.value is not None
+
+        debt_bundled = (debt_concept == "us-gaap/LongTermDebtAndCapitalLeaseObligations")
+
+        resolved_val: Optional[float] = None
+        method = "NONE"
+        cert_status = "UNAVAILABLE"
+        fact_status = MetricStatus.UNAVAILABLE
+        formula = None
+        notes = None
+
+        def _components_compatible(c1: FinancialFact, c2: FinancialFact) -> Tuple[bool, Optional[str]]:
+            if c1.period_end != c2.period_end:
+                return False, f"Mismatched period_end: current={c1.period_end} vs noncurrent={c2.period_end}"
+            if (c1.units or "").upper() != (c2.units or "").upper():
+                return False, f"Mismatched units: current={c1.units} vs noncurrent={c2.units}"
+            return True, None
+
+        # Rule 2: Both aggregate and complete component pair coexist
+        if has_agg and has_cur and has_non:
+            compat, err_msg = _components_compatible(cur_fact, non_fact)
+            if not compat:
+                resolved_val = agg_fact.value
+                method = "REPORTED_AGGREGATE"
+                cert_status = "CERTIFIED_GAAP_COMPATIBLE"
+                fact_status = MetricStatus.REPORTED
+                notes = f"Adopted verified complete total; components were incompatible ({err_msg})"
+            else:
+                component_sum = cur_fact.value + non_fact.value
+                delta = abs(agg_fact.value - component_sum)
+                tolerance = 1.0  # $1 normalized dollar
+                if delta <= tolerance:
+                    resolved_val = agg_fact.value
+                    method = "RECONCILED_MATCH"
+                    cert_status = "CERTIFIED_GAAP_COMPATIBLE"
+                    fact_status = MetricStatus.REPORTED
+                    formula = f"Aggregate ({agg_fact.value:,.0f}) == Current ({cur_fact.value:,.0f}) + Noncurrent ({non_fact.value:,.0f})"
+                    notes = f"Verified aggregate reconciled with sum of current and noncurrent components (delta=${delta:.2f})"
+                else:
+                    method = "CONFLICTING_AGGREGATE_AND_COMPONENTS"
+                    cert_status = "UNAVAILABLE"
+                    fact_status = MetricStatus.UNAVAILABLE
+                    notes = (
+                        f"Discrepancy detected between reported aggregate ({agg_fact.value:,.0f} USD) and "
+                        f"sum of components ({component_sum:,.0f} USD, delta={delta:,.2f} USD > tolerance). "
+                        "Failing closed without silent resolution."
+                    )
+
+        # Rule 1: Verified aggregate only (neither or only one component exists)
+        elif has_agg:
+            resolved_val = agg_fact.value
+            method = "REPORTED_AGGREGATE"
+            cert_status = "CERTIFIED_GAAP_COMPATIBLE"
+            fact_status = MetricStatus.REPORTED
+            notes = f"Adopted verified complete balance sheet concept {agg_fact.concept}"
+
+        # Rule 3: Complete compatible components only (no aggregate)
+        elif has_cur and has_non:
+            compat, err_msg = _components_compatible(cur_fact, non_fact)
+            if compat:
+                resolved_val = cur_fact.value + non_fact.value
+                method = "SUMMED_COMPONENTS"
+                cert_status = "CERTIFIED_GAAP_COMPATIBLE"
+                fact_status = MetricStatus.DERIVED
+                formula = f"Current Leases ({cur_fact.value:,.0f}) + Noncurrent Leases ({non_fact.value:,.0f})"
+                notes = "Fully evidenced sum of reported current and noncurrent operating lease liabilities"
+            else:
+                method = "INCOMPATIBLE_COMPONENTS"
+                cert_status = "UNAVAILABLE"
+                fact_status = MetricStatus.UNAVAILABLE
+                notes = f"Current and noncurrent operating lease components are incompatible: {err_msg}"
+
+        # Rule 4: Partial disclosure without aggregate (single component only)
+        elif has_cur or has_non:
+            method = "PARTIAL_DISCLOSURE_UNRESOLVED"
+            cert_status = "UNAVAILABLE"
+            fact_status = MetricStatus.UNAVAILABLE
+            known_comp = f"Current={cur_fact.value:,.0f}" if has_cur else f"Noncurrent={non_fact.value:,.0f}"
+            notes = (
+                f"Partial operating lease observation known ({known_comp}), but complete obligations "
+                "cannot be established without both components or a single comprehensive total. "
+                "Known partial amounts are not presented as total lease liabilities."
+            )
+
+        # Neither aggregate nor components reported
+        else:
+            method = "UNAVAILABLE"
+            cert_status = "UNAVAILABLE"
+            fact_status = MetricStatus.UNAVAILABLE
+            notes = "Operating lease liability concepts are unavailable in primary filings."
+
+        # Rule 5: Strict Anti-Double-Counting Invariant Guard
+        if resolved_val is not None:
+            max_bound = max(
+                agg_fact.value or 0.0,
+                (cur_fact.value or 0.0) + (non_fact.value or 0.0)
+            ) + 1.0
+            if resolved_val > max_bound:
+                raise LeaseDoubleCountingError(
+                    f"Anti-double-counting invariant violated: resolved value ({resolved_val:,.2f}) "
+                    f"exceeds maximum individual/component bound ({max_bound:,.2f})."
+                )
+
+        out_fact = FinancialFact(
+            metric_key="operating_lease_liabilities",
+            value=resolved_val,
+            units="USD",
+            concept=agg_fact.concept if (has_agg and method in ["REPORTED_AGGREGATE", "RECONCILED_MATCH"]) else (non_fact.concept if has_non else None),
+            accession_number=agg_fact.accession_number if has_agg else non_fact.accession_number,
+            form=agg_fact.form if has_agg else non_fact.form,
+            period_end=target_end,
+            filing_date=agg_fact.filing_date if has_agg else non_fact.filing_date,
+            status=fact_status,
+            formula=formula,
+            input_references=["operating_lease_liability_current", "operating_lease_liability_noncurrent"] if method == "SUMMED_COMPONENTS" else [],
+            notes=notes,
+        )
+
+        metadata = LeaseLiabilityMetadata(
+            convention=LeaseAccountingConvention.LEASE_AS_OPERATING_EXPENSE,
+            framework=AccountingFramework.US_GAAP,
+            certification_status=cert_status,
+            current_liability=comp_cur,
+            noncurrent_liability=comp_non,
+            aggregate_total_liability=comp_agg,
+            total_operating_lease_liabilities=resolved_val,
+            aggregation_method=method,
+            finance_lease_liabilities=fin_fact.value,
+            finance_leases_bundled_in_total_debt=debt_bundled,
+            operating_lease_rou_asset=None,
+            is_ebit_adjusted_for_leases=False,
+            ebit_lease_cost_addback=None,
+            included_in_net_debt_bridge=False,
+            notes=notes,
+        )
+
+        return out_fact, metadata
 
     def _extract_ttm_fact(
         self,
@@ -1066,9 +1273,10 @@ class SecFactNormalizer:
                 notes="Cannot calculate net debt due to unavailable total financial debt or cash"
             )
 
-        # 11. Operating Lease Liabilities
-        lease_fact = self._extract_instant_fact(
-            us_gaap, LEASE_LIABILITY_CONCEPTS, "operating_lease_liabilities", latest_period_end, as_of_date=as_of_date
+        # 11. Operating Lease Liabilities (P0-B Aggregation Precedence Policy)
+        tot_d_concept = facts["total_financial_debt"].concept if facts.get("total_financial_debt") else None
+        lease_fact, lease_metadata = self._extract_lease_liabilities_with_precedence(
+            us_gaap, latest_period_end, as_of_date=as_of_date, debt_concept=tot_d_concept
         )
         facts["operating_lease_liabilities"] = lease_fact
 
@@ -1120,6 +1328,7 @@ class SecFactNormalizer:
                 "reporting_form": latest_form,
                 "reporting_period": latest_fp,
                 "reporting_fiscal_year": latest_fy,
+                "lease_metadata": lease_metadata.to_dict(),
             },
             data_gaps=data_gaps,
         )
