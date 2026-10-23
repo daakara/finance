@@ -105,6 +105,7 @@ function RadarContent() {
   const [allAssets, setAllAssets] = useState<RadarAsset[]>([]);
   const [capabilities, setCapabilities] = useState<RadarCapabilities>(DEFAULT_RADAR_CAPABILITIES);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [isOnDemandLoading, setIsOnDemandLoading] = useState(false);
   const [onDemandError, setOnDemandError] = useState<string | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
@@ -162,6 +163,14 @@ function RadarContent() {
     fetchScreenerGems("all")
       .then((res) => {
         if (!isMounted || reqId !== latestRequestIdRef.current) return;
+        if (res.status === "ERROR" || res.status === "TIMEOUT" || res.error) {
+          setFetchError(res.error || "Unable to reach the Radar screening service");
+          setCapabilities(DEFAULT_RADAR_CAPABILITIES);
+          setAllAssets([]);
+          setIsLoading(false);
+          return;
+        }
+        setFetchError(null);
         setCapabilities(normalizeRadarCapabilities(res.capabilities));
         const mapped: RadarAsset[] = (res.results || []).map((gem: any) => {
           // Canonical typed categories: strictly consume explicit backend categories.
@@ -212,8 +221,9 @@ function RadarContent() {
         setAllAssets(mapped);
         setIsLoading(false);
       })
-      .catch(() => {
+      .catch((err) => {
         if (!isMounted || reqId !== latestRequestIdRef.current) return;
+        setFetchError(err instanceof Error ? err.message : "Failed to load screener candidates");
         setCapabilities(DEFAULT_RADAR_CAPABILITIES);
         setAllAssets([]);
         setIsLoading(false);
@@ -226,18 +236,26 @@ function RadarContent() {
   // Category Counts & Invariant Enforcement
   // Zero Semantics Invariant: Numerical count (including 0) is permitted ONLY when
   // capability is AVAILABLE. For PIPELINE_PENDING or NOT_IMPLEMENTED, return null.
+  // Missing API connectivity is not represented as zero qualifying candidates.
   const categoryMeta = useMemo(() => {
-    const isAvailable = (cat: CanonicalRadarCategory) => capabilities[cat]?.universeScreening === 'AVAILABLE';
+    const isAvailable = (cat: CanonicalRadarCategory) =>
+      !fetchError && capabilities[cat]?.universeScreening === 'AVAILABLE';
 
     return {
-      ALL: { count: allAssets.length, badge: `${allAssets.length}`, status: 'AVAILABLE' as RadarCapabilityStatus },
+      ALL: {
+        count: fetchError ? null : allAssets.length,
+        badge: fetchError ? '—' : `${allAssets.length}`,
+        status: (fetchError ? 'PIPELINE_PENDING' : 'AVAILABLE') as RadarCapabilityStatus,
+      },
       VALUE_GARP: {
         count: isAvailable('VALUE_GARP')
           ? (typeof capabilities.VALUE_GARP?.matchedCount === 'number'
               ? capabilities.VALUE_GARP.matchedCount
               : allAssets.filter((a) => a.categories.includes('VALUE_GARP')).length)
           : null,
-        badge: isAvailable('VALUE_GARP')
+        badge: fetchError
+          ? '—'
+          : isAvailable('VALUE_GARP')
           ? `${typeof capabilities.VALUE_GARP?.matchedCount === 'number'
               ? capabilities.VALUE_GARP.matchedCount
               : allAssets.filter((a) => a.categories.includes('VALUE_GARP')).length}`
@@ -257,7 +275,7 @@ function RadarContent() {
         status: capabilities.SMART_MONEY?.status || 'PIPELINE_PENDING',
       },
     };
-  }, [allAssets, capabilities]);
+  }, [allAssets, capabilities, fetchError]);
 
   // Ownership Counts (Calculated dynamically via authoritative portfolio context)
   const ownershipCounts = useMemo(() => {
@@ -455,8 +473,30 @@ function RadarContent() {
           </div>
         )}
 
+        {/* Explicit Connection Error State */}
+        {!isLoading && fetchError && (
+          <div className="p-12 rounded-2xl border border-rose-900/60 bg-rose-950/20 text-center space-y-4 font-mono text-xs text-slate-300">
+            <span className="text-3xl">⚠️</span>
+            <div className="space-y-1">
+              <div className="text-rose-400 font-bold text-sm">Radar Tape Connection Error</div>
+              <p className="text-slate-400 max-w-lg mx-auto font-sans">
+                Unable to load live screening data: {fetchError}. Missing API connectivity is not represented as zero qualifying candidates.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setRefreshNonce((n) => n + 1)}
+                className="px-4 py-2.5 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs transition-colors shadow-lg shadow-rose-950/40 focus:outline-none focus:ring-2 focus:ring-rose-400"
+              >
+                ↻ Retry Connection
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Actionable Empty State */}
-        {!isLoading && allAssets.length === 0 && (
+        {!isLoading && !fetchError && allAssets.length === 0 && (
           <div className="p-12 rounded-2xl border border-slate-800 bg-slate-900/30 text-center space-y-4 font-mono text-xs text-slate-400">
             <span className="text-3xl">📡</span>
             <div className="space-y-1">
@@ -1169,6 +1209,8 @@ function RadarContent() {
                               ? (capabilities.SMART_MONEY?.populationDenominator && capabilities.SMART_MONEY?.universeBuildId && capabilities.SMART_MONEY?.publicationDigest
                                   ? `${capabilities.SMART_MONEY.populationDenominator} securities registered in universe build ${capabilities.SMART_MONEY.universeBuildId}. Automated market-wide institutional-flow screening is pending operational activation.`
                                   : "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money.")
+                              : activeFilter === 'ALL'
+                              ? "Try clearing your search query or refreshing the tape to discover active confluence setups."
                               : `Try switching to "All Confluences" to view all active setups.`}
                           </p>
                         </div>
