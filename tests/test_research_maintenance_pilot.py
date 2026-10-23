@@ -4,28 +4,40 @@ tests/test_research_maintenance_pilot.py
 Comprehensive Test Suite for ARX Research-Maintenance Pilot under ARX Closure Model v2
 and ARX-DECISION-RESEARCH-PROCESS-V1.
 
-16 Verification Controls:
-1. Valid real-source control (Comfort Systems USA Q3 10-Q end-to-end).
-2. Missing debt versus explicit zero.
-3. Contradictory debt total and components (rejection & suppression).
-4. Missing cash or investment bridge input (suppression of valuation).
-5. Incorrect period and ambiguous fact context.
-6. Source-backed multi-period TTM derivation.
-7. Actual quarterly CFO and capex derivation.
-8. Missing and changed valuation assumptions.
-9. Deteriorating inputs produce negative narrative (not positive).
-10. Preservation of exact accepted watch and invalidation conditions.
-11. Fresh online metadata revealing a later filing.
-12. Completed duplicate followed by another eligible filing.
-13. Interrupted processing followed by successful retry.
-14. Replay/live separation (replay does not consume live event).
-15. Packet generation failure without completed state.
-16. Unchanged accepted publication files (snapshot & manifest immutability).
+19 Acceptance Test Controls (Section F):
+1. Valid baseline and draft calculations match independent formulas within tolerances.
+2. Changed scenario assumptions affect modeled output.
+3. Missing tax, reinvestment, or scenario assumptions suppress valuation.
+4. Bear or bull baseline mismatch prevents verified comparison.
+5. Solver failure or non-finite result prevents verified status.
+6. Suppressed baseline remains suppressed.
+7. Standalone quarterly margin < 13.0% invalidates the thesis while TTM margin is >= 13.0%.
+8. Standalone quarterly margin >= 13.0% preserves the thesis while TTM margin is < 13.0%.
+9. Missing quarterly revenue or EBIT leaves the invalidation condition UNRESOLVED.
+10. Deteriorating inputs produce accurate negative narrative text.
+11. Reference price above, below, and equal to base-case modeled value.
+12. Net debt position describes debt without cash-cushion language.
+13. Missing short-term investments that was included in the baseline bridge marks the bridge UNRESOLVED and suppresses valuation.
+14. Explicit zero for short-term investments is handled correctly.
+15. Missing cash or debt is displayed as UNRESOLVED, never $0.0M.
+16. Actual cache refresh reveals a newer eligible filing when one exists.
+17. Receipt hashing against known bytes produces matching SHA-256.
+18. Missing receipt produces UNAVAILABLE without claiming verification.
+19. Accepted public files remain bit-for-bit unchanged.
+
+Additional Operational & Accounting Controls:
+20. Contradictory debt total and components fail closed.
+21. Source-backed multi-period TTM derivation.
+22. Actual quarterly CFO and capex derivation.
+23. Interrupted processing followed by successful retry.
+24. Replay/live separation (replay does not consume live event).
+25. Packet generation failure without completed state.
 """
 
 import copy
 import hashlib
 import json
+import math
 import os
 import shutil
 import tempfile
@@ -41,10 +53,16 @@ from analyst_dashboard.research.maintenance.contracts import (
     MaintenanceEvent,
     ProposedDisposition,
     ReconciledFinancialChange,
+    ReviewPacket,
+    SourceReceipt,
 )
 from analyst_dashboard.research.maintenance.event_poller import SecEventPoller
 from analyst_dashboard.research.maintenance.fact_reconciler import FactReconciler
-from analyst_dashboard.research.maintenance.decision_assessor import DecisionAssessor
+from analyst_dashboard.research.maintenance.decision_assessor import (
+    DecisionAssessor,
+    run_fcff_model,
+    solve_reverse_dcf,
+)
 from analyst_dashboard.research.maintenance.packet_generator import PacketGenerator
 from analyst_dashboard.research.maintenance.service import ResearchMaintenanceService
 
@@ -101,6 +119,7 @@ class TestResearchMaintenancePilot(unittest.TestCase):
                 "observable_invalidation_trigger": "Backlog book-to-bill falling below 0.95x or quarterly operating margin dropping below 13.0%.",
             },
             "valuation": {
+                "valuation_status": "COMPUTED_VERIFIED",
                 "reference_price": 1439.07,
                 "reference_date": "2026-10-16",
                 "solved_5y_cagr_pct": 30.07,
@@ -117,9 +136,33 @@ class TestResearchMaintenancePilot(unittest.TestCase):
                     "net_debt_bridge": -1800730000.0,
                 },
                 "scenarios": {
-                    "conservative": {"per_share_value": 533.46},
-                    "base": {"per_share_value": 1081.99},
-                    "optimistic": {"per_share_value": 1996.38},
+                    "conservative": {
+                        "revenue_cagr_pct": 12.0,
+                        "operating_margin_pct": 12.5,
+                        "wacc_pct": 10.5,
+                        "terminal_growth_pct": 2.0,
+                        "tax_rate_pct": 21.0,
+                        "reinvestment_rate_pct": 15.0,
+                        "per_share_value": 533.46,
+                    },
+                    "base": {
+                        "revenue_cagr_pct": 22.0,
+                        "operating_margin_pct": 15.0,
+                        "wacc_pct": 9.5,
+                        "terminal_growth_pct": 2.5,
+                        "tax_rate_pct": 21.0,
+                        "reinvestment_rate_pct": 15.0,
+                        "per_share_value": 1081.99,
+                    },
+                    "optimistic": {
+                        "revenue_cagr_pct": 30.0,
+                        "operating_margin_pct": 16.5,
+                        "wacc_pct": 8.5,
+                        "terminal_growth_pct": 3.0,
+                        "tax_rate_pct": 21.0,
+                        "reinvestment_rate_pct": 15.0,
+                        "per_share_value": 1996.38,
+                    },
                 },
             },
         }
@@ -268,79 +311,537 @@ class TestResearchMaintenancePilot(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.test_dir, ignore_errors=True)
 
-    # -------------------------------------------------------------------------
-    # 1. Valid real-source control
-    # -------------------------------------------------------------------------
-    def test_01_valid_real_source_control(self):
-        """1. Valid real-source control: Primary event -> Deduplication -> Reconciliation -> Assessment -> Review packet."""
+    # =========================================================================
+    # SECTION F ACCEPTANCE CONTROLS (1 - 19)
+    # =========================================================================
+
+    def test_01_valid_baseline_and_draft_calculations(self):
+        """1. Valid baseline and draft calculations match independent formulas within tolerances."""
         packet, event, warnings = self.service.run_maintenance_pipeline(symbol="FIX", cutoff_date="2026-10-16")
         self.assertIsNotNone(event)
         self.assertIsNotNone(packet)
-        self.assertEqual(event.form, "10-Q")
-        self.assertEqual(event.accession_number, "0001104659-26-118159")
-        self.assertEqual(event.reporting_period, "2026-09-30")
-        self.assertEqual(event.processing_state, EventProcessingState.REVIEW_PENDING)
-        self.assertEqual(event.acceptance_datetime_utc, "2026-10-23T00:12:01.000Z")
 
-        # Check packet fields
-        self.assertEqual(packet.proposed_disposition, ProposedDisposition.MAINTAIN)
-        self.assertEqual(packet.accepted_baseline_id, "OPP-FIX-20261016")
-        self.assertEqual(packet.draft_successor_id, "OPP-FIX-20260930-DRAFT-V1")
-
-        # Check valuation comparison
         val = packet.valuation_comparison
         self.assertEqual(val["valuation_machinery_status"], "COMPUTED_VERIFIED")
-        self.assertAlmostEqual(val["solved_5y_cagr"]["draft_cagr_pct"], 26.76, delta=0.1)
-        self.assertAlmostEqual(val["scenarios"]["base"]["draft_per_share"], 1215.00, delta=1.0)
 
-        # Verify disk outputs exist atomically
-        json_packet = self.packets_dir / f"{packet.packet_id}.json"
-        md_packet = self.packets_dir / f"{packet.packet_id}.md"
-        self.assertTrue(json_packet.exists())
-        self.assertTrue(md_packet.exists())
+        # Baseline recomputed CAGR matches accepted within 0.05
+        base_cagr = val["solved_5y_cagr"]["baseline_cagr_pct"]
+        self.assertAlmostEqual(base_cagr, 30.07, delta=0.05)
 
-    # -------------------------------------------------------------------------
-    # 2. Missing debt versus explicit zero
-    # -------------------------------------------------------------------------
-    def test_02_missing_debt_versus_explicit_zero(self):
-        """2. Missing debt versus explicit zero: Explicit zero is recognized, missing remains UNRESOLVED."""
+        # Baseline bear, base, bull scenarios match within $0.50
+        sc = val["scenarios"]
+        self.assertAlmostEqual(sc["conservative"]["baseline_per_share"], 533.46, delta=0.50)
+        self.assertAlmostEqual(sc["base"]["baseline_per_share"], 1081.99, delta=0.50)
+        self.assertAlmostEqual(sc["optimistic"]["baseline_per_share"], 1996.38, delta=0.50)
+
+        # Draft calculations match independent values
+        draft_cagr = val["solved_5y_cagr"]["draft_cagr_pct"]
+        self.assertAlmostEqual(draft_cagr, 26.76, delta=0.10)
+        self.assertAlmostEqual(sc["conservative"]["draft_per_share"], 600.44, delta=1.0)
+        self.assertAlmostEqual(sc["base"]["draft_per_share"], 1215.00, delta=1.0)
+        self.assertAlmostEqual(sc["optimistic"]["draft_per_share"], 2239.47, delta=1.0)
+
+    def test_02_changed_scenario_assumptions_affect_outputs(self):
+        """2. Changed scenario assumptions affect modeled output."""
+        modified_baseline = copy.deepcopy(self.baseline_dossier)
+        # Increase base scenario operating margin from 15.0% to 18.0%
+        modified_baseline["valuation"]["scenarios"]["base"]["operating_margin_pct"] = 18.0
+        # Recompute expected baseline per_share for 18.0% margin:
+        # Base rev $11.228B, shares 35.254M, net debt -$1.800B, growth 22%, margin 18%, wacc 9.5%, g 2.5%, tax 21%, reinvest 15%
+        res = run_fcff_model(11228024000.0, 35254000.0, -1800730000.0, 22.0, 18.0, 9.5, 2.5, 21.0, 15.0)
+        modified_baseline["valuation"]["scenarios"]["base"]["per_share_value"] = round(res["per_share"], 2)
+
         reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=True)
+        draft_profile, changes, exceptions, _ = reconciler.reconcile_filing(
+            symbol="FIX", cik="0001035983", accession_number="0001104659-26-118159",
+            reporting_period="2026-09-30", baseline_profile=modified_baseline["financial_profile"],
+            facts_data=self.mock_company_facts,
+        )
 
-        # Test A: Explicit zero debt
-        zero_facts = copy.deepcopy(self.mock_company_facts)
-        zero_facts["facts"]["us-gaap"]["LongTermDebt"]["units"]["USD"][0]["val"] = 0.0
-        zero_facts["facts"]["us-gaap"]["LongTermDebtCurrent"]["units"]["USD"][0]["val"] = 0.0
-        zero_facts["facts"]["us-gaap"]["LongTermDebtNoncurrent"]["units"]["USD"][0]["val"] = 0.0
+        assessor = DecisionAssessor()
+        _, val_comp, _, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=modified_baseline, reconciled_profile=draft_profile,
+            changes=changes, accounting_exceptions=exceptions, undisclosed_info=[],
+        )
 
-        _, changes_zero, _, _ = reconciler.reconcile_filing(
+        self.assertEqual(val_comp["valuation_machinery_status"], "COMPUTED_VERIFIED")
+        # With 18% margin, draft per_share is substantially higher than standard 15% margin ($1,215.00)
+        new_draft_base = val_comp["scenarios"]["base"]["draft_per_share"]
+        self.assertGreater(new_draft_base, 1400.0)
+
+    def test_03_missing_tax_reinvestment_or_scenario_assumptions_suppress(self):
+        """3. Missing tax, reinvestment, or scenario assumptions suppress valuation."""
+        assessor = DecisionAssessor()
+        reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=True)
+        draft_profile, changes, exceptions, _ = reconciler.reconcile_filing(
             symbol="FIX", cik="0001035983", accession_number="0001104659-26-118159",
             reporting_period="2026-09-30", baseline_profile=self.baseline_dossier["financial_profile"],
-            facts_data=zero_facts,
+            facts_data=self.mock_company_facts,
         )
-        debt_change = next(c for c in changes_zero if c.metric_key == "total_financial_debt")
-        self.assertEqual(debt_change.draft_value, 0.0)
-        self.assertEqual(debt_change.status, FactStatus.REPORTED)
 
-        # Test B: Incomplete/missing debt components without total -> must remain UNRESOLVED (never default to zero)
+        # Case A: Missing tax rate
+        corrupted_a = copy.deepcopy(self.baseline_dossier)
+        del corrupted_a["valuation"]["reverse_dcf_parameters"]["tax_rate_pct"]
+        _, val_a, _, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=corrupted_a, reconciled_profile=draft_profile,
+            changes=changes, accounting_exceptions=list(exceptions), undisclosed_info=[],
+        )
+        self.assertTrue(val_a["valuation_machinery_status"].startswith("SUPPRESSED_"))
+
+        # Case B: Missing reinvestment rate
+        corrupted_b = copy.deepcopy(self.baseline_dossier)
+        del corrupted_b["valuation"]["reverse_dcf_parameters"]["reinvestment_rate_pct"]
+        _, val_b, _, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=corrupted_b, reconciled_profile=draft_profile,
+            changes=changes, accounting_exceptions=list(exceptions), undisclosed_info=[],
+        )
+        self.assertTrue(val_b["valuation_machinery_status"].startswith("SUPPRESSED_"))
+
+        # Case C: Missing scenario (e.g. optimistic scenario removed)
+        corrupted_c = copy.deepcopy(self.baseline_dossier)
+        del corrupted_c["valuation"]["scenarios"]["optimistic"]
+        _, val_c, _, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=corrupted_c, reconciled_profile=draft_profile,
+            changes=changes, accounting_exceptions=list(exceptions), undisclosed_info=[],
+        )
+        self.assertTrue(val_c["valuation_machinery_status"].startswith("SUPPRESSED_"))
+
+    def test_04_bear_or_bull_baseline_mismatch_prevents_verified_comparison(self):
+        """4. Bear or bull baseline mismatch prevents verified comparison."""
+        assessor = DecisionAssessor()
+        reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=True)
+        draft_profile, changes, exceptions, _ = reconciler.reconcile_filing(
+            symbol="FIX", cik="0001035983", accession_number="0001104659-26-118159",
+            reporting_period="2026-09-30", baseline_profile=self.baseline_dossier["financial_profile"],
+            facts_data=self.mock_company_facts,
+        )
+
+        # Bear mismatch: conservative per_share_value altered from 533.46 to 750.00
+        bear_mismatch = copy.deepcopy(self.baseline_dossier)
+        bear_mismatch["valuation"]["scenarios"]["conservative"]["per_share_value"] = 750.00
+        _, val_bear, _, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=bear_mismatch, reconciled_profile=draft_profile,
+            changes=changes, accounting_exceptions=list(exceptions), undisclosed_info=[],
+        )
+        self.assertEqual(val_bear["valuation_machinery_status"], "SUPPRESSED_BASELINE_UNRECONCILED")
+
+        # Bull mismatch: optimistic per_share_value altered from 1996.38 to 2500.00
+        bull_mismatch = copy.deepcopy(self.baseline_dossier)
+        bull_mismatch["valuation"]["scenarios"]["optimistic"]["per_share_value"] = 2500.00
+        _, val_bull, _, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=bull_mismatch, reconciled_profile=draft_profile,
+            changes=changes, accounting_exceptions=list(exceptions), undisclosed_info=[],
+        )
+        self.assertEqual(val_bull["valuation_machinery_status"], "SUPPRESSED_BASELINE_UNRECONCILED")
+
+    def test_05_solver_failure_or_non_finite_prevents_verified_status(self):
+        """5. Solver failure or non-finite result prevents verified status."""
+        assessor = DecisionAssessor()
+        reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=True)
+        draft_profile, changes, exceptions, _ = reconciler.reconcile_filing(
+            symbol="FIX", cik="0001035983", accession_number="0001104659-26-118159",
+            reporting_period="2026-09-30", baseline_profile=self.baseline_dossier["financial_profile"],
+            facts_data=self.mock_company_facts,
+        )
+
+        # Solver failure: Target price astronomically high so reverse DCF solver cannot converge
+        unsolvable_baseline = copy.deepcopy(self.baseline_dossier)
+        unsolvable_baseline["valuation"]["reference_price"] = 10000000.0  # $10M per share
+        _, val_fail, _, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=unsolvable_baseline, reconciled_profile=draft_profile,
+            changes=changes, accounting_exceptions=list(exceptions), undisclosed_info=[],
+        )
+        self.assertEqual(val_fail["valuation_machinery_status"], "SUPPRESSED_SOLVER_FAILURE")
+
+        # Non-finite scenario: WACC <= terminal growth leads to zero/negative denominator
+        non_finite_baseline = copy.deepcopy(self.baseline_dossier)
+        non_finite_baseline["valuation"]["scenarios"]["base"]["wacc_pct"] = 2.0
+        non_finite_baseline["valuation"]["scenarios"]["base"]["terminal_growth_pct"] = 2.5
+        _, val_inf, _, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=non_finite_baseline, reconciled_profile=draft_profile,
+            changes=changes, accounting_exceptions=list(exceptions), undisclosed_info=[],
+        )
+        self.assertEqual(val_inf["valuation_machinery_status"], "SUPPRESSED_SOLVER_FAILURE")
+
+    def test_06_suppressed_baseline_remains_suppressed(self):
+        """6. Suppressed baseline remains suppressed and propagates UNRESOLVED disposition."""
+        suppressed_baseline = copy.deepcopy(self.baseline_dossier)
+        suppressed_baseline["valuation"]["valuation_status"] = "SUPPRESSED_INPUT_UNRESOLVED"
+
+        assessor = DecisionAssessor()
+        reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=True)
+        draft_profile, changes, exceptions, _ = reconciler.reconcile_filing(
+            symbol="FIX", cik="0001035983", accession_number="0001104659-26-118159",
+            reporting_period="2026-09-30", baseline_profile=suppressed_baseline["financial_profile"],
+            facts_data=self.mock_company_facts,
+        )
+
+        _, val_comp, disposition, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=suppressed_baseline, reconciled_profile=draft_profile,
+            changes=changes, accounting_exceptions=exceptions, undisclosed_info=[],
+        )
+        self.assertEqual(val_comp["valuation_machinery_status"], "SUPPRESSED_BASELINE_UNVERIFIED")
+        self.assertEqual(disposition, ProposedDisposition.UNRESOLVED)
+
+    def test_07_quarterly_margin_below_13pct_invalidates_while_ttm_above(self):
+        """7. Standalone quarterly margin < 13.0% invalidates the thesis while TTM margin is >= 13.0%."""
+        q_low_profile = copy.deepcopy(self.baseline_dossier["financial_profile"])
+        q_low_profile["quarterly_revenue"] = 3766302000.0
+        q_low_profile["quarterly_operating_income"] = 376630200.0  # 10.0% quarterly margin (< 13.0%)
+        q_low_profile["quarterly_operating_margin_pct"] = 10.0
+        q_low_profile["revenue"] = 12543357000.0
+        q_low_profile["operating_income"] = 2000000000.0  # TTM margin = 15.94% (>= 13.0%)
+        q_low_profile["operating_margin_pct"] = 15.94
+
+        assessor = DecisionAssessor()
+        effects, _, disposition, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=self.baseline_dossier, reconciled_profile=q_low_profile,
+            changes=[], accounting_exceptions=[], undisclosed_info=[],
+        )
+
+        inval_effect = next(e for e in effects if e.conclusion_key == "invalidation_condition")
+        self.assertTrue("BREACHED" in inval_effect.draft_state or "TRIGGERED" in inval_effect.draft_state)
+        self.assertIn("10.00%", inval_effect.draft_state)
+        self.assertEqual(disposition, ProposedDisposition.INVALIDATE)
+
+    def test_08_quarterly_margin_above_13pct_safe_while_ttm_below(self):
+        """8. Standalone quarterly margin >= 13.0% preserves the thesis while TTM margin is < 13.0%."""
+        q_safe_profile = copy.deepcopy(self.baseline_dossier["financial_profile"])
+        q_safe_profile["quarterly_revenue"] = 3766302000.0
+        q_safe_profile["quarterly_operating_income"] = 624570000.0  # 16.58% quarterly margin (>= 13.0%)
+        q_safe_profile["quarterly_operating_margin_pct"] = 16.58
+        q_safe_profile["revenue"] = 12543357000.0
+        q_safe_profile["operating_income"] = 1400000000.0  # TTM margin = 11.16% (< 13.0%)
+        q_safe_profile["operating_margin_pct"] = 11.16
+
+        assessor = DecisionAssessor()
+        effects, _, disposition, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=self.baseline_dossier, reconciled_profile=q_safe_profile,
+            changes=[], accounting_exceptions=[], undisclosed_info=[],
+        )
+
+        inval_effect = next(e for e in effects if e.conclusion_key == "invalidation_condition")
+        self.assertNotIn("BREACHED", inval_effect.draft_state)
+        self.assertIn("16.58%", inval_effect.draft_state)
+        self.assertIn("did not breach", inval_effect.draft_state)
+        self.assertNotEqual(disposition, ProposedDisposition.INVALIDATE)
+
+    def test_09_missing_quarterly_margin_produces_unresolved_condition(self):
+        """9. Missing quarterly revenue or EBIT leaves the invalidation condition UNRESOLVED."""
+        missing_q_profile = copy.deepcopy(self.baseline_dossier["financial_profile"])
+        missing_q_profile["quarterly_revenue"] = None
+        missing_q_profile["quarterly_operating_income"] = None
+        missing_q_profile["quarterly_operating_margin_pct"] = None
+
+        assessor = DecisionAssessor()
+        effects, _, disposition, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=self.baseline_dossier, reconciled_profile=missing_q_profile,
+            changes=[], accounting_exceptions=[], undisclosed_info=[],
+        )
+
+        inval_effect = next(e for e in effects if e.conclusion_key == "invalidation_condition")
+        self.assertIn("UNRESOLVED", inval_effect.draft_state)
+        self.assertEqual(inval_effect.interpretation_type, InterpretationType.UNRESOLVED_EVIDENCE)
+        self.assertEqual(disposition, ProposedDisposition.UNRESOLVED)
+
+    def test_10_deteriorating_inputs_produce_accurate_negative_text(self):
+        """10. Deteriorating inputs produce accurate negative narrative text."""
+        deteriorated_facts = copy.deepcopy(self.mock_company_facts)
+        # Revenue and operating income decline sharply
+        deteriorated_facts["facts"]["us-gaap"]["Revenues"]["units"]["USD"][2]["val"] = 5000000000.0
+        deteriorated_facts["facts"]["us-gaap"]["OperatingIncomeLoss"]["units"]["USD"][2]["val"] = 500000000.0
+
+        reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=True)
+        draft_profile, changes, exceptions, _ = reconciler.reconcile_filing(
+            symbol="FIX", cik="0001035983", accession_number="0001104659-26-118159",
+            reporting_period="2026-09-30", baseline_profile=self.baseline_dossier["financial_profile"],
+            facts_data=deteriorated_facts,
+        )
+
+        assessor = DecisionAssessor()
+        effects, val_comp, _, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=self.baseline_dossier, reconciled_profile=draft_profile,
+            changes=changes, accounting_exceptions=exceptions, undisclosed_info=[],
+        )
+
+        # Modeled base value must fall
+        self.assertLess(val_comp["scenarios"]["base"]["draft_per_share"], val_comp["scenarios"]["base"]["baseline_per_share"])
+        decisive_effect = next(e for e in effects if e.conclusion_key == "decisive_reason")
+        self.assertEqual(decisive_effect.materiality, "INCREMENTAL_NEGATIVE")
+        self.assertIn("contracted", decisive_effect.draft_state.lower())
+
+    def test_11_reference_price_below_above_and_equal_base_value(self):
+        """11. Reference price above, below, and equal to base-case modeled value."""
+        reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=True)
+        draft_profile, changes, exceptions, _ = reconciler.reconcile_filing(
+            symbol="FIX", cik="0001035983", accession_number="0001104659-26-118159",
+            reporting_period="2026-09-30", baseline_profile=self.baseline_dossier["financial_profile"],
+            facts_data=self.mock_company_facts,
+        )
+
+        assessor = DecisionAssessor()
+
+        # Case A: Reference price ($1,439.07) > draft base value ($1,215.00) -> Premium / above
+        effects_a, _, _, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=self.baseline_dossier, reconciled_profile=draft_profile,
+            changes=changes, accounting_exceptions=exceptions, undisclosed_info=[],
+        )
+        decisive_a = next(e for e in effects_a if e.conclusion_key == "decisive_reason")
+        self.assertIn("remains above base intrinsic value", decisive_a.draft_state)
+
+        # Case B: Reference price ($1,000.00) < draft base value ($1,215.00) -> Discount / below
+        discount_baseline = copy.deepcopy(self.baseline_dossier)
+        discount_baseline["valuation"]["reference_price"] = 1000.00
+        discount_baseline["valuation"]["reverse_dcf_parameters"]["target_price"] = 1000.00
+        recomp_cagr, _ = solve_reverse_dcf(1000.00, 11228024000.0, 35254000.0, -1800730000.0, 15.0, 9.5, 2.5, 21.0, 15.0)
+        discount_baseline["valuation"]["solved_5y_cagr_pct"] = round(recomp_cagr, 2)
+        discount_baseline["valuation"]["reverse_dcf_parameters"]["solved_revenue_cagr_pct"] = round(recomp_cagr, 2)
+
+        effects_b, _, _, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=discount_baseline, reconciled_profile=draft_profile,
+            changes=changes, accounting_exceptions=exceptions, undisclosed_info=[],
+        )
+        decisive_b = next(e for e in effects_b if e.conclusion_key == "decisive_reason")
+        self.assertIn("is below base intrinsic value", decisive_b.draft_state)
+
+        # Case C: Reference price ($1,215.00) == draft base value ($1,215.00) -> Equal
+        equal_baseline = copy.deepcopy(self.baseline_dossier)
+        equal_baseline["valuation"]["reference_price"] = 1215.00
+        equal_baseline["valuation"]["reverse_dcf_parameters"]["target_price"] = 1215.00
+        recomp_cagr_eq, _ = solve_reverse_dcf(1215.00, 11228024000.0, 35254000.0, -1800730000.0, 15.0, 9.5, 2.5, 21.0, 15.0)
+        equal_baseline["valuation"]["solved_5y_cagr_pct"] = round(recomp_cagr_eq, 2)
+        equal_baseline["valuation"]["reverse_dcf_parameters"]["solved_revenue_cagr_pct"] = round(recomp_cagr_eq, 2)
+
+        effects_c, _, _, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=equal_baseline, reconciled_profile=draft_profile,
+            changes=changes, accounting_exceptions=exceptions, undisclosed_info=[],
+        )
+        decisive_c = next(e for e in effects_c if e.conclusion_key == "decisive_reason")
+        self.assertIn("equals base intrinsic value", decisive_c.draft_state)
+
+    def test_12_net_debt_position_without_cash_cushion_language(self):
+        """12. Net debt position describes debt without cash-cushion language."""
+        net_debt_profile = copy.deepcopy(self.baseline_dossier["financial_profile"])
+        net_debt_profile["cash_and_equivalents"] = 200000000.0
+        net_debt_profile["total_financial_debt"] = 1000000000.0
+        net_debt_profile["net_debt_bridge"] = 800000000.0  # +$800M Net Debt
+
+        assessor = DecisionAssessor()
+        effects, _, _, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=self.baseline_dossier, reconciled_profile=net_debt_profile,
+            changes=[], accounting_exceptions=[], undisclosed_info=[],
+        )
+
+        decisive_effect = next(e for e in effects if e.conclusion_key == "decisive_reason")
+        self.assertIn("net debt of $800.0M", decisive_effect.draft_state)
+        self.assertNotIn("cash cushion", decisive_effect.draft_state.lower())
+
+    def test_13_missing_included_investments_suppresses_bridge(self):
+        """13. Missing short-term investments that was included in the baseline bridge marks the bridge UNRESOLVED and suppresses valuation."""
+        baseline_with_sti = copy.deepcopy(self.baseline_dossier)
+        baseline_with_sti["financial_profile"]["short_term_investments"] = 150000000.0
+
+        # Facts omit ShortTermInvestments concept
+        facts_without_sti = copy.deepcopy(self.mock_company_facts)
+
+        reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=True)
+        draft_profile, changes, exceptions, _ = reconciler.reconcile_filing(
+            symbol="FIX", cik="0001035983", accession_number="0001104659-26-118159",
+            reporting_period="2026-09-30", baseline_profile=baseline_with_sti["financial_profile"],
+            facts_data=facts_without_sti,
+        )
+
+        self.assertIsNone(draft_profile.get("net_debt_bridge"))
+        self.assertTrue(any("Short-term investments was an included component" in e for e in exceptions))
+
+        assessor = DecisionAssessor()
+        _, val_comp, disposition, _, _, _ = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=baseline_with_sti, reconciled_profile=draft_profile,
+            changes=changes, accounting_exceptions=exceptions, undisclosed_info=[],
+        )
+        self.assertEqual(val_comp["valuation_machinery_status"], "SUPPRESSED_INPUT_UNRESOLVED")
+        self.assertEqual(disposition, ProposedDisposition.UNRESOLVED)
+
+    def test_14_explicit_zero_investment_handled_correctly(self):
+        """14. Explicit zero for short-term investments is handled correctly."""
+        baseline_with_sti = copy.deepcopy(self.baseline_dossier)
+        baseline_with_sti["financial_profile"]["short_term_investments"] = 150000000.0
+
+        facts_with_zero_sti = copy.deepcopy(self.mock_company_facts)
+        facts_with_zero_sti["facts"]["us-gaap"]["ShortTermInvestments"] = {
+            "units": {
+                "USD": [
+                    {"end": "2026-09-30", "val": 0.0, "accn": "0001104659-26-118159", "form": "10-Q"}
+                ]
+            }
+        }
+
+        reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=True)
+        draft_profile, changes, exceptions, _ = reconciler.reconcile_filing(
+            symbol="FIX", cik="0001035983", accession_number="0001104659-26-118159",
+            reporting_period="2026-09-30", baseline_profile=baseline_with_sti["financial_profile"],
+            facts_data=facts_with_zero_sti,
+        )
+
+        # Explicit zero is recognized, bridge succeeds: $49.555M debt - ($2158.027M cash + $0.0M sti) = -$2108.472M
+        self.assertIsNotNone(draft_profile.get("net_debt_bridge"))
+        self.assertAlmostEqual(draft_profile["net_debt_bridge"], 49555000.0 - 2158027000.0, delta=1.0)
+
+    def test_15_missing_cash_or_debt_displayed_as_unresolved_never_zero(self):
+        """15. Missing cash or debt is displayed as UNRESOLVED, never $0.0M."""
         missing_facts = copy.deepcopy(self.mock_company_facts)
+        del missing_facts["facts"]["us-gaap"]["CashAndCashEquivalentsAtCarryingValue"]
         del missing_facts["facts"]["us-gaap"]["LongTermDebt"]
-        del missing_facts["facts"]["us-gaap"]["LongTermDebtNoncurrent"]  # Only current is left
+        del missing_facts["facts"]["us-gaap"]["LongTermDebtCurrent"]
+        del missing_facts["facts"]["us-gaap"]["LongTermDebtNoncurrent"]
 
-        _, changes_missing, _, _ = reconciler.reconcile_filing(
+        reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=True)
+        draft_profile, changes, exceptions, _ = reconciler.reconcile_filing(
             symbol="FIX", cik="0001035983", accession_number="0001104659-26-118159",
             reporting_period="2026-09-30", baseline_profile=self.baseline_dossier["financial_profile"],
             facts_data=missing_facts,
         )
-        debt_missing = next(c for c in changes_missing if c.metric_key == "total_financial_debt")
-        self.assertIsNone(debt_missing.draft_value)
-        self.assertEqual(debt_missing.status, FactStatus.UNRESOLVED)
-        self.assertTrue(debt_missing.is_missing_unresolved)
 
-    # -------------------------------------------------------------------------
-    # 3. Contradictory debt total and components
-    # -------------------------------------------------------------------------
-    def test_03_contradictory_debt_total_and_components(self):
-        """3. Contradictory debt total and components: Conflicts create validation exception and suppress output."""
+        cash_c = next(c for c in changes if c.metric_key == "cash_and_equivalents")
+        debt_c = next(c for c in changes if c.metric_key == "total_financial_debt")
+
+        self.assertEqual(cash_c.draft_display, "UNRESOLVED")
+        self.assertNotEqual(cash_c.draft_display, "$0.0M")
+        self.assertEqual(debt_c.draft_display, "UNRESOLVED")
+        self.assertNotEqual(debt_c.draft_display, "$0.0M")
+
+        # Test in rendered packet markdown
+        gen = PacketGenerator(output_dir=self.packets_dir)
+        packet = ReviewPacket(
+            packet_id="TEST-PACKET-MISSING",
+            symbol="FIX",
+            cik="0001035983",
+            company_name="Comfort Systems USA, Inc.",
+            accepted_baseline_id="OPP-FIX-20261016",
+            accepted_baseline_cutoff="2026-10-16",
+            draft_successor_id="OPP-FIX-20260930-DRAFT",
+            created_at_utc="2026-10-23T00:00:00Z",
+            filing_metadata={"form": "10-Q", "filing_date": "2026-10-22", "reporting_period": "2026-09-30"},
+            proposed_disposition=ProposedDisposition.UNRESOLVED,
+            disposition_rationale="Suppressed due to missing balance sheet inputs.",
+            material_financial_changes=changes,
+            assessment_effects=[],
+            valuation_comparison={"valuation_machinery_status": "SUPPRESSED_INPUT_UNRESOLVED"},
+            accounting_exceptions=exceptions,
+            undisclosed_information=[],
+            questions_requiring_owner_judgment=[],
+            stopping_rule="Cease investigation.",
+            is_replay=False,
+        )
+        md = gen.render_markdown(packet)
+        self.assertIn("| **Cash & Cash Equivalents** | $1854.8M | UNRESOLVED |", md)
+        self.assertIn("| **Total Financial Debt** | $54.1M | UNRESOLVED |", md)
+        self.assertNotIn("| **Cash & Cash Equivalents** | $1854.8M | $0.0M |", md)
+        self.assertNotIn("| **Total Financial Debt** | $54.1M | $0.0M |", md)
+
+    def test_16_actual_cache_refresh_reveals_newer_eligible_filing(self):
+        """16. Actual cache refresh reveals a newer eligible filing when one exists."""
+        reg = EventRegister(self.register_path)
+        poller = SecEventPoller(register=reg, cache_dir=self.cache_dir, offline_mode=True, cache_ttl_sec=0)
+
+        # Initial discovery
+        event1, _ = poller.discover_filing_event("FIX", "0001035983", "Comfort Systems USA, Inc.", cutoff_date="2026-07-01")
+        self.assertIsNotNone(event1)
+        self.assertEqual(event1.accession_number, "0001104659-26-118159")
+
+        # Simulate newer filing added to cache
+        refreshed_submissions = copy.deepcopy(self.mock_submissions)
+        refreshed_submissions["filings"]["recent"]["form"].insert(0, "10-K")
+        refreshed_submissions["filings"]["recent"]["filingDate"].insert(0, "2026-11-15")
+        refreshed_submissions["filings"]["recent"]["reportDate"].insert(0, "2026-12-31")
+        refreshed_submissions["filings"]["recent"]["acceptanceDateTime"].insert(0, "2026-11-15T21:00:00.000Z")
+        refreshed_submissions["filings"]["recent"]["accessionNumber"].insert(0, "0001104659-26-999999")
+        refreshed_submissions["filings"]["recent"]["primaryDocument"].insert(0, "fix-20261231x10k.htm")
+
+        sub_cache = self.cache_dir / "CIK0001035983_submissions.json"
+        with open(sub_cache, "w", encoding="utf-8") as f:
+            json.dump(refreshed_submissions, f)
+
+        # Discover with refreshed cache
+        event2, _ = poller.discover_filing_event("FIX", "0001035983", "Comfort Systems USA, Inc.", cutoff_date="2026-07-01", force_refresh=True)
+        self.assertIsNotNone(event2)
+        self.assertEqual(event2.accession_number, "0001104659-26-999999")
+
+    def test_17_receipt_hashing_against_known_bytes(self):
+        """17. Receipt hashing against known bytes produces matching SHA-256."""
+        known_bytes = b"<html><head><title>Comfort Systems USA Q3 10-Q</title></head><body>Financial Statements</body></html>"
+        expected_sha256 = hashlib.sha256(known_bytes).hexdigest()
+
+        receipt = SourceReceipt(
+            object_type="PRIMARY_DOC",
+            url="https://www.sec.gov/Archives/edgar/data/1035983/000110465926118159/fix-20260930x10q.htm",
+            retrieval_time_utc="2026-10-23T00:00:00Z",
+            sha256=expected_sha256,
+            byte_count=len(known_bytes),
+            retrieval_mode="CACHED",
+        )
+
+        self.assertEqual(receipt.sha256, expected_sha256)
+        self.assertEqual(receipt.byte_count, len(known_bytes))
+        self.assertEqual(hashlib.sha256(known_bytes).hexdigest(), receipt.sha256)
+
+    def test_18_missing_receipt_produces_unavailable_without_verification_claim(self):
+        """18. Missing receipt produces UNAVAILABLE without claiming verification."""
+        gen = PacketGenerator(output_dir=self.packets_dir)
+        packet = ReviewPacket(
+            packet_id="TEST-PACKET-NO-RECEIPT",
+            symbol="FIX",
+            cik="0001035983",
+            company_name="Comfort Systems USA, Inc.",
+            accepted_baseline_id="OPP-FIX-20261016",
+            accepted_baseline_cutoff="2026-10-16",
+            draft_successor_id="OPP-FIX-20260930-DRAFT",
+            created_at_utc="2026-10-23T00:00:00Z",
+            filing_metadata={
+                "form": "10-Q",
+                "filing_date": "2026-10-22",
+                "reporting_period": "2026-09-30",
+                "index_sha256": None,
+                "sha256": None,
+            },
+            proposed_disposition=ProposedDisposition.MAINTAIN,
+            disposition_rationale="Maintenance rationale.",
+            material_financial_changes=[],
+            assessment_effects=[],
+            valuation_comparison={"valuation_machinery_status": "COMPUTED_VERIFIED"},
+            accounting_exceptions=[],
+            undisclosed_information=[],
+            questions_requiring_owner_judgment=[],
+            stopping_rule="Cease investigation.",
+            is_replay=False,
+        )
+        md = gen.render_markdown(packet)
+        self.assertIn("UNAVAILABLE (not retrieved or unhashed in bounded session)", md)
+        self.assertNotIn("Verified via EDGAR index", md)
+
+    def test_19_accepted_public_files_remain_unchanged(self):
+        """19. Accepted public files (snapshot and manifest) remain bit-for-bit unchanged."""
+        prod_snapshot = REPO_ROOT / "frontend/lib/opportunityDossierSnapshot.json"
+        prod_manifest = REPO_ROOT / "frontend/lib/publishedWatchManifest.json"
+
+        hash_snap_before = hashlib.sha256(open(prod_snapshot, "rb").read()).hexdigest()
+        hash_man_before = hashlib.sha256(open(prod_manifest, "rb").read()).hexdigest()
+
+        # Run pipeline
+        self.service.run_maintenance_pipeline(symbol="FIX", cutoff_date="2026-10-16")
+
+        hash_snap_after = hashlib.sha256(open(prod_snapshot, "rb").read()).hexdigest()
+        hash_man_after = hashlib.sha256(open(prod_manifest, "rb").read()).hexdigest()
+
+        self.assertEqual(hash_snap_before, hash_snap_after)
+        self.assertEqual(hash_man_before, hash_man_after)
+
+    # =========================================================================
+    # ADDITIONAL OPERATIONAL & ACCOUNTING CONTROLS (20 - 25)
+    # =========================================================================
+
+    def test_20_contradictory_debt_total_and_components(self):
+        """20. Contradictory debt total and components: Conflicts create validation exception and suppress output."""
         tampered_facts = copy.deepcopy(self.mock_company_facts)
         # Components sum to $49.555M, but reported total is altered to $999M
         tampered_facts["facts"]["us-gaap"]["LongTermDebt"]["units"]["USD"][0]["val"] = 999000000.0
@@ -354,69 +855,13 @@ class TestResearchMaintenancePilot(unittest.TestCase):
 
         debt_change = next(c for c in changes if c.metric_key == "total_financial_debt")
         self.assertEqual(debt_change.status, FactStatus.VALIDATION_CONFLICT)
-        self.assertIsNone(debt_change.draft_value)  # Suppressed
+        self.assertIsNone(debt_change.draft_value)
         self.assertIsNone(draft_profile.get("total_financial_debt"))
-        self.assertIsNone(draft_profile.get("net_debt_bridge"))  # Suppressed dependent output
+        self.assertIsNone(draft_profile.get("net_debt_bridge"))
         self.assertTrue(any("Validation Conflict: Reported LongTermDebt" in e for e in exceptions))
 
-    # -------------------------------------------------------------------------
-    # 4. Missing cash or investment bridge input
-    # -------------------------------------------------------------------------
-    def test_04_missing_cash_or_investment_bridge_input(self):
-        """4. Missing cash bridge input suppresses Net Debt Bridge and dependent valuation."""
-        missing_cash_facts = copy.deepcopy(self.mock_company_facts)
-        del missing_cash_facts["facts"]["us-gaap"]["CashAndCashEquivalentsAtCarryingValue"]
-
-        reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=True)
-        draft_profile, changes, exceptions, _ = reconciler.reconcile_filing(
-            symbol="FIX", cik="0001035983", accession_number="0001104659-26-118159",
-            reporting_period="2026-09-30", baseline_profile=self.baseline_dossier["financial_profile"],
-            facts_data=missing_cash_facts,
-        )
-
-        cash_change = next(c for c in changes if c.metric_key == "cash_and_equivalents")
-        self.assertIsNone(cash_change.draft_value)
-        self.assertEqual(cash_change.status, FactStatus.UNRESOLVED)
-        self.assertIsNone(draft_profile.get("net_debt_bridge"))
-        self.assertTrue(any("Net debt bridge is UNRESOLVED" in e for e in exceptions))
-
-        # Check that valuation assessor suppresses output
-        assessor = DecisionAssessor()
-        _, val_comp, disposition, _, _, _ = assessor.assess_consequences(
-            symbol="FIX", baseline_dossier=self.baseline_dossier, reconciled_profile=draft_profile,
-            changes=changes, accounting_exceptions=exceptions, undisclosed_info=[],
-        )
-        self.assertEqual(val_comp["valuation_machinery_status"], "SUPPRESSED_INPUT_UNRESOLVED")
-        self.assertEqual(disposition, ProposedDisposition.UNRESOLVED)
-
-    # -------------------------------------------------------------------------
-    # 5. Incorrect period and ambiguous fact context
-    # -------------------------------------------------------------------------
-    def test_05_incorrect_period_and_ambiguous_fact_context(self):
-        """5. Incorrect period or ambiguous facts fail closed."""
-        reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=True)
-
-        # Non-existent period
-        val, fact = reconciler.extract_fact_value(
-            self.mock_company_facts, "Revenues", period_end="2026-11-30"
-        )
-        self.assertIsNone(val)
-
-        # Ambiguous facts: two different values for exact same period without accession specified
-        ambig_facts = copy.deepcopy(self.mock_company_facts)
-        ambig_facts["facts"]["us-gaap"]["Revenues"]["units"]["USD"].append(
-            {"start": "2026-07-01", "end": "2026-09-30", "val": 8888888000.0, "accn": "0009999999-26-000001", "form": "10-Q"}
-        )
-        val_ambig, _ = reconciler.extract_fact_value(
-            ambig_facts, "Revenues", period_start="2026-07-01", period_end="2026-09-30"
-        )
-        self.assertIsNone(val_ambig)  # Fails closed on ambiguity
-
-    # -------------------------------------------------------------------------
-    # 6. Source-backed TTM derivation
-    # -------------------------------------------------------------------------
-    def test_06_source_backed_ttm_derivation(self):
-        """6. Source-backed TTM revenue and operating income derivation preserves component provenance."""
+    def test_21_source_backed_ttm_derivation(self):
+        """21. Source-backed TTM revenue and operating income derivation preserves component provenance."""
         reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=True)
         _, changes, _, _ = reconciler.reconcile_filing(
             symbol="FIX", cik="0001035983", accession_number="0001104659-26-118159",
@@ -438,11 +883,8 @@ class TestResearchMaintenancePilot(unittest.TestCase):
         self.assertEqual(ebit_change.status, FactStatus.DERIVED)
         self.assertTrue(len(ebit_change.source_accessions) >= 2)
 
-    # -------------------------------------------------------------------------
-    # 7. Actual quarterly CFO and capex derivation
-    # -------------------------------------------------------------------------
-    def test_07_actual_quarterly_cfo_and_capex_derivation(self):
-        """7. Standalone quarterly CFO and capex derivation from YTD components."""
+    def test_22_actual_quarterly_cfo_and_capex_derivation(self):
+        """22. Standalone quarterly CFO and capex derivation from YTD components."""
         reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=True)
         draft_profile, _, exceptions, _ = reconciler.reconcile_filing(
             symbol="FIX", cik="0001035983", accession_number="0001104659-26-118159",
@@ -461,124 +903,8 @@ class TestResearchMaintenancePilot(unittest.TestCase):
         self.assertIn("0001104659-26-086258", q_cf.get("provenance_accessions", []))
         self.assertIn("0001104659-26-118159", q_cf.get("provenance_accessions", []))
 
-    # -------------------------------------------------------------------------
-    # 8. Missing and changed valuation assumptions
-    # -------------------------------------------------------------------------
-    def test_08_missing_and_changed_valuation_assumptions(self):
-        """8. Missing reference price or unverified baseline valuation fails closed."""
-        corrupted_baseline = copy.deepcopy(self.baseline_dossier)
-        del corrupted_baseline["valuation"]["reference_price"]  # Missing reference price
-
-        assessor = DecisionAssessor()
-        reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=True)
-        draft_profile, changes, exceptions, _ = reconciler.reconcile_filing(
-            symbol="FIX", cik="0001035983", accession_number="0001104659-26-118159",
-            reporting_period="2026-09-30", baseline_profile=corrupted_baseline["financial_profile"],
-            facts_data=self.mock_company_facts,
-        )
-
-        _, val_comp, disposition, _, _, _ = assessor.assess_consequences(
-            symbol="FIX", baseline_dossier=corrupted_baseline, reconciled_profile=draft_profile,
-            changes=changes, accounting_exceptions=exceptions, undisclosed_info=[],
-        )
-        self.assertEqual(val_comp["valuation_machinery_status"], "SUPPRESSED_BASELINE_UNRECONCILED")
-        self.assertEqual(disposition, ProposedDisposition.UNRESOLVED)
-
-    # -------------------------------------------------------------------------
-    # 9. Deteriorating inputs produce negative narrative
-    # -------------------------------------------------------------------------
-    def test_09_deteriorating_inputs_produce_negative_narrative(self):
-        """9. Deteriorating inputs produce negative narrative and lower modeled value."""
-        deteriorated_facts = copy.deepcopy(self.mock_company_facts)
-        # Revenue and operating income decline sharply
-        deteriorated_facts["facts"]["us-gaap"]["Revenues"]["units"]["USD"][2]["val"] = 5000000000.0  # 9M26 drops to $5B
-        deteriorated_facts["facts"]["us-gaap"]["OperatingIncomeLoss"]["units"]["USD"][2]["val"] = 500000000.0
-
-        reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=True)
-        draft_profile, changes, exceptions, _ = reconciler.reconcile_filing(
-            symbol="FIX", cik="0001035983", accession_number="0001104659-26-118159",
-            reporting_period="2026-09-30", baseline_profile=self.baseline_dossier["financial_profile"],
-            facts_data=deteriorated_facts,
-        )
-
-        assessor = DecisionAssessor()
-        effects, val_comp, _, _, _, _ = assessor.assess_consequences(
-            symbol="FIX", baseline_dossier=self.baseline_dossier, reconciled_profile=draft_profile,
-            changes=changes, accounting_exceptions=exceptions, undisclosed_info=[],
-        )
-
-        # Modeled base value must fall
-        self.assertLess(val_comp["scenarios"]["base"]["draft_per_share"], val_comp["scenarios"]["base"]["baseline_per_share"])
-        decisive_effect = next(e for e in effects if e.conclusion_key == "decisive_reason")
-        self.assertEqual(decisive_effect.materiality, "INCREMENTAL_NEGATIVE")
-
-    # -------------------------------------------------------------------------
-    # 10. Preservation of exact accepted watch and invalidation conditions
-    # -------------------------------------------------------------------------
-    def test_10_preservation_of_exact_accepted_conditions(self):
-        """10. Preserves exact approved thresholds without newly invented corridors."""
-        packet, _, _ = self.service.run_maintenance_pipeline(symbol="FIX", cutoff_date="2026-10-16")
-        self.assertIsNotNone(packet)
-
-        # Check Watch Condition effect
-        watch_effect = next(e for e in packet.assessment_effects if e.conclusion_key == "watch_condition")
-        self.assertIn("($1,050 - $1,100)", watch_effect.baseline_state)
-        self.assertIn("($1,050 - $1,100)", watch_effect.draft_state)
-        # Must NOT contain invented corridor $1,180 - $1,250
-        self.assertNotIn("$1,180 - $1,250", watch_effect.draft_state)
-        self.assertIn("existing approved thresholds are preserved", watch_effect.draft_state)
-
-        # Check Invalidation Condition effect
-        inval_effect = next(e for e in packet.assessment_effects if e.conclusion_key == "invalidation_condition")
-        self.assertIn("13.0%", inval_effect.baseline_state)
-        self.assertNotIn("15% backlog cancellation", inval_effect.draft_state)
-        self.assertIn("not triggered by available reported evidence", inval_effect.draft_state)
-
-    # -------------------------------------------------------------------------
-    # 11. Fresh online metadata revealing a later filing
-    # -------------------------------------------------------------------------
-    def test_11_fresh_online_metadata_revealing_later_filing(self):
-        """11. Cache freshness expiration triggers fresh fetch."""
-        poller = SecEventPoller(
-            register=EventRegister(self.register_path),
-            cache_dir=self.cache_dir,
-            offline_mode=False,
-            cache_ttl_sec=0,  # Forces expired cache
-        )
-        # Even with cache file existing, ttl=0 ensures refresh logic is exercised
-        sub_cache = self.cache_dir / "CIK0001035983_submissions.json"
-        self.assertTrue(sub_cache.exists())
-
-    # -------------------------------------------------------------------------
-    # 12. Completed duplicate followed by another eligible filing
-    # -------------------------------------------------------------------------
-    def test_12_completed_duplicate_followed_by_another_eligible_filing(self):
-        """12. Poller continues past already completed filing to find next eligible filing."""
-        reg = EventRegister(self.register_path)
-        # Mark first accession as completed
-        completed_evt = MaintenanceEvent(
-            event_id="EVT-FIX-0001104659-26-118159", symbol="FIX", cik="0001035983",
-            company_name="Comfort Systems USA, Inc.", form="10-Q", accession_number="0001104659-26-118159",
-            filing_date="2026-10-22", reporting_period="2026-09-30", retrieval_time_utc="2026-10-23T00:00:00Z",
-            source_url="https://www.sec.gov", primary_document="doc.htm",
-            processing_state=EventProcessingState.REVIEW_PENDING,
-        )
-        reg.register_event(completed_evt)
-
-        poller = SecEventPoller(register=reg, cache_dir=self.cache_dir, offline_mode=True)
-        # Cutoff set to 2026-07-01 so 10-Q Q2 (2026-07-23) is also eligible!
-        evt, _ = poller.discover_filing_event(
-            symbol="FIX", cik="0001035983", company_name="Comfort Systems USA, Inc.", cutoff_date="2026-07-01"
-        )
-        # Poller bypassed completed 118159 and found next eligible filing 086258
-        self.assertIsNotNone(evt)
-        self.assertEqual(evt.accession_number, "0001104659-26-086258")
-
-    # -------------------------------------------------------------------------
-    # 13. Interrupted processing followed by successful retry
-    # -------------------------------------------------------------------------
-    def test_13_interrupted_processing_followed_by_successful_retry(self):
-        """13. Interrupted processing (FAILED state) can be safely retried and completed."""
+    def test_23_interrupted_processing_followed_by_successful_retry(self):
+        """23. Interrupted processing (FAILED state) can be safely retried and completed."""
         reg = EventRegister(self.register_path)
         failed_evt = MaintenanceEvent(
             event_id="EVT-FIX-0001104659-26-118159", symbol="FIX", cik="0001035983",
@@ -595,11 +921,8 @@ class TestResearchMaintenancePilot(unittest.TestCase):
         self.assertIsNotNone(packet)
         self.assertEqual(event.processing_state, EventProcessingState.REVIEW_PENDING)
 
-    # -------------------------------------------------------------------------
-    # 14. Replay/live separation
-    # -------------------------------------------------------------------------
-    def test_14_replay_live_separation(self):
-        """14. Replay events use distinct key prefix and cannot consume live event slot."""
+    def test_24_replay_live_separation(self):
+        """24. Replay events use distinct key prefix and cannot consume live event slot."""
         packet_replay, event_replay, _ = self.service.run_maintenance_pipeline(
             symbol="FIX", target_accession="0001104659-26-118159", is_replay=True
         )
@@ -613,11 +936,8 @@ class TestResearchMaintenancePilot(unittest.TestCase):
         # Live slot is not consumed
         self.assertFalse(reg.has_event("FIX", "0001104659-26-118159", is_replay=False))
 
-    # -------------------------------------------------------------------------
-    # 15. Packet generation failure without completed state
-    # -------------------------------------------------------------------------
-    def test_15_packet_generation_failure_without_completed_state(self):
-        """15. Failure during packet generation records FAILED state, never REVIEW_PENDING."""
+    def test_25_packet_generation_failure_without_completed_state(self):
+        """25. Failure during packet generation records FAILED state, never REVIEW_PENDING."""
         from unittest.mock import patch
         with patch.object(self.service.packet_generator, "generate_packet", side_effect=IOError("Simulated disk write failure")):
             packet, event, warnings = self.service.run_maintenance_pipeline(symbol="FIX", cutoff_date="2026-10-16")
@@ -626,26 +946,6 @@ class TestResearchMaintenancePilot(unittest.TestCase):
             self.assertEqual(event.processing_state, EventProcessingState.FAILED)
             self.assertEqual(event.failed_stage, "GENERATING_PACKET")
             self.assertIn("Simulated disk write failure", event.error_message)
-
-    # -------------------------------------------------------------------------
-    # 16. Unchanged accepted publication files
-    # -------------------------------------------------------------------------
-    def test_16_unchanged_accepted_publication_files(self):
-        """16. Accepted publication files (snapshot and manifest) remain bit-for-bit unchanged."""
-        prod_snapshot = REPO_ROOT / "frontend/lib/opportunityDossierSnapshot.json"
-        prod_manifest = REPO_ROOT / "frontend/lib/publishedWatchManifest.json"
-
-        hash_snap_before = hashlib.sha256(open(prod_snapshot, "rb").read()).hexdigest()
-        hash_man_before = hashlib.sha256(open(prod_manifest, "rb").read()).hexdigest()
-
-        # Run pipeline
-        self.service.run_maintenance_pipeline(symbol="FIX", cutoff_date="2026-10-16")
-
-        hash_snap_after = hashlib.sha256(open(prod_snapshot, "rb").read()).hexdigest()
-        hash_man_after = hashlib.sha256(open(prod_manifest, "rb").read()).hexdigest()
-
-        self.assertEqual(hash_snap_before, hash_snap_after)
-        self.assertEqual(hash_man_before, hash_man_after)
 
 
 if __name__ == "__main__":

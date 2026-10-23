@@ -7,6 +7,7 @@ net debt bridge, and ASC 842 leases under strict institutional accounting contro
 """
 
 from datetime import datetime
+import hashlib
 import json
 import logging
 from pathlib import Path
@@ -46,26 +47,38 @@ class FactReconciler:
         self.offline_mode = offline_mode
         self.cache_ttl_sec = cache_ttl_sec
         self.user_agent = SEC_USER_AGENT
+        self.last_facts_receipt: Optional[Dict[str, Any]] = None
 
     def fetch_company_facts(self, cik: str, force_refresh: bool = False) -> Dict[str, Any]:
         """Fetch SEC XBRL company facts for an entity with bounded cache policy."""
         cik_clean = cik.strip().zfill(10)
         cache_file = self.cache_dir / f"CIK{cik_clean}_companyfacts.json" if self.cache_dir else None
+        url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik_clean}.json"
 
         import time
         if not force_refresh and cache_file and cache_file.exists():
             file_age = time.time() - cache_file.stat().st_mtime
             if file_age < self.cache_ttl_sec or self.offline_mode:
                 try:
-                    with open(cache_file, "r", encoding="utf-8") as f:
-                        return json.load(f)
+                    raw = cache_file.read_bytes()
+                    data = json.loads(raw.decode("utf-8"))
+                    self.last_facts_receipt = {
+                        "object_type": "COMPANY_FACTS_JSON",
+                        "url": url,
+                        "retrieval_time_utc": datetime.utcfromtimestamp(cache_file.stat().st_mtime).isoformat() + "Z",
+                        "byte_count": len(raw),
+                        "sha256": hashlib.sha256(raw).hexdigest(),
+                        "content_type": "application/json",
+                        "retained_path": str(cache_file),
+                        "retrieval_mode": "CACHED",
+                    }
+                    return data
                 except Exception as e:
                     logger.warning(f"Error reading facts cache {cache_file}: {e}. Refetching.")
 
         if self.offline_mode:
             raise FileNotFoundError(f"Offline mode enabled, but cache file {cache_file} was not found.")
 
-        url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik_clean}.json"
         headers = {
             "User-Agent": self.user_agent,
             "Accept-Encoding": "gzip, deflate",
@@ -79,6 +92,16 @@ class FactReconciler:
                 if resp.info().get("Content-Encoding") == "gzip" or (len(raw) > 2 and raw[:2] == b"\x1f\x8b"):
                     raw = gzip.decompress(raw)
                 data = json.loads(raw.decode("utf-8"))
+                self.last_facts_receipt = {
+                    "object_type": "COMPANY_FACTS_JSON",
+                    "url": url,
+                    "retrieval_time_utc": datetime.utcnow().isoformat() + "Z",
+                    "byte_count": len(raw),
+                    "sha256": hashlib.sha256(raw).hexdigest(),
+                    "content_type": "application/json",
+                    "retained_path": str(cache_file) if cache_file else None,
+                    "retrieval_mode": "LIVE",
+                }
         except Exception as e:
             logger.error(f"Failed to fetch company facts for CIK {cik_clean} from SEC: {e}")
             raise
@@ -210,16 +233,37 @@ class FactReconciler:
         # -------------------------------------------------------------
         # 2. Balance Sheet: Short Term Investments & Restricted Cash
         # -------------------------------------------------------------
-        sti_val, _ = self.extract_fact_value(
+        sti_val, sti_fact = self.extract_fact_value(
             facts_data, "ShortTermInvestments", accession_number, period_end=reporting_period
         )
         if sti_val is None:
-            sti_val, _ = self.extract_fact_value(
+            sti_val, sti_fact = self.extract_fact_value(
                 facts_data, "MarketableSecuritiesCurrent", accession_number, period_end=reporting_period
             )
 
         base_sti = baseline_profile.get("short_term_investments")
-        if sti_val is None and base_sti is None:
+        sti_included_in_baseline = (base_sti is not None)
+
+        draft_total_cash_inv: Optional[float] = None
+        sti_status = FactStatus.UNRESOLVED
+
+        if sti_val is not None:
+            sti_status = FactStatus.EXPLICIT_ZERO if sti_val == 0.0 else FactStatus.REPORTED
+            if cash_val is not None:
+                draft_total_cash_inv = cash_val + sti_val
+        elif sti_included_in_baseline:
+            # Baseline explicitly included short-term investments, but current filing has no reported fact!
+            # Missing XBRL concept alone does NOT establish zero!
+            draft_total_cash_inv = None
+            sti_status = FactStatus.UNRESOLVED
+            accounting_exceptions.append(
+                "Short-term investments was an included component in accepted baseline bridge, but is missing from reported filing facts without explicit zero evidence. Valuation bridge suppressed."
+            )
+        else:
+            # Baseline did not include short-term investments (FIX bridge policy uses unrestricted cash).
+            # Report honest omission without defaulting to zero.
+            if cash_val is not None:
+                draft_total_cash_inv = cash_val  # Policy-supported: unrestricted cash equals total cash & investments
             undisclosed_info.append("Short-term investments: not separately reported on balance sheet (unresolved, not zero).")
 
         rc_val, _ = self.extract_fact_value(
@@ -228,12 +272,6 @@ class FactReconciler:
         base_rc = baseline_profile.get("restricted_cash")
         if rc_val is None and base_rc is None:
             undisclosed_info.append("Restricted cash: not reported on balance sheet (treated honestly as unavailable).")
-
-        # Total Cash & Investments (Never assume missing investments is zero)
-        if cash_val is not None:
-            draft_total_cash_inv = cash_val + (sti_val if sti_val is not None else 0.0)
-        else:
-            draft_total_cash_inv = None
 
         # -------------------------------------------------------------
         # 3. Balance Sheet: Funded Debt (Current + Noncurrent)
@@ -301,7 +339,7 @@ class FactReconciler:
                 metric_key="total_financial_debt",
                 label="Total Financial Debt",
                 baseline_value=base_debt,
-                baseline_display=f"${base_debt / 1e6:.1f}M" if base_debt is not None else "$0.0M",
+                baseline_display=f"${base_debt / 1e6:.1f}M" if base_debt is not None else "UNAVAILABLE",
                 draft_value=final_debt,
                 draft_display=f"${final_debt / 1e6:.1f}M" if final_debt is not None else "UNRESOLVED",
                 delta_value=delta_debt,
@@ -319,11 +357,16 @@ class FactReconciler:
         )
 
         # -------------------------------------------------------------
-        # 4. Net Debt Bridge (Total Debt - Total Cash)
+        # 4. Net Debt Bridge (Total Debt - Total Cash / Investments)
         # -------------------------------------------------------------
         draft_net_debt: Optional[float] = None
-        if final_debt is not None and cash_val is not None:
-            draft_net_debt = final_debt - cash_val
+        if sti_included_in_baseline and draft_total_cash_inv is None:
+            accounting_exceptions.append(
+                "Net debt bridge is UNRESOLVED: Short-term investments was included in baseline bridge but is missing from reported facts. Dependent valuation output suppressed."
+            )
+        elif final_debt is not None and cash_val is not None:
+            cash_bridge_val = draft_total_cash_inv if sti_included_in_baseline else cash_val
+            draft_net_debt = final_debt - cash_bridge_val
         else:
             accounting_exceptions.append(
                 "Net debt bridge is UNRESOLVED due to unresolved or conflicting debt/cash components. Dependent valuation output suppressed."
@@ -454,6 +497,10 @@ class FactReconciler:
             facts_data, "OperatingIncomeLoss", accession_number, period_end=reporting_period, period_start="2026-07-01", duration_days_range=(85, 95)
         )
 
+        quarterly_margin_pct: Optional[float] = None
+        if q3_ebit is not None and q3_rev is not None and q3_rev > 0:
+            quarterly_margin_pct = round((q3_ebit / q3_rev) * 100, 2)
+
         ttm_ebit: Optional[float] = None
         ebit_accessions: List[str] = []
         ebit_formula = ""
@@ -476,6 +523,7 @@ class FactReconciler:
         delta_ebit = ttm_ebit - base_ebit if ttm_ebit is not None and base_ebit is not None else None
         delta_margin = ttm_margin - base_margin if ttm_margin is not None and base_margin is not None else None
 
+        q3_context = f" Standalone Q3: ${q3_ebit / 1e6:.1f}M ({quarterly_margin_pct:.2f}% quarterly margin)." if (q3_ebit is not None and quarterly_margin_pct is not None) else ""
         changes.append(
             ReconciledFinancialChange(
                 metric_key="operating_income",
@@ -491,7 +539,7 @@ class FactReconciler:
                 concept="OperatingIncomeLoss (TTM multi-period derivation)",
                 period_start="2025-10-01",
                 period_end=reporting_period,
-                accounting_context=f"Operating margin: {ttm_margin:.2f}% (vs baseline {base_margin:.2f}%, delta: {delta_margin:+.2f}%). Formula: {ebit_formula}" if ttm_margin else ebit_formula,
+                accounting_context=f"Operating margin: {ttm_margin:.2f}% TTM (vs baseline {base_margin:.2f}%, delta: {delta_margin:+.2f}%).{q3_context} Formula: {ebit_formula}" if ttm_margin else ebit_formula,
                 status=FactStatus.DERIVED if ttm_ebit is not None else FactStatus.UNRESOLVED,
                 is_missing_unresolved=(ttm_ebit is None),
                 source_accessions=ebit_accessions,
@@ -585,13 +633,19 @@ class FactReconciler:
             "revenue_period": f"TTM (Ended {reporting_period})" if ttm_rev is not None else "UNRESOLVED",
             "operating_income": ttm_ebit,
             "operating_margin_pct": round(ttm_margin, 2) if ttm_margin is not None else None,
+            "quarterly_revenue": q3_rev,
+            "quarterly_operating_income": q3_ebit,
+            "quarterly_operating_margin_pct": quarterly_margin_pct,
+            "quarterly_period_start": "2026-07-01",
+            "quarterly_period_end": reporting_period,
             "cash_and_equivalents": cash_val,
+            "short_term_investments": sti_val,
             "total_cash_and_investments": draft_total_cash_inv,
             "total_financial_debt": final_debt,
             "debt_display": f"${final_debt / 1e6:.1f}M" if final_debt is not None else "UNRESOLVED",
             "net_debt_bridge": draft_net_debt,
             "capital_structure_position": ("NET_CASH" if draft_net_debt < 0 else "NET_DEBT") if draft_net_debt is not None else "UNRESOLVED",
-            "bridge_note": f"Unrestricted cash (${cash_val / 1e9:.2f}B) less funded debt (${final_debt / 1e6:.1f}M) yields ${abs(draft_net_debt) / 1e9:.2f}B net cash bridge." if (draft_net_debt is not None and cash_val is not None and final_debt is not None) else "Net debt bridge unconfirmed.",
+            "bridge_note": f"Unrestricted cash (${cash_val / 1e9:.2f}B) less funded debt (${final_debt / 1e6:.1f}M) yields ${abs(draft_net_debt) / 1e9:.2f}B net cash bridge." if (draft_net_debt is not None and cash_val is not None and final_debt is not None and draft_net_debt < 0) else (f"Funded debt (${final_debt / 1e6:.1f}M) exceeds cash (${cash_val / 1e6:.1f}M) yielding ${draft_net_debt / 1e6:.1f}M net debt." if (draft_net_debt is not None and cash_val is not None and final_debt is not None) else "Net debt bridge unconfirmed."),
             "selected_share_basis": {
                 "basis_type": "GAAP_DILUTED_WEIGHTED_AVERAGE",
                 "source": f"Form 10-Q Q3 2026 ended {reporting_period} (accn {accession_number})",
@@ -607,5 +661,19 @@ class FactReconciler:
                 "provenance_accessions": cfo_accessions,
             }
         })
+
+        if self.last_facts_receipt:
+            draft_profile["company_facts_receipt"] = self.last_facts_receipt
+        elif facts_data is not None:
+            facts_raw = json.dumps(facts_data).encode("utf-8")
+            draft_profile["company_facts_receipt"] = {
+                "object_type": "COMPANY_FACTS_JSON",
+                "url": f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik.strip().zfill(10)}.json",
+                "retrieval_time_utc": datetime.utcnow().isoformat() + "Z",
+                "byte_count": len(facts_raw),
+                "sha256": hashlib.sha256(facts_raw).hexdigest(),
+                "content_type": "application/json",
+                "retrieval_mode": "SYNTHETIC_FIXTURE",
+            }
 
         return draft_profile, changes, accounting_exceptions, undisclosed_info

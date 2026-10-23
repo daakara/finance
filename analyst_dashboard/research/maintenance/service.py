@@ -142,18 +142,18 @@ class ResearchMaintenanceService:
 
         # Check if rejected non-periodic form (e.g. 8-K)
         if event.processing_state == EventProcessingState.REJECTED_MISIDENTIFIED:
-            self.register.register_event(event, fail_if_duplicate=False)
+            self.register.register_event(event, fail_if_duplicate=False, allow_overwrite=force_refresh)
             return None, event, poll_warnings
 
         # Step 3: Register event (with duplicate prevention and retry support)
-        if self.register.has_event(clean_sym, event.accession_number, is_replay=is_replay):
+        if not force_refresh and self.register.has_event(clean_sym, event.accession_number, is_replay=is_replay):
             if not self.register.can_retry(clean_sym, event.accession_number, is_replay=is_replay):
                 existing = self.register.get_event(clean_sym, event.accession_number, is_replay=is_replay)
                 msg = f"Duplicate accession prevented: Filing {event.accession_number} for {clean_sym} is already completed."
                 logger.info(msg)
                 return None, existing, [msg]
 
-        self.register.register_event(event, fail_if_duplicate=False)
+        self.register.register_event(event, fail_if_duplicate=False, allow_overwrite=force_refresh)
 
         # Step 4: Reconcile financial facts
         try:
@@ -165,6 +165,10 @@ class ResearchMaintenanceService:
                 baseline_profile=baseline_profile,
                 facts_data=facts_data,
             )
+            if reconciled_profile.get("company_facts_receipt"):
+                if event.source_receipts is None:
+                    event.source_receipts = {}
+                event.source_receipts["COMPANY_FACTS_JSON"] = reconciled_profile["company_facts_receipt"]
             self.register.update_event_state(
                 symbol=clean_sym,
                 accession_number=event.accession_number,
@@ -252,7 +256,7 @@ class ResearchMaintenanceService:
             )
             return None, event, [err_msg]
 
-        # Update event record with packet pointers
+        # Update event record with packet pointers and cryptographic receipts
         self.register.update_event_state(
             symbol=clean_sym,
             accession_number=event.accession_number,
@@ -260,6 +264,9 @@ class ResearchMaintenanceService:
             is_replay=is_replay,
             successor_draft_id=packet.draft_successor_id,
             review_packet_id=packet.packet_id,
+            index_sha256=event.index_sha256,
+            sha256=event.sha256,
+            source_receipts=event.source_receipts,
         )
 
         return packet, event, poll_warnings

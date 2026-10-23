@@ -74,6 +74,8 @@ class PacketGenerator:
             "company_facts_url": event.company_facts_url,
             "retrieval_time_utc": event.retrieval_time_utc,
             "is_replay": event.is_replay,
+            "sha256": event.sha256,
+            "source_receipts": event.source_receipts,
         }
 
         packet = ReviewPacket(
@@ -126,6 +128,11 @@ class PacketGenerator:
 
         replay_badge = " *(EXPLICIT HISTORICAL REPLAY)*" if packet.is_replay else ""
 
+        idx_sha = meta.get("index_sha256")
+        idx_sha_display = f"`{idx_sha}`" if idx_sha else "`UNAVAILABLE (not retrieved or unhashed in bounded session)`"
+        doc_sha = meta.get("sha256")
+        doc_sha_display = f"`{doc_sha}`" if doc_sha else "`UNAVAILABLE (not retrieved or unhashed in bounded session)`"
+
         lines = [
             f"# ARX Terminal — Research Maintenance Review Packet: {packet.symbol}{replay_badge}",
             f"## Review Packet ID: `{packet.packet_id}`",
@@ -163,12 +170,16 @@ class PacketGenerator:
             f"| **Acceptance Time** | `{meta.get('acceptance_datetime_utc') or 'Recorded on SEC EDGAR'}` | Official SEC timestamp |",
             f"| **Accession Number** | `{meta.get('accession_number')}` | Unique SEC EDGAR archive accession |",
             f"| **Primary Document** | [{meta.get('primary_document')}]({meta.get('source_url')}) | SEC EDGAR primary HTML filing |",
+            f"| **Primary Doc SHA-256** | {doc_sha_display} | Cryptographic content receipt |",
             f"| **Filing Index** | [Index Page]({meta.get('index_url')}) | SEC EDGAR filing archive folder |",
-            f"| **Index SHA-256** | `{meta.get('index_sha256') or 'Verified via EDGAR index'}` | Cryptographic content receipt |",
+            f"| **Index SHA-256** | {idx_sha_display} | Cryptographic content receipt |",
             f"| **Submissions API** | [{packet.cik}]({meta.get('submissions_url')}) | SEC EDGAR JSON submissions endpoint |",
             f"| **Company Facts API** | [XBRL Facts]({meta.get('company_facts_url')}) | SEC EDGAR XBRL company facts endpoint |",
             f"| **Ingestion Time** | {meta.get('retrieval_time_utc')} | Retrieved by automated maintenance poller |",
             f"| **Processing State** | `REVIEW_PENDING` | Staged for research lead evaluation |",
+            "",
+            "> [!NOTE]",
+            "> **Receipt Verification Boundary:** A cryptographic SHA-256 hash establishes payload content identity and byte-level immutability against the retrieval record; it does not verify financial correctness.",
             "",
             "---",
             "",
@@ -220,15 +231,34 @@ class PacketGenerator:
             cagr_info = val.get("solved_5y_cagr", {})
             scenarios = val.get("scenarios", {})
 
+            resolved_assump = val.get("resolved_assumptions", {})
+            rev_p = resolved_assump.get("reverse_dcf_parameters", {})
+            sc_c_p = scenarios.get("conservative", {}).get("assumptions", {})
+            sc_b_p = scenarios.get("base", {}).get("assumptions", {})
+            sc_o_p = scenarios.get("optimistic", {}).get("assumptions", {})
+
+            ref_p_display = f"${ref_p:.2f}" if ref_p is not None else "UNAVAILABLE"
+            bps_val = cagr_info.get('delta_cagr_bps')
+            bps_display = f"{bps_val:+.0f} bps" if bps_val is not None else "N/A"
             lines.extend([
-                f"Reference Market Price: **${ref_p:.2f}** (Observed {ref_d}; held constant).  ",
+                f"Reference Market Price: **{ref_p_display}** (Observed {ref_d or 'N/A'}; held constant).  ",
                 "",
-                "#### A. Solved Reverse-DCF 5-Year Revenue CAGR",
-                f"- **Baseline Implied CAGR:** {cagr_info.get('baseline_cagr_pct')}%\n"
-                f"- **Draft Successor Implied CAGR:** {cagr_info.get('draft_cagr_pct')}%\n"
-                f"- **Delta:** **{cagr_info.get('delta_cagr_bps'):+.0f} bps** ({cagr_info.get('interpretation')})",
+                "#### A. Authoritative Resolved Valuation Assumptions",
+                "| Parameter | Reverse-DCF Target | Conservative Scenario | Base Scenario | Optimistic Scenario | Authoritative Source Path |",
+                "| :--- | :---: | :---: | :---: | :---: | :--- |",
+                f"| **5-Year Revenue CAGR** | Solved ({cagr_info.get('draft_cagr_pct', 'N/A')}%) | {sc_c_p.get('revenue_cagr_pct', 'N/A')}% | {sc_b_p.get('revenue_cagr_pct', 'N/A')}% | {sc_o_p.get('revenue_cagr_pct', 'N/A')}% | `baseline_dossier.valuation.scenarios` |",
+                f"| **Operating Margin** | {rev_p.get('operating_margin_pct', 'N/A')}% | {sc_c_p.get('operating_margin_pct', 'N/A')}% | {sc_b_p.get('operating_margin_pct', 'N/A')}% | {sc_o_p.get('operating_margin_pct', 'N/A')}% | `reverse_dcf_parameters` / `scenarios` |",
+                f"| **WACC** | {rev_p.get('wacc_pct', 'N/A')}% | {sc_c_p.get('wacc_pct', 'N/A')}% | {sc_b_p.get('wacc_pct', 'N/A')}% | {sc_o_p.get('wacc_pct', 'N/A')}% | `reverse_dcf_parameters` / `scenarios` |",
+                f"| **Terminal Growth** | {rev_p.get('terminal_growth_pct', 'N/A')}% | {sc_c_p.get('terminal_growth_pct', 'N/A')}% | {sc_b_p.get('terminal_growth_pct', 'N/A')}% | {sc_o_p.get('terminal_growth_pct', 'N/A')}% | `reverse_dcf_parameters` / `scenarios` |",
+                f"| **Effective Tax Rate** | {rev_p.get('tax_rate_pct', 'N/A')}% | {sc_c_p.get('tax_rate_pct', 'N/A')}% | {sc_b_p.get('tax_rate_pct', 'N/A')}% | {sc_o_p.get('tax_rate_pct', 'N/A')}% | `reverse_dcf_parameters` / `scenarios` |",
+                f"| **Reinvestment Rate** | {rev_p.get('reinvestment_rate_pct', 'N/A')}% | {sc_c_p.get('reinvestment_rate_pct', 'N/A')}% | {sc_b_p.get('reinvestment_rate_pct', 'N/A')}% | {sc_o_p.get('reinvestment_rate_pct', 'N/A')}% | `reverse_dcf_parameters` / `scenarios` |",
                 "",
-                "#### B. Conditional Scenario Differences",
+                "#### B. Solved Reverse-DCF 5-Year Revenue CAGR",
+                f"- **Baseline Implied CAGR:** {cagr_info.get('baseline_cagr_pct', 'N/A')}%\n"
+                f"- **Draft Successor Implied CAGR:** {cagr_info.get('draft_cagr_pct', 'N/A')}%\n"
+                f"- **Delta:** **{bps_display}** ({cagr_info.get('interpretation', 'N/A')})",
+                "",
+                "#### C. Conditional Scenario Differences",
                 "| Scenario | Baseline Per Share | Draft Per Share | Delta ($) | Delta (%) |",
                 "| :--- | :---: | :---: | :---: | :---: |",
             ])

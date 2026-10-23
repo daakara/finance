@@ -66,6 +66,25 @@ class FactStatus(str, Enum):
 
 
 @dataclass
+class SourceReceipt:
+    """
+    Cryptographic content receipt for a primary-source artifact.
+    Identifies exact object type, URL, byte count, SHA-256 digest, and retrieval mode.
+    """
+    object_type: str  # "INDEX_HTML", "PRIMARY_DOC_HTML", "SUBMISSIONS_JSON", "COMPANY_FACTS_JSON", "SYNTHETIC_FIXTURE"
+    url: str
+    retrieval_time_utc: str
+    byte_count: int
+    sha256: str
+    content_type: str = "text/html"
+    retained_path: Optional[str] = None
+    retrieval_mode: str = "LIVE"  # "LIVE", "CACHED", "SYNTHETIC_FIXTURE"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
 class MaintenanceEvent:
     """
     Durable primary-source filing event record.
@@ -90,6 +109,7 @@ class MaintenanceEvent:
     processing_state: EventProcessingState = EventProcessingState.REGISTERED
     is_replay: bool = False
     sha256: Optional[str] = None
+    source_receipts: Optional[Dict[str, Dict[str, Any]]] = None
     successor_draft_id: Optional[str] = None
     review_packet_id: Optional[str] = None
     error_message: Optional[str] = None
@@ -267,12 +287,13 @@ class EventRegister:
         self,
         event: MaintenanceEvent,
         fail_if_duplicate: bool = True,
+        allow_overwrite: bool = False,
     ) -> MaintenanceEvent:
         key = self._make_key(event.symbol, event.accession_number, is_replay=event.is_replay)
         if key in self.events:
             existing = self.events[key]
-            # If the event previously failed or was interrupted, allow safe retry
-            if self.can_retry(event.symbol, event.accession_number, is_replay=event.is_replay):
+            # If the event previously failed or was interrupted, or allow_overwrite is set, allow safe update
+            if allow_overwrite or self.can_retry(event.symbol, event.accession_number, is_replay=event.is_replay):
                 self.events[key] = event
                 if self.register_path:
                     self.save()
@@ -301,6 +322,9 @@ class EventRegister:
         error_message: Optional[str] = None,
         failed_stage: Optional[str] = None,
         reconciliation_summary: Optional[Dict[str, Any]] = None,
+        index_sha256: Optional[str] = None,
+        sha256: Optional[str] = None,
+        source_receipts: Optional[Dict[str, Any]] = None,
     ) -> MaintenanceEvent:
         key = self._make_key(symbol, accession_number, is_replay=is_replay)
         if key not in self.events:
@@ -317,6 +341,12 @@ class EventRegister:
             evt.failed_stage = failed_stage
         if reconciliation_summary:
             evt.reconciliation_summary = reconciliation_summary
+        if index_sha256:
+            evt.index_sha256 = index_sha256
+        if sha256:
+            evt.sha256 = sha256
+        if source_receipts:
+            evt.source_receipts = source_receipts
         if self.register_path:
             self.save()
         return evt

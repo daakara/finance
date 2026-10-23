@@ -7,6 +7,7 @@ announcements, and manages durable event registration.
 """
 
 from datetime import datetime
+import hashlib
 import json
 import logging
 import os
@@ -71,6 +72,7 @@ class SecEventPoller:
         self.cache_ttl_sec = cache_ttl_sec
         self.last_request_time = 0.0
         self.user_agent = SEC_USER_AGENT
+        self.last_submissions_receipt: Optional[Dict[str, Any]] = None
         if self.cache_dir:
             self.cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -87,21 +89,49 @@ class SecEventPoller:
         """
         cik_clean = cik.strip().zfill(10)
         cache_file = self.cache_dir / f"CIK{cik_clean}_submissions.json" if self.cache_dir else None
+        url = f"https://data.sec.gov/submissions/CIK{cik_clean}.json"
 
         # Check cache freshness
         if not force_refresh and cache_file and cache_file.exists():
             file_age = time.time() - cache_file.stat().st_mtime
             if file_age < self.cache_ttl_sec or self.offline_mode:
                 try:
-                    with open(cache_file, "r", encoding="utf-8") as f:
-                        return json.load(f)
+                    raw = cache_file.read_bytes()
+                    data = json.loads(raw.decode("utf-8"))
+                    self.last_submissions_receipt = {
+                        "object_type": "SUBMISSIONS_JSON",
+                        "url": url,
+                        "retrieval_time_utc": datetime.utcfromtimestamp(cache_file.stat().st_mtime).isoformat() + "Z",
+                        "byte_count": len(raw),
+                        "sha256": hashlib.sha256(raw).hexdigest(),
+                        "content_type": "application/json",
+                        "retained_path": str(cache_file),
+                        "retrieval_mode": "CACHED",
+                    }
+                    return data
                 except Exception as e:
                     logger.warning(f"Error reading cache file {cache_file}: {e}. Refetching.")
+        elif self.offline_mode and cache_file and cache_file.exists():
+            try:
+                raw = cache_file.read_bytes()
+                data = json.loads(raw.decode("utf-8"))
+                self.last_submissions_receipt = {
+                    "object_type": "SUBMISSIONS_JSON",
+                    "url": url,
+                    "retrieval_time_utc": datetime.utcfromtimestamp(cache_file.stat().st_mtime).isoformat() + "Z",
+                    "byte_count": len(raw),
+                    "sha256": hashlib.sha256(raw).hexdigest(),
+                    "content_type": "application/json",
+                    "retained_path": str(cache_file),
+                    "retrieval_mode": "CACHED",
+                }
+                return data
+            except Exception as e:
+                logger.warning(f"Error reading cache file {cache_file}: {e}.")
 
         if self.offline_mode:
             raise FileNotFoundError(f"Offline mode enabled, but cache file {cache_file} was not found or invalid.")
 
-        url = f"https://data.sec.gov/submissions/CIK{cik_clean}.json"
         self._rate_limit()
         headers = {
             "User-Agent": self.user_agent,
@@ -116,6 +146,16 @@ class SecEventPoller:
                 if resp.info().get("Content-Encoding") == "gzip" or (len(raw) > 2 and raw[:2] == b"\x1f\x8b"):
                     raw = gzip.decompress(raw)
                 data = json.loads(raw.decode("utf-8"))
+                self.last_submissions_receipt = {
+                    "object_type": "SUBMISSIONS_JSON",
+                    "url": url,
+                    "retrieval_time_utc": datetime.utcnow().isoformat() + "Z",
+                    "byte_count": len(raw),
+                    "sha256": hashlib.sha256(raw).hexdigest(),
+                    "content_type": "application/json",
+                    "retained_path": str(cache_file) if cache_file else None,
+                    "retrieval_mode": "LIVE",
+                }
         except Exception as e:
             logger.error(f"Failed to fetch submissions for CIK {cik_clean} from SEC: {e}")
             raise
@@ -125,6 +165,158 @@ class SecEventPoller:
                 json.dump(data, f, indent=2)
 
         return data
+
+    def retrieve_filing_artifacts(
+        self,
+        cik: str,
+        accession_number: str,
+        primary_doc: str,
+        force_refresh: bool = False,
+    ) -> Tuple[Optional[str], Optional[str], Dict[str, Dict[str, Any]]]:
+        """
+        Retrieves actual primary-source bytes for filing index and primary HTML document,
+        computes SHA-256 digests directly from retrieved bytes, and returns:
+            (index_sha256, primary_doc_sha256, source_receipts)
+        If an artifact cannot be retrieved (e.g. offline mode without cache, or network error),
+        records the limitation honestly without fabricating metadata.
+        """
+        clean_cik = str(int(cik.strip()))
+        clean_acc = accession_number.strip().replace("-", "")
+        receipts: Dict[str, Dict[str, Any]] = {}
+
+        # 1. Submissions receipt
+        if self.last_submissions_receipt:
+            receipts["SUBMISSIONS_JSON"] = self.last_submissions_receipt
+
+        # 2. Index HTML
+        index_url = format_sec_index_url(cik, accession_number)
+        index_cache = self.cache_dir / f"CIK{clean_cik.zfill(10)}_{clean_acc}_index.htm" if self.cache_dir else None
+        index_bytes: Optional[bytes] = None
+        index_mode = "LIVE"
+
+        if not force_refresh and index_cache and index_cache.exists():
+            file_age = time.time() - index_cache.stat().st_mtime
+            if file_age < self.cache_ttl_sec or self.offline_mode:
+                try:
+                    index_bytes = index_cache.read_bytes()
+                    index_mode = "CACHED"
+                except Exception as e:
+                    logger.warning(f"Error reading index cache {index_cache}: {e}")
+
+        if index_bytes is None and not self.offline_mode:
+            try:
+                self._rate_limit()
+                req = urllib.request.Request(index_url, headers={"User-Agent": self.user_agent, "Accept-Encoding": "gzip, deflate"})
+                import gzip
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    raw = resp.read()
+                    if resp.info().get("Content-Encoding") == "gzip" or (len(raw) > 2 and raw[:2] == b"\x1f\x8b"):
+                        raw = gzip.decompress(raw)
+                    index_bytes = raw
+                    index_mode = "LIVE"
+                if index_cache:
+                    index_cache.write_bytes(index_bytes)
+            except Exception as e:
+                logger.warning(f"Could not fetch index HTML from {index_url}: {e}")
+
+        # Fallback to local cache if live fetch failed
+        if index_bytes is None and index_cache and index_cache.exists():
+            try:
+                index_bytes = index_cache.read_bytes()
+                index_mode = "CACHED"
+            except Exception as e:
+                logger.warning(f"Error reading index cache fallback {index_cache}: {e}")
+
+        index_sha256: Optional[str] = None
+        if index_bytes is not None:
+            index_sha256 = hashlib.sha256(index_bytes).hexdigest()
+            receipts["INDEX_HTML"] = {
+                "object_type": "INDEX_HTML",
+                "url": index_url,
+                "retrieval_time_utc": datetime.utcnow().isoformat() + "Z",
+                "byte_count": len(index_bytes),
+                "sha256": index_sha256,
+                "content_type": "text/html",
+                "retained_path": str(index_cache) if index_cache else None,
+                "retrieval_mode": index_mode,
+            }
+        else:
+            receipts["INDEX_HTML"] = {
+                "object_type": "INDEX_HTML",
+                "url": index_url,
+                "retrieval_time_utc": datetime.utcnow().isoformat() + "Z",
+                "byte_count": 0,
+                "sha256": None,
+                "content_type": "text/html",
+                "retrieval_mode": "UNAVAILABLE",
+                "limitation": "Filing index HTML bytes unretrieved (offline mode or network error).",
+            }
+
+        # 3. Primary Doc HTML
+        doc_url = format_sec_primary_url(cik, accession_number, primary_doc)
+        doc_cache = self.cache_dir / f"CIK{clean_cik.zfill(10)}_{clean_acc}_{primary_doc}" if self.cache_dir else None
+        doc_bytes: Optional[bytes] = None
+        doc_mode = "LIVE"
+
+        if not force_refresh and doc_cache and doc_cache.exists():
+            file_age = time.time() - doc_cache.stat().st_mtime
+            if file_age < self.cache_ttl_sec or self.offline_mode:
+                try:
+                    doc_bytes = doc_cache.read_bytes()
+                    doc_mode = "CACHED"
+                except Exception as e:
+                    logger.warning(f"Error reading doc cache {doc_cache}: {e}")
+
+        if doc_bytes is None and not self.offline_mode:
+            try:
+                self._rate_limit()
+                req = urllib.request.Request(doc_url, headers={"User-Agent": self.user_agent, "Accept-Encoding": "gzip, deflate"})
+                import gzip
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    raw = resp.read()
+                    if resp.info().get("Content-Encoding") == "gzip" or (len(raw) > 2 and raw[:2] == b"\x1f\x8b"):
+                        raw = gzip.decompress(raw)
+                    doc_bytes = raw
+                    doc_mode = "LIVE"
+                if doc_cache:
+                    doc_cache.write_bytes(doc_bytes)
+            except Exception as e:
+                logger.warning(f"Could not fetch primary doc HTML from {doc_url}: {e}")
+
+        # Fallback to local cache if live fetch failed
+        if doc_bytes is None and doc_cache and doc_cache.exists():
+            try:
+                doc_bytes = doc_cache.read_bytes()
+                doc_mode = "CACHED"
+            except Exception as e:
+                logger.warning(f"Error reading doc cache fallback {doc_cache}: {e}")
+
+        doc_sha256: Optional[str] = None
+        if doc_bytes is not None:
+            doc_sha256 = hashlib.sha256(doc_bytes).hexdigest()
+            receipts["PRIMARY_DOC_HTML"] = {
+                "object_type": "PRIMARY_DOC_HTML",
+                "url": doc_url,
+                "retrieval_time_utc": datetime.utcnow().isoformat() + "Z",
+                "byte_count": len(doc_bytes),
+                "sha256": doc_sha256,
+                "content_type": "text/html",
+                "retained_path": str(doc_cache) if doc_cache else None,
+                "retrieval_mode": doc_mode,
+            }
+        else:
+            receipts["PRIMARY_DOC_HTML"] = {
+                "object_type": "PRIMARY_DOC_HTML",
+                "url": doc_url,
+                "retrieval_time_utc": datetime.utcnow().isoformat() + "Z",
+                "byte_count": 0,
+                "sha256": None,
+                "content_type": "text/html",
+                "retrieval_mode": "UNAVAILABLE",
+                "limitation": "Primary document HTML bytes unretrieved (offline mode or network error).",
+            }
+
+        return index_sha256, doc_sha256, receipts
 
     def discover_filing_event(
         self,
@@ -203,6 +395,7 @@ class SecEventPoller:
 
                     # Valid periodic report found
                     url = format_sec_primary_url(cik, clean_acc, doc)
+                    idx_hash, doc_hash, receipts = self.retrieve_filing_artifacts(cik, clean_acc, doc, force_refresh=force_refresh)
                     event = MaintenanceEvent(
                         event_id=f"{'REPLAY-' if is_replay else 'EVT-'}{symbol.upper()}-{clean_acc}",
                         symbol=symbol.upper(),
@@ -217,10 +410,13 @@ class SecEventPoller:
                         primary_document=doc,
                         acceptance_datetime_utc=acc_dt,
                         index_url=format_sec_index_url(cik, clean_acc),
+                        index_sha256=idx_hash,
                         submissions_url=submissions_url,
                         company_facts_url=company_facts_url,
                         processing_state=EventProcessingState.REGISTERED,
                         is_replay=is_replay,
+                        sha256=doc_hash,
+                        source_receipts=receipts,
                     )
                     return event, warnings
 
@@ -239,12 +435,13 @@ class SecEventPoller:
                 continue
 
             # If this accession is already completed in register, continue past it to find any other eligible filings!
-            if self.register.is_completed(symbol, acc, is_replay=is_replay):
+            if not force_refresh and self.register.is_completed(symbol, acc, is_replay=is_replay):
                 logger.info(f"Filing {acc} is already completed; checking next candidate filing.")
                 continue
 
             if form in QUALIFYING_PERIODIC_FORMS:
                 url = format_sec_primary_url(cik, acc, doc)
+                idx_hash, doc_hash, receipts = self.retrieve_filing_artifacts(cik, acc, doc, force_refresh=force_refresh)
                 event = MaintenanceEvent(
                     event_id=f"{'REPLAY-' if is_replay else 'EVT-'}{symbol.upper()}-{acc}",
                     symbol=symbol.upper(),
@@ -259,10 +456,13 @@ class SecEventPoller:
                     primary_document=doc,
                     acceptance_datetime_utc=acc_dt,
                     index_url=format_sec_index_url(cik, acc),
+                    index_sha256=idx_hash,
                     submissions_url=submissions_url,
                     company_facts_url=company_facts_url,
                     processing_state=EventProcessingState.REGISTERED,
                     is_replay=is_replay,
+                    sha256=doc_hash,
+                    source_receipts=receipts,
                 )
                 return event, warnings
 

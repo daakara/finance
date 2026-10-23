@@ -15,11 +15,54 @@
     "source_url": "https://www.sec.gov/Archives/edgar/data/1035983/000110465926118159/fix-20260930x10q.htm",
     "primary_document": "fix-20260930x10q.htm",
     "index_url": "https://www.sec.gov/Archives/edgar/data/1035983/000110465926118159/0001104659-26-118159-index.htm",
-    "index_sha256": null,
+    "index_sha256": "1a249254ec6612b12fc60c0d477707ec24726d102760128d8d428aed2ab2c2d9",
     "submissions_url": "https://data.sec.gov/submissions/CIK0001035983.json",
     "company_facts_url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001035983.json",
-    "retrieval_time_utc": "2026-10-23T21:23:56.473300Z",
-    "is_replay": false
+    "retrieval_time_utc": "2026-10-23T22:04:07.312448Z",
+    "is_replay": false,
+    "sha256": "54178c98d565d914df375716a118d10bc46150811ecef707218a3db39337751c",
+    "source_receipts": {
+      "SUBMISSIONS_JSON": {
+        "object_type": "SUBMISSIONS_JSON",
+        "url": "https://data.sec.gov/submissions/CIK0001035983.json",
+        "retrieval_time_utc": "2026-10-23T22:04:06.905514Z",
+        "byte_count": 157980,
+        "sha256": "8f1a5701e68c09cda6c2fda994982eb3e8f83ba16252720554f4ec955327c563",
+        "content_type": "application/json",
+        "retained_path": "C:\\Users\\akara\\Documents\\Projects\\finance-research-maintenance-pilot\\data\\research\\sourced_fundamentals\\raw\\CIK0001035983_submissions.json",
+        "retrieval_mode": "LIVE"
+      },
+      "INDEX_HTML": {
+        "object_type": "INDEX_HTML",
+        "url": "https://www.sec.gov/Archives/edgar/data/1035983/000110465926118159/0001104659-26-118159-index.htm",
+        "retrieval_time_utc": "2026-10-23T22:04:06.999630Z",
+        "byte_count": 11317,
+        "sha256": "1a249254ec6612b12fc60c0d477707ec24726d102760128d8d428aed2ab2c2d9",
+        "content_type": "text/html",
+        "retained_path": "C:\\Users\\akara\\Documents\\Projects\\finance-research-maintenance-pilot\\data\\research\\sourced_fundamentals\\raw\\CIK0001035983_000110465926118159_index.htm",
+        "retrieval_mode": "LIVE"
+      },
+      "PRIMARY_DOC_HTML": {
+        "object_type": "PRIMARY_DOC_HTML",
+        "url": "https://www.sec.gov/Archives/edgar/data/1035983/000110465926118159/fix-20260930x10q.htm",
+        "retrieval_time_utc": "2026-10-23T22:04:07.312448Z",
+        "byte_count": 2119788,
+        "sha256": "54178c98d565d914df375716a118d10bc46150811ecef707218a3db39337751c",
+        "content_type": "text/html",
+        "retained_path": "C:\\Users\\akara\\Documents\\Projects\\finance-research-maintenance-pilot\\data\\research\\sourced_fundamentals\\raw\\CIK0001035983_000110465926118159_fix-20260930x10q.htm",
+        "retrieval_mode": "LIVE"
+      },
+      "COMPANY_FACTS_JSON": {
+        "object_type": "COMPANY_FACTS_JSON",
+        "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001035983.json",
+        "retrieval_time_utc": "2026-10-23T22:02:21.442775Z",
+        "byte_count": 6831696,
+        "sha256": "394905e50c0750286dacda823f0b48c1b7252dda6da37646847ab8e35a1459e7",
+        "content_type": "application/json",
+        "retained_path": "C:\\Users\\akara\\Documents\\Projects\\finance-research-maintenance-pilot\\data\\research\\sourced_fundamentals\\raw\\CIK0001035983_companyfacts.json",
+        "retrieval_mode": "CACHED"
+      }
+    }
   },
   "material_financial_changes": [
     {
@@ -129,7 +172,7 @@
       "concept": "OperatingIncomeLoss (TTM multi-period derivation)",
       "period_start": "2025-10-01",
       "period_end": "2026-09-30",
-      "accounting_context": "Operating margin: 16.70% (vs baseline 16.47%, delta: +0.23%). Formula: Annual_2025 ($1314.6M) - 9M_2025 ($887.8M) + 9M_2026 ($1668.3M)",
+      "accounting_context": "Operating margin: 16.70% TTM (vs baseline 16.47%, delta: +0.23%). Standalone Q3: $624.6M (16.58% quarterly margin). Formula: Annual_2025 ($1314.6M) - 9M_2025 ($887.8M) + 9M_2026 ($1668.3M)",
       "status": "DERIVED",
       "is_missing_unresolved": false,
       "source_accessions": [
@@ -168,17 +211,17 @@
       "conclusion_key": "decisive_reason",
       "conclusion_label": "Decisive Reason for Quality Watch",
       "baseline_state": "Comfort Systems USA presents an exceptional balance sheet ($1.80B net cash) and high capital returns (>28% ROIC), supported by multi-year modular HVAC backlogs for hyperscale data center construction. However, the frozen reference market price of $1439.07 embeds a demanding 30.07% 5-year revenue CAGR at elevated 15.0% operating margins. Retained on watch: await market pullback toward mid-cycle base valuation range ($1,050 - $1,100) or evidence of margin persistence.",
-      "draft_state": "Net cash reserves expanded to $2108.5M while TTM revenue grew to $12.54B at 16.70% operating margin. Solved 5-year revenue CAGR holding 15.0% margin and 9.5% WACC fixed shifted from 30.07% to 26.76%. Market reference price ($1439.07) remains above base intrinsic value ($1215.00). Core decisive thesis (await pullback toward modeled value or evidence of margin persistence) is maintained.",
+      "draft_state": "Net cash buffer expanded from $1800.7M to $2108.5M. TTM revenue grew from $11.23B to $12.54B. Trailing 12-month margin was 16.70%. Solved 5-year revenue CAGR eased from 30.07% to 26.76%. Market reference price ($1439.07) remains above base intrinsic value ($1215.00). Core decisive thesis is maintained.",
       "interpretation_type": "CALCULATED_DELTA",
       "materiality": "INCREMENTAL_POSITIVE",
       "owner_judgment_required": false,
-      "notes": "Operational metrics updated from primary filing facts; required growth eased but remains above historical trend."
+      "notes": "Quantitative comparison derived directly from reconciled filing facts and recomputed DCF."
     },
     {
       "conclusion_key": "financial_resilience",
       "conclusion_label": "Balance Sheet Resilience & Capital Structure",
       "baseline_state": "Prong 1: Exceptional balance sheet ($1.80B net cash, $54.1M debt).",
-      "draft_state": "Net cash buffer expanded: Unrestricted cash carrying value $2158.0M vs funded debt $49.6M. Capital structure remains in strong net cash position.",
+      "draft_state": "Net cash buffer: Unrestricted cash carrying value $2158.0M vs funded debt $49.6M. Capital structure remains in strong net cash position ($2108.5M net cash).",
       "interpretation_type": "FACT_CHANGE",
       "materiality": "INCREMENTAL_POSITIVE",
       "owner_judgment_required": false,
@@ -198,11 +241,11 @@
       "conclusion_key": "invalidation_condition",
       "conclusion_label": "Thesis Invalidation Triggers",
       "baseline_state": "Backlog book-to-bill falling below 0.95x or quarterly operating margin dropping below 13.0%.",
-      "draft_state": "Quarterly operating margin (16.70% TTM) did not breach the approved 13.0% invalidation floor. Backlog book-to-bill ratio is an evidence limitation not disclosed in standardized primary XBRL; condition is not triggered by available reported evidence, but remains UNRESOLVED via primary filing alone.",
+      "draft_state": "Standalone quarterly operating margin (16.58%) did not breach the approved 13.0% invalidation floor. (Trailing 12-month margin is 16.70%). Backlog book-to-bill ratio is an evidence limitation not disclosed in standardized primary XBRL; condition is not triggered by available reported evidence, but remains UNRESOLVED via primary filing alone.",
       "interpretation_type": "UNRESOLVED_EVIDENCE",
       "materiality": "NEUTRAL",
       "owner_judgment_required": false,
-      "notes": "Margin condition evaluated; backlog book-to-bill requires human contract audit."
+      "notes": "Quarterly margin evaluated; backlog book-to-bill requires human contract audit."
     },
     {
       "conclusion_key": "main_uncertainty",
@@ -227,12 +270,22 @@
     "valuation_machinery_status": "COMPUTED_VERIFIED",
     "reference_price": 1439.07,
     "reference_date": "2026-10-16",
-    "fixed_assumptions": {
-      "operating_margin_pct": 15.0,
-      "wacc_pct": 9.5,
-      "terminal_growth_pct": 2.5,
-      "tax_rate_pct": 21.0,
-      "reinvestment_rate_pct": 15.0
+    "resolved_assumptions": {
+      "authoritative_paths": {
+        "reverse_dcf": "baseline_dossier.valuation.reverse_dcf_parameters",
+        "scenarios": "baseline_dossier.valuation.scenarios"
+      },
+      "reverse_dcf_parameters": {
+        "operating_margin_pct": 15.0,
+        "wacc_pct": 9.5,
+        "terminal_growth_pct": 2.5,
+        "tax_rate_pct": 21.0,
+        "reinvestment_rate_pct": 15.0
+      },
+      "solver_verification": {
+        "baseline_solver": "VERIFIED (Roundtrip per-share $1438.85 matches target $1439.07)",
+        "draft_solver": "VERIFIED (Roundtrip per-share $1438.91 matches target $1439.07)"
+      }
     },
     "solved_5y_cagr": {
       "baseline_cagr_pct": 30.07,
@@ -245,29 +298,53 @@
         "baseline_per_share": 533.46,
         "draft_per_share": 600.44,
         "delta_dollars": 66.98,
-        "delta_pct": 12.55
+        "delta_pct": 12.56,
+        "assumptions": {
+          "revenue_cagr_pct": 12.0,
+          "operating_margin_pct": 12.5,
+          "wacc_pct": 10.5,
+          "terminal_growth_pct": 2.0,
+          "tax_rate_pct": 21.0,
+          "reinvestment_rate_pct": 15.0
+        }
       },
       "base": {
         "baseline_per_share": 1081.99,
         "draft_per_share": 1215.0,
         "delta_dollars": 133.01,
-        "delta_pct": 12.29
+        "delta_pct": 12.29,
+        "assumptions": {
+          "revenue_cagr_pct": 22.0,
+          "operating_margin_pct": 15.0,
+          "wacc_pct": 9.5,
+          "terminal_growth_pct": 2.5,
+          "tax_rate_pct": 21.0,
+          "reinvestment_rate_pct": 15.0
+        }
       },
       "optimistic": {
         "baseline_per_share": 1996.38,
         "draft_per_share": 2239.47,
         "delta_dollars": 243.09,
-        "delta_pct": 12.18
+        "delta_pct": 12.18,
+        "assumptions": {
+          "revenue_cagr_pct": 30.0,
+          "operating_margin_pct": 16.5,
+          "wacc_pct": 8.5,
+          "terminal_growth_pct": 3.0,
+          "tax_rate_pct": 21.0,
+          "reinvestment_rate_pct": 15.0
+        }
       }
     }
   },
   "proposed_disposition": "MAINTAIN",
-  "disposition_rationale": "Proposed disposition: MAINTAIN Quality Watch status (WATCH_CONDITIONS). Operational results in Q3 2026 expanded net cash buffer to $2108.5M and eased solved reverse-DCF CAGR to 26.76%. However, reference market price ($1439.07) remains above mid-cycle base intrinsic value ($1215.00), and core hyperscale cyclicality remains unresolvable. No thesis invalidation occurred; maintain watch status pending human Research Lead review.",
+  "disposition_rationale": "Proposed disposition: MAINTAIN Quality Watch status (WATCH_CONDITIONS). Operational results in reporting period ended 2026-09-30: Net cash buffer expanded from $1800.7M to $2108.5M. Lower required revenue growth (26.76% vs 30.07%, -331 bps) to justify reference price due to larger starting revenue base and expanded net cash buffer. No thesis invalidation occurred; maintain watch status pending human Research Lead review.",
   "questions_requiring_owner_judgment": [
-    "Base modeled value shifted from $1081.99 to $1215.00 (+12.3%). Does the Research Lead / Product Owner approve updating the price watch entry corridor, or should existing ($1,050 - $1,100) thresholds remain unchanged?",
-    "Should normalized operating margin assumption (15.0%) be reassessed at the next annual research review given sustained 16.70% trailing 12-month margin execution?"
+    "Base modeled value shifted from $1081.99 to $1215.00 (+12.3%). Does the Research Lead / Product Owner approve updating the price watch entry corridor, or should existing approved thresholds (Priced attractive for entry if share price pulls back to base-case modeled value range ($1,050 - $1,100).) remain unchanged?",
+    "Should normalized operating margin assumption (15.0%) be reassessed at the next annual research review given trailing margin execution (16.70%)?"
   ],
   "stopping_rule": "Evidence collection complete for Form 10-Q (Period: 2026-09-30). All reported primary facts reconciled and conditional valuation differences calculated. Core customer capex cycle uncertainty remains an evidence limitation that cannot be further resolved via SEC quarterly filings until FY2026 Form 10-K. Cease investigation.",
-  "created_at_utc": "2026-10-23T21:23:56.562561Z",
+  "created_at_utc": "2026-10-23T22:04:07.397920Z",
   "is_replay": false
 }
