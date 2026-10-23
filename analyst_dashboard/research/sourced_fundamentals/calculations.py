@@ -239,6 +239,7 @@ def compute_derived_metrics(
             provenance_notes=dshares_fact.notes,
         )
 
+    cshares_fact = facts.get("common_shares_outstanding")
     cshares_meta = None
     if cshares_fact and cshares_fact.value is not None:
         cshares_meta = ShareDenominatorMetadata(

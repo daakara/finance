@@ -64,6 +64,9 @@ from analyst_dashboard.research.sourced_fundamentals.identity import (
     verify_adr_identity_binding,
     ATTRIBUTABLE_SEC_IDENTITY_AUTHORITY,
 )
+from analyst_dashboard.research.sourced_fundamentals.calculations import (
+    compute_derived_metrics,
+)
 
 LEDGER_PATH = os.path.join(
     os.path.dirname(__file__), "..", "analyst_dashboard", "research", "sourced_fundamentals", "sourced_fundamentals_ledger.json"
@@ -1053,3 +1056,35 @@ def test_adversarial_12_numerical_parity_for_compatible_existing_inputs():
     assert abs(b_val - 1068.94) < 0.10, f"Base {b_val} != 1068.94"
     assert abs(o_val - 1971.75) < 0.10, f"Optimistic {o_val} != 1971.75"
     assert abs(rev_g - 30.43) < 0.10, f"Reverse DCF {rev_g} != 30.43"
+
+
+# 13. Regression test for PR #51 cshares_fact binding in compute_derived_metrics
+def test_17_common_share_metadata_binding_regression():
+    """
+    Regression test for PR #51 / F821 undefined name 'cshares_fact' remediation.
+    Verifies that compute_derived_metrics correctly binds cshares_fact,
+    populates common_shares metadata, and handles absent/unavailable facts without error.
+    """
+    # 1. With valid common shares fact
+    cf, _ = _load_fix_fundamentals_and_metrics()
+    market_data = {"market_price": 400.0, "price_date": "2026-10-16"}
+    metrics = compute_derived_metrics(cf, market_data)
+
+    assert metrics.share_denominator_metadata is not None
+    cshares_meta = metrics.share_denominator_metadata.get("common_shares")
+    assert cshares_meta is not None
+    assert cshares_meta["basis"] == ShareBasis.POINT_IN_TIME_OUTSTANDING.value
+    assert cshares_meta["use_case"] == DenominatorUseCase.MARKET_CAPITALIZATION.value
+    assert cshares_meta["share_count"] == cf.facts["common_shares_outstanding"].value
+
+    # 2. With absent / unavailable common shares fact
+    cf_no = _load_fix_fundamentals_and_metrics()[0]
+    cf_no.facts["common_shares_outstanding"] = FinancialFact(
+        metric_key="common_shares_outstanding",
+        value=None,
+        units="shares",
+        status=MetricStatus.UNAVAILABLE,
+    )
+    metrics_no = compute_derived_metrics(cf_no, market_data)
+    assert metrics_no.share_denominator_metadata is not None
+    assert metrics_no.share_denominator_metadata.get("common_shares") is None
