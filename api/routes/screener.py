@@ -759,7 +759,7 @@ def run_screener_get(
             "decisionStateLabel": "Discovery Candidate — Analyze for Trigger" if dec_state["state"] == "ACTIONABLE_SETUP" else dec_state["label"],
             "isActionable": False,  # Screener cannot declare trade actionability; execution requires DecisionTrace
             "canSizeTrade": False,  # Sizing disabled in discovery screener
-            "allowedActions": [] if is_delisted else ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"],
+            "allowedActions": [] if is_delisted else (["RESEARCH_PROFILE"] if execution_status == "UNVERIFIED_ASSET" else ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"]),
             "disqualificationReason": dec_state.get("disqualificationReason") or "Discovery candidate: Open in Analysis hub to evaluate canonical DecisionTrace.",
             "decisionContextId": f"dec-radar-{sym}-{int(time.time() * 1000)}",
             "macroContextId": shared_macro_context_id,
@@ -837,14 +837,30 @@ def run_screener_get(
         candle_count=len(filtered),
     )
 
+    # Derive canonical candidate population model per ARX Closure Model v2 Gate B
+    reference_count = len(active_universe)
+    active_candidates = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable]
+    opportunity_candidates = [c for c in active_candidates if c.get("screeningEligible")]
+    delisted_candidates = [c for c in mapped_candidates if c["executionStatus"] == "DELISTED_SECURITY"]
+    unverified_candidates = [c for c in mapped_candidates if c["executionStatus"] == "UNVERIFIED_ASSET"]
+
+    population_model = {
+        "referenceUniverseCount": reference_count,
+        "activeScreeningCount": len(active_candidates),
+        "currentOpportunityCount": len(opportunity_candidates),
+        "delistedRecordCount": len(delisted_candidates),
+        "unverifiedRecordCount": len(unverified_candidates),
+    }
+
     return {
-        "totalCandidates": len(active_universe),
+        "totalCandidates": reference_count,
         "gemsFound": len(filtered),
         "activeFilter": filter_type,
         "userRole": user_role,
         "capabilities": get_radar_capabilities(vcp_snapshot=vcp_snapshot),
         "macroContextId": shared_macro_context_id,
         "macroDifficulty": shared_macro,
+        "population": population_model,
         "candidates": filtered,
         "results": results,
         "evidence": radar_evidence.to_dict(),
