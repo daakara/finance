@@ -1,73 +1,115 @@
 import assert from "node:assert";
 import { formatPriceObservationDate, GemCandidate } from "../lib/api";
 
-console.log("Starting Radar Price Provenance & Formatting Verification Suite (P1-002)...\n");
+console.log("Starting Radar Price Provenance & Formatting Verification Suite (P1-002 / F-02)...\n");
 
 // ---------------------------------------------------------------------------
 // 1. formatPriceObservationDate helper unit tests
 // ---------------------------------------------------------------------------
-console.log("1. Testing formatPriceObservationDate transformation across trading day contexts...");
+console.log("1. Testing formatPriceObservationDate transformation across trading day contexts & basis authority...");
 
-// Valid completed-session close
+// 1.1 Valid DAILY_CLOSE basis and valid dates
 assert.strictEqual(
-  formatPriceObservationDate("2026-10-22"),
+  formatPriceObservationDate("2026-10-22", "DAILY_CLOSE"),
   "Daily Close · Oct 22, 2026",
-  "Valid completed-session close date must format as 'Daily Close · Oct 22, 2026'"
+  "Valid completed-session close date with verified DAILY_CLOSE must format as 'Daily Close · Oct 22, 2026'"
 );
 
-// Current-day close after market closing
 assert.strictEqual(
-  formatPriceObservationDate("2026-10-23"),
+  formatPriceObservationDate("2026-10-23", "DAILY_CLOSE"),
   "Daily Close · Oct 23, 2026",
-  "Current-day close date must format as 'Daily Close · Oct 23, 2026'"
+  "Current-day close date with verified DAILY_CLOSE must format as 'Daily Close · Oct 23, 2026'"
 );
 
-// Previous trading-day close (e.g. Wednesday close viewed Thursday)
 assert.strictEqual(
-  formatPriceObservationDate("2026-10-21"),
+  formatPriceObservationDate("2026-10-21", "DAILY_CLOSE"),
   "Daily Close · Oct 21, 2026",
   "Previous trading-day close date must format as 'Daily Close · Oct 21, 2026'"
 );
 
-// Weekend & holiday gaps (e.g. Friday close viewed on Sunday/Monday morning)
 assert.strictEqual(
-  formatPriceObservationDate("2026-10-16"),
+  formatPriceObservationDate("2026-10-16", "DAILY_CLOSE"),
   "Daily Close · Oct 16, 2026",
   "Weekend/holiday close must preserve historical Friday date without synthesizing dates"
 );
 
-// Stale historical price (e.g. low-liquidity asset last traded 3 months ago)
 assert.strictEqual(
-  formatPriceObservationDate("2026-07-15"),
+  formatPriceObservationDate("2026-07-15", "DAILY_CLOSE"),
   "Daily Close · Jul 15, 2026",
-  "Stale historical price must format faithfully"
+  "Stale historical price must format faithfully with verified DAILY_CLOSE basis"
 );
 
-// Missing observation date (null, undefined, empty string)
+// 1.2 Valid DAILY_CLOSE basis but missing date
 assert.strictEqual(
-  formatPriceObservationDate(null),
+  formatPriceObservationDate(null, "DAILY_CLOSE"),
   "Daily Close · Date Unverified",
-  "Null observation date must display explicit provenance warning"
+  "Verified basis with null date must display 'Daily Close · Date Unverified'"
 );
 assert.strictEqual(
-  formatPriceObservationDate(undefined),
+  formatPriceObservationDate(undefined, "DAILY_CLOSE"),
   "Daily Close · Date Unverified",
-  "Undefined observation date must display explicit provenance warning"
+  "Verified basis with undefined date must display 'Daily Close · Date Unverified'"
 );
 assert.strictEqual(
-  formatPriceObservationDate(""),
+  formatPriceObservationDate("", "DAILY_CLOSE"),
   "Daily Close · Date Unverified",
-  "Empty observation date must display explicit provenance warning"
+  "Verified basis with empty date must display 'Daily Close · Date Unverified'"
 );
 
-// Malformed / invalid calendar date string
+// 1.3 Null / missing basis with valid date (F-02: Never silently assume Daily Close)
 assert.strictEqual(
-  formatPriceObservationDate("2026-99-99"),
+  formatPriceObservationDate("2026-10-22", null),
+  "Price · Oct 22, 2026 (Basis Unverified)",
+  "Null basis with valid date must disclose unverified basis"
+);
+assert.strictEqual(
+  formatPriceObservationDate("2026-10-22", undefined),
+  "Price · Oct 22, 2026 (Basis Unverified)",
+  "Undefined basis with valid date must disclose unverified basis"
+);
+
+// 1.4 Null / missing basis and null / missing date (F-02: Full unverified disclosure)
+assert.strictEqual(
+  formatPriceObservationDate(null, null),
+  "Price · Date & Basis Unverified",
+  "Null basis and null date must display 'Price · Date & Basis Unverified'"
+);
+assert.strictEqual(
+  formatPriceObservationDate(undefined, undefined),
+  "Price · Date & Basis Unverified",
+  "Undefined basis and undefined date must display 'Price · Date & Basis Unverified'"
+);
+assert.strictEqual(
+  formatPriceObservationDate("", null),
+  "Price · Date & Basis Unverified",
+  "Empty date and null basis must display 'Price · Date & Basis Unverified'"
+);
+
+// 1.5 Malformed / invalid calendar date strings
+assert.strictEqual(
+  formatPriceObservationDate("2026-99-99", "DAILY_CLOSE"),
   "Daily Close · Invalid Date",
-  "Malformed date string must be rejected with Invalid Date without throwing"
+  "Malformed date string with verified basis must be rejected with 'Daily Close · Invalid Date'"
+);
+assert.strictEqual(
+  formatPriceObservationDate("2026-99-99", null),
+  "Price · Invalid Date",
+  "Malformed date string with null basis must be rejected with 'Price · Invalid Date'"
+);
+assert.strictEqual(
+  formatPriceObservationDate("2026-02-31", "DAILY_CLOSE"),
+  "Daily Close · Invalid Date",
+  "Impossible calendar date (Feb 31) must be rejected with 'Daily Close · Invalid Date'"
 );
 
-console.log("   [PASS] 1.1: All formatPriceObservationDate trading day contexts verified");
+// 1.6 Custom / Unknown basis enums
+assert.strictEqual(
+  formatPriceObservationDate("2026-10-22", "UNKNOWN"),
+  "Price · Oct 22, 2026 (Basis Unverified)",
+  "Explicit UNKNOWN basis enum must not be emitted as basis label"
+);
+
+console.log("   [PASS] 1.1: All formatPriceObservationDate trading day contexts and basis authority verified");
 
 // ---------------------------------------------------------------------------
 // 2. Candidate serialization and priceBasis invariants
@@ -139,16 +181,19 @@ assert.strictEqual(dates[0], "2026-10-22");
 assert.strictEqual(dates[2], "2026-10-15");
 assert.notStrictEqual(dates[0], dates[2], "Distinct observation dates must not be conflated");
 
-// Verify unpriced asset fails closed
+// Verify unpriced asset fails closed with truthful basis disclosure
 const unpriced = candidatesBatch.find((c) => c.ticker === "UNPRICED_ASSET");
 assert.ok(unpriced);
 assert.strictEqual(unpriced.current_price, undefined);
 assert.strictEqual(unpriced.priceBasis, null);
 assert.strictEqual(unpriced.priceDate, null);
-assert.strictEqual(formatPriceObservationDate(unpriced.priceDate), "Daily Close · Date Unverified");
+assert.strictEqual(
+  formatPriceObservationDate(unpriced.priceDate, unpriced.priceBasis),
+  "Price · Date & Basis Unverified"
+);
 
 console.log("   [PASS] 2.1: Multi-asset price observation date distinction and unpriced fail-closed verified");
 
 console.log("\n===============================================================================");
-console.log("ALL RADAR PRICE PROVENANCE TESTS PASSED! ✅");
+console.log("ALL RADAR PRICE PROVENANCE TESTS PASSED! 🚀");
 console.log("===============================================================================\n");

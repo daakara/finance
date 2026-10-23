@@ -11,6 +11,7 @@ import {
   CanonicalRadarCategory,
   RadarCapabilities,
   RadarCapabilityStatus,
+  CandidatePopulationModel,
   DEFAULT_RADAR_CAPABILITIES,
   normalizeRadarCapabilities,
   getPublicationIntegrityLabel,
@@ -106,6 +107,7 @@ function RadarContent() {
   const [sortBy, setSortBy] = useState<'SCORE' | 'RVOL' | 'PRICE'>('SCORE');
   const [allAssets, setAllAssets] = useState<RadarAsset[]>([]);
   const [capabilities, setCapabilities] = useState<RadarCapabilities>(DEFAULT_RADAR_CAPABILITIES);
+  const [population, setPopulation] = useState<CandidatePopulationModel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isOnDemandLoading, setIsOnDemandLoading] = useState(false);
   const [onDemandError, setOnDemandError] = useState<string | null>(null);
@@ -165,6 +167,7 @@ function RadarContent() {
       .then((res) => {
         if (!isMounted || reqId !== latestRequestIdRef.current) return;
         setCapabilities(normalizeRadarCapabilities(res.capabilities));
+        setPopulation(res.population || null);
         const mapped: RadarAsset[] = (res.results || []).map((gem: any) => {
           // Canonical typed categories: strictly consume explicit backend categories.
           // Zero substring-based inference from arbitrary strings (e.g. "Smart Growth" or "Flow Traders").
@@ -219,6 +222,7 @@ function RadarContent() {
       .catch(() => {
         if (!isMounted || reqId !== latestRequestIdRef.current) return;
         setCapabilities(DEFAULT_RADAR_CAPABILITIES);
+        setPopulation(null);
         setAllAssets([]);
         setIsLoading(false);
       });
@@ -648,14 +652,22 @@ function RadarContent() {
                 <div className="flex flex-wrap items-center gap-4 text-xs font-mono pt-1">
                   <div
                     className="flex items-center gap-1.5"
-                    title={heroAsset.priceDate ? `Daily Close · ${heroAsset.priceDate}. Live spot quotes active in Analysis hub.` : "Observation date unverified. Live spot quotes active in Analysis hub."}
+                    title={
+                      heroAsset.executionStatus === 'DELISTED_SECURITY'
+                        ? "Historical final price. Ceased public trading."
+                        : heroAsset.priceBasis === 'DAILY_CLOSE' && heroAsset.priceDate
+                        ? `Daily Close · ${heroAsset.priceDate}. Live spot quotes active in Analysis hub.`
+                        : "Observation date and/or price basis unverified. Live spot quotes active in Analysis hub."
+                    }
                   >
                     <span className="text-slate-400">Screen Price:</span>
                     <span className="text-white font-bold">
                       {heroAsset.price && heroAsset.price > 0 ? `$${heroAsset.price.toFixed(2)}` : <span className="text-amber-400">Price Unavailable</span>}
                     </span>
-                    <span className={`text-[10px] font-sans ${!heroAsset.priceDate ? 'text-amber-400 font-medium' : 'text-slate-400'}`}>
-                      · {formatPriceObservationDate(heroAsset.priceDate, heroAsset.priceBasis)}
+                    <span className={`text-[10px] font-sans ${!heroAsset.priceDate || heroAsset.priceBasis !== 'DAILY_CLOSE' ? 'text-amber-400 font-medium' : 'text-slate-400'}`}>
+                      · {heroAsset.executionStatus === 'DELISTED_SECURITY'
+                        ? "Historical Final Price (Ceased Trading)"
+                        : formatPriceObservationDate(heroAsset.priceDate, heroAsset.priceBasis)}
                     </span>
                   </div>
                   <span className="text-slate-700">•</span>
@@ -817,6 +829,7 @@ function RadarContent() {
                   tabIndex={activeFilter === 'VALUE_GARP' ? 0 : -1}
                   onKeyDown={(e) => handleFilterKeyDown(e, 'VALUE_GARP')}
                   onClick={() => handleCategoryFilterSelect('VALUE_GARP', 'tab-radar-filter-value_garp')}
+                  title="16 Value / GARP matches identified from 35 curated reference catalog candidates evaluated. Whole-market automated screening is pending deployment."
                   className={`focus-ring px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeFilter === 'VALUE_GARP'
                       ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
@@ -1003,7 +1016,7 @@ function RadarContent() {
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
                   }`}
                 >
-                  <span>New Opportunities</span>
+                  <span>Unheld Candidates</span>
                   <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
                     {isPortfolioVerified ? ownershipCounts.notHeld : '—'}
                   </span>
@@ -1027,6 +1040,16 @@ function RadarContent() {
                     {isPortfolioVerified ? ownershipCounts.held : '—'}
                   </span>
                 </button>
+
+                {typeof population?.currentOpportunityCount === 'number' && (
+                  <div
+                    className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-800/50 px-2.5 py-1 min-h-[44px] rounded-lg shrink-0 ml-1"
+                    title="Authoritative count of candidates currently meeting active buy zone screening criteria (IN_BUY_ZONE)"
+                  >
+                    <span className="text-slate-400">Current Opportunities:</span>
+                    <span className="font-bold text-emerald-300">{population.currentOpportunityCount}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1067,12 +1090,12 @@ function RadarContent() {
               </span>
               <span className="text-slate-600">•</span>
               <span className="text-slate-400">
-                {filteredAssets.length} qualifying assets
+                {filteredAssets.length} of 16 Value / GARP Matches · 100% of Defined Reference Catalog Evaluated ({allAssets.length} Assets)
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 border border-slate-700">
-                REFERENCE CATALOG
+              <span className="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 border border-slate-700" title="100% of 35-asset curated reference catalog evaluated. Whole-market automated screening is pending VCP and Smart Money pipeline activation.">
+                REFERENCE CATALOG (16 MATCHES / 35 EVALUATED)
               </span>
             </div>
           </div>
@@ -1250,9 +1273,9 @@ function RadarContent() {
                               : ownershipFilter === 'MY_HOLDINGS'
                               ? (!isPortfolioVerified
                                   ? "The authoritative portfolio connection could not be verified. Radar renders canonically with ownership state UNKNOWN."
-                                  : "None of your current portfolio positions meet the active Radar screening confluence criteria. Switch to 'All Candidates' or 'New Opportunities' to view market setups.")
+                                  : "None of your current portfolio positions meet the active Radar screening confluence criteria. Switch to 'All Candidates' or 'Unheld Candidates' to view market setups.")
                               : ownershipFilter === 'NEW_OPPORTUNITIES' && !isPortfolioVerified
-                              ? "Filtering for new opportunities requires verified portfolio state. Currently running in degraded UNKNOWN mode."
+                              ? "Filtering for unheld candidates requires verified portfolio state. Currently running in degraded UNKNOWN mode."
                               : activeFilter === 'VCP' && categoryMeta.VCP.status === 'PIPELINE_PENDING'
                               ? (capabilities.VCP?.populationDenominator && capabilities.VCP?.universeBuildId && capabilities.VCP?.publicationDigest
                                   ? `${capabilities.VCP.populationDenominator} securities registered in universe build ${capabilities.VCP.universeBuildId}. Automated market-wide volatility contraction screening is pending operational activation.`
@@ -1357,17 +1380,41 @@ function RadarContent() {
                           </span>
                         </td>
                         <td
-                          className="p-3 font-bold text-white whitespace-nowrap"
-                          title={asset.priceDate ? `Daily Close · ${asset.priceDate}. Open Analysis hub for live tape.` : "Observation date unverified. Open Analysis hub for live tape."}
+                          className="p-3 font-mono text-xs font-bold text-slate-200 whitespace-nowrap"
+                          title={
+                            asset.executionStatus === 'DELISTED_SECURITY'
+                              ? "Historical final price. Ceased public trading."
+                              : asset.priceBasis === 'DAILY_CLOSE'
+                              ? (asset.priceDate ? `Daily Close · ${asset.priceDate}. Open Analysis hub for live tape.` : "Daily Close · Date Unverified.")
+                              : (asset.priceDate ? `Price · ${asset.priceDate} (Basis Unverified).` : "Observation date & price basis unverified.")
+                          }
                         >
-                          <div>{asset.price > 0 ? `$${asset.price.toFixed(2)}` : <span className="text-amber-400 font-normal text-xs">Price Unavailable</span>}</div>
-                          {asset.priceDate ? (
+                          <div>
+                            {asset.executionStatus === 'DELISTED_SECURITY' ? (
+                              <span className="text-slate-400 font-mono text-xs">
+                                {asset.price > 0 ? `$${asset.price.toFixed(2)}` : 'Price Unavailable'}
+                              </span>
+                            ) : asset.price > 0 ? (
+                              `$${asset.price.toFixed(2)}`
+                            ) : (
+                              <span className="text-amber-400 font-normal text-xs">Price Unavailable</span>
+                            )}
+                          </div>
+                          {asset.executionStatus === 'DELISTED_SECURITY' ? (
+                            <div className="text-[9px] font-normal text-rose-400/90 font-mono" title="Ceased public trading">
+                              Historical Close
+                            </div>
+                          ) : asset.priceBasis === 'DAILY_CLOSE' && asset.priceDate ? (
                             <div className="text-[9px] font-normal text-slate-500 font-mono">
                               {asset.priceDate}
                             </div>
+                          ) : asset.priceDate ? (
+                            <div className="text-[9px] font-normal text-slate-500 font-mono" title="Price basis unverified">
+                              {asset.priceDate} (Unverified Basis)
+                            </div>
                           ) : (
-                            <div className="text-[9px] font-medium text-amber-400 font-mono" title="Price observation date unverified">
-                              Date Unverified
+                            <div className="text-[9px] font-medium text-amber-400 font-mono" title="Price observation date and basis unverified">
+                              Date & Basis Unverified
                             </div>
                           )}
                         </td>

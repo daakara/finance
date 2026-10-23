@@ -807,11 +807,21 @@ export function formatPriceObservationDate(
   dateStr?: string | null,
   priceBasis?: "DAILY_CLOSE" | string | null
 ): string {
-  const basisLabel = priceBasis === "DAILY_CLOSE" || !priceBasis ? "Daily Close" : "Price";
+  const isVerifiedDailyClose = priceBasis === "DAILY_CLOSE";
+  const hasBasis = Boolean(priceBasis && typeof priceBasis === "string" && priceBasis.trim());
+  const basisLabel = isVerifiedDailyClose
+    ? "Daily Close"
+    : (hasBasis && priceBasis !== "UNKNOWN" ? priceBasis : "Price");
+
+  // Case 1: Date is missing or empty
   if (!dateStr || typeof dateStr !== "string" || !dateStr.trim()) {
-    return `${basisLabel} · Date Unverified`;
+    if (isVerifiedDailyClose) {
+      return "Daily Close · Date Unverified";
+    }
+    return "Price · Date & Basis Unverified";
   }
 
+  // Case 2: Date string parsing and calendar validation
   const trimmed = dateStr.trim();
   const parts = trimmed.split("-");
   if (parts.length === 3) {
@@ -833,12 +843,26 @@ export function formatPriceObservationDate(
         utcDate.getUTCMonth() === month &&
         utcDate.getUTCDate() === day
       ) {
-        return `${basisLabel} · ${months[month]} ${day}, ${year}`;
+        const formattedDate = `${months[month]} ${day}, ${year}`;
+        if (isVerifiedDailyClose) {
+          return `Daily Close · ${formattedDate}`;
+        }
+        if (hasBasis && priceBasis !== "UNKNOWN") {
+          return `${basisLabel} · ${formattedDate}`;
+        }
+        return `Price · ${formattedDate} (Basis Unverified)`;
       }
     }
-    return `${basisLabel} · Invalid Date`;
+    if (isVerifiedDailyClose) {
+      return "Daily Close · Invalid Date";
+    }
+    return "Price · Invalid Date";
   }
-  return `${basisLabel} · Date Unverified`;
+
+  if (isVerifiedDailyClose) {
+    return "Daily Close · Invalid Date";
+  }
+  return "Price · Invalid Date";
 }
 
 export function normalizeRadarCapabilities(
@@ -998,10 +1022,19 @@ export interface GemCandidate {
   decisionContextId?: string;
 }
 
+export interface CandidatePopulationModel {
+  referenceUniverseCount: number;
+  activeScreeningCount: number;
+  currentOpportunityCount: number;
+  delistedRecordCount: number;
+  unverifiedRecordCount: number;
+}
+
 export interface ScreenerResponse {
   total_candidates: number;
   gems_found: number;
   capabilities?: RadarCapabilities;
+  population?: CandidatePopulationModel;
   results: GemCandidate[];
 }
 
@@ -1709,6 +1742,7 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
         total_candidates: candidates.length,
         gems_found: candidates.length,
         ...(capabilities ? { capabilities } : {}),
+        population: (data as any)?.population || undefined,
         results: candidates,
       };
     }
