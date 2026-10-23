@@ -1,0 +1,40 @@
+{
+  "action_contract": {
+    "actual_event_action": "CLIPBOARD_COPY_ONLY",
+    "broker_routing_present": false,
+    "button_text": "Authorize Order: 45 Shares MSFT",
+    "feedback_banner": "SUCCESS",
+    "network_requests_triggered": 0
+  },
+  "asset_class": "COMMON_STOCK",
+  "canonical_cm_codes": [
+    "CM-07"
+  ],
+  "company_name": "Microsoft Corporation (Execution Deception Test)",
+  "expected_evaluations": {
+    "authorized_decision": "IDENTIFY_COPY_ACTION_ONLY",
+    "primary_rationale": "Clicking button copies execution string to clipboard; zero live broker order is routed."
+  },
+  "filename": "scn_advr_phantom_v3.json",
+  "fixture_id": "SCN-ADVR-PHANTOM",
+  "market_data": {
+    "display_label": "SIMULATED_RESEARCH_FEED",
+    "is_stale": false,
+    "quote_timestamp": "2026-10-23T14:30:00Z",
+    "spot_price": 420.0
+  },
+  "market_data_provenance": "DETERMINISTIC_SIMULATED_RESEARCH_FIXTURE",
+  "primary_exchange": "NASDAQ",
+  "provenance_reference": "ARX_DECISION_PRESENTATION_CONTRACT_AUDIT.md:Section 3",
+  "supplemental_sm_codes": [],
+  "technical_context": {
+    "distance_to_invalidation_dollar": 22.0,
+    "is_actionable": true,
+    "recommended_shares": 45,
+    "structural_invalidation_floor": 398.0
+  },
+  "ticker": "TEST_EXEC",
+  "type": "ADVERSARIAL_TRAP",
+  "underlying_reference": "MSFT",
+  "version": "3.0.0"
+}
