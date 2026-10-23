@@ -139,7 +139,7 @@ async function inspectViewports() {
         const navbarEl = document.querySelector('header nav, nav[aria-label="Global"], nav');
 
         // Surface Header Banner (Research page title / qualification note)
-        const surfaceBannerEl = document.querySelector('main header');
+        const surfaceBannerEl = Array.from(document.querySelectorAll('main header')).find(el => el.getBoundingClientRect().height > 0) || document.querySelector('main header');
 
         // 2. Collection navigation / rail
         const desktopAsideEl = document.querySelector('aside');
