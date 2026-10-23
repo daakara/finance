@@ -304,13 +304,28 @@ function cloneDossier(d: OpportunityDossier): OpportunityDossier {
 }
 
 // =========================================================================
-// Mandatory Control 3: Complete Valuation Suppression Control
+// Mandatory Control 3: Complete Valuation Suppression with Original Narratives
 // =========================================================================
 {
   const fixture = cloneDossier(deckDossier);
+  // Strictly change ONLY valuation suppression status and reason
+  // RETAIN the original presentation summary and selection rationale from approved DECK dossier
   fixture.valuation.valuation_status = "VALUATION_SUPPRESSED";
   fixture.valuation.suppression_reason = "Model suppressed due to restructuring";
-  fixture.central_assessment.presentation_summary = "Valuation model suppressed pending restructuring audit.";
+
+  // Assert fixture retained original unedited narratives containing valuation claims
+  assert.ok(
+    fixture.central_assessment.presentation_summary.includes("-2.34%"),
+    "Fixture must retain original presentation summary containing -2.34%"
+  );
+  assert.ok(
+    fixture.selection_rationale!.price_requirements!.includes("-2.34%"),
+    "Fixture must retain original price_requirements containing -2.34%"
+  );
+  assert.ok(
+    fixture.selection_rationale!.differentiated_view!.includes("negative reverse-DCF solved baseline"),
+    "Fixture must retain original differentiated_view referencing reverse-DCF"
+  );
 
   // 1. Default Surface (collapsed progressive disclosures)
   const defaultHtml = renderToStaticMarkup(
@@ -319,34 +334,72 @@ function cloneDossier(d: OpportunityDossier): OpportunityDossier {
 
   assert.ok(defaultHtml.includes("Valuation Suppressed"), "Must render 'Valuation Suppressed' in default surface");
   assert.ok(defaultHtml.includes("Model suppressed due to restructuring"), "Must render suppression reason in default surface");
+  assert.ok(
+    defaultHtml.includes("Decisive research presentation summary unavailable while valuation outputs are suppressed."),
+    "Must render neutral unavailable summary when valuation is suppressed"
+  );
   assert.strictEqual(defaultHtml.includes("$73.22"), false, "Must not render numeric Bear value on default surface");
   assert.strictEqual(defaultHtml.includes("$127.49"), false, "Must not render numeric Base value on default surface");
   assert.strictEqual(defaultHtml.includes("$209.87"), false, "Must not render numeric Bull value on default surface");
-  assert.strictEqual(defaultHtml.includes("-2.34%"), false, "Must not render solved CAGR when suppressed");
+  assert.strictEqual(defaultHtml.includes("-2.34%"), false, "Must not render solved CAGR when suppressed (even from original summary)");
   assert.strictEqual(defaultHtml.includes("-14.6%"), false, "Must not render Bear difference percentage when suppressed");
   assert.strictEqual(defaultHtml.includes("+48.7%"), false, "Must not render Base difference percentage when suppressed");
   assert.strictEqual(defaultHtml.includes("+144.8%"), false, "Must not render Bull difference percentage when suppressed");
 
+  // Valid non-suppressed facts remain available in default view
+  assert.ok(defaultHtml.includes("$85.72"), "Reference price tape remains visible on default surface");
+  assert.ok(defaultHtml.includes("2026-10-16"), "Reference date remains visible on default surface");
+  assert.ok(defaultHtml.includes("zero funded debt"), "Zero funded debt status remains visible in driver");
+
   // 2. Expanded Valuation Disclosure (initialValuationOpen = true)
-  const expandedHtml = renderToStaticMarkup(
+  const expandedValuationHtml = renderToStaticMarkup(
     React.createElement(DeckDecisionFirstView, { dossier: fixture, initialValuationOpen: true })
   );
 
-  assert.ok(expandedHtml.includes("Valuation Model Outputs Suppressed"), "Must render suppression title in expanded disclosure");
-  assert.ok(expandedHtml.includes("Model suppressed due to restructuring"), "Must render suppression reason in expanded disclosure");
-  assert.ok(expandedHtml.includes("Solved 5Y Revenue CAGR: Suppressed (Model unavailable)"), "Must state CAGR is suppressed in expanded disclosure");
-  assert.ok(expandedHtml.includes("Intrinsic Modeled Equity Values: Suppressed"), "Must state intrinsic values are suppressed in expanded disclosure");
+  assert.ok(expandedValuationHtml.includes("Valuation Model Outputs Suppressed"), "Must render suppression title in expanded disclosure");
+  assert.ok(expandedValuationHtml.includes("Model suppressed due to restructuring"), "Must render suppression reason in expanded disclosure");
+  assert.ok(expandedValuationHtml.includes("Solved 5Y Revenue CAGR: Suppressed (Model unavailable)"), "Must state CAGR is suppressed in expanded disclosure");
+  assert.ok(expandedValuationHtml.includes("Intrinsic Modeled Equity Values: Suppressed"), "Must state intrinsic values are suppressed in expanded disclosure");
 
   // The comparative scenario table MUST be completely suppressed in the expanded disclosure
-  assert.strictEqual(expandedHtml.includes("<table"), false, "Comparative scenario table must be completely suppressed when valuation is suppressed");
-  assert.strictEqual(expandedHtml.includes("$73.22"), false, "Must not render numeric Bear value in expanded disclosure");
-  assert.strictEqual(expandedHtml.includes("$127.49"), false, "Must not render numeric Base value in expanded disclosure");
-  assert.strictEqual(expandedHtml.includes("$209.87"), false, "Must not render numeric Bull value in expanded disclosure");
-  assert.strictEqual(expandedHtml.includes("-2.34%"), false, "Must not render solved CAGR in expanded disclosure");
-  assert.strictEqual(expandedHtml.includes("Roundtrip:"), false, "Must not render roundtrip value in expanded disclosure");
+  assert.strictEqual(expandedValuationHtml.includes("<table"), false, "Comparative scenario table must be completely suppressed when valuation is suppressed");
+  assert.strictEqual(expandedValuationHtml.includes("$73.22"), false, "Must not render numeric Bear value in expanded disclosure");
+  assert.strictEqual(expandedValuationHtml.includes("$127.49"), false, "Must not render numeric Base value in expanded disclosure");
+  assert.strictEqual(expandedValuationHtml.includes("$209.87"), false, "Must not render numeric Bull value in expanded disclosure");
+  assert.strictEqual(expandedValuationHtml.includes("-2.34%"), false, "Must not render solved CAGR in expanded disclosure");
+  assert.strictEqual(expandedValuationHtml.includes("Roundtrip:"), false, "Must not render roundtrip value in expanded disclosure");
 
   // Non-modeled baseline facts (reference price) remain visible in expanded disclosure
-  assert.ok(expandedHtml.includes("$85.72 USD"), "Reference price tape remains visible in expanded disclosure");
+  assert.ok(expandedValuationHtml.includes("$85.72 USD"), "Reference price tape remains visible in expanded disclosure");
+
+  // 3. Expanded Research-Provenance Disclosure (initialProvenanceOpen = true)
+  const expandedProvenanceHtml = renderToStaticMarkup(
+    React.createElement(DeckDecisionFirstView, { dossier: fixture, initialProvenanceOpen: true })
+  );
+
+  assert.ok(
+    expandedProvenanceHtml.includes("Price requirement analysis unavailable while valuation outputs are suppressed."),
+    "Must suppress price requirements narrative when valuation is suppressed"
+  );
+  assert.ok(
+    expandedProvenanceHtml.includes("Differentiated view analysis unavailable while valuation outputs are suppressed."),
+    "Must suppress differentiated view narrative referencing DCF baseline when valuation is suppressed"
+  );
+  assert.ok(
+    expandedProvenanceHtml.includes("Research timing rationale unavailable while valuation outputs are suppressed."),
+    "Must suppress research timing narrative embedding valuation expectations when valuation is suppressed"
+  );
+
+  // Strict check: Original narrative valuation claims must NOT leak through provenance disclosure
+  assert.strictEqual(expandedProvenanceHtml.includes("-2.34%"), false, "Provenence disclosure must not leak solved -2.34% CAGR");
+  assert.strictEqual(expandedProvenanceHtml.includes("roundtrip value"), false, "Provenance disclosure must not leak roundtrip value");
+  assert.strictEqual(expandedProvenanceHtml.includes("negative reverse-DCF solved baseline"), false, "Provenance disclosure must not leak reverse-DCF solved baseline");
+
+  // Valid factual business & governance items remain accessible in provenance disclosure
+  assert.ok(expandedProvenanceHtml.includes("Why This Business?"), "Why This Business card remains rendered");
+  assert.ok(expandedProvenanceHtml.includes("$1.60B in cash reserves"), "Cash balance facts remain visible in why this business");
+  assert.ok(expandedProvenanceHtml.includes("22.67% TTM operating margin"), "Operating margin facts remain visible in why this business");
+  assert.ok(expandedProvenanceHtml.includes("Governance Record:"), "Governance record remains visible");
 }
 
 console.log("[OK] Controlled fixture and fallback elimination tests passed.");

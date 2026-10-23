@@ -41,6 +41,8 @@ import {
 interface DeckDecisionFirstViewProps {
   dossier: OpportunityDossier;
   initialValuationOpen?: boolean;
+  initialFinancialsOpen?: boolean;
+  initialProvenanceOpen?: boolean;
 }
 
 const isFiniteNumber = (val: unknown): val is number =>
@@ -87,14 +89,16 @@ const formatDebt = (profile: OpportunityFinancialProfile): string => {
 export default function DeckDecisionFirstView({
   dossier,
   initialValuationOpen = false,
+  initialFinancialsOpen = false,
+  initialProvenanceOpen = false,
 }: DeckDecisionFirstViewProps) {
   const { identity, central_assessment, valuation, financial_profile, monitoring, navigation } = dossier;
   const rationale = dossier.selection_rationale;
 
   // Track accordion disclosure states for progressive disclosure sections
   const [valuationOpen, setValuationOpen] = useState(initialValuationOpen);
-  const [financialsOpen, setFinancialsOpen] = useState(false);
-  const [provenanceOpen, setProvenanceOpen] = useState(false);
+  const [financialsOpen, setFinancialsOpen] = useState(initialFinancialsOpen);
+  const [provenanceOpen, setProvenanceOpen] = useState(initialProvenanceOpen);
 
   // Check valuation suppression status
   const isSuppressed = valuation.valuation_status === "VALUATION_SUPPRESSED";
@@ -211,7 +215,9 @@ export default function DeckDecisionFirstView({
         </div>
 
         <p className="text-sm text-slate-100 leading-relaxed font-sans font-medium">
-          {central_assessment.presentation_summary || "Decisive research presentation summary unavailable."}
+          {isSuppressed
+            ? "Decisive research presentation summary unavailable while valuation outputs are suppressed."
+            : (central_assessment.presentation_summary || "Decisive research presentation summary unavailable.")}
         </p>
 
         <div className="pt-2 border-t border-amber-950/60 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-amber-300/90">
@@ -904,21 +910,33 @@ export default function DeckDecisionFirstView({
                   <h3 className="text-slate-200 font-semibold text-[11px]">
                     Why Research It Now?
                   </h3>
-                  <p className="text-slate-300 leading-relaxed">{rationale?.why_research_now || "Unavailable"}</p>
+                  <p className="text-slate-300 leading-relaxed">
+                    {isSuppressed
+                      ? "Research timing rationale unavailable while valuation outputs are suppressed."
+                      : (rationale?.why_research_now || "Unavailable")}
+                  </p>
                 </div>
 
                 <div className="bg-[#080d16] border border-slate-800 p-3 rounded-lg space-y-1">
                   <h3 className="text-slate-200 font-semibold text-[11px]">
                     What Does The Price Require?
                   </h3>
-                  <p className="text-slate-300 leading-relaxed">{rationale?.price_requirements || "Unavailable"}</p>
+                  <p className="text-slate-300 leading-relaxed">
+                    {isSuppressed
+                      ? "Price requirement analysis unavailable while valuation outputs are suppressed."
+                      : (rationale?.price_requirements || "Unavailable")}
+                  </p>
                 </div>
 
                 <div className="bg-[#080d16] border border-slate-800 p-3 rounded-lg space-y-1">
                   <h3 className="text-slate-200 font-semibold text-[11px]">
                     What Might ARX See Differently?
                   </h3>
-                  <p className="text-slate-300 leading-relaxed">{rationale?.differentiated_view || "Unavailable"}</p>
+                  <p className="text-slate-300 leading-relaxed">
+                    {isSuppressed
+                      ? "Differentiated view analysis unavailable while valuation outputs are suppressed."
+                      : (rationale?.differentiated_view || "Unavailable")}
+                  </p>
                 </div>
 
                 <div className="bg-[#080d16] border border-slate-800 p-3 rounded-lg space-y-1">
