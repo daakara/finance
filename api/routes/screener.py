@@ -442,6 +442,9 @@ def run_screener_get(
         # Retrieve current price and candles from market database
         latest_info = market_db.get_latest_price(sym)
         current_price = latest_info.get("currentPrice") if (latest_info and latest_info.get("currentPrice") and latest_info["currentPrice"] > 0) else None
+        raw_trade_date = latest_info.get("date") if latest_info else None
+        price_date = str(raw_trade_date)[:10] if (raw_trade_date and current_price is not None and not is_delisted) else None
+        price_basis = "DAILY_CLOSE" if (current_price is not None and price_date is not None) else None
         hist_df = pd.DataFrame()
 
         if is_delisted:
@@ -703,6 +706,8 @@ def run_screener_get(
             "symbol": sym,
             "companyName": r.get("company_name", sym),
             "currentPrice": current_price,
+            "priceBasis": price_basis,
+            "priceDate": price_date,
             "gemScore": int(r.get("composite_score")) if (r.get("composite_score") is not None and execution_status != "UNVERIFIED_ASSET") else None,
             "expertArchetype": model_name or ("Unverified Asset" if execution_status == "UNVERIFIED_ASSET" else None),
             "categories": cand_categories,

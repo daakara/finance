@@ -803,6 +803,25 @@ export function getPublicationIntegrityLabel(cap?: RadarCapabilityDetail | null)
   return "Publication Integrity: Not verified";
 }
 
+export function formatPriceObservationDate(dateStr?: string | null): string {
+  if (!dateStr) return "Daily Close";
+  try {
+    const parts = dateStr.split("-");
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      if (month >= 0 && month < 12 && !isNaN(day) && !isNaN(year)) {
+        return `Daily Close · ${months[month]} ${day}, ${year}`;
+      }
+    }
+    return `Daily Close · ${dateStr}`;
+  } catch {
+    return "Daily Close";
+  }
+}
+
 export function normalizeRadarCapabilities(
   incoming?: Partial<RadarCapabilities> | null
 ): RadarCapabilities {
@@ -862,14 +881,18 @@ export function normalizeRadarCapabilities(
       raw.matchedCount !== null &&
       !hasValidMatchedCount;
 
-    // Distinguish curated reference catalogs from publication snapshots:
-    // Curated reference catalogs (VALUE_GARP) qualify candidates dynamically from the candidate pool;
-    // they do NOT require a pre-aggregated publication matchedCount.
-    // Publication snapshots (VCP, SMART_MONEY) strictly require an authentic non-negative matchedCount.
+    // Curated dynamic catalog authority is strictly bounded:
+    // Only contractually authorized catalog categories (VALUE_GARP) may qualify,
+    // and they strictly require BOTH explicit metadata attestations:
+    // 1. catalogType === "CURATED_REFERENCE_CATALOG"
+    // 2. countAuthority === "DYNAMIC_CATALOG"
+    // A hypothetical VCP or Smart Money payload carrying dynamic-catalog metadata
+    // must NOT acquire scanner availability unless an explicitly authorized contract permits it.
+    const isCuratedCatalogAuthorized = cat === "VALUE_GARP";
     const isCuratedCatalog =
-      (raw.catalogType === "CURATED_REFERENCE_CATALOG" ||
-       raw.countAuthority === "DYNAMIC_CATALOG" ||
-       cat === "VALUE_GARP") &&
+      isCuratedCatalogAuthorized &&
+      raw.catalogType === "CURATED_REFERENCE_CATALOG" &&
+      raw.countAuthority === "DYNAMIC_CATALOG" &&
       !hasMalformedMatchedCount;
 
     const isAvailable =
@@ -941,6 +964,8 @@ export interface GemCandidate {
   rvol?: string | null;
   riskRewardRatio?: number | null;
   current_price?: number;
+  priceBasis?: "DAILY_CLOSE" | null;
+  priceDate?: string | null;
   execution_status?: string;
   screeningStatus?: string;
   screeningGeometry?: string;
@@ -1640,6 +1665,8 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
           factor_verdict: r.executionStatus || "WAITING_PULLBACK",
           dna_verdict: r.confluenceRating || "",
           current_price: r.currentPrice || r.current_price,
+          priceBasis: r.priceBasis ?? null,
+          priceDate: r.priceDate ?? null,
           execution_status: r.executionStatus || r.execution_status,
           screeningStatus: r.screeningStatus || (r.executionStatus === "IN_BUY_ZONE" ? "SCREENING_ZONE" : (r.executionStatus || "PULLBACK_PENDING")),
           screeningGeometry: r.screeningGeometry || (r.executionStatus === "IN_BUY_ZONE" ? "WITHIN_TOLERANCE" : "OUTSIDE_TOLERANCE"),

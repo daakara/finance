@@ -9,6 +9,7 @@ import {
   normalizeRadarCapabilities,
   getPublicationIntegrityLabel,
   fetchScreenerGems,
+  formatPriceObservationDate,
 } from "../lib/api";
 
 console.log("Starting Radar Count Authority & Filtered Display Verification Suite...\n");
@@ -807,6 +808,7 @@ async function testFetchScreenerGemsTransformation() {
         universeScreening: "AVAILABLE",
         singleAssetAnalysis: "AVAILABLE",
         catalogType: "CURATED_REFERENCE_CATALOG",
+        countAuthority: "DYNAMIC_CATALOG",
         matchedCount: 16,
       },
     });
@@ -821,6 +823,7 @@ async function testFetchScreenerGemsTransformation() {
         universeScreening: "AVAILABLE",
         singleAssetAnalysis: "AVAILABLE",
         catalogType: "CURATED_REFERENCE_CATALOG",
+        countAuthority: "DYNAMIC_CATALOG",
         matchedCount: -5,
       },
     });
@@ -835,6 +838,7 @@ async function testFetchScreenerGemsTransformation() {
         universeScreening: "AVAILABLE",
         singleAssetAnalysis: "AVAILABLE",
         catalogType: "CURATED_REFERENCE_CATALOG",
+        countAuthority: "DYNAMIC_CATALOG",
         matchedCount: true as unknown as number,
       },
     });
@@ -849,6 +853,7 @@ async function testFetchScreenerGemsTransformation() {
         universeScreening: "AVAILABLE",
         singleAssetAnalysis: "AVAILABLE",
         catalogType: "CURATED_REFERENCE_CATALOG",
+        countAuthority: "DYNAMIC_CATALOG",
         isRollback: true,
         rollbackReason: "Candidate data integrity alert",
       },
@@ -857,6 +862,44 @@ async function testFetchScreenerGemsTransformation() {
     assert.strictEqual(s3GarpRollback.VALUE_GARP.matchedCount, null);
     assert.strictEqual(s3GarpRollback.VALUE_GARP.publicationIntegrity, "ROLLBACK");
     console.log("   [PASS] 9.5: Curated reference catalog with isRollback=true strictly fails closed to PIPELINE_PENDING");
+
+    // 9.5b: Missing catalogType or countAuthority strictly fails closed (no category-name bypass)
+    const s3GarpMissingMeta = normalizeRadarCapabilities({
+      VALUE_GARP: {
+        status: "AVAILABLE",
+        universeScreening: "AVAILABLE",
+        singleAssetAnalysis: "AVAILABLE",
+        // catalogType and countAuthority omitted; matchedCount is null
+      },
+    });
+    assert.strictEqual(s3GarpMissingMeta.VALUE_GARP.universeScreening, "PIPELINE_PENDING", "VALUE_GARP without explicit catalogType & countAuthority must fail closed");
+    assert.strictEqual(s3GarpMissingMeta.VALUE_GARP.matchedCount, null);
+
+    const s3GarpMissingAuthority = normalizeRadarCapabilities({
+      VALUE_GARP: {
+        status: "AVAILABLE",
+        universeScreening: "AVAILABLE",
+        singleAssetAnalysis: "AVAILABLE",
+        catalogType: "CURATED_REFERENCE_CATALOG",
+        // countAuthority omitted
+      },
+    });
+    assert.strictEqual(s3GarpMissingAuthority.VALUE_GARP.universeScreening, "PIPELINE_PENDING", "VALUE_GARP without explicit countAuthority must fail closed");
+
+    // 9.5c: VCP or SMART_MONEY sending dynamic catalog metadata cannot acquire availability without snapshot count
+    const s3VcpSpoofedDynamic = normalizeRadarCapabilities({
+      VCP: {
+        status: "AVAILABLE",
+        universeScreening: "AVAILABLE",
+        singleAssetAnalysis: "AVAILABLE",
+        catalogType: "CURATED_REFERENCE_CATALOG",
+        countAuthority: "DYNAMIC_CATALOG",
+        matchedCount: null,
+      },
+    });
+    assert.strictEqual(s3VcpSpoofedDynamic.VCP.universeScreening, "PIPELINE_PENDING", "VCP must NOT acquire dynamic catalog availability");
+    assert.strictEqual(s3VcpSpoofedDynamic.VCP.matchedCount, null);
+    console.log("   [PASS] 9.5b/c: Strict requirement of both explicit metadata fields & zero cross-strategy dynamic spoofing verified");
 
     // 9.6: Publication snapshot (VCP) without matchedCount strictly fails closed to PIPELINE_PENDING
     const s3VcpNoCount = normalizeRadarCapabilities({
@@ -896,24 +939,42 @@ async function testFetchScreenerGemsTransformation() {
     const pageIntroPath = path.join(__dirname, "../components/PageIntro.tsx");
     const pageIntroSource = fs.readFileSync(pageIntroPath, "utf8");
 
-    // P1-002: Screening price provenance labeling
+    // P1-002: Screening price provenance and session labeling
     assert.ok(
       updatedRadarSource.includes("Screen Price:"),
       "FAIL: Radar hero card must explicitly label 'Screen Price:'"
     );
-    assert.ok(
+    assert.strictEqual(
       updatedRadarSource.includes("(Prior Close)"),
-      "FAIL: Radar hero card must explicitly state '(Prior Close)'"
+      false,
+      "FAIL: Radar hero card must NOT contain unconditional static '(Prior Close)'"
+    );
+    assert.strictEqual(
+      updatedRadarSource.includes("(prior close)"),
+      false,
+      "FAIL: Radar table must NOT contain unconditional static '(prior close)'"
     );
     assert.ok(
-      updatedRadarSource.includes("title=\"Batch screening price from prior session close. Live spot quotes active in Analysis hub.\""),
-      "FAIL: Radar hero card must explain prior session close price vs live spot quotes in tooltip"
+      updatedRadarSource.includes("Screen Price <span className=\"text-[9px] font-normal text-slate-500 normal-case\">· Daily Close</span>"),
+      "FAIL: Radar table must label 'Screen Price · Daily Close'"
     );
     assert.ok(
-      updatedRadarSource.includes("Screen Price <span className=\"text-[9px] font-normal text-slate-500 lowercase\">(prior close)</span>"),
-      "FAIL: Radar table must explicitly label 'Screen Price (prior close)'"
+      updatedRadarSource.includes("formatPriceObservationDate(heroAsset.priceDate)"),
+      "FAIL: Radar hero card must format price observation date dynamically"
     );
-    console.log("   [PASS] 9.9: P1-002 price provenance and session labeling statically verified");
+    assert.ok(
+      updatedRadarSource.includes("asset.priceDate"),
+      "FAIL: Radar table row must expose asset.priceDate"
+    );
+    console.log("   [PASS] 9.9: P1-002 price provenance, dynamic observation date, and session labeling statically verified");
+
+    // Unit test formatPriceObservationDate helper
+    assert.strictEqual(formatPriceObservationDate("2026-10-22"), "Daily Close · Oct 22, 2026");
+    assert.strictEqual(formatPriceObservationDate("2026-01-05"), "Daily Close · Jan 5, 2026");
+    assert.strictEqual(formatPriceObservationDate(null), "Daily Close");
+    assert.strictEqual(formatPriceObservationDate(undefined), "Daily Close");
+    assert.strictEqual(formatPriceObservationDate(""), "Daily Close");
+    console.log("   [PASS] 9.9b: formatPriceObservationDate unit transformations verified");
 
     // P2-001: Mobile touch target dimension enforcement (>= 44px)
     assert.ok(

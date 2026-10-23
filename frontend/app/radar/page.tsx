@@ -14,6 +14,7 @@ import {
   DEFAULT_RADAR_CAPABILITIES,
   normalizeRadarCapabilities,
   getPublicationIntegrityLabel,
+  formatPriceObservationDate,
 } from '../../lib/api';
 import { trackRadarAssetClick } from '../../lib/matomo';
 import { MASTER_ASSET_CATALOG } from '../../lib/masterCatalog';
@@ -25,6 +26,8 @@ interface RadarAsset {
   ticker: string;
   name: string;
   price: number;
+  priceBasis?: "DAILY_CLOSE" | null;
+  priceDate?: string | null;
   rvol?: string | null;
   riskRewardRatio?: number | null;
   vcpStage: string;
@@ -183,6 +186,8 @@ function RadarContent() {
             ticker: cleanTicker,
             name: resolvedName,
             price: Number(((gem.currentPrice ?? gem.current_price) || 0).toFixed(2)),
+            priceBasis: gem.priceBasis ?? (gem.price_basis as any) ?? null,
+            priceDate: gem.priceDate ?? gem.price_date ?? null,
             rvol: rvolVal,
             riskRewardRatio: rrVal,
             vcpStage: stageStr,
@@ -599,11 +604,13 @@ function RadarContent() {
                 <div className="flex flex-wrap items-center gap-4 text-xs font-mono pt-1">
                   <div
                     className="flex items-center gap-1.5"
-                    title="Batch screening price from prior session close. Live spot quotes active in Analysis hub."
+                    title={heroAsset.priceDate ? `Daily Close · ${heroAsset.priceDate}. Live spot quotes active in Analysis hub.` : "Batch screening price from daily session close. Live spot quotes active in Analysis hub."}
                   >
                     <span className="text-slate-400">Screen Price:</span>
                     <span className="text-white font-bold">${heroAsset.price.toFixed(2)}</span>
-                    <span className="text-[10px] text-slate-500 font-sans">(Prior Close)</span>
+                    <span className="text-[10px] text-slate-400 font-sans">
+                      · {formatPriceObservationDate(heroAsset.priceDate)}
+                    </span>
                   </div>
                   <span className="text-slate-700">•</span>
                   <div className="flex items-center gap-1.5" title="Pre-screened multi-factor confluence conviction score (0-100) from batch screener pipeline">
@@ -1109,9 +1116,9 @@ function RadarContent() {
                   <th className="p-3 min-w-[140px]">Screening Status</th>
                   <th
                     className="p-3 min-w-[100px]"
-                    title="Batch screening reference price from prior session close. Live spot quotes active in Analysis hub."
+                    title="Batch screening reference price from daily session close. Live spot quotes active in Analysis hub."
                   >
-                    Screen Price <span className="text-[9px] font-normal text-slate-500 lowercase">(prior close)</span>
+                    Screen Price <span className="text-[9px] font-normal text-slate-500 normal-case">· Daily Close</span>
                   </th>
                   <th className="p-3 text-center min-w-[70px]" title="Screening Snapshot Confluence Conviction Score">Screen Score</th>
                   <th className="p-3 text-center min-w-[70px]">RVOL</th>
@@ -1259,9 +1266,14 @@ function RadarContent() {
                         </td>
                         <td
                           className="p-3 font-bold text-white whitespace-nowrap"
-                          title="Batch screening reference price (Prior Close). Open Analysis hub for live tape."
+                          title={asset.priceDate ? `Daily Close · ${asset.priceDate}. Open Analysis hub for live tape.` : "Batch screening reference price (Daily Close). Open Analysis hub for live tape."}
                         >
-                          {asset.price > 0 ? `$${asset.price.toFixed(2)}` : '—'}
+                          <div>{asset.price > 0 ? `$${asset.price.toFixed(2)}` : '—'}</div>
+                          {asset.priceDate && (
+                            <div className="text-[9px] font-normal text-slate-500 font-mono">
+                              {asset.priceDate}
+                            </div>
+                          )}
                         </td>
                         <td className="p-3 text-center whitespace-nowrap">
                           <span className={`font-bold px-1.5 py-0.5 rounded ${
