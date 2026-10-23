@@ -170,6 +170,7 @@ function RadarContent() {
         if (res.status === "ERROR" || res.status === "TIMEOUT" || res.error) {
           setFetchError(res.error || "Unable to reach the Radar screening service");
           setCapabilities(DEFAULT_RADAR_CAPABILITIES);
+          setPopulation(null);
           setAllAssets([]);
           setIsLoading(false);
           return;

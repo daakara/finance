@@ -218,21 +218,24 @@ async function runRegressionSuite() {
     console.log("  [PASS] Missing capability authority fields correctly fail closed");
   }
 
-  // 9. Invalid price-date metadata (fail-closed)
+  // 9. Invalid price-date metadata (fail-closed per F-02 basis authority contract)
   {
     console.log("Test 9: Invalid price-date metadata");
     const nullFormatted = formatPriceObservationDate(null);
-    assert.strictEqual(nullFormatted, "Daily Close", "Null date must fall back to basic 'Daily Close' without fabricated date");
+    assert.strictEqual(nullFormatted, "Price · Date & Basis Unverified", "Null date and null basis must disclose unverified basis and date");
 
     const undefinedFormatted = formatPriceObservationDate(undefined);
-    assert.strictEqual(undefinedFormatted, "Daily Close", "Undefined date must fall back to basic 'Daily Close'");
+    assert.strictEqual(undefinedFormatted, "Price · Date & Basis Unverified", "Undefined date and basis must disclose unverified");
 
     const emptyFormatted = formatPriceObservationDate("");
-    assert.strictEqual(emptyFormatted, "Daily Close", "Empty date must fall back to basic 'Daily Close'");
+    assert.strictEqual(emptyFormatted, "Price · Date & Basis Unverified", "Empty date and null basis must disclose unverified");
 
-    const validFormatted = formatPriceObservationDate("2026-10-22");
-    assert.strictEqual(validFormatted, "Daily Close · Oct 22, 2026", "Valid ISO date formatted properly");
-    console.log("  [PASS] Invalid price date strings fall back cleanly to 'Daily Close' without fabrication");
+    const validWithBasis = formatPriceObservationDate("2026-10-22", "DAILY_CLOSE");
+    assert.strictEqual(validWithBasis, "Daily Close · Oct 22, 2026", "Valid ISO date with verified daily close formatted properly");
+
+    const nullDateWithBasis = formatPriceObservationDate(null, "DAILY_CLOSE");
+    assert.strictEqual(nullDateWithBasis, "Daily Close · Date Unverified", "Missing date with verified daily close discloses unverified date");
+    console.log("  [PASS] Invalid price date strings fall back cleanly to truthful unverified disclosures without authority fabrication");
   }
 
   // 10. Retry after failure simulation
