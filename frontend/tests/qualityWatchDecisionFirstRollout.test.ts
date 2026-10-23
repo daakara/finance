@@ -253,6 +253,361 @@ assert.strictEqual(muHtml.includes("Decision-First Research"), false, "MU must n
 
 console.log("[OK] Negative controls verified.");
 
+// =========================================================================
+// 5. Focused Regression Controls (A, B, C, D)
+// =========================================================================
+console.log("5. Running focused regression controls...");
+
+// Helper for deep cloning
+function cloneDossier<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+// -------------------------------------------------------------------------
+// Control A: Changed-Input Control
+// -------------------------------------------------------------------------
+console.log("  A. Testing changed-input control...");
+
+// Test DUOL changed inputs
+{
+  const duolMutated = cloneDossier(getOpportunityDossier("DUOL")!);
+  duolMutated.central_assessment.strongest_supporting_evidence =
+    "Mutated DUOL supporting evidence: $2.45B accelerated revenue run-rate and 88% gross margin.";
+  duolMutated.financial_profile.operating_margin_pct = 19.85;
+  duolMutated.monitoring.observable_invalidation_trigger =
+    "Mutated DUOL trigger: Core subscription churn exceeding 14.5% YoY.";
+  duolMutated.financial_profile.net_debt_bridge = -1550200000;
+
+  const html = renderToStaticMarkup(
+    React.createElement(DecisionFirstDossierView, {
+      dossier: duolMutated,
+      initialFinancialsOpen: true,
+    })
+  );
+
+  assert.ok(
+    html.includes("Mutated DUOL supporting evidence: $2.45B accelerated revenue run-rate and 88% gross margin."),
+    "DUOL: Rendered drivers must reflect mutated supporting evidence"
+  );
+  assert.ok(
+    html.includes("19.85% operating margin"),
+    "DUOL: Rendered margin driver must reflect mutated operating margin"
+  );
+  assert.ok(
+    html.includes("Mutated DUOL trigger: Core subscription churn exceeding 14.5% YoY."),
+    "DUOL: Rendered invalidation trigger must reflect mutated monitoring threshold"
+  );
+  assert.ok(
+    html.includes("-$1550.2M (Net Cash)"),
+    "DUOL: Rendered balance sheet must reflect mutated net cash bridge"
+  );
+
+  // Must not retain obsolete component literals
+  assert.strictEqual(
+    html.includes("platform saturation"),
+    false,
+    "DUOL: Must not retain obsolete causal claim 'platform saturation'"
+  );
+  assert.strictEqual(
+    html.includes("freemium friction"),
+    false,
+    "DUOL: Must not retain obsolete causal claim 'freemium friction'"
+  );
+}
+
+// Test FIX changed inputs
+{
+  const fixMutated = cloneDossier(getOpportunityDossier("FIX")!);
+  fixMutated.central_assessment.strongest_supporting_evidence =
+    "Mutated FIX evidence: $3.10B modular backlog with 35% ROIC.";
+  fixMutated.financial_profile.operating_margin_pct = 18.25;
+  fixMutated.monitoring.observable_invalidation_trigger =
+    "Mutated FIX trigger: Modular HVAC backlog book-to-bill falling below 1.10x.";
+
+  const html = renderToStaticMarkup(
+    React.createElement(DecisionFirstDossierView, {
+      dossier: fixMutated,
+    })
+  );
+
+  assert.ok(
+    html.includes("Mutated FIX evidence: $3.10B modular backlog with 35% ROIC."),
+    "FIX: Rendered drivers must reflect mutated supporting evidence"
+  );
+  assert.ok(
+    html.includes("18.25% operating margin"),
+    "FIX: Rendered margin driver must reflect mutated operating margin"
+  );
+  assert.ok(
+    html.includes("Mutated FIX trigger: Modular HVAC backlog book-to-bill falling below 1.10x."),
+    "FIX: Rendered invalidation must reflect mutated monitoring threshold"
+  );
+
+  // Must not retain obsolete component literals
+  assert.strictEqual(
+    html.includes("pricing pressure"),
+    false,
+    "FIX: Must not retain obsolete causal claim 'pricing pressure'"
+  );
+  assert.strictEqual(
+    html.includes("project execution delays"),
+    false,
+    "FIX: Must not retain obsolete causal claim 'project execution delays'"
+  );
+}
+
+console.log("  [PASS] Control A: Changed-input control verified.");
+
+// -------------------------------------------------------------------------
+// Control B: Original-Narrative Suppression for FIX & DUOL
+// -------------------------------------------------------------------------
+console.log("  B. Testing original-narrative suppression for FIX & DUOL...");
+
+// FIX with original narrative but suppressed valuation
+{
+  const fixSuppressed = cloneDossier(getOpportunityDossier("FIX")!);
+  fixSuppressed.valuation.valuation_status = "VALUATION_SUPPRESSED";
+  fixSuppressed.valuation.suppression_reason = "Model qualification pending verification";
+
+  const html = renderToStaticMarkup(
+    React.createElement(DecisionFirstDossierView, {
+      dossier: fixSuppressed,
+      initialValuationOpen: true,
+      initialFinancialsOpen: true,
+      initialProvenanceOpen: true,
+    })
+  );
+
+  // 1. Default Surface
+  assert.ok(
+    html.includes("Decisive research presentation summary unavailable while valuation outputs are suppressed."),
+    "FIX: Must render default decisive reason suppression notice"
+  );
+  assert.ok(
+    html.includes("Valuation Suppressed"),
+    "FIX: Solved CAGR must render Valuation Suppressed"
+  );
+  assert.ok(
+    html.includes("Strengthening watch condition unavailable while valuation outputs are suppressed."),
+    "FIX: Strengthening watch condition must be suppressed"
+  );
+
+  // 2. Expanded Valuation Disclosure
+  assert.ok(
+    html.includes("Valuation Model Outputs Suppressed"),
+    "FIX: Valuation disclosure must display suppression banner"
+  );
+  assert.ok(
+    html.includes("Model qualification pending verification"),
+    "FIX: Valuation disclosure must display suppression reason"
+  );
+
+  // 3. Expanded Provenance (Disclosure 3)
+  assert.ok(
+    html.includes("Research presentation summary unavailable while valuation outputs are suppressed."),
+    "FIX: Provenance must not leak original summary with valuation claims"
+  );
+  assert.ok(
+    html.includes("Price watch condition unavailable while valuation outputs are suppressed."),
+    "FIX: Provenance must not leak price watch condition with valuation numbers"
+  );
+
+  // 4. Verify original suppressed numbers DO NOT reappear anywhere in DOM
+  assert.strictEqual(html.includes("30.07%"), false, "FIX: Must not leak solved CAGR 30.07%");
+  assert.strictEqual(html.includes("$1,050 - $1,100"), false, "FIX: Must not leak base valuation range $1,050 - $1,100");
+  assert.strictEqual(html.includes("$533.46"), false, "FIX: Must not leak Bear case $533.46");
+  assert.strictEqual(html.includes("$1081.99"), false, "FIX: Must not leak Base case $1081.99");
+  assert.strictEqual(html.includes("$1996.38"), false, "FIX: Must not leak Bull case $1996.38");
+
+  // 5. Independently valid financial facts must remain visible
+  assert.ok(html.includes("Comfort Systems USA, Inc."), "FIX: Company name must remain visible");
+  assert.ok(html.includes("Reference Close: 2026-10-16"), "FIX: Reference date must remain visible");
+  assert.ok(html.includes("$1439.07"), "FIX: Reference close tape must remain visible");
+  assert.ok(html.includes("-$1800.7M (Net Cash)"), "FIX: Net cash bridge must remain visible");
+}
+
+// DUOL with original narrative but suppressed valuation
+{
+  const duolSuppressed = cloneDossier(getOpportunityDossier("DUOL")!);
+  duolSuppressed.valuation.valuation_status = "VALUATION_SUPPRESSED";
+  duolSuppressed.valuation.suppression_reason = "Model qualification pending verification";
+
+  const html = renderToStaticMarkup(
+    React.createElement(DecisionFirstDossierView, {
+      dossier: duolSuppressed,
+      initialValuationOpen: true,
+      initialFinancialsOpen: true,
+      initialProvenanceOpen: true,
+    })
+  );
+
+  // 1. Default Surface
+  assert.ok(
+    html.includes("Decisive research presentation summary unavailable while valuation outputs are suppressed."),
+    "DUOL: Must render default decisive reason suppression notice"
+  );
+  assert.ok(
+    html.includes("Strengthening watch condition unavailable while valuation outputs are suppressed."),
+    "DUOL: Strengthening watch condition must be suppressed"
+  );
+
+  // 2. Expanded Provenance (Disclosure 3)
+  assert.ok(
+    html.includes("Research presentation summary unavailable while valuation outputs are suppressed."),
+    "DUOL: Provenance must not leak original summary with valuation claims"
+  );
+  assert.ok(
+    html.includes("Price watch condition unavailable while valuation outputs are suppressed."),
+    "DUOL: Provenance must not leak price watch condition with valuation numbers"
+  );
+
+  // 3. Verify original suppressed numbers DO NOT reappear anywhere in DOM
+  assert.strictEqual(html.includes("22.99%"), false, "DUOL: Must not leak solved CAGR 22.99%");
+  assert.strictEqual(html.includes("$125 - $130"), false, "DUOL: Must not leak base valuation range $125 - $130");
+  assert.strictEqual(html.includes("$85.08"), false, "DUOL: Must not leak Bear case $85.08");
+  assert.strictEqual(html.includes("$129.33"), false, "DUOL: Must not leak Base case $129.33");
+  assert.strictEqual(html.includes("$185.43"), false, "DUOL: Must not leak Bull case $185.43");
+
+  // 4. Independently valid financial facts must remain visible
+  assert.ok(html.includes("Duolingo, Inc."), "DUOL: Company name must remain visible");
+  assert.ok(html.includes("Reference Close: 2026-10-16"), "DUOL: Reference date must remain visible");
+  assert.ok(html.includes("$141.76"), "DUOL: Reference close tape must remain visible");
+  assert.ok(html.includes("-$1313.9M (Net Cash)"), "DUOL: Net cash bridge must remain visible");
+}
+
+console.log("  [PASS] Control B: Original-narrative suppression verified.");
+
+// -------------------------------------------------------------------------
+// Control C: Missing-Versus-Zero Accounting
+// -------------------------------------------------------------------------
+console.log("  C. Testing missing-versus-zero accounting...");
+
+// 1. restricted_cash = null -> Unavailable
+{
+  const testDossier = cloneDossier(getOpportunityDossier("FIX")!);
+  testDossier.financial_profile.restricted_cash = null;
+
+  const html = renderToStaticMarkup(
+    React.createElement(DecisionFirstDossierView, {
+      dossier: testDossier,
+      initialFinancialsOpen: true,
+    })
+  );
+
+  assert.ok(
+    html.includes("Restricted Cash</span><span class=\"text-slate-200 font-semibold\">Unavailable"),
+    "restricted_cash = null must render Unavailable"
+  );
+  assert.strictEqual(
+    html.includes("Restricted Cash</span><span class=\"text-slate-200 font-semibold\">$0.0M"),
+    false,
+    "restricted_cash = null must NOT render $0.0M"
+  );
+}
+
+// 2. restricted_cash = 0 -> $0.0M
+{
+  const testDossier = cloneDossier(getOpportunityDossier("FIX")!);
+  testDossier.financial_profile.restricted_cash = 0;
+
+  const html = renderToStaticMarkup(
+    React.createElement(DecisionFirstDossierView, {
+      dossier: testDossier,
+      initialFinancialsOpen: true,
+    })
+  );
+
+  assert.ok(
+    html.includes("Restricted Cash</span><span class=\"text-slate-200 font-semibold\">$0.0M"),
+    "restricted_cash = 0 must render $0.0M"
+  );
+}
+
+// 3. Missing bridge / lease treatment -> unresolved wording
+{
+  const testDossier = cloneDossier(getOpportunityDossier("FIX")!);
+  testDossier.financial_profile.bridge_note = null as any;
+  testDossier.financial_profile.lease_convention_treatment = null as any;
+
+  const html = renderToStaticMarkup(
+    React.createElement(DecisionFirstDossierView, {
+      dossier: testDossier,
+      initialFinancialsOpen: true,
+    })
+  );
+
+  assert.ok(
+    html.toLowerCase().includes("unresolved"),
+    "Missing bridge/lease treatment must render unresolved wording"
+  );
+  assert.strictEqual(
+    html.includes("Lease liabilities are expensed in operating income under ASC 842"),
+    false,
+    "Must not substitute unevidenced ASC 842 lease expense convention"
+  );
+}
+
+// 4. Preserved authoritative wording for documented treatments
+{
+  const duolDossier = getOpportunityDossier("DUOL")!;
+  const html = renderToStaticMarkup(
+    React.createElement(DecisionFirstDossierView, {
+      dossier: duolDossier,
+      initialFinancialsOpen: true,
+    })
+  );
+
+  assert.ok(
+    html.includes(duolDossier.financial_profile.bridge_note!),
+    "DUOL documented bridge note must be preserved"
+  );
+}
+
+console.log("  [PASS] Control C: Missing-versus-zero accounting verified.");
+
+// -------------------------------------------------------------------------
+// Control D: DECK Preservation
+// -------------------------------------------------------------------------
+console.log("  D. Testing DECK presentation, thresholds, and behavior preservation...");
+
+{
+  const deckDossier = getOpportunityDossier("DECK")!;
+  const html = renderToStaticMarkup(
+    React.createElement(DecisionFirstDossierView, {
+      dossier: deckDossier,
+      initialValuationOpen: true,
+      initialFinancialsOpen: true,
+      initialProvenanceOpen: true,
+    })
+  );
+
+  // Exact 3 drivers preserved from PR #52
+  assert.ok(html.includes("1. DTC Velocity &amp; International Scaling") || html.includes("1. DTC Velocity & International Scaling"), "DECK: Driver 1 title preserved");
+  assert.ok(html.includes("HOKA direct-to-consumer sales sustain double-digit growth"), "DECK: Driver 1 text preserved");
+  assert.ok(html.includes("2. Gross Margin &amp; Operating Defense") || html.includes("2. Gross Margin & Operating Defense"), "DECK: Driver 2 title preserved");
+  assert.ok(html.includes("Consolidated gross margins sustain above 55.0%"), "DECK: Driver 2 text preserved");
+  assert.ok(html.includes("3. Zero-Debt Balance Sheet Strength"), "DECK: Driver 3 title preserved");
+  assert.ok(html.includes("Preservation of balance sheet strength (-$1602.6M (Net Cash), zero funded debt)"), "DECK: Driver 3 text preserved");
+
+  // Exact 2 invalidations preserved from PR #52
+  assert.ok(html.includes("1. Gross Margin Breach Below 50.0%"), "DECK: Invalidation 1 title preserved");
+  assert.ok(html.includes("Monitored Trigger: &lt; 50.0% consolidated gross margin"), "DECK: Invalidation 1 trigger preserved (<50%)");
+  assert.ok(html.includes("2. HOKA DTC Deceleration Below 10.0%"), "DECK: Invalidation 2 title preserved (10%, NOT 15%)");
+  assert.ok(html.includes("Monitored Trigger: &lt; 10.0% YoY quarterly DTC net sales growth"), "DECK: Invalidation 2 trigger preserved (<10%)");
+
+  // Net Debt Bridge & Split-Adjusted Basis
+  assert.ok(html.includes("-$1602.6M (Net Cash)"), "DECK: Net cash bridge preserved");
+  assert.ok(html.includes("6:1 split-adjusted"), "DECK: 6:1 split-adjusted basis note preserved");
+
+  // Accepted thesis quote
+  assert.ok(
+    html.includes("Can HOKA and UGG sustain direct-to-consumer momentum and operating margins above 20%"),
+    "DECK: Accepted thesis quote preserved"
+  );
+}
+
+console.log("  [PASS] Control D: DECK preservation verified.");
+
 console.log("\n===============================================================================");
 console.log("ALL QUALITY WATCH DECISION-FIRST ROLLOUT TESTS PASSED SUCCESSFULLY! ✅");
 console.log("===============================================================================");

@@ -78,6 +78,16 @@ const formatNetDebtBridge = (val: number | null | undefined): string => {
   return `$${(val / 1e6).toFixed(1)}M (Net Debt)`;
 };
 
+const formatRestrictedCash = (val: number | null | undefined): string => {
+  if (val === null || val === undefined) return "Unavailable";
+  if (!isFiniteNumber(val)) return "Unavailable";
+  if (val === 0) return "$0.0M";
+  if (Math.abs(val) >= 1e6) {
+    return `$${(val / 1e6).toFixed(1)}M`;
+  }
+  return formatCurrency(val);
+};
+
 const formatDebt = (profile: OpportunityFinancialProfile): string => {
   if (profile.is_zero_debt) return "zero funded debt";
   if (!isFiniteNumber(profile.total_financial_debt)) return "unassessed debt";
@@ -118,114 +128,22 @@ function getDriversForDossier(dossier: OpportunityDossier): DecisionDriver[] {
     ];
   }
 
-  if (sym === "FIX") {
-    return [
-      {
-        title: "1. Modular HVAC Backlog & Hyperscale Demand",
-        description:
-          "Contracted multi-year modular HVAC backlogs across hyperscale data center construction continue at robust book-to-bill rates with high capital efficiency.",
-      },
-      {
-        title: "2. Operating Margin & Profitability Defense",
-        description:
-          "Consolidated operating margins sustain near ~15.0% (>28% ROIC) alongside strong free cash flow conversion despite potential construction cycle moderation.",
-      },
-      {
-        title: `3. ${profile.is_zero_debt ? "Zero-Debt Balance Sheet Strength" : "Balance Sheet Resilience"}`,
-        description: `Preservation of pristine balance sheet liquidity (${netDebtFormatted}, ${debtFormatted}) to self-fund working capital and organic capacity expansion.`,
-      },
-    ];
-  }
-
-  if (sym === "DUOL") {
-    return [
-      {
-        title: "1. Subscription Momentum & User Conversion",
-        description:
-          "Rapid subscription expansion and DAU growth sustain strong top-line momentum ($1.15B TTM revenue) with premium gross margins near ~73%.",
-      },
-      {
-        title: "2. AI Monetization & Operating Margin Scale",
-        description:
-          "Duolingo Max tier conversion and sustainable AI monetization scale normalized operating margins toward target ~22.0% without escalating churn.",
-      },
-      {
-        title: `3. ${profile.is_zero_debt ? "Zero-Debt Balance Sheet Strength" : "Balance Sheet Resilience"}`,
-        description: `Preservation of debt-free liquidity buffer (${netDebtFormatted}, ${debtFormatted}) to fund continuous platform R&D without dilution.`,
-      },
-    ];
-  }
-
-  if (sym === "ULTA") {
-    return [
-      {
-        title: "1. Loyalty Member Engagement & Comp Store Traffic",
-        description:
-          "44M+ loyalty members driving >95% of sales sustain positive comp-store traffic and dependable operating cash flows ($1.57B TTM).",
-      },
-      {
-        title: "2. Gross Margin & Promotional Cadence Defense",
-        description:
-          "Consolidated gross margins sustain near ~39% and operating margins near ~12.5% despite prestige retail promotional pressures and mix shifts.",
-      },
-      {
-        title: `3. ${profile.is_zero_debt ? "Zero-Debt Balance Sheet Strength" : "Balance Sheet Resilience"}`,
-        description: `Dependable operating cash generation services revolving credit facility borrowings (${netDebtFormatted}) while self-funding store optimization.`,
-      },
-    ];
-  }
-
-  if (sym === "MEDP") {
-    return [
-      {
-        title: "1. Clinical Trial Backlog & Organic Execution",
-        description:
-          "Organic full-service clinical contract execution sustains net new business awards and trial backlog conversion above 1.0x book-to-bill.",
-      },
-      {
-        title: "2. High Operating Profitability Defense",
-        description:
-          "Sustained operating profitability (TTM operating margin ~21.0%) across biopharma client pipelines amidst fluctuating early-stage biotech liquidity.",
-      },
-      {
-        title: `3. ${profile.is_zero_debt ? "Zero-Debt Balance Sheet Strength" : "Balance Sheet Resilience"}`,
-        description: `Preservation of debt-free balance sheet liquidity (${netDebtFormatted}, ${debtFormatted}) providing resilience against biopharma venture funding cycles.`,
-      },
-    ];
-  }
-
-  if (sym === "ISRG") {
-    return [
-      {
-        title: "1. da Vinci 5 Adoption & Procedure Volume Growth",
-        description:
-          "da Vinci 5 system placement and procedure volume growth sustain double-digit expansion across domestic and international surgical centers.",
-      },
-      {
-        title: "2. Recurring Revenue Dominance (85%)",
-        description:
-          "High switching costs and recurring revenue streams (instruments, accessories, and services) protect high operating margins above 25%.",
-      },
-      {
-        title: `3. ${profile.is_zero_debt ? "Zero-Debt Balance Sheet Strength" : "Balance Sheet Resilience"}`,
-        description: `Pristine balance sheet liquidity (${netDebtFormatted}, ${debtFormatted}) fully self-funding next-generation robotic R&D and manufacturing capacity.`,
-      },
-    ];
-  }
-
-  // Dynamic fallback
   return [
     {
       title: "1. Operational Moat & Core Momentum",
-      description: dossier.central_assessment.strongest_supporting_evidence || "Core operating performance and moat execution sustain forward momentum.",
+      description:
+        dossier.central_assessment.strongest_supporting_evidence ||
+        "Core operating performance and moat execution sustain forward momentum.",
     },
     {
       title: "2. Operating Margin & Profitability Defense",
-      description: `Consolidated operating profitability (${formatPercent(profile.operating_margin_pct)} margin) sustains against competitive and cyclical pressures.`,
+      description: isFiniteNumber(profile.operating_margin_pct)
+        ? `Consolidated operating profitability (${formatPercent(profile.operating_margin_pct)} operating margin) sustains against competitive and cost pressures.`
+        : "Operating profitability sustains against competitive and cost pressures.",
     },
     {
       title: `3. ${profile.is_zero_debt ? "Zero-Debt Balance Sheet Strength" : "Balance Sheet Resilience"}`,
-      description: `Preservation of balance sheet liquidity (${netDebtFormatted}, ${debtFormatted}) to self-fund operational requirements.`,
+      description: `Preservation of balance sheet liquidity (${netDebtFormatted}, ${debtFormatted}) to self-fund operational requirements without dilution.`,
     },
   ];
 }
@@ -236,7 +154,7 @@ interface InvalidationCondition {
   trigger: string;
 }
 
-function getInvalidationsForDossier(dossier: OpportunityDossier): InvalidationCondition[] {
+function getInvalidationsForDossier(dossier: OpportunityDossier, isSuppressed = false): InvalidationCondition[] {
   const sym = dossier.identity.symbol;
 
   if (sym === "DECK") {
@@ -256,104 +174,37 @@ function getInvalidationsForDossier(dossier: OpportunityDossier): InvalidationCo
     ];
   }
 
-  if (sym === "FIX") {
-    return [
-      {
-        title: "1. Backlog Book-to-Bill Compression (< 0.95x)",
-        description:
-          "Backlog book-to-bill falling below 0.95x would signal moderation in hyperscale data center construction demand and weaken forward revenue visibility.",
-        trigger: "Monitored Trigger: Backlog book-to-bill < 0.95x",
-      },
-      {
-        title: "2. Operating Margin Breach Below 13.0%",
-        description:
-          "Quarterly operating margin dropping below 13.0% would indicate pricing pressure, project execution delays, or margin normalization toward historical levels.",
-        trigger: "Monitored Trigger: Quarterly operating margin < 13.0%",
-      },
-    ];
-  }
+  const invalidations: InvalidationCondition[] = [];
 
-  if (sym === "DUOL") {
-    return [
-      {
-        title: "1. Paid Subscriber Net Adds Turning Negative",
-        description:
-          "Net paid subscriber additions turning negative would indicate platform saturation, freemium friction, or user churn away from subscription tiers.",
-        trigger: "Monitored Trigger: Paid subscriber net adds < 0",
-      },
-      {
-        title: "2. Core Plan Annual Churn Exceeding 20.0%",
-        description:
-          "Annual churn exceeding 20.0% on core subscription plans would threaten recurring cash flows as multimodal LLM language tools expand.",
-        trigger: "Monitored Trigger: Annual churn > 20.0% on core plans",
-      },
-    ];
-  }
-
-  if (sym === "ULTA") {
-    return [
-      {
-        title: "1. Operating Margin Compression Below 10.0%",
-        description:
-          "Operating margin compression below 10.0% would indicate severe promotional discounting and inability to defend merchandise margins in prestige retail.",
-        trigger: "Monitored Trigger: Consolidated operating margin < 10.0%",
-      },
-      {
-        title: "2. Negative Comp Store Sales for Two Quarters",
-        description:
-          "Negative comparable store sales for two consecutive fiscal quarters would signal persistent store foot traffic erosion and market share loss.",
-        trigger: "Monitored Trigger: Negative comparable store sales for 2 consecutive fiscal quarters",
-      },
-    ];
-  }
-
-  if (sym === "MEDP") {
-    return [
-      {
-        title: "1. Net New Business Book-to-Bill Below 1.0x",
-        description:
-          "Net new business awards book-to-bill ratio declining below 1.0x for consecutive quarters would signal backlog erosion from small-cap biotech trial cancellations.",
-        trigger: "Monitored Trigger: Net book-to-bill < 1.0x for consecutive quarters",
-      },
-      {
-        title: "2. Operating Margin Breach Below 16.0%",
-        description:
-          "Operating margin breach below 16.0% would indicate operational deleverage and challenge the thesis of organic full-service clinical efficiency.",
-        trigger: "Monitored Trigger: Quarterly operating margin < 16.0%",
-      },
-    ];
-  }
-
-  if (sym === "ISRG") {
-    return [
-      {
-        title: "1. Worldwide Procedure Growth Deceleration (< 10.0%)",
-        description:
-          "Worldwide procedure growth deceleration below 10.0% would indicate slowing utilization of installed robotic surgical consoles.",
-        trigger: "Monitored Trigger: Worldwide procedure growth < 10.0%",
-      },
-      {
-        title: "2. da Vinci 5 Adoption Stagnation",
-        description:
-          "Delayed hospital capital budget commitments or multi-port competitive console placements causing da Vinci 5 adoption stagnation.",
-        trigger: "Monitored Trigger: da Vinci 5 system placement stagnation",
-      },
-    ];
-  }
-
-  // Dynamic fallback
-  return [
-    {
+  if (dossier.monitoring.observable_invalidation_trigger) {
+    invalidations.push({
       title: "1. Monitored Invalidation Condition",
-      description: dossier.monitoring.observable_invalidation_trigger || "Monitored operational trigger that would weaken the investment thesis.",
-      trigger: `Monitored Trigger: ${dossier.monitoring.observable_invalidation_trigger || "Unresolved"}`,
-    },
-    {
-      title: "2. Opposing Evidence & Downside Stress",
-      description: dossier.central_assessment.strongest_opposing_evidence || "Downside stress or competitive headwind.",
-      trigger: "Monitored Trigger: Downside operating threshold breach",
-    },
-  ];
+      description: `A breach of the monitored threshold (${dossier.monitoring.observable_invalidation_trigger}) would weaken the thesis and require reassessment; the underlying cause would require investigation.`,
+      trigger: `Monitored Trigger: ${dossier.monitoring.observable_invalidation_trigger}`,
+    });
+  }
+
+  if (dossier.central_assessment.strongest_opposing_evidence) {
+    invalidations.push({
+      title: invalidations.length === 0 ? "1. Opposing Evidence & Downside Stress" : "2. Opposing Evidence & Downside Stress",
+      description: isSuppressed
+        ? "Downside valuation stress analysis unavailable while valuation outputs are suppressed."
+        : dossier.central_assessment.strongest_opposing_evidence,
+      trigger: isSuppressed
+        ? "Evidence Consideration: Downside stress analysis unavailable"
+        : "Evidence Consideration: Downside operating and market risk factor",
+    });
+  }
+
+  if (invalidations.length === 0) {
+    invalidations.push({
+      title: "1. Monitored Invalidation Trigger",
+      description: "Monitored operational trigger that would weaken the investment thesis.",
+      trigger: "Monitored Trigger: Unresolved",
+    });
+  }
+
+  return invalidations;
 }
 
 export default function DecisionFirstDossierView({
@@ -404,7 +255,7 @@ export default function DecisionFirstDossierView({
     : (central_assessment.disposition_label || central_assessment.disposition || "MONITOR");
 
   const drivers = getDriversForDossier(dossier);
-  const invalidations = getInvalidationsForDossier(dossier);
+  const invalidations = getInvalidationsForDossier(dossier, isSuppressed);
 
   const thesisText = identity.symbol === "DECK"
     ? "Can HOKA and UGG sustain direct-to-consumer momentum and operating margins above 20% without aggressive promotional discounting as consumer footwear spending normalizes?"
@@ -796,7 +647,9 @@ export default function DecisionFirstDossierView({
               Strengthening Condition:
             </div>
             <p className="text-slate-300 leading-relaxed font-sans">
-              {monitoring.price_watch_condition || "Strengthening watch condition unresolved or unavailable."}
+              {isSuppressed
+                ? "Strengthening watch condition unavailable while valuation outputs are suppressed."
+                : (monitoring.price_watch_condition || "Strengthening watch condition unresolved or unavailable.")}
             </p>
           </div>
         </div>
@@ -1082,9 +935,7 @@ export default function DecisionFirstDossierView({
                   <div className="p-2 rounded bg-[#0f1624] border border-slate-800">
                     <span className="text-slate-500 text-[10px] block">Restricted Cash</span>
                     <span className="text-slate-200 font-semibold">
-                      {isFiniteNumber(financial_profile.restricted_cash)
-                        ? `$${(financial_profile.restricted_cash / 1e6).toFixed(1)}M`
-                        : "$0.0M"}
+                      {formatRestrictedCash(financial_profile.restricted_cash)}
                     </span>
                   </div>
                   <div className="p-2 rounded bg-[#0f1624] border border-slate-800">
@@ -1113,8 +964,16 @@ export default function DecisionFirstDossierView({
                   </div>
                 </div>
 
-                <div className="p-2.5 rounded bg-[#101726] border border-slate-800 text-[11px] text-slate-300 font-sans leading-relaxed">
-                  <strong>Accounting Bridge Convention:</strong> {financial_profile.bridge_note || financial_profile.lease_convention_treatment || "Lease liabilities are expensed in operating income under ASC 842 and excluded from the net debt bridge to avoid double-counting."}
+                <div className="p-2.5 rounded bg-[#101726] border border-slate-800 text-[11px] text-slate-300 font-sans leading-relaxed space-y-1">
+                  <div>
+                    <strong className="text-slate-200 font-semibold">Accounting Bridge Convention:</strong>{" "}
+                    {financial_profile.bridge_note || financial_profile.lease_convention_treatment || "Accounting treatment unresolved in research profile"}
+                  </div>
+                  {financial_profile.lease_convention_treatment && financial_profile.bridge_note && financial_profile.bridge_note !== financial_profile.lease_convention_treatment && (
+                    <div className="text-slate-400 text-[10px]">
+                      <strong className="text-slate-300 font-medium">Lease Accounting Treatment:</strong> {financial_profile.lease_convention_treatment}
+                    </div>
+                  )}
                 </div>
 
                 <div className="text-[11px] text-slate-400 pt-1">
@@ -1233,7 +1092,11 @@ export default function DecisionFirstDossierView({
                     <h3 className="text-slate-200 font-semibold text-[11px]">
                       Why This Business Deserves Attention
                     </h3>
-                    <p className="text-slate-300 leading-relaxed font-sans">{central_assessment.presentation_summary || "Unavailable"}</p>
+                    <p className="text-slate-300 leading-relaxed font-sans">
+                      {isSuppressed
+                        ? "Research presentation summary unavailable while valuation outputs are suppressed."
+                        : (central_assessment.presentation_summary || "Unavailable")}
+                    </p>
                   </div>
 
                   <div className="bg-[#080d16] border border-slate-800 p-3 rounded-lg space-y-1">
@@ -1247,7 +1110,11 @@ export default function DecisionFirstDossierView({
                     <h3 className="text-slate-200 font-semibold text-[11px]">
                       Why It Remains WATCH
                     </h3>
-                    <p className="text-slate-300 leading-relaxed font-sans">{central_assessment.price_watch_condition || "Unavailable"}</p>
+                    <p className="text-slate-300 leading-relaxed font-sans">
+                      {isSuppressed
+                        ? "Price watch condition unavailable while valuation outputs are suppressed."
+                        : (central_assessment.price_watch_condition || "Unavailable")}
+                    </p>
                   </div>
 
                   <div className="bg-[#080d16] border border-slate-800 p-3 rounded-lg space-y-1">
