@@ -62,15 +62,39 @@ class FactReconciler:
                 try:
                     raw = cache_file.read_bytes()
                     data = json.loads(raw.decode("utf-8"))
+                    actual_sha = hashlib.sha256(raw).hexdigest()
+                    actual_len = len(raw)
+                    sidecar_file = cache_file.with_name(cache_file.name + ".meta.json")
+                    remote_time = None
+                    byte_rep = "decoded_http_response_bytes"
+                    limitation = None
+                    if sidecar_file.exists():
+                        try:
+                            sidecar = json.loads(sidecar_file.read_text(encoding="utf-8"))
+                            if sidecar.get("sha256") == actual_sha and sidecar.get("byte_count") == actual_len:
+                                remote_time = sidecar.get("remote_retrieval_time_utc")
+                                byte_rep = sidecar.get("byte_representation", byte_rep)
+                            else:
+                                limitation = "Facts cache sidecar metadata mismatch with retained file bytes."
+                        except Exception as se:
+                            limitation = f"Failed to parse facts sidecar: {se}"
+                    else:
+                        limitation = "Facts cache sidecar missing; remote retrieval timestamp unavailable."
+
+                    read_time = datetime.utcnow().isoformat() + "Z"
                     self.last_facts_receipt = {
                         "object_type": "COMPANY_FACTS_JSON",
                         "url": url,
-                        "retrieval_time_utc": datetime.utcfromtimestamp(cache_file.stat().st_mtime).isoformat() + "Z",
-                        "byte_count": len(raw),
-                        "sha256": hashlib.sha256(raw).hexdigest(),
+                        "retrieval_time_utc": remote_time,
+                        "remote_retrieval_time_utc": remote_time,
+                        "cache_read_time_utc": read_time,
+                        "byte_count": actual_len,
+                        "sha256": actual_sha,
                         "content_type": "application/json",
                         "retained_path": str(cache_file),
                         "retrieval_mode": "CACHED",
+                        "byte_representation": byte_rep,
+                        "limitation": limitation,
                     }
                     return data
                 except Exception as e:
@@ -92,23 +116,38 @@ class FactReconciler:
                 if resp.info().get("Content-Encoding") == "gzip" or (len(raw) > 2 and raw[:2] == b"\x1f\x8b"):
                     raw = gzip.decompress(raw)
                 data = json.loads(raw.decode("utf-8"))
+                now_iso = datetime.utcnow().isoformat() + "Z"
+                sha_val = hashlib.sha256(raw).hexdigest()
+                len_val = len(raw)
+                if cache_file:
+                    cache_file.write_bytes(raw)
+                    sidecar_file = cache_file.with_name(cache_file.name + ".meta.json")
+                    sidecar_data = {
+                        "url": url,
+                        "remote_retrieval_time_utc": now_iso,
+                        "byte_count": len_val,
+                        "sha256": sha_val,
+                        "content_type": "application/json",
+                        "byte_representation": "decoded_http_response_bytes",
+                    }
+                    sidecar_file.write_text(json.dumps(sidecar_data, indent=2), encoding="utf-8")
+
                 self.last_facts_receipt = {
                     "object_type": "COMPANY_FACTS_JSON",
                     "url": url,
-                    "retrieval_time_utc": datetime.utcnow().isoformat() + "Z",
-                    "byte_count": len(raw),
-                    "sha256": hashlib.sha256(raw).hexdigest(),
+                    "retrieval_time_utc": now_iso,
+                    "remote_retrieval_time_utc": now_iso,
+                    "cache_read_time_utc": None,
+                    "byte_count": len_val,
+                    "sha256": sha_val,
                     "content_type": "application/json",
                     "retained_path": str(cache_file) if cache_file else None,
                     "retrieval_mode": "LIVE",
+                    "byte_representation": "decoded_http_response_bytes",
                 }
         except Exception as e:
             logger.error(f"Failed to fetch company facts for CIK {cik_clean} from SEC: {e}")
             raise
-
-        if cache_file:
-            with open(cache_file, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2)
 
         return data
 
@@ -670,10 +709,14 @@ class FactReconciler:
                 "object_type": "COMPANY_FACTS_JSON",
                 "url": f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik.strip().zfill(10)}.json",
                 "retrieval_time_utc": datetime.utcnow().isoformat() + "Z",
+                "remote_retrieval_time_utc": None,
+                "cache_read_time_utc": None,
                 "byte_count": len(facts_raw),
                 "sha256": hashlib.sha256(facts_raw).hexdigest(),
                 "content_type": "application/json",
                 "retrieval_mode": "SYNTHETIC_FIXTURE",
+                "byte_representation": "serialized_fixture_bytes",
+                "limitation": "In-memory test fixture passed directly; not an authoritative remote receipt.",
             }
 
         return draft_profile, changes, accounting_exceptions, undisclosed_info

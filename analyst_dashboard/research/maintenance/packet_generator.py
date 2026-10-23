@@ -181,13 +181,31 @@ class PacketGenerator:
             "> [!NOTE]",
             "> **Receipt Verification Boundary:** A cryptographic SHA-256 hash establishes payload content identity and byte-level immutability against the retrieval record; it does not verify financial correctness.",
             "",
+            "#### Detailed Artifact Receipts & Representation",
+            "| Artifact Type | Retrieval Mode | Byte Representation | Size (Bytes) | SHA-256 Content Digest |",
+            "| :--- | :---: | :--- | :---: | :--- |",
+        ]
+
+        receipts = meta.get("source_receipts", {})
+        if receipts:
+            for obj_type, r in receipts.items():
+                mode = r.get("retrieval_mode", "UNKNOWN")
+                rep = r.get("byte_representation", "decoded_http_response_bytes")
+                bc = f"{r.get('byte_count', 0):,}"
+                h = f"`{r.get('sha256')}`" if r.get("sha256") else "`UNAVAILABLE`"
+                lines.append(f"| **{obj_type}** | `{mode}` | `{rep}` | {bc} | {h} |")
+        else:
+            lines.append("| *No source receipts recorded* | - | - | - | - |")
+
+        lines.extend([
+            "",
             "---",
             "",
             "### 3. Reconciled Financial Changes",
             "",
             "| Metric | Accepted Baseline | Draft Successor | Absolute Delta | Delta % | Accounting Context & Source |",
             "| :--- | :---: | :---: | :---: | :---: | :--- |",
-        ]
+        ])
 
         for c in packet.material_financial_changes:
             base_d = c.baseline_display

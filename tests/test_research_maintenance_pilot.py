@@ -43,6 +43,7 @@ import shutil
 import tempfile
 import time
 import unittest
+from unittest.mock import patch, MagicMock
 from pathlib import Path
 
 from analyst_dashboard.research.maintenance.contracts import (
@@ -494,7 +495,7 @@ class TestResearchMaintenancePilot(unittest.TestCase):
         q_low_profile["operating_margin_pct"] = 15.94
 
         assessor = DecisionAssessor()
-        effects, _, disposition, _, _, _ = assessor.assess_consequences(
+        effects, _, disposition, rationale, _, _ = assessor.assess_consequences(
             symbol="FIX", baseline_dossier=self.baseline_dossier, reconciled_profile=q_low_profile,
             changes=[], accounting_exceptions=[], undisclosed_info=[],
         )
@@ -503,6 +504,13 @@ class TestResearchMaintenancePilot(unittest.TestCase):
         self.assertTrue("BREACHED" in inval_effect.draft_state or "TRIGGERED" in inval_effect.draft_state)
         self.assertIn("10.00%", inval_effect.draft_state)
         self.assertEqual(disposition, ProposedDisposition.INVALIDATE)
+
+        # Decisive reason must challenge thesis and require owner review
+        decisive_effect = next(e for e in effects if e.conclusion_key == "decisive_reason")
+        self.assertNotIn("Core decisive thesis is maintained", decisive_effect.draft_state)
+        self.assertIn("INVALIDATION WARNING", decisive_effect.draft_state)
+        self.assertTrue(decisive_effect.owner_judgment_required)
+        self.assertNotIn("No thesis invalidation occurred", rationale)
 
     def test_08_quarterly_margin_above_13pct_safe_while_ttm_below(self):
         """8. Standalone quarterly margin >= 13.0% preserves the thesis while TTM margin is < 13.0%."""
@@ -515,7 +523,7 @@ class TestResearchMaintenancePilot(unittest.TestCase):
         q_safe_profile["operating_margin_pct"] = 11.16
 
         assessor = DecisionAssessor()
-        effects, _, disposition, _, _, _ = assessor.assess_consequences(
+        effects, _, disposition, rationale, _, _ = assessor.assess_consequences(
             symbol="FIX", baseline_dossier=self.baseline_dossier, reconciled_profile=q_safe_profile,
             changes=[], accounting_exceptions=[], undisclosed_info=[],
         )
@@ -526,6 +534,13 @@ class TestResearchMaintenancePilot(unittest.TestCase):
         self.assertIn("did not breach", inval_effect.draft_state)
         self.assertNotEqual(disposition, ProposedDisposition.INVALIDATE)
 
+        # Decisive reason must state conditional maintenance with owner judgment
+        decisive_effect = next(e for e in effects if e.conclusion_key == "decisive_reason")
+        self.assertNotIn("No thesis invalidation occurred", decisive_effect.draft_state)
+        self.assertIn("conditionally maintained pending Product Owner review", decisive_effect.draft_state)
+        self.assertTrue(decisive_effect.owner_judgment_required)
+        self.assertNotIn("No thesis invalidation occurred", rationale)
+
     def test_09_missing_quarterly_margin_produces_unresolved_condition(self):
         """9. Missing quarterly revenue or EBIT leaves the invalidation condition UNRESOLVED."""
         missing_q_profile = copy.deepcopy(self.baseline_dossier["financial_profile"])
@@ -534,7 +549,7 @@ class TestResearchMaintenancePilot(unittest.TestCase):
         missing_q_profile["quarterly_operating_margin_pct"] = None
 
         assessor = DecisionAssessor()
-        effects, _, disposition, _, _, _ = assessor.assess_consequences(
+        effects, _, disposition, rationale, _, _ = assessor.assess_consequences(
             symbol="FIX", baseline_dossier=self.baseline_dossier, reconciled_profile=missing_q_profile,
             changes=[], accounting_exceptions=[], undisclosed_info=[],
         )
@@ -543,6 +558,13 @@ class TestResearchMaintenancePilot(unittest.TestCase):
         self.assertIn("UNRESOLVED", inval_effect.draft_state)
         self.assertEqual(inval_effect.interpretation_type, InterpretationType.UNRESOLVED_EVIDENCE)
         self.assertEqual(disposition, ProposedDisposition.UNRESOLVED)
+
+        # Decisive reason must also remain unresolved and require owner review
+        decisive_effect = next(e for e in effects if e.conclusion_key == "decisive_reason")
+        self.assertNotIn("Core decisive thesis is maintained", decisive_effect.draft_state)
+        self.assertIn("UNRESOLVED", decisive_effect.draft_state)
+        self.assertTrue(decisive_effect.owner_judgment_required)
+        self.assertNotIn("No thesis invalidation occurred", rationale)
 
     def test_10_deteriorating_inputs_produce_accurate_negative_text(self):
         """10. Deteriorating inputs produce accurate negative narrative text."""
@@ -739,51 +761,171 @@ class TestResearchMaintenancePilot(unittest.TestCase):
         self.assertNotIn("| **Cash & Cash Equivalents** | $1854.8M | $0.0M |", md)
         self.assertNotIn("| **Total Financial Debt** | $54.1M | $0.0M |", md)
 
-    def test_16_actual_cache_refresh_reveals_newer_eligible_filing(self):
-        """16. Actual cache refresh reveals a newer eligible filing when one exists."""
+    @patch("urllib.request.urlopen")
+    def test_16_actual_cache_refresh_reveals_newer_eligible_filing(self, mock_urlopen):
+        """16. Actual cache refresh reveals a newer eligible filing via HTTP request and retains exact response bytes."""
         reg = EventRegister(self.register_path)
-        poller = SecEventPoller(register=reg, cache_dir=self.cache_dir, offline_mode=True, cache_ttl_sec=0)
+        poller = SecEventPoller(register=reg, cache_dir=self.cache_dir, offline_mode=False, cache_ttl_sec=3600)
 
-        # Initial discovery
+        # 1. Start with an existing cached submissions, index, and primary doc response
+        sub_cache = self.cache_dir / "CIK0001035983_submissions.json"
+        initial_bytes = json.dumps(self.mock_submissions).encode("utf-8")
+        sub_cache.write_bytes(initial_bytes)
+        sub_cache.with_name(sub_cache.name + ".meta.json").write_text(json.dumps({
+            "url": "https://data.sec.gov/submissions/CIK0001035983.json",
+            "remote_retrieval_time_utc": "2026-10-23T00:00:00Z",
+            "byte_count": len(initial_bytes),
+            "sha256": hashlib.sha256(initial_bytes).hexdigest(),
+            "content_type": "application/json",
+            "byte_representation": "decoded_http_response_bytes",
+        }))
+
+        idx_cache = self.cache_dir / "CIK0001035983_000110465926118159_index.htm"
+        idx_bytes = b"<html>initial index</html>"
+        idx_cache.write_bytes(idx_bytes)
+        idx_cache.with_name(idx_cache.name + ".meta.json").write_text(json.dumps({
+            "url": "https://www.sec.gov/index.htm", "remote_retrieval_time_utc": "2026-10-23T00:00:00Z",
+            "byte_count": len(idx_bytes), "sha256": hashlib.sha256(idx_bytes).hexdigest(),
+            "content_type": "text/html", "byte_representation": "decoded_http_response_bytes"
+        }))
+
+        doc_cache = self.cache_dir / "CIK0001035983_000110465926118159_fix-20260930x10q.htm"
+        doc_bytes = b"<html>initial doc</html>"
+        doc_cache.write_bytes(doc_bytes)
+        doc_cache.with_name(doc_cache.name + ".meta.json").write_text(json.dumps({
+            "url": "https://www.sec.gov/doc.htm", "remote_retrieval_time_utc": "2026-10-23T00:00:00Z",
+            "byte_count": len(doc_bytes), "sha256": hashlib.sha256(doc_bytes).hexdigest(),
+            "content_type": "text/html", "byte_representation": "decoded_http_response_bytes"
+        }))
+
+        # Initial discovery from cache (HTTP request must NOT occur)
         event1, _ = poller.discover_filing_event("FIX", "0001035983", "Comfort Systems USA, Inc.", cutoff_date="2026-07-01")
         self.assertIsNotNone(event1)
         self.assertEqual(event1.accession_number, "0001104659-26-118159")
+        self.assertFalse(mock_urlopen.called)
+        self.assertEqual(poller.last_submissions_receipt["retrieval_mode"], "CACHED")
 
-        # Simulate newer filing added to cache
+        # 2. Provide a mocked newer HTTP response containing newly eligible filing
         refreshed_submissions = copy.deepcopy(self.mock_submissions)
-        refreshed_submissions["filings"]["recent"]["form"].insert(0, "10-K")
-        refreshed_submissions["filings"]["recent"]["filingDate"].insert(0, "2026-11-15")
-        refreshed_submissions["filings"]["recent"]["reportDate"].insert(0, "2026-12-31")
-        refreshed_submissions["filings"]["recent"]["acceptanceDateTime"].insert(0, "2026-11-15T21:00:00.000Z")
+        refreshed_submissions["filings"]["recent"]["form"].insert(0, "10-Q")
+        refreshed_submissions["filings"]["recent"]["filingDate"].insert(0, "2026-11-20")
+        refreshed_submissions["filings"]["recent"]["reportDate"].insert(0, "2026-11-15")
+        refreshed_submissions["filings"]["recent"]["acceptanceDateTime"].insert(0, "2026-11-20T21:00:00.000Z")
         refreshed_submissions["filings"]["recent"]["accessionNumber"].insert(0, "0001104659-26-999999")
-        refreshed_submissions["filings"]["recent"]["primaryDocument"].insert(0, "fix-20261231x10k.htm")
+        refreshed_submissions["filings"]["recent"]["primaryDocument"].insert(0, "fix-20261115x10q.htm")
 
-        sub_cache = self.cache_dir / "CIK0001035983_submissions.json"
-        with open(sub_cache, "w", encoding="utf-8") as f:
-            json.dump(refreshed_submissions, f)
+        newer_response_bytes = json.dumps(refreshed_submissions, indent=3).encode("utf-8")
 
-        # Discover with refreshed cache
-        event2, _ = poller.discover_filing_event("FIX", "0001035983", "Comfort Systems USA, Inc.", cutoff_date="2026-07-01", force_refresh=True)
+        def mock_urlopen_fn(req, timeout=15):
+            url = req.full_url if hasattr(req, "full_url") else str(req)
+            resp = MagicMock()
+            resp.info.return_value.get.return_value = None
+            resp.__enter__.return_value = resp
+            if "submissions" in url:
+                resp.read.return_value = newer_response_bytes
+            elif "index" in url:
+                resp.read.return_value = b"<html>newer index</html>"
+            else:
+                resp.read.return_value = b"<html>newer doc</html>"
+            return resp
+
+        mock_urlopen.side_effect = mock_urlopen_fn
+
+        # 3. Request explicit refresh (force_refresh=True)
+        event2, _ = poller.discover_filing_event(
+            "FIX", "0001035983", "Comfort Systems USA, Inc.",
+            cutoff_date="2026-07-01", force_refresh=True
+        )
+
+        # 4. Assert that an HTTP request occurred
+        self.assertTrue(mock_urlopen.called)
+
+        # 5. Assert that newly eligible filing was discovered
         self.assertIsNotNone(event2)
         self.assertEqual(event2.accession_number, "0001104659-26-999999")
 
-    def test_17_receipt_hashing_against_known_bytes(self):
-        """17. Receipt hashing against known bytes produces matching SHA-256."""
-        known_bytes = b"<html><head><title>Comfort Systems USA Q3 10-Q</title></head><body>Financial Statements</body></html>"
-        expected_sha256 = hashlib.sha256(known_bytes).hexdigest()
+        # 6. Assert that retained artifact on disk contains the exact response bytes used
+        retained_disk_bytes = sub_cache.read_bytes()
+        self.assertEqual(retained_disk_bytes, newer_response_bytes)
+        self.assertEqual(len(retained_disk_bytes), len(newer_response_bytes))
+        self.assertEqual(hashlib.sha256(retained_disk_bytes).hexdigest(), hashlib.sha256(newer_response_bytes).hexdigest())
 
-        receipt = SourceReceipt(
-            object_type="PRIMARY_DOC",
-            url="https://www.sec.gov/Archives/edgar/data/1035983/000110465926118159/fix-20260930x10q.htm",
-            retrieval_time_utc="2026-10-23T00:00:00Z",
-            sha256=expected_sha256,
-            byte_count=len(known_bytes),
-            retrieval_mode="CACHED",
-        )
+        # 7. Assert correct LIVE provenance on receipt
+        receipt = poller.last_submissions_receipt
+        self.assertEqual(receipt["retrieval_mode"], "LIVE")
+        self.assertEqual(receipt["byte_count"], len(newer_response_bytes))
+        self.assertEqual(receipt["sha256"], hashlib.sha256(newer_response_bytes).hexdigest())
 
-        self.assertEqual(receipt.sha256, expected_sha256)
-        self.assertEqual(receipt.byte_count, len(known_bytes))
-        self.assertEqual(hashlib.sha256(known_bytes).hexdigest(), receipt.sha256)
+    @patch("urllib.request.urlopen")
+    def test_17_receipt_hashing_against_known_bytes(self, mock_urlopen):
+        """17. Receipt hashing against known bytes exercises fetch, disk retention, byte equality, and cached reads."""
+        reg = EventRegister(self.register_path)
+        poller = SecEventPoller(register=reg, cache_dir=self.cache_dir, offline_mode=False)
+        reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=False)
+
+        # 1. Return known JSON bytes with distinctive whitespace
+        distinctive_bytes = b'{\n  "distinctive_header":   "test_whitespace_bytes_4981",\n  "count":   42\n}\n'
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = distinctive_bytes
+        mock_resp.info.return_value.get.return_value = None
+        mock_resp.__enter__.return_value = mock_resp
+        mock_urlopen.return_value = mock_resp
+
+        # 2. Allow implementation to fetch, retain, and create receipt for submissions
+        data = poller.fetch_submissions("0001035983", force_refresh=True)
+        self.assertEqual(data["distinctive_header"], "test_whitespace_bytes_4981")
+        receipt = poller.last_submissions_receipt
+        self.assertIsNotNone(receipt)
+
+        # 3. Independently read the retained file from disk
+        retained_file = self.cache_dir / "CIK0001035983_submissions.json"
+        self.assertTrue(retained_file.exists())
+        disk_bytes = retained_file.read_bytes()
+
+        # 4. Assert exact byte equality, byte count, and SHA-256 equality
+        self.assertEqual(disk_bytes, distinctive_bytes)
+        self.assertEqual(len(disk_bytes), len(distinctive_bytes))
+        self.assertEqual(len(disk_bytes), receipt["byte_count"])
+        expected_sha = hashlib.sha256(distinctive_bytes).hexdigest()
+        self.assertEqual(hashlib.sha256(disk_bytes).hexdigest(), expected_sha)
+        self.assertEqual(receipt["sha256"], expected_sha)
+        self.assertEqual(receipt["retrieval_mode"], "LIVE")
+        self.assertEqual(receipt["byte_representation"], "decoded_http_response_bytes")
+
+        # 5. Exercise a subsequent cached read and verify identity and provenance
+        mock_urlopen.reset_mock()
+        cached_data = poller.fetch_submissions("0001035983", force_refresh=False)
+        self.assertEqual(cached_data["distinctive_header"], "test_whitespace_bytes_4981")
+        self.assertFalse(mock_urlopen.called)
+        cached_receipt = poller.last_submissions_receipt
+        self.assertEqual(cached_receipt["retrieval_mode"], "CACHED")
+        self.assertEqual(cached_receipt["sha256"], expected_sha)
+        self.assertEqual(cached_receipt["byte_count"], len(distinctive_bytes))
+        self.assertIsNotNone(cached_receipt["remote_retrieval_time_utc"])
+        self.assertIsNotNone(cached_receipt["cache_read_time_utc"])
+
+        # 6. Test company facts retention and receipt matching
+        facts_distinctive_bytes = b'{\n  "facts":   {\n    "us-gaap":   {}\n  }\n}\n'
+        mock_facts_resp = MagicMock()
+        mock_facts_resp.read.return_value = facts_distinctive_bytes
+        mock_facts_resp.info.return_value.get.return_value = None
+        mock_facts_resp.__enter__.return_value = mock_facts_resp
+        mock_urlopen.return_value = mock_facts_resp
+
+        facts_data = reconciler.fetch_company_facts("0001035983", force_refresh=True)
+        facts_receipt = reconciler.last_facts_receipt
+        retained_facts_file = self.cache_dir / "CIK0001035983_companyfacts.json"
+        self.assertTrue(retained_facts_file.exists())
+        self.assertEqual(retained_facts_file.read_bytes(), facts_distinctive_bytes)
+        self.assertEqual(facts_receipt["byte_count"], len(facts_distinctive_bytes))
+        self.assertEqual(facts_receipt["sha256"], hashlib.sha256(facts_distinctive_bytes).hexdigest())
+
+        # 7. Failure case for tampered / inconsistent retained evidence
+        retained_file.write_bytes(b'{"tampered": true}')
+        tampered_data = poller.fetch_submissions("0001035983", force_refresh=False)
+        tampered_receipt = poller.last_submissions_receipt
+        self.assertIn("mismatch", tampered_receipt["limitation"])
+        self.assertNotEqual(tampered_receipt["sha256"], expected_sha)
 
     def test_18_missing_receipt_produces_unavailable_without_verification_claim(self):
         """18. Missing receipt produces UNAVAILABLE without claiming verification."""
@@ -824,14 +966,18 @@ class TestResearchMaintenancePilot(unittest.TestCase):
         prod_snapshot = REPO_ROOT / "frontend/lib/opportunityDossierSnapshot.json"
         prod_manifest = REPO_ROOT / "frontend/lib/publishedWatchManifest.json"
 
-        hash_snap_before = hashlib.sha256(open(prod_snapshot, "rb").read()).hexdigest()
-        hash_man_before = hashlib.sha256(open(prod_manifest, "rb").read()).hexdigest()
+        with open(prod_snapshot, "rb") as f:
+            hash_snap_before = hashlib.sha256(f.read()).hexdigest()
+        with open(prod_manifest, "rb") as f:
+            hash_man_before = hashlib.sha256(f.read()).hexdigest()
 
         # Run pipeline
         self.service.run_maintenance_pipeline(symbol="FIX", cutoff_date="2026-10-16")
 
-        hash_snap_after = hashlib.sha256(open(prod_snapshot, "rb").read()).hexdigest()
-        hash_man_after = hashlib.sha256(open(prod_manifest, "rb").read()).hexdigest()
+        with open(prod_snapshot, "rb") as f:
+            hash_snap_after = hashlib.sha256(f.read()).hexdigest()
+        with open(prod_manifest, "rb") as f:
+            hash_man_after = hashlib.sha256(f.read()).hexdigest()
 
         self.assertEqual(hash_snap_before, hash_snap_after)
         self.assertEqual(hash_man_before, hash_man_after)
@@ -946,6 +1092,175 @@ class TestResearchMaintenancePilot(unittest.TestCase):
             self.assertEqual(event.processing_state, EventProcessingState.FAILED)
             self.assertEqual(event.failed_stage, "GENERATING_PACKET")
             self.assertIn("Simulated disk write failure", event.error_message)
+
+    def test_26_regression_quarterly_condition_breached_thesis_judgment_coherent(self):
+        """26. Regression: Quarterly condition breached produces coherent invalidation outputs across summary, effects, rationale, and Markdown."""
+        q_low_profile = copy.deepcopy(self.baseline_dossier["financial_profile"])
+        q_low_profile["quarterly_revenue"] = 3766302000.0
+        q_low_profile["quarterly_operating_income"] = 414293220.0  # 11.0% quarterly margin (< 13.0%)
+        q_low_profile["quarterly_operating_margin_pct"] = 11.0
+        q_low_profile["revenue"] = 12543357000.0
+        q_low_profile["operating_income"] = 2000000000.0
+        q_low_profile["operating_margin_pct"] = 15.94
+
+        assessor = DecisionAssessor()
+        effects, val_comp, disposition, rationale, questions, stopping_rule = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=self.baseline_dossier, reconciled_profile=q_low_profile,
+            changes=[], accounting_exceptions=[], undisclosed_info=[],
+        )
+
+        decisive_effect = next(e for e in effects if e.conclusion_key == "decisive_reason")
+        inval_effect = next(e for e in effects if e.conclusion_key == "invalidation_condition")
+
+        # Assert no contradiction
+        self.assertNotIn("Core decisive thesis is maintained", decisive_effect.draft_state)
+        self.assertNotIn("No thesis invalidation occurred", rationale)
+        self.assertIn("INVALIDATION WARNING", decisive_effect.draft_state)
+        self.assertIn("Core decisive thesis is challenged", decisive_effect.draft_state)
+        self.assertTrue(decisive_effect.owner_judgment_required)
+        self.assertEqual(decisive_effect.materiality, "MATERIAL")
+
+        self.assertIn("INVALIDATION TRIGGER BREACHED", inval_effect.draft_state)
+        self.assertEqual(disposition, ProposedDisposition.INVALIDATE)
+        self.assertIn("INVALIDATE", rationale)
+        self.assertIn("downgrade", rationale.lower())
+
+        # Render Markdown packet and assert full internal coherence
+        generator = PacketGenerator(output_dir=self.packets_dir)
+        packet = ReviewPacket(
+            packet_id="REV-FIX-BREACH-TEST",
+            symbol="FIX",
+            cik="0001035983",
+            company_name="Comfort Systems USA, Inc.",
+            accepted_baseline_id="OPP-FIX-20261016",
+            accepted_baseline_cutoff="2026-10-16",
+            draft_successor_id="OPP-FIX-20260930-DRAFT",
+            created_at_utc="2026-10-24T00:00:00Z",
+            filing_metadata={"form": "10-Q", "filing_date": "2026-10-22", "reporting_period": "2026-09-30"},
+            material_financial_changes=[],
+            assessment_effects=effects,
+            accounting_exceptions=[],
+            undisclosed_information=[],
+            valuation_comparison=val_comp,
+            proposed_disposition=disposition,
+            disposition_rationale=rationale,
+            questions_requiring_owner_judgment=questions,
+            stopping_rule=stopping_rule,
+        )
+        md = generator.render_markdown(packet)
+        self.assertIn("**Proposed Disposition:** **`INVALIDATE`**", md)
+        self.assertNotIn("Core decisive thesis is maintained", md)
+        self.assertIn("INVALIDATION WARNING", md)
+
+    def test_27_regression_quarterly_condition_unresolved_thesis_judgment_coherent(self):
+        """27. Regression: Quarterly condition unresolved produces coherent UNRESOLVED outputs across summary, effects, rationale, and Markdown."""
+        missing_q_profile = copy.deepcopy(self.baseline_dossier["financial_profile"])
+        missing_q_profile["quarterly_revenue"] = None
+        missing_q_profile["quarterly_operating_income"] = None
+        missing_q_profile["quarterly_operating_margin_pct"] = None
+
+        assessor = DecisionAssessor()
+        effects, val_comp, disposition, rationale, questions, stopping_rule = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=self.baseline_dossier, reconciled_profile=missing_q_profile,
+            changes=[], accounting_exceptions=[], undisclosed_info=[],
+        )
+
+        decisive_effect = next(e for e in effects if e.conclusion_key == "decisive_reason")
+        inval_effect = next(e for e in effects if e.conclusion_key == "invalidation_condition")
+
+        # Assert no contradiction
+        self.assertNotIn("Core decisive thesis is maintained", decisive_effect.draft_state)
+        self.assertNotIn("No thesis invalidation occurred", rationale)
+        self.assertIn("UNRESOLVED", decisive_effect.draft_state)
+        self.assertTrue(decisive_effect.owner_judgment_required)
+
+        self.assertIn("UNRESOLVED", inval_effect.draft_state)
+        self.assertEqual(disposition, ProposedDisposition.UNRESOLVED)
+        self.assertIn("UNRESOLVED", rationale)
+
+        generator = PacketGenerator(output_dir=self.packets_dir)
+        packet = ReviewPacket(
+            packet_id="REV-FIX-UNRESOLVED-TEST",
+            symbol="FIX",
+            cik="0001035983",
+            company_name="Comfort Systems USA, Inc.",
+            accepted_baseline_id="OPP-FIX-20261016",
+            accepted_baseline_cutoff="2026-10-16",
+            draft_successor_id="OPP-FIX-20260930-DRAFT",
+            created_at_utc="2026-10-24T00:00:00Z",
+            filing_metadata={"form": "10-Q", "filing_date": "2026-10-22", "reporting_period": "2026-09-30"},
+            material_financial_changes=[],
+            assessment_effects=effects,
+            accounting_exceptions=[],
+            undisclosed_information=[],
+            valuation_comparison=val_comp,
+            proposed_disposition=disposition,
+            disposition_rationale=rationale,
+            questions_requiring_owner_judgment=questions,
+            stopping_rule=stopping_rule,
+        )
+        md = generator.render_markdown(packet)
+        self.assertIn("**Proposed Disposition:** **`UNRESOLVED`**", md)
+        self.assertNotIn("Core decisive thesis is maintained", md)
+
+    def test_28_regression_quarterly_condition_not_breached_backlog_unresolved_coherent(self):
+        """28. Regression: Quarterly margin not breached while backlog unresolved produces coherent conditional maintain outputs requiring owner review."""
+        safe_profile = copy.deepcopy(self.baseline_dossier["financial_profile"])
+        safe_profile["quarterly_revenue"] = 3766302000.0
+        safe_profile["quarterly_operating_income"] = 624570000.0  # 16.58% quarterly margin (>= 13.0%)
+        safe_profile["quarterly_operating_margin_pct"] = 16.58
+        safe_profile["revenue"] = 12543357000.0
+        safe_profile["operating_income"] = 2094998000.0
+        safe_profile["operating_margin_pct"] = 16.70
+
+        assessor = DecisionAssessor()
+        effects, val_comp, disposition, rationale, questions, stopping_rule = assessor.assess_consequences(
+            symbol="FIX", baseline_dossier=self.baseline_dossier, reconciled_profile=safe_profile,
+            changes=[], accounting_exceptions=[], undisclosed_info=[],
+        )
+
+        decisive_effect = next(e for e in effects if e.conclusion_key == "decisive_reason")
+        inval_effect = next(e for e in effects if e.conclusion_key == "invalidation_condition")
+
+        # Assert no false certainty and no contradiction
+        self.assertNotIn("No thesis invalidation occurred", rationale)
+        self.assertNotIn("No thesis invalidation occurred", decisive_effect.draft_state)
+        self.assertIn("conditionally maintained pending Product Owner review", decisive_effect.draft_state)
+        self.assertIn("backlog book-to-bill evidence remains unresolved", decisive_effect.draft_state)
+        self.assertTrue(decisive_effect.owner_judgment_required)
+        self.assertEqual(decisive_effect.interpretation_type, InterpretationType.ANALYST_JUDGMENT)
+
+        self.assertIn("did not breach", inval_effect.draft_state)
+        self.assertIn("remains UNRESOLVED via Form 10-Q", inval_effect.draft_state)
+        self.assertTrue(inval_effect.owner_judgment_required)
+
+        self.assertEqual(disposition, ProposedDisposition.MAINTAIN)
+        self.assertIn("Maintained watch status is proposed pending Product Owner review", rationale)
+
+        generator = PacketGenerator(output_dir=self.packets_dir)
+        packet = ReviewPacket(
+            packet_id="REV-FIX-MAINTAIN-TEST",
+            symbol="FIX",
+            cik="0001035983",
+            company_name="Comfort Systems USA, Inc.",
+            accepted_baseline_id="OPP-FIX-20261016",
+            accepted_baseline_cutoff="2026-10-16",
+            draft_successor_id="OPP-FIX-20260930-DRAFT",
+            created_at_utc="2026-10-24T00:00:00Z",
+            filing_metadata={"form": "10-Q", "filing_date": "2026-10-22", "reporting_period": "2026-09-30"},
+            material_financial_changes=[],
+            assessment_effects=effects,
+            accounting_exceptions=[],
+            undisclosed_information=[],
+            valuation_comparison=val_comp,
+            proposed_disposition=disposition,
+            disposition_rationale=rationale,
+            questions_requiring_owner_judgment=questions,
+            stopping_rule=stopping_rule,
+        )
+        md = generator.render_markdown(packet)
+        self.assertIn("**Proposed Disposition:** **`MAINTAIN`**", md)
+        self.assertNotIn("No thesis invalidation occurred", md)
 
 
 if __name__ == "__main__":

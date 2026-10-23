@@ -98,15 +98,39 @@ class SecEventPoller:
                 try:
                     raw = cache_file.read_bytes()
                     data = json.loads(raw.decode("utf-8"))
+                    actual_sha = hashlib.sha256(raw).hexdigest()
+                    actual_len = len(raw)
+                    sidecar_file = cache_file.with_name(cache_file.name + ".meta.json")
+                    remote_time = None
+                    byte_rep = "decoded_http_response_bytes"
+                    limitation = None
+                    if sidecar_file.exists():
+                        try:
+                            sidecar = json.loads(sidecar_file.read_text(encoding="utf-8"))
+                            if sidecar.get("sha256") == actual_sha and sidecar.get("byte_count") == actual_len:
+                                remote_time = sidecar.get("remote_retrieval_time_utc")
+                                byte_rep = sidecar.get("byte_representation", byte_rep)
+                            else:
+                                limitation = "Cache sidecar metadata mismatch with retained file bytes."
+                        except Exception as se:
+                            limitation = f"Failed to parse cache sidecar: {se}"
+                    else:
+                        limitation = "Cache sidecar missing; remote retrieval timestamp unavailable."
+
+                    read_time = datetime.utcnow().isoformat() + "Z"
                     self.last_submissions_receipt = {
                         "object_type": "SUBMISSIONS_JSON",
                         "url": url,
-                        "retrieval_time_utc": datetime.utcfromtimestamp(cache_file.stat().st_mtime).isoformat() + "Z",
-                        "byte_count": len(raw),
-                        "sha256": hashlib.sha256(raw).hexdigest(),
+                        "retrieval_time_utc": remote_time,
+                        "remote_retrieval_time_utc": remote_time,
+                        "cache_read_time_utc": read_time,
+                        "byte_count": actual_len,
+                        "sha256": actual_sha,
                         "content_type": "application/json",
                         "retained_path": str(cache_file),
                         "retrieval_mode": "CACHED",
+                        "byte_representation": byte_rep,
+                        "limitation": limitation,
                     }
                     return data
                 except Exception as e:
@@ -115,15 +139,39 @@ class SecEventPoller:
             try:
                 raw = cache_file.read_bytes()
                 data = json.loads(raw.decode("utf-8"))
+                actual_sha = hashlib.sha256(raw).hexdigest()
+                actual_len = len(raw)
+                sidecar_file = cache_file.with_name(cache_file.name + ".meta.json")
+                remote_time = None
+                byte_rep = "decoded_http_response_bytes"
+                limitation = None
+                if sidecar_file.exists():
+                    try:
+                        sidecar = json.loads(sidecar_file.read_text(encoding="utf-8"))
+                        if sidecar.get("sha256") == actual_sha and sidecar.get("byte_count") == actual_len:
+                            remote_time = sidecar.get("remote_retrieval_time_utc")
+                            byte_rep = sidecar.get("byte_representation", byte_rep)
+                        else:
+                            limitation = "Cache sidecar metadata mismatch with retained file bytes."
+                    except Exception as se:
+                        limitation = f"Failed to parse cache sidecar: {se}"
+                else:
+                    limitation = "Cache sidecar missing; remote retrieval timestamp unavailable."
+
+                read_time = datetime.utcnow().isoformat() + "Z"
                 self.last_submissions_receipt = {
                     "object_type": "SUBMISSIONS_JSON",
                     "url": url,
-                    "retrieval_time_utc": datetime.utcfromtimestamp(cache_file.stat().st_mtime).isoformat() + "Z",
-                    "byte_count": len(raw),
-                    "sha256": hashlib.sha256(raw).hexdigest(),
+                    "retrieval_time_utc": remote_time,
+                    "remote_retrieval_time_utc": remote_time,
+                    "cache_read_time_utc": read_time,
+                    "byte_count": actual_len,
+                    "sha256": actual_sha,
                     "content_type": "application/json",
                     "retained_path": str(cache_file),
                     "retrieval_mode": "CACHED",
+                    "byte_representation": byte_rep,
+                    "limitation": limitation,
                 }
                 return data
             except Exception as e:
@@ -146,23 +194,38 @@ class SecEventPoller:
                 if resp.info().get("Content-Encoding") == "gzip" or (len(raw) > 2 and raw[:2] == b"\x1f\x8b"):
                     raw = gzip.decompress(raw)
                 data = json.loads(raw.decode("utf-8"))
+                now_iso = datetime.utcnow().isoformat() + "Z"
+                sha_val = hashlib.sha256(raw).hexdigest()
+                len_val = len(raw)
+                if cache_file:
+                    cache_file.write_bytes(raw)
+                    sidecar_file = cache_file.with_name(cache_file.name + ".meta.json")
+                    sidecar_data = {
+                        "url": url,
+                        "remote_retrieval_time_utc": now_iso,
+                        "byte_count": len_val,
+                        "sha256": sha_val,
+                        "content_type": "application/json",
+                        "byte_representation": "decoded_http_response_bytes",
+                    }
+                    sidecar_file.write_text(json.dumps(sidecar_data, indent=2), encoding="utf-8")
+
                 self.last_submissions_receipt = {
                     "object_type": "SUBMISSIONS_JSON",
                     "url": url,
-                    "retrieval_time_utc": datetime.utcnow().isoformat() + "Z",
-                    "byte_count": len(raw),
-                    "sha256": hashlib.sha256(raw).hexdigest(),
+                    "retrieval_time_utc": now_iso,
+                    "remote_retrieval_time_utc": now_iso,
+                    "cache_read_time_utc": None,
+                    "byte_count": len_val,
+                    "sha256": sha_val,
                     "content_type": "application/json",
                     "retained_path": str(cache_file) if cache_file else None,
                     "retrieval_mode": "LIVE",
+                    "byte_representation": "decoded_http_response_bytes",
                 }
         except Exception as e:
             logger.error(f"Failed to fetch submissions for CIK {cik_clean} from SEC: {e}")
             raise
-
-        if cache_file:
-            with open(cache_file, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2)
 
         return data
 
@@ -193,6 +256,9 @@ class SecEventPoller:
         index_cache = self.cache_dir / f"CIK{clean_cik.zfill(10)}_{clean_acc}_index.htm" if self.cache_dir else None
         index_bytes: Optional[bytes] = None
         index_mode = "LIVE"
+        index_remote_time: Optional[str] = None
+        index_cache_read_time: Optional[str] = None
+        index_limitation: Optional[str] = None
 
         if not force_refresh and index_cache and index_cache.exists():
             file_age = time.time() - index_cache.stat().st_mtime
@@ -214,8 +280,20 @@ class SecEventPoller:
                         raw = gzip.decompress(raw)
                     index_bytes = raw
                     index_mode = "LIVE"
+                    now_iso = datetime.utcnow().isoformat() + "Z"
+                    index_remote_time = now_iso
                 if index_cache:
                     index_cache.write_bytes(index_bytes)
+                    sidecar_file = index_cache.with_name(index_cache.name + ".meta.json")
+                    sidecar_data = {
+                        "url": index_url,
+                        "remote_retrieval_time_utc": now_iso,
+                        "byte_count": len(index_bytes),
+                        "sha256": hashlib.sha256(index_bytes).hexdigest(),
+                        "content_type": "text/html",
+                        "byte_representation": "decoded_http_response_bytes",
+                    }
+                    sidecar_file.write_text(json.dumps(sidecar_data, indent=2), encoding="utf-8")
             except Exception as e:
                 logger.warning(f"Could not fetch index HTML from {index_url}: {e}")
 
@@ -230,25 +308,47 @@ class SecEventPoller:
         index_sha256: Optional[str] = None
         if index_bytes is not None:
             index_sha256 = hashlib.sha256(index_bytes).hexdigest()
+            if index_mode == "CACHED":
+                index_cache_read_time = datetime.utcnow().isoformat() + "Z"
+                sidecar_file = index_cache.with_name(index_cache.name + ".meta.json") if index_cache else None
+                if sidecar_file and sidecar_file.exists():
+                    try:
+                        sidecar = json.loads(sidecar_file.read_text(encoding="utf-8"))
+                        if sidecar.get("sha256") == index_sha256 and sidecar.get("byte_count") == len(index_bytes):
+                            index_remote_time = sidecar.get("remote_retrieval_time_utc")
+                        else:
+                            index_limitation = "Index cache sidecar metadata mismatch with retained file bytes."
+                    except Exception as se:
+                        index_limitation = f"Failed to parse index sidecar: {se}"
+                else:
+                    index_limitation = "Index cache sidecar missing; remote retrieval timestamp unavailable."
+
             receipts["INDEX_HTML"] = {
                 "object_type": "INDEX_HTML",
                 "url": index_url,
-                "retrieval_time_utc": datetime.utcnow().isoformat() + "Z",
+                "retrieval_time_utc": index_remote_time,
+                "remote_retrieval_time_utc": index_remote_time,
+                "cache_read_time_utc": index_cache_read_time,
                 "byte_count": len(index_bytes),
                 "sha256": index_sha256,
                 "content_type": "text/html",
                 "retained_path": str(index_cache) if index_cache else None,
                 "retrieval_mode": index_mode,
+                "byte_representation": "decoded_http_response_bytes",
+                "limitation": index_limitation,
             }
         else:
             receipts["INDEX_HTML"] = {
                 "object_type": "INDEX_HTML",
                 "url": index_url,
-                "retrieval_time_utc": datetime.utcnow().isoformat() + "Z",
+                "retrieval_time_utc": None,
+                "remote_retrieval_time_utc": None,
+                "cache_read_time_utc": datetime.utcnow().isoformat() + "Z",
                 "byte_count": 0,
                 "sha256": None,
                 "content_type": "text/html",
                 "retrieval_mode": "UNAVAILABLE",
+                "byte_representation": "unretrieved",
                 "limitation": "Filing index HTML bytes unretrieved (offline mode or network error).",
             }
 
@@ -257,6 +357,9 @@ class SecEventPoller:
         doc_cache = self.cache_dir / f"CIK{clean_cik.zfill(10)}_{clean_acc}_{primary_doc}" if self.cache_dir else None
         doc_bytes: Optional[bytes] = None
         doc_mode = "LIVE"
+        doc_remote_time: Optional[str] = None
+        doc_cache_read_time: Optional[str] = None
+        doc_limitation: Optional[str] = None
 
         if not force_refresh and doc_cache and doc_cache.exists():
             file_age = time.time() - doc_cache.stat().st_mtime
@@ -278,8 +381,20 @@ class SecEventPoller:
                         raw = gzip.decompress(raw)
                     doc_bytes = raw
                     doc_mode = "LIVE"
+                    now_iso = datetime.utcnow().isoformat() + "Z"
+                    doc_remote_time = now_iso
                 if doc_cache:
                     doc_cache.write_bytes(doc_bytes)
+                    sidecar_file = doc_cache.with_name(doc_cache.name + ".meta.json")
+                    sidecar_data = {
+                        "url": doc_url,
+                        "remote_retrieval_time_utc": now_iso,
+                        "byte_count": len(doc_bytes),
+                        "sha256": hashlib.sha256(doc_bytes).hexdigest(),
+                        "content_type": "text/html",
+                        "byte_representation": "decoded_http_response_bytes",
+                    }
+                    sidecar_file.write_text(json.dumps(sidecar_data, indent=2), encoding="utf-8")
             except Exception as e:
                 logger.warning(f"Could not fetch primary doc HTML from {doc_url}: {e}")
 
@@ -294,25 +409,47 @@ class SecEventPoller:
         doc_sha256: Optional[str] = None
         if doc_bytes is not None:
             doc_sha256 = hashlib.sha256(doc_bytes).hexdigest()
+            if doc_mode == "CACHED":
+                doc_cache_read_time = datetime.utcnow().isoformat() + "Z"
+                sidecar_file = doc_cache.with_name(doc_cache.name + ".meta.json") if doc_cache else None
+                if sidecar_file and sidecar_file.exists():
+                    try:
+                        sidecar = json.loads(sidecar_file.read_text(encoding="utf-8"))
+                        if sidecar.get("sha256") == doc_sha256 and sidecar.get("byte_count") == len(doc_bytes):
+                            doc_remote_time = sidecar.get("remote_retrieval_time_utc")
+                        else:
+                            doc_limitation = "Primary doc cache sidecar metadata mismatch with retained file bytes."
+                    except Exception as se:
+                        doc_limitation = f"Failed to parse primary doc sidecar: {se}"
+                else:
+                    doc_limitation = "Primary doc cache sidecar missing; remote retrieval timestamp unavailable."
+
             receipts["PRIMARY_DOC_HTML"] = {
                 "object_type": "PRIMARY_DOC_HTML",
                 "url": doc_url,
-                "retrieval_time_utc": datetime.utcnow().isoformat() + "Z",
+                "retrieval_time_utc": doc_remote_time,
+                "remote_retrieval_time_utc": doc_remote_time,
+                "cache_read_time_utc": doc_cache_read_time,
                 "byte_count": len(doc_bytes),
                 "sha256": doc_sha256,
                 "content_type": "text/html",
                 "retained_path": str(doc_cache) if doc_cache else None,
                 "retrieval_mode": doc_mode,
+                "byte_representation": "decoded_http_response_bytes",
+                "limitation": doc_limitation,
             }
         else:
             receipts["PRIMARY_DOC_HTML"] = {
                 "object_type": "PRIMARY_DOC_HTML",
                 "url": doc_url,
-                "retrieval_time_utc": datetime.utcnow().isoformat() + "Z",
+                "retrieval_time_utc": None,
+                "remote_retrieval_time_utc": None,
+                "cache_read_time_utc": datetime.utcnow().isoformat() + "Z",
                 "byte_count": 0,
                 "sha256": None,
                 "content_type": "text/html",
                 "retrieval_mode": "UNAVAILABLE",
+                "byte_representation": "unretrieved",
                 "limitation": "Primary document HTML bytes unretrieved (offline mode or network error).",
             }
 

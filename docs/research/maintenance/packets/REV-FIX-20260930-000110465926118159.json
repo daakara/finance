@@ -18,49 +18,63 @@
     "index_sha256": "1a249254ec6612b12fc60c0d477707ec24726d102760128d8d428aed2ab2c2d9",
     "submissions_url": "https://data.sec.gov/submissions/CIK0001035983.json",
     "company_facts_url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001035983.json",
-    "retrieval_time_utc": "2026-10-23T22:04:07.312448Z",
+    "retrieval_time_utc": "2026-10-23T23:53:47.682386Z",
     "is_replay": false,
     "sha256": "54178c98d565d914df375716a118d10bc46150811ecef707218a3db39337751c",
     "source_receipts": {
       "SUBMISSIONS_JSON": {
         "object_type": "SUBMISSIONS_JSON",
         "url": "https://data.sec.gov/submissions/CIK0001035983.json",
-        "retrieval_time_utc": "2026-10-23T22:04:06.905514Z",
+        "retrieval_time_utc": "2026-10-23T23:53:47.168151Z",
+        "remote_retrieval_time_utc": "2026-10-23T23:53:47.168151Z",
+        "cache_read_time_utc": null,
         "byte_count": 157980,
         "sha256": "8f1a5701e68c09cda6c2fda994982eb3e8f83ba16252720554f4ec955327c563",
         "content_type": "application/json",
         "retained_path": "C:\\Users\\akara\\Documents\\Projects\\finance-research-maintenance-pilot\\data\\research\\sourced_fundamentals\\raw\\CIK0001035983_submissions.json",
-        "retrieval_mode": "LIVE"
+        "retrieval_mode": "LIVE",
+        "byte_representation": "decoded_http_response_bytes"
       },
       "INDEX_HTML": {
         "object_type": "INDEX_HTML",
         "url": "https://www.sec.gov/Archives/edgar/data/1035983/000110465926118159/0001104659-26-118159-index.htm",
-        "retrieval_time_utc": "2026-10-23T22:04:06.999630Z",
+        "retrieval_time_utc": "2026-10-23T23:53:47.418661Z",
+        "remote_retrieval_time_utc": "2026-10-23T23:53:47.418661Z",
+        "cache_read_time_utc": null,
         "byte_count": 11317,
         "sha256": "1a249254ec6612b12fc60c0d477707ec24726d102760128d8d428aed2ab2c2d9",
         "content_type": "text/html",
         "retained_path": "C:\\Users\\akara\\Documents\\Projects\\finance-research-maintenance-pilot\\data\\research\\sourced_fundamentals\\raw\\CIK0001035983_000110465926118159_index.htm",
-        "retrieval_mode": "LIVE"
+        "retrieval_mode": "LIVE",
+        "byte_representation": "decoded_http_response_bytes",
+        "limitation": null
       },
       "PRIMARY_DOC_HTML": {
         "object_type": "PRIMARY_DOC_HTML",
         "url": "https://www.sec.gov/Archives/edgar/data/1035983/000110465926118159/fix-20260930x10q.htm",
-        "retrieval_time_utc": "2026-10-23T22:04:07.312448Z",
+        "retrieval_time_utc": "2026-10-23T23:53:47.677047Z",
+        "remote_retrieval_time_utc": "2026-10-23T23:53:47.677047Z",
+        "cache_read_time_utc": null,
         "byte_count": 2119788,
         "sha256": "54178c98d565d914df375716a118d10bc46150811ecef707218a3db39337751c",
         "content_type": "text/html",
         "retained_path": "C:\\Users\\akara\\Documents\\Projects\\finance-research-maintenance-pilot\\data\\research\\sourced_fundamentals\\raw\\CIK0001035983_000110465926118159_fix-20260930x10q.htm",
-        "retrieval_mode": "LIVE"
+        "retrieval_mode": "LIVE",
+        "byte_representation": "decoded_http_response_bytes",
+        "limitation": null
       },
       "COMPANY_FACTS_JSON": {
         "object_type": "COMPANY_FACTS_JSON",
         "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001035983.json",
-        "retrieval_time_utc": "2026-10-23T22:02:21.442775Z",
-        "byte_count": 6831696,
-        "sha256": "394905e50c0750286dacda823f0b48c1b7252dda6da37646847ab8e35a1459e7",
+        "retrieval_time_utc": "2026-10-23T23:53:48.092188Z",
+        "remote_retrieval_time_utc": "2026-10-23T23:53:48.092188Z",
+        "cache_read_time_utc": null,
+        "byte_count": 3210034,
+        "sha256": "7d6c19138261bfae55c46e7affd1597e9e15c49ded87b4d7b8d108608821bfdc",
         "content_type": "application/json",
         "retained_path": "C:\\Users\\akara\\Documents\\Projects\\finance-research-maintenance-pilot\\data\\research\\sourced_fundamentals\\raw\\CIK0001035983_companyfacts.json",
-        "retrieval_mode": "CACHED"
+        "retrieval_mode": "LIVE",
+        "byte_representation": "decoded_http_response_bytes"
       }
     }
   },
@@ -211,11 +225,11 @@
       "conclusion_key": "decisive_reason",
       "conclusion_label": "Decisive Reason for Quality Watch",
       "baseline_state": "Comfort Systems USA presents an exceptional balance sheet ($1.80B net cash) and high capital returns (>28% ROIC), supported by multi-year modular HVAC backlogs for hyperscale data center construction. However, the frozen reference market price of $1439.07 embeds a demanding 30.07% 5-year revenue CAGR at elevated 15.0% operating margins. Retained on watch: await market pullback toward mid-cycle base valuation range ($1,050 - $1,100) or evidence of margin persistence.",
-      "draft_state": "Net cash buffer expanded from $1800.7M to $2108.5M. TTM revenue grew from $11.23B to $12.54B. Trailing 12-month margin was 16.70%. Solved 5-year revenue CAGR eased from 30.07% to 26.76%. Market reference price ($1439.07) remains above base intrinsic value ($1215.00). Core decisive thesis is maintained.",
-      "interpretation_type": "CALCULATED_DELTA",
+      "draft_state": "Net cash buffer expanded from $1800.7M to $2108.5M. TTM revenue grew from $11.23B to $12.54B. Trailing 12-month margin was 16.70%. Solved 5-year revenue CAGR eased from 30.07% to 26.76%. Market reference price ($1439.07) remains above base intrinsic value ($1215.00). Reported standalone quarterly operating margin (16.58%) did not breach the approved 13.0% invalidation floor, while backlog book-to-bill evidence remains unresolved via Form 10-Q. Core decisive thesis is conditionally maintained pending Product Owner review.",
+      "interpretation_type": "ANALYST_JUDGMENT",
       "materiality": "INCREMENTAL_POSITIVE",
-      "owner_judgment_required": false,
-      "notes": "Quantitative comparison derived directly from reconciled filing facts and recomputed DCF."
+      "owner_judgment_required": true,
+      "notes": "Quarterly margin condition satisfied, but complete multi-condition thesis maintenance requires owner judgment due to unresolved backlog evidence."
     },
     {
       "conclusion_key": "financial_resilience",
@@ -241,11 +255,11 @@
       "conclusion_key": "invalidation_condition",
       "conclusion_label": "Thesis Invalidation Triggers",
       "baseline_state": "Backlog book-to-bill falling below 0.95x or quarterly operating margin dropping below 13.0%.",
-      "draft_state": "Standalone quarterly operating margin (16.58%) did not breach the approved 13.0% invalidation floor. (Trailing 12-month margin is 16.70%). Backlog book-to-bill ratio is an evidence limitation not disclosed in standardized primary XBRL; condition is not triggered by available reported evidence, but remains UNRESOLVED via primary filing alone.",
+      "draft_state": "Standalone quarterly operating margin (16.58%) did not breach the approved 13.0% invalidation floor (TTM margin: 16.70%). Backlog book-to-bill ratio is an evidence limitation not disclosed in standardized primary XBRL and remains UNRESOLVED via Form 10-Q. Quarterly margin condition was not triggered by reported evidence; complete multi-condition thesis evaluation requires owner review.",
       "interpretation_type": "UNRESOLVED_EVIDENCE",
       "materiality": "NEUTRAL",
-      "owner_judgment_required": false,
-      "notes": "Quarterly margin evaluated; backlog book-to-bill requires human contract audit."
+      "owner_judgment_required": true,
+      "notes": "Quarterly margin evaluated; backlog book-to-bill remains an unassessed evidence limitation requiring human review."
     },
     {
       "conclusion_key": "main_uncertainty",
@@ -339,12 +353,12 @@
     }
   },
   "proposed_disposition": "MAINTAIN",
-  "disposition_rationale": "Proposed disposition: MAINTAIN Quality Watch status (WATCH_CONDITIONS). Operational results in reporting period ended 2026-09-30: Net cash buffer expanded from $1800.7M to $2108.5M. Lower required revenue growth (26.76% vs 30.07%, -331 bps) to justify reference price due to larger starting revenue base and expanded net cash buffer. No thesis invalidation occurred; maintain watch status pending human Research Lead review.",
+  "disposition_rationale": "Proposed disposition: MAINTAIN Quality Watch status (WATCH_CONDITIONS). Standalone quarterly operating margin (16.58%) did not breach the approved 13.0% invalidation floor, while backlog book-to-bill remains an unresolved evidence limitation under Form 10-Q. Operational results in reporting period ended 2026-09-30: Net cash buffer expanded from $1800.7M to $2108.5M. Lower required revenue growth (26.76% vs 30.07%, -331 bps) to justify reference price due to larger starting revenue base and expanded net cash buffer. Maintained watch status is proposed pending Product Owner review and approval.",
   "questions_requiring_owner_judgment": [
     "Base modeled value shifted from $1081.99 to $1215.00 (+12.3%). Does the Research Lead / Product Owner approve updating the price watch entry corridor, or should existing approved thresholds (Priced attractive for entry if share price pulls back to base-case modeled value range ($1,050 - $1,100).) remain unchanged?",
     "Should normalized operating margin assumption (15.0%) be reassessed at the next annual research review given trailing margin execution (16.70%)?"
   ],
-  "stopping_rule": "Evidence collection complete for Form 10-Q (Period: 2026-09-30). All reported primary facts reconciled and conditional valuation differences calculated. Core customer capex cycle uncertainty remains an evidence limitation that cannot be further resolved via SEC quarterly filings until FY2026 Form 10-K. Cease investigation.",
-  "created_at_utc": "2026-10-23T22:04:07.397920Z",
+  "stopping_rule": "Evidence collection complete for Form 10-Q (Period: 2026-09-30). All reported primary facts reconciled and conditional valuation differences calculated. Core customer capex cycle uncertainty remains an evidence limitation not disclosed in interim Form 10-Q filings (annual Form 10-K disclosures provide additional qualitative context, though customer contract terms and capex cycle uncertainty cannot be guaranteed to be fully resolved via standard regulatory filings alone). Cease investigation.",
+  "created_at_utc": "2026-10-23T23:53:48.125201Z",
   "is_replay": false
 }

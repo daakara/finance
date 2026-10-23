@@ -69,16 +69,21 @@ class FactStatus(str, Enum):
 class SourceReceipt:
     """
     Cryptographic content receipt for a primary-source artifact.
-    Identifies exact object type, URL, byte count, SHA-256 digest, and retrieval mode.
+    Identifies exact object type, URL, byte count, SHA-256 digest, retrieval mode,
+    retrieval timestamps (remote vs cache-read), byte representation, and limitations.
     """
     object_type: str  # "INDEX_HTML", "PRIMARY_DOC_HTML", "SUBMISSIONS_JSON", "COMPANY_FACTS_JSON", "SYNTHETIC_FIXTURE"
     url: str
-    retrieval_time_utc: str
-    byte_count: int
-    sha256: str
+    retrieval_time_utc: Optional[str] = None
+    byte_count: int = 0
+    sha256: Optional[str] = None
     content_type: str = "text/html"
     retained_path: Optional[str] = None
-    retrieval_mode: str = "LIVE"  # "LIVE", "CACHED", "SYNTHETIC_FIXTURE"
+    retrieval_mode: str = "LIVE"  # "LIVE", "CACHED", "UNAVAILABLE", "SYNTHETIC_FIXTURE"
+    remote_retrieval_time_utc: Optional[str] = None
+    cache_read_time_utc: Optional[str] = None
+    byte_representation: str = "decoded_http_response_bytes"
+    limitation: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

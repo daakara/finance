@@ -369,6 +369,37 @@ class DecisionAssessor:
         else:
             cap_desc = "Net debt bridge is zero."
 
+        is_improved = (draft_net_bridge is not None and (base_net_bridge is None or draft_net_bridge < base_net_bridge)) and (draft_rev is not None and (base_rev is None or draft_rev > base_rev))
+        is_deteriorated = (draft_net_bridge is not None and base_net_bridge is not None and draft_net_bridge > base_net_bridge) or (draft_rev is not None and base_rev is not None and draft_rev < base_rev)
+
+        # Determine condition status and thesis text coherently before composing effects
+        if is_quarterly_invalidated:
+            thesis_judgment_text = (
+                f"INVALIDATION WARNING: Standalone quarterly operating margin ({draft_q_margin:.2f}%) fell below the approved 13.0% threshold. "
+                f"Core decisive thesis is challenged; immediate thesis review and potential downgrade required."
+            )
+            decisive_interp = InterpretationType.FACT_CHANGE
+            decisive_mat = "MATERIAL"
+            decisive_owner_req = True
+            decisive_note = "Quarterly margin breached approved 13.0% threshold; thesis maintenance is contradicted."
+        elif is_quarterly_unresolved:
+            thesis_judgment_text = (
+                "Standalone quarterly operating margin is UNRESOLVED. Core decisive thesis status cannot be confirmed without complete quarterly evidence."
+            )
+            decisive_interp = InterpretationType.UNRESOLVED_EVIDENCE
+            decisive_mat = "NEUTRAL"
+            decisive_owner_req = True
+            decisive_note = "Quarterly margin inputs unavailable; thesis resolution requires human analyst review."
+        else:
+            thesis_judgment_text = (
+                f"Reported standalone quarterly operating margin ({draft_q_margin:.2f}%) did not breach the approved 13.0% invalidation floor, "
+                f"while backlog book-to-bill evidence remains unresolved via Form 10-Q. Core decisive thesis is conditionally maintained pending Product Owner review."
+            )
+            decisive_interp = InterpretationType.ANALYST_JUDGMENT
+            decisive_mat = "INCREMENTAL_POSITIVE" if is_improved else ("INCREMENTAL_NEGATIVE" if is_deteriorated else "NEUTRAL")
+            decisive_owner_req = True
+            decisive_note = "Quarterly margin condition satisfied, but complete multi-condition thesis maintenance requires owner judgment due to unresolved backlog evidence."
+
         # Effect 1: Decisive Reason
         if val_comp.get("valuation_machinery_status") == "COMPUTED_VERIFIED":
             draft_cagr_val = val_comp["solved_5y_cagr"]["draft_cagr_pct"]
@@ -401,30 +432,34 @@ class DecisionAssessor:
 
             margin_desc = f"Trailing 12-month margin was {draft_ttm_margin:.2f}%." if draft_ttm_margin is not None else "Margin is UNRESOLVED."
 
-            is_improved = (draft_net_bridge < (base_net_bridge or 0)) and (draft_rev > (base_rev or 0))
-            is_deteriorated = (draft_net_bridge > (base_net_bridge or 0)) or (draft_rev < (base_rev or 0))
+            effects.append(
+                DecisionAssessmentEffect(
+                    conclusion_key="decisive_reason",
+                    conclusion_label="Decisive Reason for Quality Watch",
+                    baseline_state=base_decisive,
+                    draft_state=f"{cap_desc} {rev_desc} {margin_desc} {cagr_desc} {price_desc} {thesis_judgment_text}",
+                    interpretation_type=decisive_interp,
+                    materiality=decisive_mat,
+                    owner_judgment_required=decisive_owner_req,
+                    notes=decisive_note,
+                )
+            )
+        else:
+            if is_quarterly_invalidated:
+                draft_state_text = f"INVALIDATION WARNING: Standalone quarterly operating margin ({draft_q_margin:.2f}%) fell below 13.0%, while valuation calculations are SUPPRESSED ({val_comp.get('reason', 'Valuation suppressed')}). Core decisive thesis is challenged; immediate thesis review required."
+            elif is_quarterly_unresolved:
+                draft_state_text = f"Decisive reason quantitative assessment is UNRESOLVED: Quarterly operating margin is missing and valuation calculations are suppressed ({val_comp.get('reason', 'Valuation suppressed')})."
+            else:
+                draft_state_text = f"Standalone quarterly operating margin ({draft_q_margin:.2f}%) did not breach 13.0%, but valuation calculations are SUPPRESSED ({val_comp.get('reason', 'Valuation suppressed')}) and backlog book-to-bill is unresolved. Decisive reason assessment is UNRESOLVED pending complete valuation inputs."
 
             effects.append(
                 DecisionAssessmentEffect(
                     conclusion_key="decisive_reason",
                     conclusion_label="Decisive Reason for Quality Watch",
                     baseline_state=base_decisive,
-                    draft_state=f"{cap_desc} {rev_desc} {margin_desc} {cagr_desc} {price_desc} Core decisive thesis is maintained.",
-                    interpretation_type=InterpretationType.CALCULATED_DELTA,
-                    materiality="INCREMENTAL_POSITIVE" if is_improved else ("INCREMENTAL_NEGATIVE" if is_deteriorated else "NEUTRAL"),
-                    owner_judgment_required=False,
-                    notes="Quantitative comparison derived directly from reconciled filing facts and recomputed DCF."
-                )
-            )
-        else:
-            effects.append(
-                DecisionAssessmentEffect(
-                    conclusion_key="decisive_reason",
-                    conclusion_label="Decisive Reason for Quality Watch",
-                    baseline_state=base_decisive,
-                    draft_state=f"Decisive reason quantitative assessment is UNRESOLVED: {val_comp.get('reason', 'Valuation suppressed.')}",
-                    interpretation_type=InterpretationType.UNRESOLVED_EVIDENCE,
-                    materiality="NEUTRAL",
+                    draft_state=draft_state_text,
+                    interpretation_type=InterpretationType.UNRESOLVED_EVIDENCE if not is_quarterly_invalidated else InterpretationType.FACT_CHANGE,
+                    materiality="MATERIAL" if is_quarterly_invalidated else "NEUTRAL",
                     owner_judgment_required=True,
                     notes="Valuation calculations suppressed; human analyst review required."
                 )
@@ -557,10 +592,9 @@ class DecisionAssessor:
             )
         else:
             inval_text = (
-                f"Standalone quarterly operating margin ({draft_q_margin:.2f}%) did not breach the approved 13.0% invalidation floor. "
-                f"(Trailing 12-month margin is {draft_ttm_margin:.2f}%). "
-                f"Backlog book-to-bill ratio is an evidence limitation not disclosed in standardized primary XBRL; "
-                f"condition is not triggered by available reported evidence, but remains UNRESOLVED via primary filing alone."
+                f"Standalone quarterly operating margin ({draft_q_margin:.2f}%) did not breach the approved 13.0% invalidation floor (TTM margin: {draft_ttm_margin:.2f}%). "
+                f"Backlog book-to-bill ratio is an evidence limitation not disclosed in standardized primary XBRL and remains UNRESOLVED via Form 10-Q. "
+                f"Quarterly margin condition was not triggered by reported evidence; complete multi-condition thesis evaluation requires owner review."
             )
             effects.append(
                 DecisionAssessmentEffect(
@@ -570,8 +604,8 @@ class DecisionAssessor:
                     draft_state=inval_text,
                     interpretation_type=InterpretationType.UNRESOLVED_EVIDENCE,
                     materiality="NEUTRAL",
-                    owner_judgment_required=False,
-                    notes="Quarterly margin evaluated; backlog book-to-bill requires human contract audit."
+                    owner_judgment_required=True,
+                    notes="Quarterly margin evaluated; backlog book-to-bill remains an unassessed evidence limitation requiring human review."
                 )
             )
 
@@ -598,8 +632,9 @@ class DecisionAssessor:
         if is_quarterly_invalidated:
             disposition = ProposedDisposition.INVALIDATE
             rationale = (
-                f"INVALIDATE: Standalone quarterly operating margin compressed to {draft_q_margin:.2f}%, breaching the approved 13.0% invalidation threshold. "
-                f"Quality Watch thesis is invalidated by reported primary filing facts."
+                f"Proposed disposition: INVALIDATE Quality Watch status. Standalone quarterly operating margin compressed to {draft_q_margin:.2f}%, "
+                f"breaching the approved 13.0% invalidation threshold. Quality Watch thesis is challenged by reported primary filing facts; "
+                f"formal downgrade and thesis revision staged for Product Owner review."
             )
         elif is_quarterly_unresolved or val_comp.get("valuation_machinery_status") != "COMPUTED_VERIFIED":
             disposition = ProposedDisposition.UNRESOLVED
@@ -609,16 +644,19 @@ class DecisionAssessor:
             if val_comp.get("valuation_machinery_status") != "COMPUTED_VERIFIED":
                 reasons.append(f"valuation suppressed ({val_comp.get('reason')})")
             rationale = (
-                f"UNRESOLVED: Review packet is staged with unresolved status for human research review because {'; '.join(reasons)}."
+                f"Proposed disposition: UNRESOLVED. Review packet is staged with unresolved status for human research review because {'; '.join(reasons)}. "
+                f"Thesis status cannot be confirmed without complete primary evidence."
             )
         else:
             disposition = ProposedDisposition.MAINTAIN
             cagr_text_part = val_comp.get("solved_5y_cagr", {}).get("interpretation", "")
             rationale = (
                 f"Proposed disposition: MAINTAIN Quality Watch status (WATCH_CONDITIONS). "
+                f"Standalone quarterly operating margin ({draft_q_margin:.2f}%) did not breach the approved 13.0% invalidation floor, "
+                f"while backlog book-to-bill remains an unresolved evidence limitation under Form 10-Q. "
                 f"Operational results in reporting period ended {reconciled_profile.get('selected_share_basis', {}).get('measurement_period')}: "
                 f"{cap_desc} {cagr_text_part} "
-                f"No thesis invalidation occurred; maintain watch status pending human Research Lead review."
+                f"Maintained watch status is proposed pending Product Owner review and approval."
             )
 
         if val_comp.get("valuation_machinery_status") == "COMPUTED_VERIFIED":
@@ -632,7 +670,9 @@ class DecisionAssessor:
         stopping_rule = (
             f"Evidence collection complete for Form 10-Q (Period: {rep_period}). "
             f"All reported primary facts reconciled and conditional valuation differences calculated. "
-            f"Core customer capex cycle uncertainty remains an evidence limitation that cannot be further resolved via SEC quarterly filings until FY2026 Form 10-K. "
+            f"Core customer capex cycle uncertainty remains an evidence limitation not disclosed in interim Form 10-Q filings "
+            f"(annual Form 10-K disclosures provide additional qualitative context, though customer contract terms and capex cycle "
+            f"uncertainty cannot be guaranteed to be fully resolved via standard regulatory filings alone). "
             f"Cease investigation."
         )
 
