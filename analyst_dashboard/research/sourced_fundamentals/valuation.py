@@ -19,9 +19,117 @@ from .contracts import (
     DeepValuationAssessment,
     DerivedMetrics,
     CompanyFundamentals,
+    ShareBasis,
+    DenominatorUseCase,
+    DenominatorErrorCode,
+    ShareDenominatorError,
+    ShareDenominatorMetadata,
+    validate_share_denominator_compatibility,
+    IncompatibleShareBasisError,
+    PeriodAlignmentError,
+    IncompatibleShareClassError,
+    ShareUnitMismatchError,
+    MissingProvenanceError,
+    InvalidShareDenominatorError,
+    UnverifiedADRRatioError,
+    LeaseAccountingConvention,
+    AccountingFramework,
+    LeaseComponentFact,
+    LeaseLiabilityMetadata,
+    LeaseIntegrityError,
+    LeaseDoubleCountingError,
+    LeaseConventionMismatchError,
+    LeaseFrameworkIncompatibilityError,
+    LeaseAggregationConflictError,
+    LeaseIncompatibleComponentsError,
 )
 
 logger = logging.getLogger(__name__)
+
+
+def validate_lease_convention_integrity(
+    convention: LeaseAccountingConvention,
+    framework: AccountingFramework,
+    net_debt_bridge: float,
+    total_financial_debt: Optional[float] = None,
+    total_cash: Optional[float] = None,
+    lease_metadata: Optional[LeaseLiabilityMetadata] = None,
+    tolerance: float = 1.0,
+) -> None:
+    """
+    Validates that net_debt_bridge is mathematically coherent with declared convention and framework.
+    Fails closed on convention mixing, double-deduction, or unadjusted IFRS ingestion.
+    """
+    # 1. Framework Gate (IFRS 16 Discrimination)
+    if framework == AccountingFramework.IFRS and convention == LeaseAccountingConvention.LEASE_AS_OPERATING_EXPENSE:
+        if lease_metadata is None or not lease_metadata.is_ebit_adjusted_for_leases:
+            raise LeaseFrameworkIncompatibilityError(
+                "IFRS 16 issuers do not expense leases in operating profit. Applying "
+                "LEASE_AS_OPERATING_EXPENSE requires explicit EBIT downward adjustment "
+                "to reflect lease rental costs, or conversion to LEASE_AS_FINANCING_DEBT."
+            )
+
+    d = total_financial_debt if total_financial_debt is not None else 0.0
+    c = total_cash if total_cash is not None else 0.0
+
+    # 2. Convention 1: Lease-as-Operating-Expense (Canonical ARX Default)
+    if convention == LeaseAccountingConvention.LEASE_AS_OPERATING_EXPENSE:
+        expected_bridge = d - c
+
+        # Anti-Double-Deduction Check:
+        if lease_metadata and lease_metadata.included_in_net_debt_bridge:
+            raise LeaseDoubleCountingError(
+                "lease_metadata.included_in_net_debt_bridge is True under LEASE_AS_OPERATING_EXPENSE convention."
+            )
+
+        if lease_metadata and lease_metadata.total_operating_lease_liabilities:
+            leases = lease_metadata.total_operating_lease_liabilities
+            if leases > 0:
+                if total_financial_debt is not None or total_cash is not None:
+                    if abs(net_debt_bridge - (expected_bridge + leases)) <= tolerance:
+                        raise LeaseDoubleCountingError(
+                            f"Double-counting detected: net_debt_bridge ({net_debt_bridge:,.2f}) includes "
+                            f"operating lease liabilities ({leases:,.2f}) under LEASE_AS_OPERATING_EXPENSE convention. "
+                            f"Operating leases are already expensed in reported EBIT/CFO. Expected bridge: {expected_bridge:,.2f}."
+                        )
+
+        if total_financial_debt is not None and total_cash is not None:
+            if abs(net_debt_bridge - expected_bridge) > tolerance:
+                leases = lease_metadata.total_operating_lease_liabilities if (lease_metadata and lease_metadata.total_operating_lease_liabilities) else 0.0
+                if leases > 0 and abs(net_debt_bridge - (expected_bridge + leases)) <= tolerance:
+                    raise LeaseDoubleCountingError(
+                        f"Double-counting detected: net_debt_bridge ({net_debt_bridge:,.2f}) includes "
+                        f"operating lease liabilities ({leases:,.2f}) under LEASE_AS_OPERATING_EXPENSE convention."
+                    )
+                raise LeaseConventionMismatchError(
+                    f"Net debt bridge mismatch under LEASE_AS_OPERATING_EXPENSE: got {net_debt_bridge:,.2f}, "
+                    f"expected (Total Financial Debt - Total Cash) = {expected_bridge:,.2f}."
+                )
+
+    # 3. Convention 2: Lease-as-Financing-Debt (Capitalized Leases)
+    elif convention == LeaseAccountingConvention.LEASE_AS_FINANCING_DEBT:
+        leases = 0.0
+        if lease_metadata and lease_metadata.total_operating_lease_liabilities:
+            leases = lease_metadata.total_operating_lease_liabilities
+
+        expected_bridge = d + leases - c
+        if total_financial_debt is not None and total_cash is not None:
+            if abs(net_debt_bridge - expected_bridge) > tolerance:
+                raise LeaseConventionMismatchError(
+                    f"Net debt bridge mismatch under LEASE_AS_FINANCING_DEBT: got {net_debt_bridge:,.2f}, "
+                    f"expected (Total Financial Debt + Leases - Cash) = {expected_bridge:,.2f}."
+                )
+        elif lease_metadata and lease_metadata.included_in_net_debt_bridge is False:
+            raise LeaseConventionMismatchError(
+                f"Lease liabilities ({leases:,.2f}) omitted from Net Debt Bridge under LEASE_AS_FINANCING_DEBT convention."
+            )
+
+        # Verify EBIT add-back
+        if lease_metadata and not lease_metadata.is_ebit_adjusted_for_leases:
+            raise LeaseConventionMismatchError(
+                "Convention 2 (LEASE_AS_FINANCING_DEBT) declared but operating cash flow / EBIT "
+                "was not adjusted to add back operating lease expenses."
+            )
 
 
 def run_fcff_model(
@@ -34,6 +142,8 @@ def run_fcff_model(
     terminal_growth_pct: float,
     tax_rate_pct: float = 21.0,
     reinvestment_rate_pct: float = 15.0,
+    share_metadata: Optional[ShareDenominatorMetadata] = None,
+    lease_metadata: Optional[LeaseLiabilityMetadata] = None,
 ) -> Dict[str, float]:
     """
     5-Year FCFF DCF model under Lease-as-Operating-Expense convention:
@@ -47,11 +157,28 @@ def run_fcff_model(
     if base_revenue is None or current_shares is None or net_debt_bridge is None:
         raise ValueError("Cannot run FCFF model: base_revenue, current_shares, or net_debt_bridge is None")
     if current_shares <= 0:
-        raise ValueError("Current shares must be strictly positive")
+        raise InvalidShareDenominatorError(f"Current shares must be strictly positive (got {current_shares})")
     if base_revenue <= 0:
         raise ValueError("Base revenue must be strictly positive")
     if wacc_pct <= terminal_growth_pct:
         raise ValueError(f"WACC ({wacc_pct}%) must be strictly greater than terminal growth ({terminal_growth_pct}%)")
+
+    # P0-A: Validate share denominator compatibility if metadata supplied
+    if share_metadata is not None:
+        validate_share_denominator_compatibility(
+            metadata=share_metadata,
+            target_use_case=DenominatorUseCase.PRESENT_VALUE_DCF,
+            raise_on_error=True,
+        )
+
+    # P0-B: Validate lease convention integrity if metadata supplied
+    if lease_metadata is not None:
+        validate_lease_convention_integrity(
+            convention=lease_metadata.convention,
+            framework=lease_metadata.framework,
+            net_debt_bridge=net_debt_bridge,
+            lease_metadata=lease_metadata,
+        )
 
     growth = growth_5y_pct / 100.0
     ebit_margin = operating_margin_pct / 100.0
@@ -89,6 +216,45 @@ def run_fcff_model(
     }
 
 
+def compute_terminal_exit_valuation(
+    terminal_fcf: float,
+    wacc_pct: float,
+    terminal_growth_pct: float,
+    terminal_shares: float,
+    terminal_net_debt: float = 0.0,
+    share_metadata: Optional[ShareDenominatorMetadata] = None,
+) -> Dict[str, float]:
+    """
+    Computes terminal exit enterprise value, equity value, and per-share terminal equity value.
+    Enforces FORWARD_PROJECTED_TERMINAL denominator semantics under P0-A.
+    """
+    if terminal_shares is None or terminal_shares <= 0:
+        raise InvalidShareDenominatorError(f"Terminal shares must be strictly positive (got {terminal_shares})")
+    if terminal_fcf is None or terminal_fcf <= 0:
+        raise ValueError("Terminal FCF must be strictly positive")
+    if wacc_pct <= terminal_growth_pct:
+        raise ValueError(f"WACC ({wacc_pct}%) must be strictly greater than terminal growth ({terminal_growth_pct}%)")
+
+    if share_metadata is not None:
+        validate_share_denominator_compatibility(
+            metadata=share_metadata,
+            target_use_case=DenominatorUseCase.PROJECTED_TERMINAL_EXIT,
+            raise_on_error=True,
+        )
+
+    wacc = wacc_pct / 100.0
+    g = terminal_growth_pct / 100.0
+    terminal_ev = (terminal_fcf * (1.0 + g)) / (wacc - g)
+    terminal_equity = terminal_ev - terminal_net_debt
+    per_share_exit = terminal_equity / terminal_shares
+
+    return {
+        "terminal_enterprise_value": terminal_ev,
+        "terminal_equity_value": terminal_equity,
+        "terminal_per_share_exit": per_share_exit,
+    }
+
+
 def solve_reverse_dcf(
     target_price: float,
     base_revenue: float,
@@ -101,12 +267,16 @@ def solve_reverse_dcf(
     reinvestment_rate_pct: float = 15.0,
     low_bound_pct: float = -40.0,
     high_bound_pct: float = 100.0,
+    share_metadata: Optional[ShareDenominatorMetadata] = None,
+    lease_metadata: Optional[LeaseLiabilityMetadata] = None,
 ) -> Tuple[Optional[float], str]:
     """
     Numerically solves for the 5-year revenue CAGR required for per-share
     DCF value to equal target_price, holding other parameters constant.
 
     Guarantees:
+    - Validates share_metadata compatibility if provided under P0-A.
+    - Validates lease_metadata compatibility if provided under P0-B.
     - Verifies that target_price is bracketed in [low_bound_pct, high_bound_pct].
     - If target_price is NOT bracketed, returns (None, 'OUT_OF_BOUNDS_TARGET_NOT_BRACKETED').
     - Performs roundtrip forward-model verification: feeds solved CAGR back into run_fcff_model
@@ -120,6 +290,28 @@ def solve_reverse_dcf(
     ):
         return None, "MISSING_INPUTS"
 
+    # P0-A: Pre-flight validate share denominator compatibility for PV DCF
+    if share_metadata is not None:
+        val_res = validate_share_denominator_compatibility(
+            metadata=share_metadata,
+            target_use_case=DenominatorUseCase.PRESENT_VALUE_DCF,
+            raise_on_error=False,
+        )
+        if not val_res.is_valid:
+            return None, f"SUPPRESSED_DENOMINATOR_INCOMPATIBLE: [{val_res.error_code.value}] {val_res.error_message}"
+
+    # P0-B: Pre-flight validate lease convention integrity
+    if lease_metadata is not None:
+        try:
+            validate_lease_convention_integrity(
+                convention=lease_metadata.convention,
+                framework=lease_metadata.framework,
+                net_debt_bridge=net_debt_bridge,
+                lease_metadata=lease_metadata,
+            )
+        except LeaseIntegrityError as e:
+            return None, f"SUPPRESSED_LEASE_INCOMPATIBLE: {e}"
+
     try:
         res_low = run_fcff_model(
             base_revenue=base_revenue,
@@ -131,6 +323,8 @@ def solve_reverse_dcf(
             terminal_growth_pct=terminal_growth_pct,
             tax_rate_pct=tax_rate_pct,
             reinvestment_rate_pct=reinvestment_rate_pct,
+            share_metadata=share_metadata,
+            lease_metadata=lease_metadata,
         )
         res_high = run_fcff_model(
             base_revenue=base_revenue,
@@ -142,7 +336,13 @@ def solve_reverse_dcf(
             terminal_growth_pct=terminal_growth_pct,
             tax_rate_pct=tax_rate_pct,
             reinvestment_rate_pct=reinvestment_rate_pct,
+            share_metadata=share_metadata,
+            lease_metadata=lease_metadata,
         )
+    except ShareDenominatorError as e:
+        return None, f"SUPPRESSED_DENOMINATOR_INCOMPATIBLE: [{e.code.value}] {e.message}"
+    except LeaseIntegrityError as e:
+        return None, f"SUPPRESSED_LEASE_INCOMPATIBLE: {e}"
     except Exception as e:
         return None, f"MODEL_ERROR: {e}"
 
@@ -168,6 +368,8 @@ def solve_reverse_dcf(
             terminal_growth_pct=terminal_growth_pct,
             tax_rate_pct=tax_rate_pct,
             reinvestment_rate_pct=reinvestment_rate_pct,
+            share_metadata=share_metadata,
+            lease_metadata=lease_metadata,
         )
         if abs(res["per_share"] - target_price) < 0.001:
             break
@@ -189,6 +391,8 @@ def solve_reverse_dcf(
         terminal_growth_pct=terminal_growth_pct,
         tax_rate_pct=tax_rate_pct,
         reinvestment_rate_pct=reinvestment_rate_pct,
+        share_metadata=share_metadata,
+        lease_metadata=lease_metadata,
     )
     diff = abs(roundtrip["per_share"] - target_price)
     threshold = max(0.05, target_price * 0.0005)
@@ -208,11 +412,41 @@ def generate_sensitivity_matrix(
     reinvestment_rate_pct: float,
     wacc_rates: List[float] = [8.0, 9.0, 10.0, 11.0, 12.0],
     terminal_rates: List[float] = [2.0, 2.5, 3.0],
+    share_metadata: Optional[ShareDenominatorMetadata] = None,
+    lease_metadata: Optional[LeaseLiabilityMetadata] = None,
 ) -> Dict[str, Dict[str, Optional[float]]]:
     """
     Generates 2D WACC vs Terminal Growth valuation sensitivity table.
     Invalid cells return None (never zero-dollar fair values).
     """
+    if share_metadata is not None:
+        val_res = validate_share_denominator_compatibility(
+            metadata=share_metadata,
+            target_use_case=DenominatorUseCase.PRESENT_VALUE_DCF,
+            raise_on_error=False,
+        )
+        if not val_res.is_valid:
+            matrix: Dict[str, Dict[str, Optional[float]]] = {}
+            for w in wacc_rates:
+                w_key = f"WACC_{w:.1f}%"
+                matrix[w_key] = {f"g_{g:.1f}%": None for g in terminal_rates}
+            return matrix
+
+    if lease_metadata is not None:
+        try:
+            validate_lease_convention_integrity(
+                convention=lease_metadata.convention,
+                framework=lease_metadata.framework,
+                net_debt_bridge=net_debt_bridge,
+                lease_metadata=lease_metadata,
+            )
+        except LeaseIntegrityError:
+            matrix: Dict[str, Dict[str, Optional[float]]] = {}
+            for w in wacc_rates:
+                w_key = f"WACC_{w:.1f}%"
+                matrix[w_key] = {f"g_{g:.1f}%": None for g in terminal_rates}
+            return matrix
+
     matrix: Dict[str, Dict[str, Optional[float]]] = {}
     for w in wacc_rates:
         w_key = f"WACC_{w:.1f}%"
@@ -233,6 +467,8 @@ def generate_sensitivity_matrix(
                     terminal_growth_pct=g,
                     tax_rate_pct=tax_rate_pct,
                     reinvestment_rate_pct=reinvestment_rate_pct,
+                    share_metadata=share_metadata,
+                    lease_metadata=lease_metadata,
                 )
                 matrix[w_key][g_key] = round(res["per_share"], 2)
             except Exception:
@@ -240,9 +476,67 @@ def generate_sensitivity_matrix(
     return matrix
 
 
+def _resolve_and_validate_diluted_share_metadata(
+    cf: Optional[CompanyFundamentals],
+    metrics: DerivedMetrics,
+    target_use_case: DenominatorUseCase = DenominatorUseCase.PRESENT_VALUE_DCF,
+    valuation_date: Optional[str] = None,
+    require_certified: bool = True,
+) -> Tuple[Optional[ShareDenominatorMetadata], Optional[str], Optional[DenominatorErrorCode]]:
+    """
+    Extracts or reconstructs ShareDenominatorMetadata for diluted shares and validates compatibility under P0-A.
+    Returns (metadata, error_message, error_code).
+    If valid, returns (metadata, None, None).
+    """
+    dshares_meta = None
+    if metrics.share_denominator_metadata and "diluted_shares" in metrics.share_denominator_metadata:
+        raw_meta = metrics.share_denominator_metadata["diluted_shares"]
+        if raw_meta is not None:
+            if isinstance(raw_meta, ShareDenominatorMetadata):
+                dshares_meta = raw_meta
+            elif isinstance(raw_meta, dict):
+                dshares_meta = ShareDenominatorMetadata.from_dict(raw_meta)
+
+    # If missing from metrics, attempt reconstruction from authoritative cf.facts
+    if dshares_meta is None and cf and cf.facts and "diluted_shares_weighted_avg" in cf.facts:
+        f = cf.facts["diluted_shares_weighted_avg"]
+        if f.value is not None:
+            dshares_meta = ShareDenominatorMetadata(
+                share_count=f.value,
+                basis=ShareBasis.WEIGHTED_AVERAGE_DILUTED,
+                use_case=target_use_case,
+                units=f.units or "shares",
+                period_start=f.period_start,
+                period_end=f.period_end,
+                filing_date=f.filing_date,
+                accession_number=f.accession_number,
+                form=f.form,
+                status=f.status,
+                provenance_notes=f.notes,
+            )
+
+    if dshares_meta is None:
+        if require_certified:
+            return None, "Compatible share denominator metadata unavailable for certified research valuation.", DenominatorErrorCode.MISSING_PROVENANCE
+        return None, None, None
+
+    # Validate compatibility
+    try:
+        validate_share_denominator_compatibility(
+            metadata=dshares_meta,
+            target_use_case=target_use_case,
+            valuation_date=valuation_date or metrics.market_price_date,
+            raise_on_error=True,
+        )
+        return dshares_meta, None, None
+    except ShareDenominatorError as e:
+        return dshares_meta, f"[{e.code.value}] {e.message}", e.code
+
+
 def evaluate_deep_valuation_fix(
     cf: CompanyFundamentals,
     metrics: DerivedMetrics,
+    require_certified_metadata: bool = True,
 ) -> Optional[DeepValuationAssessment]:
     """Deep valuation package for FIX (Comfort Systems USA)."""
     rev = metrics.revenue_ttm
@@ -271,14 +565,46 @@ def evaluate_deep_valuation_fix(
             thesis_invalidation_thresholds=[],
             next_quarter_evidence_milestones=[],
             valuation_status="SUPPRESSED_UNAVAILABLE",
-            suppression_reason=f"Critical valuation inputs unavailable: {', '.join(missing_reasons)}"
+            suppression_reason=f"Critical valuation inputs unavailable: {', '.join(missing_reasons)}",
+            is_certified=False,
+        )
+
+    # P0-A: Resolve and validate diluted share denominator metadata
+    dshares_meta, err_msg, err_code = _resolve_and_validate_diluted_share_metadata(
+        cf=cf,
+        metrics=metrics,
+        target_use_case=DenominatorUseCase.PRESENT_VALUE_DCF,
+        valuation_date=metrics.market_price_date or "2026-10-16",
+        require_certified=require_certified_metadata,
+    )
+    if err_msg is not None:
+        status_code = f"SUPPRESSED_DENOMINATOR_{err_code.value}" if err_code else "SUPPRESSED_DENOMINATOR_UNAVAILABLE"
+        logger.warning(f"FIX deep valuation suppressed: {err_msg}")
+        return DeepValuationAssessment(
+            symbol="FIX",
+            framework_used="FCFF (Enterprise to Equity DCF, Lease-as-Operating-Expense Convention)",
+            current_price=current_price,
+            current_price_date=metrics.market_price_date or "2026-10-16",
+            current_market_cap=round(metrics.market_cap or (current_price * shares), 2),
+            diluted_shares=shares,
+            scenarios={},
+            reverse_dcf_implied_5y_growth_pct=None,
+            reverse_dcf_fixed_assumptions={"solution_status": status_code},
+            sensitivity_matrix={},
+            thesis_invalidation_thresholds=[],
+            next_quarter_evidence_milestones=[],
+            valuation_status="SUPPRESSED_DENOMINATOR_INCOMPATIBLE" if err_code != DenominatorErrorCode.MISSING_PROVENANCE else "SUPPRESSED_DENOMINATOR_UNAVAILABLE",
+            suppression_reason=f"Share denominator compatibility failure: {err_msg}",
+            is_certified=False,
+            share_basis=dshares_meta.basis.value if dshares_meta else None,
+            share_denominator_metadata=dshares_meta.to_dict() if dshares_meta else None,
         )
 
     tax_rate = 22.0
     reinvest = 15.0
 
     # 1. Conservative Scenario: Data center buildout normalizes; 12% CAGR, 12.5% margin, 10.5% WACC
-    c_res = run_fcff_model(rev, shares, net_bridge, 12.0, 12.5, 10.5, 2.0, tax_rate, reinvest)
+    c_res = run_fcff_model(rev, shares, net_bridge, 12.0, 12.5, 10.5, 2.0, tax_rate, reinvest, share_metadata=dshares_meta)
     c_scenario = ValuationScenario(
         scenario_name="Conservative",
         growth_years_1_to_5_pct=12.0,
@@ -298,7 +624,7 @@ def evaluate_deep_valuation_fix(
     )
 
     # 2. Base Scenario: Sustained AI/data-center buildout; 22% CAGR for 5 years, 15.0% margin, 9.5% WACC
-    b_res = run_fcff_model(rev, shares, net_bridge, 22.0, 15.0, 9.5, 2.5, tax_rate, reinvest)
+    b_res = run_fcff_model(rev, shares, net_bridge, 22.0, 15.0, 9.5, 2.5, tax_rate, reinvest, share_metadata=dshares_meta)
     b_scenario = ValuationScenario(
         scenario_name="Base",
         growth_years_1_to_5_pct=22.0,
@@ -318,7 +644,7 @@ def evaluate_deep_valuation_fix(
     )
 
     # 3. Optimistic Scenario: Hyper-demand; 30% CAGR for 5 years, 16.5% margin, 8.5% WACC
-    o_res = run_fcff_model(rev, shares, net_bridge, 30.0, 16.5, 8.5, 3.0, tax_rate, reinvest)
+    o_res = run_fcff_model(rev, shares, net_bridge, 30.0, 16.5, 8.5, 3.0, tax_rate, reinvest, share_metadata=dshares_meta)
     o_scenario = ValuationScenario(
         scenario_name="Optimistic",
         growth_years_1_to_5_pct=30.0,
@@ -338,8 +664,8 @@ def evaluate_deep_valuation_fix(
     )
 
     # Reverse DCF
-    rev_growth, r_note = solve_reverse_dcf(current_price, rev, shares, net_bridge, 15.0, 9.5, 2.5, tax_rate, reinvest)
-    sens_matrix = generate_sensitivity_matrix(rev, shares, net_bridge, 22.0, 15.0, tax_rate, reinvest)
+    rev_growth, r_note = solve_reverse_dcf(current_price, rev, shares, net_bridge, 15.0, 9.5, 2.5, tax_rate, reinvest, share_metadata=dshares_meta)
+    sens_matrix = generate_sensitivity_matrix(rev, shares, net_bridge, 22.0, 15.0, tax_rate, reinvest, share_metadata=dshares_meta)
 
     return DeepValuationAssessment(
         symbol="FIX",
@@ -378,6 +704,9 @@ def evaluate_deep_valuation_fix(
         ],
         valuation_status="AVAILABLE",
         suppression_reason=None,
+        is_certified=True if dshares_meta is not None else False,
+        share_basis=dshares_meta.basis.value if dshares_meta else None,
+        share_denominator_metadata=dshares_meta.to_dict() if dshares_meta else None,
     )
 
 
@@ -430,14 +759,46 @@ def evaluate_deep_valuation_duol(
                 "concepts reported, and no current/noncurrent debt components found). Under aggregate completeness rules, "
                 "missing debt cannot be assumed to be 0.0 without primary filing evidence. "
                 "Without verified total financial debt, net debt bridge cannot be established; deep DCF valuation is suppressed."
-            )
+            ),
+            is_certified=False,
+        )
+
+    # P0-A: Resolve and validate diluted share denominator metadata
+    dshares_meta, err_msg, err_code = _resolve_and_validate_diluted_share_metadata(
+        cf=cf,
+        metrics=metrics,
+        target_use_case=DenominatorUseCase.PRESENT_VALUE_DCF,
+        valuation_date=metrics.market_price_date or "2026-10-16",
+        require_certified=True,
+    )
+    if err_msg is not None:
+        status_code = f"SUPPRESSED_DENOMINATOR_{err_code.value}" if err_code else "SUPPRESSED_DENOMINATOR_UNAVAILABLE"
+        logger.warning(f"DUOL deep valuation suppressed: {err_msg}")
+        return DeepValuationAssessment(
+            symbol="DUOL",
+            framework_used="FCFF (Enterprise to Equity DCF, Lease-as-Operating-Expense Convention)",
+            current_price=current_price,
+            current_price_date=metrics.market_price_date or "2026-10-16",
+            current_market_cap=round(metrics.market_cap or (current_price * shares), 2),
+            diluted_shares=shares,
+            scenarios={},
+            reverse_dcf_implied_5y_growth_pct=None,
+            reverse_dcf_fixed_assumptions={"solution_status": status_code},
+            sensitivity_matrix={},
+            thesis_invalidation_thresholds=[],
+            next_quarter_evidence_milestones=[],
+            valuation_status="SUPPRESSED_DENOMINATOR_INCOMPATIBLE" if err_code != DenominatorErrorCode.MISSING_PROVENANCE else "SUPPRESSED_DENOMINATOR_UNAVAILABLE",
+            suppression_reason=f"Share denominator compatibility failure: {err_msg}",
+            is_certified=False,
+            share_basis=dshares_meta.basis.value if dshares_meta else None,
+            share_denominator_metadata=dshares_meta.to_dict() if dshares_meta else None,
         )
 
     tax_rate = 21.0
     reinvest = 10.0  # Asset-light software model
 
     # 1. Conservative Scenario: Organic user growth plateaus; 18% CAGR, 14% operating margin, 11% WACC
-    c_res = run_fcff_model(rev, shares, net_bridge, 18.0, 14.0, 11.0, 2.5, tax_rate, reinvest)
+    c_res = run_fcff_model(rev, shares, net_bridge, 18.0, 14.0, 11.0, 2.5, tax_rate, reinvest, share_metadata=dshares_meta)
     c_scenario = ValuationScenario(
         scenario_name="Conservative",
         growth_years_1_to_5_pct=18.0,
@@ -457,7 +818,7 @@ def evaluate_deep_valuation_duol(
     )
 
     # 2. Base Scenario: Durable expansion; 26% CAGR, 18% operating margin, 10.0% WACC
-    b_res = run_fcff_model(rev, shares, net_bridge, 26.0, 18.0, 10.0, 3.0, tax_rate, reinvest)
+    b_res = run_fcff_model(rev, shares, net_bridge, 26.0, 18.0, 10.0, 3.0, tax_rate, reinvest, share_metadata=dshares_meta)
     b_scenario = ValuationScenario(
         scenario_name="Base",
         growth_years_1_to_5_pct=26.0,
@@ -477,7 +838,7 @@ def evaluate_deep_valuation_duol(
     )
 
     # 3. Optimistic Scenario: Global multi-subject compounding (Math/Music/English); 34% CAGR, 22% margin, 9.0% WACC
-    o_res = run_fcff_model(rev, shares, net_bridge, 34.0, 22.0, 9.0, 3.5, tax_rate, reinvest)
+    o_res = run_fcff_model(rev, shares, net_bridge, 34.0, 22.0, 9.0, 3.5, tax_rate, reinvest, share_metadata=dshares_meta)
     o_scenario = ValuationScenario(
         scenario_name="Optimistic",
         growth_years_1_to_5_pct=34.0,
@@ -497,8 +858,8 @@ def evaluate_deep_valuation_duol(
     )
 
     # Reverse DCF
-    rev_growth, r_note = solve_reverse_dcf(current_price, rev, shares, net_bridge, 18.0, 10.0, 3.0, tax_rate, reinvest)
-    sens_matrix = generate_sensitivity_matrix(rev, shares, net_bridge, 26.0, 18.0, tax_rate, reinvest)
+    rev_growth, r_note = solve_reverse_dcf(current_price, rev, shares, net_bridge, 18.0, 10.0, 3.0, tax_rate, reinvest, share_metadata=dshares_meta)
+    sens_matrix = generate_sensitivity_matrix(rev, shares, net_bridge, 26.0, 18.0, tax_rate, reinvest, share_metadata=dshares_meta)
 
     return DeepValuationAssessment(
         symbol="DUOL",
@@ -537,6 +898,9 @@ def evaluate_deep_valuation_duol(
         ],
         valuation_status="AVAILABLE",
         suppression_reason=None,
+        is_certified=True if dshares_meta is not None else False,
+        share_basis=dshares_meta.basis.value if dshares_meta else None,
+        share_denominator_metadata=dshares_meta.to_dict() if dshares_meta else None,
     )
 
 
@@ -589,14 +953,46 @@ def evaluate_deep_valuation_ulta(
                 "ShortTermBorrowings of $339.6M without noncurrent debt component). Partial debt cannot be presented as total debt "
                 "under aggregate completeness rules. Without verified total financial debt, net debt bridge cannot be established; "
                 "deep DCF valuation is suppressed."
-            )
+            ),
+            is_certified=False,
+        )
+
+    # P0-A: Resolve and validate diluted share denominator metadata
+    dshares_meta, err_msg, err_code = _resolve_and_validate_diluted_share_metadata(
+        cf=cf,
+        metrics=metrics,
+        target_use_case=DenominatorUseCase.PRESENT_VALUE_DCF,
+        valuation_date=metrics.market_price_date or "2026-10-16",
+        require_certified=True,
+    )
+    if err_msg is not None:
+        status_code = f"SUPPRESSED_DENOMINATOR_{err_code.value}" if err_code else "SUPPRESSED_DENOMINATOR_UNAVAILABLE"
+        logger.warning(f"ULTA deep valuation suppressed: {err_msg}")
+        return DeepValuationAssessment(
+            symbol="ULTA",
+            framework_used="FCFF (Enterprise to Equity DCF, Lease-as-Operating-Expense Convention)",
+            current_price=current_price,
+            current_price_date=metrics.market_price_date or "2026-10-16",
+            current_market_cap=round(metrics.market_cap or (current_price * shares), 2),
+            diluted_shares=shares,
+            scenarios={},
+            reverse_dcf_implied_5y_growth_pct=None,
+            reverse_dcf_fixed_assumptions={"solution_status": status_code},
+            sensitivity_matrix={},
+            thesis_invalidation_thresholds=[],
+            next_quarter_evidence_milestones=[],
+            valuation_status="SUPPRESSED_DENOMINATOR_INCOMPATIBLE" if err_code != DenominatorErrorCode.MISSING_PROVENANCE else "SUPPRESSED_DENOMINATOR_UNAVAILABLE",
+            suppression_reason=f"Share denominator compatibility failure: {err_msg}",
+            is_certified=False,
+            share_basis=dshares_meta.basis.value if dshares_meta else None,
+            share_denominator_metadata=dshares_meta.to_dict() if dshares_meta else None,
         )
 
     tax_rate = 23.5
     reinvest = 20.0
 
     # 1. Conservative Scenario: Comp store deceleration; 4.0% CAGR, 10.5% margin, 10.0% WACC
-    c_res = run_fcff_model(rev, shares, net_bridge, 4.0, 10.5, 10.0, 1.5, tax_rate, reinvest)
+    c_res = run_fcff_model(rev, shares, net_bridge, 4.0, 10.5, 10.0, 1.5, tax_rate, reinvest, share_metadata=dshares_meta)
     c_scenario = ValuationScenario(
         scenario_name="Conservative",
         growth_years_1_to_5_pct=4.0,
@@ -616,7 +1012,7 @@ def evaluate_deep_valuation_ulta(
     )
 
     # 2. Base Scenario: Steady compounder; 8.0% CAGR, 12.0% margin, 9.0% WACC
-    b_res = run_fcff_model(rev, shares, net_bridge, 8.0, 12.0, 9.0, 2.0, tax_rate, reinvest)
+    b_res = run_fcff_model(rev, shares, net_bridge, 8.0, 12.0, 9.0, 2.0, tax_rate, reinvest, share_metadata=dshares_meta)
     b_scenario = ValuationScenario(
         scenario_name="Base",
         growth_years_1_to_5_pct=8.0,
@@ -636,7 +1032,7 @@ def evaluate_deep_valuation_ulta(
     )
 
     # 3. Optimistic Scenario: International expansion & prestige acceleration; 12.0% CAGR, 13.5% margin, 8.0% WACC
-    o_res = run_fcff_model(rev, shares, net_bridge, 12.0, 13.5, 8.0, 2.5, tax_rate, reinvest)
+    o_res = run_fcff_model(rev, shares, net_bridge, 12.0, 13.5, 8.0, 2.5, tax_rate, reinvest, share_metadata=dshares_meta)
     o_scenario = ValuationScenario(
         scenario_name="Optimistic",
         growth_years_1_to_5_pct=12.0,
@@ -656,8 +1052,8 @@ def evaluate_deep_valuation_ulta(
     )
 
     # Reverse DCF
-    rev_growth, r_note = solve_reverse_dcf(current_price, rev, shares, net_bridge, 12.0, 9.0, 2.0, tax_rate, reinvest)
-    sens_matrix = generate_sensitivity_matrix(rev, shares, net_bridge, 8.0, 12.0, tax_rate, reinvest)
+    rev_growth, r_note = solve_reverse_dcf(current_price, rev, shares, net_bridge, 12.0, 9.0, 2.0, tax_rate, reinvest, share_metadata=dshares_meta)
+    sens_matrix = generate_sensitivity_matrix(rev, shares, net_bridge, 8.0, 12.0, tax_rate, reinvest, share_metadata=dshares_meta)
 
     return DeepValuationAssessment(
         symbol="ULTA",
@@ -696,4 +1092,7 @@ def evaluate_deep_valuation_ulta(
         ],
         valuation_status="AVAILABLE",
         suppression_reason=None,
+        is_certified=True if dshares_meta is not None else False,
+        share_basis=dshares_meta.basis.value if dshares_meta else None,
+        share_denominator_metadata=dshares_meta.to_dict() if dshares_meta else None,
     )
