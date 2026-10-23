@@ -1,0 +1,242 @@
+{
+  "packet_id": "REV-FIX-20260930-000110465926118159",
+  "symbol": "FIX",
+  "company_name": "Comfort Systems USA, Inc.",
+  "cik": "0001035983",
+  "accepted_baseline_id": "OPP-FIX-20261016",
+  "accepted_baseline_cutoff": "2026-10-16T20:00:00Z",
+  "draft_successor_id": "OPP-FIX-20260930-DRAFT-V1",
+  "filing_metadata": {
+    "form": "10-Q",
+    "accession_number": "0001104659-26-118159",
+    "filing_date": "2026-10-22",
+    "reporting_period": "2026-09-30",
+    "source_url": "https://www.sec.gov/Archives/edgar/data/1035983/000110465926118159/fix-20260930x10q.htm",
+    "primary_document": "fix-20260930x10q.htm",
+    "retrieval_time_utc": "2026-10-23T20:45:27.743881Z",
+    "is_replay": false
+  },
+  "material_financial_changes": [
+    {
+      "metric_key": "cash_and_equivalents",
+      "label": "Cash & Cash Equivalents",
+      "baseline_value": 1854794000.0,
+      "baseline_display": "$1854.8M",
+      "draft_value": 2158027000.0,
+      "draft_display": "$2158.0M",
+      "delta_value": 303233000.0,
+      "delta_pct": 16.35,
+      "units": "USD",
+      "source_accession": "0001104659-26-118159",
+      "concept": "CashAndCashEquivalentsAtCarryingValue",
+      "period_start": null,
+      "period_end": "2026-09-30",
+      "accounting_context": "Consolidated balance sheet carrying value (unrestricted cash)",
+      "status": "REPORTED",
+      "is_missing_unresolved": false,
+      "notes": null
+    },
+    {
+      "metric_key": "total_financial_debt",
+      "label": "Total Financial Debt",
+      "baseline_value": 54064000.0,
+      "baseline_display": "$54.1M",
+      "draft_value": 49555000.0,
+      "draft_display": "$49.6M",
+      "delta_value": -4509000.0,
+      "delta_pct": -8.34,
+      "units": "USD",
+      "source_accession": "0001104659-26-118159",
+      "concept": "LongTermDebtCurrent + LongTermDebtNoncurrent",
+      "period_start": null,
+      "period_end": "2026-09-30",
+      "accounting_context": "Funded debt components: Current $5.71M + Noncurrent $43.84M",
+      "status": "REPORTED",
+      "is_missing_unresolved": false,
+      "notes": null
+    },
+    {
+      "metric_key": "net_debt_bridge",
+      "label": "Net Debt Bridge (Cash / Debt)",
+      "baseline_value": -1800730000.0,
+      "baseline_display": "-$1800.7M (Net Cash)",
+      "draft_value": -2108472000.0,
+      "draft_display": "-$2108.5M (Net Cash)",
+      "delta_value": -307742000.0,
+      "delta_pct": -17.09,
+      "units": "USD",
+      "source_accession": "0001104659-26-118159",
+      "concept": "total_financial_debt - cash_and_equivalents",
+      "period_start": null,
+      "period_end": "2026-09-30",
+      "accounting_context": "Net cash bridge added to enterprise value in DCF equity bridge under Lease-as-Operating-Expense convention",
+      "status": "DERIVED",
+      "is_missing_unresolved": false,
+      "notes": null
+    },
+    {
+      "metric_key": "revenue",
+      "label": "TTM Revenue",
+      "baseline_value": 11228024000.0,
+      "baseline_display": "$11.23B",
+      "draft_value": 12543357000.0,
+      "draft_display": "$12.54B",
+      "delta_value": 1315333000.0,
+      "delta_pct": 11.71,
+      "units": "USD",
+      "source_accession": "0001104659-26-118159",
+      "concept": "Revenues (TTM derived: Q4 2025 + 9M 2026)",
+      "period_start": "2025-10-01",
+      "period_end": "2026-09-30",
+      "accounting_context": "Quarterly revenue: Q3 standalone $3766.3M; 9M YTD $9897.3M",
+      "status": "DERIVED",
+      "is_missing_unresolved": false,
+      "notes": null
+    },
+    {
+      "metric_key": "operating_income",
+      "label": "TTM Operating Income",
+      "baseline_value": 1849300000.0,
+      "baseline_display": "$1849.3M",
+      "draft_value": 2094998000.0,
+      "draft_display": "$2095.0M",
+      "delta_value": 245698000.0,
+      "delta_pct": 13.29,
+      "units": "USD",
+      "source_accession": "0001104659-26-118159",
+      "concept": "OperatingIncomeLoss (TTM derived: Q4 2025 + 9M 2026)",
+      "period_start": "2025-10-01",
+      "period_end": "2026-09-30",
+      "accounting_context": "Operating margin: 16.70% (vs baseline 16.47%, delta: +0.23%)",
+      "status": "DERIVED",
+      "is_missing_unresolved": false,
+      "notes": null
+    },
+    {
+      "metric_key": "diluted_shares",
+      "label": "Diluted Weighted-Average Shares",
+      "baseline_value": 35254000.0,
+      "baseline_display": "35.25M",
+      "draft_value": 35152000.0,
+      "draft_display": "35.15M",
+      "delta_value": -102000.0,
+      "delta_pct": -0.29,
+      "units": "shares",
+      "source_accession": "0001104659-26-118159",
+      "concept": "WeightedAverageNumberOfDilutedSharesOutstanding",
+      "period_start": "2026-07-01",
+      "period_end": "2026-09-30",
+      "accounting_context": "Quarterly diluted shares matching interim reporting period duration (91 days)",
+      "status": "REPORTED",
+      "is_missing_unresolved": false,
+      "notes": null
+    }
+  ],
+  "assessment_effects": [
+    {
+      "conclusion_key": "decisive_reason",
+      "conclusion_label": "Decisive Reason for Quality Watch",
+      "baseline_state": "Comfort Systems USA presents an exceptional balance sheet ($1.80B net cash) and high capital returns (>28% ROIC), supported by multi-year modular HVAC backlogs for hyperscale data center construction. However, the frozen reference market price of $1439.07 embeds a demanding 30.07% 5-year revenue CAGR at elevated 15.0% operating margins. Retained on watch: await market pullback toward mid-cycle base valuation range ($1,050 - $1,100) or evidence of margin persistence.",
+      "draft_state": "Net cash reserves expanded from $1.80B to $2.11B (-$2,108.5M), while TTM revenue grew to $12.54B at 16.70% operating margin. Solved 5-year revenue CAGR holding 15.0% margin and 9.5% WACC fixed eased from 30.07% to 26.76% (-331 bps). However, required 26.8% CAGR remains demanding for an industrial contractor, and the $1,439.07 reference price remains above mid-cycle base valuation ($1,215.00). Core decisive thesis (await pullback or margin persistence) is maintained.",
+      "interpretation_type": "CALCULATED_DELTA",
+      "materiality": "INCREMENTAL_POSITIVE",
+      "owner_judgment_required": false,
+      "notes": "Operational metrics exceeded baseline estimates; required CAGR moderated but remains elevated."
+    },
+    {
+      "conclusion_key": "financial_resilience",
+      "conclusion_label": "Balance Sheet Resilience & Capital Structure",
+      "baseline_state": "Prong 1: Exceptional balance sheet ($1.80B net cash, $54.1M debt).",
+      "draft_state": "Prong 1 Strengthened: Net cash expanded +$307.8M to $2,108.5M; funded debt declined to $49.6M. Zero refinancing or dilution risk.",
+      "interpretation_type": "FACT_CHANGE",
+      "materiality": "INCREMENTAL_POSITIVE",
+      "owner_judgment_required": false,
+      "notes": "Verified from primary balance sheet facts (cash: $2.16B, debt: $49.6M)."
+    },
+    {
+      "conclusion_key": "watch_condition",
+      "conclusion_label": "Price Watch Entry Condition",
+      "baseline_state": "Priced attractive for entry if share price pulls back to base-case modeled value range ($1,050 - $1,100).",
+      "draft_state": "Base-case modeled conditional value shifted from $1,081.99 to $1,215.00 (+12.3%) based on expanded revenue base and cash. Owner judgment required: whether to update entry corridor to ($1,180 - $1,250) or maintain existing approved thresholds.",
+      "interpretation_type": "ANALYST_JUDGMENT",
+      "materiality": "MATERIAL",
+      "owner_judgment_required": true,
+      "notes": "Model value expansion warrants human research judgment regarding the appropriate price watch range."
+    },
+    {
+      "conclusion_key": "invalidation_condition",
+      "conclusion_label": "Thesis Invalidation Triggers",
+      "baseline_state": "Data-center order backlog cancellations or deferrals exceeding 15% in quarterly disclosures.",
+      "draft_state": "Condition NOT triggered: Q3 backlog remained robust (> $6.2B), with no customer cancellations reported in Form 10-Q Item 2 disclosures.",
+      "interpretation_type": "FACT_CHANGE",
+      "materiality": "NEUTRAL",
+      "owner_judgment_required": false,
+      "notes": "Backlog execution remains intact across modular data center infrastructure accounts."
+    },
+    {
+      "conclusion_key": "main_uncertainty",
+      "conclusion_label": "Decisive Core Uncertainty",
+      "baseline_state": "Cyclicality of hyperscale cloud capex budgets and customer concentration in top-tier tech clients.",
+      "draft_state": "Unresolved via single quarterly filing: Hyperscale tech capex multi-year durability cannot be resolved by one 10-Q.",
+      "interpretation_type": "UNRESOLVED_EVIDENCE",
+      "materiality": "NEUTRAL",
+      "owner_judgment_required": false,
+      "notes": "Public quarterly filings cannot definitively establish multi-year customer capex plans beyond stated backlog duration."
+    }
+  ],
+  "accounting_exceptions": [
+    "ASC 842 operating lease liabilities ($324.9M noncurrent) are strictly excluded from Net Debt Bridge under LEASE_AS_OPERATING_EXPENSE convention (rent is deducted in operating income).",
+    "Cash flow control: Operating cash flow ($2,538.4M) and capex ($499.4M) in Form 10-Q represent 9-month YTD totals, not standalone Q3 cash flows. Standalone Q3 cash flow is derived by subtracting H1 2026."
+  ],
+  "undisclosed_information": [
+    "Short-term investments: not separately reported on balance sheet (unresolved, not zero).",
+    "Restricted cash: not reported on balance sheet (treated honestly as unavailable)."
+  ],
+  "valuation_comparison": {
+    "valuation_machinery_status": "COMPUTED_VERIFIED",
+    "reference_price": 1439.07,
+    "reference_date": "2026-10-16",
+    "fixed_assumptions": {
+      "operating_margin_pct": 15.0,
+      "wacc_pct": 9.5,
+      "terminal_growth_pct": 2.5,
+      "tax_rate_pct": 21.0,
+      "reinvestment_rate_pct": 15.0
+    },
+    "solved_5y_cagr": {
+      "baseline_cagr_pct": 30.07,
+      "draft_cagr_pct": 26.76,
+      "delta_cagr_bps": -331.0,
+      "interpretation": "Lower required revenue growth to justify reference price due to larger starting revenue base and expanded net cash buffer."
+    },
+    "scenarios": {
+      "conservative": {
+        "baseline_per_share": 533.46,
+        "draft_per_share": 600.44,
+        "delta_dollars": 66.98,
+        "delta_pct": 12.55
+      },
+      "base": {
+        "baseline_per_share": 1081.99,
+        "draft_per_share": 1215.0,
+        "delta_dollars": 133.01,
+        "delta_pct": 12.29
+      },
+      "optimistic": {
+        "baseline_per_share": 1996.38,
+        "draft_per_share": 2239.47,
+        "delta_dollars": 243.09,
+        "delta_pct": 12.18
+      }
+    }
+  },
+  "proposed_disposition": "MAINTAIN",
+  "disposition_rationale": "Maintain Quality Watch status (WATCH_CONDITIONS). Operational performance and cash generation in Q3 2026 strengthened financial resilience ($2.11B net cash) and moderated the required reverse-DCF CAGR (26.76% vs 30.07%). However, market valuation remains above mid-cycle base intrinsic value ($1,215.00), and core hyperscale cyclicality uncertainties remain unresolvable. No thesis invalidation occurred; 'No material thesis change' is the supported outcome.",
+  "questions_requiring_owner_judgment": [
+    "Should the approved price watch entry corridor be updated from ($1,050 - $1,100) to ($1,180 - $1,250) to reflect the +12.3% expansion in base-case modeled value?",
+    "Should normalized operating margin assumption (15.0%) be reassessed at next annual review given 16.70% trailing 12-month margin persistence?"
+  ],
+  "stopping_rule": "Evidence collection complete for Form 10-Q Q3 2026. All reported facts reconciled, arithmetic verified, and conditional valuation differences calculated. Core uncertainty (hyperscale capex cycle) cannot be further resolved via public filings until Form 10-K for FY2026 (expected February 2027). Cease investigation.",
+  "created_at_utc": "2026-10-23T20:45:35.488383Z",
+  "is_replay": false
+}
