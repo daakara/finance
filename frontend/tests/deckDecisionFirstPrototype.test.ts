@@ -143,6 +143,7 @@ function cloneDossier(d: OpportunityDossier): OpportunityDossier {
 {
   const fixture = cloneDossier(deckDossier);
   fixture.valuation.solved_5y_cagr_pct = null;
+  fixture.central_assessment.presentation_summary = "Deckers Outdoor displays balance sheet strength and continued HOKA momentum.";
   const html = renderToStaticMarkup(React.createElement(DeckDecisionFirstView, { dossier: fixture }));
   assert.ok(html.includes("Unavailable"), "Missing solved CAGR must render 'Unavailable'");
   assert.strictEqual(html.includes("-2.34%"), false, "Must not substitute historical -2.34% when CAGR is null");
@@ -181,17 +182,38 @@ function cloneDossier(d: OpportunityDossier): OpportunityDossier {
   assert.ok(html.includes("$0.00"), "Valid numeric 0 per share value must render as '$0.00', not 'Unavailable'");
 }
 
-// E. Changed Valid Financial Inputs (Proving Dynamic Data Binding)
+// =========================================================================
+// Mandatory Control 1: Changed-Input Control (Dynamic Data Binding)
+// =========================================================================
 {
   const fixture = cloneDossier(deckDossier);
+  // 1. Financial profile & balance sheet updates
+  fixture.financial_profile.net_debt_bridge = -2000000000; // -$2,000.0M (Net Cash)
+  fixture.financial_profile.total_financial_debt = 50000000; // $50.00M debt
+  fixture.financial_profile.is_zero_debt = false;
+
+  // 2. Valuation inputs & Reverse-DCF assumptions
   fixture.valuation.reference_price = 100.0;
   fixture.valuation.reference_date = "2026-11-15";
   fixture.valuation.solved_5y_cagr_pct = 5.5;
   fixture.valuation.scenarios!.conservative.per_share_value = 90.0;
   fixture.valuation.scenarios!.base.per_share_value = 140.0;
   fixture.valuation.scenarios!.optimistic.per_share_value = 220.0;
+  if (!fixture.valuation.reverse_dcf_parameters) {
+    fixture.valuation.reverse_dcf_parameters = {} as any;
+  }
+  fixture.valuation.reverse_dcf_parameters!.operating_margin_pct = 25.0;
+  fixture.valuation.reverse_dcf_parameters!.wacc_pct = 10.5;
+
+  // 3. Monitoring & presentation narratives
+  fixture.monitoring.next_monitoring_trigger = "Q3 FY27 earnings call in February 2027";
+  fixture.central_assessment.main_uncertainty = "Testing custom uncertainty around supply chain lead times";
+  fixture.monitoring.price_watch_condition = "Custom price watch condition: pullback below $70.00";
+  fixture.central_assessment.presentation_summary = "Custom dynamic presentation summary: HOKA direct-to-consumer acceleration testing.";
 
   const html = renderToStaticMarkup(React.createElement(DeckDecisionFirstView, { dossier: fixture }));
+
+  // Assert all updated values are rendered
   assert.ok(html.includes("$100.00"), "Must render updated reference price $100.00");
   assert.ok(html.includes("2026-11-15"), "Must render updated reference date 2026-11-15");
   assert.ok(html.includes("5.50%"), "Must render updated solved CAGR 5.50%");
@@ -202,42 +224,129 @@ function cloneDossier(d: OpportunityDossier): OpportunityDossier {
   assert.ok(html.includes("$220.00"), "Must render updated Bull value $220.00");
   assert.ok(html.includes("+120.0%"), "Must render calculated Bull diff +120.0%");
 
-  // Historical DECK values must not be rendered when replaced
+  assert.ok(html.includes("-$2000.0M (Net Cash)"), "Must render updated Net Debt Bridge -$2000.0M (Net Cash)");
+  assert.ok(html.includes("$50.0M debt"), "Must render updated total debt $50.0M debt");
+  assert.ok(html.includes("25.00% operating margin"), "Must render updated operating margin 25.00%");
+  assert.ok(html.includes("10.50% WACC"), "Must render updated WACC 10.50%");
+  assert.ok(html.includes("Q3 FY27 earnings call in February 2027"), "Must render updated next monitoring trigger");
+  assert.ok(html.includes("Testing custom uncertainty around supply chain lead times"), "Must render updated decisive unknown");
+  assert.ok(html.includes("Custom price watch condition: pullback below $70.00"), "Must render updated watch condition");
+  assert.ok(html.includes("Custom dynamic presentation summary: HOKA direct-to-consumer acceleration testing."), "Must render updated presentation summary");
+
+  // Assert ZERO occurrences of old numbers or historical fallbacks
   assert.strictEqual(html.includes("$85.72"), false, "Old reference price $85.72 must not appear");
   assert.strictEqual(html.includes("-2.34%"), false, "Old CAGR -2.34% must not appear");
   assert.strictEqual(html.includes("$73.22"), false, "Old Bear value $73.22 must not appear");
   assert.strictEqual(html.includes("$127.49"), false, "Old Base value $127.49 must not appear");
   assert.strictEqual(html.includes("$209.87"), false, "Old Bull value $209.87 must not appear");
+  assert.strictEqual(html.includes("1,602.6M"), false, "Old net cash 1,602.6M must not appear");
+  assert.strictEqual(html.includes("1.60B"), false, "Hardcoded 1.60B must not appear");
+  assert.strictEqual(html.includes("zero funded debt"), false, "Old zero debt string must not appear when debt is present");
+  assert.strictEqual(html.includes("Q2 FY27 earnings release"), false, "Old earnings trigger must not appear when replaced");
+  assert.strictEqual(html.includes("+17.3%"), false, "Hardcoded historical DTC growth +17.3% must not appear");
+  assert.strictEqual(html.includes("+2.9%"), false, "Hardcoded historical wholesale growth +2.9% must not appear");
 }
 
-// F. Valuation Suppression
+// =========================================================================
+// Mandatory Control 2: Missing-Content Control (Honest Unavailable / Unresolved states)
+// =========================================================================
+{
+  const fixture = cloneDossier(deckDossier);
+  // Omit optional / narrative fields
+  fixture.central_assessment.presentation_summary = "";
+  fixture.valuation.solved_5y_cagr_pct = null;
+  fixture.valuation.scenarios = null;
+  fixture.monitoring.next_monitoring_trigger = "";
+  fixture.central_assessment.main_uncertainty = "";
+  fixture.monitoring.price_watch_condition = "";
+  fixture.financial_profile.net_debt_bridge = null;
+  fixture.financial_profile.total_financial_debt = null;
+  fixture.financial_profile.is_zero_debt = false;
+  fixture.valuation.reverse_dcf_parameters = null;
+
+  const html = renderToStaticMarkup(React.createElement(DeckDecisionFirstView, { dossier: fixture }));
+
+  // Honest "Unavailable" / "Unresolved" fallback assertions
+  assert.ok(
+    html.includes("Decisive research presentation summary unavailable."),
+    "Missing presentation summary must render 'Decisive research presentation summary unavailable.'"
+  );
+  assert.ok(
+    html.includes("Next review trigger unresolved or unavailable."),
+    "Missing next review trigger must render 'Next review trigger unresolved or unavailable.'"
+  );
+  assert.ok(
+    html.includes("Key uncertainty unresolved or unavailable."),
+    "Missing main uncertainty must render 'Key uncertainty unresolved or unavailable.'"
+  );
+  assert.ok(
+    html.includes("Strengthening watch condition unresolved or unavailable."),
+    "Missing price watch condition must render 'Strengthening watch condition unresolved or unavailable.'"
+  );
+  assert.ok(
+    html.includes("Unavailable"),
+    "Missing numerical fields must render 'Unavailable'"
+  );
+
+  // Total absence of manufactured historical sentences or numbers
+  assert.strictEqual(html.includes("73.22"), false, "Historical 73.22 must not appear as a fallback");
+  assert.strictEqual(html.includes("127.49"), false, "Historical 127.49 must not appear as a fallback");
+  assert.strictEqual(html.includes("209.87"), false, "Historical 209.87 must not appear as a fallback");
+  assert.strictEqual(html.includes("-2.34%"), false, "Historical -2.34% must not appear as a fallback");
+  assert.strictEqual(html.includes("-14.6%"), false, "Historical -14.6% must not appear as a fallback");
+  assert.strictEqual(html.includes("+48.7%"), false, "Historical +48.7% must not appear as a fallback");
+  assert.strictEqual(html.includes("+144.8%"), false, "Historical +144.8% must not appear as a fallback");
+  assert.strictEqual(html.includes("1.60B"), false, "Historical 1.60B must not appear as a fallback");
+  assert.strictEqual(html.includes("1602.6"), false, "Historical 1602.6 must not appear as a fallback");
+  assert.strictEqual(html.includes("+17.3%"), false, "Historical +17.3% must not appear as a fallback");
+  assert.strictEqual(html.includes("+2.9%"), false, "Historical +2.9% must not appear as a fallback");
+  assert.strictEqual(html.includes("Q2 FY27 earnings release"), false, "Historical Q2 FY27 release must not appear as a fallback");
+}
+
+// =========================================================================
+// Mandatory Control 3: Complete Valuation Suppression Control
+// =========================================================================
 {
   const fixture = cloneDossier(deckDossier);
   fixture.valuation.valuation_status = "VALUATION_SUPPRESSED";
   fixture.valuation.suppression_reason = "Model suppressed due to restructuring";
+  fixture.central_assessment.presentation_summary = "Valuation model suppressed pending restructuring audit.";
 
-  const html = renderToStaticMarkup(React.createElement(DeckDecisionFirstView, { dossier: fixture }));
-  assert.ok(html.includes("Valuation Suppressed"), "Must render 'Valuation Suppressed' when status is suppressed");
-  // Numeric fair values must be suppressed
-  assert.strictEqual(html.includes("$73.22"), false, "Must not render numeric Bear value when suppressed");
-  assert.strictEqual(html.includes("$127.49"), false, "Must not render numeric Base value when suppressed");
-  assert.strictEqual(html.includes("$209.87"), false, "Must not render numeric Bull value when suppressed");
-}
+  // 1. Default Surface (collapsed progressive disclosures)
+  const defaultHtml = renderToStaticMarkup(
+    React.createElement(DeckDecisionFirstView, { dossier: fixture, initialValuationOpen: false })
+  );
 
-// G. Total Absence of Fallback Numbers when Scenarios & Solved CAGR are Missing
-{
-  const fixture = cloneDossier(deckDossier);
-  fixture.valuation.solved_5y_cagr_pct = null;
-  fixture.valuation.scenarios = null;
+  assert.ok(defaultHtml.includes("Valuation Suppressed"), "Must render 'Valuation Suppressed' in default surface");
+  assert.ok(defaultHtml.includes("Model suppressed due to restructuring"), "Must render suppression reason in default surface");
+  assert.strictEqual(defaultHtml.includes("$73.22"), false, "Must not render numeric Bear value on default surface");
+  assert.strictEqual(defaultHtml.includes("$127.49"), false, "Must not render numeric Base value on default surface");
+  assert.strictEqual(defaultHtml.includes("$209.87"), false, "Must not render numeric Bull value on default surface");
+  assert.strictEqual(defaultHtml.includes("-2.34%"), false, "Must not render solved CAGR when suppressed");
+  assert.strictEqual(defaultHtml.includes("-14.6%"), false, "Must not render Bear difference percentage when suppressed");
+  assert.strictEqual(defaultHtml.includes("+48.7%"), false, "Must not render Base difference percentage when suppressed");
+  assert.strictEqual(defaultHtml.includes("+144.8%"), false, "Must not render Bull difference percentage when suppressed");
 
-  const html = renderToStaticMarkup(React.createElement(DeckDecisionFirstView, { dossier: fixture }));
-  assert.strictEqual(html.includes("73.22"), false, "73.22 must not appear as a fallback");
-  assert.strictEqual(html.includes("127.49"), false, "127.49 must not appear as a fallback");
-  assert.strictEqual(html.includes("209.87"), false, "209.87 must not appear as a fallback");
-  assert.strictEqual(html.includes("-2.34%"), false, "-2.34% must not appear as a fallback");
-  assert.strictEqual(html.includes("-14.6%"), false, "-14.6% must not appear as a fallback");
-  assert.strictEqual(html.includes("+48.7%"), false, "+48.7% must not appear as a fallback");
-  assert.strictEqual(html.includes("+144.8%"), false, "+144.8% must not appear as a fallback");
+  // 2. Expanded Valuation Disclosure (initialValuationOpen = true)
+  const expandedHtml = renderToStaticMarkup(
+    React.createElement(DeckDecisionFirstView, { dossier: fixture, initialValuationOpen: true })
+  );
+
+  assert.ok(expandedHtml.includes("Valuation Model Outputs Suppressed"), "Must render suppression title in expanded disclosure");
+  assert.ok(expandedHtml.includes("Model suppressed due to restructuring"), "Must render suppression reason in expanded disclosure");
+  assert.ok(expandedHtml.includes("Solved 5Y Revenue CAGR: Suppressed (Model unavailable)"), "Must state CAGR is suppressed in expanded disclosure");
+  assert.ok(expandedHtml.includes("Intrinsic Modeled Equity Values: Suppressed"), "Must state intrinsic values are suppressed in expanded disclosure");
+
+  // The comparative scenario table MUST be completely suppressed in the expanded disclosure
+  assert.strictEqual(expandedHtml.includes("<table"), false, "Comparative scenario table must be completely suppressed when valuation is suppressed");
+  assert.strictEqual(expandedHtml.includes("$73.22"), false, "Must not render numeric Bear value in expanded disclosure");
+  assert.strictEqual(expandedHtml.includes("$127.49"), false, "Must not render numeric Base value in expanded disclosure");
+  assert.strictEqual(expandedHtml.includes("$209.87"), false, "Must not render numeric Bull value in expanded disclosure");
+  assert.strictEqual(expandedHtml.includes("-2.34%"), false, "Must not render solved CAGR in expanded disclosure");
+  assert.strictEqual(expandedHtml.includes("Roundtrip:"), false, "Must not render roundtrip value in expanded disclosure");
+
+  // Non-modeled baseline facts (reference price) remain visible in expanded disclosure
+  assert.ok(expandedHtml.includes("$85.72 USD"), "Reference price tape remains visible in expanded disclosure");
 }
 
 console.log("[OK] Controlled fixture and fallback elimination tests passed.");

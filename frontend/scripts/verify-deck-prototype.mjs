@@ -258,7 +258,7 @@ async function runVerification() {
         const hasDriversHeader = text.includes("WHAT MUST BE TRUE?");
         const hasDriver1 = text.includes("1. DTC VELOCITY & INTERNATIONAL SCALING");
         const hasDriver2 = text.includes("2. GROSS MARGIN & OPERATING DEFENSE");
-        const hasDriver3 = text.includes("3. ZERO-DEBT BALANCE SHEET STRENGTH");
+        const hasDriver3 = text.includes("3. ZERO-DEBT BALANCE SHEET STRENGTH") || text.includes("3. BALANCE SHEET RESILIENCE");
 
         const hasKillersHeader = text.includes("WHAT BREAKS THE THESIS?");
         const hasKiller1 = text.includes("1. GROSS MARGIN BREACH BELOW 50.0%");

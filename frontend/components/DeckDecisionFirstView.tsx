@@ -7,32 +7,40 @@
  * Governed by ARX Closure Model v2.
  *
  * Core Objectives:
- * 1. Zero numerical fallbacks: All financial values, assumptions, and comparisons
- *    are strictly read from the authoritative dossier payload. Missing or invalid
- *    data renders "Unavailable" or is omitted; valid numeric zeros are preserved;
- *    nonfinite values are rejected; valuation suppression suppresses fair values.
- * 2. Unaltered approved research interpretation: Distinguishes monitored conditions
- *    from unproven causal claims (e.g. margin deterioration or DTC deceleration are
- *    monitored thresholds requiring investigation, not definitive proof of brand fatigue).
- *    Wholesale contraction is not invented as a third formal invalidation condition.
- *    Review trigger uses the approved Q2 FY27 earnings release.
- * 3. Substantially shorter default reading experience: Compact decision surface
- *    covering Verdict & Decisive Reason, Thesis, Expectations & Scenarios,
- *    What Must Be True (3 drivers), What Breaks The Thesis (2 supported conditions),
- *    and Next Review. Detailed WACC/margin mechanics are housed in progressive disclosures.
- * 4. Progressive disclosures: Collapsed by default, touch targets >= 44px, full accessibility.
- * 5. Strictly isolated to DECK; other dossiers retain accepted presentation.
+ * 1. Zero numerical fallbacks & Authoritative Data Binding:
+ *    - All financial figures, balance sheet bridges, and parameter percentages bind
+ *      directly to the authoritative structured payload fields.
+ *    - Approved narratives (e.g. presentation_summary, next_monitoring_trigger,
+ *      main_uncertainty, price_watch_condition) are rendered directly without
+ *      independent hardcoded versions.
+ *    - Missing or optional content renders concise "Unavailable" or "Unresolved"
+ *      states rather than manufacturing historical fallback assessments.
+ *    - Consistent sign and labeling for the net debt / net cash bridge across all sections.
+ * 2. Complete Valuation Suppression:
+ *    - When valuation_status === "VALUATION_SUPPRESSED", modeled fair values, solved CAGR,
+ *      roundtrip values, and scenario projections are suppressed across BOTH the default
+ *      surface and the expanded valuation disclosure.
+ *    - Reference price and balance-sheet resilience metrics remain visible where policy permits.
+ * 3. Concise Default Surface:
+ *    - Shorter default reading experience focused on Verdict & Decisive Reason, Thesis,
+ *      Expectations & Scenarios, What Must Be True (3 drivers), What Breaks The Thesis
+ *      (2 supported conditions), and Next Review.
+ * 4. Progressive Disclosures:
+ *    - Expandable supporting evidence, min 44px touch targets, full accessibility.
+ * 5. Strictly isolated to DECK; other published dossiers retain accepted presentation.
  */
 
 import React, { useState } from "react";
 import Link from "next/link";
 import {
   OpportunityDossier,
+  OpportunityFinancialProfile,
   calculateScenarioPriceDiffPct,
 } from "../lib/opportunityDossiers";
 
 interface DeckDecisionFirstViewProps {
   dossier: OpportunityDossier;
+  initialValuationOpen?: boolean;
 }
 
 const isFiniteNumber = (val: unknown): val is number =>
@@ -55,12 +63,36 @@ const formatDiffPercent = (diff: number | null | undefined): string => {
   return `${sign}${diff.toFixed(1)}%`;
 };
 
-export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstViewProps) {
+const formatNetDebtBridge = (val: number | null | undefined): string => {
+  if (!isFiniteNumber(val)) return "Unavailable";
+  if (val < 0) {
+    return `-$${(Math.abs(val) / 1e6).toFixed(1)}M (Net Cash)`;
+  }
+  if (val === 0) {
+    return "$0.0M (Zero Net Debt)";
+  }
+  return `$${(val / 1e6).toFixed(1)}M (Net Debt)`;
+};
+
+const formatDebt = (profile: OpportunityFinancialProfile): string => {
+  if (profile.is_zero_debt) return "zero funded debt";
+  if (!isFiniteNumber(profile.total_financial_debt)) return "unassessed debt";
+  if (profile.total_financial_debt === 0) return "zero funded debt";
+  if (Math.abs(profile.total_financial_debt) >= 1e6) {
+    return `$${(profile.total_financial_debt / 1e6).toFixed(1)}M debt`;
+  }
+  return `${formatCurrency(profile.total_financial_debt)} debt`;
+};
+
+export default function DeckDecisionFirstView({
+  dossier,
+  initialValuationOpen = false,
+}: DeckDecisionFirstViewProps) {
   const { identity, central_assessment, valuation, financial_profile, monitoring, navigation } = dossier;
   const rationale = dossier.selection_rationale;
 
   // Track accordion disclosure states for progressive disclosure sections
-  const [valuationOpen, setValuationOpen] = useState(false);
+  const [valuationOpen, setValuationOpen] = useState(initialValuationOpen);
   const [financialsOpen, setFinancialsOpen] = useState(false);
   const [provenanceOpen, setProvenanceOpen] = useState(false);
 
@@ -179,7 +211,7 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
         </div>
 
         <p className="text-sm text-slate-100 leading-relaxed font-sans font-medium">
-          Deckers Outdoor displays exceptional balance sheet strength ($1.60B net cash, zero funded senior debt) and continued brand momentum in HOKA direct-to-consumer (+17.3% YoY in Q1 FY27). It remains on WATCH because wholesale growth has moderated (+2.9% YoY) and seasonal concentration in UGG winter demand requires ongoing monitoring before considering an entry.
+          {central_assessment.presentation_summary || "Decisive research presentation summary unavailable."}
         </p>
 
         <div className="pt-2 border-t border-amber-950/60 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-amber-300/90">
@@ -233,16 +265,24 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
             </span>
           </div>
           <div className="text-xs text-slate-400 space-y-1">
-            <div>
-              <strong>Model Anchor:</strong> Solved at reference price of{" "}
-              <span className="text-slate-200 font-mono font-semibold">
-                {formatCurrency(valuation.reference_price)}
-              </span>{" "}
-              as of {valuation.reference_date || "Unavailable"}.
-            </div>
-            <p className="text-[11px] text-amber-300/90 italic font-sans pt-0.5">
-              The implied growth rate depends on model assumptions. A negative solved growth rate reflects conditional model mechanics rather than a verified market consensus of contraction or definitive proof of undervaluation.
-            </p>
+            {isSuppressed ? (
+              <p className="text-amber-300/90 italic font-sans">
+                {valuation.suppression_reason || "Modeled valuation outputs and implied growth rates are suppressed for this asset."}
+              </p>
+            ) : (
+              <>
+                <div>
+                  <strong>Model Anchor:</strong> Solved at reference price of{" "}
+                  <span className="text-slate-200 font-mono font-semibold">
+                    {formatCurrency(valuation.reference_price)}
+                  </span>{" "}
+                  as of {valuation.reference_date || "Unavailable"}.
+                </div>
+                <p className="text-[11px] text-amber-300/90 italic font-sans pt-0.5">
+                  The implied growth rate depends on model assumptions. A negative solved growth rate reflects conditional model mechanics rather than a verified market consensus of contraction or definitive proof of undervaluation.
+                </p>
+              </>
+            )}
           </div>
         </div>
 
@@ -347,7 +387,9 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
           </div>
 
           <div className="text-[10px] text-slate-400 italic font-mono pt-1">
-            Modeled values represent discounted cash flow intrinsic present equity values based on conditional operating assumptions, not future price targets or guaranteed returns. Full parameters are detailed in the disclosure below.
+            {isSuppressed
+              ? "Valuation model outputs and scenario projections are suppressed for this asset."
+              : "Modeled values represent discounted cash flow intrinsic present equity values based on conditional operating assumptions, not future price targets or guaranteed returns. Full parameters are detailed in the disclosure below."}
           </div>
         </div>
       </section>
@@ -371,7 +413,7 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
               1. DTC Velocity &amp; International Scaling
             </h3>
             <p className="text-slate-300 leading-relaxed">
-              HOKA direct-to-consumer sales sustain double-digit growth (+17.3% YoY in Q1 FY27) and international adoption scales without margin-diluting promotional spend.
+              HOKA direct-to-consumer sales sustain double-digit growth and international adoption scales without margin-diluting promotional spend.
             </p>
           </div>
 
@@ -381,17 +423,17 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
               2. Gross Margin &amp; Operating Defense
             </h3>
             <p className="text-slate-300 leading-relaxed">
-              Consolidated gross margins sustain above 55.0% alongside operating margins near ~22% despite wholesale channel moderation (+2.9% YoY in Q1 FY27).
+              Consolidated gross margins sustain above 55.0% alongside operating margins near ~22% despite wholesale channel moderation.
             </p>
           </div>
 
           {/* Driver 3 */}
           <div className="bg-[#080d16] border border-emerald-950/80 rounded-lg p-3 space-y-1.5">
             <h3 className="text-emerald-300 font-semibold text-[11px] uppercase tracking-wider">
-              3. Zero-Debt Balance Sheet Strength
+              3. {financial_profile.is_zero_debt ? "Zero-Debt Balance Sheet Strength" : "Balance Sheet Resilience"}
             </h3>
             <p className="text-slate-300 leading-relaxed">
-              Preservation of net cash cushion ($1.60B cash reserves, zero funded debt) to self-fund international footprint expansion without debt or equity dilution.
+              Preservation of balance sheet strength ({formatNetDebtBridge(financial_profile.net_debt_bridge)}, {formatDebt(financial_profile)}) to self-fund international footprint expansion without debt or equity dilution.
             </p>
           </div>
         </div>
@@ -459,7 +501,7 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
               Next Review Trigger:
             </div>
             <p className="text-slate-300 leading-relaxed">
-              {monitoring.next_monitoring_trigger || "Q2 FY27 earnings release (expected October/November 2026) for holiday pre-orders and inventory aging."}
+              {monitoring.next_monitoring_trigger || "Next review trigger unresolved or unavailable."}
             </p>
           </div>
 
@@ -469,7 +511,7 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
               Decisive Unknown:
             </div>
             <p className="text-slate-300 leading-relaxed">
-              {central_assessment.main_uncertainty || "Sustainability of premium DTC full-price sell-through rates as HOKA expands into broader lifestyle footwear categories."}
+              {central_assessment.main_uncertainty || "Key uncertainty unresolved or unavailable."}
             </p>
           </div>
 
@@ -479,7 +521,7 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
               Strengthening Condition:
             </div>
             <p className="text-slate-300 leading-relaxed">
-              {monitoring.price_watch_condition || "Confirmation of international DTC growth above 20% while maintaining consolidated gross margin above 55.0%."}
+              {monitoring.price_watch_condition || "Strengthening watch condition unresolved or unavailable."}
             </p>
           </div>
         </div>
@@ -497,9 +539,20 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
           </h2>
         </div>
         <p className="text-slate-300 leading-relaxed font-sans">
-          A market-consensus expectation gap has not been established. While the reverse-DCF implies a{" "}
-          <span className="font-mono text-purple-300">{formatPercent(valuation.solved_5y_cagr_pct)}</span> 5-year revenue CAGR at the reference price of{" "}
-          <span className="font-mono text-slate-200">{formatCurrency(valuation.reference_price)}</span> under assumed parameters (22.0% operating margin, 9.0% WACC), neither this conditional model solve nor observed DTC/wholesale channel divergence establishes proof of market mispricing or investment attractiveness.
+          A market-consensus expectation gap has not been established.{" "}
+          {isSuppressed ? (
+            <span>Valuation model outputs are suppressed for this asset ({valuation.suppression_reason || "Modeled outputs unavailable"}).</span>
+          ) : (
+            <span>
+              While the reverse-DCF implies a{" "}
+              <span className="font-mono text-purple-300">{formatPercent(valuation.solved_5y_cagr_pct)}</span> 5-year revenue CAGR at the reference price of{" "}
+              <span className="font-mono text-slate-200">{formatCurrency(valuation.reference_price)}</span>
+              {isFiniteNumber(valuation.reverse_dcf_parameters?.operating_margin_pct) && isFiniteNumber(valuation.reverse_dcf_parameters?.wacc_pct) ? (
+                <> under assumed parameters ({formatPercent(valuation.reverse_dcf_parameters.operating_margin_pct)} operating margin, {formatPercent(valuation.reverse_dcf_parameters.wacc_pct)} WACC)</>
+              ) : null}
+              , neither this conditional model solve nor observed DTC/wholesale channel divergence establishes proof of market mispricing or investment attractiveness.
+            </span>
+          )}
         </p>
       </section>
 
@@ -539,98 +592,118 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
 
           {valuationOpen && (
             <div id="disclosure-valuation-deck" className="p-4 sm:p-5 border-t border-slate-800 space-y-4 text-xs font-sans">
-              <div className="space-y-1.5 text-slate-300 leading-relaxed">
-                <p>
-                  <strong>Model Specification:</strong> {valuation.model_type || "Single-stage Reverse-DCF FCFF"}. Reverse-DCF solves for the 5-year revenue CAGR implied by the reference close tape, holding margin, WACC, and reinvestment rate fixed. Forward scenarios project explicit cash flows to compute conditional intrinsic equity values.
-                </p>
-                <div className="p-3 bg-[#080d16] rounded-lg border border-slate-800 font-mono text-[11px] text-slate-300 space-y-0.5">
-                  <div>• Model Anchor: {formatCurrency(valuation.reference_price)} USD ({valuation.reference_date || "Unavailable"})</div>
-                  <div>• Base Revenue: {isFiniteNumber(valuation.reverse_dcf_parameters?.base_revenue) ? `$${(valuation.reverse_dcf_parameters.base_revenue / 1e9).toFixed(2)}B` : "Unavailable"}</div>
-                  <div>• Diluted Share Count: {isFiniteNumber(valuation.reverse_dcf_parameters?.current_shares) ? `${(valuation.reverse_dcf_parameters.current_shares / 1e6).toFixed(2)}M (6:1 split-adjusted)` : "Unavailable"}</div>
-                  <div>• Net Debt Bridge: {isFiniteNumber(valuation.reverse_dcf_parameters?.net_debt_bridge) ? `-$${(Math.abs(valuation.reverse_dcf_parameters.net_debt_bridge) / 1e6).toFixed(1)}M (Net Cash Buffer)` : "Unavailable"}</div>
-                  <div>• Solved 5Y Revenue CAGR: {formatPercent(valuation.solved_5y_cagr_pct)} (Roundtrip: {formatCurrency(valuation.roundtrip_value)})</div>
+              {isSuppressed ? (
+                <div className="p-4 bg-amber-950/30 border border-amber-800/60 rounded-xl space-y-2">
+                  <div className="flex items-center gap-2 text-amber-300 font-semibold text-xs">
+                    <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                    <span>Valuation Model Outputs Suppressed</span>
+                  </div>
+                  <p className="text-slate-300 leading-relaxed">
+                    {valuation.suppression_reason || "Modeled valuation outputs, reverse-DCF implied growth rates, and scenario projections are suppressed for this asset."}
+                  </p>
+                  <div className="p-3 bg-[#080d16] rounded-lg border border-slate-800 font-mono text-[11px] text-slate-300 space-y-0.5">
+                    <div>• Reference Close Tape: {formatCurrency(valuation.reference_price)} USD ({valuation.reference_date || "Unavailable"})</div>
+                    <div>• Valuation Status: {valuation.valuation_status_label || "Valuation Suppressed"}</div>
+                    <div>• Solved 5Y Revenue CAGR: Suppressed (Model unavailable)</div>
+                    <div>• Intrinsic Modeled Equity Values: Suppressed</div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div className="space-y-1.5 text-slate-300 leading-relaxed">
+                    <p>
+                      <strong>Model Specification:</strong> {valuation.model_type || "Single-stage Reverse-DCF FCFF"}. Reverse-DCF solves for the 5-year revenue CAGR implied by the reference close tape, holding margin, WACC, and reinvestment rate fixed. Forward scenarios project explicit cash flows to compute conditional intrinsic equity values.
+                    </p>
+                    <div className="p-3 bg-[#080d16] rounded-lg border border-slate-800 font-mono text-[11px] text-slate-300 space-y-0.5">
+                      <div>• Model Anchor: {formatCurrency(valuation.reference_price)} USD ({valuation.reference_date || "Unavailable"})</div>
+                      <div>• Base Revenue: {isFiniteNumber(valuation.reverse_dcf_parameters?.base_revenue) ? `$${(valuation.reverse_dcf_parameters.base_revenue / 1e9).toFixed(2)}B` : "Unavailable"}</div>
+                      <div>• Diluted Share Count: {isFiniteNumber(valuation.reverse_dcf_parameters?.current_shares) ? `${(valuation.reverse_dcf_parameters.current_shares / 1e6).toFixed(2)}M (6:1 split-adjusted)` : "Unavailable"}</div>
+                      <div>• Net Debt Bridge: {formatNetDebtBridge(valuation.reverse_dcf_parameters?.net_debt_bridge)}</div>
+                      <div>• Solved 5Y Revenue CAGR: {formatPercent(valuation.solved_5y_cagr_pct)} (Roundtrip: {formatCurrency(valuation.roundtrip_value)})</div>
+                    </div>
+                  </div>
 
-              {/* Full Comparative Table */}
-              <div className="overflow-x-auto rounded-lg border border-slate-800">
-                <table className="w-full text-left text-[11px] font-mono border-collapse">
-                  <thead>
-                    <tr className="bg-[#080d16] text-slate-400 border-b border-slate-800">
-                      <th className="p-2.5 font-semibold">Assumption / Parameter</th>
-                      <th className="p-2.5 font-semibold text-cyan-300">Reverse-DCF Solve</th>
-                      <th className="p-2.5 font-semibold text-rose-300">Bear case</th>
-                      <th className="p-2.5 font-semibold text-slate-200">Base case</th>
-                      <th className="p-2.5 font-semibold text-emerald-300">Bull case</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60 bg-[#0c121e]">
-                    <tr>
-                      <td className="p-2 text-slate-400">Role / Case Description</td>
-                      <td className="p-2 text-cyan-400">Price Solve Anchor</td>
-                      <td className="p-2 text-slate-300">Downside Stress</td>
-                      <td className="p-2 text-slate-200">Central Case</td>
-                      <td className="p-2 text-emerald-400">Upside Expansion</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 text-slate-400">5Y Revenue CAGR</td>
-                      <td className="p-2 font-bold text-cyan-400">{formatPercent(valuation.solved_5y_cagr_pct)}</td>
-                      <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.revenue_cagr_pct)}</td>
-                      <td className="p-2 text-slate-200">{formatPercent(baseScenario?.revenue_cagr_pct)}</td>
-                      <td className="p-2 text-emerald-400">{formatPercent(optimisticScenario?.revenue_cagr_pct)}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 text-slate-400">Target Operating Margin</td>
-                      <td className="p-2 text-cyan-400">{formatPercent(valuation.reverse_dcf_parameters?.operating_margin_pct)}</td>
-                      <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.operating_margin_pct)}</td>
-                      <td className="p-2 text-slate-200">{formatPercent(baseScenario?.operating_margin_pct)}</td>
-                      <td className="p-2 text-emerald-400">{formatPercent(optimisticScenario?.operating_margin_pct)}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 text-slate-400">Discount Rate (WACC)</td>
-                      <td className="p-2 text-slate-300">{formatPercent(valuation.reverse_dcf_parameters?.wacc_pct)}</td>
-                      <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.wacc_pct)}</td>
-                      <td className="p-2 text-slate-300">{formatPercent(baseScenario?.wacc_pct)}</td>
-                      <td className="p-2 text-slate-300">{formatPercent(optimisticScenario?.wacc_pct)}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 text-slate-400">Terminal Growth Rate (g)</td>
-                      <td className="p-2 text-slate-300">{formatPercent(valuation.reverse_dcf_parameters?.terminal_growth_pct)}</td>
-                      <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.terminal_growth_pct)}</td>
-                      <td className="p-2 text-slate-300">{formatPercent(baseScenario?.terminal_growth_pct)}</td>
-                      <td className="p-2 text-slate-300">{formatPercent(optimisticScenario?.terminal_growth_pct)}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 text-slate-400">Effective Tax Rate</td>
-                      <td className="p-2 text-slate-300">{formatPercent(valuation.reverse_dcf_parameters?.tax_rate_pct)}</td>
-                      <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.tax_rate_pct)}</td>
-                      <td className="p-2 text-slate-300">{formatPercent(baseScenario?.tax_rate_pct)}</td>
-                      <td className="p-2 text-slate-300">{formatPercent(optimisticScenario?.tax_rate_pct)}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2 text-slate-400">Reinvestment Rate</td>
-                      <td className="p-2 text-slate-300">{formatPercent(valuation.reverse_dcf_parameters?.reinvestment_rate_pct)}</td>
-                      <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.reinvestment_rate_pct)}</td>
-                      <td className="p-2 text-slate-300">{formatPercent(baseScenario?.reinvestment_rate_pct)}</td>
-                      <td className="p-2 text-slate-300">{formatPercent(optimisticScenario?.reinvestment_rate_pct)}</td>
-                    </tr>
-                    <tr className="bg-[#090f1a]">
-                      <td className="p-2 text-slate-300 font-semibold">Modeled Value per Share</td>
-                      <td className="p-2 font-bold text-cyan-300">{formatCurrency(valuation.reference_price)}</td>
-                      <td className="p-2 font-bold text-rose-400">{formatCurrency(conservativeScenario?.per_share_value)}</td>
-                      <td className="p-2 font-bold text-white">{formatCurrency(baseScenario?.per_share_value)}</td>
-                      <td className="p-2 font-bold text-emerald-400">{formatCurrency(optimisticScenario?.per_share_value)}</td>
-                    </tr>
-                    <tr className="bg-[#080d16]">
-                      <td className="p-2 text-slate-400">Difference from Reference Price</td>
-                      <td className="p-2 text-slate-500 font-mono">Anchor (0.0%)</td>
-                      <td className="p-2 text-rose-400 font-semibold">{formatDiffPercent(bearDiff)}</td>
-                      <td className="p-2 text-slate-200 font-semibold">{formatDiffPercent(baseDiff)}</td>
-                      <td className="p-2 text-emerald-400 font-semibold">{formatDiffPercent(bullDiff)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                  {/* Full Comparative Table */}
+                  <div className="overflow-x-auto rounded-lg border border-slate-800">
+                    <table className="w-full text-left text-[11px] font-mono border-collapse">
+                      <thead>
+                        <tr className="bg-[#080d16] text-slate-400 border-b border-slate-800">
+                          <th className="p-2.5 font-semibold">Assumption / Parameter</th>
+                          <th className="p-2.5 font-semibold text-cyan-300">Reverse-DCF Solve</th>
+                          <th className="p-2.5 font-semibold text-rose-300">Bear case</th>
+                          <th className="p-2.5 font-semibold text-slate-200">Base case</th>
+                          <th className="p-2.5 font-semibold text-emerald-300">Bull case</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60 bg-[#0c121e]">
+                        <tr>
+                          <td className="p-2 text-slate-400">Role / Case Description</td>
+                          <td className="p-2 text-cyan-400">Price Solve Anchor</td>
+                          <td className="p-2 text-slate-300">Downside Stress</td>
+                          <td className="p-2 text-slate-200">Central Case</td>
+                          <td className="p-2 text-emerald-400">Upside Expansion</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 text-slate-400">5Y Revenue CAGR</td>
+                          <td className="p-2 font-bold text-cyan-400">{formatPercent(valuation.solved_5y_cagr_pct)}</td>
+                          <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.revenue_cagr_pct)}</td>
+                          <td className="p-2 text-slate-200">{formatPercent(baseScenario?.revenue_cagr_pct)}</td>
+                          <td className="p-2 text-emerald-400">{formatPercent(optimisticScenario?.revenue_cagr_pct)}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 text-slate-400">Target Operating Margin</td>
+                          <td className="p-2 text-cyan-400">{formatPercent(valuation.reverse_dcf_parameters?.operating_margin_pct)}</td>
+                          <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.operating_margin_pct)}</td>
+                          <td className="p-2 text-slate-200">{formatPercent(baseScenario?.operating_margin_pct)}</td>
+                          <td className="p-2 text-emerald-400">{formatPercent(optimisticScenario?.operating_margin_pct)}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 text-slate-400">Discount Rate (WACC)</td>
+                          <td className="p-2 text-slate-300">{formatPercent(valuation.reverse_dcf_parameters?.wacc_pct)}</td>
+                          <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.wacc_pct)}</td>
+                          <td className="p-2 text-slate-300">{formatPercent(baseScenario?.wacc_pct)}</td>
+                          <td className="p-2 text-slate-300">{formatPercent(optimisticScenario?.wacc_pct)}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 text-slate-400">Terminal Growth Rate (g)</td>
+                          <td className="p-2 text-slate-300">{formatPercent(valuation.reverse_dcf_parameters?.terminal_growth_pct)}</td>
+                          <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.terminal_growth_pct)}</td>
+                          <td className="p-2 text-slate-300">{formatPercent(baseScenario?.terminal_growth_pct)}</td>
+                          <td className="p-2 text-slate-300">{formatPercent(optimisticScenario?.terminal_growth_pct)}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 text-slate-400">Effective Tax Rate</td>
+                          <td className="p-2 text-slate-300">{formatPercent(valuation.reverse_dcf_parameters?.tax_rate_pct)}</td>
+                          <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.tax_rate_pct)}</td>
+                          <td className="p-2 text-slate-300">{formatPercent(baseScenario?.tax_rate_pct)}</td>
+                          <td className="p-2 text-slate-300">{formatPercent(optimisticScenario?.tax_rate_pct)}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 text-slate-400">Reinvestment Rate</td>
+                          <td className="p-2 text-slate-300">{formatPercent(valuation.reverse_dcf_parameters?.reinvestment_rate_pct)}</td>
+                          <td className="p-2 text-slate-300">{formatPercent(conservativeScenario?.reinvestment_rate_pct)}</td>
+                          <td className="p-2 text-slate-300">{formatPercent(baseScenario?.reinvestment_rate_pct)}</td>
+                          <td className="p-2 text-slate-300">{formatPercent(optimisticScenario?.reinvestment_rate_pct)}</td>
+                        </tr>
+                        <tr className="bg-[#090f1a]">
+                          <td className="p-2 text-slate-300 font-semibold">Modeled Value per Share</td>
+                          <td className="p-2 font-bold text-cyan-300">{formatCurrency(valuation.reference_price)}</td>
+                          <td className="p-2 font-bold text-rose-400">{formatCurrency(conservativeScenario?.per_share_value)}</td>
+                          <td className="p-2 font-bold text-white">{formatCurrency(baseScenario?.per_share_value)}</td>
+                          <td className="p-2 font-bold text-emerald-400">{formatCurrency(optimisticScenario?.per_share_value)}</td>
+                        </tr>
+                        <tr className="bg-[#080d16]">
+                          <td className="p-2 text-slate-400">Difference from Reference Price</td>
+                          <td className="p-2 text-slate-500 font-mono">Anchor (0.0%)</td>
+                          <td className="p-2 text-rose-400 font-semibold">{formatDiffPercent(bearDiff)}</td>
+                          <td className="p-2 text-slate-200 font-semibold">{formatDiffPercent(baseDiff)}</td>
+                          <td className="p-2 text-emerald-400 font-semibold">{formatDiffPercent(bullDiff)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -706,11 +779,7 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
                     Sourced Capital Structure &amp; Net Debt Bridge Breakdown
                   </span>
                   <span className="text-[10px] font-mono text-cyan-400">
-                    Net Debt Bridge: {isFiniteNumber(financial_profile.net_debt_bridge)
-                      ? (financial_profile.net_debt_bridge < 0
-                        ? `-$${(Math.abs(financial_profile.net_debt_bridge) / 1e6).toFixed(1)}M (Net Cash)`
-                        : `$${(financial_profile.net_debt_bridge / 1e6).toFixed(1)}M`)
-                      : "Unavailable"}
+                    Net Debt Bridge: {formatNetDebtBridge(financial_profile.net_debt_bridge)}
                   </span>
                 </div>
 
@@ -760,11 +829,7 @@ export default function DeckDecisionFirstView({ dossier }: DeckDecisionFirstView
                   <div className="p-2 rounded bg-[#0f1624] border border-slate-800">
                     <span className="text-slate-500 text-[10px] block">Net Debt Bridge</span>
                     <span className="text-cyan-400 font-semibold">
-                      {isFiniteNumber(financial_profile.net_debt_bridge)
-                        ? (financial_profile.net_debt_bridge < 0
-                          ? `-$${(Math.abs(financial_profile.net_debt_bridge) / 1e6).toFixed(1)}M (Net Cash)`
-                          : `$${(financial_profile.net_debt_bridge / 1e6).toFixed(1)}M`)
-                        : "Unavailable"}
+                      {formatNetDebtBridge(financial_profile.net_debt_bridge)}
                     </span>
                   </div>
                 </div>
