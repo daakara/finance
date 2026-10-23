@@ -241,6 +241,7 @@ PREDICATE_DEFINITIONS: List[PredicateDefinition] = [
             "BASE_TOO_DEEP_LOOSE",
             "CONTRACTION_COUNT_OUT_OF_BOUNDS",
             "FINAL_CONTRACTION_UNFINISHED_AT_CUTOFF",
+            "INITIAL_CONTRACTION_TOO_SHALLOW",
         ],
         conformance_role=ConformanceRole.NORMATIVE,
     ),
@@ -566,6 +567,14 @@ class VCPPredicateRegistry:
                     measured_value={"count": count, "initial_depth": initial_depth, "final_trough_confirmed": False},
                     threshold_applied="final_trough_confirmed == True",
                     reason_codes=["FINAL_CONTRACTION_UNFINISHED_AT_CUTOFF"],
+                )
+            if "INITIAL_CONTRACTION_TOO_SHALLOW" in meta_reasons:
+                return PredicateResult(
+                    predicate_id=predicate_id,
+                    status=PredicateStatus.FAIL,
+                    measured_value={"count": count, "initial_depth": initial_depth},
+                    threshold_applied="initial_depth >= 0.08 & initial_depth <= 0.45",
+                    reason_codes=["INITIAL_CONTRACTION_TOO_SHALLOW"],
                 )
             if count > 6:
                 return PredicateResult(

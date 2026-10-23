@@ -197,3 +197,167 @@ def test_04_dual_candidate_isolated_side_by_side_execution():
     # Running them again does not alter version identities
     assert clf_004.algorithm_version == VCPClassifier.VERSION_CANDIDATE_004
     assert clf_005.algorithm_version == VCPClassifier.VERSION_CANDIDATE_005
+
+
+def test_05_candidate_005_bit_exact_reproducibility_on_frozen_cases():
+    """Proves Candidate 005 yields bit-exact outputs matching vcp_hva02_candidate_005_results.json."""
+    worktree_root = Path(__file__).resolve().parent.parent
+    db_path = worktree_root / "data" / "research" / "market_data" / "bounded_150_dev_market_store.db"
+    manifest_path = worktree_root / "data" / "research" / "vcp_hva00_case_manifest.json"
+    frozen_c005_path = worktree_root / "data" / "research" / "vcp_hva02_candidate_005_results.json"
+
+    if not (db_path.exists() and manifest_path.exists() and frozen_c005_path.exists()):
+        pytest.skip("Research data files not present in worktree; skipping frozen replay.")
+
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+    with open(frozen_c005_path, "r", encoding="utf-8") as f:
+        frozen_c005 = json.load(f)
+
+    frozen_records = {r["case_id"]: r["candidate_005"] for r in frozen_c005["case_records"]}
+    pos_cases = [c for c in manifest["cases"] if c.get("stratum") == "CLEAR_POSITIVE_VCP"]
+
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    cursor = conn.cursor()
+
+    compiler = VCPTemporalCaseCompiler()
+    clf_c005 = VCPClassifier(algorithm_version=VCPClassifier.VERSION_CANDIDATE_005)
+
+    for case_defn in pos_cases:
+        cid = case_defn["case_id"]
+        sym = case_defn["symbol"]
+        cutoff = case_defn["evaluation_cutoff_date"]
+        cutoff_iso = f"{cutoff}T21:00:00Z"
+
+        rows = cursor.execute(
+            """
+            SELECT trade_date, open, high, low, close, volume
+            FROM asset_ohlcv_daily
+            WHERE symbol = ? AND trade_date <= ?
+            ORDER BY trade_date ASC
+            """,
+            (sym, cutoff),
+        ).fetchall()
+
+        bars = [
+            DailyOHLCVBar(
+                symbol=sym,
+                bar_date=r[0],
+                open=float(r[1]),
+                high=float(r[2]),
+                low=float(r[3]),
+                close=float(r[4]),
+                volume=int(r[5]),
+                valid_time=f"{r[0]}T21:00:00Z",
+                known_at=f"{r[0]}T22:00:00Z",
+            )
+            for r in rows
+        ]
+
+        pkg = compiler.compile_case(
+            case_id=cid,
+            security_id=f"SEC-{sym}",
+            symbol=sym,
+            evaluation_as_of=cutoff_iso,
+            raw_bars=bars,
+            reference_data={"rs_rank": 85.0},
+            corporate_actions=[],
+        )
+
+        obs = clf_c005.extract_observations(pkg)
+        assessment = clf_c005.classify_case(pkg)
+
+        frozen_rec = frozen_records[cid]
+        assert assessment.vcp_classification == frozen_rec["vcp_classification"], f"{cid} classification mismatch"
+        assert obs.contraction_count == frozen_rec["contraction_count"], f"{cid} count mismatch"
+        assert obs.contraction_depths == frozen_rec["contraction_depths"], f"{cid} depths mismatch"
+
+    conn.close()
+
+
+def test_06_tri_candidate_isolated_side_by_side_and_order_invariance():
+    """Instantiating Candidate 004, Candidate 005, and Candidate 006 executes cleanly with zero state leakage and order invariance."""
+    worktree_root = Path(__file__).resolve().parent.parent
+    db_path = worktree_root / "data" / "research" / "market_data" / "bounded_150_dev_market_store.db"
+    manifest_path = worktree_root / "data" / "research" / "vcp_hva00_case_manifest.json"
+
+    if not (db_path.exists() and manifest_path.exists()):
+        pytest.skip("Database or manifest not present in worktree.")
+
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+    case_defn = manifest["cases"][0]
+    sym = case_defn["symbol"]
+    cutoff = case_defn["evaluation_cutoff_date"]
+    cutoff_iso = f"{cutoff}T21:00:00Z"
+
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    cursor = conn.cursor()
+
+    rows = cursor.execute(
+        """
+        SELECT trade_date, open, high, low, close, volume
+        FROM asset_ohlcv_daily
+        WHERE symbol = ? AND trade_date <= ?
+        ORDER BY trade_date ASC
+        """,
+        (sym, cutoff),
+    ).fetchall()
+    conn.close()
+
+    bars = [
+        DailyOHLCVBar(
+            symbol=sym,
+            bar_date=r[0],
+            open=float(r[1]),
+            high=float(r[2]),
+            low=float(r[3]),
+            close=float(r[4]),
+            volume=int(r[5]),
+            valid_time=f"{r[0]}T21:00:00Z",
+            known_at=f"{r[0]}T22:00:00Z",
+        )
+        for r in rows
+    ]
+
+    compiler = VCPTemporalCaseCompiler()
+    pkg = compiler.compile_case(
+        case_id=case_defn["case_id"],
+        security_id=f"SEC-{sym}",
+        symbol=sym,
+        evaluation_as_of=cutoff_iso,
+        raw_bars=bars,
+        reference_data={"rs_rank": 85.0},
+        corporate_actions=[],
+    )
+
+    # Forward order
+    clf_004_fwd = VCPClassifier(algorithm_version=VCPClassifier.VERSION_CANDIDATE_004)
+    clf_005_fwd = VCPClassifier(algorithm_version=VCPClassifier.VERSION_CANDIDATE_005)
+    clf_006_fwd = VCPClassifier(algorithm_version=VCPClassifier.VERSION_CANDIDATE_006)
+
+    obs_004_fwd = clf_004_fwd.extract_observations(pkg)
+    obs_005_fwd = clf_005_fwd.extract_observations(pkg)
+    obs_006_fwd = clf_006_fwd.extract_observations(pkg)
+
+    # Reverse order
+    clf_006_rev = VCPClassifier(algorithm_version=VCPClassifier.VERSION_CANDIDATE_006)
+    clf_005_rev = VCPClassifier(algorithm_version=VCPClassifier.VERSION_CANDIDATE_005)
+    clf_004_rev = VCPClassifier(algorithm_version=VCPClassifier.VERSION_CANDIDATE_004)
+
+    obs_006_rev = clf_006_rev.extract_observations(pkg)
+    obs_005_rev = clf_005_rev.extract_observations(pkg)
+    obs_004_rev = clf_004_rev.extract_observations(pkg)
+
+    # Verify provenance and distinct metadata
+    assert obs_004_fwd.metadata == {}
+    assert obs_005_fwd.metadata["algorithm_version"] == VCPClassifier.VERSION_CANDIDATE_005
+    assert obs_006_fwd.metadata["algorithm_version"] == VCPClassifier.VERSION_CANDIDATE_006
+
+    # Verify order invariance
+    assert obs_004_fwd.contraction_count == obs_004_rev.contraction_count
+    assert obs_004_fwd.contraction_depths == obs_004_rev.contraction_depths
+    assert obs_005_fwd.contraction_count == obs_005_rev.contraction_count
+    assert obs_005_fwd.contraction_depths == obs_005_rev.contraction_depths
+    assert obs_006_fwd.contraction_count == obs_006_rev.contraction_count
+    assert obs_006_fwd.contraction_depths == obs_006_rev.contraction_depths
