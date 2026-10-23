@@ -7,7 +7,7 @@
 **Outcome Decision:** **`CONTINUE (Qualified Recommendation for Further Bounded Exploration)`**  
 
 > [!NOTE] Priority Reassessment Notice (October 22, 2026)
-> In accordance with the post-Cycle 2 priority review in [`CANDIDATE_PRIORITY_REASSESSMENT.md`](file:///docs/research/discovery_cycle_2/CANDIDATE_PRIORITY_REASSESSMENT.md), candidate priorities have been reassessed under a consistent four-dimensional framework. `TMDX` has been transitioned to **`REVIEW_ON_EVENT`** pending the Form 10-Q Q3 2026 filing to evaluate operating expense trajectory, cash conversion, and lease commitments alongside management's disclosed planned investments. Eaton (`ETN`) is similarly scheduled for **`REVIEW_ON_EVENT`** (Form 10-Q Q3 2026) as specific datacenter backlog cancellation terms are not separately disclosed in primary filings.
+> In accordance with the post-Cycle 2 priority review in [`CANDIDATE_PRIORITY_REASSESSMENT.md`](file:///docs/research/discovery_cycle_2/CANDIDATE_PRIORITY_REASSESSMENT.md), candidate priorities have been reassessed under a consistent four-dimensional framework. `TMDX` has been transitioned to **`REVIEW_ON_EVENT`** pending the Form 10-Q Q3 2026 filing to evaluate operating expense trajectory, cash conversion, and lease commitments (with explicit recognition that granular flight economics may remain undisclosed and stopping upon limitation is a valid outcome). Eaton (`ETN`) is similarly scheduled for **`REVIEW_ON_EVENT`** (Form 10-Q Q3 2026) as specific datacenter backlog cancellation terms are not separately disclosed in primary filings.
 
 ---
 

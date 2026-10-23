@@ -49,8 +49,8 @@ The following table presents verified reported metrics from TransMedics Group, I
 
 | Metric (in USD Millions) | FY2025 Full Year (Audited) | 1H 2025 (Six Months Ended Jun 30, 2025) | 1H 2026 (Six Months Ended Jun 30, 2026) | 1H YoY Change (%) | Q2 2025 (Three Months Ended Jun 30, 2025) | Q2 2026 (Three Months Ended Jun 30, 2026) | Q2 YoY Change (%) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Product Revenue** | $446.510M | $184.334M | $219.130M | +18.88% | $96.100M | $111.158M | +15.67% |
-| **Service Revenue** | $158.984M | $116.573M | $144.751M | +24.17% | $61.270M | $78.790M | +28.59% |
+| **Net Product Revenue** | $372.401M | $184.334M | $219.130M | +18.88% | $96.100M | $111.158M | +15.67% |
+| **Service Revenue** | $233.093M | $116.573M | $144.751M | +24.17% | $61.270M | $78.790M | +28.59% |
 | **Total Revenue** | **$605.494M** | **$300.907M** | **$363.881M** | **+20.93%** | **$157.370M** | **$189.948M** | **+20.70%** |
 | **Cost of Revenue** | $242.688M | $116.090M | $149.522M | +28.80% | $60.781M | $76.750M | +26.27% |
 | **Gross Profit** | **$362.806M** | **$184.817M** | **$214.359M** | **+15.98%** | **$96.589M** | **$113.198M** | **+17.20%** |
@@ -122,11 +122,17 @@ While management identifies pipeline and trial investments as the primary expens
 - Adding aircraft under finance leases creates multi-year debt service and maintenance obligations.
 - If procedure growth decelerates, fixed flight overhead could create negative operating leverage, constraining margin expansion.
 
-### D. Evidence Still Needed
-Distinguishing between productive clinical investment and structural operational drag requires forthcoming disclosures:
-- Form 10-Q Q3 2026 disclosures on gross margin stability and whether R&D and SG&A expense growth moderates relative to revenue.
-- Disclosure on the initial financial impact of the European PAD Aviation integration (completed July 1, 2026).
-- Evidence on whether operating cash flow rebounds to cover cash capital expenditures and contractual lease commitments.
+### D. Scope & Limitations of Forthcoming Review Trigger
+The forthcoming publication of Form 10-Q for Q3 2026 serves as a bounded review trigger. Disclosures in the filing and earnings materials may help assess:
+- **Operating-Expense Trajectory:** Whether R&D and SG&A growth rates moderate relative to top-line growth.
+- **Cash Conversion:** Whether cash generated from operations rebounds relative to cash capital expenditures.
+- **Lease Obligations:** Whether aircraft lease additions and commitments stabilize.
+- **Productive Investment vs. Operational Drag:** Initial qualitative commentary or segment disclosures regarding the European PAD Aviation integration (completed July 1, 2026) and OCS clinical pipeline progress.
+
+**Explicit Limitations:**
+- Forthcoming quarterly filings may not disclose flight-hour utilization, route-level economics, or granular per-mission logistics costs.
+- The filing is not guaranteed to conclusively resolve the tension between management's reinvestment explanation and the aviation friction hypothesis.
+- If decisive operational evidence remains undisclosed following the event, recording that limitation and stopping research is a valid, expected outcome under the ARX Closure Model.
 
 ### Live Hypotheses Maintained
 - **Hypothesis 1 (Productive Reinvestment):** The interim margin compression reflects a planned, front-loaded investment cycle in OCS Kidney, Gen 3.0, and clinical trials that will expand addressable organ indications and restore operating leverage.
@@ -137,9 +143,9 @@ Distinguishing between productive clinical investment and structural operational
 ## 4. Technical & Valuation Evidence Standards
 
 ### Technical State Qualification
-- **Observed Market Fact:** As of the regular session close on October 21, 2026, TransMedics (`TMDX`) closed at **$72.06**, which is below its trailing 200-session unadjusted simple moving average of **$96.58** (Source: S&P / Yahoo Finance market store, retrieval date October 22, 2026).
-- **Unresolved Technical Dimensions:** Daily moving average slope, comparative relative strength against medtech benchmarks, chart pattern consolidation, and volume accumulation/distribution are not independently metered with reproducible audit trails in the current environment and are formally classified as **`TECHNICAL_STATE_UNRESOLVED`**.
-- Subjective interpretations regarding "why market participants sold" or assertions of "institutional distribution" are withdrawn.
+- **Technical State:** In the absence of a verified, traceable market data provider receipt or auditable calculation archive for daily trading sessions in the current environment, the technical setup (including closing price levels, trailing moving average benchmarks, moving average slopes, relative strength, and volume accumulation/distribution) is formally classified as **`TECHNICAL_STATE_UNRESOLVED`**.
+- Subjective interpretations regarding "why market participants sold" or assertions of "institutional distribution" or "failed bases" are withdrawn.
+- The event-based research disposition for candidate companies does not depend on unverified technical numbers.
 
 ### Valuation State Qualification
 - In the absence of live, primary-source broker consensus feeds and explicit dated discounted cash flow models with published terminal assumptions, forward P/E and multiple labels ("fair," "stretched," "compressed") are unverified.
@@ -174,7 +180,7 @@ The compact matrix below establishes the internal research disposition across al
 | Candidate Symbol | Company Name | Decision-Relevant Supported Evidence | Important Unresolved Evidence | Internal Disposition | Specific Review Trigger / Action | Relative Allocation Rationale |
 | :--- | :--- | :--- | :--- | :---: | :--- | :--- |
 | **`ETN`** | Eaton Corporation plc | Leader in electrical distribution; Electrical Americas segment margin 29.9% ($3,972M); 79.5% FCF conversion; 'A-' credit rating. | Detailed backlog split (datacenter substations vs commercial construction) is `NOT_DISCLOSED`. | **`REVIEW_ON_EVENT`** | Form 10-Q Q3 2026 (Nov 2026) | Strong upstream positioning, but detailed backlog mix cannot be resolved prior to quarterly disclosure. |
-| **`TMDX`** | TransMedics Group, Inc. | FY25 revenue $605.5M; 1H26 revenue +20.9%; 1H26 operating income -42.1%; 1H26 simple cash FCF -$1.9M; $347.7M aircraft lease debt. | Productive clinical investment (OCS Kidney/Gen 3.0) vs fixed aviation logistics drag. | **`REVIEW_ON_EVENT`** | Form 10-Q Q3 2026 (Nov 2026) | Research effort deferred pending observable gross margin stability and cash conversion trajectory. |
+| **`TMDX`** | TransMedics Group, Inc. | FY25 revenue $605.5M (Net product $372.4M / Service $233.1M); 1H26 revenue +20.9%; 1H26 operating income -42.1%; 1H26 simple cash FCF -$1.9M; $347.7M aircraft lease debt. | Productive clinical investment (OCS Kidney/Gen 3.0) vs fixed aviation logistics drag. | **`REVIEW_ON_EVENT`** | Form 10-Q Q3 2026 (Nov 2026) | Research effort deferred pending observable OpEx trajectory, lease commitments, and cash conversion. |
 | **`PODD`** | Insulet Corporation | FY25 revenue $2.71B (+30.7%); operating income $473.8M (17.5% margin); >85% recurring pharmacy channel revenue. | International Omnipod 5 commercial adoption rate and gross margin sustainability. | **`REVIEW_ON_EVENT`** | Form 10-Q Q3 2026 (Nov 2026) | High recurring consumable revenue; review on Q3 international expansion metrics. |
 | **`CEG`** | Constellation Energy Corp | Largest US merchant nuclear fleet; 20-year Microsoft PPA for Three Mile Island Unit 1 restart. | FERC regulatory tariff ruling on behind-the-meter datacenter colocation dockets. | **`REVIEW_ON_EVENT`** | FERC Colocation Docket Ruling | Strategic baseload power asset, but binary regulatory cost-allocation decision dominates near-term modeling. |
 | **`TDG`** | TransDigm Group, Inc. | Proprietary commercial/military aerospace aftermarket parts (>45% EBITDA margin). | High financial leverage ($22B+ funded debt) sensitivity to debt refinancing rates. | **`INACTIVE`** | Form 10-K FY2026 (Nov 2026) | Pricing power benchmark; elevated leverage warrants monitoring rather than public research. |
@@ -198,6 +204,6 @@ The compact matrix below establishes the internal research disposition across al
   - Frozen ODP-05 discovery ledger SHA-256 (`a65be3b38cdf988081a29257fb41674c3591b10a666362f351794a7d1c40979d`) is untouched.
   - Zero scanner activation, universe expansion, live ingestion, or frontend code mutations.
 - **Backlog Tracking Reconciled:**
-  - `docs/planning/ENGINEERING_BACKLOG.md` maintains `BACKLOG-RESEARCH-EVIDENCE-DISCOVERY-046` as `COMPLETED_AND_ADOPTED` and `BACKLOG-RESEARCH-PRIORITY-REASSESSMENT-047` as `IN_PROGRESS` on branch `feat/research-candidate-priority-reassessment`.
+  - `docs/planning/ENGINEERING_BACKLOG.md` maintains `BACKLOG-RESEARCH-EVIDENCE-DISCOVERY-046` as `COMPLETED_AND_ADOPTED` and records `BACKLOG-RESEARCH-PRIORITY-REASSESSMENT-047` as `COMPLETED` (Delivered via Pull Request #48, Branch `feat/research-candidate-priority-reassessment`).
 - **Cross-Reference Synchronization:**
   - Priority notice callouts in `DISCOVERY_OPPORTUNITY_RECORDS.md`, `SEARCH_UNIVERSE_AND_TRIAGE_MATRIX.md`, and `CYCLE_2_EVALUATION_REPORT.md` are synchronized to reflect this reconciled reassessment.

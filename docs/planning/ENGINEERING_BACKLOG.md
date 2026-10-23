@@ -318,16 +318,17 @@
 - **Category**: Research / Opportunity Discovery & Queue Governance
 - **Priority**: **P2 (Strategic Priority & Queue Discipline)**
 - **Priority Rationale**: Reassesses candidate prioritization following Discovery Cycle 2 to resolve the specific concern of premature TMDX prioritization, establishing a disciplined four-dimensional priority framework (business relevance, research urgency, setup readiness, public eligibility) and constructing an evidence-supported research queue across all 14 candidates.
-- **Governing PR**: Active Draft PR (`feat/research-candidate-priority-reassessment`)
-- **Status**: `IN_PROGRESS` (Active Branch: `feat/research-candidate-priority-reassessment`)
+- **Governing PR**: [daakara/finance#48](https://github.com/daakara/finance/pull/48)
+- **Status**: `COMPLETED` (Delivered via Pull Request #48, Branch `feat/research-candidate-priority-reassessment`)
 - **Assigned Sprint**: Research Sprint 3 (Priority Reassessment & Queue Discipline)
 - **Owner**: ARX Terminal Core Team
 - **Completed Prerequisites**:
   - Discovery Cycle 2 merged into `main` via PR #46 (Commit `404a566734306a9e51b442c10dfe5fe028e7d19f`, Tree `caab46d1e93c44aa34994bbb76a4e6c0a7605423`).
   - Active published Quality Watch collection: `FIX`, `DUOL`, `ULTA`, `MEDP`, `ISRG`, `DECK` (6 symbols intact).
 - **Scope & Methodological Core**:
-  - Reconciles TMDX financial analysis against primary Form 10-K and Form 10-Q Q2 2026 filings (reconciling 1H 2025 net income to $60.589M, Q2 2026 OpEx to $89.462M, Q2 2025 OpEx to $60.022M, and Dec 31, 2025 cash to $488.366M), incorporating management commentary on planned investments in OCS Kidney, Gen 3.0, and clinical trials alongside alternative hypotheses regarding aviation operating friction.
-  - Transitions TMDX to `REVIEW_ON_EVENT` pending Form 10-Q Q3 2026 filing to evaluate gross margins, operating expense trajectory, and cash conversion.
+  - Reconciles TMDX financial analysis against primary Form 10-K and Form 10-Q Q2 2026 filings (reconciling FY2025 net product revenue to $372.401M, service revenue to $233.093M, total revenue to $605.494M, 1H 2025 net income to $60.589M, Q2 2026 OpEx to $89.462M, Q2 2025 OpEx to $60.022M, and Dec 31, 2025 cash to $488.366M), incorporating management commentary on planned investments in OCS Kidney, Gen 3.0, and clinical trials alongside alternative hypotheses regarding aviation operating friction.
+  - Technical setup dimensions (including closing prices, trailing moving average benchmarks, slopes, and pattern interpretations) classified as `TECHNICAL_STATE_UNRESOLVED` in the absence of verified market data provider archives; valuation expectation gaps classified as `VALUATION_EXPECTATION_GAP_UNRESOLVED` / `VALUATION_NOT_ASSESSED`.
+  - Transitions TMDX to `REVIEW_ON_EVENT` pending Form 10-Q Q3 2026 filing to evaluate operating expense trajectory, cash conversion, and lease commitments, with explicit recognition that flight utilization and route-level unit economics may remain undisclosed and stopping upon limitation is a valid outcome.
   - Audits ETN's Form 10-K backlog disclosures, determining that detailed datacenter switchgear vs commercial construction contract splits are `NOT_DISCLOSED` in primary filings, and scheduling ETN for `REVIEW_ON_EVENT` (Form 10-Q Q3 2026).
   - Codifies a compact, proportionate research queue across all 14 candidates with verified decision-relevant evidence, unresolved dimensions, and specific review triggers without arbitrary active-investigation quotas.
 - **Operational Boundaries & Invariants**:
