@@ -55,6 +55,56 @@ export interface ScenarioProjection {
   equity_value?: number;
 }
 
+/**
+ * Computes the percentage difference between a scenario modeled value and the reference price:
+ * ((modeledValue / referencePrice) - 1) * 100
+ * Safely handles missing, zero, invalid, and negative values.
+ */
+export function calculateScenarioPriceDiffPct(
+  modeledValue: number | undefined | null,
+  referencePrice: number | undefined | null
+): number | null {
+  if (
+    modeledValue === undefined ||
+    modeledValue === null ||
+    typeof modeledValue !== "number" ||
+    isNaN(modeledValue)
+  ) {
+    return null;
+  }
+  if (
+    referencePrice === undefined ||
+    referencePrice === null ||
+    typeof referencePrice !== "number" ||
+    isNaN(referencePrice) ||
+    referencePrice <= 0
+  ) {
+    return null;
+  }
+  return ((modeledValue / referencePrice) - 1) * 100;
+}
+
+/**
+ * Standardizes scenario keys into consistent presentation labels:
+ * Conservative -> Bear case
+ * Base / Base Case -> Base case
+ * Optimistic -> Bull case
+ */
+export function getStandardizedScenarioLabel(key: string): string {
+  if (!key || typeof key !== "string") return "";
+  const lower = key.trim().toLowerCase();
+  if (lower === "conservative" || lower.includes("conservative") || lower.includes("bear")) {
+    return "Bear case";
+  }
+  if (lower === "base" || lower === "base case" || lower.includes("base")) {
+    return "Base case";
+  }
+  if (lower === "optimistic" || lower.includes("optimistic") || lower.includes("bull")) {
+    return "Bull case";
+  }
+  return key;
+}
+
 export interface ReverseDcfParameters {
   target_price: number;
   solved_revenue_cagr_pct: number;
