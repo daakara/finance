@@ -17,15 +17,25 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from hva01 import (
     AbstentionCode,
+    AllocationEngine,
+    AllocationLedger,
+    AllocationRecord,
+    AllocationStateError,
     AppendOnlyStore,
+    AuthenticationError,
+    AuthorizationError,
     ConfidenceLevel,
     EvidenceSufficiency,
     IntakeRunner,
     PackageAccessViolation,
+    Permission,
+    Principal,
     PriorFamiliarity,
     RatingsPayload,
     ResponseValidationError,
     RestrictedLabelAccessError,
+    Role,
+    SecurityEnforcer,
     StageClassification,
     StateTransitionError,
     StorageCorruptionError,
@@ -143,6 +153,50 @@ def cmd_status(args: argparse.Namespace) -> int:
         return 1
 
 
+def cmd_alloc_gen(args: argparse.Namespace) -> int:
+    try:
+        admin_principal = Principal.create_allocation_admin(args.admin_id)
+        ledger = AllocationLedger(base_dir=args.store_dir)
+        rec_a, rec_b = AllocationEngine.generate_canonical_between_subjects_pair(
+            protocol_version=args.protocol_version,
+            package_a_sha256=args.package_a_sha,
+            package_b_sha256=args.package_b_sha,
+        )
+        ledger.register_allocation(admin_principal, rec_a)
+        ledger.register_allocation(admin_principal, rec_b)
+        print(f"[OK] Generated and registered between-subjects allocations:")
+        print(f"     A: {rec_a.allocation_id} -> {rec_a.reviewer_pseudonym} ({rec_a.assigned_package})")
+        print(f"     B: {rec_b.allocation_id} -> {rec_b.reviewer_pseudonym} ({rec_b.assigned_package})")
+        return 0
+    except Exception as exc:
+        print(f"[ERROR] Failed to generate allocations: {exc}", file=sys.stderr)
+        return 1
+
+
+def cmd_alloc_lock(args: argparse.Namespace) -> int:
+    try:
+        admin_principal = Principal.create_allocation_admin(args.admin_id)
+        ledger = AllocationLedger(base_dir=args.store_dir)
+        locked = ledger.lock_allocation(admin_principal, args.allocation_id)
+        print(f"[OK] Allocation locked: {locked.allocation_id} ({locked.reviewer_pseudonym})")
+        return 0
+    except Exception as exc:
+        print(f"[ERROR] Failed to lock allocation: {exc}", file=sys.stderr)
+        return 1
+
+
+def cmd_alloc_list(args: argparse.Namespace) -> int:
+    try:
+        admin_principal = Principal.create_allocation_admin(args.admin_id)
+        ledger = AllocationLedger(base_dir=args.store_dir)
+        allocations = ledger.list_allocations(admin_principal)
+        print(json.dumps([a.to_dict() for a in allocations], indent=2))
+        return 0
+    except Exception as exc:
+        print(f"[ERROR] Failed to list allocations: {exc}", file=sys.stderr)
+        return 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="HVA-01 Intake Runner CLI")
     subparsers = parser.add_subparsers(dest="subcommand", required=True)
@@ -205,6 +259,28 @@ def main() -> int:
     p_status.add_argument("--session-id", required=True, help="Session identifier")
     p_status.add_argument("--store-dir", default="./hva01_sessions", help="Base storage directory")
     p_status.set_defaults(func=cmd_status)
+
+    # Subcommand: alloc-gen
+    p_agen = subparsers.add_parser("alloc-gen", help="Generate canonical between-subjects allocations")
+    p_agen.add_argument("--admin-id", default="ALLOC-ADMIN-01", help="Administrator principal ID")
+    p_agen.add_argument("--protocol-version", default="2.1.0-ratified", help="Protocol version")
+    p_agen.add_argument("--package-a-sha", required=True, help="Package A manifest SHA-256")
+    p_agen.add_argument("--package-b-sha", required=True, help="Package B manifest SHA-256")
+    p_agen.add_argument("--store-dir", default="./hva01_sessions", help="Base storage directory")
+    p_agen.set_defaults(func=cmd_alloc_gen)
+
+    # Subcommand: alloc-lock
+    p_alock = subparsers.add_parser("alloc-lock", help="Lock an allocation permanently")
+    p_alock.add_argument("--allocation-id", required=True, help="Allocation ID to lock")
+    p_alock.add_argument("--admin-id", default="ALLOC-ADMIN-01", help="Administrator principal ID")
+    p_alock.add_argument("--store-dir", default="./hva01_sessions", help="Base storage directory")
+    p_alock.set_defaults(func=cmd_alloc_lock)
+
+    # Subcommand: alloc-list
+    p_alist = subparsers.add_parser("alloc-list", help="List registered allocations")
+    p_alist.add_argument("--admin-id", default="ALLOC-ADMIN-01", help="Administrator principal ID")
+    p_alist.add_argument("--store-dir", default="./hva01_sessions", help="Base storage directory")
+    p_alist.set_defaults(func=cmd_alloc_list)
 
     parsed = parser.parse_args()
     return parsed.func(parsed)
