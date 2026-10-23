@@ -6,6 +6,9 @@
 **Governing Standard:** `ARX-DECISION-RESEARCH-PROCESS-V1` (Standardized 9-Field Opportunity Template)  
 **Applicability:** Internal Research Experiment Only (Non-Production / Non-Public)  
 
+> [!NOTE] Priority Reassessment Notice (October 22, 2026)
+> In accordance with the post-Cycle 2 priority review in [`CANDIDATE_PRIORITY_REASSESSMENT.md`](file:///docs/research/discovery_cycle_2/CANDIDATE_PRIORITY_REASSESSMENT.md), candidate priorities have been reassessed under a consistent four-dimensional framework. `TMDX` has been transitioned to **`REVIEW_ON_EVENT`** pending the Form 10-Q Q3 2026 filing to evaluate operating expense trajectory, cash conversion, and lease commitments (with explicit recognition that granular flight economics may remain undisclosed and stopping upon limitation is a valid outcome). Eaton (`ETN`) is similarly scheduled for **`REVIEW_ON_EVENT`** (Form 10-Q Q3 2026) as specific datacenter backlog cancellation terms are not separately disclosed in primary filings.
+
 ---
 
 ## 1. Deep Investigation 1: TransMedics Group, Inc. (`TMDX`)
@@ -90,7 +93,7 @@ flowchart LR
   - Growth in US organ perfusion cases decelerating below 10.0% YoY.
 
 ### 9. Research Priority & Decisive Next Action
-- **Triage Priority:** **`PRIORITIZED_FOR_INTERNAL_MONITORING`**
+- **Triage Priority:** **`PRIORITIZED_FOR_INTERNAL_MONITORING`** *(Superseded: Reassessed to `REVIEW_ON_EVENT` in `CANDIDATE_PRIORITY_REASSESSMENT.md`)*
 - **Decisive Next Action:** Review Form 10-Q for Q3 2026 upon filing to track whether European aviation integration (PAD Aviation) increases capex or compresses gross margins. Do not propose for public Quality Watch publication.
 
 ---
