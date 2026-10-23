@@ -1,4 +1,4 @@
-﻿# Git
+# Git
 .git
 .gitignore
 
@@ -31,6 +31,16 @@ sample_data.py
 **/sample_data/
 **/*sample*.json
 **/sample_gem*.json
+
+# Databases and local backups
+*.db
+*.sqlite
+*.sqlite3
+backups/
+data/canonical/
+data/operational/
+data/staging/
+/output/
 
 # Frontend build artifacts
 frontend/.next/

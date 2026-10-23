@@ -12,9 +12,26 @@ export type { CanonicalInstrumentEnvelope };
 const DEFAULT_ORIGIN_API_URL = "https://web-production-e370b.up.railway.app/api/v1";
 const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || DEFAULT_ORIGIN_API_URL;
 
+/**
+ * Determines whether the current browser host is a verified Cloudflare Pages deployment
+ * of ARX Terminal (canonical arxterminal.com, www.arxterminal.com, or the official
+ * finance-xp8.pages.dev project domain and its deployment-preview subdomains).
+ */
+export function isCloudflarePagesHost(hostname: string): boolean {
+  if (!hostname) return false;
+  if (hostname === "arxterminal.com" || hostname === "www.arxterminal.com") {
+    return true;
+  }
+  if (hostname === "finance-xp8.pages.dev" || hostname.endsWith(".finance-xp8.pages.dev")) {
+    return true;
+  }
+  return false;
+}
+
 export function getApiBaseUrl(): string {
-  // In production browser environments on the canonical domain, route through Cloudflare edge proxy to shield origin
-  if (typeof window !== "undefined" && window.location.hostname.includes("arxterminal.com")) {
+  // In Cloudflare-hosted browser environments (canonical domain or official finance-xp8.pages.dev preview deployments),
+  // route through same-origin Cloudflare edge proxy (/api/backend) to shield the origin and satisfy Content Security Policy.
+  if (typeof window !== "undefined" && isCloudflarePagesHost(window.location.hostname)) {
     return "/api/backend";
   }
   return RAW_API_URL.endsWith("/api/v1")
@@ -700,21 +717,176 @@ export interface AnalyticsResponse {
 
 export type CanonicalRadarCategory = "VALUE_GARP" | "VCP" | "SMART_MONEY";
 export type RadarCapabilityStatus = "AVAILABLE" | "PIPELINE_PENDING" | "NOT_IMPLEMENTED" | "ERROR";
+export type PublicationIntegrityStatus = "VERIFIED" | "NOT_VERIFIED" | "PENDING" | "ROLLBACK";
 
 export interface RadarCapabilityDetail {
   status: RadarCapabilityStatus;
   universeScreening: RadarCapabilityStatus;
   singleAssetAnalysis: RadarCapabilityStatus;
   rationale?: string;
-  matchedCount?: number;
+  matchedCount?: number | null;
   dataAsOf?: string;
   generatedAt?: string;
   snapshotId?: string;
   freshnessStatus?: string;
   subsignal?: string;
+  populationDenominator?: number | null;
+  universeBuildId?: string | null;
+  universeId?: string | null;
+  publicationDigest?: string | null;
+  isRollback?: boolean;
+  rollbackReason?: string | null;
+  membershipStatus?: "AVAILABLE" | "PENDING" | "UNAVAILABLE";
+  lifecycleState?: string;
+  publicationIntegrity?: PublicationIntegrityStatus;
+  publicationIntegrityVerified?: boolean;
 }
 
 export type RadarCapabilities = Record<CanonicalRadarCategory, RadarCapabilityDetail>;
+
+export const DEFAULT_RADAR_CAPABILITIES: RadarCapabilities = {
+  VALUE_GARP: {
+    status: "AVAILABLE",
+    universeScreening: "AVAILABLE",
+    singleAssetAnalysis: "AVAILABLE",
+    rationale: "Authentic multi-factor fundamental screening active across known candidate universe.",
+    matchedCount: null,
+    populationDenominator: null,
+    universeBuildId: null,
+    publicationDigest: null,
+    publicationIntegrity: "NOT_VERIFIED",
+    publicationIntegrityVerified: false,
+  },
+  VCP: {
+    status: "PIPELINE_PENDING",
+    universeScreening: "PIPELINE_PENDING",
+    singleAssetAnalysis: "AVAILABLE",
+    rationale: "Single-asset volatility contraction geometry active on /setups and /analytics; universe-level batch scanning pipeline is pending deployment.",
+    matchedCount: null,
+    populationDenominator: null,
+    universeBuildId: null,
+    publicationDigest: null,
+    publicationIntegrity: "NOT_VERIFIED",
+    publicationIntegrityVerified: false,
+  },
+  SMART_MONEY: {
+    status: "PIPELINE_PENDING",
+    universeScreening: "PIPELINE_PENDING",
+    singleAssetAnalysis: "AVAILABLE",
+    rationale: "Single-asset SEC Form 4 and Congressional STOCK Act disclosures active on /smart-money; universe-level institutional accumulation screener pipeline is pending deployment.",
+    matchedCount: null,
+    populationDenominator: null,
+    universeBuildId: null,
+    publicationDigest: null,
+    publicationIntegrity: "NOT_VERIFIED",
+    publicationIntegrityVerified: false,
+  },
+};
+
+export function getPublicationIntegrityLabel(cap?: RadarCapabilityDetail | null): string {
+  if (!cap) return "Publication Integrity: Not verified";
+  if (cap.isRollback || cap.publicationIntegrity === "ROLLBACK") {
+    return "Publication Integrity: Rolled back";
+  }
+  if (cap.publicationIntegrity === "VERIFIED" || cap.publicationIntegrityVerified === true) {
+    return "Publication Integrity: Verified";
+  }
+  if (cap.publicationIntegrity === "PENDING") {
+    return "Publication Integrity: Pending";
+  }
+  return "Publication Integrity: Not verified";
+}
+
+export function normalizeRadarCapabilities(
+  incoming?: Partial<RadarCapabilities> | null
+): RadarCapabilities {
+  const result: RadarCapabilities = {
+    VALUE_GARP: { ...DEFAULT_RADAR_CAPABILITIES.VALUE_GARP },
+    VCP: { ...DEFAULT_RADAR_CAPABILITIES.VCP },
+    SMART_MONEY: { ...DEFAULT_RADAR_CAPABILITIES.SMART_MONEY },
+  };
+
+  if (!incoming || typeof incoming !== "object") {
+    return result;
+  }
+
+  const categories: CanonicalRadarCategory[] = ["VALUE_GARP", "VCP", "SMART_MONEY"];
+  for (const cat of categories) {
+    const raw = incoming[cat];
+    if (!raw || typeof raw !== "object") {
+      // Missing strategy in incoming payload strictly fails closed to canonical default.
+      continue;
+    }
+
+    // Rollback protection: rolled-back publication cannot claim operational screening.
+    if (raw.isRollback) {
+      result[cat] = {
+        ...DEFAULT_RADAR_CAPABILITIES[cat],
+        status: "PIPELINE_PENDING",
+        universeScreening: "PIPELINE_PENDING",
+        singleAssetAnalysis: "AVAILABLE",
+        matchedCount: null,
+        populationDenominator: typeof raw.populationDenominator === "number" ? raw.populationDenominator : null,
+        universeBuildId: raw.universeBuildId ?? null,
+        universeId: raw.universeId ?? null,
+        publicationDigest: raw.publicationDigest ?? null,
+        isRollback: true,
+        rollbackReason: raw.rollbackReason ?? null,
+        membershipStatus: raw.membershipStatus ?? "UNAVAILABLE",
+        lifecycleState: raw.lifecycleState ?? "STALE_OR_ROLLED_BACK_PUBLICATION",
+        rationale: raw.rationale ?? `Publication build '${raw.universeBuildId}' was rolled back. Scanner execution is suspended.`,
+        publicationIntegrity: "ROLLBACK",
+        publicationIntegrityVerified: false,
+      };
+      continue;
+    }
+
+    // Operational match count validation: authentic non-negative integer
+    const hasValidMatchedCount =
+      typeof raw.matchedCount === "number" &&
+      Number.isInteger(raw.matchedCount) &&
+      raw.matchedCount >= 0;
+
+    const isAvailable = (raw.universeScreening === "AVAILABLE" || raw.status === "AVAILABLE") && hasValidMatchedCount;
+
+    // Truthful Publication Integrity evaluation:
+    // Verified ONLY when explicit authoritative attestation is present.
+    // Never inferred from publicationDigest, buildId, or operational scanner status alone.
+    let pubIntegrity: PublicationIntegrityStatus = "NOT_VERIFIED";
+    if (raw.publicationIntegrity === "VERIFIED" || raw.publicationIntegrityVerified === true) {
+      pubIntegrity = "VERIFIED";
+    } else if (raw.publicationIntegrity === "PENDING") {
+      pubIntegrity = "PENDING";
+    } else if (raw.publicationIntegrity === "ROLLBACK") {
+      pubIntegrity = "ROLLBACK";
+    }
+
+    result[cat] = {
+      status: isAvailable ? "AVAILABLE" : (raw.status === "AVAILABLE" ? "PIPELINE_PENDING" : (raw.status || DEFAULT_RADAR_CAPABILITIES[cat].status)),
+      universeScreening: isAvailable ? "AVAILABLE" : (raw.universeScreening === "AVAILABLE" ? "PIPELINE_PENDING" : (raw.universeScreening || DEFAULT_RADAR_CAPABILITIES[cat].universeScreening)),
+      singleAssetAnalysis: raw.singleAssetAnalysis || DEFAULT_RADAR_CAPABILITIES[cat].singleAssetAnalysis,
+      rationale: raw.rationale || DEFAULT_RADAR_CAPABILITIES[cat].rationale,
+      matchedCount: isAvailable ? raw.matchedCount : null,
+      dataAsOf: raw.dataAsOf,
+      generatedAt: raw.generatedAt,
+      snapshotId: raw.snapshotId,
+      freshnessStatus: raw.freshnessStatus,
+      subsignal: raw.subsignal,
+      populationDenominator: typeof raw.populationDenominator === "number" ? raw.populationDenominator : null,
+      universeBuildId: raw.universeBuildId ?? null,
+      universeId: raw.universeId ?? null,
+      publicationDigest: raw.publicationDigest ?? null,
+      isRollback: false,
+      rollbackReason: null,
+      membershipStatus: raw.membershipStatus ?? "AVAILABLE",
+      lifecycleState: raw.lifecycleState,
+      publicationIntegrity: pubIntegrity,
+      publicationIntegrityVerified: pubIntegrity === "VERIFIED",
+    };
+  }
+
+  return result;
+}
 
 export interface GemCandidate {
   ticker: string;
@@ -1257,7 +1429,7 @@ export async function fetchAssetAnalytics(
     const cleanRole = userRole === "DAY_TRADER" ? "DAY_TRADER" : "LONG_TERM";
     const res = await fetch(`${baseUrl}/analytics/${encodeURIComponent(symbol)}?period=${period}&interval=${interval}&user_role=${cleanRole}`, {
       headers: ARX_API_HEADERS,
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(6000),
     });
     if (res.ok) {
       const data = await res.json();
@@ -1394,60 +1566,72 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
     });
     if (res.ok) {
       const data = await res.json();
-      const rawCandidates = data.candidates || data.results || [];
-      if (Array.isArray(rawCandidates) && rawCandidates.length > 0) {
-        const capabilities: RadarCapabilities | undefined = data.capabilities;
-        const candidates: GemCandidate[] = rawCandidates.map((r: any) => {
-          const confluenceVal = typeof r.confluenceScore === "number" && Number.isFinite(r.confluenceScore)
-            ? Math.round(r.confluenceScore)
-            : null;
-          const gemVal = typeof r.gemScore === "number" && Number.isFinite(r.gemScore)
-            ? Math.round(r.gemScore)
-            : null;
+      const rawCandidates = Array.isArray(data?.candidates)
+        ? data.candidates
+        : Array.isArray(data?.results)
+        ? data.results
+        : [];
+      const capabilities: RadarCapabilities | undefined =
+        data &&
+        typeof data === "object" &&
+        data.capabilities &&
+        typeof data.capabilities === "object" &&
+        !Array.isArray(data.capabilities) &&
+        Object.keys(data.capabilities).length > 0
+          ? normalizeRadarCapabilities(data.capabilities as Partial<RadarCapabilities>)
+          : undefined;
 
-          return {
-            ticker: r.ticker || r.symbol || r.companyName || "UNKNOWN",
-            composite_score: confluenceVal,
-            confluenceScore: confluenceVal,
-            gemScore: gemVal,
-            companyName: r.companyName || r.name || null,
-            expert_model: r.expertArchetype || null,
-            categories: Array.isArray(r.categories)
-              ? (r.categories.filter((c: any) => ["VALUE_GARP", "VCP", "SMART_MONEY"].includes(c)) as CanonicalRadarCategory[])
-              : [],
-            categoryEvidence: (r.categoryEvidence && typeof r.categoryEvidence === "object") ? r.categoryEvidence : {},
-            peg_ratio: r.peg_ratio,
-            roic_pct: r.roic_pct,
-            gross_margin_pct: r.gross_margin_pct,
-            risk_rating: r.confluenceRating || "Medium",
-            investment_thesis: r.entryThesis || "",
-            primary_catalyst: r.catalyst || "",
-            factor_verdict: r.executionStatus || "WAITING_PULLBACK",
-            dna_verdict: r.confluenceRating || "",
-            current_price: r.currentPrice || r.current_price,
-            execution_status: r.executionStatus || r.execution_status,
-            screeningStatus: r.screeningStatus || (r.executionStatus === "IN_BUY_ZONE" ? "SCREENING_ZONE" : (r.executionStatus || "PULLBACK_PENDING")),
-            screeningGeometry: r.screeningGeometry || (r.executionStatus === "IN_BUY_ZONE" ? "WITHIN_TOLERANCE" : "OUTSIDE_TOLERANCE"),
-            screeningEligible: typeof r.screeningEligible === "boolean" ? r.screeningEligible : Boolean(r.executionStatus === "IN_BUY_ZONE"),
-            rvol: typeof r.rvol === "string" ? r.rvol : null,
-            riskRewardRatio: typeof r.riskRewardRatio === "number" ? r.riskRewardRatio : null,
-            decisionState: r.decisionState || "VALID_SETUP",
-            decisionStateLabel: r.decisionStateLabel || "Discovery Candidate — Analyze for Trigger",
-            // Invariant: Screener output is discovery-only. Canonical actionability strictly requires Single-Asset DecisionTrace.
-            isActionable: false,
-            canSizeTrade: false,
-            allowedActions: Array.isArray(r.allowedActions) ? r.allowedActions : ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"],
-            disqualificationReason: r.disqualificationReason ?? "Discovery candidate: Open in Analysis hub to evaluate canonical DecisionTrace.",
-            decisionContextId: r.decisionContextId,
-          };
-        });
+      const candidates: GemCandidate[] = rawCandidates.map((r: any) => {
+        const confluenceVal = typeof r.confluenceScore === "number" && Number.isFinite(r.confluenceScore)
+          ? Math.round(r.confluenceScore)
+          : null;
+        const gemVal = typeof r.gemScore === "number" && Number.isFinite(r.gemScore)
+          ? Math.round(r.gemScore)
+          : null;
+
         return {
-          total_candidates: candidates.length,
-          gems_found: candidates.length,
-          capabilities,
-          results: candidates,
+          ticker: r.ticker || r.symbol || r.companyName || "UNKNOWN",
+          composite_score: confluenceVal,
+          confluenceScore: confluenceVal,
+          gemScore: gemVal,
+          companyName: r.companyName || r.name || null,
+          expert_model: r.expertArchetype || null,
+          categories: Array.isArray(r.categories)
+            ? (r.categories.filter((c: any) => ["VALUE_GARP", "VCP", "SMART_MONEY"].includes(c)) as CanonicalRadarCategory[])
+            : [],
+          categoryEvidence: (r.categoryEvidence && typeof r.categoryEvidence === "object") ? r.categoryEvidence : {},
+          peg_ratio: r.peg_ratio,
+          roic_pct: r.roic_pct,
+          gross_margin_pct: r.gross_margin_pct,
+          risk_rating: r.confluenceRating || "Medium",
+          investment_thesis: r.entryThesis || "",
+          primary_catalyst: r.catalyst || "",
+          factor_verdict: r.executionStatus || "WAITING_PULLBACK",
+          dna_verdict: r.confluenceRating || "",
+          current_price: r.currentPrice || r.current_price,
+          execution_status: r.executionStatus || r.execution_status,
+          screeningStatus: r.screeningStatus || (r.executionStatus === "IN_BUY_ZONE" ? "SCREENING_ZONE" : (r.executionStatus || "PULLBACK_PENDING")),
+          screeningGeometry: r.screeningGeometry || (r.executionStatus === "IN_BUY_ZONE" ? "WITHIN_TOLERANCE" : "OUTSIDE_TOLERANCE"),
+          screeningEligible: typeof r.screeningEligible === "boolean" ? r.screeningEligible : Boolean(r.executionStatus === "IN_BUY_ZONE"),
+          rvol: typeof r.rvol === "string" ? r.rvol : null,
+          riskRewardRatio: typeof r.riskRewardRatio === "number" ? r.riskRewardRatio : null,
+          decisionState: r.decisionState || "VALID_SETUP",
+          decisionStateLabel: r.decisionStateLabel || "Discovery Candidate — Analyze for Trigger",
+          // Invariant: Screener output is discovery-only. Canonical actionability strictly requires Single-Asset DecisionTrace.
+          isActionable: false,
+          canSizeTrade: false,
+          allowedActions: Array.isArray(r.allowedActions) ? r.allowedActions : ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"],
+          disqualificationReason: r.disqualificationReason ?? "Discovery candidate: Open in Analysis hub to evaluate canonical DecisionTrace.",
+          decisionContextId: r.decisionContextId,
         };
-      }
+      });
+
+      return {
+        total_candidates: candidates.length,
+        gems_found: candidates.length,
+        ...(capabilities ? { capabilities } : {}),
+        results: candidates,
+      };
     }
   } catch (err) {
     console.warn("Screener API error:", err);

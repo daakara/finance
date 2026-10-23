@@ -39,7 +39,9 @@ htmlcov/
 *.log
 
 # Sample data & databases
-data/
+data/*
+!data/*.py
+!data/__init__.py
 !analyst_dashboard/data/
 !analyst_dashboard/data/paper_trading_ledger.json
 *.csv
