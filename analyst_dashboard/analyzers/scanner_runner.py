@@ -296,7 +296,7 @@ class VCPScannerRunner:
 
                 current_price = latest["currentPrice"]
                 db_candles = self.market_db.get_daily_candles(clean_sym, limit=252)
-                if not db_candles or len(db_candles) < 50:
+                if not db_candles or len(db_candles) < 200:
                     unavailable_reasons["INSUFFICIENT_HISTORY"] = unavailable_reasons.get("INSUFFICIENT_HISTORY", 0) + 1
                     continue
 
@@ -336,6 +336,10 @@ class VCPScannerRunner:
 
                 if has_corrupt_candle or not vcp_bars:
                     unavailable_reasons["INVALID_PRICE_DATA"] = unavailable_reasons.get("INVALID_PRICE_DATA", 0) + 1
+                    continue
+
+                if len(vcp_bars) < 200:
+                    unavailable_reasons["INSUFFICIENT_HISTORY"] = unavailable_reasons.get("INSUFFICIENT_HISTORY", 0) + 1
                     continue
 
                 scanned_successfully_count += 1
@@ -541,8 +545,12 @@ class VCPScannerRunner:
                 status_at_pub = ScannerStatus.AVAILABLE
                 effective_matched_count = 0
             elif scanned_successfully_count == 0:
-                status_at_pub = ScannerStatus.ERROR
-                effective_matched_count = None
+                if unavailable_reasons.get("INSUFFICIENT_HISTORY", 0) > 0 and unavailable_reasons.get("INVALID_PRICE_DATA", 0) == 0:
+                    status_at_pub = ScannerStatus.PIPELINE_PENDING
+                    effective_matched_count = None
+                else:
+                    status_at_pub = ScannerStatus.ERROR
+                    effective_matched_count = None
             elif computed_evaluations_count == 0 and uncomputed_evaluations_count > 0:
                 status_at_pub = ScannerStatus.PIPELINE_PENDING
                 effective_matched_count = None
