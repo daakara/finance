@@ -58,7 +58,14 @@ export interface ScenarioProjection {
 /**
  * Computes the percentage difference between a scenario modeled value and the reference price:
  * ((modeledValue / referencePrice) - 1) * 100
- * Safely handles missing, zero, invalid, and negative values.
+ *
+ * Requirements:
+ * - Requires finite numeric inputs (Number.isFinite for both inputs).
+ * - Requires a strictly positive reference price (referencePrice > 0).
+ * - Correctly handles zero modeled equity value (returns -100.0, representing -100%).
+ * - Correctly computes mathematically consistent finite differences for negative modeled values (e.g. -20 vs 100 -> -120%).
+ * - Rejects any nonfinite calculated result (returns null).
+ * - Safely returns null for missing, non-numeric, zero/negative reference prices, or infinite values.
  */
 export function calculateScenarioPriceDiffPct(
   modeledValue: number | undefined | null,
@@ -68,7 +75,7 @@ export function calculateScenarioPriceDiffPct(
     modeledValue === undefined ||
     modeledValue === null ||
     typeof modeledValue !== "number" ||
-    isNaN(modeledValue)
+    !Number.isFinite(modeledValue)
   ) {
     return null;
   }
@@ -76,12 +83,16 @@ export function calculateScenarioPriceDiffPct(
     referencePrice === undefined ||
     referencePrice === null ||
     typeof referencePrice !== "number" ||
-    isNaN(referencePrice) ||
+    !Number.isFinite(referencePrice) ||
     referencePrice <= 0
   ) {
     return null;
   }
-  return ((modeledValue / referencePrice) - 1) * 100;
+  const diff = ((modeledValue / referencePrice) - 1) * 100;
+  if (!Number.isFinite(diff)) {
+    return null;
+  }
+  return diff;
 }
 
 /**
@@ -103,6 +114,26 @@ export function getStandardizedScenarioLabel(key: string): string {
     return "Bull case";
   }
   return key;
+}
+
+/**
+ * Determines whether a scenario name contains a descriptive business narrative
+ * rather than a generic classification label (e.g. "Conservative", "Base", "Optimistic").
+ */
+export function isDescriptiveScenarioName(name?: string | null): boolean {
+  if (!name || typeof name !== "string") return false;
+  const lower = name.trim().toLowerCase();
+  const genericLabels = new Set([
+    "conservative",
+    "base",
+    "base case",
+    "optimistic",
+    "bear",
+    "bull",
+    "bear case",
+    "bull case",
+  ]);
+  return !genericLabels.has(lower);
 }
 
 export interface ReverseDcfParameters {

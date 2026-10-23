@@ -24,6 +24,7 @@ import {
   OpportunityDossier,
   calculateScenarioPriceDiffPct,
   getStandardizedScenarioLabel,
+  isDescriptiveScenarioName,
 } from "../lib/opportunityDossiers";
 
 interface OpportunityDossierCardProps {
@@ -454,7 +455,7 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
                             Reference price as of {valuation.reference_date}: ${valuation.reference_price.toFixed(2)}
                           </div>
                         </div>
-                        {valuation.scenarios.conservative.name && valuation.scenarios.conservative.name !== "Conservative" && (
+                        {isDescriptiveScenarioName(valuation.scenarios.conservative.name) && (
                           <p className="text-[11px] text-slate-300 leading-relaxed font-sans italic">
                             {valuation.scenarios.conservative.name}
                           </p>
@@ -534,7 +535,7 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
                             Reference price as of {valuation.reference_date}: ${valuation.reference_price.toFixed(2)}
                           </div>
                         </div>
-                        {valuation.scenarios.base.name && valuation.scenarios.base.name !== "Base" && valuation.scenarios.base.name !== "Base Case" && (
+                        {isDescriptiveScenarioName(valuation.scenarios.base.name) && (
                           <p className="text-[11px] text-slate-300 leading-relaxed font-sans italic">
                             {valuation.scenarios.base.name}
                           </p>
@@ -614,7 +615,7 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
                             Reference price as of {valuation.reference_date}: ${valuation.reference_price.toFixed(2)}
                           </div>
                         </div>
-                        {valuation.scenarios.optimistic.name && valuation.scenarios.optimistic.name !== "Optimistic" && (
+                        {isDescriptiveScenarioName(valuation.scenarios.optimistic.name) && (
                           <p className="text-[11px] text-slate-300 leading-relaxed font-sans italic">
                             {valuation.scenarios.optimistic.name}
                           </p>
@@ -656,14 +657,14 @@ export default function OpportunityDossierCard({ dossier }: OpportunityDossierCa
                 </div>
 
                 {/* Scenario Explanatory Notes & Probability Boundary */}
-                <div className="bg-[#0b1019] border border-slate-800/80 rounded-lg p-3 text-[11px] text-slate-400 space-y-1 font-sans">
+                <div className="bg-[#0b1019] border border-slate-800/80 rounded-lg p-3 text-[11px] text-slate-400 space-y-1.5 font-sans">
                   <div className="text-slate-300 font-semibold flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" aria-hidden="true"></span>
                     <span>Scenario Interpretation &amp; Model Boundaries</span>
                   </div>
-                  <div>• <strong>Bear case:</strong> Downside stress case assuming customer capex moderation, margin compression, or higher cost of capital.</div>
-                  <div>• <strong>Base case:</strong> Central fundamental case reflecting steady execution under current competitive structure. Not a probability-weighted target.</div>
-                  <div>• <strong>Bull case:</strong> Upside case reflecting accelerated market adoption and sustained operating leverage. Not a buy recommendation.</div>
+                  <p className="text-slate-300 text-xs leading-relaxed">
+                    Bear, base, and bull cases use the assumptions shown below. Their modeled values are conditional estimates, not assigned probabilities or future price targets.
+                  </p>
                   <div className="text-[10px] text-slate-400 pt-1 italic font-mono">
                     Modeled values represent discounted cash flow intrinsic present equity values per share based on conditional operating assumptions, not future price targets, guaranteed returns, or live market quotes. Scenarios reflect different assumptions, not assigned probabilities.
                   </div>
