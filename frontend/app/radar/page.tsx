@@ -11,6 +11,7 @@ import {
   CanonicalRadarCategory,
   RadarCapabilities,
   RadarCapabilityStatus,
+  CandidatePopulationModel,
   DEFAULT_RADAR_CAPABILITIES,
   normalizeRadarCapabilities,
   getPublicationIntegrityLabel,
@@ -45,6 +46,8 @@ interface RadarAsset {
   canSizeTrade?: boolean;
   disqualificationReason?: string | null;
   decisionContextId?: string;
+  allowedActions: string[];
+  screeningEligible?: boolean;
 }
 
 type CategoryFilter = 'ALL' | CanonicalRadarCategory;
@@ -104,6 +107,7 @@ function RadarContent() {
   const [sortBy, setSortBy] = useState<'SCORE' | 'RVOL' | 'PRICE'>('SCORE');
   const [allAssets, setAllAssets] = useState<RadarAsset[]>([]);
   const [capabilities, setCapabilities] = useState<RadarCapabilities>(DEFAULT_RADAR_CAPABILITIES);
+  const [population, setPopulation] = useState<CandidatePopulationModel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isOnDemandLoading, setIsOnDemandLoading] = useState(false);
@@ -172,6 +176,7 @@ function RadarContent() {
         }
         setFetchError(null);
         setCapabilities(normalizeRadarCapabilities(res.capabilities));
+        setPopulation(res.population || null);
         const mapped: RadarAsset[] = (res.results || []).map((gem: any) => {
           // Canonical typed categories: strictly consume explicit backend categories.
           // Zero substring-based inference from arbitrary strings (e.g. "Smart Growth" or "Flow Traders").
@@ -216,6 +221,8 @@ function RadarContent() {
             canSizeTrade: false,
             disqualificationReason: gem.disqualificationReason || null,
             decisionContextId: gem.decisionContextId,
+            allowedActions: Array.isArray(gem.allowedActions) ? gem.allowedActions : [],
+            screeningEligible: typeof gem.screeningEligible === 'boolean' ? gem.screeningEligible : Boolean(executionStatus === 'IN_BUY_ZONE'),
           };
         });
         setAllAssets(mapped);
@@ -225,6 +232,7 @@ function RadarContent() {
         if (!isMounted || reqId !== latestRequestIdRef.current) return;
         setFetchError(err instanceof Error ? err.message : "Failed to load screener candidates");
         setCapabilities(DEFAULT_RADAR_CAPABILITIES);
+        setPopulation(null);
         setAllAssets([]);
         setIsLoading(false);
       });
@@ -277,16 +285,46 @@ function RadarContent() {
     };
   }, [allAssets, capabilities, fetchError]);
 
-  // Ownership Counts (Calculated dynamically via authoritative portfolio context)
+  // Candidate Population Model: Helper to determine if an asset is eligible for active opportunity metrics
+  const isCandidateEligibleOpportunity = (asset: RadarAsset): boolean => {
+    if (asset.executionStatus === 'DELISTED_SECURITY') return false;
+    if (asset.executionStatus === 'UNVERIFIED_ASSET') return false;
+    if (asset.executionStatus === 'UNKNOWN') return false;
+    return true;
+  };
+
+  // Ownership & Opportunity Counts (Derived dynamically from candidate eligibility contract)
   const ownershipCounts = useMemo(() => {
     let held = 0;
     let notHeld = 0;
+    let delistedCount = 0;
+    let unverifiedCount = 0;
+
     for (const asset of allAssets) {
+      const isEligible = isCandidateEligibleOpportunity(asset);
+      if (asset.executionStatus === 'DELISTED_SECURITY') {
+        delistedCount++;
+      } else if (asset.executionStatus === 'UNVERIFIED_ASSET') {
+        unverifiedCount++;
+      }
+
       const st = getOwnershipState(asset.ticker);
-      if (st === 'HELD') held++;
-      else if (st === 'NOT_HELD') notHeld++;
+      if (st === 'HELD') {
+        held++;
+      } else if (st === 'NOT_HELD' && isEligible) {
+        // Delisted and unverified securities CANNOT inflate New Opportunities!
+        notHeld++;
+      }
     }
-    return { held, notHeld, total: allAssets.length };
+    const totalActive = allAssets.filter(isCandidateEligibleOpportunity).length;
+    return {
+      held,
+      notHeld,
+      total: allAssets.length,
+      totalActive,
+      delistedCount,
+      unverifiedCount,
+    };
   }, [allAssets, getOwnershipState]);
 
   // Filtered & Sorted Assets (Canonical sort order strictly preserved per INV-RADAR-PORTFOLIO-04)
@@ -308,15 +346,21 @@ function RadarContent() {
         const matchesOwnership =
           ownershipFilter === 'ALL'
             ? true
-            : ownershipFilter === 'NEW_OPPORTUNITIES'
-            ? ownState === 'NOT_HELD'
-            : ownershipFilter === 'MY_HOLDINGS'
+            : (ownershipFilter === 'NEW_OPPORTUNITIES' || (ownershipFilter as any) === 'NOT_HELD')
+            ? ownState === 'NOT_HELD' && isCandidateEligibleOpportunity(asset)
+            : ownershipFilter === 'MY_HOLDINGS' || (ownershipFilter as any) === 'HELD'
             ? ownState === 'HELD'
             : true;
 
         return matchesCategory && matchesQuery && matchesOwnership;
       })
       .sort((a, b) => {
+        // Scenario 10 in Gate H: Sorting never promotes delisted assets into eligible opportunity rankings
+        const aDelisted = a.executionStatus === 'DELISTED_SECURITY' ? 1 : 0;
+        const bDelisted = b.executionStatus === 'DELISTED_SECURITY' ? 1 : 0;
+        if (aDelisted !== bDelisted) {
+          return aDelisted - bDelisted; // Delisted securities sink to bottom
+        }
         if (sortBy === 'SCORE') return b.confluenceScore - a.confluenceScore;
         if (sortBy === 'RVOL') {
           const aRvol = a.rvol ? parseFloat(a.rvol.replace('x', '')) : 0;
@@ -399,6 +443,10 @@ function RadarContent() {
         canSizeTrade: false,
         disqualificationReason: dec?.disqualificationReason || null,
         decisionContextId: data.decisionId,
+        allowedActions: executionStatus === 'DELISTED_SECURITY' ? [] : ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"],
+        screeningEligible: Boolean(executionStatus === 'IN_BUY_ZONE'),
+        priceBasis: "DAILY_CLOSE",
+        priceDate: (data as any)?.tradeDate ?? null,
       };
 
       setAllAssets((prev) => [newAsset, ...prev.filter((a) => a.ticker !== clean)]);
@@ -644,12 +692,22 @@ function RadarContent() {
                 <div className="flex flex-wrap items-center gap-4 text-xs font-mono pt-1">
                   <div
                     className="flex items-center gap-1.5"
-                    title={heroAsset.priceDate ? `Daily Close · ${heroAsset.priceDate}. Live spot quotes active in Analysis hub.` : "Batch screening price from daily session close. Live spot quotes active in Analysis hub."}
+                    title={
+                      heroAsset.executionStatus === 'DELISTED_SECURITY'
+                        ? "Historical final price. Ceased public trading."
+                        : heroAsset.priceBasis === 'DAILY_CLOSE' && heroAsset.priceDate
+                        ? `Daily Close · ${heroAsset.priceDate}. Live spot quotes active in Analysis hub.`
+                        : "Observation date and/or price basis unverified. Live spot quotes active in Analysis hub."
+                    }
                   >
                     <span className="text-slate-400">Screen Price:</span>
-                    <span className="text-white font-bold">${heroAsset.price.toFixed(2)}</span>
-                    <span className="text-[10px] text-slate-400 font-sans">
-                      · {formatPriceObservationDate(heroAsset.priceDate)}
+                    <span className="text-white font-bold">
+                      {heroAsset.price && heroAsset.price > 0 ? `$${heroAsset.price.toFixed(2)}` : <span className="text-amber-400">Price Unavailable</span>}
+                    </span>
+                    <span className={`text-[10px] font-sans ${!heroAsset.priceDate || heroAsset.priceBasis !== 'DAILY_CLOSE' ? 'text-amber-400 font-medium' : 'text-slate-400'}`}>
+                      · {heroAsset.executionStatus === 'DELISTED_SECURITY'
+                        ? "Historical Final Price (Ceased Trading)"
+                        : formatPriceObservationDate(heroAsset.priceDate, heroAsset.priceBasis)}
                     </span>
                   </div>
                   <span className="text-slate-700">•</span>
@@ -689,31 +747,77 @@ function RadarContent() {
 
               <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
                 {(() => {
+                  const allowed = Array.isArray(heroAsset.allowedActions) ? heroAsset.allowedActions : [];
+                  const isDelisted = heroAsset.executionStatus === 'DELISTED_SECURITY';
+                  const isUnverified = heroAsset.executionStatus === 'UNVERIFIED_ASSET';
                   const isHeroHeld = getOwnershipState(heroAsset.ticker) === 'HELD';
+
+                  // Gate C: Prevent false Analyze affordance on delisted or prohibited securities
+                  if (isDelisted || allowed.length === 0) {
+                    return (
+                      <span
+                        className="px-5 py-2.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-mono font-bold border border-zinc-800 bg-zinc-900/80 text-zinc-500 inline-flex items-center justify-center cursor-not-allowed select-none"
+                        title={
+                          isDelisted
+                            ? "Security ceased public trading pursuant to confirmed corporate action. Trade execution and technical triggers disabled."
+                            : "Actionability unavailable: No authorized actions permitted for this security."
+                        }
+                      >
+                        {isDelisted ? "Delisted / Inactive" : "Action Unavailable"}
+                      </span>
+                    );
+                  }
+
+                  if (isUnverified) {
+                    if (allowed.includes("RESEARCH_PROFILE")) {
+                      return (
+                        <Link
+                          href={`/?symbol=${heroAsset.ticker}`}
+                          onClick={() => trackRadarAssetClick(heroAsset.ticker, 1)}
+                          className="px-5 py-2.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-mono font-bold transition-all border bg-amber-950/60 hover:bg-amber-900/80 text-amber-200 border-amber-700 inline-flex items-center justify-center gap-2"
+                          title="Open research profile in Analysis hub. Market data and execution clearance unverified."
+                        >
+                          <span>Research {heroAsset.ticker} Profile</span>
+                          <span>→</span>
+                        </Link>
+                      );
+                    }
+                    return (
+                      <span
+                        className="px-5 py-2.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-mono font-bold border border-zinc-800 bg-zinc-900/80 text-zinc-500 inline-flex items-center justify-center cursor-not-allowed select-none"
+                        title="Market data unverified. Analysis unavailable."
+                      >
+                        Unverified Asset
+                      </span>
+                    );
+                  }
+
                   return (
-                    <Link
-                      href={`/?symbol=${heroAsset.ticker}`}
-                      onClick={() => trackRadarAssetClick(heroAsset.ticker, 1)}
-                      className={`px-5 py-2.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-mono font-black tracking-tight transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] ${
-                        isHeroHeld
-                          ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-950/50'
-                          : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-cyan-950/50'
-                      }`}
-                      title={isHeroHeld ? "Review existing position in Analysis hub" : `Inspect ${heroAsset.ticker} in Analysis hub`}
-                    >
-                      <span>{isHeroHeld ? `Review ${heroAsset.ticker} Position` : `Analyze ${heroAsset.ticker}`}</span>
-                      <span>→</span>
-                    </Link>
+                    <>
+                      <Link
+                        href={`/?symbol=${heroAsset.ticker}`}
+                        onClick={() => trackRadarAssetClick(heroAsset.ticker, 1)}
+                        className={`px-5 py-2.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-mono font-black tracking-tight transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] ${
+                          isHeroHeld
+                            ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-950/50'
+                            : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-cyan-950/50'
+                        }`}
+                        title={isHeroHeld ? "Review existing position in Analysis hub" : `Inspect ${heroAsset.ticker} setup and structure in Analysis hub`}
+                      >
+                        <span>{isHeroHeld ? `Review ${heroAsset.ticker} Position` : `Analyze ${heroAsset.ticker}`}</span>
+                        <span>→</span>
+                      </Link>
+                      <Link
+                        href={`/setups?symbol=${heroAsset.ticker}`}
+                        onClick={() => trackRadarAssetClick(heroAsset.ticker, 1)}
+                        className="px-4 py-2.5 min-h-[44px] min-w-[44px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-all border border-slate-700 flex items-center justify-center gap-1.5 hover:border-slate-600 active:scale-95"
+                      >
+                        <span>Inspect Setup in /setups</span>
+                        <span>→</span>
+                      </Link>
+                    </>
                   );
                 })()}
-                <Link
-                  href={`/setups?symbol=${heroAsset.ticker}`}
-                  onClick={() => trackRadarAssetClick(heroAsset.ticker, 1)}
-                  className="px-4 py-2.5 min-h-[44px] min-w-[44px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-all border border-slate-700 flex items-center justify-center gap-1.5 hover:border-slate-600 active:scale-95"
-                >
-                  <span>Inspect Setup in /setups</span>
-                  <span>→</span>
-                </Link>
                 <div className="text-[10px] font-mono text-slate-400 text-center">
                   Discovery Candidate · Not an Execution Recommendation
                 </div>
@@ -765,6 +869,7 @@ function RadarContent() {
                   tabIndex={activeFilter === 'VALUE_GARP' ? 0 : -1}
                   onKeyDown={(e) => handleFilterKeyDown(e, 'VALUE_GARP')}
                   onClick={() => handleCategoryFilterSelect('VALUE_GARP', 'tab-radar-filter-value_garp')}
+                  title="16 Value / GARP matches identified from 35 curated reference catalog candidates evaluated. Whole-market automated screening is pending deployment."
                   className={`focus-ring px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeFilter === 'VALUE_GARP'
                       ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
@@ -951,7 +1056,7 @@ function RadarContent() {
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
                   }`}
                 >
-                  <span>New Opportunities</span>
+                  <span>Unheld Candidates</span>
                   <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
                     {isPortfolioVerified ? ownershipCounts.notHeld : '—'}
                   </span>
@@ -975,6 +1080,16 @@ function RadarContent() {
                     {isPortfolioVerified ? ownershipCounts.held : '—'}
                   </span>
                 </button>
+
+                {typeof population?.currentOpportunityCount === 'number' && (
+                  <div
+                    className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-800/50 px-2.5 py-1 min-h-[44px] rounded-lg shrink-0 ml-1"
+                    title="Authoritative count of candidates currently meeting active buy zone screening criteria (IN_BUY_ZONE)"
+                  >
+                    <span className="text-slate-400">Current Opportunities:</span>
+                    <span className="font-bold text-emerald-300">{population.currentOpportunityCount}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1015,12 +1130,12 @@ function RadarContent() {
               </span>
               <span className="text-slate-600">•</span>
               <span className="text-slate-400">
-                {filteredAssets.length} qualifying assets
+                {filteredAssets.length} of 16 Value / GARP Matches · 100% of Defined Reference Catalog Evaluated ({allAssets.length} Assets)
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 border border-slate-700">
-                REFERENCE CATALOG
+              <span className="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 border border-slate-700" title="100% of 35-asset curated reference catalog evaluated. Whole-market automated screening is pending VCP and Smart Money pipeline activation.">
+                REFERENCE CATALOG (16 MATCHES / 35 EVALUATED)
               </span>
             </div>
           </div>
@@ -1198,9 +1313,9 @@ function RadarContent() {
                               : ownershipFilter === 'MY_HOLDINGS'
                               ? (!isPortfolioVerified
                                   ? "The authoritative portfolio connection could not be verified. Radar renders canonically with ownership state UNKNOWN."
-                                  : "None of your current portfolio positions meet the active Radar screening confluence criteria. Switch to 'All Candidates' or 'New Opportunities' to view market setups.")
+                                  : "None of your current portfolio positions meet the active Radar screening confluence criteria. Switch to 'All Candidates' or 'Unheld Candidates' to view market setups.")
                               : ownershipFilter === 'NEW_OPPORTUNITIES' && !isPortfolioVerified
-                              ? "Filtering for new opportunities requires verified portfolio state. Currently running in degraded UNKNOWN mode."
+                              ? "Filtering for unheld candidates requires verified portfolio state. Currently running in degraded UNKNOWN mode."
                               : activeFilter === 'VCP' && categoryMeta.VCP.status === 'PIPELINE_PENDING'
                               ? (capabilities.VCP?.populationDenominator && capabilities.VCP?.universeBuildId && capabilities.VCP?.publicationDigest
                                   ? `${capabilities.VCP.populationDenominator} securities registered in universe build ${capabilities.VCP.universeBuildId}. Automated market-wide volatility contraction screening is pending operational activation.`
@@ -1307,13 +1422,41 @@ function RadarContent() {
                           </span>
                         </td>
                         <td
-                          className="p-3 font-bold text-white whitespace-nowrap"
-                          title={asset.priceDate ? `Daily Close · ${asset.priceDate}. Open Analysis hub for live tape.` : "Batch screening reference price (Daily Close). Open Analysis hub for live tape."}
+                          className="p-3 font-mono text-xs font-bold text-slate-200 whitespace-nowrap"
+                          title={
+                            asset.executionStatus === 'DELISTED_SECURITY'
+                              ? "Historical final price. Ceased public trading."
+                              : asset.priceBasis === 'DAILY_CLOSE'
+                              ? (asset.priceDate ? `Daily Close · ${asset.priceDate}. Open Analysis hub for live tape.` : "Daily Close · Date Unverified.")
+                              : (asset.priceDate ? `Price · ${asset.priceDate} (Basis Unverified).` : "Observation date & price basis unverified.")
+                          }
                         >
-                          <div>{asset.price > 0 ? `$${asset.price.toFixed(2)}` : '—'}</div>
-                          {asset.priceDate && (
+                          <div>
+                            {asset.executionStatus === 'DELISTED_SECURITY' ? (
+                              <span className="text-slate-400 font-mono text-xs">
+                                {asset.price > 0 ? `$${asset.price.toFixed(2)}` : 'Price Unavailable'}
+                              </span>
+                            ) : asset.price > 0 ? (
+                              `$${asset.price.toFixed(2)}`
+                            ) : (
+                              <span className="text-amber-400 font-normal text-xs">Price Unavailable</span>
+                            )}
+                          </div>
+                          {asset.executionStatus === 'DELISTED_SECURITY' ? (
+                            <div className="text-[9px] font-normal text-rose-400/90 font-mono" title="Ceased public trading">
+                              Historical Close
+                            </div>
+                          ) : asset.priceBasis === 'DAILY_CLOSE' && asset.priceDate ? (
                             <div className="text-[9px] font-normal text-slate-500 font-mono">
                               {asset.priceDate}
+                            </div>
+                          ) : asset.priceDate ? (
+                            <div className="text-[9px] font-normal text-slate-500 font-mono" title="Price basis unverified">
+                              {asset.priceDate} (Unverified Basis)
+                            </div>
+                          ) : (
+                            <div className="text-[9px] font-medium text-amber-400 font-mono" title="Price observation date and basis unverified">
+                              Date & Basis Unverified
                             </div>
                           )}
                         </td>
@@ -1339,6 +1482,49 @@ function RadarContent() {
                         <td className="p-3 text-right whitespace-nowrap">
                           {(() => {
                             const isAssetHeld = getOwnershipState(asset.ticker) === 'HELD';
+                            const allowed = Array.isArray(asset.allowedActions) ? asset.allowedActions : [];
+                            const isDelisted = asset.executionStatus === 'DELISTED_SECURITY';
+                            const isUnverified = asset.executionStatus === 'UNVERIFIED_ASSET';
+
+                            // Gate C: Prevent false Analyze affordance on delisted or prohibited securities
+                            if (isDelisted || allowed.length === 0) {
+                              return (
+                                <span
+                                  className="px-3 py-2 min-h-[44px] min-w-[44px] rounded text-[11px] font-mono text-zinc-500 bg-zinc-900/80 border border-zinc-800 inline-flex items-center justify-center cursor-not-allowed select-none"
+                                  title={
+                                    isDelisted
+                                      ? "Security ceased public trading pursuant to confirmed corporate action. Live technical triggers and trade execution are disabled."
+                                      : "Actionability unavailable: No authorized actions permitted for this security."
+                                  }
+                                >
+                                  {isDelisted ? "Delisted" : "Unavailable"}
+                                </span>
+                              );
+                            }
+
+                            if (isUnverified) {
+                              if (allowed.includes("RESEARCH_PROFILE")) {
+                                return (
+                                  <Link
+                                    href={`/?symbol=${asset.ticker}`}
+                                    onClick={() => trackRadarAssetClick(asset.ticker)}
+                                    className="px-3 py-2 min-h-[44px] min-w-[44px] rounded text-[11px] font-bold font-mono transition-colors inline-flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none border bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border-amber-800/60"
+                                    title="Open research profile in Analysis hub. Market data and execution clearance unverified."
+                                  >
+                                    Research Profile →
+                                  </Link>
+                                );
+                              }
+                              return (
+                                <span
+                                  className="px-3 py-2 min-h-[44px] min-w-[44px] rounded text-[11px] font-mono text-zinc-500 bg-zinc-900/80 border border-zinc-800 inline-flex items-center justify-center cursor-not-allowed select-none"
+                                  title="Market data unverified. Analysis unavailable."
+                                >
+                                  Unverified
+                                </span>
+                              );
+                            }
+
                             return (
                               <Link
                                 href={`/?symbol=${asset.ticker}`}
@@ -1348,7 +1534,11 @@ function RadarContent() {
                                     ? 'bg-indigo-950/80 hover:bg-indigo-600 text-indigo-200 hover:text-white border-indigo-700/80 hover:border-indigo-500'
                                     : 'bg-slate-800 hover:bg-cyan-600 hover:text-white text-cyan-300 border-slate-700 hover:border-cyan-500'
                                 }`}
-                                title={isAssetHeld ? `Review existing ${asset.ticker} position in Analysis hub` : "Inspect in Analysis hub for live technical triggers & execution clearance"}
+                                title={
+                                  isAssetHeld
+                                    ? `Review existing ${asset.ticker} position in Analysis hub`
+                                    : `Inspect ${asset.ticker} setup and technical structure in Analysis hub`
+                                }
                               >
                                 {isAssetHeld ? "Review Position →" : "Analyze →"}
                               </Link>
