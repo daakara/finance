@@ -152,3 +152,36 @@ def verify_company_identity(
         )
 
     return IdentityValidationResult(True, None, binding)
+
+
+class ADRIdentityBinding(NamedTuple):
+    symbol: str
+    issuer_cik: str
+    company_name: str
+    exchange: str
+    adr_ratio: float  # Ordinary shares per ADR
+    depositary_bank: str
+    ratio_source: str
+    is_verified: bool
+
+
+def verify_adr_identity_binding(
+    symbol: str,
+    issuer_cik: str,
+    adr_ratio: Optional[float],
+    ratio_source: Optional[str],
+) -> IdentityValidationResult:
+    """
+    Verifies ADR cross-border listing identity and conversion ratio under P0-A.
+    Enforces that conversion ratio is explicitly sourced and strictly positive.
+    Never defaults an unknown ratio to 1.0.
+    """
+    if not symbol or not isinstance(symbol, str):
+        return IdentityValidationResult(False, "Symbol must be a non-empty string.")
+    if not issuer_cik or not validate_cik_format(issuer_cik):
+        return IdentityValidationResult(False, f"Malformed or missing issuer CIK '{issuer_cik}'.")
+    if adr_ratio is None or adr_ratio <= 0:
+        return IdentityValidationResult(False, f"Invalid ADR-to-ordinary conversion ratio '{adr_ratio}'. Ratio must be strictly positive.")
+    if not ratio_source or not isinstance(ratio_source, str) or not ratio_source.strip():
+        return IdentityValidationResult(False, "Missing attributable ratio_source for ADR conversion verification.")
+    return IdentityValidationResult(True, None, None)
