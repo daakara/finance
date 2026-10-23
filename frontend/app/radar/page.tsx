@@ -11,6 +11,9 @@ import {
   CanonicalRadarCategory,
   RadarCapabilities,
   RadarCapabilityStatus,
+  DEFAULT_RADAR_CAPABILITIES,
+  normalizeRadarCapabilities,
+  getPublicationIntegrityLabel,
 } from '../../lib/api';
 import { trackRadarAssetClick } from '../../lib/matomo';
 import { MASTER_ASSET_CATALOG } from '../../lib/masterCatalog';
@@ -43,26 +46,6 @@ interface RadarAsset {
 
 type CategoryFilter = 'ALL' | CanonicalRadarCategory;
 
-const DEFAULT_RADAR_CAPABILITIES: RadarCapabilities = {
-  VALUE_GARP: {
-    status: "AVAILABLE",
-    universeScreening: "AVAILABLE",
-    singleAssetAnalysis: "AVAILABLE",
-    rationale: "Authentic multi-factor fundamental screening active across known candidate universe.",
-  },
-  VCP: {
-    status: "PIPELINE_PENDING",
-    universeScreening: "PIPELINE_PENDING",
-    singleAssetAnalysis: "AVAILABLE",
-    rationale: "Single-asset volatility contraction geometry active on /setups and /analytics; universe-level batch scanning pipeline is pending deployment.",
-  },
-  SMART_MONEY: {
-    status: "PIPELINE_PENDING",
-    universeScreening: "PIPELINE_PENDING",
-    singleAssetAnalysis: "AVAILABLE",
-    rationale: "Single-asset SEC Form 4 and Congressional STOCK Act disclosures active on /smart-money; universe-level institutional accumulation screener pipeline is pending deployment.",
-  },
-};
 
 function parseCanonicalExecutionStatus(raw: string): ExecutionStatus {
   const s = raw.trim().toUpperCase();
@@ -121,6 +104,19 @@ function RadarContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isOnDemandLoading, setIsOnDemandLoading] = useState(false);
   const [onDemandError, setOnDemandError] = useState<string | null>(null);
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  const latestRequestIdRef = React.useRef(0);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).__arxTriggerRadarScan = () => setRefreshNonce((n) => n + 1);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete (window as any).__arxTriggerRadarScan;
+      }
+    };
+  }, []);
 
   const {
     isVerified: isPortfolioVerified,
@@ -157,12 +153,13 @@ function RadarContent() {
 
   useEffect(() => {
     let isMounted = true;
+    const reqId = ++latestRequestIdRef.current;
+    setIsLoading(true);
+
     fetchScreenerGems("all")
       .then((res) => {
-        if (!isMounted) return;
-        if (res.capabilities) {
-          setCapabilities(res.capabilities);
-        }
+        if (!isMounted || reqId !== latestRequestIdRef.current) return;
+        setCapabilities(normalizeRadarCapabilities(res.capabilities));
         const mapped: RadarAsset[] = (res.results || []).map((gem: any) => {
           // Canonical typed categories: strictly consume explicit backend categories.
           // Zero substring-based inference from arbitrary strings (e.g. "Smart Growth" or "Flow Traders").
@@ -211,13 +208,15 @@ function RadarContent() {
         setIsLoading(false);
       })
       .catch(() => {
-        if (!isMounted) return;
+        if (!isMounted || reqId !== latestRequestIdRef.current) return;
+        setCapabilities(DEFAULT_RADAR_CAPABILITIES);
+        setAllAssets([]);
         setIsLoading(false);
       });
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [refreshNonce]);
 
   // Category Counts & Invariant Enforcement
   // Zero Semantics Invariant: Numerical count (including 0) is permitted ONLY when
@@ -233,7 +232,9 @@ function RadarContent() {
         status: capabilities.VALUE_GARP?.status || 'AVAILABLE',
       },
       VCP: {
-        count: isAvailable('VCP') ? allAssets.filter((a) => a.categories.includes('VCP')).length : null,
+        count: isAvailable('VCP')
+          ? (typeof capabilities.VCP?.matchedCount === 'number' ? capabilities.VCP.matchedCount : allAssets.filter((a) => a.categories.includes('VCP')).length)
+          : null,
         badge: isAvailable('VCP') ? `${allAssets.filter((a) => a.categories.includes('VCP')).length}` : 'Universe Scanner Pending',
         status: capabilities.VCP?.status || 'PIPELINE_PENDING',
       },
@@ -972,12 +973,56 @@ function RadarContent() {
               <span className="font-bold text-cyan-400">⚡ Minervini VCP</span>
               <span className="text-slate-600">•</span>
               <span className="text-slate-300">
-                Scope: <strong className="text-white">ARX-eligible US equities</strong>
+                Scope: <strong className="text-white">{capabilities.VCP?.universeId || 'ARX-eligible US equities'}</strong>
               </span>
               <span className="text-slate-600">•</span>
               <span className="text-slate-400">
-                {filteredAssets.length} matches · 100% coverage
+                {(() => {
+                  const hasValidProvenance = Boolean(
+                    typeof capabilities.VCP?.populationDenominator === 'number' &&
+                    capabilities.VCP.populationDenominator > 0 &&
+                    capabilities.VCP?.universeBuildId &&
+                    capabilities.VCP?.publicationDigest
+                  );
+                  const coverageText = hasValidProvenance
+                    ? `${capabilities.VCP?.populationDenominator} scannable population`
+                    : 'Coverage Pending';
+
+                  const authMatches = typeof capabilities.VCP?.matchedCount === 'number' && !capabilities.VCP?.isRollback
+                    ? capabilities.VCP.matchedCount
+                    : null;
+
+                  if (capabilities.VCP?.universeScreening === 'AVAILABLE' && authMatches !== null) {
+                    if (filteredAssets.length !== authMatches) {
+                      return (
+                        <>
+                          Showing <strong className="text-white">{filteredAssets.length}</strong> of <strong className="text-white">{authMatches}</strong> scanner matches · {coverageText}
+                        </>
+                      );
+                    }
+                    return (
+                      <>
+                        <strong className="text-white">{authMatches}</strong> scanner matches · {coverageText}
+                      </>
+                    );
+                  }
+
+                  return (
+                    <>
+                      Scanner Pending · {coverageText}
+                    </>
+                  );
+                })()}
               </span>
+              {capabilities.VCP?.universeBuildId && (
+                <>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-slate-400" title={capabilities.VCP?.publicationDigest ? `Digest: ${capabilities.VCP.publicationDigest}` : undefined}>
+                    Build: <strong className="text-slate-200">{capabilities.VCP.universeBuildId}</strong>
+                    {capabilities.VCP?.isRollback && <span className="ml-1 text-amber-400 font-bold">(Rollback)</span>}
+                  </span>
+                </>
+              )}
               {capabilities.VCP?.dataAsOf && (
                 <>
                   <span className="text-slate-600">•</span>
@@ -1006,9 +1051,32 @@ function RadarContent() {
                 }
                 return null;
               })()}
-              <div className="text-[11px] text-slate-500 font-mono">
-                Publication Integrity: Verified
-              </div>
+              {(() => {
+                const cap = capabilities.VCP;
+                const label = getPublicationIntegrityLabel(cap);
+                if (cap?.isRollback || cap?.publicationIntegrity === 'ROLLBACK') {
+                  return (
+                    <div className="text-[11px] text-amber-400/90 font-mono flex items-center gap-1.5" data-testid="publication-integrity-badge">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                      {label}
+                    </div>
+                  );
+                }
+                if (cap?.publicationIntegrity === 'VERIFIED' || cap?.publicationIntegrityVerified === true) {
+                  return (
+                    <div className="text-[11px] text-emerald-400 font-mono flex items-center gap-1.5" data-testid="publication-integrity-badge">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                      {label}
+                    </div>
+                  );
+                }
+                return (
+                  <div className="text-[11px] text-slate-500 font-mono flex items-center gap-1.5" data-testid="publication-integrity-badge">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                    {label}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -1070,9 +1138,13 @@ function RadarContent() {
                               : ownershipFilter === 'NEW_OPPORTUNITIES' && !isPortfolioVerified
                               ? "Filtering for new opportunities requires verified portfolio state. Currently running in degraded UNKNOWN mode."
                               : activeFilter === 'VCP' && categoryMeta.VCP.status === 'PIPELINE_PENDING'
-                              ? "Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs."
+                              ? (capabilities.VCP?.populationDenominator && capabilities.VCP?.universeBuildId && capabilities.VCP?.publicationDigest
+                                  ? `${capabilities.VCP.populationDenominator} securities registered in universe build ${capabilities.VCP.universeBuildId}. Automated market-wide volatility contraction screening is pending operational activation.`
+                                  : "Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs.")
                               : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
-                              ? "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money."
+                              ? (capabilities.SMART_MONEY?.populationDenominator && capabilities.SMART_MONEY?.universeBuildId && capabilities.SMART_MONEY?.publicationDigest
+                                  ? `${capabilities.SMART_MONEY.populationDenominator} securities registered in universe build ${capabilities.SMART_MONEY.universeBuildId}. Automated market-wide institutional-flow screening is pending operational activation.`
+                                  : "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money.")
                               : `Try switching to "All Confluences" to view all active setups.`}
                           </p>
                         </div>
