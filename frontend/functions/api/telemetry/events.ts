@@ -1,10 +1,11 @@
 // Cloudflare Pages Function: /api/telemetry/events
-// Edge Ingestion & Validation Gateway for Corporate Events RC5 Telemetry
+// Edge Ingestion & Hardened Gateway for Corporate Events RC5 Telemetry (v1.1.0)
 
 import {
   scanForProhibitedFields,
   validateCorporateEventPayload,
   computeServerDeduplicationKey,
+  computeCanonicalDigest,
 } from "../../../lib/telemetry/corporateEventsContract";
 import {
   forwardToRailwayBackend,
@@ -27,7 +28,7 @@ const ALLOWED_ORIGINS = new Set([
 ]);
 
 const MAX_PAYLOAD_BYTES = 16 * 1024; // 16 KB
-const DEFAULT_HMAC_SALT = "arx_telemetry_corporate_events_salt_v1";
+const SYNTHETIC_HMAC_SECRET_FALLBACK = "arx_synthetic_test_hmac_secret_v1";
 
 function resolveAllowedOrigin(originHeader: string | null): string | null {
   if (!originHeader) return null;
@@ -44,7 +45,7 @@ export const onRequest = async (context: any): Promise<Response> => {
   const origin = req.headers.get("Origin");
   const allowedOrigin = resolveAllowedOrigin(origin);
 
-  // Common response headers
+  // Standard response headers
   const getCorsHeaders = (): Record<string, string> => {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -72,10 +73,20 @@ export const onRequest = async (context: any): Promise<Response> => {
 
   // 2. Method Enforcement (POST only)
   if (req.method !== "POST") {
-    return new Response(
-      JSON.stringify({ error: "Method Not Allowed. Only POST is supported." }),
-      { status: 405, headers: getCorsHeaders() }
-    );
+    const resp: GatewayResponse = {
+      contract_version: "1.1.0",
+      status: "REJECTED",
+      accepted: false,
+      forwarded: false,
+      persisted: "NOT_PERSISTED",
+      retryable: false,
+      error_code: "METHOD_NOT_ALLOWED",
+      message: "Method Not Allowed. Only POST is supported.",
+    };
+    return new Response(JSON.stringify(resp), {
+      status: 405,
+      headers: { ...getCorsHeaders(), Allow: "POST, OPTIONS" },
+    });
   }
 
   // 3. Payload Size Limitation (16 KB)
@@ -83,43 +94,66 @@ export const onRequest = async (context: any): Promise<Response> => {
   try {
     rawBodyText = await req.text();
     if (rawBodyText.length > MAX_PAYLOAD_BYTES) {
-      return new Response(
-        JSON.stringify({
-          error: "Payload Too Large",
-          max_bytes: MAX_PAYLOAD_BYTES,
-          received_bytes: rawBodyText.length,
-        }),
-        { status: 413, headers: getCorsHeaders() }
-      );
+      const resp: GatewayResponse = {
+        contract_version: "1.1.0",
+        status: "REJECTED",
+        accepted: false,
+        forwarded: false,
+        persisted: "NOT_PERSISTED",
+        retryable: false,
+        error_code: "PAYLOAD_TOO_LARGE",
+        message: `Payload Too Large: received ${rawBodyText.length} bytes, maximum permitted is ${MAX_PAYLOAD_BYTES} bytes`,
+      };
+      return new Response(JSON.stringify(resp), { status: 413, headers: getCorsHeaders() });
     }
-  } catch (err) {
-    return new Response(
-      JSON.stringify({ error: "Failed to read request body stream" }),
-      { status: 400, headers: getCorsHeaders() }
-    );
+  } catch {
+    const resp: GatewayResponse = {
+      contract_version: "1.1.0",
+      status: "REJECTED",
+      accepted: false,
+      forwarded: false,
+      persisted: "NOT_PERSISTED",
+      retryable: false,
+      error_code: "BODY_READ_ERROR",
+      message: "Failed to read request body stream",
+    };
+    return new Response(JSON.stringify(resp), { status: 400, headers: getCorsHeaders() });
   }
 
   // 4. JSON Deserialization
   let parsedBody: any;
   try {
     parsedBody = JSON.parse(rawBodyText);
-  } catch (err) {
-    return new Response(
-      JSON.stringify({ error: "Malformed JSON payload. Parsing failed." }),
-      { status: 400, headers: getCorsHeaders() }
-    );
+  } catch {
+    const resp: GatewayResponse = {
+      contract_version: "1.1.0",
+      status: "REJECTED",
+      accepted: false,
+      forwarded: false,
+      persisted: "NOT_PERSISTED",
+      retryable: false,
+      error_code: "MALFORMED_JSON",
+      message: "Malformed JSON payload. Parsing failed.",
+    };
+    return new Response(JSON.stringify(resp), { status: 400, headers: getCorsHeaders() });
   }
 
-  // 5. Strict Privacy Pre-Filter (Deny-list scan)
+  // 5. Gate F: Strict Privacy Pre-Filter (Deny-list field and regex value scan)
   const privacyCheck = scanForProhibitedFields(parsedBody);
   if (privacyCheck.detected) {
-    return new Response(
-      JSON.stringify({
-        error: "Privacy Boundary Violation: Prohibited field detected",
-        prohibited_field: privacyCheck.prohibitedField,
-      }),
-      { status: 400, headers: getCorsHeaders() }
-    );
+    const resp: GatewayResponse = {
+      contract_version: "1.1.0",
+      status: "REJECTED",
+      accepted: false,
+      forwarded: false,
+      persisted: "NOT_PERSISTED",
+      retryable: false,
+      error_code: "PRIVACY_BOUNDARY_VIOLATION",
+      prohibited_field: privacyCheck.prohibitedField,
+      prohibited_rule: privacyCheck.prohibitedRule,
+      message: `Privacy Boundary Violation: Prohibited field or sensitive value pattern detected in '${privacyCheck.prohibitedField}'`,
+    };
+    return new Response(JSON.stringify(resp), { status: 400, headers: getCorsHeaders() });
   }
 
   // 6. Unpack Transport Envelope or Direct Canonical Payload
@@ -131,7 +165,7 @@ export const onRequest = async (context: any): Promise<Response> => {
   if (
     parsedBody &&
     typeof parsedBody === "object" &&
-    parsedBody.transport_version === "1.0.0" &&
+    (parsedBody.transport_version === "1.0.0" || parsedBody.transport_version === "1.1.0") &&
     parsedBody.payload
   ) {
     const envelope = parsedBody as CorporateEventTransportEnvelope;
@@ -146,16 +180,21 @@ export const onRequest = async (context: any): Promise<Response> => {
     syntheticFromEnvelope = parsedBody?.synthetic_marker;
   }
 
-  // 7. Canonical Schema Validation
+  // 7. Canonical Schema Validation & Replay Window (Gate B & D)
   const validation = validateCorporateEventPayload(canonicalPayloadRaw);
   if (!validation.valid || !validation.payload) {
-    return new Response(
-      JSON.stringify({
-        error: "Schema Validation Error",
-        details: validation.errors,
-      }),
-      { status: 400, headers: getCorsHeaders() }
-    );
+    const resp: GatewayResponse = {
+      contract_version: "1.1.0",
+      status: "REJECTED",
+      accepted: false,
+      forwarded: false,
+      persisted: "NOT_PERSISTED",
+      retryable: false,
+      error_code: validation.errorCode || "SCHEMA_VALIDATION_ERROR",
+      message: validation.errors.join("; "),
+      details: validation.errors,
+    };
+    return new Response(JSON.stringify(resp), { status: 400, headers: getCorsHeaders() });
   }
 
   const payload = validation.payload;
@@ -183,10 +222,48 @@ export const onRequest = async (context: any): Promise<Response> => {
   payload.ci_marker = isCi;
   payload.manual_qa_marker = isQa;
 
-  // Derive Deduplication Key (Server authority)
-  const salt = context.env?.TELEMETRY_HMAC_SALT || DEFAULT_HMAC_SALT;
   const evaluationId = payload.evaluation_id || payload.event_id;
   payload.evaluation_id = evaluationId;
+
+  // Derive Canonical Digest (Gate C & D)
+  try {
+    payload.canonical_digest = await computeCanonicalDigest(payload);
+  } catch {
+    const resp: GatewayResponse = {
+      contract_version: "1.1.0",
+      status: "REJECTED",
+      accepted: false,
+      forwarded: false,
+      persisted: "NOT_PERSISTED",
+      retryable: false,
+      error_code: "DIGEST_COMPUTATION_FAILED",
+      message: "Cryptographic digest computation failed",
+    };
+    return new Response(JSON.stringify(resp), { status: 500, headers: getCorsHeaders() });
+  }
+
+  // Derive Deduplication Key with Server Secret (Gate E)
+  const hmacSecret =
+    context.env?.TELEMETRY_HMAC_SECRET ||
+    context.env?.TELEMETRY_HMAC_SALT ||
+    (isSynthetic ? SYNTHETIC_HMAC_SECRET_FALLBACK : "");
+
+  if (!hmacSecret) {
+    // Fail-closed in non-synthetic environment if secret is unconfigured
+    const resp: GatewayResponse = {
+      contract_version: "1.1.0",
+      status: "TEMPORARILY_UNAVAILABLE",
+      accepted: false,
+      forwarded: false,
+      persisted: "NOT_PERSISTED",
+      retryable: true,
+      error_code: "UNCONFIGURED_HMAC_SECRET",
+      message: "Server deduplication secret unconfigured; failing closed",
+    };
+    return new Response(JSON.stringify(resp), { status: 500, headers: getCorsHeaders() });
+  }
+
+  const keyId = context.env?.TELEMETRY_KEY_ID || "k1";
 
   try {
     payload.deduplication_key = await computeServerDeduplicationKey(
@@ -194,14 +271,21 @@ export const onRequest = async (context: any): Promise<Response> => {
       payload.symbol,
       payload.event_time_utc,
       evaluationId,
-      salt
+      hmacSecret,
+      keyId
     );
   } catch {
-    // Cryptographic failure fails closed
-    return new Response(
-      JSON.stringify({ error: "Cryptographic deduplication derivation failed" }),
-      { status: 500, headers: getCorsHeaders() }
-    );
+    const resp: GatewayResponse = {
+      contract_version: "1.1.0",
+      status: "TEMPORARILY_UNAVAILABLE",
+      accepted: false,
+      forwarded: false,
+      persisted: "NOT_PERSISTED",
+      retryable: true,
+      error_code: "CRYPTOGRAPHIC_DERIVATION_FAILED",
+      message: "Cryptographic deduplication derivation failed",
+    };
+    return new Response(JSON.stringify(resp), { status: 500, headers: getCorsHeaders() });
   }
 
   // 9. Feature Flag Check (Disabled by default)
@@ -209,12 +293,16 @@ export const onRequest = async (context: any): Promise<Response> => {
 
   if (!isEnabled) {
     const disabledResponse: GatewayResponse = {
+      contract_version: "1.1.0",
       status: "DISABLED",
       accepted: false,
       forwarded: false,
+      persisted: "NOT_PERSISTED",
+      retryable: false,
       evaluation_id: evaluationId,
       delivery_attempt_id: deliveryAttemptId,
       deduplication_key: payload.deduplication_key,
+      canonical_digest: payload.canonical_digest,
       message: "Corporate Events telemetry gateway is disabled by policy",
     };
     return new Response(JSON.stringify(disabledResponse), {

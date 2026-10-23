@@ -5,17 +5,19 @@ import { CorporateEventCanonicalPayload } from "../../../types/corporate-events-
 
 const AUTH_SHA = "8404b6e4645b5f9f8237e70517dcab3b6afdda7f";
 
-function createValidPayload(): CorporateEventCanonicalPayload {
+function createValidPayload(
+  overrides: Partial<CorporateEventCanonicalPayload> = {}
+): CorporateEventCanonicalPayload {
   return {
-    schema_version: "1.0.0",
+    schema_version: "1.1.0",
     event_id: "c7f9e8a2-3b1d-4e5f-9a0c-8d7e6f5a4b3c",
-    occurred_at_utc: "2026-10-24T10:00:00.000Z",
+    occurred_at_utc: new Date().toISOString(),
     release_sha: AUTH_SHA,
     ruleset_version: "RC5",
     evaluation_context_id: "ctx-7a8b9c",
     symbol: "AAPL",
     event_category: "EARNINGS_ANNOUNCEMENT",
-    event_time_utc: "2026-10-25T14:00:00.000Z",
+    event_time_utc: new Date(Date.now() + 86400000 * 2).toISOString(),
     market_session: "BMO",
     event_source_status: "CONFIRMED",
     freshness_status: "FRESH",
@@ -25,6 +27,7 @@ function createValidPayload(): CorporateEventCanonicalPayload {
     evaluation_outcome: "COMPLETED",
     evaluation_id: "eval-uuid-0001",
     delivery_attempt_id: "attempt-uuid-0001",
+    ...overrides,
   };
 }
 
@@ -55,11 +58,13 @@ function mockRequestContext(options: {
       cf: options.cf || { botManagement: { score: 80 } },
       url: "https://arxterminal.com/api/telemetry/events",
     },
-    env: options.env || {},
+    env: options.env || {
+      TELEMETRY_HMAC_SECRET: "mock-secret-for-tests",
+    },
   };
 }
 
-describe("Cloudflare Pages Gateway: /api/telemetry/events", () => {
+describe("Cloudflare Pages Gateway: /api/telemetry/events (v1.1.0 Hardened)", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -76,6 +81,8 @@ describe("Cloudflare Pages Gateway: /api/telemetry/events", () => {
       const contextGet = mockRequestContext({ method: "GET" });
       const respGet = await onRequest(contextGet);
       expect(respGet.status).toBe(405);
+      const dataGet = await respGet.json();
+      expect(dataGet.error_code).toBe("METHOD_NOT_ALLOWED");
 
       const contextPut = mockRequestContext({ method: "PUT" });
       const respPut = await onRequest(contextPut);
@@ -88,7 +95,7 @@ describe("Cloudflare Pages Gateway: /api/telemetry/events", () => {
       const resp = await onRequest(context);
       expect(resp.status).toBe(413);
       const data = await resp.json();
-      expect(data.error).toContain("Payload Too Large");
+      expect(data.error_code).toBe("PAYLOAD_TOO_LARGE");
     });
 
     it("rejects malformed JSON syntax with 400 Bad Request", async () => {
@@ -96,19 +103,20 @@ describe("Cloudflare Pages Gateway: /api/telemetry/events", () => {
       const resp = await onRequest(context);
       expect(resp.status).toBe(400);
       const data = await resp.json();
-      expect(data.error).toContain("Malformed JSON payload");
+      expect(data.error_code).toBe("MALFORMED_JSON");
     });
   });
 
-  describe("Gate F: Privacy Deny-List Enforcement", () => {
+  describe("Gate F: Privacy Deny-List & Value Scanner Enforcement", () => {
     it("strictly rejects payload containing user_id with 400", async () => {
       const bad = { ...createValidPayload(), user_id: "user-12345" };
       const context = mockRequestContext({ body: JSON.stringify(bad) });
       const resp = await onRequest(context);
       expect(resp.status).toBe(400);
       const data = await resp.json();
-      expect(data.error).toContain("Privacy Boundary Violation");
+      expect(data.error_code).toBe("PRIVACY_BOUNDARY_VIOLATION");
       expect(data.prohibited_field).toBe("user_id");
+      expect(data.prohibited_rule).toBe("DENYLIST_FIELD_NAME");
     });
 
     it("strictly rejects payload containing client_ip with 400", async () => {
@@ -117,7 +125,28 @@ describe("Cloudflare Pages Gateway: /api/telemetry/events", () => {
       const resp = await onRequest(context);
       expect(resp.status).toBe(400);
       const data = await resp.json();
-      expect(data.error).toContain("Privacy Boundary Violation");
+      expect(data.error_code).toBe("PRIVACY_BOUNDARY_VIOLATION");
+    });
+
+    it("strictly rejects payload containing email address in string value with 400", async () => {
+      const bad = createValidPayload({ evaluation_context_id: "ctx-leak-user@example.com" });
+      const context = mockRequestContext({ body: JSON.stringify(bad) });
+      const resp = await onRequest(context);
+      expect(resp.status).toBe(400);
+      const data = await resp.json();
+      expect(data.error_code).toBe("PRIVACY_BOUNDARY_VIOLATION");
+      expect(data.prohibited_rule).toBe("VALUE_PATTERN_EMAIL");
+    });
+
+    it("strictly rejects payload containing JWT token value with 400", async () => {
+      const mockJwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abc123456789";
+      const bad = createValidPayload({ evaluation_context_id: mockJwt });
+      const context = mockRequestContext({ body: JSON.stringify(bad) });
+      const resp = await onRequest(context);
+      expect(resp.status).toBe(400);
+      const data = await resp.json();
+      expect(data.error_code).toBe("PRIVACY_BOUNDARY_VIOLATION");
+      expect(data.prohibited_rule).toBe("VALUE_PATTERN_JWT_TOKEN");
     });
   });
 
@@ -128,43 +157,64 @@ describe("Cloudflare Pages Gateway: /api/telemetry/events", () => {
       const resp = await onRequest(context);
       expect(resp.status).toBe(400);
       const data = await resp.json();
-      expect(data.error).toContain("Schema Validation Error");
+      expect(data.error_code).toBe("SCHEMA_VALIDATION_ERROR");
     });
 
     it("rejects semantic penalty mismatch with 400", async () => {
-      const bad = { ...createValidPayload(), risk_bucket: "ACUTE", applied_penalty: -8.0 };
+      const bad = createValidPayload({ risk_bucket: "ACUTE", applied_penalty: -8.0 });
       const context = mockRequestContext({ body: JSON.stringify(bad) });
       const resp = await onRequest(context);
       expect(resp.status).toBe(400);
+      const data = await resp.json();
+      expect(data.error_code).toBe("SCHEMA_VALIDATION_ERROR");
+    });
+
+    it("rejects expired replay window (>24h) with 400", async () => {
+      const expiredTime = new Date(Date.now() - 26 * 3600 * 1000).toISOString();
+      const bad = createValidPayload({ occurred_at_utc: expiredTime });
+      const context = mockRequestContext({ body: JSON.stringify(bad) });
+      const resp = await onRequest(context);
+      expect(resp.status).toBe(400);
+      const data = await resp.json();
+      expect(data.error_code).toBe("EXPIRED_REPLAY_WINDOW");
     });
   });
 
   describe("Gate E: Disabled-by-Default Feature Flag", () => {
     it("returns HTTP 200 with status DISABLED when feature flag is absent", async () => {
-      const context = mockRequestContext({ env: {} });
+      const context = mockRequestContext({
+        env: { TELEMETRY_HMAC_SECRET: "test-secret" },
+      });
       const resp = await onRequest(context);
       expect(resp.status).toBe(200);
       const data = await resp.json();
+      expect(data.contract_version).toBe("1.1.0");
       expect(data.status).toBe("DISABLED");
       expect(data.accepted).toBe(false);
       expect(data.forwarded).toBe(false);
+      expect(data.persisted).toBe("NOT_PERSISTED");
       expect(data.deduplication_key).toBeDefined();
+      expect(data.canonical_digest).toBeDefined();
     });
 
     it("returns HTTP 200 with status DISABLED when feature flag is explicitly 'false'", async () => {
       const context = mockRequestContext({
-        env: { ENABLE_CORPORATE_EVENTS_TELEMETRY: "false" },
+        env: {
+          ENABLE_CORPORATE_EVENTS_TELEMETRY: "false",
+          TELEMETRY_HMAC_SECRET: "test-secret",
+        },
       });
       const resp = await onRequest(context);
       expect(resp.status).toBe(200);
       const data = await resp.json();
       expect(data.status).toBe("DISABLED");
       expect(data.accepted).toBe(false);
+      expect(data.persisted).toBe("NOT_PERSISTED");
     });
   });
 
-  describe("Gate E: Upstream Forwarding Resiliency (Enabled State)", () => {
-    it("forwards to upstream and returns ACCEPTED on upstream 200", async () => {
+  describe("Gate C & E: Upstream Forwarding & Duplicate Classification (Enabled State)", () => {
+    it("forwards to upstream and returns PERSISTED with confirmed persistence on upstream 200", async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 200,
         text: () => Promise.resolve(JSON.stringify({ status: "ACCEPTED", record_id: "rec-1" })),
@@ -174,39 +224,101 @@ describe("Cloudflare Pages Gateway: /api/telemetry/events", () => {
         env: {
           ENABLE_CORPORATE_EVENTS_TELEMETRY: "true",
           TELEMETRY_UPSTREAM_URL: "http://127.0.0.1:8080/persist",
+          TELEMETRY_HMAC_SECRET: "test-secret",
         },
       });
 
       const resp = await onRequest(context);
       expect(resp.status).toBe(200);
       const data = await resp.json();
-      expect(data.status).toBe("ACCEPTED");
+      expect(data.status).toBe("PERSISTED");
+      expect(data.accepted).toBe(true);
       expect(data.forwarded).toBe(true);
+      expect(data.persisted).toBe("CONFIRMED");
       expect(global.fetch).toHaveBeenCalledWith(
         "http://127.0.0.1:8080/persist",
         expect.objectContaining({ method: "POST" })
       );
     });
 
-    it("handles upstream 409 duplicate acknowledgement gracefully", async () => {
+    it("authoritative duplicate 409: returns CONFIRMED_DUPLICATE with persisted CONFIRMED", async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 409,
-        text: () => Promise.resolve(JSON.stringify({ error: "Duplicate deduplication_key" })),
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({
+              status: "CONFIRMED_DUPLICATE",
+              evaluation_id: "eval-uuid-0001",
+            })
+          ),
       });
 
       const context = mockRequestContext({
         env: {
           ENABLE_CORPORATE_EVENTS_TELEMETRY: "true",
+          TELEMETRY_HMAC_SECRET: "test-secret",
         },
       });
 
       const resp = await onRequest(context);
       expect(resp.status).toBe(200);
       const data = await resp.json();
-      expect(data.status).toBe("DUPLICATE_ACKNOWLEDGED");
+      expect(data.status).toBe("CONFIRMED_DUPLICATE");
+      expect(data.accepted).toBe(true);
+      expect(data.persisted).toBe("CONFIRMED");
     });
 
-    it("returns 502 UPSTREAM_UNAVAILABLE on upstream 500 error", async () => {
+    it("conflicting identity 409: returns 409 CONFLICTING_IDENTITY and fails closed", async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 409,
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({
+              status: "CONFLICTING_IDENTITY",
+              error_code: "CONFLICTING_IDENTITY",
+              message: "Same evaluation_id with mismatched symbol",
+            })
+          ),
+      });
+
+      const context = mockRequestContext({
+        env: {
+          ENABLE_CORPORATE_EVENTS_TELEMETRY: "true",
+          TELEMETRY_HMAC_SECRET: "test-secret",
+        },
+      });
+
+      const resp = await onRequest(context);
+      expect(resp.status).toBe(409);
+      const data = await resp.json();
+      expect(data.status).toBe("CONFLICTING_IDENTITY");
+      expect(data.accepted).toBe(false);
+      expect(data.persisted).toBe("NOT_PERSISTED");
+    });
+
+    it("ambiguous conflict 409: returns 502 AMBIGUOUS_CONFLICT and fails closed", async () => {
+      // Generic 409 without authoritative proof contract
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 409,
+        text: () => Promise.resolve(JSON.stringify({ error: "Conflict key exists" })),
+      });
+
+      const context = mockRequestContext({
+        env: {
+          ENABLE_CORPORATE_EVENTS_TELEMETRY: "true",
+          TELEMETRY_HMAC_SECRET: "test-secret",
+        },
+      });
+
+      const resp = await onRequest(context);
+      expect(resp.status).toBe(502);
+      const data = await resp.json();
+      expect(data.status).toBe("AMBIGUOUS_CONFLICT");
+      expect(data.accepted).toBe(false);
+      expect(data.persisted).toBe("UNKNOWN");
+    });
+
+    it("returns 502 TEMPORARILY_UNAVAILABLE on upstream 500 error", async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 500,
         text: () => Promise.resolve("Internal Server Error"),
@@ -215,16 +327,19 @@ describe("Cloudflare Pages Gateway: /api/telemetry/events", () => {
       const context = mockRequestContext({
         env: {
           ENABLE_CORPORATE_EVENTS_TELEMETRY: "true",
+          TELEMETRY_HMAC_SECRET: "test-secret",
         },
       });
 
       const resp = await onRequest(context);
       expect(resp.status).toBe(502);
       const data = await resp.json();
-      expect(data.status).toBe("UPSTREAM_UNAVAILABLE");
+      expect(data.status).toBe("TEMPORARILY_UNAVAILABLE");
+      expect(data.persisted).toBe("NOT_PERSISTED");
+      expect(data.retryable).toBe(true);
     });
 
-    it("returns 504 GATEWAY_TIMEOUT on upstream timeout / abort", async () => {
+    it("returns 504 OUTCOME_UNKNOWN on upstream timeout / abort", async () => {
       const abortError = new Error("The operation was aborted");
       abortError.name = "AbortError";
       global.fetch = vi.fn().mockRejectedValue(abortError);
@@ -232,13 +347,16 @@ describe("Cloudflare Pages Gateway: /api/telemetry/events", () => {
       const context = mockRequestContext({
         env: {
           ENABLE_CORPORATE_EVENTS_TELEMETRY: "true",
+          TELEMETRY_HMAC_SECRET: "test-secret",
         },
       });
 
       const resp = await onRequest(context);
       expect(resp.status).toBe(504);
       const data = await resp.json();
-      expect(data.status).toBe("GATEWAY_TIMEOUT");
+      expect(data.status).toBe("OUTCOME_UNKNOWN");
+      expect(data.persisted).toBe("UNKNOWN");
+      expect(data.retryable).toBe(true);
     });
   });
 });

@@ -1,8 +1,13 @@
 /**
- * ARX Terminal — Corporate Events Telemetry Contract & Validator (v1.0.0).
+ * ARX Terminal — Corporate Events Telemetry Contract & Validator (v1.1.0 Hardened).
  *
- * Implements strict server-side validation, privacy deny-list scanning,
- * semantic invariant enforcement, and HMAC-SHA256 deduplication key computation.
+ * Increment 1.1 Hardening:
+ * - Gate B: Strict canonical schema validation (extra="forbid").
+ * - Gate C: Canonical digest computation for duplicate vs conflicting identity verification.
+ * - Gate D: Replay window (24h) and future clock skew (60s) bounds enforcement.
+ * - Gate E: Key versioning (kid), fail-closed unconfigured secret detection, and rotation semantics.
+ * - Gate F: Recursive field-name deny-list AND deep regex value scanner (emails, IPs, JWTs, bearer tokens).
+ * - Gate G: Decision engine semantic invariants preservation (ACUTE, CAUTION, NOMINAL, UNAVAILABLE).
  */
 
 import {
@@ -70,14 +75,26 @@ export const ALLOWED_CANONICAL_KEYS = new Set([
   "evaluation_id",
   "delivery_attempt_id",
   "deduplication_key",
+  "canonical_digest",
   "synthetic_marker",
   "ci_marker",
   "manual_qa_marker",
 ]);
 
 const SHA_REGEX = /^[0-9a-f]{40}$/;
-const SYMBOL_REGEX = /^[A-Z0-9]{1,5}$/;
+const SYMBOL_REGEX = /^[A-Z0-9.]{1,10}$/;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Privacy Value-Level Regex Patterns (Gate F)
+const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+const IPV4_REGEX = /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/;
+const IPV6_REGEX = /\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b/;
+const JWT_REGEX = /\beyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\b/;
+const BEARER_OR_SESSION_REGEX = /(?:bearer\s+[a-zA-Z0-9_\-\.]{16,}|session=[a-zA-Z0-9]{16,}|cookie:\s*)/i;
+const URL_REGEX = /https?:\/\//i;
+
+export const MAX_EVENT_AGE_MS = 24 * 60 * 60 * 1000; // 24-hour replay window horizon
+export const MAX_FUTURE_SKEW_MS = 60 * 1000;         // 60-second future clock skew bound
 
 const VALID_CATEGORIES: Set<CorporateEventCategory> = new Set([
   "EARNINGS_ANNOUNCEMENT",
@@ -89,35 +106,27 @@ const VALID_CATEGORIES: Set<CorporateEventCategory> = new Set([
 ]);
 
 const VALID_SESSIONS: Set<MarketSession> = new Set(["BMO", "AMC", "DURING", "UNKNOWN"]);
-
-const VALID_SOURCES: Set<EventSourceStatus> = new Set([
-  "CONFIRMED",
-  "UNVERIFIED",
-  "DATA_UNAVAILABLE",
-]);
-
+const VALID_SOURCES: Set<EventSourceStatus> = new Set(["CONFIRMED", "UNVERIFIED", "DATA_UNAVAILABLE"]);
 const VALID_FRESHNESS: Set<FreshnessStatus> = new Set(["FRESH", "STALE", "UNVERIFIED"]);
+const VALID_RISK_BUCKETS: Set<RiskBucket> = new Set(["ACUTE", "CAUTION", "NOMINAL", "UNAVAILABLE"]);
+const VALID_OUTCOMES: Set<EvaluationOutcome> = new Set(["COMPLETED", "UNAVAILABLE", "ERROR"]);
 
-const VALID_RISK_BUCKETS: Set<RiskBucket> = new Set([
-  "ACUTE",
-  "CAUTION",
-  "NOMINAL",
-  "UNAVAILABLE",
-]);
-
-const VALID_OUTCOMES: Set<EvaluationOutcome> = new Set([
-  "COMPLETED",
-  "UNAVAILABLE",
-  "ERROR",
-]);
+export interface PrivacyScanResult {
+  detected: boolean;
+  prohibitedField?: string;
+  prohibitedRule?: string;
+}
 
 /**
- * Recursively scans an object for prohibited privacy keys.
+ * Recursively scans an object for:
+ * 1. Prohibited field names in deny-list.
+ * 2. Sensitive value patterns (emails, IPs, JWTs, bearer tokens, embedded URLs).
+ * Guarantees zero sensitive value leakage in the scan return object.
  */
 export function scanForProhibitedFields(
   data: unknown,
   maxDepth = 5
-): { detected: boolean; prohibitedField?: string } {
+): PrivacyScanResult {
   if (!data || typeof data !== "object" || maxDepth <= 0) {
     return { detected: false };
   }
@@ -133,12 +142,60 @@ export function scanForProhibitedFields(
   const record = data as Record<string, unknown>;
   for (const key of Object.keys(record)) {
     const normKey = key.toLowerCase().replace(/[-_]/g, "");
+
+    // 1. Check prohibited field names
     for (const prohibited of PROHIBITED_PRIVACY_FIELDS) {
       if (normKey === prohibited.replace(/[-_]/g, "")) {
-        return { detected: true, prohibitedField: key };
+        return {
+          detected: true,
+          prohibitedField: key,
+          prohibitedRule: "DENYLIST_FIELD_NAME",
+        };
       }
     }
+
     const val = record[key];
+
+    // 2. Check value-level leaks in strings (Gate F)
+    if (typeof val === "string") {
+      if (EMAIL_REGEX.test(val)) {
+        return {
+          detected: true,
+          prohibitedField: key,
+          prohibitedRule: "VALUE_PATTERN_EMAIL",
+        };
+      }
+      if (IPV4_REGEX.test(val) || IPV6_REGEX.test(val)) {
+        return {
+          detected: true,
+          prohibitedField: key,
+          prohibitedRule: "VALUE_PATTERN_IP_ADDRESS",
+        };
+      }
+      if (JWT_REGEX.test(val)) {
+        return {
+          detected: true,
+          prohibitedField: key,
+          prohibitedRule: "VALUE_PATTERN_JWT_TOKEN",
+        };
+      }
+      if (BEARER_OR_SESSION_REGEX.test(val)) {
+        return {
+          detected: true,
+          prohibitedField: key,
+          prohibitedRule: "VALUE_PATTERN_AUTH_TOKEN",
+        };
+      }
+      if (key !== "deployment_host" && URL_REGEX.test(val)) {
+        return {
+          detected: true,
+          prohibitedField: key,
+          prohibitedRule: "VALUE_PATTERN_UNAUTHORIZED_URL",
+        };
+      }
+    }
+
+    // 3. Recurse into nested objects
     if (typeof val === "object" && val !== null) {
       const nestedRes = scanForProhibitedFields(val, maxDepth - 1);
       if (nestedRes.detected) return nestedRes;
@@ -148,49 +205,85 @@ export function scanForProhibitedFields(
   return { detected: false };
 }
 
+export interface ValidationOptions {
+  nowMs?: number;
+  skipReplayWindow?: boolean;
+}
+
 export interface ValidationResult {
   valid: boolean;
   errors: string[];
+  errorCode?: string;
   payload?: CorporateEventCanonicalPayload;
 }
 
 /**
- * Validates a payload against the 17-field canonical contract and decision engine invariants.
+ * Validates a payload against the 17-field canonical contract, decision engine invariants,
+ * and replay window/clock-skew bounds.
  */
-export function validateCorporateEventPayload(data: unknown): ValidationResult {
+export function validateCorporateEventPayload(
+  data: unknown,
+  options: ValidationOptions = {}
+): ValidationResult {
   const errors: string[] = [];
 
   if (!data || typeof data !== "object" || Array.isArray(data)) {
-    return { valid: false, errors: ["Payload must be a non-null JSON object"] };
+    return {
+      valid: false,
+      errors: ["Payload must be a non-null JSON object"],
+      errorCode: "INVALID_STRUCTURE",
+    };
   }
 
   const raw = data as Record<string, unknown>;
 
-  // 1. Check for unexpected / forbidden extra fields
+  // 1. Check for unknown / forbidden extra fields (extra = "forbid")
   for (const key of Object.keys(raw)) {
     if (!ALLOWED_CANONICAL_KEYS.has(key)) {
       errors.push(`Unknown extra field forbidden: '${key}'`);
     }
   }
 
-  // 2. Validate required string fields
-  if (raw.schema_version !== "1.0.0") {
-    errors.push(`schema_version must be '1.0.0', got '${raw.schema_version}'`);
+  // 2. Validate schema_version
+  if (raw.schema_version !== "1.0.0" && raw.schema_version !== "1.1.0") {
+    errors.push(`schema_version must be '1.0.0' or '1.1.0', got '${raw.schema_version}'`);
   }
 
+  // 3. Validate event_id (UUIDv4)
   if (typeof raw.event_id !== "string" || !UUID_REGEX.test(raw.event_id)) {
     errors.push(`event_id must be a valid UUIDv4 string, got '${raw.event_id}'`);
   }
 
+  // 4. Validate occurred_at_utc and Replay Window (Gate D)
+  let occurredAtMs = 0;
   if (typeof raw.occurred_at_utc !== "string" || !raw.occurred_at_utc.includes("T")) {
     errors.push(`occurred_at_utc must be a valid ISO 8601 UTC timestamp`);
   } else {
-    const parsedDate = Date.parse(raw.occurred_at_utc);
-    if (Number.isNaN(parsedDate)) {
+    occurredAtMs = Date.parse(raw.occurred_at_utc);
+    if (Number.isNaN(occurredAtMs)) {
       errors.push(`occurred_at_utc is not a parseable date timestamp`);
+    } else if (!options.skipReplayWindow) {
+      const nowMs = options.nowMs ?? Date.now();
+      if (nowMs - occurredAtMs > MAX_EVENT_AGE_MS) {
+        errors.push(`Replay Window Expired: Event age exceeds 24h horizon`);
+        return {
+          valid: false,
+          errors,
+          errorCode: "EXPIRED_REPLAY_WINDOW",
+        };
+      }
+      if (occurredAtMs - nowMs > MAX_FUTURE_SKEW_MS) {
+        errors.push(`Future Timestamp Rejected: Clock skew exceeds 60s tolerance`);
+        return {
+          valid: false,
+          errors,
+          errorCode: "FUTURE_TIMESTAMP_REJECTED",
+        };
+      }
     }
   }
 
+  // 5. Release SHA & Ruleset
   if (typeof raw.release_sha !== "string" || !SHA_REGEX.test(raw.release_sha.toLowerCase())) {
     errors.push(`release_sha must be exactly 40 lowercase hexadecimal characters`);
   }
@@ -199,15 +292,16 @@ export function validateCorporateEventPayload(data: unknown): ValidationResult {
     errors.push(`ruleset_version must be 'RC5' or 'RC4', got '${raw.ruleset_version}'`);
   }
 
+  // 6. Context & Symbol
   if (typeof raw.evaluation_context_id !== "string" || raw.evaluation_context_id.trim().length === 0) {
     errors.push(`evaluation_context_id must be a non-empty string`);
   }
 
   if (typeof raw.symbol !== "string" || !SYMBOL_REGEX.test(raw.symbol.toUpperCase())) {
-    errors.push(`symbol must be 1 to 5 uppercase alphanumeric characters`);
+    errors.push(`symbol must be 1 to 10 uppercase alphanumeric characters`);
   }
 
-  // 3. Enums
+  // 7. Enums
   if (!VALID_CATEGORIES.has(raw.event_category as CorporateEventCategory)) {
     errors.push(`event_category invalid: '${raw.event_category}'`);
   }
@@ -230,7 +324,7 @@ export function validateCorporateEventPayload(data: unknown): ValidationResult {
     errors.push(`freshness_status invalid: '${raw.freshness_status}'`);
   }
 
-  // 4. Numeric & Semantic Rules
+  // 8. Days to Earnings, Risk Bucket & Applied Penalty
   let days: number | null = null;
   if (raw.days_to_earnings !== null && raw.days_to_earnings !== undefined) {
     if (typeof raw.days_to_earnings !== "number" || Number.isNaN(raw.days_to_earnings)) {
@@ -254,7 +348,7 @@ export function validateCorporateEventPayload(data: unknown): ValidationResult {
     errors.push(`evaluation_outcome invalid: '${raw.evaluation_outcome}'`);
   }
 
-  // 5. Invariant Checks
+  // 9. Semantic Decision Invariants (Gate G)
   if (riskBucket === "ACUTE" && penalty !== -25.0) {
     errors.push(`Semantic mismatch: risk_bucket ACUTE requires applied_penalty -25.0, got ${penalty}`);
   }
@@ -272,21 +366,31 @@ export function validateCorporateEventPayload(data: unknown): ValidationResult {
       errors.push(`Boundary violation: 1.0 < days_to_earnings (${days}) <= 7.0 must be CAUTION, got ${riskBucket}`);
     } else if (days > 7.0 && riskBucket !== "NOMINAL") {
       errors.push(`Boundary violation: days_to_earnings (${days}) > 7.0 must be NOMINAL, got ${riskBucket}`);
-    } else if (days < 0.0 && riskBucket !== "NOMINAL") {
-      errors.push(`Boundary violation: elapsed event (${days} < 0.0) must be NOMINAL, got ${riskBucket}`);
+    } else if (days < 0.0) {
+      // Historical/elapsed event must not have active penalty, and if stale must be UNAVAILABLE
+      if (raw.freshness_status === "STALE" && riskBucket !== "UNAVAILABLE") {
+        errors.push(`Boundary violation: stale elapsed event must be UNAVAILABLE, got ${riskBucket}`);
+      } else if (riskBucket !== "NOMINAL" && riskBucket !== "UNAVAILABLE") {
+        errors.push(`Boundary violation: elapsed event (${days} < 0.0) must be NOMINAL or UNAVAILABLE, got ${riskBucket}`);
+      }
     }
   } else {
-    if (riskBucket !== "UNAVAILABLE" && riskBucket !== "NOMINAL") {
-      errors.push(`Missing days_to_earnings requires UNAVAILABLE or NOMINAL, got ${riskBucket}`);
+    // Missing coverage must be UNAVAILABLE
+    if (riskBucket !== "UNAVAILABLE") {
+      errors.push(`Missing coverage (days_to_earnings=null) requires UNAVAILABLE, got ${riskBucket}`);
     }
   }
 
   if (errors.length > 0) {
-    return { valid: false, errors };
+    return {
+      valid: false,
+      errors,
+      errorCode: "SCHEMA_VALIDATION_ERROR",
+    };
   }
 
   const payload: CorporateEventCanonicalPayload = {
-    schema_version: "1.0.0",
+    schema_version: raw.schema_version as "1.0.0" | "1.1.0",
     event_id: String(raw.event_id),
     occurred_at_utc: String(raw.occurred_at_utc),
     release_sha: String(raw.release_sha).toLowerCase(),
@@ -305,6 +409,7 @@ export function validateCorporateEventPayload(data: unknown): ValidationResult {
     evaluation_id: raw.evaluation_id ? String(raw.evaluation_id) : undefined,
     delivery_attempt_id: raw.delivery_attempt_id ? String(raw.delivery_attempt_id) : undefined,
     deduplication_key: raw.deduplication_key ? String(raw.deduplication_key) : undefined,
+    canonical_digest: raw.canonical_digest ? String(raw.canonical_digest) : undefined,
     synthetic_marker: Boolean(raw.synthetic_marker),
     ci_marker: Boolean(raw.ci_marker),
     manual_qa_marker: Boolean(raw.manual_qa_marker),
@@ -314,38 +419,88 @@ export function validateCorporateEventPayload(data: unknown): ValidationResult {
 }
 
 /**
- * Universal HMAC-SHA256 deduplication key derivation.
- * Works seamlessly in Browser (WebCrypto), Cloudflare Workers, and Node.js.
+ * Computes a deterministic SHA-256 digest of the canonical evaluation fields.
+ * Used for tamper detection and distinguishing confirmed duplicates from conflicting identities.
+ */
+export async function computeCanonicalDigest(
+  payload: CorporateEventCanonicalPayload
+): Promise<string> {
+  const canonicalParts = [
+    payload.schema_version,
+    payload.event_id,
+    payload.occurred_at_utc,
+    payload.release_sha.toLowerCase(),
+    payload.ruleset_version,
+    payload.symbol.toUpperCase(),
+    payload.event_category,
+    payload.event_time_utc ?? "null",
+    payload.market_session,
+    payload.event_source_status,
+    payload.freshness_status,
+    payload.days_to_earnings !== null ? payload.days_to_earnings.toFixed(2) : "null",
+    payload.risk_bucket,
+    payload.applied_penalty.toFixed(1),
+    payload.evaluation_outcome,
+    payload.evaluation_id || payload.event_id,
+  ];
+
+  const canonicalString = canonicalParts.join("|");
+  const enc = new TextEncoder();
+
+  if (typeof crypto !== "undefined" && crypto.subtle) {
+    const hashBuffer = await crypto.subtle.digest("SHA-256", enc.encode(canonicalString));
+    return Array.from(new Uint8Array(hashBuffer))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  }
+
+  try {
+    const nodeCrypto = await import("crypto");
+    return nodeCrypto.createHash("sha256").update(canonicalString).digest("hex");
+  } catch {
+    throw new Error("No cryptographic provider available for SHA-256 computation");
+  }
+}
+
+/**
+ * Universal HMAC-SHA256 deduplication key derivation with key versioning (kid)
+ * and fail-closed secret configuration (Gate E).
  */
 export async function computeServerDeduplicationKey(
   evaluation_context_id: string,
   symbol: string,
   event_time_utc: string | null,
   evaluation_id: string,
-  salt: string
+  saltOrSecret: string,
+  keyId = "k1"
 ): Promise<string> {
-  const message = `ctx:${evaluation_context_id}|sym:${symbol.toUpperCase()}|event:${event_time_utc || "none"}|eval_id:${evaluation_id}`;
+  if (!saltOrSecret || saltOrSecret.trim().length === 0) {
+    throw new Error("UNCONFIGURED_HMAC_SECRET: Server HMAC secret must not be empty or unconfigured");
+  }
+
+  const message = `kid:${keyId}|ctx:${evaluation_context_id}|sym:${symbol.toUpperCase()}|event:${event_time_utc || "none"}|eval_id:${evaluation_id}`;
   const enc = new TextEncoder();
 
   if (typeof crypto !== "undefined" && crypto.subtle) {
     const key = await crypto.subtle.importKey(
       "raw",
-      enc.encode(salt),
+      enc.encode(saltOrSecret),
       { name: "HMAC", hash: "SHA-256" },
       false,
       ["sign"]
     );
     const signature = await crypto.subtle.sign("HMAC", key, enc.encode(message));
-    return Array.from(new Uint8Array(signature))
+    const hex = Array.from(new Uint8Array(signature))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
+    return `${keyId}:${hex}`;
   }
 
-  // Fallback for Node without crypto.subtle (dynamic require)
   try {
     const nodeCrypto = await import("crypto");
-    return nodeCrypto.createHmac("sha256", salt).update(message).digest("hex");
-  } catch (err) {
+    const hex = nodeCrypto.createHmac("sha256", saltOrSecret).update(message).digest("hex");
+    return `${keyId}:${hex}`;
+  } catch {
     throw new Error("No cryptographic provider available for HMAC computation");
   }
 }

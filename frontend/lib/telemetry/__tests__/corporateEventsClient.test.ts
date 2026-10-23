@@ -9,7 +9,7 @@ import {
   dispatchCorporateEventTelemetry,
 } from "../corporateEventsClient";
 
-describe("Corporate Events Telemetry Client Helper", () => {
+describe("Corporate Events Telemetry Client Helper (v1.1.0 Hardened)", () => {
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const AUTH_SHA = "8404b6e4645b5f9f8237e70517dcab3b6afdda7f";
 
@@ -64,6 +64,7 @@ describe("Corporate Events Telemetry Client Helper", () => {
       expect(payload.evaluation_id).toBeDefined();
       expect(payload.evaluation_id).toMatch(UUID_REGEX);
       expect(payload.occurred_at_utc).toBeDefined();
+      expect(payload.schema_version).toBe("1.1.0");
     });
 
     it("preserves evaluation_id across multiple retries while assigning distinct delivery_attempt_id", () => {
@@ -93,8 +94,8 @@ describe("Corporate Events Telemetry Client Helper", () => {
     });
   });
 
-  describe("Gate E: Transport Dispatch & Fail-Open Behavior", () => {
-    it("dispatches via sendBeacon when available and returns accepted", async () => {
+  describe("Gate B & E: Transport Dispatch & Acknowledgment States", () => {
+    it("dispatches via sendBeacon when available with status RECEIVED and unknown persistence", async () => {
       (navigator.sendBeacon as any).mockReturnValue(true);
 
       const payload = assembleCorporateEventPayload({
@@ -107,20 +108,31 @@ describe("Corporate Events Telemetry Client Helper", () => {
       const envelope = buildTransportEnvelope(payload);
 
       const res = await dispatchCorporateEventTelemetry(envelope);
-      expect(res.status).toBe("ACCEPTED");
+      expect(res.contract_version).toBe("1.1.0");
+      expect(res.status).toBe("RECEIVED");
       expect(res.accepted).toBe(true);
+      expect(res.persisted).toBe("UNKNOWN");
       expect(navigator.sendBeacon).toHaveBeenCalledWith(
         "/api/telemetry/events",
         expect.any(String)
       );
     });
 
-    it("falls back to fetch when sendBeacon returns false", async () => {
+    it("falls back to fetch when sendBeacon returns false and parses PERSISTED response", async () => {
       (navigator.sendBeacon as any).mockReturnValue(false);
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        text: () => Promise.resolve(JSON.stringify({ status: "ACCEPTED", forwarded: true })),
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({
+              contract_version: "1.1.0",
+              status: "PERSISTED",
+              accepted: true,
+              forwarded: true,
+              persisted: "CONFIRMED",
+            })
+          ),
       });
 
       const payload = assembleCorporateEventPayload({
@@ -133,12 +145,47 @@ describe("Corporate Events Telemetry Client Helper", () => {
       const envelope = buildTransportEnvelope(payload);
 
       const res = await dispatchCorporateEventTelemetry(envelope);
-      expect(res.status).toBe("ACCEPTED");
+      expect(res.status).toBe("PERSISTED");
       expect(res.accepted).toBe(true);
+      expect(res.forwarded).toBe(true);
+      expect(res.persisted).toBe("CONFIRMED");
       expect(global.fetch).toHaveBeenCalled();
     });
 
-    it("fails open on network exception without throwing", async () => {
+    it("respects DISABLED response from gateway and does not report accepted", async () => {
+      (navigator.sendBeacon as any).mockReturnValue(false);
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({
+              contract_version: "1.1.0",
+              status: "DISABLED",
+              accepted: false,
+              forwarded: false,
+              persisted: "NOT_PERSISTED",
+            })
+          ),
+      });
+
+      const payload = assembleCorporateEventPayload({
+        symbol: "AAPL",
+        release_sha: AUTH_SHA,
+        days_to_earnings: 5.0,
+        risk_bucket: "CAUTION",
+        applied_penalty: -8.0,
+      });
+      const envelope = buildTransportEnvelope(payload);
+
+      const res = await dispatchCorporateEventTelemetry(envelope);
+      expect(res.status).toBe("DISABLED");
+      expect(res.accepted).toBe(false);
+      expect(res.forwarded).toBe(false);
+      expect(res.persisted).toBe("NOT_PERSISTED");
+    });
+
+    it("fails open on network exception without throwing, marking OUTCOME_UNKNOWN", async () => {
       (navigator.sendBeacon as any).mockReturnValue(false);
       global.fetch = vi.fn().mockRejectedValue(new Error("Failed to fetch (offline)"));
 
@@ -153,7 +200,9 @@ describe("Corporate Events Telemetry Client Helper", () => {
 
       const res = await dispatchCorporateEventTelemetry(envelope);
       expect(res.accepted).toBe(false);
-      expect(res.status).toBe("UPSTREAM_UNAVAILABLE");
+      expect(res.status).toBe("OUTCOME_UNKNOWN");
+      expect(res.persisted).toBe("UNKNOWN");
+      expect(res.retryable).toBe(true);
       expect(res.rejection_reason).toContain("offline");
     });
   });

@@ -1,5 +1,5 @@
 /**
- * ARX Terminal — Corporate Events Telemetry Client Helper.
+ * ARX Terminal — Corporate Events Telemetry Client Helper (v1.1.0 Hardened).
  *
  * Implements frozen evaluation identity across transmission retries,
  * separate delivery attempt tracking, and fail-open transport dispatch.
@@ -9,6 +9,8 @@ import {
   CorporateEventCanonicalPayload,
   CorporateEventTransportEnvelope,
   GatewayResponse,
+  AcknowledgmentStatus,
+  PersistenceState,
 } from "../../types/corporate-events-telemetry";
 
 export const CORPORATE_EVENTS_TELEMETRY_ENDPOINT = "/api/telemetry/events";
@@ -79,6 +81,7 @@ export interface CreateEvaluationParams {
   ruleset_version?: "RC5" | "RC4";
   occurred_at_utc?: string;
   evaluation_id?: string;
+  canonical_digest?: string;
 }
 
 /**
@@ -91,7 +94,7 @@ export function assembleCorporateEventPayload(
   const occurredAt = params.occurred_at_utc || new Date().toISOString();
 
   return {
-    schema_version: "1.0.0",
+    schema_version: "1.1.0",
     event_id: generateUuidV4(),
     occurred_at_utc: occurredAt,
     release_sha: params.release_sha.toLowerCase(),
@@ -108,28 +111,30 @@ export function assembleCorporateEventPayload(
     applied_penalty: params.applied_penalty,
     evaluation_outcome: params.evaluation_outcome || "COMPLETED",
     evaluation_id: evalId,
+    canonical_digest: params.canonical_digest,
   };
 }
 
 /**
- * Constructs a transport envelope for dispatch, retaining the evaluation_id
+ * Constructs a transport envelope for dispatch, retaining the frozen evaluation_id
  * while generating a distinct delivery_attempt_id.
  */
 export function buildTransportEnvelope(
   payload: CorporateEventCanonicalPayload,
-  isRetry = false
+  _isRetry = false
 ): CorporateEventTransportEnvelope {
   const now = new Date();
   const isSynthetic =
     typeof window !== "undefined" && Boolean((window as any).__ARX_SYNTHETIC__);
 
   return {
-    transport_version: "1.0.0",
+    transport_version: "1.1.0",
     evaluation_id: payload.evaluation_id || payload.event_id,
     delivery_attempt_id: generateUuidV4(),
     client_timestamp: now.toISOString(),
     client_epoch_ms: now.getTime(),
     synthetic_marker: isSynthetic,
+    canonical_digest: payload.canonical_digest,
     payload,
   };
 }
@@ -150,12 +155,16 @@ export async function dispatchCorporateEventTelemetry(
       const beaconSent = navigator.sendBeacon(endpoint, serialized);
       if (beaconSent) {
         return {
-          status: "ACCEPTED",
+          contract_version: "1.1.0",
+          status: "RECEIVED",
           accepted: true,
           forwarded: false,
+          persisted: "UNKNOWN",
+          retryable: false,
           evaluation_id: envelope.evaluation_id,
           delivery_attempt_id: envelope.delivery_attempt_id,
-          message: "Dispatched via sendBeacon",
+          canonical_digest: envelope.canonical_digest,
+          message: "Dispatched via sendBeacon; downstream persistence unknown",
         };
       }
     } catch {
@@ -182,40 +191,61 @@ export async function dispatchCorporateEventTelemetry(
       }
 
       if (resp.ok) {
+        const status = (parsedJson.status as AcknowledgmentStatus) || "RECEIVED";
+        const accepted = typeof parsedJson.accepted === "boolean" ? parsedJson.accepted : true;
+        const forwarded = Boolean(parsedJson.forwarded);
+        const persisted = (parsedJson.persisted as PersistenceState) || "UNKNOWN";
+
         return {
-          status: (parsedJson.status as any) || "ACCEPTED",
-          accepted: true,
-          forwarded: Boolean(parsedJson.forwarded),
+          contract_version: "1.1.0",
+          status,
+          accepted,
+          forwarded,
+          persisted,
+          retryable: Boolean(parsedJson.retryable),
           evaluation_id: envelope.evaluation_id,
           delivery_attempt_id: envelope.delivery_attempt_id,
+          deduplication_key: parsedJson.deduplication_key as string | undefined,
+          canonical_digest: envelope.canonical_digest,
           message: String(parsedJson.message || "Delivered successfully"),
         };
       }
 
       return {
-        status: resp.status === 400 ? "REJECTED_MALFORMED" : "UPSTREAM_UNAVAILABLE",
+        contract_version: "1.1.0",
+        status: (parsedJson.status as AcknowledgmentStatus) || (resp.status === 400 ? "REJECTED" : "TEMPORARILY_UNAVAILABLE"),
         accepted: false,
         forwarded: false,
+        persisted: "NOT_PERSISTED",
+        retryable: resp.status >= 500 || resp.status === 429,
         evaluation_id: envelope.evaluation_id,
         delivery_attempt_id: envelope.delivery_attempt_id,
-        rejection_reason: String(parsedJson.error || `HTTP ${resp.status}`),
+        error_code: String(parsedJson.error_code || `HTTP_${resp.status}`),
+        rejection_reason: String(parsedJson.error || parsedJson.message || `HTTP ${resp.status}`),
       };
     } catch (err) {
       return {
-        status: "UPSTREAM_UNAVAILABLE",
+        contract_version: "1.1.0",
+        status: "OUTCOME_UNKNOWN",
         accepted: false,
         forwarded: false,
+        persisted: "UNKNOWN",
+        retryable: true,
         evaluation_id: envelope.evaluation_id,
         delivery_attempt_id: envelope.delivery_attempt_id,
+        error_code: "CLIENT_DISPATCH_EXCEPTION",
         rejection_reason: `Network dispatch failed: ${String(err)}`,
       };
     }
   }
 
   return {
+    contract_version: "1.1.0",
     status: "DISABLED",
     accepted: false,
     forwarded: false,
+    persisted: "NOT_PERSISTED",
+    retryable: false,
     evaluation_id: envelope.evaluation_id,
     delivery_attempt_id: envelope.delivery_attempt_id,
     message: "No HTTP transport available",
