@@ -773,6 +773,175 @@ async function testFetchScreenerGemsTransformation() {
     assert.strictEqual(getPublicationIntegrityLabel(undefined), "Publication Integrity: Not verified");
     console.log("   [PASS] 8.5: Null/undefined capability -> 'Publication Integrity: Not verified'");
 
+    // ---------------------------------------------------------------------------
+    // 9. Sprint 3 Finding-P1-001 & P1-002 & P2-001 Invariant Regression Suite
+    // ---------------------------------------------------------------------------
+    console.log("\n9. Verifying Sprint 3 Value/GARP Dynamic Catalog Contract & Invariants...");
+
+    // 9.1: Curated reference catalog without matchedCount retains AVAILABLE
+    const s3GarpDynamic = normalizeRadarCapabilities({
+      VALUE_GARP: {
+        status: "AVAILABLE",
+        universeScreening: "AVAILABLE",
+        singleAssetAnalysis: "AVAILABLE",
+        catalogType: "CURATED_REFERENCE_CATALOG",
+        countAuthority: "DYNAMIC_CATALOG",
+      },
+      VCP: {
+        status: "PIPELINE_PENDING",
+        universeScreening: "PIPELINE_PENDING",
+        singleAssetAnalysis: "AVAILABLE",
+      },
+    });
+    assert.strictEqual(s3GarpDynamic.VALUE_GARP.status, "AVAILABLE");
+    assert.strictEqual(s3GarpDynamic.VALUE_GARP.universeScreening, "AVAILABLE");
+    assert.strictEqual(s3GarpDynamic.VALUE_GARP.matchedCount, null, "Dynamic catalog without pre-aggregated count must preserve matchedCount=null (not fabricated 0)");
+    assert.strictEqual(s3GarpDynamic.VALUE_GARP.catalogType, "CURATED_REFERENCE_CATALOG");
+    assert.strictEqual(s3GarpDynamic.VALUE_GARP.countAuthority, "DYNAMIC_CATALOG");
+    console.log("   [PASS] 9.1: Curated reference catalog without pre-aggregated matchedCount evaluates to AVAILABLE with DYNAMIC_CATALOG authority");
+
+    // 9.2: Curated reference catalog with valid integer matchedCount preserves it
+    const s3GarpWithCount = normalizeRadarCapabilities({
+      VALUE_GARP: {
+        status: "AVAILABLE",
+        universeScreening: "AVAILABLE",
+        singleAssetAnalysis: "AVAILABLE",
+        catalogType: "CURATED_REFERENCE_CATALOG",
+        matchedCount: 16,
+      },
+    });
+    assert.strictEqual(s3GarpWithCount.VALUE_GARP.universeScreening, "AVAILABLE");
+    assert.strictEqual(s3GarpWithCount.VALUE_GARP.matchedCount, 16);
+    console.log("   [PASS] 9.2: Curated reference catalog with explicit valid matchedCount preserves count");
+
+    // 9.3: Curated reference catalog with malformed negative count fails closed
+    const s3GarpNegative = normalizeRadarCapabilities({
+      VALUE_GARP: {
+        status: "AVAILABLE",
+        universeScreening: "AVAILABLE",
+        singleAssetAnalysis: "AVAILABLE",
+        catalogType: "CURATED_REFERENCE_CATALOG",
+        matchedCount: -5,
+      },
+    });
+    assert.strictEqual(s3GarpNegative.VALUE_GARP.universeScreening, "PIPELINE_PENDING");
+    assert.strictEqual(s3GarpNegative.VALUE_GARP.matchedCount, null);
+    console.log("   [PASS] 9.3: Curated reference catalog with malformed negative matchedCount fails closed to PIPELINE_PENDING");
+
+    // 9.4: Curated reference catalog with boolean count fails closed
+    const s3GarpBool = normalizeRadarCapabilities({
+      VALUE_GARP: {
+        status: "AVAILABLE",
+        universeScreening: "AVAILABLE",
+        singleAssetAnalysis: "AVAILABLE",
+        catalogType: "CURATED_REFERENCE_CATALOG",
+        matchedCount: true as unknown as number,
+      },
+    });
+    assert.strictEqual(s3GarpBool.VALUE_GARP.universeScreening, "PIPELINE_PENDING");
+    assert.strictEqual(s3GarpBool.VALUE_GARP.matchedCount, null);
+    console.log("   [PASS] 9.4: Curated reference catalog with boolean matchedCount fails closed to PIPELINE_PENDING");
+
+    // 9.5: Curated reference catalog with rollback fails closed
+    const s3GarpRollback = normalizeRadarCapabilities({
+      VALUE_GARP: {
+        status: "AVAILABLE",
+        universeScreening: "AVAILABLE",
+        singleAssetAnalysis: "AVAILABLE",
+        catalogType: "CURATED_REFERENCE_CATALOG",
+        isRollback: true,
+        rollbackReason: "Candidate data integrity alert",
+      },
+    });
+    assert.strictEqual(s3GarpRollback.VALUE_GARP.universeScreening, "PIPELINE_PENDING");
+    assert.strictEqual(s3GarpRollback.VALUE_GARP.matchedCount, null);
+    assert.strictEqual(s3GarpRollback.VALUE_GARP.publicationIntegrity, "ROLLBACK");
+    console.log("   [PASS] 9.5: Curated reference catalog with isRollback=true strictly fails closed to PIPELINE_PENDING");
+
+    // 9.6: Publication snapshot (VCP) without matchedCount strictly fails closed to PIPELINE_PENDING
+    const s3VcpNoCount = normalizeRadarCapabilities({
+      VCP: {
+        status: "AVAILABLE",
+        universeScreening: "AVAILABLE",
+        singleAssetAnalysis: "AVAILABLE",
+        matchedCount: null,
+      },
+    });
+    assert.strictEqual(s3VcpNoCount.VCP.universeScreening, "PIPELINE_PENDING", "Count requirement must NEVER be relaxed for VCP");
+    assert.strictEqual(s3VcpNoCount.VCP.matchedCount, null);
+    console.log("   [PASS] 9.6: Publication snapshot (VCP) without matchedCount strictly fails closed (invariants protected)");
+
+    // 9.7: Publication snapshot (SMART_MONEY) without matchedCount strictly fails closed
+    const s3SmNoCount = normalizeRadarCapabilities({
+      SMART_MONEY: {
+        status: "AVAILABLE",
+        universeScreening: "AVAILABLE",
+        singleAssetAnalysis: "AVAILABLE",
+        matchedCount: null,
+      },
+    });
+    assert.strictEqual(s3SmNoCount.SMART_MONEY.universeScreening, "PIPELINE_PENDING", "Count requirement must NEVER be relaxed for SMART_MONEY");
+    assert.strictEqual(s3SmNoCount.SMART_MONEY.matchedCount, null);
+    console.log("   [PASS] 9.7: Publication snapshot (SMART_MONEY) without matchedCount strictly fails closed");
+
+    // 9.8: Cross-strategy isolation: VALUE_GARP availability does NOT leak to VCP or SMART_MONEY
+    assert.strictEqual(s3GarpDynamic.VCP.universeScreening, "PIPELINE_PENDING");
+    assert.strictEqual(s3GarpDynamic.VCP.matchedCount, null);
+    assert.strictEqual(s3GarpDynamic.SMART_MONEY.universeScreening, "PIPELINE_PENDING");
+    assert.strictEqual(s3GarpDynamic.SMART_MONEY.matchedCount, null);
+    console.log("   [PASS] 9.8: Zero cross-strategy leakage: VALUE_GARP dynamic availability is strictly isolated");
+
+    // 9.9: Static Invariant Verification on Sprint 3 Remediations
+    const updatedRadarSource = fs.readFileSync(radarPath, "utf8");
+    const pageIntroPath = path.join(__dirname, "../components/PageIntro.tsx");
+    const pageIntroSource = fs.readFileSync(pageIntroPath, "utf8");
+
+    // P1-002: Screening price provenance labeling
+    assert.ok(
+      updatedRadarSource.includes("Screen Price:"),
+      "FAIL: Radar hero card must explicitly label 'Screen Price:'"
+    );
+    assert.ok(
+      updatedRadarSource.includes("(Prior Close)"),
+      "FAIL: Radar hero card must explicitly state '(Prior Close)'"
+    );
+    assert.ok(
+      updatedRadarSource.includes("title=\"Batch screening price from prior session close. Live spot quotes active in Analysis hub.\""),
+      "FAIL: Radar hero card must explain prior session close price vs live spot quotes in tooltip"
+    );
+    assert.ok(
+      updatedRadarSource.includes("Screen Price <span className=\"text-[9px] font-normal text-slate-500 lowercase\">(prior close)</span>"),
+      "FAIL: Radar table must explicitly label 'Screen Price (prior close)'"
+    );
+    console.log("   [PASS] 9.9: P1-002 price provenance and session labeling statically verified");
+
+    // P2-001: Mobile touch target dimension enforcement (>= 44px)
+    assert.ok(
+      updatedRadarSource.includes("onClick={() => setSortBy('SCORE')}\n                  title=\"Sort by Confluence Score (Technical execution setup, RSI momentum, and smart money flow — not intrinsic valuation discount)\"\n                  className={`focus-ring px-3 py-2 min-h-[44px]"),
+      "FAIL: Score sort button must enforce min-h-[44px]"
+    );
+    assert.ok(
+      updatedRadarSource.includes("onClick={() => setSortBy('RVOL')}\n                  className={`focus-ring px-3 py-2 min-h-[44px] min-w-[44px]"),
+      "FAIL: RVOL sort button must enforce min-h-[44px] min-w-[44px]"
+    );
+    assert.ok(
+      updatedRadarSource.includes("onClick={() => setSortBy('PRICE')}\n                  className={`focus-ring px-3 py-2 min-h-[44px] min-w-[44px]"),
+      "FAIL: Price sort button must enforce min-h-[44px] min-w-[44px]"
+    );
+    assert.ok(
+      updatedRadarSource.includes("className={`px-3 py-2 min-h-[44px] min-w-[44px] rounded text-[11px] font-bold font-mono transition-colors inline-flex items-center justify-center"),
+      "FAIL: Table action link must enforce min-h-[44px] min-w-[44px]"
+    );
+    assert.ok(
+      pageIntroSource.includes("className=\"px-3.5 py-2 min-h-[44px] min-w-[44px] rounded-xl bg-slate-800"),
+      "FAIL: PageIntro secondaryAction must enforce min-h-[44px] min-w-[44px]"
+    );
+    assert.ok(
+      pageIntroSource.includes("className=\"focus-ring px-4 py-2 min-h-[44px] min-w-[44px] rounded-xl bg-cyan-600"),
+      "FAIL: PageIntro primaryAction must enforce min-h-[44px] min-w-[44px]"
+    );
+    console.log("   [PASS] 9.10: P2-001 mobile interactive touch targets (>= 44x44px) statically verified");
+
   } finally {
     globalThis.fetch = originalFetch;
   }

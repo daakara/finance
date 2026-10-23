@@ -92,7 +92,7 @@ export default function PageIntro({
           secondaryAction.href ? (
             <Link
               href={secondaryAction.href}
-              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-all border border-slate-700 flex items-center gap-1.5 cursor-pointer hover:border-slate-600 active:scale-95"
+              className="px-3.5 py-2 min-h-[44px] min-w-[44px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-all border border-slate-700 inline-flex items-center justify-center gap-1.5 cursor-pointer hover:border-slate-600 active:scale-95"
             >
               {secondaryAction.icon}
               <span>{secondaryAction.label}</span>
@@ -101,7 +101,7 @@ export default function PageIntro({
             <button
               type="button"
               onClick={secondaryAction.onClick}
-              className="focus-ring px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-all border border-slate-700 flex items-center gap-1.5 cursor-pointer hover:border-slate-600 active:scale-95"
+              className="focus-ring px-3.5 py-2 min-h-[44px] min-w-[44px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-all border border-slate-700 inline-flex items-center justify-center gap-1.5 cursor-pointer hover:border-slate-600 active:scale-95"
             >
               {secondaryAction.icon}
               <span>{secondaryAction.label}</span>
@@ -114,7 +114,7 @@ export default function PageIntro({
             <Link
               href={primaryAction.href}
               onClick={primaryAction.onClick}
-              className="focus-ring px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-slate-950 text-xs font-mono font-black tracking-tight transition-all border border-cyan-500/40 flex items-center gap-1.5 cursor-pointer active:scale-95"
+              className="focus-ring px-4 py-2 min-h-[44px] min-w-[44px] rounded-xl bg-cyan-600 hover:bg-cyan-500 text-slate-950 text-xs font-mono font-black tracking-tight transition-all border border-cyan-500/40 inline-flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
             >
               {primaryAction.icon}
               <span>{primaryAction.label}</span>
@@ -123,7 +123,7 @@ export default function PageIntro({
             <button
               type="button"
               onClick={primaryAction.onClick}
-              className="focus-ring px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-slate-950 text-xs font-mono font-black tracking-tight transition-all border border-cyan-500/40 flex items-center gap-1.5 cursor-pointer active:scale-95"
+              className="focus-ring px-4 py-2 min-h-[44px] min-w-[44px] rounded-xl bg-cyan-600 hover:bg-cyan-500 text-slate-950 text-xs font-mono font-black tracking-tight transition-all border border-cyan-500/40 inline-flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
             >
               {primaryAction.icon}
               <span>{primaryAction.label}</span>

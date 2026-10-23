@@ -724,6 +724,9 @@ export interface RadarCapabilityDetail {
   universeScreening: RadarCapabilityStatus;
   singleAssetAnalysis: RadarCapabilityStatus;
   rationale?: string;
+  catalogType?: "CURATED_REFERENCE_CATALOG" | string | null;
+  countAuthority?: "DYNAMIC_CATALOG" | "PUBLICATION_SNAPSHOT" | string | null;
+  sortingSemantics?: string | null;
   matchedCount?: number | null;
   dataAsOf?: string;
   generatedAt?: string;
@@ -749,6 +752,9 @@ export const DEFAULT_RADAR_CAPABILITIES: RadarCapabilities = {
     status: "AVAILABLE",
     universeScreening: "AVAILABLE",
     singleAssetAnalysis: "AVAILABLE",
+    catalogType: "CURATED_REFERENCE_CATALOG",
+    countAuthority: "DYNAMIC_CATALOG",
+    sortingSemantics: "CONFLUENCE_TECHNICAL_FLOW",
     rationale: "Authentic multi-factor fundamental screening active across known candidate universe.",
     matchedCount: null,
     populationDenominator: null,
@@ -825,6 +831,9 @@ export function normalizeRadarCapabilities(
         status: "PIPELINE_PENDING",
         universeScreening: "PIPELINE_PENDING",
         singleAssetAnalysis: "AVAILABLE",
+        catalogType: raw.catalogType || DEFAULT_RADAR_CAPABILITIES[cat].catalogType || null,
+        countAuthority: raw.countAuthority || DEFAULT_RADAR_CAPABILITIES[cat].countAuthority || null,
+        sortingSemantics: raw.sortingSemantics || DEFAULT_RADAR_CAPABILITIES[cat].sortingSemantics || null,
         matchedCount: null,
         populationDenominator: typeof raw.populationDenominator === "number" ? raw.populationDenominator : null,
         universeBuildId: raw.universeBuildId ?? null,
@@ -847,7 +856,26 @@ export function normalizeRadarCapabilities(
       Number.isInteger(raw.matchedCount) &&
       raw.matchedCount >= 0;
 
-    const isAvailable = (raw.universeScreening === "AVAILABLE" || raw.status === "AVAILABLE") && hasValidMatchedCount;
+    // Fail closed on explicit malformed count (e.g. negative numbers, boolean, NaN, non-integers)
+    const hasMalformedMatchedCount =
+      raw.matchedCount !== undefined &&
+      raw.matchedCount !== null &&
+      !hasValidMatchedCount;
+
+    // Distinguish curated reference catalogs from publication snapshots:
+    // Curated reference catalogs (VALUE_GARP) qualify candidates dynamically from the candidate pool;
+    // they do NOT require a pre-aggregated publication matchedCount.
+    // Publication snapshots (VCP, SMART_MONEY) strictly require an authentic non-negative matchedCount.
+    const isCuratedCatalog =
+      (raw.catalogType === "CURATED_REFERENCE_CATALOG" ||
+       raw.countAuthority === "DYNAMIC_CATALOG" ||
+       cat === "VALUE_GARP") &&
+      !hasMalformedMatchedCount;
+
+    const isAvailable =
+      (raw.universeScreening === "AVAILABLE" || raw.status === "AVAILABLE") &&
+      !hasMalformedMatchedCount &&
+      (hasValidMatchedCount || isCuratedCatalog);
 
     // Truthful Publication Integrity evaluation:
     // Verified ONLY when explicit authoritative attestation is present.
@@ -865,8 +893,11 @@ export function normalizeRadarCapabilities(
       status: isAvailable ? "AVAILABLE" : (raw.status === "AVAILABLE" ? "PIPELINE_PENDING" : (raw.status || DEFAULT_RADAR_CAPABILITIES[cat].status)),
       universeScreening: isAvailable ? "AVAILABLE" : (raw.universeScreening === "AVAILABLE" ? "PIPELINE_PENDING" : (raw.universeScreening || DEFAULT_RADAR_CAPABILITIES[cat].universeScreening)),
       singleAssetAnalysis: raw.singleAssetAnalysis || DEFAULT_RADAR_CAPABILITIES[cat].singleAssetAnalysis,
+      catalogType: raw.catalogType || DEFAULT_RADAR_CAPABILITIES[cat].catalogType || null,
+      countAuthority: raw.countAuthority || (isCuratedCatalog ? "DYNAMIC_CATALOG" : "PUBLICATION_SNAPSHOT"),
+      sortingSemantics: raw.sortingSemantics || DEFAULT_RADAR_CAPABILITIES[cat].sortingSemantics || null,
       rationale: raw.rationale || DEFAULT_RADAR_CAPABILITIES[cat].rationale,
-      matchedCount: isAvailable ? raw.matchedCount : null,
+      matchedCount: hasValidMatchedCount ? raw.matchedCount : null,
       dataAsOf: raw.dataAsOf,
       generatedAt: raw.generatedAt,
       snapshotId: raw.snapshotId,

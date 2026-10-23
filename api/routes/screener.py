@@ -129,6 +129,7 @@ RADAR_CAPABILITY_CONTRACT = {
         "universeScreening": "AVAILABLE",
         "singleAssetAnalysis": "AVAILABLE",
         "catalogType": "CURATED_REFERENCE_CATALOG",
+        "countAuthority": "DYNAMIC_CATALOG",
         "sortingSemantics": "CONFLUENCE_TECHNICAL_FLOW",
         "rationale": "Curated multi-factor fundamental reference catalog active; candidates sorted by technical and macro confluence score rather than intrinsic valuation discount.",
     },
