@@ -1257,16 +1257,17 @@ function RadarContent() {
         )}
 
         {/* Level 1: Dense Confluence Stream Table (Tabpanel) */}
-        <div
-          role="tabpanel"
-          id="panel-radar-candidates"
-          aria-label="Radar Confluence Candidates"
-          tabIndex={0}
-          className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden shadow-xl focus-ring"
-        >
-          <div className="overflow-x-auto">
-            <table className="w-full text-left font-mono text-xs">
-              <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 text-[10px] uppercase tracking-wider">
+        {!fetchError && (
+          <div
+            role="tabpanel"
+            id="panel-radar-candidates"
+            aria-label="Radar Confluence Candidates"
+            tabIndex={0}
+            className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden shadow-xl focus-ring"
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full text-left font-mono text-xs">
+                <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 text-[10px] uppercase tracking-wider">
                 <tr>
                   <th className="p-3 sticky left-0 bg-slate-950 z-10 min-w-[130px]">Asset</th>
                   <th className="p-3 min-w-[140px]">Screening Status</th>
@@ -1554,6 +1555,7 @@ function RadarContent() {
             </table>
           </div>
         </div>
+        )}
       </div>
     </TerminalShell>
   );
