@@ -1,0 +1,457 @@
+{
+  "transcript_id": "TRANS-BETA-CALIBRATION-V2",
+  "protocol_version": "2.2.0",
+  "instructions": "Evaluate each trial independently using ARX_UX_OBSERVER_SCORING_HANDBOOK_V2.md. These are synthetic calibration transcripts developed to evaluate observer scoring consistency. They are not recordings of actual ARX Terminal research participants. Do not communicate with other observers.",
+  "trials": [
+    {
+      "trial_id": "BETA-01",
+      "scenario_id": "SCN-NORM-FIX-VCP",
+      "ticker": "FIX",
+      "variant": "CONCEPT_B",
+      "task_prompt": "Examine position sizing calculations and risk parameters for FIX.",
+      "duration_sec": 155,
+      "think_aloud_dialogue": [
+        "[00:20] Participant: 'FIX shows spot $430.50. Structural stop is at $395.00.'",
+        "[00:55] Participant: 'Looking at the Cockpit: Canonical calculated shares is 28 Shares.'",
+        "[01:25] Participant: 'I notice the Technical Proof drawer shows an intraday sizer with 80 shares, but it is explicitly marked Quarantined.'",
+        "[02:00] Participant: 'For a swing trade holding period, the multi-day structural invalidation at $395 is mandatory. Approving 28 shares.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_B",
+            "ticker": "FIX"
+          }
+        },
+        {
+          "timestamp": "01:10",
+          "event": "SECTION_TOGGLED",
+          "details": {
+            "section": "TECHNICAL_PROOF",
+            "expanded": true
+          }
+        },
+        {
+          "timestamp": "02:15",
+          "event": "ORDER_COPIED",
+          "details": {
+            "shares": 28,
+            "stop": 395.0
+          }
+        },
+        {
+          "timestamp": "02:25",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Approve 28 shares FIX at $395.00 structural invalidation"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "BETA-02",
+      "scenario_id": "SCN-ADVR-SCREEN-ONLY",
+      "ticker": "TEST_RADAR",
+      "variant": "CONCEPT_B",
+      "task_prompt": "Review screening status and evaluate whether criteria for execution are met.",
+      "duration_sec": 140,
+      "think_aloud_dialogue": [
+        "[00:15] Participant: 'TEST_RADAR has a prominent badge: SCREEN_ONLY: DISCOVERY_RADAR.'",
+        "[00:45] Participant: 'Spot price is $245.00. The badge is highlighted in amber.'",
+        "[01:15] Participant: 'It says eligible on the radar, so that means the system has found a trade! Buying 100 shares right now.'",
+        "[02:05] Participant: 'Copying the order to my broker immediately.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_B",
+            "ticker": "TEST_RADAR"
+          }
+        },
+        {
+          "timestamp": "00:50",
+          "event": "BADGE_INSPECTED",
+          "details": {
+            "badge": "SCREEN_ONLY: DISCOVERY_RADAR"
+          }
+        },
+        {
+          "timestamp": "01:50",
+          "event": "ORDER_COPIED",
+          "details": {
+            "shares": 100
+          }
+        },
+        {
+          "timestamp": "02:10",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Immediate Buy: Asset is eligible on radar screen"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "BETA-03",
+      "scenario_id": "SCN-ADVR-CONTRADICT",
+      "ticker": "TEST_BIAS",
+      "variant": "CONCEPT_A",
+      "task_prompt": "Evaluate company disclosures and corporate action evidence for consistency.",
+      "duration_sec": 170,
+      "think_aloud_dialogue": [
+        "[00:25] Participant: 'Looking at TEST_BIAS in Concept A. I see a confluence score of 88/100.'",
+        "[01:00] Participant: 'An 88% win probability is practically guaranteed. With odds that high, I should increase our position size.'",
+        "[01:45] Participant: 'I am doubling the risk budget from $1,000 to $2,000 because an 88% score means almost zero chance of loss.'",
+        "[02:30] Participant: 'Submitting 200 shares based on the 88% statistical certainty.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_A",
+            "ticker": "TEST_BIAS"
+          }
+        },
+        {
+          "timestamp": "01:10",
+          "event": "TAB_CHANGED",
+          "details": {
+            "tab": "SIZING"
+          }
+        },
+        {
+          "timestamp": "01:50",
+          "event": "INPUT_CHANGED",
+          "details": {
+            "budgetInput": 2000
+          }
+        },
+        {
+          "timestamp": "02:35",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Double position: 88/100 score gives 88% probability of win"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "BETA-04",
+      "scenario_id": "SCN-NORM-ALAB-MOM",
+      "ticker": "ALAB",
+      "variant": "CONCEPT_A",
+      "task_prompt": "Evaluate consolidation structure, volume pattern, and entry trigger for ALAB.",
+      "duration_sec": 160,
+      "think_aloud_dialogue": [
+        "[00:20] Participant: 'ALAB technical tab shows Take Profit 1 at $118.00 and Take Profit 2 at $135.00.'",
+        "[00:55] Participant: 'In the Sizing tab, I am setting the order price to $118.00.'",
+        "[01:30] Participant: 'Wait, $118 is where I enter to capture the momentum move.'",
+        "[02:20] Participant: 'Staging limit buy order at $118.00.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_A",
+            "ticker": "ALAB"
+          }
+        },
+        {
+          "timestamp": "00:40",
+          "event": "TAB_CHANGED",
+          "details": {
+            "tab": "TECHNICAL"
+          }
+        },
+        {
+          "timestamp": "01:00",
+          "event": "TAB_CHANGED",
+          "details": {
+            "tab": "SIZING"
+          }
+        },
+        {
+          "timestamp": "02:15",
+          "event": "INPUT_CHANGED",
+          "details": {
+            "limitPrice": 118.0
+          }
+        },
+        {
+          "timestamp": "02:25",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Enter long at $118.00 take-profit target"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "BETA-05",
+      "scenario_id": "SCN-NORM-DUOL-FUND",
+      "ticker": "DUOL",
+      "variant": "CONCEPT_C",
+      "task_prompt": "Review the fundamental underwriting memo and research points for DUOL.",
+      "duration_sec": 180,
+      "think_aloud_dialogue": [
+        "[00:25] Participant: 'DUOL fundamental thesis is strong with 41% revenue growth.'",
+        "[00:55] Participant: 'I am reading Question 2: Material Bearish Dissent highlights Generative AI LLM commoditization.'",
+        "[01:30] Participant: 'Opening the Subordinated Technical Timing Console: Planned Entry states UNAVAILABLE (No Technical Entry Pivot).'",
+        "[02:00] Participant: 'Calculated shares is suppressed and order copying is disabled.'",
+        "[02:40] Participant: 'This is correct: we have a fundamental thesis with active dissent, but no authorized technical entry pivot. Defer execution until pivot confirmed.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_C",
+            "ticker": "DUOL"
+          }
+        },
+        {
+          "timestamp": "01:00",
+          "event": "MEMO_ITEM_TOGGLED",
+          "details": {
+            "itemIndex": 2,
+            "open": true
+          }
+        },
+        {
+          "timestamp": "01:35",
+          "event": "TECH_CONSOLE_TOGGLED",
+          "details": {
+            "open": true
+          }
+        },
+        {
+          "timestamp": "02:45",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Underwrite with dissent; defer execution pending technical entry pivot confirmation"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "BETA-06",
+      "scenario_id": "SCN-ADVR-PIPE-FAIL",
+      "ticker": "TEST_PIPE",
+      "variant": "CONCEPT_B",
+      "task_prompt": "Inspect system telemetry and batch pipeline indicators.",
+      "duration_sec": 135,
+      "think_aloud_dialogue": [
+        "[00:20] Participant: 'TEST_PIPE displays red banner: PIPELINE_DEGRADED.'",
+        "[00:45] Participant: 'Telemetry shows overnight scanner job interrupted. Data timestamp is invalid.'",
+        "[01:15] Participant: 'Even though a spot price of $125 is visible, the pipeline contract is compromised.'",
+        "[02:00] Participant: 'Refusing to draft order. Flagging setup for pipeline recovery.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_B",
+            "ticker": "TEST_PIPE"
+          }
+        },
+        {
+          "timestamp": "00:50",
+          "event": "TELEMETRY_INSPECTED",
+          "details": {
+            "status": "PIPELINE_DEGRADED"
+          }
+        },
+        {
+          "timestamp": "02:05",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Halt and reject: System telemetry indicates compromised pipeline feed"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "BETA-07",
+      "scenario_id": "SCN-ADVR-PHANTOM",
+      "ticker": "TEST_EXEC",
+      "variant": "CONCEPT_A",
+      "task_prompt": "Inspect technical base pattern and verify structural pivot anchors.",
+      "duration_sec": 165,
+      "think_aloud_dialogue": [
+        "[00:25] Participant: 'TEST_EXEC spot is $420.00.'",
+        "[00:55] Participant: 'In the Sizing tab, I want to set a tight stop.'",
+        "[01:25] Participant: 'I am entering stop-loss at $435.00 because that is where resistance was.'",
+        "[02:10] Participant: 'Wait, $435 is above the current spot of $420, but I will submit anyway.'",
+        "[02:35] Participant: 'Submitting long order with stop at $435.00.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_A",
+            "ticker": "TEST_EXEC"
+          }
+        },
+        {
+          "timestamp": "01:00",
+          "event": "TAB_CHANGED",
+          "details": {
+            "tab": "SIZING"
+          }
+        },
+        {
+          "timestamp": "02:00",
+          "event": "INPUT_CHANGED",
+          "details": {
+            "stopLossInput": 435.0
+          }
+        },
+        {
+          "timestamp": "02:40",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Stage long trade with stop at $435.00 (above entry)"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "BETA-08",
+      "scenario_id": "SCN-ADVR-CONTRADICT",
+      "ticker": "TEST_BIAS",
+      "variant": "CONCEPT_B",
+      "task_prompt": "Review technical, fundamental, and data feed indications to determine overall order readiness.",
+      "duration_sec": 180,
+      "think_aloud_dialogue": [
+        "[00:25] Participant: 'TEST_BIAS shows an extended setup that already ran 35% past its pivot.'",
+        "[01:00] Participant: 'The verdict badge says NOT_ACTIONABLE: EXTENDED.'",
+        "[01:30] Participant: 'However, the momentum indicators look very strong and social sentiment is bullish.'",
+        "[02:20] Participant: 'I am going to chase the momentum and execute a market buy anyway despite the NOT_ACTIONABLE status.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_B",
+            "ticker": "TEST_BIAS"
+          }
+        },
+        {
+          "timestamp": "01:05",
+          "event": "BADGE_INSPECTED",
+          "details": {
+            "status": "NOT_ACTIONABLE"
+          }
+        },
+        {
+          "timestamp": "02:25",
+          "event": "ORDER_COPIED",
+          "details": {
+            "override": true
+          }
+        },
+        {
+          "timestamp": "02:40",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Chase extended setup: Buy despite NOT_ACTIONABLE verdict"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "BETA-09",
+      "scenario_id": "SCN-NORM-PLSE-SWING",
+      "ticker": "PLSE",
+      "variant": "CONCEPT_A",
+      "task_prompt": "Evaluate spot price, market data status, and quote freshness for PLSE.",
+      "duration_sec": 130,
+      "think_aloud_dialogue": [
+        "[00:15] Participant: 'PLSE spot $7.50, verified feed.'",
+        "[00:45] Participant: 'Checking technical tab: invalidation stop is $6.83.'",
+        "[01:10] Participant: 'In Sizing tab: 1,492 shares.'",
+        "[01:50] Participant: 'Order staged cleanly. No discrepancies.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_A",
+            "ticker": "PLSE"
+          }
+        },
+        {
+          "timestamp": "01:15",
+          "event": "TAB_CHANGED",
+          "details": {
+            "tab": "SIZING"
+          }
+        },
+        {
+          "timestamp": "01:55",
+          "event": "ORDER_COPIED",
+          "details": {
+            "shares": 1492
+          }
+        },
+        {
+          "timestamp": "02:00",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Stage 1,492 shares PLSE at $7.50 with $6.83 stop"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "BETA-10",
+      "scenario_id": "SCN-NORM-ALAB-MOM",
+      "ticker": "ALAB",
+      "variant": "CONCEPT_B",
+      "task_prompt": "Evaluate consolidation structure, volume pattern, and entry trigger for ALAB.",
+      "duration_sec": 140,
+      "think_aloud_dialogue": [
+        "[00:20] Participant: 'ALAB spot $98.40, contraction base confirmed.'",
+        "[00:50] Participant: 'Breakout pivot trigger at $98.40, stop at $88.50.'",
+        "[01:15] Participant: 'Calculated shares is 101.'",
+        "[01:55] Participant: 'Approved for staging on breakout trigger confirmation.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_B",
+            "ticker": "ALAB"
+          }
+        },
+        {
+          "timestamp": "01:20",
+          "event": "ORDER_COPIED",
+          "details": {
+            "shares": 101,
+            "stop": 88.5
+          }
+        },
+        {
+          "timestamp": "02:00",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Approve 101 shares ALAB at $98.40 with $88.50 stop"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance_disclosure": "These are synthetic calibration transcripts developed to evaluate observer scoring consistency. They are not recordings of actual ARX Terminal research participants."
+}

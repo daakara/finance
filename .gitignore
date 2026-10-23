@@ -71,4 +71,20 @@ frontend/screenshots/
 # Diagnostic output directory
 /output/
 
-
+# ARX Human Observer Evidence Custody Exclusions (Phase 2)
+tests/fixtures/qualification/submissions/*.json
+tests/fixtures/qualification/submissions/vault/
+tests/fixtures/qualification/submissions/staging/
+tests/fixtures/qualification/submissions/identities/
+tests/fixtures/qualification/submissions/*.db
+tests/fixtures/qualification/submissions/*.sqlite*
+tests/fixtures/qualification/submissions/*.key
+tests/fixtures/qualification/submissions/*receipts*.jsonl
+*.vault/
+.vault/
+*.custody/
+.custody/
+*custody_secrets*
+*identity_mapping*.json
+*observer_keys*
+!tests/fixtures/qualification/submissions/SUBMISSION_LOCKBOX_POLICY.md
