@@ -28,11 +28,22 @@ export function isCloudflarePagesHost(hostname: string): boolean {
   return false;
 }
 
+export function isLocalPreviewHost(hostname?: string | null): boolean {
+  if (!hostname) return false;
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "0.0.0.0";
+}
+
 export function getApiBaseUrl(): string {
   // In Cloudflare-hosted browser environments (canonical domain or official finance-xp8.pages.dev preview deployments),
   // route through same-origin Cloudflare edge proxy (/api/backend) to shield the origin and satisfy Content Security Policy.
-  if (typeof window !== "undefined" && isCloudflarePagesHost(window.location.hostname)) {
-    return "/api/backend";
+  if (typeof window !== "undefined") {
+    if (isCloudflarePagesHost(window.location.hostname)) {
+      return "/api/backend";
+    }
+    // Local development and preview environment: route same-origin to local preview backend
+    if (isLocalPreviewHost(window.location.hostname)) {
+      return "/api/v1";
+    }
   }
   return RAW_API_URL.endsWith("/api/v1")
     ? RAW_API_URL
@@ -864,23 +875,66 @@ export function getPublicationIntegrityLabel(cap?: RadarCapabilityDetail | null)
   return "Publication Integrity: Not verified";
 }
 
-export function formatPriceObservationDate(dateStr?: string | null): string {
-  if (!dateStr) return "Daily Close";
-  try {
-    const parts = dateStr.split("-");
-    if (parts.length === 3) {
-      const year = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const day = parseInt(parts[2], 10);
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      if (month >= 0 && month < 12 && !isNaN(day) && !isNaN(year)) {
-        return `Daily Close · ${months[month]} ${day}, ${year}`;
+export function formatPriceObservationDate(
+  dateStr?: string | null,
+  priceBasis?: "DAILY_CLOSE" | string | null
+): string {
+  const isVerifiedDailyClose = priceBasis === "DAILY_CLOSE";
+  const hasBasis = Boolean(priceBasis && typeof priceBasis === "string" && priceBasis.trim());
+  const basisLabel = isVerifiedDailyClose
+    ? "Daily Close"
+    : (hasBasis && priceBasis !== "UNKNOWN" ? priceBasis : "Price");
+
+  // Case 1: Date is missing or empty
+  if (!dateStr || typeof dateStr !== "string" || !dateStr.trim()) {
+    if (isVerifiedDailyClose) {
+      return "Daily Close · Date Unverified";
+    }
+    return "Price · Date & Basis Unverified";
+  }
+
+  // Case 2: Date string parsing and calendar validation
+  const trimmed = dateStr.trim();
+  const parts = trimmed.split("-");
+  if (parts.length === 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    // Validate calendar components strictly (no fabricated dates, reject invalid dates like Feb 31)
+    if (
+      !isNaN(year) && year >= 1900 && year <= 2100 &&
+      !isNaN(month) && month >= 0 && month < 12 &&
+      !isNaN(day) && day >= 1 && day <= 31
+    ) {
+      // Use Date.UTC to prevent any browser timezone-induced trading-day shifts
+      const utcDate = new Date(Date.UTC(year, month, day));
+      if (
+        utcDate.getUTCFullYear() === year &&
+        utcDate.getUTCMonth() === month &&
+        utcDate.getUTCDate() === day
+      ) {
+        const formattedDate = `${months[month]} ${day}, ${year}`;
+        if (isVerifiedDailyClose) {
+          return `Daily Close · ${formattedDate}`;
+        }
+        if (hasBasis && priceBasis !== "UNKNOWN") {
+          return `${basisLabel} · ${formattedDate}`;
+        }
+        return `Price · ${formattedDate} (Basis Unverified)`;
       }
     }
-    return `Daily Close · ${dateStr}`;
-  } catch {
-    return "Daily Close";
+    if (isVerifiedDailyClose) {
+      return "Daily Close · Invalid Date";
+    }
+    return "Price · Invalid Date";
   }
+
+  if (isVerifiedDailyClose) {
+    return "Daily Close · Invalid Date";
+  }
+  return "Price · Invalid Date";
 }
 
 export function normalizeRadarCapabilities(
@@ -1040,11 +1094,22 @@ export interface GemCandidate {
   decisionContextId?: string;
 }
 
+export interface CandidatePopulationModel {
+  referenceUniverseCount: number;
+  activeScreeningCount: number;
+  currentOpportunityCount: number;
+  delistedRecordCount: number;
+  unverifiedRecordCount: number;
+}
+
 export interface ScreenerResponse {
   total_candidates: number;
   gems_found: number;
   capabilities?: RadarCapabilities;
+  population?: CandidatePopulationModel;
   results: GemCandidate[];
+  error?: string | null;
+  status?: "SUCCESS" | "ERROR" | "TIMEOUT";
 }
 
 // 🧠 Global Spot Price & Metadata Registry (Enforces 100% price parity across all timeframes)
@@ -1739,7 +1804,9 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
           // Invariant: Screener output is discovery-only. Canonical actionability strictly requires Single-Asset DecisionTrace.
           isActionable: false,
           canSizeTrade: false,
-          allowedActions: Array.isArray(r.allowedActions) ? r.allowedActions : ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"],
+          allowedActions: Array.isArray(r.allowedActions)
+            ? r.allowedActions
+            : (Array.isArray(r.allowed_actions) ? r.allowed_actions : []),
           disqualificationReason: r.disqualificationReason ?? "Discovery candidate: Open in Analysis hub to evaluate canonical DecisionTrace.",
           decisionContextId: r.decisionContextId,
         };
@@ -1749,11 +1816,34 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
         total_candidates: candidates.length,
         gems_found: candidates.length,
         ...(capabilities ? { capabilities } : {}),
+        population: (data as any)?.population || undefined,
         results: candidates,
+        status: "SUCCESS",
+        error: null,
+      };
+    } else {
+      console.warn(`Screener API HTTP error: ${res.status} ${res.statusText}`);
+      return {
+        total_candidates: 0,
+        gems_found: 0,
+        results: [],
+        status: "ERROR",
+        error: `HTTP ${res.status}: ${res.statusText || "Screener service error"}`,
       };
     }
-  } catch (err) {
-    console.warn("Screener API error:", err);
+  } catch (err: any) {
+    const isTimeout = err?.name === "AbortError" || (err instanceof Error && err.name === "AbortError");
+    const errMsg = isTimeout
+      ? "Screener API request timed out (deadline 6000ms exceeded)"
+      : (err instanceof Error ? err.message : "Failed to connect to screener service");
+    console.warn("Screener API error:", errMsg);
+    return {
+      total_candidates: 0,
+      gems_found: 0,
+      results: [],
+      status: isTimeout ? "TIMEOUT" : "ERROR",
+      error: errMsg,
+    };
   }
 
   // Epistemic Invariant: Zero synthetic fallback catalog data
@@ -1761,6 +1851,8 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
     total_candidates: 0,
     gems_found: 0,
     results: [],
+    status: "ERROR",
+    error: "Screener API unavailable",
   };
 }
 
