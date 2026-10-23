@@ -32,6 +32,7 @@ import {
   getCollectionProvenance,
   OpportunityCohortItem,
   IS_PILOT_DRAFTS_BUILD_ENABLED,
+  PUBLISHED_WATCH_SYMBOLS,
 } from "../../lib/opportunityDossiers";
 import {
   Microscope,
@@ -144,10 +145,15 @@ function ResearchContent() {
     return getCollectionProvenance(hasSymbolParam && !isKnown ? displaySymbol : undefined);
   }, [hasSymbolParam, isKnown, displaySymbol]);
 
-  const isDeckPrototype = normalizedSymbol === "DECK" && dossier?.central_assessment?.disposition === "WATCH_CONDITIONS";
+  const isDecisionFirst = Boolean(
+    isKnown &&
+    PUBLISHED_WATCH_SYMBOLS.includes(normalizedSymbol) &&
+    dossier?.central_assessment?.disposition === "WATCH_CONDITIONS"
+  );
+  const isDeckPrototype = isDecisionFirst;
 
   return (
-    <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 ${isDeckPrototype ? "space-y-4 sm:space-y-6" : "space-y-6"}`}>
+    <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 ${isDecisionFirst ? "space-y-4 sm:space-y-6" : "space-y-6"}`}>
       {/* Breadcrumb Navigation */}
       <nav aria-label="Breadcrumb" className="text-xs font-mono text-slate-500 flex items-center space-x-2">
         <Link href="/" className="hover:text-cyan-400 transition-colors">
@@ -166,7 +172,7 @@ function ResearchContent() {
       </nav>
 
       {/* Surface Header Banner */}
-      {isDeckPrototype ? (
+      {isDecisionFirst ? (
         <>
           {/* Desktop Surface Header (Preserves Accepted Full Presentation) */}
           <header className="hidden lg:block bg-gradient-to-r from-[#0b1019] via-[#0e1624] to-[#0b1019] p-5 sm:p-6 rounded-2xl border border-[#1e293b] space-y-4 shadow-xl">

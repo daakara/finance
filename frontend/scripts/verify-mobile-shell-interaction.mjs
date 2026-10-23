@@ -181,17 +181,21 @@ async function run() {
       const fixResult = await page.evaluate(() => {
         const isFix = window.location.search.includes("symbol=FIX");
         if (!isFix) return { passed: false, error: `URL does not include symbol=FIX (search: ${window.location.search})` };
-        const standardHeader = document.querySelector("header.bg-gradient-to-r");
-        if (!standardHeader) return { passed: false, error: "Standard header 'header.bg-gradient-to-r' not found on FIX" };
-        const r = standardHeader.getBoundingClientRect();
-        if (r.height <= 400) return { passed: false, error: `Standard header height ${Math.round(r.height)}px expected > 400px` };
+        const compactHeader = document.querySelector("header.lg\\:hidden");
+        if (!compactHeader) return { passed: false, error: "Compact header 'header.lg:hidden' not found on FIX" };
+        const r = compactHeader.getBoundingClientRect();
+        if (r.height <= 0 || r.height >= 250) {
+          return { passed: false, error: `Compact header height ${Math.round(r.height)}px expected 0 < height < 250` };
+        }
+        const decisionHeading = document.getElementById("decision-first-heading-FIX");
+        if (!decisionHeading) return { passed: false, error: "Decision-first heading not found on FIX" };
         return { passed: true, height: r.height };
       });
 
       recordCheck(
-        "Switch to FIX: Standard header active (height > 400px)",
+        "Switch to FIX: Compact header active (< 250px) & Decision-First view loaded",
         fixResult.passed,
-        fixResult.passed ? `height: ${Math.round(fixResult.height)}px` : fixResult.error
+        fixResult.passed ? `height: ${Math.round(fixResult.height)}px < 250px` : fixResult.error
       );
     }
 
