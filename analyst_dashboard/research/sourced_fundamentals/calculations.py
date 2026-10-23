@@ -10,7 +10,13 @@ split-normalized share comparisons, and honest non-positive invested capital rep
 
 import logging
 from typing import Dict, Any, Optional, Tuple
-from .contracts import CompanyFundamentals, DerivedMetrics
+from .contracts import (
+    CompanyFundamentals,
+    DerivedMetrics,
+    ShareBasis,
+    DenominatorUseCase,
+    ShareDenominatorMetadata,
+)
 from .normalizer import parse_date
 
 logger = logging.getLogger(__name__)
@@ -215,6 +221,39 @@ def compute_derived_metrics(
     price = market_data.get("market_price")
     price_date = market_data.get("price_date")
 
+    # Build P0-A ShareDenominatorMetadata for diluted and common shares
+    dshares_meta = None
+    if dshares_fact and dshares_fact.value is not None:
+        dshares_meta = ShareDenominatorMetadata(
+            share_count=dshares_fact.value,
+            basis=ShareBasis.WEIGHTED_AVERAGE_DILUTED,
+            use_case=DenominatorUseCase.HISTORICAL_ANNUAL_EPS if est_status == "REPORTED_ANNUAL_COMPATIBLE" else DenominatorUseCase.HISTORICAL_INTERIM_EPS,
+            units=dshares_fact.units or "shares",
+            period_start=dshares_fact.period_start,
+            period_end=dshares_fact.period_end,
+            filing_date=dshares_fact.filing_date,
+            accession_number=dshares_fact.accession_number,
+            form=dshares_fact.form,
+            status=dshares_fact.status,
+            estimate_status=est_status,
+            provenance_notes=dshares_fact.notes,
+        )
+
+    cshares_meta = None
+    if cshares_fact and cshares_fact.value is not None:
+        cshares_meta = ShareDenominatorMetadata(
+            share_count=cshares_fact.value,
+            basis=ShareBasis.POINT_IN_TIME_OUTSTANDING,
+            use_case=DenominatorUseCase.MARKET_CAPITALIZATION,
+            units=cshares_fact.units or "shares",
+            as_of_date=cshares_fact.period_end,
+            filing_date=cshares_fact.filing_date,
+            accession_number=cshares_fact.accession_number,
+            form=cshares_fact.form,
+            status=cshares_fact.status,
+            provenance_notes=cshares_fact.notes,
+        )
+
     market_cap = None
     if price is not None and cshares is not None and cshares > 0:
         market_cap = price * cshares
@@ -330,6 +369,11 @@ def compute_derived_metrics(
         cfo_minus_capex_per_share=round(fcf_per_share, 2) if fcf_per_share is not None else None,
         share_dilution_1y_pct=round(dilution_1y_pct, 2) if dilution_1y_pct is not None else None,
         share_dilution_3y_pct=round(dilution_3y_pct, 2) if dilution_3y_pct is not None else None,
+        share_basis=ShareBasis.WEIGHTED_AVERAGE_DILUTED.value if dshares is not None else None,
+        share_denominator_metadata={
+            "diluted_shares": dshares_meta.to_dict() if dshares_meta else None,
+            "common_shares": cshares_meta.to_dict() if cshares_meta else None,
+        },
         market_price=price,
         market_price_date=price_date,
         market_cap=round(market_cap, 2) if market_cap is not None else None,
