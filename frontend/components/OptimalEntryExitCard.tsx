@@ -34,6 +34,8 @@ interface OptimalEntryExitCardProps {
   canSizeTrade?: boolean;
   decisionState?: string;
   decisionStateLabel?: string;
+  catalystForecast?: any;
+  corporateEvent?: any;
 }
 
 export default function OptimalEntryExitCard({
@@ -53,6 +55,8 @@ export default function OptimalEntryExitCard({
   canSizeTrade,
   decisionState,
   decisionStateLabel,
+  catalystForecast,
+  corporateEvent,
 }: OptimalEntryExitCardProps) {
   const [isSizerOpen, setIsSizerOpen] = useState<boolean>(false);
   const [isAlertOpen, setIsAlertOpen] = useState<boolean>(false);
@@ -270,18 +274,42 @@ export default function OptimalEntryExitCard({
     resolvedVix ? resolvedVix > 20 : (macroRegime?.vix && Number(macroRegime.vix) > 20)
   );
 
-  // hasImminentEarnings: true if any catalyst event is of Earnings category
-  // and its expectedDate is within 7 days from today
-  const derivedHasImminentEarnings = (() => {
-    const catalysts = (executionPlan as any)?.catalystForecast?.catalysts;
-    if (!Array.isArray(catalysts)) return false;
-    const now = Date.now();
-    return catalysts.some((c: any) => {
-      if (!c?.expectedDate) return false;
-      const diff = (new Date(c.expectedDate).getTime() - now) / 86400000;
-      return diff >= 0 && diff <= 7 && (c.category === "Earnings" || c.category === "FDA" || c.volatilityImpact === "Very High");
-    });
+  // Canonical Corporate Event & Catalyst State Resolution
+  const resolvedCorporateEvent = corporateEvent || executionPlan.corporate_event || (executionPlan as any)?.catalystForecast?.corporate_event;
+  const resolvedDaysToEarnings: number | null = (() => {
+    if (typeof resolvedCorporateEvent?.days_to_earnings === "number") return resolvedCorporateEvent.days_to_earnings;
+    if (typeof executionPlan.days_to_earnings === "number") return executionPlan.days_to_earnings;
+    if (typeof (catalystForecast as any)?.days_to_earnings === "number") return (catalystForecast as any).days_to_earnings;
+    return null;
   })();
+
+  const resolvedCatalystState: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR" = (() => {
+    if (resolvedCorporateEvent?.preflight_state) return resolvedCorporateEvent.preflight_state;
+    if (resolvedDaysToEarnings !== null) {
+      if (resolvedDaysToEarnings < 0.0) return "UNAVAILABLE"; // Invariant 3: completed historical event alone cannot establish clean forward runway
+      if (resolvedDaysToEarnings <= 7.0) return "WARN";
+      return "PASS";
+    }
+    if (resolvedCorporateEvent?.coverage_status === "DATA_UNAVAILABLE" || resolvedCorporateEvent?.coverage_status === "ABSENT") {
+      return "UNAVAILABLE";
+    }
+    return "UNAVAILABLE";
+  })();
+
+  const derivedHasImminentEarnings = resolvedCatalystState === "WARN";
+
+  const derivedCatalystEvidence = {
+    state: resolvedCatalystState,
+    daysToEarnings: resolvedDaysToEarnings,
+    eventDate: resolvedCorporateEvent?.event_date_et || (catalystForecast as any)?.event_date_et,
+    callTimeEt: resolvedCorporateEvent?.conference_call_time_et,
+    resultsReleaseTimeEt: resolvedCorporateEvent?.results_release_time_et,
+    sourceName: resolvedCorporateEvent?.source_name,
+    confirmationStatus: resolvedCorporateEvent?.confirmation_status,
+    coverageStatus: resolvedCorporateEvent?.coverage_status,
+    riskTier: resolvedCorporateEvent?.risk_tier,
+    isEstimate: resolvedCorporateEvent?.is_estimate,
+  };
 
   // isDistributionTrap: Deprecated options-flow heuristic; single-asset options flow is unconnected.
   // Pre-Flight Check 3 is canonically scoped to Capital Risk evaluated via MASTER_ASSET_CATALOG.
@@ -439,6 +467,37 @@ export default function OptimalEntryExitCard({
               >
                 <span>{executionPlan.liquidity_defense.badge_color === "rose" ? "🛑" : executionPlan.liquidity_defense.badge_color === "amber" ? "⚡" : executionPlan.liquidity_defense.badge_color === "slate" ? "⚪" : "💧"}</span>
                 {isPlain ? executionPlan.liquidity_defense.plain_label : executionPlan.liquidity_defense.pro_label}
+              </span>
+            )}
+            {/* Corporate Event / Catalyst Status Badge */}
+            {resolvedCorporateEvent && resolvedCorporateEvent.coverage_status !== "DATA_UNAVAILABLE" ? (
+              <span
+                className={`px-2 py-0.5 rounded border inline-flex items-center gap-1 font-mono text-[10px] ${
+                  resolvedCatalystState === "WARN"
+                    ? "bg-rose-950/80 text-rose-300 border-rose-700/80"
+                    : "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
+                }`}
+                title={`Source: ${resolvedCorporateEvent.source_name || "Corporate IR"} | Confirmation: ${resolvedCorporateEvent.confirmation_status || "UNVERIFIED"} | Freshness: ${resolvedCorporateEvent.freshness_status || "LIVE"}`}
+              >
+                <span>📅</span>
+                <span>
+                  {isPlain
+                    ? (resolvedDaysToEarnings !== null && resolvedDaysToEarnings <= 1.0
+                        ? `Earnings Imminent (<=${Math.max(1, Math.round(resolvedDaysToEarnings * 24))}h)`
+                        : `Earnings ${resolvedCorporateEvent.event_date_et || "Scheduled"}`)
+                    : `Catalyst: ${resolvedCorporateEvent.event_date_et || "Earnings"}${resolvedCorporateEvent.conference_call_time_et ? ` (${resolvedCorporateEvent.conference_call_time_et} ET Call)` : ""}`}
+                </span>
+                <span className="text-[9px] opacity-75 font-sans">
+                  ({resolvedCorporateEvent.confirmation_status === "CONFIRMED" ? "IR Confirmed" : "Estimate"})
+                </span>
+              </span>
+            ) : (
+              <span
+                className="px-2 py-0.5 rounded bg-slate-900/80 text-slate-400 border border-slate-700/80 inline-flex items-center gap-1 font-mono text-[10px]"
+                title="Corporate event schedule telemetry unavailable from primary exchange source. Pre-Flight event runway uncertified."
+              >
+                <span>📅</span>
+                <span>{isPlain ? "Event Runway: Unverified" : "Catalyst: Coverage Unavailable"}</span>
               </span>
             )}
             <span className="hidden sm:inline text-slate-500">•</span>
@@ -832,6 +891,8 @@ export default function OptimalEntryExitCard({
         breakoutPivot={executionPlan.breakout_pivot || Number((current_price * 1.072).toFixed(2))}
         vix={resolvedVix}
         hasImminentEarnings={derivedHasImminentEarnings}
+        catalystState={resolvedCatalystState}
+        catalystEvidence={derivedCatalystEvidence}
         isDistributionTrap={derivedIsDistributionTrap}
         isActionable={canonicalActionable}
         decisionState={decisionState}

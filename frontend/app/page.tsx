@@ -440,6 +440,8 @@ function TerminalContent() {
                     canSizeTrade={data?.decisionTrace?.canSizeTrade ?? (data?.canonicalDecision as any)?.can_size_trade}
                     decisionState={data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state}
                     decisionStateLabel={data?.decisionTrace?.stateLabel ?? (data?.canonicalDecision as any)?.decision_state_label}
+                    catalystForecast={data?.catalystForecast}
+                    corporateEvent={data?.corporateEvent}
                   />
                 ) : (
                   <div className="bg-[#111722] border border-[#243044] rounded-xl p-5 shadow-xl space-y-2 font-mono text-slate-300">

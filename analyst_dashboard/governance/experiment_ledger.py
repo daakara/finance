@@ -85,7 +85,7 @@ class ExperimentLedger:
         env_sha = os.getenv("ARX_OBSERVATION_GOVERNANCE_SHA")
         if env_sha:
             return env_sha.strip()
-        manifest = cls.get_epoch4_v5_manifest() or cls.get_epoch4_v4_manifest() or cls.get_epoch4_v3_manifest() or cls.get_epoch4_manifest() or cls.get_epoch3_manifest() or cls.get_epoch2_manifest() or cls.get_epoch1_manifest()
+        manifest = cls.get_epoch4_v6_manifest() or cls.get_epoch4_v5_manifest() or cls.get_epoch4_v4_manifest() or cls.get_epoch4_v3_manifest() or cls.get_epoch4_manifest() or cls.get_epoch3_manifest() or cls.get_epoch2_manifest() or cls.get_epoch1_manifest()
         if manifest and manifest.get("observationGovernanceSha"):
             return manifest["observationGovernanceSha"].strip()
         return cls.OBSERVATION_GOVERNANCE_ARTIFACT_SHA
@@ -100,14 +100,21 @@ class ExperimentLedger:
     PREVIOUS_DECISION_ENGINE_VERSION = "2.4.0"
     VERSION_INCREMENT_REASON = "LIVE_MARKET_DECISION_INPUT_SEMANTICS"
 
-    # Current Production Authority Binding (Release Addendum 002)
-    CURRENT_RATIFIED_AUTHORITY = "RELEASE_ADDENDUM_002"
-    CURRENT_RATIFIED_COMMIT = "cd0922471767775636957df74406a2d5efb8f519"
-    CURRENT_AUTHORITY_MANIFEST = "FROZEN_ENGINE_MANIFEST_V2_5_1.json"
-    CURRENT_AUTHORITY_MANIFEST_DIGEST = "bb51df94f6d328a721089cea7d6004b4dcac1c2b1eeea55d763b5f8f6a58c5f0"
+    # Current Production Authority Binding (Release Addendum 002 -> RC5 Corporate Events)
+    CURRENT_RATIFIED_AUTHORITY = "SPRINT3_RC5_CORPORATE_EVENTS_RATIFICATION"
+    CURRENT_RATIFIED_COMMIT = "7980d3a6e5dde0fe172d215c729ec213b9a164b1"
+    CURRENT_AUTHORITY_MANIFEST = "FROZEN_ENGINE_MANIFEST_V2_5_2.json"
+    CURRENT_AUTHORITY_MANIFEST_DIGEST = "5a7be1f24e200a8480a41fbb096790a4cc6968a47170daba6107bdf176bd6330"
 
     # Explicit Authority & Provenance Bindings for Engine Freeze Manifests
     AUTHORITY_VERSION_BINDINGS = {
+        "2.5.2": {
+            "manifestFile": "FROZEN_ENGINE_MANIFEST_V2_5_2.json",
+            "provenanceCommit": "7980d3a6e5dde0fe172d215c729ec213b9a164b1",
+            "releaseAuthorityBinding": "SPRINT3_RC5_CORPORATE_EVENTS_RATIFICATION",
+            "ratifiedAuthorityRecord": "ARX_RC5_ENGINE_MANIFEST_V252_SUCCESSION_RECORD.md",
+            "expectedDigest": "5a7be1f24e200a8480a41fbb096790a4cc6968a47170daba6107bdf176bd6330",
+        },
         "2.5.1": {
             "manifestFile": "FROZEN_ENGINE_MANIFEST_V2_5_1.json",
             "provenanceCommit": "cd0922471767775636957df74406a2d5efb8f519",
@@ -143,8 +150,8 @@ class ExperimentLedger:
         """Loads the cryptographic engine freeze manifest enforcing explicit version authority bindings."""
         if repo_root is None:
             repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        if version is None or version in ["2.5.1", "CURRENT", "ACTIVE"]:
-            binding = cls.AUTHORITY_VERSION_BINDINGS.get("2.5.1")
+        if version is None or version in ["2.5.2", "CURRENT", "ACTIVE"]:
+            binding = cls.AUTHORITY_VERSION_BINDINGS.get("2.5.2")
         else:
             binding = cls.AUTHORITY_VERSION_BINDINGS.get(version)
 
@@ -301,6 +308,22 @@ class ExperimentLedger:
                     return json.load(f)
             except Exception:
                 return None
+        return None
+
+    @classmethod
+    def get_epoch4_v6_manifest(cls) -> Optional[Dict[str, Any]]:
+        """Loads the Epoch 4 V6 observation governance manifest if available."""
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        manifest_path = os.path.join(repo_root, "EPOCH_4_MANIFEST_V6.json")
+        if os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if not isinstance(data, dict) or "executableGovernanceFiles" not in data:
+                        return {"status": "CORRUPTED", "error": "MALFORMED_MANIFEST_V6", "valid": False}
+                    return data
+            except Exception:
+                return {"status": "CORRUPTED", "error": "MALFORMED_MANIFEST_V6", "valid": False}
         return None
 
     @classmethod
@@ -505,7 +528,7 @@ class ExperimentLedger:
     @classmethod
     def verify_epoch4_manifest(cls) -> Dict[str, Any]:
         """Verifies repository executable observation governance against authoritative Epoch 4 manifest (V5 if available, else V4, else V3, else V2)."""
-        manifest = cls.get_epoch4_v5_manifest() or cls.get_epoch4_v4_manifest() or cls.get_epoch4_v3_manifest() or cls.get_epoch4_manifest()
+        manifest = cls.get_epoch4_v6_manifest() or cls.get_epoch4_v5_manifest() or cls.get_epoch4_v4_manifest() or cls.get_epoch4_v3_manifest() or cls.get_epoch4_manifest()
         if not manifest or manifest.get("status") == "CORRUPTED" or not manifest.get("executableGovernanceFiles"):
             return {
                 "status": "CORRUPTED" if (manifest and manifest.get("status") == "CORRUPTED") else "MANIFEST_MISSING",
@@ -601,7 +624,7 @@ class ExperimentLedger:
     @classmethod
     def verify_observation_governance_manifest(cls) -> Dict[str, Any]:
         """Verifies repository executable observation governance against active manifest (EPOCH_4 V5, EPOCH_4 V4, EPOCH_4 V3, EPOCH_4 V2, EPOCH_3, EPOCH_2 or EPOCH_1)."""
-        manifest = cls.get_epoch4_v5_manifest() or cls.get_epoch4_v4_manifest() or cls.get_epoch4_v3_manifest() or cls.get_epoch4_manifest() or cls.get_epoch3_manifest() or cls.get_epoch2_manifest() or cls.get_epoch1_manifest()
+        manifest = cls.get_epoch4_v6_manifest() or cls.get_epoch4_v5_manifest() or cls.get_epoch4_v4_manifest() or cls.get_epoch4_v3_manifest() or cls.get_epoch4_manifest() or cls.get_epoch3_manifest() or cls.get_epoch2_manifest() or cls.get_epoch1_manifest()
         if not manifest or manifest.get("status") == "CORRUPTED" or not manifest.get("executableGovernanceFiles"):
             return {
                 "status": "CORRUPTED" if (manifest and manifest.get("status") == "CORRUPTED") else "MANIFEST_MISSING",

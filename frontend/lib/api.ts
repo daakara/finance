@@ -259,6 +259,59 @@ export interface CatalystEvent {
   primaryMetric: string;
 }
 
+export type CorporateEventType = 
+  | "EARNINGS_ANNOUNCEMENT"
+  | "CONFERENCE_CALL"
+  | "DIVIDEND_EX_DATE"
+  | "STOCK_SPLIT"
+  | "SHAREHOLDER_MEETING";
+
+export type EventCoverageStatus = 
+  | "CONFIRMED_UPCOMING"
+  | "ESTIMATED_UPCOMING"
+  | "COVERED"
+  | "ELAPSED_RECENT"
+  | "DATA_UNAVAILABLE"
+  | "UNVERIFIED"
+  | "STALE";
+
+export type ConfirmationStatus = "CONFIRMED" | "ESTIMATED" | "UNVERIFIED";
+
+export type EventRiskTier = 
+  | "ACUTE_BINARY_GAP_RISK"
+  | "HIGH_GAP_RISK"
+  | "CAUTION_BUFFER"
+  | "NORMAL_RUNWAY"
+  | "UNVERIFIED_RISK";
+
+export interface CorporateEventRecord {
+  symbol: string;
+  event_type: CorporateEventType | string;
+  event_timestamp_utc?: number | null;
+  event_date_et?: string | null;
+  event_time_et?: string | null;
+  time_zone: string;
+  results_release_time_et?: string | null;
+  conference_call_time_et?: string | null;
+  days_to_earnings?: number | null;
+  has_imminent_earnings: boolean;
+  has_exact_time: boolean;
+  is_estimate: boolean;
+  confirmation_status: ConfirmationStatus;
+  coverage_status: EventCoverageStatus;
+  freshness_status: "LIVE" | "RECENT" | "STALE" | "UNVERIFIED";
+  news_sentiment_status?: "ACTIVE" | "UNAVAILABLE" | "ABSENT";
+  risk_tier: EventRiskTier;
+  source_name: string;
+  source_url?: string | null;
+  last_verified_at: string;
+  preflight_state: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR";
+  preflight_summary: {
+    plain_english: string;
+    pro_quant: string;
+  };
+}
+
 export interface CatalystForecastData {
   company_name: string;
   symbol: string;
@@ -273,6 +326,10 @@ export interface CatalystForecastData {
   macroRegime?: string;
   overallDirection?: string;
   catalysts?: CatalystEvent[];
+  days_to_earnings?: number | null;
+  has_imminent_earnings?: boolean;
+  event_date_et?: string | null;
+  corporate_event?: CorporateEventRecord;
 }
 
 export interface CongressTradeDetails {
@@ -473,6 +530,9 @@ export interface OptimalExecutionPlan {
   liquidity_defense?: LiquidityDefenseData;
   execution_hazard?: boolean | "UNKNOWN";
   liquidity_warning?: string;
+  corporate_event?: CorporateEventRecord;
+  days_to_earnings?: number | null;
+  has_imminent_earnings?: boolean;
 }
 
 export interface Phase26ExecutionObservation {
@@ -694,6 +754,7 @@ export interface AnalyticsResponse {
   selfHealingAudit?: SelfHealingAudit;
   marketGraph?: MarketGraphReport;
   catalystForecast?: CatalystForecastData;
+  corporateEvent?: CorporateEventRecord;
   optimalExecution?: OptimalExecutionPlan;
   liquidityDefense?: LiquidityDefenseData;
   confluence?: ConfluenceData;

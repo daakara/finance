@@ -221,17 +221,33 @@ class ConfluenceEngine:
         # ── 5. CATALYST RUNWAY RISK ADJUSTMENT ────────────────────────────────
         catalyst_mod = 0.0
         warnings = []
-        if catalyst_data:
+        if catalyst_data and isinstance(catalyst_data, dict):
+            # Guard against past or completed events
+            is_completed = bool(
+                catalyst_data.get("is_completed", False)
+                or catalyst_data.get("status") in ("COMPLETED", "ELAPSED", "ELAPSED_RECENT")
+                or catalyst_data.get("coverage_status") in ("COMPLETED", "ELAPSED", "ELAPSED_RECENT")
+            )
             raw_dte = catalyst_data.get("days_to_earnings")
-            if raw_dte is not None:
-                days_to_earnings = float(raw_dte)
-                if days_to_earnings <= 1.0:
-                    catalyst_mod -= 25.0
-                    hours_left = int(days_to_earnings * 24) if days_to_earnings > 0 else 24
-                    warnings.append(f"⚠️ HIGH BINARY GAP RISK: Earnings in <={hours_left}h! Limit position sizing.")
-                elif days_to_earnings < 7:
-                    catalyst_mod -= 8.0
-                    warnings.append(f"Caution: Earnings in {days_to_earnings} days.")
+            if raw_dte is not None and not is_completed:
+                try:
+                    days_to_earnings = float(raw_dte)
+                    if math.isnan(days_to_earnings) or math.isinf(days_to_earnings):
+                        days_to_earnings = None
+                except (ValueError, TypeError):
+                    days_to_earnings = None
+
+                if days_to_earnings is not None:
+                    if 0.0 <= days_to_earnings <= 1.0:
+                        catalyst_mod -= 25.0
+                        hours_left = max(1, int(days_to_earnings * 24))
+                        warnings.append(f"⚠️ HIGH BINARY GAP RISK: Earnings in <={hours_left}h! Limit position sizing.")
+                    elif 1.0 < days_to_earnings <= 7.0:
+                        catalyst_mod -= 8.0
+                        warnings.append(f"Caution: Earnings in {days_to_earnings} days.")
+                    elif days_to_earnings < 0.0:
+                        # Elapsed event: historical reporting cannot indefinitely penalize future setups
+                        pass
 
         # ── COMPOSITE SYNTHESIS (Dynamic Normalized Reweighting) ─────────────
         # If an asset has verified fundamentals but Smart Money regulatory filings or Macro are unavailable,
