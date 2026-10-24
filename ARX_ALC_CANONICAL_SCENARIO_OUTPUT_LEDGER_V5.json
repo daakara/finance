@@ -1,0 +1,1428 @@
+{
+  "metadata": {
+    "model_version": "v5.0",
+    "predecessor_version": "v4.0",
+    "net_debt_policy": "SCENARIO_DERIVED_FROM_CASH_FLOWS",
+    "owner_authorization": "ARX_ALCON_SCENARIO_DERIVED_NET_DEBT_CORRECTION_AND_CANDIDATE_REQUALIFICATION_AUTHORIZED",
+    "policy_decision": "Option B: Primary publication valuations use terminal net debt derived from each scenario's ending gross debt minus ending cash.",
+    "source_revision": "3cf65ce2095c24696367bca7337ec297ed4fbc8c",
+    "security": "Alcon Inc. (NYSE: ALC, SIX: ALC)",
+    "cik": "0001167379",
+    "data_as_of": "2026-10-21",
+    "currency": "USD",
+    "units": {
+      "financial_totals": "$M",
+      "per_share": "$/share",
+      "shares": "Millions (M)",
+      "rates": "Percentage / Decimal"
+    },
+    "valuation_date": "2026-10-22",
+    "investment_start_date": "2026-10-22",
+    "investment_end_date": "2031-10-22",
+    "investment_timeline_convention": "CONVENTION_A_FIVE_FULL_YEARS",
+    "holding_period_years": 5.0,
+    "holding_period_days": 1826,
+    "annual_cash_flow_periods": 5,
+    "dividend_payment_convention": "ANNUAL_AGM_MAY_15",
+    "spot_price": 67.43,
+    "annual_dividend_schedule": [
+      0.36,
+      0.39,
+      0.42,
+      0.45,
+      0.48
+    ],
+    "calendar_cash_flow_dates": [
+      "2026-10-22",
+      "2027-05-15",
+      "2028-05-15",
+      "2029-05-15",
+      "2030-05-15",
+      "2031-05-15",
+      "2031-10-22"
+    ],
+    "hurdle_rates": [
+      0.08,
+      0.085,
+      0.1
+    ],
+    "governance_status": "READ_ONLY_RESEARCH_NO_EXECUTION_AUTHORITY"
+  },
+  "buyback_authority_reconciliation": {
+    "EXECUTED_BUYBACKS_2025_PROGRAM": {
+      "amount": 750.0,
+      "status": "COMPLETED",
+      "completion_date": "2026-01-31",
+      "source": "Form 20-F Note 11 & Official Buyback History"
+    },
+    "APPROVED_CAPACITY_2026_PROGRAM": {
+      "amount": 1500.0,
+      "status": "BOARD_AND_AGM_AUTHORIZED",
+      "authorization_date": "2026-05-05",
+      "expiration_date": "2029-05-05",
+      "source": "2026 AGM Resolution & June 2026 Form 6-K"
+    },
+    "EXECUTED_UNDER_2026_PROGRAM_H1": {
+      "amount": 300.0,
+      "status": "EXECUTED",
+      "period": "May 5, 2026 - June 30, 2026",
+      "source": "June 2026 Form 6-K"
+    },
+    "REMAINING_APPROVED_CAPACITY": {
+      "amount": 1200.0,
+      "status": "ACTIVE_REMAINING_CAPACITY",
+      "as_of": "2026-06-30"
+    },
+    "FORECAST_BUYBACKS_BASELINE": {
+      "amount": 1800.0,
+      "status": "POLICY_ASSUMPTION_5YR",
+      "composition": {
+        "remaining_approved": 1200.0,
+        "assumed_future_authorization": 600.0
+      }
+    },
+    "ASSUMED_FUTURE_AUTHORIZATIONS": {
+      "amount": 600.0,
+      "status": "HYPOTHETICAL_EXTENSION",
+      "notes": "Requires future AGM authorization renewal post-2029"
+    }
+  },
+  "historical_v4_baseline_comparison": {
+    "metadata": {
+      "title": "Alcon Inc. V4 (Fixed Assumption) vs V5 (Scenario-Derived Net Debt) Audit Ledger Comparison",
+      "spot_price": 67.43,
+      "data_as_of": "2026-10-21",
+      "owner_decision": "Option B: Scenario-Derived Net Debt Policy (ending_gross_debt - ending_cash)"
+    },
+    "scenarios": [
+      {
+        "scenario_id": "CONSERVATIVE",
+        "scenario_name": "Conservative (Scenario-Derived Net Debt)",
+        "v4_baseline": {
+          "ending_gross_debt": 0.0,
+          "ending_cash": 2045.79,
+          "cash_flow_net_debt": -2045.79,
+          "valuation_net_debt": -2176.2,
+          "net_debt_difference": -130.41,
+          "terminal_share_price": 76.64,
+          "annual_irr_percent": 3.18,
+          "calendar_dated_xirr_percent": 3.19,
+          "ceiling_80": 53.82,
+          "ceiling_85": 52.6,
+          "ceiling_100": 49.16
+        },
+        "v5_successor": {
+          "ending_gross_debt": 0.0,
+          "ending_cash": 2045.79,
+          "cash_flow_net_debt": -2045.79,
+          "valuation_net_debt": -2045.79,
+          "net_debt_difference": 0.0,
+          "terminal_share_price": 76.36,
+          "annual_irr_percent": 3.11,
+          "calendar_dated_xirr_percent": 3.12,
+          "ceiling_80": 53.63,
+          "ceiling_85": 52.42,
+          "ceiling_100": 48.99
+        },
+        "delta": {
+          "valuation_net_debt": 130.41,
+          "terminal_share_price": -0.28,
+          "annual_irr_bps": -7.3,
+          "calendar_xirr_bps": -7.3,
+          "ceiling_80": -0.19,
+          "ceiling_85": -0.18,
+          "ceiling_100": -0.17
+        }
+      },
+      {
+        "scenario_id": "BASE_MULTIPLE",
+        "scenario_name": "Base Case (Exit Multiple, Derived Net Debt)",
+        "v4_baseline": {
+          "ending_gross_debt": 0.0,
+          "ending_cash": 3687.55,
+          "cash_flow_net_debt": -3687.55,
+          "valuation_net_debt": -2176.2,
+          "net_debt_difference": 1511.35,
+          "terminal_share_price": 90.02,
+          "annual_irr_percent": 6.5,
+          "calendar_dated_xirr_percent": 6.51,
+          "ceiling_80": 62.93,
+          "ceiling_85": 61.5,
+          "ceiling_100": 57.47
+        },
+        "v5_successor": {
+          "ending_gross_debt": 0.0,
+          "ending_cash": 3687.55,
+          "cash_flow_net_debt": -3687.55,
+          "valuation_net_debt": -3687.55,
+          "net_debt_difference": 0.0,
+          "terminal_share_price": 93.2,
+          "annual_irr_percent": 7.23,
+          "calendar_dated_xirr_percent": 7.24,
+          "ceiling_80": 65.09,
+          "ceiling_85": 63.62,
+          "ceiling_100": 59.44
+        },
+        "delta": {
+          "valuation_net_debt": -1511.35,
+          "terminal_share_price": 3.18,
+          "annual_irr_bps": 73.0,
+          "calendar_xirr_bps": 73.1,
+          "ceiling_80": 2.16,
+          "ceiling_85": 2.12,
+          "ceiling_100": 1.97
+        }
+      },
+      {
+        "scenario_id": "BASE_DCF",
+        "scenario_name": "Base Case (Gordon Growth DCF, Derived Net Debt)",
+        "v4_baseline": {
+          "ending_gross_debt": 0.0,
+          "ending_cash": 3687.55,
+          "cash_flow_net_debt": -3687.55,
+          "valuation_net_debt": -2176.2,
+          "net_debt_difference": 1511.35,
+          "terminal_share_price": 91.82,
+          "annual_irr_percent": 6.92,
+          "calendar_dated_xirr_percent": 6.93,
+          "ceiling_80": 64.15,
+          "ceiling_85": 62.7,
+          "ceiling_100": 58.59
+        },
+        "v5_successor": {
+          "ending_gross_debt": 0.0,
+          "ending_cash": 3687.55,
+          "cash_flow_net_debt": -3687.55,
+          "valuation_net_debt": -3687.55,
+          "net_debt_difference": 0.0,
+          "terminal_share_price": 95.0,
+          "annual_irr_percent": 7.64,
+          "calendar_dated_xirr_percent": 7.65,
+          "ceiling_80": 66.31,
+          "ceiling_85": 64.82,
+          "ceiling_100": 60.56
+        },
+        "delta": {
+          "valuation_net_debt": -1511.35,
+          "terminal_share_price": 3.18,
+          "annual_irr_bps": 71.9,
+          "calendar_xirr_bps": 72.0,
+          "ceiling_80": 2.16,
+          "ceiling_85": 2.12,
+          "ceiling_100": 1.97
+        }
+      },
+      {
+        "scenario_id": "OPTIMISTIC",
+        "scenario_name": "Optimistic (Scenario-Derived Net Debt)",
+        "v4_baseline": {
+          "ending_gross_debt": 0.0,
+          "ending_cash": 5290.81,
+          "cash_flow_net_debt": -5290.81,
+          "valuation_net_debt": -2176.2,
+          "net_debt_difference": 3114.61,
+          "terminal_share_price": 123.42,
+          "annual_irr_percent": 13.34,
+          "calendar_dated_xirr_percent": 13.36,
+          "ceiling_80": 85.65,
+          "ceiling_85": 83.71,
+          "ceiling_100": 78.2
+        },
+        "v5_successor": {
+          "ending_gross_debt": 0.0,
+          "ending_cash": 5290.81,
+          "cash_flow_net_debt": -5290.81,
+          "valuation_net_debt": -5290.81,
+          "net_debt_difference": 0.0,
+          "terminal_share_price": 129.97,
+          "annual_irr_percent": 14.5,
+          "calendar_dated_xirr_percent": 14.52,
+          "ceiling_80": 90.11,
+          "ceiling_85": 88.07,
+          "ceiling_100": 82.27
+        },
+        "delta": {
+          "valuation_net_debt": -3114.61,
+          "terminal_share_price": 6.55,
+          "annual_irr_bps": 116.4,
+          "calendar_xirr_bps": 116.5,
+          "ceiling_80": 4.46,
+          "ceiling_85": 4.36,
+          "ceiling_100": 4.07
+        }
+      },
+      {
+        "scenario_id": "CONSERVATIVE_DYNAMIC",
+        "scenario_name": "Conservative (Cash-Constrained Dynamic)",
+        "v4_baseline": {
+          "ending_gross_debt": 1000.0,
+          "ending_cash": 3645.79,
+          "cash_flow_net_debt": -2645.79,
+          "valuation_net_debt": -2645.79,
+          "net_debt_difference": 0.0,
+          "terminal_share_price": 76.7,
+          "annual_irr_percent": 3.2,
+          "calendar_dated_xirr_percent": 3.21,
+          "ceiling_80": 53.86,
+          "ceiling_85": 52.65,
+          "ceiling_100": 49.2
+        },
+        "v5_successor": {
+          "ending_gross_debt": 1000.0,
+          "ending_cash": 3645.79,
+          "cash_flow_net_debt": -2645.79,
+          "valuation_net_debt": -2645.79,
+          "net_debt_difference": 0.0,
+          "terminal_share_price": 76.7,
+          "annual_irr_percent": 3.2,
+          "calendar_dated_xirr_percent": 3.21,
+          "ceiling_80": 53.86,
+          "ceiling_85": 52.65,
+          "ceiling_100": 49.2
+        },
+        "delta": {
+          "valuation_net_debt": 0.0,
+          "terminal_share_price": 0.0,
+          "annual_irr_bps": 0.0,
+          "calendar_xirr_bps": 0.0,
+          "ceiling_80": 0.0,
+          "ceiling_85": 0.0,
+          "ceiling_100": 0.0
+        }
+      },
+      {
+        "scenario_id": "OPTIMISTIC_DYNAMIC",
+        "scenario_name": "Optimistic (High-Cash Dynamic)",
+        "v4_baseline": {
+          "ending_gross_debt": 0.0,
+          "ending_cash": 5290.81,
+          "cash_flow_net_debt": -5290.81,
+          "valuation_net_debt": -5290.81,
+          "net_debt_difference": 0.0,
+          "terminal_share_price": 129.06,
+          "annual_irr_percent": 14.34,
+          "calendar_dated_xirr_percent": 14.36,
+          "ceiling_80": 89.49,
+          "ceiling_85": 87.46,
+          "ceiling_100": 81.71
+        },
+        "v5_successor": {
+          "ending_gross_debt": 0.0,
+          "ending_cash": 5290.81,
+          "cash_flow_net_debt": -5290.81,
+          "valuation_net_debt": -5290.81,
+          "net_debt_difference": 0.0,
+          "terminal_share_price": 129.06,
+          "annual_irr_percent": 14.34,
+          "calendar_dated_xirr_percent": 14.36,
+          "ceiling_80": 89.49,
+          "ceiling_85": 87.46,
+          "ceiling_100": 81.71
+        },
+        "delta": {
+          "valuation_net_debt": 0.0,
+          "terminal_share_price": 0.0,
+          "annual_irr_bps": 0.0,
+          "calendar_xirr_bps": 0.0,
+          "ceiling_80": 0.0,
+          "ceiling_85": 0.0,
+          "ceiling_100": 0.0
+        }
+      }
+    ]
+  },
+  "scenarios": {
+    "CONSERVATIVE": {
+      "scenario_id": "CONSERVATIVE",
+      "scenario_name": "Conservative (Scenario-Derived Net Debt)",
+      "description": "5.0% revenue CAGR, 16.5% EBIT margin, 10.65x exit multiple, scenario-derived net cash ($2,045.79M).",
+      "operating_assumptions": {
+        "revenue_growth_cagr": 0.05,
+        "year5_revenue": 13406.4,
+        "core_operating_margin": 0.165,
+        "year5_ebit": 2212.06,
+        "dna_pct_of_rev": 0.075,
+        "year5_dna": 1005.44,
+        "year5_ebitda": 3217.5,
+        "cumulative_ocf": 11574.82,
+        "cumulative_capex": 3411.52,
+        "cumulative_fcf": 8163.29
+      },
+      "capital_allocation_assumptions": {
+        "buyback_expenditure": 1800.0,
+        "avg_repurchase_price": 75.0,
+        "shares_repurchased": 24.0,
+        "sbc_shares_issued": 11.0,
+        "dilutive_awards_exit": 4.0,
+        "debt_repaid": 4500.0,
+        "cumulative_dividends_paid": 1017.5,
+        "buyback_classification": {
+          "EXECUTED_BUYBACKS_HISTORICAL": 750.0,
+          "APPROVED_CAPACITY": 1500.0,
+          "REMAINING_APPROVED_CAPACITY": 1200.0,
+          "FORECAST_BUYBACKS": 1800.0,
+          "ASSUMED_FUTURE_AUTHORIZATIONS": 600.0
+        }
+      },
+      "terminal_balance_sheet_values": {
+        "starting_gross_debt": 4500.0,
+        "ending_gross_debt": 0.0,
+        "starting_cash": 1200.0,
+        "ending_cash": 2045.79,
+        "starting_net_debt": 3300.0,
+        "ending_net_debt": -2045.79,
+        "net_debt_reduction": 5345.79,
+        "net_debt_derivation": {
+          "ending_gross_debt": 0.0,
+          "ending_cash": 2045.79,
+          "gross_debt_minus_cash": -2045.79,
+          "valuation_net_debt_used": -2045.79,
+          "difference": 0.0,
+          "derivation_status": "EXACT_ZERO_VARIANCE",
+          "reason": "Scenario-derived from cash flows: gross debt minus cash"
+        }
+      },
+      "share_count_basis": {
+        "beginning_basic_shares": 484.524,
+        "shares_repurchased": 24.0,
+        "sbc_issuance": 11.0,
+        "ending_actual_basic_shares": 471.524,
+        "dilutive_awards": 4.0,
+        "ending_diluted_shares": 475.524
+      },
+      "terminal_valuation": {
+        "method": "multiple",
+        "exit_multiple": 10.65,
+        "wacc": null,
+        "terminal_growth": null,
+        "enterprise_value": 34266.38,
+        "equity_value": 36312.17,
+        "terminal_share_price": 76.36
+      },
+      "dated_returns": {
+        "spot_price": 67.43,
+        "terminal_share_price": 76.36,
+        "annual_dividends": [
+          0.36,
+          0.39,
+          0.42,
+          0.45,
+          0.48
+        ],
+        "cumulative_dividends_per_share": 2.1,
+        "total_terminal_payout": 78.46,
+        "simple_5yr_cagr": 0.03077,
+        "five_period_annual_irr": 0.031098,
+        "five_period_annual_irr_percent": 3.11,
+        "calendar_dated_xirr": 0.03116,
+        "calendar_dated_xirr_percent": 3.12,
+        "dated_xirr": 0.031098,
+        "dated_xirr_percent": 3.11,
+        "dated_cash_flows": [
+          {
+            "event": "INITIAL_INVESTMENT",
+            "date": "2026-10-22",
+            "days_from_start": 0,
+            "fraction_years": 0.0,
+            "cash_flow": -67.43
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_1",
+            "date": "2027-05-15",
+            "days_from_start": 205,
+            "fraction_years": 0.561644,
+            "cash_flow": 0.36
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_2",
+            "date": "2028-05-15",
+            "days_from_start": 571,
+            "fraction_years": 1.564384,
+            "cash_flow": 0.39
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_3",
+            "date": "2029-05-15",
+            "days_from_start": 936,
+            "fraction_years": 2.564384,
+            "cash_flow": 0.42
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_4",
+            "date": "2030-05-15",
+            "days_from_start": 1301,
+            "fraction_years": 3.564384,
+            "cash_flow": 0.45
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_5",
+            "date": "2031-05-15",
+            "days_from_start": 1666,
+            "fraction_years": 4.564384,
+            "cash_flow": 0.48
+          },
+          {
+            "event": "TERMINAL_SHARE_DISPOSITION",
+            "date": "2031-10-22",
+            "days_from_start": 1826,
+            "fraction_years": 5.00274,
+            "cash_flow": 76.3624252975402
+          }
+        ]
+      },
+      "accumulation_ceilings": {
+        "ceiling_80_hurdle": 53.63,
+        "ceiling_85_hurdle": 52.42,
+        "ceiling_100_hurdle": 48.99,
+        "ceiling_calendar_80_hurdle": 53.68,
+        "ceiling_calendar_85_hurdle": 52.47,
+        "ceiling_calendar_100_hurdle": 49.04,
+        "annual_irr_basis": {
+          "ceiling_80": 53.63,
+          "ceiling_85": 52.42,
+          "ceiling_100": 48.99,
+          "invertibility_proof": {
+            "reproduced_irr_at_80": 0.08,
+            "reproduced_irr_at_85": 0.085,
+            "reproduced_irr_at_100": 0.1,
+            "is_exact": true
+          }
+        },
+        "calendar_xirr_basis": {
+          "ceiling_80": 53.68,
+          "ceiling_85": 52.47,
+          "ceiling_100": 49.04,
+          "invertibility_proof": {
+            "reproduced_xirr_at_80": 0.08,
+            "reproduced_xirr_at_85": 0.085,
+            "reproduced_xirr_at_100": 0.1,
+            "is_exact": true
+          }
+        },
+        "invertibility_proof": {
+          "reproduced_irr_at_80": 0.08,
+          "reproduced_irr_at_85": 0.085,
+          "reproduced_irr_at_100": 0.1,
+          "is_exact": true
+        }
+      },
+      "provenance_and_confidence": {
+        "primary_source": "SEC Form 20-F FY2025 & Form 6-K H1 2026",
+        "accounting_standard": "IFRS IAS 7 (Interest Paid in Operating Activities)",
+        "confidence_score": 0.95,
+        "governance_disposition": "WATCH_CONDITION",
+        "allocation_directive": "NO_TRADE_EXECUTION"
+      }
+    },
+    "BASE_MULTIPLE": {
+      "scenario_id": "BASE_MULTIPLE",
+      "scenario_name": "Base Case (Exit Multiple, Derived Net Debt)",
+      "description": "6.5% revenue CAGR, 18.5% EBIT margin, 10.65x exit multiple, scenario-derived net cash ($3,687.55M).",
+      "operating_assumptions": {
+        "revenue_growth_cagr": 0.065,
+        "year5_revenue": 14396.6,
+        "core_operating_margin": 0.185,
+        "year5_ebit": 2663.37,
+        "dna_pct_of_rev": 0.08,
+        "year5_dna": 1151.73,
+        "year5_ebitda": 3815.1,
+        "cumulative_ocf": 13370.52,
+        "cumulative_capex": 3565.47,
+        "cumulative_fcf": 9805.05
+      },
+      "capital_allocation_assumptions": {
+        "buyback_expenditure": 1800.0,
+        "avg_repurchase_price": 75.0,
+        "shares_repurchased": 24.0,
+        "sbc_shares_issued": 11.0,
+        "dilutive_awards_exit": 4.0,
+        "debt_repaid": 4500.0,
+        "cumulative_dividends_paid": 1017.5,
+        "buyback_classification": {
+          "EXECUTED_BUYBACKS_HISTORICAL": 750.0,
+          "APPROVED_CAPACITY": 1500.0,
+          "REMAINING_APPROVED_CAPACITY": 1200.0,
+          "FORECAST_BUYBACKS": 1800.0,
+          "ASSUMED_FUTURE_AUTHORIZATIONS": 600.0
+        }
+      },
+      "terminal_balance_sheet_values": {
+        "starting_gross_debt": 4500.0,
+        "ending_gross_debt": 0.0,
+        "starting_cash": 1200.0,
+        "ending_cash": 3687.55,
+        "starting_net_debt": 3300.0,
+        "ending_net_debt": -3687.55,
+        "net_debt_reduction": 6987.55,
+        "net_debt_derivation": {
+          "ending_gross_debt": 0.0,
+          "ending_cash": 3687.55,
+          "gross_debt_minus_cash": -3687.55,
+          "valuation_net_debt_used": -3687.55,
+          "difference": 0.0,
+          "derivation_status": "EXACT_ZERO_VARIANCE",
+          "reason": "Scenario-derived from cash flows: gross debt minus cash"
+        }
+      },
+      "share_count_basis": {
+        "beginning_basic_shares": 484.524,
+        "shares_repurchased": 24.0,
+        "sbc_issuance": 11.0,
+        "ending_actual_basic_shares": 471.524,
+        "dilutive_awards": 4.0,
+        "ending_diluted_shares": 475.524
+      },
+      "terminal_valuation": {
+        "method": "multiple",
+        "exit_multiple": 10.65,
+        "wacc": null,
+        "terminal_growth": null,
+        "enterprise_value": 40630.82,
+        "equity_value": 44318.36,
+        "terminal_share_price": 93.2
+      },
+      "dated_returns": {
+        "spot_price": 67.43,
+        "terminal_share_price": 93.2,
+        "annual_dividends": [
+          0.36,
+          0.39,
+          0.42,
+          0.45,
+          0.48
+        ],
+        "cumulative_dividends_per_share": 2.1,
+        "total_terminal_payout": 95.3,
+        "simple_5yr_cagr": 0.071635,
+        "five_period_annual_irr": 0.072314,
+        "five_period_annual_irr_percent": 7.23,
+        "calendar_dated_xirr": 0.072443,
+        "calendar_dated_xirr_percent": 7.24,
+        "dated_xirr": 0.072314,
+        "dated_xirr_percent": 7.23,
+        "dated_cash_flows": [
+          {
+            "event": "INITIAL_INVESTMENT",
+            "date": "2026-10-22",
+            "days_from_start": 0,
+            "fraction_years": 0.0,
+            "cash_flow": -67.43
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_1",
+            "date": "2027-05-15",
+            "days_from_start": 205,
+            "fraction_years": 0.561644,
+            "cash_flow": 0.36
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_2",
+            "date": "2028-05-15",
+            "days_from_start": 571,
+            "fraction_years": 1.564384,
+            "cash_flow": 0.39
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_3",
+            "date": "2029-05-15",
+            "days_from_start": 936,
+            "fraction_years": 2.564384,
+            "cash_flow": 0.42
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_4",
+            "date": "2030-05-15",
+            "days_from_start": 1301,
+            "fraction_years": 3.564384,
+            "cash_flow": 0.45
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_5",
+            "date": "2031-05-15",
+            "days_from_start": 1666,
+            "fraction_years": 4.564384,
+            "cash_flow": 0.48
+          },
+          {
+            "event": "TERMINAL_SHARE_DISPOSITION",
+            "date": "2031-10-22",
+            "days_from_start": 1826,
+            "fraction_years": 5.00274,
+            "cash_flow": 93.19900192698726
+          }
+        ]
+      },
+      "accumulation_ceilings": {
+        "ceiling_80_hurdle": 65.09,
+        "ceiling_85_hurdle": 63.62,
+        "ceiling_100_hurdle": 59.44,
+        "ceiling_calendar_80_hurdle": 65.13,
+        "ceiling_calendar_85_hurdle": 63.66,
+        "ceiling_calendar_100_hurdle": 59.49,
+        "annual_irr_basis": {
+          "ceiling_80": 65.09,
+          "ceiling_85": 63.62,
+          "ceiling_100": 59.44,
+          "invertibility_proof": {
+            "reproduced_irr_at_80": 0.08,
+            "reproduced_irr_at_85": 0.085,
+            "reproduced_irr_at_100": 0.1,
+            "is_exact": true
+          }
+        },
+        "calendar_xirr_basis": {
+          "ceiling_80": 65.13,
+          "ceiling_85": 63.66,
+          "ceiling_100": 59.49,
+          "invertibility_proof": {
+            "reproduced_xirr_at_80": 0.08,
+            "reproduced_xirr_at_85": 0.085,
+            "reproduced_xirr_at_100": 0.1,
+            "is_exact": true
+          }
+        },
+        "invertibility_proof": {
+          "reproduced_irr_at_80": 0.08,
+          "reproduced_irr_at_85": 0.085,
+          "reproduced_irr_at_100": 0.1,
+          "is_exact": true
+        }
+      },
+      "provenance_and_confidence": {
+        "primary_source": "SEC Form 20-F FY2025 & Form 6-K H1 2026",
+        "accounting_standard": "IFRS IAS 7 (Interest Paid in Operating Activities)",
+        "confidence_score": 0.95,
+        "governance_disposition": "WATCH_CONDITION",
+        "allocation_directive": "NO_TRADE_EXECUTION"
+      }
+    },
+    "BASE_DCF": {
+      "scenario_id": "BASE_DCF",
+      "scenario_name": "Base Case (Gordon Growth DCF, Derived Net Debt)",
+      "description": "6.5% revenue CAGR, 18.5% EBIT margin, WACC 7.25%, g 2.50%, terminal FCFF $1,970.67M, derived net cash ($3,687.55M).",
+      "operating_assumptions": {
+        "revenue_growth_cagr": 0.065,
+        "year5_revenue": 14396.6,
+        "core_operating_margin": 0.185,
+        "year5_ebit": 2663.37,
+        "dna_pct_of_rev": 0.08,
+        "year5_dna": 1151.73,
+        "year5_ebitda": 3815.1,
+        "cumulative_ocf": 13370.52,
+        "cumulative_capex": 3565.47,
+        "cumulative_fcf": 9805.05
+      },
+      "capital_allocation_assumptions": {
+        "buyback_expenditure": 1800.0,
+        "avg_repurchase_price": 75.0,
+        "shares_repurchased": 24.0,
+        "sbc_shares_issued": 11.0,
+        "dilutive_awards_exit": 4.0,
+        "debt_repaid": 4500.0,
+        "cumulative_dividends_paid": 1017.5,
+        "buyback_classification": {
+          "EXECUTED_BUYBACKS_HISTORICAL": 750.0,
+          "APPROVED_CAPACITY": 1500.0,
+          "REMAINING_APPROVED_CAPACITY": 1200.0,
+          "FORECAST_BUYBACKS": 1800.0,
+          "ASSUMED_FUTURE_AUTHORIZATIONS": 600.0
+        }
+      },
+      "terminal_balance_sheet_values": {
+        "starting_gross_debt": 4500.0,
+        "ending_gross_debt": 0.0,
+        "starting_cash": 1200.0,
+        "ending_cash": 3687.55,
+        "starting_net_debt": 3300.0,
+        "ending_net_debt": -3687.55,
+        "net_debt_reduction": 6987.55,
+        "net_debt_derivation": {
+          "ending_gross_debt": 0.0,
+          "ending_cash": 3687.55,
+          "gross_debt_minus_cash": -3687.55,
+          "valuation_net_debt_used": -3687.55,
+          "difference": 0.0,
+          "derivation_status": "EXACT_ZERO_VARIANCE",
+          "reason": "Scenario-derived from cash flows: gross debt minus cash"
+        }
+      },
+      "share_count_basis": {
+        "beginning_basic_shares": 484.524,
+        "shares_repurchased": 24.0,
+        "sbc_issuance": 11.0,
+        "ending_actual_basic_shares": 471.524,
+        "dilutive_awards": 4.0,
+        "ending_diluted_shares": 475.524
+      },
+      "terminal_valuation": {
+        "method": "gordon_growth",
+        "exit_multiple": 10.8746,
+        "wacc": 0.0725,
+        "terminal_growth": 0.025,
+        "enterprise_value": 41487.79,
+        "equity_value": 45175.34,
+        "terminal_share_price": 95.0
+      },
+      "dated_returns": {
+        "spot_price": 67.43,
+        "terminal_share_price": 95.0,
+        "annual_dividends": [
+          0.36,
+          0.39,
+          0.42,
+          0.45,
+          0.48
+        ],
+        "cumulative_dividends_per_share": 2.1,
+        "total_terminal_payout": 97.1,
+        "simple_5yr_cagr": 0.075658,
+        "five_period_annual_irr": 0.076367,
+        "five_period_annual_irr_percent": 7.64,
+        "calendar_dated_xirr": 0.076501,
+        "calendar_dated_xirr_percent": 7.65,
+        "dated_xirr": 0.076367,
+        "dated_xirr_percent": 7.64,
+        "dated_cash_flows": [
+          {
+            "event": "INITIAL_INVESTMENT",
+            "date": "2026-10-22",
+            "days_from_start": 0,
+            "fraction_years": 0.0,
+            "cash_flow": -67.43
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_1",
+            "date": "2027-05-15",
+            "days_from_start": 205,
+            "fraction_years": 0.561644,
+            "cash_flow": 0.36
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_2",
+            "date": "2028-05-15",
+            "days_from_start": 571,
+            "fraction_years": 1.564384,
+            "cash_flow": 0.39
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_3",
+            "date": "2029-05-15",
+            "days_from_start": 936,
+            "fraction_years": 2.564384,
+            "cash_flow": 0.42
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_4",
+            "date": "2030-05-15",
+            "days_from_start": 1301,
+            "fraction_years": 3.564384,
+            "cash_flow": 0.45
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_5",
+            "date": "2031-05-15",
+            "days_from_start": 1666,
+            "fraction_years": 4.564384,
+            "cash_flow": 0.48
+          },
+          {
+            "event": "TERMINAL_SHARE_DISPOSITION",
+            "date": "2031-10-22",
+            "days_from_start": 1826,
+            "fraction_years": 5.00274,
+            "cash_flow": 95.00117063705073
+          }
+        ]
+      },
+      "accumulation_ceilings": {
+        "ceiling_80_hurdle": 66.31,
+        "ceiling_85_hurdle": 64.82,
+        "ceiling_100_hurdle": 60.56,
+        "ceiling_calendar_80_hurdle": 66.36,
+        "ceiling_calendar_85_hurdle": 64.86,
+        "ceiling_calendar_100_hurdle": 60.61,
+        "annual_irr_basis": {
+          "ceiling_80": 66.31,
+          "ceiling_85": 64.82,
+          "ceiling_100": 60.56,
+          "invertibility_proof": {
+            "reproduced_irr_at_80": 0.08,
+            "reproduced_irr_at_85": 0.085,
+            "reproduced_irr_at_100": 0.1,
+            "is_exact": true
+          }
+        },
+        "calendar_xirr_basis": {
+          "ceiling_80": 66.36,
+          "ceiling_85": 64.86,
+          "ceiling_100": 60.61,
+          "invertibility_proof": {
+            "reproduced_xirr_at_80": 0.08,
+            "reproduced_xirr_at_85": 0.085,
+            "reproduced_xirr_at_100": 0.1,
+            "is_exact": true
+          }
+        },
+        "invertibility_proof": {
+          "reproduced_irr_at_80": 0.08,
+          "reproduced_irr_at_85": 0.085,
+          "reproduced_irr_at_100": 0.1,
+          "is_exact": true
+        }
+      },
+      "provenance_and_confidence": {
+        "primary_source": "SEC Form 20-F FY2025 & Form 6-K H1 2026",
+        "accounting_standard": "IFRS IAS 7 (Interest Paid in Operating Activities)",
+        "confidence_score": 0.95,
+        "governance_disposition": "WATCH_CONDITION",
+        "allocation_directive": "NO_TRADE_EXECUTION"
+      }
+    },
+    "OPTIMISTIC": {
+      "scenario_id": "OPTIMISTIC",
+      "scenario_name": "Optimistic (Scenario-Derived Net Debt)",
+      "description": "8.5% revenue CAGR, 20.0% EBIT margin, 13.00x exit multiple, scenario-derived net cash ($5,290.81M).",
+      "operating_assumptions": {
+        "revenue_growth_cagr": 0.085,
+        "year5_revenue": 15807.4,
+        "core_operating_margin": 0.2,
+        "year5_ebit": 3161.48,
+        "dna_pct_of_rev": 0.075,
+        "year5_dna": 1185.52,
+        "year5_ebitda": 4347.0,
+        "cumulative_ocf": 15188.58,
+        "cumulative_capex": 3780.27,
+        "cumulative_fcf": 11408.31
+      },
+      "capital_allocation_assumptions": {
+        "buyback_expenditure": 1800.0,
+        "avg_repurchase_price": 75.0,
+        "shares_repurchased": 24.0,
+        "sbc_shares_issued": 11.0,
+        "dilutive_awards_exit": 4.0,
+        "debt_repaid": 4500.0,
+        "cumulative_dividends_paid": 1017.5,
+        "buyback_classification": {
+          "EXECUTED_BUYBACKS_HISTORICAL": 750.0,
+          "APPROVED_CAPACITY": 1500.0,
+          "REMAINING_APPROVED_CAPACITY": 1200.0,
+          "FORECAST_BUYBACKS": 1800.0,
+          "ASSUMED_FUTURE_AUTHORIZATIONS": 600.0
+        }
+      },
+      "terminal_balance_sheet_values": {
+        "starting_gross_debt": 4500.0,
+        "ending_gross_debt": 0.0,
+        "starting_cash": 1200.0,
+        "ending_cash": 5290.81,
+        "starting_net_debt": 3300.0,
+        "ending_net_debt": -5290.81,
+        "net_debt_reduction": 8590.81,
+        "net_debt_derivation": {
+          "ending_gross_debt": 0.0,
+          "ending_cash": 5290.81,
+          "gross_debt_minus_cash": -5290.81,
+          "valuation_net_debt_used": -5290.81,
+          "difference": 0.0,
+          "derivation_status": "EXACT_ZERO_VARIANCE",
+          "reason": "Scenario-derived from cash flows: gross debt minus cash"
+        }
+      },
+      "share_count_basis": {
+        "beginning_basic_shares": 484.524,
+        "shares_repurchased": 24.0,
+        "sbc_issuance": 11.0,
+        "ending_actual_basic_shares": 471.524,
+        "dilutive_awards": 4.0,
+        "ending_diluted_shares": 475.524
+      },
+      "terminal_valuation": {
+        "method": "multiple",
+        "exit_multiple": 13.0,
+        "wacc": null,
+        "terminal_growth": null,
+        "enterprise_value": 56511.0,
+        "equity_value": 61801.81,
+        "terminal_share_price": 129.97
+      },
+      "dated_returns": {
+        "spot_price": 67.43,
+        "terminal_share_price": 129.97,
+        "annual_dividends": [
+          0.36,
+          0.39,
+          0.42,
+          0.45,
+          0.48
+        ],
+        "cumulative_dividends_per_share": 2.1,
+        "total_terminal_payout": 132.07,
+        "simple_5yr_cagr": 0.143898,
+        "five_period_annual_irr": 0.145022,
+        "five_period_annual_irr_percent": 14.5,
+        "calendar_dated_xirr": 0.14523,
+        "calendar_dated_xirr_percent": 14.52,
+        "dated_xirr": 0.145022,
+        "dated_xirr_percent": 14.5,
+        "dated_cash_flows": [
+          {
+            "event": "INITIAL_INVESTMENT",
+            "date": "2026-10-22",
+            "days_from_start": 0,
+            "fraction_years": 0.0,
+            "cash_flow": -67.43
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_1",
+            "date": "2027-05-15",
+            "days_from_start": 205,
+            "fraction_years": 0.561644,
+            "cash_flow": 0.36
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_2",
+            "date": "2028-05-15",
+            "days_from_start": 571,
+            "fraction_years": 1.564384,
+            "cash_flow": 0.39
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_3",
+            "date": "2029-05-15",
+            "days_from_start": 936,
+            "fraction_years": 2.564384,
+            "cash_flow": 0.42
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_4",
+            "date": "2030-05-15",
+            "days_from_start": 1301,
+            "fraction_years": 3.564384,
+            "cash_flow": 0.45
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_5",
+            "date": "2031-05-15",
+            "days_from_start": 1666,
+            "fraction_years": 4.564384,
+            "cash_flow": 0.48
+          },
+          {
+            "event": "TERMINAL_SHARE_DISPOSITION",
+            "date": "2031-10-22",
+            "days_from_start": 1826,
+            "fraction_years": 5.00274,
+            "cash_flow": 129.96570620156425
+          }
+        ]
+      },
+      "accumulation_ceilings": {
+        "ceiling_80_hurdle": 90.11,
+        "ceiling_85_hurdle": 88.07,
+        "ceiling_100_hurdle": 82.27,
+        "ceiling_calendar_80_hurdle": 90.15,
+        "ceiling_calendar_85_hurdle": 88.11,
+        "ceiling_calendar_100_hurdle": 82.31,
+        "annual_irr_basis": {
+          "ceiling_80": 90.11,
+          "ceiling_85": 88.07,
+          "ceiling_100": 82.27,
+          "invertibility_proof": {
+            "reproduced_irr_at_80": 0.08,
+            "reproduced_irr_at_85": 0.085,
+            "reproduced_irr_at_100": 0.1,
+            "is_exact": true
+          }
+        },
+        "calendar_xirr_basis": {
+          "ceiling_80": 90.15,
+          "ceiling_85": 88.11,
+          "ceiling_100": 82.31,
+          "invertibility_proof": {
+            "reproduced_xirr_at_80": 0.08,
+            "reproduced_xirr_at_85": 0.085,
+            "reproduced_xirr_at_100": 0.1,
+            "is_exact": true
+          }
+        },
+        "invertibility_proof": {
+          "reproduced_irr_at_80": 0.08,
+          "reproduced_irr_at_85": 0.085,
+          "reproduced_irr_at_100": 0.1,
+          "is_exact": true
+        }
+      },
+      "provenance_and_confidence": {
+        "primary_source": "SEC Form 20-F FY2025 & Form 6-K H1 2026",
+        "accounting_standard": "IFRS IAS 7 (Interest Paid in Operating Activities)",
+        "confidence_score": 0.95,
+        "governance_disposition": "WATCH_CONDITION",
+        "allocation_directive": "NO_TRADE_EXECUTION"
+      }
+    },
+    "CONSERVATIVE_DYNAMIC": {
+      "scenario_id": "CONSERVATIVE_DYNAMIC",
+      "scenario_name": "Conservative (Cash-Constrained Dynamic)",
+      "description": "Conservative growth with buybacks strictly capped at $1.2B remaining approved capacity.",
+      "operating_assumptions": {
+        "revenue_growth_cagr": 0.05,
+        "year5_revenue": 13400.96,
+        "core_operating_margin": 0.165,
+        "year5_ebit": 2211.16,
+        "dna_pct_of_rev": 0.075,
+        "year5_dna": 1005.07,
+        "year5_ebitda": 3216.23,
+        "cumulative_ocf": 11574.82,
+        "cumulative_capex": 3411.52,
+        "cumulative_fcf": 8163.29
+      },
+      "capital_allocation_assumptions": {
+        "buyback_expenditure": 1200.0,
+        "avg_repurchase_price": 65.0,
+        "shares_repurchased": 18.462,
+        "sbc_shares_issued": 11.0,
+        "dilutive_awards_exit": 4.0,
+        "debt_repaid": 3500.0,
+        "cumulative_dividends_paid": 1017.5,
+        "buyback_classification": {
+          "EXECUTED_BUYBACKS_HISTORICAL": 750.0,
+          "APPROVED_CAPACITY": 1500.0,
+          "REMAINING_APPROVED_CAPACITY": 1200.0,
+          "FORECAST_BUYBACKS": 1200.0,
+          "ASSUMED_FUTURE_AUTHORIZATIONS": 0.0
+        }
+      },
+      "terminal_balance_sheet_values": {
+        "starting_gross_debt": 4500.0,
+        "ending_gross_debt": 1000.0,
+        "starting_cash": 1200.0,
+        "ending_cash": 3645.79,
+        "starting_net_debt": 3300.0,
+        "ending_net_debt": -2645.79,
+        "net_debt_reduction": 5945.79,
+        "net_debt_derivation": {
+          "ending_gross_debt": 1000.0,
+          "ending_cash": 3645.79,
+          "gross_debt_minus_cash": -2645.79,
+          "valuation_net_debt_used": -2645.79,
+          "difference": 0.0,
+          "derivation_status": "EXACT_ZERO_VARIANCE",
+          "reason": "Scenario-derived from cash flows: gross debt minus cash"
+        }
+      },
+      "share_count_basis": {
+        "beginning_basic_shares": 484.524,
+        "shares_repurchased": 18.462,
+        "sbc_issuance": 11.0,
+        "ending_actual_basic_shares": 477.062,
+        "dilutive_awards": 4.0,
+        "ending_diluted_shares": 481.062
+      },
+      "terminal_valuation": {
+        "method": "multiple",
+        "exit_multiple": 10.65,
+        "wacc": null,
+        "terminal_growth": null,
+        "enterprise_value": 34252.84,
+        "equity_value": 36898.64,
+        "terminal_share_price": 76.7
+      },
+      "dated_returns": {
+        "spot_price": 67.43,
+        "terminal_share_price": 76.7,
+        "annual_dividends": [
+          0.36,
+          0.39,
+          0.42,
+          0.45,
+          0.48
+        ],
+        "cumulative_dividends_per_share": 2.1,
+        "total_terminal_payout": 78.8,
+        "simple_5yr_cagr": 0.031662,
+        "five_period_annual_irr": 0.031998,
+        "five_period_annual_irr_percent": 3.2,
+        "calendar_dated_xirr": 0.032062,
+        "calendar_dated_xirr_percent": 3.21,
+        "dated_xirr": 0.031998,
+        "dated_xirr_percent": 3.2,
+        "dated_cash_flows": [
+          {
+            "event": "INITIAL_INVESTMENT",
+            "date": "2026-10-22",
+            "days_from_start": 0,
+            "fraction_years": 0.0,
+            "cash_flow": -67.43
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_1",
+            "date": "2027-05-15",
+            "days_from_start": 205,
+            "fraction_years": 0.561644,
+            "cash_flow": 0.36
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_2",
+            "date": "2028-05-15",
+            "days_from_start": 571,
+            "fraction_years": 1.564384,
+            "cash_flow": 0.39
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_3",
+            "date": "2029-05-15",
+            "days_from_start": 936,
+            "fraction_years": 2.564384,
+            "cash_flow": 0.42
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_4",
+            "date": "2030-05-15",
+            "days_from_start": 1301,
+            "fraction_years": 3.564384,
+            "cash_flow": 0.45
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_5",
+            "date": "2031-05-15",
+            "days_from_start": 1666,
+            "fraction_years": 4.564384,
+            "cash_flow": 0.48
+          },
+          {
+            "event": "TERMINAL_SHARE_DISPOSITION",
+            "date": "2031-10-22",
+            "days_from_start": 1826,
+            "fraction_years": 5.00274,
+            "cash_flow": 76.70237952792836
+          }
+        ]
+      },
+      "accumulation_ceilings": {
+        "ceiling_80_hurdle": 53.86,
+        "ceiling_85_hurdle": 52.65,
+        "ceiling_100_hurdle": 49.2,
+        "ceiling_calendar_80_hurdle": 53.91,
+        "ceiling_calendar_85_hurdle": 52.69,
+        "ceiling_calendar_100_hurdle": 49.25,
+        "annual_irr_basis": {
+          "ceiling_80": 53.86,
+          "ceiling_85": 52.65,
+          "ceiling_100": 49.2,
+          "invertibility_proof": {
+            "reproduced_irr_at_80": 0.08,
+            "reproduced_irr_at_85": 0.085,
+            "reproduced_irr_at_100": 0.1,
+            "is_exact": true
+          }
+        },
+        "calendar_xirr_basis": {
+          "ceiling_80": 53.91,
+          "ceiling_85": 52.69,
+          "ceiling_100": 49.25,
+          "invertibility_proof": {
+            "reproduced_xirr_at_80": 0.08,
+            "reproduced_xirr_at_85": 0.085,
+            "reproduced_xirr_at_100": 0.1,
+            "is_exact": true
+          }
+        },
+        "invertibility_proof": {
+          "reproduced_irr_at_80": 0.08,
+          "reproduced_irr_at_85": 0.085,
+          "reproduced_irr_at_100": 0.1,
+          "is_exact": true
+        }
+      },
+      "provenance_and_confidence": {
+        "primary_source": "SEC Form 20-F FY2025 & Form 6-K H1 2026",
+        "accounting_standard": "IFRS IAS 7 (Interest Paid in Operating Activities)",
+        "confidence_score": 0.95,
+        "governance_disposition": "WATCH_CONDITION",
+        "allocation_directive": "NO_TRADE_EXECUTION"
+      }
+    },
+    "OPTIMISTIC_DYNAMIC": {
+      "scenario_id": "OPTIMISTIC_DYNAMIC",
+      "scenario_name": "Optimistic (High-Cash Dynamic)",
+      "description": "High cash generation with full debt extinguishment and $1.8B buybacks @ $85/sh.",
+      "operating_assumptions": {
+        "revenue_growth_cagr": 0.085,
+        "year5_revenue": 15788.4,
+        "core_operating_margin": 0.2,
+        "year5_ebit": 3157.68,
+        "dna_pct_of_rev": 0.075,
+        "year5_dna": 1184.13,
+        "year5_ebitda": 4341.81,
+        "cumulative_ocf": 15188.58,
+        "cumulative_capex": 3780.27,
+        "cumulative_fcf": 11408.31
+      },
+      "capital_allocation_assumptions": {
+        "buyback_expenditure": 1800.0,
+        "avg_repurchase_price": 85.0,
+        "shares_repurchased": 21.176,
+        "sbc_shares_issued": 11.0,
+        "dilutive_awards_exit": 4.0,
+        "debt_repaid": 4500.0,
+        "cumulative_dividends_paid": 1017.5,
+        "buyback_classification": {
+          "EXECUTED_BUYBACKS_HISTORICAL": 750.0,
+          "APPROVED_CAPACITY": 1500.0,
+          "REMAINING_APPROVED_CAPACITY": 1200.0,
+          "FORECAST_BUYBACKS": 1800.0,
+          "ASSUMED_FUTURE_AUTHORIZATIONS": 600.0
+        }
+      },
+      "terminal_balance_sheet_values": {
+        "starting_gross_debt": 4500.0,
+        "ending_gross_debt": 0.0,
+        "starting_cash": 1200.0,
+        "ending_cash": 5290.81,
+        "starting_net_debt": 3300.0,
+        "ending_net_debt": -5290.81,
+        "net_debt_reduction": 8590.81,
+        "net_debt_derivation": {
+          "ending_gross_debt": 0.0,
+          "ending_cash": 5290.81,
+          "gross_debt_minus_cash": -5290.81,
+          "valuation_net_debt_used": -5290.81,
+          "difference": 0.0,
+          "derivation_status": "EXACT_ZERO_VARIANCE",
+          "reason": "Scenario-derived from cash flows: gross debt minus cash"
+        }
+      },
+      "share_count_basis": {
+        "beginning_basic_shares": 484.524,
+        "shares_repurchased": 21.176,
+        "sbc_issuance": 11.0,
+        "ending_actual_basic_shares": 474.348,
+        "dilutive_awards": 4.0,
+        "ending_diluted_shares": 478.348
+      },
+      "terminal_valuation": {
+        "method": "multiple",
+        "exit_multiple": 13.0,
+        "wacc": null,
+        "terminal_growth": null,
+        "enterprise_value": 56443.51,
+        "equity_value": 61734.33,
+        "terminal_share_price": 129.06
+      },
+      "dated_returns": {
+        "spot_price": 67.43,
+        "terminal_share_price": 129.06,
+        "annual_dividends": [
+          0.36,
+          0.39,
+          0.42,
+          0.45,
+          0.48
+        ],
+        "cumulative_dividends_per_share": 2.1,
+        "total_terminal_payout": 131.16,
+        "simple_5yr_cagr": 0.142321,
+        "five_period_annual_irr": 0.143437,
+        "five_period_annual_irr_percent": 14.34,
+        "calendar_dated_xirr": 0.143643,
+        "calendar_dated_xirr_percent": 14.36,
+        "dated_xirr": 0.143437,
+        "dated_xirr_percent": 14.34,
+        "dated_cash_flows": [
+          {
+            "event": "INITIAL_INVESTMENT",
+            "date": "2026-10-22",
+            "days_from_start": 0,
+            "fraction_years": 0.0,
+            "cash_flow": -67.43
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_1",
+            "date": "2027-05-15",
+            "days_from_start": 205,
+            "fraction_years": 0.561644,
+            "cash_flow": 0.36
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_2",
+            "date": "2028-05-15",
+            "days_from_start": 571,
+            "fraction_years": 1.564384,
+            "cash_flow": 0.39
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_3",
+            "date": "2029-05-15",
+            "days_from_start": 936,
+            "fraction_years": 2.564384,
+            "cash_flow": 0.42
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_4",
+            "date": "2030-05-15",
+            "days_from_start": 1301,
+            "fraction_years": 3.564384,
+            "cash_flow": 0.45
+          },
+          {
+            "event": "ANNUAL_DIVIDEND_YEAR_5",
+            "date": "2031-05-15",
+            "days_from_start": 1666,
+            "fraction_years": 4.564384,
+            "cash_flow": 0.48
+          },
+          {
+            "event": "TERMINAL_SHARE_DISPOSITION",
+            "date": "2031-10-22",
+            "days_from_start": 1826,
+            "fraction_years": 5.00274,
+            "cash_flow": 129.0574774354331
+          }
+        ]
+      },
+      "accumulation_ceilings": {
+        "ceiling_80_hurdle": 89.49,
+        "ceiling_85_hurdle": 87.46,
+        "ceiling_100_hurdle": 81.71,
+        "ceiling_calendar_80_hurdle": 89.53,
+        "ceiling_calendar_85_hurdle": 87.5,
+        "ceiling_calendar_100_hurdle": 81.75,
+        "annual_irr_basis": {
+          "ceiling_80": 89.49,
+          "ceiling_85": 87.46,
+          "ceiling_100": 81.71,
+          "invertibility_proof": {
+            "reproduced_irr_at_80": 0.08,
+            "reproduced_irr_at_85": 0.085,
+            "reproduced_irr_at_100": 0.1,
+            "is_exact": true
+          }
+        },
+        "calendar_xirr_basis": {
+          "ceiling_80": 89.53,
+          "ceiling_85": 87.5,
+          "ceiling_100": 81.75,
+          "invertibility_proof": {
+            "reproduced_xirr_at_80": 0.08,
+            "reproduced_xirr_at_85": 0.085,
+            "reproduced_xirr_at_100": 0.1,
+            "is_exact": true
+          }
+        },
+        "invertibility_proof": {
+          "reproduced_irr_at_80": 0.08,
+          "reproduced_irr_at_85": 0.085,
+          "reproduced_irr_at_100": 0.1,
+          "is_exact": true
+        }
+      },
+      "provenance_and_confidence": {
+        "primary_source": "SEC Form 20-F FY2025 & Form 6-K H1 2026",
+        "accounting_standard": "IFRS IAS 7 (Interest Paid in Operating Activities)",
+        "confidence_score": 0.95,
+        "governance_disposition": "WATCH_CONDITION",
+        "allocation_directive": "NO_TRADE_EXECUTION"
+      }
+    }
+  }
+}

@@ -34,9 +34,9 @@ interface OpportunityDossierCardProps {
 }
 
 export default function OpportunityDossierCard({ dossier }: OpportunityDossierCardProps) {
-  // Decision-first presentation for published Quality Watch assets with WATCH_CONDITIONS disposition
+  // Decision-first presentation for published Quality Watch assets or Alcon V4 research candidate
   if (
-    PUBLISHED_WATCH_SYMBOLS.includes(dossier.identity.symbol) &&
+    (PUBLISHED_WATCH_SYMBOLS.includes(dossier.identity.symbol) || dossier.alcon_v4_extension) &&
     dossier.central_assessment.disposition === "WATCH_CONDITIONS"
   ) {
     return <DecisionFirstDossierView dossier={dossier} />;

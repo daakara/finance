@@ -39,6 +39,7 @@ import {
   OpportunityFinancialProfile,
   calculateScenarioPriceDiffPct,
 } from "../lib/opportunityDossiers";
+import AlconV4ExtendedView from "./AlconV4ExtendedView";
 
 export interface DecisionFirstDossierViewProps {
   dossier: OpportunityDossier;
@@ -399,158 +400,162 @@ export default function DecisionFirstDossierView({
       </section>
 
       {/* C. Expectations & Scenarios */}
-      <section
-        className="bg-[#0f172a]/95 border border-cyan-800/60 rounded-xl p-4 sm:p-5 space-y-4 shadow-md"
-        aria-label="Expectations and Scenarios"
-      >
-        <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
-          <span className="w-2 h-2 rounded-full bg-cyan-400" aria-hidden="true"></span>
-          <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-300">
-            Expectations &amp; Scenarios
-          </h2>
-        </div>
-
-        {/* Reverse-DCF Implication Banner */}
-        <div className="bg-[#080d16] rounded-xl p-4 border border-cyan-950/80 space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-xs text-slate-300 font-medium">
-              Reference Price Solved 5-Year Revenue CAGR:
-            </span>
-            <span className="font-mono font-bold text-cyan-400 text-xl sm:text-2xl">
-              {isSuppressed
-                ? "Valuation Suppressed"
-                : formatPercent(valuation.solved_5y_cagr_pct)}
-            </span>
+      {dossier.alcon_v4_extension ? (
+        <AlconV4ExtendedView dossier={dossier} extension={dossier.alcon_v4_extension} />
+      ) : (
+        <section
+          className="bg-[#0f172a]/95 border border-cyan-800/60 rounded-xl p-4 sm:p-5 space-y-4 shadow-md"
+          aria-label="Expectations and Scenarios"
+        >
+          <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+            <span className="w-2 h-2 rounded-full bg-cyan-400" aria-hidden="true"></span>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+              Expectations &amp; Scenarios
+            </h2>
           </div>
-          <div className="text-xs text-slate-400 space-y-1">
-            {isSuppressed ? (
-              <p className="text-amber-300/90 italic font-sans">
-                {valuation.suppression_reason || "Modeled valuation outputs and implied growth rates are suppressed for this asset."}
-              </p>
-            ) : (
-              <>
-                <div>
-                  <strong>Model Anchor:</strong> Solved at reference price of{" "}
-                  <span className="text-slate-200 font-mono font-semibold">
-                    {formatCurrency(valuation.reference_price)}
-                  </span>{" "}
-                  as of {valuation.reference_date || "Unavailable"}.
-                </div>
-                <p className="text-[11px] text-amber-300/90 italic font-sans pt-0.5">
-                  {expectationExplanation}
+
+          {/* Reverse-DCF Implication Banner */}
+          <div className="bg-[#080d16] rounded-xl p-4 border border-cyan-950/80 space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs text-slate-300 font-medium">
+                Reference Price Solved 5-Year Revenue CAGR:
+              </span>
+              <span className="font-mono font-bold text-cyan-400 text-xl sm:text-2xl">
+                {isSuppressed
+                  ? "Valuation Suppressed"
+                  : formatPercent(valuation.solved_5y_cagr_pct)}
+              </span>
+            </div>
+            <div className="text-xs text-slate-400 space-y-1">
+              {isSuppressed ? (
+                <p className="text-amber-300/90 italic font-sans">
+                  {valuation.suppression_reason || "Modeled valuation outputs and implied growth rates are suppressed for this asset."}
                 </p>
-              </>
-            )}
+              ) : (
+                <>
+                  <div>
+                    <strong>Model Anchor:</strong> Solved at reference price of{" "}
+                    <span className="text-slate-200 font-mono font-semibold">
+                      {formatCurrency(valuation.reference_price)}
+                    </span>{" "}
+                    as of {valuation.reference_date || "Unavailable"}.
+                  </div>
+                  <p className="text-[11px] text-amber-300/90 italic font-sans pt-0.5">
+                    {expectationExplanation}
+                  </p>
+                </>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Compact Scenario Comparison: Bear -> Base -> Bull */}
-        <div className="space-y-2">
-          <div className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">
-            Conditional Intrinsic Value Comparison:
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-left">
-            {/* Bear case */}
-            <div
-              className="bg-[#080d16] border border-rose-900/50 rounded-xl p-3.5 space-y-2 flex flex-col justify-between"
-              aria-label="Bear case scenario card"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-rose-950 text-rose-300 border border-rose-800">
-                    Bear case
+          {/* Compact Scenario Comparison: Bear -> Base -> Bull */}
+          <div className="space-y-2">
+            <div className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">
+              Conditional Intrinsic Value Comparison:
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-left">
+              {/* Bear case */}
+              <div
+                className="bg-[#080d16] border border-rose-900/50 rounded-xl p-3.5 space-y-2 flex flex-col justify-between"
+                aria-label="Bear case scenario card"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-rose-950 text-rose-300 border border-rose-800">
+                      Bear case
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500">
+                      Downside Stress
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-medium">
+                    Modeled Value per Share
                   </span>
-                  <span className="text-[10px] font-mono text-slate-500">
-                    Downside Stress
+                  <div className="font-mono font-bold text-rose-400 text-xl sm:text-2xl tracking-tight">
+                    {isSuppressed
+                      ? "Valuation Suppressed"
+                      : formatCurrency(conservativeScenario?.per_share_value)}
+                  </div>
+                  <div className="bg-[#0d1422] rounded-md p-2 border border-slate-800/80 space-y-0.5 text-xs">
+                    <div className="text-[10px] text-slate-400">Difference from reference price:</div>
+                    <div className="font-mono font-semibold text-rose-400">
+                      {isSuppressed ? "—" : formatDiffPercent(bearDiff)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Base case */}
+              <div
+                className="bg-[#080d16] border border-cyan-700/80 ring-1 ring-cyan-700/40 rounded-xl p-3.5 space-y-2 flex flex-col justify-between shadow-md"
+                aria-label="Base case scenario card"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-cyan-950 text-cyan-300 border border-cyan-800">
+                      Base case
+                    </span>
+                    <span className="text-[10px] font-mono text-cyan-400">
+                      Central Case
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-medium">
+                    Modeled Value per Share
                   </span>
+                  <div className="font-mono font-bold text-white text-xl sm:text-2xl tracking-tight">
+                    {isSuppressed
+                      ? "Valuation Suppressed"
+                      : formatCurrency(baseScenario?.per_share_value)}
+                  </div>
+                  <div className="bg-[#0d1422] rounded-md p-2 border border-slate-800/80 space-y-0.5 text-xs">
+                    <div className="text-[10px] text-slate-400">Difference from reference price:</div>
+                    <div className="font-mono font-semibold text-cyan-300">
+                      {isSuppressed ? "—" : formatDiffPercent(baseDiff)}
+                    </div>
+                  </div>
                 </div>
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-medium">
-                  Modeled Value per Share
-                </span>
-                <div className="font-mono font-bold text-rose-400 text-xl sm:text-2xl tracking-tight">
-                  {isSuppressed
-                    ? "Valuation Suppressed"
-                    : formatCurrency(conservativeScenario?.per_share_value)}
-                </div>
-                <div className="bg-[#0d1422] rounded-md p-2 border border-slate-800/80 space-y-0.5 text-xs">
-                  <div className="text-[10px] text-slate-400">Difference from reference price:</div>
-                  <div className="font-mono font-semibold text-rose-400">
-                    {isSuppressed ? "—" : formatDiffPercent(bearDiff)}
+              </div>
+
+              {/* Bull case */}
+              <div
+                className="bg-[#080d16] border border-emerald-900/50 rounded-xl p-3.5 space-y-2 flex flex-col justify-between"
+                aria-label="Bull case scenario card"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-950 text-emerald-300 border border-emerald-800">
+                      Bull case
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500">
+                      Upside Expansion
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-medium">
+                    Modeled Value per Share
+                  </span>
+                  <div className="font-mono font-bold text-emerald-400 text-xl sm:text-2xl tracking-tight">
+                    {isSuppressed
+                      ? "Valuation Suppressed"
+                      : formatCurrency(optimisticScenario?.per_share_value)}
+                  </div>
+                  <div className="bg-[#0d1422] rounded-md p-2 border border-slate-800/80 space-y-0.5 text-xs">
+                    <div className="text-[10px] text-slate-400">Difference from reference price:</div>
+                    <div className="font-mono font-semibold text-emerald-400">
+                      {isSuppressed ? "—" : formatDiffPercent(bullDiff)}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Base case */}
-            <div
-              className="bg-[#080d16] border border-cyan-700/80 ring-1 ring-cyan-700/40 rounded-xl p-3.5 space-y-2 flex flex-col justify-between shadow-md"
-              aria-label="Base case scenario card"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-cyan-950 text-cyan-300 border border-cyan-800">
-                    Base case
-                  </span>
-                  <span className="text-[10px] font-mono text-cyan-400">
-                    Central Case
-                  </span>
-                </div>
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-medium">
-                  Modeled Value per Share
-                </span>
-                <div className="font-mono font-bold text-white text-xl sm:text-2xl tracking-tight">
-                  {isSuppressed
-                    ? "Valuation Suppressed"
-                    : formatCurrency(baseScenario?.per_share_value)}
-                </div>
-                <div className="bg-[#0d1422] rounded-md p-2 border border-slate-800/80 space-y-0.5 text-xs">
-                  <div className="text-[10px] text-slate-400">Difference from reference price:</div>
-                  <div className="font-mono font-semibold text-cyan-300">
-                    {isSuppressed ? "—" : formatDiffPercent(baseDiff)}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bull case */}
-            <div
-              className="bg-[#080d16] border border-emerald-900/50 rounded-xl p-3.5 space-y-2 flex flex-col justify-between"
-              aria-label="Bull case scenario card"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-950 text-emerald-300 border border-emerald-800">
-                    Bull case
-                  </span>
-                  <span className="text-[10px] font-mono text-slate-500">
-                    Upside Expansion
-                  </span>
-                </div>
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-medium">
-                  Modeled Value per Share
-                </span>
-                <div className="font-mono font-bold text-emerald-400 text-xl sm:text-2xl tracking-tight">
-                  {isSuppressed
-                    ? "Valuation Suppressed"
-                    : formatCurrency(optimisticScenario?.per_share_value)}
-                </div>
-                <div className="bg-[#0d1422] rounded-md p-2 border border-slate-800/80 space-y-0.5 text-xs">
-                  <div className="text-[10px] text-slate-400">Difference from reference price:</div>
-                  <div className="font-mono font-semibold text-emerald-400">
-                    {isSuppressed ? "—" : formatDiffPercent(bullDiff)}
-                  </div>
-                </div>
-              </div>
+            <div className="text-[10px] text-slate-400 italic font-mono pt-1">
+              {isSuppressed
+                ? "Valuation model outputs and scenario projections are suppressed for this asset."
+                : "Modeled values represent discounted cash flow intrinsic present equity values based on conditional operating assumptions, not future price targets or guaranteed returns. Full parameters are detailed in the disclosure below."}
             </div>
           </div>
-
-          <div className="text-[10px] text-slate-400 italic font-mono pt-1">
-            {isSuppressed
-              ? "Valuation model outputs and scenario projections are suppressed for this asset."
-              : "Modeled values represent discounted cash flow intrinsic present equity values based on conditional operating assumptions, not future price targets or guaranteed returns. Full parameters are detailed in the disclosure below."}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* D. What Must Be True? — Up to Three Drivers */}
       <section

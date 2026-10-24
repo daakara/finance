@@ -55,7 +55,7 @@ PILOT_ADDITIONS_COHORT = [
 TOTAL_PILOT_COHORT = BASELINE_COHORT + PILOT_ADDITIONS_COHORT
 
 # Curated Quality Watch & Selective Publication constants
-PUBLISHED_WATCH_SYMBOLS = ["FIX", "DUOL", "ULTA", "MEDP", "ISRG", "DECK"]
+PUBLISHED_WATCH_SYMBOLS = ["FIX", "DUOL", "ULTA", "MEDP", "ISRG", "DECK", "ALC"]
 BASELINE_WATCH_COHORT = ["FIX", "DUOL"]
 HELD_HISTORICAL_SYMBOLS = ["IREN", "CORZ"]
 EXCLUDED_HISTORICAL_SYMBOLS = ["MU"]
@@ -2597,7 +2597,8 @@ def compute_canonical_dossier_digest(dossier: Dict[str, Any]) -> str:
 
 
 def generate_published_watch_manifest(
-    pilot_dossiers: Dict[str, Any]
+    pilot_dossiers: Dict[str, Any],
+    alc_dossier: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """
     Generates the authoritative published watch manifest.
@@ -2793,6 +2794,49 @@ def generate_published_watch_manifest(
             }
         }
     }
+
+    if alc_dossier is None:
+        alc_draft_path = REPO_ROOT / "docs/research/opportunity_discovery/drafts/ALC_opportunity_dossier_draft.json"
+        if alc_draft_path.exists():
+            with open(alc_draft_path, "r", encoding="utf-8") as f:
+                alc_dossier = json.load(f)
+
+    if alc_dossier:
+        alc_sha256 = compute_canonical_dossier_digest(alc_dossier)
+        manifest["accepted_additions"]["ALC"] = alc_dossier
+        manifest["additions_provenance"]["ALC"] = {
+            "company_name": "Alcon Inc.",
+            "cik": "0001167379",
+            "exchange": "NYSE",
+            "acceptance_basis": "PRIMARY_SEC_EDGAR_VERIFIED_RESEARCH",
+            "selection_decision": "Published under Sprint 4 Alcon V4 Publication Plan",
+            "content_sha256": alc_sha256,
+            "authoring_timestamp_utc": "2026-10-24T12:00:00Z",
+            "filing_availability_cutoff_utc": "2026-10-21T20:00:00Z",
+            "lifecycle_status": "CANDIDATE_SELECTED",
+            "review_status": "RESEARCH_EVIDENCE_ACCEPTED",
+            "source_authority": "ARX Quality Watch Sourced Research",
+            "governing_contract": "INITIATIVE-S4-ALCON-V4-PUBLICATION",
+            "source_filings": [
+                "0001167379-26-000014",
+                "0001167379-26-000042"
+            ],
+            "reference_price": 67.43,
+            "reference_date": "2026-10-21",
+            "solved_5y_cagr_pct": 6.51,
+            "selection_rationale": {
+                "why_this_business": "Alcon Inc. is the global market leader in surgical ophthalmic instrumentation and vision care, operating with an investment-grade balance sheet, 88.37% non-equipment recurring procedural replenishment revenue, and established global distribution.",
+                "why_research_now": "Post-spin operational restructuring, supply chain normalization, and new surgical platform adoption (Unity VCS and PanOptix / Clareon IOLs) warrant active research tracking of operating margin expansion and capital return authorization.",
+                "price_requirements": "At the $67.43 reference close (October 21, 2026), the reverse-DCF market-implied revenue CAGR is 6.51% (identical to the 6.50% Base Case). Base Case Gordon Growth DCF yields $95.00 (+40.9% return, 7.64% annual IRR / 7.65% calendar XIRR). Pullbacks below $66.31 (8.0% hurdle), $64.82 (8.5% hurdle), or $60.56 (10.0% hurdle) are required to satisfy institutional cost of equity.",
+                "differentiated_view": "Form 20-F verified recurrence (88.37% non-equipment replenishment) provides defensive cash generation through economic contractions, though statutory Swiss buyback limits require strict tracking ($1.2B active remaining approved capacity vs $600M hypothetical renewal).",
+                "assessment_changes": "Strengthening: Annual General Meeting (AGM) capital return authorizations expanding buyback capacity beyond $1.2B alongside core operating margin expansion >18.5%. Weakening/Invalidation: Procedural volume deceleration below 4.0% YoY or surgical instrumentation market share loss.",
+                "queue_priority": "Serves as the high-recurrence anchor for ophthalmic healthcare technology, offering non-cyclical procedural demand, zero reliance on uncommitted external funding, and audited Form 20-F financial disclosures under IFRS."
+            }
+        }
+    else:
+        manifest["published_symbols"] = [s for s in manifest["published_symbols"] if s != "ALC"]
+        manifest["published_count"] = len(manifest["published_symbols"])
+
     return manifest
 
 
@@ -3360,7 +3404,8 @@ def validate_existing_pilot_artifacts(
     with open(target_fe_published, "r", encoding="utf-8") as f:
         actual_fe_pub_manifest = json.load(f)
 
-    expected_pub_manifest = generate_published_watch_manifest(recomputed_dossiers)
+    alc_dossier = actual_pub_manifest.get("accepted_additions", {}).get("ALC")
+    expected_pub_manifest = generate_published_watch_manifest(recomputed_dossiers, alc_dossier=alc_dossier)
     pub_diffs = find_structural_differences(expected_pub_manifest, actual_pub_manifest, path="$.published_manifest")
     if pub_diffs:
         for diff in pub_diffs[:5]:
