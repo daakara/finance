@@ -55,6 +55,7 @@ from .pilot_config import (
     REHEARSAL_OUTPUT_DIR,
     REHEARSAL_CACHE_DIR,
     REHEARSAL_ARTIFACT_NAME,
+    validate_rehearsal_paths,
     evaluate_pilot_status,
     is_reconciliation_supported,
     RunBudgetTracker,
@@ -114,6 +115,13 @@ class ScheduledRunner:
         self.is_rehearsal = is_rehearsal if is_rehearsal is not None else force_run
         self.allow_bootstrap = allow_bootstrap
 
+        # Reject contradictory settings that allow force_run rehearsal execution to use the operational namespace
+        if self.force_run and not self.is_rehearsal:
+            raise ValueError(
+                "BOUNDARY_VIOLATION: Contradictory settings: 'force_run=True' is reserved for rehearsals "
+                "and cannot execute against the operational namespace (is_rehearsal=False)."
+            )
+
         # Resolve paths according to operational vs rehearsal namespace
         repo_root = Path(__file__).resolve().parent.parent.parent.parent
         if self.is_rehearsal:
@@ -130,6 +138,15 @@ class ScheduledRunner:
         self.state_dir = Path(state_dir) if state_dir else default_state
         self.output_dir = Path(output_dir) if output_dir else default_output
         self.cache_dir = Path(cache_dir) if cache_dir else default_cache
+
+        # Rehearsal isolation validation for explicit paths:
+        if self.is_rehearsal:
+            validate_rehearsal_paths(
+                state_dir=self.state_dir,
+                output_dir=self.output_dir,
+                cache_dir=self.cache_dir,
+                repo_root=repo_root,
+            )
 
         self.state_mgr = DurableStateManager(
             state_dir=self.state_dir,
@@ -643,16 +660,20 @@ def main():
 
     is_rehearsal = args.rehearsal or args.force_run
 
-    runner = ScheduledRunner(
-        symbol=args.symbol,
-        state_dir=args.state_dir,
-        output_dir=args.output_dir,
-        cache_dir=args.cache_dir,
-        offline_mode=args.offline,
-        force_run=args.force_run,
-        is_rehearsal=is_rehearsal,
-        allow_bootstrap=args.bootstrap,
-    )
+    try:
+        runner = ScheduledRunner(
+            symbol=args.symbol,
+            state_dir=args.state_dir,
+            output_dir=args.output_dir,
+            cache_dir=args.cache_dir,
+            offline_mode=args.offline,
+            force_run=args.force_run,
+            is_rehearsal=is_rehearsal,
+            allow_bootstrap=args.bootstrap,
+        )
+    except ValueError as e:
+        print(f"[ARX BOUNDARY ERROR] {e}", file=sys.stderr)
+        sys.exit(1)
 
     outcome, summary = runner.run(target_accession=args.target_accession)
     print(f"\n[ARX SCHEDULED RUNNER OUTCOME] => {outcome.value}")

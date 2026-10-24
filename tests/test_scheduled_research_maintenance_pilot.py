@@ -47,6 +47,13 @@ from analyst_dashboard.research.maintenance.pilot_config import (
     MAX_REQUESTS_PER_RUN,
     MAX_RUNTIME_SECONDS,
     MIN_REQUEST_INTERVAL_SECONDS,
+    OPERATIONAL_STATE_DIR,
+    OPERATIONAL_OUTPUT_DIR,
+    OPERATIONAL_CACHE_DIR,
+    REHEARSAL_STATE_DIR,
+    REHEARSAL_OUTPUT_DIR,
+    REHEARSAL_CACHE_DIR,
+    validate_rehearsal_paths,
     evaluate_pilot_status,
     is_reconciliation_supported,
     RunBudgetTracker,
@@ -58,6 +65,10 @@ from analyst_dashboard.research.maintenance.durable_state import (
     StateIntegrityError,
     StatePersistenceError,
     StateRecoveryError,
+    validate_github_artifact_list_response,
+    validate_github_workflow_runs_response,
+    validate_github_run_jobs_response,
+    validate_github_workflow_run_response,
 )
 from analyst_dashboard.research.maintenance.scheduled_runner import ScheduledRunner
 from analyst_dashboard.research.maintenance.service import ResearchMaintenanceService
@@ -778,8 +789,19 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
                     "id": 88888,
                     "name": "research-maintenance-fix-state",
                     "archive_download_url": "https://api.github.com/repos/daakara/finance/actions/artifacts/88888/zip",
+                    "workflow_run": {
+                        "id": 55555,
+                    },
                 }
             ],
+        }
+
+        run_resp = {
+            "id": 55555,
+            "path": ".github/workflows/scheduled_research_maintenance.yml",
+            "repository": {
+                "full_name": "daakara/finance",
+            },
         }
 
         class MockHTTPResponse:
@@ -801,6 +823,8 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
                 return MockHTTPResponse(zip_bytes)
             elif "actions/artifacts" in url:
                 return MockHTTPResponse(json.dumps(artifacts_resp).encode("utf-8"))
+            elif "actions/runs/55555" in url:
+                return MockHTTPResponse(json.dumps(run_resp).encode("utf-8"))
             raise ValueError(f"Unexpected url: {url}")
 
         with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "mock-token", "GITHUB_REPOSITORY": "daakara/finance"}):
@@ -846,7 +870,7 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
             def __exit__(self, *args):
                 pass
 
-        # Sub-case A: Successful dormant run (no state artifacts) -> bootstrap permitted
+        # Sub-case A: Successful dormant run (stateful steps skipped) -> bootstrap permitted
         def mock_urlopen_dormant(req, timeout=None):
             url = req.full_url if hasattr(req, "full_url") else str(req)
             if "actions/artifacts?name=" in url:
@@ -855,6 +879,24 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
                 return MockHTTPResponse(b'{"total_count": 1, "workflow_runs": [{"id": 1111}]}')
             elif "runs/1111/artifacts" in url:
                 return MockHTTPResponse(b'{"total_count": 0, "artifacts": []}')
+            elif "runs/1111/jobs" in url:
+                jobs_data = {
+                    "total_count": 1,
+                    "jobs": [
+                        {
+                            "id": 11111,
+                            "name": "Detect Periodic Filing & Prepare Review Packet (FIX)",
+                            "status": "completed",
+                            "steps": [
+                                {"name": "1. Checkout Repository", "status": "completed", "conclusion": "success"},
+                                {"name": "4. Restore Durable State Cache", "status": "completed", "conclusion": "skipped"},
+                                {"name": "6. Save Durable State Cache", "status": "completed", "conclusion": "skipped"},
+                                {"name": "7. Upload State and Review Artifacts", "status": "completed", "conclusion": "skipped"},
+                            ],
+                        }
+                    ],
+                }
+                return MockHTTPResponse(json.dumps(jobs_data).encode("utf-8"))
             raise ValueError(f"Unexpected url: {url}")
 
         with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "mock-token"}):
@@ -873,7 +915,7 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
             elif "runs?status=success" in url:
                 return MockHTTPResponse(b'{"total_count": 1, "workflow_runs": [{"id": 2222}]}')
             elif "runs/2222/artifacts" in url:
-                return MockHTTPResponse(b'{"total_count": 1, "artifacts": [{"id": 777, "name": "research-maintenance-fix-state"}]}')
+                return MockHTTPResponse(b'{"total_count": 1, "artifacts": [{"id": 777, "name": "research-maintenance-fix-state", "archive_download_url": "https://api.github.com/repos/daakara/finance/actions/artifacts/777/zip"}]}')
             raise ValueError(f"Unexpected url: {url}")
 
         with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "mock-token"}):
@@ -1042,6 +1084,396 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
         mgr.record_failed_event(evt, stage="BUDGET_EXHAUSTED", error_msg="Timeout exceeded")
         # Assert accession is NOT completed
         self.assertFalse(mgr.is_accession_completed("0001104659-26-777777"))
+
+    # -------------------------------------------------------------------------
+    # CONTROL 27: Malformed Responses Fail Without Genesis
+    # -------------------------------------------------------------------------
+    def test_control_27_recovery_malformed_responses_fail_without_genesis(self):
+        """Malformed, empty dict, missing fields, or incorrect types fail without genesis."""
+        class MockHTTPResponse:
+            def __init__(self, data_bytes):
+                self._data = data_bytes
+
+            def read(self):
+                return self._data
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                pass
+
+        # Case A: {} returned for artifacts
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "mock-token"}):
+            with patch("urllib.request.urlopen", return_value=MockHTTPResponse(b"{}")):
+                mgr = DurableStateManager(self.state_dir)
+                with self.assertRaises(StateRecoveryError) as ctx:
+                    mgr.hydrate_or_recover(allow_bootstrap=True)
+                self.assertIn("missing required field 'total_count'", str(ctx.exception))
+                self.assertFalse((self.state_dir / "DURABLE_STATE_MANIFEST.json").exists())
+
+        # Case B: total_count is boolean or string or negative
+        for bad_tc in (b'{"total_count": true, "artifacts": []}', b'{"total_count": "zero", "artifacts": []}', b'{"total_count": -1, "artifacts": []}'):
+            with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "mock-token"}):
+                with patch("urllib.request.urlopen", return_value=MockHTTPResponse(bad_tc)):
+                    mgr = DurableStateManager(self.state_dir)
+                    with self.assertRaises(StateRecoveryError) as ctx:
+                        mgr.hydrate_or_recover(allow_bootstrap=True)
+                    self.assertIn("invalid 'total_count'", str(ctx.exception))
+                    self.assertFalse((self.state_dir / "DURABLE_STATE_MANIFEST.json").exists())
+
+        # Case C: total_count < len(artifacts) (inconsistent)
+        inconsistent = b'{"total_count": 0, "artifacts": [{"id": 1, "name": "foo", "archive_download_url": "http://x"}]}'
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "mock-token"}):
+            with patch("urllib.request.urlopen", return_value=MockHTTPResponse(inconsistent)):
+                mgr = DurableStateManager(self.state_dir)
+                with self.assertRaises(StateRecoveryError) as ctx:
+                    mgr.hydrate_or_recover(allow_bootstrap=True)
+                self.assertIn("Inconsistent", str(ctx.exception))
+                self.assertFalse((self.state_dir / "DURABLE_STATE_MANIFEST.json").exists())
+
+    # -------------------------------------------------------------------------
+    # CONTROL 28: Artifact Provenance & Workflow Association Verification
+    # -------------------------------------------------------------------------
+    def test_control_28_recovery_rejects_artifact_from_wrong_workflow_or_missing_provenance(self):
+        """Artifacts must originate from daakara/finance and scheduled_research_maintenance.yml."""
+        class MockHTTPResponse:
+            def __init__(self, data_bytes):
+                self._data = data_bytes
+
+            def read(self):
+                return self._data
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                pass
+
+        # Sub-case A: Artifact missing workflow_run provenance
+        bad_art_resp = {
+            "total_count": 1,
+            "artifacts": [
+                {
+                    "id": 99991,
+                    "name": "research-maintenance-fix-state",
+                    "archive_download_url": "https://api.github.com/zip",
+                }
+            ],
+        }
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "mock-token", "GITHUB_REPOSITORY": "daakara/finance"}):
+            with patch("urllib.request.urlopen", return_value=MockHTTPResponse(json.dumps(bad_art_resp).encode("utf-8"))):
+                mgr = DurableStateManager(self.state_dir)
+                with self.assertRaises(StateRecoveryError) as ctx:
+                    mgr.hydrate_or_recover(allow_bootstrap=False)
+                self.assertIn("missing 'workflow_run' provenance", str(ctx.exception))
+
+        # Sub-case B: Artifact from wrong workflow (e.g. .github/workflows/deploy.yml)
+        art_with_run = {
+            "total_count": 1,
+            "artifacts": [
+                {
+                    "id": 99992,
+                    "name": "research-maintenance-fix-state",
+                    "archive_download_url": "https://api.github.com/zip",
+                    "workflow_run": {"id": 123456},
+                }
+            ],
+        }
+        wrong_wf_run = {
+            "id": 123456,
+            "path": ".github/workflows/deploy.yml",
+            "repository": {"full_name": "daakara/finance"},
+        }
+        def mock_urlopen_wrong_wf(req, timeout=None):
+            url = req.full_url if hasattr(req, "full_url") else str(req)
+            if "actions/artifacts" in url:
+                return MockHTTPResponse(json.dumps(art_with_run).encode("utf-8"))
+            elif "actions/runs/123456" in url:
+                return MockHTTPResponse(json.dumps(wrong_wf_run).encode("utf-8"))
+            raise ValueError(f"Unexpected url: {url}")
+
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "mock-token", "GITHUB_REPOSITORY": "daakara/finance"}):
+            with patch("urllib.request.urlopen", side_effect=mock_urlopen_wrong_wf):
+                mgr = DurableStateManager(self.state_dir)
+                with self.assertRaises(StateRecoveryError) as ctx:
+                    mgr.hydrate_or_recover(allow_bootstrap=False)
+                self.assertIn("unauthorized workflow", str(ctx.exception))
+
+        # Sub-case C: Artifact from wrong repository
+        wrong_repo_run = {
+            "id": 123456,
+            "path": ".github/workflows/scheduled_research_maintenance.yml",
+            "repository": {"full_name": "evil-org/finance"},
+        }
+        def mock_urlopen_wrong_repo(req, timeout=None):
+            url = req.full_url if hasattr(req, "full_url") else str(req)
+            if "actions/artifacts" in url:
+                return MockHTTPResponse(json.dumps(art_with_run).encode("utf-8"))
+            elif "actions/runs/123456" in url:
+                return MockHTTPResponse(json.dumps(wrong_repo_run).encode("utf-8"))
+            raise ValueError(f"Unexpected url: {url}")
+
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "mock-token", "GITHUB_REPOSITORY": "daakara/finance"}):
+            with patch("urllib.request.urlopen", side_effect=mock_urlopen_wrong_repo):
+                mgr = DurableStateManager(self.state_dir)
+                with self.assertRaises(StateRecoveryError) as ctx:
+                    mgr.hydrate_or_recover(allow_bootstrap=False)
+                self.assertIn("originates from repository 'evil-org/finance'", str(ctx.exception))
+
+    # -------------------------------------------------------------------------
+    # CONTROL 29: Missing Historical Artifacts Do Not Automatically Establish Dormancy
+    # -------------------------------------------------------------------------
+    def test_control_29_missing_historical_artifacts_do_not_automatically_establish_dormancy(self):
+        """Absence of state artifacts does not prove dormancy if execution evidence shows state steps executed."""
+        class MockHTTPResponse:
+            def __init__(self, data_bytes):
+                self._data = data_bytes
+
+            def read(self):
+                return self._data
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                pass
+
+        # Run 3333 had 0 artifacts (e.g. expired or deleted), but its jobs show "Upload State and Review Artifacts" succeeded!
+        def mock_urlopen_expired_operational(req, timeout=None):
+            url = req.full_url if hasattr(req, "full_url") else str(req)
+            if "actions/artifacts?name=" in url:
+                return MockHTTPResponse(b'{"total_count": 0, "artifacts": []}')
+            elif "runs?status=success" in url:
+                return MockHTTPResponse(b'{"total_count": 1, "workflow_runs": [{"id": 3333}]}')
+            elif "runs/3333/artifacts" in url:
+                return MockHTTPResponse(b'{"total_count": 0, "artifacts": []}')
+            elif "runs/3333/jobs" in url:
+                jobs_data = {
+                    "total_count": 1,
+                    "jobs": [
+                        {
+                            "id": 33331,
+                            "name": "Detect Periodic Filing & Prepare Review Packet (FIX)",
+                            "status": "completed",
+                            "steps": [
+                                {"name": "1. Checkout Repository", "status": "completed", "conclusion": "success"},
+                                {"name": "4. Restore Durable State Cache", "status": "completed", "conclusion": "success"},
+                                {"name": "6. Save Durable State Cache", "status": "completed", "conclusion": "success"},
+                                {"name": "7. Upload State and Review Artifacts", "status": "completed", "conclusion": "success"},
+                            ],
+                        }
+                    ],
+                }
+                return MockHTTPResponse(json.dumps(jobs_data).encode("utf-8"))
+            raise ValueError(f"Unexpected url: {url}")
+
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "mock-token"}):
+            with patch("urllib.request.urlopen", side_effect=mock_urlopen_expired_operational):
+                mgr = DurableStateManager(self.state_dir)
+                with self.assertRaises(StateRecoveryError) as ctx:
+                    mgr.hydrate_or_recover(allow_bootstrap=True)
+                # Fails closed because prior operational run executed, never establishing false dormancy or genesis!
+                self.assertIn("Evidence of prior operational runs exists", str(ctx.exception))
+
+    # -------------------------------------------------------------------------
+    # CONTROL 30: Truncated History Cannot Establish Initialization
+    # -------------------------------------------------------------------------
+    def test_control_30_incomplete_or_truncated_history_cannot_establish_initialization(self):
+        """Truncated page of workflow runs or missing jobs cannot establish first initialization."""
+        class MockHTTPResponse:
+            def __init__(self, data_bytes):
+                self._data = data_bytes
+
+            def read(self):
+                return self._data
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                pass
+
+        # total_count=10 but workflow_runs has only 2 items (truncated)
+        def mock_urlopen_truncated(req, timeout=None):
+            url = req.full_url if hasattr(req, "full_url") else str(req)
+            if "actions/artifacts?name=" in url:
+                return MockHTTPResponse(b'{"total_count": 0, "artifacts": []}')
+            elif "runs?status=success" in url:
+                return MockHTTPResponse(b'{"total_count": 10, "workflow_runs": [{"id": 1}, {"id": 2}]}')
+            raise ValueError(f"Unexpected url: {url}")
+
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "mock-token"}):
+            with patch("urllib.request.urlopen", side_effect=mock_urlopen_truncated):
+                mgr = DurableStateManager(self.state_dir)
+                with self.assertRaises(StateRecoveryError) as ctx:
+                    mgr.hydrate_or_recover(allow_bootstrap=True)
+                self.assertIn("Remote workflow run history is truncated", str(ctx.exception))
+
+        # Case B: Genuinely empty history (total_count=0) with explicit bootstrap permits genuine initialization
+        def mock_urlopen_empty(req, timeout=None):
+            url = req.full_url if hasattr(req, "full_url") else str(req)
+            if "actions/artifacts?name=" in url:
+                return MockHTTPResponse(b'{"total_count": 0, "artifacts": []}')
+            elif "runs?status=success" in url:
+                return MockHTTPResponse(b'{"total_count": 0, "workflow_runs": []}')
+            raise ValueError(f"Unexpected url: {url}")
+
+        state_dir_empty = Path(self.temp_dir) / "state_empty"
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "mock-token"}):
+            with patch("urllib.request.urlopen", side_effect=mock_urlopen_empty):
+                mgr_empty = DurableStateManager(state_dir_empty)
+                ok, msg = mgr_empty.hydrate_or_recover(allow_bootstrap=True)
+                self.assertTrue(ok)
+                self.assertEqual(msg, "GENESIS_INITIALIZED")
+                self.assertTrue((state_dir_empty / "DURABLE_STATE_MANIFEST.json").exists())
+
+    # -------------------------------------------------------------------------
+    # CONTROL 31: Rehearsal Rejects Explicit Operational Paths & Contradictions
+    # -------------------------------------------------------------------------
+    def test_control_31_rehearsal_rejects_explicit_operational_paths_and_contradictory_settings(self):
+        """Rehearsal invocation rejects operational paths and contradictory force_run settings."""
+        # 1. Contradictory settings: force_run=True, is_rehearsal=False
+        with self.assertRaises(ValueError) as ctx:
+            ScheduledRunner(
+                symbol="FIX",
+                force_run=True,
+                is_rehearsal=False,
+            )
+        self.assertIn("Contradictory settings", str(ctx.exception))
+
+        # 2. Explicit operational state_dir passed to rehearsal
+        with self.assertRaises(ValueError) as ctx:
+            ScheduledRunner(
+                symbol="FIX",
+                state_dir=REPO_ROOT / OPERATIONAL_STATE_DIR,
+                is_rehearsal=True,
+            )
+        self.assertIn("matches protected operational state dir", str(ctx.exception))
+
+        # 3. Explicit operational output_dir passed to rehearsal
+        with self.assertRaises(ValueError) as ctx:
+            ScheduledRunner(
+                symbol="FIX",
+                output_dir=REPO_ROOT / OPERATIONAL_OUTPUT_DIR,
+                is_rehearsal=True,
+            )
+        self.assertIn("matches protected operational output dir", str(ctx.exception))
+
+        # 4. Explicit operational cache_dir passed to rehearsal
+        with self.assertRaises(ValueError) as ctx:
+            ScheduledRunner(
+                symbol="FIX",
+                cache_dir=REPO_ROOT / OPERATIONAL_CACHE_DIR,
+                is_rehearsal=True,
+            )
+        self.assertIn("matches protected operational cache dir", str(ctx.exception))
+
+    # -------------------------------------------------------------------------
+    # CONTROL 32: Rehearsal Rejects Parent/Child Overlaps and Aliases
+    # -------------------------------------------------------------------------
+    def test_control_32_rehearsal_rejects_parent_child_overlaps_and_aliases(self):
+        """Rehearsal paths cannot contain, be contained in, or alias protected operational roots."""
+        # 1. Parent overlap (state_dir contains operational state root)
+        with self.assertRaises(ValueError) as ctx:
+            validate_rehearsal_paths(
+                state_dir=REPO_ROOT / "durable_state",
+                output_dir=self.output_dir,
+                cache_dir=self.cache_dir,
+                repo_root=REPO_ROOT,
+            )
+        self.assertIn("contains protected operational state dir", str(ctx.exception))
+
+        # 2. Child overlap (output_dir is inside operational output root)
+        with self.assertRaises(ValueError) as ctx:
+            validate_rehearsal_paths(
+                state_dir=self.state_dir,
+                output_dir=REPO_ROOT / OPERATIONAL_OUTPUT_DIR / "nested_subdir",
+                cache_dir=self.cache_dir,
+                repo_root=REPO_ROOT,
+            )
+        self.assertIn("is inside protected operational output dir", str(ctx.exception))
+
+        # 3. Parent overlap: cache_dir = repo_root
+        with self.assertRaises(ValueError) as ctx:
+            validate_rehearsal_paths(
+                state_dir=self.state_dir,
+                output_dir=self.output_dir,
+                cache_dir=REPO_ROOT,
+                repo_root=REPO_ROOT,
+            )
+        self.assertIn("contains protected", str(ctx.exception))
+
+        # 4. Symlink alias pointing to operational directory
+        symlink_dir = Path(self.temp_dir) / "symlink_to_op_state"
+        try:
+            os.symlink(REPO_ROOT / OPERATIONAL_STATE_DIR, symlink_dir, target_is_directory=True)
+            has_symlink = True
+        except (OSError, NotImplementedError):
+            has_symlink = False
+
+        if has_symlink:
+            with self.assertRaises(ValueError) as ctx:
+                validate_rehearsal_paths(
+                    state_dir=symlink_dir,
+                    output_dir=self.output_dir,
+                    cache_dir=self.cache_dir,
+                    repo_root=REPO_ROOT,
+                )
+            self.assertIn("matches protected operational state dir", str(ctx.exception))
+
+    # -------------------------------------------------------------------------
+    # CONTROL 33: Safe Custom Rehearsal Paths and Manifest Immutability
+    # -------------------------------------------------------------------------
+    def test_control_33_rehearsal_safe_custom_paths_and_manifest_immutability(self):
+        """Safe custom paths work, while failed or valid rehearsals leave operational manifest untouched."""
+        op_state_dir = Path(self.temp_dir) / "op_state_c33"
+        op_mgr = DurableStateManager(op_state_dir)
+        op_mgr.hydrate_or_recover(allow_bootstrap=True)
+        op_mgr.commit_run_checkpoint(RunOutcome.NO_QUALIFYING_EVENT)
+        op_mgr.commit_run_checkpoint(RunOutcome.NO_QUALIFYING_EVENT)
+        self.assertEqual(op_mgr.run_count, 2)
+
+        op_manifest_path = op_state_dir / "DURABLE_STATE_MANIFEST.json"
+        op_bytes_before = op_manifest_path.read_bytes()
+        op_sha_before = hashlib.sha256(op_bytes_before).hexdigest()
+
+        # Custom safe temporary rehearsal paths
+        custom_reh_state = Path(self.temp_dir) / "custom_rehearsal_state"
+        custom_reh_output = Path(self.temp_dir) / "custom_rehearsal_output"
+        custom_reh_cache = Path(self.temp_dir) / "custom_rehearsal_cache"
+
+        reh_runner = ScheduledRunner(
+            symbol="FIX",
+            state_dir=custom_reh_state,
+            output_dir=custom_reh_output,
+            cache_dir=custom_reh_cache,
+            force_run=True,
+            is_rehearsal=True,
+            allow_bootstrap=True,
+            offline_mode=True,
+        )
+        self.assertEqual(reh_runner.artifact_name, "research-maintenance-fix-rehearsal-state")
+
+        outcome, summary = reh_runner.run()
+        self.assertIn(outcome, (RunOutcome.NO_QUALIFYING_EVENT, RunOutcome.SEC_RETRIEVAL_FAILURE))
+        self.assertTrue((custom_reh_state / "DURABLE_STATE_MANIFEST.json").exists())
+
+        # Operational manifest is 100% bit-for-bit unchanged
+        op_bytes_after = op_manifest_path.read_bytes()
+        op_sha_after = hashlib.sha256(op_bytes_after).hexdigest()
+        self.assertEqual(op_sha_before, op_sha_after, "Operational manifest mutated by rehearsal run!")
+
+        # Attempt an unsafe rehearsal that gets rejected, verifying no mutation occurs
+        with self.assertRaises(ValueError):
+            ScheduledRunner(
+                symbol="FIX",
+                state_dir=REPO_ROOT / OPERATIONAL_STATE_DIR,
+                is_rehearsal=True,
+            )
+
+        op_bytes_after_rejected = op_manifest_path.read_bytes()
+        self.assertEqual(op_sha_before, hashlib.sha256(op_bytes_after_rejected).hexdigest())
 
 
 if __name__ == "__main__":

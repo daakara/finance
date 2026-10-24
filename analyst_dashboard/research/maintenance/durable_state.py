@@ -38,8 +38,13 @@ from .pilot_config import (
     TARGET_SYMBOL,
     TARGET_CIK,
     RECORDED_KNOWN_ACCESSIONS,
+    OPERATIONAL_STATE_DIR,
+    REHEARSAL_STATE_DIR,
     OPERATIONAL_ARTIFACT_NAME,
     REHEARSAL_ARTIFACT_NAME,
+    TARGET_REPOSITORY,
+    DESIGNATED_WORKFLOW_FILE,
+    DESIGNATED_WORKFLOW_PATH,
     RunBudgetTracker,
     BudgetExhaustedError,
 )
@@ -80,6 +85,195 @@ def sha256_hex(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
+def validate_github_artifact_list_response(data: Any, context: str = "artifacts") -> Dict[str, Any]:
+    """
+    Validates GitHub Actions artifact list response structure and types.
+    Fails closed on missing fields, wrong types, or inconsistent counts.
+    """
+    if not isinstance(data, dict):
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: expected JSON object, got {type(data).__name__}"
+        )
+
+    if "total_count" not in data:
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: missing required field 'total_count'"
+        )
+    total_count = data["total_count"]
+    if not isinstance(total_count, int) or isinstance(total_count, bool) or total_count < 0:
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: invalid 'total_count' ({total_count})"
+        )
+
+    if "artifacts" not in data:
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: missing required field 'artifacts'"
+        )
+    artifacts = data["artifacts"]
+    if not isinstance(artifacts, list):
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: 'artifacts' must be a list"
+        )
+
+    if total_count < len(artifacts):
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Inconsistent {context} response: total_count ({total_count}) < len(artifacts) ({len(artifacts)})"
+        )
+
+    for idx, art in enumerate(artifacts):
+        if not isinstance(art, dict):
+            raise StateRecoveryError(
+                f"STATE_RECOVERY_FAILURE: Malformed artifact entry at index {idx}: expected dict"
+            )
+        if "id" not in art or not isinstance(art["id"], int) or isinstance(art["id"], bool):
+            raise StateRecoveryError(
+                f"STATE_RECOVERY_FAILURE: Malformed artifact entry at index {idx}: missing/invalid 'id'"
+            )
+        if "name" not in art or not isinstance(art["name"], str):
+            raise StateRecoveryError(
+                f"STATE_RECOVERY_FAILURE: Malformed artifact entry at index {idx}: missing/invalid 'name'"
+            )
+        if "archive_download_url" not in art or not isinstance(art["archive_download_url"], str):
+            raise StateRecoveryError(
+                f"STATE_RECOVERY_FAILURE: Malformed artifact entry at index {idx}: missing/invalid 'archive_download_url'"
+            )
+
+    return data
+
+
+def validate_github_workflow_runs_response(data: Any, context: str = "workflow runs") -> Dict[str, Any]:
+    """
+    Validates GitHub Actions workflow runs response structure and types.
+    Fails closed on missing fields, wrong types, or inconsistent counts.
+    """
+    if not isinstance(data, dict):
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: expected JSON object, got {type(data).__name__}"
+        )
+
+    if "total_count" not in data:
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: missing required field 'total_count'"
+        )
+    total_count = data["total_count"]
+    if not isinstance(total_count, int) or isinstance(total_count, bool) or total_count < 0:
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: invalid 'total_count' ({total_count})"
+        )
+
+    if "workflow_runs" not in data:
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: missing required field 'workflow_runs'"
+        )
+    runs = data["workflow_runs"]
+    if not isinstance(runs, list):
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: 'workflow_runs' must be a list"
+        )
+
+    if total_count < len(runs):
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Inconsistent {context} response: total_count ({total_count}) < len(runs) ({len(runs)})"
+        )
+
+    for idx, run in enumerate(runs):
+        if not isinstance(run, dict):
+            raise StateRecoveryError(
+                f"STATE_RECOVERY_FAILURE: Malformed workflow run entry at index {idx}: expected dict"
+            )
+        if "id" not in run or not isinstance(run["id"], int) or isinstance(run["id"], bool):
+            raise StateRecoveryError(
+                f"STATE_RECOVERY_FAILURE: Malformed workflow run entry at index {idx}: missing/invalid 'id'"
+            )
+
+    return data
+
+
+def validate_github_run_jobs_response(data: Any, context: str = "run jobs") -> Dict[str, Any]:
+    """
+    Validates GitHub Actions run jobs response structure and types.
+    Fails closed on missing fields, wrong types, or inconsistent counts.
+    """
+    if not isinstance(data, dict):
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: expected JSON object, got {type(data).__name__}"
+        )
+
+    if "total_count" not in data:
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: missing required field 'total_count'"
+        )
+    total_count = data["total_count"]
+    if not isinstance(total_count, int) or isinstance(total_count, bool) or total_count < 0:
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: invalid 'total_count' ({total_count})"
+        )
+
+    if "jobs" not in data:
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: missing required field 'jobs'"
+        )
+    jobs = data["jobs"]
+    if not isinstance(jobs, list):
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: 'jobs' must be a list"
+        )
+
+    for idx, job in enumerate(jobs):
+        if not isinstance(job, dict):
+            raise StateRecoveryError(
+                f"STATE_RECOVERY_FAILURE: Malformed job entry at index {idx}: expected dict"
+            )
+        if "id" not in job or not isinstance(job["id"], int) or isinstance(job["id"], bool):
+            raise StateRecoveryError(
+                f"STATE_RECOVERY_FAILURE: Malformed job entry at index {idx}: missing/invalid 'id'"
+            )
+        if "steps" not in job or not isinstance(job["steps"], list):
+            raise StateRecoveryError(
+                f"STATE_RECOVERY_FAILURE: Malformed job entry at index {idx}: missing/invalid 'steps'"
+            )
+        for s_idx, step in enumerate(job["steps"]):
+            if not isinstance(step, dict):
+                raise StateRecoveryError(
+                    f"STATE_RECOVERY_FAILURE: Malformed step entry at job {idx}, step {s_idx}"
+                )
+            if "name" not in step or not isinstance(step["name"], str):
+                raise StateRecoveryError(
+                    f"STATE_RECOVERY_FAILURE: Malformed step entry at job {idx}, step {s_idx}: missing 'name'"
+                )
+
+    return data
+
+
+def validate_github_workflow_run_response(data: Any, context: str = "workflow run") -> Dict[str, Any]:
+    """
+    Validates a single workflow run response structure and types.
+    Fails closed on missing fields or wrong types.
+    """
+    if not isinstance(data, dict):
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: expected JSON object, got {type(data).__name__}"
+        )
+    if "id" not in data or not isinstance(data["id"], int) or isinstance(data["id"], bool):
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: missing/invalid 'id'"
+        )
+    if "path" not in data or not isinstance(data["path"], str):
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: missing/invalid 'path'"
+        )
+    if "repository" not in data or not isinstance(data["repository"], dict):
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: missing/invalid 'repository'"
+        )
+    repo_obj = data["repository"]
+    if "full_name" not in repo_obj or not isinstance(repo_obj["full_name"], str):
+        raise StateRecoveryError(
+            f"STATE_RECOVERY_FAILURE: Malformed {context} response: missing/invalid 'repository.full_name'"
+        )
+    return data
+
+
 class DurableStateManager:
     """
     Manages cross-run durable state persistence, atomic concurrency locking,
@@ -105,6 +299,24 @@ class DurableStateManager:
         self.expected_repo = expected_repo
         self.manifest_path = self.state_dir / self.MANIFEST_NAME
         self.lock_path = self.state_dir / self.LOCK_NAME
+
+        repo_root = Path(__file__).resolve().parent.parent.parent.parent
+        op_state_root = (repo_root / OPERATIONAL_STATE_DIR).resolve()
+
+        if self.is_rehearsal:
+            if self.artifact_name == OPERATIONAL_ARTIFACT_NAME:
+                raise ValueError(
+                    f"BOUNDARY_VIOLATION: Rehearsal state manager cannot use operational artifact name '{OPERATIONAL_ARTIFACT_NAME}'."
+                )
+            if self.state_dir == op_state_root or self.state_dir.is_relative_to(op_state_root) or op_state_root.is_relative_to(self.state_dir):
+                raise ValueError(
+                    f"BOUNDARY_VIOLATION: Rehearsal state dir '{self.state_dir}' overlaps with protected operational root '{op_state_root}'."
+                )
+        else:
+            if self.artifact_name == REHEARSAL_ARTIFACT_NAME:
+                raise ValueError(
+                    f"BOUNDARY_VIOLATION: Operational state manager cannot use rehearsal artifact name '{REHEARSAL_ARTIFACT_NAME}'."
+                )
 
         # In-memory hydrated state
         self.manifest_version = STATE_MANIFEST_VERSION
@@ -246,9 +458,10 @@ class DurableStateManager:
     def _has_evidence_of_prior_operation(self, budget_tracker: Optional[RunBudgetTracker] = None) -> bool:
         """
         Determines whether prior runs existed (to prevent silent genesis reset).
-        Fails closed: an unavailable, unauthorized, malformed, or failed history response
-        raises StateRecoveryError rather than returning False.
-        Dormant workflow runs without operational state are not counted as operational execution.
+        Fails closed: an unavailable, unauthorized, malformed, inconsistent, or truncated
+        history response raises StateRecoveryError rather than returning False.
+        Dormant workflow runs where stateful steps were skipped are distinguished
+        from operational runs via execution evidence.
         """
         # 1. Check backup dir marker
         if self.backup_dir and (self.backup_dir / self.PRIOR_RUNS_MARKER).exists():
@@ -292,10 +505,18 @@ class DurableStateManager:
                     "User-Agent": "ARX-DurableState-Recovery",
                 })
                 with urllib.request.urlopen(req, timeout=timeout) as resp:
-                    art_data = json.loads(resp.read().decode("utf-8"))
-                    if art_data.get("total_count", 0) > 0:
-                        logger.info(f"Prior operational artifact found ({self.artifact_name}).")
-                        return True
+                    raw_bytes = resp.read()
+                    try:
+                        art_data = json.loads(raw_bytes.decode("utf-8"))
+                    except Exception as e:
+                        raise StateRecoveryError(f"STATE_RECOVERY_FAILURE: Malformed artifacts JSON response: {e}")
+
+                validate_github_artifact_list_response(art_data, context="actions/artifacts")
+                if art_data["total_count"] > 0:
+                    logger.info(f"Prior operational artifact found ({self.artifact_name}).")
+                    return True
+            except (StateRecoveryError, StateIntegrityError):
+                raise
             except Exception as e:
                 raise StateRecoveryError(
                     f"STATE_RECOVERY_FAILURE: Failed to query remote artifacts ({e}). History is unavailable."
@@ -307,7 +528,7 @@ class DurableStateManager:
                 if budget_tracker
                 else 10.0
             )
-            runs_url = f"https://api.github.com/repos/{repo}/actions/workflows/scheduled_research_maintenance.yml/runs?status=success&per_page=5"
+            runs_url = f"https://api.github.com/repos/{repo}/actions/workflows/{DESIGNATED_WORKFLOW_FILE}/runs?status=success&per_page=30"
             try:
                 req = urllib.request.Request(runs_url, headers={
                     "Authorization": f"Bearer {token}",
@@ -315,20 +536,35 @@ class DurableStateManager:
                     "User-Agent": "ARX-DurableState-Recovery",
                 })
                 with urllib.request.urlopen(req, timeout=timeout) as resp:
-                    runs_data = json.loads(resp.read().decode("utf-8"))
+                    raw_runs = resp.read()
+                    try:
+                        runs_data = json.loads(raw_runs.decode("utf-8"))
+                    except Exception as e:
+                        raise StateRecoveryError(f"STATE_RECOVERY_FAILURE: Malformed workflow runs JSON response: {e}")
 
-                total_runs = runs_data.get("total_count", 0)
+                validate_github_workflow_runs_response(runs_data, context="actions/workflows/runs")
+
+                total_runs = runs_data["total_count"]
+                runs_list = runs_data["workflow_runs"]
+
                 if total_runs == 0:
+                    logger.info("Remote workflow history confirmed empty (0 successful runs).")
                     return False
 
-                # Inspect recent successful runs to distinguish operational runs from dormant runs
-                workflow_runs = runs_data.get("workflow_runs", [])
-                for run_item in workflow_runs:
+                # Requirement 7: Do not treat a truncated page of recent successful runs as complete historical evidence.
+                if total_runs > len(runs_list):
+                    raise StateRecoveryError(
+                        f"STATE_RECOVERY_FAILURE: Remote workflow run history is truncated ({len(runs_list)} of {total_runs} runs retrieved). "
+                        "Bounded inspection cannot resolve prior operational execution across full history."
+                    )
+
+                # Step 4c: Inspect execution evidence showing stateful steps were skipped (Requirement 6)
+                for run_item in runs_list:
                     run_id = run_item.get("id")
                     if not run_id:
-                        continue
+                        raise StateRecoveryError("STATE_RECOVERY_FAILURE: Workflow run missing 'id'.")
 
-                    # Check artifacts of this specific run
+                    # 1. Query run artifacts
                     timeout = (
                         budget_tracker.acquire_recovery_request_slot(default_timeout_sec=10.0)
                         if budget_tracker
@@ -341,16 +577,74 @@ class DurableStateManager:
                         "User-Agent": "ARX-DurableState-Recovery",
                     })
                     with urllib.request.urlopen(req_art, timeout=timeout) as r_art:
-                        run_art_data = json.loads(r_art.read().decode("utf-8"))
-                        for a in run_art_data.get("artifacts", []):
-                            if a.get("name") == self.artifact_name:
-                                logger.info(f"Prior operational run confirmed via run artifact ID {a.get('id')}.")
+                        raw_art_run = r_art.read()
+                        try:
+                            run_art_data = json.loads(raw_art_run.decode("utf-8"))
+                        except Exception as e:
+                            raise StateRecoveryError(f"STATE_RECOVERY_FAILURE: Malformed run artifacts JSON: {e}")
+
+                    validate_github_artifact_list_response(run_art_data, context=f"runs/{run_id}/artifacts")
+                    for a in run_art_data["artifacts"]:
+                        if a.get("name") == self.artifact_name:
+                            logger.info(f"Prior operational run confirmed via run artifact ID {a.get('id')}.")
+                            return True
+
+                    # 2. Query run jobs/steps to inspect execution evidence (verify stateful steps skipped)
+                    timeout = (
+                        budget_tracker.acquire_recovery_request_slot(default_timeout_sec=10.0)
+                        if budget_tracker
+                        else 10.0
+                    )
+                    jobs_url = f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs"
+                    req_jobs = urllib.request.Request(jobs_url, headers={
+                        "Authorization": f"Bearer {token}",
+                        "Accept": "application/vnd.github.v3+json",
+                        "User-Agent": "ARX-DurableState-Recovery",
+                    })
+                    with urllib.request.urlopen(req_jobs, timeout=timeout) as r_jobs:
+                        raw_jobs = r_jobs.read()
+                        try:
+                            jobs_data = json.loads(raw_jobs.decode("utf-8"))
+                        except Exception as e:
+                            raise StateRecoveryError(f"STATE_RECOVERY_FAILURE: Malformed run jobs JSON: {e}")
+
+                    validate_github_run_jobs_response(jobs_data, context=f"runs/{run_id}/jobs")
+                    jobs = jobs_data["jobs"]
+                    if not jobs:
+                        raise StateRecoveryError(
+                            f"STATE_RECOVERY_FAILURE: Run ID {run_id} has no jobs recorded; cannot verify dormancy."
+                        )
+
+                    for job in jobs:
+                        steps = job.get("steps", [])
+                        stateful_steps = [
+                            s for s in steps
+                            if any(kw in s.get("name", "") for kw in (
+                                "Save Durable State Cache",
+                                "Upload State and Review Artifacts",
+                                "Restore Durable State Cache",
+                            ))
+                        ]
+                        if not stateful_steps:
+                            raise StateRecoveryError(
+                                f"STATE_RECOVERY_FAILURE: Run ID {run_id} does not contain verifiable stateful steps; "
+                                "cannot verify dormancy from execution evidence."
+                            )
+                        for s in stateful_steps:
+                            s_name = s.get("name", "")
+                            s_concl = s.get("conclusion")
+                            if s_concl != "skipped":
+                                logger.info(
+                                    f"Prior operational run confirmed: Run ID {run_id} executed stateful step '{s_name}' "
+                                    f"(conclusion: '{s_concl}')."
+                                )
                                 return True
 
-                # All inspected successful runs were dormant runs without operational state
-                logger.info("Recent successful runs inspected: confirmed dormant (no operational state uploaded).")
+                logger.info(f"All {len(runs_list)} historical successful runs inspected: confirmed dormant (stateful steps skipped).")
                 return False
 
+            except (StateRecoveryError, StateIntegrityError):
+                raise
             except Exception as e:
                 raise StateRecoveryError(
                     f"STATE_RECOVERY_FAILURE: Failed to query remote workflow runs ({e}). History is unavailable."
@@ -361,7 +655,8 @@ class DurableStateManager:
     def _recover_from_github_artifact(self, budget_tracker: Optional[RunBudgetTracker] = None) -> bool:
         """
         Attempts to download and extract the designated state artifact from GitHub Actions.
-        Only recovers state matching the expected repository, workflow, operational namespace, and issuer.
+        Only recovers state matching the expected repository, designated workflow,
+        correct operational/rehearsal namespace, and expected artifact name.
         """
         token = os.environ.get("GITHUB_TOKEN")
         repo = os.environ.get("GITHUB_REPOSITORY", self.expected_repo)
@@ -376,30 +671,110 @@ class DurableStateManager:
                 if budget_tracker
                 else 15.0
             )
-            url = f"https://api.github.com/repos/{repo}/actions/artifacts?name={self.artifact_name}&per_page=1"
+            url = f"https://api.github.com/repos/{repo}/actions/artifacts?name={self.artifact_name}&per_page=5"
             req = urllib.request.Request(url, headers={
                 "Authorization": f"Bearer {token}",
                 "Accept": "application/vnd.github.v3+json",
                 "User-Agent": "ARX-DurableState-Recovery",
             })
             with urllib.request.urlopen(req, timeout=timeout) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
+                raw_bytes = resp.read()
+                try:
+                    data = json.loads(raw_bytes.decode("utf-8"))
+                except Exception as e:
+                    raise StateRecoveryError(f"STATE_RECOVERY_FAILURE: Remote artifact list JSON parse error: {e}")
 
-            artifacts = data.get("artifacts", [])
-            if not artifacts:
+            validate_github_artifact_list_response(data, context="actions/artifacts")
+
+            total_count = data["total_count"]
+            artifacts = data["artifacts"]
+
+            if total_count == 0 or len(artifacts) == 0:
                 logger.info(f"No prior {self.artifact_name} artifact found on GitHub.")
                 return False
 
             latest_art = artifacts[0]
-            # Ensure artifact name exactly matches
-            if latest_art.get("name") != self.artifact_name:
-                return False
 
+            # 1. Verify artifact name exactly matches expected name
+            art_name = latest_art.get("name")
+            if art_name != self.artifact_name:
+                raise StateRecoveryError(
+                    f"STATE_RECOVERY_FAILURE: Artifact name mismatch: expected '{self.artifact_name}', got '{art_name}'."
+                )
+
+            # 2. Verify namespace consistency
+            if self.is_rehearsal and self.artifact_name != REHEARSAL_ARTIFACT_NAME:
+                raise StateRecoveryError(
+                    f"STATE_RECOVERY_FAILURE: Rehearsal recovery attempted with non-rehearsal artifact name '{self.artifact_name}'."
+                )
+            if not self.is_rehearsal and self.artifact_name != OPERATIONAL_ARTIFACT_NAME:
+                raise StateRecoveryError(
+                    f"STATE_RECOVERY_FAILURE: Operational recovery attempted with non-operational artifact name '{self.artifact_name}'."
+                )
+
+            # 3. Check expiration
+            if latest_art.get("expired") is True:
+                logger.warning(f"Remote artifact {self.artifact_name} is marked as expired.")
+                raise StateRecoveryError(
+                    f"STATE_RECOVERY_FAILURE: Remote artifact {self.artifact_name} (ID {latest_art.get('id')}) has expired."
+                )
+
+            # 4. Verify workflow run association and provenance
+            wf_run = latest_art.get("workflow_run")
+            if not wf_run or not isinstance(wf_run, dict):
+                raise StateRecoveryError(
+                    "STATE_RECOVERY_FAILURE: Artifact metadata missing 'workflow_run' provenance object."
+                )
+            run_id = wf_run.get("id")
+            if not isinstance(run_id, int) or isinstance(run_id, bool) or run_id <= 0:
+                raise StateRecoveryError(
+                    f"STATE_RECOVERY_FAILURE: Artifact metadata has invalid workflow_run ID ({run_id})."
+                )
+
+            # Query workflow run details to verify repository and designated workflow
+            run_url = f"https://api.github.com/repos/{repo}/actions/runs/{run_id}"
+            run_timeout = (
+                budget_tracker.acquire_recovery_request_slot(default_timeout_sec=10.0)
+                if budget_tracker
+                else 10.0
+            )
+            run_req = urllib.request.Request(run_url, headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.github.v3+json",
+                "User-Agent": "ARX-DurableState-Recovery",
+            })
+            with urllib.request.urlopen(run_req, timeout=run_timeout) as run_resp:
+                run_raw = run_resp.read()
+                try:
+                    run_data = json.loads(run_raw.decode("utf-8"))
+                except Exception as e:
+                    raise StateRecoveryError(f"STATE_RECOVERY_FAILURE: Workflow run JSON parse error: {e}")
+
+            validate_github_workflow_run_response(run_data, context=f"actions/runs/{run_id}")
+
+            # Verify repository association
+            run_repo = run_data["repository"]["full_name"]
+            if run_repo != self.expected_repo:
+                raise StateRecoveryError(
+                    f"STATE_RECOVERY_FAILURE: Artifact originates from repository '{run_repo}'; expected '{self.expected_repo}'."
+                )
+
+            # Verify designated workflow path
+            run_path = run_data.get("path", "")
+            if run_path != DESIGNATED_WORKFLOW_PATH and not run_path.endswith(DESIGNATED_WORKFLOW_FILE):
+                raise StateRecoveryError(
+                    f"STATE_RECOVERY_FAILURE: Artifact originated from unauthorized workflow '{run_path}'; "
+                    f"expected '{DESIGNATED_WORKFLOW_PATH}'."
+                )
+
+            # 5. Download archive
             download_url = latest_art.get("archive_download_url")
-            if not download_url:
-                return False
+            if not download_url or not isinstance(download_url, str):
+                raise StateRecoveryError(
+                    f"STATE_RECOVERY_FAILURE: Artifact ID {latest_art.get('id')} missing archive_download_url."
+                )
 
-            timeout = (
+            dl_timeout = (
                 budget_tracker.acquire_recovery_request_slot(default_timeout_sec=20.0)
                 if budget_tracker
                 else 20.0
@@ -409,12 +784,13 @@ class DurableStateManager:
                 "Authorization": f"Bearer {token}",
                 "User-Agent": "ARX-DurableState-Recovery",
             })
-            with urllib.request.urlopen(dl_req, timeout=timeout) as dl_resp:
+            with urllib.request.urlopen(dl_req, timeout=dl_timeout) as dl_resp:
                 zip_bytes = dl_resp.read()
 
             import io
             self.state_dir.mkdir(parents=True, exist_ok=True)
             with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zf:
+                manifest_found = False
                 for member in zf.namelist():
                     # Security check: prevent zip slip / path traversal
                     if ".." in member or member.startswith("/") or member.startswith("\\"):
@@ -423,9 +799,14 @@ class DurableStateManager:
                         target_file = self.state_dir / self.MANIFEST_NAME
                         with zf.open(member) as src, open(target_file, "wb") as dst:
                             shutil.copyfileobj(src, dst)
+                        manifest_found = True
                         logger.info(f"Successfully recovered {self.MANIFEST_NAME} from remote artifact {self.artifact_name}.")
-                        return True
-        except StateIntegrityError:
+                if not manifest_found:
+                    raise StateIntegrityError(
+                        f"Artifact zip does not contain expected manifest {self.MANIFEST_NAME}."
+                    )
+                return True
+        except (StateIntegrityError, StateRecoveryError):
             raise
         except Exception as e:
             logger.warning(f"Remote artifact recovery failed: {e}")

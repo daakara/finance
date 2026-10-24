@@ -18,8 +18,9 @@ Invariants:
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import os
+from pathlib import Path
 import time
-from typing import Set, Tuple, Optional, Callable
+from typing import Set, Tuple, Optional, Callable, Union
 
 
 # Pilot Target Identity
@@ -81,6 +82,60 @@ REHEARSAL_CACHE_KEY_PREFIX = "research-maintenance-rehearsal-state-"
 # Activation Flag Environment Variables
 ACTIVATION_ENV_VAR = "ARX_MAINTENANCE_PILOT_ACTIVE"
 REPO_VAR_NAME = "ENABLE_RESEARCH_MAINTENANCE_PILOT"
+
+# GitHub Actions Workflow & Repository Boundaries
+TARGET_REPOSITORY = "daakara/finance"
+DESIGNATED_WORKFLOW_FILE = "scheduled_research_maintenance.yml"
+DESIGNATED_WORKFLOW_PATH = ".github/workflows/scheduled_research_maintenance.yml"
+
+
+def validate_rehearsal_paths(
+    state_dir: Union[str, Path],
+    output_dir: Union[str, Path],
+    cache_dir: Union[str, Path],
+    repo_root: Optional[Path] = None,
+) -> None:
+    """
+    Validates that rehearsal paths do not collide or overlap with protected operational roots.
+    Rejects exact equality and parent/child overlap in either direction.
+    Resolves existing symlinks and junction aliases using filesystem behavior.
+    Uses path-aware comparisons (is_relative_to), not string prefixes.
+    Preserves safe custom temporary directories.
+    """
+    if repo_root is None:
+        repo_root = Path(__file__).resolve().parent.parent.parent.parent
+    else:
+        repo_root = Path(repo_root).resolve()
+
+    op_roots = [
+        ("operational state dir", (repo_root / OPERATIONAL_STATE_DIR).resolve()),
+        ("operational output dir", (repo_root / OPERATIONAL_OUTPUT_DIR).resolve()),
+        ("operational cache dir", (repo_root / OPERATIONAL_CACHE_DIR).resolve()),
+    ]
+
+    rehearsal_paths = [
+        ("state_dir", Path(state_dir).resolve()),
+        ("output_dir", Path(output_dir).resolve()),
+        ("cache_dir", Path(cache_dir).resolve()),
+    ]
+
+    for r_name, r_resolved in rehearsal_paths:
+        for op_name, op_root in op_roots:
+            # 1. Exact equality
+            if r_resolved == op_root:
+                raise ValueError(
+                    f"BOUNDARY_VIOLATION: Rehearsal {r_name} '{r_resolved}' matches protected {op_name} '{op_root}'."
+                )
+            # 2. Child overlap (r_resolved is inside op_root)
+            if r_resolved.is_relative_to(op_root):
+                raise ValueError(
+                    f"BOUNDARY_VIOLATION: Rehearsal {r_name} '{r_resolved}' is inside protected {op_name} '{op_root}'."
+                )
+            # 3. Parent overlap (op_root is inside r_resolved)
+            if op_root.is_relative_to(r_resolved):
+                raise ValueError(
+                    f"BOUNDARY_VIOLATION: Rehearsal {r_name} '{r_resolved}' contains protected {op_name} '{op_root}'."
+                )
 
 
 class BudgetExhaustedError(RuntimeError):
