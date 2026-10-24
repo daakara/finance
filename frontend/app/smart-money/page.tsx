@@ -200,7 +200,7 @@ function SmartMoneyContent() {
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-slate-400 max-w-3xl">
-              See what politicians on Capitol Hill, corporate CEOs, and big-money options whales are buying with their own capital — before it hits the headlines.
+              Track disclosed institutional and congressional capital flows from official regulatory filings. Form 4 insider transactions, Congressional STOCK Act disclosures, and options flow benchmarks.
             </p>
           </div>
 
@@ -220,9 +220,35 @@ function SmartMoneyContent() {
               <span className="text-base font-bold text-cyan-400 tabular-nums">{secInsiders.length}</span>
             </div>
             <div className="bg-[#090d14] px-3 py-1.5 rounded-lg border border-[#243044] text-right">
-              <span className="text-[10px] text-slate-500 block uppercase">Options Volume (Archive)</span>
-              <span className="text-base font-bold text-amber-400 tabular-nums">$112.8M</span>
+              <span className="text-[10px] text-slate-500 block uppercase">Options Volume (Static Benchmark)</span>
+              <div className="flex items-center justify-end gap-1.5">
+                <span className="text-base font-bold text-amber-400 tabular-nums">$112.8M</span>
+                <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-950 text-amber-300 border border-amber-800/40">Baseline</span>
+              </div>
             </div>
+          </div>
+        </div>
+
+        {/* Statutory Reporting Lag & Regulatory Disclosures */}
+        <div className="bg-[#0b101b] border border-cyan-900/50 rounded-xl p-3.5 text-xs text-slate-300 flex flex-wrap items-center justify-between gap-3 shadow-md">
+          <div className="space-y-1 max-w-4xl">
+            <div className="flex items-center gap-2">
+              <span className="text-cyan-400 font-bold flex items-center gap-1.5 font-mono uppercase tracking-wider text-[11px]">
+                <span>⚖️</span>
+                <span>Statutory Reporting Windows & Feed Disclosures</span>
+              </span>
+            </div>
+            <p className="text-slate-400 text-[11px] leading-relaxed">
+              Regulatory disclosures are legally lagged public filings, not low-latency market feeds. 
+              <strong> SEC Form 4</strong> insider transactions are subject to a statutory reporting window of up to <strong>2 business days</strong> post-execution. 
+              <strong> Congressional STOCK Act</strong> Periodic Transaction Reports (PTRs) reflect a statutory reporting window of <strong>15 to 45 calendar days</strong> post-execution. 
+              Options volume metrics reflect curated historical reference baselines.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono">
+            <span className="px-2 py-1 rounded bg-slate-800/80 text-cyan-300 border border-slate-700">SEC Form 4: ≤2 Days</span>
+            <span className="px-2 py-1 rounded bg-slate-800/80 text-cyan-300 border border-slate-700">STOCK Act: 15–45 Days</span>
+            <span className="px-2 py-1 rounded bg-amber-950/80 text-amber-300 border border-amber-700/60">Scanner: PIPELINE_PENDING</span>
           </div>
         </div>
 
