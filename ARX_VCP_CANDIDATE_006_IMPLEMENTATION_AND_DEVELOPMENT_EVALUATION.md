@@ -1,19 +1,27 @@
 # ARX Terminal — Candidate 006 Implementation & Development Evaluation
 
-**Document Identifier**: ARX_VCP_CANDIDATE_006_IMPLEMENTATION_AND_DEVELOPMENT_EVALUATION  
-**Workstream Identifier**: ARX_VCP_RESEARCH_WAVE_FRAGMENTATION_01 (Nonproduction Research Experiment)  
-**Execution Timestamp**: 2026-10-24T01:35:00+02:00  
-**Reporting Reconciliation Date**: 2026-10-24T01:45:00+02:00  
-**Governing Framework**: ARX Closure Model v2 — Decision-First, Minimum Sufficient Evidence  
-**Final Approval Authority**: David Akara  
+**Document Identifier**: ARX_VCP_CANDIDATE_006_IMPLEMENTATION_AND_DEVELOPMENT_EVALUATION
+**Workstream Identifier**: ARX_VCP_RESEARCH_WAVE_FRAGMENTATION_01 (Nonproduction Research Experiment)
+**Execution Timestamp**: 2026-10-24T01:35:00+02:00
+**Reporting Reconciliation Date**: 2026-10-24T01:45:00+02:00
+**Governing Framework**: ARX Closure Model v2 — Decision-First, Minimum Sufficient Evidence
+**Final Approval Authority**: David Akara
 **Final Disposition**: ARX_VCP_CANDIDATE_006_DEVELOPMENT_EXPERIMENT_COMPLETE
 
-> **Reporting Reconciliation Note (2026-10-24T01:45:00+02:00)**:  
-> This report has been reconciled under authorization ARX_VCP_CANDIDATE_006_LOCAL_RESEARCH_BASELINE_COMMIT_AUTHORIZED to:  
-> 1. Formulate control classification findings precisely separating true negative classifications from insufficient-data abstentions across the four control subsets.  
-> 2. Accurately describe the LLY qualification tradeoff relative to the approved Candidate 005 final-trough contract rather than informal phrasing.  
-> 3. Document the full harness execution history including the two initial invocation exceptions prior to the successful full run.  
+> **Reporting Reconciliation Note (2026-10-24T01:45:00+02:00)**:
+> This report has been reconciled under authorization `ARX_VCP_CANDIDATE_006_LOCAL_RESEARCH_BASELINE_COMMIT_AUTHORIZED` to:
+> 1. Formulate control classification findings precisely separating true negative classifications from insufficient-data abstentions across the four control subsets.
+> 2. Accurately describe the LLY qualification tradeoff relative to the approved Candidate 005 final-trough contract rather than informal phrasing.
+> 3. Document the full harness execution history including the two initial invocation exceptions prior to the successful full run.
 > 4. Enforce strict claim limits: No implementation defect found within the verified scope; observed development recognition does not constitute independently validated sensitivity or predictive performance.
+>
+> **Packaging & Lineage Addendum (2026-10-24T08:45:00+02:00)**:
+> Reconciled under authorization `ARX_VCP_CANDIDATE_006_RESEARCH_TRANSPLANT_CI_PACKAGING_AND_LOCAL_COMMITS_AUTHORIZED`:
+> - Reconciled FTNT cutoffs (`2026-10-02`, `2026-10-05`) and DHLGY cutoff (`2026-09-01`) to match authoritative manifest records.
+> - Distinguished POS-04 final-wave volume ratio (`0.6448`) from POS-03 (`0.6273`).
+> - Formally qualified control abstentions: 6 missing input data (< 200 bars), 1 SPY unavailable base-anchor geometry & volume.
+> - Formally qualified harness execution: zero completed case records; first-case assessment had already been computed before serialization failed.
+> - Updated operational risk phrasing: Candidate 004 remains default, while shared-code regression risk remains subject to verification.
 
 ---
 
@@ -159,13 +167,13 @@ Execution of 	ests/test_vcp_candidate_reproducibility.py confirmed:
 
 | Invoc. ID | Timestamp | Harness Target | Cases Processed | Results Saved | Failure Location & Cause | Action Taken |
 | :---: | :---: | :---: | :---: | :---: | :--- | :--- |
-| **Attempt 1** | 2026-10-24T01:30:51+02:00 | evaluate_candidate_006_hva00.py | 0 / 60 | None | Line 125: AttributeError: 'VCPDomainAssessment' object has no attribute 'decision_reason_codes' | Fixed attribute name to 
+| **Attempt 1** | 2026-10-24T01:30:51+02:00 | evaluate_candidate_006_hva00.py | 0 / 60 | None | Line 125: AttributeError: 'VCPDomainAssessment' object has no attribute 'decision_reason_codes' | Fixed attribute name to
 eason_codes. |
 | **Attempt 2** | 2026-10-24T01:31:34+02:00 | evaluate_candidate_006_hva00.py | 0 / 60 | None | Line 125: AttributeError: 'VCPDomainAssessment' object has no attribute 'reason_codes' | Fixed attribute name to classification_reason_codes per predicate_registry.py. |
 | **Attempt 3** | 2026-10-24T01:31:59+02:00 | evaluate_candidate_006_hva00.py | 60 / 60 | Complete | None (Execution finished cleanly in 2.87s) | Results written to cp_hva02_candidate_006_results.json. |
 
 **Forensic Evaluation Notes**:
-1. *Zero Case Leakage / No Partial Computation*: In Attempts 1 and 2, execution crashed on Case 1 (HVA00-POS-01 / NVDA) during extraction of assessment attributes into the results dictionary. Zero cases were buffered, displayed, or written to disk.
+1. *Zero Case Leakage / Pre-Extraction Computation*: In Attempts 1 and 2, zero completed case records were created. However, the classifier assessment on Case 1 (`HVA00-POS-01 / NVDA`) had already been computed by `classify_case()`, `extract_observations()`, and `evaluate_predicates()` before execution crashed on line 125 during output property extraction. Zero cases were buffered, displayed, or written to disk.
 2. *Strict Code Isolation*: Only harness extraction boilerplate changed between attempts. The core Candidate 006 algorithm in classifier.py, the ruleset constants in scanner_contract.py, and all test fixtures remained 100% frozen.
 3. *Single Completed Run*: Attempt 3 represents the sole completed evaluation run across the full 60-case corpus.
 
@@ -179,14 +187,14 @@ eason_codes. |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
 | HVA00-POS-01 | NVDA | 2026-01-29 | Non-Qual | Non-Qual | **NON-QUALIFIED** | 4 | [15.68, 15.20, 9.41, 8.27] | NON_TIGHTENING_SEQUENCE, VOLUME_HEAVY_ON_PULLBACK |
 | HVA00-POS-02 | NVDA | 2026-01-30 | Non-Qual | Non-Qual | **NON-QUALIFIED** | 4 | [15.68, 15.20, 9.41, 8.27] | FINAL_CONTRACTION_UNFINISHED_AT_CUTOFF, VOLUME_HEAVY |
-| HVA00-POS-03 | FTNT | 2026-01-29 | Non-Qual | Non-Qual | **QUALIFIED** | 4 | [15.60, 13.85, 12.70, 6.51] | *None (All 13 Predicates Passed)* |
-| HVA00-POS-04 | FTNT | 2026-01-30 | Non-Qual | Non-Qual | **QUALIFIED** | 4 | [15.60, 13.85, 12.70, 6.51] | *None (All 13 Predicates Passed)* |
+| HVA00-POS-03 | FTNT | 2026-10-02 | Non-Qual | Non-Qual | **QUALIFIED** | 4 | [15.60, 13.85, 12.70, 6.51] | *None (All 13 Predicates Passed)* |
+| HVA00-POS-04 | FTNT | 2026-10-05 | Non-Qual | Non-Qual | **QUALIFIED** | 4 | [15.60, 13.85, 12.70, 6.51] | *None (All 13 Predicates Passed)* |
 | HVA00-POS-05 | PLTR | 2026-01-14 | Non-Qual | Non-Qual | **NON-QUALIFIED** | 2 | [12.03, 11.64] | NON_TIGHTENING_SEQUENCE, PRICE_EXTENDED_PAST_PIVOT |
 | HVA00-POS-06 | PLTR | 2026-01-15 | Non-Qual | Non-Qual | **NON-QUALIFIED** | 2 | [12.03, 11.64] | NON_TIGHTENING_SEQUENCE, VOLUME_HEAVY_ON_PULLBACK |
 | HVA00-POS-07 | VRT | 2026-01-22 | Non-Qual | Non-Qual | **NON-QUALIFIED** | 8 | [26.26, 7.21, 22.01, 4.10, ...] | CONTRACTION_COUNT_OUT_OF_BOUNDS, VOLATILITY_EXPANSION |
 | HVA00-POS-08 | VRT | 2026-01-23 | Non-Qual | Non-Qual | **NON-QUALIFIED** | 8 | [26.26, 7.21, 22.01, 4.10, ...] | CONTRACTION_COUNT_OUT_OF_BOUNDS, VOLATILITY_EXPANSION |
 | HVA00-POS-09 | DHLGY| 2026-01-08 | Non-Qual | Non-Qual | **NON-QUALIFIED** | 2 | [9.15, 6.73] | FINAL_CONTRACTION_UNFINISHED_AT_CUTOFF, VOLUME_HEAVY |
-| HVA00-POS-10 | DHLGY| 2026-01-09 | Non-Qual | Non-Qual | **QUALIFIED** | 3 | [10.06, 6.73, 5.95] | *None (All 13 Predicates Passed)* |
+| HVA00-POS-10 | DHLGY| 2026-09-01 | Non-Qual | Non-Qual | **QUALIFIED** | 3 | [10.06, 6.73, 5.95] | *None (All 13 Predicates Passed)* |
 | HVA00-POS-11 | LLY | 2026-01-07 | Non-Qual | Qual | **NON-QUALIFIED** | 1 | [11.97] | FINAL_CONTRACTION_UNFINISHED_AT_CUTOFF, INSUFFICIENT_WAVES|
 | HVA00-POS-12 | LLY | 2026-01-08 | Non-Qual | Non-Qual | **NON-QUALIFIED** | 1 | [11.97] | FINAL_CONTRACTION_UNFINISHED_AT_CUTOFF, INSUFFICIENT_WAVES|
 | HVA00-POS-13 | RTX | 2026-01-15 | Non-Qual | Non-Qual | **ABSTENTION** | 0 | [] | INSUFFICIENT_BASE_ANCHOR_CANDIDATES, VOLUME_DATA_UNAVAILABLE|
@@ -207,7 +215,10 @@ Zero positive outputs across 45 control inputs, comprising 38 negative classific
 | **Insufficient Evidence (Stratum 6B)** | 5 | 0 | 0 | **0** | 0 | 5 | 5 data abstentions (preserved from baseline) |
 | **Total Control Inputs** | **45** | **0** | **0** | **0** | **38** | **7** | **Zero False Positives Across All 45 Inputs** |
 
-*Note on Control Accounting*: The 7 abstentions reflect missing historical volume/price data rather than classifier-evaluated negatives. Abstentions do not establish specificity, but confirm that Candidate 006 preserves data integrity gates without converting data-starved inputs into false signals.
+*Note on Control Accounting*: The 7 abstentions are formally partitioned into two distinct failure mechanisms:
+1. *Missing Raw Input Data (6 cases)*: `HVA00-INS-01` through `05` and `HVA00-REJ-04` (< 200 trading sessions available, triggering `INSUFFICIENT_HISTORY_SESSIONS` and `VOLUME_DATA_UNAVAILABLE`).
+2. *Unavailable Derived Geometry / Base Anchor (1 case)*: `HVA00-S2N-09 / SPY` has 284 trading sessions and passes Stage 2 and prior uptrend, but abstains due to `INSUFFICIENT_BASE_ANCHOR_CANDIDATES` (no valid 15-to-90 day consolidation base anchor exists in a smooth monotonic uptrend) combined with ETF volume omissions (`VOLUME_DATA_UNAVAILABLE`).
+Abstentions do not establish classifier specificity, but confirm that Candidate 006 preserves data integrity gates without converting data-starved or unanchored inputs into false signals.
 
 ---
 
@@ -229,5 +240,5 @@ Machine-readable results and reproduction artifacts are preserved in the persist
 ### Recommended Next Owner Decision
 **Recommend Candidate 006 for Research Preservation and Bounded Holdout Pre-Commitment Review**:
 - Candidate 006 demonstrates superior contraction segmentation over Candidates 004 and 005, successfully solving wave fragmentation on FTNT and DHLGY without producing a single false positive across 45 controls.
-- Production activation remains on **HOLD** (PR #73 held).
+- Production activation remains on **HOLD** (PR #73 held). Candidate 004 remains default, while shared-code regression risk remains subject to verification. A future main merge may trigger normal deployment automation and requires separate release authorization.
 - Recommend David Akara authorize creating a scoped local research commit in worktree inance-vcp-candidate-006-merging to preserve this experimental milestone.

@@ -1,12 +1,17 @@
-"""ARX Terminal — Candidate 004 vs Candidate 005 Reproducibility & Dual Execution Suite.
+"""ARX Terminal — Candidate 004 / 005 / 006 Reproducibility & Dual Execution Suite.
 
 Proves:
+0. Fixture package integrity matches cryptographic manifest.
 1. Default instantiation of VCPClassifier selects Candidate 004.
-2. Candidate 004 produces 100% bit-exact outputs matching frozen baseline records on HVA-00 development cases.
-3. Candidate 004 and Candidate 005 can execute side-by-side against identical inputs without state leakage.
-4. Numeric contract defaults preserve Candidate 004 monotonic tightening rules.
+2. Numeric contract defaults preserve Candidate 004 monotonic tightening rules.
+3. Candidate 004 produces 100% bit-exact outputs matching frozen baseline records on HVA-00 development cases.
+4. Candidate 004 and Candidate 005 can execute side-by-side against identical inputs without state leakage.
+5. Candidate 005 produces 100% bit-exact outputs matching frozen baseline records on HVA-00 development cases.
+6. Tri-candidate side-by-side execution (C004, C005, C006) exhibits zero state leakage and order invariance.
+7. Candidate 006 produces 100% bit-exact outputs matching frozen baseline records on HVA-00 development cases.
 """
 
+import hashlib
 import json
 from pathlib import Path
 import sqlite3
@@ -16,6 +21,42 @@ from analyst_dashboard.vcp.case_compiler import VCPTemporalCaseCompiler
 from analyst_dashboard.vcp.classifier import VCPClassifier
 from analyst_dashboard.vcp.numeric_contract import VCPNumericContract
 from analyst_dashboard.vcp.temporal_contract import DailyOHLCVBar
+
+
+def _resolve_vcp_fixture(filename: str) -> Path:
+    """Resolves VCP research fixtures from tests/fixtures/vcp/ with fallback to data/research/."""
+    worktree_root = Path(__file__).resolve().parent.parent
+    primary = worktree_root / "tests" / "fixtures" / "vcp" / filename
+    if primary.exists():
+        return primary
+    fallback = worktree_root / "data" / "research" / filename
+    if fallback.exists():
+        return fallback
+    return primary
+
+
+def test_00_fixture_manifest_integrity():
+    """Validates that packaged VCP research fixtures exist and match cryptographic hashes."""
+    manifest_path = _resolve_vcp_fixture("FIXTURE_MANIFEST.json")
+    if not manifest_path.exists():
+        pytest.skip("FIXTURE_MANIFEST.json not present in fixtures directory.")
+
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        meta = json.load(f)
+
+    worktree_root = Path(__file__).resolve().parent.parent
+    fixture_dir = manifest_path.parent
+
+    for item in meta["fixtures"]:
+        fpath = fixture_dir / item["filename"]
+        assert fpath.exists(), f"Packaged fixture missing: {item['filename']}"
+        assert fpath.stat().st_size == item["size_bytes"], f"Size mismatch for {item['filename']}"
+
+        h = hashlib.sha256()
+        with open(fpath, "rb") as bf:
+            while chunk := bf.read(8192):
+                h.update(chunk)
+        assert h.hexdigest() == item["sha256"], f"SHA-256 mismatch for {item['filename']}"
 
 
 def test_01_default_classifier_is_candidate_004():
@@ -39,8 +80,8 @@ def test_03_candidate_004_bit_exact_reproducibility_on_frozen_cases():
     """Proves Candidate 004 yields bit-exact outputs matching vcp_hva00_frozen_algorithm_results.json."""
     worktree_root = Path(__file__).resolve().parent.parent
     db_path = worktree_root / "data" / "research" / "market_data" / "bounded_150_dev_market_store.db"
-    manifest_path = worktree_root / "data" / "research" / "vcp_hva00_case_manifest.json"
-    frozen_path = worktree_root / "data" / "research" / "vcp_hva00_frozen_algorithm_results.json"
+    manifest_path = _resolve_vcp_fixture("vcp_hva00_case_manifest.json")
+    frozen_path = _resolve_vcp_fixture("vcp_hva00_frozen_algorithm_results.json")
 
     if not (db_path.exists() and manifest_path.exists() and frozen_path.exists()):
         pytest.skip("Research data files not present in worktree; skipping frozen replay.")
@@ -129,7 +170,7 @@ def test_04_dual_candidate_isolated_side_by_side_execution():
     """Instantiating both Candidate 004 and Candidate 005 executes cleanly without shared state contamination."""
     worktree_root = Path(__file__).resolve().parent.parent
     db_path = worktree_root / "data" / "research" / "market_data" / "bounded_150_dev_market_store.db"
-    manifest_path = worktree_root / "data" / "research" / "vcp_hva00_case_manifest.json"
+    manifest_path = _resolve_vcp_fixture("vcp_hva00_case_manifest.json")
 
     if not (db_path.exists() and manifest_path.exists()):
         pytest.skip("Database or manifest not present in worktree.")
@@ -203,8 +244,8 @@ def test_05_candidate_005_bit_exact_reproducibility_on_frozen_cases():
     """Proves Candidate 005 yields bit-exact outputs matching vcp_hva02_candidate_005_results.json."""
     worktree_root = Path(__file__).resolve().parent.parent
     db_path = worktree_root / "data" / "research" / "market_data" / "bounded_150_dev_market_store.db"
-    manifest_path = worktree_root / "data" / "research" / "vcp_hva00_case_manifest.json"
-    frozen_c005_path = worktree_root / "data" / "research" / "vcp_hva02_candidate_005_results.json"
+    manifest_path = _resolve_vcp_fixture("vcp_hva00_case_manifest.json")
+    frozen_c005_path = _resolve_vcp_fixture("vcp_hva02_candidate_005_results.json")
 
     if not (db_path.exists() and manifest_path.exists() and frozen_c005_path.exists()):
         pytest.skip("Research data files not present in worktree; skipping frozen replay.")
@@ -279,7 +320,7 @@ def test_06_tri_candidate_isolated_side_by_side_and_order_invariance():
     """Instantiating Candidate 004, Candidate 005, and Candidate 006 executes cleanly with zero state leakage and order invariance."""
     worktree_root = Path(__file__).resolve().parent.parent
     db_path = worktree_root / "data" / "research" / "market_data" / "bounded_150_dev_market_store.db"
-    manifest_path = worktree_root / "data" / "research" / "vcp_hva00_case_manifest.json"
+    manifest_path = _resolve_vcp_fixture("vcp_hva00_case_manifest.json")
 
     if not (db_path.exists() and manifest_path.exists()):
         pytest.skip("Database or manifest not present in worktree.")
@@ -361,3 +402,83 @@ def test_06_tri_candidate_isolated_side_by_side_and_order_invariance():
     assert obs_005_fwd.contraction_depths == obs_005_rev.contraction_depths
     assert obs_006_fwd.contraction_count == obs_006_rev.contraction_count
     assert obs_006_fwd.contraction_depths == obs_006_rev.contraction_depths
+
+
+def test_07_candidate_006_bit_exact_reproducibility_on_frozen_cases():
+    """Proves Candidate 006 yields bit-exact outputs matching vcp_hva02_candidate_006_results.json."""
+    worktree_root = Path(__file__).resolve().parent.parent
+    db_path = worktree_root / "data" / "research" / "market_data" / "bounded_150_dev_market_store.db"
+    manifest_path = _resolve_vcp_fixture("vcp_hva00_case_manifest.json")
+    frozen_c006_path = _resolve_vcp_fixture("vcp_hva02_candidate_006_results.json")
+
+    if not (db_path.exists() and manifest_path.exists() and frozen_c006_path.exists()):
+        pytest.skip("Research data files not present in worktree; skipping frozen replay.")
+
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+    with open(frozen_c006_path, "r", encoding="utf-8") as f:
+        frozen_c006 = json.load(f)
+
+    frozen_records = {r["case_id"]: r["candidate_006"] for r in frozen_c006["case_records"]}
+    pos_cases = [c for c in manifest["cases"] if c.get("stratum") == "CLEAR_POSITIVE_VCP"]
+
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    cursor = conn.cursor()
+
+    compiler = VCPTemporalCaseCompiler()
+    clf_c006 = VCPClassifier(algorithm_version=VCPClassifier.VERSION_CANDIDATE_006)
+
+    for case_defn in pos_cases:
+        cid = case_defn["case_id"]
+        sym = case_defn["symbol"]
+        cutoff = case_defn["evaluation_cutoff_date"]
+        cutoff_iso = f"{cutoff}T21:00:00Z"
+
+        rows = cursor.execute(
+            """
+            SELECT trade_date, open, high, low, close, volume
+            FROM asset_ohlcv_daily
+            WHERE symbol = ? AND trade_date <= ?
+            ORDER BY trade_date ASC
+            """,
+            (sym, cutoff),
+        ).fetchall()
+
+        bars = [
+            DailyOHLCVBar(
+                symbol=sym,
+                bar_date=r[0],
+                open=float(r[1]),
+                high=float(r[2]),
+                low=float(r[3]),
+                close=float(r[4]),
+                volume=int(r[5]),
+                valid_time=f"{r[0]}T21:00:00Z",
+                known_at=f"{r[0]}T22:00:00Z",
+            )
+            for r in rows
+        ]
+
+        pkg = compiler.compile_case(
+            case_id=cid,
+            security_id=f"SEC-{sym}",
+            symbol=sym,
+            evaluation_as_of=cutoff_iso,
+            raw_bars=bars,
+            reference_data={"rs_rank": 85.0},
+            corporate_actions=[],
+        )
+
+        obs = clf_c006.extract_observations(pkg)
+        assessment = clf_c006.classify_case(pkg)
+
+        frozen_rec = frozen_records[cid]
+        assert assessment.vcp_classification == frozen_rec["vcp_classification"], f"{cid} classification mismatch"
+        assert obs.contraction_count == frozen_rec["contraction_count"], f"{cid} count mismatch"
+        assert obs.contraction_depths == frozen_rec["contraction_depths"], f"{cid} depths mismatch"
+        assert obs.is_progressive_tightening == frozen_rec["is_progressive_tightening"], f"{cid} tightening mismatch"
+        if frozen_rec["final_wave_volume_ratio"] is not None:
+            assert obs.final_wave_volume_ratio == frozen_rec["final_wave_volume_ratio"], f"{cid} volume ratio mismatch"
+        assert assessment.vcp_qualified == frozen_rec["vcp_qualified"], f"{cid} qualification mismatch"
+
+    conn.close()
