@@ -549,7 +549,7 @@ export default function AlconV4ExtendedView({ dossier, extension }: AlconV4Exten
                 </span>
                 <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
                   Historical Model v4.0 anchored an unamortized fixed assumption of -$2,176.2M net cash across all reference cases.
-                  Under Owner Decision Option B (Model v5.0), terminal net debt is derived strictly from each scenario's ending gross debt minus ending cash,
+                  Under Owner Decision Option B (Model v5.0), terminal net debt is derived strictly from each scenario&apos;s ending gross debt minus ending cash,
                   eliminating balance-sheet variance and reflecting scenario-specific cash generation in equity value.
                 </p>
                 <div className="overflow-x-auto">
@@ -649,7 +649,7 @@ export default function AlconV4ExtendedView({ dossier, extension }: AlconV4Exten
               <div className="p-3 bg-[#0a101b] rounded border border-slate-800 text-[11px] text-slate-400 space-y-1 font-sans">
                 <span className="font-bold text-slate-300 block font-mono">Terminal Net Debt Governance &amp; IFRS Disclosures:</span>
                 <p>
-                  <strong>Owner Decision Option B (Scenario-Derived Net Debt):</strong> Valuation net debt equals each scenario's ending gross debt minus ending cash exactly ($0 debt minus cash in all reference and optimistic scenarios; $1,000M gross debt minus ending cash in Conservative Dynamic). Zero balancing plugs or unexplained liquid asset adjustments are applied.
+                  <strong>Owner Decision Option B (Scenario-Derived Net Debt):</strong> Valuation net debt equals each scenario&apos;s ending gross debt minus ending cash exactly ($0 debt minus cash in all reference and optimistic scenarios; $1,000M gross debt minus ending cash in Conservative Dynamic). Zero balancing plugs or unexplained liquid asset adjustments are applied.
                 </p>
                 <p>
                   Alcon is an IFRS foreign private issuer reporting under IFRS 16 and IAS 7. Lease liabilities are recognized in total financial debt, and lease interest is classified inside operating cash flows. No US-GAAP ASC 842 lease conventions are applied.

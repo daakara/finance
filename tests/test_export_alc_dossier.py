@@ -54,15 +54,15 @@ def test_01_five_scenario_preservation(exported_dossier):
 
 
 def test_02_numerical_parity_against_frozen_ledger(exported_dossier):
-    """2. Numerical parity against independently certified v4.0 ledger values."""
+    """2. Numerical parity against independently certified v5.0 scenario-derived ledger values."""
     base_dcf = exported_dossier["valuation"]["scenarios"]["base_dcf"]
     
-    assert base_dcf["per_share_value"] == 91.82
-    assert base_dcf["potential_return_pct"] == pytest.approx(36.17, abs=0.01)
-    assert base_dcf["five_period_annual_irr_pct"] == 6.92
-    assert base_dcf["calendar_dated_xirr_pct"] == 6.93
+    assert base_dcf["per_share_value"] == 95.00
+    assert base_dcf["potential_return_pct"] == pytest.approx(40.89, abs=0.01)
+    assert base_dcf["five_period_annual_irr_pct"] == 7.64
+    assert base_dcf["calendar_dated_xirr_pct"] == 7.65
     assert base_dcf["enterprise_value"] == pytest.approx(41487.79, abs=0.01)
-    assert base_dcf["equity_value"] == pytest.approx(43663.99, abs=0.01)
+    assert base_dcf["equity_value"] == pytest.approx(45175.34, abs=0.01)
     assert base_dcf["revenue_cagr_pct"] == 6.50
     assert base_dcf["operating_margin_pct"] == 18.50
     assert base_dcf["year5_revenue"] == 14396.6
@@ -95,7 +95,7 @@ def test_03_dated_cash_flow_and_xirr_schedule(exported_dossier):
     # Event 6: Terminal Share Disposition
     assert cash_flows[6]["event"] == "TERMINAL_SHARE_DISPOSITION"
     assert cash_flows[6]["date"] == "2031-10-22"
-    assert cash_flows[6]["cash_flow"] == pytest.approx(91.82, abs=0.01)
+    assert cash_flows[6]["cash_flow"] == pytest.approx(95.00, abs=0.01)
 
     # Holding period
     assert ext["holding_period_days"] == 1826
@@ -114,24 +114,24 @@ def test_04_bridge_currency_units_and_denominator(exported_dossier):
 
     # Valuation terminal bridge
     base_dcf = exported_dossier["valuation"]["scenarios"]["base_dcf"]
-    assert base_dcf["net_debt_bridge"] == pytest.approx(-2176.2, abs=0.1)  # net cash of $2,176.2M
+    assert base_dcf["net_debt_bridge"] == pytest.approx(-3687.55, abs=0.1)  # net cash of $3,687.55M
     assert base_dcf["ending_diluted_shares"] == 475.524
 
 
 def test_05_accumulation_ceilings_and_invertibility(exported_dossier):
-    """5. Accumulation ceilings ($64.15, $62.70, $58.59) and invertibility verification."""
+    """5. Accumulation ceilings ($66.31, $64.82, $60.56) and invertibility verification."""
     ceilings = exported_dossier["alcon_v4_extension"]["accumulation_ceilings"]
     
     annual = ceilings["annual_irr_basis"]
-    assert annual["hurdle_80"] == 64.15
-    assert annual["hurdle_85"] == 62.70
-    assert annual["hurdle_100"] == 58.59
+    assert annual["hurdle_80"] == 66.31
+    assert annual["hurdle_85"] == 64.82
+    assert annual["hurdle_100"] == 60.56
     assert annual["invertibility_verified"] is True
 
     calendar = ceilings["calendar_xirr_basis"]
-    assert calendar["hurdle_80"] == 64.20
-    assert calendar["hurdle_85"] == 62.75
-    assert calendar["hurdle_100"] == 58.64
+    assert calendar["hurdle_80"] == 66.36
+    assert calendar["hurdle_85"] == 64.86
+    assert calendar["hurdle_100"] == 60.61
     assert calendar["invertibility_verified"] is True
 
 
@@ -252,3 +252,33 @@ def test_12_draft_output_path_isolation(exported_dossier):
     assert "drafts" in output_path.parts
     assert exported_dossier["publication_metadata"]["is_publication_active"] is False
     assert exported_dossier["publication_metadata"]["publication_status"] == "DRAFT_RESEARCH_CANDIDATE"
+
+
+def test_13_historical_v4_baseline_preservation_and_comparison(exported_dossier):
+    """13. Preserves subordinate historical v4.0 baseline comparison ledger."""
+    ext = exported_dossier["alcon_v4_extension"]
+    assert "historical_v4_baseline" in ext, "Missing historical_v4_baseline in alcon_v4_extension"
+    v4_base = ext["historical_v4_baseline"]
+    assert "Option B" in v4_base["metadata"]["owner_decision"]
+    assert v4_base["metadata"]["spot_price"] == 67.43
+    
+    scenarios_by_id = {s["scenario_id"]: s for s in v4_base["scenarios"]}
+    assert "BASE_DCF" in scenarios_by_id
+    base_dcf = scenarios_by_id["BASE_DCF"]
+    assert base_dcf["v4_baseline"]["terminal_share_price"] == 91.82
+    assert base_dcf["v4_baseline"]["valuation_net_debt"] == -2176.2
+    assert base_dcf["v5_successor"]["terminal_share_price"] == 95.00
+    assert base_dcf["v5_successor"]["valuation_net_debt"] == -3687.55
+    assert base_dcf["delta"]["terminal_share_price"] == 3.18
+
+
+def test_14_export_v4_ledger_reproducibility():
+    """14. Direct export of historical v4.0 ledger reproduces certified v4.0 values."""
+    v4_ledger_path = Path("ARX_ALC_CANONICAL_SCENARIO_OUTPUT_LEDGER.json")
+    assert v4_ledger_path.exists(), "Historical V4 ledger missing"
+    v4_dossier = export_alc_dossier(v4_ledger_path)
+    base_dcf = v4_dossier["valuation"]["scenarios"]["base_dcf"]
+    assert base_dcf["per_share_value"] == 91.82
+    assert base_dcf["five_period_annual_irr_pct"] == 6.92
+    assert base_dcf["net_debt_bridge"] == -2176.2
+
