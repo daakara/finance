@@ -25,6 +25,7 @@ import os
 from pathlib import Path
 import shutil
 import tempfile
+import time
 import unittest
 from unittest.mock import patch, MagicMock
 import urllib.error
@@ -41,14 +42,20 @@ from analyst_dashboard.research.maintenance.pilot_config import (
     ACCEPTED_BASELINE_ID,
     ACCEPTED_CUTOFF_DATE,
     RECORDED_KNOWN_ACCESSIONS,
+    MAX_REQUESTS_PER_RUN,
+    MAX_RUNTIME_SECONDS,
+    MIN_REQUEST_INTERVAL_SECONDS,
     evaluate_pilot_status,
     is_reconciliation_supported,
+    RunBudgetTracker,
+    BudgetExhaustedError,
 )
 from analyst_dashboard.research.maintenance.durable_state import (
     DurableStateManager,
     ConcurrentRunError,
     StateIntegrityError,
     StatePersistenceError,
+    StateRecoveryError,
 )
 from analyst_dashboard.research.maintenance.scheduled_runner import ScheduledRunner
 from analyst_dashboard.research.maintenance.service import ResearchMaintenanceService
@@ -100,21 +107,27 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
     # CONTROL 1: Disabled Activation Prevents Recurring Work
     # -------------------------------------------------------------------------
     def test_control_1_disabled_activation_prevents_recurring_work(self):
-        """When activation flag is unset or false, runner halts safely with PILOT_DORMANT."""
-        with patch.dict(os.environ, {"ARX_MAINTENANCE_PILOT_ACTIVE": "false"}):
-            runner = ScheduledRunner(
-                symbol="FIX",
-                state_dir=self.state_dir,
-                output_dir=self.output_dir,
-                cache_dir=self.cache_dir,
-                force_run=False,
-            )
-            outcome, summary = runner.run()
+        """When activation flag is unset or false, runner halts safely with PILOT_DORMANT with zero fs/lock mutations."""
+        dormant_state_dir = Path(self.temp_dir) / "dormant_state"
+        self.assertFalse(dormant_state_dir.exists())
 
-            self.assertEqual(outcome, RunOutcome.PILOT_DORMANT)
-            self.assertFalse(summary["is_active"])
-            self.assertIn("PILOT_DORMANT", summary["message"])
-            self.assertEqual(len(list(self.output_dir.glob("*"))), 0)
+        with patch.dict(os.environ, {"ARX_MAINTENANCE_PILOT_ACTIVE": "false"}):
+            with patch("urllib.request.urlopen", side_effect=AssertionError("No network requests allowed when dormant")):
+                runner = ScheduledRunner(
+                    symbol="FIX",
+                    state_dir=dormant_state_dir,
+                    output_dir=self.output_dir,
+                    cache_dir=self.cache_dir,
+                    force_run=False,
+                )
+                outcome, summary = runner.run()
+
+                self.assertEqual(outcome, RunOutcome.PILOT_DORMANT)
+                self.assertFalse(summary["is_active"])
+                self.assertIn("PILOT_DORMANT", summary["message"])
+                self.assertEqual(len(list(self.output_dir.glob("*"))), 0)
+                # Ensure no state dir or lock file created
+                self.assertFalse(dormant_state_dir.exists())
 
     # -------------------------------------------------------------------------
     # CONTROL 2: Manual Rehearsal Uses Isolated State
@@ -536,6 +549,185 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             ScheduledRunner(symbol="DUOL", state_dir=self.state_dir)
         self.assertIn("BOUNDARY_VIOLATION", str(ctx.exception))
+
+
+    # -------------------------------------------------------------------------
+    # CONTROL 13: Cross-Run Recovery and Fail-Closed on Missing State
+    # -------------------------------------------------------------------------
+    def test_control_13_cross_run_recovery_and_fail_closed_on_missing_state(self):
+        """State is recovered across runs; missing state after prior runs fails closed with StateRecoveryError."""
+        backup_dir = Path(self.temp_dir) / "backup_state"
+        mgr1 = DurableStateManager(self.state_dir, backup_dir=backup_dir)
+        mgr1.hydrate_or_recover()
+        # Record an event
+        evt = MaintenanceEvent(
+            event_id="EVT-FIX-test-accn",
+            symbol="FIX",
+            cik=TARGET_CIK,
+            company_name="Comfort Systems USA, Inc.",
+            form="10-Q",
+            accession_number="0001104659-26-888888",
+            filing_date="2026-10-24",
+            reporting_period="2026-09-30",
+            retrieval_time_utc="2026-10-24T21:05:00Z",
+            source_url="https://www.sec.gov/test",
+            primary_document="doc.htm",
+            processing_state=EventProcessingState.REVIEW_PENDING,
+        )
+        mgr1.record_completed_event(evt, review_packet_id="REV-TEST-888")
+        mgr1.commit_run_checkpoint(RunOutcome.NEWLY_VERIFIED_EVENT_SUPPORTED)
+        self.assertEqual(mgr1.run_count, 1)
+        self.assertEqual(mgr1.checkpoint_sequence, 1)
+
+        # Wipe local state_dir (simulating ephemeral GitHub Actions runner)
+        shutil.rmtree(self.state_dir)
+        self.assertFalse(self.state_dir.exists())
+
+        # Runner B recovers from backup_dir
+        mgr2 = DurableStateManager(self.state_dir, backup_dir=backup_dir)
+        ok, msg = mgr2.hydrate_or_recover()
+        self.assertTrue(ok)
+        self.assertEqual(mgr2.run_count, 1)
+        self.assertEqual(mgr2.checkpoint_sequence, 1)
+        self.assertTrue(mgr2.is_accession_completed("0001104659-26-888888"))
+
+        # Wipe local state_dir AND remove backup manifest, but leave marker that prior runs existed
+        shutil.rmtree(self.state_dir)
+        (backup_dir / "DURABLE_STATE_MANIFEST.json").unlink()
+        self.assertTrue((backup_dir / ".has_prior_runs").exists())
+
+        mgr3 = DurableStateManager(self.state_dir, backup_dir=backup_dir)
+        with self.assertRaises(StateRecoveryError) as ctx:
+            mgr3.hydrate_or_recover(allow_remote_artifact=False)
+        self.assertIn("STATE_RECOVERY_FAILURE", str(ctx.exception))
+
+    # -------------------------------------------------------------------------
+    # CONTROL 14: Corrupted State Rejected with StateIntegrityError
+    # -------------------------------------------------------------------------
+    def test_control_14_corrupted_state_rejected_with_integrity_error(self):
+        """Tampered or corrupted manifest file fails checksum verification with StateIntegrityError."""
+        mgr = DurableStateManager(self.state_dir)
+        mgr.hydrate_or_recover()
+        mgr.commit_run_checkpoint(RunOutcome.NO_QUALIFYING_EVENT)
+
+        # Tamper with the manifest content on disk
+        manifest_path = self.state_dir / "DURABLE_STATE_MANIFEST.json"
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        data["run_count"] = 999  # Tampered run count without updating SHA-256
+        manifest_path.write_text(json.dumps(data), encoding="utf-8")
+
+        mgr_tampered = DurableStateManager(self.state_dir)
+        with self.assertRaises(StateIntegrityError) as ctx:
+            mgr_tampered.hydrate_or_recover()
+        self.assertIn("Manifest SHA-256 mismatch", str(ctx.exception))
+
+    # -------------------------------------------------------------------------
+    # CONTROL 15: Multiple Events Chronological Ordering and Retryability
+    # -------------------------------------------------------------------------
+    def test_control_15_multiple_events_chronological_and_retryability(self):
+        """Poller orders events chronologically; failed events remain retryable."""
+        accn1 = "0001104659-26-900001"
+        accn2 = "0001104659-26-900002"
+
+        subs_mock = {
+            "filings": {
+                "recent": {
+                    "form": ["10-Q", "10-Q"],
+                    "filingDate": ["2026-10-24", "2026-10-25"],
+                    "reportDate": ["2026-09-30", "2026-09-30"],
+                    "acceptanceDateTime": ["2026-10-24T21:00:00Z", "2026-10-25T21:00:00Z"],
+                    "accessionNumber": [accn1, accn2],
+                    "primaryDocument": ["doc1.htm", "doc2.htm"],
+                }
+            }
+        }
+
+        mgr = DurableStateManager(self.state_dir)
+        mgr.hydrate_or_recover()
+
+        service = ResearchMaintenanceService(
+            packets_dir=self.output_dir,
+            cache_dir=self.cache_dir,
+            completed_accessions=mgr.completed_accessions,
+        )
+
+        with patch.object(service.poller, "fetch_submissions", return_value=subs_mock):
+            with patch.object(service.poller, "retrieve_filing_artifacts", return_value=("h1", "h2", {})):
+                # First run should discover the EARLIEST uncompleted filing (accn1, filingDate 2026-10-24)
+                event, _ = service.poller.discover_filing_event(
+                    symbol="FIX",
+                    cik=TARGET_CIK,
+                    company_name="Comfort Systems USA, Inc.",
+                    cutoff_date=ACCEPTED_CUTOFF_DATE,
+                )
+                self.assertIsNotNone(event)
+                self.assertEqual(event.accession_number, accn1)
+
+                # Record failure on accn1: it remains retryable (not completed)
+                mgr.record_failed_event(event, stage="PIPELINE", error_msg="Simulated failure")
+                self.assertFalse(mgr.is_accession_completed(accn1))
+
+                # Mark accn1 completed now: subsequent scan must discover accn2
+                mgr.record_completed_event(event, review_packet_id="REV-001")
+                self.assertTrue(mgr.is_accession_completed(accn1))
+
+                # Next run should find accn2
+                service.poller.completed_accessions = mgr.completed_accessions
+                event2, _ = service.poller.discover_filing_event(
+                    symbol="FIX",
+                    cik=TARGET_CIK,
+                    company_name="Comfort Systems USA, Inc.",
+                    cutoff_date=ACCEPTED_CUTOFF_DATE,
+                )
+                self.assertIsNotNone(event2)
+                self.assertEqual(event2.accession_number, accn2)
+
+    # -------------------------------------------------------------------------
+    # CONTROL 16: Budget Request Limit Enforced
+    # -------------------------------------------------------------------------
+    def test_control_16_budget_request_limit_enforced(self):
+        """Active RunBudgetTracker strictly blocks 6th request attempt with BudgetExhaustedError."""
+        tracker = RunBudgetTracker(max_requests=5, max_runtime_seconds=120, min_request_interval_seconds=0.001)
+        for i in range(5):
+            tracker.acquire_request_slot()
+        self.assertEqual(tracker.request_count, 5)
+
+        # 6th attempt must raise BudgetExhaustedError and never start
+        with self.assertRaises(BudgetExhaustedError) as ctx:
+            tracker.acquire_request_slot()
+        self.assertIn("REQUEST_BUDGET_EXHAUSTED", str(ctx.exception))
+        self.assertEqual(tracker.request_count, 5)
+
+    # -------------------------------------------------------------------------
+    # CONTROL 17: Budget Runtime Deadline Enforced
+    # -------------------------------------------------------------------------
+    def test_control_17_budget_runtime_deadline_enforced(self):
+        """Active RunBudgetTracker raises BudgetExhaustedError when monotonic runtime deadline expires."""
+        tracker = RunBudgetTracker(max_requests=5, max_runtime_seconds=1.0, min_request_interval_seconds=0.001)
+        # Advance deadline artificially by setting deadline in the past
+        tracker.deadline = time.monotonic() - 1.0
+
+        with self.assertRaises(BudgetExhaustedError) as ctx:
+            tracker.acquire_request_slot()
+        self.assertIn("RUNTIME_BUDGET_EXHAUSTED", str(ctx.exception))
+
+    # -------------------------------------------------------------------------
+    # CONTROL 18: Atomic Lock Creation Prevents Race
+    # -------------------------------------------------------------------------
+    def test_control_18_atomic_lock_creation_prevents_race(self):
+        """Mutual exclusion lock uses atomic OS-level file creation to prevent concurrent runs."""
+        mgr1 = DurableStateManager(self.state_dir)
+        with mgr1.acquire_lock():
+            # Concurrently attempt with mgr2
+            mgr2 = DurableStateManager(self.state_dir)
+            with self.assertRaises(ConcurrentRunError) as ctx:
+                with mgr2.acquire_lock(timeout_seconds=60.0):
+                    pass
+            self.assertIn("CONCURRENT_RUN_REJECTED", str(ctx.exception))
+
+        # After mgr1 exits, mgr2 can acquire lock
+        with mgr2.acquire_lock():
+            self.assertTrue(mgr2.lock_path.exists())
 
 
 if __name__ == "__main__":

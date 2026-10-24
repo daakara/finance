@@ -46,14 +46,18 @@ from .pilot_config import (
     MAX_PILOT_RUNS,
     MAX_REQUESTS_PER_RUN,
     MAX_RUNTIME_SECONDS,
+    MIN_REQUEST_INTERVAL_SECONDS,
     evaluate_pilot_status,
     is_reconciliation_supported,
+    RunBudgetTracker,
+    BudgetExhaustedError,
 )
 from .durable_state import (
     DurableStateManager,
     ConcurrentRunError,
     StateIntegrityError,
     StatePersistenceError,
+    StateRecoveryError,
 )
 from .event_poller import (
     SecEventPoller,
@@ -110,8 +114,24 @@ class ScheduledRunner:
 
     def run(self, target_accession: Optional[str] = None) -> Tuple[RunOutcome, Dict[str, Any]]:
         """
-        Executes the guarded scheduled run under the concurrency lock.
+        Executes the guarded scheduled run under the concurrency lock,
+        unless dormant (dormant exits immediately with zero filesystem or lock mutation).
         """
+        # Step 0: Dormant guard - must exit immediately before touching filesystem,
+        # acquiring lock, hydrating state, or making network calls.
+        pre_status = evaluate_pilot_status(current_run_count=0, force_run=self.force_run)
+        if not pre_status.is_active and not pre_status.is_expired:
+            logger.info(f"Pilot is dormant: {pre_status.message}")
+            summary = {
+                "outcome": RunOutcome.PILOT_DORMANT.value,
+                "message": pre_status.message,
+                "run_count": 0,
+                "is_active": False,
+                "instructions": "Set ENABLE_RESEARCH_MAINTENANCE_PILOT=true (or ARX_MAINTENANCE_PILOT_ACTIVE=1) to activate.",
+            }
+            self._write_step_summary(RunOutcome.PILOT_DORMANT, summary)
+            return RunOutcome.PILOT_DORMANT, summary
+
         # Step 1: Concurrency lock
         try:
             with self.state_mgr.acquire_lock():
@@ -128,17 +148,22 @@ class ScheduledRunner:
             return RunOutcome.STATE_PERSISTENCE_FAILURE, summary
 
     def _execute_guarded_run(self, target_accession: Optional[str] = None) -> Tuple[RunOutcome, Dict[str, Any]]:
-        # Step 2: Hydrate durable state
+        # Step 2: Hydrate durable state (multi-tier recovery: local -> backup -> GitHub artifact -> genesis)
         try:
-            ok, hydrate_msg = self.state_mgr.hydrate()
+            ok, hydrate_msg = self.state_mgr.hydrate_or_recover()
             logger.info(f"Durable state hydration: {hydrate_msg}")
+        except StateRecoveryError as sre:
+            logger.error(f"State recovery failure: {sre}")
+            summary = {"outcome": RunOutcome.STATE_PERSISTENCE_FAILURE.value, "error": str(sre)}
+            self._write_step_summary(RunOutcome.STATE_PERSISTENCE_FAILURE, summary)
+            return RunOutcome.STATE_PERSISTENCE_FAILURE, summary
         except StateIntegrityError as se:
             logger.error(f"State integrity failure: {se}")
             summary = {"outcome": RunOutcome.STATE_PERSISTENCE_FAILURE.value, "error": str(se)}
             self._write_step_summary(RunOutcome.STATE_PERSISTENCE_FAILURE, summary)
             return RunOutcome.STATE_PERSISTENCE_FAILURE, summary
 
-        # Step 3: Evaluate pilot activation and lifespan limits
+        # Step 3: Evaluate pilot activation and lifespan limits with hydrated run count
         status = evaluate_pilot_status(
             current_run_count=self.state_mgr.run_count,
             force_run=self.force_run,
@@ -169,14 +194,23 @@ class ScheduledRunner:
             self._write_step_summary(RunOutcome.PILOT_DORMANT, summary)
             return RunOutcome.PILOT_DORMANT, summary
 
-        # Step 4: Setup services
+        # Step 4: Initialize request & runtime budget tracker
+        budget_tracker = RunBudgetTracker(
+            max_requests=MAX_REQUESTS_PER_RUN,
+            max_runtime_seconds=MAX_RUNTIME_SECONDS,
+            min_request_interval_seconds=MIN_REQUEST_INTERVAL_SECONDS,
+        )
+
+        # Step 5: Setup services with unified budget tracker and completed accessions
         service = ResearchMaintenanceService(
             packets_dir=self.output_dir,
             cache_dir=self.cache_dir,
             offline_mode=self.offline_mode,
+            budget_tracker=budget_tracker,
+            completed_accessions=self.state_mgr.completed_accessions,
         )
 
-        # Step 5: Poll primary-source metadata
+        # Step 6: Poll primary-source metadata within active request budget
         logger.info(f"Checking primary-source filings for {self.symbol} (CIK: {self.cik})...")
         try:
             event, warnings = service.poller.discover_filing_event(
@@ -188,7 +222,19 @@ class ScheduledRunner:
                 is_replay=False,
                 force_refresh=False,
             )
-            self.request_count += 1
+            self.request_count = budget_tracker.request_count
+        except BudgetExhaustedError as be:
+            logger.error(f"Budget exhausted during SEC polling: {be}")
+            summary = {
+                "outcome": RunOutcome.SEC_RETRIEVAL_FAILURE.value,
+                "error": f"BUDGET_EXHAUSTED: {be}",
+                "symbol": self.symbol,
+                "run_count": self.state_mgr.run_count,
+                "request_count": budget_tracker.request_count,
+                "elapsed_time": budget_tracker.elapsed_time(),
+            }
+            self._write_step_summary(RunOutcome.SEC_RETRIEVAL_FAILURE, summary, budget_tracker=budget_tracker)
+            return RunOutcome.SEC_RETRIEVAL_FAILURE, summary
         except Exception as e:
             logger.error(f"Primary source retrieval failed: {e}")
             summary = {
@@ -196,8 +242,10 @@ class ScheduledRunner:
                 "error": f"SEC retrieval failure: {e}",
                 "symbol": self.symbol,
                 "run_count": self.state_mgr.run_count,
+                "request_count": budget_tracker.request_count,
+                "elapsed_time": budget_tracker.elapsed_time(),
             }
-            self._write_step_summary(RunOutcome.SEC_RETRIEVAL_FAILURE, summary)
+            self._write_step_summary(RunOutcome.SEC_RETRIEVAL_FAILURE, summary, budget_tracker=budget_tracker)
             return RunOutcome.SEC_RETRIEVAL_FAILURE, summary
 
         # Check for retrieval failure warning from poller
@@ -208,11 +256,13 @@ class ScheduledRunner:
                 "error": "; ".join(warnings),
                 "symbol": self.symbol,
                 "run_count": self.state_mgr.run_count,
+                "request_count": budget_tracker.request_count,
+                "elapsed_time": budget_tracker.elapsed_time(),
             }
-            self._write_step_summary(RunOutcome.SEC_RETRIEVAL_FAILURE, summary)
+            self._write_step_summary(RunOutcome.SEC_RETRIEVAL_FAILURE, summary, budget_tracker=budget_tracker)
             return RunOutcome.SEC_RETRIEVAL_FAILURE, summary
 
-        # Step 6: Case - No Qualifying Event
+        # Step 7: Case - No Qualifying Event
         if event is None:
             logger.info(f"No new qualifying periodic filing found for {self.symbol}.")
             self.state_mgr.commit_run_checkpoint(RunOutcome.NO_QUALIFYING_EVENT)
@@ -226,10 +276,10 @@ class ScheduledRunner:
                 "last_checked_utc": self.state_mgr.last_checked_utc,
                 "message": "Routine poll completed: No new periodic filings postdating cutoff. Checkpoint committed with 0 code or public mutations.",
             }
-            self._write_step_summary(RunOutcome.NO_QUALIFYING_EVENT, summary)
+            self._write_step_summary(RunOutcome.NO_QUALIFYING_EVENT, summary, budget_tracker=budget_tracker)
             return RunOutcome.NO_QUALIFYING_EVENT, summary
 
-        # Step 7: Case - Already Processed / Known Accession
+        # Step 8: Case - Already Processed / Known Accession
         if self.state_mgr.is_accession_completed(event.accession_number):
             logger.info(f"Filing {event.accession_number} is already completed/known in durable state.")
             self.state_mgr.commit_run_checkpoint(RunOutcome.ALREADY_PROCESSED_EVENT)
@@ -241,10 +291,10 @@ class ScheduledRunner:
                 "checkpoint_sequence": self.state_mgr.checkpoint_sequence,
                 "message": f"Filing {event.accession_number} was previously completed. Deduplicated without re-generating review packets.",
             }
-            self._write_step_summary(RunOutcome.ALREADY_PROCESSED_EVENT, summary)
+            self._write_step_summary(RunOutcome.ALREADY_PROCESSED_EVENT, summary, budget_tracker=budget_tracker)
             return RunOutcome.ALREADY_PROCESSED_EVENT, summary
 
-        # Step 8: Case - Non-periodic disclosure misidentified (e.g. 8-K)
+        # Step 9: Case - Non-periodic disclosure misidentified (e.g. 8-K)
         if event.processing_state == EventProcessingState.REJECTED_MISIDENTIFIED:
             logger.warning(f"Filing {event.accession_number} is a non-periodic disclosure (Form {event.form}).")
             self.state_mgr.record_completed_event(event)
@@ -256,31 +306,46 @@ class ScheduledRunner:
                 "form": event.form,
                 "reason": "Non-periodic disclosure (e.g. 8-K) rejected under fail-closed periodic qualification rule.",
             }
-            self._write_step_summary(RunOutcome.SOURCE_VALIDATION_CONFLICT, summary)
+            self._write_step_summary(RunOutcome.SOURCE_VALIDATION_CONFLICT, summary, budget_tracker=budget_tracker)
             return RunOutcome.SOURCE_VALIDATION_CONFLICT, summary
 
-        # Step 9: Load accepted baseline dossier
+        # Step 10: Load accepted baseline dossier
         try:
             baseline_dossier = service.load_accepted_baseline_dossier(self.symbol)
         except Exception as be:
             logger.error(f"Baseline load error: {be}")
             summary = {"outcome": RunOutcome.SOURCE_VALIDATION_CONFLICT.value, "error": str(be)}
-            self._write_step_summary(RunOutcome.SOURCE_VALIDATION_CONFLICT, summary)
+            self._write_step_summary(RunOutcome.SOURCE_VALIDATION_CONFLICT, summary, budget_tracker=budget_tracker)
             return RunOutcome.SOURCE_VALIDATION_CONFLICT, summary
 
-        # Step 10: Check if period/form reconciliation is supported
+        # Step 11: Check if period/form reconciliation is supported
         supported = is_reconciliation_supported(self.symbol, event.form, event.reporting_period) and not event.is_amendment
 
         if supported:
             # PATH A: Fully Supported Period (e.g. Q3 2026 Form 10-Q)
             logger.info(f"Filing {event.accession_number} is supported for automated reconciliation.")
-            packet, processed_event, pipe_warnings = service.run_maintenance_pipeline(
-                symbol=self.symbol,
-                target_accession=event.accession_number,
-                cutoff_date=ACCEPTED_CUTOFF_DATE,
-                is_replay=False,
-                force_refresh=False,
-            )
+            try:
+                packet, processed_event, pipe_warnings = service.run_maintenance_pipeline(
+                    symbol=self.symbol,
+                    target_accession=event.accession_number,
+                    cutoff_date=ACCEPTED_CUTOFF_DATE,
+                    is_replay=False,
+                    force_refresh=False,
+                )
+                self.request_count = budget_tracker.request_count
+            except BudgetExhaustedError as be:
+                logger.error(f"Budget exhausted during pipeline reconciliation: {be}")
+                self.state_mgr.record_failed_event(event, stage="BUDGET_EXHAUSTED", error_msg=str(be))
+                summary = {
+                    "outcome": RunOutcome.SEC_RETRIEVAL_FAILURE.value,
+                    "error": f"BUDGET_EXHAUSTED: {be}",
+                    "symbol": self.symbol,
+                    "run_count": self.state_mgr.run_count,
+                    "request_count": budget_tracker.request_count,
+                    "elapsed_time": budget_tracker.elapsed_time(),
+                }
+                self._write_step_summary(RunOutcome.SEC_RETRIEVAL_FAILURE, summary, budget_tracker=budget_tracker)
+                return RunOutcome.SEC_RETRIEVAL_FAILURE, summary
 
             if packet is None:
                 # Failed during processing
@@ -288,7 +353,7 @@ class ScheduledRunner:
                 self.state_mgr.record_failed_event(event, stage="PIPELINE", error_msg=err)
                 self.state_mgr.commit_run_checkpoint(RunOutcome.SOURCE_VALIDATION_CONFLICT)
                 summary = {"outcome": RunOutcome.SOURCE_VALIDATION_CONFLICT.value, "error": err}
-                self._write_step_summary(RunOutcome.SOURCE_VALIDATION_CONFLICT, summary)
+                self._write_step_summary(RunOutcome.SOURCE_VALIDATION_CONFLICT, summary, budget_tracker=budget_tracker)
                 return RunOutcome.SOURCE_VALIDATION_CONFLICT, summary
 
             # Success: Record completed event and commit checkpoint
@@ -312,7 +377,7 @@ class ScheduledRunner:
                 "packet_json_path": str(self.output_dir / f"{packet.packet_id}.json"),
                 "packet_md_path": str(self.output_dir / f"{packet.packet_id}.md"),
             }
-            self._write_step_summary(RunOutcome.NEWLY_VERIFIED_EVENT_SUPPORTED, summary)
+            self._write_step_summary(RunOutcome.NEWLY_VERIFIED_EVENT_SUPPORTED, summary, budget_tracker=budget_tracker)
             return RunOutcome.NEWLY_VERIFIED_EVENT_SUPPORTED, summary
 
         else:
@@ -354,14 +419,22 @@ class ScheduledRunner:
                 "artifact_json_path": str(json_path),
                 "artifact_md_path": str(md_path),
             }
-            self._write_step_summary(RunOutcome.NEWLY_VERIFIED_EVENT_UNSUPPORTED_PERIOD, summary)
+            self._write_step_summary(RunOutcome.NEWLY_VERIFIED_EVENT_UNSUPPORTED_PERIOD, summary, budget_tracker=budget_tracker)
             return RunOutcome.NEWLY_VERIFIED_EVENT_UNSUPPORTED_PERIOD, summary
 
-    def _write_step_summary(self, outcome: RunOutcome, summary: Dict[str, Any]):
+    def _write_step_summary(
+        self,
+        outcome: RunOutcome,
+        summary: Dict[str, Any],
+        budget_tracker: Optional[RunBudgetTracker] = None,
+    ):
         """Writes execution telemetry to GITHUB_STEP_SUMMARY when available."""
         summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
         if not summary_path:
             return
+
+        req_count = budget_tracker.request_count if budget_tracker else summary.get("request_count", self.request_count)
+        run_sec = budget_tracker.elapsed_time() if budget_tracker else summary.get("run_time_sec", time.time() - self.start_time)
 
         md = f"""## ARX Scheduled Research Maintenance Run Summary
 
@@ -371,8 +444,8 @@ class ScheduledRunner:
 | **Run Outcome** | `{outcome.value}` |
 | **Run Count** | {summary.get('run_count', self.state_mgr.run_count)} / {MAX_PILOT_RUNS} |
 | **Checkpoint Sequence** | {summary.get('checkpoint_sequence', self.state_mgr.checkpoint_sequence)} |
-| **Execution Time** | {time.time() - self.start_time:.2f}s (Budget: {MAX_RUNTIME_SECONDS}s) |
-| **Request Count** | {self.request_count} (Budget: {MAX_REQUESTS_PER_RUN}) |
+| **Execution Time** | {run_sec:.2f}s (Budget: {MAX_RUNTIME_SECONDS}s) |
+| **Request Count** | {req_count} (Budget: {MAX_REQUESTS_PER_RUN}) |
 
 """
         if outcome == RunOutcome.NEWLY_VERIFIED_EVENT_SUPPORTED:

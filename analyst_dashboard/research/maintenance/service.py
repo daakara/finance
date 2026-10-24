@@ -16,7 +16,7 @@ from datetime import datetime
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple, Union
+from typing import Dict, Any, List, Optional, Tuple, Union, Set
 
 from .contracts import (
     EventProcessingState,
@@ -63,6 +63,8 @@ class ResearchMaintenanceService:
         baseline_snapshot_path: Optional[Union[str, Path]] = None,
         published_manifest_path: Optional[Union[str, Path]] = None,
         offline_mode: bool = False,
+        budget_tracker: Optional[Any] = None,
+        completed_accessions: Optional[Set[str]] = None,
     ):
         self.register_path = Path(register_path) if register_path else DEFAULT_REGISTER_PATH
         self.packets_dir = Path(packets_dir) if packets_dir else DEFAULT_PACKETS_DIR
@@ -70,10 +72,22 @@ class ResearchMaintenanceService:
         self.baseline_snapshot_path = Path(baseline_snapshot_path) if baseline_snapshot_path else DEFAULT_BASELINE_SNAPSHOT
         self.published_manifest_path = Path(published_manifest_path) if published_manifest_path else DEFAULT_PUBLISHED_MANIFEST
         self.offline_mode = offline_mode
+        self.budget_tracker = budget_tracker
+        self.completed_accessions = completed_accessions
 
         self.register = EventRegister(self.register_path)
-        self.poller = SecEventPoller(self.register, cache_dir=self.cache_dir, offline_mode=self.offline_mode)
-        self.reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=self.offline_mode)
+        self.poller = SecEventPoller(
+            self.register,
+            cache_dir=self.cache_dir,
+            offline_mode=self.offline_mode,
+            budget_tracker=self.budget_tracker,
+            completed_accessions=self.completed_accessions,
+        )
+        self.reconciler = FactReconciler(
+            cache_dir=self.cache_dir,
+            offline_mode=self.offline_mode,
+            budget_tracker=self.budget_tracker,
+        )
         self.assessor = DecisionAssessor()
         self.packet_generator = PacketGenerator(output_dir=self.packets_dir)
 

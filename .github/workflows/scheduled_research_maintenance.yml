@@ -13,7 +13,7 @@ name: ARX Research Maintenance Scheduled Pilot (FIX)
 
 on:
   schedule:
-    # Runs Monday through Friday at 21:17 UTC (after SEC EDGAR 21:00 UTC cutoff)
+    # Runs Monday through Friday at 21:17 UTC (configured post-market weekday scheduled scan)
     # Minute 17 avoids top-of-hour GitHub Actions shared runner queue delays.
     - cron: '17 21 * * 1-5'
   workflow_dispatch:
@@ -59,17 +59,34 @@ jobs:
           python-version: "3.11"
           cache: ""
 
-      - name: 3. Restore Durable State Cache
+      - name: 3. Check Pilot Activation Guard
+        id: check-activation
+        shell: bash
+        run: |
+          FORCE="${{ inputs.force_run }}"
+          ENV_ACTIVE="${{ env.ARX_MAINTENANCE_PILOT_ACTIVE }}"
+          if [ "$FORCE" = "true" ] || [ "$ENV_ACTIVE" = "true" ] || [ "$ENV_ACTIVE" = "1" ] || [ "$ENV_ACTIVE" = "yes" ]; then
+            echo "is_active=true" >> "$GITHUB_OUTPUT"
+            echo "Pilot activation confirmed (force_run=$FORCE, active=$ENV_ACTIVE)."
+          else
+            echo "is_active=false" >> "$GITHUB_OUTPUT"
+            echo "Pilot is dormant (ENABLE_RESEARCH_MAINTENANCE_PILOT=$ENV_ACTIVE). Stateful steps conditioned off."
+          fi
+
+      - name: 4. Restore Durable State Cache
         uses: actions/cache/restore@v4
         id: restore-state
+        if: steps.check-activation.outputs.is_active == 'true'
         with:
           path: durable_state/
           key: research-maintenance-durable-state-${{ github.run_id }}
           restore-keys: |
             research-maintenance-durable-state-
 
-      - name: 4. Execute Governed Scheduled Runner
+      - name: 5. Execute Governed Scheduled Runner
         id: execute-runner
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           FORCE_FLAG=""
           if [ "${{ inputs.force_run }}" = "true" ]; then
@@ -87,19 +104,20 @@ jobs:
             --output-dir docs/research/maintenance/packets \
             $FORCE_FLAG $ACCESSION_FLAG
 
-      - name: 5. Save Durable State Cache
+      - name: 6. Save Durable State Cache
         uses: actions/cache/save@v4
-        if: always()
+        if: always() && steps.check-activation.outputs.is_active == 'true'
         with:
           path: durable_state/
           key: research-maintenance-durable-state-${{ github.run_id }}
 
-      - name: 6. Upload Review Packets and State Artifacts
+      - name: 7. Upload State and Review Artifacts
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.check-activation.outputs.is_active == 'true'
         with:
-          name: research-maintenance-fix-artifacts-${{ github.run_id }}
+          name: research-maintenance-fix-state
           path: |
             durable_state/
             docs/research/maintenance/packets/
           retention-days: 30
+          overwrite: true
