@@ -106,53 +106,109 @@ jobs:
               print('PASS: DualTSAFallbackEngine transport fail-closed behavior verified:', str(e))
           "
 
-      - name: Phase 5 (Isolation) — Apply kernel-level network isolation (iptables airlock)
+      - name: Phase 5 (Isolation) — Create isolated network namespace & verify multi-vector egress denial
         run: |
-          echo "Enforcing kernel-level network egress restrictions..."
-          sudo iptables -A OUTPUT -o lo -j ACCEPT
-          sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-          sudo iptables -A OUTPUT -j REJECT
-          echo "Kernel iptables airlock active. Outbound non-loopback packets will be rejected."
+          echo "Creating dedicated Linux network namespace (arx-airlock)..."
+          sudo mkdir -p /run/netns
+          sudo ip netns add arx-airlock
+          sudo ip netns exec arx-airlock ip link set lo up
+          echo "Dedicated network namespace arx-airlock initialized with loopback-only interface."
 
-          # Verify that direct socket connections are blocked by the kernel
-          python -c "
-          import socket, sys
+          # Execute multi-vector egress denial verification inside the namespace
+          sudo ip netns exec arx-airlock sudo -u "$(id -un)" -E env "PATH=$PATH" "PYTHONPATH=." $(which python) -c "
+          import socket, sys, urllib.request, urllib.error
+
+          print('=== Multi-Vector Network Denial Verification inside Namespace ===')
+
+          # 1. IPv4 TCP connection denial across multiple destinations
+          for target in ['1.1.1.1', '8.8.8.8']:
+              try:
+                  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                  s.settimeout(2.0)
+                  s.connect((target, 80))
+                  print(f'FATAL: Outbound IPv4 connection to {target}:80 succeeded!', file=sys.stderr)
+                  sys.exit(1)
+              except OSError as e:
+                  print(f'PASS: Outbound IPv4 to {target}:80 denied at kernel level: {type(e).__name__} ({e})')
+
+          # 2. IPv6 TCP connection denial
+          for target in ['2606:4700:4700::1111', '2001:4860:4860::8888']:
+              try:
+                  s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+                  s.settimeout(2.0)
+                  s.connect((target, 80))
+                  print(f'FATAL: Outbound IPv6 connection to [{target}]:80 succeeded!', file=sys.stderr)
+                  sys.exit(1)
+              except OSError as e:
+                  print(f'PASS: Outbound IPv6 to [{target}]:80 denied at kernel level: {type(e).__name__} ({e})')
+
+          # 3. DNS resolution denial
           try:
-              s = socket.socket()
-              s.settimeout(2.0)
-              s.connect(('1.1.1.1', 80))
-              print('FATAL: Direct socket connection succeeded despite kernel iptables firewall!', file=sys.stderr)
+              socket.getaddrinfo('timestamp.digicert.com', 80)
+              print('FATAL: DNS resolution of timestamp.digicert.com succeeded inside namespace!', file=sys.stderr)
               sys.exit(1)
-          except Exception as e:
-              print('PASS: Direct socket connection rejected at kernel level:', type(e).__name__, str(e))
-          "
+          except (socket.gaierror, OSError) as e:
+              print(f'PASS: DNS resolution denied inside namespace: {type(e).__name__} ({e})')
 
-          # Verify that live HTTP requests to external TSAs are blocked by the kernel
-          python -c "
-          import urllib.request, sys
+          # 4. Live TSA HTTP egress denial
           try:
               urllib.request.urlopen('http://timestamp.digicert.com', timeout=2)
-              print('FATAL: Outbound live TSA HTTP request succeeded despite kernel airlock!', file=sys.stderr)
+              print('FATAL: Live TSA HTTP request succeeded inside namespace!', file=sys.stderr)
               sys.exit(1)
+          except (urllib.error.URLError, OSError) as e:
+              print(f'PASS: Live TSA HTTP request denied inside namespace: {type(e).__name__}')
+
+          # 5. Localhost loopback preservation
+          try:
+              s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+              s.bind(('127.0.0.1', 0))
+              s.listen(1)
+              port = s.getsockname()[1]
+              c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+              c.connect(('127.0.0.1', port))
+              conn, _ = s.accept()
+              conn.sendall(b'AIRLOCK_TEST')
+              msg = c.recv(12)
+              assert msg == b'AIRLOCK_TEST'
+              s.close()
+              c.close()
+              conn.close()
+              print('PASS: Localhost loopback (127.0.0.1) verified functional inside namespace.')
           except Exception as e:
-              print('PASS: Outbound live TSA request rejected at kernel level:', type(e).__name__)
+              print(f'FATAL: Localhost loopback failed inside namespace: {e}', file=sys.stderr)
+              sys.exit(1)
           "
 
-      - name: Phase 6 (Execution) — Execute 202-test cryptographic suite under kernel isolation
-        env:
-          PYTHONPATH: "."
-          HTTP_PROXY: "http://127.0.0.1:9"
-          HTTPS_PROXY: "http://127.0.0.1:9"
-          ALL_PROXY: "http://127.0.0.1:9"
+      - name: Phase 6 (Execution) — Execute 202-test cryptographic suite inside isolated network namespace
         run: |
-          export http_proxy="$HTTP_PROXY"
-          export https_proxy="$HTTPS_PROXY"
-          export all_proxy="$ALL_PROXY"
-          python -m pytest \
-            tests/test_hva01_adversarial_security.py \
-            tests/test_hva01_canonical_20_scenarios.py \
-            tests/test_hva01_timestamp_wire.py \
-            tests/test_hva01_wave1.py \
-            tests/test_hva01_wave3_access_blinding.py \
-            tests/test_hva01_wave4b_witness_acceptance.py \
-            -v --durations=10
+          echo "Executing 202 cryptographic tests inside arx-airlock namespace..."
+          sudo ip netns exec arx-airlock sudo -u "$(id -un)" -E env \
+            "PATH=$PATH" \
+            "PYTHONPATH=." \
+            "HTTP_PROXY=http://127.0.0.1:9" \
+            "HTTPS_PROXY=http://127.0.0.1:9" \
+            "ALL_PROXY=http://127.0.0.1:9" \
+            "http_proxy=http://127.0.0.1:9" \
+            "https_proxy=http://127.0.0.1:9" \
+            "all_proxy=http://127.0.0.1:9" \
+            $(which python) -m pytest \
+              tests/test_hva01_adversarial_security.py \
+              tests/test_hva01_canonical_20_scenarios.py \
+              tests/test_hva01_timestamp_wire.py \
+              tests/test_hva01_wave1.py \
+              tests/test_hva01_wave3_access_blinding.py \
+              tests/test_hva01_wave4b_witness_acceptance.py \
+              -v --durations=10
+
+      - name: Phase 7 (Teardown & Connectivity) — Delete network namespace & assert GitHub connectivity
+        if: always()
+        run: |
+          echo "Cleaning up arx-airlock network namespace..."
+          sudo ip netns del arx-airlock 2>/dev/null || true
+          echo "Namespace removed."
+          echo "Verifying runner-to-GitHub control-plane connectivity..."
+          python -c "
+          import urllib.request
+          resp = urllib.request.urlopen('https://api.github.com', timeout=5)
+          print('PASS: Runner control-plane connectivity to GitHub verified intact (HTTP', resp.status, ')')
+          "
