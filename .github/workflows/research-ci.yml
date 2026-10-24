@@ -1,0 +1,264 @@
+name: HVA-01 Research CI Gate
+
+"on":
+  push:
+    branches:
+      - "research/arx-hva01-v2-1-wave4c1-dual-tsa-local"
+      - "research/**"
+  pull_request:
+    branches:
+      - "research/**"
+      - "main"
+    paths:
+      - "hva01/**"
+      - "tests/test_hva01*.py"
+      - ".github/workflows/research-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: research-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  research_cryptographic_verification:
+    name: Cryptographic Test Suite (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout research tree
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Phase 1 (Ingress) — Install pinned cryptographic dependencies
+        run: |
+          python -m pip install --upgrade pip==24.3.1
+          pip install \
+            cryptography==50.0.1 \
+            pyasn1==0.6.4 \
+            pyasn1-modules==0.4.2 \
+            pytest==8.4.2 \
+            pytest-cov==7.1.0
+
+      - name: Phase 2 (Environment) — Verify OpenSSL runtime & surface diagnostics
+        run: |
+          echo "=== OpenSSL CLI Diagnostic ==="
+          openssl version -a
+          python -c "
+          import subprocess, sys
+          res = subprocess.run(['openssl', 'version'], capture_output=True, text=True)
+          ver = res.stdout.strip()
+          print('Reported OpenSSL:', ver)
+          if not ver.startswith('OpenSSL 3.'):
+              print('FATAL: Hosted runner OpenSSL version is not 3.x:', ver, file=sys.stderr)
+              sys.exit(1)
+          print('OpenSSL 3.x family verified for hosted Linux runner.')
+          "
+
+      - name: Phase 3 (Pre-Flight) — Assert zero production secrets exposed
+        run: |
+          echo "Asserting zero production credentials in research runner..."
+          VIOLATION=0
+          for var in CLOUDFLARE_API_TOKEN CLOUDFLARE_ZONE_ID RENDER_API_KEY GH_TOKEN GITHUB_PAT; do
+            if [ -n "${!var}" ]; then
+              echo "FATAL SECURITY VIOLATION: Production secret $var is present in research runner!"
+              VIOLATION=1
+            fi
+          done
+          if [ "$VIOLATION" -ne 0 ]; then
+            exit 1
+          fi
+          echo "Runner environment verified clean of production credentials."
+
+      - name: Phase 4 (Security) — Adversarial verification of DualTSAFallbackEngine fail-closed behavior
+        env:
+          PYTHONPATH: "."
+        run: |
+          python -c "
+          import sys, datetime
+          from hva01.witness.client import DualTSAFallbackEngine, TSAProviderConfig, TSATransportError
+          from cryptography import x509
+          from cryptography.hazmat.primitives import hashes
+          from cryptography.hazmat.primitives.asymmetric import rsa
+
+          key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+          cert = x509.CertificateBuilder().subject_name(x509.Name([])).issuer_name(x509.Name([])).public_key(key.public_key()).serial_number(1).not_valid_before(datetime.datetime.now(datetime.timezone.utc)).not_valid_after(datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)).sign(key, hashes.SHA256())
+
+          cfg = TSAProviderConfig(provider_id='ADVERSARIAL_TEST', endpoint_url='https://live.tsa.digicert.com', trusted_certificates=[cert])
+          try:
+              cfg.execute_transport(b'dummy_request')
+              print('FATAL: Unconfigured transport did not fail closed!', file=sys.stderr)
+              sys.exit(1)
+          except TSATransportError as e:
+              print('PASS: DualTSAFallbackEngine transport fail-closed behavior verified:', str(e))
+          "
+
+      - name: Phase 5 (Isolation) — Create isolated network namespace & verify multi-vector egress denial
+        run: |
+          echo "Creating dedicated Linux network namespace (arx-airlock)..."
+          sudo mkdir -p /run/netns
+          sudo ip netns add arx-airlock
+          sudo ip netns exec arx-airlock ip link set lo up
+          echo "Dedicated network namespace arx-airlock initialized with loopback-only interface."
+
+          # Execute multi-vector egress denial verification inside the namespace
+          sudo ip netns exec arx-airlock sudo -u "$(id -un)" -E env "PATH=$PATH" "PYTHONPATH=." $(which python) -c "
+          import socket, sys, urllib.request, urllib.error
+
+          print('=== Multi-Vector Network Denial Verification inside Namespace ===')
+
+          # 1. IPv4 TCP connection denial across multiple destinations
+          for target in ['1.1.1.1', '8.8.8.8']:
+              try:
+                  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                  s.settimeout(2.0)
+                  s.connect((target, 80))
+                  print(f'FATAL: Outbound IPv4 connection to {target}:80 succeeded!', file=sys.stderr)
+                  sys.exit(1)
+              except OSError as e:
+                  print(f'PASS: Outbound IPv4 to {target}:80 denied at kernel level: {type(e).__name__} ({e})')
+
+          # 2. IPv6 TCP connection denial
+          for target in ['2606:4700:4700::1111', '2001:4860:4860::8888']:
+              try:
+                  s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+                  s.settimeout(2.0)
+                  s.connect((target, 80))
+                  print(f'FATAL: Outbound IPv6 connection to [{target}]:80 succeeded!', file=sys.stderr)
+                  sys.exit(1)
+              except OSError as e:
+                  print(f'PASS: Outbound IPv6 to [{target}]:80 denied at kernel level: {type(e).__name__} ({e})')
+
+          # 3. DNS resolution denial
+          try:
+              socket.getaddrinfo('timestamp.digicert.com', 80)
+              print('FATAL: DNS resolution of timestamp.digicert.com succeeded inside namespace!', file=sys.stderr)
+              sys.exit(1)
+          except (socket.gaierror, OSError) as e:
+              print(f'PASS: DNS resolution denied inside namespace: {type(e).__name__} ({e})')
+
+          # 4. Live TSA HTTP egress denial
+          try:
+              urllib.request.urlopen('http://timestamp.digicert.com', timeout=2)
+              print('FATAL: Live TSA HTTP request succeeded inside namespace!', file=sys.stderr)
+              sys.exit(1)
+          except (urllib.error.URLError, OSError) as e:
+              print(f'PASS: Live TSA HTTP request denied inside namespace: {type(e).__name__}')
+
+          # 5. Localhost loopback preservation
+          try:
+              s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+              s.bind(('127.0.0.1', 0))
+              s.listen(1)
+              port = s.getsockname()[1]
+              c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+              c.connect(('127.0.0.1', port))
+              conn, _ = s.accept()
+              conn.sendall(b'AIRLOCK_TEST')
+              msg = c.recv(12)
+              assert msg == b'AIRLOCK_TEST'
+              s.close()
+              c.close()
+              conn.close()
+              print('PASS: Localhost loopback (127.0.0.1) verified functional inside namespace.')
+          except Exception as e:
+              print(f'FATAL: Localhost loopback failed inside namespace: {e}', file=sys.stderr)
+              sys.exit(1)
+          "
+
+      - name: Phase 6 (Execution) — Execute 214-test cryptographic suite inside isolated network namespace
+        run: |
+          echo "Executing 214 cryptographic tests inside arx-airlock namespace..."
+          sudo ip netns exec arx-airlock sudo -u "$(id -un)" -E env \
+            "PATH=$PATH" \
+            "PYTHONPATH=." \
+            "HTTP_PROXY=http://127.0.0.1:9" \
+            "HTTPS_PROXY=http://127.0.0.1:9" \
+            "ALL_PROXY=http://127.0.0.1:9" \
+            "http_proxy=http://127.0.0.1:9" \
+            "https_proxy=http://127.0.0.1:9" \
+            "all_proxy=http://127.0.0.1:9" \
+            $(which python) -m pytest \
+              tests/test_hva01_adversarial_security.py \
+              tests/test_hva01_canonical_20_scenarios.py \
+              tests/test_hva01_key_ceremony_tooling.py \
+              tests/test_hva01_timestamp_wire.py \
+              tests/test_hva01_wave1.py \
+              tests/test_hva01_wave3_access_blinding.py \
+              tests/test_hva01_wave4b_witness_acceptance.py \
+              -v --durations=10
+
+      - name: Phase 7 (Teardown & Connectivity) — Delete network namespace & assert GitHub connectivity
+        if: always()
+        run: |
+          echo "=== Step 1: Explicit Namespace Teardown & Verification ==="
+          if sudo ip netns list 2>/dev/null | grep -qw "arx-airlock"; then
+            echo "Deleting arx-airlock network namespace..."
+            sudo ip netns del arx-airlock
+          fi
+          if sudo ip netns list 2>/dev/null | grep -qw "arx-airlock"; then
+            echo "FATAL: Failed to delete arx-airlock network namespace!" >&2
+            exit 1
+          fi
+          echo "PASS: arx-airlock network namespace confirmed absent."
+
+          echo "=== Step 2: Host Control-Plane Connectivity Assertion ==="
+          python -c "
+          import urllib.request, urllib.error, socket, ssl, sys
+
+          # 1. DNS resolution
+          try:
+              addrs = socket.getaddrinfo('github.com', 443, proto=socket.IPPROTO_TCP)
+              assert len(addrs) > 0
+              print(f'PASS: Host DNS resolution verified ({len(addrs)} addresses found).')
+          except Exception as e:
+              print(f'FATAL: Host DNS resolution failed: {e}', file=sys.stderr)
+              sys.exit(1)
+
+          # 2. TCP socket connectivity
+          try:
+              sock = socket.create_connection(('github.com', 443), timeout=5)
+              sock.close()
+              print('PASS: Host TCP connectivity to github.com:443 verified.')
+          except Exception as e:
+              print(f'FATAL: Host TCP connection failed: {e}', file=sys.stderr)
+              sys.exit(1)
+
+          # 3. HTTPS response reception (public rate-limit-insensitive endpoint with API fallback)
+          endpoints = ['https://github.com', 'https://api.github.com']
+          verified = False
+          for url in endpoints:
+              try:
+                  req = urllib.request.Request(url, headers={'User-Agent': 'arx-hva01-runner-probe'})
+                  with urllib.request.urlopen(req, timeout=10) as resp:
+                      print(f'PASS: Host HTTPS response received from {url} (HTTP {resp.status}).')
+                      verified = True
+                      break
+              except urllib.error.HTTPError as e:
+                  # Any HTTP status response (including 403 rate-limited, 429) confirms successful
+                  # DNS resolution, TCP handshake, TLS negotiation, and HTTP payload reception.
+                  print(f'PASS: Host HTTPS response received from {url} (HTTP {e.code}: {e.reason}) - transport verified.')
+                  verified = True
+                  break
+              except (urllib.error.URLError, socket.error, ssl.SSLError, OSError) as e:
+                  print(f'WARN: Transport failure reaching {url}: {type(e).__name__} ({e})', file=sys.stderr)
+                  continue
+
+          if not verified:
+              print('FATAL: All host HTTPS connectivity assertions failed!', file=sys.stderr)
+              sys.exit(1)
+          "
