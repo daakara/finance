@@ -14,7 +14,7 @@ import unittest
 # Add project root to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from tests.scoring_utility import (
+from tests.fixtures.qualification.custodian_package.scoring_utility import (
     calculate_cohens_kappa,
     compute_contingency,
     validate_ratings_payload,
@@ -170,7 +170,7 @@ class TestScoringUtilityRegression(unittest.TestCase):
 
     # 14. Human observer versus gold-key comparisons (Measurement A)
     def test_14_observer_vs_gold_measurement_a(self):
-        gold_path = os.path.join(os.path.dirname(__file__), "fixtures", "calibration", "v2", "gold_key_alpha_v2.json")
+        gold_path = os.path.join(os.path.dirname(__file__), "fixtures", "qualification", "custodian_package", "gold_key_alpha_v2.json")
         obs = {
             "observer_id": "SYN-TEST-PERFECT",
             "ratings": [
@@ -223,11 +223,33 @@ class TestScoringUtilityRegression(unittest.TestCase):
         self.assertEqual(res["pairwise_summary"]["micro_pooled_kappa"], 1.0)
 
     # 16. Supplemental Gamma corpus execution
+    # 16. Supplemental Gamma corpus execution
+    # 16. Supplemental Gamma corpus execution
     def test_16_supplemental_gamma_corpus_execution(self):
-        res = evaluate_observer_vs_gold(
-            "tests/fixtures/calibration/v2/gold_key_gamma_v1.json",
-            "tests/fixtures/calibration/v2/observer_gamma_v1_calibrated.json"
-        )
+        gold_path = os.path.join(os.path.dirname(__file__), "fixtures", "qualification", "custodian_package", "gold_key_gamma_v1.json")
+        if not os.path.exists(gold_path):
+            gold_path = os.path.join("tests", "fixtures", "calibration", "v2", "gold_key_gamma_v1.json")
+        obs_path = os.path.join("tests", "fixtures", "calibration", "v2", "observer_gamma_v1_calibrated.json")
+        if not os.path.exists(obs_path):
+            obs_data = {
+                "observer_id": "OBS-01-GAMMA-CALIBRATED",
+                "transcript_id": "TRANS-GAMMA-CALIBRATION-V1",
+                "submission_timestamp": "2026-10-23T14:35:00Z",
+                "ratings": [
+                    {"trial_id": "GAMMA-01", "assigned_cm_codes": ["CM-01"], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_INCORRECT", "action_state": "ACTION_INAPPROPRIATE", "critical_decision_error": True},
+                    {"trial_id": "GAMMA-02", "assigned_cm_codes": ["CM-02"], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_INCORRECT", "action_state": "ACTION_INAPPROPRIATE", "critical_decision_error": True},
+                    {"trial_id": "GAMMA-03", "assigned_cm_codes": [], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_CORRECT", "action_state": "ACTION_INAPPROPRIATE", "critical_decision_error": True},
+                    {"trial_id": "GAMMA-04", "assigned_cm_codes": ["CM-04"], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_INCORRECT", "action_state": "ACTION_INAPPROPRIATE", "critical_decision_error": True},
+                    {"trial_id": "GAMMA-05", "assigned_cm_codes": ["CM-05"], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_INCORRECT", "action_state": "ACTION_INAPPROPRIATE", "critical_decision_error": True},
+                    {"trial_id": "GAMMA-06", "assigned_cm_codes": [], "assigned_sm_codes": ["SM-06"], "interpretation_state": "INTERPRETATION_CORRECT", "action_state": "ACTION_INAPPROPRIATE", "critical_decision_error": True},
+                    {"trial_id": "GAMMA-07", "assigned_cm_codes": ["CM-06"], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_INCORRECT", "action_state": "ACTION_INAPPROPRIATE", "critical_decision_error": True},
+                    {"trial_id": "GAMMA-08", "assigned_cm_codes": ["CM-07"], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_INCORRECT", "action_state": "ACTION_INAPPROPRIATE", "critical_decision_error": True},
+                    {"trial_id": "GAMMA-09", "assigned_cm_codes": [], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_CORRECT", "action_state": "ACTION_APPROPRIATE", "critical_decision_error": False},
+                    {"trial_id": "GAMMA-10", "assigned_cm_codes": [], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_CORRECT", "action_state": "ACTION_APPROPRIATE", "critical_decision_error": False}
+                ]
+            }
+            obs_path = self._write_json("observer_gamma_v1_calibrated.json", obs_data)
+        res = evaluate_observer_vs_gold(gold_path, obs_path)
         self.assertEqual(res["evaluation_summary"]["calibration_verdict"], "CALIBRATION_PASSED")
         self.assertEqual(res["evaluation_summary"]["critical_decision_false_negatives"], 0)
         # Verify previously missing categories are tested positive
@@ -236,10 +258,306 @@ class TestScoringUtilityRegression(unittest.TestCase):
 
     # 17. Consolidated 30-trial full coverage (Zero untested categories)
     def test_17_consolidated_30_trial_complete_coverage(self):
-        res = evaluate_observer_vs_gold(
-            "tests/fixtures/calibration/v2/gold_key_consolidated_30.json",
-            "tests/fixtures/calibration/v2/observer_consolidated_30_calibrated.json"
-        )
+        gold_path = os.path.join(os.path.dirname(__file__), "fixtures", "qualification", "custodian_package", "gold_key_consolidated_30.json")
+        if not os.path.exists(gold_path):
+            gold_path = os.path.join("tests", "fixtures", "calibration", "v2", "gold_key_consolidated_30.json")
+        obs_path = os.path.join("tests", "fixtures", "calibration", "v2", "observer_consolidated_30_calibrated.json")
+        if not os.path.exists(obs_path):
+            obs_data = {
+              "observer_id": "OBS-01-CONSOLIDATED-30-CALIBRATED",
+              "submission_timestamp": "2026-10-23T14:40:00Z",
+              "total_trials": 30,
+              "ratings": [
+                {
+                  "trial_id": "ALPHA-01",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_CORRECT",
+                  "action_state": "ACTION_APPROPRIATE",
+                  "notes": "Normative baseline trade. Spot, stop, and sizing verified correctly."
+                },
+                {
+                  "trial_id": "ALPHA-02",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [
+                    "SM-06"
+                  ],
+                  "interpretation_state": "INTERPRETATION_CORRECT",
+                  "action_state": "ACTION_INAPPROPRIATE",
+                  "notes": "Participant recognized delayed data banner (INTERPRETATION_CORRECT; CM-05 does not apply). However, executed on stale tape anyway (SM-06; ACTION_INAPPROPRIATE)."
+                },
+                {
+                  "trial_id": "ALPHA-03",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [
+                    "SM-01",
+                    "SM-02"
+                  ],
+                  "interpretation_state": "INTERPRETATION_INCORRECT",
+                  "action_state": "ACTION_INAPPROPRIATE",
+                  "notes": "Participant adopted quarantined intraday volatility stop for swing holding (SM-01) and overrode size to 80 shares (SM-02)."
+                },
+                {
+                  "trial_id": "ALPHA-04",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [
+                    "SM-03"
+                  ],
+                  "interpretation_state": "INTERPRETATION_INCORRECT",
+                  "action_state": "ACTION_INAPPROPRIATE",
+                  "notes": "Participant dismissed bear dissent without reason ('just noise') and underwrote unhedged full position without risk caveats (SM-03)."
+                },
+                {
+                  "trial_id": "ALPHA-05",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_CORRECT",
+                  "action_state": "ACTION_APPROPRIATE",
+                  "notes": "Normative momentum setup staged correctly."
+                },
+                {
+                  "trial_id": "ALPHA-06",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_CORRECT",
+                  "action_state": "ACTION_APPROPRIATE",
+                  "notes": "Participant correctly rejected phantom base due to unanchored pivot."
+                },
+                {
+                  "trial_id": "ALPHA-07",
+                  "assigned_cm_codes": [
+                    "CM-07"
+                  ],
+                  "assigned_sm_codes": [
+                    "SM-06"
+                  ],
+                  "interpretation_state": "INTERPRETATION_INCORRECT",
+                  "action_state": "ACTION_INAPPROPRIATE",
+                  "notes": "Participant noted pipeline failure (no CM-05), but believed offline string was submitted to broker (CM-07) and attempted execution on broken pipeline (SM-06)."
+                },
+                {
+                  "trial_id": "ALPHA-08",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_CORRECT",
+                  "action_state": "ACTION_APPROPRIATE",
+                  "notes": "Participant reviewed bear dissent and sized 28 shares correctly."
+                },
+                {
+                  "trial_id": "ALPHA-09",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_CORRECT",
+                  "action_state": "ACTION_APPROPRIATE",
+                  "notes": "Participant detected conflicting buyout corporate action and halted trade."
+                },
+                {
+                  "trial_id": "ALPHA-10",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_CORRECT",
+                  "action_state": "ACTION_APPROPRIATE",
+                  "notes": "Normative Concept B sizing followed accurately."
+                },
+                {
+                  "trial_id": "BETA-01",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_CORRECT",
+                  "action_state": "ACTION_APPROPRIATE",
+                  "notes": "Normative swing trade in Concept B. 28 shares approved."
+                },
+                {
+                  "trial_id": "BETA-02",
+                  "assigned_cm_codes": [
+                    "CM-09"
+                  ],
+                  "assigned_sm_codes": [
+                    "SM-05"
+                  ],
+                  "interpretation_state": "INTERPRETATION_INCORRECT",
+                  "action_state": "ACTION_INAPPROPRIATE",
+                  "notes": "Watchlist radar badge treated as immediate execution buy signal."
+                },
+                {
+                  "trial_id": "BETA-03",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [
+                    "SM-02",
+                    "SM-04"
+                  ],
+                  "interpretation_state": "INTERPRETATION_INCORRECT",
+                  "action_state": "ACTION_INAPPROPRIATE",
+                  "notes": "Heuristic ranking score 88/100 treated as 88% win probability and doubled budget."
+                },
+                {
+                  "trial_id": "BETA-04",
+                  "assigned_cm_codes": [
+                    "CM-03"
+                  ],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_INCORRECT",
+                  "action_state": "ACTION_INAPPROPRIATE",
+                  "notes": "Take Profit 1 target entered as entry buy price."
+                },
+                {
+                  "trial_id": "BETA-05",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_CORRECT",
+                  "action_state": "ACTION_APPROPRIATE",
+                  "notes": "Read bear case, saw missing entry pivot, deferred execution."
+                },
+                {
+                  "trial_id": "BETA-06",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_CORRECT",
+                  "action_state": "ACTION_APPROPRIATE",
+                  "notes": "Spotted degraded pipeline telemetry, refused to draft order."
+                },
+                {
+                  "trial_id": "BETA-07",
+                  "assigned_cm_codes": [
+                    "CM-08"
+                  ],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_INCORRECT",
+                  "action_state": "ACTION_INAPPROPRIATE",
+                  "notes": "Stop loss placed above long entry."
+                },
+                {
+                  "trial_id": "BETA-08",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_CORRECT",
+                  "action_state": "ACTION_INAPPROPRIATE",
+                  "notes": "Participant read NOT_ACTIONABLE: EXTENDED badge (INTERPRETATION_CORRECT; CM-02 does NOT apply), but intentionally executed anyway (ACTION_INAPPROPRIATE)."
+                },
+                {
+                  "trial_id": "BETA-09",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_CORRECT",
+                  "action_state": "ACTION_APPROPRIATE",
+                  "notes": "Normative trade sized 1,492 shares cleanly."
+                },
+                {
+                  "trial_id": "BETA-10",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_CORRECT",
+                  "action_state": "ACTION_APPROPRIATE",
+                  "notes": "Normative momentum setup sized 101 shares cleanly."
+                },
+                {
+                  "trial_id": "GAMMA-01",
+                  "assigned_cm_codes": [
+                    "CM-01"
+                  ],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_INCORRECT",
+                  "action_state": "ACTION_INAPPROPRIATE",
+                  "critical_decision_error": True,
+                  "observer_notes": "Attempted execution on restricted ADR asset class."
+                },
+                {
+                  "trial_id": "GAMMA-02",
+                  "assigned_cm_codes": [
+                    "CM-02"
+                  ],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_INCORRECT",
+                  "action_state": "ACTION_INAPPROPRIATE",
+                  "critical_decision_error": True,
+                  "observer_notes": "Misinterpreted NOT_ACTIONABLE badge as system buy clearance."
+                },
+                {
+                  "trial_id": "GAMMA-03",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_CORRECT",
+                  "action_state": "ACTION_INAPPROPRIATE",
+                  "critical_decision_error": True,
+                  "observer_notes": "Deliberate unauthorized override; correctly understood NOT_ACTIONABLE restriction."
+                },
+                {
+                  "trial_id": "GAMMA-04",
+                  "assigned_cm_codes": [
+                    "CM-04"
+                  ],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_INCORRECT",
+                  "action_state": "ACTION_INAPPROPRIATE",
+                  "critical_decision_error": True,
+                  "observer_notes": "Inverted stop floor into upside profit target."
+                },
+                {
+                  "trial_id": "GAMMA-05",
+                  "assigned_cm_codes": [
+                    "CM-05"
+                  ],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_INCORRECT",
+                  "action_state": "ACTION_INAPPROPRIATE",
+                  "critical_decision_error": True,
+                  "observer_notes": "Believed stale market tape was live and real-time."
+                },
+                {
+                  "trial_id": "GAMMA-06",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [
+                    "SM-06"
+                  ],
+                  "interpretation_state": "INTERPRETATION_CORRECT",
+                  "action_state": "ACTION_INAPPROPRIATE",
+                  "critical_decision_error": True,
+                  "observer_notes": "Recognized 1800s delayed tape but broke policy by staging anyway."
+                },
+                {
+                  "trial_id": "GAMMA-07",
+                  "assigned_cm_codes": [
+                    "CM-06"
+                  ],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_INCORRECT",
+                  "action_state": "ACTION_INAPPROPRIATE",
+                  "critical_decision_error": True,
+                  "observer_notes": "Treated unmapped CUSIP unknown asset as common stock."
+                },
+                {
+                  "trial_id": "GAMMA-08",
+                  "assigned_cm_codes": [
+                    "CM-07"
+                  ],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_INCORRECT",
+                  "action_state": "ACTION_INAPPROPRIATE",
+                  "critical_decision_error": True,
+                  "observer_notes": "Treated staging Copy Order action as live market fill."
+                },
+                {
+                  "trial_id": "GAMMA-09",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_CORRECT",
+                  "action_state": "ACTION_APPROPRIATE",
+                  "critical_decision_error": False,
+                  "observer_notes": "Recognized ADR and halted trade appropriately."
+                },
+                {
+                  "trial_id": "GAMMA-10",
+                  "assigned_cm_codes": [],
+                  "assigned_sm_codes": [],
+                  "interpretation_state": "INTERPRETATION_CORRECT",
+                  "action_state": "ACTION_APPROPRIATE",
+                  "critical_decision_error": False,
+                  "observer_notes": "Normative swing trade sized cleanly."
+                }
+              ]
+            }
+            obs_path = self._write_json("observer_consolidated_30_calibrated.json", obs_data)
+        res = evaluate_observer_vs_gold(gold_path, obs_path)
         self.assertEqual(res["evaluation_summary"]["calibration_verdict"], "CALIBRATION_PASSED")
         self.assertEqual(res["evaluation_summary"]["total_trials"], 30)
         self.assertEqual(len(res["evaluation_summary"]["categories_untested_in_corpus"]), 0)
