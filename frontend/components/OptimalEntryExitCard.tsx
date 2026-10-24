@@ -284,12 +284,25 @@ export default function OptimalEntryExitCard({
   })();
 
   const resolvedCatalystState: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR" = (() => {
-    if (resolvedCorporateEvent?.preflight_state) return resolvedCorporateEvent.preflight_state;
+    if (resolvedCorporateEvent?.freshness_status && resolvedCorporateEvent.freshness_status !== "LIVE") {
+      return "UNAVAILABLE";
+    }
+    if (resolvedCorporateEvent?.has_imminent_earnings === true) {
+      return "WARN";
+    }
     if (resolvedDaysToEarnings !== null) {
       if (resolvedDaysToEarnings < 0.0) return "UNAVAILABLE"; // Invariant 3: completed historical event alone cannot establish clean forward runway
       if (resolvedDaysToEarnings <= 7.0) return "WARN";
-      return "PASS";
+      if (
+        resolvedCorporateEvent?.coverage_status === "CONFIRMED_UPCOMING" ||
+        resolvedCorporateEvent?.coverage_status === "ESTIMATED_UPCOMING" ||
+        resolvedCorporateEvent?.coverage_status === "COVERED"
+      ) {
+        return "PASS";
+      }
+      return "UNAVAILABLE";
     }
+    if (resolvedCorporateEvent?.preflight_state) return resolvedCorporateEvent.preflight_state;
     if (resolvedCorporateEvent?.coverage_status === "DATA_UNAVAILABLE" || resolvedCorporateEvent?.coverage_status === "ABSENT") {
       return "UNAVAILABLE";
     }
@@ -307,6 +320,7 @@ export default function OptimalEntryExitCard({
     sourceName: resolvedCorporateEvent?.source_name,
     confirmationStatus: resolvedCorporateEvent?.confirmation_status,
     coverageStatus: resolvedCorporateEvent?.coverage_status,
+    freshnessStatus: resolvedCorporateEvent?.freshness_status,
     riskTier: resolvedCorporateEvent?.risk_tier,
     isEstimate: resolvedCorporateEvent?.is_estimate,
   };
