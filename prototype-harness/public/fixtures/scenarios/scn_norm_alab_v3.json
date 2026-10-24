@@ -1,0 +1,45 @@
+{
+  "asset_class": "COMMON_STOCK",
+  "canonical_cm_codes": [],
+  "company_name": "Astera Labs, Inc.",
+  "expected_evaluations": {
+    "authorized_decision": "APPROVE_MOMENTUM_PLAN",
+    "authorized_shares": 101,
+    "authorized_stop_price": 88.5,
+    "primary_rationale": "High-growth breakout setup sized strictly to 101 shares at $88.50 structural invalidation floor."
+  },
+  "filename": "scn_norm_alab_v3.json",
+  "fixture_id": "SCN-NORM-ALAB-MOM",
+  "market_data": {
+    "display_label": "SIMULATED_RESEARCH_FEED",
+    "is_stale": false,
+    "latency_seconds": 3,
+    "quote_timestamp": "2026-10-23T15:15:00Z",
+    "spot_price": 98.4
+  },
+  "market_data_provenance": "DETERMINISTIC_SIMULATED_RESEARCH_FIXTURE",
+  "primary_exchange": "NASDAQ",
+  "provenance_reference": "ARX_UX_FIXTURE_NUMERICAL_VALIDATION.md:Section 4",
+  "sizing_context": {
+    "capital_committed": 9938.4,
+    "maximum_modeled_loss": 999.9,
+    "portfolio_equity": 100000.0,
+    "portfolio_exposure_pct": 9.94,
+    "recommended_shares": 101,
+    "risk_budget_dollar": 1000.0,
+    "risk_budget_pct": 0.01
+  },
+  "supplemental_sm_codes": [
+    "SM-02"
+  ],
+  "technical_context": {
+    "distance_to_invalidation_dollar": 9.9,
+    "distance_to_invalidation_pct": -10.06,
+    "is_actionable": true,
+    "planned_entry_pivot": 98.4,
+    "structural_invalidation_floor": 88.5
+  },
+  "ticker": "ALAB",
+  "type": "NORMATIVE",
+  "version": "3.0.0"
+}

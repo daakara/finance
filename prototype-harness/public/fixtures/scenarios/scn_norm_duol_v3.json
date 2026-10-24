@@ -1,0 +1,53 @@
+{
+  "asset_class": "COMMON_STOCK",
+  "canonical_cm_codes": [],
+  "company_name": "Duolingo, Inc.",
+  "expected_evaluations": {
+    "authorized_decision": "UNDERWRITE_WITH_DISSENT",
+    "authorized_shares": 87,
+    "authorized_stop_price": 131.1,
+    "primary_rationale": "Underwrite growth thesis while explicitly acknowledging AI commoditization bear dissent."
+  },
+  "filename": "scn_norm_duol_v3.json",
+  "fixture_id": "SCN-NORM-DUOL-FUND",
+  "fundamental_context": {
+    "forward_pe": 48.5,
+    "net_cash_balance_sheet": true,
+    "revenue_growth_yoy_pct": 41.0,
+    "stock_based_compensation_pct_rev": 18.0
+  },
+  "market_data": {
+    "display_label": "SIMULATED_RESEARCH_FEED",
+    "is_stale": false,
+    "latency_seconds": 5,
+    "quote_timestamp": "2026-10-23T15:30:00Z",
+    "spot_price": 142.5
+  },
+  "market_data_provenance": "DETERMINISTIC_SIMULATED_RESEARCH_FIXTURE",
+  "primary_exchange": "NASDAQ",
+  "provenance_reference": "ARX_UX_FIXTURE_NUMERICAL_VALIDATION.md:Section 4",
+  "research_dossier": {
+    "bearish_dissent": "Generative AI LLM native translation commoditization risk; elevated stock-based compensation diluting cash generation.",
+    "core_thesis": "Accelerating subscription flywheel with superior language learning retention and expanding English test moat."
+  },
+  "sizing_context": {
+    "capital_committed": 12397.5,
+    "maximum_modeled_loss": 991.8,
+    "portfolio_equity": 100000.0,
+    "portfolio_exposure_pct": 12.4,
+    "recommended_shares": 87,
+    "risk_budget_dollar": 1000.0
+  },
+  "supplemental_sm_codes": [
+    "SM-03"
+  ],
+  "technical_context": {
+    "distance_to_invalidation_dollar": 11.4,
+    "distance_to_invalidation_pct": -8.0,
+    "is_actionable": true,
+    "structural_invalidation_floor": 131.1
+  },
+  "ticker": "DUOL",
+  "type": "NORMATIVE",
+  "version": "3.0.0"
+}
