@@ -266,8 +266,8 @@ class CorporateEventTelemetryPayload(BaseModel):
     @field_validator("schema_version")
     @classmethod
     def validate_schema_version(cls, v: str) -> str:
-        if v != "1.0.0":
-            raise ValueError(f"Unsupported schema version: '{v}'. Expected '1.0.0'")
+        if v not in ("1.0.0", "1.1.0"):
+            raise ValueError(f"Unsupported schema version: '{v}'. Expected '1.0.0' or '1.1.0'")
         return v
 
     @field_validator("release_sha")
@@ -369,3 +369,95 @@ class CorporateEventTelemetryPayload(BaseModel):
             )
 
         return self
+
+
+def compute_canonical_digest(payload: Dict[str, Any]) -> str:
+    """Computes deterministic SHA-256 hex digest across the 12 semantic decision fields.
+    
+    Guarantees:
+    - Byte-level parity with TypeScript computeCanonicalDigest.
+    - Strictly excludes transport identifiers (event_id, occurred_at_utc, evaluation_context_id, evaluation_id).
+    - Immutable decision output identity.
+    """
+    sym = str(payload.get("symbol", "")).upper()
+    sha = str(payload.get("release_sha", "")).lower()
+    ruleset = str(payload.get("ruleset_version", ""))
+    
+    cat = payload.get("event_category", "")
+    if hasattr(cat, "value"):
+        cat = cat.value
+    cat = str(cat)
+
+    event_time = payload.get("event_time_utc")
+    event_time_str = str(event_time) if event_time else "null"
+
+    session = payload.get("market_session", "")
+    if hasattr(session, "value"):
+        session = session.value
+    session = str(session)
+
+    source_status = payload.get("event_source_status", "")
+    if hasattr(source_status, "value"):
+        source_status = source_status.value
+    source_status = str(source_status)
+
+    freshness = payload.get("freshness_status", "")
+    if hasattr(freshness, "value"):
+        freshness = freshness.value
+    freshness = str(freshness)
+
+    dte = payload.get("days_to_earnings")
+    dte_str = f"{float(dte):.2f}" if dte is not None else "null"
+
+    risk = payload.get("risk_bucket", "")
+    if hasattr(risk, "value"):
+        risk = risk.value
+    risk = str(risk)
+
+    penalty = payload.get("applied_penalty", 0.0)
+    penalty_str = f"{float(penalty):.1f}"
+
+    outcome = payload.get("evaluation_outcome", "")
+    if hasattr(outcome, "value"):
+        outcome = outcome.value
+    outcome = str(outcome)
+
+    parts = [
+        sym,
+        sha,
+        ruleset,
+        cat,
+        event_time_str,
+        session,
+        source_status,
+        freshness,
+        dte_str,
+        risk,
+        penalty_str,
+        outcome,
+    ]
+    canonical_string = "|".join(parts)
+    return hashlib.sha256(canonical_string.encode("utf-8")).hexdigest()
+
+
+def derive_authoritative_evaluation_id(
+    release_sha: str,
+    symbol: str,
+    ruleset_version: str,
+    event_time_utc: Optional[str],
+    market_session: str,
+    evaluation_timestamp: str,
+) -> str:
+    """Deterministically derives the authoritative evaluation instance identifier.
+    
+    Guarantees:
+    - Identical inputs and evaluation execution timestamp produce the identical evaluation_id.
+    - Two browser tabs viewing the same execution result produce the identical evaluation_id.
+    - Two genuine executions (with distinct execution timestamps or inputs) produce distinct evaluation_ids.
+    - Rehydration of an existing execution retains its frozen evaluation_id.
+    - Byte-level parity with TypeScript deriveAuthoritativeEvaluationId.
+    """
+    event_time_str = event_time_utc if event_time_utc else "null"
+    s = f"eval|{release_sha.lower()}|{symbol.upper()}|{ruleset_version}|{event_time_str}|{market_session}|{evaluation_timestamp}"
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()
+

@@ -11,6 +11,7 @@ import {
 
 describe("Corporate Events Telemetry Client Helper (v1.1.0 Hardened)", () => {
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const EVALUATION_ID_REGEX = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{64})$/i;
   const AUTH_SHA = "8404b6e4645b5f9f8237e70517dcab3b6afdda7f";
 
   beforeEach(() => {
@@ -62,7 +63,7 @@ describe("Corporate Events Telemetry Client Helper (v1.1.0 Hardened)", () => {
       });
 
       expect(payload.evaluation_id).toBeDefined();
-      expect(payload.evaluation_id).toMatch(UUID_REGEX);
+      expect(payload.evaluation_id).toMatch(EVALUATION_ID_REGEX);
       expect(payload.occurred_at_utc).toBeDefined();
       expect(payload.schema_version).toBe("1.1.0");
     });

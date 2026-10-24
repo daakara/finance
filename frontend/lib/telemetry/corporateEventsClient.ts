@@ -12,6 +12,7 @@ import {
   AcknowledgmentStatus,
   PersistenceState,
 } from "../../types/corporate-events-telemetry";
+import { deriveAuthoritativeEvaluationIdSync } from "./corporateEventsContract";
 
 export const CORPORATE_EVENTS_TELEMETRY_ENDPOINT = "/api/telemetry/events";
 
@@ -90,8 +91,17 @@ export interface CreateEvaluationParams {
 export function assembleCorporateEventPayload(
   params: CreateEvaluationParams
 ): CorporateEventCanonicalPayload {
-  const evalId = params.evaluation_id || generateUuidV4();
   const occurredAt = params.occurred_at_utc || new Date().toISOString();
+  const evalId =
+    params.evaluation_id ||
+    deriveAuthoritativeEvaluationIdSync({
+      release_sha: params.release_sha,
+      symbol: params.symbol,
+      ruleset_version: params.ruleset_version || "RC5",
+      event_time_utc: params.event_time_utc ?? null,
+      market_session: params.market_session || "UNKNOWN",
+      evaluation_timestamp: occurredAt,
+    });
 
   return {
     schema_version: "1.1.0",
