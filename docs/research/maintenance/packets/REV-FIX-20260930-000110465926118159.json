@@ -1,0 +1,364 @@
+{
+  "packet_id": "REV-FIX-20260930-000110465926118159",
+  "symbol": "FIX",
+  "company_name": "Comfort Systems USA, Inc.",
+  "cik": "0001035983",
+  "accepted_baseline_id": "OPP-FIX-20261016",
+  "accepted_baseline_cutoff": "2026-10-16T20:00:00Z",
+  "draft_successor_id": "OPP-FIX-20260930-DRAFT-V1",
+  "filing_metadata": {
+    "form": "10-Q",
+    "accession_number": "0001104659-26-118159",
+    "filing_date": "2026-10-22",
+    "reporting_period": "2026-09-30",
+    "acceptance_datetime_utc": "2026-10-23T00:12:01.000Z",
+    "source_url": "https://www.sec.gov/Archives/edgar/data/1035983/000110465926118159/fix-20260930x10q.htm",
+    "primary_document": "fix-20260930x10q.htm",
+    "index_url": "https://www.sec.gov/Archives/edgar/data/1035983/000110465926118159/0001104659-26-118159-index.htm",
+    "index_sha256": "1a249254ec6612b12fc60c0d477707ec24726d102760128d8d428aed2ab2c2d9",
+    "submissions_url": "https://data.sec.gov/submissions/CIK0001035983.json",
+    "company_facts_url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001035983.json",
+    "retrieval_time_utc": "2026-10-23T23:53:47.682386Z",
+    "is_replay": false,
+    "sha256": "54178c98d565d914df375716a118d10bc46150811ecef707218a3db39337751c",
+    "source_receipts": {
+      "SUBMISSIONS_JSON": {
+        "object_type": "SUBMISSIONS_JSON",
+        "url": "https://data.sec.gov/submissions/CIK0001035983.json",
+        "retrieval_time_utc": "2026-10-23T23:53:47.168151Z",
+        "remote_retrieval_time_utc": "2026-10-23T23:53:47.168151Z",
+        "cache_read_time_utc": null,
+        "byte_count": 157980,
+        "sha256": "8f1a5701e68c09cda6c2fda994982eb3e8f83ba16252720554f4ec955327c563",
+        "content_type": "application/json",
+        "retained_path": "C:\\Users\\akara\\Documents\\Projects\\finance-research-maintenance-pilot\\data\\research\\sourced_fundamentals\\raw\\CIK0001035983_submissions.json",
+        "retrieval_mode": "LIVE",
+        "byte_representation": "decoded_http_response_bytes"
+      },
+      "INDEX_HTML": {
+        "object_type": "INDEX_HTML",
+        "url": "https://www.sec.gov/Archives/edgar/data/1035983/000110465926118159/0001104659-26-118159-index.htm",
+        "retrieval_time_utc": "2026-10-23T23:53:47.418661Z",
+        "remote_retrieval_time_utc": "2026-10-23T23:53:47.418661Z",
+        "cache_read_time_utc": null,
+        "byte_count": 11317,
+        "sha256": "1a249254ec6612b12fc60c0d477707ec24726d102760128d8d428aed2ab2c2d9",
+        "content_type": "text/html",
+        "retained_path": "C:\\Users\\akara\\Documents\\Projects\\finance-research-maintenance-pilot\\data\\research\\sourced_fundamentals\\raw\\CIK0001035983_000110465926118159_index.htm",
+        "retrieval_mode": "LIVE",
+        "byte_representation": "decoded_http_response_bytes",
+        "limitation": null
+      },
+      "PRIMARY_DOC_HTML": {
+        "object_type": "PRIMARY_DOC_HTML",
+        "url": "https://www.sec.gov/Archives/edgar/data/1035983/000110465926118159/fix-20260930x10q.htm",
+        "retrieval_time_utc": "2026-10-23T23:53:47.677047Z",
+        "remote_retrieval_time_utc": "2026-10-23T23:53:47.677047Z",
+        "cache_read_time_utc": null,
+        "byte_count": 2119788,
+        "sha256": "54178c98d565d914df375716a118d10bc46150811ecef707218a3db39337751c",
+        "content_type": "text/html",
+        "retained_path": "C:\\Users\\akara\\Documents\\Projects\\finance-research-maintenance-pilot\\data\\research\\sourced_fundamentals\\raw\\CIK0001035983_000110465926118159_fix-20260930x10q.htm",
+        "retrieval_mode": "LIVE",
+        "byte_representation": "decoded_http_response_bytes",
+        "limitation": null
+      },
+      "COMPANY_FACTS_JSON": {
+        "object_type": "COMPANY_FACTS_JSON",
+        "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001035983.json",
+        "retrieval_time_utc": "2026-10-23T23:53:48.092188Z",
+        "remote_retrieval_time_utc": "2026-10-23T23:53:48.092188Z",
+        "cache_read_time_utc": null,
+        "byte_count": 3210034,
+        "sha256": "7d6c19138261bfae55c46e7affd1597e9e15c49ded87b4d7b8d108608821bfdc",
+        "content_type": "application/json",
+        "retained_path": "C:\\Users\\akara\\Documents\\Projects\\finance-research-maintenance-pilot\\data\\research\\sourced_fundamentals\\raw\\CIK0001035983_companyfacts.json",
+        "retrieval_mode": "LIVE",
+        "byte_representation": "decoded_http_response_bytes"
+      }
+    }
+  },
+  "material_financial_changes": [
+    {
+      "metric_key": "cash_and_equivalents",
+      "label": "Cash & Cash Equivalents",
+      "baseline_value": 1854794000.0,
+      "baseline_display": "$1854.8M",
+      "draft_value": 2158027000.0,
+      "draft_display": "$2158.0M",
+      "delta_value": 303233000.0,
+      "delta_pct": 16.35,
+      "units": "USD",
+      "source_accession": "0001104659-26-118159",
+      "concept": "CashAndCashEquivalentsAtCarryingValue",
+      "period_start": null,
+      "period_end": "2026-09-30",
+      "accounting_context": "Consolidated balance sheet carrying value (unrestricted cash)",
+      "status": "REPORTED",
+      "is_missing_unresolved": false,
+      "source_accessions": [
+        "0001104659-26-118159"
+      ],
+      "derivation_formula": null,
+      "notes": null
+    },
+    {
+      "metric_key": "total_financial_debt",
+      "label": "Total Financial Debt",
+      "baseline_value": 54064000.0,
+      "baseline_display": "$54.1M",
+      "draft_value": 49555000.0,
+      "draft_display": "$49.6M",
+      "delta_value": -4509000.0,
+      "delta_pct": -8.34,
+      "units": "USD",
+      "source_accession": "0001104659-26-118159",
+      "concept": "LongTermDebt / LongTermDebtCurrent + LongTermDebtNoncurrent",
+      "period_start": null,
+      "period_end": "2026-09-30",
+      "accounting_context": "Funded debt reconciled: Current $5.71M + Noncurrent $43.84M = Total $49.55M",
+      "status": "REPORTED",
+      "is_missing_unresolved": false,
+      "source_accessions": [
+        "0001104659-26-118159"
+      ],
+      "derivation_formula": null,
+      "notes": null
+    },
+    {
+      "metric_key": "net_debt_bridge",
+      "label": "Net Debt Bridge (Cash / Debt)",
+      "baseline_value": -1800730000.0,
+      "baseline_display": "-$1800.7M (Net Cash)",
+      "draft_value": -2108472000.0,
+      "draft_display": "-$2108.5M (Net Cash)",
+      "delta_value": -307742000.0,
+      "delta_pct": -17.09,
+      "units": "USD",
+      "source_accession": "0001104659-26-118159",
+      "concept": "total_financial_debt - cash_and_equivalents",
+      "period_start": null,
+      "period_end": "2026-09-30",
+      "accounting_context": "Net cash bridge added to enterprise value in DCF equity bridge under Lease-as-Operating-Expense convention",
+      "status": "DERIVED",
+      "is_missing_unresolved": false,
+      "source_accessions": [
+        "0001104659-26-118159"
+      ],
+      "derivation_formula": "total_financial_debt - cash_and_equivalents",
+      "notes": null
+    },
+    {
+      "metric_key": "revenue",
+      "label": "TTM Revenue",
+      "baseline_value": 11228024000.0,
+      "baseline_display": "$11.23B",
+      "draft_value": 12543357000.0,
+      "draft_display": "$12.54B",
+      "delta_value": 1315333000.0,
+      "delta_pct": 11.71,
+      "units": "USD",
+      "source_accession": "0001104659-26-118159",
+      "concept": "Revenues (TTM multi-period derivation)",
+      "period_start": "2025-10-01",
+      "period_end": "2026-09-30",
+      "accounting_context": "Derived TTM revenue: Annual_2025 ($9101.6M) - 9M_2025 ($6455.6M) + 9M_2026 ($9897.3M). Standalone Q3: $3766.3M.",
+      "status": "DERIVED",
+      "is_missing_unresolved": false,
+      "source_accessions": [
+        "0001104659-26-017530",
+        "0001104659-26-118159"
+      ],
+      "derivation_formula": "Annual_2025 - YTD_9M_2025 + YTD_9M_2026",
+      "notes": null
+    },
+    {
+      "metric_key": "operating_income",
+      "label": "TTM Operating Income",
+      "baseline_value": 1849300000.0,
+      "baseline_display": "$1849.3M",
+      "draft_value": 2094998000.0,
+      "draft_display": "$2095.0M",
+      "delta_value": 245698000.0,
+      "delta_pct": 13.29,
+      "units": "USD",
+      "source_accession": "0001104659-26-118159",
+      "concept": "OperatingIncomeLoss (TTM multi-period derivation)",
+      "period_start": "2025-10-01",
+      "period_end": "2026-09-30",
+      "accounting_context": "Operating margin: 16.70% TTM (vs baseline 16.47%, delta: +0.23%). Standalone Q3: $624.6M (16.58% quarterly margin). Formula: Annual_2025 ($1314.6M) - 9M_2025 ($887.8M) + 9M_2026 ($1668.3M)",
+      "status": "DERIVED",
+      "is_missing_unresolved": false,
+      "source_accessions": [
+        "0001104659-26-017530",
+        "0001104659-26-118159"
+      ],
+      "derivation_formula": "Annual_2025 - YTD_9M_2025 + YTD_9M_2026",
+      "notes": null
+    },
+    {
+      "metric_key": "diluted_shares",
+      "label": "Diluted Weighted-Average Shares",
+      "baseline_value": 35254000.0,
+      "baseline_display": "35.25M",
+      "draft_value": 35152000.0,
+      "draft_display": "35.15M",
+      "delta_value": -102000.0,
+      "delta_pct": -0.29,
+      "units": "shares",
+      "source_accession": "0001104659-26-118159",
+      "concept": "WeightedAverageNumberOfDilutedSharesOutstanding",
+      "period_start": "2026-07-01",
+      "period_end": "2026-09-30",
+      "accounting_context": "Quarterly diluted shares matching interim reporting period duration (2026-07-01 to 2026-09-30)",
+      "status": "REPORTED",
+      "is_missing_unresolved": false,
+      "source_accessions": [
+        "0001104659-26-118159"
+      ],
+      "derivation_formula": null,
+      "notes": null
+    }
+  ],
+  "assessment_effects": [
+    {
+      "conclusion_key": "decisive_reason",
+      "conclusion_label": "Decisive Reason for Quality Watch",
+      "baseline_state": "Comfort Systems USA presents an exceptional balance sheet ($1.80B net cash) and high capital returns (>28% ROIC), supported by multi-year modular HVAC backlogs for hyperscale data center construction. However, the frozen reference market price of $1439.07 embeds a demanding 30.07% 5-year revenue CAGR at elevated 15.0% operating margins. Retained on watch: await market pullback toward mid-cycle base valuation range ($1,050 - $1,100) or evidence of margin persistence.",
+      "draft_state": "Net cash buffer expanded from $1800.7M to $2108.5M. TTM revenue grew from $11.23B to $12.54B. Trailing 12-month margin was 16.70%. Solved 5-year revenue CAGR eased from 30.07% to 26.76%. Market reference price ($1439.07) remains above base intrinsic value ($1215.00). Reported standalone quarterly operating margin (16.58%) did not breach the approved 13.0% invalidation floor, while backlog book-to-bill evidence remains unresolved via Form 10-Q. Core decisive thesis is conditionally maintained pending Product Owner review.",
+      "interpretation_type": "ANALYST_JUDGMENT",
+      "materiality": "INCREMENTAL_POSITIVE",
+      "owner_judgment_required": true,
+      "notes": "Quarterly margin condition satisfied, but complete multi-condition thesis maintenance requires owner judgment due to unresolved backlog evidence."
+    },
+    {
+      "conclusion_key": "financial_resilience",
+      "conclusion_label": "Balance Sheet Resilience & Capital Structure",
+      "baseline_state": "Prong 1: Exceptional balance sheet ($1.80B net cash, $54.1M debt).",
+      "draft_state": "Net cash buffer: Unrestricted cash carrying value $2158.0M vs funded debt $49.6M. Capital structure remains in strong net cash position ($2108.5M net cash).",
+      "interpretation_type": "FACT_CHANGE",
+      "materiality": "INCREMENTAL_POSITIVE",
+      "owner_judgment_required": false,
+      "notes": "Reconciled directly from primary balance sheet facts."
+    },
+    {
+      "conclusion_key": "watch_condition",
+      "conclusion_label": "Price Watch Entry Condition",
+      "baseline_state": "Priced attractive for entry if share price pulls back to base-case modeled value range ($1,050 - $1,100).",
+      "draft_state": "Approved entry condition remains Priced attractive for entry if share price pulls back to base-case modeled value range ($1,050 - $1,100).. Base-case modeled conditional value shifted from $1081.99 to $1215.00 (+12.3%). Modifying approved entry thresholds is an analyst judgment decision reserved for the Product Owner; existing approved thresholds are preserved.",
+      "interpretation_type": "ANALYST_JUDGMENT",
+      "materiality": "MATERIAL",
+      "owner_judgment_required": true,
+      "notes": "Model value expansion warrants human review; existing approved watch thresholds are preserved intact."
+    },
+    {
+      "conclusion_key": "invalidation_condition",
+      "conclusion_label": "Thesis Invalidation Triggers",
+      "baseline_state": "Backlog book-to-bill falling below 0.95x or quarterly operating margin dropping below 13.0%.",
+      "draft_state": "Standalone quarterly operating margin (16.58%) did not breach the approved 13.0% invalidation floor (TTM margin: 16.70%). Backlog book-to-bill ratio is an evidence limitation not disclosed in standardized primary XBRL and remains UNRESOLVED via Form 10-Q. Quarterly margin condition was not triggered by reported evidence; complete multi-condition thesis evaluation requires owner review.",
+      "interpretation_type": "UNRESOLVED_EVIDENCE",
+      "materiality": "NEUTRAL",
+      "owner_judgment_required": true,
+      "notes": "Quarterly margin evaluated; backlog book-to-bill remains an unassessed evidence limitation requiring human review."
+    },
+    {
+      "conclusion_key": "main_uncertainty",
+      "conclusion_label": "Decisive Core Uncertainty",
+      "baseline_state": "Cyclicality of hyperscale cloud capex budgets and customer concentration in top-tier tech clients.",
+      "draft_state": "Core uncertainty (Cyclicality of hyperscale cloud capex budgets and customer concentration in top-tier tech clients.) cannot be resolved by a single interim Form 10-Q filing. Multi-year hyperscale cloud capex commitments remain subject to technology expenditure cycles.",
+      "interpretation_type": "UNRESOLVED_EVIDENCE",
+      "materiality": "NEUTRAL",
+      "owner_judgment_required": false,
+      "notes": "Interim filing reports historical backlog but cannot eliminate macro tech capex cycle risk."
+    }
+  ],
+  "accounting_exceptions": [
+    "ASC 842 operating lease liabilities ($324.9M noncurrent) are strictly excluded from Net Debt Bridge under LEASE_AS_OPERATING_EXPENSE convention (rent is deducted in operating income).",
+    "Cash flow control: Operating cash flow ($2,538.4M) and capex ($499.4M) in Form 10-Q represent 9-month YTD totals. Standalone Q3 derived: CFO $1010.1M - Capex $210.6M = FCF $799.5M."
+  ],
+  "undisclosed_information": [
+    "Short-term investments: not separately reported on balance sheet (unresolved, not zero).",
+    "Restricted cash: not reported on balance sheet (treated honestly as unavailable)."
+  ],
+  "valuation_comparison": {
+    "valuation_machinery_status": "COMPUTED_VERIFIED",
+    "reference_price": 1439.07,
+    "reference_date": "2026-10-16",
+    "resolved_assumptions": {
+      "authoritative_paths": {
+        "reverse_dcf": "baseline_dossier.valuation.reverse_dcf_parameters",
+        "scenarios": "baseline_dossier.valuation.scenarios"
+      },
+      "reverse_dcf_parameters": {
+        "operating_margin_pct": 15.0,
+        "wacc_pct": 9.5,
+        "terminal_growth_pct": 2.5,
+        "tax_rate_pct": 21.0,
+        "reinvestment_rate_pct": 15.0
+      },
+      "solver_verification": {
+        "baseline_solver": "VERIFIED (Roundtrip per-share $1438.85 matches target $1439.07)",
+        "draft_solver": "VERIFIED (Roundtrip per-share $1438.91 matches target $1439.07)"
+      }
+    },
+    "solved_5y_cagr": {
+      "baseline_cagr_pct": 30.07,
+      "draft_cagr_pct": 26.76,
+      "delta_cagr_bps": -331.0,
+      "interpretation": "Lower required revenue growth (26.76% vs 30.07%, -331 bps) to justify reference price due to larger starting revenue base and expanded net cash buffer."
+    },
+    "scenarios": {
+      "conservative": {
+        "baseline_per_share": 533.46,
+        "draft_per_share": 600.44,
+        "delta_dollars": 66.98,
+        "delta_pct": 12.56,
+        "assumptions": {
+          "revenue_cagr_pct": 12.0,
+          "operating_margin_pct": 12.5,
+          "wacc_pct": 10.5,
+          "terminal_growth_pct": 2.0,
+          "tax_rate_pct": 21.0,
+          "reinvestment_rate_pct": 15.0
+        }
+      },
+      "base": {
+        "baseline_per_share": 1081.99,
+        "draft_per_share": 1215.0,
+        "delta_dollars": 133.01,
+        "delta_pct": 12.29,
+        "assumptions": {
+          "revenue_cagr_pct": 22.0,
+          "operating_margin_pct": 15.0,
+          "wacc_pct": 9.5,
+          "terminal_growth_pct": 2.5,
+          "tax_rate_pct": 21.0,
+          "reinvestment_rate_pct": 15.0
+        }
+      },
+      "optimistic": {
+        "baseline_per_share": 1996.38,
+        "draft_per_share": 2239.47,
+        "delta_dollars": 243.09,
+        "delta_pct": 12.18,
+        "assumptions": {
+          "revenue_cagr_pct": 30.0,
+          "operating_margin_pct": 16.5,
+          "wacc_pct": 8.5,
+          "terminal_growth_pct": 3.0,
+          "tax_rate_pct": 21.0,
+          "reinvestment_rate_pct": 15.0
+        }
+      }
+    }
+  },
+  "proposed_disposition": "MAINTAIN",
+  "disposition_rationale": "Proposed disposition: MAINTAIN Quality Watch status (WATCH_CONDITIONS). Standalone quarterly operating margin (16.58%) did not breach the approved 13.0% invalidation floor, while backlog book-to-bill remains an unresolved evidence limitation under Form 10-Q. Operational results in reporting period ended 2026-09-30: Net cash buffer expanded from $1800.7M to $2108.5M. Lower required revenue growth (26.76% vs 30.07%, -331 bps) to justify reference price due to larger starting revenue base and expanded net cash buffer. Maintained watch status is proposed pending Product Owner review and approval.",
+  "questions_requiring_owner_judgment": [
+    "Base modeled value shifted from $1081.99 to $1215.00 (+12.3%). Does the Research Lead / Product Owner approve updating the price watch entry corridor, or should existing approved thresholds (Priced attractive for entry if share price pulls back to base-case modeled value range ($1,050 - $1,100).) remain unchanged?",
+    "Should normalized operating margin assumption (15.0%) be reassessed at the next annual research review given trailing margin execution (16.70%)?"
+  ],
+  "stopping_rule": "Evidence collection complete for Form 10-Q (Period: 2026-09-30). All reported primary facts reconciled and conditional valuation differences calculated. Core customer capex cycle uncertainty remains an evidence limitation not disclosed in interim Form 10-Q filings (annual Form 10-K disclosures provide additional qualitative context, though customer contract terms and capex cycle uncertainty cannot be guaranteed to be fully resolved via standard regulatory filings alone). Cease investigation.",
+  "created_at_utc": "2026-10-23T23:53:48.125201Z",
+  "is_replay": false
+}

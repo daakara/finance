@@ -30,13 +30,19 @@ from analyst_dashboard.vcp.predicate_registry import (
 class VCPClassifier:
     """Governed VCP classification engine conforming to the frozen domain contract."""
 
+    VERSION_CANDIDATE_004 = "ARX_VCP_CLASSIFIER_V1_CANDIDATE_004"
+    VERSION_CANDIDATE_005 = "ARX_VCP_CLASSIFIER_V1_CANDIDATE_005"
+    VERSION_CANDIDATE_006 = "ARX_VCP_CLASSIFIER_V1_CANDIDATE_006"
+
     def __init__(
         self,
         predicate_registry: Optional[VCPPredicateRegistry] = None,
         numeric_contract: Optional[VCPNumericContract] = None,
+        algorithm_version: str = "ARX_VCP_CLASSIFIER_V1_CANDIDATE_004",
     ):
         self.predicate_registry = predicate_registry or VCPPredicateRegistry()
         self.numeric_contract = numeric_contract or VCPNumericContract()
+        self.algorithm_version = algorithm_version
 
     def extract_observations(self, package: VCPTemporalCasePackage) -> VCPObservation:
         """Extracts purely descriptive measurements from the sealed case package.
@@ -103,15 +109,40 @@ class VCPClassifier:
                     )
                 prior_uptrend_bars = len(pre_base_window)
 
-        # Contraction wave detection over trailing base consolidation (trailing 70 sessions)
-        valid_contractions, contraction_depths = self._detect_contractions(bars)
-        contraction_count = len(valid_contractions)
-
-        is_progressive = (
-            self.numeric_contract.verify_progressive_tightening(contraction_depths)
-            if contraction_count >= 2
-            else False
-        )
+        # Contraction wave detection (Candidate 004 vs Candidate 005 vs Candidate 006)
+        macro_meta: Dict[str, Any] = {}
+        if self.algorithm_version == self.VERSION_CANDIDATE_006:
+            valid_contractions, contraction_depths, macro_meta = self._detect_causal_contractions(bars)
+            contraction_count = len(valid_contractions)
+            is_progressive = (
+                self.numeric_contract.verify_progressive_tightening(
+                    contraction_depths,
+                    relative_reduction=0.05,
+                    eps_float=1e-7,
+                )
+                if contraction_count >= 2
+                else False
+            )
+        elif self.algorithm_version == self.VERSION_CANDIDATE_005:
+            valid_contractions, contraction_depths, macro_meta = self._detect_macro_contractions(bars)
+            contraction_count = len(valid_contractions)
+            is_progressive = (
+                self.numeric_contract.verify_progressive_tightening(
+                    contraction_depths,
+                    relative_reduction=0.05,
+                    eps_float=1e-7,
+                )
+                if contraction_count >= 2
+                else False
+            )
+        else:
+            valid_contractions, contraction_depths = self._detect_contractions(bars)
+            contraction_count = len(valid_contractions)
+            is_progressive = (
+                self.numeric_contract.verify_progressive_tightening(contraction_depths)
+                if contraction_count >= 2
+                else False
+            )
 
         # Volume analysis on final contraction wave
         vol_50_sma = self.numeric_contract.compute_sma(volumes, 50)
@@ -160,6 +191,7 @@ class VCPClassifier:
             pivot_distance_pct=pivot_dist,
             history_sufficient_trend=(n_sessions >= 200),
             history_sufficient_volume=(n_sessions >= 50),
+            metadata=macro_meta,
         )
 
     def _detect_contractions(
@@ -227,6 +259,556 @@ class VCPClassifier:
             i += 1
 
         return waves, depths
+
+    def _detect_macro_contractions(
+        self,
+        bars: List[DailyOHLCVBar],
+        lookback_max: int = 90,
+        lookback_min: int = 15,
+        k_anchor: int = 3,
+        theta_d1: float = 0.08,
+        theta_dk: float = 0.04,
+        theta_d_final: float = 0.02,
+        theta_amp: float = 0.04,
+        theta_dur: int = 3,
+        theta_recovery: float = 0.015,
+        ceiling_restart_threshold: float = 1.03,
+    ) -> Tuple[List[Dict[str, Any]], List[float], Dict[str, Any]]:
+        """Candidate 005 Macro Contraction Wave Detection Engine.
+
+        Resolves:
+        1. Base-origin anchoring with chronological processing and restart.
+        2. Conjunctive noise-merging (amplitude < 4% AND duration <= 3 elapsed sessions).
+        3. Independent final-wave trough confirmation (recovery >= 1.5% or close > trough bar high).
+        """
+        n = len(bars)
+        metadata: Dict[str, Any] = {
+            "algorithm_version": self.VERSION_CANDIDATE_005,
+            "anchor_selected": None,
+            "pre_base_bars_truncated": 0,
+            "waves_merged_noise": 0,
+            "final_trough_confirmed": False,
+            "final_trough_conf_date": None,
+            "reason_codes": [],
+        }
+
+        if n < 40:
+            metadata["reason_codes"].append("INSUFFICIENT_HISTORY_FOR_BASE")
+            return [], [], metadata
+
+        # 1. Base lookback slice: [max(0, n - lookback_max) : n]
+        start_lookback = max(0, n - lookback_max)
+        search_end = n - lookback_min
+        if search_end <= start_lookback:
+            metadata["reason_codes"].append("BASE_LOOKBACK_WINDOW_TOO_NARROW")
+            return [], [], metadata
+
+        highs = [b.high for b in bars]
+        lows = [b.low for b in bars]
+        closes = [b.close for b in bars]
+
+        # 2. Find eligible anchor peaks in [start_lookback + k_anchor, search_end]
+        peak_candidates = []
+        for i in range(start_lookback + k_anchor, search_end + 1):
+            if i + k_anchor >= n:
+                continue
+            is_sym_peak = True
+            for offset in range(-k_anchor, k_anchor + 1):
+                if offset != 0 and highs[i + offset] > highs[i]:
+                    is_sym_peak = False
+                    break
+            if is_sym_peak:
+                peak_candidates.append(i)
+
+        if not peak_candidates:
+            metadata["reason_codes"].append("INSUFFICIENT_BASE_ANCHOR_CANDIDATES")
+            return [], [], metadata
+
+        # 3. Chronological Anchor Selection & Restart Engine (Ambiguity B)
+        # Find earliest confirmed symmetric peak that initiates a contraction >= theta_d1 (8.0%)
+        active_anchor_idx = None
+        for p_idx in peak_candidates:
+            p_high = highs[p_idx]
+            trough_end = min(n, p_idx + 35)
+            if trough_end > p_idx + 1:
+                min_l = min(lows[p_idx + 1 : trough_end])
+                if (p_high - min_l) / p_high >= theta_d1:
+                    active_anchor_idx = p_idx
+                    break
+
+        if active_anchor_idx is None:
+            metadata["reason_codes"].append("INSUFFICIENT_BASE_ANCHOR_CANDIDATES")
+            return [], [], metadata
+
+        # Step forward chronologically through subsequent peaks to test restart vs ceiling
+        for p_idx in peak_candidates:
+            if p_idx <= active_anchor_idx:
+                continue
+            current_anchor_high = highs[active_anchor_idx]
+            new_high = highs[p_idx]
+            ratio = new_high / current_anchor_high
+
+            if ratio > ceiling_restart_threshold:
+                # New trend leg / advance: check if new peak initiates contraction >= theta_d1
+                trough_end = min(n, p_idx + 35)
+                if trough_end > p_idx + 1:
+                    min_l = min(lows[p_idx + 1 : trough_end])
+                    if (new_high - min_l) / new_high >= theta_d1:
+                        # Base restarts at new peak
+                        active_anchor_idx = p_idx
+
+        metadata["anchor_selected"] = {
+            "bar_index": active_anchor_idx,
+            "date": bars[active_anchor_idx].bar_date,
+            "high": highs[active_anchor_idx],
+        }
+        metadata["pre_base_bars_truncated"] = active_anchor_idx - start_lookback
+        if metadata["pre_base_bars_truncated"] > 0:
+            metadata["reason_codes"].append("PRE_BASE_ADVANCE_TRUNCATED")
+
+        # 4. Segment Contraction Waves starting from active_anchor_idx
+        waves: List[Dict[str, Any]] = []
+        depths: List[float] = []
+
+        curr_peak_idx = active_anchor_idx
+        curr_peak_val = highs[curr_peak_idx]
+
+        while curr_peak_idx < n - 2:
+            running_low = curr_peak_val
+            running_low_idx = curr_peak_idx
+            leg_closed = False
+            rebound_peak_val = running_low
+            rebound_peak_idx = running_low_idx
+
+            j = curr_peak_idx + 1
+            while j < n:
+                b_low = lows[j]
+                b_high = highs[j]
+
+                if b_low < running_low:
+                    running_low = b_low
+                    running_low_idx = j
+                    rebound_peak_val = b_high
+                    rebound_peak_idx = j
+                else:
+                    if b_high > rebound_peak_val:
+                        rebound_peak_val = b_high
+                        rebound_peak_idx = j
+
+                    delta_rebound = (rebound_peak_val - running_low) / running_low if running_low > 0 else 0.0
+                    tau_rebound = j - running_low_idx
+
+                    is_noise = (delta_rebound < theta_amp) and (tau_rebound <= theta_dur)
+
+                    if not is_noise:
+                        leg_closed = True
+                        break
+
+                j += 1
+
+            # Check wave properties
+            trough_idx = running_low_idx
+            trough_val = running_low
+            wave_dur = trough_idx - curr_peak_idx + 1
+            wave_depth = self.numeric_contract.compute_contraction_depth(curr_peak_val, trough_val)
+
+            min_depth_req = theta_d1 if len(waves) == 0 else (theta_d_final if j >= n - 5 else theta_dk)
+
+            if wave_depth >= min_depth_req and wave_dur >= 2:
+                wave_record = {
+                    "wave_index": len(waves) + 1,
+                    "start_idx": curr_peak_idx,
+                    "trough_idx": trough_idx,
+                    "peak_date": bars[curr_peak_idx].bar_date,
+                    "trough_date": bars[trough_idx].bar_date,
+                    "peak_price": self.numeric_contract.round_price(curr_peak_val),
+                    "trough_price": self.numeric_contract.round_price(trough_val),
+                    "depth_pct": wave_depth,
+                    "duration_bars": wave_dur,
+                }
+                waves.append(wave_record)
+                depths.append(wave_depth)
+            else:
+                metadata["waves_merged_noise"] += 1
+
+            if j >= n or not leg_closed:
+                break
+
+            # Find next peak from rebound
+            next_peak_idx = rebound_peak_idx
+            next_peak_val = highs[next_peak_idx]
+
+            k_idx = rebound_peak_idx + 1
+            while k_idx < n:
+                if highs[k_idx] > next_peak_val:
+                    next_peak_val = highs[k_idx]
+                    next_peak_idx = k_idx
+                elif (next_peak_val - lows[k_idx]) / next_peak_val >= theta_dk:
+                    break
+                k_idx += 1
+
+            if next_peak_idx == curr_peak_idx or next_peak_idx >= n - 1:
+                break
+            curr_peak_idx = next_peak_idx
+            curr_peak_val = next_peak_val
+
+        if metadata["waves_merged_noise"] > 0:
+            metadata["reason_codes"].append("INTRA_WAVE_NOISE_MERGED")
+
+        # 5. Independent Final-Trough Confirmation (Ambiguity A)
+        if waves:
+            final_wave = waves[-1]
+            final_trough_val = final_wave["trough_price"]
+            final_trough_idx = final_wave["trough_idx"]
+            trough_bar_high = bars[final_trough_idx].high
+
+            trough_confirmed = False
+            trough_conf_date = None
+
+            if final_trough_idx < n - 1:
+                for eval_idx in range(final_trough_idx + 1, n):
+                    eval_close = closes[eval_idx]
+                    eval_low = lows[eval_idx]
+
+                    if eval_low < final_trough_val:
+                        trough_confirmed = False
+                        break
+
+                    rec_pct = (eval_close - final_trough_val) / final_trough_val if final_trough_val > 0 else 0.0
+                    condA = rec_pct >= theta_recovery
+                    condB = eval_close > trough_bar_high
+
+                    if condA or condB:
+                        trough_confirmed = True
+                        trough_conf_date = bars[eval_idx].bar_date
+
+            metadata["final_trough_confirmed"] = trough_confirmed
+            metadata["final_trough_conf_date"] = trough_conf_date
+            if not trough_confirmed:
+                metadata["reason_codes"].append("FINAL_CONTRACTION_UNFINISHED_AT_CUTOFF")
+
+        return waves, depths, metadata
+
+    def _detect_causal_contractions(
+        self,
+        bars: List[DailyOHLCVBar],
+        lookback_max: int = 90,
+        lookback_min: int = 15,
+        k_anchor: int = 3,
+        theta_d1: float = 0.08,
+        theta_dk: float = 0.04,
+        theta_d_final: float = 0.02,
+        theta_prom: float = 0.05,
+        theta_dur: int = 3,
+        theta_rollover: float = 0.04,
+        eps_guard: float = 1e-7,
+        ceiling_restart_threshold: float = 1.03,
+    ) -> Tuple[List[Dict[str, Any]], List[float], Dict[str, Any]]:
+        """Candidate 006 Causal Wave Segmentation Engine.
+
+        Conforms strictly to Revision 2.3.0 and binding owner corrections:
+        1. Base-origin anchoring with chronological processing and restart.
+        2. Conservative causal segmentation:
+           - Wave 1 downswing tracking from base anchor.
+           - Rebound confirmation: >= 3 elapsed trading sessions post-trough and
+             closing recovery (C_j - L_trough) / L_trough >= 0.05 - 1e-7.
+           - Lower low resets running trough and elapsed-session origin.
+           - Candidate peak initialized strictly from highs post-trough through confirmation.
+           - Same-bar non-ordering policy: bar establishing/updating candidate peak cannot
+             also trigger downswing rollover.
+           - Rollover confirmed on subsequent session: (P_cand - C_j) / P_cand >= 0.04 - 1e-7.
+           - Next trough initialized across all eligible lows in [t_peak + 1, j_roll].
+           - Confirmed wave boundaries are immutable.
+           - Faithful expansion extraction: expanding waves are recorded; predicate evaluates.
+           - Initial depth floor requirement: D_1 >= 0.08.
+        """
+        n = len(bars)
+        metadata: Dict[str, Any] = {
+            "algorithm_version": self.VERSION_CANDIDATE_006,
+            "anchor_selected": None,
+            "pre_base_bars_truncated": 0,
+            "waves_merged_noise": 0,
+            "confirmed_wave_records": [],
+            "provisional_wave": None,
+            "state_transitions": [],
+            "final_trough_confirmed": False,
+            "final_trough_conf_date": None,
+            "reason_codes": [],
+        }
+
+        if n < 40:
+            metadata["reason_codes"].append("INSUFFICIENT_HISTORY_FOR_BASE")
+            return [], [], metadata
+
+        start_lookback = max(0, n - lookback_max)
+        search_end = n - lookback_min
+        if search_end <= start_lookback:
+            metadata["reason_codes"].append("BASE_LOOKBACK_WINDOW_TOO_NARROW")
+            return [], [], metadata
+
+        highs = [b.high for b in bars]
+        lows = [b.low for b in bars]
+        closes = [b.close for b in bars]
+
+        # 1. Symmetric Anchor Peak Detection
+        peak_candidates = []
+        for i in range(start_lookback + k_anchor, search_end + 1):
+            if i + k_anchor >= n:
+                continue
+            is_sym_peak = True
+            for offset in range(-k_anchor, k_anchor + 1):
+                if offset != 0 and highs[i + offset] > highs[i]:
+                    is_sym_peak = False
+                    break
+            if is_sym_peak:
+                peak_candidates.append(i)
+
+        if not peak_candidates:
+            metadata["reason_codes"].append("INSUFFICIENT_BASE_ANCHOR_CANDIDATES")
+            return [], [], metadata
+
+        # 2. Chronological Anchor Selection & Restart Engine
+        active_anchor_idx = None
+        for p_idx in peak_candidates:
+            p_high = highs[p_idx]
+            trough_end = min(n, p_idx + 35)
+            if trough_end > p_idx + 1:
+                min_l = min(lows[p_idx + 1 : trough_end])
+                if (p_high - min_l) / p_high >= theta_d1:
+                    active_anchor_idx = p_idx
+                    break
+
+        if active_anchor_idx is None:
+            metadata["reason_codes"].append("INSUFFICIENT_BASE_ANCHOR_CANDIDATES")
+            return [], [], metadata
+
+        for p_idx in peak_candidates:
+            if p_idx <= active_anchor_idx:
+                continue
+            current_anchor_high = highs[active_anchor_idx]
+            new_high = highs[p_idx]
+            ratio = new_high / current_anchor_high
+
+            if ratio > ceiling_restart_threshold:
+                trough_end = min(n, p_idx + 35)
+                if trough_end > p_idx + 1:
+                    min_l = min(lows[p_idx + 1 : trough_end])
+                    if (new_high - min_l) / new_high >= theta_d1:
+                        active_anchor_idx = p_idx
+
+        metadata["anchor_selected"] = {
+            "bar_index": active_anchor_idx,
+            "date": bars[active_anchor_idx].bar_date,
+            "high": highs[active_anchor_idx],
+        }
+        metadata["pre_base_bars_truncated"] = active_anchor_idx - start_lookback
+        if metadata["pre_base_bars_truncated"] > 0:
+            metadata["reason_codes"].append("PRE_BASE_ADVANCE_TRUNCATED")
+
+        # 3. Causal Segmentation Loop
+        confirmed_waves: List[Dict[str, Any]] = []
+        depths: List[float] = []
+        state_transitions: List[Dict[str, Any]] = []
+
+        p1_val = highs[active_anchor_idx]
+        p1_idx = active_anchor_idx
+
+        state = "STATE_WAVE_1_DOWNSWING"
+        running_trough_val = lows[active_anchor_idx + 1] if active_anchor_idx + 1 < n else p1_val
+        running_trough_idx = active_anchor_idx + 1 if active_anchor_idx + 1 < n else active_anchor_idx
+        candidate_peak_val = 0.0
+        candidate_peak_idx = -1
+        current_wave_peak_val = p1_val
+        current_wave_peak_idx = p1_idx
+
+        for j in range(active_anchor_idx + 1, n):
+            b_high = highs[j]
+            b_low = lows[j]
+            b_close = closes[j]
+
+            if b_high <= 0 or b_low <= 0 or b_close <= 0:
+                metadata["reason_codes"].append("INVALID_PRICE_NONPOSITIVE")
+                continue
+
+            if state == "STATE_WAVE_1_DOWNSWING":
+                if b_low < running_trough_val:
+                    running_trough_val = b_low
+                    running_trough_idx = j
+                    state_transitions.append({
+                        "bar_idx": j,
+                        "date": bars[j].bar_date,
+                        "event": "NEW_LOWER_LOW_RESET",
+                        "trough_val": running_trough_val,
+                        "trough_idx": running_trough_idx,
+                        "state": state,
+                    })
+                else:
+                    elapsed = j - running_trough_idx
+                    delta_rec = (b_close - running_trough_val) / running_trough_val if running_trough_val > 0 else 0.0
+                    if elapsed >= theta_dur and delta_rec >= (theta_prom - eps_guard):
+                        w1_depth = self.numeric_contract.compute_contraction_depth(current_wave_peak_val, running_trough_val)
+                        w1_record = {
+                            "wave_index": 1,
+                            "start_idx": current_wave_peak_idx,
+                            "trough_idx": running_trough_idx,
+                            "peak_date": bars[current_wave_peak_idx].bar_date,
+                            "trough_date": bars[running_trough_idx].bar_date,
+                            "peak_price": self.numeric_contract.round_price(current_wave_peak_val),
+                            "trough_price": self.numeric_contract.round_price(running_trough_val),
+                            "depth_pct": w1_depth,
+                            "duration_bars": running_trough_idx - current_wave_peak_idx + 1,
+                            "confirmation_idx": j,
+                            "confirmation_date": bars[j].bar_date,
+                        }
+                        confirmed_waves.append(w1_record)
+                        depths.append(w1_depth)
+
+                        state = "STATE_CONFIRMED_REBOUND"
+                        # Candidate peak initialized strictly from bars post-trough through j
+                        post_trough_highs = highs[running_trough_idx + 1 : j + 1]
+                        candidate_peak_val = max(post_trough_highs)
+                        offset = post_trough_highs.index(candidate_peak_val)
+                        candidate_peak_idx = running_trough_idx + 1 + offset
+
+                        state_transitions.append({
+                            "bar_idx": j,
+                            "date": bars[j].bar_date,
+                            "event": "WAVE_CONFIRMED",
+                            "wave_index": 1,
+                            "confirmation_idx": j,
+                            "candidate_peak_val": candidate_peak_val,
+                            "candidate_peak_idx": candidate_peak_idx,
+                            "state": state,
+                        })
+
+            elif state == "STATE_CONFIRMED_REBOUND":
+                if b_high > candidate_peak_val:
+                    candidate_peak_val = b_high
+                    candidate_peak_idx = j
+                    state_transitions.append({
+                        "bar_idx": j,
+                        "date": bars[j].bar_date,
+                        "event": "CANDIDATE_PEAK_UPDATED",
+                        "candidate_peak_val": candidate_peak_val,
+                        "candidate_peak_idx": candidate_peak_idx,
+                        "state": state,
+                    })
+                    # Same-bar non-ordering policy: bar updating peak cannot also trigger rollover
+                    continue
+                else:
+                    delta_roll = (candidate_peak_val - b_close) / candidate_peak_val if candidate_peak_val > 0 else 0.0
+                    if delta_roll >= (theta_rollover - eps_guard):
+                        current_wave_peak_val = candidate_peak_val
+                        current_wave_peak_idx = candidate_peak_idx
+
+                        eligible_lows = lows[candidate_peak_idx + 1 : j + 1]
+                        running_trough_val = min(eligible_lows)
+                        offset = eligible_lows.index(running_trough_val)
+                        running_trough_idx = candidate_peak_idx + 1 + offset
+
+                        state = "STATE_NEW_CONTRACTION"
+                        state_transitions.append({
+                            "bar_idx": j,
+                            "date": bars[j].bar_date,
+                            "event": "ROLLOVER_CONFIRMED",
+                            "wave_index": len(confirmed_waves) + 1,
+                            "locked_peak_val": current_wave_peak_val,
+                            "locked_peak_idx": current_wave_peak_idx,
+                            "running_trough_val": running_trough_val,
+                            "running_trough_idx": running_trough_idx,
+                            "state": state,
+                        })
+
+            elif state == "STATE_NEW_CONTRACTION":
+                if b_low < running_trough_val:
+                    running_trough_val = b_low
+                    running_trough_idx = j
+                    state_transitions.append({
+                        "bar_idx": j,
+                        "date": bars[j].bar_date,
+                        "event": "NEW_LOWER_LOW_RESET",
+                        "trough_val": running_trough_val,
+                        "trough_idx": running_trough_idx,
+                        "state": state,
+                    })
+                else:
+                    elapsed = j - running_trough_idx
+                    delta_rec = (b_close - running_trough_val) / running_trough_val if running_trough_val > 0 else 0.0
+                    if elapsed >= theta_dur and delta_rec >= (theta_prom - eps_guard):
+                        next_depth = self.numeric_contract.compute_contraction_depth(current_wave_peak_val, running_trough_val)
+                        wave_record = {
+                            "wave_index": len(confirmed_waves) + 1,
+                            "start_idx": current_wave_peak_idx,
+                            "trough_idx": running_trough_idx,
+                            "peak_date": bars[current_wave_peak_idx].bar_date,
+                            "trough_date": bars[running_trough_idx].bar_date,
+                            "peak_price": self.numeric_contract.round_price(current_wave_peak_val),
+                            "trough_price": self.numeric_contract.round_price(running_trough_val),
+                            "depth_pct": next_depth,
+                            "duration_bars": running_trough_idx - current_wave_peak_idx + 1,
+                            "confirmation_idx": j,
+                            "confirmation_date": bars[j].bar_date,
+                        }
+                        confirmed_waves.append(wave_record)
+                        depths.append(next_depth)
+
+                        state = "STATE_CONFIRMED_REBOUND"
+                        post_trough_highs = highs[running_trough_idx + 1 : j + 1]
+                        candidate_peak_val = max(post_trough_highs)
+                        offset = post_trough_highs.index(candidate_peak_val)
+                        candidate_peak_idx = running_trough_idx + 1 + offset
+
+                        state_transitions.append({
+                            "bar_idx": j,
+                            "date": bars[j].bar_date,
+                            "event": "WAVE_CONFIRMED",
+                            "wave_index": len(confirmed_waves),
+                            "confirmation_idx": j,
+                            "candidate_peak_val": candidate_peak_val,
+                            "candidate_peak_idx": candidate_peak_idx,
+                            "state": state,
+                        })
+
+        metadata["confirmed_wave_records"] = copy.deepcopy(confirmed_waves)
+        metadata["state_transitions"] = state_transitions
+        metadata["final_state"] = state
+
+        if state == "STATE_CONFIRMED_REBOUND":
+            metadata["final_trough_confirmed"] = True if confirmed_waves else False
+            metadata["final_trough_conf_date"] = bars[confirmed_waves[-1]["confirmation_idx"]].bar_date if confirmed_waves else None
+            metadata["provisional_wave"] = {
+                "wave_index": len(confirmed_waves) + 1,
+                "candidate_peak_idx": candidate_peak_idx,
+                "candidate_peak_price": self.numeric_contract.round_price(candidate_peak_val) if candidate_peak_idx >= 0 else None,
+                "status": "PROVISIONAL_PEAK_NO_ROLLOVER",
+            }
+        elif state == "STATE_NEW_CONTRACTION":
+            metadata["final_trough_confirmed"] = False
+            metadata["reason_codes"].append("FINAL_CONTRACTION_UNFINISHED_AT_CUTOFF")
+            metadata["provisional_wave"] = {
+                "wave_index": len(confirmed_waves) + 1,
+                "candidate_peak_idx": current_wave_peak_idx,
+                "candidate_peak_price": self.numeric_contract.round_price(current_wave_peak_val),
+                "running_trough_idx": running_trough_idx,
+                "running_trough_price": self.numeric_contract.round_price(running_trough_val),
+                "status": "UNFINISHED_DOWNSWING_AT_CUTOFF",
+            }
+        elif state == "STATE_WAVE_1_DOWNSWING":
+            metadata["final_trough_confirmed"] = False
+            metadata["reason_codes"].append("INSUFFICIENT_CONFIRMED_CONTRACTIONS")
+            metadata["provisional_wave"] = {
+                "wave_index": 1,
+                "candidate_peak_idx": current_wave_peak_idx,
+                "candidate_peak_price": self.numeric_contract.round_price(current_wave_peak_val),
+                "running_trough_idx": running_trough_idx,
+                "running_trough_price": self.numeric_contract.round_price(running_trough_val),
+                "status": "WAVE_1_UNCONFIRMED_AT_CUTOFF",
+            }
+
+        if depths and depths[0] < theta_d1:
+            metadata["reason_codes"].append("INITIAL_CONTRACTION_TOO_SHALLOW")
+
+        return confirmed_waves, depths, metadata
 
     def evaluate_predicates(self, obs: VCPObservation) -> Dict[str, PredicateResult]:
         """Evaluates all normative and supporting predicates against the observation."""

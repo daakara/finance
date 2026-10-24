@@ -30,6 +30,7 @@ interface PreFlightChecklistModalProps {
     sourceName?: string | null;
     confirmationStatus?: "CONFIRMED" | "ESTIMATED" | "UNVERIFIED" | null;
     coverageStatus?: string | null;
+    freshnessStatus?: "LIVE" | "STALE" | "EXPIRED" | string | null;
     riskTier?: string | null;
     isEstimate?: boolean | null;
   } | null;
@@ -174,32 +175,65 @@ export default function PreFlightChecklistModal({
   // Mandatory Fail-Closed Rule: PARTIAL_EVIDENCE => NOT_CERTIFIED. Must be COMPLETE to PASS.
   const isCapitalRiskPassed = isPriceValid && capitalRiskEvidenceState === "COMPLETE" && !isCapitalRiskFailed && isDistributionTrap !== true;
 
-  // Check 4: Catalyst Hazard Buffer (Fail-Closed 4-State Model)
-  // PASS: Fresh, adequate evidence confirms no event within configured risk window (>7d or past elapsed).
-  // WARN: A relevant upcoming event is identified (<= 7 days to binary event).
-  // UNAVAILABLE: Coverage is absent, stale, invalid or insufficient (Never fake-pass).
-  // ERROR: Technical evaluation error.
+  // Check 4: Catalyst Hazard Buffer (Fail-Closed Positive Verification Model)
+  // PASS: Verified forward coverage in allowlist, verified LIVE freshness, runway > 7d, and nonhazardous risk tier.
+  // WARN: Imminent binary event (<= 7 days) OR authoritative source hazard / preflight_state WARN.
+  // UNAVAILABLE: Coverage absent, unverified, stale, elapsed-only, or missing mandatory fields.
+  // ERROR: Technical evaluation or provider error.
   const resolvedCatalystState: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR" = (() => {
-    if (catalystState) return catalystState;
+    // 1. Explicit error states
+    if (
+      catalystState === "ERROR" ||
+      catalystEvidence?.state === "ERROR" ||
+      (catalystEvidence as any)?.preflightState === "ERROR"
+    ) {
+      return "ERROR";
+    }
 
+    // 2. Freshness check: Stale or unverified freshness fails closed to UNAVAILABLE
+    if (catalystEvidence?.freshnessStatus && catalystEvidence.freshnessStatus !== "LIVE") {
+      return "UNAVAILABLE";
+    }
+
+    // 3. Source hazard / Imminent hazard check (Precedence over forward runway)
+    if (
+      hasImminentEarnings === true ||
+      catalystEvidence?.state === "WARN" ||
+      (catalystEvidence as any)?.preflightState === "WARN" ||
+      (catalystEvidence?.riskTier && catalystEvidence.riskTier !== "NORMAL_RUNWAY" && catalystEvidence.riskTier !== "UNVERIFIED_RISK")
+    ) {
+      return "WARN";
+    }
+
+    // 4. Evidence-backed evaluation with Positive Allowlist
     if (catalystEvidence) {
-      if (catalystEvidence.state) return catalystEvidence.state;
       const dte = catalystEvidence.daysToEarnings;
       if (typeof dte === "number" && !isNaN(dte)) {
         if (dte < 0.0) return "UNAVAILABLE"; // Invariant 3: completed historical event alone cannot establish clean forward runway
         if (dte <= 7.0) return "WARN"; // Binary event within 7-day risk window
-        return "PASS"; // Verified clean runway > 7 days backed by fresh forward coverage
+
+        const validStatuses = new Set(["CONFIRMED_UPCOMING", "ESTIMATED_UPCOMING", "COVERED"]);
+        const isCoverageValid = Boolean(catalystEvidence.coverageStatus && validStatuses.has(catalystEvidence.coverageStatus));
+        const isFresh = catalystEvidence.freshnessStatus === "LIVE";
+
+        // Required property: CHK4_PASS => VERIFIED_COVERAGE_STATUS && VERIFIED_LIVE_FRESHNESS
+        if (!isCoverageValid || !isFresh) {
+          return "UNAVAILABLE";
+        }
+
+        if (catalystEvidence.riskTier && catalystEvidence.riskTier !== "NORMAL_RUNWAY") {
+          return "WARN";
+        }
+
+        return "PASS"; // Verified clean runway > 7 days backed by verified forward coverage & LIVE freshness
       }
       if (catalystEvidence.coverageStatus === "DATA_UNAVAILABLE" || catalystEvidence.coverageStatus === "ABSENT") {
         return "UNAVAILABLE";
       }
     }
 
-    if (hasImminentEarnings === true) {
-      return "WARN";
-    }
-
-    // Fail-closed invariant: missing coverage must NEVER evaluate to safety PASS
+    // Fail-closed invariant: missing/unverified evidence must NEVER evaluate to safety PASS.
+    // Unverified catalystState string alone cannot manufacture clearance without verified evidence.
     return "UNAVAILABLE";
   })();
 
@@ -212,7 +246,39 @@ export default function PreFlightChecklistModal({
   const passedCount = [isRRPassed, isTrendPassed, isCapitalRiskPassed, isCatalystPassed, isMacroPassed].filter(Boolean).length;
   const convictionPct = isPriceValid ? Math.round((passedCount / 5) * 100) : 0;
   const isActionableGranted = isActionable === true;
-  const isCleared = isActionableGranted && isPriceValid && isRRValid && convictionPct >= 80 && !isStage4 && isCapitalRiskPassed && isTrendPassed;
+
+  // Fail-Closed Mandatory Clearance Contract (All 5 mandatory checks must independently reach verified PASS)
+  const mandatoryChecksVerified =
+    isRRPassed &&
+    isTrendPassed &&
+    isCapitalRiskPassed &&
+    isCatalystPassed &&
+    isMacroPassed;
+
+  const isCleared =
+    isActionableGranted &&
+    isPriceValid &&
+    isRRValid &&
+    !isStage4 &&
+    mandatoryChecksVerified;
+
+  // Active Blocker Text for Visible Semantic Clarity
+  const activeBlocker = (() => {
+    if (!isActionableGranted) return "CANONICAL SETUP NON-ACTIONABLE";
+    if (!isPriceValid || !isRRValid) return "UNVERIFIED EXECUTION LEVELS";
+    if (isStage4) return "STAGE 4 DISTRIBUTION STRUCTURE";
+    if (!isRRPassed) return "REWARD/RISK ASYMMETRY (< 2.0:1)";
+    if (!isTrendPassed) return "TECHNICAL STRUCTURE NOT CONFIRMED";
+    if (!isCapitalRiskPassed) return capitalRiskEvidenceState !== "COMPLETE" ? "CAPITAL RISK EVIDENCE INCOMPLETE" : "CAPITAL PRESERVATION DEFENSE";
+    if (!isCatalystPassed) {
+      if (resolvedCatalystState === "WARN") return "IMMINENT EARNINGS HAZARD (<= 7 DAYS)";
+      if (resolvedCatalystState === "ERROR") return "CATALYST EVALUATION ERROR";
+      if (catalystEvidence?.freshnessStatus && catalystEvidence.freshnessStatus !== "LIVE") return "STALE CATALYST COVERAGE";
+      return "CATALYST COVERAGE UNAVAILABLE";
+    }
+    if (!isMacroPassed) return !isVixValid || currentVix === null ? "VIX DATA UNAVAILABLE" : "MACRO VOLATILITY REGIME (VIX >= 26.0)";
+    return "NONE";
+  })();
 
   // Analytics — inline try/catch, no useEffect needed (stable values within a single open session)
   try {
@@ -240,7 +306,7 @@ export default function PreFlightChecklistModal({
 - **Profit Goal 2 (TP2 Runner)**: ${target2Str}
 - **Tactical Rule (Protected Trailing Transition)**: ${safeTarget !== null ? `When Profit Goal 1 ($${safeTarget.toFixed(2)}) is hit, sell 50% of position and immediately move Stop Loss on remaining 50% to purchase price ($${safePrice.toFixed(2)}) to lock in a protected trade.` : "Establish verified target levels before executing tactical scaling rules."}
 - **Setup**: ${setupPattern || "Minervini VCP Pattern"}
-- **Pre-Flight Score**: ${convictionPct}% (${isCleared ? "🟢 CLEARED" : "⚠️ NOT CLEARED — wait for better setup"})
+- **Pre-Flight Score**: ${convictionPct}% Checklist (${isCleared ? "🟢 CLEARED" : `⚠️ NOT CLEARED — ${activeBlocker}`})
 `
     : `### 📋 ARX Institutional Execution Brief: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
@@ -252,8 +318,8 @@ export default function PreFlightChecklistModal({
 - **Execution Rule (Protected Trailing Ratchet)**: ${safeTarget !== null ? `Scale 0.50x tranche @ TP1 ($${safeTarget.toFixed(2)}). Ratchet trailing stop to cost basis ($${safePrice.toFixed(2)}) to ensure protected runner convexity.` : "Establish verified target levels before executing tactical scaling rules."}
 - **Risk/Reward**: ${isRRValid ? `${safeRR.toFixed(2)} : 1.0` : "Unverified"}
 - **Setup Pattern**: ${setupPattern || "Minervini VCP"}
-- **Pre-Flight Clearance**: ${convictionPct}% — ${isCleared ? "🟢 CLEARED FOR EXECUTION" : "⚠️ CONDITIONAL / AWAIT BASE CLEARANCE"}
-- **VIX Regime**: ${currentVix !== null ? currentVix.toFixed(1) : "UNAVAILABLE"} | **Capital Risk**: ${isCapitalRiskPassed ? "PASS" : isCapitalRiskFailed ? "DETECTED" : capitalRiskEvidenceState} | **Earnings Hazard**: ${resolvedCatalystState === "PASS" ? "CLEAR" : resolvedCatalystState === "WARN" ? "ACTIVE" : resolvedCatalystState}
+- **Pre-Flight Clearance**: ${convictionPct}% Checklist — ${isCleared ? "🟢 CLEARED FOR EXECUTION" : `⚠️ NOT CLEARED (${activeBlocker})`}
+- **VIX Regime**: ${currentVix !== null ? currentVix.toFixed(1) : "UNAVAILABLE"} | **Capital Risk**: ${isCapitalRiskPassed ? "PASS" : isCapitalRiskFailed ? "DETECTED" : capitalRiskEvidenceState} | **Earnings Hazard**: ${resolvedCatalystState === "PASS" ? "CLEAR" : resolvedCatalystState === "WARN" ? "HAZARD" : resolvedCatalystState}
 `;
 
   const handleCopy = async () => {
@@ -353,8 +419,8 @@ export default function PreFlightChecklistModal({
                 {isPlain ? "Trade Readiness Score" : "Quantitative Clearance Status"}
               </span>
               <div className="text-base sm:text-lg font-extrabold flex items-center gap-1.5">
-                <span>{isCleared ? "🟢 CLEARED TO EXECUTE" : "⚠️ CONDITIONAL / NOT CLEARED"}</span>
-                <span className="text-xs font-mono font-normal">({convictionPct}% Pass)</span>
+                <span>{isCleared ? "🟢 CLEARED TO EXECUTE" : `⚠️ NOT CLEARED — ${activeBlocker}`}</span>
+                <span className="text-xs font-mono font-normal">({convictionPct}% Checklist)</span>
               </div>
             </div>
             <div className="text-right font-mono">

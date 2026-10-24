@@ -1,0 +1,56 @@
+{
+  "manifest_version": "1.0.0",
+  "description": "Cryptographic fixture manifest for VCP clean-checkout research reproducibility.",
+  "market_database_reference": {
+    "path": "data/research/market_data/bounded_150_dev_market_store.db",
+    "size_bytes": 4714496,
+    "sha256": "ab31fdffa0b8b20af714bf12becf55f9ea81d17018fdda81c77e3c7bb1ade615",
+    "origin_commit": "f6c5755 (merged to main via PR #33)"
+  },
+  "fixtures": [
+    {
+      "filename": "vcp_hva00_case_manifest.json",
+      "role": "Sealed 60-case development corpus manifest defining strata, cutoffs, and evaluation parameters.",
+      "sha256": "407fb5f7dab217501cda0b7c936f6ef894b9b4ce773153da35b142e1278b9bb7",
+      "size_bytes": 65822,
+      "candidate_version": "N/A (Corpus Manifest)",
+      "source_provenance": "HVA-00 Sealed Development Corpus (Sprint 2B/2C)",
+      "exposed_development_status": "Exposed Development Corpus (60 cases)",
+      "original_cutoff_label_preservation": "Original cutoffs and labels preserved immutable.",
+      "required_market_data_dependency": "data/research/market_data/bounded_150_dev_market_store.db"
+    },
+    {
+      "filename": "vcp_hva00_frozen_algorithm_results.json",
+      "role": "Candidate 004 frozen reference results across all 60 development cases.",
+      "sha256": "efe13e8a4672422b0e58e179c97cbdcd7b4c33937d036767eb5a011c12cc51b4",
+      "size_bytes": 310897,
+      "candidate_version": "ARX_VCP_CLASSIFIER_V1_CANDIDATE_004",
+      "source_provenance": "HVA-00 Candidate 004 Benchmark Execution",
+      "exposed_development_status": "Exposed Development Corpus (60 cases)",
+      "original_cutoff_label_preservation": "Original cutoffs and labels preserved immutable.",
+      "required_market_data_dependency": "data/research/market_data/bounded_150_dev_market_store.db"
+    },
+    {
+      "filename": "vcp_hva02_candidate_005_results.json",
+      "role": "Candidate 005 frozen reference results across all 60 development cases.",
+      "sha256": "e34863b566df0087822eff71309381c50d6f538636f52120a02b3018935d62fc",
+      "size_bytes": 318426,
+      "candidate_version": "ARX_VCP_CLASSIFIER_V1_CANDIDATE_005",
+      "source_provenance": "HVA-02 Candidate 005 Benchmark Execution",
+      "exposed_development_status": "Exposed Development Corpus (60 cases)",
+      "original_cutoff_label_preservation": "Original cutoffs and labels preserved immutable.",
+      "required_market_data_dependency": "data/research/market_data/bounded_150_dev_market_store.db"
+    },
+    {
+      "filename": "vcp_hva02_candidate_006_results.json",
+      "role": "Candidate 006 frozen reference results across all 60 development cases.",
+      "sha256": "9945108c2e0647654384be79265e6df07787f2ecb8185fdb5b49cda4e360a54a",
+      "size_bytes": 374810,
+      "candidate_version": "ARX_VCP_CLASSIFIER_V1_CANDIDATE_006",
+      "source_provenance": "ARX_VCP_RESEARCH_WAVE_FRAGMENTATION_01 Benchmark Execution",
+      "exposed_development_status": "Exposed Development Corpus (60 cases)",
+      "original_cutoff_label_preservation": "Original cutoffs and labels preserved immutable.",
+      "required_market_data_dependency": "data/research/market_data/bounded_150_dev_market_store.db"
+    }
+  ]
+}
