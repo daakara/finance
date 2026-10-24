@@ -180,9 +180,9 @@ jobs:
               sys.exit(1)
           "
 
-      - name: Phase 6 (Execution) — Execute 202-test cryptographic suite inside isolated network namespace
+      - name: Phase 6 (Execution) — Execute 214-test cryptographic suite inside isolated network namespace
         run: |
-          echo "Executing 202 cryptographic tests inside arx-airlock namespace..."
+          echo "Executing 214 cryptographic tests inside arx-airlock namespace..."
           sudo ip netns exec arx-airlock sudo -u "$(id -un)" -E env \
             "PATH=$PATH" \
             "PYTHONPATH=." \
@@ -195,6 +195,7 @@ jobs:
             $(which python) -m pytest \
               tests/test_hva01_adversarial_security.py \
               tests/test_hva01_canonical_20_scenarios.py \
+              tests/test_hva01_key_ceremony_tooling.py \
               tests/test_hva01_timestamp_wire.py \
               tests/test_hva01_wave1.py \
               tests/test_hva01_wave3_access_blinding.py \
