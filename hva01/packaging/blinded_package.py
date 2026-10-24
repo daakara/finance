@@ -7,11 +7,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from ..engine.hasher import CanonicalHasher
+
+
+METADATA_KEY_PATTERN = re.compile(r"^[a-z0-9_]{1,64}$")
 
 
 class PackageIntegrityError(ValueError):
@@ -30,6 +34,19 @@ class BlindedCase:
     chart_asset_path: str
     display_title: str
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.metadata, dict):
+            raise PackageIntegrityError(f"metadata must be a dictionary, got {type(self.metadata)}")
+        for mk, mv in self.metadata.items():
+            if not isinstance(mk, str) or not METADATA_KEY_PATTERN.match(mk):
+                raise PackageIntegrityError(
+                    f"Case '{self.case_id}' metadata key '{mk}' violates restricted pattern ^[a-z0-9_]{{1,64}}$"
+                )
+            if isinstance(mv, float) and not isinstance(mv, bool):
+                raise PackageIntegrityError(
+                    f"Case '{self.case_id}' metadata key '{mk}' has unsupported float value: {mv}"
+                )
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -100,11 +117,22 @@ class BlindedPackage:
 
             # Check inside metadata dictionary if present
             meta = item.get("metadata", {})
+            if not isinstance(meta, dict):
+                raise PackageIntegrityError(f"Case '{item.get('case_id')}' metadata must be a dictionary.")
             meta_leaks = [k for k in meta.keys() if k.lower() in cls.PROHIBITED_LEAK_KEYS]
             if meta_leaks:
                 raise PackageIntegrityError(
                     f"BLINDING_LEAK_DETECTED: Prohibited metadata key(s) {meta_leaks} in case '{item.get('case_id')}'."
                 )
+            for mk, mv in meta.items():
+                if not isinstance(mk, str) or not METADATA_KEY_PATTERN.match(mk):
+                    raise PackageIntegrityError(
+                        f"Case '{item.get('case_id')}' metadata key '{mk}' violates restricted pattern ^[a-z0-9_]{{1,64}}$"
+                    )
+                if isinstance(mv, float) and not isinstance(mv, bool):
+                    raise PackageIntegrityError(
+                        f"Case '{item.get('case_id')}' metadata key '{mk}' has unsupported float value: {mv}"
+                    )
 
             case_id = item["case_id"]
             # Validate case ID format conforms to package

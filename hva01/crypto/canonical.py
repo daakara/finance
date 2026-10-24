@@ -8,8 +8,14 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 import unicodedata
 from typing import Any, Dict, List, Union
+
+
+CANONICAL_KEY_PATTERN = re.compile(r"^[a-z0-9_-]{1,64}$")
+MAX_SAFE_INTEGER = 9007199254740991
+MIN_SAFE_INTEGER = -9007199254740991
 
 
 class CanonicalSerializationError(ValueError):
@@ -19,42 +25,48 @@ class CanonicalSerializationError(ValueError):
 
 class CanonicalJCS:
     """
-    Implements RFC 8785 JSON Canonicalization Scheme:
+    Implements RFC 8785 JSON Canonicalization Scheme under HVA-01 Restricted Contract:
     1. UTF-8 encoding with Unicode Normalization Form C (NFC).
     2. Strict lexicographic key sorting by UTF-16 code units.
-    3. IEEE 754 number serialization (no NaN, no Infinity, zero as 0, no trailing .0 for ints).
-    4. Deterministic whitespace elimination (separators=(',', ':')).
-    5. Preserved array sequence ordering.
+    3. Restricted property-name validation (^[a-z0-9_-]{1,64}$).
+    4. Restricted integer number serialization (safe range [-(2^53-1), 2^53-1]; floats unauthorized).
+    5. Deterministic whitespace elimination (separators=(',', ':')).
+    6. Preserved array sequence ordering.
     """
 
     @classmethod
     def serialize_value(cls, val: Any) -> Any:
-        """Recursively normalize and validate values according to RFC 8785."""
+        """Recursively normalize and validate values according to RFC 8785 restricted profile."""
         if val is None:
             return None
         elif isinstance(val, bool):
             return val
         elif isinstance(val, int):
+            if not (MIN_SAFE_INTEGER <= val <= MAX_SAFE_INTEGER):
+                raise CanonicalSerializationError(
+                    f"Integer value {val} exceeds IEEE 754 safe integer range [{MIN_SAFE_INTEGER}, {MAX_SAFE_INTEGER}]"
+                )
             return val
         elif isinstance(val, float):
-            if math.isnan(val) or math.isinf(val):
-                raise CanonicalSerializationError(f"RFC 8785 prohibits NaN and Infinity, got: {val}")
-            if val == 0.0:
-                return 0
-            if val.is_integer():
-                return int(val)
-            return val
+            raise CanonicalSerializationError(
+                f"Floating-point values are unauthorized in HVA-01 canonical payloads, got: {val}"
+            )
         elif isinstance(val, str):
             # NFC normalization
             return unicodedata.normalize("NFC", val)
         elif isinstance(val, (list, tuple)):
             return [cls.serialize_value(item) for item in val]
         elif isinstance(val, dict):
+            for k in val.keys():
+                if not isinstance(k, str):
+                    raise CanonicalSerializationError(f"Dictionary keys must be strings, got: {type(k)}")
             # Sort keys by UTF-16 code units
             sorted_dict = {}
             for k in sorted(val.keys(), key=lambda s: s.encode("utf-16be")):
-                if not isinstance(k, str):
-                    raise CanonicalSerializationError(f"Dictionary keys must be strings, got: {type(k)}")
+                if not CANONICAL_KEY_PATTERN.match(k):
+                    raise CanonicalSerializationError(
+                        f"Canonical property name '{k}' violates restricted schema pattern '^[a-z0-9_-]{{1,64}}$'"
+                    )
                 normalized_k = unicodedata.normalize("NFC", k)
                 sorted_dict[normalized_k] = cls.serialize_value(val[k])
             return sorted_dict
@@ -69,11 +81,12 @@ class CanonicalJCS:
     def canonicalize(cls, data: Any) -> bytes:
         """
         Serialize data to deterministic RFC 8785 canonical UTF-8 bytes.
+        Preserves the UTF-16 code unit insertion order established in serialize_value.
         """
         normalized_data = cls.serialize_value(data)
         canonical_str = json.dumps(
             normalized_data,
-            sort_keys=True,
+            sort_keys=False,
             separators=(",", ":"),
             ensure_ascii=False,
             allow_nan=False,

@@ -23,7 +23,13 @@ from typing import Any, Dict, List
 import pytest
 from cryptography.hazmat.primitives.asymmetric import ed25519
 
-from hva01.crypto.canonical import CanonicalJCS, canonical_sha256, canonicalize_json
+from hva01.crypto.canonical import (
+    CanonicalJCS,
+    CanonicalSerializationError,
+    canonical_sha256,
+    canonicalize_json,
+)
+from hva01.packaging.blinded_package import BlindedCase, PackageIntegrityError
 from hva01.crypto.merkle import (
     MerkleTree,
     build_merkle_tree,
@@ -74,7 +80,7 @@ from hva01.models.response import (
     StageClassification,
     VCPQualification,
 )
-from hva01.models.session import SessionModel
+from hva01.models.session import SessionModel, ValidationError
 from hva01.storage.append_store import AppendOnlyStore
 from hva01.allocation.engine import AllocationEngine
 
@@ -965,3 +971,160 @@ class TestCategory5EdgeCasesRecoveryAndPrivacy:
         assert canonical_genesis.strata_breakdown["positive_sensitivity"] == 15
         assert canonical_genesis.strata_breakdown["developing_controls"] == 10
         assert canonical_genesis.strata_breakdown["sufficiency_controls"] == 5
+
+
+class TestCategory6CanonicalizationAndSchemaRemediation:
+    """
+    Wave 4B-S Adversarial Regression Suite.
+    Enforces recursive ASCII property-name restriction and restricted integer numeric domain.
+    Covers all 28 adversarial cases specified under Wave 4B-S Gate E.
+    """
+
+    # --- Property-Name Validation (Cases 1 - 14) ---
+
+    def test_cs01_valid_lowercase_ascii_and_underscore_keys(self):
+        """Cases 1 & 2: Valid lowercase ASCII identifiers and underscore keys are accepted."""
+        valid_payload = {"case_id": 1, "sequence_index": 2, "rev_01": 3}
+        out = canonicalize_json(valid_payload)
+        assert out == b'{"case_id":1,"rev_01":3,"sequence_index":2}'
+
+    def test_cs02_unsupported_uppercase_property_name_rejected(self):
+        """Case 3: Uppercase property names are rejected fail-closed."""
+        with pytest.raises(CanonicalSerializationError, match="restricted schema pattern"):
+            canonicalize_json({"CASE_ID": 1})
+
+    def test_cs03_property_name_with_spaces_rejected(self):
+        """Case 4: Property names containing whitespace are rejected fail-closed."""
+        with pytest.raises(CanonicalSerializationError, match="restricted schema pattern"):
+            canonicalize_json({"case id": 1})
+
+    def test_cs04_accented_latin_property_name_rejected(self):
+        """Case 5: Accented Latin characters (e.g. café) are rejected fail-closed."""
+        with pytest.raises(CanonicalSerializationError, match="restricted schema pattern"):
+            canonicalize_json({"caf\u00e9_id": 1})
+
+    def test_cs05_supplementary_plane_unicode_property_name_rejected(self):
+        """Case 6: Supplementary-plane Unicode property names (U+10000+) are rejected fail-closed."""
+        with pytest.raises(CanonicalSerializationError, match="restricted schema pattern"):
+            canonicalize_json({"\U00010000_key": 1})
+
+    def test_cs06_emoji_property_name_rejected(self):
+        """Case 7: Emoji property names are rejected fail-closed."""
+        with pytest.raises(CanonicalSerializationError, match="restricted schema pattern"):
+            canonicalize_json({"\U0001f525_key": 1})
+
+    def test_cs07_unicode_escape_prohibited_key_rejected(self):
+        """Case 8: Unicode escape representations of prohibited keys are rejected fail-closed."""
+        with pytest.raises(CanonicalSerializationError, match="restricted schema pattern"):
+            canonicalize_json({"\\u00e9_key": 1})
+
+    def test_cs08_nested_prohibited_property_name_rejected(self):
+        """Case 9: Nested dictionaries containing prohibited property names fail closed recursively."""
+        with pytest.raises(CanonicalSerializationError, match="restricted schema pattern"):
+            canonicalize_json({"outer": {"nested_INVALID": 1}})
+
+    def test_cs09_prohibited_property_name_inside_array_rejected(self):
+        """Case 10: Dictionaries inside arrays containing prohibited property names fail closed."""
+        with pytest.raises(CanonicalSerializationError, match="restricted schema pattern"):
+            canonicalize_json({"items": [{"valid_key": 1}, {"\U0001f525": 2}]})
+
+    def test_cs10_empty_and_overlength_property_names_rejected(self):
+        """Cases 11 & 12: Empty keys and keys exceeding 64 characters are rejected fail-closed."""
+        with pytest.raises(CanonicalSerializationError, match="restricted schema pattern"):
+            canonicalize_json({"": 1})
+        with pytest.raises(CanonicalSerializationError, match="restricted schema pattern"):
+            canonicalize_json({"a" * 65: 1})
+
+    def test_cs11_non_string_mapping_key_rejected(self):
+        """Case 13: Non-string mapping keys are rejected fail-closed."""
+        with pytest.raises(CanonicalSerializationError, match="Dictionary keys must be strings"):
+            canonicalize_json({123: 1})
+
+    def test_cs12_unexpected_metadata_extension_rejected(self):
+        """Case 14: Invalid property names in open metadata containers are rejected fail-closed."""
+        with pytest.raises(ValidationError, match="Session metadata key"):
+            SessionModel(
+                session_id="HVA01-SESS-TEST",
+                protocol_version="HVA-01",
+                protocol_document_sha256="0" * 64,
+                assigned_package="PACKAGE_A",
+                package_sha256="1" * 64,
+                reviewer_pseudonym="REV-01",
+                created_at_utc="2026-10-24T10:00:00Z",
+                metadata={"Invalid Key!": 1},
+            )
+        with pytest.raises(PackageIntegrityError, match="metadata key"):
+            BlindedCase(
+                sequence_index=1,
+                case_id="HVA2-A-01",
+                chart_asset_path="charts/HVA2-A-01.svg",
+                display_title="Case 01",
+                metadata={"\U0001f525": 1},
+            )
+
+    # --- Numeric Validation (Cases 15 - 28) ---
+
+    def test_cs13_valid_numeric_integers_and_booleans(self):
+        """Cases 15, 16, 17, 25: Valid integers and booleans are serialized deterministically."""
+        assert canonicalize_json({"v": 0}) == b'{"v":0}'
+        assert canonicalize_json({"v": 12345}) == b'{"v":12345}'
+        assert canonicalize_json({"v": -99}) == b'{"v":-99}'
+        assert canonicalize_json({"v_true": True, "v_false": False}) == b'{"v_false":false,"v_true":true}'
+
+    def test_cs14_floating_point_numbers_rejected_fail_closed(self):
+        """Cases 18, 19, 20, 21, 22: All floating-point numbers are rejected fail-closed."""
+        with pytest.raises(CanonicalSerializationError, match="Floating-point values are unauthorized"):
+            canonicalize_json({"v": 1.0})
+        with pytest.raises(CanonicalSerializationError, match="Floating-point values are unauthorized"):
+            canonicalize_json({"v": -0.0})
+        with pytest.raises(CanonicalSerializationError, match="Floating-point values are unauthorized"):
+            canonicalize_json({"v": 0.01})
+        with pytest.raises(CanonicalSerializationError, match="Floating-point values are unauthorized"):
+            canonicalize_json({"v": 1e-6})
+        with pytest.raises(CanonicalSerializationError, match="Floating-point values are unauthorized"):
+            canonicalize_json({"v": 1e20})
+
+    def test_cs15_non_finite_floating_point_rejected(self):
+        """Cases 23 & 24: NaN and Infinity are rejected fail-closed."""
+        with pytest.raises(CanonicalSerializationError, match="Floating-point values are unauthorized"):
+            canonicalize_json({"v": float("nan")})
+        with pytest.raises(CanonicalSerializationError, match="Floating-point values are unauthorized"):
+            canonicalize_json({"v": float("inf")})
+        with pytest.raises(CanonicalSerializationError, match="Floating-point values are unauthorized"):
+            canonicalize_json({"v": float("-inf")})
+
+    def test_cs16_nested_unsupported_float_rejected(self):
+        """Case 26: Nested floating-point values fail closed recursively."""
+        with pytest.raises(CanonicalSerializationError, match="Floating-point values are unauthorized"):
+            canonicalize_json({"metrics": {"outer": [1, 2, {"inner_float": 92.5}]}})
+
+    def test_cs17_numeric_float_in_open_metadata_rejected(self):
+        """Case 27: Floating-point numbers in model metadata containers are rejected fail-closed."""
+        with pytest.raises(ValidationError, match="unsupported float value"):
+            SessionModel(
+                session_id="HVA01-SESS-TEST",
+                protocol_version="HVA-01",
+                protocol_document_sha256="0" * 64,
+                assigned_package="PACKAGE_A",
+                package_sha256="1" * 64,
+                reviewer_pseudonym="REV-01",
+                created_at_utc="2026-10-24T10:00:00Z",
+                metadata={"metric_float": 99.5},
+            )
+        with pytest.raises(PackageIntegrityError, match="unsupported float value"):
+            BlindedCase(
+                sequence_index=1,
+                case_id="HVA2-A-01",
+                chart_asset_path="charts/HVA2-A-01.svg",
+                display_title="Case 01",
+                metadata={"confidence": 0.85},
+            )
+
+    def test_cs18_attestation_input_float_rejected(self):
+        """Case 28: Attestation inputs containing floating-point values are rejected fail-closed."""
+        with pytest.raises(CanonicalSerializationError, match="Floating-point values are unauthorized"):
+            canonicalize_json({
+                "leaf_count": 59.0,
+                "merkle_root": "sha256:" + "0" * 64,
+                "session_id": "HVA01-SESS-01",
+            })

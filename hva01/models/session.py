@@ -28,6 +28,7 @@ SESSION_ID_PATTERN = re.compile(r"^HVA01-SESS-[A-Z0-9_-]{4,64}$")
 REVIEWER_PSEUDONYM_PATTERN = re.compile(r"^(SYNTH-REV|REV)-[A-Z0-9_-]{2,32}$")
 SHA256_HEX_PATTERN = re.compile(r"^[a-f0-9]{64}$")
 EMAIL_PATTERN = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
+METADATA_KEY_PATTERN = re.compile(r"^[a-z0-9_]{1,64}$")
 
 
 class ValidationError(ValueError):
@@ -94,6 +95,17 @@ class SessionModel:
                 datetime.fromisoformat(self.expiry_utc.replace("Z", "+00:00"))
             except (ValueError, TypeError) as exc:
                 raise ValidationError(f"Invalid expiry_utc timestamp: {self.expiry_utc}") from exc
+
+        # Validate metadata schema and numeric domain
+        if not isinstance(self.metadata, dict):
+            raise ValidationError(f"metadata must be a dictionary, got {type(self.metadata)}")
+        for mk, mv in self.metadata.items():
+            if not isinstance(mk, str) or not METADATA_KEY_PATTERN.match(mk):
+                raise ValidationError(
+                    f"Session metadata key '{mk}' violates restricted schema pattern ^[a-z0-9_]{{1,64}}$"
+                )
+            if isinstance(mv, float) and not isinstance(mv, bool):
+                raise ValidationError(f"Session metadata key '{mk}' has unsupported float value: {mv}")
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         """Return a sorted-key dictionary representation suitable for canonical hashing."""
