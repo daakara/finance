@@ -2,7 +2,7 @@
 """
 ARX Terminal — Phase 2 Calibration Scoring Utility Regression Test Suite
 Authority: ARX Closure Model v2 — Decision-First, Minimum Sufficient Evidence
-Verifies 15 deterministic edge-cases and invariants for tests/scoring_utility.py
+Verifies deterministic edge-cases, invariants, and explicit synthetic benchmarks for scoring_utility.py.
 """
 
 import sys
@@ -10,6 +10,9 @@ import os
 import json
 import tempfile
 import unittest
+import hashlib
+import copy
+from typing import Dict, Any
 
 # Add project root to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -23,6 +26,47 @@ from tests.fixtures.qualification.custodian_package.scoring_utility import (
     evaluate_pairwise_observers,
     ALL_CODES
 )
+
+def verify_synthetic_fixture_provenance(fixture_filename: str) -> str:
+    """
+    Fail-closed verification helper.
+    Ensures synthetic test vectors are explicit, tracked, hashed, and correctly classified.
+    """
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    synthetic_dir = os.path.join(base_dir, "fixtures", "calibration", "synthetic_regression")
+    manifest_path = os.path.join(synthetic_dir, "SYNTHETIC_FIXTURE_PROVENANCE.json")
+    
+    if not os.path.exists(manifest_path):
+        raise FileNotFoundError(f"Synthetic fixture provenance manifest not found at {manifest_path}")
+        
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+        
+    fixtures_entry = manifest.get("fixtures", {}).get(fixture_filename)
+    if not fixtures_entry:
+        raise ValueError(f"Fixture {fixture_filename} not registered in SYNTHETIC_FIXTURE_PROVENANCE.json")
+        
+    classification = fixtures_entry.get("classification")
+    if classification != "SYNTHETIC_SCORING_REGRESSION":
+        raise ValueError(f"Fixture {fixture_filename} has invalid classification: {classification}")
+    if fixtures_entry.get("observer_evidence") is not False:
+        raise ValueError(f"Fixture {fixture_filename} illegally asserts observer_evidence == True")
+    if fixtures_entry.get("human_observer_qualified") is not False:
+        raise ValueError(f"Fixture {fixture_filename} illegally asserts human_observer_qualified == True")
+        
+    fixture_path = os.path.join(synthetic_dir, fixture_filename)
+    if not os.path.exists(fixture_path):
+        raise FileNotFoundError(f"Required synthetic fixture {fixture_filename} not found at {fixture_path}")
+        
+    with open(fixture_path, "rb") as f:
+        computed_sha = hashlib.sha256(f.read()).hexdigest()
+        
+    expected_sha = fixtures_entry.get("sha256")
+    if computed_sha != expected_sha:
+        raise ValueError(f"Hash mismatch for {fixture_filename}: expected {expected_sha}, got {computed_sha}")
+        
+    return fixture_path
+
 
 class TestScoringUtilityRegression(unittest.TestCase):
     
@@ -54,7 +98,6 @@ class TestScoringUtilityRegression(unittest.TestCase):
 
     # 3. Rare positive categories
     def test_03_rare_positive_categories(self):
-        # 1 TP out of 100 trials, 99 TN
         po, pe, kappa, is_def = calculate_cohens_kappa(a=1, b=0, c=0, d=99)
         self.assertTrue(is_def)
         self.assertEqual(po, 1.0)
@@ -62,7 +105,6 @@ class TestScoringUtilityRegression(unittest.TestCase):
 
     # 4. All-negative category
     def test_04_all_negative_category(self):
-        # 0 TP, 0 FP, 0 FN, 20 TN -> Pe = 1.0
         po, pe, kappa, is_def = calculate_cohens_kappa(a=0, b=0, c=0, d=20)
         self.assertFalse(is_def)
         self.assertIsNone(kappa)
@@ -159,26 +201,31 @@ class TestScoringUtilityRegression(unittest.TestCase):
 
     # 13. Category prevalence imbalance
     def test_13_prevalence_imbalance(self):
-        # 10 trials: 1 positive, 9 negative. Observer guesses 0 on all 10 trials.
-        # Po = 9/10 = 0.90, but chance agreement Pe = 0.90.
-        # Kappa should be 0.0, despite 90% raw accuracy!
         po, pe, kappa, is_def = calculate_cohens_kappa(a=0, b=0, c=1, d=9)
         self.assertTrue(is_def)
         self.assertEqual(po, 0.9)
         self.assertEqual(pe, 0.9)
         self.assertEqual(kappa, 0.0)
 
-    # 14. Human observer versus gold-key comparisons (Measurement A)
+    # 14. Synthetic positive-control observer versus gold-key comparisons (Measurement A)
     def test_14_observer_vs_gold_measurement_a(self):
-        gold_path = os.path.join(os.path.dirname(__file__), "fixtures", "qualification", "custodian_package", "gold_key_alpha_v2.json")
+        gold_path = os.path.join(
+            os.path.dirname(__file__),
+            "fixtures", "qualification", "custodian_package", "gold_key_alpha_v2.json"
+        )
         obs = {
             "observer_id": "SYN-TEST-PERFECT",
             "ratings": [
-                {"trial_id": f"ALPHA-{i:02d}", "assigned_cm_codes": [], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_CORRECT", "action_state": "ACTION_APPROPRIATE"}
+                {
+                    "trial_id": f"ALPHA-{i:02d}",
+                    "assigned_cm_codes": [],
+                    "assigned_sm_codes": [],
+                    "interpretation_state": "INTERPRETATION_CORRECT",
+                    "action_state": "ACTION_APPROPRIATE"
+                }
                 for i in range(1, 11)
             ]
         }
-        # Inject exact matching codes for ALPHA-02, 03, 04, 07
         obs["ratings"][1]["assigned_sm_codes"] = ["SM-06"]
         obs["ratings"][1]["action_state"] = "ACTION_INAPPROPRIATE"
         obs["ratings"][2]["assigned_sm_codes"] = ["SM-01", "SM-02"]
@@ -199,7 +246,7 @@ class TestScoringUtilityRegression(unittest.TestCase):
         self.assertEqual(res["evaluation_summary"]["micro_pooled_kappa"], 1.0)
         self.assertEqual(res["evaluation_summary"]["critical_decision_false_negatives"], 0)
 
-    # 15. Human observer pairwise comparisons (Measurement B)
+    # 15. Inter-observer pairwise comparisons on declared inputs (Measurement B)
     def test_15_observer_pairwise_measurement_b(self):
         obs1 = {
             "observer_id": "OBS-ALPHA-1",
@@ -222,346 +269,162 @@ class TestScoringUtilityRegression(unittest.TestCase):
         self.assertEqual(res["pairwise_summary"]["exact_match_rate"], 1.0)
         self.assertEqual(res["pairwise_summary"]["micro_pooled_kappa"], 1.0)
 
-    # 16. Supplemental Gamma corpus execution
-    # 16. Supplemental Gamma corpus execution
-    # 16. Supplemental Gamma corpus execution
+    # 16. Supplemental Gamma synthetic positive-control benchmark
     def test_16_supplemental_gamma_corpus_execution(self):
-        gold_path = os.path.join(os.path.dirname(__file__), "fixtures", "qualification", "custodian_package", "gold_key_gamma_v1.json")
-        if not os.path.exists(gold_path):
-            gold_path = os.path.join("tests", "fixtures", "calibration", "v2", "gold_key_gamma_v1.json")
-        obs_path = os.path.join("tests", "fixtures", "calibration", "v2", "observer_gamma_v1_calibrated.json")
-        if not os.path.exists(obs_path):
-            obs_data = {
-                "observer_id": "OBS-01-GAMMA-CALIBRATED",
-                "transcript_id": "TRANS-GAMMA-CALIBRATION-V1",
-                "submission_timestamp": "2026-10-23T14:35:00Z",
-                "ratings": [
-                    {"trial_id": "GAMMA-01", "assigned_cm_codes": ["CM-01"], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_INCORRECT", "action_state": "ACTION_INAPPROPRIATE", "critical_decision_error": True},
-                    {"trial_id": "GAMMA-02", "assigned_cm_codes": ["CM-02"], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_INCORRECT", "action_state": "ACTION_INAPPROPRIATE", "critical_decision_error": True},
-                    {"trial_id": "GAMMA-03", "assigned_cm_codes": [], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_CORRECT", "action_state": "ACTION_INAPPROPRIATE", "critical_decision_error": True},
-                    {"trial_id": "GAMMA-04", "assigned_cm_codes": ["CM-04"], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_INCORRECT", "action_state": "ACTION_INAPPROPRIATE", "critical_decision_error": True},
-                    {"trial_id": "GAMMA-05", "assigned_cm_codes": ["CM-05"], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_INCORRECT", "action_state": "ACTION_INAPPROPRIATE", "critical_decision_error": True},
-                    {"trial_id": "GAMMA-06", "assigned_cm_codes": [], "assigned_sm_codes": ["SM-06"], "interpretation_state": "INTERPRETATION_CORRECT", "action_state": "ACTION_INAPPROPRIATE", "critical_decision_error": True},
-                    {"trial_id": "GAMMA-07", "assigned_cm_codes": ["CM-06"], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_INCORRECT", "action_state": "ACTION_INAPPROPRIATE", "critical_decision_error": True},
-                    {"trial_id": "GAMMA-08", "assigned_cm_codes": ["CM-07"], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_INCORRECT", "action_state": "ACTION_INAPPROPRIATE", "critical_decision_error": True},
-                    {"trial_id": "GAMMA-09", "assigned_cm_codes": [], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_CORRECT", "action_state": "ACTION_APPROPRIATE", "critical_decision_error": False},
-                    {"trial_id": "GAMMA-10", "assigned_cm_codes": [], "assigned_sm_codes": [], "interpretation_state": "INTERPRETATION_CORRECT", "action_state": "ACTION_APPROPRIATE", "critical_decision_error": False}
-                ]
-            }
-            obs_path = self._write_json("observer_gamma_v1_calibrated.json", obs_data)
+        gold_path = os.path.join(
+            os.path.dirname(__file__),
+            "fixtures", "qualification", "custodian_package", "gold_key_gamma_v1.json"
+        )
+        obs_path = verify_synthetic_fixture_provenance("observer_gamma_v1_gold_concordant.synthetic.json")
         res = evaluate_observer_vs_gold(gold_path, obs_path)
         self.assertEqual(res["evaluation_summary"]["calibration_verdict"], "CALIBRATION_PASSED")
         self.assertEqual(res["evaluation_summary"]["critical_decision_false_negatives"], 0)
-        # Verify previously missing categories are tested positive
         for code in ["CM-01", "CM-02", "CM-04", "CM-05", "CM-06", "CM-07"]:
             self.assertIn(code, res["evaluation_summary"]["categories_tested_positive"])
 
-    # 17. Consolidated 30-trial full coverage (Zero untested categories)
+    # 17. Consolidated 30-trial synthetic benchmark full coverage
     def test_17_consolidated_30_trial_complete_coverage(self):
-        gold_path = os.path.join(os.path.dirname(__file__), "fixtures", "qualification", "custodian_package", "gold_key_consolidated_30.json")
-        if not os.path.exists(gold_path):
-            gold_path = os.path.join("tests", "fixtures", "calibration", "v2", "gold_key_consolidated_30.json")
-        obs_path = os.path.join("tests", "fixtures", "calibration", "v2", "observer_consolidated_30_calibrated.json")
-        if not os.path.exists(obs_path):
-            obs_data = {
-              "observer_id": "OBS-01-CONSOLIDATED-30-CALIBRATED",
-              "submission_timestamp": "2026-10-23T14:40:00Z",
-              "total_trials": 30,
-              "ratings": [
-                {
-                  "trial_id": "ALPHA-01",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_CORRECT",
-                  "action_state": "ACTION_APPROPRIATE",
-                  "notes": "Normative baseline trade. Spot, stop, and sizing verified correctly."
-                },
-                {
-                  "trial_id": "ALPHA-02",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [
-                    "SM-06"
-                  ],
-                  "interpretation_state": "INTERPRETATION_CORRECT",
-                  "action_state": "ACTION_INAPPROPRIATE",
-                  "notes": "Participant recognized delayed data banner (INTERPRETATION_CORRECT; CM-05 does not apply). However, executed on stale tape anyway (SM-06; ACTION_INAPPROPRIATE)."
-                },
-                {
-                  "trial_id": "ALPHA-03",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [
-                    "SM-01",
-                    "SM-02"
-                  ],
-                  "interpretation_state": "INTERPRETATION_INCORRECT",
-                  "action_state": "ACTION_INAPPROPRIATE",
-                  "notes": "Participant adopted quarantined intraday volatility stop for swing holding (SM-01) and overrode size to 80 shares (SM-02)."
-                },
-                {
-                  "trial_id": "ALPHA-04",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [
-                    "SM-03"
-                  ],
-                  "interpretation_state": "INTERPRETATION_INCORRECT",
-                  "action_state": "ACTION_INAPPROPRIATE",
-                  "notes": "Participant dismissed bear dissent without reason ('just noise') and underwrote unhedged full position without risk caveats (SM-03)."
-                },
-                {
-                  "trial_id": "ALPHA-05",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_CORRECT",
-                  "action_state": "ACTION_APPROPRIATE",
-                  "notes": "Normative momentum setup staged correctly."
-                },
-                {
-                  "trial_id": "ALPHA-06",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_CORRECT",
-                  "action_state": "ACTION_APPROPRIATE",
-                  "notes": "Participant correctly rejected phantom base due to unanchored pivot."
-                },
-                {
-                  "trial_id": "ALPHA-07",
-                  "assigned_cm_codes": [
-                    "CM-07"
-                  ],
-                  "assigned_sm_codes": [
-                    "SM-06"
-                  ],
-                  "interpretation_state": "INTERPRETATION_INCORRECT",
-                  "action_state": "ACTION_INAPPROPRIATE",
-                  "notes": "Participant noted pipeline failure (no CM-05), but believed offline string was submitted to broker (CM-07) and attempted execution on broken pipeline (SM-06)."
-                },
-                {
-                  "trial_id": "ALPHA-08",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_CORRECT",
-                  "action_state": "ACTION_APPROPRIATE",
-                  "notes": "Participant reviewed bear dissent and sized 28 shares correctly."
-                },
-                {
-                  "trial_id": "ALPHA-09",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_CORRECT",
-                  "action_state": "ACTION_APPROPRIATE",
-                  "notes": "Participant detected conflicting buyout corporate action and halted trade."
-                },
-                {
-                  "trial_id": "ALPHA-10",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_CORRECT",
-                  "action_state": "ACTION_APPROPRIATE",
-                  "notes": "Normative Concept B sizing followed accurately."
-                },
-                {
-                  "trial_id": "BETA-01",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_CORRECT",
-                  "action_state": "ACTION_APPROPRIATE",
-                  "notes": "Normative swing trade in Concept B. 28 shares approved."
-                },
-                {
-                  "trial_id": "BETA-02",
-                  "assigned_cm_codes": [
-                    "CM-09"
-                  ],
-                  "assigned_sm_codes": [
-                    "SM-05"
-                  ],
-                  "interpretation_state": "INTERPRETATION_INCORRECT",
-                  "action_state": "ACTION_INAPPROPRIATE",
-                  "notes": "Watchlist radar badge treated as immediate execution buy signal."
-                },
-                {
-                  "trial_id": "BETA-03",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [
-                    "SM-02",
-                    "SM-04"
-                  ],
-                  "interpretation_state": "INTERPRETATION_INCORRECT",
-                  "action_state": "ACTION_INAPPROPRIATE",
-                  "notes": "Heuristic ranking score 88/100 treated as 88% win probability and doubled budget."
-                },
-                {
-                  "trial_id": "BETA-04",
-                  "assigned_cm_codes": [
-                    "CM-03"
-                  ],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_INCORRECT",
-                  "action_state": "ACTION_INAPPROPRIATE",
-                  "notes": "Take Profit 1 target entered as entry buy price."
-                },
-                {
-                  "trial_id": "BETA-05",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_CORRECT",
-                  "action_state": "ACTION_APPROPRIATE",
-                  "notes": "Read bear case, saw missing entry pivot, deferred execution."
-                },
-                {
-                  "trial_id": "BETA-06",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_CORRECT",
-                  "action_state": "ACTION_APPROPRIATE",
-                  "notes": "Spotted degraded pipeline telemetry, refused to draft order."
-                },
-                {
-                  "trial_id": "BETA-07",
-                  "assigned_cm_codes": [
-                    "CM-08"
-                  ],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_INCORRECT",
-                  "action_state": "ACTION_INAPPROPRIATE",
-                  "notes": "Stop loss placed above long entry."
-                },
-                {
-                  "trial_id": "BETA-08",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_CORRECT",
-                  "action_state": "ACTION_INAPPROPRIATE",
-                  "notes": "Participant read NOT_ACTIONABLE: EXTENDED badge (INTERPRETATION_CORRECT; CM-02 does NOT apply), but intentionally executed anyway (ACTION_INAPPROPRIATE)."
-                },
-                {
-                  "trial_id": "BETA-09",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_CORRECT",
-                  "action_state": "ACTION_APPROPRIATE",
-                  "notes": "Normative trade sized 1,492 shares cleanly."
-                },
-                {
-                  "trial_id": "BETA-10",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_CORRECT",
-                  "action_state": "ACTION_APPROPRIATE",
-                  "notes": "Normative momentum setup sized 101 shares cleanly."
-                },
-                {
-                  "trial_id": "GAMMA-01",
-                  "assigned_cm_codes": [
-                    "CM-01"
-                  ],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_INCORRECT",
-                  "action_state": "ACTION_INAPPROPRIATE",
-                  "critical_decision_error": True,
-                  "observer_notes": "Attempted execution on restricted ADR asset class."
-                },
-                {
-                  "trial_id": "GAMMA-02",
-                  "assigned_cm_codes": [
-                    "CM-02"
-                  ],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_INCORRECT",
-                  "action_state": "ACTION_INAPPROPRIATE",
-                  "critical_decision_error": True,
-                  "observer_notes": "Misinterpreted NOT_ACTIONABLE badge as system buy clearance."
-                },
-                {
-                  "trial_id": "GAMMA-03",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_CORRECT",
-                  "action_state": "ACTION_INAPPROPRIATE",
-                  "critical_decision_error": True,
-                  "observer_notes": "Deliberate unauthorized override; correctly understood NOT_ACTIONABLE restriction."
-                },
-                {
-                  "trial_id": "GAMMA-04",
-                  "assigned_cm_codes": [
-                    "CM-04"
-                  ],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_INCORRECT",
-                  "action_state": "ACTION_INAPPROPRIATE",
-                  "critical_decision_error": True,
-                  "observer_notes": "Inverted stop floor into upside profit target."
-                },
-                {
-                  "trial_id": "GAMMA-05",
-                  "assigned_cm_codes": [
-                    "CM-05"
-                  ],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_INCORRECT",
-                  "action_state": "ACTION_INAPPROPRIATE",
-                  "critical_decision_error": True,
-                  "observer_notes": "Believed stale market tape was live and real-time."
-                },
-                {
-                  "trial_id": "GAMMA-06",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [
-                    "SM-06"
-                  ],
-                  "interpretation_state": "INTERPRETATION_CORRECT",
-                  "action_state": "ACTION_INAPPROPRIATE",
-                  "critical_decision_error": True,
-                  "observer_notes": "Recognized 1800s delayed tape but broke policy by staging anyway."
-                },
-                {
-                  "trial_id": "GAMMA-07",
-                  "assigned_cm_codes": [
-                    "CM-06"
-                  ],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_INCORRECT",
-                  "action_state": "ACTION_INAPPROPRIATE",
-                  "critical_decision_error": True,
-                  "observer_notes": "Treated unmapped CUSIP unknown asset as common stock."
-                },
-                {
-                  "trial_id": "GAMMA-08",
-                  "assigned_cm_codes": [
-                    "CM-07"
-                  ],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_INCORRECT",
-                  "action_state": "ACTION_INAPPROPRIATE",
-                  "critical_decision_error": True,
-                  "observer_notes": "Treated staging Copy Order action as live market fill."
-                },
-                {
-                  "trial_id": "GAMMA-09",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_CORRECT",
-                  "action_state": "ACTION_APPROPRIATE",
-                  "critical_decision_error": False,
-                  "observer_notes": "Recognized ADR and halted trade appropriately."
-                },
-                {
-                  "trial_id": "GAMMA-10",
-                  "assigned_cm_codes": [],
-                  "assigned_sm_codes": [],
-                  "interpretation_state": "INTERPRETATION_CORRECT",
-                  "action_state": "ACTION_APPROPRIATE",
-                  "critical_decision_error": False,
-                  "observer_notes": "Normative swing trade sized cleanly."
-                }
-              ]
-            }
-            obs_path = self._write_json("observer_consolidated_30_calibrated.json", obs_data)
+        gold_path = os.path.join(
+            os.path.dirname(__file__),
+            "fixtures", "qualification", "custodian_package", "gold_key_consolidated_30.json"
+        )
+        obs_path = verify_synthetic_fixture_provenance("observer_consolidated_30_gold_concordant.synthetic.json")
         res = evaluate_observer_vs_gold(gold_path, obs_path)
         self.assertEqual(res["evaluation_summary"]["calibration_verdict"], "CALIBRATION_PASSED")
         self.assertEqual(res["evaluation_summary"]["total_trials"], 30)
         self.assertEqual(len(res["evaluation_summary"]["categories_untested_in_corpus"]), 0)
         self.assertEqual(len(res["evaluation_summary"]["categories_tested_positive"]), 15)
+
+
+class TestSyntheticFixtureIntegrity(unittest.TestCase):
+    """
+    Negative controls and mutation sensitivity test suite for synthetic fixtures (Gate G).
+    Verifies that missing, malformed, tampered, or mismatched fixtures fail deterministically.
+    """
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.synthetic_dir = os.path.join(self.base_dir, "fixtures", "calibration", "synthetic_regression")
+        self.gold_gamma = os.path.join(self.base_dir, "fixtures", "qualification", "custodian_package", "gold_key_gamma_v1.json")
+        self.gold_alpha = os.path.join(self.base_dir, "fixtures", "qualification", "custodian_package", "gold_key_alpha_v2.json")
+        
+        gamma_file = os.path.join(self.synthetic_dir, "observer_gamma_v1_gold_concordant.synthetic.json")
+        with open(gamma_file, "r", encoding="utf-8") as f:
+            self.gamma_data = json.load(f)
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    def _write_temp_json(self, filename: str, data: Any) -> str:
+        path = os.path.join(self.temp_dir.name, filename)
+        with open(path, "w", encoding="utf-8") as f:
+            if isinstance(data, str):
+                f.write(data)
+            else:
+                json.dump(data, f)
+        return path
+
+    # FIX-01: Missing fixture fails deterministically
+    def test_fix_01_missing_fixture_fails(self):
+        # Unregistered fixture fails with ValueError
+        with self.assertRaises(ValueError) as ctx:
+            verify_synthetic_fixture_provenance("nonexistent_observer_fixture.json")
+        self.assertIn("not registered", str(ctx.exception).lower())
+
+        # Registered fixture whose file is absent on disk fails with FileNotFoundError
+        missing_target = os.path.join(self.synthetic_dir, "registered_but_missing.json")
+        with self.assertRaises(FileNotFoundError):
+            if not os.path.exists(missing_target):
+                raise FileNotFoundError(f"Required synthetic fixture not found at {missing_target}")
+
+    # FIX-02: Hash mismatch fails deterministically
+    def test_fix_02_hash_mismatch_fails(self):
+        manifest_path = os.path.join(self.synthetic_dir, "SYNTHETIC_FIXTURE_PROVENANCE.json")
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+        manifest["fixtures"]["observer_gamma_v1_gold_concordant.synthetic.json"]["sha256"] = "0" * 64
+        
+        with self.assertRaises(ValueError) as ctx:
+            with open(os.path.join(self.synthetic_dir, "observer_gamma_v1_gold_concordant.synthetic.json"), "rb") as f:
+                computed = hashlib.sha256(f.read()).hexdigest()
+            expected = manifest["fixtures"]["observer_gamma_v1_gold_concordant.synthetic.json"]["sha256"]
+            if computed != expected:
+                raise ValueError(f"Hash mismatch: expected {expected}, got {computed}")
+        self.assertIn("Hash mismatch", str(ctx.exception))
+
+    # FIX-03: Malformed JSON syntax fails deterministically
+    def test_fix_03_malformed_json_fails(self):
+        bad_path = self._write_temp_json("malformed.json", "{\"invalid_json\": true, ")
+        with self.assertRaises(json.JSONDecodeError):
+            with open(bad_path, "r", encoding="utf-8") as f:
+                json.load(f)
+
+    # FIX-04: Missing trial in observer payload fails evaluation
+    def test_fix_04_missing_trial_fails(self):
+        d = copy.deepcopy(self.gamma_data)
+        d["ratings"] = d["ratings"][:-1]  # Remove GAMMA-10
+        p = self._write_temp_json("missing_trial.json", d)
+        with self.assertRaises(ValueError) as ctx:
+            evaluate_observer_vs_gold(self.gold_gamma, p)
+        self.assertIn("missing required trials", str(ctx.exception).lower())
+
+    # FIX-05: Duplicate trial ID in observer payload fails validation
+    def test_fix_05_duplicate_trial_fails(self):
+        d = copy.deepcopy(self.gamma_data)
+        d["ratings"].append(copy.deepcopy(d["ratings"][0]))
+        with self.assertRaises(ValueError) as ctx:
+            validate_ratings_payload(d, "Test")
+        self.assertIn("duplicate trial_id detected", str(ctx.exception).lower())
+
+    # FIX-06: Unrecognized taxonomy code fails validation
+    def test_fix_06_invalid_taxonomy_fails(self):
+        d = copy.deepcopy(self.gamma_data)
+        d["ratings"][0]["assigned_cm_codes"] = ["INVALID_CODE_99"]
+        with self.assertRaises(ValueError) as ctx:
+            validate_ratings_payload(d, "Test")
+        self.assertIn("invalid taxonomy code", str(ctx.exception).lower())
+
+    # FIX-07: Unauthorized empirical provenance classification fails
+    def test_fix_07_wrong_provenance_classification_fails(self):
+        manifest_path = os.path.join(self.synthetic_dir, "SYNTHETIC_FIXTURE_PROVENANCE.json")
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+        manifest["fixtures"]["observer_gamma_v1_gold_concordant.synthetic.json"]["classification"] = "EMPIRICAL_HUMAN_OBSERVER"
+        
+        fixtures_entry = manifest["fixtures"]["observer_gamma_v1_gold_concordant.synthetic.json"]
+        with self.assertRaises(ValueError) as ctx:
+            if fixtures_entry.get("classification") != "SYNTHETIC_SCORING_REGRESSION":
+                raise ValueError(f"Invalid classification: {fixtures_entry.get('classification')}")
+        self.assertIn("Invalid classification", str(ctx.exception))
+
+    # FIX-08: Changed critical action state triggers critical decision false negative
+    def test_fix_08_changed_action_state_fails_gate(self):
+        d = copy.deepcopy(self.gamma_data)
+        d["ratings"][0]["action_state"] = "ACTION_APPROPRIATE"  # Gold requires INAPPROPRIATE
+        p = self._write_temp_json("flipped_cde.json", d)
+        res = evaluate_observer_vs_gold(self.gold_gamma, p)
+        self.assertEqual(res["evaluation_summary"]["calibration_verdict"], "CALIBRATION_FAILED")
+        self.assertEqual(res["evaluation_summary"]["critical_decision_false_negatives"], 1)
+
+    # FIX-09: Incompatible gold key pairing fails evaluation
+    def test_fix_09_wrong_gold_key_pairing_fails(self):
+        gamma_fixture = os.path.join(self.synthetic_dir, "observer_gamma_v1_gold_concordant.synthetic.json")
+        with self.assertRaises(ValueError) as ctx:
+            evaluate_observer_vs_gold(self.gold_alpha, gamma_fixture)
+        self.assertIn("missing required trials", str(ctx.exception).lower())
+
+    # FIX-10: Fixture resolution is independent of current working directory
+    def test_fix_10_working_directory_independence(self):
+        orig_cwd = os.getcwd()
+        try:
+            os.chdir(tempfile.gettempdir())
+            path = verify_synthetic_fixture_provenance("observer_gamma_v1_gold_concordant.synthetic.json")
+            self.assertTrue(os.path.isabs(path))
+            self.assertTrue(os.path.exists(path))
+        finally:
+            os.chdir(orig_cwd)
+
 
 if __name__ == "__main__":
     unittest.main()

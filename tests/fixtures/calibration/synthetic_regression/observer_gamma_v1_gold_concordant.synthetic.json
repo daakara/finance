@@ -1,0 +1,110 @@
+{
+  "observer_id": "SYNTHETIC-OBS-01-GAMMA-CONCORDANT",
+  "provenance": {
+    "fixture_id": "SYNTHETIC_GAMMA_GOLD_CONCORDANT_V1",
+    "classification": "SYNTHETIC_SCORING_REGRESSION",
+    "observer_evidence": false,
+    "human_observer_qualified": false,
+    "benchmark_type": "POSITIVE_CONTROL",
+    "gold_derived": true,
+    "source_gold_key": "gold_key_gamma_v1.json",
+    "authoritative_gold_key_sha256": "6542d279ec6f50126695a217ee595e62791958077159cd4a601b056b00834037",
+    "disclaimer": "This synthetic benchmark does NOT represent empirical human observer responses. It is a deterministic positive-control test vector for scoring software verification."
+  },
+  "ratings": [
+    {
+      "trial_id": "GAMMA-01",
+      "assigned_cm_codes": [
+        "CM-01"
+      ],
+      "assigned_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true
+    },
+    {
+      "trial_id": "GAMMA-02",
+      "assigned_cm_codes": [
+        "CM-02"
+      ],
+      "assigned_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true
+    },
+    {
+      "trial_id": "GAMMA-03",
+      "assigned_cm_codes": [],
+      "assigned_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true
+    },
+    {
+      "trial_id": "GAMMA-04",
+      "assigned_cm_codes": [
+        "CM-04"
+      ],
+      "assigned_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true
+    },
+    {
+      "trial_id": "GAMMA-05",
+      "assigned_cm_codes": [
+        "CM-05"
+      ],
+      "assigned_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true
+    },
+    {
+      "trial_id": "GAMMA-06",
+      "assigned_cm_codes": [],
+      "assigned_sm_codes": [
+        "SM-06"
+      ],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true
+    },
+    {
+      "trial_id": "GAMMA-07",
+      "assigned_cm_codes": [
+        "CM-06"
+      ],
+      "assigned_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true
+    },
+    {
+      "trial_id": "GAMMA-08",
+      "assigned_cm_codes": [
+        "CM-07"
+      ],
+      "assigned_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true
+    },
+    {
+      "trial_id": "GAMMA-09",
+      "assigned_cm_codes": [],
+      "assigned_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_APPROPRIATE",
+      "critical_decision_error": false
+    },
+    {
+      "trial_id": "GAMMA-10",
+      "assigned_cm_codes": [],
+      "assigned_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_APPROPRIATE",
+      "critical_decision_error": false
+    }
+  ]
+}
