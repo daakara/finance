@@ -5,6 +5,7 @@ import Link from "next/link";
 import { QuantitativeInsight } from "../../types/insight";
 import FinancialDisclaimer from "../FinancialDisclaimer";
 import { deriveUnmetConditions } from "../../lib/decisionHierarchyUtils";
+import PreFlightReadinessBar from "../PreFlightReadinessBar";
 
 interface StandardTerminalViewProps {
   insight: QuantitativeInsight;
@@ -12,6 +13,7 @@ interface StandardTerminalViewProps {
   onOpenWhy: () => void;
   chartSlot?: React.ReactNode;
   planSlot?: React.ReactNode;
+  preflightSlot?: React.ReactNode;
   isDemo?: boolean;
 }
 
@@ -21,6 +23,7 @@ export default function StandardTerminalView({
   onOpenWhy,
   chartSlot,
   planSlot,
+  preflightSlot,
   isDemo = false,
 }: StandardTerminalViewProps) {
   const kl = insight.standard.keyLevels;
@@ -223,6 +226,25 @@ export default function StandardTerminalView({
             >
               {chartSlot}
             </div>
+          )}
+
+          {/* 🎯 SYNTHESIS E V3: INLINE PRE-FLIGHT CLEARANCE PANEL */}
+          {preflightSlot !== undefined ? (
+            preflightSlot
+          ) : (
+            <PreFlightReadinessBar
+              symbol={insight.symbol}
+              currentPrice={hasValidPrice ? (rawPrice as number) : 0}
+              stopLoss={kl.stopLoss}
+              takeProfit1={kl.target1}
+              riskRewardRatio={kl.profitRiskRatio}
+              setupPattern={insight.standard.setupSummary}
+              isStage4={insight.standard.setupSummary?.toLowerCase().includes("stage 4") || (insight.advanced as any)?.is_stage4}
+              optimalEntryMin={kl.entryMin}
+              optimalEntryMax={kl.entryMax}
+              isActionable={isActionable}
+              decisionState={insight.decisionTrace?.decisionState}
+            />
           )}
         </div>
 

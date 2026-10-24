@@ -26,6 +26,8 @@ import WeeklyConfluenceSpotlight from "../components/WeeklyConfluenceSpotlight";
 import IntentHero from "../components/IntentHero";
 import PageIntro from "../components/PageIntro";
 import AdaptiveTerminal from "../components/AdaptiveTerminal";
+import PreFlightReadinessBar from "../components/PreFlightReadinessBar";
+import PreFlightChecklistModal from "../components/PreFlightChecklistModal";
 import EtfCostOfOwnershipCard from "../components/EtfCostOfOwnershipCard";
 import EtfRiskProfileCard from "../components/EtfRiskProfileCard";
 import { fetchAssetAnalytics, AnalyticsResponse, SpotPriceRegistry } from "../lib/api";
@@ -60,6 +62,7 @@ function TerminalContent() {
   const [insiderTrades, setInsiderTrades] = useState<SecForm4Trade[]>([]);
   const capabilities = useMemo(() => resolveCapabilities(data, data?.optimalExecution), [data]);
   const [lastUpdatedTime, setLastUpdatedTime] = useState<string>("");
+  const [isPreflightModalOpen, setIsPreflightModalOpen] = useState<boolean>(false);
   const cacheRef = useRef<Map<string, AnalyticsResponse>>(new Map());
 
   useEffect(() => {
@@ -415,6 +418,47 @@ function TerminalContent() {
                   />
                 </div>
               }
+              preflightSlot={
+                loading ? (
+                  <div className="bg-[#0a0f19] border border-[#1b263b] rounded-xl p-3 text-slate-500 font-mono text-xs flex items-center justify-center space-x-2">
+                    <span className="w-2 h-2 rounded-full bg-slate-500 animate-pulse" />
+                    <span>Evaluating Pre-Flight Clearance...</span>
+                  </div>
+                ) : (
+                  <PreFlightReadinessBar
+                    symbol={selectedSymbol}
+                    currentPrice={data?.currentPrice ?? (SpotPriceRegistry.get(selectedSymbol)?.price || 0)}
+                    stopLoss={data?.optimalExecution?.stop_loss ?? undefined}
+                    takeProfit1={data?.optimalExecution?.take_profit_1 ?? undefined}
+                    riskRewardRatio={data?.optimalExecution?.risk_reward_ratio ?? undefined}
+                    setupPattern={data?.optimalExecution?.setup_pattern}
+                    isDayTrader={userRole === "DAY_TRADER"}
+                    isStage4={Boolean(data?.optimalExecution?.stage_phase?.toLowerCase().includes("stage 4") || (data?.technicals as any)?.is_stage4)}
+                    optimalEntryMin={data?.optimalExecution?.optimal_entry_min ?? undefined}
+                    optimalEntryMax={data?.optimalExecution?.optimal_entry_max ?? undefined}
+                    breakoutPivot={data?.optimalExecution?.breakout_pivot ?? undefined}
+                    vix={(macroData as any)?.vix?.value ?? (macroData as any)?.vix?.level ?? (typeof (macroData as any)?.vix === "number" ? (macroData as any).vix : undefined)}
+                    hasImminentEarnings={((data as any)?.corporateEvent?.days_to_earnings != null && (data as any)?.corporateEvent?.days_to_earnings <= 7.0 && (data as any)?.corporateEvent?.days_to_earnings >= 0) || (data as any)?.corporateEvent?.preflight_state === "WARN"}
+                    catalystState={(data as any)?.corporateEvent?.preflight_state}
+                    catalystEvidence={(data as any)?.corporateEvent ? {
+                      state: (data as any).corporateEvent.preflight_state,
+                      daysToEarnings: (data as any).corporateEvent.days_to_earnings,
+                      eventDate: (data as any).corporateEvent.event_date_et,
+                      callTimeEt: (data as any).corporateEvent.conference_call_time_et,
+                      resultsReleaseTimeEt: (data as any).corporateEvent.results_release_time_et,
+                      sourceName: (data as any).corporateEvent.source_name,
+                      confirmationStatus: (data as any).corporateEvent.confirmation_status,
+                      coverageStatus: (data as any).corporateEvent.coverage_status,
+                      freshnessStatus: (data as any).corporateEvent.freshness_status,
+                      riskTier: (data as any).corporateEvent.risk_tier,
+                      isEstimate: (data as any).corporateEvent.is_estimate,
+                    } : null}
+                    isActionable={data?.decisionTrace?.isActionable ?? (data?.canonicalDecision as any)?.is_actionable}
+                    decisionState={data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state}
+                    onOpenModal={() => setIsPreflightModalOpen(true)}
+                  />
+                )
+              }
               planSlot={
                 loading ? (
                   <div className="bg-[#111722] border border-[#243044] rounded-xl p-5 shadow-xl text-slate-500 font-mono text-xs flex items-center justify-center space-x-2">
@@ -459,6 +503,41 @@ function TerminalContent() {
               }
             />
           )}
+
+          {/* ✈️ Pre-Flight Mandatory Clearance Detailed Inspection Modal */}
+          <PreFlightChecklistModal
+            isOpen={isPreflightModalOpen}
+            onClose={() => setIsPreflightModalOpen(false)}
+            symbol={selectedSymbol}
+            currentPrice={data?.currentPrice ?? (SpotPriceRegistry.get(selectedSymbol)?.price || 0)}
+            stopLoss={data?.optimalExecution?.stop_loss || 0}
+            takeProfit1={data?.optimalExecution?.take_profit_1 || 0}
+            riskRewardRatio={data?.optimalExecution?.risk_reward_ratio || 0}
+            setupPattern={data?.optimalExecution?.setup_pattern}
+            isDayTrader={userRole === "DAY_TRADER"}
+            isStage4={Boolean(data?.optimalExecution?.stage_phase?.toLowerCase().includes("stage 4") || (data?.technicals as any)?.is_stage4)}
+            optimalEntryMin={data?.optimalExecution?.optimal_entry_min ?? undefined}
+            optimalEntryMax={data?.optimalExecution?.optimal_entry_max ?? undefined}
+            breakoutPivot={data?.optimalExecution?.breakout_pivot ?? undefined}
+            vix={(macroData as any)?.vix?.value ?? (macroData as any)?.vix?.level ?? (typeof (macroData as any)?.vix === "number" ? (macroData as any).vix : undefined)}
+            hasImminentEarnings={((data as any)?.corporateEvent?.days_to_earnings != null && (data as any)?.corporateEvent?.days_to_earnings <= 7.0 && (data as any)?.corporateEvent?.days_to_earnings >= 0) || (data as any)?.corporateEvent?.preflight_state === "WARN"}
+            catalystState={(data as any)?.corporateEvent?.preflight_state}
+            catalystEvidence={(data as any)?.corporateEvent ? {
+              state: (data as any).corporateEvent.preflight_state,
+              daysToEarnings: (data as any).corporateEvent.days_to_earnings,
+              eventDate: (data as any).corporateEvent.event_date_et,
+              callTimeEt: (data as any).corporateEvent.conference_call_time_et,
+              resultsReleaseTimeEt: (data as any).corporateEvent.results_release_time_et,
+              sourceName: (data as any).corporateEvent.source_name,
+              confirmationStatus: (data as any).corporateEvent.confirmation_status,
+              coverageStatus: (data as any).corporateEvent.coverage_status,
+              freshnessStatus: (data as any).corporateEvent.freshness_status,
+              riskTier: (data as any).corporateEvent.risk_tier,
+              isEstimate: (data as any).corporateEvent.is_estimate,
+            } : null}
+            isActionable={data?.decisionTrace?.isActionable ?? (data?.canonicalDecision as any)?.is_actionable}
+            decisionState={data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state}
+          />
 
           {/* Intelligent Did You Mean Ticker Recommendation Banner */}
           {aliasRecommendation && aliasRecommendation.canonicalTicker.toUpperCase() !== selectedSymbol.toUpperCase() && (

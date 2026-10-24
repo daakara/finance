@@ -34,6 +34,7 @@ interface AdaptiveTerminalProps {
   analysisReferencePrice?: number | null;
   chartSlot?: React.ReactNode;
   planSlot?: React.ReactNode;
+  preflightSlot?: React.ReactNode;
   isDemo?: boolean;
 }
 
@@ -56,6 +57,7 @@ export default function AdaptiveTerminal({
   analysisReferencePrice,
   chartSlot,
   planSlot,
+  preflightSlot,
   isDemo = false,
 }: AdaptiveTerminalProps) {
   const searchParams = useSearchParams();
@@ -186,6 +188,7 @@ export default function AdaptiveTerminal({
           onOpenWhy={() => setIsWhyOpen(true)}
           chartSlot={chartSlot}
           planSlot={planSlot}
+          preflightSlot={preflightSlot}
           isDemo={isDemo}
         />
       )}
