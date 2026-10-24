@@ -13,7 +13,7 @@ import logging
 import os
 from pathlib import Path
 import time
-from typing import Dict, Any, List, Optional, Tuple, Union
+from typing import Dict, Any, List, Optional, Tuple, Union, Set
 import urllib.request
 import urllib.error
 
@@ -27,9 +27,10 @@ logger = logging.getLogger(__name__)
 
 SEC_USER_AGENT = "ARXTerminal Research Akara.david26@gmail.com"
 QUALIFYING_PERIODIC_FORMS = {"10-Q", "10-K"}
+PERIODIC_AMENDMENT_FORMS = {"10-Q/A", "10-K/A"}
 MISIDENTIFIED_NON_PERIODIC_FORMS = {
     "8-K", "4", "144", "SCHEDULE 13G", "SCHEDULE 13G/A",
-    "SC 13G", "SC 13D", "DEF 14A", "10-Q/A", "10-K/A"
+    "SC 13G", "SC 13D", "DEF 14A"
 }
 
 SEC_EDGAR_ARCHIVE_BASE = "https://www.sec.gov/Archives/edgar/data"
@@ -64,17 +65,27 @@ class SecEventPoller:
         offline_mode: bool = False,
         min_request_interval_sec: float = 0.25,
         cache_ttl_sec: int = DEFAULT_CACHE_TTL_SEC,
+        budget_tracker: Optional[Any] = None,
+        completed_accessions: Optional[Set[str]] = None,
     ):
         self.register = register
         self.cache_dir = Path(cache_dir) if cache_dir else None
         self.offline_mode = offline_mode
         self.min_request_interval_sec = min_request_interval_sec
         self.cache_ttl_sec = cache_ttl_sec
+        self.budget_tracker = budget_tracker
+        self.completed_accessions = completed_accessions
         self.last_request_time = 0.0
         self.user_agent = SEC_USER_AGENT
         self.last_submissions_receipt: Optional[Dict[str, Any]] = None
         if self.cache_dir:
             self.cache_dir.mkdir(parents=True, exist_ok=True)
+
+    def is_completed(self, symbol: str, accession_number: str, is_replay: bool = False) -> bool:
+        """Authoritative check for whether an accession has been completed."""
+        if self.completed_accessions is not None and not is_replay:
+            return accession_number.strip() in self.completed_accessions
+        return self.register.is_completed(symbol, accession_number, is_replay=is_replay)
 
     def _rate_limit(self):
         elapsed = time.time() - self.last_request_time
@@ -180,7 +191,12 @@ class SecEventPoller:
         if self.offline_mode:
             raise FileNotFoundError(f"Offline mode enabled, but cache file {cache_file} was not found or invalid.")
 
-        self._rate_limit()
+        timeout = 15.0
+        if self.budget_tracker:
+            timeout = self.budget_tracker.acquire_request_slot(default_timeout_sec=15.0)
+        else:
+            self._rate_limit()
+
         headers = {
             "User-Agent": self.user_agent,
             "Accept-Encoding": "gzip, deflate",
@@ -189,7 +205,7 @@ class SecEventPoller:
         req = urllib.request.Request(url, headers=headers)
         import gzip
         try:
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
                 raw = resp.read()
                 if resp.info().get("Content-Encoding") == "gzip" or (len(raw) > 2 and raw[:2] == b"\x1f\x8b"):
                     raw = gzip.decompress(raw)
@@ -271,10 +287,14 @@ class SecEventPoller:
 
         if index_bytes is None and not self.offline_mode:
             try:
-                self._rate_limit()
+                timeout = 15.0
+                if self.budget_tracker:
+                    timeout = self.budget_tracker.acquire_request_slot(default_timeout_sec=15.0)
+                else:
+                    self._rate_limit()
                 req = urllib.request.Request(index_url, headers={"User-Agent": self.user_agent, "Accept-Encoding": "gzip, deflate"})
                 import gzip
-                with urllib.request.urlopen(req, timeout=15) as resp:
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
                     raw = resp.read()
                     if resp.info().get("Content-Encoding") == "gzip" or (len(raw) > 2 and raw[:2] == b"\x1f\x8b"):
                         raw = gzip.decompress(raw)
@@ -372,10 +392,14 @@ class SecEventPoller:
 
         if doc_bytes is None and not self.offline_mode:
             try:
-                self._rate_limit()
+                timeout = 15.0
+                if self.budget_tracker:
+                    timeout = self.budget_tracker.acquire_request_slot(default_timeout_sec=15.0)
+                else:
+                    self._rate_limit()
                 req = urllib.request.Request(doc_url, headers={"User-Agent": self.user_agent, "Accept-Encoding": "gzip, deflate"})
                 import gzip
-                with urllib.request.urlopen(req, timeout=15) as resp:
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
                     raw = resp.read()
                     if resp.info().get("Content-Encoding") == "gzip" or (len(raw) > 2 and raw[:2] == b"\x1f\x8b"):
                         raw = gzip.decompress(raw)
@@ -526,11 +550,12 @@ class SecEventPoller:
                         )
                         return rejected_event, [msg]
 
-                    if form not in QUALIFYING_PERIODIC_FORMS:
+                    if form not in QUALIFYING_PERIODIC_FORMS and form not in PERIODIC_AMENDMENT_FORMS:
                         msg = f"Filing {clean_acc} has non-qualifying form '{form}'."
                         return None, [msg]
 
-                    # Valid periodic report found
+                    # Valid periodic report or amendment found
+                    is_amendment = form in PERIODIC_AMENDMENT_FORMS
                     url = format_sec_primary_url(cik, clean_acc, doc)
                     idx_hash, doc_hash, receipts = self.retrieve_filing_artifacts(cik, clean_acc, doc, force_refresh=force_refresh)
                     event = MaintenanceEvent(
@@ -552,6 +577,11 @@ class SecEventPoller:
                         company_facts_url=company_facts_url,
                         processing_state=EventProcessingState.REGISTERED,
                         is_replay=is_replay,
+                        is_amendment=is_amendment,
+                        unsupported_reason=(
+                            f"Periodic amendment Form {form} requires manual reconciliation."
+                            if is_amendment else None
+                        ),
                         sha256=doc_hash,
                         source_receipts=receipts,
                     )
@@ -560,6 +590,8 @@ class SecEventPoller:
             return None, [f"Target accession {target_accession} not found in submissions."]
 
         # Auto-scan for newer periodic filings postdating cutoff
+        eligible_candidates = []
+        already_completed_candidates = []
         for i in range(len(forms)):
             form = forms[i].strip()
             filing_date = filing_dates[i]
@@ -571,36 +603,76 @@ class SecEventPoller:
             if filing_date <= cutoff_date and not is_replay:
                 continue
 
-            # If this accession is already completed in register, continue past it to find any other eligible filings!
-            if not force_refresh and self.register.is_completed(symbol, acc, is_replay=is_replay):
-                logger.info(f"Filing {acc} is already completed; checking next candidate filing.")
-                continue
+            if form in QUALIFYING_PERIODIC_FORMS or form in PERIODIC_AMENDMENT_FORMS:
+                # Exclude completed accessions using unified authoritative check
+                if not force_refresh and self.is_completed(symbol, acc, is_replay=is_replay):
+                    logger.info(f"Filing {acc} is already completed; checking next candidate filing.")
+                    already_completed_candidates.append({
+                        "form": form,
+                        "filing_date": filing_date,
+                        "report_date": report_date,
+                        "acc_dt": acc_dt,
+                        "acc": acc,
+                        "doc": doc,
+                    })
+                    continue
 
-            if form in QUALIFYING_PERIODIC_FORMS:
-                url = format_sec_primary_url(cik, acc, doc)
-                idx_hash, doc_hash, receipts = self.retrieve_filing_artifacts(cik, acc, doc, force_refresh=force_refresh)
-                event = MaintenanceEvent(
-                    event_id=f"{'REPLAY-' if is_replay else 'EVT-'}{symbol.upper()}-{acc}",
-                    symbol=symbol.upper(),
-                    cik=cik_clean,
-                    company_name=company_name,
-                    form=form,
-                    accession_number=acc,
-                    filing_date=filing_date,
-                    reporting_period=report_date or filing_date,
-                    retrieval_time_utc=datetime.utcnow().isoformat() + "Z",
-                    source_url=url,
-                    primary_document=doc,
-                    acceptance_datetime_utc=acc_dt,
-                    index_url=format_sec_index_url(cik, acc),
-                    index_sha256=idx_hash,
-                    submissions_url=submissions_url,
-                    company_facts_url=company_facts_url,
-                    processing_state=EventProcessingState.REGISTERED,
-                    is_replay=is_replay,
-                    sha256=doc_hash,
-                    source_receipts=receipts,
-                )
-                return event, warnings
+                eligible_candidates.append({
+                    "form": form,
+                    "filing_date": filing_date,
+                    "report_date": report_date,
+                    "acc_dt": acc_dt,
+                    "acc": acc,
+                    "doc": doc,
+                })
 
-        return None, [f"NO_NEW_FILING: No qualifying periodic filing (10-Q/10-K) postdating {cutoff_date} found for {symbol}."]
+        chosen = None
+        if eligible_candidates:
+            # Deterministic order from SEC EDGAR submissions: newest uncompleted eligible filing postdating cutoff is selected
+            chosen = eligible_candidates[0]
+        elif already_completed_candidates:
+            # All qualifying filings postdating cutoff were already completed.
+            # Select the most recent completed filing to allow reporting idempotent deduplication.
+            chosen = already_completed_candidates[0]
+
+        if chosen:
+            form = chosen["form"]
+            filing_date = chosen["filing_date"]
+            report_date = chosen["report_date"]
+            acc_dt = chosen["acc_dt"]
+            acc = chosen["acc"]
+            doc = chosen["doc"]
+
+            is_amendment = form in PERIODIC_AMENDMENT_FORMS
+            url = format_sec_primary_url(cik, acc, doc)
+            idx_hash, doc_hash, receipts = self.retrieve_filing_artifacts(cik, acc, doc, force_refresh=force_refresh)
+            event = MaintenanceEvent(
+                event_id=f"{'REPLAY-' if is_replay else 'EVT-'}{symbol.upper()}-{acc}",
+                symbol=symbol.upper(),
+                cik=cik_clean,
+                company_name=company_name,
+                form=form,
+                accession_number=acc,
+                filing_date=filing_date,
+                reporting_period=report_date or filing_date,
+                retrieval_time_utc=datetime.utcnow().isoformat() + "Z",
+                source_url=url,
+                primary_document=doc,
+                acceptance_datetime_utc=acc_dt,
+                index_url=format_sec_index_url(cik, acc),
+                index_sha256=idx_hash,
+                submissions_url=submissions_url,
+                company_facts_url=company_facts_url,
+                processing_state=EventProcessingState.REGISTERED,
+                is_replay=is_replay,
+                is_amendment=is_amendment,
+                unsupported_reason=(
+                    f"Periodic amendment Form {form} requires manual reconciliation."
+                    if is_amendment else None
+                ),
+                sha256=doc_hash,
+                source_receipts=receipts,
+            )
+            return event, warnings
+
+        return None, [f"NO_NEW_FILING: No qualifying periodic filing (10-Q/10-K/amendment) postdating {cutoff_date} found for {symbol}."]
