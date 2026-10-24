@@ -179,7 +179,7 @@ export default function PreFlightChecklistModal({
   const isRRValid = typeof riskRewardRatio === "number" && !isNaN(riskRewardRatio) && riskRewardRatio > 0;
   const hasExecutionLevels = safeStop !== null && safeTarget !== null;
   const isRRPassed = checks[0].passed;
-  const isTrendPassed = checks[1].passed;
+  const isTrendPassed = checks[1].passed && !isStage4;
   const isExtendedAboveZone = Boolean(safeEntryMax && safePrice > safeEntryMax * 1.02);
   const isCapitalRiskPassed = checks[2].passed;
   const isCapitalRiskFailed = checks[2].status === "CAPITAL RISK";
