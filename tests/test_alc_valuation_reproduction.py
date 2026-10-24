@@ -12,6 +12,9 @@ import pytest
 import math
 import research_canonical_valuation as rcv
 
+pytestmark = pytest.mark.tier1
+
+
 
 class TestAlconValuationReproductionHarness:
     """Deterministic unit tests validating valuation formulas, reverse solver, and shareholder returns."""

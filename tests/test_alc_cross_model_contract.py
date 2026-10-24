@@ -23,6 +23,9 @@ import os
 import pytest
 from datetime import date
 
+pytestmark = pytest.mark.tier1
+
+
 from analyst_dashboard.research.sourced_fundamentals.alc_scenario_engine import (
     build_canonical_scenarios,
     generate_canonical_ledger,

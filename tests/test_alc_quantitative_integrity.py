@@ -22,6 +22,9 @@ Covers:
 import math
 import pytest
 
+pytestmark = pytest.mark.tier1
+
+
 
 class TestAlconQuantitativeIntegrityGate:
     # Authoritative Baseline Parameters (Q2 2026 TTM):

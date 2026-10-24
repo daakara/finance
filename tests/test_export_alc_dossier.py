@@ -11,6 +11,9 @@ import sys
 from pathlib import Path
 import pytest
 
+pytestmark = pytest.mark.tier1
+
+
 from scripts.research.export_alc_dossier import (
     DEFAULT_INPUT_PATH,
     DEFAULT_OUTPUT_PATH,

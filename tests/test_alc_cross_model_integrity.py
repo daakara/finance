@@ -24,6 +24,9 @@ Tests:
 
 import math
 import pytest
+
+pytestmark = pytest.mark.tier1
+
 from analyst_dashboard.research.sourced_fundamentals.alc_scenario_engine import (
     build_share_count_bridge,
     build_balance_sheet_bridge,
