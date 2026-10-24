@@ -1,0 +1,34 @@
+{
+  "manifestVersion": "2.5.2",
+  "frozenTimestamp": "2026-10-23T12:00:00Z",
+  "provenanceCommit": "7980d3a6e5dde0fe172d215c729ec213b9a164b1",
+  "frozenStrategyVersion": "2.5.2",
+  "releaseAuthorityBinding": "SPRINT3_RC5_CORPORATE_EVENTS_RATIFICATION",
+  "ratifiedAuthorityRecord": "ARX_RC5_ENGINE_MANIFEST_V252_SUCCESSION_RECORD.md",
+  "supersedesManifest": "FROZEN_ENGINE_MANIFEST_V2_5_1.json",
+  "authorityScope": "CURRENT_PRODUCTION_AUTHORITY",
+  "engines": {
+    "optimal_execution": {
+      "filePath": "analyst_dashboard/analyzers/optimal_execution.py",
+      "sha256": "84d1a8b855a5368466b53105fdd58df15c3d60aaab77024286f3fcaaaad95576",
+      "ratificationRecord": "Release Addendum 002 (Binding PO Rejection of EXC-002)",
+      "ratificationCommit": "cd0922471767775636957df74406a2d5efb8f519"
+    },
+    "confluence_engine": {
+      "filePath": "analyst_dashboard/analyzers/confluence_engine.py",
+      "sha256": "0f77d3b0b15f5d60a6de52ec1a0cd6b385ce1615865839d684d53aa655dadc5a",
+      "ratificationRecord": "Corporate Events RC5 Runway Risk Integration",
+      "ratificationCommit": "7980d3a6e5dde0fe172d215c729ec213b9a164b1"
+    },
+    "decision_hierarchy": {
+      "filePath": "analyst_dashboard/analyzers/decision_hierarchy.py",
+      "sha256": "823f37f81c7f601885213d968934c1118285fbf6c875b2993e091984e9b8ebe3",
+      "ratificationRecord": "Synthesis E Wave 3 Decision Integrity (PRD Addendum 001)",
+      "ratificationCommit": "9d5fc2bc9b5029f02177dbe2ab50e026fbfb5f69"
+    }
+  },
+  "invariants": {
+    "zero_production_mutation": true,
+    "enforced_by": "tests/test_measurement_adversarial_suite.py::test_production_engine_freeze_manifest_compliance"
+  }
+}

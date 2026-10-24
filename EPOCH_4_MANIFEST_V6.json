@@ -1,0 +1,84 @@
+{
+  "manifestVersion": "6.0.0",
+  "epochId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_4",
+  "lifecycleState": "PRE_ACTIVATION",
+  "activationPolicy": "SUCCESSFUL_PRODUCTION_ACTIVATION",
+  "epochStartUtc": null,
+  "epochStartAuthority": "PRODUCTION_ACTIVATION_RECORD",
+  "observationGovernanceVersion": "6.0.0",
+  "observationGovernanceIdentity": "MANIFEST_HASH",
+  "observationGovernanceManifestHash": "dba05d9f625ef06d2497c1b3c4e412f64b5bfb210c3569aaad33fbb9d1bf9a01",
+  "observationGovernanceArtifactIdentity": "dba05d9f625ef06d2497c1b3c4e412f64b5bfb210c3569aaad33fbb9d1bf9a01",
+  "observationGovernanceSha": "dba05d9f625ef06d2497c1b3c4e412f64b5bfb210c3569aaad33fbb9d1bf9a01",
+  "decisionEngineSha": "23cd1b20401f8fedd596da065ee16b04bc9cd5a2ab62bf4064830dbab05ccac3",
+  "decisionEngineCompositeSha": "23cd1b20401f8fedd596da065ee16b04bc9cd5a2ab62bf4064830dbab05ccac3",
+  "decisionEngineVersion": "2.5.2",
+  "parentManifest": "EPOCH_4_MANIFEST_V5.json",
+  "parentManifestVersion": "5.0.0",
+  "parentRuntimeSha": "99bea6ebc9b4f31634ef994bd2630710d89555940a5e491e98e1285668ce04c5",
+  "activationRule": "first deployed runtime containing V6 and passing current-manifest verification",
+  "authorizationRationale": "Formal non-circular manifest succession resolving Sprint 3 Corporate Events RC5 analytics route addition and certified candidate tree governance evolution, certifying commit 7980d3a6e5dde0fe172d215c729ec213b9a164b1 while preserving historical V1-V5 manifest immutability.",
+  "driftReconciliationReferences": [
+    "ed04de55e5d32d431d1ec15ffcefeef29d068db2",
+    "d97801ef36691c94d03da24806aeb85381aa99c4",
+    "37a665cb37bcac30025ed7fd4d9687069f31b694",
+    "74baf306cfe2b2b53da8269990e6f7363c2fe42d",
+    "cd0922471767775636957df74406a2d5efb8f519",
+    "e88b9fe7711426d86176472a3ba87dff6c49eea9",
+    "cbbce7ea08bb259a7fd5207b54cab5ae78bf0c3a",
+    "7980d3a6e5dde0fe172d215c729ec213b9a164b1"
+  ],
+  "createdAtUtc": "2026-10-23T12:00:00Z",
+  "CREATED_AT_UTC": "2026-10-23T12:00:00Z",
+  "supersedesRuntimeBoundary": "EPOCH_4_MANIFEST_V5.json",
+  "SUPERSEDES_MANIFEST": "EPOCH_4_MANIFEST_V5.json",
+  "certifiedSourceSnapshotCommitSha1": "7980d3a6e5dde0fe172d215c729ec213b9a164b1",
+  "CERTIFIED_SOURCE_SNAPSHOT_COMMIT_SHA1": "7980d3a6e5dde0fe172d215c729ec213b9a164b1",
+  "authorityScope": "CURRENT_PRODUCTION_AUTHORITY",
+  "AUTHORITY_SCOPE": "CURRENT_PRODUCTION_AUTHORITY",
+  "activationCommitBinding": "EXTERNAL_RELEASE_EVIDENCE",
+  "ACTIVATION_COMMIT_BINDING": "EXTERNAL_RELEASE_EVIDENCE",
+  "historicalManifestImmutable": true,
+  "executableGovernanceFiles": {
+    "analyst_dashboard/governance/passive_capture.py": {
+      "sha256": "fd3cae6f682640b7182468dba053c0e97bcf9f1a73a2ca01ef5d6b81199dea93"
+    },
+    "analyst_dashboard/governance/experiment_ledger.py": {
+      "sha256": "897920d2ed5379f0b021f8452e82760599402600e069df96317c313e14196cc1"
+    },
+    "analyst_dashboard/governance/governance_db.py": {
+      "sha256": "aa11e7920c290d5acd65b3c93bc232e42d481f59b2a49800b9407ed4e9658c8f"
+    },
+    "analyst_dashboard/governance/storage.py": {
+      "sha256": "ebb0ceecac1acef022d23637f97efb96fd751763f4078412e1f95d052354c889"
+    },
+    "analyst_dashboard/data/fred_fetcher.py": {
+      "sha256": "d88dd714d76af3eb112a966db02b71f10308c8e36b3f5f089734a5c3c4307c08"
+    },
+    "api/routes/analytics.py": {
+      "sha256": "361ae1daa6ca5379222b65f00cc31c4bad0ec5589d53dac3d7c2ad9e39aea278"
+    },
+    "analyst_dashboard/data/alpaca_fetcher.py": {
+      "sha256": "0764e55916c8a426a5397926c46ac891fcbeb3f12a1b11bb0b80ec3ee64714c8"
+    },
+    "analyst_dashboard/data/market_price_state.py": {
+      "sha256": "83846723d76a9b3e0a91cda0fc9373179075fe5773ebceb89a1e30e3e505a797"
+    },
+    "api/routes/screener.py": {
+      "sha256": "054206f9f7b12bcf2a771b6f0f16618964430eb8dc4d0d5ae1c5e0a07d6c88af"
+    },
+    "analyst_dashboard/analyzers/gem_screener.py": {
+      "sha256": "fa1c425f1f09bc3b45c6b6406a5521e1884a96cb7a01c12ff94d316a1639f780"
+    }
+  },
+  "invariants": {
+    "zero_unauthorized_production_mutation": true,
+    "zero_brokerage_execution_side_effects": true,
+    "fail_closed_passive_capture": true,
+    "epistemic_null_unobserved_excursions": true,
+    "completed_session_market_data_authority": true,
+    "live_market_dual_price_contract": true,
+    "zero_synthetic_prospective_writes": true,
+    "single_canonical_actionability_authority": true
+  }
+}

@@ -348,8 +348,9 @@ def test_frozen_production_ledger_live_cohort_hashes_intact():
 
 
 def test_production_engine_freeze_manifest_compliance():
-    """Verify historical engine manifest integrity and active production compliance under Release Addendum 002."""
+    """Verify historical engine manifest integrity and active production compliance under Release Addendum 002 and RC5."""
     repo_root = os.path.dirname(os.path.dirname(__file__))
+    manifest_v251_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_5_1.json")
     manifest_v250_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_5_0.json")
     manifest_v240_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_4_0.json")
     manifest_default_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST.json")
@@ -369,7 +370,13 @@ def test_production_engine_freeze_manifest_compliance():
     assert v250.get("frozenStrategyVersion") == "2.5.0"
     assert v250.get("provenanceCommit") == "PENDING_EPOCH_3_FREEZE"
 
-    # 2. Active Production Engine Compliance Audit (Release Addendum 002 / Synthesis E Wave 3)
+    with open(manifest_v251_path, "r", encoding="utf-8") as f:
+        v251 = json.load(f)
+    assert v251.get("frozenStrategyVersion") == "2.5.0"
+    assert v251.get("provenanceCommit") == "cd0922471767775636957df74406a2d5efb8f519"
+    assert v251.get("releaseAuthorityBinding") == "RELEASE_ADDENDUM_002"
+
+    # 2. Active Production Engine Compliance Audit (Release Addendum 002 / SPRINT3 RC5 Corporate Events)
     import hashlib
 
     # optimal_execution.py: Ratified Release Addendum 002 Section 7 contract restoration (commit cd09224)
@@ -388,11 +395,11 @@ def test_production_engine_freeze_manifest_compliance():
         f"Decision hierarchy integrity violation: unexpected decision_hierarchy SHA {dec_sha}"
     )
 
-    # confluence_engine.py: Preserved Strategy 2.4.0 baseline
+    # confluence_engine.py: SPRINT3 RC5 Corporate Events runway risk integration (commit 7980d3a)
     conf_path = os.path.join(repo_root, "analyst_dashboard", "analyzers", "confluence_engine.py")
     with open(conf_path, "rb") as fp:
         conf_sha = hashlib.sha256(fp.read().replace(b"\r\n", b"\n")).hexdigest()
-    assert conf_sha == "147c010eb6068c3470fa3269f08610c0f436ea117b99b3b5217e7020b911e2b1", (
+    assert conf_sha == "0f77d3b0b15f5d60a6de52ec1a0cd6b385ce1615865839d684d53aa655dadc5a", (
         f"Confluence engine integrity violation: unexpected confluence_engine SHA {conf_sha}"
     )
 
@@ -579,7 +586,7 @@ def test_governance_engine_authority_and_tampering_unmocked(tmp_path):
     real_audit = ExperimentLedger.verify_frozen_engine_manifest()
     assert real_audit["status"] == "VERIFIED"
     assert real_audit["valid"] is True
-    assert real_audit["manifestVersion"] == "2.5.1"
+    assert real_audit["manifestVersion"] == "2.5.2"
     assert len(real_audit["engines"]) == 3
     for eng_name, eng_info in real_audit["engines"].items():
         assert eng_info["valid"] is True
@@ -588,9 +595,9 @@ def test_governance_engine_authority_and_tampering_unmocked(tmp_path):
     temp_repo = tmp_path / "temp_repo"
     temp_repo.mkdir()
 
-    # Copy manifest V2.5.1
-    manifest_src = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_5_1.json")
-    manifest_dst = temp_repo / "FROZEN_ENGINE_MANIFEST_V2_5_1.json"
+    # Copy manifest V2.5.2
+    manifest_src = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_5_2.json")
+    manifest_dst = temp_repo / "FROZEN_ENGINE_MANIFEST_V2_5_2.json"
     shutil.copy2(manifest_src, manifest_dst)
 
     # Copy engines maintaining relative paths

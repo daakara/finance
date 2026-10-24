@@ -19,7 +19,20 @@ interface PreFlightChecklistModalProps {
   optimalEntryMax?: number;
   breakoutPivot?: number;
   isDistributionTrap?: boolean;
-  hasImminentEarnings?: boolean;
+  hasImminentEarnings?: boolean | null;
+  catalystState?: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR";
+  catalystEvidence?: {
+    state?: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR";
+    daysToEarnings?: number | null;
+    eventDate?: string | null;
+    callTimeEt?: string | null;
+    resultsReleaseTimeEt?: string | null;
+    sourceName?: string | null;
+    confirmationStatus?: "CONFIRMED" | "ESTIMATED" | "UNVERIFIED" | null;
+    coverageStatus?: string | null;
+    riskTier?: string | null;
+    isEstimate?: boolean | null;
+  } | null;
   vix?: number;
   isActionable?: boolean;
   decisionState?: string;
@@ -40,7 +53,9 @@ export default function PreFlightChecklistModal({
   optimalEntryMax,
   breakoutPivot,
   isDistributionTrap,
-  hasImminentEarnings = false,
+  hasImminentEarnings = null,
+  catalystState,
+  catalystEvidence,
   vix,
   isActionable = false,
   decisionState,
@@ -159,8 +174,36 @@ export default function PreFlightChecklistModal({
   // Mandatory Fail-Closed Rule: PARTIAL_EVIDENCE => NOT_CERTIFIED. Must be COMPLETE to PASS.
   const isCapitalRiskPassed = isPriceValid && capitalRiskEvidenceState === "COMPLETE" && !isCapitalRiskFailed && isDistributionTrap !== true;
 
-  // Check 4: Catalyst Hazard Buffer
-  const isCatalystPassed = isPriceValid && !hasImminentEarnings;
+  // Check 4: Catalyst Hazard Buffer (Fail-Closed 4-State Model)
+  // PASS: Fresh, adequate evidence confirms no event within configured risk window (>7d or past elapsed).
+  // WARN: A relevant upcoming event is identified (<= 7 days to binary event).
+  // UNAVAILABLE: Coverage is absent, stale, invalid or insufficient (Never fake-pass).
+  // ERROR: Technical evaluation error.
+  const resolvedCatalystState: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR" = (() => {
+    if (catalystState) return catalystState;
+
+    if (catalystEvidence) {
+      if (catalystEvidence.state) return catalystEvidence.state;
+      const dte = catalystEvidence.daysToEarnings;
+      if (typeof dte === "number" && !isNaN(dte)) {
+        if (dte < 0.0) return "UNAVAILABLE"; // Invariant 3: completed historical event alone cannot establish clean forward runway
+        if (dte <= 7.0) return "WARN"; // Binary event within 7-day risk window
+        return "PASS"; // Verified clean runway > 7 days backed by fresh forward coverage
+      }
+      if (catalystEvidence.coverageStatus === "DATA_UNAVAILABLE" || catalystEvidence.coverageStatus === "ABSENT") {
+        return "UNAVAILABLE";
+      }
+    }
+
+    if (hasImminentEarnings === true) {
+      return "WARN";
+    }
+
+    // Fail-closed invariant: missing coverage must NEVER evaluate to safety PASS
+    return "UNAVAILABLE";
+  })();
+
+  const isCatalystPassed = isPriceValid && resolvedCatalystState === "PASS";
 
   // Check 5: Macro Regime Guard (VIX < 26.0 with valid macro reading)
   // Single authority: binds to canonical macro ribbon VIX. Missing VIX is strictly UNAVAILABLE (never 28.0 or 99.0).
@@ -210,7 +253,7 @@ export default function PreFlightChecklistModal({
 - **Risk/Reward**: ${isRRValid ? `${safeRR.toFixed(2)} : 1.0` : "Unverified"}
 - **Setup Pattern**: ${setupPattern || "Minervini VCP"}
 - **Pre-Flight Clearance**: ${convictionPct}% — ${isCleared ? "🟢 CLEARED FOR EXECUTION" : "⚠️ CONDITIONAL / AWAIT BASE CLEARANCE"}
-- **VIX Regime**: ${currentVix !== null ? currentVix.toFixed(1) : "UNAVAILABLE"} | **Capital Risk**: ${isCapitalRiskPassed ? "PASS" : isCapitalRiskFailed ? "DETECTED" : capitalRiskEvidenceState} | **Earnings Hazard**: ${hasImminentEarnings ? "ACTIVE" : "CLEAR"}
+- **VIX Regime**: ${currentVix !== null ? currentVix.toFixed(1) : "UNAVAILABLE"} | **Capital Risk**: ${isCapitalRiskPassed ? "PASS" : isCapitalRiskFailed ? "DETECTED" : capitalRiskEvidenceState} | **Earnings Hazard**: ${resolvedCatalystState === "PASS" ? "CLEAR" : resolvedCatalystState === "WARN" ? "ACTIVE" : resolvedCatalystState}
 `;
 
   const handleCopy = async () => {
@@ -407,22 +450,58 @@ export default function PreFlightChecklistModal({
             <div className="p-3 rounded-lg bg-[#111722] border border-[#1e293b] flex items-start justify-between gap-3">
               <div className="space-y-0.5">
                 <div className="font-bold text-slate-100 flex items-center gap-1.5">
-                  <span>{isCatalystPassed ? "✅" : "⚠️"}</span>
-                  <span>{isPlain ? "4. News Event Safety (No surprise earnings report tomorrow)" : "4. Catalyst Hazard Buffer (>7 Days to Binary Earnings)"}</span>
+                  <span>
+                    {resolvedCatalystState === "PASS"
+                      ? "✅"
+                      : resolvedCatalystState === "WARN"
+                      ? "⚠️"
+                      : "⚪"}
+                  </span>
+                  <span>
+                    {isPlain
+                      ? "4. News Event Safety (No surprise earnings report tomorrow)"
+                      : "4. Catalyst Hazard Buffer (>7 Days to Binary Earnings)"}
+                  </span>
                 </div>
                 <p className="text-[11px] text-slate-400 pl-5">
-                  {isCatalystPassed
+                  {resolvedCatalystState === "PASS"
                     ? (isPlain
-                        ? "Sufficient time window to manage trade without overnight earnings gap risk."
-                        : "Catalyst Buffer: Clean window (>7 days to binary catalyst).")
+                        ? `Verified event runway: No earnings announcement scheduled within the 7-day trade window${catalystEvidence?.daysToEarnings ? ` (${catalystEvidence.daysToEarnings.toFixed(1)}d DTE)` : ""}.`
+                        : `Catalyst Buffer: Clean window verified (>7 days to binary catalyst${catalystEvidence?.daysToEarnings ? `, ${catalystEvidence.daysToEarnings.toFixed(1)}d DTE` : ""}).`)
+                    : resolvedCatalystState === "WARN"
+                    ? (isPlain
+                        ? `⚠️ High Risk: Scheduled earnings announcement ${catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null ? (catalystEvidence.daysToEarnings <= 1.0 ? "in <= 24h" : `in ${catalystEvidence.daysToEarnings.toFixed(1)} days`) : "within 7-day window"}${catalystEvidence?.eventDate ? ` (${catalystEvidence.eventDate})` : ""}.`
+                        : `⚠️ Binary Gap Risk: Earnings announcement scheduled for ${catalystEvidence?.eventDate || "imminent"}${catalystEvidence?.callTimeEt ? ` (${catalystEvidence.callTimeEt} ET Call)` : ""}. Position sizing restricted.`)
+                    : resolvedCatalystState === "ERROR"
+                    ? (isPlain
+                        ? "Technical error retrieving corporate earnings schedule."
+                        : "Catalyst Evaluation Error: Provider telemetry stream failed to resolve.")
                     : (isPlain
-                        ? "⚠️ High Risk: Imminent binary earnings announcement / major FDA event within 48 hours."
-                        : "⚠️ Imminent Binary Event: Overnight gap risk exceeds standard stop constraint.")}
+                        ? (catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null && catalystEvidence.daysToEarnings < 0
+                            ? `Prior earnings reported (${catalystEvidence.eventDate || "historical"}), but forward calendar is unverified. Cannot certify forward runway.`
+                            : "Earnings calendar coverage unavailable: Event runway cannot be certified.")
+                        : (catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null && catalystEvidence.daysToEarnings < 0
+                            ? `Historical Event Elapsed: Prior report on ${catalystEvidence.eventDate || "historical record"}. Forward schedule unverified; runway uncertified.`
+                            : "Catalyst Telemetry Unavailable: Corporate event schedule unverified from primary source."))}
                 </p>
               </div>
               <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
-                isCatalystPassed ? "bg-emerald-950 text-emerald-300 border-emerald-800" : "bg-amber-950 text-amber-300 border-amber-800"
-              }`}>{isCatalystPassed ? "PASS" : "HAZARD"}</span>
+                resolvedCatalystState === "PASS"
+                  ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                  : resolvedCatalystState === "WARN"
+                  ? "bg-rose-950 text-rose-300 border-rose-800"
+                  : resolvedCatalystState === "ERROR"
+                  ? "bg-rose-950/80 text-rose-300 border-rose-800"
+                  : "bg-slate-900 text-slate-400 border-slate-700"
+              }`}>
+                {resolvedCatalystState === "PASS"
+                  ? "PASS"
+                  : resolvedCatalystState === "WARN"
+                  ? "HAZARD"
+                  : resolvedCatalystState === "ERROR"
+                  ? "ERROR"
+                  : "UNAVAILABLE"}
+              </span>
             </div>
 
             {/* Check 5 */}
