@@ -82,6 +82,7 @@ REHEARSAL_CACHE_KEY_PREFIX = "research-maintenance-rehearsal-state-"
 # Activation Flag Environment Variables
 ACTIVATION_ENV_VAR = "ARX_MAINTENANCE_PILOT_ACTIVE"
 REPO_VAR_NAME = "ENABLE_RESEARCH_MAINTENANCE_PILOT"
+OPERATIONAL_BOOTSTRAP_ENV_VAR = "ARX_OPERATIONAL_BOOTSTRAP"
 
 # GitHub Actions Workflow & Repository Boundaries
 TARGET_REPOSITORY = "daakara/finance"
@@ -297,6 +298,7 @@ def evaluate_pilot_status(
     force_run: bool = False,
     override_date: str = None,
     override_active: bool = None,
+    operational_bootstrap: bool = False,
 ) -> PilotStatus:
     """
     Evaluates whether the scheduled pilot is authorized to execute.
@@ -305,7 +307,7 @@ def evaluate_pilot_status(
     now_utc = datetime.now(timezone.utc)
     current_date_str = override_date or now_utc.strftime("%Y-%m-%d")
 
-    # 1. Check expiration limits
+    # 1. Check expiration limits (enforced unconditionally even for bootstrap)
     date_expired = current_date_str > PILOT_END_DATE
     runs_exhausted = current_run_count >= MAX_PILOT_RUNS
 
@@ -325,14 +327,19 @@ def evaluate_pilot_status(
             message=f"PILOT_EXPIRED: {reason}. Recurring execution is halted by code guard.",
         )
 
-    # 2. Check activation flag
+    # 2. Check activation flag and operational bootstrap
+    is_bootstrap = (
+        operational_bootstrap
+        or os.environ.get(OPERATIONAL_BOOTSTRAP_ENV_VAR, "").strip().lower() in ("1", "true", "yes", "enabled")
+    )
+
     if override_active is not None:
         active_flag = override_active
     else:
         env_val = os.environ.get(ACTIVATION_ENV_VAR, "").strip().lower()
         active_flag = env_val in ("1", "true", "yes", "enabled")
 
-    if not active_flag and not force_run:
+    if not active_flag and not force_run and not is_bootstrap:
         return PilotStatus(
             is_active=False,
             is_expired=False,
@@ -341,6 +348,17 @@ def evaluate_pilot_status(
             current_date=current_date_str,
             end_date=PILOT_END_DATE,
             message="PILOT_DORMANT: Scheduled research maintenance pilot is disabled (ARX_MAINTENANCE_PILOT_ACTIVE=false).",
+        )
+
+    if is_bootstrap:
+        return PilotStatus(
+            is_active=True,
+            is_expired=False,
+            run_count=current_run_count,
+            max_runs=MAX_PILOT_RUNS,
+            current_date=current_date_str,
+            end_date=PILOT_END_DATE,
+            message="PILOT_ACTIVE: Authorized manual operational bootstrap invocation.",
         )
 
     return PilotStatus(
