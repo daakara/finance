@@ -27,9 +27,10 @@ logger = logging.getLogger(__name__)
 
 SEC_USER_AGENT = "ARXTerminal Research Akara.david26@gmail.com"
 QUALIFYING_PERIODIC_FORMS = {"10-Q", "10-K"}
+PERIODIC_AMENDMENT_FORMS = {"10-Q/A", "10-K/A"}
 MISIDENTIFIED_NON_PERIODIC_FORMS = {
     "8-K", "4", "144", "SCHEDULE 13G", "SCHEDULE 13G/A",
-    "SC 13G", "SC 13D", "DEF 14A", "10-Q/A", "10-K/A"
+    "SC 13G", "SC 13D", "DEF 14A"
 }
 
 SEC_EDGAR_ARCHIVE_BASE = "https://www.sec.gov/Archives/edgar/data"
@@ -526,11 +527,12 @@ class SecEventPoller:
                         )
                         return rejected_event, [msg]
 
-                    if form not in QUALIFYING_PERIODIC_FORMS:
+                    if form not in QUALIFYING_PERIODIC_FORMS and form not in PERIODIC_AMENDMENT_FORMS:
                         msg = f"Filing {clean_acc} has non-qualifying form '{form}'."
                         return None, [msg]
 
-                    # Valid periodic report found
+                    # Valid periodic report or amendment found
+                    is_amendment = form in PERIODIC_AMENDMENT_FORMS
                     url = format_sec_primary_url(cik, clean_acc, doc)
                     idx_hash, doc_hash, receipts = self.retrieve_filing_artifacts(cik, clean_acc, doc, force_refresh=force_refresh)
                     event = MaintenanceEvent(
@@ -552,6 +554,11 @@ class SecEventPoller:
                         company_facts_url=company_facts_url,
                         processing_state=EventProcessingState.REGISTERED,
                         is_replay=is_replay,
+                        is_amendment=is_amendment,
+                        unsupported_reason=(
+                            f"Periodic amendment Form {form} requires manual reconciliation."
+                            if is_amendment else None
+                        ),
                         sha256=doc_hash,
                         source_receipts=receipts,
                     )
@@ -576,7 +583,8 @@ class SecEventPoller:
                 logger.info(f"Filing {acc} is already completed; checking next candidate filing.")
                 continue
 
-            if form in QUALIFYING_PERIODIC_FORMS:
+            if form in QUALIFYING_PERIODIC_FORMS or form in PERIODIC_AMENDMENT_FORMS:
+                is_amendment = form in PERIODIC_AMENDMENT_FORMS
                 url = format_sec_primary_url(cik, acc, doc)
                 idx_hash, doc_hash, receipts = self.retrieve_filing_artifacts(cik, acc, doc, force_refresh=force_refresh)
                 event = MaintenanceEvent(
@@ -598,9 +606,14 @@ class SecEventPoller:
                     company_facts_url=company_facts_url,
                     processing_state=EventProcessingState.REGISTERED,
                     is_replay=is_replay,
+                    is_amendment=is_amendment,
+                    unsupported_reason=(
+                        f"Periodic amendment Form {form} requires manual reconciliation."
+                        if is_amendment else None
+                    ),
                     sha256=doc_hash,
                     source_receipts=receipts,
                 )
                 return event, warnings
 
-        return None, [f"NO_NEW_FILING: No qualifying periodic filing (10-Q/10-K) postdating {cutoff_date} found for {symbol}."]
+        return None, [f"NO_NEW_FILING: No qualifying periodic filing (10-Q/10-K/amendment) postdating {cutoff_date} found for {symbol}."]

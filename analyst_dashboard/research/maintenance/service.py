@@ -155,7 +155,29 @@ class ResearchMaintenanceService:
 
         self.register.register_event(event, fail_if_duplicate=False, allow_overwrite=force_refresh)
 
-        # Step 4: Reconcile financial facts
+        # Step 4: Check if financial reconciliation is supported for this period and form
+        from .pilot_config import is_reconciliation_supported
+        if not is_reconciliation_supported(clean_sym, event.form, event.reporting_period) or event.is_amendment:
+            unsupported_reason = event.unsupported_reason or (
+                f"Automated reconciliation is validated ONLY for Q3 2026 Form 10-Q (period 2026-09-30). "
+                f"Period '{event.reporting_period}' and Form '{event.form}' require manual accounting review."
+            )
+            event.unsupported_reason = unsupported_reason
+            artifact, json_path, md_path = self.packet_generator.generate_unsupported_period_artifact(
+                event=event,
+                baseline_dossier=baseline_dossier,
+                unsupported_reason=unsupported_reason,
+            )
+            self.register.update_event_state(
+                symbol=clean_sym,
+                accession_number=event.accession_number,
+                state=EventProcessingState.DETECTED_UNSUPPORTED_PERIOD,
+                is_replay=is_replay,
+                unsupported_reason=unsupported_reason,
+            )
+            return None, event, [f"UNSUPPORTED_PERIOD: {unsupported_reason}"]
+
+        # Step 5: Reconcile financial facts (for supported periods)
         try:
             reconciled_profile, changes, exceptions, undisclosed = self.reconciler.reconcile_filing(
                 symbol=clean_sym,
@@ -188,7 +210,7 @@ class ResearchMaintenanceService:
             )
             return None, event, [f"FAILED during reconciliation: {e}"]
 
-        # Step 5: Assess research decision consequences
+        # Step 6: Assess research decision consequences
         try:
             effects, val_comp, disposition, rationale, questions, stopping_rule = self.assessor.assess_consequences(
                 symbol=clean_sym,
@@ -216,7 +238,7 @@ class ResearchMaintenanceService:
             )
             return None, event, [f"FAILED during assessment: {e}"]
 
-        # Step 6: Generate Review Packet
+        # Step 7: Generate Review Packet
         try:
             packet, json_path, md_path = self.packet_generator.generate_packet(
                 event=event,

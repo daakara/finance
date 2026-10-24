@@ -1,0 +1,105 @@
+name: ARX Research Maintenance Scheduled Pilot (FIX)
+
+# Governed by ARX Closure Model v2, ARX-DECISION-RESEARCH-PROCESS-V1, and PILOT_MAINTENANCE_POLICY.md.
+# Invariants:
+# - Strictly limited to Comfort Systems USA, Inc. (FIX), CIK 0001035983.
+# - Once-daily weekday schedule (UTC).
+# - Explicit activation flag (dormant by default: ENABLE_RESEARCH_MAINTENANCE_PILOT=false).
+# - Hard-coded pilot limits: 30-day window, max 30 runs.
+# - Strictly bounded request budget (max 5 requests/run, min 0.25s interval).
+# - Financial reconciliation validated ONLY for Q3 2026 Form 10-Q (2026-09-30).
+# - Unsupported periods generate bounded event-review artifacts without valuation.
+# - Zero repository mutation on no-change runs; no push to main; no automated publication.
+
+on:
+  schedule:
+    # Runs Monday through Friday at 21:17 UTC (after SEC EDGAR 21:00 UTC cutoff)
+    # Minute 17 avoids top-of-hour GitHub Actions shared runner queue delays.
+    - cron: '17 21 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: 'Bypass dormant check for controlled manual rehearsal'
+        required: false
+        type: boolean
+        default: false
+      target_accession:
+        description: 'Optional specific accession number for replay/rehearsal'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: research-maintenance-pilot
+  cancel-in-progress: false
+
+jobs:
+  detect-and-review:
+    name: Detect Periodic Filing & Prepare Review Packet (FIX)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    env:
+      # Activation flag: dormant by default unless explicitly configured in repo vars
+      ARX_MAINTENANCE_PILOT_ACTIVE: ${{ vars.ENABLE_RESEARCH_MAINTENANCE_PILOT || 'false' }}
+      ARX_MAINTENANCE_STATE_DIR: durable_state/research_maintenance
+      ARX_MAINTENANCE_OUTPUT_DIR: docs/research/maintenance/packets
+
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 2. Set up Python Runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: ""
+
+      - name: 3. Restore Durable State Cache
+        uses: actions/cache/restore@v4
+        id: restore-state
+        with:
+          path: durable_state/
+          key: research-maintenance-durable-state-${{ github.run_id }}
+          restore-keys: |
+            research-maintenance-durable-state-
+
+      - name: 4. Execute Governed Scheduled Runner
+        id: execute-runner
+        run: |
+          FORCE_FLAG=""
+          if [ "${{ inputs.force_run }}" = "true" ]; then
+            FORCE_FLAG="--force-run"
+          fi
+          
+          ACCESSION_FLAG=""
+          if [ -n "${{ inputs.target_accession }}" ]; then
+            ACCESSION_FLAG="--target-accession ${{ inputs.target_accession }}"
+          fi
+
+          python -m analyst_dashboard.research.maintenance.scheduled_runner \
+            --symbol FIX \
+            --state-dir durable_state/research_maintenance \
+            --output-dir docs/research/maintenance/packets \
+            $FORCE_FLAG $ACCESSION_FLAG
+
+      - name: 5. Save Durable State Cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: durable_state/
+          key: research-maintenance-durable-state-${{ github.run_id }}
+
+      - name: 6. Upload Review Packets and State Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: research-maintenance-fix-artifacts-${{ github.run_id }}
+          path: |
+            durable_state/
+            docs/research/maintenance/packets/
+          retention-days: 30
