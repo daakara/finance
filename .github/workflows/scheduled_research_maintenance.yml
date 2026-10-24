@@ -18,6 +18,11 @@ on:
     - cron: '17 21 * * 1-5'
   workflow_dispatch:
     inputs:
+      bootstrap:
+        description: 'Authorize explicit one-time manual operational bootstrap'
+        required: false
+        type: boolean
+        default: false
       force_run:
         description: 'Bypass dormant check for controlled manual rehearsal'
         required: false
@@ -61,13 +66,43 @@ jobs:
 
       - name: 3. Check Pilot Activation Guard & Namespace
         id: check-activation
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_BOOTSTRAP: ${{ inputs.bootstrap }}
+          INPUT_FORCE: ${{ inputs.force_run }}
+          ENV_ACTIVE: ${{ env.ARX_MAINTENANCE_PILOT_ACTIVE }}
         shell: bash
         run: |
-          FORCE="${{ inputs.force_run }}"
-          ENV_ACTIVE="${{ env.ARX_MAINTENANCE_PILOT_ACTIVE }}"
-          if [ "$FORCE" = "true" ]; then
+          # Never derive bootstrap authorization from a scheduled or non-dispatch event
+          BOOTSTRAP="false"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$INPUT_BOOTSTRAP" = "true" ]; then
+            BOOTSTRAP="true"
+          fi
+
+          FORCE="false"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$INPUT_FORCE" = "true" ]; then
+            FORCE="true"
+          fi
+
+          # Reject contradictory rehearsal and bootstrap settings before filesystem or network work
+          if [ "$BOOTSTRAP" = "true" ] && [ "$FORCE" = "true" ]; then
+            echo "::error::Contradictory settings: 'bootstrap' (operational) cannot be combined with 'force_run' (rehearsal)." >&2
+            exit 1
+          fi
+
+          if [ "$BOOTSTRAP" = "true" ]; then
+            echo "is_active=true" >> "$GITHUB_OUTPUT"
+            echo "is_rehearsal=false" >> "$GITHUB_OUTPUT"
+            echo "is_bootstrap=true" >> "$GITHUB_OUTPUT"
+            echo "state_dir=durable_state/research_maintenance" >> "$GITHUB_OUTPUT"
+            echo "output_dir=docs/research/maintenance/packets" >> "$GITHUB_OUTPUT"
+            echo "cache_key_prefix=research-maintenance-durable-state-" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=research-maintenance-fix-state" >> "$GITHUB_OUTPUT"
+            echo "Manual operational bootstrap active (bootstrap=true). Routing to operational namespace."
+          elif [ "$FORCE" = "true" ]; then
             echo "is_active=true" >> "$GITHUB_OUTPUT"
             echo "is_rehearsal=true" >> "$GITHUB_OUTPUT"
+            echo "is_bootstrap=false" >> "$GITHUB_OUTPUT"
             echo "state_dir=durable_state/rehearsal_maintenance" >> "$GITHUB_OUTPUT"
             echo "output_dir=docs/research/maintenance/rehearsal_packets" >> "$GITHUB_OUTPUT"
             echo "cache_key_prefix=research-maintenance-rehearsal-state-" >> "$GITHUB_OUTPUT"
@@ -76,6 +111,7 @@ jobs:
           elif [ "$ENV_ACTIVE" = "true" ] || [ "$ENV_ACTIVE" = "1" ] || [ "$ENV_ACTIVE" = "yes" ]; then
             echo "is_active=true" >> "$GITHUB_OUTPUT"
             echo "is_rehearsal=false" >> "$GITHUB_OUTPUT"
+            echo "is_bootstrap=false" >> "$GITHUB_OUTPUT"
             echo "state_dir=durable_state/research_maintenance" >> "$GITHUB_OUTPUT"
             echo "output_dir=docs/research/maintenance/packets" >> "$GITHUB_OUTPUT"
             echo "cache_key_prefix=research-maintenance-durable-state-" >> "$GITHUB_OUTPUT"
@@ -84,6 +120,7 @@ jobs:
           else
             echo "is_active=false" >> "$GITHUB_OUTPUT"
             echo "is_rehearsal=false" >> "$GITHUB_OUTPUT"
+            echo "is_bootstrap=false" >> "$GITHUB_OUTPUT"
             echo "state_dir=durable_state/research_maintenance" >> "$GITHUB_OUTPUT"
             echo "output_dir=docs/research/maintenance/packets" >> "$GITHUB_OUTPUT"
             echo "cache_key_prefix=research-maintenance-durable-state-" >> "$GITHUB_OUTPUT"
@@ -105,21 +142,28 @@ jobs:
         id: execute-runner
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          STATE_DIR: ${{ steps.check-activation.outputs.state_dir }}
+          OUTPUT_DIR: ${{ steps.check-activation.outputs.output_dir }}
+          IS_REHEARSAL: ${{ steps.check-activation.outputs.is_rehearsal }}
+          IS_BOOTSTRAP: ${{ steps.check-activation.outputs.is_bootstrap }}
+          TARGET_ACCESSION: ${{ inputs.target_accession }}
         run: |
-          FLAGS=""
-          if [ "${{ steps.check-activation.outputs.is_rehearsal }}" = "true" ]; then
-            FLAGS="--rehearsal --force-run"
+          ARGS=(
+            --symbol FIX
+            --state-dir "$STATE_DIR"
+            --output-dir "$OUTPUT_DIR"
+          )
+          if [ "$IS_REHEARSAL" = "true" ]; then
+            ARGS+=(--rehearsal --force-run)
           fi
-          
-          if [ -n "${{ inputs.target_accession }}" ]; then
-            FLAGS="$FLAGS --target-accession ${{ inputs.target_accession }}"
+          if [ "$IS_BOOTSTRAP" = "true" ]; then
+            ARGS+=(--operational-bootstrap --bootstrap)
+          fi
+          if [ -n "$TARGET_ACCESSION" ]; then
+            ARGS+=(--target-accession "$TARGET_ACCESSION")
           fi
 
-          python -m analyst_dashboard.research.maintenance.scheduled_runner \
-            --symbol FIX \
-            --state-dir "${{ steps.check-activation.outputs.state_dir }}" \
-            --output-dir "${{ steps.check-activation.outputs.output_dir }}" \
-            $FLAGS
+          python -m analyst_dashboard.research.maintenance.scheduled_runner "${ARGS[@]}"
 
       - name: 6. Save Durable State Cache
         uses: actions/cache/save@v4

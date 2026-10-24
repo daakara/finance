@@ -51,6 +51,7 @@ from .pilot_config import (
     OPERATIONAL_OUTPUT_DIR,
     OPERATIONAL_CACHE_DIR,
     OPERATIONAL_ARTIFACT_NAME,
+    OPERATIONAL_BOOTSTRAP_ENV_VAR,
     REHEARSAL_STATE_DIR,
     REHEARSAL_OUTPUT_DIR,
     REHEARSAL_CACHE_DIR,
@@ -100,6 +101,7 @@ class ScheduledRunner:
         force_run: bool = False,
         is_rehearsal: Optional[bool] = None,
         allow_bootstrap: bool = False,
+        operational_bootstrap: bool = False,
     ):
         clean_sym = symbol.strip().upper()
         if clean_sym != TARGET_SYMBOL:
@@ -114,6 +116,16 @@ class ScheduledRunner:
         self.force_run = force_run
         self.is_rehearsal = is_rehearsal if is_rehearsal is not None else force_run
         self.allow_bootstrap = allow_bootstrap
+        self.operational_bootstrap = (
+            operational_bootstrap
+            or os.environ.get(OPERATIONAL_BOOTSTRAP_ENV_VAR, "").strip().lower() in ("1", "true", "yes", "enabled")
+        )
+
+        # Reject contradictory settings: operational bootstrap cannot be combined with rehearsal mode
+        if self.operational_bootstrap and (self.is_rehearsal or self.force_run):
+            raise ValueError(
+                "BOUNDARY_VIOLATION: Contradictory settings: operational bootstrap cannot be combined with rehearsal mode."
+            )
 
         # Reject contradictory settings that allow force_run rehearsal execution to use the operational namespace
         if self.force_run and not self.is_rehearsal:
@@ -163,7 +175,11 @@ class ScheduledRunner:
         """
         # Step 0: Initial safety guard - evaluate expiry and activation before acquiring locks,
         # mutating directories, hydrating state, or making network calls.
-        pre_status = evaluate_pilot_status(current_run_count=0, force_run=self.force_run)
+        pre_status = evaluate_pilot_status(
+            current_run_count=0,
+            force_run=self.force_run,
+            operational_bootstrap=self.operational_bootstrap,
+        )
         if pre_status.is_expired:
             logger.info(f"Pilot execution halted (expired): {pre_status.message}")
             summary = {
@@ -243,6 +259,7 @@ class ScheduledRunner:
         status = evaluate_pilot_status(
             current_run_count=self.state_mgr.run_count,
             force_run=self.force_run,
+            operational_bootstrap=self.operational_bootstrap,
         )
 
         if status.is_expired:
@@ -572,6 +589,22 @@ class ScheduledRunner:
         budget_tracker: Optional[RunBudgetTracker] = None,
     ):
         """Writes execution telemetry to GITHUB_STEP_SUMMARY when available."""
+        is_reh = getattr(self, "is_rehearsal", False)
+        is_boot = getattr(self, "operational_bootstrap", False)
+
+        if is_boot:
+            prefix = "[OPERATIONAL BOOTSTRAP] "
+            invocation_mode_str = "Manual Operational Bootstrap"
+            summary["invocation_mode"] = "MANUAL_OPERATIONAL_BOOTSTRAP"
+        elif is_reh:
+            prefix = "[REHEARSAL] "
+            invocation_mode_str = "Rehearsal"
+            summary["invocation_mode"] = "REHEARSAL"
+        else:
+            prefix = ""
+            invocation_mode_str = "Scheduled / Operational"
+            summary["invocation_mode"] = "SCHEDULED_OR_OPERATIONAL"
+
         summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
         if not summary_path:
             return
@@ -579,8 +612,6 @@ class ScheduledRunner:
         req_count = budget_tracker.sec_request_count if budget_tracker else summary.get("request_count", self.request_count)
         rec_count = budget_tracker.recovery_request_count if budget_tracker else summary.get("recovery_requests", 0)
         run_sec = budget_tracker.elapsed_time() if budget_tracker else summary.get("run_time_sec", time.time() - self.start_time)
-        is_reh = getattr(self, "is_rehearsal", False)
-        prefix = "[REHEARSAL] " if is_reh else ""
 
         md = f"""## {prefix}ARX Scheduled Research Maintenance Run Summary
 
@@ -588,12 +619,18 @@ class ScheduledRunner:
 | :--- | :--- |
 | **Issuer** | {self.company_name} (`{self.symbol}`, CIK: `{self.cik}`) |
 | **Run Outcome** | `{outcome.value}` |
+| **Invocation Mode** | `{invocation_mode_str}` |
 | **Run Count** | {summary.get('run_count', self.state_mgr.run_count)} / {MAX_PILOT_RUNS} |
 | **Checkpoint Sequence** | {summary.get('checkpoint_sequence', self.state_mgr.checkpoint_sequence)} |
 | **Execution Time** | {run_sec:.2f}s (Budget: {MAX_RUNTIME_SECONDS}s) |
 | **SEC HTTP Requests** | {req_count} / {MAX_REQUESTS_PER_RUN} |
 | **Recovery HTTP Requests** | {rec_count} |
 | **Namespace Mode** | `{'REHEARSAL' if is_reh else 'OPERATIONAL'}` |
+
+"""
+        if is_boot:
+            md += """> [!NOTE]
+> **Authorized Operational Bootstrap**: One-time manual invocation executing against the operational namespace while recurring schedule remains dormant.
 
 """
         if outcome == RunOutcome.NEWLY_VERIFIED_EVENT_SUPPORTED:
@@ -654,9 +691,18 @@ def main():
     parser.add_argument("--force-run", action="store_true", help="Bypass dormant activation check")
     parser.add_argument("--rehearsal", action="store_true", help="Execute in isolated rehearsal namespace")
     parser.add_argument("--bootstrap", action="store_true", help="Authorize first-run genesis initialization")
+    parser.add_argument("--operational-bootstrap", action="store_true", help="Authorize manual operational execution while pilot is dormant")
     parser.add_argument("--target-accession", default=None, help="Target specific accession for rehearsal")
 
     args = parser.parse_args()
+
+    # Reject contradictory settings: operational bootstrap cannot be combined with rehearsal mode
+    if args.operational_bootstrap and (args.rehearsal or args.force_run):
+        print(
+            "[ARX BOUNDARY ERROR] Contradictory settings: operational bootstrap cannot be combined with rehearsal mode.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     is_rehearsal = args.rehearsal or args.force_run
 
@@ -670,6 +716,7 @@ def main():
             force_run=args.force_run,
             is_rehearsal=is_rehearsal,
             allow_bootstrap=args.bootstrap,
+            operational_bootstrap=args.operational_bootstrap,
         )
     except ValueError as e:
         print(f"[ARX BOUNDARY ERROR] {e}", file=sys.stderr)
