@@ -74,6 +74,8 @@ jobs:
           echo "Building verified frontend static export..."
           cd frontend
           npm ci
+          echo "Enforcing ARX UX Design Parity Gate V1..."
+          npm run test:parity
           npm run build:verified
 
           # Independently compute deterministic, content-addressed artifact digest over output
