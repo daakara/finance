@@ -14,11 +14,12 @@ console.log("===================================================================
 console.log("1. Verifying Authoritative Synthesis E V3 Reference Artifact...");
 
 const candidatePrototypePaths = [
-  path.resolve(__dirname, "../../scratch/arx-ux-prototypes/synthesis-e-remediation-candidate-v2-layout-accessibility-qa/index.html"),
-  path.resolve("C:/Users/akara/Documents/Projects/finance/scratch/arx-ux-prototypes/synthesis-e-remediation-candidate-v2-layout-accessibility-qa/index.html")
+  path.resolve(__dirname, "fixtures/synthesis-e-v3-approved-reference.html"),
+  path.resolve(__dirname, "../../scratch/arx-ux-prototypes/synthesis-e-remediation-candidate-v2-layout-accessibility-qa/index.html")
 ];
 
 let prototypeFound = false;
+let resolvedReferencePath: string | null = null;
 const EXPECTED_PROTOTYPE_SHA = "2857d19a442153e2399be9e3745cfee04f3b6e75f8ef9adfb3ebdec8cdd9008f";
 
 for (const p of candidatePrototypePaths) {
@@ -31,14 +32,15 @@ for (const p of candidatePrototypePaths) {
       `Synthesis E V3 prototype hash must match approved reference bitwise (${EXPECTED_PROTOTYPE_SHA})`
     );
     prototypeFound = true;
+    resolvedReferencePath = p;
     console.log(`   [PASS] Synthesis E V3 reference verified bitwise at ${p}: ${hash}`);
     break;
   }
 }
 
 if (!prototypeFound) {
-  // If running in isolated CI where external scratch directory is absent, ensure contract digest is verified
-  console.log("   [NOTICE] Local scratch artifact not present in current directory; validating against contract hash.");
+  console.error("   [FAIL] Approved Synthesis E V3 reference baseline is legitimately unavailable. Disposition: UNVERIFIED");
+  process.exit(1);
 }
 
 // Verify contract JSON exists and matches expectations
