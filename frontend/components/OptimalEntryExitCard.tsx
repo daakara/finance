@@ -6,7 +6,6 @@ import InsightProvenanceModal from "./InsightProvenanceModal";
 import PositionSizerModal from "./PositionSizerModal";
 import AlertTriggerModal from "./AlertTriggerModal";
 import PreFlightChecklistModal from "./PreFlightChecklistModal";
-import TradeExecutionStepper from "./TradeExecutionStepper";
 import { addPortfolioPosition } from "../lib/portfolio";
 import {
   resolveDecisionReadiness,
@@ -654,16 +653,6 @@ export default function OptimalEntryExitCard({
           </div>
         </div>
       )}
-
-      {/* 🚀 5-Step Guided Trade Execution Stepper */}
-      <TradeExecutionStepper
-        symbol={symbol}
-        onOpenPreFlight={() => setIsChecklistOpen(true)}
-        onOpenSizer={() => setIsSizerOpen(true)}
-        onOpenAlert={() => setIsAlertOpen(true)}
-        onLogPortfolio={handleLogToPortfolio}
-        logStatus={logStatus}
-      />
 
       {/* Interactive Execution Price Ladder */}
       <div className="space-y-2 bg-[#090d14] p-3.5 rounded-xl border border-[#1e293b]">

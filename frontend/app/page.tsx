@@ -56,7 +56,7 @@ function TerminalContent() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(
     (urlTab === "SMART_MONEY" || urlTab === "FUNDAMENTALS" || urlTab === "RISK_CONTAGION" || urlTab === "EXECUTION")
       ? urlTab as WorkspaceTab
-      : "EXECUTION"
+      : "SMART_MONEY"
   );
   const [macroData, setMacroData] = useState<FredMacroData | null>(null);
   const [insiderTrades, setInsiderTrades] = useState<SecForm4Trade[]>([]);
@@ -459,6 +459,16 @@ function TerminalContent() {
                   />
                 )
               }
+              evidenceSlot={
+                <CompositeConvictionCard
+                  symbol={selectedSymbol}
+                  data={data}
+                  macro={macroData}
+                  insiders={insiderTrades}
+                  userRole={userRole}
+                  onOpenWhy={() => setIsPreflightModalOpen(true)}
+                />
+              }
               planSlot={
                 loading ? (
                   <div className="bg-[#111722] border border-[#243044] rounded-xl p-5 shadow-xl text-slate-500 font-mono text-xs flex items-center justify-center space-x-2">
@@ -584,31 +594,9 @@ function TerminalContent() {
             </div>
           )}
 
-          {/* 💎 DECISION-SYNTHESIS COMPOSITE CONVICTION SCORECARD */}
-          <CompositeConvictionCard
-            symbol={selectedSymbol}
-            data={data}
-            macro={macroData}
-            insiders={insiderTrades}
-            userRole={userRole}
-          />
-
           {/* Modular Domain Workspace Tabs (Detailed Domain Content) */}
           <div data-testid="detailed-domain-content" className="space-y-4 sm:space-y-5">
-            <div role="tablist" aria-label="Quantitative Domain Workspaces" className="bg-[#0c1017] p-1.5 rounded-2xl border border-[#243044] grid grid-cols-2 sm:grid-cols-4 gap-1.5 shadow-xl font-mono text-xs">
-              <button
-                role="tab"
-                aria-selected={activeTab === "EXECUTION"}
-                onClick={() => handleTabChange("EXECUTION", "Execution & Levels")}
-                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[40px] cursor-pointer ${
-                  activeTab === "EXECUTION"
-                    ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
-                }`}
-              >
-                <Target className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                <span className="whitespace-nowrap"><span className="sm:hidden">Execution</span><span className="hidden sm:inline">Execution & Levels</span></span>
-              </button>
+            <div role="tablist" aria-label="Quantitative Domain Workspaces" className="bg-[#0c1017] p-1.5 rounded-2xl border border-[#243044] grid grid-cols-1 sm:grid-cols-3 gap-1.5 shadow-xl font-mono text-xs">
 
               <button
                 role="tab"
@@ -737,36 +725,36 @@ function TerminalContent() {
           </div>
 
           {/* Below-Fold Narrative & Discovery Guidance */}
-          <div className="space-y-4 pt-4 border-t border-[#182335]">
-            <PageIntro
-              hubId="analysis"
-              title={hasExplicitSymbol ? `Analysis — ${selectedSymbol}` : "ARX Terminal · Quantitative Analysis"}
-              purpose="Evaluate whether an asset deserves capital based on confluence, technicals, and risk."
-              badge={hasExplicitSymbol ? "Active Target" : "Demonstration Mode"}
-              symbol={hasExplicitSymbol ? selectedSymbol : null}
-              isDemo={!hasExplicitSymbol}
-              demoNotice={!hasExplicitSymbol ? `Displaying ${selectedSymbol} as a demonstration asset. Search any ticker to analyze your target.` : undefined}
-              primaryAction={{
-                label: `Prepare Trade Setup (${selectedSymbol}) →`,
-                href: `/setups?symbol=${selectedSymbol}`,
-                onClick: () => trackAnalysisToSetup(selectedSymbol),
-              }}
-              secondaryAction={{
-                label: "Scan Radar Candidates →",
-                href: "/radar",
-              }}
-            />
+          {!hasExplicitSymbol && (
+            <div className="space-y-4 pt-4 border-t border-[#182335]">
+              <PageIntro
+                hubId="analysis"
+                title={hasExplicitSymbol ? `Analysis — ${selectedSymbol}` : "ARX Terminal · Quantitative Analysis"}
+                purpose="Evaluate whether an asset deserves capital based on confluence, technicals, and risk."
+                badge={hasExplicitSymbol ? "Active Target" : "Demonstration Mode"}
+                symbol={hasExplicitSymbol ? selectedSymbol : null}
+                isDemo={!hasExplicitSymbol}
+                demoNotice={!hasExplicitSymbol ? `Displaying ${selectedSymbol} as a demonstration asset. Search any ticker to analyze your target.` : undefined}
+                primaryAction={{
+                  label: `Prepare Trade Setup (${selectedSymbol}) →`,
+                  href: `/setups?symbol=${selectedSymbol}`,
+                  onClick: () => trackAnalysisToSetup(selectedSymbol),
+                }}
+                secondaryAction={{
+                  label: "Scan Radar Candidates →",
+                  href: "/radar",
+                }}
+              />
 
-            {!hasExplicitSymbol && (
               <IntentHero onSelectSymbol={handleSelectSymbol} />
-            )}
 
-            <WeeklyConfluenceSpotlight
-              defaultCollapsed={selectedSymbol.toUpperCase() !== "SPY"}
-              onSelectSymbol={handleSelectSymbol}
-              selectedSymbol={selectedSymbol}
-            />
-          </div>
+              <WeeklyConfluenceSpotlight
+                defaultCollapsed={selectedSymbol.toUpperCase() !== "SPY"}
+                onSelectSymbol={handleSelectSymbol}
+                selectedSymbol={selectedSymbol}
+              />
+            </div>
+          )}
         </section>
 
         {/* Watchlist Sidebar (Left column on desktop, Below chart on mobile) */}
