@@ -2806,7 +2806,7 @@ def generate_published_watch_manifest(
         manifest["accepted_additions"]["ALC"] = alc_dossier
         manifest["additions_provenance"]["ALC"] = {
             "company_name": "Alcon Inc.",
-            "cik": "0001748310",
+            "cik": "0001167379",
             "exchange": "NYSE",
             "acceptance_basis": "PRIMARY_SEC_EDGAR_VERIFIED_RESEARCH",
             "selection_decision": "Published under Sprint 4 Alcon V4 Publication Plan",
@@ -2818,8 +2818,8 @@ def generate_published_watch_manifest(
             "source_authority": "ARX Quality Watch Sourced Research",
             "governing_contract": "INITIATIVE-S4-ALCON-V4-PUBLICATION",
             "source_filings": [
-                "0001748310-26-000008",
-                "0001748310-26-000021"
+                "0001167379-26-000014",
+                "0001167379-26-000042"
             ],
             "reference_price": 67.43,
             "reference_date": "2026-10-21",
