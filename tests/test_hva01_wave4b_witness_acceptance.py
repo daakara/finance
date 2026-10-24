@@ -18,7 +18,7 @@ import secrets
 import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric import ed25519
