@@ -143,11 +143,11 @@ jobs:
           PYTHONPATH: "."
           HTTP_PROXY: "http://127.0.0.1:9"
           HTTPS_PROXY: "http://127.0.0.1:9"
-          http_proxy: "http://127.0.0.1:9"
-          https_proxy: "http://127.0.0.1:9"
           ALL_PROXY: "http://127.0.0.1:9"
-          all_proxy: "http://127.0.0.1:9"
         run: |
+          export http_proxy="$HTTP_PROXY"
+          export https_proxy="$HTTPS_PROXY"
+          export all_proxy="$ALL_PROXY"
           python -m pytest \
             tests/test_hva01_adversarial_security.py \
             tests/test_hva01_canonical_20_scenarios.py \
