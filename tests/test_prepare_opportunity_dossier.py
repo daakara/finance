@@ -653,8 +653,8 @@ def test_28_published_watch_manifest_integrity():
     assert m1 == m2, "Docs and frontend published watch manifests must be identical"
     assert m1["schema_version"] == "ARX-PUBLISHED-WATCH-MANIFEST-V1"
     assert m1["governing_standard"] == "ARX-QUALITY-WATCH-STANDARD-V1"
-    assert m1["published_symbols"] == ["FIX", "DUOL", "ULTA", "MEDP", "ISRG", "DECK"]
-    assert m1["published_count"] == 6
+    assert m1["published_symbols"] == ["FIX", "DUOL", "ULTA", "MEDP", "ISRG", "DECK", "ALC"]
+    assert m1["published_count"] == 7
     assert m1["baseline_watch_symbols"] == ["FIX", "DUOL"]
     assert m1["held_historical_symbols"] == ["IREN", "CORZ"]
     assert m1["excluded_historical_symbols"] == ["MU"]
@@ -703,12 +703,21 @@ def test_28_published_watch_manifest_integrity():
     assert m1["additions_provenance"]["DECK"]["reference_price"] == 85.72
     assert len(m1["additions_provenance"]["DECK"]["content_sha256"]) == 64
 
+    # ALC
+    assert "ALC" in m1["accepted_additions"]
+    assert m1["accepted_additions"]["ALC"]["publication_metadata"]["governing_initiative"] == "INITIATIVE-S4-ALCON-V4-PUBLICATION"
+    assert m1["accepted_additions"]["ALC"]["valuation"]["reference_price"] == 67.43
+    assert m1["accepted_additions"]["ALC"]["financial_profile"]["total_financial_debt"] == 4500000000.0
+    assert m1["accepted_additions"]["ALC"]["financial_profile"]["is_zero_debt"] is False
+    assert m1["additions_provenance"]["ALC"]["reference_price"] == 67.43
+    assert len(m1["additions_provenance"]["ALC"]["content_sha256"]) == 64
+
     # Remaining expansion queue & selection rationale in manifest
     assert "remaining_expansion_queue" in m1
     assert len(m1["remaining_expansion_queue"]) == 10
     assert "KLAC" in m1["remaining_expansion_queue"]
     assert "ELF" in m1["remaining_expansion_queue"]
-    for sym in ["ULTA", "MEDP", "ISRG", "DECK"]:
+    for sym in ["ULTA", "MEDP", "ISRG", "DECK", "ALC"]:
         assert "selection_rationale" in m1["additions_provenance"][sym]
         assert len(m1["additions_provenance"][sym]["selection_rationale"]) == 6
 

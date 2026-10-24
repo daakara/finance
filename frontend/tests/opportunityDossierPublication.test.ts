@@ -52,11 +52,11 @@ console.log("Running Test A: Unchanged valid control manifest...");
 const resultA = validateAndDerivePublishedCollection(validManifest, validSnapshot, { verifyDigests: true });
 assert.strictEqual(resultA.isValid, true, `Control manifest must be valid, got errors: ${resultA.errors.join("; ")}`);
 assert.strictEqual(resultA.errors.length, 0);
-assert.deepStrictEqual(resultA.publishedSymbols, ["FIX", "DUOL", "ULTA", "MEDP", "ISRG", "DECK"], "Published symbols must match [FIX, DUOL, ULTA, MEDP, ISRG, DECK]");
-assert.strictEqual(resultA.cohortItems.length, 6, "Cohort items length must be 6");
+assert.deepStrictEqual(resultA.publishedSymbols, ["FIX", "DUOL", "ULTA", "MEDP", "ISRG", "DECK", "ALC"], "Published symbols must match [FIX, DUOL, ULTA, MEDP, ISRG, DECK, ALC]");
+assert.strictEqual(resultA.cohortItems.length, 7, "Cohort items length must be 7");
 assert.deepStrictEqual(
   resultA.cohortItems.map((c) => c.symbol),
-  ["FIX", "DUOL", "ULTA", "MEDP", "ISRG", "DECK"]
+  ["FIX", "DUOL", "ULTA", "MEDP", "ISRG", "DECK", "ALC"]
 );
 assert.ok(resultA.dossiers.FIX, "FIX dossier must exist");
 assert.ok(resultA.dossiers.DUOL, "DUOL dossier must exist");
@@ -64,6 +64,7 @@ assert.ok(resultA.dossiers.ULTA, "ULTA dossier must exist");
 assert.ok(resultA.dossiers.MEDP, "MEDP dossier must exist");
 assert.ok(resultA.dossiers.ISRG, "ISRG dossier must exist");
 assert.ok(resultA.dossiers.DECK, "DECK dossier must exist");
+assert.ok(resultA.dossiers.ALC, "ALC dossier must exist");
 assert.strictEqual(resultA.dossiers.ULTA.valuation.reference_price, 592.94);
 assert.strictEqual(resultA.dossiers.ULTA.valuation.solved_5y_cagr_pct, 15.45);
 assert.strictEqual(resultA.dossiers.MEDP.valuation.reference_price, 618.47);
@@ -72,15 +73,18 @@ assert.strictEqual(resultA.dossiers.ISRG.valuation.reference_price, 426.70);
 assert.strictEqual(resultA.dossiers.ISRG.valuation.solved_5y_cagr_pct, 36.87);
 assert.strictEqual(resultA.dossiers.DECK.valuation.reference_price, 85.72);
 assert.strictEqual(resultA.dossiers.DECK.valuation.solved_5y_cagr_pct, -2.34);
+assert.strictEqual(resultA.dossiers.ALC.valuation.reference_price, 67.43);
+assert.strictEqual(resultA.dossiers.ALC.valuation.solved_5y_cagr_pct, 6.51);
 
 // Verify live accessors reflect Test A
-assert.strictEqual(listOpportunityCohort().length, 6);
+assert.strictEqual(listOpportunityCohort().length, 7);
 assert.strictEqual(isCohortSymbol("ULTA"), true);
 assert.strictEqual(isCohortSymbol("FIX"), true);
 assert.strictEqual(isCohortSymbol("DUOL"), true);
 assert.strictEqual(isCohortSymbol("MEDP"), true);
 assert.strictEqual(isCohortSymbol("ISRG"), true);
 assert.strictEqual(isCohortSymbol("DECK"), true);
+assert.strictEqual(isCohortSymbol("ALC"), true);
 assert.strictEqual(isCohortSymbol("IREN"), false); // Held
 assert.strictEqual(isCohortSymbol("CORZ"), false); // Held
 assert.strictEqual(isCohortSymbol("MU"), false);   // Excluded
@@ -216,6 +220,16 @@ assert.strictEqual(provDeck.reviewStatus, "RESEARCH_EVIDENCE_ACCEPTED");
 assert.strictEqual(provDeck.isAddition, true);
 assert.ok(!provDeck.contentDigest.includes("a65be3b"), "DECK must NOT carry baseline ledger hash");
 
+// 1e. ALC (Sourced Research Addition)
+const provAlc = getDossierProvenance("ALC");
+assert.ok(provAlc, "getDossierProvenance(ALC) must return provenance");
+assert.strictEqual(provAlc.sourceAuthority, "ARX Quality Watch Sourced Research");
+assert.strictEqual(provAlc.referenceMarketDate, "2026-10-21");
+assert.strictEqual(provAlc.lifecycleStatus, "CANDIDATE_SELECTED");
+assert.strictEqual(provAlc.reviewStatus, "RESEARCH_EVIDENCE_ACCEPTED");
+assert.strictEqual(provAlc.isAddition, true);
+assert.ok(!provAlc.contentDigest.includes("a65be3b"), "ALC must NOT carry baseline ledger hash");
+
 // 2. FIX (Historical Baseline)
 const provFix = getDossierProvenance("FIX");
 assert.ok(provFix, "getDossierProvenance(FIX) must return provenance");
@@ -230,7 +244,7 @@ assert.ok(provFix.contentDigest.includes("a65be3b38cdf"), "FIX must carry baseli
 // 3. Collection-Level Provenance for Unavailable / Excluded symbols
 const colProvMu = getCollectionProvenance("MU");
 assert.strictEqual(colProvMu.governingStandard, "ARX-QUALITY-WATCH-STANDARD-V1");
-assert.strictEqual(colProvMu.publishedCount, 6);
+assert.strictEqual(colProvMu.publishedCount, 7);
 assert.ok(colProvMu.disclaimer.includes('No published watch dossier exists for "MU"'));
 assert.ok(!JSON.stringify(colProvMu).includes("a65be3b"), "Collection provenance must not leak baseline hash for unavailable records");
 

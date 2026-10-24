@@ -244,11 +244,11 @@ console.log("   [OK] Architectural distinction between unpublished fallback and 
 // =========================================================================
 // 5. Published Dossiers Data Integrity & Scenario Order
 // =========================================================================
-console.log("5. Testing data integrity for all 6 published Quality Watch dossiers...");
+console.log("5. Testing data integrity for all 7 published Quality Watch dossiers...");
 
-const publishedSymbols = ["FIX", "DUOL", "ULTA", "MEDP", "ISRG", "DECK"];
+const publishedSymbols = ["FIX", "DUOL", "ULTA", "MEDP", "ISRG", "DECK", "ALC"];
 const cohort = listOpportunityCohort();
-assert.strictEqual(cohort.length, 6, "Published cohort length must be exactly 6");
+assert.strictEqual(cohort.length, 7, "Published cohort length must be exactly 7");
 
 for (const symbol of publishedSymbols) {
   const dossier = getOpportunityDossier(symbol);
@@ -281,7 +281,7 @@ for (const symbol of publishedSymbols) {
   assert.strictEqual(scenarios !== undefined, true);
   if (scenarios) {
     const bearVal = scenarios.conservative?.per_share_value;
-    const baseVal = scenarios.base?.per_share_value;
+    const baseVal = (scenarios.base || scenarios.base_dcf || scenarios.base_multiple)?.per_share_value;
     const bullVal = scenarios.optimistic?.per_share_value;
 
     assert.strictEqual(typeof bearVal === "number" && bearVal > 0, true);
@@ -303,6 +303,6 @@ for (const symbol of publishedSymbols) {
   }
 }
 
-console.log("   [OK] All 6 published dossiers have complete summary content and verified scenario calculations");
+console.log("   [OK] All 7 published dossiers have complete summary content and verified scenario calculations");
 
 console.log("\nALL RESEARCH SUMMARY & SCENARIO PRESENTATION TESTS PASSED SUCCESSFULLY!");

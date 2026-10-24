@@ -46,6 +46,7 @@ PUBLISHED_SYMBOLS_CIK = {
     "MEDP": {"name": "Medpace Holdings, Inc.", "cik": "0001668397"},
     "ISRG": {"name": "Intuitive Surgical, Inc.", "cik": "0001035267"},
     "DECK": {"name": "Deckers Outdoor Corp.", "cik": "0000910521"},
+    "ALC": {"name": "Alcon Inc.", "cik": "0001748310"},
 }
 
 
@@ -112,7 +113,7 @@ class ResearchMaintenanceService:
         """
         clean_sym = symbol.strip().upper()
         if clean_sym not in PUBLISHED_SYMBOLS_CIK:
-            return None, None, [f"Symbol '{clean_sym}' is not among the six published Quality Watch assets."]
+            return None, None, [f"Symbol '{clean_sym}' is not among the published Quality Watch assets."]
 
         meta_info = PUBLISHED_SYMBOLS_CIK[clean_sym]
         cik = meta_info["cik"]
@@ -125,6 +126,16 @@ class ResearchMaintenanceService:
             return None, None, [f"Failed to load accepted baseline for {clean_sym}: {e}"]
 
         baseline_profile = baseline_dossier.get("financial_profile", {})
+
+        # Guard: Check for non-US-GAAP reporting convention (e.g. IFRS Foreign Private Issuer)
+        if baseline_profile.get("accounting_basis") == "IFRS":
+            msg = (
+                f"Symbol '{clean_sym}' reports under IFRS ({baseline_profile.get('accounting_standard', 'IFRS')}). "
+                "Automated US-GAAP XBRL pipeline ingestion is held; certified research model remains strictly "
+                "governed by frozen canonical ledger ARX_ALC_CANONICAL_SCENARIO_OUTPUT_LEDGER.json."
+            )
+            logger.info(msg)
+            return None, None, [msg]
 
         # Step 2: Poll / Discover filing event
         event, poll_warnings = self.poller.discover_filing_event(

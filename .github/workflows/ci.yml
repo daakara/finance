@@ -56,6 +56,17 @@ jobs:
         python scripts/research/generate_opportunity_dossier_snapshot.py --check
         python scripts/research/prepare_opportunity_dossier.py --check
 
+    - name: Run Alcon V4 Research & Exporter Gate
+      env:
+        PYTHONPATH: "."
+      run: |
+        pytest tests/test_alc_cross_model_contract.py \
+               tests/test_alc_cross_model_integrity.py \
+               tests/test_alc_quantitative_integrity.py \
+               tests/test_alc_valuation_reproduction.py \
+               tests/test_export_alc_dossier.py -v
+        python scripts/research/export_alc_dossier.py --check
+
     - name: Run Historical SIP Ingestion & Registration Expansion Suite
       env:
         PYTHONPATH: "."

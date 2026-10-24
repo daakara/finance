@@ -264,8 +264,8 @@ if (!IS_PILOT_DRAFTS_BUILD_ENABLED) {
     const draftAttempt = getPilotDraftDossier(sym);
     assert.strictEqual(draftAttempt, null, `getPilotDraftDossier(${sym}) must return null when build flag disabled`);
   }
-  assert.strictEqual(listOpportunityCohort().length, 6, "listOpportunityCohort must return exactly 6 published Quality Watch companies (FIX, DUOL, ULTA, MEDP, ISRG, DECK)");
-  assert.strictEqual(listPilotDraftCohort().length, 6, "listPilotDraftCohort must fall back to 6 companies when drafts disabled");
+  assert.strictEqual(listOpportunityCohort().length, 7, "listOpportunityCohort must return exactly 7 published Quality Watch companies (FIX, DUOL, ULTA, MEDP, ISRG, DECK, ALC)");
+  assert.strictEqual(listPilotDraftCohort().length, 7, "listPilotDraftCohort must fall back to 7 companies when drafts disabled");
   console.log("[OK] Production baseline isolation verified: unselected draft additions return null from all accessors while additions are published");
 
   // Mode B: Execute Subprocess with NEXT_PUBLIC_ENABLE_RESEARCH_PILOT_DRAFTS="true" to verify preview branch

@@ -30,6 +30,21 @@ if (IS_PILOT_DRAFTS_BUILD_ENABLED) {
   }
 }
 
+// Alcon V4 Development-Only Research Preview Loader
+// In production builds (NEXT_PUBLIC_ENABLE_ALCON_DEV_PREVIEW !== "true"),
+// Webpack aliases alconDraftDossier.json to an empty stub, ensuring zero bundle leakage.
+export const IS_ALCON_DEV_PREVIEW_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_ALCON_DEV_PREVIEW === "true";
+
+let typedAlconDraft: OpportunityDossier | null = null;
+if (IS_ALCON_DEV_PREVIEW_ENABLED) {
+  try {
+    typedAlconDraft = require("./alconDraftDossier.json") as OpportunityDossier;
+  } catch {
+    typedAlconDraft = null;
+  }
+}
+
 export interface PrimaryFilingReference {
   form: string;
   period_end: string;
@@ -53,6 +68,19 @@ export interface ScenarioProjection {
   reinvestment_rate_pct?: number;
   enterprise_value?: number;
   equity_value?: number;
+  // Extended scenario fields for multi-scenario / Alcon V4 models:
+  year5_revenue?: number;
+  year5_ebit?: number;
+  year5_ebitda?: number;
+  exit_method?: string;
+  exit_multiple?: number;
+  net_debt_bridge?: number;
+  ending_diluted_shares?: number;
+  cumulative_dividends_per_share?: number;
+  total_terminal_payout?: number;
+  five_period_annual_irr_pct?: number;
+  calendar_dated_xirr_pct?: number;
+  holding_period_years?: number;
 }
 
 /**
@@ -251,6 +279,71 @@ export interface OpportunityNavigation {
   radar_note: string;
 }
 
+export interface AlconDatedCashFlow {
+  event: string;
+  date: string;
+  days_from_start: number;
+  fraction_years: number;
+  cash_flow: number;
+}
+
+export interface AlconAccumulationHurdleSet {
+  hurdle_80: number;
+  hurdle_85: number;
+  hurdle_100: number;
+  invertibility_verified: boolean;
+}
+
+export interface AlconAccumulationCeilings {
+  annual_irr_basis: AlconAccumulationHurdleSet;
+  calendar_xirr_basis: AlconAccumulationHurdleSet;
+}
+
+export interface AlconBuybackAuthorityItem {
+  amount?: number;
+  status?: string;
+  source?: string;
+  authorization_date?: string;
+  expiration_date?: string;
+  period?: string;
+  completion_date?: string;
+  as_of?: string;
+  notes?: string;
+  composition?: {
+    assumed_future_authorization?: number;
+    remaining_approved?: number;
+  };
+}
+
+export interface AlconBuybackAuthorityReconciliation {
+  APPROVED_CAPACITY_2026_PROGRAM?: AlconBuybackAuthorityItem;
+  EXECUTED_BUYBACKS_2025_PROGRAM?: AlconBuybackAuthorityItem;
+  EXECUTED_UNDER_2026_PROGRAM_H1?: AlconBuybackAuthorityItem;
+  REMAINING_APPROVED_CAPACITY?: AlconBuybackAuthorityItem;
+  FORECAST_BUYBACKS_BASELINE?: AlconBuybackAuthorityItem;
+  ASSUMED_FUTURE_AUTHORIZATIONS?: AlconBuybackAuthorityItem;
+  [key: string]: AlconBuybackAuthorityItem | undefined;
+}
+
+export interface AlconQualitativeEvidenceItem {
+  claim: string;
+  finding: string;
+  classification: "AUDITED_AND_CERTIFIED" | "QUALITATIVE_HYPOTHESIS" | "UNAUDITED_MANAGEMENT_ASSERTION" | string;
+  source: string;
+}
+
+export interface AlconV4Extension {
+  model_version: string;
+  timeline_convention: string;
+  holding_period_days: number;
+  holding_period_years: number;
+  dividend_schedule_dps: number[];
+  accumulation_ceilings: AlconAccumulationCeilings;
+  buyback_authority_reconciliation: AlconBuybackAuthorityReconciliation;
+  dated_cash_flows: AlconDatedCashFlow[];
+  qualitative_evidence_matrix: AlconQualitativeEvidenceItem[];
+}
+
 export interface OpportunityDossier {
   identity: OpportunityDossierIdentity;
   central_assessment: OpportunityCentralAssessment;
@@ -261,6 +354,7 @@ export interface OpportunityDossier {
   publication_metadata?: Record<string, any>;
   source_evidence_tracing?: Record<string, any>;
   selection_rationale?: SelectionRationale | null;
+  alcon_v4_extension?: AlconV4Extension;
 }
 
 export interface OpportunityCohortItem {
@@ -796,4 +890,29 @@ export function getPilotDraftSnapshotMetadata(): OpportunitySnapshotMetadata {
 
 export function getPublishedWatchManifest(): PublishedWatchManifestFile {
   return typedPublishedManifest;
+}
+
+/**
+ * Returns the isolated Alcon V4 draft dossier for development-only preview.
+ * Returns null in standard production builds or when NEXT_PUBLIC_ENABLE_ALCON_DEV_PREVIEW !== "true".
+ */
+export function getAlconDevPreviewDossier(): OpportunityDossier | null {
+  if (!IS_ALCON_DEV_PREVIEW_ENABLED || !typedAlconDraft) {
+    return null;
+  }
+  return typedAlconDraft;
+}
+
+/**
+ * Type guard for Alcon V4 extended dossier.
+ */
+export function isAlconV4Dossier(
+  dossier: OpportunityDossier | null | undefined
+): dossier is OpportunityDossier & { alcon_v4_extension: AlconV4Extension } {
+  return Boolean(
+    dossier &&
+    dossier.identity?.symbol === "ALC" &&
+    dossier.alcon_v4_extension &&
+    dossier.alcon_v4_extension.model_version === "v4.0"
+  );
 }
