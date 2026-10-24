@@ -1475,6 +1475,355 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
         op_bytes_after_rejected = op_manifest_path.read_bytes()
         self.assertEqual(op_sha_before, hashlib.sha256(op_bytes_after_rejected).hexdigest())
 
+    # -------------------------------------------------------------------------
+    # CONTROL 34: Scheduled Execution with Activation False Remains Dormant
+    # -------------------------------------------------------------------------
+    def test_control_34_scheduled_execution_inactive_remains_dormant(self):
+        """Scheduled execution with activation flag false exits immediately with 0 mutations and 0 HTTP."""
+        with patch.dict(os.environ, {"ARX_MAINTENANCE_PILOT_ACTIVE": "false", "ARX_OPERATIONAL_BOOTSTRAP": "false"}):
+            runner = ScheduledRunner(
+                symbol="FIX",
+                state_dir=self.state_dir,
+                output_dir=self.output_dir,
+                cache_dir=self.cache_dir,
+                force_run=False,
+                is_rehearsal=False,
+                operational_bootstrap=False,
+            )
+            outcome, summary = runner.run()
+            self.assertEqual(outcome, RunOutcome.PILOT_DORMANT)
+            self.assertFalse(summary["is_active"])
+            self.assertEqual(summary["invocation_mode"], "SCHEDULED_OR_OPERATIONAL")
+            # Zero filesystem mutations in state_dir or output_dir
+            self.assertEqual(list(self.state_dir.iterdir()), [])
+            self.assertEqual(list(self.output_dir.iterdir()), [])
+
+    # -------------------------------------------------------------------------
+    # CONTROL 35: Ordinary Manual Dispatch with Inactive Variable Remains Dormant
+    # -------------------------------------------------------------------------
+    def test_control_35_ordinary_manual_dispatch_inactive_remains_dormant(self):
+        """Ordinary manual dispatch without bootstrap or force_run remains dormant."""
+        with patch.dict(os.environ, {"ARX_MAINTENANCE_PILOT_ACTIVE": "false"}, clear=True):
+            runner = ScheduledRunner(
+                symbol="FIX",
+                state_dir=self.state_dir,
+                output_dir=self.output_dir,
+                cache_dir=self.cache_dir,
+                force_run=False,
+                is_rehearsal=False,
+                allow_bootstrap=False,
+                operational_bootstrap=False,
+            )
+            outcome, summary = runner.run()
+            self.assertEqual(outcome, RunOutcome.PILOT_DORMANT)
+            self.assertEqual(summary["invocation_mode"], "SCHEDULED_OR_OPERATIONAL")
+            self.assertEqual(list(self.state_dir.iterdir()), [])
+
+    # -------------------------------------------------------------------------
+    # CONTROL 36: Explicit Operational Bootstrap Reaches Authorized Path
+    # -------------------------------------------------------------------------
+    def test_control_36_operational_bootstrap_reaches_authorized_path(self):
+        """Explicit operational bootstrap with activation false reaches authorized operational path."""
+        with patch.dict(os.environ, {"ARX_MAINTENANCE_PILOT_ACTIVE": "false"}, clear=True):
+            runner = ScheduledRunner(
+                symbol="FIX",
+                state_dir=self.state_dir,
+                output_dir=self.output_dir,
+                cache_dir=self.cache_dir,
+                offline_mode=True,
+                force_run=False,
+                is_rehearsal=False,
+                allow_bootstrap=True,
+                operational_bootstrap=True,
+            )
+            self.assertTrue(runner.operational_bootstrap)
+            self.assertFalse(runner.is_rehearsal)
+            self.assertEqual(runner.artifact_name, "research-maintenance-fix-state")
+
+            with patch("analyst_dashboard.research.maintenance.event_poller.SecEventPoller.discover_filing_event", return_value=(None, [])):
+                outcome, summary = runner.run()
+                self.assertEqual(outcome, RunOutcome.NO_QUALIFYING_EVENT)
+                self.assertEqual(summary["invocation_mode"], "MANUAL_OPERATIONAL_BOOTSTRAP")
+                self.assertEqual(summary["run_count"], 1)
+                self.assertEqual(summary["checkpoint_sequence"], 1)
+
+            # Genesis manifest is successfully persisted
+            manifest_path = self.state_dir / "DURABLE_STATE_MANIFEST.json"
+            self.assertTrue(manifest_path.exists())
+            manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual(manifest_data["run_count"], 1)
+            self.assertEqual(manifest_data["checkpoint_sequence"], 1)
+            self.assertEqual(manifest_data["symbol"], "FIX")
+
+    # -------------------------------------------------------------------------
+    # CONTROL 37: Bootstrap Invocation Uses Operational Namespaces and Artifact
+    # -------------------------------------------------------------------------
+    def test_control_37_bootstrap_defaults_to_operational_namespaces(self):
+        """Operational bootstrap defaults to operational directories and operational artifact name."""
+        runner = ScheduledRunner(
+            symbol="FIX",
+            operational_bootstrap=True,
+            allow_bootstrap=True,
+        )
+        self.assertEqual(runner.state_dir, REPO_ROOT / OPERATIONAL_STATE_DIR)
+        self.assertEqual(runner.output_dir, REPO_ROOT / OPERATIONAL_OUTPUT_DIR)
+        self.assertEqual(runner.cache_dir, REPO_ROOT / OPERATIONAL_CACHE_DIR)
+        self.assertEqual(runner.artifact_name, "research-maintenance-fix-state")
+        self.assertFalse(runner.is_rehearsal)
+
+    # -------------------------------------------------------------------------
+    # CONTROL 38: Rehearsal Behavior Remains Isolated
+    # -------------------------------------------------------------------------
+    def test_control_38_rehearsal_behavior_remains_isolated(self):
+        """Rehearsal invocation uses rehearsal namespace and does not affect operational directories."""
+        reh_runner = ScheduledRunner(
+            symbol="FIX",
+            force_run=True,
+            is_rehearsal=True,
+            operational_bootstrap=False,
+        )
+        self.assertEqual(reh_runner.state_dir, REPO_ROOT / REHEARSAL_STATE_DIR)
+        self.assertEqual(reh_runner.output_dir, REPO_ROOT / REHEARSAL_OUTPUT_DIR)
+        self.assertEqual(reh_runner.cache_dir, REPO_ROOT / REHEARSAL_CACHE_DIR)
+        self.assertEqual(reh_runner.artifact_name, "research-maintenance-fix-rehearsal-state")
+        self.assertTrue(reh_runner.is_rehearsal)
+        self.assertFalse(reh_runner.operational_bootstrap)
+
+    # -------------------------------------------------------------------------
+    # CONTROL 39: Contradictory Settings Rejected Before Mutation
+    # -------------------------------------------------------------------------
+    def test_control_39_contradictory_settings_rejected_before_mutation(self):
+        """Combining operational bootstrap with rehearsal mode raises ValueError before mutation."""
+        # 1. operational_bootstrap + is_rehearsal
+        with self.assertRaises(ValueError) as ctx:
+            ScheduledRunner(
+                symbol="FIX",
+                state_dir=self.state_dir,
+                operational_bootstrap=True,
+                is_rehearsal=True,
+            )
+        self.assertIn("Contradictory settings: operational bootstrap cannot be combined with rehearsal mode", str(ctx.exception))
+
+        # 2. operational_bootstrap + force_run
+        with self.assertRaises(ValueError) as ctx2:
+            ScheduledRunner(
+                symbol="FIX",
+                state_dir=self.state_dir,
+                operational_bootstrap=True,
+                force_run=True,
+            )
+        self.assertIn("Contradictory settings: operational bootstrap cannot be combined with rehearsal mode", str(ctx2.exception))
+
+        # Zero mutation
+        self.assertEqual(list(self.state_dir.iterdir()), [])
+
+    # -------------------------------------------------------------------------
+    # CONTROL 40: Expired Bootstrap Is Rejected Before State or Network Work
+    # -------------------------------------------------------------------------
+    def test_control_40_expired_bootstrap_rejected_before_work(self):
+        """Expired pilot halts bootstrap invocation before locks, hydration, or network calls."""
+        # A. Date expired
+        with patch("analyst_dashboard.research.maintenance.pilot_config.datetime") as mock_dt:
+            mock_dt.now.return_value = datetime(2026, 12, 1, 0, 0, 0, tzinfo=timezone.utc)
+            mock_dt.side_effect = lambda *args, **kw: datetime(*args, **kw)
+            runner = ScheduledRunner(
+                symbol="FIX",
+                state_dir=self.state_dir,
+                output_dir=self.output_dir,
+                cache_dir=self.cache_dir,
+                operational_bootstrap=True,
+                allow_bootstrap=True,
+            )
+            outcome, summary = runner.run()
+            self.assertEqual(outcome, RunOutcome.PILOT_EXPIRED)
+            self.assertTrue(summary["is_expired"])
+            self.assertFalse(summary["is_active"])
+            # Zero state files created
+            self.assertEqual(list(self.state_dir.iterdir()), [])
+
+        # B. Run limit exhausted
+        status = evaluate_pilot_status(
+            current_run_count=30,
+            operational_bootstrap=True,
+        )
+        self.assertEqual(status.is_expired, True)
+        self.assertEqual(status.is_active, False)
+        self.assertIn("PILOT_EXPIRED", status.message)
+
+    # -------------------------------------------------------------------------
+    # CONTROL 41: Existing State Recovered Without Resetting Counts
+    # -------------------------------------------------------------------------
+    def test_control_41_existing_state_recovered_without_reset(self):
+        """Bootstrap invocation on existing state recovers prior counts without resetting to genesis."""
+        # Seed an existing state
+        seed_mgr = DurableStateManager(self.state_dir)
+        seed_mgr.hydrate_or_recover(allow_bootstrap=True)
+        for _ in range(4):
+            seed_mgr.commit_run_checkpoint(RunOutcome.NO_QUALIFYING_EVENT)
+        self.assertEqual(seed_mgr.run_count, 4)
+        self.assertEqual(seed_mgr.checkpoint_sequence, 4)
+
+        # Run with operational_bootstrap=True and allow_bootstrap=True
+        runner = ScheduledRunner(
+            symbol="FIX",
+            state_dir=self.state_dir,
+            output_dir=self.output_dir,
+            cache_dir=self.cache_dir,
+            offline_mode=True,
+            operational_bootstrap=True,
+            allow_bootstrap=True,
+        )
+        with patch("analyst_dashboard.research.maintenance.event_poller.SecEventPoller.discover_filing_event", return_value=(None, [])):
+            outcome, summary = runner.run()
+            self.assertEqual(outcome, RunOutcome.NO_QUALIFYING_EVENT)
+            # Sequence and run_count must advance to 5, NOT reset to 1
+            self.assertEqual(summary["run_count"], 5)
+            self.assertEqual(summary["checkpoint_sequence"], 5)
+
+        manifest = json.loads((self.state_dir / "DURABLE_STATE_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["run_count"], 5)
+        self.assertEqual(manifest["checkpoint_sequence"], 5)
+
+    # -------------------------------------------------------------------------
+    # CONTROL 42: Unresolved Recovery History Prevents Genesis
+    # -------------------------------------------------------------------------
+    def test_control_42_unresolved_recovery_history_prevents_genesis(self):
+        """When history is unresolvable or evidence of prior operations exists without manifest, fails closed."""
+        # Create prior runs marker in state dir without a valid manifest
+        (self.state_dir / ".has_prior_runs").touch()
+
+        runner = ScheduledRunner(
+            symbol="FIX",
+            state_dir=self.state_dir,
+            output_dir=self.output_dir,
+            cache_dir=self.cache_dir,
+            offline_mode=True,
+            operational_bootstrap=True,
+            allow_bootstrap=True,
+        )
+        outcome, summary = runner.run()
+        self.assertEqual(outcome, RunOutcome.STATE_PERSISTENCE_FAILURE)
+        self.assertIn("STATE_RECOVERY_FAILURE", summary["error"])
+        # Manifest was NOT created
+        self.assertFalse((self.state_dir / "DURABLE_STATE_MANIFEST.json").exists())
+
+    # -------------------------------------------------------------------------
+    # CONTROL 43: Workflow YAML Conditions and Input Wiring Validated
+    # -------------------------------------------------------------------------
+    def test_control_43_workflow_yaml_wiring_and_guards(self):
+        """Workflow file includes bootstrap input, mutual exclusivity check, operational routing, and guard conditions."""
+        wf_path = REPO_ROOT / ".github/workflows/scheduled_research_maintenance.yml"
+        self.assertTrue(wf_path.exists())
+        content = wf_path.read_text(encoding="utf-8")
+
+        # 1. Inputs defined
+        self.assertIn("inputs:\n      bootstrap:", content)
+        self.assertIn("type: boolean", content)
+        self.assertIn("force_run:", content)
+
+        # 2. Rejection of contradictory settings
+        self.assertIn('[ "$BOOTSTRAP" = "true" ] && [ "$FORCE" = "true" ]', content)
+        self.assertIn("Contradictory settings: 'bootstrap' (operational) cannot be combined with 'force_run' (rehearsal)", content)
+
+        # 3. Non-dispatch isolation
+        self.assertIn('[ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$INPUT_BOOTSTRAP" = "true" ]', content)
+
+        # 4. Routing outputs for bootstrap
+        self.assertIn('echo "is_bootstrap=true" >> "$GITHUB_OUTPUT"', content)
+        self.assertIn('echo "state_dir=durable_state/research_maintenance" >> "$GITHUB_OUTPUT"', content)
+        self.assertIn('echo "artifact_name=research-maintenance-fix-state" >> "$GITHUB_OUTPUT"', content)
+
+        # 5. Runner invocation passing both flags safely
+        self.assertIn('ARGS+=(--operational-bootstrap --bootstrap)', content)
+
+        # 6. Stateful steps guarded by is_active
+        self.assertIn("if: steps.check-activation.outputs.is_active == 'true'", content)
+
+    # -------------------------------------------------------------------------
+    # CONTROL 44: Operational Manifest Recovery from GitHub Artifact
+    # -------------------------------------------------------------------------
+    def test_control_44_operational_manifest_recovered_from_github_artifact(self):
+        """Operational manifest generated by bootstrap can be recovered through _recover_from_github_artifact."""
+        # 1. Generate bootstrap state in a temporary directory
+        source_state_dir = Path(self.temp_dir) / "source_state"
+        source_state_dir.mkdir(parents=True)
+        mgr = DurableStateManager(source_state_dir, artifact_name="research-maintenance-fix-state")
+        mgr.hydrate_or_recover(allow_bootstrap=True)
+        mgr.commit_run_checkpoint(RunOutcome.NO_QUALIFYING_EVENT)
+        self.assertEqual(mgr.run_count, 1)
+        self.assertEqual(mgr.checkpoint_sequence, 1)
+
+        manifest_file = source_state_dir / "DURABLE_STATE_MANIFEST.json"
+        self.assertTrue(manifest_file.exists())
+        manifest_bytes = manifest_file.read_bytes()
+
+        # 2. Package manifest into an in-memory zip
+        zip_buf = io.BytesIO()
+        with zipfile.ZipFile(zip_buf, "w") as zf:
+            zf.writestr("DURABLE_STATE_MANIFEST.json", manifest_bytes)
+        zip_payload = zip_buf.getvalue()
+
+        # 3. Setup clean target directory for recovery
+        target_state_dir = Path(self.temp_dir) / "target_state"
+        target_state_dir.mkdir(parents=True)
+        recovery_mgr = DurableStateManager(target_state_dir, artifact_name="research-maintenance-fix-state")
+
+        # Mock GitHub Actions API artifact listing, workflow run, and zip download
+        artifact_list_response = {
+            "total_count": 1,
+            "artifacts": [
+                {
+                    "id": 999999,
+                    "name": "research-maintenance-fix-state",
+                    "archive_download_url": "https://api.github.com/repos/daakara/finance/actions/artifacts/999999/zip",
+                    "expired": False,
+                    "created_at": "2026-10-24T12:00:00Z",
+                    "workflow_run": {"id": 12345},
+                }
+            ],
+        }
+
+        run_response = {
+            "id": 12345,
+            "path": ".github/workflows/scheduled_research_maintenance.yml",
+            "repository": {
+                "full_name": "daakara/finance",
+            },
+        }
+
+        class MockHTTPResponse:
+            def __init__(self, data_bytes):
+                self._data = data_bytes
+
+            def read(self):
+                return self._data
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                pass
+
+        def fake_urlopen(req, timeout=None):
+            url = req.full_url if hasattr(req, "full_url") else str(req)
+            if "artifacts/999999/zip" in url:
+                return MockHTTPResponse(zip_payload)
+            elif "actions/artifacts" in url:
+                return MockHTTPResponse(json.dumps(artifact_list_response).encode("utf-8"))
+            elif "actions/runs/12345" in url:
+                return MockHTTPResponse(json.dumps(run_response).encode("utf-8"))
+            raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+
+        with patch.dict(os.environ, {"GITHUB_TOKEN": "mock-token", "GITHUB_REPOSITORY": "daakara/finance"}):
+            with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+                recovered = recovery_mgr._recover_from_github_artifact()
+                self.assertTrue(recovered)
+                ok, msg = recovery_mgr.hydrate_or_recover(allow_bootstrap=False)
+                self.assertTrue(ok)
+                self.assertEqual(recovery_mgr.checkpoint_sequence, 1)
+                self.assertEqual(recovery_mgr.run_count, 1)
+                self.assertEqual(recovery_mgr.symbol, "FIX")
+
 
 if __name__ == "__main__":
     unittest.main()
