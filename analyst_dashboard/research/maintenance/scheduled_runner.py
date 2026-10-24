@@ -47,6 +47,14 @@ from .pilot_config import (
     MAX_REQUESTS_PER_RUN,
     MAX_RUNTIME_SECONDS,
     MIN_REQUEST_INTERVAL_SECONDS,
+    OPERATIONAL_STATE_DIR,
+    OPERATIONAL_OUTPUT_DIR,
+    OPERATIONAL_CACHE_DIR,
+    OPERATIONAL_ARTIFACT_NAME,
+    REHEARSAL_STATE_DIR,
+    REHEARSAL_OUTPUT_DIR,
+    REHEARSAL_CACHE_DIR,
+    REHEARSAL_ARTIFACT_NAME,
     evaluate_pilot_status,
     is_reconciliation_supported,
     RunBudgetTracker,
@@ -89,6 +97,8 @@ class ScheduledRunner:
         cache_dir: Optional[Union[str, Path]] = None,
         offline_mode: bool = False,
         force_run: bool = False,
+        is_rehearsal: Optional[bool] = None,
+        allow_bootstrap: bool = False,
     ):
         clean_sym = symbol.strip().upper()
         if clean_sym != TARGET_SYMBOL:
@@ -101,26 +111,55 @@ class ScheduledRunner:
         self.company_name = TARGET_COMPANY_NAME
         self.offline_mode = offline_mode
         self.force_run = force_run
+        self.is_rehearsal = is_rehearsal if is_rehearsal is not None else force_run
+        self.allow_bootstrap = allow_bootstrap
 
-        # Resolve paths
+        # Resolve paths according to operational vs rehearsal namespace
         repo_root = Path(__file__).resolve().parent.parent.parent.parent
-        self.state_dir = Path(state_dir) if state_dir else repo_root / "durable_state/research_maintenance"
-        self.output_dir = Path(output_dir) if output_dir else repo_root / "docs/research/maintenance/packets"
-        self.cache_dir = Path(cache_dir) if cache_dir else repo_root / "data/research/sourced_fundamentals/raw"
+        if self.is_rehearsal:
+            default_state = repo_root / REHEARSAL_STATE_DIR
+            default_output = repo_root / REHEARSAL_OUTPUT_DIR
+            default_cache = repo_root / REHEARSAL_CACHE_DIR
+            self.artifact_name = REHEARSAL_ARTIFACT_NAME
+        else:
+            default_state = repo_root / OPERATIONAL_STATE_DIR
+            default_output = repo_root / OPERATIONAL_OUTPUT_DIR
+            default_cache = repo_root / OPERATIONAL_CACHE_DIR
+            self.artifact_name = OPERATIONAL_ARTIFACT_NAME
 
-        self.state_mgr = DurableStateManager(self.state_dir)
+        self.state_dir = Path(state_dir) if state_dir else default_state
+        self.output_dir = Path(output_dir) if output_dir else default_output
+        self.cache_dir = Path(cache_dir) if cache_dir else default_cache
+
+        self.state_mgr = DurableStateManager(
+            state_dir=self.state_dir,
+            artifact_name=self.artifact_name,
+            is_rehearsal=self.is_rehearsal,
+        )
         self.start_time = time.time()
         self.request_count = 0
 
     def run(self, target_accession: Optional[str] = None) -> Tuple[RunOutcome, Dict[str, Any]]:
         """
         Executes the guarded scheduled run under the concurrency lock,
-        unless dormant (dormant exits immediately with zero filesystem or lock mutation).
+        unless dormant or expired (exits immediately with zero filesystem, lock, or network mutation).
         """
-        # Step 0: Dormant guard - must exit immediately before touching filesystem,
-        # acquiring lock, hydrating state, or making network calls.
+        # Step 0: Initial safety guard - evaluate expiry and activation before acquiring locks,
+        # mutating directories, hydrating state, or making network calls.
         pre_status = evaluate_pilot_status(current_run_count=0, force_run=self.force_run)
-        if not pre_status.is_active and not pre_status.is_expired:
+        if pre_status.is_expired:
+            logger.info(f"Pilot execution halted (expired): {pre_status.message}")
+            summary = {
+                "outcome": RunOutcome.PILOT_EXPIRED.value,
+                "message": pre_status.message,
+                "run_count": 0,
+                "is_active": False,
+                "is_expired": True,
+            }
+            self._write_step_summary(RunOutcome.PILOT_EXPIRED, summary)
+            return RunOutcome.PILOT_EXPIRED, summary
+
+        if not pre_status.is_active:
             logger.info(f"Pilot is dormant: {pre_status.message}")
             summary = {
                 "outcome": RunOutcome.PILOT_DORMANT.value,
@@ -148,19 +187,39 @@ class ScheduledRunner:
             return RunOutcome.STATE_PERSISTENCE_FAILURE, summary
 
     def _execute_guarded_run(self, target_accession: Optional[str] = None) -> Tuple[RunOutcome, Dict[str, Any]]:
+        # Initialize monotonic runtime and request budget tracker BEFORE active state recovery begins
+        budget_tracker = RunBudgetTracker(
+            max_requests=MAX_REQUESTS_PER_RUN,
+            max_runtime_seconds=MAX_RUNTIME_SECONDS,
+            min_request_interval_seconds=MIN_REQUEST_INTERVAL_SECONDS,
+        )
+
         # Step 2: Hydrate durable state (multi-tier recovery: local -> backup -> GitHub artifact -> genesis)
         try:
-            ok, hydrate_msg = self.state_mgr.hydrate_or_recover()
+            ok, hydrate_msg = self.state_mgr.hydrate_or_recover(
+                allow_bootstrap=self.allow_bootstrap,
+                budget_tracker=budget_tracker,
+            )
             logger.info(f"Durable state hydration: {hydrate_msg}")
         except StateRecoveryError as sre:
             logger.error(f"State recovery failure: {sre}")
-            summary = {"outcome": RunOutcome.STATE_PERSISTENCE_FAILURE.value, "error": str(sre)}
-            self._write_step_summary(RunOutcome.STATE_PERSISTENCE_FAILURE, summary)
+            summary = {
+                "outcome": RunOutcome.STATE_PERSISTENCE_FAILURE.value,
+                "error": str(sre),
+                "recovery_requests": budget_tracker.recovery_request_count,
+                "run_time_sec": budget_tracker.elapsed_time(),
+            }
+            self._write_step_summary(RunOutcome.STATE_PERSISTENCE_FAILURE, summary, budget_tracker=budget_tracker)
             return RunOutcome.STATE_PERSISTENCE_FAILURE, summary
         except StateIntegrityError as se:
             logger.error(f"State integrity failure: {se}")
-            summary = {"outcome": RunOutcome.STATE_PERSISTENCE_FAILURE.value, "error": str(se)}
-            self._write_step_summary(RunOutcome.STATE_PERSISTENCE_FAILURE, summary)
+            summary = {
+                "outcome": RunOutcome.STATE_PERSISTENCE_FAILURE.value,
+                "error": str(se),
+                "recovery_requests": budget_tracker.recovery_request_count,
+                "run_time_sec": budget_tracker.elapsed_time(),
+            }
+            self._write_step_summary(RunOutcome.STATE_PERSISTENCE_FAILURE, summary, budget_tracker=budget_tracker)
             return RunOutcome.STATE_PERSISTENCE_FAILURE, summary
 
         # Step 3: Evaluate pilot activation and lifespan limits with hydrated run count
@@ -179,7 +238,7 @@ class ScheduledRunner:
                 "max_runs": status.max_runs,
                 "checkpoint_sequence": self.state_mgr.checkpoint_sequence,
             }
-            self._write_step_summary(RunOutcome.PILOT_EXPIRED, summary)
+            self._write_step_summary(RunOutcome.PILOT_EXPIRED, summary, budget_tracker=budget_tracker)
             return RunOutcome.PILOT_EXPIRED, summary
 
         if not status.is_active:
@@ -191,15 +250,22 @@ class ScheduledRunner:
                 "is_active": False,
                 "instructions": "Set ENABLE_RESEARCH_MAINTENANCE_PILOT=true (or ARX_MAINTENANCE_PILOT_ACTIVE=1) to activate.",
             }
-            self._write_step_summary(RunOutcome.PILOT_DORMANT, summary)
+            self._write_step_summary(RunOutcome.PILOT_DORMANT, summary, budget_tracker=budget_tracker)
             return RunOutcome.PILOT_DORMANT, summary
 
-        # Step 4: Initialize request & runtime budget tracker
-        budget_tracker = RunBudgetTracker(
-            max_requests=MAX_REQUESTS_PER_RUN,
-            max_runtime_seconds=MAX_RUNTIME_SECONDS,
-            min_request_interval_seconds=MIN_REQUEST_INTERVAL_SECONDS,
-        )
+        # Step 4: Check monotonic deadline at boundary before SEC polling
+        try:
+            budget_tracker.check_deadline("pre_sec_polling")
+        except BudgetExhaustedError as be:
+            logger.error(f"Budget exhausted before polling: {be}")
+            summary = {
+                "outcome": RunOutcome.SEC_RETRIEVAL_FAILURE.value,
+                "error": f"BUDGET_EXHAUSTED: {be}",
+                "symbol": self.symbol,
+                "run_count": self.state_mgr.run_count,
+            }
+            self._write_step_summary(RunOutcome.SEC_RETRIEVAL_FAILURE, summary, budget_tracker=budget_tracker)
+            return RunOutcome.SEC_RETRIEVAL_FAILURE, summary
 
         # Step 5: Setup services with unified budget tracker and completed accessions
         service = ResearchMaintenanceService(
@@ -222,7 +288,7 @@ class ScheduledRunner:
                 is_replay=False,
                 force_refresh=False,
             )
-            self.request_count = budget_tracker.request_count
+            self.request_count = budget_tracker.sec_request_count
         except BudgetExhaustedError as be:
             logger.error(f"Budget exhausted during SEC polling: {be}")
             summary = {
@@ -230,7 +296,7 @@ class ScheduledRunner:
                 "error": f"BUDGET_EXHAUSTED: {be}",
                 "symbol": self.symbol,
                 "run_count": self.state_mgr.run_count,
-                "request_count": budget_tracker.request_count,
+                "request_count": budget_tracker.sec_request_count,
                 "elapsed_time": budget_tracker.elapsed_time(),
             }
             self._write_step_summary(RunOutcome.SEC_RETRIEVAL_FAILURE, summary, budget_tracker=budget_tracker)
@@ -242,7 +308,7 @@ class ScheduledRunner:
                 "error": f"SEC retrieval failure: {e}",
                 "symbol": self.symbol,
                 "run_count": self.state_mgr.run_count,
-                "request_count": budget_tracker.request_count,
+                "request_count": budget_tracker.sec_request_count,
                 "elapsed_time": budget_tracker.elapsed_time(),
             }
             self._write_step_summary(RunOutcome.SEC_RETRIEVAL_FAILURE, summary, budget_tracker=budget_tracker)
@@ -256,7 +322,7 @@ class ScheduledRunner:
                 "error": "; ".join(warnings),
                 "symbol": self.symbol,
                 "run_count": self.state_mgr.run_count,
-                "request_count": budget_tracker.request_count,
+                "request_count": budget_tracker.sec_request_count,
                 "elapsed_time": budget_tracker.elapsed_time(),
             }
             self._write_step_summary(RunOutcome.SEC_RETRIEVAL_FAILURE, summary, budget_tracker=budget_tracker)
@@ -309,6 +375,21 @@ class ScheduledRunner:
             self._write_step_summary(RunOutcome.SOURCE_VALIDATION_CONFLICT, summary, budget_tracker=budget_tracker)
             return RunOutcome.SOURCE_VALIDATION_CONFLICT, summary
 
+        # Consequential processing boundary check before baseline load
+        try:
+            budget_tracker.check_deadline("pre_baseline_load")
+        except BudgetExhaustedError as be:
+            logger.error(f"Budget exhausted before baseline load: {be}")
+            self.state_mgr.record_failed_event(event, stage="BUDGET_EXHAUSTED", error_msg=str(be))
+            summary = {
+                "outcome": RunOutcome.SEC_RETRIEVAL_FAILURE.value,
+                "error": f"BUDGET_EXHAUSTED: {be}",
+                "symbol": self.symbol,
+                "run_count": self.state_mgr.run_count,
+            }
+            self._write_step_summary(RunOutcome.SEC_RETRIEVAL_FAILURE, summary, budget_tracker=budget_tracker)
+            return RunOutcome.SEC_RETRIEVAL_FAILURE, summary
+
         # Step 10: Load accepted baseline dossier
         try:
             baseline_dossier = service.load_accepted_baseline_dossier(self.symbol)
@@ -317,6 +398,21 @@ class ScheduledRunner:
             summary = {"outcome": RunOutcome.SOURCE_VALIDATION_CONFLICT.value, "error": str(be)}
             self._write_step_summary(RunOutcome.SOURCE_VALIDATION_CONFLICT, summary, budget_tracker=budget_tracker)
             return RunOutcome.SOURCE_VALIDATION_CONFLICT, summary
+
+        # Consequential processing boundary check before pipeline execution
+        try:
+            budget_tracker.check_deadline("pre_reconciliation")
+        except BudgetExhaustedError as be:
+            logger.error(f"Budget exhausted before reconciliation: {be}")
+            self.state_mgr.record_failed_event(event, stage="BUDGET_EXHAUSTED", error_msg=str(be))
+            summary = {
+                "outcome": RunOutcome.SEC_RETRIEVAL_FAILURE.value,
+                "error": f"BUDGET_EXHAUSTED: {be}",
+                "symbol": self.symbol,
+                "run_count": self.state_mgr.run_count,
+            }
+            self._write_step_summary(RunOutcome.SEC_RETRIEVAL_FAILURE, summary, budget_tracker=budget_tracker)
+            return RunOutcome.SEC_RETRIEVAL_FAILURE, summary
 
         # Step 11: Check if period/form reconciliation is supported
         supported = is_reconciliation_supported(self.symbol, event.form, event.reporting_period) and not event.is_amendment
@@ -332,7 +428,7 @@ class ScheduledRunner:
                     is_replay=False,
                     force_refresh=False,
                 )
-                self.request_count = budget_tracker.request_count
+                self.request_count = budget_tracker.sec_request_count
             except BudgetExhaustedError as be:
                 logger.error(f"Budget exhausted during pipeline reconciliation: {be}")
                 self.state_mgr.record_failed_event(event, stage="BUDGET_EXHAUSTED", error_msg=str(be))
@@ -341,7 +437,7 @@ class ScheduledRunner:
                     "error": f"BUDGET_EXHAUSTED: {be}",
                     "symbol": self.symbol,
                     "run_count": self.state_mgr.run_count,
-                    "request_count": budget_tracker.request_count,
+                    "request_count": budget_tracker.sec_request_count,
                     "elapsed_time": budget_tracker.elapsed_time(),
                 }
                 self._write_step_summary(RunOutcome.SEC_RETRIEVAL_FAILURE, summary, budget_tracker=budget_tracker)
@@ -355,6 +451,21 @@ class ScheduledRunner:
                 summary = {"outcome": RunOutcome.SOURCE_VALIDATION_CONFLICT.value, "error": err}
                 self._write_step_summary(RunOutcome.SOURCE_VALIDATION_CONFLICT, summary, budget_tracker=budget_tracker)
                 return RunOutcome.SOURCE_VALIDATION_CONFLICT, summary
+
+            # Consequential processing boundary check before committing checkpoint
+            try:
+                budget_tracker.check_deadline("pre_checkpoint_commit")
+            except BudgetExhaustedError as be:
+                logger.error(f"Budget exhausted before checkpoint commit: {be}")
+                self.state_mgr.record_failed_event(event, stage="BUDGET_EXHAUSTED", error_msg=str(be))
+                summary = {
+                    "outcome": RunOutcome.SEC_RETRIEVAL_FAILURE.value,
+                    "error": f"BUDGET_EXHAUSTED: {be}",
+                    "symbol": self.symbol,
+                    "run_count": self.state_mgr.run_count,
+                }
+                self._write_step_summary(RunOutcome.SEC_RETRIEVAL_FAILURE, summary, budget_tracker=budget_tracker)
+                return RunOutcome.SEC_RETRIEVAL_FAILURE, summary
 
             # Success: Record completed event and commit checkpoint
             self.state_mgr.record_completed_event(processed_event, review_packet_id=packet.packet_id)
@@ -397,6 +508,21 @@ class ScheduledRunner:
                 unsupported_reason=unsupported_reason,
             )
 
+            # Consequential processing boundary check before committing checkpoint
+            try:
+                budget_tracker.check_deadline("pre_checkpoint_commit")
+            except BudgetExhaustedError as be:
+                logger.error(f"Budget exhausted before checkpoint commit: {be}")
+                self.state_mgr.record_failed_event(event, stage="BUDGET_EXHAUSTED", error_msg=str(be))
+                summary = {
+                    "outcome": RunOutcome.SEC_RETRIEVAL_FAILURE.value,
+                    "error": f"BUDGET_EXHAUSTED: {be}",
+                    "symbol": self.symbol,
+                    "run_count": self.state_mgr.run_count,
+                }
+                self._write_step_summary(RunOutcome.SEC_RETRIEVAL_FAILURE, summary, budget_tracker=budget_tracker)
+                return RunOutcome.SEC_RETRIEVAL_FAILURE, summary
+
             event.processing_state = EventProcessingState.DETECTED_UNSUPPORTED_PERIOD
             self.state_mgr.record_completed_event(event, review_packet_id=artifact["artifact_id"])
             self.state_mgr.commit_run_checkpoint(
@@ -433,10 +559,13 @@ class ScheduledRunner:
         if not summary_path:
             return
 
-        req_count = budget_tracker.request_count if budget_tracker else summary.get("request_count", self.request_count)
+        req_count = budget_tracker.sec_request_count if budget_tracker else summary.get("request_count", self.request_count)
+        rec_count = budget_tracker.recovery_request_count if budget_tracker else summary.get("recovery_requests", 0)
         run_sec = budget_tracker.elapsed_time() if budget_tracker else summary.get("run_time_sec", time.time() - self.start_time)
+        is_reh = getattr(self, "is_rehearsal", False)
+        prefix = "[REHEARSAL] " if is_reh else ""
 
-        md = f"""## ARX Scheduled Research Maintenance Run Summary
+        md = f"""## {prefix}ARX Scheduled Research Maintenance Run Summary
 
 | Metric | Value |
 | :--- | :--- |
@@ -445,7 +574,9 @@ class ScheduledRunner:
 | **Run Count** | {summary.get('run_count', self.state_mgr.run_count)} / {MAX_PILOT_RUNS} |
 | **Checkpoint Sequence** | {summary.get('checkpoint_sequence', self.state_mgr.checkpoint_sequence)} |
 | **Execution Time** | {run_sec:.2f}s (Budget: {MAX_RUNTIME_SECONDS}s) |
-| **Request Count** | {req_count} (Budget: {MAX_REQUESTS_PER_RUN}) |
+| **SEC HTTP Requests** | {req_count} / {MAX_REQUESTS_PER_RUN} |
+| **Recovery HTTP Requests** | {rec_count} |
+| **Namespace Mode** | `{'REHEARSAL' if is_reh else 'OPERATIONAL'}` |
 
 """
         if outcome == RunOutcome.NEWLY_VERIFIED_EVENT_SUPPORTED:
@@ -504,9 +635,13 @@ def main():
     parser.add_argument("--cache-dir", default=None, help="Directory for raw SEC cache")
     parser.add_argument("--offline", action="store_true", help="Run in offline mode using local fixtures")
     parser.add_argument("--force-run", action="store_true", help="Bypass dormant activation check")
+    parser.add_argument("--rehearsal", action="store_true", help="Execute in isolated rehearsal namespace")
+    parser.add_argument("--bootstrap", action="store_true", help="Authorize first-run genesis initialization")
     parser.add_argument("--target-accession", default=None, help="Target specific accession for rehearsal")
 
     args = parser.parse_args()
+
+    is_rehearsal = args.rehearsal or args.force_run
 
     runner = ScheduledRunner(
         symbol=args.symbol,
@@ -515,6 +650,8 @@ def main():
         cache_dir=args.cache_dir,
         offline_mode=args.offline,
         force_run=args.force_run,
+        is_rehearsal=is_rehearsal,
+        allow_bootstrap=args.bootstrap,
     )
 
     outcome, summary = runner.run(target_accession=args.target_accession)

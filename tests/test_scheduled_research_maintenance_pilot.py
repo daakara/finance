@@ -20,6 +20,7 @@ Verifies the 11 Required Operational Controls:
 
 from datetime import datetime, timezone
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -29,6 +30,7 @@ import time
 import unittest
 from unittest.mock import patch, MagicMock
 import urllib.error
+import zipfile
 
 from analyst_dashboard.research.maintenance.contracts import (
     EventProcessingState,
@@ -142,6 +144,7 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
                 cache_dir=self.cache_dir,
                 force_run=True,
                 offline_mode=True,
+                allow_bootstrap=True,
             )
             # Offline mode without mock returns no new filing
             outcome, summary = runner.run()
@@ -183,6 +186,7 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
             output_dir=self.output_dir,
             cache_dir=self.cache_dir,
             force_run=True,
+            allow_bootstrap=True,
         )
 
         with patch("analyst_dashboard.research.maintenance.event_poller.SecEventPoller.fetch_submissions", return_value=subs_mock):
@@ -359,6 +363,7 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
             output_dir=self.output_dir,
             cache_dir=self.cache_dir,
             force_run=True,
+            allow_bootstrap=True,
         )
 
         with patch("analyst_dashboard.research.maintenance.event_poller.SecEventPoller.fetch_submissions", side_effect=urllib.error.URLError("Network unreachable")):
@@ -400,6 +405,7 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
             output_dir=self.output_dir,
             cache_dir=self.cache_dir,
             force_run=True,
+            allow_bootstrap=True,
         )
 
         with patch("analyst_dashboard.research.maintenance.event_poller.SecEventPoller.fetch_submissions", return_value=subs_mock):
@@ -453,6 +459,7 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
             output_dir=self.output_dir,
             cache_dir=self.cache_dir,
             force_run=True,
+            allow_bootstrap=True,
         )
 
         with patch("analyst_dashboard.research.maintenance.event_poller.SecEventPoller.fetch_submissions", return_value=subs_mock):
@@ -511,6 +518,7 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
             output_dir=self.output_dir,
             cache_dir=self.cache_dir,
             force_run=True,
+            allow_bootstrap=True,
         )
 
         # Acquire lock in runner 1 context
@@ -521,6 +529,7 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
                 output_dir=self.output_dir,
                 cache_dir=self.cache_dir,
                 force_run=True,
+                allow_bootstrap=True,
             )
             # Runner 2 attempts to run while runner 1 holds lock
             outcome, summary = runner2.run()
@@ -558,7 +567,7 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
         """State is recovered across runs; missing state after prior runs fails closed with StateRecoveryError."""
         backup_dir = Path(self.temp_dir) / "backup_state"
         mgr1 = DurableStateManager(self.state_dir, backup_dir=backup_dir)
-        mgr1.hydrate_or_recover()
+        mgr1.hydrate_or_recover(allow_bootstrap=True)
         # Record an event
         evt = MaintenanceEvent(
             event_id="EVT-FIX-test-accn",
@@ -583,9 +592,9 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
         shutil.rmtree(self.state_dir)
         self.assertFalse(self.state_dir.exists())
 
-        # Runner B recovers from backup_dir
+        # Runner B recovers from backup_dir (without bootstrap needed, since backup manifest exists)
         mgr2 = DurableStateManager(self.state_dir, backup_dir=backup_dir)
-        ok, msg = mgr2.hydrate_or_recover()
+        ok, msg = mgr2.hydrate_or_recover(allow_bootstrap=False)
         self.assertTrue(ok)
         self.assertEqual(mgr2.run_count, 1)
         self.assertEqual(mgr2.checkpoint_sequence, 1)
@@ -607,7 +616,7 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
     def test_control_14_corrupted_state_rejected_with_integrity_error(self):
         """Tampered or corrupted manifest file fails checksum verification with StateIntegrityError."""
         mgr = DurableStateManager(self.state_dir)
-        mgr.hydrate_or_recover()
+        mgr.hydrate_or_recover(allow_bootstrap=True)
         mgr.commit_run_checkpoint(RunOutcome.NO_QUALIFYING_EVENT)
 
         # Tamper with the manifest content on disk
@@ -643,7 +652,7 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
         }
 
         mgr = DurableStateManager(self.state_dir)
-        mgr.hydrate_or_recover()
+        mgr.hydrate_or_recover(allow_bootstrap=True)
 
         service = ResearchMaintenanceService(
             packets_dir=self.output_dir,
@@ -728,6 +737,311 @@ class TestScheduledResearchMaintenancePilot(unittest.TestCase):
         # After mgr1 exits, mgr2 can acquire lock
         with mgr2.acquire_lock():
             self.assertTrue(mgr2.lock_path.exists())
+
+    # -------------------------------------------------------------------------
+    # CONTROL 19: Recovery from Mocked GitHub Artifact ZIP
+    # -------------------------------------------------------------------------
+    def test_control_19_recovery_from_mocked_github_artifact_zip(self):
+        """Runner recovers state from remote GitHub Actions artifact ZIP and validates schema."""
+        from analyst_dashboard.research.maintenance.durable_state import deterministic_json, sha256_hex
+
+        # Build in-memory artifact ZIP containing a valid manifest
+        manifest_data = {
+            "manifest_version": "ARX-MAINTENANCE-STATE-V1",
+            "symbol": "FIX",
+            "cik": "0001035983",
+            "checkpoint_sequence": 5,
+            "prev_checkpoint_hash": "a" * 64,
+            "created_at_utc": "2026-10-24T12:00:00Z",
+            "last_checked_utc": "2026-10-24T18:00:00Z",
+            "last_outcome": "NO_QUALIFYING_EVENT",
+            "run_count": 5,
+            "completed_accessions": sorted(list(RECORDED_KNOWN_ACCESSIONS | {"0001104659-26-999999"})),
+            "events": {},
+        }
+        manifest_copy = dict(manifest_data)
+        manifest_copy.pop("manifest_sha256", None)
+        manifest_data["manifest_sha256"] = sha256_hex(deterministic_json(manifest_copy).encode("utf-8"))
+
+        zip_buf = io.BytesIO()
+        with zipfile.ZipFile(zip_buf, "w") as zf:
+            zf.writestr("durable_state/research_maintenance/DURABLE_STATE_MANIFEST.json", json.dumps(manifest_data, indent=2))
+        zip_bytes = zip_buf.getvalue()
+
+        # Mock GitHub API responses:
+        # 1. artifacts list: returns artifact info with archive_download_url
+        # 2. archive download: returns zip_bytes
+        artifacts_resp = {
+            "total_count": 1,
+            "artifacts": [
+                {
+                    "id": 88888,
+                    "name": "research-maintenance-fix-state",
+                    "archive_download_url": "https://api.github.com/repos/daakara/finance/actions/artifacts/88888/zip",
+                }
+            ],
+        }
+
+        class MockHTTPResponse:
+            def __init__(self, data_bytes):
+                self._data = data_bytes
+
+            def read(self):
+                return self._data
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                pass
+
+        def mock_urlopen(req, timeout=None):
+            url = req.full_url if hasattr(req, "full_url") else str(req)
+            if "artifacts/88888/zip" in url:
+                return MockHTTPResponse(zip_bytes)
+            elif "actions/artifacts" in url:
+                return MockHTTPResponse(json.dumps(artifacts_resp).encode("utf-8"))
+            raise ValueError(f"Unexpected url: {url}")
+
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "mock-token", "GITHUB_REPOSITORY": "daakara/finance"}):
+            with patch("urllib.request.urlopen", side_effect=mock_urlopen):
+                mgr = DurableStateManager(self.state_dir)
+                ok, msg = mgr.hydrate_or_recover(allow_bootstrap=False)
+
+                self.assertTrue(ok)
+                self.assertEqual(mgr.checkpoint_sequence, 5)
+                self.assertEqual(mgr.run_count, 5)
+                self.assertTrue(mgr.is_accession_completed("0001104659-26-999999"))
+                self.assertTrue((self.state_dir / "DURABLE_STATE_MANIFEST.json").exists())
+
+    # -------------------------------------------------------------------------
+    # CONTROL 20: Recovery Fails Closed When History Unavailable or Unauthorized
+    # -------------------------------------------------------------------------
+    def test_control_20_recovery_fails_closed_when_history_unavailable_or_unauthorized(self):
+        """HTTP error or unauthorized history response raises StateRecoveryError and never defaults to genesis."""
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "mock-token"}):
+            with patch("urllib.request.urlopen", side_effect=urllib.error.HTTPError("https://api.github.com", 401, "Unauthorized", {}, None)):
+                mgr = DurableStateManager(self.state_dir)
+                # Even if allow_bootstrap=True, unavailable history fails closed!
+                with self.assertRaises(StateRecoveryError) as ctx:
+                    mgr.hydrate_or_recover(allow_bootstrap=True)
+                self.assertIn("STATE_RECOVERY_FAILURE", str(ctx.exception))
+                self.assertFalse((self.state_dir / "DURABLE_STATE_MANIFEST.json").exists())
+
+    # -------------------------------------------------------------------------
+    # CONTROL 21: Dormant Runs Do Not Count as Prior Operational Execution
+    # -------------------------------------------------------------------------
+    def test_control_21_dormant_runs_do_not_count_as_prior_operational_execution(self):
+        """A successful dormant workflow run (no state artifact) is not counted as prior operational execution."""
+        class MockHTTPResponse:
+            def __init__(self, data_bytes):
+                self._data = data_bytes
+
+            def read(self):
+                return self._data
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                pass
+
+        # Sub-case A: Successful dormant run (no state artifacts) -> bootstrap permitted
+        def mock_urlopen_dormant(req, timeout=None):
+            url = req.full_url if hasattr(req, "full_url") else str(req)
+            if "actions/artifacts?name=" in url:
+                return MockHTTPResponse(b'{"total_count": 0, "artifacts": []}')
+            elif "runs?status=success" in url:
+                return MockHTTPResponse(b'{"total_count": 1, "workflow_runs": [{"id": 1111}]}')
+            elif "runs/1111/artifacts" in url:
+                return MockHTTPResponse(b'{"total_count": 0, "artifacts": []}')
+            raise ValueError(f"Unexpected url: {url}")
+
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "mock-token"}):
+            with patch("urllib.request.urlopen", side_effect=mock_urlopen_dormant):
+                mgr = DurableStateManager(self.state_dir)
+                ok, msg = mgr.hydrate_or_recover(allow_bootstrap=True)
+                self.assertTrue(ok)
+                self.assertEqual(msg, "GENESIS_INITIALIZED")
+
+        # Sub-case B: Successful operational run found in run artifacts -> bootstrap blocked without prior state
+        state_dir_2 = Path(self.temp_dir) / "state_sub_b"
+        def mock_urlopen_operational(req, timeout=None):
+            url = req.full_url if hasattr(req, "full_url") else str(req)
+            if "actions/artifacts?name=" in url:
+                return MockHTTPResponse(b'{"total_count": 0, "artifacts": []}')
+            elif "runs?status=success" in url:
+                return MockHTTPResponse(b'{"total_count": 1, "workflow_runs": [{"id": 2222}]}')
+            elif "runs/2222/artifacts" in url:
+                return MockHTTPResponse(b'{"total_count": 1, "artifacts": [{"id": 777, "name": "research-maintenance-fix-state"}]}')
+            raise ValueError(f"Unexpected url: {url}")
+
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "mock-token"}):
+            with patch("urllib.request.urlopen", side_effect=mock_urlopen_operational):
+                mgr2 = DurableStateManager(state_dir_2)
+                with self.assertRaises(StateRecoveryError) as ctx:
+                    mgr2.hydrate_or_recover(allow_bootstrap=True)
+                self.assertIn("Evidence of prior operational runs exists", str(ctx.exception))
+
+    # -------------------------------------------------------------------------
+    # CONTROL 22: Rehearsal Namespace Isolation Leaves Operational State Untouched
+    # -------------------------------------------------------------------------
+    def test_control_22_rehearsal_namespace_isolation_leaves_operational_state_untouched(self):
+        """Rehearsal run operates strictly in rehearsal namespace and leaves operational manifest byte-identical."""
+        op_state_dir = Path(self.temp_dir) / "op_state"
+        reh_state_dir = Path(self.temp_dir) / "reh_state"
+        reh_output_dir = Path(self.temp_dir) / "reh_output"
+
+        # Initialize operational state
+        op_mgr = DurableStateManager(op_state_dir)
+        op_mgr.hydrate_or_recover(allow_bootstrap=True)
+        op_mgr.commit_run_checkpoint(RunOutcome.NO_QUALIFYING_EVENT)
+        op_manifest_path = op_state_dir / "DURABLE_STATE_MANIFEST.json"
+        op_manifest_bytes_before = op_manifest_path.read_bytes()
+        op_sha_before = hashlib.sha256(op_manifest_bytes_before).hexdigest()
+        self.assertEqual(op_mgr.run_count, 1)
+
+        # Execute rehearsal run
+        reh_runner = ScheduledRunner(
+            symbol="FIX",
+            state_dir=reh_state_dir,
+            output_dir=reh_output_dir,
+            cache_dir=self.cache_dir,
+            force_run=True,
+            is_rehearsal=True,
+            allow_bootstrap=True,
+            offline_mode=True,
+        )
+        self.assertEqual(reh_runner.artifact_name, "research-maintenance-fix-rehearsal-state")
+
+        outcome, summary = reh_runner.run()
+        self.assertIn(outcome, (RunOutcome.NO_QUALIFYING_EVENT, RunOutcome.SEC_RETRIEVAL_FAILURE))
+
+        # Operational manifest must be 100% bit-for-bit unchanged
+        op_manifest_bytes_after = op_manifest_path.read_bytes()
+        op_sha_after = hashlib.sha256(op_manifest_bytes_after).hexdigest()
+        self.assertEqual(op_sha_before, op_sha_after, "Operational manifest was mutated by rehearsal!")
+
+        # Rehearsal manifest exists in separate rehearsal directory
+        self.assertTrue((reh_state_dir / "DURABLE_STATE_MANIFEST.json").exists())
+
+    # -------------------------------------------------------------------------
+    # CONTROL 23: Expired Pilot Halts at Step 0 Before Lock or Mutation
+    # -------------------------------------------------------------------------
+    def test_control_23_expired_pilot_halts_at_step_0_before_lock_or_mutation(self):
+        """Expired pilot halts at step 0 without creating state directories, acquiring locks, or network calls."""
+        uncreated_dir = Path(self.temp_dir) / "uncreated_state_dir"
+        self.assertFalse(uncreated_dir.exists())
+
+        with patch("analyst_dashboard.research.maintenance.pilot_config.datetime") as mock_dt:
+            # Set time after PILOT_END_DATE (2026-11-24)
+            fake_now = datetime(2026, 11, 26, 12, 0, 0, tzinfo=timezone.utc)
+            mock_dt.now.return_value = fake_now
+            mock_dt.timezone = timezone
+
+            with patch("urllib.request.urlopen", side_effect=AssertionError("Network called when expired")):
+                runner = ScheduledRunner(
+                    symbol="FIX",
+                    state_dir=uncreated_dir,
+                    output_dir=self.output_dir,
+                    cache_dir=self.cache_dir,
+                    force_run=True,  # Even force_run must not bypass lifecycle expiration!
+                )
+                outcome, summary = runner.run()
+
+                self.assertEqual(outcome, RunOutcome.PILOT_EXPIRED)
+                self.assertTrue(summary["is_expired"])
+                self.assertFalse(uncreated_dir.exists(), "State directory was created by expired pilot!")
+
+    # -------------------------------------------------------------------------
+    # CONTROL 24: Dynamic Timeout Never Inflated Above Remaining Deadline
+    # -------------------------------------------------------------------------
+    def test_control_24_dynamic_timeout_never_inflated_above_remaining_deadline(self):
+        """Dynamic timeout is strictly bounded by remaining runtime (never inflated with max(0.5, ...))."""
+        # Create tracker with mock clock
+        clock_time = [1000.0]
+        def mock_clock():
+            return clock_time[0]
+
+        tracker = RunBudgetTracker(
+            max_requests=5,
+            max_runtime_sec=10.0,
+            min_interval_sec=0.0,
+            clock_fn=mock_clock,
+        )
+        # Advance clock to leave only 0.3s remaining
+        clock_time[0] = 1009.7
+        self.assertAlmostEqual(tracker.remaining_runtime(), 0.3, places=2)
+
+        timeout = tracker.acquire_request_slot(default_timeout_sec=15.0)
+        self.assertAlmostEqual(timeout, 0.3, places=2)
+        self.assertLessEqual(timeout, 0.3, "Timeout was inflated above remaining runtime!")
+
+        # Advance clock to leave < 0.1s remaining (e.g. 0.05s)
+        clock_time[0] = 1009.96
+        with self.assertRaises(BudgetExhaustedError) as ctx:
+            tracker.acquire_request_slot()
+        self.assertIn("Insufficient runtime", str(ctx.exception))
+
+    # -------------------------------------------------------------------------
+    # CONTROL 25: Recovery Requests Separated from SEC Budget
+    # -------------------------------------------------------------------------
+    def test_control_25_recovery_requests_separated_from_sec_budget(self):
+        """Recovery HTTP requests are tracked separately and do not consume from the 5 SEC request ceiling."""
+        tracker = RunBudgetTracker(max_requests=5, max_runtime_sec=120.0, min_interval_sec=0.0)
+
+        # 3 recovery requests
+        for _ in range(3):
+            timeout = tracker.acquire_recovery_request_slot(default_timeout_sec=10.0)
+            self.assertGreater(timeout, 0.0)
+
+        self.assertEqual(tracker.recovery_request_count, 3)
+        self.assertEqual(tracker.sec_request_count, 0)
+
+        # 5 SEC requests permitted
+        for _ in range(5):
+            tracker.acquire_sec_request_slot()
+
+        self.assertEqual(tracker.sec_request_count, 5)
+        self.assertEqual(tracker.total_requests, 8)
+
+        # 6th SEC request strictly rejected
+        with self.assertRaises(BudgetExhaustedError) as ctx:
+            tracker.acquire_sec_request_slot()
+        self.assertIn("REQUEST_BUDGET_EXHAUSTED", str(ctx.exception))
+
+    # -------------------------------------------------------------------------
+    # CONTROL 26: Boundary Deadline Checks and Event Retryability
+    # -------------------------------------------------------------------------
+    def test_control_26_boundary_deadline_checks_and_event_retryability(self):
+        """Consequential boundaries check deadline, and budget exhaustion leaves event retryable."""
+        tracker = RunBudgetTracker(max_requests=5, max_runtime_sec=1.0)
+        tracker.deadline = time.monotonic() - 1.0  # Expired
+
+        with self.assertRaises(BudgetExhaustedError) as ctx:
+            tracker.check_deadline("pre_reconciliation")
+        self.assertIn("pre_reconciliation", str(ctx.exception))
+
+        # Event failure due to budget exhaustion leaves event uncompleted (retryable)
+        mgr = DurableStateManager(self.state_dir)
+        mgr.hydrate_or_recover(allow_bootstrap=True)
+        evt = MaintenanceEvent(
+            event_id="EVT-FIX-test-retry",
+            symbol="FIX",
+            cik=TARGET_CIK,
+            company_name="Comfort Systems USA, Inc.",
+            form="10-Q",
+            accession_number="0001104659-26-777777",
+            filing_date="2026-10-24",
+            reporting_period="2026-09-30",
+            retrieval_time_utc="2026-10-24T21:05:00Z",
+            source_url="https://www.sec.gov/test",
+            primary_document="doc.htm",
+            processing_state=EventProcessingState.REVIEW_PENDING,
+        )
+        mgr.record_failed_event(evt, stage="BUDGET_EXHAUSTED", error_msg="Timeout exceeded")
+        # Assert accession is NOT completed
+        self.assertFalse(mgr.is_accession_completed("0001104659-26-777777"))
 
 
 if __name__ == "__main__":

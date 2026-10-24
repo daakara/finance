@@ -65,6 +65,19 @@ MAX_REQUESTS_PER_RUN = 5
 MAX_RUNTIME_SECONDS = 120.0
 MIN_REQUEST_INTERVAL_SECONDS = 0.25
 
+# Isolated Namespace Constants: Operational vs. Rehearsal
+OPERATIONAL_STATE_DIR = "durable_state/research_maintenance"
+OPERATIONAL_OUTPUT_DIR = "docs/research/maintenance/packets"
+OPERATIONAL_CACHE_DIR = "data/research/sourced_fundamentals/raw"
+OPERATIONAL_ARTIFACT_NAME = "research-maintenance-fix-state"
+OPERATIONAL_CACHE_KEY_PREFIX = "research-maintenance-durable-state-"
+
+REHEARSAL_STATE_DIR = "durable_state/rehearsal_maintenance"
+REHEARSAL_OUTPUT_DIR = "docs/research/maintenance/rehearsal_packets"
+REHEARSAL_CACHE_DIR = "data/research/sourced_fundamentals/rehearsal_raw"
+REHEARSAL_ARTIFACT_NAME = "research-maintenance-fix-rehearsal-state"
+REHEARSAL_CACHE_KEY_PREFIX = "research-maintenance-rehearsal-state-"
+
 # Activation Flag Environment Variables
 ACTIVATION_ENV_VAR = "ARX_MAINTENANCE_PILOT_ACTIVE"
 REPO_VAR_NAME = "ENABLE_RESEARCH_MAINTENANCE_PILOT"
@@ -79,9 +92,10 @@ class RunBudgetTracker:
     """
     Shared run-level budget tracker enforcing:
     - Overall monotonic runtime deadline (default 120.0s).
-    - Per-run HTTP request count ceiling (default 5 requests).
+    - Per-run HTTP request count ceiling for primary-source SEC retrieval (max 5 requests).
+    - Explicit separation of SEC requests from recovery HTTP requests.
     - Rate limit interval between network requests (default 0.25s).
-    - Request-level timeouts dynamically bounded by remaining runtime.
+    - Request-level timeouts dynamically bounded by remaining runtime (never inflated).
     """
 
     def __init__(
@@ -93,7 +107,7 @@ class RunBudgetTracker:
         max_runtime_seconds: Optional[float] = None,
         min_request_interval_seconds: Optional[float] = None,
     ):
-        self.max_requests = max_requests
+        self.max_sec_requests = max_requests
         self.max_runtime_sec = (
             max_runtime_seconds
             if max_runtime_seconds is not None
@@ -107,8 +121,23 @@ class RunBudgetTracker:
         self._clock = clock_fn or time.monotonic
         self.start_time = self._clock()
         self.deadline = self.start_time + self.max_runtime_sec
-        self.last_request_time = 0.0
-        self.request_count = 0
+        self.last_sec_request_time = 0.0
+        self.sec_request_count = 0
+        self.recovery_request_count = 0
+
+    @property
+    def max_requests(self) -> int:
+        return self.max_sec_requests
+
+    @property
+    def request_count(self) -> int:
+        """Backward-compatible access to SEC request count."""
+        return self.sec_request_count
+
+    @property
+    def total_requests(self) -> int:
+        """Combined SEC and recovery HTTP requests."""
+        return self.sec_request_count + self.recovery_request_count
 
     def elapsed_time(self) -> float:
         """Returns elapsed time in seconds since tracker creation."""
@@ -118,39 +147,82 @@ class RunBudgetTracker:
         """Returns seconds remaining before monotonic deadline."""
         return max(0.0, self.deadline - self._clock())
 
-    def check_can_request(self) -> Tuple[bool, Optional[str]]:
-        """Checks if another HTTP request is permitted under both budgets."""
-        if self.request_count >= self.max_requests:
-            return False, f"REQUEST_BUDGET_EXHAUSTED: Run reached maximum {self.max_requests} HTTP requests."
+    def check_deadline(self, boundary_name: str = "") -> None:
+        """
+        Enforces monotonic deadline at consequential processing boundaries.
+        Raises BudgetExhaustedError if remaining runtime is exhausted or insufficient.
+        """
         rem = self.remaining_runtime()
-        if rem <= 0.0:
-            return False, f"RUNTIME_BUDGET_EXHAUSTED: Monotonic runtime limit ({self.max_runtime_sec}s) exhausted."
+        if rem <= 0.05:
+            prefix = f" [{boundary_name}]" if boundary_name else ""
+            raise BudgetExhaustedError(
+                f"RUNTIME_BUDGET_EXHAUSTED{prefix}: Monotonic deadline ({self.max_runtime_sec}s) expired "
+                f"(remaining: {rem:.2f}s)."
+            )
+
+    def check_can_request(self) -> Tuple[bool, Optional[str]]:
+        """Checks if another SEC HTTP request is permitted under both budgets."""
+        if self.sec_request_count >= self.max_sec_requests:
+            return False, f"REQUEST_BUDGET_EXHAUSTED: Run reached maximum {self.max_sec_requests} SEC HTTP requests."
+        rem = self.remaining_runtime()
+        if rem < 0.1:
+            return False, f"RUNTIME_BUDGET_EXHAUSTED: Insufficient runtime ({rem:.2f}s) remaining before monotonic deadline."
         return True, None
 
     def acquire_request_slot(self, default_timeout_sec: float = 15.0) -> float:
+        """Backward-compatible alias for acquire_sec_request_slot."""
+        return self.acquire_sec_request_slot(default_timeout_sec=default_timeout_sec)
+
+    def acquire_sec_request_slot(self, default_timeout_sec: float = 15.0) -> float:
         """
-        Enforces rate limiting, consumes 1 request budget slot, and returns bounded timeout.
+        Enforces SEC rate limiting, consumes 1 SEC request budget slot, and returns bounded timeout.
+        Dynamically bounds timeout by remaining monotonic runtime without inflation.
         Raises BudgetExhaustedError if budget or runtime has expired.
         """
         can_req, reason = self.check_can_request()
         if not can_req:
             raise BudgetExhaustedError(reason)
 
-        elapsed = self._clock() - self.last_request_time
+        elapsed = self._clock() - self.last_sec_request_time
         if elapsed < self.min_interval_sec:
-            time.sleep(self.min_interval_sec - elapsed)
+            sleep_needed = self.min_interval_sec - elapsed
+            rem = self.remaining_runtime()
+            if sleep_needed >= rem:
+                raise BudgetExhaustedError(
+                    f"RUNTIME_BUDGET_EXHAUSTED: Monotonic deadline reached while rate limiting."
+                )
+            time.sleep(sleep_needed)
 
-        self.last_request_time = self._clock()
-        self.request_count += 1
+        rem_before = self.remaining_runtime()
+        if rem_before < 0.1:
+            raise BudgetExhaustedError(
+                f"RUNTIME_BUDGET_EXHAUSTED: Insufficient runtime ({rem_before:.2f}s) to initiate SEC request."
+            )
 
-        rem = self.remaining_runtime()
-        if rem <= 0.0:
+        self.last_sec_request_time = self._clock()
+        self.sec_request_count += 1
+
+        rem_after = self.remaining_runtime()
+        if rem_after <= 0.0:
             raise BudgetExhaustedError(
                 f"RUNTIME_BUDGET_EXHAUSTED: Monotonic deadline reached during rate limit sleep."
             )
 
-        # Dynamic timeout: bounded by default_timeout_sec or remaining runtime
-        return min(default_timeout_sec, max(0.5, rem))
+        # Dynamic timeout: strictly bounded by remaining runtime (never inflated above rem_after)
+        return min(default_timeout_sec, rem_after)
+
+    def acquire_recovery_request_slot(self, default_timeout_sec: float = 10.0) -> float:
+        """
+        Consumes 1 recovery HTTP request slot (tracked separately from SEC retrieval budget)
+        and bounds timeout by remaining monotonic deadline.
+        """
+        rem = self.remaining_runtime()
+        if rem < 0.1:
+            raise BudgetExhaustedError(
+                f"RUNTIME_BUDGET_EXHAUSTED: Insufficient runtime ({rem:.2f}s) to initiate state recovery request."
+            )
+        self.recovery_request_count += 1
+        return min(default_timeout_sec, rem)
 
 
 @dataclass(frozen=True)

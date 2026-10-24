@@ -59,17 +59,35 @@ jobs:
           python-version: "3.11"
           cache: ""
 
-      - name: 3. Check Pilot Activation Guard
+      - name: 3. Check Pilot Activation Guard & Namespace
         id: check-activation
         shell: bash
         run: |
           FORCE="${{ inputs.force_run }}"
           ENV_ACTIVE="${{ env.ARX_MAINTENANCE_PILOT_ACTIVE }}"
-          if [ "$FORCE" = "true" ] || [ "$ENV_ACTIVE" = "true" ] || [ "$ENV_ACTIVE" = "1" ] || [ "$ENV_ACTIVE" = "yes" ]; then
+          if [ "$FORCE" = "true" ]; then
             echo "is_active=true" >> "$GITHUB_OUTPUT"
-            echo "Pilot activation confirmed (force_run=$FORCE, active=$ENV_ACTIVE)."
+            echo "is_rehearsal=true" >> "$GITHUB_OUTPUT"
+            echo "state_dir=durable_state/rehearsal_maintenance" >> "$GITHUB_OUTPUT"
+            echo "output_dir=docs/research/maintenance/rehearsal_packets" >> "$GITHUB_OUTPUT"
+            echo "cache_key_prefix=research-maintenance-rehearsal-state-" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=research-maintenance-fix-rehearsal-state" >> "$GITHUB_OUTPUT"
+            echo "Pilot manual rehearsal active (force_run=true). Routing to isolated rehearsal namespace."
+          elif [ "$ENV_ACTIVE" = "true" ] || [ "$ENV_ACTIVE" = "1" ] || [ "$ENV_ACTIVE" = "yes" ]; then
+            echo "is_active=true" >> "$GITHUB_OUTPUT"
+            echo "is_rehearsal=false" >> "$GITHUB_OUTPUT"
+            echo "state_dir=durable_state/research_maintenance" >> "$GITHUB_OUTPUT"
+            echo "output_dir=docs/research/maintenance/packets" >> "$GITHUB_OUTPUT"
+            echo "cache_key_prefix=research-maintenance-durable-state-" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=research-maintenance-fix-state" >> "$GITHUB_OUTPUT"
+            echo "Operational scheduled pilot active (ENABLE_RESEARCH_MAINTENANCE_PILOT=$ENV_ACTIVE)."
           else
             echo "is_active=false" >> "$GITHUB_OUTPUT"
+            echo "is_rehearsal=false" >> "$GITHUB_OUTPUT"
+            echo "state_dir=durable_state/research_maintenance" >> "$GITHUB_OUTPUT"
+            echo "output_dir=docs/research/maintenance/packets" >> "$GITHUB_OUTPUT"
+            echo "cache_key_prefix=research-maintenance-durable-state-" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=research-maintenance-fix-state" >> "$GITHUB_OUTPUT"
             echo "Pilot is dormant (ENABLE_RESEARCH_MAINTENANCE_PILOT=$ENV_ACTIVE). Stateful steps conditioned off."
           fi
 
@@ -78,46 +96,45 @@ jobs:
         id: restore-state
         if: steps.check-activation.outputs.is_active == 'true'
         with:
-          path: durable_state/
-          key: research-maintenance-durable-state-${{ github.run_id }}
+          path: ${{ steps.check-activation.outputs.state_dir }}
+          key: ${{ steps.check-activation.outputs.cache_key_prefix }}${{ github.run_id }}
           restore-keys: |
-            research-maintenance-durable-state-
+            ${{ steps.check-activation.outputs.cache_key_prefix }}
 
       - name: 5. Execute Governed Scheduled Runner
         id: execute-runner
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          FORCE_FLAG=""
-          if [ "${{ inputs.force_run }}" = "true" ]; then
-            FORCE_FLAG="--force-run"
+          FLAGS=""
+          if [ "${{ steps.check-activation.outputs.is_rehearsal }}" = "true" ]; then
+            FLAGS="--rehearsal --force-run"
           fi
           
-          ACCESSION_FLAG=""
           if [ -n "${{ inputs.target_accession }}" ]; then
-            ACCESSION_FLAG="--target-accession ${{ inputs.target_accession }}"
+            FLAGS="$FLAGS --target-accession ${{ inputs.target_accession }}"
           fi
 
           python -m analyst_dashboard.research.maintenance.scheduled_runner \
             --symbol FIX \
-            --state-dir durable_state/research_maintenance \
-            --output-dir docs/research/maintenance/packets \
-            $FORCE_FLAG $ACCESSION_FLAG
+            --state-dir "${{ steps.check-activation.outputs.state_dir }}" \
+            --output-dir "${{ steps.check-activation.outputs.output_dir }}" \
+            $FLAGS
 
       - name: 6. Save Durable State Cache
         uses: actions/cache/save@v4
         if: always() && steps.check-activation.outputs.is_active == 'true'
         with:
-          path: durable_state/
-          key: research-maintenance-durable-state-${{ github.run_id }}
+          path: ${{ steps.check-activation.outputs.state_dir }}
+          key: ${{ steps.check-activation.outputs.cache_key_prefix }}${{ github.run_id }}
 
       - name: 7. Upload State and Review Artifacts
         uses: actions/upload-artifact@v4
         if: always() && steps.check-activation.outputs.is_active == 'true'
         with:
-          name: research-maintenance-fix-state
+          name: ${{ steps.check-activation.outputs.artifact_name }}
           path: |
-            durable_state/
-            docs/research/maintenance/packets/
+            ${{ steps.check-activation.outputs.state_dir }}/
+            ${{ steps.check-activation.outputs.output_dir }}/
           retention-days: 30
           overwrite: true

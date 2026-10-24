@@ -38,6 +38,10 @@ from .pilot_config import (
     TARGET_SYMBOL,
     TARGET_CIK,
     RECORDED_KNOWN_ACCESSIONS,
+    OPERATIONAL_ARTIFACT_NAME,
+    REHEARSAL_ARTIFACT_NAME,
+    RunBudgetTracker,
+    BudgetExhaustedError,
 )
 
 logger = logging.getLogger(__name__)
@@ -86,9 +90,19 @@ class DurableStateManager:
     LOCK_NAME = ".maintenance.lock"
     PRIOR_RUNS_MARKER = ".has_prior_runs"
 
-    def __init__(self, state_dir: Union[str, Path], backup_dir: Optional[Union[str, Path]] = None):
+    def __init__(
+        self,
+        state_dir: Union[str, Path],
+        backup_dir: Optional[Union[str, Path]] = None,
+        artifact_name: str = OPERATIONAL_ARTIFACT_NAME,
+        is_rehearsal: bool = False,
+        expected_repo: str = "daakara/finance",
+    ):
         self.state_dir = Path(state_dir).resolve()
         self.backup_dir = Path(backup_dir).resolve() if backup_dir else None
+        self.artifact_name = artifact_name
+        self.is_rehearsal = is_rehearsal
+        self.expected_repo = expected_repo
         self.manifest_path = self.state_dir / self.MANIFEST_NAME
         self.lock_path = self.state_dir / self.LOCK_NAME
 
@@ -107,13 +121,19 @@ class DurableStateManager:
         self._lock_held: bool = False
         self._lock_record: Optional[Dict[str, Any]] = None
 
-    def hydrate_or_recover(self, allow_remote_artifact: bool = True) -> Tuple[bool, str]:
+    def hydrate_or_recover(
+        self,
+        allow_bootstrap: bool = False,
+        budget_tracker: Optional[RunBudgetTracker] = None,
+        allow_remote_artifact: bool = True,
+    ) -> Tuple[bool, str]:
         """
         Primary entry point for durable state rehydration.
-        1. Checks for local manifest. If present, verifies checksum and rehydrates.
+        1. Checks for local manifest. If present, verifies checksum/schema and rehydrates.
         2. If missing, attempts recovery from backup_dir or remote workflow artifact.
         3. If prior operation evidence exists but state cannot be recovered, fails closed with StateRecoveryError.
-        4. If genuine first run, initializes genesis state explicitly.
+        4. If genuine first run, initializes genesis state ONLY IF explicit bootstrap is authorized.
+           Otherwise fails closed with StateRecoveryError.
         """
         # Tier 1: Local manifest exists (e.g. disk or restored Actions cache)
         if self.manifest_path.exists():
@@ -129,30 +149,41 @@ class DurableStateManager:
 
         # Tier 3: Attempt remote artifact recovery in GitHub Actions environment
         if allow_remote_artifact and os.environ.get("GITHUB_ACTIONS") == "true":
-            recovered = self._recover_from_github_artifact()
+            recovered = self._recover_from_github_artifact(budget_tracker=budget_tracker)
             if recovered:
                 return self._hydrate_from_file(self.manifest_path)
 
         # Tier 4: Check if prior operations exist before assuming genesis
-        if self._has_evidence_of_prior_operation():
+        if self._has_evidence_of_prior_operation(budget_tracker=budget_tracker):
             raise StateRecoveryError(
                 "STATE_RECOVERY_FAILURE: Evidence of prior operational runs exists, but the durable state "
                 "manifest could not be recovered from cache, backup, or artifacts. "
                 "Failing closed to prevent resetting run count or losing completed event history."
             )
 
-        # Genuine first run: Initialize genesis explicitly
-        logger.info("Genuine first run confirmed: Initializing genesis state.")
+        # Tier 5: Genesis initialization - strictly guarded by explicit bootstrap authorization
+        is_bootstrap_authorized = (
+            allow_bootstrap
+            or os.environ.get("ARX_BOOTSTRAP_GENESIS", "").strip().lower() in ("1", "true", "yes")
+            or (self.state_dir / ".bootstrap_genesis").exists()
+        )
+        if not is_bootstrap_authorized:
+            raise StateRecoveryError(
+                "STATE_RECOVERY_FAILURE: No existing durable state recovered and explicit bootstrap is not authorized. "
+                "Operational runs require prior durable state or explicit bootstrap authorization (--bootstrap or ARX_BOOTSTRAP_GENESIS=true)."
+            )
+
+        logger.info("Explicit bootstrap authorized: Initializing genesis state.")
         self._init_genesis_state()
         self._save_atomic()
         return True, "GENESIS_INITIALIZED"
 
     def hydrate(self) -> Tuple[bool, str]:
-        """Backward-compatible alias for hydrate_or_recover."""
-        return self.hydrate_or_recover()
+        """Backward-compatible alias for hydrate_or_recover with allow_bootstrap=True."""
+        return self.hydrate_or_recover(allow_bootstrap=True)
 
     def _hydrate_from_file(self, manifest_file: Path) -> Tuple[bool, str]:
-        """Reads, verifies checksum, and populates in-memory state from manifest file."""
+        """Reads, verifies checksum and invariants, and populates in-memory state from manifest file."""
         try:
             raw_bytes = manifest_file.read_bytes()
             manifest = json.loads(raw_bytes.decode("utf-8"))
@@ -169,16 +200,39 @@ class DurableStateManager:
                 "State manifest content is corrupt or tampered."
             )
 
+        # Validate schema invariants
+        version = manifest.get("manifest_version")
+        if version != STATE_MANIFEST_VERSION:
+            raise StateIntegrityError(
+                f"Invalid manifest version: expected {STATE_MANIFEST_VERSION}, got {version}"
+            )
+        symbol = manifest.get("symbol")
+        if symbol != TARGET_SYMBOL:
+            raise StateIntegrityError(
+                f"Invalid manifest symbol: expected {TARGET_SYMBOL}, got {symbol}"
+            )
+        cik = manifest.get("cik")
+        if cik != TARGET_CIK:
+            raise StateIntegrityError(
+                f"Invalid manifest CIK: expected {TARGET_CIK}, got {cik}"
+            )
+        seq = manifest.get("checkpoint_sequence", 0)
+        if not isinstance(seq, int) or seq < 0:
+            raise StateIntegrityError(f"Invalid checkpoint sequence: {seq}")
+        rc = manifest.get("run_count", 0)
+        if not isinstance(rc, int) or rc < 0:
+            raise StateIntegrityError(f"Invalid run count: {rc}")
+
         # Rehydrate fields
-        self.manifest_version = manifest.get("manifest_version", STATE_MANIFEST_VERSION)
-        self.symbol = manifest.get("symbol", TARGET_SYMBOL)
-        self.cik = manifest.get("cik", TARGET_CIK)
-        self.checkpoint_sequence = manifest.get("checkpoint_sequence", 0)
+        self.manifest_version = version
+        self.symbol = symbol
+        self.cik = cik
+        self.checkpoint_sequence = seq
         self.prev_checkpoint_hash = manifest.get("prev_checkpoint_hash")
         self.created_at_utc = manifest.get("created_at_utc")
         self.last_checked_utc = manifest.get("last_checked_utc")
         self.last_outcome = manifest.get("last_outcome")
-        self.run_count = manifest.get("run_count", 0)
+        self.run_count = rc
 
         completed_list = manifest.get("completed_accessions", [])
         self.completed_accessions = set(completed_list)
@@ -189,8 +243,13 @@ class DurableStateManager:
 
         return True, f"HYDRATED_SEQUENCE_{self.checkpoint_sequence}"
 
-    def _has_evidence_of_prior_operation(self) -> bool:
-        """Determines whether prior runs existed (to prevent silent genesis reset)."""
+    def _has_evidence_of_prior_operation(self, budget_tracker: Optional[RunBudgetTracker] = None) -> bool:
+        """
+        Determines whether prior runs existed (to prevent silent genesis reset).
+        Fails closed: an unavailable, unauthorized, malformed, or failed history response
+        raises StateRecoveryError rather than returning False.
+        Dormant workflow runs without operational state are not counted as operational execution.
+        """
         # 1. Check backup dir marker
         if self.backup_dir and (self.backup_dir / self.PRIOR_RUNS_MARKER).exists():
             return True
@@ -206,81 +265,173 @@ class DurableStateManager:
                 return True
 
         # 4. Check GitHub Actions workflow history if in CI
-        if os.environ.get("GITHUB_ACTIONS") == "true" and os.environ.get("GITHUB_TOKEN"):
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            token = os.environ.get("GITHUB_TOKEN")
+            if not token:
+                raise StateRecoveryError(
+                    "STATE_RECOVERY_FAILURE: GITHUB_ACTIONS is active but GITHUB_TOKEN is not configured; "
+                    "cannot verify remote workflow history."
+                )
+
+            import urllib.request
+            import urllib.error
+
+            repo = os.environ.get("GITHUB_REPOSITORY", self.expected_repo)
+
+            # Step 4a: Check if an artifact matching self.artifact_name exists or existed
+            timeout = (
+                budget_tracker.acquire_recovery_request_slot(default_timeout_sec=10.0)
+                if budget_tracker
+                else 10.0
+            )
+            art_url = f"https://api.github.com/repos/{repo}/actions/artifacts?name={self.artifact_name}&per_page=5"
             try:
-                import urllib.request
-                repo = os.environ.get("GITHUB_REPOSITORY", "daakara/finance")
-                token = os.environ["GITHUB_TOKEN"]
-                url = f"https://api.github.com/repos/{repo}/actions/workflows/scheduled_research_maintenance.yml/runs?status=success&per_page=1"
-                req = urllib.request.Request(url, headers={
+                req = urllib.request.Request(art_url, headers={
                     "Authorization": f"Bearer {token}",
                     "Accept": "application/vnd.github.v3+json",
                     "User-Agent": "ARX-DurableState-Recovery",
                 })
-                with urllib.request.urlopen(req, timeout=10) as resp:
-                    data = json.loads(resp.read().decode("utf-8"))
-                    if data.get("total_count", 0) > 0:
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    art_data = json.loads(resp.read().decode("utf-8"))
+                    if art_data.get("total_count", 0) > 0:
+                        logger.info(f"Prior operational artifact found ({self.artifact_name}).")
                         return True
             except Exception as e:
-                logger.warning(f"Failed to check remote workflow history: {e}")
+                raise StateRecoveryError(
+                    f"STATE_RECOVERY_FAILURE: Failed to query remote artifacts ({e}). History is unavailable."
+                )
+
+            # Step 4b: Query workflow runs to inspect history
+            timeout = (
+                budget_tracker.acquire_recovery_request_slot(default_timeout_sec=10.0)
+                if budget_tracker
+                else 10.0
+            )
+            runs_url = f"https://api.github.com/repos/{repo}/actions/workflows/scheduled_research_maintenance.yml/runs?status=success&per_page=5"
+            try:
+                req = urllib.request.Request(runs_url, headers={
+                    "Authorization": f"Bearer {token}",
+                    "Accept": "application/vnd.github.v3+json",
+                    "User-Agent": "ARX-DurableState-Recovery",
+                })
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    runs_data = json.loads(resp.read().decode("utf-8"))
+
+                total_runs = runs_data.get("total_count", 0)
+                if total_runs == 0:
+                    return False
+
+                # Inspect recent successful runs to distinguish operational runs from dormant runs
+                workflow_runs = runs_data.get("workflow_runs", [])
+                for run_item in workflow_runs:
+                    run_id = run_item.get("id")
+                    if not run_id:
+                        continue
+
+                    # Check artifacts of this specific run
+                    timeout = (
+                        budget_tracker.acquire_recovery_request_slot(default_timeout_sec=10.0)
+                        if budget_tracker
+                        else 10.0
+                    )
+                    run_art_url = f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts"
+                    req_art = urllib.request.Request(run_art_url, headers={
+                        "Authorization": f"Bearer {token}",
+                        "Accept": "application/vnd.github.v3+json",
+                        "User-Agent": "ARX-DurableState-Recovery",
+                    })
+                    with urllib.request.urlopen(req_art, timeout=timeout) as r_art:
+                        run_art_data = json.loads(r_art.read().decode("utf-8"))
+                        for a in run_art_data.get("artifacts", []):
+                            if a.get("name") == self.artifact_name:
+                                logger.info(f"Prior operational run confirmed via run artifact ID {a.get('id')}.")
+                                return True
+
+                # All inspected successful runs were dormant runs without operational state
+                logger.info("Recent successful runs inspected: confirmed dormant (no operational state uploaded).")
+                return False
+
+            except Exception as e:
+                raise StateRecoveryError(
+                    f"STATE_RECOVERY_FAILURE: Failed to query remote workflow runs ({e}). History is unavailable."
+                )
 
         return False
 
-    def _recover_from_github_artifact(self) -> bool:
-        """Attempts to download and extract the latest research-maintenance-fix-state artifact."""
+    def _recover_from_github_artifact(self, budget_tracker: Optional[RunBudgetTracker] = None) -> bool:
+        """
+        Attempts to download and extract the designated state artifact from GitHub Actions.
+        Only recovers state matching the expected repository, workflow, operational namespace, and issuer.
+        """
         token = os.environ.get("GITHUB_TOKEN")
-        repo = os.environ.get("GITHUB_REPOSITORY", "daakara/finance")
+        repo = os.environ.get("GITHUB_REPOSITORY", self.expected_repo)
         if not token:
             logger.info("No GITHUB_TOKEN available for remote artifact recovery.")
             return False
 
         try:
             import urllib.request
-            url = f"https://api.github.com/repos/{repo}/actions/artifacts?name=research-maintenance-fix-state&per_page=1"
+            timeout = (
+                budget_tracker.acquire_recovery_request_slot(default_timeout_sec=15.0)
+                if budget_tracker
+                else 15.0
+            )
+            url = f"https://api.github.com/repos/{repo}/actions/artifacts?name={self.artifact_name}&per_page=1"
             req = urllib.request.Request(url, headers={
                 "Authorization": f"Bearer {token}",
                 "Accept": "application/vnd.github.v3+json",
                 "User-Agent": "ARX-DurableState-Recovery",
             })
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
 
             artifacts = data.get("artifacts", [])
             if not artifacts:
-                logger.info("No prior research-maintenance-fix-state artifact found on GitHub.")
+                logger.info(f"No prior {self.artifact_name} artifact found on GitHub.")
                 return False
 
             latest_art = artifacts[0]
+            # Ensure artifact name exactly matches
+            if latest_art.get("name") != self.artifact_name:
+                return False
+
             download_url = latest_art.get("archive_download_url")
             if not download_url:
                 return False
 
+            timeout = (
+                budget_tracker.acquire_recovery_request_slot(default_timeout_sec=20.0)
+                if budget_tracker
+                else 20.0
+            )
             logger.info(f"Downloading state artifact ID {latest_art.get('id')} from {download_url}...")
             dl_req = urllib.request.Request(download_url, headers={
                 "Authorization": f"Bearer {token}",
                 "User-Agent": "ARX-DurableState-Recovery",
             })
-            with urllib.request.urlopen(dl_req, timeout=30) as dl_resp:
+            with urllib.request.urlopen(dl_req, timeout=timeout) as dl_resp:
                 zip_bytes = dl_resp.read()
 
-            with tempfile.NamedTemporaryFile("wb", delete=False) as tf:
-                tf.write(zip_bytes)
-                tmp_zip = Path(tf.name)
-
+            import io
             self.state_dir.mkdir(parents=True, exist_ok=True)
-            with zipfile.ZipFile(tmp_zip, "r") as zf:
+            with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zf:
                 for member in zf.namelist():
+                    # Security check: prevent zip slip / path traversal
+                    if ".." in member or member.startswith("/") or member.startswith("\\"):
+                        raise StateIntegrityError(f"Malicious member path in artifact zip: {member}")
                     if member.endswith(self.MANIFEST_NAME):
                         target_file = self.state_dir / self.MANIFEST_NAME
                         with zf.open(member) as src, open(target_file, "wb") as dst:
                             shutil.copyfileobj(src, dst)
-                        logger.info(f"Successfully recovered {self.MANIFEST_NAME} from remote artifact.")
-                        tmp_zip.unlink(missing_ok=True)
+                        logger.info(f"Successfully recovered {self.MANIFEST_NAME} from remote artifact {self.artifact_name}.")
                         return True
-
-            tmp_zip.unlink(missing_ok=True)
+        except StateIntegrityError:
+            raise
         except Exception as e:
             logger.warning(f"Remote artifact recovery failed: {e}")
+            raise StateRecoveryError(
+                f"STATE_RECOVERY_FAILURE: Remote artifact {self.artifact_name} could not be retrieved or extracted: {e}"
+            )
 
         return False
 
