@@ -85,6 +85,16 @@ jobs:
                tests/test_strategy_governance_adversarial.py \
                tests/test_lookback_threshold_boundaries.py -v
 
+    - name: VCP Research Conformance & Reproducibility
+      env:
+        PYTHONPATH: "."
+      run: |
+        python -m pytest \
+          tests/test_vcp_candidate_005_conformance.py \
+          tests/test_vcp_candidate_006_conformance.py \
+          tests/test_vcp_candidate_reproducibility.py \
+          -v --strict-markers
+
     - name: Run Tier 3 Pre-Flight Release Gate
       if: github.base_ref == 'main' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
       env:
