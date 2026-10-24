@@ -175,28 +175,37 @@ export default function PreFlightChecklistModal({
   // Mandatory Fail-Closed Rule: PARTIAL_EVIDENCE => NOT_CERTIFIED. Must be COMPLETE to PASS.
   const isCapitalRiskPassed = isPriceValid && capitalRiskEvidenceState === "COMPLETE" && !isCapitalRiskFailed && isDistributionTrap !== true;
 
-  // Check 4: Catalyst Hazard Buffer (Fail-Closed 4-State Model)
-  // PASS: Fresh, adequate evidence confirms no event within configured risk window (>7d or past elapsed).
-  // WARN: A relevant upcoming event is identified (<= 7 days to binary event).
-  // UNAVAILABLE: Coverage is absent, stale, invalid or insufficient (Never fake-pass).
-  // ERROR: Technical evaluation error.
+  // Check 4: Catalyst Hazard Buffer (Fail-Closed Positive Verification Model)
+  // PASS: Verified forward coverage in allowlist, verified LIVE freshness, runway > 7d, and nonhazardous risk tier.
+  // WARN: Imminent binary event (<= 7 days) OR authoritative source hazard / preflight_state WARN.
+  // UNAVAILABLE: Coverage absent, unverified, stale, elapsed-only, or missing mandatory fields.
+  // ERROR: Technical evaluation or provider error.
   const resolvedCatalystState: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR" = (() => {
     // 1. Explicit error states
-    if (catalystState === "ERROR" || catalystEvidence?.state === "ERROR") {
+    if (
+      catalystState === "ERROR" ||
+      catalystEvidence?.state === "ERROR" ||
+      (catalystEvidence as any)?.preflightState === "ERROR"
+    ) {
       return "ERROR";
     }
 
-    // 2. Freshness check: Stale coverage fails closed to UNAVAILABLE
+    // 2. Freshness check: Stale or unverified freshness fails closed to UNAVAILABLE
     if (catalystEvidence?.freshnessStatus && catalystEvidence.freshnessStatus !== "LIVE") {
       return "UNAVAILABLE";
     }
 
-    // 3. Imminent hazard check
-    if (hasImminentEarnings === true || catalystEvidence?.state === "WARN") {
+    // 3. Source hazard / Imminent hazard check (Precedence over forward runway)
+    if (
+      hasImminentEarnings === true ||
+      catalystEvidence?.state === "WARN" ||
+      (catalystEvidence as any)?.preflightState === "WARN" ||
+      (catalystEvidence?.riskTier && catalystEvidence.riskTier !== "NORMAL_RUNWAY" && catalystEvidence.riskTier !== "UNVERIFIED_RISK")
+    ) {
       return "WARN";
     }
 
-    // 4. Evidence-backed evaluation
+    // 4. Evidence-backed evaluation with Positive Allowlist
     if (catalystEvidence) {
       const dte = catalystEvidence.daysToEarnings;
       if (typeof dte === "number" && !isNaN(dte)) {
@@ -204,21 +213,27 @@ export default function PreFlightChecklistModal({
         if (dte <= 7.0) return "WARN"; // Binary event within 7-day risk window
 
         const validStatuses = new Set(["CONFIRMED_UPCOMING", "ESTIMATED_UPCOMING", "COVERED"]);
-        if (catalystEvidence.coverageStatus && !validStatuses.has(catalystEvidence.coverageStatus)) {
+        const isCoverageValid = Boolean(catalystEvidence.coverageStatus && validStatuses.has(catalystEvidence.coverageStatus));
+        const isFresh = catalystEvidence.freshnessStatus === "LIVE";
+
+        // Required property: CHK4_PASS => VERIFIED_COVERAGE_STATUS && VERIFIED_LIVE_FRESHNESS
+        if (!isCoverageValid || !isFresh) {
           return "UNAVAILABLE";
         }
-        return "PASS"; // Verified clean runway > 7 days backed by forward coverage
+
+        if (catalystEvidence.riskTier && catalystEvidence.riskTier !== "NORMAL_RUNWAY") {
+          return "WARN";
+        }
+
+        return "PASS"; // Verified clean runway > 7 days backed by verified forward coverage & LIVE freshness
       }
       if (catalystEvidence.coverageStatus === "DATA_UNAVAILABLE" || catalystEvidence.coverageStatus === "ABSENT") {
         return "UNAVAILABLE";
       }
     }
 
-    if (catalystState === "PASS") {
-      return "PASS";
-    }
-
-    // Fail-closed invariant: missing coverage must NEVER evaluate to safety PASS
+    // Fail-closed invariant: missing/unverified evidence must NEVER evaluate to safety PASS.
+    // Unverified catalystState string alone cannot manufacture clearance without verified evidence.
     return "UNAVAILABLE";
   })();
 

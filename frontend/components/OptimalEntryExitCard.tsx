@@ -284,25 +284,44 @@ export default function OptimalEntryExitCard({
   })();
 
   const resolvedCatalystState: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR" = (() => {
+    // 1. Explicit error states
+    if (resolvedCorporateEvent?.preflight_state === "ERROR") {
+      return "ERROR";
+    }
+
+    // 2. Freshness check: Stale or unverified coverage fails closed to UNAVAILABLE
     if (resolvedCorporateEvent?.freshness_status && resolvedCorporateEvent.freshness_status !== "LIVE") {
       return "UNAVAILABLE";
     }
-    if (resolvedCorporateEvent?.has_imminent_earnings === true) {
+
+    // 3. Source hazard precedence: Authoritative source hazard takes precedence over forward runway
+    if (
+      resolvedCorporateEvent?.has_imminent_earnings === true ||
+      resolvedCorporateEvent?.preflight_state === "WARN" ||
+      (resolvedCorporateEvent?.risk_tier && resolvedCorporateEvent.risk_tier !== "NORMAL_RUNWAY" && resolvedCorporateEvent.risk_tier !== "UNVERIFIED_RISK")
+    ) {
       return "WARN";
     }
+
+    // 4. Evidence-backed evaluation with Positive Allowlist
     if (resolvedDaysToEarnings !== null) {
       if (resolvedDaysToEarnings < 0.0) return "UNAVAILABLE"; // Invariant 3: completed historical event alone cannot establish clean forward runway
       if (resolvedDaysToEarnings <= 7.0) return "WARN";
-      if (
-        resolvedCorporateEvent?.coverage_status === "CONFIRMED_UPCOMING" ||
-        resolvedCorporateEvent?.coverage_status === "ESTIMATED_UPCOMING" ||
-        resolvedCorporateEvent?.coverage_status === "COVERED"
-      ) {
+
+      const validStatuses = ["CONFIRMED_UPCOMING", "ESTIMATED_UPCOMING", "COVERED"];
+      const isCoverageValid = Boolean(resolvedCorporateEvent?.coverage_status && validStatuses.includes(resolvedCorporateEvent.coverage_status));
+      const isFresh = resolvedCorporateEvent?.freshness_status === "LIVE";
+
+      if (isCoverageValid && isFresh && resolvedCorporateEvent?.preflight_state !== "WARN") {
         return "PASS";
       }
       return "UNAVAILABLE";
     }
-    if (resolvedCorporateEvent?.preflight_state) return resolvedCorporateEvent.preflight_state;
+
+    if (resolvedCorporateEvent?.preflight_state === "PASS" && resolvedCorporateEvent?.freshness_status === "LIVE") {
+      return "PASS";
+    }
+
     if (resolvedCorporateEvent?.coverage_status === "DATA_UNAVAILABLE" || resolvedCorporateEvent?.coverage_status === "ABSENT") {
       return "UNAVAILABLE";
     }
@@ -323,6 +342,7 @@ export default function OptimalEntryExitCard({
     freshnessStatus: resolvedCorporateEvent?.freshness_status,
     riskTier: resolvedCorporateEvent?.risk_tier,
     isEstimate: resolvedCorporateEvent?.is_estimate,
+    preflightState: resolvedCorporateEvent?.preflight_state,
   };
 
   // isDistributionTrap: Deprecated options-flow heuristic; single-asset options flow is unconnected.

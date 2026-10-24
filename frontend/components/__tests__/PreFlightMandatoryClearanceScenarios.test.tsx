@@ -254,4 +254,239 @@ describe("Track A Pre-Flight 16 Mandatory Safety Scenarios (S01–S16)", () => {
     expect(screen.queryByText(/🟢 CLEARED TO EXECUTE/i)).toBeNull();
     expect(screen.getByText(/⚠️ NOT CLEARED/i)).toBeDefined();
   });
+
+  describe("Adversarial Positive Coverage & Hazard Precedence Matrix (G01–G16)", () => {
+    it("G01: Verified clear coverage, fresh, nonhazardous -> PASS (Cleared)", () => {
+      render(
+        <PreFlightChecklistModal
+          {...basePristineProps}
+          catalystEvidence={{
+            state: "PASS",
+            daysToEarnings: 14.0,
+            eventDate: "2026-11-20",
+            confirmationStatus: "CONFIRMED",
+            coverageStatus: "CONFIRMED_UPCOMING",
+            freshnessStatus: "LIVE",
+            riskTier: "NORMAL_RUNWAY",
+          }}
+        />
+      );
+      expect(screen.getByText(/🟢 CLEARED TO EXECUTE/i)).toBeDefined();
+      expect(screen.getByText("5/5")).toBeDefined();
+    });
+
+    it("G02: Future event, coverage status missing -> UNAVAILABLE (Blocked)", () => {
+      render(
+        <PreFlightChecklistModal
+          {...basePristineProps}
+          catalystEvidence={{
+            daysToEarnings: 14.0,
+            freshnessStatus: "LIVE",
+            coverageStatus: undefined as any,
+          }}
+        />
+      );
+      expect(screen.queryByText(/🟢 CLEARED TO EXECUTE/i)).toBeNull();
+      expect(screen.getByText(/⚠️ NOT CLEARED — CATALYST COVERAGE UNAVAILABLE/i)).toBeDefined();
+      expect(screen.getByText("4/5")).toBeDefined();
+    });
+
+    it("G03: Future event, freshness missing -> UNAVAILABLE (Blocked)", () => {
+      render(
+        <PreFlightChecklistModal
+          {...basePristineProps}
+          catalystEvidence={{
+            daysToEarnings: 14.0,
+            coverageStatus: "CONFIRMED_UPCOMING",
+            freshnessStatus: undefined as any,
+          }}
+        />
+      );
+      expect(screen.queryByText(/🟢 CLEARED TO EXECUTE/i)).toBeNull();
+      expect(screen.getByText(/⚠️ NOT CLEARED — CATALYST COVERAGE UNAVAILABLE/i)).toBeDefined();
+    });
+
+    it("G04: Derived PASS but evidence missing -> Not PASS (Blocked)", () => {
+      render(
+        <PreFlightChecklistModal
+          {...basePristineProps}
+          catalystState="PASS"
+          catalystEvidence={undefined}
+        />
+      );
+      expect(screen.queryByText(/🟢 CLEARED TO EXECUTE/i)).toBeNull();
+      expect(screen.getByText(/⚠️ NOT CLEARED — CATALYST COVERAGE UNAVAILABLE/i)).toBeDefined();
+    });
+
+    it("G05: Derived PASS but stale source -> Not PASS (Blocked)", () => {
+      render(
+        <PreFlightChecklistModal
+          {...basePristineProps}
+          catalystState="PASS"
+          catalystEvidence={{
+            daysToEarnings: 14.0,
+            coverageStatus: "CONFIRMED_UPCOMING",
+            freshnessStatus: "STALE",
+          }}
+        />
+      );
+      expect(screen.queryByText(/🟢 CLEARED TO EXECUTE/i)).toBeNull();
+      expect(screen.getByText(/⚠️ NOT CLEARED — STALE CATALYST COVERAGE/i)).toBeDefined();
+    });
+
+    it("G06: Source WARN with future earnings date -> WARN / Blocked (Source Hazard Precedence)", () => {
+      render(
+        <PreFlightChecklistModal
+          {...basePristineProps}
+          catalystEvidence={{
+            daysToEarnings: 15.0,
+            coverageStatus: "CONFIRMED_UPCOMING",
+            freshnessStatus: "LIVE",
+            preflightState: "WARN",
+          }}
+        />
+      );
+      expect(screen.queryByText(/🟢 CLEARED TO EXECUTE/i)).toBeNull();
+      expect(screen.getByText(/⚠️ NOT CLEARED — IMMINENT EARNINGS HAZARD \(<= 7 DAYS\)/i)).toBeDefined();
+    });
+
+    it("G07: Source ERROR with future earnings date -> ERROR / Blocked", () => {
+      render(
+        <PreFlightChecklistModal
+          {...basePristineProps}
+          catalystEvidence={{
+            daysToEarnings: 15.0,
+            coverageStatus: "CONFIRMED_UPCOMING",
+            freshnessStatus: "LIVE",
+            preflightState: "ERROR",
+          }}
+        />
+      );
+      expect(screen.queryByText(/🟢 CLEARED TO EXECUTE/i)).toBeNull();
+      expect(screen.getByText(/⚠️ NOT CLEARED — CATALYST EVALUATION ERROR/i)).toBeDefined();
+    });
+
+    it("G08: Unknown coverage enum -> UNAVAILABLE (Blocked)", () => {
+      render(
+        <PreFlightChecklistModal
+          {...basePristineProps}
+          catalystEvidence={{
+            daysToEarnings: 14.0,
+            coverageStatus: "UNKNOWN_ENUM_CODE" as any,
+            freshnessStatus: "LIVE",
+          }}
+        />
+      );
+      expect(screen.queryByText(/🟢 CLEARED TO EXECUTE/i)).toBeNull();
+      expect(screen.getByText(/⚠️ NOT CLEARED — CATALYST COVERAGE UNAVAILABLE/i)).toBeDefined();
+    });
+
+    it("G09: Elapsed-only record -> UNAVAILABLE (Blocked)", () => {
+      render(
+        <PreFlightChecklistModal
+          {...basePristineProps}
+          catalystEvidence={{
+            daysToEarnings: -5.0,
+            coverageStatus: "ELAPSED_RECENT",
+            freshnessStatus: "RECENT",
+          }}
+        />
+      );
+      expect(screen.queryByText(/🟢 CLEARED TO EXECUTE/i)).toBeNull();
+      expect(screen.getByText(/⚠️ NOT CLEARED/i)).toBeDefined();
+    });
+
+    it("G10: Imminent earnings -> WARN / Blocked", () => {
+      render(
+        <PreFlightChecklistModal
+          {...basePristineProps}
+          hasImminentEarnings={true}
+          catalystEvidence={{
+            daysToEarnings: 0.5,
+            coverageStatus: "CONFIRMED_UPCOMING",
+            freshnessStatus: "LIVE",
+          }}
+        />
+      );
+      expect(screen.queryByText(/🟢 CLEARED TO EXECUTE/i)).toBeNull();
+      expect(screen.getByText(/⚠️ NOT CLEARED — IMMINENT EARNINGS HAZARD \(<= 7 DAYS\)/i)).toBeDefined();
+    });
+
+    it("G11: Confirmed event within seven days -> WARN / Blocked", () => {
+      render(
+        <PreFlightChecklistModal
+          {...basePristineProps}
+          catalystEvidence={{
+            daysToEarnings: 4.0,
+            coverageStatus: "CONFIRMED_UPCOMING",
+            freshnessStatus: "LIVE",
+          }}
+        />
+      );
+      expect(screen.queryByText(/🟢 CLEARED TO EXECUTE/i)).toBeNull();
+      expect(screen.getByText(/⚠️ NOT CLEARED — IMMINENT EARNINGS HAZARD \(<= 7 DAYS\)/i)).toBeDefined();
+    });
+
+    it("G12: Provider timeout -> ERROR / Blocked", () => {
+      render(
+        <PreFlightChecklistModal
+          {...basePristineProps}
+          catalystEvidence={{
+            state: "ERROR",
+            sourceName: "Provider Timeout",
+          }}
+        />
+      );
+      expect(screen.queryByText(/🟢 CLEARED TO EXECUTE/i)).toBeNull();
+      expect(screen.getByText(/⚠️ NOT CLEARED — CATALYST EVALUATION ERROR/i)).toBeDefined();
+    });
+
+    it("G13: Contradictory corporate-event fields -> Blocked", () => {
+      render(
+        <PreFlightChecklistModal
+          {...basePristineProps}
+          catalystEvidence={{
+            daysToEarnings: -3.0,
+            coverageStatus: "CONFIRMED_UPCOMING",
+            freshnessStatus: "STALE",
+          }}
+        />
+      );
+      expect(screen.queryByText(/🟢 CLEARED TO EXECUTE/i)).toBeNull();
+      expect(screen.getByText(/⚠️ NOT CLEARED/i)).toBeDefined();
+    });
+
+    it("G14: Missing VIX, other checks pass -> Not cleared", () => {
+      render(
+        <PreFlightChecklistModal
+          {...basePristineProps}
+          vix={undefined as any}
+        />
+      );
+      expect(screen.queryByText(/🟢 CLEARED TO EXECUTE/i)).toBeNull();
+      expect(screen.getByText(/⚠️ NOT CLEARED — VIX DATA UNAVAILABLE/i)).toBeDefined();
+    });
+
+    it("G15: Four of five mandatory checks pass -> Not cleared", () => {
+      render(
+        <PreFlightChecklistModal
+          {...basePristineProps}
+          stopLoss={null as any}
+        />
+      );
+      expect(screen.queryByText(/🟢 CLEARED TO EXECUTE/i)).toBeNull();
+      expect(screen.getByText(/⚠️ NOT CLEARED/i)).toBeDefined();
+    });
+
+    it("G16: Five checks pass but canonical setup non-actionable -> Not cleared", () => {
+      render(
+        <PreFlightChecklistModal
+          {...basePristineProps}
+          isActionable={false}
+        />
+      );
+      expect(screen.queryByText(/🟢 CLEARED TO EXECUTE/i)).toBeNull();
+      expect(screen.getByText(/⚠️ NOT CLEARED — CANONICAL SETUP NON-ACTIONABLE/i)).toBeDefined();
+    });
+  });
 });
