@@ -2639,7 +2639,7 @@
             "form": "20-F",
             "period_end": "2025-12-31",
             "source_role": "AUDITED_ANNUAL_REPORT_IFRS",
-            "url": "https://www.sec.gov/Archives/edgar/data/1748310/000116737926000014/alc-20251231.htm"
+            "url": "https://www.sec.gov/Archives/edgar/data/1167379/000116737926000014/alc-20251231.htm"
           },
           {
             "accession_number": "0001167379-26-000042",
@@ -2647,7 +2647,7 @@
             "form": "6-K",
             "period_end": "2026-06-30",
             "source_role": "INTERIM_FINANCIAL_REPORT_H1_2026",
-            "url": "https://www.sec.gov/Archives/edgar/data/1748310/000116737926000042/alc-20260630.htm"
+            "url": "https://www.sec.gov/Archives/edgar/data/1167379/000116737926000042/alc-20260630.htm"
           }
         ],
         "reporting_currency": "USD",
@@ -2667,7 +2667,7 @@
         "zero_debt_support": null
       },
       "identity": {
-        "cik": "0001748310",
+        "cik": "0001167379",
         "company_name": "Alcon Inc.",
         "exchange": "NYSE",
         "opportunity_route": "Healthcare / Medical Instruments & Supplies (Ophthalmology)",
@@ -2678,7 +2678,7 @@
           "share_class": "Shares traded directly under Swiss-US bilateral structure (not an ADR ratio)",
           "ticker": "ALC"
         },
-        "sec_edgar_browse_url": "https://www.sec.gov/edgar/browse/?CIK=0001748310",
+        "sec_edgar_browse_url": "https://www.sec.gov/edgar/browse/?CIK=0001167379",
         "secondary_listings": [
           {
             "currency": "CHF",
@@ -3028,11 +3028,11 @@
     },
     "ALC": {
       "company_name": "Alcon Inc.",
-      "cik": "0001748310",
+      "cik": "0001167379",
       "exchange": "NYSE",
       "acceptance_basis": "PRIMARY_SEC_EDGAR_VERIFIED_RESEARCH",
       "selection_decision": "Published under Sprint 4 Alcon V4 Publication Plan",
-      "content_sha256": "a5b718e42f0c4cad863a112142b1ada1afe13ce7e39b3051df39c0b4b34374f6",
+      "content_sha256": "9e6517827d55077153b925a0d5e8bf0862b9c0cf12b6a938a55188f8dd9deab7",
       "authoring_timestamp_utc": "2026-10-24T12:00:00Z",
       "filing_availability_cutoff_utc": "2026-10-21T20:00:00Z",
       "lifecycle_status": "CANDIDATE_SELECTED",
@@ -3040,8 +3040,8 @@
       "source_authority": "ARX Quality Watch Sourced Research",
       "governing_contract": "INITIATIVE-S4-ALCON-V4-PUBLICATION",
       "source_filings": [
-        "0001748310-26-000008",
-        "0001748310-26-000021"
+        "0001167379-26-000014",
+        "0001167379-26-000042"
       ],
       "reference_price": 67.43,
       "reference_date": "2026-10-21",

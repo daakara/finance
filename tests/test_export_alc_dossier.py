@@ -150,7 +150,7 @@ def test_06_historical_reference_price_and_dates(exported_dossier):
 
 
 def test_07_identity_and_cross_listing_binding(exported_dossier):
-    """7. Alcon Inc. / NYSE / SIX / CIK 0001748310 identity binding."""
+    """7. Alcon Inc. / NYSE / SIX / CIK 0001167379 identity binding."""
     identity = exported_dossier["identity"]
     assert identity["symbol"] == TARGET_SYMBOL
     assert identity["company_name"] == TARGET_COMPANY

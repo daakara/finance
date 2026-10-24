@@ -31,7 +31,7 @@ EXPECTED_CANONICAL_LEDGER_SHA256 = "d28270a18984de2b851ab5ce24dfcbe822d6bc554790
 EXPECTED_ENGINE_SHA256 = "326cbe1c8e64a04ecbc387d750ab2cb3c61cb1e01ed0aada1a7e9197e487023c"
 MODEL_VERSION = "v4.0"
 TARGET_SYMBOL = "ALC"
-TARGET_CIK = "0001748310"
+TARGET_CIK = "0001167379"
 TARGET_COMPANY = "Alcon Inc."
 
 DEFAULT_INPUT_PATH = Path("ARX_ALC_CANONICAL_SCENARIO_OUTPUT_LEDGER.json")
@@ -263,7 +263,7 @@ def export_alc_dossier(ledger_path: Path) -> Dict[str, Any]:
                     "period_end": "2025-12-31",
                     "filing_date": "2026-02-25",
                     "accession_number": "0001167379-26-000014",
-                    "url": "https://www.sec.gov/Archives/edgar/data/1748310/000116737926000014/alc-20251231.htm",
+                    "url": "https://www.sec.gov/Archives/edgar/data/1167379/000116737926000014/alc-20251231.htm",
                     "source_role": "AUDITED_ANNUAL_REPORT_IFRS"
                 },
                 {
@@ -271,7 +271,7 @@ def export_alc_dossier(ledger_path: Path) -> Dict[str, Any]:
                     "period_end": "2026-06-30",
                     "filing_date": "2026-08-18",
                     "accession_number": "0001167379-26-000042",
-                    "url": "https://www.sec.gov/Archives/edgar/data/1748310/000116737926000042/alc-20260630.htm",
+                    "url": "https://www.sec.gov/Archives/edgar/data/1167379/000116737926000042/alc-20260630.htm",
                     "source_role": "INTERIM_FINANCIAL_REPORT_H1_2026"
                 }
             ]

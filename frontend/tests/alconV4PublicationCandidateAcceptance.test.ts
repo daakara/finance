@@ -70,7 +70,7 @@ const alc = getOpportunityDossier("ALC");
 assert.ok(alc, "ALC published dossier must be retrievable from getOpportunityDossier");
 assert.strictEqual(alc?.identity.symbol, "ALC");
 assert.strictEqual(alc?.identity.company_name, "Alcon Inc.");
-assert.strictEqual(alc?.identity.cik, "0001748310");
+assert.strictEqual(alc?.identity.cik, "0001167379");
 assert.strictEqual(alc?.valuation.reference_price, 67.43);
 assert.strictEqual(alc?.valuation.solved_5y_cagr_pct, 6.51);
 assert.strictEqual(isAlconV4Dossier(alc!), true);

@@ -169,7 +169,7 @@
         "form": "20-F",
         "period_end": "2025-12-31",
         "source_role": "AUDITED_ANNUAL_REPORT_IFRS",
-        "url": "https://www.sec.gov/Archives/edgar/data/1748310/000116737926000014/alc-20251231.htm"
+        "url": "https://www.sec.gov/Archives/edgar/data/1167379/000116737926000014/alc-20251231.htm"
       },
       {
         "accession_number": "0001167379-26-000042",
@@ -177,7 +177,7 @@
         "form": "6-K",
         "period_end": "2026-06-30",
         "source_role": "INTERIM_FINANCIAL_REPORT_H1_2026",
-        "url": "https://www.sec.gov/Archives/edgar/data/1748310/000116737926000042/alc-20260630.htm"
+        "url": "https://www.sec.gov/Archives/edgar/data/1167379/000116737926000042/alc-20260630.htm"
       }
     ],
     "reporting_currency": "USD",
@@ -197,7 +197,7 @@
     "zero_debt_support": null
   },
   "identity": {
-    "cik": "0001748310",
+    "cik": "0001167379",
     "company_name": "Alcon Inc.",
     "exchange": "NYSE",
     "opportunity_route": "Healthcare / Medical Instruments & Supplies (Ophthalmology)",
@@ -208,7 +208,7 @@
       "share_class": "Shares traded directly under Swiss-US bilateral structure (not an ADR ratio)",
       "ticker": "ALC"
     },
-    "sec_edgar_browse_url": "https://www.sec.gov/edgar/browse/?CIK=0001748310",
+    "sec_edgar_browse_url": "https://www.sec.gov/edgar/browse/?CIK=0001167379",
     "secondary_listings": [
       {
         "currency": "CHF",

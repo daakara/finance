@@ -46,7 +46,7 @@ PUBLISHED_SYMBOLS_CIK = {
     "MEDP": {"name": "Medpace Holdings, Inc.", "cik": "0001668397"},
     "ISRG": {"name": "Intuitive Surgical, Inc.", "cik": "0001035267"},
     "DECK": {"name": "Deckers Outdoor Corp.", "cik": "0000910521"},
-    "ALC": {"name": "Alcon Inc.", "cik": "0001748310"},
+    "ALC": {"name": "Alcon Inc.", "cik": "0001167379"},
 }
 
 

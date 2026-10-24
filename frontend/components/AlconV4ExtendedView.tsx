@@ -84,7 +84,7 @@ export default function AlconV4ExtendedView({ dossier, extension }: AlconV4Exten
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              CIK 0001748310 &bull; Swiss Registered Shares (ISIN CH0432492467) &bull; Primary US Trading Line (NYSE)
+              CIK 0001167379 &bull; Swiss Registered Shares (ISIN CH0432492467) &bull; Primary US Trading Line (NYSE)
             </p>
           </div>
           <div className="text-right">
@@ -461,7 +461,7 @@ export default function AlconV4ExtendedView({ dossier, extension }: AlconV4Exten
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-[#0d1422] p-3 rounded border border-slate-800 space-y-2">
                   <span className="font-bold text-slate-200 block text-xs uppercase font-mono">
-                    Balance Sheet Bridge Evolution:
+                    Capital Structure &amp; Valuation Net Debt:
                   </span>
                   <div className="space-y-1 font-mono text-[11px]">
                     <div className="flex justify-between text-slate-400">
@@ -476,9 +476,25 @@ export default function AlconV4ExtendedView({ dossier, extension }: AlconV4Exten
                       <span>Starting Net Debt Bridge:</span>
                       <span className="text-cyan-300">$3,300.0M</span>
                     </div>
-                    <div className="flex justify-between text-slate-300 font-semibold pt-1 border-t border-slate-800">
-                      <span>Terminal Ending Net Debt:</span>
-                      <span className="text-emerald-300">-$2,176.2M (Net Cash)</span>
+                    <div className="flex justify-between text-slate-400 pt-1 border-t border-slate-800">
+                      <span>Modeled Valuation Net Debt:</span>
+                      <span className="text-emerald-300 font-bold">-$2,176.2M (Fixed Assumption)</span>
+                    </div>
+                    <div className="flex justify-between text-slate-400">
+                      <span>Assumption Scope:</span>
+                      <span className="text-slate-300">Standardized across 4 reference cases</span>
+                    </div>
+                    <div className="flex justify-between text-slate-400">
+                      <span>Cash-Derived Cash (Conservative):</span>
+                      <span className="text-slate-300">$2,045.8M (Net: -$2,045.8M)</span>
+                    </div>
+                    <div className="flex justify-between text-slate-400">
+                      <span>Cash-Derived Cash (Base Case):</span>
+                      <span className="text-slate-300">$3,687.6M (Net: -$3,687.6M)</span>
+                    </div>
+                    <div className="flex justify-between text-slate-400">
+                      <span>Dynamic Sensitivity Variants:</span>
+                      <span className="text-slate-300">Unanchored (pure debt minus cash)</span>
                     </div>
                   </div>
                 </div>
@@ -513,7 +529,10 @@ export default function AlconV4ExtendedView({ dossier, extension }: AlconV4Exten
               </div>
 
               <div className="p-3 bg-[#0a101b] rounded border border-slate-800 text-[11px] text-slate-400 space-y-1 font-sans">
-                <span className="font-bold text-slate-300 block font-mono">IFRS Accounting Standard Disclosures:</span>
+                <span className="font-bold text-slate-300 block font-mono">Terminal Net Debt Modeling Assumption &amp; IFRS Disclosures:</span>
+                <p>
+                  <strong>Terminal Net Debt Modeling Assumption:</strong> In the four certified reference scenarios (Conservative, Base Multiple, Base DCF, Optimistic), terminal net debt is an unamortized fixed modeling assumption of -$2,176.2M (net cash) anchored from the certified base model to hold the capital structure invariant. It is distinguished from cash-flow-derived terminal net debt ($0 debt minus ending cash: -$2,045.8M in Conservative, -$3,687.6M in Base Case, -$5,290.8M in Optimistic). In the dynamic sensitivity variants, terminal net debt is unanchored and equals ending debt minus cash exactly (-$2,645.8M in Conservative Dynamic; -$5,290.8M in Optimistic Dynamic).
+                </p>
                 <p>
                   Alcon is an IFRS foreign private issuer reporting under IFRS 16 and IAS 7. Lease liabilities are recognized in total financial debt, and lease interest is classified inside operating cash flows. No US-GAAP ASC 842 lease conventions are applied.
                 </p>

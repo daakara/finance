@@ -44,7 +44,7 @@ const alcDossier: OpportunityDossier = JSON.parse(rawDraft);
 
 assert.strictEqual(alcDossier.identity.symbol, "ALC");
 assert.strictEqual(alcDossier.identity.company_name, "Alcon Inc.");
-assert.strictEqual(alcDossier.identity.cik, "0001748310");
+assert.strictEqual(alcDossier.identity.cik, "0001167379");
 assert.strictEqual(alcDossier.identity.exchange, "NYSE");
 assert.strictEqual(isAlconV4Dossier(alcDossier), true, "Must satisfy isAlconV4Dossier type guard");
 
