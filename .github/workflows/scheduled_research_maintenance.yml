@@ -1,0 +1,184 @@
+name: ARX Research Maintenance Scheduled Pilot (FIX)
+
+# Governed by ARX Closure Model v2, ARX-DECISION-RESEARCH-PROCESS-V1, and PILOT_MAINTENANCE_POLICY.md.
+# Invariants:
+# - Strictly limited to Comfort Systems USA, Inc. (FIX), CIK 0001035983.
+# - Once-daily weekday schedule (UTC).
+# - Explicit activation flag (dormant by default: ENABLE_RESEARCH_MAINTENANCE_PILOT=false).
+# - Hard-coded pilot limits: 30-day window, max 30 runs.
+# - Strictly bounded request budget (max 5 requests/run, min 0.25s interval).
+# - Financial reconciliation validated ONLY for Q3 2026 Form 10-Q (2026-09-30).
+# - Unsupported periods generate bounded event-review artifacts without valuation.
+# - Zero repository mutation on no-change runs; no push to main; no automated publication.
+
+on:
+  schedule:
+    # Runs Monday through Friday at 21:17 UTC (configured post-market weekday scheduled scan)
+    # Minute 17 avoids top-of-hour GitHub Actions shared runner queue delays.
+    - cron: '17 21 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      bootstrap:
+        description: 'Authorize explicit one-time manual operational bootstrap'
+        required: false
+        type: boolean
+        default: false
+      force_run:
+        description: 'Bypass dormant check for controlled manual rehearsal'
+        required: false
+        type: boolean
+        default: false
+      target_accession:
+        description: 'Optional specific accession number for replay/rehearsal'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: research-maintenance-pilot
+  cancel-in-progress: false
+
+jobs:
+  detect-and-review:
+    name: Detect Periodic Filing & Prepare Review Packet (FIX)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    env:
+      # Activation flag: dormant by default unless explicitly configured in repo vars
+      ARX_MAINTENANCE_PILOT_ACTIVE: ${{ vars.ENABLE_RESEARCH_MAINTENANCE_PILOT || 'false' }}
+      ARX_MAINTENANCE_STATE_DIR: durable_state/research_maintenance
+      ARX_MAINTENANCE_OUTPUT_DIR: docs/research/maintenance/packets
+
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 2. Set up Python Runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: ""
+
+      - name: 3. Check Pilot Activation Guard & Namespace
+        id: check-activation
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_BOOTSTRAP: ${{ inputs.bootstrap }}
+          INPUT_FORCE: ${{ inputs.force_run }}
+          ENV_ACTIVE: ${{ env.ARX_MAINTENANCE_PILOT_ACTIVE }}
+        shell: bash
+        run: |
+          # Never derive bootstrap authorization from a scheduled or non-dispatch event
+          BOOTSTRAP="false"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$INPUT_BOOTSTRAP" = "true" ]; then
+            BOOTSTRAP="true"
+          fi
+
+          FORCE="false"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$INPUT_FORCE" = "true" ]; then
+            FORCE="true"
+          fi
+
+          # Reject contradictory rehearsal and bootstrap settings before filesystem or network work
+          if [ "$BOOTSTRAP" = "true" ] && [ "$FORCE" = "true" ]; then
+            echo "::error::Contradictory settings: 'bootstrap' (operational) cannot be combined with 'force_run' (rehearsal)." >&2
+            exit 1
+          fi
+
+          if [ "$BOOTSTRAP" = "true" ]; then
+            echo "is_active=true" >> "$GITHUB_OUTPUT"
+            echo "is_rehearsal=false" >> "$GITHUB_OUTPUT"
+            echo "is_bootstrap=true" >> "$GITHUB_OUTPUT"
+            echo "state_dir=durable_state/research_maintenance" >> "$GITHUB_OUTPUT"
+            echo "output_dir=docs/research/maintenance/packets" >> "$GITHUB_OUTPUT"
+            echo "cache_key_prefix=research-maintenance-durable-state-" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=research-maintenance-fix-state" >> "$GITHUB_OUTPUT"
+            echo "Manual operational bootstrap active (bootstrap=true). Routing to operational namespace."
+          elif [ "$FORCE" = "true" ]; then
+            echo "is_active=true" >> "$GITHUB_OUTPUT"
+            echo "is_rehearsal=true" >> "$GITHUB_OUTPUT"
+            echo "is_bootstrap=false" >> "$GITHUB_OUTPUT"
+            echo "state_dir=durable_state/rehearsal_maintenance" >> "$GITHUB_OUTPUT"
+            echo "output_dir=docs/research/maintenance/rehearsal_packets" >> "$GITHUB_OUTPUT"
+            echo "cache_key_prefix=research-maintenance-rehearsal-state-" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=research-maintenance-fix-rehearsal-state" >> "$GITHUB_OUTPUT"
+            echo "Pilot manual rehearsal active (force_run=true). Routing to isolated rehearsal namespace."
+          elif [ "$ENV_ACTIVE" = "true" ] || [ "$ENV_ACTIVE" = "1" ] || [ "$ENV_ACTIVE" = "yes" ]; then
+            echo "is_active=true" >> "$GITHUB_OUTPUT"
+            echo "is_rehearsal=false" >> "$GITHUB_OUTPUT"
+            echo "is_bootstrap=false" >> "$GITHUB_OUTPUT"
+            echo "state_dir=durable_state/research_maintenance" >> "$GITHUB_OUTPUT"
+            echo "output_dir=docs/research/maintenance/packets" >> "$GITHUB_OUTPUT"
+            echo "cache_key_prefix=research-maintenance-durable-state-" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=research-maintenance-fix-state" >> "$GITHUB_OUTPUT"
+            echo "Operational scheduled pilot active (ENABLE_RESEARCH_MAINTENANCE_PILOT=$ENV_ACTIVE)."
+          else
+            echo "is_active=false" >> "$GITHUB_OUTPUT"
+            echo "is_rehearsal=false" >> "$GITHUB_OUTPUT"
+            echo "is_bootstrap=false" >> "$GITHUB_OUTPUT"
+            echo "state_dir=durable_state/research_maintenance" >> "$GITHUB_OUTPUT"
+            echo "output_dir=docs/research/maintenance/packets" >> "$GITHUB_OUTPUT"
+            echo "cache_key_prefix=research-maintenance-durable-state-" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=research-maintenance-fix-state" >> "$GITHUB_OUTPUT"
+            echo "Pilot is dormant (ENABLE_RESEARCH_MAINTENANCE_PILOT=$ENV_ACTIVE). Stateful steps conditioned off."
+          fi
+
+      - name: 4. Restore Durable State Cache
+        uses: actions/cache/restore@v4
+        id: restore-state
+        if: steps.check-activation.outputs.is_active == 'true'
+        with:
+          path: ${{ steps.check-activation.outputs.state_dir }}
+          key: ${{ steps.check-activation.outputs.cache_key_prefix }}${{ github.run_id }}
+          restore-keys: |
+            ${{ steps.check-activation.outputs.cache_key_prefix }}
+
+      - name: 5. Execute Governed Scheduled Runner
+        id: execute-runner
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          STATE_DIR: ${{ steps.check-activation.outputs.state_dir }}
+          OUTPUT_DIR: ${{ steps.check-activation.outputs.output_dir }}
+          IS_REHEARSAL: ${{ steps.check-activation.outputs.is_rehearsal }}
+          IS_BOOTSTRAP: ${{ steps.check-activation.outputs.is_bootstrap }}
+          TARGET_ACCESSION: ${{ inputs.target_accession }}
+        run: |
+          ARGS=(
+            --symbol FIX
+            --state-dir "$STATE_DIR"
+            --output-dir "$OUTPUT_DIR"
+          )
+          if [ "$IS_REHEARSAL" = "true" ]; then
+            ARGS+=(--rehearsal --force-run)
+          fi
+          if [ "$IS_BOOTSTRAP" = "true" ]; then
+            ARGS+=(--operational-bootstrap --bootstrap)
+          fi
+          if [ -n "$TARGET_ACCESSION" ]; then
+            ARGS+=(--target-accession "$TARGET_ACCESSION")
+          fi
+
+          python -m analyst_dashboard.research.maintenance.scheduled_runner "${ARGS[@]}"
+
+      - name: 6. Save Durable State Cache
+        uses: actions/cache/save@v4
+        if: always() && steps.check-activation.outputs.is_active == 'true'
+        with:
+          path: ${{ steps.check-activation.outputs.state_dir }}
+          key: ${{ steps.check-activation.outputs.cache_key_prefix }}${{ github.run_id }}
+
+      - name: 7. Upload State and Review Artifacts
+        uses: actions/upload-artifact@v4
+        if: always() && steps.check-activation.outputs.is_active == 'true'
+        with:
+          name: ${{ steps.check-activation.outputs.artifact_name }}
+          path: |
+            ${{ steps.check-activation.outputs.state_dir }}/
+            ${{ steps.check-activation.outputs.output_dir }}/
+          retention-days: 30
+          overwrite: true
