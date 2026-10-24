@@ -214,7 +214,14 @@ PREDICATE_DEFINITIONS: List[PredicateDefinition] = [
         boundary_behavior="Count >= 2 PASS, Count < 2 FAIL",
         missing_data_behavior="If base cannot be analyzed, returns INSUFFICIENT_DATA",
         temporal_semantics="Wave search strictly bounded within base lookback",
-        reason_codes=["CONTRACTION_EXISTS_PASS", "INSUFFICIENT_CONTRACTIONS_FOUND"],
+        reason_codes=[
+            "CONTRACTION_EXISTS_PASS",
+            "INSUFFICIENT_CONTRACTIONS_FOUND",
+            "PRE_BASE_ADVANCE_TRUNCATED",
+            "INTRA_WAVE_NOISE_MERGED",
+            "INSUFFICIENT_BASE_ANCHOR_CANDIDATES",
+            "AMBIGUOUS_BASE_ORIGIN",
+        ],
         conformance_role=ConformanceRole.NORMATIVE,
     ),
     PredicateDefinition(
@@ -229,7 +236,13 @@ PREDICATE_DEFINITIONS: List[PredicateDefinition] = [
         boundary_behavior="Depth > 45% fails as base is too loose / damaged",
         missing_data_behavior="Returns NOT_APPLICABLE if no contractions found",
         temporal_semantics="Chronological waves in base",
-        reason_codes=["CONTRACTION_SEQUENCE_VALID", "BASE_TOO_DEEP_LOOSE", "CONTRACTION_COUNT_OUT_OF_BOUNDS"],
+        reason_codes=[
+            "CONTRACTION_SEQUENCE_VALID",
+            "BASE_TOO_DEEP_LOOSE",
+            "CONTRACTION_COUNT_OUT_OF_BOUNDS",
+            "FINAL_CONTRACTION_UNFINISHED_AT_CUTOFF",
+            "INITIAL_CONTRACTION_TOO_SHALLOW",
+        ],
         conformance_role=ConformanceRole.NORMATIVE,
     ),
     PredicateDefinition(
@@ -509,21 +522,30 @@ class VCPPredicateRegistry:
 
         elif predicate_id == "PRED_CONTRACTION_EXISTS":
             count = obs.contraction_count
+            meta_reasons = obs.metadata.get("reason_codes", [])
             if count >= 2:
+                rc = ["CONTRACTION_EXISTS_PASS"]
+                for extra in ["PRE_BASE_ADVANCE_TRUNCATED", "INTRA_WAVE_NOISE_MERGED"]:
+                    if extra in meta_reasons and extra not in rc:
+                        rc.append(extra)
                 return PredicateResult(
                     predicate_id=predicate_id,
                     status=PredicateStatus.PASS,
                     measured_value=count,
                     threshold_applied=2,
-                    reason_codes=["CONTRACTION_EXISTS_PASS"],
+                    reason_codes=rc,
                 )
             else:
+                rc = ["INSUFFICIENT_CONTRACTIONS_FOUND"]
+                for extra in ["INSUFFICIENT_BASE_ANCHOR_CANDIDATES", "AMBIGUOUS_BASE_ORIGIN"]:
+                    if extra in meta_reasons and extra not in rc:
+                        rc.append(extra)
                 return PredicateResult(
                     predicate_id=predicate_id,
                     status=PredicateStatus.FAIL,
                     measured_value=count,
                     threshold_applied=2,
-                    reason_codes=["INSUFFICIENT_CONTRACTIONS_FOUND"],
+                    reason_codes=rc,
                 )
 
         elif predicate_id == "PRED_CONTRACTION_SEQUENCE_VALID":
@@ -537,6 +559,23 @@ class VCPPredicateRegistry:
                     reason_codes=["NO_CONTRACTION_SEQUENCE_TO_EVALUATE"],
                 )
             initial_depth = obs.contraction_depths[0] if obs.contraction_depths else None
+            meta_reasons = obs.metadata.get("reason_codes", [])
+            if "FINAL_CONTRACTION_UNFINISHED_AT_CUTOFF" in meta_reasons:
+                return PredicateResult(
+                    predicate_id=predicate_id,
+                    status=PredicateStatus.FAIL,
+                    measured_value={"count": count, "initial_depth": initial_depth, "final_trough_confirmed": False},
+                    threshold_applied="final_trough_confirmed == True",
+                    reason_codes=["FINAL_CONTRACTION_UNFINISHED_AT_CUTOFF"],
+                )
+            if "INITIAL_CONTRACTION_TOO_SHALLOW" in meta_reasons:
+                return PredicateResult(
+                    predicate_id=predicate_id,
+                    status=PredicateStatus.FAIL,
+                    measured_value={"count": count, "initial_depth": initial_depth},
+                    threshold_applied="initial_depth >= 0.08 & initial_depth <= 0.45",
+                    reason_codes=["INITIAL_CONTRACTION_TOO_SHALLOW"],
+                )
             if count > 6:
                 return PredicateResult(
                     predicate_id=predicate_id,
@@ -571,22 +610,27 @@ class VCPPredicateRegistry:
                     reason_codes=["INSUFFICIENT_WAVES_FOR_PROGRESSION"],
                 )
             depths = obs.contraction_depths
-            is_tightening = all(depths[i] < depths[i - 1] for i in range(1, len(depths)))
+            if obs.is_progressive_tightening is not None:
+                is_tightening = obs.is_progressive_tightening
+            else:
+                is_tightening = all(depths[i] < depths[i - 1] for i in range(1, len(depths)))
             if is_tightening:
                 return PredicateResult(
                     predicate_id=predicate_id,
                     status=PredicateStatus.PASS,
                     measured_value=depths,
-                    threshold_applied="Depth_k < Depth_{k-1}",
+                    threshold_applied="Progressive tightening satisfied",
                     reason_codes=["PROGRESSIVE_TIGHTENING_CONFIRMED"],
                 )
             else:
+                has_expansion = any(depths[i] > depths[i - 1] for i in range(1, len(depths)))
+                reason_code = "VOLATILITY_EXPANSION_DETECTED" if has_expansion else "NON_TIGHTENING_SEQUENCE"
                 return PredicateResult(
                     predicate_id=predicate_id,
                     status=PredicateStatus.FAIL,
                     measured_value=depths,
-                    threshold_applied="Depth_k < Depth_{k-1}",
-                    reason_codes=["NON_TIGHTENING_SEQUENCE"],
+                    threshold_applied="Progressive tightening satisfied",
+                    reason_codes=[reason_code],
                 )
 
         elif predicate_id == "PRED_VOLUME_DRY_UP":

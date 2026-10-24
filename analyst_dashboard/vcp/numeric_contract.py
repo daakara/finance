@@ -153,14 +153,29 @@ class VCPNumericContract:
         return VCPNumericContract.round_ratio(depth)
 
     @staticmethod
-    def verify_progressive_tightening(depths: Sequence[float]) -> bool:
-        """Verifies strict monotonic contraction depth sequence: Depth_k < Depth_{k-1}."""
+    def verify_progressive_tightening(
+        depths: Sequence[float],
+        relative_reduction: float = 0.0,
+        eps_float: float = 1e-7,
+    ) -> bool:
+        """Verifies progressive tightening sequence.
+
+        Candidate 004 default (relative_reduction=0.0): Strict monotonic decrease Depth_k < Depth_{k-1}.
+        Candidate 005 (relative_reduction=0.05): Clean multiplicative reduction
+        Depth_k <= Depth_{k-1} * (1.0 - relative_reduction) + eps_float.
+        """
         if len(depths) < 2:
             return False
         for i in range(1, len(depths)):
-            # Strictly decreasing
-            if depths[i] >= depths[i - 1]:
-                return False
+            prev_d = depths[i - 1]
+            curr_d = depths[i]
+            if relative_reduction == 0.0:
+                if curr_d >= prev_d:
+                    return False
+            else:
+                max_allowed = prev_d * (1.0 - relative_reduction) + eps_float
+                if curr_d > max_allowed:
+                    return False
         return True
 
     @staticmethod
