@@ -72,6 +72,9 @@ describe("PreFlightChecklistModal — Catalyst & Corporate Events Fail-Closed St
           daysToEarnings: 14.5,
           eventDate: "2026-11-06",
           confirmationStatus: "CONFIRMED",
+          coverageStatus: "CONFIRMED_UPCOMING",
+          freshnessStatus: "LIVE",
+          riskTier: "NORMAL_RUNWAY",
         }}
       />
     );

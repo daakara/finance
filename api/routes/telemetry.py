@@ -23,6 +23,13 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger("api.telemetry")
 router = APIRouter()
 
+# Mount Corporate Events RC5 Telemetry router
+try:
+    from api.routes.telemetry_rc5 import router as rc5_router
+    router.include_router(rc5_router, prefix="/corporate-events", tags=["Corporate Events Telemetry"])
+except Exception as e:
+    logger.warning(f"Could not load telemetry_rc5 router: {e}")
+
 DATA_DIR = os.getenv("DATA_DIR", os.path.expanduser("~"))
 DEFAULT_DB_PATH = os.path.join(DATA_DIR, ".finance_platform_history.db")
 

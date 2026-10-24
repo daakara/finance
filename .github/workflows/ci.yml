@@ -163,6 +163,10 @@ jobs:
       working-directory: frontend
       run: npm run test:arch
 
+    - name: Enforce ARX UX Design Parity Gate V1 (Structural Invariants)
+      working-directory: frontend
+      run: npm run test:parity
+
     - name: Enforce Opportunity Dossier Snapshot Integrity Gate
       working-directory: frontend
       run: npm run check:dossier

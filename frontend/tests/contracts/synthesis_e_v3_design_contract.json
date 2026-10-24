@@ -1,0 +1,103 @@
+{
+  "gateId": "ARX_UX_DESIGN_PARITY_GATE_V1",
+  "version": "1.0.0",
+  "authoritativeBaseline": {
+    "designReference": "Synthesis E V3",
+    "referencePath": "scratch/arx-ux-prototypes/synthesis-e-remediation-candidate-v2-layout-accessibility-qa/index.html",
+    "sha256": "2857d19a442153e2399be9e3745cfee04f3b6e75f8ef9adfb3ebdec8cdd9008f",
+    "ownerAuthorization": "SYNTHESIS_E_V3_FRONTEND_PROMOTION_AUTHORIZED"
+  },
+  "canonicalClearanceAuthority": {
+    "evaluatorModule": "frontend/lib/preflightEvaluator.ts",
+    "primaryComponent": "PreFlightReadinessBar",
+    "mountedPosition": "beneath-candlestick-chart",
+    "containerTestId": "preflight-readiness-bar",
+    "actionabilityBadgeTestId": "inline-actionability-badge",
+    "clearanceBadgeTestId": "inline-clearance-badge",
+    "activeBlockerTestId": "active-blocker-callout",
+    "telemetryDrawerTestId": "preflight-details-drawer",
+    "requiredPills": [
+      { "id": "inline-chk-pill-1", "name": "CHK-1 R:R" },
+      { "id": "inline-chk-pill-2", "name": "CHK-2 STRUCTURE" },
+      { "id": "inline-chk-pill-3", "name": "CHK-3 CAPITAL" },
+      { "id": "inline-chk-pill-4", "name": "CHK-4 CATALYST" },
+      { "id": "inline-chk-pill-5", "name": "CHK-5 MACRO" }
+    ]
+  },
+  "fourPillarConfluence": {
+    "containerTestId": "supporting-evidence",
+    "componentFile": "frontend/components/CompositeConvictionCard.tsx",
+    "equalWeightingPct": 25,
+    "pillars": [
+      {
+        "id": "technical",
+        "title": "Technical Confluence",
+        "weightLabel": "25% Weight",
+        "fallbackAllowed": false
+      },
+      {
+        "id": "fundamental",
+        "title": "Fundamental Moat",
+        "weightLabel": "25% Weight",
+        "fallbackAllowed": false
+      },
+      {
+        "id": "institutional",
+        "title": "Institutional Flow",
+        "weightLabel": "25% Weight",
+        "mandatoryPresence": true,
+        "fallbackAllowed": false
+      },
+      {
+        "id": "macro",
+        "title": "Macro Environment",
+        "weightLabel": "25% Weight",
+        "fallbackAllowed": false
+      }
+    ],
+    "prohibitedTokens": ["undefined", "null", "NaN"]
+  },
+  "domainWorkspaceTabs": {
+    "requiredTabs": [
+      { "id": "SMART_MONEY", "label": "Smart Money" },
+      { "id": "FUNDAMENTALS", "label": "Factors & Macro" },
+      { "id": "RISK_CONTAGION", "label": "Risk & Contagion" }
+    ],
+    "defaultTab": "SMART_MONEY",
+    "prohibitedTabs": ["EXECUTION"]
+  },
+  "supersededLegacySurfaces": [
+    {
+      "id": "TRADE_EXECUTION_STEPPER",
+      "targetFile": "frontend/components/OptimalEntryExitCard.tsx",
+      "prohibitedPattern": "<TradeExecutionStepper",
+      "rationale": "5-step stepper duplicated inline preflight readiness authority"
+    },
+    {
+      "id": "DUPLICATE_PRIMARY_VERDICTS",
+      "targetFile": "frontend/components/CompositeConvictionCard.tsx",
+      "prohibitedPattern": "<h2>{synthesis.verdictTitle}</h2>",
+      "rationale": "Confluence card must not issue competing primary verdict headers"
+    },
+    {
+      "id": "DUPLICATE_BOTTOM_LINE",
+      "targetFile": "frontend/components/CompositeConvictionCard.tsx",
+      "prohibitedPattern": "The Bottom Line (No Wall Street Fluff)",
+      "rationale": "Secondary summary box duplicated main cockpit takeaway"
+    },
+    {
+      "id": "STANDALONE_CONFLUENCE_CARD",
+      "targetFile": "frontend/app/page.tsx",
+      "prohibitedPattern": "<CompositeConvictionCard",
+      "allowedContext": "evidenceSlot={<CompositeConvictionCard",
+      "rationale": "Confluence card must only render inside supporting-evidence slot"
+    },
+    {
+      "id": "ACTIVE_ANALYSIS_TUTORIAL_LEAK",
+      "targetFile": "frontend/app/page.tsx",
+      "prohibitedPattern": "<PageIntro",
+      "requiredGuard": "{!hasExplicitSymbol && (",
+      "rationale": "Onboarding tutorials must not display during active symbol analysis"
+    }
+  ]
+}

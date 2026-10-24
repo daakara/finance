@@ -13,6 +13,7 @@ interface GuidedTerminalViewProps {
   onOpenWhy: () => void;
   chartSlot?: React.ReactNode;
   planSlot?: React.ReactNode;
+  evidenceSlot?: React.ReactNode;
 }
 
 export default function GuidedTerminalView({
@@ -21,6 +22,7 @@ export default function GuidedTerminalView({
   onOpenWhy,
   chartSlot,
   planSlot,
+  evidenceSlot,
 }: GuidedTerminalViewProps) {
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const unmetConditions = deriveUnmetConditions(insight);

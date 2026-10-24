@@ -47,3 +47,23 @@ frontend/.next/
 frontend/out/
 frontend/node_modules/
 *.tsbuildinfo
+
+# ARX UX Research Isolation & Custody Quarantine (SPRINT 3 / PR #75)
+/research/
+/prototype-harness/
+/docs/
+/tests/
+/benchmarks/
+/scratch/
+/artifacts/
+/.github/
+*.md
+
+# Quarantine PR #75 custody files inside analyst_dashboard
+/analyst_dashboard/research/custody/
+
+# Quarantine PR #75 research scripts specifically (preserves scripts/research/etf_v2/openfigi_rate_limiter.py)
+/scripts/create_scoped_custody_commit.py
+/scripts/launch_prototype_local.ps1
+/scripts/research_server.py
+/scripts/verify_evidence_custody_containment.py

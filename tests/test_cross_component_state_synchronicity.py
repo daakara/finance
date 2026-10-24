@@ -26,6 +26,11 @@ class TestCrossComponentStateSynchronicity(unittest.TestCase):
         with open(modal_path, "r", encoding="utf-8") as f:
             content = f.read()
 
+        evaluator_path = os.path.join("frontend", "lib", "preflightEvaluator.ts")
+        if os.path.exists(evaluator_path):
+            with open(evaluator_path, "r", encoding="utf-8") as f:
+                content += "\n" + f.read()
+
         # Must declare dynamic stage and boundary props
         self.assertIn("isStage4?: boolean", content, "PreFlightChecklistModal must accept isStage4 prop")
         self.assertIn("optimalEntryMin?: number", content, "PreFlightChecklistModal must accept optimalEntryMin")

@@ -1,0 +1,3414 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARX Terminal — Synthesis E (Ephemeral Canonical Prototype)</title>
+  <style>
+    /* ==========================================================================
+       ARX TERMINAL — SYNTHESIS E DESIGN SYSTEM & CSS TOKENS
+       Governed by SYNTHESIS_E_SPECIFICATION.json
+       TOKEN_CONSOLIDATION = DEFERRED
+       ========================================================================== */
+    :root {
+      --app-bg: #090d16;
+      --surface-1: #0f1523;
+      --surface-2: #141c2e;
+      --surface-elevated: #1a253c;
+      --surface-hover: #1e2b44;
+      --surface-active: #243452;
+      --border-subtle: rgba(51, 65, 85, 0.45);
+      --border-strong: #2b3a52;
+      --border-focus: #06b6d4;
+      --text-1: #f8fafc;
+      --text-2: #94a3b8;
+      --text-muted: #94a3b8;
+      --status-positive: #10b981;
+      --status-positive-bg: rgba(16, 185, 129, 0.14);
+      --status-positive-border: rgba(16, 185, 129, 0.35);
+      --status-caution: #f59e0b;
+      --status-caution-bg: rgba(245, 158, 11, 0.14);
+      --status-caution-border: rgba(245, 158, 11, 0.35);
+      --status-negative: #f43f5e;
+      --status-negative-bg: rgba(244, 63, 94, 0.14);
+      --status-negative-border: rgba(244, 63, 94, 0.35);
+      --status-info: #06b6d4;
+      --status-info-bg: rgba(6, 182, 212, 0.14);
+      --status-info-border: rgba(6, 182, 212, 0.35);
+      --status-neutral: #94a3b8;
+      --btn-primary-bg: #047857;
+      --btn-primary-text: #ffffff;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.55);
+      --radius-outer: 12px;
+      --radius-inner: 8px;
+      --radius-control: 6px;
+      --radius-pill: 9999px;
+      --control-h-desktop: 36px;
+      --control-h-touch: 44px;
+      --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    [data-theme="paper"] {
+      --app-bg: #f4f6f9;
+      --surface-1: #ffffff;
+      --surface-2: #f8fafc;
+      --surface-elevated: #ffffff;
+      --surface-hover: #f1f5f9;
+      --surface-active: #e2e8f0;
+      --border-subtle: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --border-focus: #0284c7;
+      --text-1: #0f172a;
+      --text-2: #334155;
+      --text-muted: #475569;
+      --status-positive: #166534;
+      --status-positive-bg: #f0fdf4;
+      --status-positive-border: #bbf7d0;
+      --status-caution: #92400e;
+      --status-caution-bg: #fffbeb;
+      --status-caution-border: #fde68a;
+      --status-negative: #b91c1c;
+      --status-negative-bg: #fef2f2;
+      --status-negative-border: #fecaca;
+      --status-info: #0369a1;
+      --status-info-bg: #f0f9ff;
+      --status-info-border: #bae6fd;
+      --status-neutral: #475569;
+      --btn-primary-bg: #166534;
+      --btn-primary-text: #ffffff;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.09);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.12);
+    }
+
+    /* Base Reset & Typography Standards (>= 12px strictly enforced) */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      overflow-x: hidden;
+      background-color: var(--app-bg);
+      color: var(--text-1);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .btn-reset { background: none; border: none; font: inherit; color: inherit; cursor: pointer; }
+    .svg-icon { display: inline-block; width: 16px; height: 16px; stroke-width: 2; stroke: currentColor; fill: none; vertical-align: middle; flex-shrink: 0; }
+
+    /* Accessibility Focus Rings */
+    a:focus-visible, button:focus-visible, input:focus-visible, [role="button"]:focus-visible {
+      outline: 2px solid var(--border-focus);
+      outline-offset: 2px;
+    }
+
+    /* 1. STICKY COMMAND HEADER (Total height ~70px) */
+    header.command-header {
+      background-color: var(--surface-1);
+      border-bottom: 1px solid var(--border-subtle);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(8px);
+    }
+    .command-header-bar {
+      max-width: 1750px;
+      margin: 0 auto;
+      height: 44px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    /* Zone 1: Brand & Main Navigation (0 EMOJIS) */
+    .brand-nav-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .brand-mark {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: -0.02em;
+      color: var(--text-1);
+      text-decoration: none;
+    }
+    .demo-asset-badge {
+      font-size: 12px;
+      font-weight: 700;
+      color: #fbbf24;
+      background: #231c0e;
+      border: 1px solid #78350f;
+      border-radius: var(--radius-pill);
+      padding: 3px 8px;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    [data-theme="paper"] .demo-asset-badge {
+      color: #92400e;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-control);
+      padding: 2px;
+      height: 40px;
+    }
+    .nav-item {
+      height: 36px;
+      min-height: 36px;
+      padding: 0 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: background-color 0.15s, color 0.15s;
+    }
+    .nav-item:hover { color: var(--text-1); }
+    .nav-item.active {
+      background-color: var(--surface-elevated);
+      color: var(--text-1);
+      font-weight: 700;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Zone 2: OmniSearch */
+    .search-zone {
+      flex: 1;
+      max-width: 440px;
+      position: relative;
+    }
+    .search-input-wrapper {
+      display: flex;
+      align-items: center;
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-control);
+      height: var(--control-h-desktop);
+      padding: 0 10px;
+      gap: 8px;
+    }
+    .search-input-wrapper:focus-within {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 1px var(--border-focus);
+    }
+    .search-input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text-1);
+      font-size: 12px;
+      font-family: inherit;
+    }
+    .search-input::placeholder { color: var(--text-muted); }
+    .search-shortcut-kbd {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+      border-radius: 3px;
+      padding: 1px 4px;
+    }
+    .search-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin-top: 4px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-inner);
+      box-shadow: var(--shadow-lg);
+      z-index: 100;
+      max-height: 340px;
+      overflow-y: auto;
+      display: none;
+    }
+    .search-item {
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      font-size: 12px;
+      transition: background-color 0.12s;
+    }
+    .search-item:hover, .search-item.selected {
+      background-color: var(--surface-hover);
+    }
+
+    /* Zone 3: Command Bar Controls */
+    .command-controls-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .segmented-control {
+      display: flex;
+      align-items: center;
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-control);
+      padding: 2px;
+      height: 40px;
+    }
+    .segment-btn {
+      height: 36px;
+      min-height: 36px;
+      padding: 0 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      transition: all 0.15s;
+    }
+    .segment-btn:hover { color: var(--text-1); }
+    .segment-btn.active {
+      background-color: #0e7490;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .icon-ctrl-btn {
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-control);
+      color: var(--text-2);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .icon-ctrl-btn:hover {
+      background: var(--surface-hover);
+      color: var(--text-1);
+      border-color: var(--border-strong);
+    }
+
+    /* Header Utilities Overflow Menu */
+    .overflow-container {
+      position: relative;
+    }
+    .overflow-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 6px;
+      width: 260px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-inner);
+      box-shadow: var(--shadow-lg);
+      padding: 6px;
+      display: none;
+      flex-direction: column;
+      gap: 2px;
+      z-index: 120;
+    }
+    .overflow-item {
+      width: 100%;
+      height: 36px;
+      min-height: 36px;
+      padding: 0 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      text-align: left;
+      transition: background-color 0.12s;
+    }
+    .overflow-item:hover, .overflow-item:focus-visible {
+      background-color: var(--surface-hover);
+    }
+    .overflow-item.danger-action {
+      color: var(--status-negative);
+    }
+    .overflow-item.danger-action:hover {
+      background-color: var(--status-negative-bg);
+    }
+
+    /* Macro Ticker Strip (26px height) */
+    .macro-strip {
+      border-top: 1px solid var(--border-subtle);
+      background: var(--surface-1);
+      height: 26px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      overflow-x: auto;
+      white-space: nowrap;
+      gap: 16px;
+      font-size: 12px;
+    }
+    .macro-strip-inner {
+      max-width: 1750px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .macro-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-2);
+    }
+    .macro-val-up { color: var(--status-positive); font-weight: 600; }
+    .macro-val-down { color: var(--status-negative); font-weight: 600; }
+
+    /* 2. FIRST-VISIT WORKFLOW GUIDE BANNER */
+    .guide-banner {
+      background: var(--surface-elevated);
+      border-bottom: 1px solid var(--border-strong);
+      padding: 10px 16px;
+      display: block;
+    }
+    .guide-banner-inner {
+      max-width: 1750px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .guide-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .guide-badge {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--status-info);
+      background: var(--status-info-bg);
+      border: 1px solid var(--status-info-border);
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+    }
+    .guide-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-1);
+    }
+    .guide-steps {
+      font-size: 12px;
+      color: var(--text-2);
+    }
+    .guide-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .btn-dismiss {
+      height: 36px;
+      min-height: 36px;
+      padding: 0 14px;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-control);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+      cursor: pointer;
+    }
+    .btn-dismiss:hover {
+      background: var(--surface-hover);
+      color: var(--text-1);
+    }
+
+    /* 3. MAIN WORKSPACE CONTAINER */
+    main.workspace-main {
+      max-width: 1750px;
+      margin: 0 auto;
+      padding: 12px 16px 80px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ==========================================================================
+       FIRST VIEWPORT GRID (1440x900 HARD CONTRACT)
+       Verdict Card (~38-40%) + Price Chart (~60-62%)
+       Simultaneously visible with zero vertical scroll at 1440x900!
+       ========================================================================== */
+/* --- Candidate V2 Layout Rebalancing: Desktop Two-Column Split --- */
+    /* --- Candidate V2 Layout Accessibility Rebalancing: Two-Column CSS Grid --- */
+    .first-viewport-row {
+      display: grid;
+      grid-template-columns: minmax(420px, 39%) minmax(0, 1fr);
+      grid-template-rows: auto auto;
+      gap: 16px;
+      align-items: start;
+    }
+    #verdict-card {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    #execution-action-card {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    #chart-card {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    #preflight-readiness-bar {
+      grid-column: 2;
+      grid-row: 2;
+      margin-top: 6px;
+    }
+    .execution-action-card {
+      background: var(--surface-1);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-outer);
+      padding: 14px 16px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: hidden;
+    }
+    .compact-preflight-bar {
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-inner);
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .compact-pf-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .compact-pf-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--text-2);
+      display: flex;
+      align-items: center;
+    }
+    .compact-pf-badge {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      letter-spacing: 0.02em;
+    }
+    .compact-pf-badge.cleared {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: var(--status-positive);
+    }
+    .compact-pf-badge.blocked {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: var(--status-caution);
+    }
+    .compact-pf-badge.na {
+      background: rgba(148, 163, 184, 0.15);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      color: var(--text-muted);
+    }
+    .compact-pf-subtext {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.3;
+    }
+    @media (min-width: 1025px) {
+      .preflight-badges-wide {
+        display: grid !important;
+        grid-template-columns: repeat(5, 1fr) !important;
+        gap: 8px !important;
+      }
+      .preflight-remediation-row {
+        display: grid;
+        grid-template-columns: 1fr 1.3fr;
+        gap: 12px;
+        align-items: start;
+      }
+      .preflight-details-drawer.expanded {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+        gap: 8px !important;
+      }
+    }
+
+    /* VERDICT / DECISION CARD */
+    .verdict-card {
+      background: var(--surface-1);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-outer);
+      padding: 14px 16px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    /* Symbol & Price Deck */
+    .deck-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .symbol-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .symbol-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .symbol-text {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-1);
+      line-height: 1;
+    }
+    .asset-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+    }
+    .price-group {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .price-text {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-1);
+      line-height: 1;
+    }
+    .delta-text {
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .delta-up { color: var(--status-positive); }
+    .delta-down { color: var(--status-negative); }
+
+    /* Verdict & Score Banner */
+    .verdict-banner {
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-inner);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .verdict-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .verdict-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+    .verdict-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-1);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .score-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .score-pill {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-inner);
+      padding: 4px 10px;
+      text-align: center;
+    }
+    .score-num {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-1);
+      line-height: 1;
+    }
+    .score-den {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .why-score-btn {
+      height: 36px;
+      min-height: 36px;
+      padding: 0 10px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-control);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-1);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .why-score-btn:hover {
+      background: var(--surface-hover);
+      border-color: var(--border-focus);
+    }
+
+    /* Status Pill Badges */
+    .status-badge {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .badge-positive {
+      background: var(--status-positive-bg);
+      color: var(--status-positive);
+      border: 1px solid var(--status-positive-border);
+    }
+    .badge-caution {
+      background: var(--status-caution-bg);
+      color: var(--status-caution);
+      border: 1px solid var(--status-caution-border);
+    }
+    .badge-negative {
+      background: var(--status-negative-bg);
+      color: var(--status-negative);
+      border: 1px solid var(--status-negative-border);
+    }
+    .badge-info {
+      background: var(--status-info-bg);
+      color: var(--status-info);
+      border: 1px solid var(--status-info-border);
+    }
+
+    /* Execution Ladder / ETF Context Profile */
+    .middle-panel {
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-inner);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+    }
+    .ladder-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .ladder-cell {
+      background: var(--surface-1);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-control);
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .cell-lbl {
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .cell-val {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-1);
+    }
+    .cell-val.positive { color: var(--status-positive); }
+    .cell-val.negative { color: var(--status-negative); }
+
+    /* Sizing & Capital Allocation Bar */
+    .sizing-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 8px;
+      font-size: 12px;
+      gap: 8px;
+    }
+    .sizing-meta {
+      color: var(--text-2);
+      line-height: 1.35;
+    }
+    .sizing-bold {
+      font-weight: 700;
+      color: var(--text-1);
+    }
+
+    /* Primary Action CTA Button */
+    .cta-btn {
+      height: 44px;
+      min-height: 44px;
+      width: 100%;
+      border-radius: var(--radius-control);
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, background-color 0.15s;
+    }
+    .primary-cta {
+      background: var(--btn-primary-bg);
+      color: var(--btn-primary-text);
+    }
+    .primary-cta:hover { opacity: 0.92; }
+    .disabled-cta {
+      background: var(--surface-active);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* PRICE CHART CARD */
+    .chart-card {
+      background: var(--surface-1);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-outer);
+      padding: 12px 14px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+    .chart-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .interval-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .interval-chip {
+      height: 36px;
+      min-height: 36px;
+      padding: 0 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      transition: all 0.12s;
+    }
+    .interval-chip:hover { color: var(--text-1); border-color: var(--border-strong); }
+    .interval-chip.active {
+      background: var(--surface-elevated);
+      color: var(--text-1);
+      border-color: var(--border-focus);
+      font-weight: 700;
+    }
+
+    .indicator-legend {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text-2);
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    /* Chart Canvas Container (Height 450px) */
+    .chart-container {
+      width: 100%;
+      height: 450px;
+      min-height: 450px;
+      position: relative;
+      background: transparent;
+      border-radius: var(--radius-inner);
+      overflow: hidden;
+    }
+
+    /* 4. BELOW-FIRST-ROW SUPPORTING CONTENT */
+    .secondary-workspace-section {
+      background: var(--surface-1);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-outer);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .section-tab-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 8px;
+    }
+    .section-tab {
+      height: 36px;
+      min-height: 36px;
+      padding: 0 14px;
+      border-radius: var(--radius-control);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+    }
+    .section-tab:hover { color: var(--text-1); }
+    .section-tab.active {
+      background: var(--surface-2);
+      border-color: var(--border-subtle);
+      color: var(--text-1);
+      font-weight: 700;
+    }
+
+    /* Pillars / Triad Grid */
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .pillar-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-inner);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .pillar-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .pillar-val {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-1);
+    }
+    .pillar-desc {
+      font-size: 12px;
+      color: var(--text-2);
+      line-height: 1.4;
+    }
+
+    /* Smart Money Feed & Solvency */
+    .two-col-supporting {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .feed-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-inner);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .feed-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .trade-item {
+      background: var(--surface-1);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-control);
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    /* Provenance Bar */
+    .provenance-bar {
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* 5. MODAL SYSTEM (ACCESSIBLE DIALOGS) */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-dialog {
+      background: var(--surface-1);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-outer);
+      max-width: 520px;
+      width: 100%;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .modal-head {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-1);
+    }
+    .modal-close-btn {
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-control);
+      border: none;
+      background: transparent;
+      color: var(--text-2);
+      cursor: pointer;
+    }
+    .modal-close-btn:hover { background: var(--surface-hover); color: var(--text-1); }
+    .modal-body {
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--text-2);
+      line-height: 1.45;
+    }
+    .modal-foot {
+      padding: 12px 18px;
+      border-top: 1px solid var(--border-subtle);
+      background: var(--surface-2);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .btn-secondary {
+      height: 36px;
+      min-height: 36px;
+      padding: 0 14px;
+      background: var(--surface-1);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-control);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-1);
+      cursor: pointer;
+    }
+    .btn-primary {
+      height: 36px;
+      min-height: 36px;
+      padding: 0 16px;
+      background: var(--btn-primary-bg);
+      border: 1px solid transparent;
+      border-radius: var(--radius-control);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--btn-primary-text);
+      cursor: pointer;
+    }
+    .btn-danger {
+      height: 36px;
+      min-height: 36px;
+      padding: 0 16px;
+      background: var(--status-negative);
+      border: 1px solid transparent;
+      border-radius: var(--radius-control);
+      font-size: 12px;
+      font-weight: 700;
+      color: #ffffff;
+      cursor: pointer;
+    }
+
+    /* 6. MOBILE DOCK & DRAWER SYSTEM */
+    .mobile-bottom-dock {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      background: var(--surface-1);
+      border-top: 1px solid var(--border-strong);
+      z-index: 60;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 8px;
+    }
+    .dock-btn {
+      height: 44px;
+      min-height: 44px;
+      min-width: 44px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+      text-decoration: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    .dock-btn.active { color: var(--text-1); font-weight: 700; }
+
+    /* ==========================================================================
+       RESPONSIVE BREAKPOINTS (1440x900, 1280x800, 1024x768, 768x1024, 390x844)
+       ========================================================================== */
+    @media (max-width: 1024px) {
+      .first-viewport-row {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        max-height: none;
+        min-height: auto;
+      }
+      #verdict-card,
+      #chart-card,
+      #preflight-readiness-bar,
+      #execution-action-card {
+        grid-column: auto;
+        grid-row: auto;
+        width: 100%;
+      }
+      .secondary-workspace-section { order: 5; }
+      .pillars-grid { grid-template-columns: repeat(2, 1fr); }
+      .two-col-supporting { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+      .mobile-bottom-dock { display: flex; }
+      body { padding-bottom: 64px; }
+      
+      /* Touch target scaling for coarse pointers */
+      .icon-ctrl-btn { min-width: 44px; min-height: 44px; }
+      .segment-btn { min-height: 44px; }
+      .why-score-btn { min-height: 44px; }
+      .cta-btn { min-height: 44px; }
+      .interval-chip { min-height: 44px; padding: 0 12px; }
+      .section-tab { min-height: 44px; }
+      .modal-close-btn { min-width: 44px; min-height: 44px; }
+      .btn-secondary { min-height: 44px; }
+      .btn-primary { min-height: 44px; }
+      .btn-danger { min-height: 44px; }
+    }
+
+    @media (max-width: 640px) {
+      .command-header-bar { padding: 0 10px; }
+      .segmented-control { display: none; }
+      .ladder-grid { grid-template-columns: repeat(2, 1fr); }
+      .pillars-grid { grid-template-columns: 1fr; }
+      .chart-container { height: 360px; min-height: 360px; }
+    }
+  
+    /* --- ARX SYNTHESIS E REMEDIATION CANDIDATE V1 STYLES --- */
+    
+    /* P2-02: Compact Collapsible Workflow Guide (No Persistence) */
+    .guide-banner {
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 4px 16px;
+      transition: all 0.2s ease;
+    }
+    .guide-banner-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 28px;
+    }
+    .guide-header-strip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+    }
+    .guide-toggle-btn {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-2);
+      border-radius: var(--radius-inner);
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .guide-toggle-btn:hover, .guide-toggle-btn:focus-visible {
+      background: var(--surface-3);
+      color: var(--text-1);
+      border-color: var(--accent);
+      outline: none;
+    }
+    .guide-expandable-content {
+      display: none;
+      padding: 8px 0 6px 0;
+      border-top: 1px dashed var(--border-subtle);
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--text-2);
+      line-height: 1.5;
+    }
+    .guide-expandable-content.is-expanded {
+      display: block;
+    }
+
+    /* P1-04: Price Authority & Freshness Subdeck */
+    .price-group {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+    .price-line {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .price-subdeck {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      letter-spacing: 0.02em;
+    }
+    .price-tag {
+      font-weight: 600;
+    }
+
+    /* P1-02: Default Verdict Explanation */
+    .verdict-summary {
+      font-size: 12px;
+      color: var(--text-2);
+      line-height: 1.45;
+      margin: 4px 0 0 0;
+      padding: 0;
+    }
+
+    /* P0-01: Decoupled Risk Presentation Matrix */
+    .sizing-matrix-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .sizing-cell {
+      background: var(--surface-2);
+      padding: 6px 8px;
+      border-radius: var(--radius-inner);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .sizing-lbl {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .sizing-val {
+      font-size: 12.5px;
+      font-weight: 700;
+    }
+    .sizing-disclaimer {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.35;
+      font-style: italic;
+    }
+
+    /* Pre-Flight Execution Readiness Bar (Candidate V2) */
+    .preflight-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-inner);
+      padding: 10px 12px;
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: border-color 0.2s ease;
+    }
+    .preflight-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .preflight-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .preflight-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-1);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .preflight-readiness-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.04em;
+      transition: all 0.2s ease;
+    }
+    .preflight-readiness-badge.cleared {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.5);
+      color: var(--status-positive);
+    }
+    .preflight-readiness-badge.blocked {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      color: var(--status-caution);
+    }
+    .preflight-readiness-badge.pulse-blocker {
+      animation: pulseBlocker 0.6s infinite alternate;
+    }
+    @keyframes pulseBlocker {
+      from { transform: scale(1); box-shadow: 0 0 0 rgba(245, 158, 11, 0); }
+      to { transform: scale(1.05); box-shadow: 0 0 12px rgba(245, 158, 11, 0.6); }
+    }
+    .preflight-badges-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .preflight-check-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--surface-1);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      padding: 3px 7px;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--text-2);
+      min-height: 28px;
+    }
+    .chk-tag {
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .chk-status {
+      font-weight: 800;
+      border-radius: 2px;
+      padding: 1px 4px;
+      font-size: 9.5px;
+    }
+    .chk-status.status-pass {
+      background: rgba(16, 185, 129, 0.18);
+      color: var(--status-positive);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .chk-status.status-hazard, .chk-status.status-fail {
+      background: rgba(225, 29, 72, 0.18);
+      color: var(--status-negative);
+      border: 1px solid rgba(225, 29, 72, 0.4);
+    }
+    .chk-status.status-unavail, .chk-status.status-stale, .chk-status.status-partial, .chk-status.status-high-vix {
+      background: rgba(245, 158, 11, 0.18);
+      color: var(--status-caution);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+    .chk-status.status-na {
+      background: rgba(148, 163, 184, 0.15);
+      color: var(--text-muted);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+    .preflight-blocker-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    .blocker-label {
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+    .blocker-val {
+      font-weight: 700;
+      color: var(--text-1);
+    }
+    .blocker-val.has-blocker {
+      color: var(--status-caution);
+    }
+    .preflight-change-callout {
+      background: rgba(56, 189, 248, 0.06);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: var(--radius-inner);
+      padding: 6px 10px;
+      font-size: 11px;
+      line-height: 1.35;
+      color: var(--text-2);
+    }
+    .preflight-change-callout strong {
+      color: #38bdf8;
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .preflight-meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 10.5px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 6px;
+      margin-top: 2px;
+      flex-wrap: wrap;
+    }
+    .preflight-toggle-btn {
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-2);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 14px;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+      min-height: 44px;
+      box-sizing: border-box;
+    }
+    .preflight-toggle-btn:hover {
+      background: var(--surface-3);
+      color: var(--text-1);
+    }
+    .preflight-toggle-btn:focus-visible {
+      outline: 2px solid var(--accent);
+    }
+    .preflight-chevron {
+      transition: transform 0.2s ease;
+      width: 12px;
+      height: 12px;
+    }
+    .preflight-toggle-btn[aria-expanded="true"] .preflight-chevron {
+      transform: rotate(180deg);
+    }
+    .preflight-details-drawer {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      padding-top: 6px;
+      border-top: 1px dashed var(--border-subtle);
+    }
+    
+    .cta-disabled-reason {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 12px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: var(--radius-inner);
+      font-size: 11px;
+      color: var(--status-danger);
+      margin-top: 6px;
+    }
+    .review-blockers-btn {
+      min-height: 44px;
+      padding: 8px 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-inner);
+      color: var(--text-normal);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: underline;
+    }
+    .review-blockers-btn:hover {
+      background: var(--surface-hover);
+      border-color: var(--status-danger);
+    }
+
+    .preflight-details-drawer.expanded {
+      display: flex;
+    }
+    .detail-check-card {
+      background: var(--surface-1);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-inner);
+      padding: 6px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 11px;
+    }
+    .detail-check-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .detail-check-title {
+      font-weight: 700;
+      color: var(--text-1);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .detail-check-meta {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .detail-check-desc {
+      color: var(--text-2);
+      font-size: 10.5px;
+      line-height: 1.35;
+      margin: 0;
+    }
+    .detail-check-action {
+      color: #38bdf8;
+      font-size: 10px;
+      margin: 0;
+      font-family: var(--font-mono);
+    }
+    .cta-btn.locked-cta {
+      background: rgba(148, 163, 184, 0.12) !important;
+      border: 1px dashed rgba(245, 158, 11, 0.5) !important;
+      color: var(--text-muted) !important;
+      cursor: not-allowed !important;
+      box-shadow: none !important;
+    }
+
+    /* P1-01: Bearish Dissent & Invalidation Anchor (Layout B) */
+    .dissent-card {
+      background: rgba(225, 29, 72, 0.06);
+      border: 1px solid rgba(225, 29, 72, 0.28);
+      border-left: 3px solid var(--status-negative);
+      border-radius: var(--radius-inner);
+      padding: 10px 12px;
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .dissent-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .dissent-badge-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dissent-badge {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #fb7185;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .dissent-level {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .dissent-body {
+      font-size: 11.5px;
+      line-height: 1.4;
+      color: var(--text-2);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .dissent-statement {
+      margin: 0;
+      color: var(--text-1);
+    }
+    .dissent-detail {
+      margin: 0;
+      color: var(--text-2);
+    }
+
+    /* P1-03: Simulation Safety Controls */
+    .simulation-badge-bar {
+      margin-top: 10px;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: center;
+    }
+    .simulation-badge {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #38bdf8;
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* P2-01: Accessible Chart Event Badges */
+    .chart-event-badges-bar {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-inner);
+      font-size: 11px;
+    }
+    .event-badge-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .event-badge-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface-1);
+      border: 1px solid var(--border-subtle);
+      padding: 3px 8px;
+      border-radius: var(--radius-inner);
+      font-size: 11px;
+      cursor: pointer;
+      position: relative;
+    }
+    .event-badge-item:hover, .event-badge-item:focus-visible {
+      border-color: var(--accent);
+      background: var(--surface-3);
+      outline: none;
+    }
+    .event-badge-pill {
+      font-weight: 800;
+      font-size: 9.5px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+    .event-badge-pill.pol {
+      background: rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+    .event-badge-pill.ins {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+
+    /* --- Paper Theme Accessibility & Contrast Enhancements --- */
+    [data-theme="paper"] #stage-trade-btn:disabled {
+      background: #f1f5f9 !important;
+      color: #475569 !important;
+      border: 1px solid #cbd5e1 !important;
+    }
+    [data-theme="paper"] #cta-disabled-reason {
+      background: #fffbeb !important;
+      border: 1px solid #fde68a !important;
+      color: #92400e !important;
+    }
+    [data-theme="paper"] #review-preflight-btn {
+      background: #ffffff !important;
+      border: 1px solid #fde68a !important;
+      color: #92400e !important;
+    }
+    [data-theme="paper"] #review-preflight-btn:hover {
+      background: #fffbeb !important;
+    }
+    [data-theme="paper"] .status-hazard,
+    [data-theme="paper"] .preflight-check-pill .status-hazard {
+      background: #fef2f2 !important;
+      color: #991b1b !important;
+      border: 1px solid #fecaca !important;
+    }
+    [data-theme="paper"] .status-pass,
+    [data-theme="paper"] .preflight-check-pill .status-pass {
+      background: #f0fdf4 !important;
+      color: #166534 !important;
+      border: 1px solid #bbf7d0 !important;
+    }
+    [data-theme="paper"] #bear-dissent-block {
+      background: #fef2f2 !important;
+      border: 1px solid #fecaca !important;
+      border-left: 4px solid #b91c1c !important;
+      color: #0f172a !important;
+    }
+    [data-theme="paper"] .preflight-readiness-badge.blocked {
+      background: #fef2f2 !important;
+      color: #991b1b !important;
+      border: 1px solid #fecaca !important;
+    }
+    [data-theme="paper"] .compact-pf-badge.blocked {
+      background: #fef2f2 !important;
+      color: #991b1b !important;
+      border: 1px solid #fecaca !important;
+    }
+  </style>
+  <script src="lightweight-charts.standalone.production.js"></script>
+  <script src="synthesis_fixtures.js"></script>
+</head>
+<body>
+  <!-- ==========================================================================
+       COMMAND HEADER (DESKTOP_GLOBAL_NAV = STICKY_COMPACT)
+       Directly visible controls: Logo, Nav, Search, Depth, Horizon, Theme, Overflow.
+       0 Emojis! Lucide inline SVGs only.
+       ========================================================================== -->
+  <header class="command-header">
+    <div class="command-header-bar">
+      <!-- Zone 1: Brand & Navigation -->
+      <div class="brand-nav-group">
+        <a href="#analysis" class="brand-mark" aria-label="ARX Terminal Home">
+          <svg class="svg-icon" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          <span>ARX TERMINAL</span>
+        </a>
+        <span class="demo-asset-badge" id="demo-asset-tag" aria-label="Demo Asset">[DEMO ASSET]</span>
+        <nav class="nav-links" aria-label="Main Navigation">
+          <a class="nav-item" href="#radar">
+            <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+            Radar
+          </a>
+          <a class="nav-item active" href="#analysis">
+            <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Analysis
+          </a>
+          <a class="nav-item" href="#setups">
+            <svg class="svg-icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Setups
+          </a>
+          <a class="nav-item" href="#portfolio">
+            <svg class="svg-icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            Portfolio
+          </a>
+        </nav>
+      </div>
+
+      <!-- Zone 2: OmniSearch (Ctrl+K) -->
+      <div class="search-zone">
+        <div class="search-input-wrapper">
+          <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="omni-search-input" class="search-input" placeholder="Search ticker or ETF (e.g. NVDA, SPY, AMD, QQQ)..." autocomplete="off" aria-label="OmniSearch Ticker or Benchmark">
+          <kbd class="search-shortcut-kbd">Ctrl+K</kbd>
+        </div>
+        <div id="search-dropdown" class="search-dropdown" role="listbox" aria-label="Search Results"></div>
+      </div>
+
+      <!-- Zone 3: Command Controls -->
+      <div class="command-controls-group">
+        <!-- Depth Switch (State Authority: Header) -->
+        <div class="segmented-control" role="group" aria-label="Analysis Depth">
+          <button class="segment-btn btn-reset" data-depth="guided">Guided</button>
+          <button class="segment-btn btn-reset active" data-depth="standard">Standard</button>
+          <button class="segment-btn btn-reset" data-depth="quant">Quant</button>
+        </div>
+
+        <!-- Horizon Switch (State Authority: Header) -->
+        <div class="segmented-control" role="group" aria-label="Trading Horizon">
+          <button class="segment-btn btn-reset" data-horizon="intraday">Intraday</button>
+          <button class="segment-btn btn-reset active" data-horizon="swing">Swing</button>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button id="theme-btn" class="icon-ctrl-btn btn-reset" aria-label="Toggle Theme">
+          <svg id="theme-icon" class="svg-icon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+
+        <!-- Header Overflow Trigger (•••) -->
+        <div class="overflow-container">
+          <button id="header-utilities-btn" class="icon-ctrl-btn btn-reset" aria-haspopup="true" aria-expanded="false" aria-controls="header-overflow-menu" aria-label="Workspace Utilities">
+            <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+          </button>
+          <div id="header-overflow-menu" class="overflow-menu" role="menu" aria-label="Workspace Utilities Menu">
+            <button role="menuitem" id="menu-shortcuts-btn" class="overflow-item btn-reset">
+              <span>Keyboard Shortcuts</span>
+              <kbd class="search-shortcut-kbd">Ctrl+/</kbd>
+            </button>
+            <button role="menuitem" id="menu-guide-btn" class="overflow-item btn-reset">
+              <span>Guided Onboarding Tour</span>
+            </button>
+            <button role="menuitem" id="menu-privacy-btn" class="overflow-item btn-reset">
+              <span>Privacy & Telemetry</span>
+            </button>
+            <button role="menuitem" id="menu-purge-btn" class="overflow-item danger-action btn-reset">
+              <span>Purge Local Cache / Re-seed</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Macro Ticker Strip (26px height) -->
+    <div class="macro-strip">
+      <div class="macro-strip-inner">
+        <span class="macro-item"><strong>SPX</strong> 5,751.13 <span class="macro-val-up">+0.41%</span></span>
+        <span class="macro-item"><strong>QQQ</strong> 488.60 <span class="macro-val-up">+0.85%</span></span>
+        <span class="macro-item"><strong>VIX</strong> 14.82 <span class="macro-val-down">-3.12%</span></span>
+        <span class="macro-item"><strong>US10Y</strong> 4.02% <span class="macro-val-up">+2 bps</span></span>
+        <span class="macro-item"><strong>DXY</strong> 102.45 <span class="macro-val-down">-0.15%</span></span>
+        <span class="macro-item" style="color: var(--text-muted); font-size: 12px;">Market Regime: Low Volatility Expansion (Normalizing 2s10s)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       FIRST-VISIT WORKFLOW GUIDE (AUTO-SHOW ON FIRST VISIT, DISMISSIBLE, REOPEN)
+       ========================================================================== -->
+  <!-- ==========================================================================
+       P2-02: COMPACT COLLAPSIBLE WORKFLOW GUIDE (NO PERSISTENT STORAGE)
+       ========================================================================== -->
+  <section id="guide-banner" class="guide-banner" role="region" aria-label="Workflow Guide Navigation">
+    <div class="guide-banner-inner">
+      <div class="guide-header-strip">
+        <span class="guide-badge">WORKFLOW</span>
+        <span class="guide-steps">1. Scan Radar → 2. Review Triad → 3. Verify Ladder & Sizing → 4. Stage Simulation</span>
+      </div>
+      <div class="guide-actions">
+        <button id="toggle-guide-btn" class="guide-toggle-btn btn-reset" aria-expanded="false" aria-controls="guide-steps-body">
+          <span id="guide-toggle-label">Expand Guide</span>
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width:12px;height:12px;"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="guide-steps-body" class="guide-expandable-content" role="region" aria-label="Detailed Workflow Instructions">
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+        <div><strong>Step 1: Opportunity</strong><br><span style="font-size:11px;color:var(--text-muted)">Scan Radar for confirmed Stage 2 VCP setups within active buy zones.</span></div>
+        <div><strong>Step 2: Triad Review</strong><br><span style="font-size:11px;color:var(--text-muted)">Verify Technical, Fundamental Moat, Institutional Flow, and Macro Regime alignment.</span></div>
+        <div><strong>Step 3: Risk Calibration</strong><br><span style="font-size:11px;color:var(--text-muted)">Verify structural stop loss distance and ensure budget utilization is below 100%.</span></div>
+        <div><strong>Step 4: Epistemic Invalidation</strong><br><span style="font-size:11px;color:var(--text-muted)">Confront bearish dissent and thesis invalidation triggers prior to staging simulated plan.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       MAIN WORKSPACE
+       Desktop First Viewport (1440x900): Verdict Card + Price Chart
+       Both 100% visible simultaneously without vertical scrolling!
+       ========================================================================== -->
+  <main class="workspace-main">
+    <section class="first-viewport-row" aria-label="Decision Cockpit and Evidence Workspace">
+      <!-- 1. DECISION COCKPIT: VERDICT, LADDER, SIZING -->
+      <article id="verdict-card" class="verdict-card" aria-label="ARX Bottom Line and Execution Decision">
+        <!-- Ticker & Price Deck -->
+        <div class="deck-top">
+          <div class="symbol-title-group">
+            <div class="symbol-row">
+              <span id="card-symbol" class="symbol-text mono">NVDA</span>
+              <span id="card-exchange" class="macro-item" style="font-size: 12px; font-weight: 700;">NASDAQ</span>
+              <span id="card-status-badge" class="status-badge badge-positive">IN BUY ZONE</span>
+            </div>
+            <span id="card-name" class="asset-name">NVIDIA Corporation</span>
+          </div>
+          <!-- P1-04: Price Authority & Freshness Subdeck -->
+          <div class="price-group">
+            <div class="price-line">
+              <span id="card-price" class="price-text mono">$126.40</span>
+              <span id="card-delta" class="delta-text mono delta-up">+$4.12 (+3.37%)</span>
+            </div>
+            <div id="price-subdeck" class="price-subdeck" aria-label="Price Authority and Session Metadata">
+              <span id="price-role" class="price-tag">Setup Spot Reference</span> • 
+              <span id="price-session" class="price-tag">Market Closed</span> • 
+              <span id="price-asof" class="price-tag mono">As of 2026-10-06 20:00 EDT (Synthetic Fixture)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Verdict & Score Banner -->
+        <div class="verdict-banner">
+          <div class="verdict-info">
+            <span id="card-verdict-label" class="verdict-label">ARX BOTTOM LINE VERDICT</span>
+            <div id="card-verdict-title" class="verdict-title">Stage 2 VCP Breakout</div>
+            <!-- P1-02: Default Inline Rationale -->
+            <p id="card-verdict-summary" class="verdict-summary">Valid Stage 2 base with 3 contraction cycles (VCP). Breakout pivot at $125.80 confirmed on +48% above-average volume. Favorable 1:2.00 reward-to-risk ratio.</p>
+          </div>
+          <div class="score-box">
+            <div id="card-score-pill" class="score-pill">
+              <span id="card-score-num" class="score-num mono">88</span><span id="card-score-den" class="score-den">/100</span>
+            </div>
+            <button id="why-score-btn" class="why-score-btn btn-reset" aria-haspopup="dialog" aria-expanded="false" aria-controls="why-score-modal">
+              <span id="why-score-text">Why Score?</span>
+              <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Middle Panel: Execution Ladder (Stock) OR Benchmark Profile (ETF) -->
+        <div id="card-middle-panel" class="middle-panel">
+          <div class="panel-head">
+            <span id="middle-panel-title">RISK & EXECUTION LADDER</span>
+            <span id="middle-panel-sub" class="mono">R:R 1 : 2.00</span>
+          </div>
+          <div id="middle-panel-content" class="ladder-grid">
+            <div class="ladder-cell">
+              <span class="cell-lbl">Pivot</span>
+              <span id="cell-pivot" class="cell-val mono">$125.80</span>
+            </div>
+            <div class="ladder-cell">
+              <span class="cell-lbl">Entry Zone</span>
+              <span id="cell-entry" class="cell-val mono">$124.50 - $126.80</span>
+            </div>
+            <div class="ladder-cell">
+              <span class="cell-lbl">Stop Loss</span>
+              <span id="cell-stop" class="cell-val negative mono">$121.50 (-3.88%)</span>
+            </div>
+            <div class="ladder-cell">
+              <span class="cell-lbl">Target 1</span>
+              <span id="cell-target" class="cell-val positive mono">$136.20 (+7.75%)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P0-01: Decoupled Position Sizing & Risk Presentation -->
+        <div id="card-sizing-bar" class="sizing-bar">
+          <div class="sizing-meta">
+            <span id="sizing-line-1">Position Size: <span id="sizing-shares" class="sizing-bold mono">100 Shares</span> ($12,640.00 / 10.15% equity)</span>
+          </div>
+          <div class="sizing-matrix-grid">
+            <div class="sizing-cell">
+              <span class="sizing-lbl">Modeled Loss at Stop</span>
+              <span id="sizing-stop-loss" class="sizing-val negative mono">-$490.00 (-3.88% / 0.39% equity)</span>
+            </div>
+            <div class="sizing-cell">
+              <span class="sizing-lbl">Max Risk Allowance (2.0%)</span>
+              <span id="sizing-max-allowance" class="sizing-val mono">$2,490.00</span>
+            </div>
+            <div class="sizing-cell">
+              <span class="sizing-lbl">Budget Utilization</span>
+              <span id="sizing-utilization" class="sizing-val mono">19.68%</span>
+            </div>
+          </div>
+          <div class="sizing-disclaimer">
+            Modeled loss assumes exact stop execution at $121.50. Does not account for overnight gaps, liquidity blackouts, or broker slippage.
+          </div>
+        </div>
+
+        </article>
+
+      <!-- 2. PRICE EVIDENCE: INTERACTIVE CHART -->
+      <article id="chart-card" class="chart-card" aria-label="Interactive Candlestick and Technical Indicators Chart">
+        <div class="chart-header-bar">
+          <!-- Timeframe Selector Chips -->
+          <div class="interval-group" role="group" aria-label="Chart Timeframe">
+            <button class="interval-chip btn-reset" data-interval="1D">1D</button>
+            <button class="interval-chip btn-reset" data-interval="5D">5D</button>
+            <button class="interval-chip btn-reset active" data-interval="1M">1M</button>
+            <button class="interval-chip btn-reset" data-interval="6M">6M</button>
+            <button class="interval-chip btn-reset" data-interval="1Y">1Y</button>
+            <button class="interval-chip btn-reset" data-interval="3Y">3Y</button>
+            <button class="interval-chip btn-reset" data-interval="5Y">5Y</button>
+          </div>
+
+          <!-- Indicator Legend -->
+          <div class="indicator-legend">
+            <span class="legend-item"><span class="legend-dot" style="background: #38bdf8;"></span> 20 EMA</span>
+            <span class="legend-item"><span class="legend-dot" style="background: #f59e0b;"></span> Congress BUY</span>
+            <span id="legend-form4" class="legend-item"><span class="legend-dot" style="background: #10b981;"></span> Form 4 Insider</span>
+          </div>
+        </div>
+
+        <!-- Lightweight-charts Canvas Mount Point -->
+        <div id="chart-container" class="chart-container"></div>
+        
+        <!-- P2-01: Accessible Chart Event Badges & Legend -->
+        <div id="chart-event-badges" class="chart-event-badges-bar" role="region" aria-label="Key Chart Events & Filings">
+          <span class="event-badge-label">Key Events:</span>
+          <div id="chart-event-badge-list" style="display:inline-flex;gap:6px;flex-wrap:wrap;"></div>
+        </div>
+      </article>
+
+      <!-- 3. EXECUTION READINESS: FULL PRE-FLIGHT CHECKLIST -->
+        <div id="preflight-readiness-bar" class="preflight-card" role="region" aria-label="Preflight Execution Readiness">
+          <div class="preflight-header">
+            <div class="preflight-title-wrap">
+              <svg class="svg-icon" viewBox="0 0 24 24" style="width:14px;height:14px;color:var(--text-1);"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
+              <span class="preflight-title">PREFLIGHT EXECUTION READINESS</span>
+            </div>
+            <span id="preflight-readiness-badge" class="preflight-readiness-badge blocked">NOT CLEARED — EVALUATING</span>
+          </div>
+
+          <!-- 5-Check Status Badges Row -->
+          <div id="preflight-badges-row" class="preflight-badges-row preflight-badges-wide" role="list" aria-label="Pre-Flight Five Checks">
+            <div class="preflight-check-pill" role="listitem">
+              <span class="chk-tag">CHK-1 R:R</span>
+              <span id="chk-badge-1" class="chk-status status-pass">PASS</span>
+            </div>
+            <div class="preflight-check-pill" role="listitem">
+              <span class="chk-tag">CHK-2 STRUCTURE</span>
+              <span id="chk-badge-2" class="chk-status status-pass">PASS</span>
+            </div>
+            <div class="preflight-check-pill" role="listitem">
+              <span class="chk-tag">CHK-3 CAPITAL</span>
+              <span id="chk-badge-3" class="chk-status status-pass">PASS</span>
+            </div>
+            <div class="preflight-check-pill" role="listitem">
+              <span class="chk-tag">CHK-4 CATALYST</span>
+              <span id="chk-badge-4" class="chk-status status-hazard">HAZARD</span>
+            </div>
+            <div class="preflight-check-pill" role="listitem">
+              <span class="chk-tag">CHK-5 MACRO</span>
+              <span id="chk-badge-5" class="chk-status status-pass">PASS</span>
+            </div>
+          </div>
+
+          <!-- Active Blocker -->
+          <!-- Active Blocker & Remediation Row -->
+          <div class="preflight-remediation-row">
+            <div class="preflight-blocker-row">
+              <span class="blocker-label">Active Blocker:</span>
+              <span id="preflight-active-blocker" class="blocker-val has-blocker">Evaluating...</span>
+            </div>
+            <div id="preflight-change-callout" class="preflight-change-callout">
+              <strong>What Needs to Change:</strong>
+              <span id="preflight-what-needs-to-change">Wait for post-earnings binary risk window to clear (>7 days).</span>
+            </div>
+          </div>
+
+          <!-- Meta Footer & Drawer Toggle -->
+          <div class="preflight-meta-row">
+            <span id="preflight-evidence-meta">Evidence: SYNTHETIC FIXTURE · 5/5 Mandatory Checks</span>
+            <button id="toggle-preflight-details-btn" class="preflight-toggle-btn" type="button" aria-expanded="false" aria-controls="preflight-details-drawer">
+              <span>Inspect Telemetry</span>
+              <svg class="svg-icon preflight-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+          </div>
+
+          <!-- Expandable Details Drawer -->
+          <div id="preflight-details-drawer" class="preflight-details-drawer" aria-label="Detailed Preflight Telemetry">
+            <!-- Dynamically populated in updatePreflightUI -->
+          </div>
+        </div>
+
+      <!-- 4. EXECUTION ACTIONS: MIRRORED PRE-FLIGHT, BEARISH DISSENT, SIMULATED STAGING CTA -->
+              <div id="execution-action-card" class="execution-action-card" role="region" aria-label="Execution Action and Invalidation">
+        <!-- Compact Mirrored Pre-Flight Status Indicator -->
+        <div id="left-preflight-indicator" class="compact-preflight-bar" role="region" aria-label="Pre-Flight Clearance Summary">
+          <div class="compact-pf-header">
+            <span class="compact-pf-title">
+              <svg class="svg-icon" viewBox="0 0 24 24" style="width:13px;height:13px;vertical-align:middle;margin-right:4px;"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
+              PREFLIGHT CLEARANCE
+            </span>
+            <span id="compact-preflight-badge" class="compact-pf-badge blocked">NOT CLEARED (4/5)</span>
+          </div>
+          <div id="compact-preflight-blocker" class="compact-pf-subtext">Active Blocker: Imminent Earnings Hazard</div>
+        </div>
+
+<!-- P1-01: Bearish Dissent & Thesis Invalidation (Layout B - Epistemic Priority) -->
+        <div id="bear-dissent-block" class="dissent-card" role="region" aria-label="Bearish Dissent and Thesis Invalidation">
+          <div class="dissent-header">
+            <div class="dissent-badge-wrap">
+              <svg class="svg-icon" viewBox="0 0 24 24" style="width:14px;height:14px;color:var(--status-caution);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span class="dissent-badge">BEARISH DISSENT & THESIS INVALIDATION</span>
+            </div>
+            <span id="dissent-level" class="dissent-level mono">Priority: Epistemic Audit</span>
+          </div>
+          <div class="dissent-body">
+            <p id="dissent-invalidation" class="dissent-statement"><strong>Invalidation Trigger:</strong> Close below <strong class="mono">$121.50</strong> on volume &gt;50M invalidates Stage 2 VCP base structure.</p>
+            <p id="dissent-counter" class="dissent-detail"><strong>Counter-Thesis:</strong> Volume on prior contraction dried to 2.8% but remains vulnerable to broader semiconductor index (SOX) multiple compression.</p>
+          </div>
+        </div>
+
+        <!-- P1-03: Simulation Safety Controls & CTA -->
+        <div class="simulation-badge-bar">
+          <span class="simulation-badge">SYNTHETIC OFFLINE SIMULATION</span>
+        </div>
+        <button id="stage-trade-btn" class="cta-btn primary-cta btn-reset" aria-haspopup="dialog" aria-expanded="false" aria-controls="staging-modal">
+          <svg class="svg-icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span id="stage-btn-text">Prepare Simulated Trade Plan</span>
+        </button>
+        <div id="cta-disabled-reason" class="cta-disabled-reason" style="display: none;" aria-live="polite">
+          <span class="disabled-reason-text" id="disabled-reason-text">⚠️ Simulated Staging Locked: Pre-Flight clearance required.</span>
+          <button id="review-preflight-btn" class="review-blockers-btn btn-reset" type="button" aria-controls="preflight-readiness-bar">
+            Review Pre-Flight blockers →
+          </button>
+        </div>
+
+        <!-- Deck Footnote / Provenance Subtitle -->
+        <div class="deck-footnote" style="font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between;">
+          <span id="card-data-freshness">Illustrative Synthetic Fixture • Static Prototype</span>
+          <span id="card-volume-statement">Volume: 54.2M (148% vs 50D)</span>
+        </div>
+      
+      </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+       BELOW-FIRST-ROW SUPPORTING CONTENT (SCROLLABLE BELOW 600px FOLD)
+       ========================================================================== -->
+    <section class="secondary-workspace-section" aria-label="Supporting Analytical Pillars and Intelligence Feeds">
+      <div class="section-tab-bar" role="tablist">
+        <button class="section-tab active btn-reset" role="tab" aria-selected="true" data-tab="pillars">
+          <svg class="svg-icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+          Multi-Pillar Confluence
+        </button>
+        <button class="section-tab btn-reset" role="tab" aria-selected="false" data-tab="smartmoney">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Smart Money Disclosures
+        </button>
+        <button class="section-tab btn-reset" role="tab" aria-selected="false" data-tab="solvency">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          Fundamental & Risk Profile
+        </button>
+      </div>
+
+      <!-- Tab Panel 1: Multi-Pillar Grid -->
+      <div id="panel-pillars" class="pillars-grid" role="tabpanel"></div>
+
+      <!-- Tab Panel 2: Smart Money Feeds -->
+      <div id="panel-smartmoney" class="two-col-supporting" style="display: none;" role="tabpanel">
+        <div class="feed-card">
+          <div class="feed-title">
+            <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/></svg>
+            Congressional Trading Filings (STOCK Act)
+          </div>
+          <div id="congress-feed-list" style="display: flex; flex-direction: column; gap: 6px;"></div>
+        </div>
+        <div class="feed-card">
+          <div class="feed-title">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            SEC Form 4 Corporate Insider Disclosures
+          </div>
+          <div id="insider-feed-list" style="display: flex; flex-direction: column; gap: 6px;"></div>
+        </div>
+      </div>
+
+      <!-- Tab Panel 3: Fundamental / ETF Risk Profile -->
+      <div id="panel-solvency" class="feed-card" style="display: none;" role="tabpanel">
+        <div class="feed-title">Fundamental Solvency & Drag Analysis</div>
+        <div id="solvency-content" style="font-size: 13px; color: var(--text-2); line-height: 1.5;"></div>
+      </div>
+
+      <!-- Global Provenance Bar -->
+      <footer class="provenance-bar">
+        <span>As of: <strong id="prov-date" class="mono">2026-10-06 (Static Baseline Fixture)</strong></span>
+        <span>Authority: <strong id="prov-auth">ARX Ephemeral Prototype Fixture Authority (Offline Simulation)</strong></span>
+        <span>Risk Floor: <strong>2.0% Maximum Account Risk ($2,490.00)</strong></span>
+      </footer>
+    </section>
+  </main>
+
+  <!-- ==========================================================================
+       MODAL 1: WHY SCORE? / ETF COMPOSITION EXPLANATION
+       ========================================================================== -->
+  <div id="why-score-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="why-score-modal-title">
+    <div class="modal-dialog">
+      <div class="modal-head">
+        <h3 id="why-score-modal-title" class="modal-title">ARX Setup Score Attribution</h3>
+        <button id="why-score-close-btn" class="modal-close-btn btn-reset" aria-label="Close Dialog">
+          <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="why-score-body" class="modal-body"></div>
+      <div class="modal-foot">
+        <button id="why-score-dismiss-btn" class="btn-secondary btn-reset">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL 2: STAGING CONFIRMATION
+       ========================================================================== -->
+  <div id="staging-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="staging-modal-title">
+    <div class="modal-dialog">
+      <div class="modal-head">
+        <h3 id="staging-modal-title" class="modal-title">Stage Simulated Execution Plan</h3>
+        <button id="staging-close-btn" class="modal-close-btn btn-reset" aria-label="Close Dialog">
+          <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="staging-body" class="modal-body"></div>
+      <div class="modal-foot">
+        <button id="stage-cancel-btn" class="btn-secondary btn-reset">Cancel</button>
+        <button id="stage-confirm-btn" class="btn-primary btn-reset">Confirm Simulated Stage</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL 3: PURGE CACHE CONFIRMATION
+       ========================================================================== -->
+  <div id="purge-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="purge-modal-title">
+    <div class="modal-dialog">
+      <div class="modal-head">
+        <h3 id="purge-modal-title" class="modal-title" style="color: var(--status-negative);">Confirm Cache & Workspace Purge</h3>
+        <button id="purge-close-btn" class="modal-close-btn btn-reset" aria-label="Close Dialog">
+          <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to purge all local simulation cache and re-seed workspace state?</p>
+        <p>This action will reset dismissed guides, restore baseline fixtures, and re-initialize the terminal state.</p>
+      </div>
+      <div class="modal-foot">
+        <button id="purge-cancel-btn" class="btn-secondary btn-reset">Cancel</button>
+        <button id="purge-confirm-btn" class="btn-danger btn-reset">Purge & Re-Seed</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL 4: KEYBOARD SHORTCUTS
+       ========================================================================== -->
+  <div id="shortcuts-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="shortcuts-modal-title">
+    <div class="modal-dialog">
+      <div class="modal-head">
+        <h3 id="shortcuts-modal-title" class="modal-title">ARX Terminal Keyboard Shortcuts</h3>
+        <button id="shortcuts-close-btn" class="modal-close-btn btn-reset" aria-label="Close Dialog">
+          <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding: 4px 0;">
+          <span>OmniSearch</span><kbd class="search-shortcut-kbd">Ctrl+K</kbd>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding: 4px 0;">
+          <span>Keyboard Shortcuts</span><kbd class="search-shortcut-kbd">Ctrl+/</kbd>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding: 4px 0;">
+          <span>Close Open Dialog / Menu</span><kbd class="search-shortcut-kbd">Escape</kbd>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding: 4px 0;">
+          <span>Toggle Dark / Paper Theme</span><kbd class="search-shortcut-kbd">Alt+T</kbd>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button id="shortcuts-dismiss-btn" class="btn-secondary btn-reset">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MOBILE PERSISTENT DOCK (COARSE POINTERS >= 44PX)
+       ========================================================================== -->
+  <nav class="mobile-bottom-dock" aria-label="Mobile Navigation Dock">
+    <a href="#radar" class="dock-btn">
+      <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/></svg>
+      Radar
+    </a>
+    <a href="#analysis" class="dock-btn active">
+      <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Analysis
+    </a>
+    <a href="#setups" class="dock-btn">
+      <svg class="svg-icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      Setups
+    </a>
+    <a href="#portfolio" class="dock-btn">
+      <svg class="svg-icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      Portfolio
+    </a>
+  </nav>
+
+  <!-- ==========================================================================
+       APPLICATION LOGIC & RESIZEOBSERVER ENGINE
+       ========================================================================== -->
+  <script>
+    // State Variables
+    let currentTicker = 'NVDA';
+    let chart = null;
+    let candleSeries = null;
+    let emaLineSeries = null;
+    let lastActiveTrigger = null;
+
+    // P2-02: Workflow Guide State (In-Memory Only, No Persistent Storage, Default Collapsed)
+    let guideExpanded = false;
+
+    function initWorkflowGuide() {
+      const toggleBtn = document.getElementById('toggle-guide-btn');
+      const body = document.getElementById('guide-steps-body');
+      const label = document.getElementById('guide-toggle-label');
+      if (!toggleBtn || !body) return;
+
+      toggleBtn.addEventListener('click', () => {
+        guideExpanded = !guideExpanded;
+        body.classList.toggle('is-expanded', guideExpanded);
+        toggleBtn.setAttribute('aria-expanded', String(guideExpanded));
+        label.textContent = guideExpanded ? 'Collapse Guide' : 'Expand Guide';
+      });
+    }
+
+    // Explanation Normalization Helper (P0-02)
+    function getNormalizedPillarExplanation(p) {
+      if (!p) return 'Explanation unavailable in this synthetic fixture';
+      const val = p.explanation || p.detail || p.summary;
+      if (typeof val === 'string' && val.trim().length > 0) return val.trim();
+      return 'Explanation unavailable in this synthetic fixture';
+    }
+
+    // Instrument Classification
+    function isEtfInstrument(data) {
+      return data.security_type === 'ETF' || data.secType === 'ETF' || data.executionEligibility === 'ETF_EXECUTION';
+    }
+
+    // Chart Initialization with LightweightCharts
+    function initChart() {
+      const container = document.getElementById('chart-container');
+      const isPaper = document.documentElement.getAttribute('data-theme') === 'paper';
+
+      chart = LightweightCharts.createChart(container, {
+        width: container.clientWidth || 600,
+        height: container.clientHeight || 450,
+        layout: {
+          background: { color: 'transparent' },
+          textColor: isPaper ? '#334155' : '#94a3b8',
+          fontSize: 12,
+          fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif'
+        },
+        grid: {
+          vertLines: { color: isPaper ? '#f1f5f9' : '#141c2e' },
+          horzLines: { color: isPaper ? '#f1f5f9' : '#141c2e' }
+        },
+        crosshair: {
+          mode: 1
+        },
+        rightPriceScale: {
+          borderColor: isPaper ? '#cbd5e1' : '#2b3a52',
+          autoScale: true
+        },
+        timeScale: {
+          borderColor: isPaper ? '#cbd5e1' : '#2b3a52',
+          timeVisible: true
+        }
+      });
+
+      candleSeries = chart.addCandlestickSeries({
+        upColor: '#10b981',
+        downColor: '#f43f5e',
+        borderUpColor: '#10b981',
+        borderDownColor: '#f43f5e',
+        wickUpColor: '#10b981',
+        wickDownColor: '#f43f5e'
+      });
+
+      emaLineSeries = chart.addLineSeries({
+        color: '#38bdf8',
+        lineWidth: 2,
+        title: '20 EMA'
+      });
+
+      // ResizeObserver Implementation (Section 13)
+      // Reacts when container size changes WITHOUT window resize event!
+      const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          if (chart && entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+            chart.applyOptions({
+              width: entry.contentRect.width,
+              height: entry.contentRect.height
+            });
+            chart.timeScale().fitContent();
+          }
+        }
+      });
+      resizeObserver.observe(container);
+    }
+
+    // Update Theme in Chart
+    function updateChartTheme() {
+      if (!chart) return;
+      const isPaper = document.documentElement.getAttribute('data-theme') === 'paper';
+      chart.applyOptions({
+        layout: {
+          textColor: isPaper ? '#334155' : '#94a3b8'
+        },
+        grid: {
+          vertLines: { color: isPaper ? '#f1f5f9' : '#141c2e' },
+          horzLines: { color: isPaper ? '#f1f5f9' : '#141c2e' }
+        },
+        rightPriceScale: {
+          borderColor: isPaper ? '#cbd5e1' : '#2b3a52'
+        },
+        timeScale: {
+          borderColor: isPaper ? '#cbd5e1' : '#2b3a52'
+        }
+      });
+    }
+
+    // Load and Render Active Ticker
+
+    function updatePreflightUI(fixture, isEtf) {
+      const pf = fixture.preflight;
+      const bar = document.getElementById('preflight-readiness-bar');
+      const badge = document.getElementById('preflight-readiness-badge');
+      const blockerEl = document.getElementById('preflight-active-blocker');
+      const changeEl = document.getElementById('preflight-what-needs-to-change');
+      const metaEl = document.getElementById('preflight-evidence-meta');
+      const compactBadge = document.getElementById('compact-preflight-badge');
+      const compactBlocker = document.getElementById('compact-preflight-blocker');
+      const drawer = document.getElementById('preflight-details-drawer');
+      const ctaBtn = document.getElementById('stage-trade-btn');
+      const ctaText = document.getElementById('stage-btn-text');
+
+      if (!bar || !pf) return;
+
+      if (isEtf || pf.isApplicable === false) {
+        badge.className = 'preflight-readiness-badge';
+        badge.style.background = 'rgba(148, 163, 184, 0.15)';
+        badge.style.border = '1px solid rgba(148, 163, 184, 0.3)';
+        badge.style.color = 'var(--text-muted)';
+        badge.textContent = 'SINGLE-STOCK N/A (INDEX INSTRUMENT)';
+        
+        ['1', '2', '3', '4', '5'].forEach(i => {
+          const el = document.getElementById('chk-badge-' + i);
+          if (el) {
+            el.className = 'chk-status status-na';
+            el.textContent = 'N/A';
+          }
+        });
+
+        blockerEl.textContent = pf.activeBlocker;
+        blockerEl.className = 'blocker-val';
+        changeEl.textContent = pf.whatNeedsToChange;
+        metaEl.textContent = 'Benchmark Instrument · Basket Macro Role';
+        if (compactBadge) {
+          compactBadge.className = 'compact-pf-badge na';
+          compactBadge.textContent = 'N/A (INDEX)';
+        }
+        if (compactBlocker) {
+          compactBlocker.textContent = 'Single-stock execution N/A for Index Instruments.';
+        }
+
+        // Lock Staging
+        ctaBtn.className = 'cta-btn disabled-cta btn-reset locked-cta';
+        ctaBtn.disabled = true;
+        ctaBtn.setAttribute('aria-disabled', 'true');
+        ctaText.textContent = 'Simulated Trade Plan Locked — Index Instrument';
+        window.isCurrentPreFlightCleared = () => false;
+        const ctaReasonEtf = document.getElementById('cta-disabled-reason');
+        const reasonTextEtf = document.getElementById('disabled-reason-text');
+        if (ctaReasonEtf) {
+          ctaReasonEtf.style.display = 'flex';
+          if (reasonTextEtf) reasonTextEtf.textContent = '⚠️ Simulated Staging Locked: Single-stock execution N/A for Index Instruments.';
+        }
+
+        // Render Drawer Cards
+        if (drawer && Array.isArray(pf.checks)) {
+          drawer.innerHTML = pf.checks.map(c => `
+            <div class="detail-check-card">
+              <div class="detail-check-header">
+                <span class="detail-check-title">${c.id}: ${c.name}</span>
+                <span class="chk-status status-na">N/A</span>
+              </div>
+              <div class="detail-check-meta">
+                <span>Authority: ${c.authority}</span>
+                <span>${c.timestamp}</span>
+              </div>
+              <p class="detail-check-desc">${c.explanation}</p>
+            </div>
+          `).join('');
+        }
+        return;
+      }
+
+      // Equity Pre-Flight Handling
+      const isCleared = (pf.isCleared === true) && (fixture.isActionable === true);
+      window.isCurrentPreFlightCleared = () => isCleared;
+
+      if (isCleared) {
+        badge.className = 'preflight-readiness-badge cleared';
+        badge.style.background = '';
+        badge.style.border = '';
+        badge.style.color = '';
+        badge.textContent = '🟢 CLEARED FOR SIMULATED PLAN';
+
+        blockerEl.textContent = 'None — All 5 Mandatory Checks Certified';
+        blockerEl.className = 'blocker-val';
+        changeEl.textContent = pf.whatNeedsToChange || 'Execution criteria satisfied. Simulated trade staging unlocked.';
+
+        ctaBtn.className = 'cta-btn primary-cta btn-reset';
+        ctaBtn.disabled = false;
+        ctaBtn.setAttribute('aria-disabled', 'false');
+        ctaText.textContent = 'Prepare Simulated Trade Plan';
+        if (compactBadge) {
+          compactBadge.className = 'compact-pf-badge cleared';
+          compactBadge.textContent = '🟢 CLEARED (5/5)';
+        }
+        if (compactBlocker) {
+          compactBlocker.textContent = 'All 5 mandatory checks certified.';
+        }
+        const ctaReasonClear = document.getElementById('cta-disabled-reason');
+        if (ctaReasonClear) ctaReasonClear.style.display = 'none';
+      } else {
+        badge.className = 'preflight-readiness-badge blocked';
+        badge.style.background = '';
+        badge.style.border = '';
+        badge.style.color = '';
+        badge.textContent = `⚠️ NOT CLEARED — ${pf.activeBlocker}`;
+
+        blockerEl.textContent = pf.activeBlocker;
+        blockerEl.className = 'blocker-val has-blocker';
+        changeEl.textContent = pf.whatNeedsToChange;
+
+        ctaBtn.className = 'cta-btn disabled-cta btn-reset locked-cta';
+        ctaBtn.disabled = true;
+        ctaBtn.setAttribute('aria-disabled', 'true');
+        ctaText.textContent = 'Simulated Trade Plan Locked — Pre-Flight Requirements Unmet';
+        if (compactBadge) {
+          compactBadge.className = 'compact-pf-badge blocked';
+          compactBadge.textContent = `⚠️ NOT CLEARED (${pf.passedCount || 0}/5)`;
+        }
+        if (compactBlocker) {
+          compactBlocker.textContent = `Active Blocker: ${pf.activeBlocker}`;
+        }
+        const ctaReason = document.getElementById('cta-disabled-reason');
+        const reasonText = document.getElementById('disabled-reason-text');
+        if (ctaReason) {
+          ctaReason.style.display = 'flex';
+          if (reasonText) reasonText.textContent = `⚠️ Simulated Staging Locked: ${pf.activeBlocker}`;
+        }
+      }
+
+      const displayFreshness = pf.evidenceFreshness === 'LIVE' ? 'SYNTHETIC FIXTURE' : pf.evidenceFreshness;
+      metaEl.textContent = `Evidence: ${displayFreshness} · Checks Passed: ${pf.passedCount}/${pf.totalMandatory || 5} · Status: ${isCleared ? 'VERIFIED' : 'RESTRICTED'}`;
+
+      // Update Individual Badges
+      if (Array.isArray(pf.checks)) {
+        pf.checks.forEach((c, idx) => {
+          const badgeEl = document.getElementById(`chk-badge-${idx + 1}`);
+          if (badgeEl) {
+            badgeEl.textContent = c.badge;
+            if (c.status === 'PASS') {
+              badgeEl.className = 'chk-status status-pass';
+            } else if (c.status === 'HAZARD' || c.status === 'FAIL') {
+              badgeEl.className = 'chk-status status-hazard';
+            } else if (c.status === 'PARTIAL') {
+              badgeEl.className = 'chk-status status-partial';
+            } else if (c.badge === 'HIGH VIX') {
+              badgeEl.className = 'chk-status status-high-vix';
+            } else if (c.status === 'STALE') {
+              badgeEl.className = 'chk-status status-stale';
+            } else {
+              badgeEl.className = 'chk-status status-unavail';
+            }
+          }
+        });
+
+        // Drawer
+        if (drawer) {
+          drawer.innerHTML = pf.checks.map(c => `
+            <div class="detail-check-card">
+              <div class="detail-check-header">
+                <span class="detail-check-title">${c.id}: ${c.name} (${c.rule})</span>
+                <span class="chk-status ${c.status === 'PASS' ? 'status-pass' : (c.status === 'HAZARD' || c.status === 'FAIL') ? 'status-hazard' : 'status-unavail'}">${c.badge}</span>
+              </div>
+              <div class="detail-check-meta">
+                <span>Reading: <strong>${c.value}</strong></span>
+                <span>Authority: ${c.authority}</span>
+                <span>${c.timestamp}</span>
+              </div>
+              <p class="detail-check-desc">${c.explanation}</p>
+              ${c.status !== 'PASS' ? `<p class="detail-check-action">Action: ${c.recoveryAction}</p>` : ''}
+            </div>
+          `).join('');
+        }
+      }
+    }
+
+    function renderTicker(symbol) {
+      window.renderTicker = renderTicker;
+      currentTicker = symbol;
+      const fixture = window.ARX_SYNTHESIS_FIXTURES.states[symbol];
+      if (!fixture) return;
+
+      const isEtf = isEtfInstrument(fixture);
+
+      // 1. Deck Top
+      document.getElementById('card-symbol').textContent = fixture.symbol;
+      document.getElementById('card-exchange').textContent = fixture.exchange;
+      document.getElementById('card-name').textContent = fixture.name;
+      document.getElementById('card-price').textContent = `$${fixture.currentPrice.toFixed(2)}`;
+      
+      const deltaEl = document.getElementById('card-delta');
+      const sign = fixture.priceDeltaDollar >= 0 ? '+' : '';
+      deltaEl.textContent = `${sign}$${fixture.priceDeltaDollar.toFixed(2)} (${sign}${fixture.priceDeltaPct.toFixed(2)}%)`;
+      deltaEl.className = fixture.priceDeltaDollar >= 0 ? 'delta-text mono delta-up' : 'delta-text mono delta-down';
+
+      // P1-04: Price Authority & Freshness Subdeck
+      const priceRoleEl = document.getElementById('price-role');
+      const priceSessionEl = document.getElementById('price-session');
+      const priceAsofEl = document.getElementById('price-asof');
+      if (priceRoleEl) priceRoleEl.textContent = isEtf ? 'Benchmark Spot Reference' : 'Setup Spot Reference';
+      if (priceSessionEl) priceSessionEl.textContent = 'Market Closed';
+      if (priceAsofEl) priceAsofEl.textContent = `As of ${fixture.provenance.asOf} (Synthetic Fixture)`;
+
+      const statusBadge = document.getElementById('card-status-badge');
+      if (isEtf) {
+        statusBadge.textContent = 'CORE BENCHMARK';
+        statusBadge.className = 'status-badge badge-info';
+      } else if (fixture.decisionState === 'ACTIONABLE_SETUP') {
+        statusBadge.textContent = 'IN BUY ZONE';
+        statusBadge.className = 'status-badge badge-positive';
+      } else if (fixture.decisionState === 'VALID_SETUP') {
+        statusBadge.textContent = fixture.executionStatus.replace(/_/g, ' ');
+        statusBadge.className = 'status-badge badge-info';
+      } else if (fixture.decisionState === 'EVIDENCE_INCOMPLETE') {
+        statusBadge.textContent = 'STALE EVIDENCE';
+        statusBadge.className = 'status-badge badge-caution';
+      } else if (fixture.decisionState === 'UNVERIFIED') {
+        statusBadge.textContent = 'FAIL CLOSED / INELIGIBLE';
+        statusBadge.className = 'status-badge badge-negative';
+      }
+
+      // 2. Verdict & Score Banner
+      const verdictLabel = document.getElementById('card-verdict-label');
+      const verdictTitle = document.getElementById('card-verdict-title');
+      const verdictSummary = document.getElementById('card-verdict-summary');
+      const scoreNum = document.getElementById('card-score-num');
+      const scoreDen = document.getElementById('card-score-den');
+      const whyScoreText = document.getElementById('why-score-text');
+
+      if (isEtf) {
+        verdictLabel.textContent = 'ARX BENCHMARK CONTEXT';
+        verdictTitle.textContent = fixture.macroContext.posture;
+        if (verdictSummary) {
+          verdictSummary.textContent = `${fixture.name} serves as macro ${fixture.macroContext.regime.toLowerCase()} reference benchmark. Single-stock setup scoring suppressed under quantitative integrity rules.`;
+        }
+        scoreNum.textContent = 'N/A';
+        scoreDen.textContent = '';
+        whyScoreText.textContent = 'Benchmark Role';
+      } else {
+        verdictLabel.textContent = 'ARX BOTTOM LINE VERDICT';
+        verdictTitle.textContent = fixture.pattern;
+        
+        // P1-02: Default Inline Rationale
+        if (verdictSummary) {
+          if (fixture.decisionState === 'ACTIONABLE_SETUP') {
+            verdictSummary.textContent = `Valid Stage 2 base with 3 contraction cycles (VCP). Breakout pivot at $${fixture.levels.pivot.toFixed(2)} confirmed on +48% above-average volume. Favorable ${fixture.levels.riskRewardDisplay} reward-to-risk ratio.`;
+          } else if (fixture.decisionState === 'WAITING_PULLBACK') {
+            verdictSummary.textContent = `Extended +1.4% above optimal pivot ($${fixture.levels.pivot.toFixed(2)}). Setup valid but entry paused awaiting orderly pullback to test 10 EMA support.`;
+          } else if (fixture.decisionState === 'EVIDENCE_INCOMPLETE') {
+            verdictSummary.textContent = `Market data stale >24 hours. Tape synchronization incomplete; actionability suppressed under ARX quantitative integrity rules.`;
+          } else if (fixture.decisionState === 'UNVERIFIED') {
+            verdictSummary.textContent = `Microcap speculative security ($${fixture.currentPrice.toFixed(2)}) fails institutional liquidity and solvency floors. Defensive execution prohibition enforced.`;
+          } else {
+            verdictSummary.textContent = `Position advancing along 10 EMA; monitoring towards Target 1 ($${fixture.levels?.target1 ? fixture.levels.target1.toFixed(2) : '228.00'}).`;
+          }
+        }
+        scoreNum.textContent = fixture.confluenceScore !== null ? Math.round(fixture.confluenceScore) : 'N/A';
+        scoreDen.textContent = fixture.confluenceScore !== null ? '/100' : '';
+        whyScoreText.textContent = 'Why Score?';
+      }
+
+      // 3. Middle Panel (Ladder vs ETF Profile)
+      const middleTitle = document.getElementById('middle-panel-title');
+      const middleSub = document.getElementById('middle-panel-sub');
+      const middleGrid = document.getElementById('middle-panel-content');
+
+      if (isEtf) {
+        middleTitle.textContent = 'ETF BENCHMARK PROFILE';
+        middleSub.textContent = `AUM ${fixture.etfProfile.aum}`;
+        middleGrid.innerHTML = `
+          <div class="ladder-cell">
+            <span class="cell-lbl">Category</span>
+            <span class="cell-val" style="font-size: 12px;">${fixture.etfProfile.category}</span>
+          </div>
+          <div class="ladder-cell">
+            <span class="cell-lbl">Expense Ratio</span>
+            <span class="cell-val mono">${fixture.etfProfile.expenseRatio}</span>
+          </div>
+          <div class="ladder-cell">
+            <span class="cell-lbl">Tracking Error</span>
+            <span class="cell-val mono">${fixture.etfProfile.trackingError}</span>
+          </div>
+          <div class="ladder-cell">
+            <span class="cell-lbl">Benchmark Beta</span>
+            <span class="cell-val mono">${fixture.etfProfile.beta}</span>
+          </div>
+        `;
+      } else {
+        middleTitle.textContent = 'RISK & EXECUTION LADDER';
+        middleSub.textContent = fixture.levels.riskRewardDisplay;
+        middleGrid.innerHTML = `
+          <div class="ladder-cell">
+            <span class="cell-lbl">Pivot</span>
+            <span class="cell-val mono">$${fixture.levels.pivot.toFixed(2)}</span>
+          </div>
+          <div class="ladder-cell">
+            <span class="cell-lbl">Entry Zone</span>
+            <span class="cell-val mono">$${fixture.levels.entryMin.toFixed(2)} - $${fixture.levels.entryMax.toFixed(2)}</span>
+          </div>
+          <div class="ladder-cell">
+            <span class="cell-lbl">Stop Loss</span>
+            <span class="cell-val negative mono">$${fixture.levels.stopLoss.toFixed(2)} (${fixture.levels.stopDistancePct}%)</span>
+          </div>
+          <div class="ladder-cell">
+            <span class="cell-lbl">Target 1</span>
+            <span class="cell-val positive mono">$${fixture.levels.target1.toFixed(2)} (+${fixture.levels.rewardDistancePct}%)</span>
+          </div>
+        `;
+      }
+
+      // 4. P0-01: Decoupled Position Sizing & Risk Presentation
+      const sizingL1 = document.getElementById('sizing-line-1');
+      const stopLossEl = document.getElementById('sizing-stop-loss');
+      const maxAllowanceEl = document.getElementById('sizing-max-allowance');
+      const utilEl = document.getElementById('sizing-utilization');
+      const maxBudgetDollar = window.ARX_SYNTHESIS_FIXTURES.account_context.maxRiskDollarBudget;
+
+      if (isEtf) {
+        sizingL1.innerHTML = `<span class="sizing-bold">Asset Allocation Model:</span> Core Strategic Index Anchor (${fixture.etfProfile.holdingsCount} holdings)`;
+        if (stopLossEl) {
+          stopLossEl.textContent = 'N/A (Benchmark)';
+          stopLossEl.className = 'sizing-val mono';
+        }
+        if (maxAllowanceEl) maxAllowanceEl.textContent = `$${maxBudgetDollar.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+        if (utilEl) {
+          utilEl.textContent = 'N/A (Multi-Asset)';
+          utilEl.className = 'sizing-val mono';
+        }
+      } else if (fixture.sizing && fixture.sizing.shares > 0) {
+        sizingL1.innerHTML = `Position Size: <span class="sizing-bold mono">${fixture.sizing.shares} Shares</span> ($${fixture.sizing.capitalAllocated.toLocaleString('en-US', {minimumFractionDigits: 2})} / ${fixture.sizing.portfolioAllocationPct}% equity)`;
+        if (stopLossEl) {
+          stopLossEl.textContent = `-$${fixture.sizing.modeledStopLossDollar.toFixed(2)} (${fixture.levels.stopDistancePct.toFixed(2)}% / ${fixture.sizing.modeledStopLossEquityPct.toFixed(2)}% equity)`;
+          stopLossEl.className = 'sizing-val negative mono';
+        }
+        if (maxAllowanceEl) maxAllowanceEl.textContent = `$${maxBudgetDollar.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+        if (utilEl) {
+          utilEl.textContent = `${fixture.sizing.riskBudgetUtilizationPct.toFixed(2)}%`;
+          utilEl.className = 'sizing-val positive mono';
+        }
+      } else {
+        sizingL1.innerHTML = `<span class="sizing-bold">Position Size:</span> Ineligible / Fail-Closed`;
+        if (stopLossEl) {
+          stopLossEl.textContent = '$0.00 (No Allocation)';
+          stopLossEl.className = 'sizing-val mono';
+        }
+        if (maxAllowanceEl) maxAllowanceEl.textContent = `$${maxBudgetDollar.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+        if (utilEl) {
+          utilEl.textContent = '0.00%';
+          utilEl.className = 'sizing-val mono';
+        }
+      }
+
+      // P1-01: Bearish Dissent & Thesis Invalidation (Layout B)
+      const dissentInvalidation = document.getElementById('dissent-invalidation');
+      const dissentCounter = document.getElementById('dissent-counter');
+      const dissentLevel = document.getElementById('dissent-level');
+
+      if (dissentInvalidation && dissentCounter && dissentLevel) {
+        if (isEtf) {
+          dissentLevel.textContent = 'Macro Floor: Strategic Allocation';
+          dissentInvalidation.innerHTML = `<strong>Invalidation Trigger:</strong> S&P 500 / Nasdaq close below 200-day simple moving average.`;
+          dissentCounter.innerHTML = `<strong>Counter-Thesis:</strong> Secular growth multiple decompression under persistent terminal rate inflation.`;
+        } else if (fixture.decisionState === 'ACTIONABLE_SETUP') {
+          dissentLevel.textContent = 'Priority: Epistemic Invalidation Audit';
+          dissentInvalidation.innerHTML = `<strong>Invalidation Trigger:</strong> Close below <strong class="mono">$${fixture.levels.stopLoss.toFixed(2)}</strong> on volume &gt;50M invalidates Stage 2 VCP base structure.`;
+          dissentCounter.innerHTML = `<strong>Counter-Thesis:</strong> Volume on prior contraction dried to 2.8% but remains vulnerable to broader semiconductor index (SOX) multiple compression.`;
+        } else if (fixture.decisionState === 'WAITING_PULLBACK') {
+          dissentLevel.textContent = 'Priority: Extended Chase Invalidation';
+          dissentInvalidation.innerHTML = `<strong>Invalidation Trigger:</strong> Close below breakout pivot <strong class="mono">$${fixture.levels.pivot.toFixed(2)}</strong> indicates false breakout / bull trap.`;
+          dissentCounter.innerHTML = `<strong>Counter-Thesis:</strong> R:R deteriorated to 1.12R due to +1.4% extension. Buying without pullback violates institutional discipline.`;
+        } else if (fixture.decisionState === 'EVIDENCE_INCOMPLETE') {
+          dissentLevel.textContent = 'Critical Flaw: Evidence Stale';
+          dissentInvalidation.innerHTML = `<strong>Invalidation Trigger:</strong> Tape feed delay &gt;24 hours violates data integrity floor.`;
+          dissentCounter.innerHTML = `<strong>Counter-Thesis:</strong> Underwriting risk impossible without synchronized primary exchange quote feeds.`;
+        } else if (fixture.decisionState === 'UNVERIFIED') {
+          dissentLevel.textContent = 'Defensive Prohibition: Ineligible Asset';
+          dissentInvalidation.innerHTML = `<strong>Invalidation Trigger:</strong> OTC micro-cap security fails liquidity and solvency floors.`;
+          dissentCounter.innerHTML = `<strong>Counter-Thesis:</strong> Capital allocation strictly prohibited under ARX risk preservation mandates.`;
+        } else {
+          dissentLevel.textContent = 'Position Monitoring Floor';
+          dissentInvalidation.innerHTML = `<strong>Invalidation Trigger:</strong> Close below <strong class="mono">$${fixture.levels?.stopLoss ? fixture.levels.stopLoss.toFixed(2) : '218.50'}</strong> triggers protective profit stop.`;
+          dissentCounter.innerHTML = `<strong>Counter-Thesis:</strong> Maturing uptrend approaching Target 1; trailing stops must be respected.`;
+        }
+      }
+
+      // Pre-Flight Readiness Integration (Candidate V2 - Authoritative CTA Governance)
+      updatePreflightUI(fixture, isEtf);
+
+      // 6. Volume Statement & Provenance
+      document.getElementById('card-data-freshness').textContent = `${fixture.provenance.dataMode} • ${fixture.provenance.quoteFreshness}`;
+      document.getElementById('card-volume-statement').textContent = `Volume: ${fixture.volumeStatement}`;
+      document.getElementById('prov-date').textContent = fixture.provenance.asOf;
+      document.getElementById('prov-auth').textContent = fixture.provenance.authority;
+
+      // 7. P2-01: Update Chart Data & Compact Accessible Markers
+      const eventListEl = document.getElementById('chart-event-badge-list');
+      if (candleSeries && fixture.candles) {
+        candleSeries.setData(fixture.candles);
+        if (fixture.chartMarkers && fixture.chartMarkers.length > 0) {
+          const compactMarkers = fixture.chartMarkers.map(m => {
+            const isCongress = m.text.includes('CONGRESS');
+            return {
+              time: m.time,
+              position: m.position,
+              color: m.color,
+              shape: m.shape,
+              text: isCongress ? 'POL' : 'INS'
+            };
+          });
+          candleSeries.setMarkers(compactMarkers);
+
+          if (eventListEl) {
+            eventListEl.innerHTML = fixture.chartMarkers.map(m => {
+              const isCongress = m.text.includes('CONGRESS');
+              const pillClass = isCongress ? 'pol' : 'ins';
+              const pillText = isCongress ? 'POL' : 'INS';
+              return `
+                <button class="event-badge-item btn-reset" type="button" title="${m.text} (${m.time})" aria-label="${m.text} on ${m.time}">
+                  <span class="event-badge-pill ${pillClass}">${pillText}</span>
+                  <span class="mono" style="font-weight:600;">${m.time}:</span>
+                  <span style="color:var(--text-1);">${m.text.replace(/^(CONGRESS|FORM 4):\s*/, '')}</span>
+                </button>
+              `;
+            }).join('');
+          }
+        } else {
+          candleSeries.setMarkers([]);
+          if (eventListEl) {
+            eventListEl.innerHTML = '<span style="color:var(--text-muted);font-size:11px;">No active regulatory event filings in window.</span>';
+          }
+        }
+      }
+      if (emaLineSeries && fixture.ema20) {
+        emaLineSeries.setData(fixture.ema20);
+      }
+      if (chart) {
+        chart.timeScale().fitContent();
+      }
+
+      // Legend Form 4 visibility (Suppressed for ETFs)
+      const form4Legend = document.getElementById('legend-form4');
+      if (form4Legend) {
+        form4Legend.style.display = isEtf ? 'none' : 'inline-flex';
+      }
+
+      // 8. Render Pillars / Supporting Tabs
+      renderSupportingTabs(fixture);
+    }
+
+    // Render Supporting Tabs Content (P0-02 Normalized Explanations)
+    function renderSupportingTabs(fixture) {
+      const isEtf = isEtfInstrument(fixture);
+
+      // Multi-Pillars Grid
+      const pillarsGrid = document.getElementById('panel-pillars');
+      pillarsGrid.innerHTML = fixture.pillars.map(p => `
+        <div class="pillar-card">
+          <div class="pillar-head">
+            <span>${p.label}</span>
+            <span>${p.weightPct}% Weight</span>
+          </div>
+          <div class="pillar-val mono">${p.score !== undefined && p.score !== null ? p.score + ' / 100' : 'ACTIVE'}</div>
+          <div class="pillar-desc">${getNormalizedPillarExplanation(p)}</div>
+        </div>
+      `).join('');
+
+      // Smart Money Feeds
+      const congressList = document.getElementById('congress-feed-list');
+      const insiderList = document.getElementById('insider-feed-list');
+
+      if (fixture.smartMoney && fixture.smartMoney.trades && fixture.smartMoney.trades.length > 0) {
+        const congressTrades = fixture.smartMoney.trades.filter(t => t.type === 'CONGRESS');
+        congressList.innerHTML = congressTrades.length > 0 ? congressTrades.map(t => `
+          <div class="trade-item">
+            <div>
+              <strong>${t.filer}</strong> (${t.transaction})<br>
+              <span style="color: var(--text-muted); font-size: 12px;">${t.disclosure}</span>
+            </div>
+            <div class="mono" style="font-weight: 700; color: var(--status-positive);">${t.size}</div>
+          </div>
+        `).join('') : '<div style="font-size: 12px; color: var(--text-muted); padding: 8px;">No recent Congressional disclosures in 90D window.</div>';
+
+        const insiderTrades = fixture.smartMoney.trades.filter(t => t.type === 'INSIDER');
+        insiderList.innerHTML = insiderTrades.length > 0 ? insiderTrades.map(t => `
+          <div class="trade-item">
+            <div>
+              <strong>${t.filer}</strong> (${t.title})<br>
+              <span style="color: var(--text-muted); font-size: 12px;">${t.transaction} • ${t.date}</span>
+            </div>
+            <div class="mono" style="font-weight: 700; color: var(--status-positive);">${t.shares}</div>
+          </div>
+        `).join('') : '<div style="font-size: 12px; color: var(--text-muted); padding: 8px;">No recent Form 4 insider disclosures in 90D window.</div>';
+      } else {
+        congressList.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); padding: 8px;">No recent Congressional disclosures in 90D window.</div>';
+        insiderList.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); padding: 8px;">No recent Form 4 insider disclosures in 90D window.</div>';
+      }
+
+      // Solvency / Fundamental Drag
+      const solvencyEl = document.getElementById('solvency-content');
+      if (isEtf) {
+        solvencyEl.innerHTML = `
+          <p><strong>Underlying Asset Class:</strong> ${fixture.etfProfile.category}</p>
+          <p><strong>Tracking Efficiency:</strong> ${fixture.etfProfile.trackingError} annualized tracking deviation against underlying index.</p>
+          <p><strong>Expense Ratio Drag:</strong> ${fixture.etfProfile.expenseRatio} annual management fee.</p>
+          <p><strong>Portfolio Holdings:</strong> ${fixture.etfProfile.holdingsCount} constituent securities with top-10 concentration of ${fixture.etfProfile.top10Concentration}.</p>
+        `;
+      } else {
+        solvencyEl.innerHTML = `
+          <p><strong>Balance Sheet Solvency:</strong> Cash & short-term investments exceed total short-term debt obligations by 3.4x.</p>
+          <p><strong>Piotroski F-Score:</strong> 9/9 (Highest conviction fundamental quality bracket).</p>
+          <p><strong>Free Cash Flow Conversion:</strong> 88.4% of operating net income converted to free cash flow.</p>
+          <p><strong>Dilution Risk:</strong> Weighted shares outstanding increased &lt;0.4% YoY (Zero material ATM shelf dilution).</p>
+        `;
+      }
+    }
+
+    // Tab Switching
+    document.querySelectorAll('.section-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.section-tab').forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+
+        const tabKey = tab.getAttribute('data-tab');
+        document.getElementById('panel-pillars').style.display = tabKey === 'pillars' ? 'grid' : 'none';
+        document.getElementById('panel-smartmoney').style.display = tabKey === 'smartmoney' ? 'grid' : 'none';
+        document.getElementById('panel-solvency').style.display = tabKey === 'solvency' ? 'block' : 'none';
+      });
+    });
+
+    // Pre-Flight Details Drawer Toggle
+    const togglePreflightBtn = document.getElementById('toggle-preflight-details-btn');
+    const preflightDrawer = document.getElementById('preflight-details-drawer');
+    if (togglePreflightBtn && preflightDrawer) {
+      togglePreflightBtn.addEventListener('click', () => {
+        const isExp = togglePreflightBtn.getAttribute('aria-expanded') === 'true';
+        togglePreflightBtn.setAttribute('aria-expanded', String(!isExp));
+        if (isExp) {
+          preflightDrawer.classList.remove('expanded');
+          togglePreflightBtn.querySelector('span').textContent = 'Inspect Telemetry';
+        } else {
+          preflightDrawer.classList.add('expanded');
+          togglePreflightBtn.querySelector('span').textContent = 'Collapse Telemetry';
+        }
+      });
+    }
+
+    // OmniSearch Functionality
+    const searchInput = document.getElementById('omni-search-input');
+    const searchDropdown = document.getElementById('search-dropdown');
+
+    function populateSearch(query = '') {
+      const q = query.trim().toUpperCase();
+      const states = window.ARX_SYNTHESIS_FIXTURES.states;
+      const matches = Object.keys(states).filter(sym => {
+        const item = states[sym];
+        return sym.includes(q) || item.name.toUpperCase().includes(q);
+      });
+
+      if (matches.length === 0) {
+        searchDropdown.innerHTML = '<div style="padding: 12px; font-size: 12px; color: var(--text-muted);">No matching symbols found.</div>';
+        return;
+      }
+
+      searchDropdown.innerHTML = matches.map(sym => {
+        const item = states[sym];
+        const isEtf = isEtfInstrument(item);
+        const tag = isEtf ? '<span class="status-badge badge-info">ETF</span>' : '<span class="status-badge badge-positive">STOCK</span>';
+        return `
+          <div class="search-item" data-sym="${sym}">
+            <div>
+              <strong class="mono" style="font-size: 13px;">${sym}</strong> — ${item.name}
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              ${tag}
+              <span class="mono" style="font-weight: 700;">$${item.currentPrice.toFixed(2)}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      searchDropdown.querySelectorAll('.search-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const sym = el.getAttribute('data-sym');
+          renderTicker(sym);
+          searchDropdown.style.display = 'none';
+          searchInput.value = '';
+        });
+      });
+    }
+
+    searchInput.addEventListener('focus', () => {
+      populateSearch(searchInput.value);
+      searchDropdown.style.display = 'block';
+    });
+    searchInput.addEventListener('input', () => {
+      populateSearch(searchInput.value);
+      searchDropdown.style.display = 'block';
+    });
+    document.addEventListener('click', (e) => {
+      if (!searchInput.contains(e.target) && !searchDropdown.contains(e.target)) {
+        searchDropdown.style.display = 'none';
+      }
+    });
+
+    // Keyboard Shortcuts (Ctrl+K, Ctrl+/, Alt+T, Escape)
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault();
+        openModal('shortcuts-modal', document.body);
+      } else if (e.altKey && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        toggleTheme();
+      } else if (e.key === 'Escape') {
+        closeAllModals();
+        closeOverflowMenu();
+        searchDropdown.style.display = 'none';
+      }
+    });
+
+    // Theme Toggle Functionality
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'paper' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      const icon = document.getElementById('theme-icon');
+      if (next === 'paper') {
+        icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+      } else {
+        icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+      }
+      updateChartTheme();
+    }
+    document.getElementById('theme-btn').addEventListener('click', toggleTheme);
+
+    // Header Overflow Menu Controls
+    const utilBtn = document.getElementById('header-utilities-btn');
+    const overflowMenu = document.getElementById('header-overflow-menu');
+
+    function openOverflowMenu() {
+      overflowMenu.style.display = 'flex';
+      utilBtn.setAttribute('aria-expanded', 'true');
+      const firstItem = overflowMenu.querySelector('button');
+      if (firstItem) firstItem.focus();
+    }
+    function closeOverflowMenu() {
+      overflowMenu.style.display = 'none';
+      utilBtn.setAttribute('aria-expanded', 'false');
+      if (document.activeElement && overflowMenu.contains(document.activeElement)) {
+        utilBtn.focus();
+      }
+    }
+
+    utilBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = utilBtn.getAttribute('aria-expanded') === 'true';
+      if (isOpen) closeOverflowMenu();
+      else openOverflowMenu();
+    });
+
+    utilBtn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openOverflowMenu();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!utilBtn.contains(e.target) && !overflowMenu.contains(e.target)) {
+        closeOverflowMenu();
+      }
+    });
+
+    // Overflow Menu Item Actions
+    document.getElementById('menu-shortcuts-btn').addEventListener('click', () => {
+      closeOverflowMenu();
+      openModal('shortcuts-modal', utilBtn);
+    });
+    document.getElementById('menu-guide-btn').addEventListener('click', () => {
+      closeOverflowMenu();
+      const banner = document.getElementById('guide-banner');
+      banner.style.display = 'block';
+      banner.scrollIntoView({ behavior: 'smooth' });
+    });
+    document.getElementById('menu-privacy-btn').addEventListener('click', () => {
+      closeOverflowMenu();
+      alert('ARX Terminal Telemetry & Privacy: All computations are performed locally in-browser. Zero outbound user telemetry transmitted.');
+    });
+    document.getElementById('menu-purge-btn').addEventListener('click', () => {
+      closeOverflowMenu();
+      openModal('purge-modal', utilBtn);
+    });
+
+    // Modal Management (Accessible Focus Trap & Return)
+    function openModal(modalId, triggerElement) {
+      lastActiveTrigger = triggerElement;
+      if (lastActiveTrigger && lastActiveTrigger.setAttribute) {
+        lastActiveTrigger.setAttribute('aria-expanded', 'true');
+      }
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.style.display = 'flex';
+        const focusable = modal.querySelector('button, [tabindex="0"]');
+        if (focusable) focusable.focus();
+      }
+    }
+    function closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.style.display = 'none';
+        if (lastActiveTrigger) {
+          if (lastActiveTrigger.setAttribute) {
+            lastActiveTrigger.setAttribute('aria-expanded', 'false');
+          }
+          lastActiveTrigger.focus();
+          lastActiveTrigger = null;
+        }
+      }
+    }
+    function closeAllModals() {
+      document.querySelectorAll('.modal-backdrop').forEach(m => {
+        m.style.display = 'none';
+      });
+      if (lastActiveTrigger) {
+        if (lastActiveTrigger.setAttribute) {
+          lastActiveTrigger.setAttribute('aria-expanded', 'false');
+        }
+        lastActiveTrigger.focus();
+        lastActiveTrigger = null;
+      }
+    }
+
+    // Modal Focus Trap
+    document.querySelectorAll('.modal-backdrop').forEach(modal => {
+      modal.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab') {
+          const focusables = Array.from(modal.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+          if (focusables.length === 0) return;
+          const first = focusables[0];
+          const last = focusables[focusables.length - 1];
+          if (e.shiftKey) {
+            if (document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            }
+          } else {
+            if (document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+      });
+    });
+
+    // Modal Close Triggers
+    document.getElementById('why-score-close-btn').addEventListener('click', () => closeModal('why-score-modal'));
+    document.getElementById('why-score-dismiss-btn').addEventListener('click', () => closeModal('why-score-modal'));
+    document.getElementById('staging-close-btn').addEventListener('click', () => closeModal('staging-modal'));
+    document.getElementById('stage-cancel-btn').addEventListener('click', () => closeModal('staging-modal'));
+    document.getElementById('purge-close-btn').addEventListener('click', () => closeModal('purge-modal'));
+    document.getElementById('purge-cancel-btn').addEventListener('click', () => closeModal('purge-modal'));
+    document.getElementById('shortcuts-close-btn').addEventListener('click', () => closeModal('shortcuts-modal'));
+    document.getElementById('shortcuts-dismiss-btn').addEventListener('click', () => closeModal('shortcuts-modal'));
+
+    // Purge Local Cache Action
+    document.getElementById('purge-confirm-btn').addEventListener('click', () => {
+      localStorage.clear();
+      closeModal('purge-modal');
+      checkGuideStatus();
+      renderTicker('NVDA');
+      alert('Local cache successfully purged. Workspace re-seeded to canonical baseline.');
+    });
+
+    // Why Score Modal Content Population
+    document.getElementById('why-score-btn').addEventListener('click', (e) => {
+      const fixture = window.ARX_SYNTHESIS_FIXTURES.states[currentTicker];
+      const isEtf = isEtfInstrument(fixture);
+      const title = document.getElementById('why-score-modal-title');
+      const body = document.getElementById('why-score-body');
+
+      if (isEtf) {
+        title.textContent = `${fixture.symbol} Benchmark Macro Role & Composition`;
+        body.innerHTML = `
+          <p><strong>Benchmark Role:</strong> ${fixture.macroContext.benchmarkRole}</p>
+          <p><strong>Macro Posture:</strong> ${fixture.macroContext.posture}</p>
+          <p><strong>Macro Regime:</strong> ${fixture.macroContext.regime}</p>
+          <p><strong>Sector Breadth:</strong> ${fixture.macroContext.sectorBreadth}</p>
+          <p><strong>Yield Curve Skew:</strong> ${fixture.macroContext.yieldCurveSkew}</p>
+          <p style="color: var(--status-caution); font-weight: 600;">Notice: Tactical single-stock setup scoring is suppressed for multi-asset benchmark ETFs under ARX Terminal quantitative integrity rules.</p>
+        `;
+      } else {
+        title.textContent = `${fixture.symbol} Confluence Score Attribution (${Math.round(fixture.confluenceScore)}/100)`;
+        body.innerHTML = `
+          <p><strong>Conviction Rating:</strong> ${fixture.confluenceRating}</p>
+          <p><strong>Primary Setup Pattern:</strong> ${fixture.pattern}</p>
+          <p><strong>Institutional Alignment:</strong> ${fixture.confluenceBadge}</p>
+          <div style="border-top: 1px solid var(--border-subtle); padding-top: 8px;">
+            ${fixture.pillars.map(p => `
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span>${p.label} (${p.weightPct}%)</span>
+                <strong class="mono">${p.score} / 100</strong>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+      openModal('why-score-modal', e.currentTarget);
+    });
+
+    // Candidate V2: Strict Pre-Flight Lockout on Staging Modal Action
+    document.getElementById('stage-trade-btn').addEventListener('click', (e) => {
+      if (typeof window.isCurrentPreFlightCleared === 'function' && !window.isCurrentPreFlightCleared()) {
+        e.preventDefault();
+        e.stopPropagation();
+        const bar = document.getElementById('preflight-readiness-bar');
+        if (bar) {
+          bar.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const badge = document.getElementById('preflight-readiness-badge');
+          if (badge) {
+            badge.classList.add('pulse-blocker');
+            setTimeout(() => badge.classList.remove('pulse-blocker'), 2000);
+          }
+        }
+        return false;
+      }
+      const fixture = window.ARX_SYNTHESIS_FIXTURES.states[currentTicker];
+      const body = document.getElementById('staging-body');
+      const maxBudget = window.ARX_SYNTHESIS_FIXTURES.account_context.maxRiskDollarBudget;
+      body.innerHTML = `
+        <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: var(--radius-inner); padding: 8px 12px; margin-bottom: 12px;">
+          <strong style="color: #38bdf8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;">Mode: Synthetic Paper Simulation (Unfunded Tracked Setup)</strong>
+          <p style="margin: 4px 0 0 0; font-size: 11.5px; color: var(--text-2);">This plan is generated for offline execution tracking. No live broker API connection or real order submission will occur.</p>
+        </div>
+        <p><strong>Instrument:</strong> ${fixture.symbol} (${fixture.name})</p>
+        <p><strong>Target Entry Range:</strong> $${fixture.levels.entryMin.toFixed(2)} - $${fixture.levels.entryMax.toFixed(2)}</p>
+        <p><strong>Stop Loss:</strong> $${fixture.levels.stopLoss.toFixed(2)} (${fixture.levels.stopDistancePct.toFixed(2)}%)</p>
+        <p><strong>Modeled Position:</strong> ${fixture.sizing.shares} Shares ($${fixture.sizing.capitalAllocated.toLocaleString('en-US', {minimumFractionDigits: 2})})</p>
+        <p><strong>Modeled Loss at Stop:</strong> -$${fixture.sizing.modeledStopLossDollar.toFixed(2)} (${fixture.sizing.modeledStopLossEquityPct.toFixed(2)}% equity)</p>
+        <p><strong>Max Risk Allowance (2.0%):</strong> $${maxBudget.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+        <p><strong>Risk Budget Utilization:</strong> ${fixture.sizing.riskBudgetUtilizationPct.toFixed(2)}%</p>
+      `;
+      openModal('staging-modal', e.currentTarget);
+    });
+
+        const reviewBtn = document.getElementById('review-preflight-btn');
+    if (reviewBtn) {
+      reviewBtn.addEventListener('click', () => {
+        const bar = document.getElementById('preflight-readiness-bar');
+        const drawer = document.getElementById('preflight-details-drawer');
+        const toggleBtn = document.getElementById('toggle-preflight-details-btn');
+        if (drawer && toggleBtn && !drawer.classList.contains('expanded')) {
+          drawer.classList.add('expanded');
+          toggleBtn.setAttribute('aria-expanded', 'true');
+          const span = toggleBtn.querySelector('span');
+          if (span) span.textContent = 'Collapse Telemetry';
+        }
+        if (bar) {
+          bar.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const badge = document.getElementById('preflight-readiness-badge');
+          if (badge) {
+            badge.classList.add('pulse-blocker');
+            setTimeout(() => badge.classList.remove('pulse-blocker'), 2000);
+            badge.setAttribute('tabindex', '-1');
+            badge.focus();
+          }
+        }
+      });
+    }
+
+    document.getElementById('stage-confirm-btn').addEventListener('click', () => {
+      const fixture = window.ARX_SYNTHESIS_FIXTURES.states[currentTicker];
+      const planText = `[ARX OFFLINE SIMULATION PLAN]\nInstrument: ${fixture.symbol} (${fixture.name})\nType: Long ${fixture.pattern || 'Benchmark Context'}\nReference Spot: $${fixture.currentPrice ? fixture.currentPrice.toFixed(2) : 'N/A'} | Pivot: $${fixture.levels?.pivot ? fixture.levels.pivot.toFixed(2) : 'N/A'}\nEntry Zone: $${fixture.levels?.entryMin ? fixture.levels.entryMin.toFixed(2) : 'N/A'} - $${fixture.levels?.entryMax ? fixture.levels.entryMax.toFixed(2) : 'N/A'}\nStop Loss: $${fixture.levels?.stopLoss ? fixture.levels.stopLoss.toFixed(2) : 'N/A'} (${fixture.levels?.stopDistancePct ? fixture.levels.stopDistancePct.toFixed(2) : '0'}%)\nTarget 1: $${fixture.levels?.target1 ? fixture.levels.target1.toFixed(2) : 'N/A'} | R:R: ${fixture.levels?.riskRewardDisplay || 'N/A'}\nModeled Sizing: ${fixture.sizing?.shares || 0} Shares ($${fixture.sizing?.capitalAllocated ? fixture.sizing.capitalAllocated.toLocaleString() : '0'})\nModeled Loss at Stop: -$${fixture.sizing?.modeledStopLossDollar ? fixture.sizing.modeledStopLossDollar.toFixed(2) : '0'} (${fixture.sizing?.riskBudgetUtilizationPct ? fixture.sizing.riskBudgetUtilizationPct.toFixed(2) : '0'}% of $2,490 budget)\nAuthority: ARX Ephemeral Prototype Fixture (Offline)`;
+      navigator.clipboard.writeText(planText).catch(() => {});
+      closeModal('staging-modal');
+      alert('Simulated trade plan generated and copied to local clipboard.\n\n[ARX OFFLINE SIMULATION PLAN]\nStatus: UNBOUND PAPER SPECIFICATION (ZERO BROKER TRANSMISSION)');
+    });
+
+    
+    document.getElementById('stage-confirm-btn').addEventListener('click', () => {
+      closeModal('staging-modal');
+      alert(`Simulated order plan for ${currentTicker} staged successfully in local simulation workspace.`);
+    });
+
+    // Timeframe Chips Click
+    document.querySelectorAll('.interval-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.interval-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+      });
+    });
+
+    // Depth Chips Click
+    document.querySelectorAll('[data-depth]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('[data-depth]').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+      });
+    });
+
+    // Horizon Chips Click
+    document.querySelectorAll('[data-horizon]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('[data-horizon]').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+      });
+    });
+
+    // Initialize Workspace
+    window.addEventListener('DOMContentLoaded', () => {
+      initWorkflowGuide();
+      initChart();
+      renderTicker('NVDA');
+    });
+  </script>
+</body>
+</html>

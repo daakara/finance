@@ -1,0 +1,151 @@
+{
+  "gateId": "ARX_UX_DESIGN_PARITY_GATE_V1",
+  "timestamp": "2026-10-24T22:23:51.743Z",
+  "targetUrl": "https://www.arxterminal.com",
+  "verdict": "PASS",
+  "passedCount": 22,
+  "failedCount": 0,
+  "checks": {
+    "AAPL_HTTP_STATUS": {
+      "passed": true,
+      "message": "HTTP status code 200"
+    },
+    "PREFLIGHT_BAR_MOUNTED": {
+      "passed": true,
+      "message": "Inline Pre-Flight readiness bar mounted"
+    },
+    "PREFLIGHT_BAR_POSITION": {
+      "passed": true,
+      "message": "Mounted in DOM hierarchy beneath chart"
+    },
+    "PREFLIGHT_5_PILLS": {
+      "passed": true,
+      "message": "Contains 5 checks (found 5)"
+    },
+    "PREFLIGHT_FAIL_CLOSED_AAPL": {
+      "passed": true,
+      "message": "AAPL clearance fail-closed: ⚠️\nNOT CLEARED (4/5)"
+    },
+    "CONFLUENCE_4_PILLARS": {
+      "passed": true,
+      "message": "All 4 pillars present (Technical Confluence, Fundamental Moat, Institutional Flow, Macro Environment)"
+    },
+    "CONFLUENCE_INSTITUTIONAL_FLOW": {
+      "passed": true,
+      "message": "Institutional Flow pillar is present"
+    },
+    "CONFLUENCE_EQUAL_WEIGHT": {
+      "passed": true,
+      "message": "4 pillars display 25% Weight (found 4)"
+    },
+    "CONFLUENCE_NO_UNDEFINED_OR_NULL": {
+      "passed": true,
+      "message": "Zero undefined, null, or NaN in confluence evidence"
+    },
+    "NEGATIVE_NO_STEPPER": {
+      "passed": true,
+      "message": "TradeExecutionStepper eliminated"
+    },
+    "NEGATIVE_NO_DUPLICATE_VERDICT_H2": {
+      "passed": true,
+      "message": "Max 1 primary verdict title (found 0)"
+    },
+    "NEGATIVE_NO_DUPLICATE_BOTTOM_LINE": {
+      "passed": true,
+      "message": "Max 1 bottom-line box (found 0)"
+    },
+    "NEGATIVE_NO_TUTORIAL_LEAK": {
+      "passed": true,
+      "message": "Onboarding tutorials suppressed during asset analysis"
+    },
+    "TABLET_FULLPAGE_CAPTURED": {
+      "passed": true,
+      "message": "Tablet 768px full page captured"
+    },
+    "MOBILE_FULLPAGE_CAPTURED": {
+      "passed": true,
+      "message": "Mobile 390px full page captured"
+    },
+    "NVDA_HTTP_STATUS": {
+      "passed": true,
+      "message": "HTTP status code 200"
+    },
+    "NVDA_FAIL_CLOSED_STAGE4": {
+      "passed": true,
+      "message": "NVDA clearance blocks on Stage 4 Wait: ⚠️\nNOT CLEARED — STAGE 4 WAIT"
+    },
+    "NVDA_CONFLUENCE_4_PILLARS": {
+      "passed": true,
+      "message": "NVDA renders all 4 pillars (Technical Confluence, Fundamental Moat, Institutional Flow, Macro Environment)"
+    },
+    "NVDA_NO_UNDEFINED_OR_NULL": {
+      "passed": true,
+      "message": "NVDA zero undefined/null/NaN"
+    },
+    "TABS_SMART_MONEY": {
+      "passed": true,
+      "message": "Smart Money tab accessible in workspace"
+    },
+    "TABS_FACTORS_MACRO": {
+      "passed": true,
+      "message": "Factors & Macro tab accessible"
+    },
+    "TABS_RISK_CONTAGION": {
+      "passed": true,
+      "message": "Risk & Contagion tab accessible"
+    }
+  },
+  "symbolsAudited": {
+    "AAPL": {
+      "preflight": {
+        "found": true,
+        "isBelowChart": true,
+        "pillsCount": 5,
+        "actionability": "AWAITING TRIGGER",
+        "clearance": "⚠️\nNOT CLEARED (4/5)",
+        "blocker": ""
+      },
+      "confluence": {
+        "found": true,
+        "allPillarsPresent": true,
+        "presentPillars": [
+          "Technical Confluence",
+          "Fundamental Moat",
+          "Institutional Flow",
+          "Macro Environment"
+        ],
+        "has25PctCount": 4,
+        "hasUndefinedOrNull": false,
+        "institutionalFlowPresent": true,
+        "rawSnippet": "QUANTITATIVE CONFLUENCE • AAPL\nMulti-Model Confluence Attribution\n\nFour distinct, equally weighted analytical dimensions evaluated for structural conviction.\n\nCONFLUENCE SCORE\n3-Feed Confluence (Selective)\n74/100\nInspect Telemetry\n→\n📈\nTECHNICAL CONFLUENCE\n25% Weight\n75 / 100\n\nStage 2 Advancing Growth Phase with 2.4:1 R:R structure and healthy RSI (72.3).\n\n🏢\nFUNDAMENTAL MOAT\n25% Weight\n80 / 100\n\n"
+      },
+      "negatives": {
+        "stepperPresent": false,
+        "verdictH2Count": 0,
+        "bottomLineCount": 0,
+        "tutorialsPresent": false
+      }
+    },
+    "NVDA": {
+      "clearance": "⚠️\nNOT CLEARED — STAGE 4 WAIT",
+      "stage4Wait": true,
+      "allPillarsPresent": true,
+      "presentPillars": [
+        "Technical Confluence",
+        "Fundamental Moat",
+        "Institutional Flow",
+        "Macro Environment"
+      ],
+      "hasUndefinedOrNull": false
+    }
+  },
+  "screenshots": [
+    "after_consolidation_desktop_fullpage.png",
+    "preflight_bar_aapl_closeup.png",
+    "preflight_drawer_expanded.png",
+    "four_pillars_aapl_closeup.png",
+    "after_consolidation_tablet_fullpage.png",
+    "after_consolidation_mobile_fullpage.png",
+    "four_pillars_nvda_closeup.png"
+  ]
+}

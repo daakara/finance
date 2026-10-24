@@ -179,8 +179,13 @@ class TestNextJsFrontendStructure(unittest.TestCase):
 
         with open(conviction_path, "r", encoding="utf-8") as f:
             conv_content = f.read()
-        self.assertIn("The Bottom Line (No Wall Street Fluff)", conv_content)
+        self.assertIn("Multi-Model Confluence Attribution", conv_content)
         self.assertIn("finance:vernacular-change", conv_content)
+
+        standard_terminal_path = os.path.join("frontend", "components", "terminal", "StandardTerminalView.tsx")
+        with open(standard_terminal_path, "r", encoding="utf-8") as f:
+            standard_content = f.read()
+        self.assertIn("Reason / Bottom Line:", standard_content)
 
         with open(sizer_path, "r", encoding="utf-8") as f:
             sizer_content = f.read()
