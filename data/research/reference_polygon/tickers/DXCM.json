@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "DXCM",
+    "name": "DexCom, Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001093557",
+    "composite_figi": "BBG000QTF8K1",
+    "share_class_figi": "BBG001SKZG99",
+    "last_updated_utc": "2026-10-18T06:10:11.414228768Z"
+  },
+  "status": "OK"
+}

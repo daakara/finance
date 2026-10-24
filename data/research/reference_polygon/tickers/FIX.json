@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "FIX",
+    "name": "Comfort Systems USA, Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001035983",
+    "composite_figi": "BBG000BWN2Y9",
+    "share_class_figi": "BBG001SB1GG8",
+    "last_updated_utc": "2026-10-18T06:10:11.414353837Z"
+  },
+  "status": "OK"
+}

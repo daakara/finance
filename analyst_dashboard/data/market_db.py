@@ -4,7 +4,7 @@ import json
 import time
 import functools
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Dict, Any, List, Optional, Union, Tuple
 
 logger = logging.getLogger(__name__)
@@ -66,10 +66,11 @@ def retry_sqlite(max_retries: int = 3, base_delay: float = 0.05):
 class MarketDatabaseEngine:
     """Production-grade SQLite persistent store for market data, eliminating synthetic fallbacks."""
 
-    def __init__(self, db_path: str = DB_PATH):
+    def __init__(self, db_path: str = DB_PATH, auto_init: bool = True):
         self.db_path = db_path
         os.makedirs(os.path.dirname(os.path.abspath(self.db_path)), exist_ok=True)
-        self._init_schema()
+        if auto_init:
+            self._init_schema()
 
     def _get_connection(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path, timeout=10.0)
@@ -318,14 +319,41 @@ class MarketDatabaseEngine:
         symbol: str,
         data: Any,
         provenance: Union[MarketProvenance, MarketEvidence],
+        replace_existing_scope: bool = False,
+        scope_start_date: Optional[str] = None,
+        scope_end_date: Optional[str] = None,
     ) -> None:
         """Atomically save OHLCV candles AND sidecar provenance to database.
 
         Both writes occur within a single SQLite transaction. If either fails,
-        the entire operation is rolled back.
+        the entire operation is rolled back. If replace_existing_scope is True:
+        - Both scope_start_date and scope_end_date must be provided, valid ISO dates,
+          and ordered (start <= end).
+        - Only existing candles and provenance records within [scope_start_date, scope_end_date]
+          are removed within the transaction, preserving rows outside the reviewed scope.
+        - Missing bounds, invalid date strings, or reversed intervals fail closed with
+          ValueError prior to any database mutation. Unbounded whole-history replacement
+          is strictly prohibited.
         """
         if data is None:
             return
+
+        if replace_existing_scope:
+            if not scope_start_date or not scope_end_date:
+                raise ValueError(
+                    "INVALID_REPLACEMENT_SCOPE_BOUNDS: Both scope_start_date and scope_end_date are required "
+                    "when replace_existing_scope=True. Unbounded whole-history replacement is strictly prohibited."
+                )
+            try:
+                d_scope_start = date.fromisoformat(str(scope_start_date)[:10])
+                d_scope_end = date.fromisoformat(str(scope_end_date)[:10])
+            except Exception as e:
+                raise ValueError(f"INVALID_REPLACEMENT_SCOPE_BOUNDS: Could not parse replacement scope dates: {e}")
+            if d_scope_start > d_scope_end:
+                raise ValueError(
+                    f"INVALID_REPLACEMENT_SCOPE_BOUNDS: Reversed replacement scope: "
+                    f"start '{scope_start_date}' cannot be after end '{scope_end_date}'."
+                )
         prov = provenance.provenance if isinstance(provenance, MarketEvidence) else provenance
         if not isinstance(prov, MarketProvenance):
             prov = MarketProvenance.from_dict(prov)
@@ -395,6 +423,15 @@ class MarketDatabaseEngine:
         try:
             with conn:
                 cursor = conn.cursor()
+                if replace_existing_scope:
+                    cursor.execute(
+                        "DELETE FROM asset_ohlcv_daily WHERE symbol = ? AND trade_date >= ? AND trade_date <= ?",
+                        (upper, str(scope_start_date), str(scope_end_date)),
+                    )
+                    cursor.execute(
+                        "DELETE FROM asset_ohlcv_provenance WHERE symbol = ? AND trade_date >= ? AND trade_date <= ?",
+                        (upper, str(scope_start_date), str(scope_end_date)),
+                    )
                 cursor.executemany("""
                     INSERT OR REPLACE INTO asset_ohlcv_daily (symbol, trade_date, open, high, low, close, volume)
                     VALUES (?, ?, ?, ?, ?, ?, ?)

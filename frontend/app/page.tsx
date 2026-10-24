@@ -26,6 +26,8 @@ import WeeklyConfluenceSpotlight from "../components/WeeklyConfluenceSpotlight";
 import IntentHero from "../components/IntentHero";
 import PageIntro from "../components/PageIntro";
 import AdaptiveTerminal from "../components/AdaptiveTerminal";
+import PreFlightReadinessBar from "../components/PreFlightReadinessBar";
+import PreFlightChecklistModal from "../components/PreFlightChecklistModal";
 import EtfCostOfOwnershipCard from "../components/EtfCostOfOwnershipCard";
 import EtfRiskProfileCard from "../components/EtfRiskProfileCard";
 import { fetchAssetAnalytics, AnalyticsResponse, SpotPriceRegistry } from "../lib/api";
@@ -54,12 +56,13 @@ function TerminalContent() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(
     (urlTab === "SMART_MONEY" || urlTab === "FUNDAMENTALS" || urlTab === "RISK_CONTAGION" || urlTab === "EXECUTION")
       ? urlTab as WorkspaceTab
-      : "EXECUTION"
+      : "SMART_MONEY"
   );
   const [macroData, setMacroData] = useState<FredMacroData | null>(null);
   const [insiderTrades, setInsiderTrades] = useState<SecForm4Trade[]>([]);
   const capabilities = useMemo(() => resolveCapabilities(data, data?.optimalExecution), [data]);
   const [lastUpdatedTime, setLastUpdatedTime] = useState<string>("");
+  const [isPreflightModalOpen, setIsPreflightModalOpen] = useState<boolean>(false);
   const cacheRef = useRef<Map<string, AnalyticsResponse>>(new Map());
 
   useEffect(() => {
@@ -363,13 +366,13 @@ function TerminalContent() {
 
                   <PriceChart
                     symbol={selectedSymbol}
-                    candles={data?.candles || []}
-                    currentPrice={data?.currentPrice}
-                    liveSpotPrice={data?.liveSpotPrice}
-                    analysisReferencePrice={data?.analysisReferencePrice}
-                    optimalExecution={data?.optimalExecution}
-                    marketPriceState={data?.marketPriceState}
-                    priceChangePct={data?.priceChangePct24h}
+                    candles={data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? (data?.candles || []) : []}
+                    currentPrice={data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data?.currentPrice : undefined}
+                    liveSpotPrice={data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data?.liveSpotPrice : undefined}
+                    analysisReferencePrice={data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data?.analysisReferencePrice : undefined}
+                    optimalExecution={data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data?.optimalExecution : undefined}
+                    marketPriceState={data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data?.marketPriceState : undefined}
+                    priceChangePct={data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data?.priceChangePct24h : undefined}
                     interval={interval}
                     userRole={userRole}
                     onRoleChange={handleRoleChange}
@@ -411,9 +414,60 @@ function TerminalContent() {
                         : undefined
                     }
                     loading={loading}
-                    technicals={data?.technicals}
+                    technicals={data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data?.technicals : undefined}
                   />
                 </div>
+              }
+              preflightSlot={
+                loading ? (
+                  <div className="bg-[#0a0f19] border border-[#1b263b] rounded-xl p-3 text-slate-500 font-mono text-xs flex items-center justify-center space-x-2">
+                    <span className="w-2 h-2 rounded-full bg-slate-500 animate-pulse" />
+                    <span>Evaluating Pre-Flight Clearance...</span>
+                  </div>
+                ) : (
+                  <PreFlightReadinessBar
+                    symbol={selectedSymbol}
+                    currentPrice={data?.currentPrice ?? (SpotPriceRegistry.get(selectedSymbol)?.price || 0)}
+                    stopLoss={data?.optimalExecution?.stop_loss ?? undefined}
+                    takeProfit1={data?.optimalExecution?.take_profit_1 ?? undefined}
+                    riskRewardRatio={data?.optimalExecution?.risk_reward_ratio ?? undefined}
+                    setupPattern={data?.optimalExecution?.setup_pattern}
+                    isDayTrader={userRole === "DAY_TRADER"}
+                    isStage4={Boolean(data?.optimalExecution?.stage_phase?.toLowerCase().includes("stage 4") || (data?.technicals as any)?.is_stage4)}
+                    optimalEntryMin={data?.optimalExecution?.optimal_entry_min ?? undefined}
+                    optimalEntryMax={data?.optimalExecution?.optimal_entry_max ?? undefined}
+                    breakoutPivot={data?.optimalExecution?.breakout_pivot ?? undefined}
+                    vix={(macroData as any)?.vix?.value ?? (macroData as any)?.vix?.level ?? (typeof (macroData as any)?.vix === "number" ? (macroData as any).vix : undefined)}
+                    hasImminentEarnings={((data as any)?.corporateEvent?.days_to_earnings != null && (data as any)?.corporateEvent?.days_to_earnings <= 7.0 && (data as any)?.corporateEvent?.days_to_earnings >= 0) || (data as any)?.corporateEvent?.preflight_state === "WARN"}
+                    catalystState={(data as any)?.corporateEvent?.preflight_state}
+                    catalystEvidence={(data as any)?.corporateEvent ? {
+                      state: (data as any).corporateEvent.preflight_state,
+                      daysToEarnings: (data as any).corporateEvent.days_to_earnings,
+                      eventDate: (data as any).corporateEvent.event_date_et,
+                      callTimeEt: (data as any).corporateEvent.conference_call_time_et,
+                      resultsReleaseTimeEt: (data as any).corporateEvent.results_release_time_et,
+                      sourceName: (data as any).corporateEvent.source_name,
+                      confirmationStatus: (data as any).corporateEvent.confirmation_status,
+                      coverageStatus: (data as any).corporateEvent.coverage_status,
+                      freshnessStatus: (data as any).corporateEvent.freshness_status,
+                      riskTier: (data as any).corporateEvent.risk_tier,
+                      isEstimate: (data as any).corporateEvent.is_estimate,
+                    } : null}
+                    isActionable={data?.decisionTrace?.isActionable ?? (data?.canonicalDecision as any)?.is_actionable}
+                    decisionState={data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state}
+                    onOpenModal={() => setIsPreflightModalOpen(true)}
+                  />
+                )
+              }
+              evidenceSlot={
+                <CompositeConvictionCard
+                  symbol={selectedSymbol}
+                  data={data}
+                  macro={macroData}
+                  insiders={insiderTrades}
+                  userRole={userRole}
+                  onOpenWhy={() => setIsPreflightModalOpen(true)}
+                />
               }
               planSlot={
                 loading ? (
@@ -440,6 +494,8 @@ function TerminalContent() {
                     canSizeTrade={data?.decisionTrace?.canSizeTrade ?? (data?.canonicalDecision as any)?.can_size_trade}
                     decisionState={data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state}
                     decisionStateLabel={data?.decisionTrace?.stateLabel ?? (data?.canonicalDecision as any)?.decision_state_label}
+                    catalystForecast={data?.catalystForecast}
+                    corporateEvent={data?.corporateEvent}
                   />
                 ) : (
                   <div className="bg-[#111722] border border-[#243044] rounded-xl p-5 shadow-xl space-y-2 font-mono text-slate-300">
@@ -457,6 +513,41 @@ function TerminalContent() {
               }
             />
           )}
+
+          {/* ✈️ Pre-Flight Mandatory Clearance Detailed Inspection Modal */}
+          <PreFlightChecklistModal
+            isOpen={isPreflightModalOpen}
+            onClose={() => setIsPreflightModalOpen(false)}
+            symbol={selectedSymbol}
+            currentPrice={data?.currentPrice ?? (SpotPriceRegistry.get(selectedSymbol)?.price || 0)}
+            stopLoss={data?.optimalExecution?.stop_loss || 0}
+            takeProfit1={data?.optimalExecution?.take_profit_1 || 0}
+            riskRewardRatio={data?.optimalExecution?.risk_reward_ratio || 0}
+            setupPattern={data?.optimalExecution?.setup_pattern}
+            isDayTrader={userRole === "DAY_TRADER"}
+            isStage4={Boolean(data?.optimalExecution?.stage_phase?.toLowerCase().includes("stage 4") || (data?.technicals as any)?.is_stage4)}
+            optimalEntryMin={data?.optimalExecution?.optimal_entry_min ?? undefined}
+            optimalEntryMax={data?.optimalExecution?.optimal_entry_max ?? undefined}
+            breakoutPivot={data?.optimalExecution?.breakout_pivot ?? undefined}
+            vix={(macroData as any)?.vix?.value ?? (macroData as any)?.vix?.level ?? (typeof (macroData as any)?.vix === "number" ? (macroData as any).vix : undefined)}
+            hasImminentEarnings={((data as any)?.corporateEvent?.days_to_earnings != null && (data as any)?.corporateEvent?.days_to_earnings <= 7.0 && (data as any)?.corporateEvent?.days_to_earnings >= 0) || (data as any)?.corporateEvent?.preflight_state === "WARN"}
+            catalystState={(data as any)?.corporateEvent?.preflight_state}
+            catalystEvidence={(data as any)?.corporateEvent ? {
+              state: (data as any).corporateEvent.preflight_state,
+              daysToEarnings: (data as any).corporateEvent.days_to_earnings,
+              eventDate: (data as any).corporateEvent.event_date_et,
+              callTimeEt: (data as any).corporateEvent.conference_call_time_et,
+              resultsReleaseTimeEt: (data as any).corporateEvent.results_release_time_et,
+              sourceName: (data as any).corporateEvent.source_name,
+              confirmationStatus: (data as any).corporateEvent.confirmation_status,
+              coverageStatus: (data as any).corporateEvent.coverage_status,
+              freshnessStatus: (data as any).corporateEvent.freshness_status,
+              riskTier: (data as any).corporateEvent.risk_tier,
+              isEstimate: (data as any).corporateEvent.is_estimate,
+            } : null}
+            isActionable={data?.decisionTrace?.isActionable ?? (data?.canonicalDecision as any)?.is_actionable}
+            decisionState={data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state}
+          />
 
           {/* Intelligent Did You Mean Ticker Recommendation Banner */}
           {aliasRecommendation && aliasRecommendation.canonicalTicker.toUpperCase() !== selectedSymbol.toUpperCase() && (
@@ -503,31 +594,9 @@ function TerminalContent() {
             </div>
           )}
 
-          {/* 💎 DECISION-SYNTHESIS COMPOSITE CONVICTION SCORECARD */}
-          <CompositeConvictionCard
-            symbol={selectedSymbol}
-            data={data}
-            macro={macroData}
-            insiders={insiderTrades}
-            userRole={userRole}
-          />
-
           {/* Modular Domain Workspace Tabs (Detailed Domain Content) */}
           <div data-testid="detailed-domain-content" className="space-y-4 sm:space-y-5">
-            <div role="tablist" aria-label="Quantitative Domain Workspaces" className="bg-[#0c1017] p-1.5 rounded-2xl border border-[#243044] grid grid-cols-2 sm:grid-cols-4 gap-1.5 shadow-xl font-mono text-xs">
-              <button
-                role="tab"
-                aria-selected={activeTab === "EXECUTION"}
-                onClick={() => handleTabChange("EXECUTION", "Execution & Levels")}
-                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[40px] cursor-pointer ${
-                  activeTab === "EXECUTION"
-                    ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
-                }`}
-              >
-                <Target className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                <span className="whitespace-nowrap"><span className="sm:hidden">Execution</span><span className="hidden sm:inline">Execution & Levels</span></span>
-              </button>
+            <div role="tablist" aria-label="Quantitative Domain Workspaces" className="bg-[#0c1017] p-1.5 rounded-2xl border border-[#243044] grid grid-cols-1 sm:grid-cols-3 gap-1.5 shadow-xl font-mono text-xs">
 
               <button
                 role="tab"
@@ -656,36 +725,36 @@ function TerminalContent() {
           </div>
 
           {/* Below-Fold Narrative & Discovery Guidance */}
-          <div className="space-y-4 pt-4 border-t border-[#182335]">
-            <PageIntro
-              hubId="analysis"
-              title={hasExplicitSymbol ? `Analysis — ${selectedSymbol}` : "Analysis"}
-              purpose="Evaluate whether an asset deserves capital based on confluence, technicals, and risk."
-              badge={hasExplicitSymbol ? "Active Target" : "Demonstration Mode"}
-              symbol={hasExplicitSymbol ? selectedSymbol : null}
-              isDemo={!hasExplicitSymbol}
-              demoNotice={!hasExplicitSymbol ? `Displaying ${selectedSymbol} as a demonstration asset. Search any ticker to analyze your target.` : undefined}
-              primaryAction={{
-                label: `Prepare Trade Setup (${selectedSymbol}) →`,
-                href: `/setups?symbol=${selectedSymbol}`,
-                onClick: () => trackAnalysisToSetup(selectedSymbol),
-              }}
-              secondaryAction={{
-                label: "Scan Radar Candidates →",
-                href: "/radar",
-              }}
-            />
+          {!hasExplicitSymbol && (
+            <div className="space-y-4 pt-4 border-t border-[#182335]">
+              <PageIntro
+                hubId="analysis"
+                title={hasExplicitSymbol ? `Analysis — ${selectedSymbol}` : "ARX Terminal · Quantitative Analysis"}
+                purpose="Evaluate whether an asset deserves capital based on confluence, technicals, and risk."
+                badge={hasExplicitSymbol ? "Active Target" : "Demonstration Mode"}
+                symbol={hasExplicitSymbol ? selectedSymbol : null}
+                isDemo={!hasExplicitSymbol}
+                demoNotice={!hasExplicitSymbol ? `Displaying ${selectedSymbol} as a demonstration asset. Search any ticker to analyze your target.` : undefined}
+                primaryAction={{
+                  label: `Prepare Trade Setup (${selectedSymbol}) →`,
+                  href: `/setups?symbol=${selectedSymbol}`,
+                  onClick: () => trackAnalysisToSetup(selectedSymbol),
+                }}
+                secondaryAction={{
+                  label: "Scan Radar Candidates →",
+                  href: "/radar",
+                }}
+              />
 
-            {!hasExplicitSymbol && (
               <IntentHero onSelectSymbol={handleSelectSymbol} />
-            )}
 
-            <WeeklyConfluenceSpotlight
-              defaultCollapsed={selectedSymbol.toUpperCase() !== "SPY"}
-              onSelectSymbol={handleSelectSymbol}
-              selectedSymbol={selectedSymbol}
-            />
-          </div>
+              <WeeklyConfluenceSpotlight
+                defaultCollapsed={selectedSymbol.toUpperCase() !== "SPY"}
+                onSelectSymbol={handleSelectSymbol}
+                selectedSymbol={selectedSymbol}
+              />
+            </div>
+          )}
         </section>
 
         {/* Watchlist Sidebar (Left column on desktop, Below chart on mobile) */}

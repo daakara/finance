@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "TGT",
+    "name": "Target Corporation",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000027419",
+    "composite_figi": "BBG000H8TVT2",
+    "share_class_figi": "BBG001SC0K41",
+    "last_updated_utc": "2026-10-18T06:10:11.416068767Z"
+  },
+  "status": "OK"
+}

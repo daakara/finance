@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "PANW",
+    "name": "Palo Alto Networks, Inc. Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001327567",
+    "composite_figi": "BBG0014GJCT9",
+    "share_class_figi": "BBG001T9NWN5",
+    "last_updated_utc": "2026-10-18T06:10:11.415691557Z"
+  },
+  "status": "OK"
+}

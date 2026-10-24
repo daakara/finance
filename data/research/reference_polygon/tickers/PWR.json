@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "PWR",
+    "name": "Quanta Services, Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001050915",
+    "composite_figi": "BBG000BBL8V7",
+    "share_class_figi": "BBG001S5VH85",
+    "last_updated_utc": "2026-10-18T06:10:11.415780677Z"
+  },
+  "status": "OK"
+}

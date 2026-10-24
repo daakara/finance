@@ -1,0 +1,17 @@
+# Explicit Railway CLI upload exclusions (defense-in-depth)
+.git/
+.env
+.env.*
+.env.local
+.env.*.local
+frontend/.env*
+*.db
+*.sqlite
+*.sqlite3
+*.csv
+*.xlsx
+backups/
+/output/
+data/canonical/
+data/operational/
+data/staging/

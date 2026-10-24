@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+
 /**
  * Resolves the canonical frontend release identity using strict precedence:
  * CF_PAGES_COMMIT_SHA > NEXT_PUBLIC_ARX_RELEASE > undefined (fail-safe)
@@ -26,6 +28,24 @@ const nextConfig = {
   },
   env: {
     ...(effectiveRelease ? { NEXT_PUBLIC_ARX_RELEASE: effectiveRelease } : {}),
+  },
+  webpack: (config) => {
+    // In production builds (where pilot drafts are NOT explicitly enabled),
+    // alias the pilot drafts JSON to an empty stub so Webpack excludes draft research
+    // from client bundles and static export chunks entirely.
+    if (process.env.NEXT_PUBLIC_ENABLE_RESEARCH_PILOT_DRAFTS !== "true") {
+      const stubPath = fileURLToPath(
+        new URL("./lib/opportunityDossierPilotDrafts.stub.json", import.meta.url)
+      );
+      config.resolve.alias = config.resolve.alias || {};
+      config.resolve.alias["./opportunityDossierPilotDrafts.json"] = stubPath;
+      config.resolve.alias["./opportunityDossierPilotDrafts.json$"] = stubPath;
+      config.resolve.alias["@/lib/opportunityDossierPilotDrafts.json"] = stubPath;
+      config.resolve.alias[
+        fileURLToPath(new URL("./lib/opportunityDossierPilotDrafts.json", import.meta.url))
+      ] = stubPath;
+    }
+    return config;
   },
 };
 

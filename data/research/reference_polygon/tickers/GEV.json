@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "GEV",
+    "name": "GE Vernova Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001996810",
+    "composite_figi": "BBG013G17W31",
+    "share_class_figi": "BBG013G17W77",
+    "last_updated_utc": "2026-10-18T06:10:11.414970683Z"
+  },
+  "status": "OK"
+}

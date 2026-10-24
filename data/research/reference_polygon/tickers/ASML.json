@@ -1,0 +1,15 @@
+{
+  "results": {
+    "ticker": "ASML",
+    "name": "ASML Holding NV",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "ADRC",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000937966",
+    "last_updated_utc": "2026-10-18T06:10:11.413798428Z"
+  },
+  "status": "OK"
+}

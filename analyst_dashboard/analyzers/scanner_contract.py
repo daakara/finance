@@ -60,6 +60,14 @@ VCP_DATA_PROVENANCE_VERSION = "1.0.0"
 VCP_UNIVERSE_VERSION = "1.0.0"
 VCP_FRESHNESS_POLICY_VERSION = "1.0.0"
 
+# Candidate 005 Nonproduction Research Constants
+VCP_CANDIDATE_005_RULESET_VERSION = "1.1.0"
+VCP_CANDIDATE_005_ALGORITHM_VERSION = "ARX_VCP_CLASSIFIER_V1_CANDIDATE_005"
+
+# Candidate 006 Nonproduction Research Constants (Causal Wave Segmentation)
+VCP_CANDIDATE_006_RULESET_VERSION = "1.2.0"
+VCP_CANDIDATE_006_ALGORITHM_VERSION = "ARX_VCP_CLASSIFIER_V1_CANDIDATE_006"
+
 # Canonical Version Constants for Smart Money (Specification baseline)
 SMART_MONEY_API_CONTRACT_VERSION = "1.0.0"
 SMART_MONEY_RULESET_VERSION = "1.0.0"
@@ -156,7 +164,7 @@ class ImmutableScannerSnapshot:
     status_at_publication: ScannerStatus
     universe_id: str
     universe_size: int
-    matched_count: int
+    matched_count: Optional[int]
     results: List[Dict[str, Any]]
     provenance: Dict[str, Any]
     freshness: Dict[str, Any]

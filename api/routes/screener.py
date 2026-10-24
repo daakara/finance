@@ -52,6 +52,34 @@ def verify_operator_token(candidate_token: Optional[str]) -> bool:
         return False
     return hmac.compare_digest(candidate_token.strip().encode("utf-8"), expected.encode("utf-8"))
 
+import hmac
+
+
+def is_vcp_natural_scheduler_enabled() -> bool:
+    """Check if natural VCP scheduler trigger is enabled via environment variable (default: disabled)."""
+    return os.getenv("VCP_NATURAL_SCHEDULER_ENABLED", "0").strip().lower() in ("1", "true", "yes", "enabled")
+
+
+def verify_scheduler_token(candidate_token: Optional[str]) -> bool:
+    """
+    Constant-time comparison against dedicated VCP_SCHEDULER_SECRET.
+    Strictly prohibits cross-domain credential fallback to telemetry or epoch-activation keys.
+    Fails closed if VCP_SCHEDULER_SECRET is unset, empty, or candidate does not match.
+    """
+    if not candidate_token:
+        return False
+    expected = os.getenv("VCP_SCHEDULER_SECRET", "").strip()
+    if not expected:
+        return False
+    return hmac.compare_digest(candidate_token.strip().encode("utf-8"), expected.encode("utf-8"))
+
+
+class VCPNaturalScanRequest(BaseModel):
+    scheduled_date: Optional[str] = None
+    universe_build_id: Optional[str] = None
+    scheduler_job_id: Optional[str] = None
+    scheduler_event_id: Optional[str] = None
+
 router = APIRouter()
 screener = HiddenGemsScreener()
 optimal_engine = OptimalExecutionEngine()
@@ -78,6 +106,41 @@ LONG_TERM_CANDIDATES = CANONICAL_VCP_UNIVERSE
 
 DEFAULT_CANDIDATES = LONG_TERM_CANDIDATES
 
+# ── Canonical Corporate Actions & Listing Lifecycle Registry ───────────────
+# Authoritative registry of confirmed corporate actions, mergers, and delistings
+# with primary SEC filing citations. Inactive securities are retained for audit
+# and historical valuation integrity, but strictly excluded from active discovery.
+CONFIRMED_CORPORATE_ACTIONS: Dict[str, Dict[str, Any]] = {
+    "CPRX": {
+        "status": "DELISTED",
+        "action_type": "CASH_MERGER_ACQUISITION",
+        "effective_date": "2026-07-21",
+        "acquirer": "Angelini Pharma S.p.A.",
+        "consideration": "$31.50 per share in cash",
+        "filings": [
+            {"form": "25-NSE", "filing_date": "2026-07-10", "description": "Notification of Removal from Listing on Nasdaq"},
+            {"form": "15-12B", "filing_date": "2026-07-20", "description": "Certification and Notice of Termination of Registration"},
+        ],
+        "execution_status": "DELISTED_SECURITY",
+        "status_label": "🛑 Delisted / Inactive",
+        "status_color": "rose",
+        "decision_state": "INELIGIBLE_INACTIVE",
+        "screening_eligible": False,
+        "is_investable": False,
+        "notes": "Acquired by Angelini Pharma for $31.50/share in July 2026. Common stock deregistered and delisted from Nasdaq.",
+    }
+}
+
+# ── Attributable Lifecycle Evidence Registry ──────────────────────────────
+# Invariant: Static reference catalog membership does NOT constitute lifecycle evidence.
+# Listing status is reported as ACTIVE only where attributable, primary-source lifecycle
+# evidence exists (e.g. verified exchange certificate, primary listing confirmation).
+# Without attributable lifecycle evidence, candidates report UNVERIFIED.
+ATTRIBUTABLE_LIFECYCLE_EVIDENCE: Dict[str, Dict[str, Any]] = {
+    # Populated when attributable primary listing / lifecycle verification is supplied.
+    # Candidates without verified lifecycle records report 'UNVERIFIED'.
+}
+
 # ── Canonical Radar Discovery Taxonomy ──────────────────────────────────────
 # Exactly three canonical categories governed across backend transport, API contracts,
 # and UI presentation (no transport aliases such as "VALUE").
@@ -89,7 +152,10 @@ RADAR_CAPABILITY_CONTRACT = {
         "status": "AVAILABLE",
         "universeScreening": "AVAILABLE",
         "singleAssetAnalysis": "AVAILABLE",
-        "rationale": "Authentic multi-factor fundamental screening active across known candidate universe.",
+        "catalogType": "CURATED_REFERENCE_CATALOG",
+        "countAuthority": "DYNAMIC_CATALOG",
+        "sortingSemantics": "CONFLUENCE_TECHNICAL_FLOW",
+        "rationale": "Curated multi-factor fundamental reference catalog active; candidates sorted by technical and macro confluence score rather than intrinsic valuation discount.",
     },
     "VCP": {
         "status": "AVAILABLE",
@@ -105,7 +171,7 @@ RADAR_CAPABILITY_CONTRACT = {
     },
 }
 
-# Whitelist of authentic fundamental models that establish VALUE_GARP membership
+# Whitelist of authentic fundamental models that establish descriptive classification
 VALUE_GARP_MODELS = {
     "Peter Lynch GARP Compounder",
     "Greenblatt Magic Formula",
@@ -114,8 +180,168 @@ VALUE_GARP_MODELS = {
 }
 
 
-def get_radar_capabilities(sm_snapshot: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    caps = dict(RADAR_CAPABILITY_CONTRACT)
+def get_radar_capabilities(
+    vcp_snapshot: Optional[Dict[str, Any]] = None,
+    publication_pointer: Optional[Any] = None,
+    sm_snapshot: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    caps = {k: dict(v) for k, v in RADAR_CAPABILITY_CONTRACT.items()}
+
+    # Resolve publication identity & population denominator if pointer or snapshot provided
+    pop_denom = None
+    build_id = None
+    univ_id = None
+    pub_digest = None
+    is_rollback = False
+    rollback_reason = None
+    membership_status = "UNAVAILABLE"
+
+    if publication_pointer is not None and hasattr(publication_pointer, "published_symbols"):
+        pop_denom = len(publication_pointer.published_symbols)
+        build_id = getattr(publication_pointer, "build_id", None)
+        univ_id = getattr(publication_pointer, "universe_id", None)
+        pub_digest = getattr(publication_pointer, "publication_digest", None)
+        is_rollback = getattr(publication_pointer, "is_rollback", False)
+        rollback_reason = getattr(publication_pointer, "rollback_reason", None)
+        membership_status = "AVAILABLE" if pop_denom else "UNAVAILABLE"
+
+    # Invariant 6: Stale or rolled-back pointers cannot imply operational scanner availability
+    if is_rollback:
+        caps["VCP"] = {
+            "status": "PIPELINE_PENDING",
+            "universeScreening": "PIPELINE_PENDING",
+            "singleAssetAnalysis": "AVAILABLE",
+            "matchedCount": None,
+            "populationDenominator": pop_denom,
+            "universeBuildId": build_id,
+            "universeId": univ_id,
+            "publicationDigest": pub_digest,
+            "isRollback": True,
+            "rollbackReason": rollback_reason,
+            "membershipStatus": membership_status,
+            "lifecycleState": "STALE_OR_ROLLED_BACK_PUBLICATION",
+            "reason": "ROLLED_BACK_PUBLICATION_POINTER",
+            "rationale": f"Publication build '{build_id}' was rolled back ({rollback_reason or 'No reason specified'}). Scanner execution is suspended.",
+        }
+    elif vcp_snapshot:
+        snap_status = vcp_snapshot.get("status")
+        freshness_info = vcp_snapshot.get("freshness", {})
+        u_meta = vcp_snapshot.get("universe", {})
+        if u_meta:
+            pop_denom = pop_denom or u_meta.get("eligible_universe_count") or vcp_snapshot.get("snapshot", {}).get("universe_size")
+            build_id = build_id or u_meta.get("universe_build_id")
+            univ_id = univ_id or u_meta.get("scope_class") or "ARX_US_EQUITIES"
+            pub_digest = pub_digest or u_meta.get("membership_hash")
+            membership_status = "AVAILABLE" if pop_denom else membership_status
+
+        if snap_status == "AVAILABLE":
+            raw_matched = vcp_snapshot.get("matched_count")
+            is_valid_op = type(raw_matched) is int and raw_matched >= 0
+            matched_count = raw_matched if is_valid_op else None
+            caps["VCP"] = {
+                "status": "AVAILABLE" if is_valid_op else "PIPELINE_PENDING",
+                "universeScreening": "AVAILABLE" if is_valid_op else "PIPELINE_PENDING",
+                "singleAssetAnalysis": "AVAILABLE",
+                "matchedCount": matched_count,
+                "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
+                "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
+                "snapshotId": vcp_snapshot.get("snapshot_id"),
+                "freshnessStatus": freshness_info.get("status", "LIVE"),
+                "populationDenominator": pop_denom,
+                "universeBuildId": build_id,
+                "universeId": univ_id,
+                "publicationDigest": pub_digest,
+                "isRollback": False,
+                "rollbackReason": None,
+                "membershipStatus": membership_status,
+                "lifecycleState": "SCANNER_OPERATIONAL" if is_valid_op else "SCANNER_OUTPUT_INCOMPLETE",
+                "rationale": "Authentic Minervini Volatility Contraction Pattern universe screening active with deterministic publication integrity.",
+            }
+        elif snap_status == "PIPELINE_PENDING":
+            reason = vcp_snapshot.get("reason", "UNCOMPUTED_CLASSIFICATION" if vcp_snapshot.get("snapshot_id") else "NO_ACTIVE_SNAPSHOT")
+            caps["VCP"] = {
+                "status": "PIPELINE_PENDING",
+                "universeScreening": "PIPELINE_PENDING",
+                "singleAssetAnalysis": "AVAILABLE",
+                "matchedCount": None,
+                "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
+                "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
+                "snapshotId": vcp_snapshot.get("snapshot_id"),
+                "freshnessStatus": freshness_info.get("status", "UNKNOWN"),
+                "reason": reason,
+                "populationDenominator": pop_denom,
+                "universeBuildId": build_id,
+                "universeId": univ_id,
+                "publicationDigest": pub_digest,
+                "isRollback": is_rollback,
+                "rollbackReason": rollback_reason,
+                "membershipStatus": membership_status,
+                "lifecycleState": "COMMITTED_PUBLICATION_SCANNER_NOT_ENROLLED" if pop_denom else "NO_COMMITTED_PUBLICATION",
+                "rationale": vcp_snapshot.get("detail") or "Automated market-wide volatility contraction screening is pending authoritative classifier integration.",
+            }
+        elif snap_status == "ERROR":
+            caps["VCP"] = {
+                "status": "ERROR",
+                "universeScreening": "ERROR",
+                "singleAssetAnalysis": "AVAILABLE",
+                "matchedCount": None,
+                "dataAsOf": None,
+                "generatedAt": None,
+                "snapshotId": None,
+                "freshnessStatus": "UNKNOWN",
+                "reason": vcp_snapshot.get("reason", "STORAGE_ERROR"),
+                "populationDenominator": pop_denom,
+                "universeBuildId": build_id,
+                "universeId": univ_id,
+                "publicationDigest": pub_digest,
+                "isRollback": is_rollback,
+                "rollbackReason": rollback_reason,
+                "membershipStatus": membership_status,
+                "lifecycleState": "ERROR",
+                "rationale": vcp_snapshot.get("detail", "VCP scanner snapshot store error."),
+            }
+        elif snap_status == "STALE":
+            raw_matched = vcp_snapshot.get("matched_count")
+            is_valid_count = type(raw_matched) is int and raw_matched >= 0
+            matched_count = raw_matched if is_valid_count else None
+            caps["VCP"] = {
+                "status": "AVAILABLE" if is_valid_count else "PIPELINE_PENDING",
+                "universeScreening": "AVAILABLE" if is_valid_count else "PIPELINE_PENDING",
+                "singleAssetAnalysis": "AVAILABLE",
+                "matchedCount": matched_count,
+                "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
+                "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
+                "snapshotId": vcp_snapshot.get("snapshot_id"),
+                "freshnessStatus": "STALE",
+                "populationDenominator": pop_denom,
+                "universeBuildId": build_id,
+                "universeId": univ_id,
+                "publicationDigest": pub_digest,
+                "isRollback": is_rollback,
+                "rollbackReason": rollback_reason,
+                "membershipStatus": membership_status,
+                "lifecycleState": "SCANNER_OPERATIONAL",
+                "rationale": "VCP scanner snapshot is stale past freshness policy cutoff.",
+            }
+    elif pop_denom:
+        caps["VCP"] = {
+            "status": "PIPELINE_PENDING",
+            "universeScreening": "PIPELINE_PENDING",
+            "singleAssetAnalysis": "AVAILABLE",
+            "matchedCount": None,
+            "populationDenominator": pop_denom,
+            "universeBuildId": build_id,
+            "universeId": univ_id,
+            "publicationDigest": pub_digest,
+            "isRollback": is_rollback,
+            "rollbackReason": rollback_reason,
+            "membershipStatus": "AVAILABLE",
+            "lifecycleState": "COMMITTED_PUBLICATION_SCANNER_NOT_ENROLLED",
+            "reason": "SCANNER_NOT_ENROLLED",
+            "rationale": f"Universe publication '{build_id}' active with {pop_denom} scannable symbols; batch scanner pipeline is pending operational activation.",
+        }
+
+    # Evaluate SMART_MONEY capability from authoritative snapshot
     if sm_snapshot and sm_snapshot.get("status") == "AVAILABLE":
         matched_cnt = sm_snapshot.get("matched_count", 0)
         caps["SMART_MONEY"] = {
@@ -135,6 +361,9 @@ def get_radar_capabilities(sm_snapshot: Optional[Dict[str, Any]] = None) -> Dict
             "subsignal": "INSIDER_FORM4",
             "rationale": "Single-asset SEC Form 4 and Congressional STOCK Act disclosures active on /smart-money; universe-level institutional accumulation screener pipeline is pending deployment.",
         }
+
+    return caps
+        }
     return caps
 
 
@@ -153,10 +382,15 @@ def derive_canonical_radar_categories(
     """
     cats: List[str] = []
 
-    # VALUE_GARP: Requires explicit known fundamental model membership or verified metrics
-    if expert_model in VALUE_GARP_MODELS:
-        cats.append("VALUE_GARP")
-    elif peg_ratio is not None and 0.0 < peg_ratio <= 1.05 and roic_pct is not None and roic_pct >= 15.0:
+    # Inactive / delisted securities are strictly excluded from active discovery categories
+    if symbol in CONFIRMED_CORPORATE_ACTIONS:
+        return cats
+
+    # VALUE_GARP: Requires quantitative valuation/quality qualification.
+    # Descriptive archetype strings alone do NOT certify qualification.
+    # Pre-existing established quantitative criteria: PEG <= 1.05 and ROIC >= 15.0%
+    # No invented replacement thresholds are permitted.
+    if peg_ratio is not None and 0.0 < peg_ratio <= 1.05 and roic_pct is not None and roic_pct >= 15.0:
         cats.append("VALUE_GARP")
 
     # VCP: Backed by deterministic market-wide scanner runner and verified snapshot
@@ -258,12 +492,41 @@ def run_screener_get(
         roic_val = r.get("roic_pct")
         margin_val = r.get("gross_margin_pct")
 
+        # Check for confirmed corporate actions (delistings / acquisitions)
+        corp_action = CONFIRMED_CORPORATE_ACTIONS.get(sym)
+        is_delisted = corp_action is not None
+
         # Retrieve current price and candles from market database
         latest_info = market_db.get_latest_price(sym)
         current_price = latest_info.get("currentPrice") if (latest_info and latest_info.get("currentPrice") and latest_info["currentPrice"] > 0) else None
+        raw_trade_date = latest_info.get("date") if latest_info else None
+        price_date = str(raw_trade_date)[:10] if (raw_trade_date and current_price is not None and not is_delisted) else None
+        price_basis = "DAILY_CLOSE" if (current_price is not None and price_date is not None) else None
         hist_df = pd.DataFrame()
 
-        if current_price is None or current_price <= 0:
+        if is_delisted:
+            execution = {
+                "current_price": current_price,
+                "optimal_entry_min": None,
+                "optimal_entry_max": None,
+                "stop_loss": None,
+                "stop_loss_pct": None,
+                "take_profit_1": None,
+                "take_profit_1_pct": None,
+                "take_profit_2": None,
+                "take_profit_2_pct": None,
+                "risk_reward_ratio": None,
+                "execution_status": "DELISTED_SECURITY",
+                "setup_pattern": "Delisted Security / Ceased Public Trading",
+                "entry_thesis": f"Security ceased trading pursuant to {corp_action['action_type']} ({corp_action['notes']}). Trade execution suppressed.",
+                "invalidation_condition": "Security delisted from exchange.",
+                "stage_phase": "Delisted / Inactive",
+                "vcp_contraction_status": "Inactive",
+                "breakout_pivot": None,
+                "atr_14": None,
+                "liquidity_defense": None,
+            }
+        elif current_price is None or current_price <= 0:
             current_price = None
             execution = {
                 "current_price": None,
@@ -308,7 +571,11 @@ def run_screener_get(
         atr_14 = execution.get("atr_14")
 
         # Pure Mathematical Execution State Determination
-        if execution.get("execution_status") == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
+        if is_delisted:
+            execution_status = "DELISTED_SECURITY"
+            status_label = corp_action["status_label"]
+            status_color = corp_action["status_color"]
+        elif execution.get("execution_status") == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
             execution_status = "UNVERIFIED_ASSET"
             status_label = "⚠️ Unverified Asset"
             status_color = "slate"
@@ -341,7 +608,17 @@ def run_screener_get(
         liq_def = execution.get("liquidity_defense")
 
         # Deterministic Smart Money & Catalyst Attributes
-        if execution_status == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
+        if is_delisted:
+            confluence_res = {
+                "confluenceScore": 0.0,
+                "confluenceRating": "Delisted Security / Inactive Listing",
+                "badgeColor": "rose",
+                "reasons": [corp_action["notes"]],
+                "warnings": ["Ceased public trading. Do not trade. Historical record retained for audit integrity."],
+            }
+            rvol_val = "N/A"
+            short_float_val = "N/A"
+        elif execution_status == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
             confluence_res = {
                 "confluenceScore": 0.0,
                 "confluenceRating": "Unverified Asset / No Market Data",
@@ -446,67 +723,90 @@ def run_screener_get(
         cand_evidence = classify_candidate_category_evidence(cand_categories)
 
         # Resolve Canonical Decision State under DecisionHierarchyEngine (Phase 2 Consolidation)
-        candle_count = len(hist_df) if (hist_df is not None and not hist_df.empty) else 0
-        has_fundamentals = bool(
-            execution_status != "UNVERIFIED_ASSET"
-            and any(r.get(k) is not None for k in ["quality_score", "growth_score", "valuation_score", "piotroski_f", "roic_pct", "peg_ratio"])
-        )
-        if execution_status == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
-            freshness_status = "UNAVAILABLE"
-        elif execution_status == "INSUFFICIENT_HISTORY" or candle_count < 50:
-            freshness_status = "INSUFFICIENT_HISTORY"
+        if is_delisted:
+            dec_state = {
+                "state": corp_action["decision_state"],
+                "label": "Delisted Security — Inactive",
+                "isActionable": False,
+                "canSizeTrade": False,
+                "disqualificationReason": f"Security ceased trading: {corp_action['notes']}",
+            }
         else:
-            freshness_status = "LIVE"
+            candle_count = len(hist_df) if (hist_df is not None and not hist_df.empty) else 0
+            has_fundamentals = bool(
+                execution_status != "UNVERIFIED_ASSET"
+                and any(r.get(k) is not None for k in ["quality_score", "growth_score", "valuation_score", "piotroski_f", "roic_pct", "peg_ratio"])
+            )
+            if execution_status == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
+                freshness_status = "UNAVAILABLE"
+            elif execution_status == "INSUFFICIENT_HISTORY" or candle_count < 50:
+                freshness_status = "INSUFFICIENT_HISTORY"
+            else:
+                freshness_status = "LIVE"
 
-        dec_state = DecisionHierarchyEngine.resolve_decision_state(
-            symbol=sym,
-            current_price=current_price or 0.0,
-            candle_count=candle_count,
-            freshness_status=freshness_status,
-            has_fundamentals=has_fundamentals,
-            confluence_score=float(confluence_res["confluenceScore"]),
-            stage_phase=execution.get("stage_phase") or setup_pat,
-            is_in_buy_zone=(execution_status == "IN_BUY_ZONE"),
-            risk_reward_ratio=rr_ratio,
-            is_cataloged=True,
-            is_confirmed=False,  # Invariant: Screener represents structural discovery only; cannot confirm execution triggers
-            user_role=user_role,
-        )
+            dec_state = DecisionHierarchyEngine.resolve_decision_state(
+                symbol=sym,
+                current_price=current_price or 0.0,
+                candle_count=candle_count,
+                freshness_status=freshness_status,
+                has_fundamentals=has_fundamentals,
+                confluence_score=float(confluence_res["confluenceScore"]),
+                stage_phase=execution.get("stage_phase") or setup_pat,
+                is_in_buy_zone=(execution_status == "IN_BUY_ZONE"),
+                risk_reward_ratio=rr_ratio,
+                is_cataloged=True,
+                is_confirmed=False,  # Invariant: Screener represents structural discovery only; cannot confirm execution triggers
+                user_role=user_role,
+            )
 
         mapped_candidates.append({
             "ticker": sym,
             "symbol": sym,
             "companyName": r.get("company_name", sym),
             "currentPrice": current_price,
-            "gemScore": int(r.get("composite_score")) if r.get("composite_score") is not None else (0 if execution_status == "UNVERIFIED_ASSET" else None),
+            "priceBasis": price_basis,
+            "priceDate": price_date,
+            "gemScore": int(r.get("composite_score")) if (r.get("composite_score") is not None and execution_status != "UNVERIFIED_ASSET") else None,
             "expertArchetype": model_name or ("Unverified Asset" if execution_status == "UNVERIFIED_ASSET" else None),
             "categories": cand_categories,
             "categoryEvidence": cand_evidence,
             "roic": f"{roic_val}%" if roic_val is not None else "N/A",
-            "pegRatio": str(r.get("peg_ratio")) if r.get("peg_ratio") is not None else ("0.0" if execution_status == "UNVERIFIED_ASSET" else "N/A"),
+            "pegRatio": str(r.get("peg_ratio")) if r.get("peg_ratio") is not None else "N/A",
             "grossMargin": f"{margin_val}%" if margin_val is not None else "N/A",
-            "atr14": f"${atr_14:.2f}" if (atr_14 is not None and execution_status not in ["UNVERIFIED_ASSET", "INSUFFICIENT_HISTORY"]) else "N/A",
+            "atr14": f"${atr_14:.2f}" if (atr_14 is not None and execution_status not in ["UNVERIFIED_ASSET", "INSUFFICIENT_HISTORY", "DELISTED_SECURITY"]) else "N/A",
             "rvol": rvol_val,
             "shortFloat": short_float_val,
-            "dayTraderSetup": "Pricing and intraday VWAP tape unavailable." if execution_status == "UNVERIFIED_ASSET" else "Intraday momentum trend continuation above 5m VWAP anchor with defined ATR risk.",
+            "dayTraderSetup": "Pricing and intraday VWAP tape unavailable." if execution_status == "UNVERIFIED_ASSET" else ("Trading suspended for delisted security." if is_delisted else "Intraday momentum trend continuation above 5m VWAP anchor with defined ATR risk."),
             "thesis": r.get("investment_thesis", "Disclosures and market data unavailable for unverified security." if execution_status == "UNVERIFIED_ASSET" else ("High relative volume momentum with clear intraday VWAP risk definition." if is_day_trader else "High return on capital with strong free cash flows.")),
             "catalyst": r.get("primary_catalyst", "Awaiting verified disclosures." if execution_status == "UNVERIFIED_ASSET" else ("Intraday institutional flow breakout." if is_day_trader else "Product cycle expansion and margin gains.")),
-            "riskLevel": "Unverified Risk" if execution_status == "UNVERIFIED_ASSET" else ("High Volatility (Intraday)" if is_day_trader else r.get("risk_rating", "Low-to-Medium Risk")),
+            "riskLevel": "Unverified Risk" if execution_status == "UNVERIFIED_ASSET" else ("Delisted / Closed Position" if is_delisted else ("High Volatility (Intraday)" if is_day_trader else r.get("risk_rating", "Low-to-Medium Risk"))),
             # Execution Scanner Levels & Structural Geometry
             "executionStatus": execution_status,
             "statusLabel": status_label,
             "statusColor": status_color,
-            "screeningStatus": "SCREENING_ZONE" if execution_status == "IN_BUY_ZONE" else execution_status,
-            "screeningGeometry": "WITHIN_TOLERANCE" if execution_status == "IN_BUY_ZONE" else "OUTSIDE_TOLERANCE",
-            "screeningEligible": bool(execution_status in ["IN_BUY_ZONE", "APPROACHING_TARGET"]),
+            "screeningStatus": "DELISTED" if is_delisted else ("SCREENING_ZONE" if execution_status == "IN_BUY_ZONE" else execution_status),
+            "screeningGeometry": "INACTIVE" if is_delisted else ("WITHIN_TOLERANCE" if execution_status == "IN_BUY_ZONE" else "OUTSIDE_TOLERANCE"),
+            "screeningEligible": False if is_delisted else bool(execution_status in ["IN_BUY_ZONE", "APPROACHING_TARGET"]),
+            "corporateAction": corp_action,
+            "fundamentalEvidence": {
+                "provenance": "STATIC_REFERENCE_CATALOG" if sym in screener.KNOWN_GEMS_DATA else "UNVERIFIED",
+                "isCatalogReference": bool(sym in screener.KNOWN_GEMS_DATA),
+                "metricBasis": "HISTORICAL_PRE_ACQUISITION_CATALOG" if is_delisted else ("HISTORICAL_CATALOG_VALUE" if sym in screener.KNOWN_GEMS_DATA else "MISSING"),
+                "asOfDate": corp_action["effective_date"] if is_delisted else ("CURATED_CATALOG_BASELINE" if sym in screener.KNOWN_GEMS_DATA else None),
+                "listingStatus": corp_action["status"] if is_delisted else (ATTRIBUTABLE_LIFECYCLE_EVIDENCE[sym]["status"] if sym in ATTRIBUTABLE_LIFECYCLE_EVIDENCE else "UNVERIFIED"),
+                "lifecycleEvidenceSource": corp_action.get("action_type") if is_delisted else (ATTRIBUTABLE_LIFECYCLE_EVIDENCE[sym].get("source") if sym in ATTRIBUTABLE_LIFECYCLE_EVIDENCE else None),
+                "isAudited": False,
+                "qualificationState": "INELIGIBLE_INACTIVE" if is_delisted else ("REFERENCE_CRITERIA_MET" if "VALUE_GARP" in cand_categories else ("REFERENCE_CRITERIA_UNMET" if sym in screener.KNOWN_GEMS_DATA else "UNASSESSED_INSUFFICIENT_EVIDENCE")),
+                "sortingBasis": "TECHNICAL_CONFLUENCE_MOMENTUM" if not is_delisted and execution_status != "UNVERIFIED_ASSET" else "UNAVAILABLE",
+            },
             "optimalEntryMin": entry_min,
             "optimalEntryMax": entry_max,
             "stopLoss": stop_loss,
-            "stopLossPct": round(((stop_loss - current_price) / current_price) * 100, 1) if (stop_loss is not None and current_price > 0) else None,
+            "stopLossPct": round(((stop_loss - current_price) / current_price) * 100, 1) if (stop_loss is not None and current_price is not None and current_price > 0) else None,
             "takeProfit1": tp1,
-            "takeProfit1Pct": round(((tp1 - current_price) / current_price) * 100, 1) if (tp1 is not None and current_price > 0) else None,
+            "takeProfit1Pct": round(((tp1 - current_price) / current_price) * 100, 1) if (tp1 is not None and current_price is not None and current_price > 0) else None,
             "takeProfit2": tp2,
-            "takeProfit2Pct": round(((tp2 - current_price) / current_price) * 100, 1) if (tp2 is not None and current_price > 0) else None,
+            "takeProfit2Pct": round(((tp2 - current_price) / current_price) * 100, 1) if (tp2 is not None and current_price is not None and current_price > 0) else None,
             "riskRewardRatio": rr_ratio,
             "setupPattern": setup_pat,
             "entryThesis": entry_th,
@@ -515,7 +815,7 @@ def run_screener_get(
             "decisionStateLabel": "Discovery Candidate — Analyze for Trigger" if dec_state["state"] == "ACTIONABLE_SETUP" else dec_state["label"],
             "isActionable": False,  # Screener cannot declare trade actionability; execution requires DecisionTrace
             "canSizeTrade": False,  # Sizing disabled in discovery screener
-            "allowedActions": ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"],
+            "allowedActions": [] if is_delisted else (["RESEARCH_PROFILE"] if execution_status == "UNVERIFIED_ASSET" else ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"]),
             "disqualificationReason": dec_state.get("disqualificationReason") or "Discovery candidate: Open in Analysis hub to evaluate canonical DecisionTrace.",
             "decisionContextId": f"dec-radar-{sym}-{int(time.time() * 1000)}",
             "macroContextId": shared_macro_context_id,
@@ -529,6 +829,7 @@ def run_screener_get(
         })
 
     # Apply Selected Filter dynamically based on numerical thresholds
+    non_tradable = ["UNVERIFIED_ASSET", "DELISTED_SECURITY"]
     if filter_type in ["in_buy_zone", "vwap_pullback"]:
         filtered = [c for c in mapped_candidates if c["executionStatus"] == "IN_BUY_ZONE"]
     elif filter_type in ["approaching_target", "orb_breakout"]:
@@ -536,26 +837,39 @@ def run_screener_get(
     elif filter_type == "high_rr":
         filtered = [
             c for c in mapped_candidates
-            if c.get("riskRewardRatio") is not None and c["riskRewardRatio"] >= 2.0 and (c["executionStatus"] == "IN_BUY_ZONE" or (c.get("optimalEntryMax") is not None and c["currentPrice"] <= c["optimalEntryMax"] * 1.02))
+            if c["executionStatus"] not in non_tradable
+            and c.get("riskRewardRatio") is not None and c["riskRewardRatio"] >= 2.0 and (c["executionStatus"] == "IN_BUY_ZONE" or (c.get("optimalEntryMax") is not None and c["currentPrice"] is not None and c["currentPrice"] <= c["optimalEntryMax"] * 1.02))
         ]
     elif filter_type == "high_confluence":
-        filtered = [c for c in mapped_candidates if c["confluenceScore"] >= 80.0 and c["executionStatus"] != "UNVERIFIED_ASSET"]
+        filtered = [c for c in mapped_candidates if c["confluenceScore"] >= 80.0 and c["executionStatus"] not in non_tradable]
     elif filter_type == "high_rvol":
-        filtered = [c for c in mapped_candidates if c["rvol"] != "N/A" and float(c["rvol"].replace("x", "")) >= 2.5]
+        filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and c["rvol"] != "N/A" and float(c["rvol"].replace("x", "")) >= 2.5]
     elif filter_type == "squeeze":
-        filtered = [c for c in mapped_candidates if c["shortFloat"] != "N/A" and float(c["shortFloat"].replace("%", "")) >= 6.0]
+        filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and c["shortFloat"] != "N/A" and float(c["shortFloat"].replace("%", "")) >= 6.0]
     elif filter_type == "lynch":
-        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and ((0 < float(c["pegRatio"]) <= 1.05) or (c["expertArchetype"] and ("Lynch" in c["expertArchetype"] or "GARP" in c["expertArchetype"])))]
+        filtered = [
+            c for c in mapped_candidates
+            if c["executionStatus"] not in non_tradable
+            and ((c.get("pegRatio") not in [None, "N/A"] and 0 < float(c["pegRatio"]) <= 1.05) or (c.get("expertArchetype") and ("Lynch" in c["expertArchetype"] or "GARP" in c["expertArchetype"])))
+            and "VALUE_GARP" in c["categories"]
+        ]
     elif filter_type == "greenblatt":
-        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and (float(c["roic"].replace("%", "")) >= 28.0 or (c["expertArchetype"] and ("Greenblatt" in c["expertArchetype"] or "Magic" in c["expertArchetype"])))]
+        filtered = [
+            c for c in mapped_candidates
+            if c["executionStatus"] not in non_tradable
+            and (
+                (c.get("roic") not in [None, "N/A"] and float(c["roic"].replace("%", "")) >= 28.0)
+                or (c.get("expertArchetype") and ("Greenblatt" in c["expertArchetype"] or "Magic" in c["expertArchetype"]))
+            )
+        ]
     elif filter_type == "rule_breakers":
-        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and (float(c["grossMargin"].replace("%", "")) >= 65.0 or (c["expertArchetype"] and ("Rule Breakers" in c["expertArchetype"] or "Disruptive" in c["expertArchetype"])))]
+        filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and (c.get("grossMargin") not in [None, "N/A"] and float(c["grossMargin"].replace("%", "")) >= 65.0)]
     elif filter_type == "value_garp":
-        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and "VALUE_GARP" in c["categories"]]
+        filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and "VALUE_GARP" in c["categories"]]
     elif filter_type == "vcp":
-        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and "VCP" in c["categories"]]
+        filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and "VCP" in c["categories"]]
     elif filter_type == "smart_money":
-        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and "SMART_MONEY" in c["categories"]]
+        filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and "SMART_MONEY" in c["categories"]]
     else:
         filtered = mapped_candidates
 
@@ -579,14 +893,30 @@ def run_screener_get(
         candle_count=len(filtered),
     )
 
+    # Derive canonical candidate population model per ARX Closure Model v2 Gate B
+    reference_count = len(active_universe)
+    active_candidates = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable]
+    opportunity_candidates = [c for c in active_candidates if c.get("screeningEligible")]
+    delisted_candidates = [c for c in mapped_candidates if c["executionStatus"] == "DELISTED_SECURITY"]
+    unverified_candidates = [c for c in mapped_candidates if c["executionStatus"] == "UNVERIFIED_ASSET"]
+
+    population_model = {
+        "referenceUniverseCount": reference_count,
+        "activeScreeningCount": len(active_candidates),
+        "currentOpportunityCount": len(opportunity_candidates),
+        "delistedRecordCount": len(delisted_candidates),
+        "unverifiedRecordCount": len(unverified_candidates),
+    }
+
     return {
-        "totalCandidates": len(active_universe),
+        "totalCandidates": reference_count,
         "gemsFound": len(filtered),
         "activeFilter": filter_type,
         "userRole": user_role,
-        "capabilities": get_radar_capabilities(sm_snapshot),
+        "capabilities": get_radar_capabilities(vcp_snapshot=vcp_snapshot, sm_snapshot=sm_snapshot),
         "macroContextId": shared_macro_context_id,
         "macroDifficulty": shared_macro,
+        "population": population_model,
         "candidates": filtered,
         "results": results,
         "evidence": radar_evidence.to_dict(),
@@ -682,6 +1012,88 @@ def trigger_vcp_scan(
             universe_build_id=universe_build_id,
             operator_request_id=x_operator_request_id,
             logical_job_key=logical_job_key,
+        )
+    except RuntimeError as e:
+        if "OVERLAPPING_VCP_SCANS_PROHIBITED" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(e),
+            )
+        raise
+    except Exception as e:
+        if "FENCED_REJECTED" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(e),
+            )
+        raise
+
+
+@router.post("/vcp/natural-scan")
+def trigger_natural_vcp_scan(
+    payload: Optional[VCPNaturalScanRequest] = None,
+    x_scheduler_token: Optional[str] = Header(None, alias="X-Scheduler-Token"),
+    x_scheduler_job_id: Optional[str] = Header(None, alias="X-Scheduler-Job-Id"),
+    x_scheduler_event_id: Optional[str] = Header(None, alias="X-Scheduler-Event-Id"),
+):
+    """
+    Authoritative natural production trigger for Minervini VCP market-wide EOD scans.
+    Disabled by default: requires VCP_NATURAL_SCHEDULER_ENABLED=1.
+    Protected by constant-time X-Scheduler-Token authentication against dedicated VCP_SCHEDULER_SECRET.
+    Invokes NaturalVCPTriggerService with invocation_class=SCHEDULED_PRODUCTION and candidate_generation_id=CANDIDATE_GENERATION_004.
+    """
+    if not is_vcp_natural_scheduler_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="NATURAL_SCHEDULER_DISABLED: VCP natural scheduling entry point is disabled in current deployment.",
+        )
+    if not verify_scheduler_token(x_scheduler_token):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="SCHEDULER_AUTHENTICATION_FAILED: Valid X-Scheduler-Token required for natural trigger execution.",
+        )
+
+    from analyst_dashboard.vcp.natural_trigger import get_natural_vcp_trigger_service
+    from analyst_dashboard.vcp.session_guard import evaluate_natural_session_eligibility
+
+    req_date = payload.scheduled_date if payload else None
+    req_build = payload.universe_build_id if payload else None
+    eff_job = (payload.scheduler_job_id if payload and payload.scheduler_job_id else None) or x_scheduler_job_id
+    eff_event = (payload.scheduler_event_id if payload and payload.scheduler_event_id else None) or x_scheduler_event_id
+
+    # Step 3: Server-side exchange-session eligibility & settlement window enforcement
+    # Evaluates against authorized published executable universe (INV-U01, INV-U02, INV-U04)
+    universe_store = getattr(vcp_scanner_runner, "universe_store", None)
+    eligibility = evaluate_natural_session_eligibility(
+        session_date=req_date,
+        check_data_freshness=True,
+        universe_symbols=None,
+        universe_build_id=req_build,
+        universe_store=universe_store,
+        market_db=vcp_scanner_runner.market_db,
+    )
+    if not eligibility.is_eligible:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "status": "REJECTED",
+                "reason": eligibility.reason,
+                "session_date": eligibility.session_date,
+                "earliest_execution_utc": eligibility.earliest_execution_utc,
+                "latest_execution_utc": eligibility.latest_execution_utc,
+                "coverage_ratio": eligibility.coverage_ratio,
+                "detail": eligibility.detail,
+            },
+        )
+
+    trigger_svc = get_natural_vcp_trigger_service()
+
+    try:
+        return trigger_svc.trigger_natural_scan(
+            scheduled_date=req_date,
+            universe_build_id=eligibility.universe_build_id or req_build,
+            scheduler_job_id=eff_job,
+            scheduler_event_id=eff_event,
         )
     except RuntimeError as e:
         if "OVERLAPPING_VCP_SCANS_PROHIBITED" in str(e):

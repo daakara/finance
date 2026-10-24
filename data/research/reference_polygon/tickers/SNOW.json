@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "SNOW",
+    "name": "Snowflake Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001640147",
+    "composite_figi": "BBG007DHGNJ4",
+    "share_class_figi": "BBG007DHGNK2",
+    "last_updated_utc": "2026-10-18T06:10:11.415963897Z"
+  },
+  "status": "OK"
+}

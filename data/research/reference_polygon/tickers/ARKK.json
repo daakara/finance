@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "ARKK",
+    "name": "ARK Innovation ETF",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "BATS",
+    "type": "ETF",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001697748",
+    "composite_figi": "BBG007FJMV58",
+    "share_class_figi": "BBG007FJMV49",
+    "last_updated_utc": "2026-10-18T06:10:11.413784762Z"
+  },
+  "status": "OK"
+}

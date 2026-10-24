@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "MSFT",
+    "name": "Microsoft Corp",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000789019",
+    "composite_figi": "BBG000BPH459",
+    "share_class_figi": "BBG001S5TD05",
+    "last_updated_utc": "2026-10-18T06:10:11.4155463Z"
+  },
+  "status": "OK"
+}

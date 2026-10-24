@@ -15,7 +15,10 @@
  *    NEVER "Wait for Trigger".
  */
 
-import { DecisionReadinessResult } from "./decisionReadiness";
+import {
+  DecisionReadinessResult,
+  validateCanonicalActionable,
+} from "./decisionReadiness";
 
 export interface PresentationBadgeStyle {
   bg: string;
@@ -45,7 +48,7 @@ export interface PresentationResolverParams {
   decisionState?: string | null;
   decisionStateLabel?: string | null;
   executionStatus?: string | null;
-  isActionable?: boolean | null;
+  isActionable?: boolean | string | null;
   disqualificationReason?: string | null;
   readinessResult?: DecisionReadinessResult | null;
 }
@@ -60,7 +63,7 @@ export function resolvePresentationState(params: PresentationResolverParams): Fo
     readinessResult,
   } = params;
 
-  const actionable = Boolean(isActionable);
+  const actionable = validateCanonicalActionable(isActionable);
   const statusUpper = (executionStatus || "").toUpperCase().trim();
   const stateUpper = (decisionState || "").toUpperCase().trim();
 

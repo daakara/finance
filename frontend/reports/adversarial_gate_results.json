@@ -1,0 +1,73 @@
+{
+  "timestamp": "2026-10-24T22:39:07.459Z",
+  "totalMutationsTested": 8,
+  "mutationsSuccessfullyBlocked": 8,
+  "cleanCandidateRestoredAndPassed": true,
+  "disposition": "PASS",
+  "results": [
+    {
+      "id": "DEFECT_1_REMOVE_INSTITUTIONAL_FLOW",
+      "name": "Remove Institutional Flow Pillar",
+      "defectInjected": true,
+      "gateExitedNonZero": true,
+      "rejectionPatternMatched": true,
+      "verdict": "SUCCESSFULLY_BLOCKED"
+    },
+    {
+      "id": "DEFECT_2_REMOVE_ANOTHER_CONFLUENCE_PILLAR",
+      "name": "Remove Fundamental Moat Pillar",
+      "defectInjected": true,
+      "gateExitedNonZero": true,
+      "rejectionPatternMatched": true,
+      "verdict": "SUCCESSFULLY_BLOCKED"
+    },
+    {
+      "id": "DEFECT_3_DUPLICATE_LEGACY_DECISION_READINESS",
+      "name": "Unsubordinated Decision Readiness Progression",
+      "defectInjected": true,
+      "gateExitedNonZero": true,
+      "rejectionPatternMatched": true,
+      "verdict": "SUCCESSFULLY_BLOCKED"
+    },
+    {
+      "id": "DEFECT_4_COMPETING_PREFLIGHT_CLEARANCE_DISPLAY",
+      "name": "Competing Primary Clearance Verdict",
+      "defectInjected": true,
+      "gateExitedNonZero": true,
+      "rejectionPatternMatched": true,
+      "verdict": "SUCCESSFULLY_BLOCKED"
+    },
+    {
+      "id": "DEFECT_5_CONTRADICTORY_ACTIONABILITY_TEXT",
+      "name": "Contradictory Actionability in Pre-Flight Bar",
+      "defectInjected": true,
+      "gateExitedNonZero": true,
+      "rejectionPatternMatched": true,
+      "verdict": "SUCCESSFULLY_BLOCKED"
+    },
+    {
+      "id": "DEFECT_6_RENDER_UNDEFINED_AS_SCORE_DESCRIPTION",
+      "name": "Render 'undefined' Token in Score Display",
+      "defectInjected": true,
+      "gateExitedNonZero": true,
+      "rejectionPatternMatched": true,
+      "verdict": "SUCCESSFULLY_BLOCKED"
+    },
+    {
+      "id": "DEFECT_7_SUPPRESS_REQUIRED_EVIDENCE_DISCLOSURE",
+      "name": "Suppress Composite Conviction Evidence Slot",
+      "defectInjected": true,
+      "gateExitedNonZero": true,
+      "rejectionPatternMatched": true,
+      "verdict": "SUCCESSFULLY_BLOCKED"
+    },
+    {
+      "id": "DEFECT_8_BREAK_MOBILE_RESPONSIVE_COMPOSITION",
+      "name": "Remove 5-Step Stepper Suppression",
+      "defectInjected": true,
+      "gateExitedNonZero": true,
+      "rejectionPatternMatched": true,
+      "verdict": "SUCCESSFULLY_BLOCKED"
+    }
+  ]
+}

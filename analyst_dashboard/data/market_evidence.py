@@ -20,6 +20,7 @@ class Provider:
     FRED = "FRED"
     EODHD = "EODHD"
     SEC_EDGAR = "SEC_EDGAR"
+    ALPACA = "ALPACA"
     UNKNOWN = "UNKNOWN"
 
 
@@ -59,6 +60,7 @@ class ObservationSource:
 
 class AdjustmentState:
     SPLIT_AND_DIVIDEND_ADJUSTED = "SPLIT_AND_DIVIDEND_ADJUSTED"
+    SPLIT_ADJUSTED_ONLY = "SPLIT_ADJUSTED_ONLY"
     UNADJUSTED = "UNADJUSTED"
     UNKNOWN = "UNKNOWN"
 

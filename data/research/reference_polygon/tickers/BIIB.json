@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "BIIB",
+    "name": "Biogen Inc. Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000875045",
+    "composite_figi": "BBG000C17X76",
+    "share_class_figi": "BBG001S67826",
+    "last_updated_utc": "2026-10-18T06:10:11.413885173Z"
+  },
+  "status": "OK"
+}

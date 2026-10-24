@@ -1,0 +1,320 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "manifest_id": "MANIFEST-PILOT-EXPANSION-150-B-001",
+  "manifest_version": "1.0.0",
+  "title": "Four-Security Historical Market-Data Ingestion Pilot Manifest",
+  "governance_status": {
+    "authorization_state": "PROPOSED_NOT_AUTHORIZED",
+    "is_authorized": false,
+    "authorized_by": null,
+    "operational_authority": "G-S2-ACT",
+    "deferred_gate_reference": "G-VCP-012",
+    "generated_at_utc": "2026-10-21T07:30:00Z",
+    "review_status": "QUALIFIED_PREFLIGHT_AWAITING_EXPLICIT_SIGNATURE",
+    "prohibitions": [
+      "Zero production database mutation permitted under this document.",
+      "Does not authorize Package C universe publication.",
+      "Does not authorize live radar scanner activation.",
+      "Does not authorize Gate 12 release."
+    ]
+  },
+  "target_store": {
+    "environment": "production",
+    "service": "web",
+    "project_id": "a339a92a-7236-4ac0-9a3a-d7ad440f9690",
+    "container_name": "tranquil-radiance",
+    "target_database_path": "/root/.finance_market_store.db",
+    "table_daily_candles": "asset_ohlcv_daily",
+    "table_provenance": "asset_ohlcv_provenance",
+    "journal_mode": "WAL",
+    "connection_mode_read": "file:/root/.finance_market_store.db?mode=ro",
+    "connection_mode_write": "file:/root/.finance_market_store.db?busy_timeout=30000"
+  },
+  "provider_configuration": {
+    "provider_name": "Alpaca Market Data API v2",
+    "endpoint_template": "https://data.alpaca.markets/v2/stocks/{symbol}/bars",
+    "tape_feed": "sip",
+    "prohibited_feeds": [
+      "iex"
+    ],
+    "adjustment_convention": "split",
+    "pagination_limit_per_page": 1000,
+    "max_pagination_budget": 25,
+    "retry_policy": {
+      "max_retries": 3,
+      "backoff_base_sec": 1.5,
+      "retryable_status_codes": [
+        500,
+        502,
+        503,
+        504
+      ],
+      "fail_closed_status_codes": [
+        400,
+        401,
+        403,
+        404,
+        422
+      ]
+    }
+  },
+  "acquisition_window": {
+    "strategy_type": "CALENDAR_WINDOW_REQUEST_STRATEGY",
+    "requested_start_date": "2025-09-15",
+    "requested_end_date": "2026-10-19",
+    "calendar_days_count": 400,
+    "expected_nyse_sessions_count": 276,
+    "minimum_acceptable_bars": 260,
+    "exchange_calendar_authority": "exchange_calendars:XNYS",
+    "ceiling_determination_rule": "DYNAMIC_LATEST_COMPLETED_SESSION"
+  },
+  "backup_policy": {
+    "mandatory_pre_apply_backup": true,
+    "backup_directory": "/root/backups/",
+    "backup_filename_template": "finance_market_store_pre_pilot_%Y%m%d_%H%M%S.db",
+    "backup_method": "SQLITE_ONLINE_BACKUP_API",
+    "verification_checks": [
+      "PRAGMA integrity_check == 'ok'",
+      "Complete preservation of asset_ohlcv_daily and asset_ohlcv_provenance tables",
+      "Bit-for-bit SHA-256 agreement logged to receipt file"
+    ]
+  },
+  "pilot_candidates": [
+    {
+      "symbol": "AAPL",
+      "durable_security_id": "ARX_SEC_0B4C728FE0BE",
+      "listing_association_id": "ASSOC_ARX_SEC_0B4C728FE0BE_XNAS_AAPL_2026-10-17",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000320193",
+      "share_class": null,
+      "company_name": "Apple Inc.",
+      "pre_execution_store_state": {
+        "daily_bar_count": 288,
+        "provenance_count": 0,
+        "coverage_classification": "PRESENT_FRESH_UNPROVENANCED"
+      },
+      "mandated_action": "BACKFILL",
+      "action_rationale": "Existing 288 bars lack provenance sidecars in asset_ohlcv_provenance; requires full replacement with verified Alpaca SIP data to establish qualified lineage.",
+      "acceptance_criteria": {
+        "min_bars_ingested": 260,
+        "max_bars_ingested": 276,
+        "expected_provenance_count": 276,
+        "provenance_provider": "ALPACA",
+        "provenance_adjustment_state": "SPLIT_ADJUSTED_ONLY",
+        "zero_missing_sessions_in_window": true
+      }
+    },
+    {
+      "symbol": "GOOG",
+      "durable_security_id": "ARX_SEC_A11A24D442E2",
+      "listing_association_id": "ASSOC_ARX_SEC_A11A24D442E2_XNAS_GOOG_2026-10-17",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001652044",
+      "share_class": "CLASS_C",
+      "company_name": "Alphabet Inc. (Class C Capital Stock)",
+      "pre_execution_store_state": {
+        "daily_bar_count": 287,
+        "provenance_count": 287,
+        "stored_provider": "MASSIVE_POLYGON",
+        "coverage_classification": "PRESENT_STALE_PROV_CERT"
+      },
+      "mandated_action": "BACKFILL",
+      "action_rationale": "Canonical lineage homogeneity invariant forbids appending Alpaca SIP tail bars onto stored MASSIVE_POLYGON history; requires bounded full replacement with pure Alpaca SIP data.",
+      "acceptance_criteria": {
+        "min_bars_ingested": 260,
+        "max_bars_ingested": 276,
+        "expected_provenance_count": 276,
+        "provenance_provider": "ALPACA",
+        "provenance_adjustment_state": "SPLIT_ADJUSTED_ONLY",
+        "zero_missing_sessions_in_window": true
+      }
+    },
+    {
+      "symbol": "GOOGL",
+      "durable_security_id": "ARX_SEC_B7EF9ED7A35A",
+      "listing_association_id": "ASSOC_ARX_SEC_B7EF9ED7A35A_XNAS_GOOGL_2026-10-17",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001652044",
+      "share_class": "CLASS_A",
+      "company_name": "Alphabet Inc. (Class A Common Stock)",
+      "pre_execution_store_state": {
+        "daily_bar_count": 288,
+        "provenance_count": 0,
+        "coverage_classification": "PRESENT_FRESH_UNPROVENANCED"
+      },
+      "mandated_action": "BACKFILL",
+      "action_rationale": "Existing 288 bars lack provenance sidecars in asset_ohlcv_provenance; requires full replacement with verified Alpaca SIP data while strictly maintaining economic and voting class separation from GOOG.",
+      "acceptance_criteria": {
+        "min_bars_ingested": 260,
+        "max_bars_ingested": 276,
+        "expected_provenance_count": 276,
+        "provenance_provider": "ALPACA",
+        "provenance_adjustment_state": "SPLIT_ADJUSTED_ONLY",
+        "zero_missing_sessions_in_window": true
+      }
+    },
+    {
+      "symbol": "ABBV",
+      "durable_security_id": "ARX_SEC_BFA51AC4C0B5",
+      "listing_association_id": "ASSOC_ARX_SEC_BFA51AC4C0B5_XNYS_ABBV_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001551152",
+      "share_class": null,
+      "company_name": "AbbVie Inc.",
+      "pre_execution_store_state": {
+        "daily_bar_count": 0,
+        "provenance_count": 0,
+        "coverage_classification": "MISSING"
+      },
+      "mandated_action": "BACKFILL",
+      "action_rationale": "Initial empty-state ingestion for a brand new NYSE-listed corporate equity registered under PLAN_ADOPT_9A2E4E04E878.",
+      "acceptance_criteria": {
+        "min_bars_ingested": 260,
+        "max_bars_ingested": 276,
+        "expected_provenance_count": 276,
+        "provenance_provider": "ALPACA",
+        "provenance_adjustment_state": "SPLIT_ADJUSTED_ONLY",
+        "zero_missing_sessions_in_window": true
+      }
+    }
+  ],
+  "abort_and_rollback_triggers": [
+    "Provider returns HTTP 401 Unauthorized or HTTP 403 Forbidden.",
+    "Authoritative NYSE trading calendar dependency is unavailable.",
+    "Bar series validation detects non-positive prices, OHLC geometric inversions, or fractional volume.",
+    "Pagination token cycle detected or budget exhausted (max_pages > 25).",
+    "Candidate symbol identity mismatch returned by provider.",
+    "Pre-apply SQLite backup creation or verification fails.",
+    "Database write lock timeout (30,000ms exceeded)."
+  ],
+  "post_execution_acceptance_readback": {
+    "readback_connection": "file:/root/.finance_market_store.db?mode=ro",
+    "readback_checks": [
+      "PRAGMA integrity_check == 'ok'",
+      "All 4 pilot symbols possess >= 260 daily bars terminating at 2026-10-19",
+      "All 4 pilot symbols possess matching row counts in asset_ohlcv_provenance with provider='ALPACA'",
+      "API analytics probe GET /api/v1/analytics/ABBV returns HTTP 200 OK with valid technical indicators"
+    ]
+  },
+  "recovery_policy": {
+    "recovery_method": "GUARDED_NONDESTRUCTIVE_INCIDENT_RECOVERY",
+    "prohibited_actions": [
+      "Wildcard file deletion (rm -f *.db*)",
+      "Implicit kill -9 or unverified termination",
+      "Direct unquarantined file overwrite",
+      "Restoration while competing writers or uncommitted transactions exist"
+    ],
+    "mandatory_steps": [
+      "1. Formal operator incident authorization token (G-S2-ACT or INC-G-S2-...).",
+      "2. Halt new ingestion processes and verify competing writers disabled.",
+      "3. Verify database access quiescence via exclusive lock check before replacement.",
+      "4. Non-destructively quarantine affected .db, .db-wal, and .db-shm files into incident evidence directory.",
+      "5. Verify backup file existence, SHA-256 digest match, and PRAGMA integrity_check.",
+      "6. Stage restoration into isolated .restore_candidate file before controlled atomic replacement.",
+      "7. Verify restored schema, row counts, provenance sidecars, and identity consistency via readback.",
+      "8. Reopen application access only after post-restoration verification passes 100%.",
+      "9. Emit cryptographically signed incident and recovery receipt JSON."
+    ],
+    "incident_evidence_directory": "/root/incident_quarantine/",
+    "recovery_cli_tool": "scripts/guarded_market_recovery.py"
+  },
+  "candidates": [
+    {
+      "symbol": "AAPL",
+      "durable_security_id": "ARX_SEC_0B4C728FE0BE",
+      "listing_association_id": "ASSOC_ARX_SEC_0B4C728FE0BE_XNAS_AAPL_2026-10-17",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000320193",
+      "share_class": null,
+      "company_name": "Apple Inc.",
+      "pre_execution_store_state": {
+        "daily_bar_count": 288,
+        "provenance_count": 0,
+        "coverage_classification": "PRESENT_FRESH_UNPROVENANCED"
+      },
+      "mandated_action": "BACKFILL",
+      "action_rationale": "Existing 288 bars lack provenance sidecars in asset_ohlcv_provenance; requires full replacement with verified Alpaca SIP data to establish qualified lineage.",
+      "acceptance_criteria": {
+        "min_bars_ingested": 260,
+        "max_bars_ingested": 276,
+        "expected_provenance_count": 276,
+        "provenance_provider": "ALPACA",
+        "provenance_adjustment_state": "SPLIT_ADJUSTED_ONLY",
+        "zero_missing_sessions_in_window": true
+      }
+    },
+    {
+      "symbol": "GOOG",
+      "durable_security_id": "ARX_SEC_A11A24D442E2",
+      "listing_association_id": "ASSOC_ARX_SEC_A11A24D442E2_XNAS_GOOG_2026-10-17",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001652044",
+      "share_class": "CLASS_C",
+      "company_name": "Alphabet Inc. (Class C Capital Stock)",
+      "pre_execution_store_state": {
+        "daily_bar_count": 287,
+        "provenance_count": 287,
+        "stored_provider": "MASSIVE_POLYGON",
+        "coverage_classification": "PRESENT_STALE_PROV_CERT"
+      },
+      "mandated_action": "BACKFILL",
+      "action_rationale": "Canonical lineage homogeneity invariant forbids appending Alpaca SIP tail bars onto stored MASSIVE_POLYGON history; requires bounded full replacement with pure Alpaca SIP data.",
+      "acceptance_criteria": {
+        "min_bars_ingested": 260,
+        "max_bars_ingested": 276,
+        "expected_provenance_count": 276,
+        "provenance_provider": "ALPACA",
+        "provenance_adjustment_state": "SPLIT_ADJUSTED_ONLY",
+        "zero_missing_sessions_in_window": true
+      }
+    },
+    {
+      "symbol": "GOOGL",
+      "durable_security_id": "ARX_SEC_B7EF9ED7A35A",
+      "listing_association_id": "ASSOC_ARX_SEC_B7EF9ED7A35A_XNAS_GOOGL_2026-10-17",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001652044",
+      "share_class": "CLASS_A",
+      "company_name": "Alphabet Inc. (Class A Common Stock)",
+      "pre_execution_store_state": {
+        "daily_bar_count": 288,
+        "provenance_count": 0,
+        "coverage_classification": "PRESENT_FRESH_UNPROVENANCED"
+      },
+      "mandated_action": "BACKFILL",
+      "action_rationale": "Existing 288 bars lack provenance sidecars in asset_ohlcv_provenance; requires full replacement with verified Alpaca SIP data while strictly maintaining economic and voting class separation from GOOG.",
+      "acceptance_criteria": {
+        "min_bars_ingested": 260,
+        "max_bars_ingested": 276,
+        "expected_provenance_count": 276,
+        "provenance_provider": "ALPACA",
+        "provenance_adjustment_state": "SPLIT_ADJUSTED_ONLY",
+        "zero_missing_sessions_in_window": true
+      }
+    },
+    {
+      "symbol": "ABBV",
+      "durable_security_id": "ARX_SEC_BFA51AC4C0B5",
+      "listing_association_id": "ASSOC_ARX_SEC_BFA51AC4C0B5_XNYS_ABBV_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001551152",
+      "share_class": null,
+      "company_name": "AbbVie Inc.",
+      "pre_execution_store_state": {
+        "daily_bar_count": 0,
+        "provenance_count": 0,
+        "coverage_classification": "MISSING"
+      },
+      "mandated_action": "BACKFILL",
+      "action_rationale": "Initial empty-state ingestion for a brand new NYSE-listed corporate equity registered under PLAN_ADOPT_9A2E4E04E878.",
+      "acceptance_criteria": {
+        "min_bars_ingested": 260,
+        "max_bars_ingested": 276,
+        "expected_provenance_count": 276,
+        "provenance_provider": "ALPACA",
+        "provenance_adjustment_state": "SPLIT_ADJUSTED_ONLY",
+        "zero_missing_sessions_in_window": true
+      }
+    }
+  ]
+}

@@ -73,18 +73,38 @@ export default function TerminalSsrShell() {
             </div>
           </div>
 
+          {/* Platform Identity & Authority Heading */}
+          <div className="bg-[#0b0f19] border border-[#1b2434] rounded-xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black text-white font-mono tracking-tight">
+                ARX Terminal <span className="text-cyan-400 font-sans font-light text-sm sm:text-base tracking-normal ml-1">· Quantitative Decision Engine &amp; Risk Platform</span>
+              </h1>
+              <p className="text-xs text-slate-400 font-sans mt-0.5">
+                Institutional systematic analysis, Volatility Contraction Pattern (VCP) algorithmic execution, and Congressional STOCK Act surveillance.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/radar"
+                className="px-3 py-1.5 rounded-lg bg-cyan-950/80 text-cyan-300 border border-cyan-800 text-xs font-mono font-semibold hover:bg-cyan-900/80 transition-colors"
+              >
+                Opportunity Radar →
+              </Link>
+            </div>
+          </div>
+
           {/* Active Asset Header Strip */}
           <div className="bg-[#0e1420] border border-[#1b2434] rounded-xl p-4 shadow-xl">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight" aria-label="Spotlight asset AAPL catalog baseline reference">
                   AAPL <span className="text-xl sm:text-2xl font-bold text-slate-200">${CATALOG_BASELINE_PRICES["AAPL"]?.toFixed(2) || "224.23"}</span>
-                </h1>
-                <span className="px-2 py-0.5 rounded text-xs font-bold font-mono bg-emerald-950 text-emerald-400 border border-emerald-800">
-                  +0.45% 1Y
+                </div>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">
+                  Catalog Reference
                 </span>
-                <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-[#111726] text-cyan-400 border border-cyan-900/60">
-                  20 EMA Active
+                <span className="text-[10px] text-slate-400 font-sans hidden sm:inline">
+                  (Static baseline · Live market tape loads interactively)
                 </span>
               </div>
             </div>
@@ -183,7 +203,7 @@ export default function TerminalSsrShell() {
               ARX Terminal is an institutional equity intelligence platform engineered for active swing traders, hedge fund analysts, and quantitative capital allocators. The platform unifies <strong>Mark Minervini Volatility Contraction Pattern (VCP)</strong> breakout execution, <strong>Peter Lynch Growth At A Reasonable Price (GARP)</strong> valuation screeners, <strong>Joel Greenblatt Magic Formula</strong> scoring, <strong>Cornish-Fisher Value-at-Risk (VaR)</strong> fat-tail modeling, and <strong>Federal Reserve (FRED)</strong> macro regime detection.
             </p>
             <div className="flex flex-wrap gap-2 pt-1 font-mono text-[11px] text-cyan-400">
-              <Link href="/screener" className="hover:underline">Explore 60+ Screener Gems →</Link>
+              <Link href="/radar" className="hover:underline">Explore Opportunity Radar &amp; Screener →</Link>
               <span>•</span>
               <Link href="/smart-money" className="hover:underline">Inspect STOCK Act Disclosures →</Link>
               <span>•</span>

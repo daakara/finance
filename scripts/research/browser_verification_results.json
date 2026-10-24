@@ -1,0 +1,85 @@
+{
+  "executionTimestamp": "2026-10-21T06:10:53.507Z",
+  "serverPort": 3034,
+  "totalChecks": 8,
+  "allPass": true,
+  "results": [
+    {
+      "test": "Desktop FIX Dossier (Reinvestment & Provenance)",
+      "url": "/research/?symbol=FIX",
+      "hasReverseDcf": true,
+      "hasReinvestmentNopatLabel": true,
+      "noSalesCapLabel": true,
+      "hasReinvestmentPercentUnits": true,
+      "noReinvestmentMultipleSuffix": true,
+      "hasAcceptedFilingCutoff": true,
+      "hasAcceptedAuthoringTimestamp": true,
+      "noStaticGeneratorPassCopy": true,
+      "hasPrimaryFiling": true,
+      "hasWatchConditions": true
+    },
+    {
+      "test": "Desktop DUOL Dossier (Zero Debt & Reinvestment)",
+      "url": "/research/?symbol=DUOL",
+      "hasZeroDebt": true,
+      "hasTotalCash": true,
+      "hasReinvestmentNopatLabel": true,
+      "hasReinvestmentPercentUnits": true,
+      "noReinvestmentMultipleSuffix": true,
+      "hasCleanBridgeLabels": true,
+      "hasWatchConditions": true
+    },
+    {
+      "test": "Desktop IREN Dossier (Valuation Suppressed)",
+      "url": "/research/?symbol=IREN",
+      "hasValuationSuppressedBanner": true,
+      "zeroNumericTargets": true,
+      "hasResumeConditions": true,
+      "hasWatchConditions": true
+    },
+    {
+      "test": "Desktop CORZ Dossier (CIK, Commitments & Digital Assets)",
+      "url": "/research/?symbol=CORZ",
+      "hasCorrectCik": true,
+      "hasCoreWeaveCommitments": true,
+      "hasDigitalAssets": true,
+      "noAmbiguousAccountingCaption": true,
+      "hasSuppressionReason": true,
+      "hasWatchConditions": true
+    },
+    {
+      "test": "Desktop MU Dossier (Qualified Valuation & Reinvestment)",
+      "url": "/research/?symbol=MU",
+      "hasQualifiedBanner": true,
+      "hasReinvestmentNopatLabel": true,
+      "hasReinvestmentPercentUnits": true,
+      "noReinvestmentMultipleSuffix": true,
+      "noDeflationClaim": true,
+      "hasRejectDisposition": true,
+      "hasSeparatedWatchCondition": true
+    },
+    {
+      "test": "Desktop Unsupported Symbol (NVDA)",
+      "url": "/research/?symbol=NVDA",
+      "hasUnsupportedBanner": true,
+      "hasTerminalDeepLink": true,
+      "hasRadarDeepLink": true,
+      "hasCohortJumpButtons": true
+    },
+    {
+      "test": "Stock Detail Page (/stock/fix/)",
+      "url": "/stock/fix/",
+      "hasResearchLinkBadge": true,
+      "hasSourcedFundamentalsCard": true
+    },
+    {
+      "test": "Mobile (390x844) FIX Dossier",
+      "url": "/research/?symbol=FIX",
+      "rendersProperly": true,
+      "hasHorizontalRail": true,
+      "hasMobileReinvestmentLabel": true,
+      "hasMobilePercentUnits": true,
+      "noMobileMultipleSuffix": true
+    }
+  ]
+}

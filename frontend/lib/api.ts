@@ -12,10 +12,38 @@ export type { CanonicalInstrumentEnvelope };
 const DEFAULT_ORIGIN_API_URL = "https://web-production-e370b.up.railway.app/api/v1";
 const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || DEFAULT_ORIGIN_API_URL;
 
+/**
+ * Determines whether the current browser host is a verified Cloudflare Pages deployment
+ * of ARX Terminal (canonical arxterminal.com, www.arxterminal.com, or the official
+ * finance-xp8.pages.dev project domain and its deployment-preview subdomains).
+ */
+export function isCloudflarePagesHost(hostname: string): boolean {
+  if (!hostname) return false;
+  if (hostname === "arxterminal.com" || hostname === "www.arxterminal.com") {
+    return true;
+  }
+  if (hostname === "finance-xp8.pages.dev" || hostname.endsWith(".finance-xp8.pages.dev")) {
+    return true;
+  }
+  return false;
+}
+
+export function isLocalPreviewHost(hostname?: string | null): boolean {
+  if (!hostname) return false;
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "0.0.0.0";
+}
+
 export function getApiBaseUrl(): string {
-  // In production browser environments on the canonical domain, route through Cloudflare edge proxy to shield origin
-  if (typeof window !== "undefined" && window.location.hostname.includes("arxterminal.com")) {
-    return "/api/backend";
+  // In Cloudflare-hosted browser environments (canonical domain or official finance-xp8.pages.dev preview deployments),
+  // route through same-origin Cloudflare edge proxy (/api/backend) to shield the origin and satisfy Content Security Policy.
+  if (typeof window !== "undefined") {
+    if (isCloudflarePagesHost(window.location.hostname)) {
+      return "/api/backend";
+    }
+    // Local development and preview environment: route same-origin to local preview backend
+    if (isLocalPreviewHost(window.location.hostname)) {
+      return "/api/v1";
+    }
   }
   return RAW_API_URL.endsWith("/api/v1")
     ? RAW_API_URL
@@ -231,6 +259,59 @@ export interface CatalystEvent {
   primaryMetric: string;
 }
 
+export type CorporateEventType = 
+  | "EARNINGS_ANNOUNCEMENT"
+  | "CONFERENCE_CALL"
+  | "DIVIDEND_EX_DATE"
+  | "STOCK_SPLIT"
+  | "SHAREHOLDER_MEETING";
+
+export type EventCoverageStatus = 
+  | "CONFIRMED_UPCOMING"
+  | "ESTIMATED_UPCOMING"
+  | "COVERED"
+  | "ELAPSED_RECENT"
+  | "DATA_UNAVAILABLE"
+  | "UNVERIFIED"
+  | "STALE";
+
+export type ConfirmationStatus = "CONFIRMED" | "ESTIMATED" | "UNVERIFIED";
+
+export type EventRiskTier = 
+  | "ACUTE_BINARY_GAP_RISK"
+  | "HIGH_GAP_RISK"
+  | "CAUTION_BUFFER"
+  | "NORMAL_RUNWAY"
+  | "UNVERIFIED_RISK";
+
+export interface CorporateEventRecord {
+  symbol: string;
+  event_type: CorporateEventType | string;
+  event_timestamp_utc?: number | null;
+  event_date_et?: string | null;
+  event_time_et?: string | null;
+  time_zone: string;
+  results_release_time_et?: string | null;
+  conference_call_time_et?: string | null;
+  days_to_earnings?: number | null;
+  has_imminent_earnings: boolean;
+  has_exact_time: boolean;
+  is_estimate: boolean;
+  confirmation_status: ConfirmationStatus;
+  coverage_status: EventCoverageStatus;
+  freshness_status: "LIVE" | "RECENT" | "STALE" | "UNVERIFIED";
+  news_sentiment_status?: "ACTIVE" | "UNAVAILABLE" | "ABSENT";
+  risk_tier: EventRiskTier;
+  source_name: string;
+  source_url?: string | null;
+  last_verified_at: string;
+  preflight_state: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR";
+  preflight_summary: {
+    plain_english: string;
+    pro_quant: string;
+  };
+}
+
 export interface CatalystForecastData {
   company_name: string;
   symbol: string;
@@ -245,6 +326,10 @@ export interface CatalystForecastData {
   macroRegime?: string;
   overallDirection?: string;
   catalysts?: CatalystEvent[];
+  days_to_earnings?: number | null;
+  has_imminent_earnings?: boolean;
+  event_date_et?: string | null;
+  corporate_event?: CorporateEventRecord;
 }
 
 export interface CongressTradeDetails {
@@ -445,6 +530,9 @@ export interface OptimalExecutionPlan {
   liquidity_defense?: LiquidityDefenseData;
   execution_hazard?: boolean | "UNKNOWN";
   liquidity_warning?: string;
+  corporate_event?: CorporateEventRecord;
+  days_to_earnings?: number | null;
+  has_imminent_earnings?: boolean;
 }
 
 export interface Phase26ExecutionObservation {
@@ -666,6 +754,7 @@ export interface AnalyticsResponse {
   selfHealingAudit?: SelfHealingAudit;
   marketGraph?: MarketGraphReport;
   catalystForecast?: CatalystForecastData;
+  corporateEvent?: CorporateEventRecord;
   optimalExecution?: OptimalExecutionPlan;
   liquidityDefense?: LiquidityDefenseData;
   confluence?: ConfluenceData;
@@ -700,15 +789,273 @@ export interface AnalyticsResponse {
 
 export type CanonicalRadarCategory = "VALUE_GARP" | "VCP" | "SMART_MONEY";
 export type RadarCapabilityStatus = "AVAILABLE" | "PIPELINE_PENDING" | "NOT_IMPLEMENTED" | "ERROR";
+export type PublicationIntegrityStatus = "VERIFIED" | "NOT_VERIFIED" | "PENDING" | "ROLLBACK";
 
 export interface RadarCapabilityDetail {
   status: RadarCapabilityStatus;
   universeScreening: RadarCapabilityStatus;
   singleAssetAnalysis: RadarCapabilityStatus;
   rationale?: string;
+  catalogType?: "CURATED_REFERENCE_CATALOG" | string | null;
+  countAuthority?: "DYNAMIC_CATALOG" | "PUBLICATION_SNAPSHOT" | string | null;
+  sortingSemantics?: string | null;
+  matchedCount?: number | null;
+  dataAsOf?: string;
+  generatedAt?: string;
+  snapshotId?: string;
+  freshnessStatus?: string;
+  subsignal?: string;
+  populationDenominator?: number | null;
+  universeBuildId?: string | null;
+  universeId?: string | null;
+  publicationDigest?: string | null;
+  isRollback?: boolean;
+  rollbackReason?: string | null;
+  membershipStatus?: "AVAILABLE" | "PENDING" | "UNAVAILABLE";
+  lifecycleState?: string;
+  publicationIntegrity?: PublicationIntegrityStatus;
+  publicationIntegrityVerified?: boolean;
 }
 
 export type RadarCapabilities = Record<CanonicalRadarCategory, RadarCapabilityDetail>;
+
+export const DEFAULT_RADAR_CAPABILITIES: RadarCapabilities = {
+  VALUE_GARP: {
+    status: "AVAILABLE",
+    universeScreening: "AVAILABLE",
+    singleAssetAnalysis: "AVAILABLE",
+    catalogType: "CURATED_REFERENCE_CATALOG",
+    countAuthority: "DYNAMIC_CATALOG",
+    sortingSemantics: "CONFLUENCE_TECHNICAL_FLOW",
+    rationale: "Authentic multi-factor fundamental screening active across known candidate universe.",
+    matchedCount: null,
+    populationDenominator: null,
+    universeBuildId: null,
+    publicationDigest: null,
+    publicationIntegrity: "NOT_VERIFIED",
+    publicationIntegrityVerified: false,
+  },
+  VCP: {
+    status: "PIPELINE_PENDING",
+    universeScreening: "PIPELINE_PENDING",
+    singleAssetAnalysis: "AVAILABLE",
+    rationale: "Single-asset volatility contraction geometry active on /setups and /analytics; universe-level batch scanning pipeline is pending deployment.",
+    matchedCount: null,
+    populationDenominator: null,
+    universeBuildId: null,
+    publicationDigest: null,
+    publicationIntegrity: "NOT_VERIFIED",
+    publicationIntegrityVerified: false,
+  },
+  SMART_MONEY: {
+    status: "PIPELINE_PENDING",
+    universeScreening: "PIPELINE_PENDING",
+    singleAssetAnalysis: "AVAILABLE",
+    rationale: "Single-asset SEC Form 4 and Congressional STOCK Act disclosures active on /smart-money; universe-level institutional accumulation screener pipeline is pending deployment.",
+    matchedCount: null,
+    populationDenominator: null,
+    universeBuildId: null,
+    publicationDigest: null,
+    publicationIntegrity: "NOT_VERIFIED",
+    publicationIntegrityVerified: false,
+  },
+};
+
+export function getPublicationIntegrityLabel(cap?: RadarCapabilityDetail | null): string {
+  if (!cap) return "Publication Integrity: Not verified";
+  if (cap.isRollback || cap.publicationIntegrity === "ROLLBACK") {
+    return "Publication Integrity: Rolled back";
+  }
+  if (cap.publicationIntegrity === "VERIFIED" || cap.publicationIntegrityVerified === true) {
+    return "Publication Integrity: Verified";
+  }
+  if (cap.publicationIntegrity === "PENDING") {
+    return "Publication Integrity: Pending";
+  }
+  return "Publication Integrity: Not verified";
+}
+
+export function formatPriceObservationDate(
+  dateStr?: string | null,
+  priceBasis?: "DAILY_CLOSE" | string | null
+): string {
+  const isVerifiedDailyClose = priceBasis === "DAILY_CLOSE";
+  const hasBasis = Boolean(priceBasis && typeof priceBasis === "string" && priceBasis.trim());
+  const basisLabel = isVerifiedDailyClose
+    ? "Daily Close"
+    : (hasBasis && priceBasis !== "UNKNOWN" ? priceBasis : "Price");
+
+  // Case 1: Date is missing or empty
+  if (!dateStr || typeof dateStr !== "string" || !dateStr.trim()) {
+    if (isVerifiedDailyClose) {
+      return "Daily Close · Date Unverified";
+    }
+    return "Price · Date & Basis Unverified";
+  }
+
+  // Case 2: Date string parsing and calendar validation
+  const trimmed = dateStr.trim();
+  const parts = trimmed.split("-");
+  if (parts.length === 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    // Validate calendar components strictly (no fabricated dates, reject invalid dates like Feb 31)
+    if (
+      !isNaN(year) && year >= 1900 && year <= 2100 &&
+      !isNaN(month) && month >= 0 && month < 12 &&
+      !isNaN(day) && day >= 1 && day <= 31
+    ) {
+      // Use Date.UTC to prevent any browser timezone-induced trading-day shifts
+      const utcDate = new Date(Date.UTC(year, month, day));
+      if (
+        utcDate.getUTCFullYear() === year &&
+        utcDate.getUTCMonth() === month &&
+        utcDate.getUTCDate() === day
+      ) {
+        const formattedDate = `${months[month]} ${day}, ${year}`;
+        if (isVerifiedDailyClose) {
+          return `Daily Close · ${formattedDate}`;
+        }
+        if (hasBasis && priceBasis !== "UNKNOWN") {
+          return `${basisLabel} · ${formattedDate}`;
+        }
+        return `Price · ${formattedDate} (Basis Unverified)`;
+      }
+    }
+    if (isVerifiedDailyClose) {
+      return "Daily Close · Invalid Date";
+    }
+    return "Price · Invalid Date";
+  }
+
+  if (isVerifiedDailyClose) {
+    return "Daily Close · Invalid Date";
+  }
+  return "Price · Invalid Date";
+}
+
+export function normalizeRadarCapabilities(
+  incoming?: Partial<RadarCapabilities> | null
+): RadarCapabilities {
+  const result: RadarCapabilities = {
+    VALUE_GARP: { ...DEFAULT_RADAR_CAPABILITIES.VALUE_GARP },
+    VCP: { ...DEFAULT_RADAR_CAPABILITIES.VCP },
+    SMART_MONEY: { ...DEFAULT_RADAR_CAPABILITIES.SMART_MONEY },
+  };
+
+  if (!incoming || typeof incoming !== "object") {
+    return result;
+  }
+
+  const categories: CanonicalRadarCategory[] = ["VALUE_GARP", "VCP", "SMART_MONEY"];
+  for (const cat of categories) {
+    const raw = incoming[cat];
+    if (!raw || typeof raw !== "object") {
+      // Missing strategy in incoming payload strictly fails closed to canonical default.
+      continue;
+    }
+
+    // Rollback protection: rolled-back publication cannot claim operational screening.
+    if (raw.isRollback) {
+      result[cat] = {
+        ...DEFAULT_RADAR_CAPABILITIES[cat],
+        status: "PIPELINE_PENDING",
+        universeScreening: "PIPELINE_PENDING",
+        singleAssetAnalysis: "AVAILABLE",
+        catalogType: raw.catalogType || DEFAULT_RADAR_CAPABILITIES[cat].catalogType || null,
+        countAuthority: raw.countAuthority || DEFAULT_RADAR_CAPABILITIES[cat].countAuthority || null,
+        sortingSemantics: raw.sortingSemantics || DEFAULT_RADAR_CAPABILITIES[cat].sortingSemantics || null,
+        matchedCount: null,
+        populationDenominator: typeof raw.populationDenominator === "number" ? raw.populationDenominator : null,
+        universeBuildId: raw.universeBuildId ?? null,
+        universeId: raw.universeId ?? null,
+        publicationDigest: raw.publicationDigest ?? null,
+        isRollback: true,
+        rollbackReason: raw.rollbackReason ?? null,
+        membershipStatus: raw.membershipStatus ?? "UNAVAILABLE",
+        lifecycleState: raw.lifecycleState ?? "STALE_OR_ROLLED_BACK_PUBLICATION",
+        rationale: raw.rationale ?? `Publication build '${raw.universeBuildId}' was rolled back. Scanner execution is suspended.`,
+        publicationIntegrity: "ROLLBACK",
+        publicationIntegrityVerified: false,
+      };
+      continue;
+    }
+
+    // Operational match count validation: authentic non-negative integer
+    const hasValidMatchedCount =
+      typeof raw.matchedCount === "number" &&
+      Number.isInteger(raw.matchedCount) &&
+      raw.matchedCount >= 0;
+
+    // Fail closed on explicit malformed count (e.g. negative numbers, boolean, NaN, non-integers)
+    const hasMalformedMatchedCount =
+      raw.matchedCount !== undefined &&
+      raw.matchedCount !== null &&
+      !hasValidMatchedCount;
+
+    // Curated dynamic catalog authority is strictly bounded:
+    // Only contractually authorized catalog categories (VALUE_GARP) may qualify,
+    // and they strictly require BOTH explicit metadata attestations:
+    // 1. catalogType === "CURATED_REFERENCE_CATALOG"
+    // 2. countAuthority === "DYNAMIC_CATALOG"
+    // A hypothetical VCP or Smart Money payload carrying dynamic-catalog metadata
+    // must NOT acquire scanner availability unless an explicitly authorized contract permits it.
+    const isCuratedCatalogAuthorized = cat === "VALUE_GARP";
+    const isCuratedCatalog =
+      isCuratedCatalogAuthorized &&
+      raw.catalogType === "CURATED_REFERENCE_CATALOG" &&
+      raw.countAuthority === "DYNAMIC_CATALOG" &&
+      !hasMalformedMatchedCount;
+
+    const isAvailable =
+      (raw.universeScreening === "AVAILABLE" || raw.status === "AVAILABLE") &&
+      !hasMalformedMatchedCount &&
+      (hasValidMatchedCount || isCuratedCatalog);
+
+    // Truthful Publication Integrity evaluation:
+    // Verified ONLY when explicit authoritative attestation is present.
+    // Never inferred from publicationDigest, buildId, or operational scanner status alone.
+    let pubIntegrity: PublicationIntegrityStatus = "NOT_VERIFIED";
+    if (raw.publicationIntegrity === "VERIFIED" || raw.publicationIntegrityVerified === true) {
+      pubIntegrity = "VERIFIED";
+    } else if (raw.publicationIntegrity === "PENDING") {
+      pubIntegrity = "PENDING";
+    } else if (raw.publicationIntegrity === "ROLLBACK") {
+      pubIntegrity = "ROLLBACK";
+    }
+
+    result[cat] = {
+      status: isAvailable ? "AVAILABLE" : (raw.status === "AVAILABLE" ? "PIPELINE_PENDING" : (raw.status || DEFAULT_RADAR_CAPABILITIES[cat].status)),
+      universeScreening: isAvailable ? "AVAILABLE" : (raw.universeScreening === "AVAILABLE" ? "PIPELINE_PENDING" : (raw.universeScreening || DEFAULT_RADAR_CAPABILITIES[cat].universeScreening)),
+      singleAssetAnalysis: raw.singleAssetAnalysis || DEFAULT_RADAR_CAPABILITIES[cat].singleAssetAnalysis,
+      catalogType: raw.catalogType || DEFAULT_RADAR_CAPABILITIES[cat].catalogType || null,
+      countAuthority: raw.countAuthority || (isCuratedCatalog ? "DYNAMIC_CATALOG" : "PUBLICATION_SNAPSHOT"),
+      sortingSemantics: raw.sortingSemantics || DEFAULT_RADAR_CAPABILITIES[cat].sortingSemantics || null,
+      rationale: raw.rationale || DEFAULT_RADAR_CAPABILITIES[cat].rationale,
+      matchedCount: hasValidMatchedCount ? raw.matchedCount : null,
+      dataAsOf: raw.dataAsOf,
+      generatedAt: raw.generatedAt,
+      snapshotId: raw.snapshotId,
+      freshnessStatus: raw.freshnessStatus,
+      subsignal: raw.subsignal,
+      populationDenominator: typeof raw.populationDenominator === "number" ? raw.populationDenominator : null,
+      universeBuildId: raw.universeBuildId ?? null,
+      universeId: raw.universeId ?? null,
+      publicationDigest: raw.publicationDigest ?? null,
+      isRollback: false,
+      rollbackReason: null,
+      membershipStatus: raw.membershipStatus ?? "AVAILABLE",
+      lifecycleState: raw.lifecycleState,
+      publicationIntegrity: pubIntegrity,
+      publicationIntegrityVerified: pubIntegrity === "VERIFIED",
+    };
+  }
+
+  return result;
+}
 
 export interface GemCandidate {
   ticker: string;
@@ -732,6 +1079,8 @@ export interface GemCandidate {
   rvol?: string | null;
   riskRewardRatio?: number | null;
   current_price?: number;
+  priceBasis?: "DAILY_CLOSE" | null;
+  priceDate?: string | null;
   execution_status?: string;
   screeningStatus?: string;
   screeningGeometry?: string;
@@ -745,11 +1094,22 @@ export interface GemCandidate {
   decisionContextId?: string;
 }
 
+export interface CandidatePopulationModel {
+  referenceUniverseCount: number;
+  activeScreeningCount: number;
+  currentOpportunityCount: number;
+  delistedRecordCount: number;
+  unverifiedRecordCount: number;
+}
+
 export interface ScreenerResponse {
   total_candidates: number;
   gems_found: number;
   capabilities?: RadarCapabilities;
+  population?: CandidatePopulationModel;
   results: GemCandidate[];
+  error?: string | null;
+  status?: "SUCCESS" | "ERROR" | "TIMEOUT";
 }
 
 // 🧠 Global Spot Price & Metadata Registry (Enforces 100% price parity across all timeframes)
@@ -1251,7 +1611,7 @@ export async function fetchAssetAnalytics(
     const cleanRole = userRole === "DAY_TRADER" ? "DAY_TRADER" : "LONG_TERM";
     const res = await fetch(`${baseUrl}/analytics/${encodeURIComponent(symbol)}?period=${period}&interval=${interval}&user_role=${cleanRole}`, {
       headers: ARX_API_HEADERS,
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(6000),
     });
     if (res.ok) {
       const data = await res.json();
@@ -1388,63 +1748,102 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
     });
     if (res.ok) {
       const data = await res.json();
-      const rawCandidates = data.candidates || data.results || [];
-      if (Array.isArray(rawCandidates) && rawCandidates.length > 0) {
-        const capabilities: RadarCapabilities | undefined = data.capabilities;
-        const candidates: GemCandidate[] = rawCandidates.map((r: any) => {
-          const confluenceVal = typeof r.confluenceScore === "number" && Number.isFinite(r.confluenceScore)
-            ? Math.round(r.confluenceScore)
-            : null;
-          const gemVal = typeof r.gemScore === "number" && Number.isFinite(r.gemScore)
-            ? Math.round(r.gemScore)
-            : null;
+      const rawCandidates = Array.isArray(data?.candidates)
+        ? data.candidates
+        : Array.isArray(data?.results)
+        ? data.results
+        : [];
+      const capabilities: RadarCapabilities | undefined =
+        data &&
+        typeof data === "object" &&
+        data.capabilities &&
+        typeof data.capabilities === "object" &&
+        !Array.isArray(data.capabilities) &&
+        Object.keys(data.capabilities).length > 0
+          ? normalizeRadarCapabilities(data.capabilities as Partial<RadarCapabilities>)
+          : undefined;
 
-          return {
-            ticker: r.ticker || r.symbol || r.companyName || "UNKNOWN",
-            composite_score: confluenceVal,
-            confluenceScore: confluenceVal,
-            gemScore: gemVal,
-            companyName: r.companyName || r.name || null,
-            expert_model: r.expertArchetype || null,
-            categories: Array.isArray(r.categories)
-              ? (r.categories.filter((c: any) => ["VALUE_GARP", "VCP", "SMART_MONEY"].includes(c)) as CanonicalRadarCategory[])
-              : [],
-            categoryEvidence: (r.categoryEvidence && typeof r.categoryEvidence === "object") ? r.categoryEvidence : {},
-            peg_ratio: r.peg_ratio,
-            roic_pct: r.roic_pct,
-            gross_margin_pct: r.gross_margin_pct,
-            risk_rating: r.confluenceRating || "Medium",
-            investment_thesis: r.entryThesis || "",
-            primary_catalyst: r.catalyst || "",
-            factor_verdict: r.executionStatus || "WAITING_PULLBACK",
-            dna_verdict: r.confluenceRating || "",
-            current_price: r.currentPrice || r.current_price,
-            execution_status: r.executionStatus || r.execution_status,
-            screeningStatus: r.screeningStatus || (r.executionStatus === "IN_BUY_ZONE" ? "SCREENING_ZONE" : (r.executionStatus || "PULLBACK_PENDING")),
-            screeningGeometry: r.screeningGeometry || (r.executionStatus === "IN_BUY_ZONE" ? "WITHIN_TOLERANCE" : "OUTSIDE_TOLERANCE"),
-            screeningEligible: typeof r.screeningEligible === "boolean" ? r.screeningEligible : Boolean(r.executionStatus === "IN_BUY_ZONE"),
-            rvol: typeof r.rvol === "string" ? r.rvol : null,
-            riskRewardRatio: typeof r.riskRewardRatio === "number" ? r.riskRewardRatio : null,
-            decisionState: r.decisionState || "VALID_SETUP",
-            decisionStateLabel: r.decisionStateLabel || "Discovery Candidate — Analyze for Trigger",
-            // Invariant: Screener output is discovery-only. Canonical actionability strictly requires Single-Asset DecisionTrace.
-            isActionable: false,
-            canSizeTrade: false,
-            allowedActions: Array.isArray(r.allowedActions) ? r.allowedActions : ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"],
-            disqualificationReason: r.disqualificationReason ?? "Discovery candidate: Open in Analysis hub to evaluate canonical DecisionTrace.",
-            decisionContextId: r.decisionContextId,
-          };
-        });
+      const candidates: GemCandidate[] = rawCandidates.map((r: any) => {
+        const confluenceVal = typeof r.confluenceScore === "number" && Number.isFinite(r.confluenceScore)
+          ? Math.round(r.confluenceScore)
+          : null;
+        const gemVal = typeof r.gemScore === "number" && Number.isFinite(r.gemScore)
+          ? Math.round(r.gemScore)
+          : null;
+
         return {
-          total_candidates: candidates.length,
-          gems_found: candidates.length,
-          capabilities,
-          results: candidates,
+          ticker: r.ticker || r.symbol || r.companyName || "UNKNOWN",
+          composite_score: confluenceVal,
+          confluenceScore: confluenceVal,
+          gemScore: gemVal,
+          companyName: r.companyName || r.name || null,
+          expert_model: r.expertArchetype || null,
+          categories: Array.isArray(r.categories)
+            ? (r.categories.filter((c: any) => ["VALUE_GARP", "VCP", "SMART_MONEY"].includes(c)) as CanonicalRadarCategory[])
+            : [],
+          categoryEvidence: (r.categoryEvidence && typeof r.categoryEvidence === "object") ? r.categoryEvidence : {},
+          peg_ratio: r.peg_ratio,
+          roic_pct: r.roic_pct,
+          gross_margin_pct: r.gross_margin_pct,
+          risk_rating: r.confluenceRating || "Medium",
+          investment_thesis: r.entryThesis || "",
+          primary_catalyst: r.catalyst || "",
+          factor_verdict: r.executionStatus || "WAITING_PULLBACK",
+          dna_verdict: r.confluenceRating || "",
+          current_price: r.currentPrice || r.current_price,
+          priceBasis: r.priceBasis ?? null,
+          priceDate: r.priceDate ?? null,
+          execution_status: r.executionStatus || r.execution_status,
+          screeningStatus: r.screeningStatus || (r.executionStatus === "IN_BUY_ZONE" ? "SCREENING_ZONE" : (r.executionStatus || "PULLBACK_PENDING")),
+          screeningGeometry: r.screeningGeometry || (r.executionStatus === "IN_BUY_ZONE" ? "WITHIN_TOLERANCE" : "OUTSIDE_TOLERANCE"),
+          screeningEligible: typeof r.screeningEligible === "boolean" ? r.screeningEligible : Boolean(r.executionStatus === "IN_BUY_ZONE"),
+          rvol: typeof r.rvol === "string" ? r.rvol : null,
+          riskRewardRatio: typeof r.riskRewardRatio === "number" ? r.riskRewardRatio : null,
+          decisionState: r.decisionState || "VALID_SETUP",
+          decisionStateLabel: r.decisionStateLabel || "Discovery Candidate — Analyze for Trigger",
+          // Invariant: Screener output is discovery-only. Canonical actionability strictly requires Single-Asset DecisionTrace.
+          isActionable: false,
+          canSizeTrade: false,
+          allowedActions: Array.isArray(r.allowedActions)
+            ? r.allowedActions
+            : (Array.isArray(r.allowed_actions) ? r.allowed_actions : []),
+          disqualificationReason: r.disqualificationReason ?? "Discovery candidate: Open in Analysis hub to evaluate canonical DecisionTrace.",
+          decisionContextId: r.decisionContextId,
         };
-      }
+      });
+
+      return {
+        total_candidates: candidates.length,
+        gems_found: candidates.length,
+        ...(capabilities ? { capabilities } : {}),
+        population: (data as any)?.population || undefined,
+        results: candidates,
+        status: "SUCCESS",
+        error: null,
+      };
+    } else {
+      console.warn(`Screener API HTTP error: ${res.status} ${res.statusText}`);
+      return {
+        total_candidates: 0,
+        gems_found: 0,
+        results: [],
+        status: "ERROR",
+        error: `HTTP ${res.status}: ${res.statusText || "Screener service error"}`,
+      };
     }
-  } catch (err) {
-    console.warn("Screener API error:", err);
+  } catch (err: any) {
+    const isTimeout = err?.name === "AbortError" || (err instanceof Error && err.name === "AbortError");
+    const errMsg = isTimeout
+      ? "Screener API request timed out (deadline 6000ms exceeded)"
+      : (err instanceof Error ? err.message : "Failed to connect to screener service");
+    console.warn("Screener API error:", errMsg);
+    return {
+      total_candidates: 0,
+      gems_found: 0,
+      results: [],
+      status: isTimeout ? "TIMEOUT" : "ERROR",
+      error: errMsg,
+    };
   }
 
   // Epistemic Invariant: Zero synthetic fallback catalog data
@@ -1452,6 +1851,8 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
     total_candidates: 0,
     gems_found: 0,
     results: [],
+    status: "ERROR",
+    error: "Screener API unavailable",
   };
 }
 

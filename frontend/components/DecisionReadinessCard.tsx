@@ -97,24 +97,37 @@ export default function DecisionReadinessCard({
     >
       {/* ── Header: Title & Execution Readiness Status ──────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 border-b border-[#1b263b] pb-1.5 sm:pb-3">
-        <div className="flex items-center space-x-1.5 sm:space-x-2">
-          <span className="text-sm sm:text-base" aria-hidden="true">🚦</span>
-          <h3 id="readiness-heading" className="text-xs sm:text-sm font-bold tracking-tight text-white uppercase font-mono">
-            Decision Readiness Progression
-          </h3>
+        <div className="space-y-0.5">
+          <div className="flex items-center space-x-1.5 sm:space-x-2">
+            <span className="text-sm sm:text-base" aria-hidden="true">🚦</span>
+            <h3 id="readiness-heading" className="text-xs sm:text-sm font-bold tracking-tight text-white uppercase font-mono">
+              Decision Readiness Progression
+            </h3>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono font-semibold">
+              Advisory Workflow
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-400 font-sans">
+            Sequential preparation workflow. Canonical clearance is governed exclusively by the Pre-Flight engine above.
+          </p>
         </div>
 
-        {/* Binary State Indicator (Non-color only: explicit text + icon) */}
+        {/* State Indicator (Non-color only: explicit text + icon) */}
         <div
           data-testid="readiness-status-badge"
           className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-mono font-bold border ${
-            isExecutionReady
+            readinessResult.readinessVerdict === "EXECUTION_READY"
               ? "bg-emerald-950/60 text-emerald-400 border-emerald-500/50"
+              : readinessResult.readinessVerdict === "AWAITING_CANONICAL_CLEARANCE"
+              ? "bg-amber-950/40 text-amber-300 border-amber-600/50"
               : "bg-amber-950/40 text-amber-400 border-amber-600/50"
           }`}
         >
-          <span aria-hidden="true">{isExecutionReady ? "✓" : "⏳"}</span>
-          <span>{isExecutionReady ? "EXECUTION READY" : "SETUP IN PROGRESS"}</span>
+          <span aria-hidden="true">{readinessResult.readinessVerdict === "EXECUTION_READY" ? "✓" : "⏳"}</span>
+          <span>
+            {readinessResult.readinessVerdictLabel ||
+              (isExecutionReady ? "EXECUTION READY" : "SETUP IN PROGRESS")}
+          </span>
         </div>
       </div>
 
@@ -216,7 +229,11 @@ export default function DecisionReadinessCard({
       >
         <div className="flex items-center justify-between">
           <span className="text-[10px] uppercase font-mono font-bold text-slate-400">
-            {activeBlockingGate === "NONE" ? "Action Clearance" : "Active Blocker Requirement"}
+            {activeBlockingGate === "NONE"
+              ? isExecutionReady
+                ? "Action Clearance"
+                : "Canonical Clearance Requirement"
+              : "Active Blocker Requirement"}
           </span>
           {activeBlockingGate !== "NONE" && (
             <span
@@ -224,6 +241,14 @@ export default function DecisionReadinessCard({
               className="text-[10px] font-mono font-bold text-rose-400 bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-800/40"
             >
               ACTIVE BLOCKER
+            </span>
+          )}
+          {activeBlockingGate === "NONE" && !isExecutionReady && (
+            <span
+              data-testid="active-blocker-tag"
+              className="text-[10px] font-mono font-bold text-amber-400 bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-800/40"
+            >
+              AWAITING CLEARANCE
             </span>
           )}
         </div>

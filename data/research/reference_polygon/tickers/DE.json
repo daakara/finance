@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "DE",
+    "name": "Deere & Company",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000315189",
+    "composite_figi": "BBG000BH1NH9",
+    "share_class_figi": "BBG001S5QFF7",
+    "last_updated_utc": "2026-10-18T06:10:11.41417222Z"
+  },
+  "status": "OK"
+}

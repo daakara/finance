@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "CMG",
+    "name": "Chipotle Mexican Grill, Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001058090",
+    "composite_figi": "BBG000QX74T1",
+    "share_class_figi": "BBG001SP50B3",
+    "last_updated_utc": "2026-10-18T06:10:11.414079904Z"
+  },
+  "status": "OK"
+}

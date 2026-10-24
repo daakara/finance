@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "CHRD",
+    "name": "Chord Energy Corporation Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001486159",
+    "composite_figi": "BBG00Y7BLHL9",
+    "share_class_figi": "BBG00Y7BLJF2",
+    "last_updated_utc": "2026-10-18T06:10:11.414042573Z"
+  },
+  "status": "OK"
+}

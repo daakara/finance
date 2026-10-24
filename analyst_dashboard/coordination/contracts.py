@@ -23,6 +23,7 @@ class TriggerType(str, Enum):
     SCHEDULED = "SCHEDULED"
     OPERATOR = "OPERATOR"
     API = "API"
+    MAINTENANCE = "MAINTENANCE"
 
 
 class JobStatus(str, Enum):

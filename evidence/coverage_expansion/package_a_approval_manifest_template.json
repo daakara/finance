@@ -1,0 +1,929 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "approval_id": "APPROVAL-EXPANSION-150-A-TEMPLATE",
+  "title": "Unsigned Operator Approval Manifest Template for Package A Reference Identity Registration",
+  "description": "Unsigned template approval manifest for 130 reference identity additions into /root/analyst_dashboard/data/identity.db. Requires explicit operator authorization before execution wrapper can apply.",
+  "reviewed_plan_id": "PLAN_ADOPT_9A2E4E04E878",
+  "reviewed_plan_file": "evidence/coverage_expansion/package_a_identity_adoption_plan.json",
+  "reviewed_plan_file_sha256": "14b7f5edc1e1bbe41b5ed79bcbf367f9052199fc47e02ebb83ae0c0c8b9fcaef",
+  "reviewed_plan_content_digest": "9a2e4e04e878b667e25a2a75d56292a0b3e679b15890211cef13db96f7a8bfe5",
+  "approved_target_db_path": "/root/analyst_dashboard/data/identity.db",
+  "expected_target_state_digest": "b881778ac5370601174838271c918a1e1dcae7b4522b2bfc7b76a78e622e87e7",
+  "authorized_by": null,
+  "authorization_timestamp_utc": null,
+  "scope": "REFERENCE_IDENTITY_REGISTRATION",
+  "execution_wrapper_invocation": "python scripts/apply_registration_plan_wrapper.py --reviewed-plan evidence/coverage_expansion/package_a_identity_adoption_plan.json --approval-manifest <signed-approval-manifest.json> --db-path /root/analyst_dashboard/data/identity.db --backup-path /root/analyst_dashboard/data/identity.db.pre_expansion_backup --output-applied-plan /root/analyst_dashboard/data/applied_plan_150_expansion.json",
+  "remote_execution_transport": "railway ssh -s web -e production",
+  "candidate_bindings": {
+    "MU": {
+      "issuer_cik": "0000723125",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_C1998195121E",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "NVDA": {
+      "issuer_cik": "0001045810",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_442CE0B25527",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "META": {
+      "issuer_cik": "0001326801",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_896111757300",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "TSLA": {
+      "issuer_cik": "0001318605",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_9EC4CE6C2433",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "INTC": {
+      "issuer_cik": "0000050863",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_A09505BB92E4",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "AMD": {
+      "issuer_cik": "0000002488",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_A8DC2F6265AF",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "MSFT": {
+      "issuer_cik": "0000789019",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_E602D4F9329C",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "AMZN": {
+      "issuer_cik": "0001018724",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_6E68C50B3651",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "AVGO": {
+      "issuer_cik": "0001730168",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_E017EF93C227",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "MRVL": {
+      "issuer_cik": "0001835632",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_CA4E1007631E",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "ORCL": {
+      "issuer_cik": "0001341439",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_1511BE18A299",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "PLTR": {
+      "issuer_cik": "0001321655",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_E3AF4B146077",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "MSTR": {
+      "issuer_cik": "0001050446",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_54E15888CC8F",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "AMAT": {
+      "issuer_cik": "0000006951",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_2C64DA7AEF25",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "LRCX": {
+      "issuer_cik": "0000707549",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_7E8930D0B771",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "LLY": {
+      "issuer_cik": "0000059478",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_5FCB8712F857",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "NFLX": {
+      "issuer_cik": "0001065280",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_B2FA6EFA6D25",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "CRM": {
+      "issuer_cik": "0001108524",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_552E40F24574",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "CRWD": {
+      "issuer_cik": "0001535527",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_45815D9E419C",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "HOOD": {
+      "issuer_cik": "0001783879",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_DC1858ABF8E4",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "XOM": {
+      "issuer_cik": "0002115436",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_7A9D3E20A5F0",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "PANW": {
+      "issuer_cik": "0001327567",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_BE8541A97F58",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "COST": {
+      "issuer_cik": "0000909832",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_AB9F37A351C9",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "GEV": {
+      "issuer_cik": "0001996810",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_718CBD21F532",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "BA": {
+      "issuer_cik": "0000012927",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_82B38D003D55",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "V": {
+      "issuer_cik": "0001403161",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_534470FAF906",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "QCOM": {
+      "issuer_cik": "0000804328",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_38FA279C539E",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "CAT": {
+      "issuer_cik": "0000018230",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_FEE752228F9E",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "IREN": {
+      "issuer_cik": "0001878848",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_5FC8E180F103",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "KLAC": {
+      "issuer_cik": "0000319201",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_FA15DCFF4707",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "CVX": {
+      "issuer_cik": "0000093410",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_DE522056E821",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "HD": {
+      "issuer_cik": "0000354950",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_888A96812E7C",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "COIN": {
+      "issuer_cik": "0001679788",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_5A060BCF72F1",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "RKLB": {
+      "issuer_cik": "0001819994",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_9B51695DA12B",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "MA": {
+      "issuer_cik": "0001141391",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_8B948EA8001E",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "NKE": {
+      "issuer_cik": "0000320187",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_693A81069A58",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "NOW": {
+      "issuer_cik": "0001373715",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_AAE763CDAE89",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "APP": {
+      "issuer_cik": "0001751008",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_F5AEADCE3FA6",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "SNOW": {
+      "issuer_cik": "0001640147",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_4DA645D0D04F",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "GE": {
+      "issuer_cik": "0000040545",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_BF94A2A7C4EC",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "SMCI": {
+      "issuer_cik": "0001375365",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_3F3D1AA38BF7",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "TXN": {
+      "issuer_cik": "0000097476",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_46FC2970F92C",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "TJX": {
+      "issuer_cik": "0000109198",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_F5E86851B3E8",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "ABBV": {
+      "issuer_cik": "0001551152",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_BFA51AC4C0B5",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "IBM": {
+      "issuer_cik": "0000051143",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_03E964A5076A",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "ADBE": {
+      "issuer_cik": "0000796343",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_F2EAD38AA852",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "AMGN": {
+      "issuer_cik": "0000318154",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_F529ED410A08",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "SNPS": {
+      "issuer_cik": "0000883241",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_F630988F9A69",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "ADI": {
+      "issuer_cik": "0000006281",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_93BA3923018A",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "VRT": {
+      "issuer_cik": "0001674101",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_0BD3E9A219CB",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "INTU": {
+      "issuer_cik": "0000896878",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_2A443D99E284",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "NET": {
+      "issuer_cik": "0001477333",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_CA8529F734CC",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "MPWR": {
+      "issuer_cik": "0001280452",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_67B6F523B2F0",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "NEE": {
+      "issuer_cik": "0000753308",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_8C89A2BC55C2",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "ANET": {
+      "issuer_cik": "0001596532",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_19F637B205D7",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "CEG": {
+      "issuer_cik": "0001868275",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_88598B4E3AB4",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "IONQ": {
+      "issuer_cik": "0001824920",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_B8976BE2E5BC",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "ON": {
+      "issuer_cik": "0001097864",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_BF8C569DE4F0",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "DE": {
+      "issuer_cik": "0000315189",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_4EF3AD410566",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "ETN": {
+      "issuer_cik": "0001551182",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_455086325187",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "GILD": {
+      "issuer_cik": "0000882095",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_57D1B2C5CD0B",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "DDOG": {
+      "issuer_cik": "0001561550",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_0B7CEDD50497",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "BSX": {
+      "issuer_cik": "0000885725",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_8F075B93DEBF",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "BMY": {
+      "issuer_cik": "0000014272",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_99DFEAF1CF82",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "CDNS": {
+      "issuer_cik": "0000813672",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_D6CA98435068",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "SOFI": {
+      "issuer_cik": "0001818874",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_DA8502C94355",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "ISRG": {
+      "issuer_cik": "0001035267",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_C827F9A35C27",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "CIEN": {
+      "issuer_cik": "0000936395",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_33BD897CA8FA",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "VST": {
+      "issuer_cik": "0001692819",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_F85111DD9311",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "RTX": {
+      "issuer_cik": "0000101829",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_C14429DD1287",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "SBUX": {
+      "issuer_cik": "0000829224",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_EA7223331010",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "NXPI": {
+      "issuer_cik": "0001413447",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_17DA3FE155B3",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "UNP": {
+      "issuer_cik": "0000100885",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_F839A62DFF4B",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "FTNT": {
+      "issuer_cik": "0001262039",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_ADD1AAC27385",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "ZS": {
+      "issuer_cik": "0001713683",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_27324B088572",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "MCHP": {
+      "issuer_cik": "0000827054",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_19D399D87086",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "MDB": {
+      "issuer_cik": "0001441816",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_9AF36A409CD1",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "PWR": {
+      "issuer_cik": "0001050915",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_DF5ACADD290D",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "TGT": {
+      "issuer_cik": "0000027419",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_D38FF8E84F3E",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "LMT": {
+      "issuer_cik": "0000936468",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_ABF01803332F",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "VRTX": {
+      "issuer_cik": "0000875320",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_8882F1460B8E",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "CMG": {
+      "issuer_cik": "0001058090",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_02265A0EF8C1",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "PYPL": {
+      "issuer_cik": "0001633917",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_6C808E5504C8",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "FIX": {
+      "issuer_cik": "0001035983",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_8E5D6C214D2D",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "REGN": {
+      "issuer_cik": "0000872589",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_8E6814FE24CD",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "TEAM": {
+      "issuer_cik": "0001650372",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_02051BB3295D",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "MARA": {
+      "issuer_cik": "0001507605",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_F082FA5C6F0B",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "NOC": {
+      "issuer_cik": "0001133421",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_6250BE495075",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "ROST": {
+      "issuer_cik": "0000745732",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_27A72A082BAD",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "HON": {
+      "issuer_cik": "0000773840",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_5A590025E17E",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "LULU": {
+      "issuer_cik": "0001397187",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_B90F7BB3A58C",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "TDG": {
+      "issuer_cik": "0001260221",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_22282BB3674F",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "MNST": {
+      "issuer_cik": "0000865752",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_AFE834214958",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "FSLR": {
+      "issuer_cik": "0001274494",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_546084E5CD12",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "WDAY": {
+      "issuer_cik": "0001327811",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_23443D139EA4",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "ONON": {
+      "issuer_cik": "0001858985",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_0856CBDE4B4C",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "HUBS": {
+      "issuer_cik": "0001404655",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_BA23783A6437",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "DXCM": {
+      "issuer_cik": "0001093557",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_47202947540E",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "ALNY": {
+      "issuer_cik": "0001178670",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_64DAB319A432",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "EME": {
+      "issuer_cik": "0000105634",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_20F191FAE74D",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "AFRM": {
+      "issuer_cik": "0001820953",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_0677B1120327",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "DECK": {
+      "issuer_cik": "0000910521",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_3BA395938C4C",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "BIIB": {
+      "issuer_cik": "0000875045",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_6D5C456D8BB5",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "ULTA": {
+      "issuer_cik": "0001403568",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_05F69742132C",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "DPZ": {
+      "issuer_cik": "0001286681",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_196CD0740411",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "NVR": {
+      "issuer_cik": "0000906163",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_C390DA7515C5",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "PODD": {
+      "issuer_cik": "0001145197",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_71F0B20DDFC2",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "CELH": {
+      "issuer_cik": "0001341766",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_55D0CCEA0064",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "MEDP": {
+      "issuer_cik": "0001668397",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_70044A01D17D",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "ENPH": {
+      "issuer_cik": "0001463101",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_D27B889D4694",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "DUOL": {
+      "issuer_cik": "0001562088",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_5FE499FF050D",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "ELF": {
+      "issuer_cik": "0001600033",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_5ECDFE4C0D61",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "LNTH": {
+      "issuer_cik": "0001521036",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_FB1E08AD4D1F",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "ARWR": {
+      "issuer_cik": "0000879407",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_0FC7F0574580",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "SEDG": {
+      "issuer_cik": "0001419612",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_9430371427D9",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "CHRD": {
+      "issuer_cik": "0001486159",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_33F83E10EB24",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "CRSP": {
+      "issuer_cik": "0001674416",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_50A0437954AB",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "TMDX": {
+      "issuer_cik": "0001756262",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_F15EDA9A42F0",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "ACLS": {
+      "issuer_cik": "0001113232",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_FD679186E10C",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "POWI": {
+      "issuer_cik": "0000833640",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_AE0212952B79",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "ABT": {
+      "issuer_cik": "0000001800",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_BA1EA7C591A9",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "BAC": {
+      "issuer_cik": "0000070858",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_9213246C9B74",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "CSCO": {
+      "issuer_cik": "0000858877",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_A772C2FA2AF2",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    },
+    "DIS": {
+      "issuer_cik": "0001744489",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_124363A43E44",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "JNJ": {
+      "issuer_cik": "0000200406",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_A893EE591BCF",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "JPM": {
+      "issuer_cik": "0000019617",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_55AF67997EC6",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "MRK": {
+      "issuer_cik": "0000310158",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_90DAA920B8E2",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "PFE": {
+      "issuer_cik": "0000078003",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_4E8A19CC9BB8",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "PG": {
+      "issuer_cik": "0000080424",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_0EB3697E0866",
+      "operating_mic": "XNYS",
+      "effective_from": "2026-10-19"
+    },
+    "WMT": {
+      "issuer_cik": "0000104169",
+      "share_class": null,
+      "durable_security_id": "ARX_SEC_C54A88FF90FC",
+      "operating_mic": "XNAS",
+      "effective_from": "2026-10-19"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "results": {
+    "ticker": "ETN",
+    "name": "Eaton Corporation, plc Ordinary Shares",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001551182",
+    "last_updated_utc": "2026-10-18T06:10:11.41429243Z"
+  },
+  "status": "OK"
+}

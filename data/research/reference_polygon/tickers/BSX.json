@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "BSX",
+    "name": "Boston Scientific Corp.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000885725",
+    "composite_figi": "BBG000C0LW92",
+    "share_class_figi": "BBG001S63L94",
+    "last_updated_utc": "2026-10-18T06:10:11.413940268Z"
+  },
+  "status": "OK"
+}

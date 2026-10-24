@@ -27,7 +27,7 @@ export default function FinancialDisclaimer({ variant = "footer", className = ""
             </div>
             <ul className="space-y-0.5 text-slate-400 font-mono text-[11px]">
               <li><Link href="/" className="hover:text-cyan-400 transition-colors inline-block py-1 min-h-[24px]">Live Terminal</Link></li>
-              <li><Link href="/screener/" className="hover:text-cyan-400 transition-colors inline-block py-1 min-h-[24px]">Multi-Factor Screener</Link></li>
+              <li><Link href="/radar/" className="hover:text-cyan-400 transition-colors inline-block py-1 min-h-[24px]">Opportunity Radar &amp; Screener</Link></li>
               <li><Link href="/compare/" className="hover:text-cyan-400 transition-colors inline-block py-1 min-h-[24px]">Asset Comparison</Link></li>
               <li><Link href="/portfolio/" className="hover:text-cyan-400 transition-colors inline-block py-1 min-h-[24px]">Risk Allocator</Link></li>
             </ul>

@@ -3,8 +3,10 @@ import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 import ShareTradeCardButton from "../../../components/ShareTradeCardButton";
 import HistoricalEdgeScorecard from "../../../components/HistoricalEdgeScorecard";
+import SourcedFundamentalsCard from "../../../components/SourcedFundamentalsCard";
 import { SHARED_WATCHLIST_ITEMS } from "../../../lib/constants";
 import { getMasterAsset, getAllMasterTickers, getMasterBaselinePrice } from "../../../lib/masterCatalog";
+import { isCohortSymbol, ODP05_COHORT_SYMBOLS, PUBLISHED_WATCH_SYMBOLS } from "../../../lib/opportunityDossiers";
 
 interface PageProps {
   params: {
@@ -65,10 +67,15 @@ export function generateStaticParams() {
   const stockSymbols = SHARED_WATCHLIST_ITEMS.map((item) => ({
     ticker: item.symbol.toLowerCase(),
   }));
+  const cohortTickers = [
+    ...ODP05_COHORT_SYMBOLS.map((s) => ({ ticker: s.toLowerCase() })),
+    ...PUBLISHED_WATCH_SYMBOLS.map((s) => ({ ticker: s.toLowerCase() })),
+  ];
   
   const unique = Array.from(new Set([
     ...masterTickers.map(s => s.ticker),
     ...stockSymbols.map(s => s.ticker),
+    ...cohortTickers.map(s => s.ticker),
   ]));
   return unique.map(ticker => ({ ticker }));
 }
@@ -164,11 +171,11 @@ export default function StockDetailPage({ params }: PageProps) {
   const jsonLd = [
     {
       "@context": "https://schema.org",
-      "@type": "FinancialProduct",
-      "name": `${name} (${sym})`,
+      "@type": "WebPage",
+      "name": `${name} (${sym}) Trading Blueprint • Minervini VCP Levels & Insiders`,
       "description": `Quantitative equity analytics, Minervini VCP levels, and risk modeling for ${name} (${sym}).`,
       "url": `https://www.arxterminal.com/stock/${params.ticker.toLowerCase()}/`,
-      "provider": {
+      "publisher": {
         "@type": "Organization",
         "name": "ARX Terminal",
         "url": "https://www.arxterminal.com"
@@ -187,8 +194,8 @@ export default function StockDetailPage({ params }: PageProps) {
         {
           "@type": "ListItem",
           "position": 2,
-          "name": "Equities & Stocks",
-          "item": "https://www.arxterminal.com/screener/"
+          "name": "Market Radar",
+          "item": "https://www.arxterminal.com/radar/"
         },
         {
           "@type": "ListItem",
@@ -213,7 +220,7 @@ export default function StockDetailPage({ params }: PageProps) {
         <nav className="text-xs text-slate-500 flex items-center space-x-2">
           <Link href="/" className="hover:text-cyan-400">Terminal</Link>
           <span>/</span>
-          <Link href="/screener" className="hover:text-cyan-400">Screener</Link>
+          <Link href="/radar" className="hover:text-cyan-400">Radar</Link>
           <span>/</span>
           <span className="text-slate-300 font-bold">{sym}</span>
         </nav>
@@ -222,11 +229,21 @@ export default function StockDetailPage({ params }: PageProps) {
         <header className="bg-[#0b1019] p-5 sm:p-6 rounded-2xl border border-[#1e293b] space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <div className="flex items-center space-x-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <span className="px-2.5 py-1 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800 text-xs font-bold font-mono">
                   {sym}
                 </span>
                 <span className="text-slate-400 text-xs font-sans">• {watchlist?.type || "Equity Asset"}</span>
+                {isCohortSymbol(sym) && (
+                  <Link
+                    href={`/research?symbol=${encodeURIComponent(sym)}`}
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-cyan-950/90 text-cyan-300 border border-cyan-600/80 hover:bg-cyan-900/90 hover:border-cyan-400 text-[11px] font-mono transition-colors shadow-sm"
+                    title="View Quality Watch dossier"
+                  >
+                    <span>View Quality Watch Dossier</span>
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                )}
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mt-1">
                 {name} ({sym})
@@ -446,6 +463,9 @@ export default function StockDetailPage({ params }: PageProps) {
             </div>
           </div>
         </section>
+
+        {/* 📑 SEC EDGAR SOURCED FUNDAMENTALS & EVIDENCE INSPECTION */}
+        <SourcedFundamentalsCard symbol={sym} />
 
         {/* 📊 QUANTITATIVE BACKTESTED EDGE & SETUP WIN-RATE SCORECARD */}
         <section aria-label="Quantitative Historical Edge Scorecard">

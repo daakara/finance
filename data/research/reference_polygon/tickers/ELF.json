@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "ELF",
+    "name": "e.l.f. Beauty, Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001600033",
+    "composite_figi": "BBG00DQ6VYP3",
+    "share_class_figi": "BBG00DQ6VYQ2",
+    "last_updated_utc": "2026-10-18T06:10:11.414257884Z"
+  },
+  "status": "OK"
+}

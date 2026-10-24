@@ -16,7 +16,7 @@ from api.routes.screener import (
 )
 
 
-pytestmark = pytest.mark.tier2b
+pytestmark = [pytest.mark.tier2b, pytest.mark.usefixtures("published_screener_universe")]
 
 
 def test_canonical_vocabulary_constants():
@@ -48,7 +48,21 @@ def test_screener_payload_exposes_canonical_categories_and_capabilities():
     data = run_screener_get(resp, filter_type="all")
 
     assert "capabilities" in data
-    assert data["capabilities"] == RADAR_CAPABILITY_CONTRACT
+    caps = data["capabilities"]
+    for cat in CANONICAL_RADAR_CATEGORIES:
+        assert cat in caps
+        assert "status" in caps[cat]
+        assert "universeScreening" in caps[cat]
+        assert "singleAssetAnalysis" in caps[cat]
+        assert "rationale" in caps[cat]
+
+    # VALUE_GARP and SMART_MONEY match static contract baseline
+    for cat in ["VALUE_GARP", "SMART_MONEY"]:
+        for key, val in RADAR_CAPABILITY_CONTRACT[cat].items():
+            assert caps[cat][key] == val
+
+    # VCP capabilities reflect runtime snapshot state (AVAILABLE if active snapshot exists, PIPELINE_PENDING if none)
+    assert caps["VCP"]["universeScreening"] in ("AVAILABLE", "PIPELINE_PENDING")
 
     candidates = data.get("candidates", [])
     assert len(candidates) > 0

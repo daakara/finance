@@ -1,6 +1,6 @@
 """Catalyst & Multi-Year Earnings Impact Analyzer Engine."""
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 # Knowledge base of clinical trials, product launches, legislative milestones, and multi-year valuation forecasts
@@ -371,7 +371,8 @@ class CatalystEngine:
         sector: str = "",
         industry: str = "",
         company_name: str = "",
-        include_curated: bool = False
+        include_curated: bool = False,
+        corporate_event: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         upper = symbol.upper().replace("-USD", "").strip()
 
@@ -388,6 +389,20 @@ class CatalystEngine:
                 data["isCuratedArchive"] = True
                 data["asOfDate"] = "2026-09-01"
                 data["forecastProvenance"] = "Curated Historical Consensus"
+
+            if corporate_event:
+                data["corporate_event"] = corporate_event
+                data["days_to_earnings"] = corporate_event.get("days_to_earnings")
+                data["has_imminent_earnings"] = corporate_event.get("has_imminent_earnings", False)
+                data["event_date_et"] = corporate_event.get("event_date_et")
+                if corporate_event.get("days_to_earnings") is not None and corporate_event["days_to_earnings"] >= 0:
+                    call_desc = f" ({corporate_event.get('conference_call_time_et')} ET Call)" if corporate_event.get('conference_call_time_et') else ""
+                    data["upcoming_milestones"] = [{
+                        "date": corporate_event.get("event_date_et", "Upcoming"),
+                        "event": f"Quarterly Earnings Announcement{call_desc}",
+                        "impact": "High Binary",
+                        "source": corporate_event.get("source_name", "Primary IR"),
+                    }]
             return data
 
         clean_name = company_name or f"{upper} Corporation"
@@ -412,6 +427,23 @@ class CatalystEngine:
             primary_trial = "Awaiting Verified Regulatory Disclosures"
 
         # Uncataloged / Uncurated Asset (Enforce Epistemic Honesty: No fabricated trials, milestones, or forecasts)
+        milestones = []
+        days_to_earnings = None
+        has_imminent = False
+        event_date_et = None
+        if corporate_event:
+            days_to_earnings = corporate_event.get("days_to_earnings")
+            has_imminent = corporate_event.get("has_imminent_earnings", False)
+            event_date_et = corporate_event.get("event_date_et")
+            if days_to_earnings is not None and days_to_earnings >= 0:
+                call_desc = f" ({corporate_event.get('conference_call_time_et')} ET Call)" if corporate_event.get('conference_call_time_et') else ""
+                milestones.append({
+                    "date": event_date_et or "Upcoming",
+                    "event": f"Quarterly Earnings Announcement{call_desc}",
+                    "impact": "High Binary",
+                    "source": corporate_event.get("source_name", "Primary IR"),
+                })
+
         return {
             "symbol": upper,
             "company_name": clean_name,
@@ -421,6 +453,10 @@ class CatalystEngine:
             "trial_readout_timeline": "Awaiting Official Corporate Schedule",
             "efficacy_summary": f"Awaiting verified fundamental and financial reporting disclosures for {clean_name}.",
             "competitive_edge": "Verified operational moat data unavailable.",
-            "upcoming_milestones": [],
+            "upcoming_milestones": milestones,
             "multi_year_forecast": [],
+            "corporate_event": corporate_event,
+            "days_to_earnings": days_to_earnings,
+            "has_imminent_earnings": has_imminent,
+            "event_date_et": event_date_et,
         }

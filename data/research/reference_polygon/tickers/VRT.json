@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "VRT",
+    "name": "Vertiv Holdings Co Class A Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001674101",
+    "composite_figi": "BBG00L2B8KW8",
+    "share_class_figi": "BBG00L2B8LM7",
+    "last_updated_utc": "2026-10-18T06:10:11.41619663Z"
+  },
+  "status": "OK"
+}

@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "AMZN",
+    "name": "Amazon.Com Inc",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001018724",
+    "composite_figi": "BBG000BVPV84",
+    "share_class_figi": "BBG001S5PQL7",
+    "last_updated_utc": "2026-10-18T06:10:11.413757971Z"
+  },
+  "status": "OK"
+}

@@ -140,6 +140,7 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         self.assertIn("/workbench/*", redirects_content)
         self.assertIn("/strategy", redirects_content)
         self.assertIn("301", redirects_content)
+        self.assertNotIn("/research/*", redirects_content, "Active research route must NOT be covered by a redirect to root")
 
         with open(layout_path, "r", encoding="utf-8") as f:
             layout_content = f.read()
@@ -178,8 +179,13 @@ class TestNextJsFrontendStructure(unittest.TestCase):
 
         with open(conviction_path, "r", encoding="utf-8") as f:
             conv_content = f.read()
-        self.assertIn("The Bottom Line (No Wall Street Fluff)", conv_content)
+        self.assertIn("Multi-Model Confluence Attribution", conv_content)
         self.assertIn("finance:vernacular-change", conv_content)
+
+        standard_terminal_path = os.path.join("frontend", "components", "terminal", "StandardTerminalView.tsx")
+        with open(standard_terminal_path, "r", encoding="utf-8") as f:
+            standard_content = f.read()
+        self.assertIn("Reason / Bottom Line:", standard_content)
 
         with open(sizer_path, "r", encoding="utf-8") as f:
             sizer_content = f.read()
@@ -214,7 +220,7 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         with open(entry_card_path, "r", encoding="utf-8") as f:
             entry_content = f.read()
         self.assertIn("finance:vernacular-change", entry_content)
-        self.assertIn("Safe Buy & Sell Plan", entry_content)
+        self.assertIn("Conditional Trade Plan", entry_content)
 
         with open(screener_path, "r", encoding="utf-8") as f:
             screener_content = f.read()

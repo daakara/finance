@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "ZS",
+    "name": "Zscaler, Inc. Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001713683",
+    "composite_figi": "BBG003338H34",
+    "share_class_figi": "BBG003338H61",
+    "last_updated_utc": "2026-10-18T06:10:11.416288706Z"
+  },
+  "status": "OK"
+}

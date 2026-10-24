@@ -54,6 +54,17 @@ class DeterministicUniverseBuilder:
         self.market_db = market_db or MarketDatabaseEngine()
 
     @classmethod
+    def evaluate_candidate_eligibility(
+        cls,
+        security: SourceSecurity,
+        build_id: str,
+        observed_at: str,
+        release_sha: str = CURRENT_RELEASE_SHA,
+    ) -> EligibilityLedgerRow:
+        """Alias for evaluate_security_eligibility for candidate evaluation."""
+        return cls.evaluate_security_eligibility(security, build_id, observed_at, release_sha)
+
+    @classmethod
     def evaluate_security_eligibility(
         cls,
         security: SourceSecurity,
@@ -82,8 +93,14 @@ class DeterministicUniverseBuilder:
         r02 = (normalized.security_type == CANONICAL_ELIGIBILITY_RULES["R02_SECURITY_TYPE"]["expected"])
         rule_results["R02_SECURITY_TYPE"] = r02
 
-        # R03: Listing Status
-        r03 = (normalized.listing_status == CANONICAL_ELIGIBILITY_RULES["R03_LISTING_STATUS"]["expected"])
+        # Temporal anchor for point-in-time evaluation against target session date
+        obs_date = observed_at[:10] if observed_at else ""
+
+        # R03: Listing Status (Venue trading status must be ACTIVE at observed_at)
+        if normalized.trading_suspension_date and obs_date and obs_date >= normalized.trading_suspension_date:
+            r03 = False
+        else:
+            r03 = (normalized.listing_status == CANONICAL_ELIGIBILITY_RULES["R03_LISTING_STATUS"]["expected"])
         rule_results["R03_LISTING_STATUS"] = r03
 
         # R04: Primary Exchange
@@ -98,8 +115,14 @@ class DeterministicUniverseBuilder:
         r06 = (normalized.primary_listing is True)
         rule_results["R06_PRIMARY_LISTING"] = r06
 
-        # R07: Not Delisted
-        r07 = (normalized.delisting_date is None or normalized.delisting_date == "")
+        # R07: Not Delisted (Point-in-time evaluation against session date)
+        if normalized.delisting_date:
+            if obs_date and obs_date < normalized.delisting_date:
+                r07 = True
+            else:
+                r07 = False
+        else:
+            r07 = (normalized.listing_status != "DELISTED")
         rule_results["R07_NOT_DELISTED"] = r07
 
         # Terminal state & reason code assignment (first failing rule deterministically)
@@ -243,6 +266,7 @@ class DeterministicUniverseBuilder:
         - Cross-build reconciliation against previous_build.
         """
         now_iso = datetime.now(timezone.utc).isoformat()
+        eval_time = snapshot.as_of if snapshot and snapshot.as_of else now_iso
         actual_build_id = build_id or f"ubuild-{int(datetime.now(timezone.utc).timestamp())}"
 
         # 1. Deterministic normalization and evaluation of source securities
@@ -251,13 +275,13 @@ class DeterministicUniverseBuilder:
 
         if worker_count <= 1:
             eligibility_rows = [
-                self.evaluate_security_eligibility(sec, actual_build_id, now_iso, release_sha)
+                self.evaluate_security_eligibility(sec, actual_build_id, eval_time, release_sha)
                 for sec in sorted_securities
             ]
         else:
             with ThreadPoolExecutor(max_workers=worker_count) as executor:
                 eligibility_rows = list(executor.map(
-                    lambda sec: self.evaluate_security_eligibility(sec, actual_build_id, now_iso, release_sha),
+                    lambda sec: self.evaluate_security_eligibility(sec, actual_build_id, eval_time, release_sha),
                     sorted_securities
                 ))
 

@@ -58,6 +58,9 @@ def test_screener_differential_subsets():
     all_syms = set(c["symbol"] for c in all_candidates)
     assert len(all_candidates) == len(DEFAULT_CANDIDATES), "All filter must return the full universe"
 
+    day_trader_all = run_screener_get(filter_type="all", user_role="DAY_TRADER")
+    day_trader_syms = set(c["symbol"] for c in day_trader_all.get("candidates", []))
+
     filters = [
         ("high_confluence", lambda c: c["confluenceScore"] >= 80.0),
         ("in_buy_zone", lambda c: c["executionStatus"] == "IN_BUY_ZONE"),
@@ -69,16 +72,19 @@ def test_screener_differential_subsets():
     ]
 
     for filter_name, validator in filters:
-        data = run_screener_get(filter_type=filter_name)
+        role = "DAY_TRADER" if filter_name == "approaching_target" else "LONG_TERM"
+        data = run_screener_get(filter_type=filter_name, user_role=role)
         candidates = data.get("candidates", [])
         syms = set(c["symbol"] for c in candidates)
+        expected_syms = day_trader_syms if role == "DAY_TRADER" else all_syms
+        max_candidates = len(day_trader_syms) if role == "DAY_TRADER" else len(all_candidates)
 
         # 1. Non-Zero Distribution Assertion: No filter should return 0 results
         assert len(candidates) > 0, f"Filter '{filter_name}' returned 0 results; must return non-zero candidates"
 
         # 2. Strict Subset Assertion: Filtered set must be a proper subset of total universe
-        assert len(candidates) <= len(all_candidates), f"Filter '{filter_name}' count cannot exceed total universe"
-        assert syms.issubset(all_syms), f"Filter '{filter_name}' contained unknown symbols not in universe"
+        assert len(candidates) <= max_candidates, f"Filter '{filter_name}' count cannot exceed total universe"
+        assert syms.issubset(expected_syms), f"Filter '{filter_name}' contained unknown symbols not in universe"
 
         # 3. Filter Criterion Compliance: Every returned asset must satisfy the filter rule
         for cand in candidates:
@@ -87,8 +93,8 @@ def test_screener_differential_subsets():
 
 def test_screener_disjoint_execution_states():
     """Verify that execution state categories are mutually exclusive (disjoint)."""
-    buy_zone_data = run_screener_get(filter_type="in_buy_zone")
-    tp_target_data = run_screener_get(filter_type="approaching_target")
+    buy_zone_data = run_screener_get(filter_type="in_buy_zone", user_role="DAY_TRADER")
+    tp_target_data = run_screener_get(filter_type="approaching_target", user_role="DAY_TRADER")
 
     buy_zone_syms = set(c["symbol"] for c in buy_zone_data.get("candidates", []))
     tp_target_syms = set(c["symbol"] for c in tp_target_data.get("candidates", []))
@@ -107,7 +113,7 @@ def test_screener_candidate_data_integrity():
         sym = c["symbol"]
         assert c["currentPrice"] > 0, f"{sym}: Price must be positive"
         assert c["gemScore"] >= 0 and c["gemScore"] <= 100, f"{sym}: GemScore out of bounds"
-        if c["executionStatus"] not in ["INSUFFICIENT_HISTORY", "UNVERIFIED_ASSET"]:
+        if c["executionStatus"] not in ["INSUFFICIENT_HISTORY", "UNVERIFIED_ASSET", "DELISTED_SECURITY"]:
             assert c["stopLoss"] < c["optimalEntryMin"] <= c["optimalEntryMax"] < c["takeProfit1"], f"{sym}: Invalid level ladder"
         else:
             assert c["stopLoss"] is None
@@ -143,7 +149,7 @@ def test_screener_custom_tickers_on_demand():
     assert "AAPL" in syms and "AMD" in syms and "META" in syms, "Custom symbols must match parsed input"
     for c in candidates:
         assert c["currentPrice"] > 0
-        if c["executionStatus"] not in ["INSUFFICIENT_HISTORY", "UNVERIFIED_ASSET"]:
+        if c["executionStatus"] not in ["INSUFFICIENT_HISTORY", "UNVERIFIED_ASSET", "DELISTED_SECURITY"]:
             assert c["stopLoss"] < c["optimalEntryMin"] <= c["optimalEntryMax"] < c["takeProfit1"]
         else:
             assert c["stopLoss"] is None
@@ -201,7 +207,7 @@ def test_screener_liquidity_non_contamination():
 import unittest
 
 import pytest
-pytestmark = pytest.mark.tier2b
+pytestmark = [pytest.mark.tier2b, pytest.mark.usefixtures("published_screener_universe")]
 
 
 class TestScreenerExecution(unittest.TestCase):

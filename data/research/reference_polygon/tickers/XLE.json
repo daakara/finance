@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "XLE",
+    "name": "State Street Energy Select Sector SPDR ETF",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "ARCX",
+    "type": "ETF",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001064641",
+    "composite_figi": "BBG000BJ20S2",
+    "share_class_figi": "BBG001S7T1S7",
+    "last_updated_utc": "2026-10-18T06:10:11.416250924Z"
+  },
+  "status": "OK"
+}

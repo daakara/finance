@@ -82,6 +82,13 @@ CURRENT_IMPLEMENTATION_RELEASE_SHA = "ed04de51160e0f2c3e82bd43d989897a4fd77f89"
 from analyst_dashboard.analyzers.scanner_contract import CANONICAL_VCP_UNIVERSE
 
 
+# Supported authoritative classification authorities for VCP
+SUPPORTED_VCP_CLASSIFICATION_AUTHORITIES = {
+    "CANONICAL_VCP_CLASSIFIER",
+    "VCP_CLASSIFIER_V1",
+}
+
+
 class VCPScannerRunner:
     """Market-wide execution runner for Minervini Volatility Contraction Pattern."""
 
@@ -194,8 +201,15 @@ class VCPScannerRunner:
         if acq_result.status == AcquisitionStatus.JOB_ALREADY_SUCCEEDED:
             if acquired_thread_lock:
                 self._scan_lock.release()
-            logger.info(f"Logical job {effective_job_key} already succeeded. Returning active snapshot.")
-            return self.get_active_or_latest_snapshot()
+            pub_id = acq_result.existing_job.successful_publication_id if acq_result.existing_job else None
+            logger.info(f"Logical job {effective_job_key} already succeeded with publication {pub_id}. Returning active snapshot.")
+            cached = self.get_active_or_latest_snapshot()
+            if isinstance(cached, dict):
+                cached = dict(cached)
+                cached["deduplicated"] = True
+                cached["acquisition_status"] = "JOB_ALREADY_SUCCEEDED"
+                cached["successful_publication_id"] = pub_id
+            return cached
 
         if acq_result.status == AcquisitionStatus.ALREADY_RUNNING:
             if acquired_thread_lock:
@@ -213,6 +227,8 @@ class VCPScannerRunner:
             target_build_id = universe_build_id
             build_attestation = None
             if target_build_id:
+                if hasattr(self.universe_store, "get_universe_build"):
+                    build_attestation = self.universe_store.get_universe_build(target_build_id)
                 scannable_symbols = self.universe_store.get_scannable_membership(target_build_id)
             else:
                 latest_build = self.universe_store.get_latest_published_universe(UNIVERSE_ID)
@@ -223,18 +239,33 @@ class VCPScannerRunner:
                 else:
                     scannable_symbols = []
 
+            is_natural_scheduled = (
+                invocation_class == "SCHEDULED_PRODUCTION"
+                or trigger_type == TriggerType.SCHEDULED
+            )
+
             if universe_override is not None:
                 universe = universe_override
                 eligible_count = len(universe)
                 scannable_count = len(universe)
                 unavailable_count = 0
             elif scannable_symbols:
+                # For natural scheduled scan, enforce published build validity (INV-U02, INV-U08, INV-U09)
+                if is_natural_scheduled and build_attestation:
+                    if build_attestation.get("publication_decision") != "PUBLISH" or build_attestation.get("construction_status") != "COMPLETE":
+                        raise RuntimeError(
+                            f"UNPUBLISHED_UNIVERSE_BUILD: Build '{target_build_id}' has publication_decision='{build_attestation.get('publication_decision')}', construction_status='{build_attestation.get('construction_status')}'. Natural execution prohibited."
+                        )
                 universe = scannable_symbols
                 eligible_count = build_attestation["eligible_count"] if build_attestation else len(universe)
                 scannable_count = len(scannable_symbols)
                 unavailable_count = build_attestation["data_unavailable_count"] if build_attestation else 0
             else:
-                # Historical regression fixture fallback
+                # Historical regression fixture fallback ONLY for non-natural / bootstrap / test invocations (INV-U04)
+                if is_natural_scheduled:
+                    raise RuntimeError(
+                        f"NO_PUBLISHED_EXECUTABLE_UNIVERSE: Natural scheduled scan requires an authorized published universe build. Historical fixture fallback is prohibited for invocation_class='{invocation_class}'."
+                    )
                 universe = list(dict.fromkeys(CANONICAL_VCP_UNIVERSE))
                 eligible_count = len(universe)
                 scannable_count = len(universe)
@@ -242,6 +273,8 @@ class VCPScannerRunner:
 
             universe_size = len(universe)
             scanned_successfully_count = 0
+            computed_evaluations_count = 0
+            uncomputed_evaluations_count = 0
             unavailable_reasons: Dict[str, int] = {}
             qualified_candidates: List[Dict[str, Any]] = []
 
@@ -265,9 +298,32 @@ class VCPScannerRunner:
 
                 exec_res = OptimalExecutionEngine.calculate_trade_levels(df, current_price, user_role="LONG_TERM")
 
-                # Qualification ruleset: Must be confirmed VCP in Stage 2 Advancing Growth Phase
-                is_vcp = exec_res.get("vcp_contraction_status") == "VCP 3-Stage Compression Confirmed"
-                is_stage_2 = exec_res.get("stage_phase") == "Stage 2 Advancing Growth Phase"
+                # Compute actual moving averages directly from daily candles
+                close_s = df["Close"]
+                actual_sma_50 = round(float(close_s.rolling(50).mean().iloc[-1]), 4) if len(close_s) >= 50 else None
+                actual_ema_20 = round(float(close_s.ewm(span=20, adjust=False).mean().iloc[-1]), 4) if len(close_s) >= 20 else None
+
+                # Truthfulness Invariant: OptimalExecutionEngine evaluates tactical execution corridors (entry/stop/target/ATR).
+                # Its legacy strategy 2.0.0 heuristic strings ("Minervini VCP", "Stage 2") on 60-bar windows
+                # do not constitute authoritative VCP domain classification or 200-session trend template qualification.
+                # A 60-bar query window is epistemically incapable of evaluating a 200-session trend template.
+                # Operational runner rejects the legacy false-certification fallback and enforces uncomputed status:
+                vcp_authoritative_computed = bool(exec_res.get("vcp_authoritative_evaluated", False))
+
+                if vcp_authoritative_computed:
+                    vcp_status = exec_res.get("vcp_contraction_status")
+                    stage_status = exec_res.get("stage_phase")
+                    setup_pattern = exec_res.get("setup_pattern")
+                    computed_evaluations_count += 1
+                else:
+                    vcp_status = "Consolidation Unverified"
+                    stage_status = "Stage Unverified (Trend Template Uncomputed)"
+                    setup_pattern = "Consolidation Setup (Pattern Unverified)"
+                    uncomputed_evaluations_count += 1
+
+                # Qualification ruleset: Must be authoritatively confirmed VCP in Stage 2 Advancing Growth Phase
+                is_vcp = vcp_authoritative_computed and (vcp_status == "VCP 3-Stage Compression Confirmed")
+                is_stage_2 = vcp_authoritative_computed and (stage_status == "Stage 2 Advancing Growth Phase")
 
                 if is_vcp and is_stage_2:
                     # Calculate multi-factor confluence conviction score
@@ -276,8 +332,8 @@ class VCPScannerRunner:
                         technical_data={
                             "executionStatus": exec_res["execution_status"],
                             "riskRewardRatio": exec_res["risk_reward_ratio"],
-                            "setup_pattern": exec_res["setup_pattern"],
-                            "stage_phase": exec_res["stage_phase"],
+                            "setup_pattern": setup_pattern,
+                            "stage_phase": stage_status,
                             "rsi_14": exec_res.get("rsi_14"),
                             "stop_loss": exec_res["stop_loss"],
                             "current_price": current_price,
@@ -286,11 +342,11 @@ class VCPScannerRunner:
                     score = round(float(conf_res.get("confluenceScore", 75.0)), 1)
 
                     scanner_evidence = {
-                        "vcp_stage": exec_res.get("vcp_contraction_status"),
-                        "setup_pattern": exec_res.get("setup_pattern"),
-                        "stage_phase": exec_res.get("stage_phase"),
-                        "sma_50": exec_res.get("breakout_pivot"),
-                        "ema_20": exec_res.get("optimal_entry_min"),
+                        "vcp_stage": vcp_status,
+                        "setup_pattern": setup_pattern,
+                        "stage_phase": stage_status,
+                        "sma_50": actual_sma_50,
+                        "ema_20": actual_ema_20,
                         "atr_14": exec_res.get("atr_14"),
                         "breakout_pivot": exec_res.get("breakout_pivot"),
                         "optimal_entry_min": exec_res.get("optimal_entry_min"),
@@ -401,6 +457,32 @@ class VCPScannerRunner:
                 freshness_policy_hash=CANONICAL_VCP_FRESHNESS_HASH,
             )
 
+            # Resolve 4-way semantic state:
+            # Scenario A: Computed evaluation with zero matches (e.g. empty universe or computed 0-match)
+            # Scenario B: Uncomputed / pipeline pending (pattern unverified across evaluated assets)
+            # Scenario C: Evaluation failed / insufficient data
+            # Scenario D: Computed with supported matches
+            if eval_report.decision != PublicationDecision.PUBLISH:
+                status_at_pub = ScannerStatus.ERROR
+                effective_matched_count = None
+            elif len(qualified_candidates) > 0:
+                status_at_pub = ScannerStatus.AVAILABLE
+                effective_matched_count = len(qualified_candidates)
+            elif universe_size == 0:
+                status_at_pub = ScannerStatus.AVAILABLE
+                effective_matched_count = 0
+            elif scanned_successfully_count == 0:
+                status_at_pub = ScannerStatus.ERROR
+                effective_matched_count = None
+            elif computed_evaluations_count == 0 and uncomputed_evaluations_count > 0:
+                status_at_pub = ScannerStatus.PIPELINE_PENDING
+                effective_matched_count = None
+            else:
+                status_at_pub = ScannerStatus.AVAILABLE
+                effective_matched_count = 0
+
+            coverage_metadata["matched_count"] = effective_matched_count
+
             snapshot_id = f"vcp-snap-{int(time.time())}-{uuid.uuid4().hex[:8]}"
 
             provenance_dict: Dict[str, Any] = {
@@ -436,10 +518,10 @@ class VCPScannerRunner:
                 "semantic_fingerprint": semantic_fingerprint,
                 "generated_at": generated_at,
                 "data_as_of": data_as_of,
-                "status_at_publication": ScannerStatus.AVAILABLE.value if eval_report.decision == PublicationDecision.PUBLISH else ScannerStatus.ERROR.value,
+                "status_at_publication": status_at_pub.value,
                 "universe_id": "ARX_CANONICAL_LONG_TERM_V1",
                 "universe_size": universe_size,
-                "matched_count": matched_count,
+                "matched_count": effective_matched_count,
                 "results": qualified_candidates,
                 "provenance": provenance_dict,
                 "freshness": {
@@ -467,7 +549,7 @@ class VCPScannerRunner:
                 else:
                     self.snapshot_store.save_snapshot(snapshot_record)
                 self._cached_active_snapshot = snapshot_record
-                logger.info(f"VCP Scanner snapshot {snapshot_id} published successfully with {matched_count} matches.")
+                logger.info(f"VCP Scanner snapshot {snapshot_id} published successfully with status={status_at_pub.value}, matches={effective_matched_count}.")
             else:
                 if lease is not None:
                     self.coordinator.release(lease)
@@ -482,10 +564,10 @@ class VCPScannerRunner:
                 semantic_fingerprint=semantic_fingerprint,
                 generated_at=generated_at,
                 data_as_of=data_as_of,
-                status_at_publication=ScannerStatus.AVAILABLE if eval_report.decision == PublicationDecision.PUBLISH else ScannerStatus.ERROR,
+                status_at_publication=status_at_pub,
                 universe_id="ARX_CANONICAL_LONG_TERM_V1",
                 universe_size=universe_size,
-                matched_count=matched_count,
+                matched_count=effective_matched_count,
                 results=qualified_candidates,
                 provenance=snapshot_record["provenance"],
                 freshness=snapshot_record["freshness"],
@@ -499,28 +581,282 @@ class VCPScannerRunner:
             if acquired_thread_lock:
                 self._scan_lock.release()
 
-    def get_active_or_latest_snapshot(self) -> Dict[str, Any]:
-        """Retrieve active in-memory snapshot or load latest from store, executing initial scan if store is empty."""
-        if self._cached_active_snapshot is not None:
-            return self._to_envelope(self._cached_active_snapshot)
+    @staticmethod
+    def _is_candidate_vcp_classification_authoritative(
+        cand: Dict[str, Any],
+        snapshot_provenance: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """
+        Evaluate whether a single candidate possesses affirmative, verifiable,
+        authoritative VCP classification.
+        """
+        if not isinstance(cand, dict):
+            return False
 
-        persisted = self.snapshot_store.get_latest_active_snapshot("MINERVINI_VCP")
-        if persisted is not None:
-            if persisted.get("implementation_release_sha") == CURRENT_IMPLEMENTATION_RELEASE_SHA:
+        evidence = cand.get("scanner_evidence")
+        if not isinstance(evidence, dict):
+            return False
+
+        setup_pattern = str(cand.get("setup_pattern") or evidence.get("setup_pattern") or "")
+        vcp_stage = str(cand.get("vcp_stage") or evidence.get("vcp_stage") or "")
+        stage_phase = str(cand.get("stage_phase") or evidence.get("stage_phase") or "")
+
+        # 1. Reject unverified or uncomputed indicators
+        if any("Unverified" in s or "Uncomputed" in s for s in (setup_pattern, vcp_stage, stage_phase)):
+            return False
+
+        # 2. Check provenance authority boundary:
+        # If provenance indicates internal reference only / deferred validation,
+        # it cannot claim public classification authority.
+        prov = snapshot_provenance if isinstance(snapshot_provenance, dict) else {}
+        shadow_gov = prov.get("shadow_governance", {})
+        if isinstance(shadow_gov, dict):
+            if (
+                shadow_gov.get("shadow_domain_authority") == "INTERNAL_REFERENCE_ONLY"
+                and shadow_gov.get("external_validation_status") == "DEFERRED"
+            ):
+                return False
+
+        # 3. Must specify an authorized classification authority
+        authority = (
+            evidence.get("classification_authority")
+            or cand.get("classification_authority")
+            or prov.get("classification_authority")
+        )
+        if authority not in SUPPORTED_VCP_CLASSIFICATION_AUTHORITIES:
+            return False
+
+        # 4. Must declare affirmative evaluation flag
+        if evidence.get("vcp_authoritative_evaluated") is not True and cand.get("vcp_authoritative_evaluated") is not True:
+            return False
+
+        # 5. Must have affirmative boolean pattern detection and stage 2 confirmation
+        if evidence.get("vcp_pattern_detected") is not True:
+            return False
+        if evidence.get("stage2_status") != "STAGE_2_CONFIRMED":
+            return False
+
+        # 6. Must have calculated moving average (SMA50)
+        sma_50 = evidence.get("sma_50")
+        if sma_50 is None or not isinstance(sma_50, (int, float)) or sma_50 <= 0:
+            return False
+
+        return True
+
+    def _has_unsupported_vcp_matches(self, rec: Dict[str, Any]) -> bool:
+        """
+        Detect if a snapshot claims AVAILABLE or STALE matches but contains unsupported,
+        unverified, or legacy proxy classifications.
+
+        Enforces affirmative classification trust:
+        - If snapshot claims AVAILABLE or STALE status:
+          - If matched_count is 0 and results is empty: returns False (valid zero-match evaluation).
+          - If matched_count > 0 or results has candidates:
+            EVERY candidate claiming VCP qualification or containing scanner evidence
+            must be authoritatively verified via _is_candidate_vcp_classification_authoritative.
+          - If any candidate contains legacy label strings ('Minervini', 'VCP', 'Stage 2')
+            without authoritative classification, fails closed.
+          - If any candidate contains unverified/uncomputed indicators, fails closed.
+          - If matched_count is inconsistent with results length, fails closed.
+        """
+        if not isinstance(rec, dict):
+            return True
+
+        status_pub = rec.get("status_at_publication")
+        if status_pub not in (ScannerStatus.AVAILABLE.value, "AVAILABLE", ScannerStatus.STALE.value, "STALE"):
+            return False
+
+        matched_count = rec.get("matched_count")
+        results = rec.get("results")
+
+        # Invariant: Reject boolean, non-int, or negative matched_count values
+        if type(matched_count) is bool or (matched_count is not None and type(matched_count) is not int) or (type(matched_count) is int and matched_count < 0):
+            return True
+
+        # Inconsistent null matched_count on AVAILABLE/STALE snapshot
+        if matched_count is None and (results is None or len(results) == 0):
+            return True
+
+        # Valid zero-match evaluation
+        if matched_count == 0 and (results is None or (isinstance(results, list) and len(results) == 0)):
+            return False
+
+        if not isinstance(results, list):
+            return True
+
+        if (matched_count or 0) > 0 and len(results) == 0:
+            return True
+        if (matched_count or 0) == 0 and len(results) > 0:
+            return True
+
+        provenance = rec.get("provenance", {})
+        if not isinstance(provenance, dict):
+            provenance = {}
+
+        for cand in results:
+            if not isinstance(cand, dict):
+                return True
+            evidence = cand.get("scanner_evidence", {})
+            setup_pattern = str(cand.get("setup_pattern") or evidence.get("setup_pattern") or "")
+            vcp_stage = str(cand.get("vcp_stage") or evidence.get("vcp_stage") or "")
+            stage_phase = str(cand.get("stage_phase") or evidence.get("stage_phase") or "")
+
+            # 1. Any unverified or uncomputed indicators in candidates claiming VCP qualification
+            if any("Unverified" in s or "Uncomputed" in s for s in (setup_pattern, vcp_stage, stage_phase)):
+                return True
+
+            # 2. Legacy proxy fallback or claims of VCP / Minervini / Stage 2
+            is_claiming_vcp = any(
+                term in s for s in (setup_pattern, vcp_stage, stage_phase)
+                for term in ("Minervini", "VCP", "Stage 2")
+            )
+            # If candidate claims VCP or contains scanner_evidence
+            if is_claiming_vcp or "scanner_evidence" in cand:
+                if not self._is_candidate_vcp_classification_authoritative(cand, snapshot_provenance=provenance):
+                    return True
+
+        return False
+
+    def get_active_or_latest_snapshot(self) -> Dict[str, Any]:
+        """Retrieve active in-memory snapshot or load latest from store without initiating background scan execution."""
+        try:
+            if self._cached_active_snapshot is not None:
+                if (
+                    self._cached_active_snapshot.get("implementation_release_sha") == CURRENT_IMPLEMENTATION_RELEASE_SHA
+                    and not self._has_unsupported_vcp_matches(self._cached_active_snapshot)
+                ):
+                    latest_id = self.snapshot_store.get_latest_active_snapshot_id("MINERVINI_VCP")
+                    if latest_id == self._cached_active_snapshot.get("snapshot_id"):
+                        return self._to_envelope(self._cached_active_snapshot)
+
+            persisted = self.snapshot_store.get_latest_active_snapshot("MINERVINI_VCP")
+            if persisted is not None:
+                if persisted.get("implementation_release_sha") != CURRENT_IMPLEMENTATION_RELEASE_SHA:
+                    return self._to_status_envelope(
+                        status=ScannerStatus.PIPELINE_PENDING,
+                        reason="RELEASE_MISMATCH",
+                        detail=(
+                            f"Latest snapshot implementation release ({persisted.get('implementation_release_sha')}) "
+                            f"does not match current release ({CURRENT_IMPLEMENTATION_RELEASE_SHA}). Pipeline execution pending."
+                        ),
+                    )
+                if self._has_unsupported_vcp_matches(persisted):
+                    logger.warning("VCPScannerRunner: retained snapshot contains unsupported VCP matches; failing closed to PIPELINE_PENDING.")
+                    return self._to_status_envelope(
+                        status=ScannerStatus.PIPELINE_PENDING,
+                        reason="UNSUPPORTED_LEGACY_MATCHES",
+                        detail="Retained scanner snapshot contains unsupported or unverified VCP classifications. Pipeline execution pending.",
+                    )
                 self._cached_active_snapshot = persisted
                 return self._to_envelope(persisted)
 
-        # First run or new release candidate: execute canonical market-wide scan
-        return self.execute_market_wide_scan(trigger_type=TriggerType.SCHEDULED)
+            # Store is empty / cache miss: fail closed to PIPELINE_PENDING without initiating execution
+            return self._to_status_envelope(
+                status=ScannerStatus.PIPELINE_PENDING,
+                reason="NO_ACTIVE_SNAPSHOT",
+                detail="No published VCP scanner snapshot is active for current implementation release. Pipeline execution pending.",
+            )
+        except Exception as e:
+            logger.error(f"VCPScannerRunner: snapshot store lookup failed: {e}")
+            return self._to_status_envelope(
+                status=ScannerStatus.ERROR,
+                reason="STORAGE_ERROR",
+                detail=f"Failed to access scanner snapshot store: {e}",
+            )
+
+    def _evaluate_freshness_status(self, rec: Dict[str, Any]) -> str:
+        freshness_dict = rec.get("freshness", {})
+        if isinstance(freshness_dict, dict) and freshness_dict.get("status") in (FreshnessStatus.STALE.value, "STALE"):
+            return FreshnessStatus.STALE.value
+        if rec.get("status_at_publication") in (ScannerStatus.STALE.value, "STALE"):
+            return FreshnessStatus.STALE.value
+        return freshness_dict.get("status", FreshnessStatus.LIVE.value) if isinstance(freshness_dict, dict) else FreshnessStatus.LIVE.value
+
+    def _to_status_envelope(
+        self,
+        status: ScannerStatus,
+        reason: str,
+        detail: str,
+        freshness_status: FreshnessStatus = FreshnessStatus.UNKNOWN,
+    ) -> Dict[str, Any]:
+        version_tuple = self.get_version_tuple()
+        now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        return {
+            "scanner_id": "MINERVINI_VCP",
+            "api_contract_version": version_tuple.api_contract_version,
+            "status": status.value,
+            "reason": reason,
+            "detail": detail,
+            "snapshot_id": None,
+            "matched_count": None,
+            "data_as_of": None,
+            "generated_at": now_iso,
+            "methodology": {
+                "ruleset_version": version_tuple.ruleset_version,
+                "evidence_schema_version": version_tuple.evidence_schema_version,
+                "score_model_version": version_tuple.score_model_version,
+            },
+            "provenance": {
+                "data_provenance_version": version_tuple.data_provenance_version,
+                "universe_version": version_tuple.universe_version,
+                "implementation_release_sha": version_tuple.implementation_release_sha,
+                "source": "FAIL_CLOSED_READ_CONTRACT",
+            },
+            "freshness": {
+                "policy_version": version_tuple.freshness_policy_version,
+                "generated_at": now_iso,
+                "data_as_of": None,
+                "evaluated_at": now_iso,
+                "status": freshness_status.value,
+                "rationale": detail,
+            },
+            "snapshot": {
+                "run_id": None,
+                "snapshot_id": None,
+                "universe_size": len(CANONICAL_VCP_UNIVERSE),
+                "matched_count": None,
+                "semantic_fingerprint": None,
+            },
+            "universe": {
+                "scope_class": "US_EQUITIES",
+                "display_name": RADAR_SCOPE_LABEL,
+                "source_population_count": 0,
+                "eligible_universe_count": 0,
+                "universe_version": version_tuple.universe_version,
+                "universe_build_id": None,
+                "membership_hash": None,
+                "construction_status": "NONE",
+            },
+            "coverage": {
+                "coverage_status": "PENDING" if status == ScannerStatus.PIPELINE_PENDING else "UNAVAILABLE",
+                "data_complete_count": 0,
+                "scanned_successfully_count": 0,
+                "matched_count": None,
+                "unavailable_symbol_count": 0,
+                "unresolved_symbol_count": 0,
+                "data_completeness_pct": 0.0,
+                "scan_coverage_pct": 0.0,
+                "unavailable_reasons": {},
+            },
+            "results": [],
+        }
 
     def _to_envelope(self, rec: Dict[str, Any]) -> Dict[str, Any]:
         u_meta = rec.get("universe_metadata", {})
         c_meta = rec.get("coverage_metadata", {})
         u_size = rec.get("universe_size", 0)
+        freshness_status = self._evaluate_freshness_status(rec)
+        status = rec["status_at_publication"]
+        if freshness_status == FreshnessStatus.STALE.value and status == ScannerStatus.AVAILABLE.value:
+            status = ScannerStatus.STALE.value
         return {
             "scanner_id": rec["scanner_id"],
             "api_contract_version": rec["api_contract_version"],
-            "status": rec["status_at_publication"],
+            "status": status,
+            "snapshot_id": rec.get("snapshot_id"),
+            "matched_count": rec.get("matched_count"),
+            "data_as_of": rec.get("data_as_of"),
+            "generated_at": rec.get("generated_at"),
             "methodology": {
                 "ruleset_version": rec["ruleset_version"],
                 "evidence_schema_version": rec["evidence_schema_version"],
@@ -537,7 +873,7 @@ class VCPScannerRunner:
                 "generated_at": rec["generated_at"],
                 "data_as_of": rec["data_as_of"],
                 "evaluated_at": rec.get("freshness", {}).get("evaluated_at", rec["generated_at"]),
-                "status": rec.get("freshness", {}).get("status", FreshnessStatus.LIVE.value),
+                "status": freshness_status,
             },
             "snapshot": {
                 "run_id": rec["run_id"],

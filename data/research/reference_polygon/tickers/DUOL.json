@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "DUOL",
+    "name": "Duolingo, Inc. Class A Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001562088",
+    "composite_figi": "BBG003D4V951",
+    "share_class_figi": "BBG003D4V960",
+    "last_updated_utc": "2026-10-18T06:10:11.414223408Z"
+  },
+  "status": "OK"
+}

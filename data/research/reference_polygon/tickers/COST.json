@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "COST",
+    "name": "Costco Wholesale Corp",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000909832",
+    "composite_figi": "BBG000F6H8W8",
+    "share_class_figi": "BBG001S9KRQ7",
+    "last_updated_utc": "2026-10-18T06:10:11.414098961Z"
+  },
+  "status": "OK"
+}

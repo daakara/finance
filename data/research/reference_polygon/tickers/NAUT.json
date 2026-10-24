@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "NAUT",
+    "name": "Nautilus Biotechnolgy, Inc. Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001808805",
+    "composite_figi": "BBG00W7G4M12",
+    "share_class_figi": "BBG00W7G4MV9",
+    "last_updated_utc": "2026-10-18T06:10:11.415575155Z"
+  },
+  "status": "OK"
+}

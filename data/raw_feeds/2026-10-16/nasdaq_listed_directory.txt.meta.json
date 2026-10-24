@@ -1,0 +1,19 @@
+{
+  "source_id": "nasdaq_listed_directory",
+  "requested_url": "https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt",
+  "final_url": "https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt",
+  "retrieval_start_utc": "2026-10-16T19:40:57.009246+00:00",
+  "retrieval_end_utc": "2026-10-16T19:40:57.727086+00:00",
+  "http_status": 200,
+  "content_type": "text/plain",
+  "byte_length": 349723,
+  "content_sha256": "67f42dd0594aff8e29634ec9e42b561319cbb74340829098cbfbf9b4517fe272",
+  "etag": "\"80b07b65985ddd1:0\"",
+  "last_modified": "Fri, 16 Oct 2026 18:01:41 GMT",
+  "publisher_timestamp": null,
+  "acquisition_version": "1.0.0",
+  "outcome": "SUCCESS",
+  "raw_artifact_path": "C:\\Users\\akara\\Documents\\Projects\\finance-sprint-2-listing-acquisition\\data\\raw_feeds\\2026-10-16\\nasdaq_listed_directory.txt",
+  "metadata_artifact_path": "C:\\Users\\akara\\Documents\\Projects\\finance-sprint-2-listing-acquisition\\data\\raw_feeds\\2026-10-16\\nasdaq_listed_directory.txt.meta.json",
+  "error_message": null
+}
