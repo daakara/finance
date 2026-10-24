@@ -56,21 +56,21 @@ assert.ok(scenarios, "Scenarios object must exist");
 
 const conservative = scenarios.conservative;
 assert.ok(conservative, "Conservative scenario must exist");
-assert.strictEqual(conservative.per_share_value, 76.64);
+assert.strictEqual(conservative.per_share_value, 76.36);
 assert.strictEqual(conservative.exit_method, "multiple");
 assert.strictEqual(conservative.revenue_cagr_pct, 5.00);
 assert.strictEqual(conservative.operating_margin_pct, 16.50);
 
 const baseMultiple = scenarios.base_multiple;
 assert.ok(baseMultiple, "Base Multiple scenario must exist");
-assert.strictEqual(baseMultiple.per_share_value, 90.02);
+assert.strictEqual(baseMultiple.per_share_value, 93.20);
 assert.strictEqual(baseMultiple.exit_method, "multiple");
 assert.strictEqual(baseMultiple.revenue_cagr_pct, 6.50);
 assert.strictEqual(baseMultiple.operating_margin_pct, 18.50);
 
 const baseDcf = scenarios.base_dcf;
 assert.ok(baseDcf, "Base DCF scenario must exist");
-assert.strictEqual(baseDcf.per_share_value, 91.82);
+assert.strictEqual(baseDcf.per_share_value, 95.00);
 assert.strictEqual(baseDcf.exit_method, "gordon_growth");
 assert.strictEqual(baseDcf.revenue_cagr_pct, 6.50);
 assert.strictEqual(baseDcf.operating_margin_pct, 18.50);
@@ -79,7 +79,7 @@ assert.strictEqual(baseDcf.terminal_growth_pct, 2.50);
 
 const optimistic = scenarios.optimistic;
 assert.ok(optimistic, "Optimistic scenario must exist");
-assert.strictEqual(optimistic.per_share_value, 123.42);
+assert.strictEqual(optimistic.per_share_value, 129.97);
 assert.strictEqual(optimistic.exit_method, "multiple");
 assert.strictEqual(optimistic.revenue_cagr_pct, 8.50);
 assert.strictEqual(optimistic.operating_margin_pct, 20.00);
@@ -87,17 +87,17 @@ assert.strictEqual(optimistic.operating_margin_pct, 20.00);
 console.log("✅ 2. Five canonical scenarios and valuation methods verified.");
 
 // 3. Discrete Annual IRR vs Calendar-Dated XIRR Separation
-assert.strictEqual(conservative.five_period_annual_irr_pct, 3.18);
-assert.strictEqual(conservative.calendar_dated_xirr_pct, 3.19);
+assert.strictEqual(conservative.five_period_annual_irr_pct, 3.11);
+assert.strictEqual(conservative.calendar_dated_xirr_pct, 3.12);
 
-assert.strictEqual(baseMultiple.five_period_annual_irr_pct, 6.50);
-assert.strictEqual(baseMultiple.calendar_dated_xirr_pct, 6.51);
+assert.strictEqual(baseMultiple.five_period_annual_irr_pct, 7.23);
+assert.strictEqual(baseMultiple.calendar_dated_xirr_pct, 7.24);
 
-assert.strictEqual(baseDcf.five_period_annual_irr_pct, 6.92);
-assert.strictEqual(baseDcf.calendar_dated_xirr_pct, 6.93);
+assert.strictEqual(baseDcf.five_period_annual_irr_pct, 7.64);
+assert.strictEqual(baseDcf.calendar_dated_xirr_pct, 7.65);
 
-assert.strictEqual(optimistic.five_period_annual_irr_pct, 13.34);
-assert.strictEqual(optimistic.calendar_dated_xirr_pct, 13.36);
+assert.strictEqual(optimistic.five_period_annual_irr_pct, 14.50);
+assert.strictEqual(optimistic.calendar_dated_xirr_pct, 14.52);
 
 // Confirm they cannot be interchanged (they are distinct numeric values)
 assert.notStrictEqual(baseDcf.five_period_annual_irr_pct, baseDcf.calendar_dated_xirr_pct, "Annual IRR and Calendar XIRR must not be conflated");
@@ -109,15 +109,15 @@ const ceilings = alcDossier.alcon_v4_extension!.accumulation_ceilings;
 assert.ok(ceilings, "Accumulation ceilings must exist");
 
 const annual = ceilings.annual_irr_basis;
-assert.strictEqual(annual.hurdle_80, 64.15, "8.0% annual ceiling must be 64.15");
-assert.strictEqual(annual.hurdle_85, 62.70, "8.5% annual ceiling must be 62.70");
-assert.strictEqual(annual.hurdle_100, 58.59, "10.0% annual ceiling must be 58.59");
+assert.strictEqual(annual.hurdle_80, 66.31, "8.0% annual ceiling must be 66.31");
+assert.strictEqual(annual.hurdle_85, 64.82, "8.5% annual ceiling must be 64.82");
+assert.strictEqual(annual.hurdle_100, 60.56, "10.0% annual ceiling must be 60.56");
 assert.strictEqual(annual.invertibility_verified, true);
 
 const calendar = ceilings.calendar_xirr_basis;
-assert.strictEqual(calendar.hurdle_80, 64.20, "8.0% calendar ceiling must be 64.20");
-assert.strictEqual(calendar.hurdle_85, 62.75, "8.5% calendar ceiling must be 62.75");
-assert.strictEqual(calendar.hurdle_100, 58.64, "10.0% calendar ceiling must be 58.64");
+assert.strictEqual(calendar.hurdle_80, 66.36, "8.0% calendar ceiling must be 66.36");
+assert.strictEqual(calendar.hurdle_85, 64.86, "8.5% calendar ceiling must be 64.86");
+assert.strictEqual(calendar.hurdle_100, 60.61, "10.0% calendar ceiling must be 60.61");
 assert.strictEqual(calendar.invertibility_verified, true);
 
 console.log("✅ 4. Hurdle-specific accumulation ceilings verified.");
@@ -130,7 +130,7 @@ assert.strictEqual(fp.cash_and_equivalents, 1200000000.0);
 assert.strictEqual(fp.total_financial_debt, 4500000000.0);
 assert.strictEqual(fp.net_debt_bridge, 3300000000.0);
 
-assert.strictEqual(baseDcf.net_debt_bridge, -2176.2, "Ending net debt must be -$2,176.2M (net cash)");
+assert.strictEqual(baseDcf.net_debt_bridge, -3687.55, "Ending net debt must be -$3,687.55M (scenario-derived net cash)");
 assert.strictEqual(baseDcf.ending_diluted_shares, 475.524, "Ending diluted shares must be 475.524M");
 
 console.log("✅ 5. Net debt bridge and diluted share count verified.");

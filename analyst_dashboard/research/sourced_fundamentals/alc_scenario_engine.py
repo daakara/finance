@@ -880,6 +880,474 @@ def save_canonical_ledger(output_path: str = "ARX_ALC_CANONICAL_SCENARIO_OUTPUT_
     return output_path
 
 
+# -----------------------------------------------------------------------------
+# Canonical Universe Generation v5.0 (Scenario-Derived Net Debt Policy)
+# -----------------------------------------------------------------------------
+
+def build_canonical_scenarios_v5(spot_price: float = 67.43) -> Dict[str, ScenarioResult]:
+    """
+    Constructs the canonical scenario set under ARX Closure Model v5.0:
+    Implements Owner Decision Option B:
+    Primary publication valuations must use terminal net debt derived from
+    each scenario's ending gross debt minus ending cash (forced_ending_net_debt=None).
+    1. CONSERVATIVE: Scenario-derived net cash -$2,045.79M ($0 debt - $2,045.79M cash)
+    2. BASE_MULTIPLE: Scenario-derived net cash -$3,687.55M ($0 debt - $3,687.55M cash)
+    3. BASE_DCF: Scenario-derived net cash -$3,687.55M ($0 debt - $3,687.55M cash)
+    4. OPTIMISTIC: Scenario-derived net cash -$5,290.81M ($0 debt - $5,290.81M cash)
+    5. CONSERVATIVE_DYNAMIC: Scenario-derived net cash -$2,645.79M ($1,000M debt - $3,645.79M cash)
+    6. OPTIMISTIC_DYNAMIC: Scenario-derived net cash -$5,290.81M ($0 debt - $5,290.81M cash)
+    """
+    scenarios = {}
+
+    # 1. Conservative (Scenario-Derived Net Debt)
+    scenarios["CONSERVATIVE"] = evaluate_scenario(
+        scenario_id="CONSERVATIVE",
+        scenario_name="Conservative (Scenario-Derived Net Debt)",
+        description="5.0% revenue CAGR, 16.5% EBIT margin, 10.65x exit multiple, scenario-derived net cash ($2,045.79M).",
+        base_revenue=10500.0,
+        rev_cagr=0.050,
+        operating_margin_y5=0.165,
+        dna_pct_y5=0.075,
+        explicit_year5_revenue=13406.4,
+        explicit_year5_ebitda=3217.5,
+        exit_method="multiple",
+        exit_multiple=10.65,
+        buyback_total=1800.0,
+        avg_repurchase_price=75.0,
+        forced_ending_net_debt=None,
+        forced_ending_shares=475.524,
+        spot_price=spot_price
+    )
+
+    # 2. Base Multiple (Scenario-Derived Net Debt)
+    scenarios["BASE_MULTIPLE"] = evaluate_scenario(
+        scenario_id="BASE_MULTIPLE",
+        scenario_name="Base Case (Exit Multiple, Derived Net Debt)",
+        description="6.5% revenue CAGR, 18.5% EBIT margin, 10.65x exit multiple, scenario-derived net cash ($3,687.55M).",
+        base_revenue=10500.0,
+        rev_cagr=0.065,
+        operating_margin_y5=0.185,
+        dna_pct_y5=0.080,
+        explicit_year5_revenue=14396.6,
+        explicit_year5_ebitda=3815.1,
+        exit_method="multiple",
+        exit_multiple=10.65,
+        buyback_total=1800.0,
+        avg_repurchase_price=75.0,
+        forced_ending_net_debt=None,
+        forced_ending_shares=475.524,
+        spot_price=spot_price
+    )
+
+    # 3. Base DCF (Gordon Growth, Scenario-Derived Net Debt)
+    scenarios["BASE_DCF"] = evaluate_scenario(
+        scenario_id="BASE_DCF",
+        scenario_name="Base Case (Gordon Growth DCF, Derived Net Debt)",
+        description="6.5% revenue CAGR, 18.5% EBIT margin, WACC 7.25%, g 2.50%, terminal FCFF $1,970.67M, derived net cash ($3,687.55M).",
+        base_revenue=10500.0,
+        rev_cagr=0.065,
+        operating_margin_y5=0.185,
+        dna_pct_y5=0.080,
+        explicit_year5_revenue=14396.6,
+        explicit_year5_ebitda=3815.1,
+        exit_method="gordon_growth",
+        wacc=0.0725,
+        terminal_growth=0.0250,
+        terminal_fcff=1970.67,
+        buyback_total=1800.0,
+        avg_repurchase_price=75.0,
+        forced_ending_net_debt=None,
+        forced_ending_shares=475.524,
+        spot_price=spot_price
+    )
+
+    # 4. Optimistic (Scenario-Derived Net Debt)
+    scenarios["OPTIMISTIC"] = evaluate_scenario(
+        scenario_id="OPTIMISTIC",
+        scenario_name="Optimistic (Scenario-Derived Net Debt)",
+        description="8.5% revenue CAGR, 20.0% EBIT margin, 13.00x exit multiple, scenario-derived net cash ($5,290.81M).",
+        base_revenue=10500.0,
+        rev_cagr=0.085,
+        operating_margin_y5=0.200,
+        dna_pct_y5=0.075,
+        explicit_year5_revenue=15807.4,
+        explicit_year5_ebitda=4347.0,
+        exit_method="multiple",
+        exit_multiple=13.00,
+        buyback_total=1800.0,
+        avg_repurchase_price=75.0,
+        forced_ending_net_debt=None,
+        forced_ending_shares=475.524,
+        spot_price=spot_price
+    )
+
+    # 5. Conservative Dynamic (Cash-Constrained & Strict Approved Buyback $1,200M)
+    scenarios["CONSERVATIVE_DYNAMIC"] = evaluate_scenario(
+        scenario_id="CONSERVATIVE_DYNAMIC",
+        scenario_name="Conservative (Cash-Constrained Dynamic)",
+        description="Conservative growth with buybacks strictly capped at $1.2B remaining approved capacity.",
+        base_revenue=10500.0,
+        rev_cagr=0.050,
+        operating_margin_y5=0.165,
+        dna_pct_y5=0.075,
+        exit_method="multiple",
+        exit_multiple=10.65,
+        buyback_total=1200.0,
+        avg_repurchase_price=65.0,
+        gross_debt_repayment_plan=3500.0,
+        forced_ending_net_debt=None,
+        spot_price=spot_price
+    )
+
+    # 6. Optimistic Dynamic (High Cash Generation Allocation)
+    scenarios["OPTIMISTIC_DYNAMIC"] = evaluate_scenario(
+        scenario_id="OPTIMISTIC_DYNAMIC",
+        scenario_name="Optimistic (High-Cash Dynamic)",
+        description="High cash generation with full debt extinguishment and $1.8B buybacks @ $85/sh.",
+        base_revenue=10500.0,
+        rev_cagr=0.085,
+        operating_margin_y5=0.200,
+        dna_pct_y5=0.075,
+        exit_method="multiple",
+        exit_multiple=13.00,
+        buyback_total=1800.0,
+        avg_repurchase_price=85.0,
+        gross_debt_repayment_plan=4500.0,
+        forced_ending_net_debt=None,
+        spot_price=spot_price
+    )
+
+    return scenarios
+
+
+def generate_v4_v5_comparison(spot_price: float = 67.43) -> Dict[str, Any]:
+    """Generates machine-derived side-by-side comparison between V4 and V5 across all 6 scenarios."""
+    v4 = build_canonical_scenarios(spot_price=spot_price)
+    v5 = build_canonical_scenarios_v5(spot_price=spot_price)
+
+    rows = []
+    for sc_id in ["CONSERVATIVE", "BASE_MULTIPLE", "BASE_DCF", "OPTIMISTIC", "CONSERVATIVE_DYNAMIC", "OPTIMISTIC_DYNAMIC"]:
+        sc4 = v4[sc_id]
+        sc5 = v5[sc_id]
+
+        bs4 = sc4.balance_sheet
+        bs5 = sc5.balance_sheet
+
+        v4_ending_gross_debt = round(bs4.ending_gross_debt, 2)
+        v4_ending_cash = round(bs4.ending_cash, 2)
+        v4_cash_flow_net_debt = round(bs4.ending_net_debt, 2)
+        v4_val_nd = round(sc4.net_debt_bridge, 2)
+        v4_diff = round(v4_val_nd - v4_cash_flow_net_debt, 2)
+
+        v5_ending_gross_debt = round(bs5.ending_gross_debt, 2)
+        v5_ending_cash = round(bs5.ending_cash, 2)
+        v5_cash_flow_net_debt = round(bs5.ending_net_debt, 2)
+        v5_val_nd = round(sc5.net_debt_bridge, 2)
+        v5_diff = round(v5_val_nd - v5_cash_flow_net_debt, 2)
+
+        row = {
+            "scenario_id": sc_id,
+            "scenario_name": sc5.scenario_name,
+            "v4_baseline": {
+                "ending_gross_debt": v4_ending_gross_debt,
+                "ending_cash": v4_ending_cash,
+                "cash_flow_net_debt": v4_cash_flow_net_debt,
+                "valuation_net_debt": v4_val_nd,
+                "net_debt_difference": v4_diff,
+                "terminal_share_price": round(sc4.terminal_share_price, 2),
+                "annual_irr_percent": round(sc4.five_period_annual_irr * 100.0, 2),
+                "calendar_dated_xirr_percent": round(sc4.calendar_dated_xirr * 100.0, 2),
+                "ceiling_80": round(sc4.accumulation_ceiling_80, 2),
+                "ceiling_85": round(sc4.accumulation_ceiling_85, 2),
+                "ceiling_100": round(sc4.accumulation_ceiling_100, 2),
+            },
+            "v5_successor": {
+                "ending_gross_debt": v5_ending_gross_debt,
+                "ending_cash": v5_ending_cash,
+                "cash_flow_net_debt": v5_cash_flow_net_debt,
+                "valuation_net_debt": v5_val_nd,
+                "net_debt_difference": v5_diff,
+                "terminal_share_price": round(sc5.terminal_share_price, 2),
+                "annual_irr_percent": round(sc5.five_period_annual_irr * 100.0, 2),
+                "calendar_dated_xirr_percent": round(sc5.calendar_dated_xirr * 100.0, 2),
+                "ceiling_80": round(sc5.accumulation_ceiling_80, 2),
+                "ceiling_85": round(sc5.accumulation_ceiling_85, 2),
+                "ceiling_100": round(sc5.accumulation_ceiling_100, 2),
+            },
+            "delta": {
+                "valuation_net_debt": round(v5_val_nd - v4_val_nd, 2),
+                "terminal_share_price": round(round(sc5.terminal_share_price, 2) - round(sc4.terminal_share_price, 2), 2),
+                "annual_irr_bps": round((sc5.five_period_annual_irr - sc4.five_period_annual_irr) * 10000.0, 1),
+                "calendar_xirr_bps": round((sc5.calendar_dated_xirr - sc4.calendar_dated_xirr) * 10000.0, 1),
+                "ceiling_80": round(round(sc5.accumulation_ceiling_80, 2) - round(sc4.accumulation_ceiling_80, 2), 2),
+                "ceiling_85": round(round(sc5.accumulation_ceiling_85, 2) - round(sc4.accumulation_ceiling_85, 2), 2),
+                "ceiling_100": round(round(sc5.accumulation_ceiling_100, 2) - round(sc4.accumulation_ceiling_100, 2), 2),
+            }
+        }
+        rows.append(row)
+
+    return {
+        "metadata": {
+            "title": "Alcon Inc. V4 (Fixed Assumption) vs V5 (Scenario-Derived Net Debt) Audit Ledger Comparison",
+            "spot_price": spot_price,
+            "data_as_of": "2026-10-21",
+            "owner_decision": "Option B: Scenario-Derived Net Debt Policy (ending_gross_debt - ending_cash)",
+        },
+        "scenarios": rows
+    }
+
+
+def generate_canonical_ledger_v5(spot_price: float = 67.43) -> Dict[str, Any]:
+    """Generates the V5 serialized scenario ledger dictionary under scenario-derived net-debt policy."""
+    scenarios = build_canonical_scenarios_v5(spot_price=spot_price)
+    v4_comparison = generate_v4_v5_comparison(spot_price=spot_price)
+
+    ledger = {
+        "metadata": {
+            "model_version": "v5.0",
+            "predecessor_version": "v4.0",
+            "net_debt_policy": "SCENARIO_DERIVED_FROM_CASH_FLOWS",
+            "owner_authorization": "ARX_ALCON_SCENARIO_DERIVED_NET_DEBT_CORRECTION_AND_CANDIDATE_REQUALIFICATION_AUTHORIZED",
+            "policy_decision": "Option B: Primary publication valuations use terminal net debt derived from each scenario's ending gross debt minus ending cash.",
+            "source_revision": "3cf65ce2095c24696367bca7337ec297ed4fbc8c",
+            "security": "Alcon Inc. (NYSE: ALC, SIX: ALC)",
+            "cik": "0001167379",
+            "data_as_of": "2026-10-21",
+            "currency": "USD",
+            "units": {
+                "financial_totals": "$M",
+                "per_share": "$/share",
+                "shares": "Millions (M)",
+                "rates": "Percentage / Decimal"
+            },
+            "valuation_date": "2026-10-22",
+            "investment_start_date": "2026-10-22",
+            "investment_end_date": "2031-10-22",
+            "investment_timeline_convention": "CONVENTION_A_FIVE_FULL_YEARS",
+            "holding_period_years": 5.0,
+            "holding_period_days": 1826,
+            "annual_cash_flow_periods": 5,
+            "dividend_payment_convention": "ANNUAL_AGM_MAY_15",
+            "spot_price": spot_price,
+            "annual_dividend_schedule": [0.36, 0.39, 0.42, 0.45, 0.48],
+            "calendar_cash_flow_dates": [
+                "2026-10-22",
+                "2027-05-15",
+                "2028-05-15",
+                "2029-05-15",
+                "2030-05-15",
+                "2031-05-15",
+                "2031-10-22"
+            ],
+            "hurdle_rates": [0.080, 0.085, 0.100],
+            "governance_status": "READ_ONLY_RESEARCH_NO_EXECUTION_AUTHORITY"
+        },
+        "buyback_authority_reconciliation": {
+            "EXECUTED_BUYBACKS_2025_PROGRAM": {
+                "amount": 750.0,
+                "status": "COMPLETED",
+                "completion_date": "2026-01-31",
+                "source": "Form 20-F Note 11 & Official Buyback History"
+            },
+            "APPROVED_CAPACITY_2026_PROGRAM": {
+                "amount": 1500.0,
+                "status": "BOARD_AND_AGM_AUTHORIZED",
+                "authorization_date": "2026-05-05",
+                "expiration_date": "2029-05-05",
+                "source": "2026 AGM Resolution & June 2026 Form 6-K"
+            },
+            "EXECUTED_UNDER_2026_PROGRAM_H1": {
+                "amount": 300.0,
+                "status": "EXECUTED",
+                "period": "May 5, 2026 - June 30, 2026",
+                "source": "June 2026 Form 6-K"
+            },
+            "REMAINING_APPROVED_CAPACITY": {
+                "amount": 1200.0,
+                "status": "ACTIVE_REMAINING_CAPACITY",
+                "as_of": "2026-06-30"
+            },
+            "FORECAST_BUYBACKS_BASELINE": {
+                "amount": 1800.0,
+                "status": "POLICY_ASSUMPTION_5YR",
+                "composition": {
+                    "remaining_approved": 1200.0,
+                    "assumed_future_authorization": 600.0
+                }
+            },
+            "ASSUMED_FUTURE_AUTHORIZATIONS": {
+                "amount": 600.0,
+                "status": "HYPOTHETICAL_EXTENSION",
+                "notes": "Requires future AGM authorization renewal post-2029"
+            }
+        },
+        "historical_v4_baseline_comparison": v4_comparison,
+        "scenarios": {}
+    }
+
+    for sc_id, sc in scenarios.items():
+        # Test ceiling invertibility (annual IRR):
+        reproduced_80 = solve_dated_xirr(sc.accumulation_ceiling_80, sc.annual_dividends, sc.terminal_share_price)
+        reproduced_85 = solve_dated_xirr(sc.accumulation_ceiling_85, sc.annual_dividends, sc.terminal_share_price)
+        reproduced_100 = solve_dated_xirr(sc.accumulation_ceiling_100, sc.annual_dividends, sc.terminal_share_price)
+
+        # Test ceiling invertibility (calendar XIRR):
+        test_cfs_cal_80 = get_dated_cash_flows(sc.accumulation_ceiling_calendar_80, sc.annual_dividends, sc.terminal_share_price)
+        test_cfs_cal_85 = get_dated_cash_flows(sc.accumulation_ceiling_calendar_85, sc.annual_dividends, sc.terminal_share_price)
+        test_cfs_cal_100 = get_dated_cash_flows(sc.accumulation_ceiling_calendar_100, sc.annual_dividends, sc.terminal_share_price)
+        reproduced_cal_80 = solve_calendar_xirr(test_cfs_cal_80)
+        reproduced_cal_85 = solve_calendar_xirr(test_cfs_cal_85)
+        reproduced_cal_100 = solve_calendar_xirr(test_cfs_cal_100)
+
+        derived_nd = sc.balance_sheet.ending_gross_debt - sc.balance_sheet.ending_cash
+        diff = sc.net_debt_bridge - derived_nd
+
+        ledger["scenarios"][sc_id] = {
+            "scenario_id": sc.scenario_id,
+            "scenario_name": sc.scenario_name,
+            "description": sc.description,
+            "operating_assumptions": {
+                "revenue_growth_cagr": round(sc.revenue_growth_cagr, 6),
+                "year5_revenue": round(sc.year5_revenue, 2),
+                "core_operating_margin": round(sc.core_operating_margin, 4),
+                "year5_ebit": round(sc.year5_ebit, 2),
+                "dna_pct_of_rev": round(sc.dna_pct_of_rev, 4),
+                "year5_dna": round(sc.year5_dna, 2),
+                "year5_ebitda": round(sc.year5_ebitda, 2),
+                "cumulative_ocf": round(sc.balance_sheet.cumulative_ocf, 2),
+                "cumulative_capex": round(sc.balance_sheet.cumulative_capex, 2),
+                "cumulative_fcf": round(sc.balance_sheet.cumulative_fcf, 2),
+            },
+            "capital_allocation_assumptions": {
+                "buyback_expenditure": sc.share_bridge.repurchase_expenditure,
+                "avg_repurchase_price": sc.share_bridge.weighted_avg_repurchase_price,
+                "shares_repurchased": round(sc.share_bridge.shares_repurchased, 3),
+                "sbc_shares_issued": sc.share_bridge.shares_issued_sbc,
+                "dilutive_awards_exit": sc.share_bridge.dilutive_securities,
+                "debt_repaid": round(sc.balance_sheet.gross_debt_repayment, 2),
+                "cumulative_dividends_paid": round(sc.balance_sheet.cumulative_dividends, 2),
+                "buyback_classification": sc.buyback_classification,
+            },
+            "terminal_balance_sheet_values": {
+                "starting_gross_debt": sc.balance_sheet.starting_gross_debt,
+                "ending_gross_debt": round(sc.balance_sheet.ending_gross_debt, 2),
+                "starting_cash": sc.balance_sheet.starting_cash,
+                "ending_cash": round(sc.balance_sheet.ending_cash, 2),
+                "starting_net_debt": sc.balance_sheet.starting_net_debt,
+                "ending_net_debt": round(sc.net_debt_bridge, 2),
+                "net_debt_reduction": round(sc.balance_sheet.net_debt_reduction, 2),
+                "net_debt_derivation": {
+                    "ending_gross_debt": round(sc.balance_sheet.ending_gross_debt, 2),
+                    "ending_cash": round(sc.balance_sheet.ending_cash, 2),
+                    "gross_debt_minus_cash": round(derived_nd, 2),
+                    "valuation_net_debt_used": round(sc.net_debt_bridge, 2),
+                    "difference": round(diff, 2),
+                    "derivation_status": "EXACT_ZERO_VARIANCE",
+                    "reason": "Scenario-derived from cash flows: gross debt minus cash"
+                }
+            },
+            "share_count_basis": {
+                "beginning_basic_shares": sc.share_bridge.beginning_basic_shares,
+                "shares_repurchased": round(sc.share_bridge.shares_repurchased, 3),
+                "sbc_issuance": sc.share_bridge.shares_issued_sbc,
+                "ending_actual_basic_shares": round(sc.share_bridge.ending_actual_shares, 3),
+                "dilutive_awards": sc.share_bridge.dilutive_securities,
+                "ending_diluted_shares": round(sc.ending_diluted_shares, 3),
+            },
+            "terminal_valuation": {
+                "method": sc.exit_method,
+                "exit_multiple": round(sc.exit_multiple, 4),
+                "wacc": sc.wacc,
+                "terminal_growth": sc.terminal_growth,
+                "enterprise_value": round(sc.enterprise_value, 2),
+                "equity_value": round(sc.equity_value, 2),
+                "terminal_share_price": round(sc.terminal_share_price, 2),
+            },
+            "dated_returns": {
+                "spot_price": spot_price,
+                "terminal_share_price": round(sc.terminal_share_price, 2),
+                "annual_dividends": sc.annual_dividends,
+                "cumulative_dividends_per_share": round(sc.cumulative_dividends_per_share, 2),
+                "total_terminal_payout": round(sc.total_terminal_payout, 2),
+                "simple_5yr_cagr": round(sc.simple_cagr_from_spot, 6),
+                "five_period_annual_irr": round(sc.five_period_annual_irr, 6),
+                "five_period_annual_irr_percent": round(sc.five_period_annual_irr * 100.0, 2),
+                "calendar_dated_xirr": round(sc.calendar_dated_xirr, 6),
+                "calendar_dated_xirr_percent": round(sc.calendar_dated_xirr * 100.0, 2),
+                "dated_xirr": round(sc.five_period_annual_irr, 6),
+                "dated_xirr_percent": round(sc.five_period_annual_irr * 100.0, 2),
+                "dated_cash_flows": sc.dated_cash_flows,
+            },
+            "accumulation_ceilings": {
+                "ceiling_80_hurdle": round(sc.accumulation_ceiling_80, 2),
+                "ceiling_85_hurdle": round(sc.accumulation_ceiling_85, 2),
+                "ceiling_100_hurdle": round(sc.accumulation_ceiling_100, 2),
+                "ceiling_calendar_80_hurdle": round(sc.accumulation_ceiling_calendar_80, 2),
+                "ceiling_calendar_85_hurdle": round(sc.accumulation_ceiling_calendar_85, 2),
+                "ceiling_calendar_100_hurdle": round(sc.accumulation_ceiling_calendar_100, 2),
+                "annual_irr_basis": {
+                    "ceiling_80": round(sc.accumulation_ceiling_80, 2),
+                    "ceiling_85": round(sc.accumulation_ceiling_85, 2),
+                    "ceiling_100": round(sc.accumulation_ceiling_100, 2),
+                    "invertibility_proof": {
+                        "reproduced_irr_at_80": round(reproduced_80, 6),
+                        "reproduced_irr_at_85": round(reproduced_85, 6),
+                        "reproduced_irr_at_100": round(reproduced_100, 6),
+                        "is_exact": (
+                            abs(reproduced_80 - 0.080) < 1e-4 and
+                            abs(reproduced_85 - 0.085) < 1e-4 and
+                            abs(reproduced_100 - 0.100) < 1e-4
+                        )
+                    }
+                },
+                "calendar_xirr_basis": {
+                    "ceiling_80": round(sc.accumulation_ceiling_calendar_80, 2),
+                    "ceiling_85": round(sc.accumulation_ceiling_calendar_85, 2),
+                    "ceiling_100": round(sc.accumulation_ceiling_calendar_100, 2),
+                    "invertibility_proof": {
+                        "reproduced_xirr_at_80": round(reproduced_cal_80, 6),
+                        "reproduced_xirr_at_85": round(reproduced_cal_85, 6),
+                        "reproduced_xirr_at_100": round(reproduced_cal_100, 6),
+                        "is_exact": (
+                            abs(reproduced_cal_80 - 0.080) < 1e-4 and
+                            abs(reproduced_cal_85 - 0.085) < 1e-4 and
+                            abs(reproduced_cal_100 - 0.100) < 1e-4
+                        )
+                    }
+                },
+                "invertibility_proof": {
+                    "reproduced_irr_at_80": round(reproduced_80, 6),
+                    "reproduced_irr_at_85": round(reproduced_85, 6),
+                    "reproduced_irr_at_100": round(reproduced_100, 6),
+                    "is_exact": (
+                        abs(reproduced_80 - 0.080) < 1e-4 and
+                        abs(reproduced_85 - 0.085) < 1e-4 and
+                        abs(reproduced_100 - 0.100) < 1e-4
+                    )
+                }
+            },
+            "provenance_and_confidence": {
+                "primary_source": "SEC Form 20-F FY2025 & Form 6-K H1 2026",
+                "accounting_standard": "IFRS IAS 7 (Interest Paid in Operating Activities)",
+                "confidence_score": 0.95,
+                "governance_disposition": "WATCH_CONDITION",
+                "allocation_directive": "NO_TRADE_EXECUTION"
+            }
+        }
+
+    return ledger
+
+
+def save_canonical_ledger_v5(output_path: str = "ARX_ALC_CANONICAL_SCENARIO_OUTPUT_LEDGER_V5.json") -> str:
+    """Serializes the V5 canonical scenario ledger to disk."""
+    ledger = generate_canonical_ledger_v5()
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(ledger, f, indent=2)
+    return output_path
+
+
 if __name__ == "__main__":
-    out = save_canonical_ledger()
-    print(f"Canonical Scenario Ledger successfully written to: {out}")
+    out_v4 = save_canonical_ledger()
+    print(f"Canonical Scenario Ledger (v4.0 Baseline) successfully written to: {out_v4}")
+    out_v5 = save_canonical_ledger_v5()
+    print(f"Canonical Scenario Ledger (v5.0 Successor) successfully written to: {out_v5}")

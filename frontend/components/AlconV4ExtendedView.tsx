@@ -80,7 +80,7 @@ export default function AlconV4ExtendedView({ dossier, extension }: AlconV4Exten
                 Alcon Inc. (NYSE: ALC / SIX: ALC)
               </h2>
               <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-700">
-                Model v4.0 Certified
+                Model {extension.model_version === "v5.0" ? "v5.0 Certified (Scenario-Derived Net Debt)" : "v4.0 Certified"}
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -334,7 +334,7 @@ export default function AlconV4ExtendedView({ dossier, extension }: AlconV4Exten
         </div>
 
         <p className="text-xs text-slate-300 leading-relaxed">
-          Because the expected Base DCF annual return at $67.43 (6.92%) fails the institutional cost of equity (7.80%),
+          Because the expected Base DCF annual return at $67.43 ({baseDcf?.five_period_annual_irr_pct?.toFixed(2) || "7.64"}%) remains below the institutional cost of equity (7.80%),
           capital accumulation requires pullbacks below the following mathematical ceiling thresholds:
         </p>
 
@@ -346,11 +346,11 @@ export default function AlconV4ExtendedView({ dossier, extension }: AlconV4Exten
               <span className="text-[10px] font-mono text-slate-400">Min Threshold</span>
             </div>
             <div className="font-mono font-bold text-xl text-white">
-              ${annualCeilings?.hurdle_80?.toFixed(2) || "64.15"}
+              ${annualCeilings?.hurdle_80?.toFixed(2) || "66.31"}
             </div>
             <div className="text-[11px] font-mono text-slate-400 flex justify-between">
               <span>Calendar XIRR:</span>
-              <span className="text-slate-300">${calendarCeilings?.hurdle_80?.toFixed(2) || "64.20"}</span>
+              <span className="text-slate-300">${calendarCeilings?.hurdle_80?.toFixed(2) || "66.36"}</span>
             </div>
           </div>
 
@@ -361,11 +361,11 @@ export default function AlconV4ExtendedView({ dossier, extension }: AlconV4Exten
               <span className="text-[10px] font-mono text-slate-400">Institutional</span>
             </div>
             <div className="font-mono font-bold text-xl text-white">
-              ${annualCeilings?.hurdle_85?.toFixed(2) || "62.70"}
+              ${annualCeilings?.hurdle_85?.toFixed(2) || "64.82"}
             </div>
             <div className="text-[11px] font-mono text-slate-400 flex justify-between">
               <span>Calendar XIRR:</span>
-              <span className="text-slate-300">${calendarCeilings?.hurdle_85?.toFixed(2) || "62.75"}</span>
+              <span className="text-slate-300">${calendarCeilings?.hurdle_85?.toFixed(2) || "64.86"}</span>
             </div>
           </div>
 
@@ -376,11 +376,11 @@ export default function AlconV4ExtendedView({ dossier, extension }: AlconV4Exten
               <span className="text-[10px] font-mono text-slate-400">High Conviction</span>
             </div>
             <div className="font-mono font-bold text-xl text-white">
-              ${annualCeilings?.hurdle_100?.toFixed(2) || "58.59"}
+              ${annualCeilings?.hurdle_100?.toFixed(2) || "60.56"}
             </div>
             <div className="text-[11px] font-mono text-slate-400 flex justify-between">
               <span>Calendar XIRR:</span>
-              <span className="text-slate-300">${calendarCeilings?.hurdle_100?.toFixed(2) || "58.64"}</span>
+              <span className="text-slate-300">${calendarCeilings?.hurdle_100?.toFixed(2) || "60.61"}</span>
             </div>
           </div>
         </div>
@@ -433,7 +433,7 @@ export default function AlconV4ExtendedView({ dossier, extension }: AlconV4Exten
               </div>
               <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
                 Dividends are modeled at Swiss post-AGM payment dates in mid-May (Day 205, 571, 936, 1301, 1666).
-                Terminal disposition at $91.82 occurs on October 22, 2031 (Day 1826). Cumulative DPS: $2.10. Total terminal payout: $93.92.
+                Terminal disposition at ${baseDcf?.per_share_value?.toFixed(2) || "95.00"} occurs on October 22, 2031 (Day 1826). Cumulative DPS: $2.10. Total terminal payout: ${(baseDcf?.total_terminal_payout || 97.10).toFixed(2)}.
               </p>
             </div>
           )}
@@ -477,24 +477,38 @@ export default function AlconV4ExtendedView({ dossier, extension }: AlconV4Exten
                       <span className="text-cyan-300">$3,300.0M</span>
                     </div>
                     <div className="flex justify-between text-slate-400 pt-1 border-t border-slate-800">
-                      <span>Modeled Valuation Net Debt:</span>
-                      <span className="text-emerald-300 font-bold">-$2,176.2M (Fixed Assumption)</span>
+                      <span>Base Case Valuation Net Debt:</span>
+                      <span className="text-emerald-300 font-bold">
+                        {extension.model_version === "v5.0" ? "-$3,687.6M (Scenario-Derived)" : "-$2,176.2M (Fixed Assumption)"}
+                      </span>
                     </div>
                     <div className="flex justify-between text-slate-400">
-                      <span>Assumption Scope:</span>
-                      <span className="text-slate-300">Standardized across 4 reference cases</span>
+                      <span>Policy Standard:</span>
+                      <span className="text-slate-300">
+                        {extension.model_version === "v5.0"
+                          ? "Option B: Gross debt minus cash (Zero variance)"
+                          : "Fixed baseline -$2,176.2M across reference cases"}
+                      </span>
                     </div>
                     <div className="flex justify-between text-slate-400">
-                      <span>Cash-Derived Cash (Conservative):</span>
-                      <span className="text-slate-300">$2,045.8M (Net: -$2,045.8M)</span>
+                      <span>Ending Net Debt (Conservative):</span>
+                      <span className="text-slate-300">-$2,045.8M (Variance: $0.0M)</span>
                     </div>
                     <div className="flex justify-between text-slate-400">
-                      <span>Cash-Derived Cash (Base Case):</span>
-                      <span className="text-slate-300">$3,687.6M (Net: -$3,687.6M)</span>
+                      <span>Ending Net Debt (Base Multiple):</span>
+                      <span className="text-slate-300">-$3,687.6M (Variance: $0.0M)</span>
                     </div>
                     <div className="flex justify-between text-slate-400">
-                      <span>Dynamic Sensitivity Variants:</span>
-                      <span className="text-slate-300">Unanchored (pure debt minus cash)</span>
+                      <span>Ending Net Debt (Base DCF):</span>
+                      <span className="text-slate-300">-$3,687.6M (Variance: $0.0M)</span>
+                    </div>
+                    <div className="flex justify-between text-slate-400">
+                      <span>Ending Net Debt (Optimistic):</span>
+                      <span className="text-slate-300">-$5,290.8M (Variance: $0.0M)</span>
+                    </div>
+                    <div className="flex justify-between text-slate-400">
+                      <span>Conservative Dynamic (Gross $1,000M):</span>
+                      <span className="text-slate-300">-$2,645.8M (Variance: $0.0M)</span>
                     </div>
                   </div>
                 </div>
@@ -528,10 +542,114 @@ export default function AlconV4ExtendedView({ dossier, extension }: AlconV4Exten
                 </div>
               </div>
 
+              {/* Subordinate Historical V4 Baseline Comparison Table */}
+              <div className="bg-[#0a101b] p-3 rounded border border-slate-800 space-y-2">
+                <span className="font-bold text-slate-200 block text-xs uppercase font-mono">
+                  Subordinate Historical V4 Baseline vs V5 Successor Comparison (Option B Audit Ledger):
+                </span>
+                <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+                  Historical Model v4.0 anchored an unamortized fixed assumption of -$2,176.2M net cash across all reference cases.
+                  Under Owner Decision Option B (Model v5.0), terminal net debt is derived strictly from each scenario's ending gross debt minus ending cash,
+                  eliminating balance-sheet variance and reflecting scenario-specific cash generation in equity value.
+                </p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-[11px] font-mono">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-slate-400">
+                        <th className="py-1 px-1.5">Scenario</th>
+                        <th className="py-1 px-1.5 text-right">V4 Net Debt</th>
+                        <th className="py-1 px-1.5 text-right">V5 Net Debt</th>
+                        <th className="py-1 px-1.5 text-right">Net Debt Δ</th>
+                        <th className="py-1 px-1.5 text-right">V4 Target</th>
+                        <th className="py-1 px-1.5 text-right">V5 Target</th>
+                        <th className="py-1 px-1.5 text-right">Price Δ</th>
+                        <th className="py-1 px-1.5 text-right">V4 IRR</th>
+                        <th className="py-1 px-1.5 text-right">V5 IRR</th>
+                        <th className="py-1 px-1.5 text-right">IRR Δ</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      <tr className="hover:bg-slate-800/20">
+                        <td className="py-1 px-1.5 text-slate-300">Conservative</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">-$2,176.2M</td>
+                        <td className="py-1 px-1.5 text-right text-emerald-300">-$2,045.8M</td>
+                        <td className="py-1 px-1.5 text-right text-rose-300">+$130.4M</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">$76.64</td>
+                        <td className="py-1 px-1.5 text-right text-white font-bold">$76.36</td>
+                        <td className="py-1 px-1.5 text-right text-rose-300">-$0.28</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">3.18%</td>
+                        <td className="py-1 px-1.5 text-right text-emerald-300">3.11%</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">-7 bps</td>
+                      </tr>
+                      <tr className="hover:bg-slate-800/20">
+                        <td className="py-1 px-1.5 text-slate-300">Base Multiple</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">-$2,176.2M</td>
+                        <td className="py-1 px-1.5 text-right text-emerald-300">-$3,687.6M</td>
+                        <td className="py-1 px-1.5 text-right text-emerald-300">-$1,511.4M</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">$90.02</td>
+                        <td className="py-1 px-1.5 text-right text-white font-bold">$93.20</td>
+                        <td className="py-1 px-1.5 text-right text-emerald-300">+$3.18</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">6.50%</td>
+                        <td className="py-1 px-1.5 text-right text-emerald-300">7.23%</td>
+                        <td className="py-1 px-1.5 text-right text-emerald-300">+73 bps</td>
+                      </tr>
+                      <tr className="hover:bg-slate-800/20 bg-cyan-950/20">
+                        <td className="py-1 px-1.5 text-cyan-300 font-semibold">Base DCF (Primary)</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">-$2,176.2M</td>
+                        <td className="py-1 px-1.5 text-right text-emerald-300 font-semibold">-$3,687.6M</td>
+                        <td className="py-1 px-1.5 text-right text-emerald-300 font-semibold">-$1,511.4M</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">$91.82</td>
+                        <td className="py-1 px-1.5 text-right text-white font-bold">$95.00</td>
+                        <td className="py-1 px-1.5 text-right text-emerald-300 font-semibold">+$3.18</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">6.92%</td>
+                        <td className="py-1 px-1.5 text-right text-emerald-300 font-semibold">7.64%</td>
+                        <td className="py-1 px-1.5 text-right text-emerald-300 font-semibold">+72 bps</td>
+                      </tr>
+                      <tr className="hover:bg-slate-800/20">
+                        <td className="py-1 px-1.5 text-slate-300">Optimistic</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">-$2,176.2M</td>
+                        <td className="py-1 px-1.5 text-right text-emerald-300">-$5,290.8M</td>
+                        <td className="py-1 px-1.5 text-right text-emerald-300">-$3,114.6M</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">$123.42</td>
+                        <td className="py-1 px-1.5 text-right text-white font-bold">$129.97</td>
+                        <td className="py-1 px-1.5 text-right text-emerald-300">+$6.55</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">13.34%</td>
+                        <td className="py-1 px-1.5 text-right text-emerald-300">14.50%</td>
+                        <td className="py-1 px-1.5 text-right text-emerald-300">+116 bps</td>
+                      </tr>
+                      <tr className="hover:bg-slate-800/20">
+                        <td className="py-1 px-1.5 text-slate-300">Conservative Dyn</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">-$2,645.8M</td>
+                        <td className="py-1 px-1.5 text-right text-slate-300">-$2,645.8M</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">$0.0M</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">$76.70</td>
+                        <td className="py-1 px-1.5 text-right text-white font-bold">$76.70</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">$0.00</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">3.20%</td>
+                        <td className="py-1 px-1.5 text-right text-slate-300">3.20%</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">0 bps</td>
+                      </tr>
+                      <tr className="hover:bg-slate-800/20">
+                        <td className="py-1 px-1.5 text-slate-300">Optimistic Dyn</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">-$5,290.8M</td>
+                        <td className="py-1 px-1.5 text-right text-slate-300">-$5,290.8M</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">$0.0M</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">$129.06</td>
+                        <td className="py-1 px-1.5 text-right text-white font-bold">$129.06</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">$0.00</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">14.34%</td>
+                        <td className="py-1 px-1.5 text-right text-slate-300">14.34%</td>
+                        <td className="py-1 px-1.5 text-right text-slate-400">0 bps</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
               <div className="p-3 bg-[#0a101b] rounded border border-slate-800 text-[11px] text-slate-400 space-y-1 font-sans">
-                <span className="font-bold text-slate-300 block font-mono">Terminal Net Debt Modeling Assumption &amp; IFRS Disclosures:</span>
+                <span className="font-bold text-slate-300 block font-mono">Terminal Net Debt Governance &amp; IFRS Disclosures:</span>
                 <p>
-                  <strong>Terminal Net Debt Modeling Assumption:</strong> In the four certified reference scenarios (Conservative, Base Multiple, Base DCF, Optimistic), terminal net debt is an unamortized fixed modeling assumption of -$2,176.2M (net cash) anchored from the certified base model to hold the capital structure invariant. It is distinguished from cash-flow-derived terminal net debt ($0 debt minus ending cash: -$2,045.8M in Conservative, -$3,687.6M in Base Case, -$5,290.8M in Optimistic). In the dynamic sensitivity variants, terminal net debt is unanchored and equals ending debt minus cash exactly (-$2,645.8M in Conservative Dynamic; -$5,290.8M in Optimistic Dynamic).
+                  <strong>Owner Decision Option B (Scenario-Derived Net Debt):</strong> Valuation net debt equals each scenario's ending gross debt minus ending cash exactly ($0 debt minus cash in all reference and optimistic scenarios; $1,000M gross debt minus ending cash in Conservative Dynamic). Zero balancing plugs or unexplained liquid asset adjustments are applied.
                 </p>
                 <p>
                   Alcon is an IFRS foreign private issuer reporting under IFRS 16 and IAS 7. Lease liabilities are recognized in total financial debt, and lease interest is classified inside operating cash flows. No US-GAAP ASC 842 lease conventions are applied.

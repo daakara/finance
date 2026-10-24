@@ -77,12 +77,12 @@ assert.strictEqual(isAlconV4Dossier(alc!), true);
 
 const ext = alc!.alcon_v4_extension!;
 assert.ok(ext, "ALC extension must exist");
-assert.strictEqual(ext.accumulation_ceilings.annual_irr_basis.hurdle_80, 64.15);
-assert.strictEqual(ext.accumulation_ceilings.annual_irr_basis.hurdle_85, 62.70);
-assert.strictEqual(ext.accumulation_ceilings.annual_irr_basis.hurdle_100, 58.59);
-assert.strictEqual(ext.accumulation_ceilings.calendar_xirr_basis.hurdle_80, 64.20);
-assert.strictEqual(ext.accumulation_ceilings.calendar_xirr_basis.hurdle_85, 62.75);
-assert.strictEqual(ext.accumulation_ceilings.calendar_xirr_basis.hurdle_100, 58.64);
+assert.strictEqual(ext.accumulation_ceilings.annual_irr_basis.hurdle_80, 66.31);
+assert.strictEqual(ext.accumulation_ceilings.annual_irr_basis.hurdle_85, 64.82);
+assert.strictEqual(ext.accumulation_ceilings.annual_irr_basis.hurdle_100, 60.56);
+assert.strictEqual(ext.accumulation_ceilings.calendar_xirr_basis.hurdle_80, 66.36);
+assert.strictEqual(ext.accumulation_ceilings.calendar_xirr_basis.hurdle_85, 64.86);
+assert.strictEqual(ext.accumulation_ceilings.calendar_xirr_basis.hurdle_100, 60.61);
 assert.strictEqual(ext.dated_cash_flows.length, 7);
 console.log("✅ 3. Public ALC dossier loading and certified extension integrity verified.");
 

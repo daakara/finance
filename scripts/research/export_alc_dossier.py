@@ -27,14 +27,16 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 # Authoritative Constants
-EXPECTED_CANONICAL_LEDGER_SHA256 = "d28270a18984de2b851ab5ce24dfcbe822d6bc55479024b708e418e21acdced4"
+EXPECTED_CANONICAL_LEDGER_V4_SHA256 = "d28270a18984de2b851ab5ce24dfcbe822d6bc55479024b708e418e21acdced4"
+EXPECTED_CANONICAL_LEDGER_V5_SHA256 = "c4db315f037416a10c01ebf0eb1ccfda52a5ed66fa9396e6f2b8aa9d38256c38"
 EXPECTED_ENGINE_SHA256 = "326cbe1c8e64a04ecbc387d750ab2cb3c61cb1e01ed0aada1a7e9197e487023c"
-MODEL_VERSION = "v4.0"
+MODEL_VERSION_V4 = "v4.0"
+MODEL_VERSION_V5 = "v5.0"
 TARGET_SYMBOL = "ALC"
 TARGET_CIK = "0001167379"
 TARGET_COMPANY = "Alcon Inc."
 
-DEFAULT_INPUT_PATH = Path("ARX_ALC_CANONICAL_SCENARIO_OUTPUT_LEDGER.json")
+DEFAULT_INPUT_PATH = Path("ARX_ALC_CANONICAL_SCENARIO_OUTPUT_LEDGER_V5.json")
 DEFAULT_OUTPUT_PATH = Path("docs/research/opportunity_discovery/drafts/ALC_opportunity_dossier_draft.json")
 
 
@@ -50,8 +52,9 @@ def compute_sha256(path: Path) -> str:
 def validate_canonical_ledger(data: Dict[str, Any], input_path: Path) -> None:
     """Validates structural and financial invariants of the canonical ledger."""
     meta = data.get("metadata", {})
-    if meta.get("model_version") != MODEL_VERSION:
-        raise ValueError(f"Unsupported model version: {meta.get('model_version')}, expected {MODEL_VERSION}")
+    version = meta.get("model_version")
+    if version not in (MODEL_VERSION_V4, MODEL_VERSION_V5):
+        raise ValueError(f"Unsupported model version: {version}, expected {MODEL_VERSION_V4} or {MODEL_VERSION_V5}")
     
     if meta.get("currency") != "USD":
         raise ValueError(f"Unexpected currency: {meta.get('currency')}, expected USD")
@@ -62,19 +65,33 @@ def validate_canonical_ledger(data: Dict[str, Any], input_path: Path) -> None:
         if sc not in scenarios:
             raise ValueError(f"Missing required canonical scenario: {sc}")
     
-    # Check Base DCF invariant values
     base_dcf = scenarios["BASE_DCF"]
     tv = base_dcf.get("terminal_valuation", {})
-    if abs(tv.get("terminal_share_price", 0.0) - 91.82) > 0.05:
-        raise ValueError(f"Base DCF target price mismatch: {tv.get('terminal_share_price')}, expected 91.82")
-    
     dr = base_dcf.get("dated_returns", {})
-    if abs(dr.get("five_period_annual_irr", 0.0) - 0.069178) > 1e-4:
-        raise ValueError(f"Base DCF annual IRR mismatch: {dr.get('five_period_annual_irr')}, expected ~0.069178")
-    
     ac = base_dcf.get("accumulation_ceilings", {})
-    if abs(ac.get("ceiling_80_hurdle", 0.0) - 64.15) > 0.05:
-        raise ValueError(f"Base DCF 8.0% ceiling mismatch: {ac.get('ceiling_80_hurdle')}, expected 64.15")
+
+    if version == MODEL_VERSION_V5:
+        # V5 Scenario-derived invariants
+        if abs(tv.get("terminal_share_price", 0.0) - 95.00) > 0.05:
+            raise ValueError(f"Base DCF V5 target price mismatch: {tv.get('terminal_share_price')}, expected 95.00")
+        if abs(dr.get("five_period_annual_irr", 0.0) - 0.076388) > 1e-4:
+            raise ValueError(f"Base DCF V5 annual IRR mismatch: {dr.get('five_period_annual_irr')}, expected ~0.076388")
+        if abs(ac.get("ceiling_80_hurdle", 0.0) - 66.31) > 0.05:
+            raise ValueError(f"Base DCF V5 8.0% ceiling mismatch: {ac.get('ceiling_80_hurdle')}, expected 66.31")
+        # In V5, every scenario must satisfy exact zero net debt variance
+        for sc_name, sc_obj in scenarios.items():
+            bs = sc_obj.get("terminal_balance_sheet_values", {})
+            nd_deriv = bs.get("net_debt_derivation", {})
+            if abs(nd_deriv.get("difference", 0.0)) > 1e-3:
+                raise ValueError(f"Scenario {sc_name} has non-zero net debt variance in V5: {nd_deriv.get('difference')}")
+    else:
+        # V4 Historical baseline invariants
+        if abs(tv.get("terminal_share_price", 0.0) - 91.82) > 0.05:
+            raise ValueError(f"Base DCF V4 target price mismatch: {tv.get('terminal_share_price')}, expected 91.82")
+        if abs(dr.get("five_period_annual_irr", 0.0) - 0.069178) > 1e-4:
+            raise ValueError(f"Base DCF V4 annual IRR mismatch: {dr.get('five_period_annual_irr')}, expected ~0.069178")
+        if abs(ac.get("ceiling_80_hurdle", 0.0) - 64.15) > 0.05:
+            raise ValueError(f"Base DCF V4 8.0% ceiling mismatch: {ac.get('ceiling_80_hurdle')}, expected 64.15")
 
 
 def transform_scenario_projection(sc_id: str, sc_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -128,6 +145,9 @@ def export_alc_dossier(ledger_path: Path) -> Dict[str, Any]:
     validate_canonical_ledger(ledger, ledger_path)
     
     meta = ledger.get("metadata", {})
+    version = meta.get("model_version", MODEL_VERSION_V5)
+    is_v5 = (version == MODEL_VERSION_V5)
+
     scenarios = ledger.get("scenarios", {})
     base_dcf = scenarios["BASE_DCF"]
     base_dr = base_dcf.get("dated_returns", {})
@@ -149,7 +169,7 @@ def export_alc_dossier(ledger_path: Path) -> Dict[str, Any]:
         "dossier_id": "ODP-ALC-01",
         "publication_metadata": {
             "schema_version": "ARX-OPPORTUNITY-DOSSIER-V1",
-            "model_version": meta.get("model_version", "v4.0"),
+            "model_version": version,
             "governing_workstream": "ARX_SPRINT4_ALCON_V4",
             "governing_initiative": "INITIATIVE-S4-ALCON-V4-PUBLICATION",
             "source_ledger_path": str(ledger_path).replace("\\", "/"),
@@ -200,9 +220,16 @@ def export_alc_dossier(ledger_path: Path) -> Dict[str, Any]:
                 "Audited FY2025 Form 20-F disclosures confirm that 88.4% of total net sales ($9,119M of $10,319M) represent non-equipment "
                 "repeat procedural and consumer replenishment demand (NOT contracted subscription revenue). However, at the frozen "
                 "October 21, 2026 reference price of $67.43 USD, the market embeds a 6.51% 5-year revenue CAGR at 20.5% operating margin. "
-                "Under certified Base DCF assumptions (6.5% CAGR, 18.5% EBIT margin, WACC 7.25%, g 2.50%), the expected 5-year discrete "
-                "annual IRR is 6.92% (6.93% calendar XIRR). This fails the institutional cost of equity (7.80%) and 8.00% capital hurdle. "
-                "Retained strictly on watch: entry requires market pullbacks toward the accumulation ceiling of $64.15 (8.0% hurdle) or $62.70 (8.5% hurdle)."
+                + (
+                    "Under certified Base DCF assumptions with scenario-derived net debt (6.5% CAGR, 18.5% EBIT margin, WACC 7.25%, g 2.50%), "
+                    "the expected 5-year discrete annual IRR is 7.64% (7.65% calendar XIRR). This approaches but remains just below the institutional "
+                    "cost of equity (7.80%) and 8.00% capital hurdle. Retained strictly on watch: entry requires market pullbacks toward the "
+                    "accumulation ceiling of $66.31 (8.0% hurdle) or $64.82 (8.5% hurdle)."
+                    if is_v5 else
+                    "Under certified Base DCF assumptions (6.5% CAGR, 18.5% EBIT margin, WACC 7.25%, g 2.50%), the expected 5-year discrete "
+                    "annual IRR is 6.92% (6.93% calendar XIRR). This fails the institutional cost of equity (7.80%) and 8.00% capital hurdle. "
+                    "Retained strictly on watch: entry requires market pullbacks toward the accumulation ceiling of $64.15 (8.0% hurdle) or $62.70 (8.5% hurdle)."
+                )
             ),
             "summary_provenance": "DERIVED_SYNTHESIS",
             "strongest_supporting_evidence": (
@@ -210,20 +237,31 @@ def export_alc_dossier(ledger_path: Path) -> Dict[str, Any]:
                 "friction; global ophthalmic surgical duopoly with steady procedural growth driven by aging global demographics."
             ),
             "strongest_opposing_evidence": (
-                "Expected 5-year IRR of 6.92% fails institutional cost of equity (7.80%) and provides negligible equity risk premium over US 10-year "
-                "Treasuries (4.10%); significant capital expenditures required for contact lens and intraocular lens manufacturing expansion; "
-                "approved buyback capacity ($1,200M active) requires future AGM renewals beyond May 2029 to finance modeled $1,800M share repurchases."
+                (
+                    "Expected 5-year IRR of 7.64% remains below institutional cost of equity (7.80%) and provides thin equity risk premium over US 10-year "
+                    "Treasuries (4.10%); significant capital expenditures required for contact lens and intraocular lens manufacturing expansion; "
+                    "approved buyback capacity ($1,200M active) requires future AGM renewals beyond May 2029 to finance modeled $1,800M share repurchases."
+                ) if is_v5 else (
+                    "Expected 5-year IRR of 6.92% fails institutional cost of equity (7.80%) and provides negligible equity risk premium over US 10-year "
+                    "Treasuries (4.10%); significant capital expenditures required for contact lens and intraocular lens manufacturing expansion; "
+                    "approved buyback capacity ($1,200M active) requires future AGM renewals beyond May 2029 to finance modeled $1,800M share repurchases."
+                )
             ),
             "main_uncertainty": (
                 "Commercial transition velocity to the next-generation Unity surgical console platform, competitive intraocular lens pricing "
                 "in EMEA/APAC tenders, and future Swiss AGM approval timing for additional capital return authorizations."
             ),
             "price_watch_condition": (
-                "Accumulate only on pullbacks below $64.15 for an 8.0% expected return, or below $62.70 for an 8.5% return "
-                "($58.59 for 10.0% hurdle). At current $67.43 reference price, risk/reward remains uncompensated."
+                (
+                    "Accumulate only on pullbacks below $66.31 for an 8.0% expected return, or below $64.82 for an 8.5% return "
+                    "($60.56 for 10.0% hurdle). At current $67.43 reference price, risk/reward remains uncompensated."
+                ) if is_v5 else (
+                    "Accumulate only on pullbacks below $64.15 for an 8.0% expected return, or below $62.70 for an 8.5% return "
+                    "($58.59 for 10.0% hurdle). At current $67.43 reference price, risk/reward remains uncompensated."
+                )
             ),
             "confidence_assessment": (
-                "High confidence on quantitative modeling and valuation math (44/44 regression tests pass). Qualitative claims strictly audited: "
+                "High confidence on quantitative modeling and valuation math (regression tests pass). Qualitative claims strictly audited: "
                 "console installed count (>30,000) downgraded to industry estimate; consumables gross margin (>75%) downgraded to unaudited management "
                 "assertion; non-equipment revenue share (88.4%) certified from audited Form 20-F financial statements."
             )
@@ -248,7 +286,11 @@ def export_alc_dossier(ledger_path: Path) -> Dict[str, Any]:
             "operating_lease_liabilities_asc842": None,
             "lease_convention_treatment": "IFRS 16 Lease Liabilities are included in total financial debt; interest classified in operating cash flows under IFRS IAS 7",
             "net_debt_bridge": 3300000000.0,
-            "capital_structure_position": "Investment grade balance sheet; net debt of $3.30B amortized down to net cash (-$2.18B) over 5-year base forecast",
+            "capital_structure_position": (
+                "Investment grade balance sheet; net debt of $3.30B amortized down to net cash (-$3.69B) over 5-year base forecast"
+                if is_v5 else
+                "Investment grade balance sheet; net debt of $3.30B amortized down to net cash (-$2.18B) over 5-year base forecast"
+            ),
             "bridge_note": "Starting gross debt $4,500.0M minus starting cash $1,200.0M = $3,300.0M net debt bridge",
             "selected_share_basis": {
                 "basis_type": "DILUTED_SHARES",
@@ -279,8 +321,12 @@ def export_alc_dossier(ledger_path: Path) -> Dict[str, Any]:
         "valuation": {
             "valuation_status": "COMPUTED_VERIFIED",
             "valuation_status_label": "Computed & Certified",
-            "model_type": "Discrete 5-Period Annual FCFF & Reverse-DCF Engine v4.0",
-            "calculation_version": "ARX-ALC-CANONICAL-V4.0",
+            "model_type": (
+                "Discrete 5-Period Annual FCFF & Reverse-DCF Engine v5.0 (Scenario-Derived Net Debt)"
+                if is_v5 else
+                "Discrete 5-Period Annual FCFF & Reverse-DCF Engine v4.0"
+            ),
+            "calculation_version": "ARX-ALC-CANONICAL-V5.0" if is_v5 else "ARX-ALC-CANONICAL-V4.0",
             "reference_price": meta.get("spot_price", 67.43),
             "reference_price_label": "Frozen historical reference market close price",
             "reference_price_source": "NYSE market close October 21, 2026",
@@ -307,6 +353,10 @@ def export_alc_dossier(ledger_path: Path) -> Dict[str, Any]:
             ),
             "qualification_notice": (
                 "Alcon is an IFRS foreign private issuer reporting under IAS 7 and IFRS 16. "
+                "Valuation outputs are based on the certified v5.0 canonical scenario ledger under scenario-derived net-debt policy (Option B). "
+                "Model parameters represent frozen historical research as of October 21, 2026, not live pricing signals."
+                if is_v5 else
+                "Alcon is an IFRS foreign private issuer reporting under IAS 7 and IFRS 16. "
                 "Valuation outputs are based on the certified v4.0 canonical scenario ledger. "
                 "Model parameters represent frozen historical research as of October 21, 2026, not live pricing signals."
             ),
@@ -315,22 +365,23 @@ def export_alc_dossier(ledger_path: Path) -> Dict[str, Any]:
             "scenarios": scenario_projections
         },
         "alcon_v4_extension": {
-            "model_version": meta.get("model_version", "v4.0"),
+            "model_version": version,
+            "net_debt_policy": meta.get("net_debt_policy", "SCENARIO_DERIVED_FROM_CASH_FLOWS" if is_v5 else "FIXED_MODELING_ASSUMPTION"),
             "timeline_convention": meta.get("investment_timeline_convention", "CONVENTION_A_FIVE_FULL_YEARS"),
             "holding_period_days": meta.get("holding_period_days", 1826),
             "holding_period_years": meta.get("holding_period_years", 5.0),
             "dividend_schedule_dps": meta.get("annual_dividend_schedule", [0.36, 0.39, 0.42, 0.45, 0.48]),
             "accumulation_ceilings": {
                 "annual_irr_basis": {
-                    "hurdle_80": base_ceilings.get("ceiling_80_hurdle", 64.15),
-                    "hurdle_85": base_ceilings.get("ceiling_85_hurdle", 62.70),
-                    "hurdle_100": base_ceilings.get("ceiling_100_hurdle", 58.59),
+                    "hurdle_80": base_ceilings.get("ceiling_80_hurdle", 66.31 if is_v5 else 64.15),
+                    "hurdle_85": base_ceilings.get("ceiling_85_hurdle", 64.82 if is_v5 else 62.70),
+                    "hurdle_100": base_ceilings.get("ceiling_100_hurdle", 60.56 if is_v5 else 58.59),
                     "invertibility_verified": True
                 },
                 "calendar_xirr_basis": {
-                    "hurdle_80": base_ceilings.get("ceiling_calendar_80_hurdle", 64.20),
-                    "hurdle_85": base_ceilings.get("ceiling_calendar_85_hurdle", 62.75),
-                    "hurdle_100": base_ceilings.get("ceiling_calendar_100_hurdle", 58.64),
+                    "hurdle_80": base_ceilings.get("ceiling_calendar_80_hurdle", 66.36 if is_v5 else 64.20),
+                    "hurdle_85": base_ceilings.get("ceiling_calendar_85_hurdle", 64.86 if is_v5 else 62.75),
+                    "hurdle_100": base_ceilings.get("ceiling_calendar_100_hurdle", 60.61 if is_v5 else 58.64),
                     "invertibility_verified": True
                 }
             },
@@ -344,6 +395,7 @@ def export_alc_dossier(ledger_path: Path) -> Dict[str, Any]:
                 "statutory_authorization_expiry": "2029-05-05"
             }),
             "dated_cash_flows": base_dr.get("dated_cash_flows", []),
+            "historical_v4_baseline": ledger.get("historical_v4_baseline_comparison", {}),
             "qualitative_evidence_matrix": [
                 {
                     "claim": "Non-equipment recurring sales share",
@@ -375,7 +427,11 @@ def export_alc_dossier(ledger_path: Path) -> Dict[str, Any]:
                 "and intraocular lens volume trends in China VBP (Volume-Based Procurement)."
             ),
             "price_watch_condition": (
-                "Accumulate below $64.15 for 8.0% return; below $62.70 for 8.5% return; below $58.59 for 10.0% return."
+                (
+                    "Accumulate below $66.31 for 8.0% return; below $64.82 for 8.5% return; below $60.56 for 10.0% return."
+                ) if is_v5 else (
+                    "Accumulate below $64.15 for 8.0% return; below $62.70 for 8.5% return; below $58.59 for 10.0% return."
+                )
             ),
             "baseline_factual_evidence": (
                 "Audited Form 20-F FY2025 Item 18 Statements of Income; Form 6-K H1 2026 financial report; May 5, 2026 AGM minutes."

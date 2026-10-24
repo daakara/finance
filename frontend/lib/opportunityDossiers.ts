@@ -334,6 +334,7 @@ export interface AlconQualitativeEvidenceItem {
 
 export interface AlconV4Extension {
   model_version: string;
+  net_debt_policy?: string;
   timeline_convention: string;
   holding_period_days: number;
   holding_period_years: number;
@@ -341,6 +342,7 @@ export interface AlconV4Extension {
   accumulation_ceilings: AlconAccumulationCeilings;
   buyback_authority_reconciliation: AlconBuybackAuthorityReconciliation;
   dated_cash_flows: AlconDatedCashFlow[];
+  historical_v4_baseline?: Record<string, any>;
   qualitative_evidence_matrix: AlconQualitativeEvidenceItem[];
 }
 
@@ -904,7 +906,7 @@ export function getAlconDevPreviewDossier(): OpportunityDossier | null {
 }
 
 /**
- * Type guard for Alcon V4 extended dossier.
+ * Type guard for Alcon V4/V5 extended dossier.
  */
 export function isAlconV4Dossier(
   dossier: OpportunityDossier | null | undefined
@@ -913,6 +915,8 @@ export function isAlconV4Dossier(
     dossier &&
     dossier.identity?.symbol === "ALC" &&
     dossier.alcon_v4_extension &&
-    dossier.alcon_v4_extension.model_version === "v4.0"
+    (dossier.alcon_v4_extension.model_version === "v4.0" || dossier.alcon_v4_extension.model_version === "v5.0")
   );
 }
+
+export const isAlconV5Dossier = isAlconV4Dossier;
