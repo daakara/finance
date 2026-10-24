@@ -35,6 +35,35 @@ CANONICAL_VCP_RULESET_SPEC = {
 }
 CANONICAL_VCP_RULESET_HASH = compute_hash(CANONICAL_VCP_RULESET_SPEC)
 
+# Candidate 005 Ruleset Specification & Hash (HVA-02 Nonproduction Research)
+CANONICAL_VCP_RULESET_SPEC_V1_1_0 = {
+    "name": "Minervini Volatility Contraction Pattern & Stage 2 Growth (Candidate 005)",
+    "minimum_sessions": 200,
+    "base_lookback_window": 90,
+    "primary_depth_floor": 0.08,
+    "intermediate_depth_floor": 0.04,
+    "final_handle_depth_floor": 0.02,
+    "tightening_relative_reduction": 0.05,
+    "noise_merging": "amp < 0.04 and dur <= 3",
+}
+CANONICAL_VCP_RULESET_HASH_V1_1_0 = compute_hash(CANONICAL_VCP_RULESET_SPEC_V1_1_0)
+
+# Candidate 006 Ruleset Specification & Hash (Nonproduction Research - Causal Wave Segmentation)
+CANONICAL_VCP_RULESET_SPEC_V1_2_0 = {
+    "name": "Minervini Volatility Contraction Pattern & Stage 2 Growth (Candidate 006 Causal Wave Segmentation)",
+    "minimum_sessions": 200,
+    "base_lookback_window": 90,
+    "primary_depth_floor": 0.08,
+    "intermediate_depth_floor": 0.04,
+    "final_handle_depth_floor": 0.02,
+    "tightening_relative_reduction": 0.05,
+    "rebound_prominence_threshold": 0.05,
+    "rebound_elapsed_sessions": 3,
+    "downswing_rollover_threshold": 0.04,
+    "ratio_epsilon_guard": 1e-7,
+}
+CANONICAL_VCP_RULESET_HASH_V1_2_0 = compute_hash(CANONICAL_VCP_RULESET_SPEC_V1_2_0)
+
 CANONICAL_VCP_EVIDENCE_SCHEMA_SPEC = {
     "fields": [
         "vcp_stage",
