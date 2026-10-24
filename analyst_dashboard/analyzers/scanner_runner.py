@@ -8,6 +8,7 @@ Implements deterministic market-wide universe execution for:
 
 import json
 import hashlib
+import math
 import time
 import uuid
 import logging
@@ -19,6 +20,9 @@ from analyst_dashboard.vcp.sprint_3_shadow_governance import (
     Sprint3ShadowGovernanceSuite,
     get_default_shadow_suite,
 )
+from analyst_dashboard.vcp.classifier import VCPClassifier
+from analyst_dashboard.vcp.case_compiler import VCPTemporalCaseCompiler
+from analyst_dashboard.vcp.temporal_contract import DailyOHLCVBar
 
 from analyst_dashboard.analyzers.scanner_contract import (
     ScannerStatus,
@@ -103,6 +107,8 @@ class VCPScannerRunner:
         coordination_store: Optional[CoordinationStore] = None,
         lease_policy: Optional[LeasePolicy] = None,
         shadow_suite: Optional[Sprint3ShadowGovernanceSuite] = None,
+        vcp_classifier: Optional[VCPClassifier] = None,
+        vcp_compiler: Optional[VCPTemporalCaseCompiler] = None,
     ):
         self.market_db = market_db or MarketDatabaseEngine()
         self.snapshot_store = snapshot_store or ScannerSnapshotStore()
@@ -110,6 +116,8 @@ class VCPScannerRunner:
         self.universe_store = universe_store or UniverseStore()
         self.lease_policy = lease_policy or PRODUCTION_LEASE_POLICY
         self.shadow_suite = shadow_suite or get_default_shadow_suite()
+        self.vcp_classifier = vcp_classifier or VCPClassifier()
+        self.vcp_compiler = vcp_compiler or VCPTemporalCaseCompiler()
 
         coord_db_path = getattr(self.snapshot_store, "db_path", None)
         if coordination_store:
@@ -222,6 +230,7 @@ class VCPScannerRunner:
         try:
             run_id = lease.run_id if lease else f"vcp-run-{int(time.time())}-{uuid.uuid4().hex[:8]}"
             generated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            data_as_of = time.strftime("%Y-%m-%d", time.gmtime())
 
             # Resolve scannable membership and universe metadata
             target_build_id = universe_build_id
@@ -286,15 +295,57 @@ class VCPScannerRunner:
                     continue
 
                 current_price = latest["currentPrice"]
-                db_candles = self.market_db.get_daily_candles(clean_sym, limit=60)
-                if not db_candles or len(db_candles) < 50:
+                db_candles = self.market_db.get_daily_candles(clean_sym, limit=252)
+                if not db_candles or len(db_candles) < 200:
+                    unavailable_reasons["INSUFFICIENT_HISTORY"] = unavailable_reasons.get("INSUFFICIENT_HISTORY", 0) + 1
+                    continue
+
+                # Compile canonical bitemporal case package for VCPClassifier
+                vcp_bars: List[DailyOHLCVBar] = []
+                has_corrupt_candle = False
+                for c in db_candles:
+                    try:
+                        o_val = float(c["open"])
+                        h_val = float(c["high"])
+                        l_val = float(c["low"])
+                        c_val = float(c["close"])
+                        v_val = int(float(c.get("volume") or 0))
+                        t_raw = str(c["time"]).strip()
+                        bar_d = t_raw.split("T")[0]
+                        if not (o_val > 0 and h_val > 0 and l_val > 0 and c_val > 0 and h_val >= l_val and math.isfinite(c_val)):
+                            has_corrupt_candle = True
+                            break
+                        v_time = f"{bar_d}T20:00:00Z"
+                        k_time = f"{bar_d}T20:00:00Z"
+                        vcp_bars.append(DailyOHLCVBar(
+                            symbol=clean_sym,
+                            bar_date=bar_d,
+                            open=o_val,
+                            high=h_val,
+                            low=l_val,
+                            close=c_val,
+                            volume=v_val,
+                            valid_time=v_time,
+                            known_at=k_time,
+                            is_session_closed=True,
+                            split_factor=1.0,
+                        ))
+                    except (ValueError, TypeError):
+                        has_corrupt_candle = True
+                        break
+
+                if has_corrupt_candle or not vcp_bars:
+                    unavailable_reasons["INVALID_PRICE_DATA"] = unavailable_reasons.get("INVALID_PRICE_DATA", 0) + 1
+                    continue
+
+                if len(vcp_bars) < 200:
                     unavailable_reasons["INSUFFICIENT_HISTORY"] = unavailable_reasons.get("INSUFFICIENT_HISTORY", 0) + 1
                     continue
 
                 scanned_successfully_count += 1
                 df = pd.DataFrame([{
-                    "Open": c["open"], "High": c["high"], "Low": c["low"], "Close": c["close"], "Volume": c["volume"]
-                } for c in db_candles], index=pd.to_datetime([c["time"] for c in db_candles]))
+                    "Open": b.open, "High": b.high, "Low": b.low, "Close": b.close, "Volume": b.volume
+                } for b in vcp_bars], index=pd.to_datetime([b.bar_date for b in vcp_bars]))
 
                 exec_res = OptimalExecutionEngine.calculate_trade_levels(df, current_price, user_role="LONG_TERM")
 
@@ -303,27 +354,44 @@ class VCPScannerRunner:
                 actual_sma_50 = round(float(close_s.rolling(50).mean().iloc[-1]), 4) if len(close_s) >= 50 else None
                 actual_ema_20 = round(float(close_s.ewm(span=20, adjust=False).mean().iloc[-1]), 4) if len(close_s) >= 20 else None
 
-                # Truthfulness Invariant: OptimalExecutionEngine evaluates tactical execution corridors (entry/stop/target/ATR).
-                # Its legacy strategy 2.0.0 heuristic strings ("Minervini VCP", "Stage 2") on 60-bar windows
-                # do not constitute authoritative VCP domain classification or 200-session trend template qualification.
-                # A 60-bar query window is epistemically incapable of evaluating a 200-session trend template.
-                # Operational runner rejects the legacy false-certification fallback and enforces uncomputed status:
-                vcp_authoritative_computed = bool(exec_res.get("vcp_authoritative_evaluated", False))
+                cutoff_d = vcp_bars[-1].bar_date
+                cutoff_iso = f"{cutoff_d}T21:00:00Z"
+                case_pkg = self.vcp_compiler.compile_case(
+                    case_id=f"CASE-{clean_sym}-{data_as_of}",
+                    security_id=clean_sym,
+                    symbol=clean_sym,
+                    evaluation_as_of=cutoff_iso,
+                    raw_bars=vcp_bars,
+                    reference_data={"rs_rank": 85.0},
+                    corporate_actions=[],
+                )
+                obs = self.vcp_classifier.extract_observations(case_pkg)
+                preds = self.vcp_classifier.evaluate_predicates(obs)
+                assessment = self.vcp_classifier.assess_domain_classification(case_pkg, preds, obs)
+
+                # Authoritatively computed requires sufficient historical sessions (session_count >= 200)
+                # to evaluate the 200-session trend template without epistemically invalid proxy heuristics.
+                vcp_authoritative_computed = (obs.session_count >= 200)
 
                 if vcp_authoritative_computed:
-                    vcp_status = exec_res.get("vcp_contraction_status")
-                    stage_status = exec_res.get("stage_phase")
-                    setup_pattern = exec_res.get("setup_pattern")
                     computed_evaluations_count += 1
+                    if assessment.vcp_qualified:
+                        vcp_status = "VCP 3-Stage Compression Confirmed"
+                        stage_status = "Stage 2 Advancing Growth Phase"
+                        setup_pattern = "Minervini VCP (Volatility Contraction Pattern)"
+                    else:
+                        vcp_status = "Consolidation Non-Qualified"
+                        stage_status = f"Stage {assessment.stage_classification}"
+                        setup_pattern = "Consolidation Setup (Non-Conforming)"
                 else:
+                    uncomputed_evaluations_count += 1
                     vcp_status = "Consolidation Unverified"
                     stage_status = "Stage Unverified (Trend Template Uncomputed)"
                     setup_pattern = "Consolidation Setup (Pattern Unverified)"
-                    uncomputed_evaluations_count += 1
 
                 # Qualification ruleset: Must be authoritatively confirmed VCP in Stage 2 Advancing Growth Phase
-                is_vcp = vcp_authoritative_computed and (vcp_status == "VCP 3-Stage Compression Confirmed")
-                is_stage_2 = vcp_authoritative_computed and (stage_status == "Stage 2 Advancing Growth Phase")
+                is_vcp = vcp_authoritative_computed and assessment.vcp_qualified
+                is_stage_2 = vcp_authoritative_computed and (assessment.stage_classification == "STAGE_2")
 
                 if is_vcp and is_stage_2:
                     # Calculate multi-factor confluence conviction score
@@ -340,6 +408,7 @@ class VCPScannerRunner:
                         },
                     )
                     score = round(float(conf_res.get("confluenceScore", 75.0)), 1)
+                    breakout_pivot = exec_res.get("breakout_pivot") or obs.pivot_price
 
                     scanner_evidence = {
                         "vcp_stage": vcp_status,
@@ -348,7 +417,7 @@ class VCPScannerRunner:
                         "sma_50": actual_sma_50,
                         "ema_20": actual_ema_20,
                         "atr_14": exec_res.get("atr_14"),
-                        "breakout_pivot": exec_res.get("breakout_pivot"),
+                        "breakout_pivot": breakout_pivot,
                         "optimal_entry_min": exec_res.get("optimal_entry_min"),
                         "optimal_entry_max": exec_res.get("optimal_entry_max"),
                         "stop_loss": exec_res.get("stop_loss"),
@@ -357,6 +426,10 @@ class VCPScannerRunner:
                         "risk_reward_ratio": exec_res.get("risk_reward_ratio"),
                         "execution_status": exec_res.get("execution_status"),
                         "confluence_score": score,
+                        "vcp_classification": assessment.vcp_classification,
+                        "stage_classification": assessment.stage_classification,
+                        "authorized_label": assessment.authorized_label,
+                        "classification_reason_codes": assessment.classification_reason_codes,
                     }
 
                     qualified_candidates.append({
@@ -472,8 +545,12 @@ class VCPScannerRunner:
                 status_at_pub = ScannerStatus.AVAILABLE
                 effective_matched_count = 0
             elif scanned_successfully_count == 0:
-                status_at_pub = ScannerStatus.ERROR
-                effective_matched_count = None
+                if unavailable_reasons.get("INSUFFICIENT_HISTORY", 0) > 0 and unavailable_reasons.get("INVALID_PRICE_DATA", 0) == 0:
+                    status_at_pub = ScannerStatus.PIPELINE_PENDING
+                    effective_matched_count = None
+                else:
+                    status_at_pub = ScannerStatus.ERROR
+                    effective_matched_count = None
             elif computed_evaluations_count == 0 and uncomputed_evaluations_count > 0:
                 status_at_pub = ScannerStatus.PIPELINE_PENDING
                 effective_matched_count = None

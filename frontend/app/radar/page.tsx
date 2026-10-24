@@ -275,7 +275,11 @@ function RadarContent() {
         count: isAvailable('VCP')
           ? (typeof capabilities.VCP?.matchedCount === 'number' ? capabilities.VCP.matchedCount : allAssets.filter((a) => a.categories.includes('VCP')).length)
           : null,
-        badge: isAvailable('VCP') ? `${allAssets.filter((a) => a.categories.includes('VCP')).length}` : 'Universe Scanner Pending',
+        badge: isAvailable('VCP')
+          ? `${typeof capabilities.VCP?.matchedCount === 'number'
+              ? capabilities.VCP.matchedCount
+              : allAssets.filter((a) => a.categories.includes('VCP')).length}`
+          : 'Universe Scanner Pending',
         status: capabilities.VCP?.status || 'PIPELINE_PENDING',
       },
       SMART_MONEY: {
