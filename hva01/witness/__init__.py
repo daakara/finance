@@ -19,6 +19,24 @@ from .client import (
     TSATimeoutError,
     TSATransportError,
 )
+from .clock_daemon import (
+    ClockAnomalyError,
+    ClockDaemonError,
+    ClockDriftDaemon,
+    ClockDriftExceededError as DaemonDriftExceededError,
+    ClockHealthStatus,
+    ClockRollbackError,
+    ClockSample,
+    TimeSourceUnavailableError,
+)
+from .fault_harness import (
+    AdversarialNetworkHarness,
+    ConflictingEvidenceError,
+    FaultHarnessStats,
+    FaultInjectionMode,
+    ReplayAttackDetectedError,
+    ReplayProtectionLedger,
+)
 from .models import (
     AttestationPayload,
     GenesisCommitment,
@@ -96,4 +114,19 @@ __all__ = [
     "TSAFailClosedError",
     "ProvenanceRecord",
     "ProviderAttemptRecord",
+    # Wave 4C-3 Clock Daemon & Fault Harness
+    "ClockDriftDaemon",
+    "ClockHealthStatus",
+    "ClockSample",
+    "ClockDaemonError",
+    "ClockRollbackError",
+    "DaemonDriftExceededError",
+    "TimeSourceUnavailableError",
+    "ClockAnomalyError",
+    "AdversarialNetworkHarness",
+    "FaultInjectionMode",
+    "FaultHarnessStats",
+    "ReplayProtectionLedger",
+    "ReplayAttackDetectedError",
+    "ConflictingEvidenceError",
 ]
