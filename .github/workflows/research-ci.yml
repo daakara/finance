@@ -1,0 +1,158 @@
+name: HVA-01 Research CI Gate
+
+"on":
+  push:
+    branches:
+      - "research/arx-hva01-v2-1-wave4c1-dual-tsa-local"
+      - "research/**"
+  pull_request:
+    branches:
+      - "research/**"
+      - "main"
+    paths:
+      - "hva01/**"
+      - "tests/test_hva01*.py"
+      - ".github/workflows/research-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: research-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  research_cryptographic_verification:
+    name: Cryptographic Test Suite (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout research tree
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@0b93645e9fea7318edeed2796c01d3ab981718e0 # v5.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Phase 1 (Ingress) — Install pinned cryptographic dependencies
+        run: |
+          python -m pip install --upgrade pip==24.3.1
+          pip install \
+            cryptography==50.0.1 \
+            pyasn1==0.6.4 \
+            pyasn1-modules==0.4.2 \
+            pytest==8.4.2 \
+            pytest-cov==7.1.0
+
+      - name: Phase 2 (Environment) — Verify OpenSSL runtime & surface diagnostics
+        run: |
+          echo "=== OpenSSL CLI Diagnostic ==="
+          openssl version -a
+          python -c "
+          import subprocess, sys
+          res = subprocess.run(['openssl', 'version'], capture_output=True, text=True)
+          ver = res.stdout.strip()
+          print('Reported OpenSSL:', ver)
+          if not ver.startswith('OpenSSL 3.'):
+              print('FATAL: Hosted runner OpenSSL version is not 3.x:', ver, file=sys.stderr)
+              sys.exit(1)
+          print('OpenSSL 3.x family verified for hosted Linux runner.')
+          "
+
+      - name: Phase 3 (Pre-Flight) — Assert zero production secrets exposed
+        run: |
+          echo "Asserting zero production credentials in research runner..."
+          VIOLATION=0
+          for var in CLOUDFLARE_API_TOKEN CLOUDFLARE_ZONE_ID RENDER_API_KEY GH_TOKEN GITHUB_PAT; do
+            if [ -n "${!var}" ]; then
+              echo "FATAL SECURITY VIOLATION: Production secret $var is present in research runner!"
+              VIOLATION=1
+            fi
+          done
+          if [ "$VIOLATION" -ne 0 ]; then
+            exit 1
+          fi
+          echo "Runner environment verified clean of production credentials."
+
+      - name: Phase 4 (Security) — Adversarial verification of DualTSAFallbackEngine fail-closed behavior
+        env:
+          PYTHONPATH: "."
+        run: |
+          python -c "
+          import sys, datetime
+          from hva01.witness.client import DualTSAFallbackEngine, TSAProviderConfig, TSATransportError
+          from cryptography import x509
+          from cryptography.hazmat.primitives import hashes
+          from cryptography.hazmat.primitives.asymmetric import rsa
+
+          key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+          cert = x509.CertificateBuilder().subject_name(x509.Name([])).issuer_name(x509.Name([])).public_key(key.public_key()).serial_number(1).not_valid_before(datetime.datetime.now(datetime.timezone.utc)).not_valid_after(datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)).sign(key, hashes.SHA256())
+
+          cfg = TSAProviderConfig(provider_id='ADVERSARIAL_TEST', endpoint_url='https://live.tsa.digicert.com', trusted_certificates=[cert])
+          try:
+              cfg.execute_transport(b'dummy_request')
+              print('FATAL: Unconfigured transport did not fail closed!', file=sys.stderr)
+              sys.exit(1)
+          except TSATransportError as e:
+              print('PASS: DualTSAFallbackEngine transport fail-closed behavior verified:', str(e))
+          "
+
+      - name: Phase 5 (Isolation) — Apply kernel-level network isolation (iptables airlock)
+        run: |
+          echo "Enforcing kernel-level network egress restrictions..."
+          sudo iptables -A OUTPUT -o lo -j ACCEPT
+          sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+          sudo iptables -A OUTPUT -j REJECT
+          echo "Kernel iptables airlock active. Outbound non-loopback packets will be rejected."
+
+          # Verify that direct socket connections are blocked by the kernel
+          python -c "
+          import socket, sys
+          try:
+              s = socket.socket()
+              s.settimeout(2.0)
+              s.connect(('1.1.1.1', 80))
+              print('FATAL: Direct socket connection succeeded despite kernel iptables firewall!', file=sys.stderr)
+              sys.exit(1)
+          except Exception as e:
+              print('PASS: Direct socket connection rejected at kernel level:', type(e).__name__, str(e))
+          "
+
+          # Verify that live HTTP requests to external TSAs are blocked by the kernel
+          python -c "
+          import urllib.request, sys
+          try:
+              urllib.request.urlopen('http://timestamp.digicert.com', timeout=2)
+              print('FATAL: Outbound live TSA HTTP request succeeded despite kernel airlock!', file=sys.stderr)
+              sys.exit(1)
+          except Exception as e:
+              print('PASS: Outbound live TSA request rejected at kernel level:', type(e).__name__)
+          "
+
+      - name: Phase 6 (Execution) — Execute 202-test cryptographic suite under kernel isolation
+        env:
+          PYTHONPATH: "."
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          http_proxy: "http://127.0.0.1:9"
+          https_proxy: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          all_proxy: "http://127.0.0.1:9"
+        run: |
+          python -m pytest \
+            tests/test_hva01_adversarial_security.py \
+            tests/test_hva01_canonical_20_scenarios.py \
+            tests/test_hva01_timestamp_wire.py \
+            tests/test_hva01_wave1.py \
+            tests/test_hva01_wave3_access_blinding.py \
+            tests/test_hva01_wave4b_witness_acceptance.py \
+            -v --durations=10
