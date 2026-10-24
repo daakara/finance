@@ -33,6 +33,156 @@ class PacketGenerator:
         if self.output_dir:
             self.output_dir.mkdir(parents=True, exist_ok=True)
 
+    def generate_unsupported_period_artifact(
+        self,
+        event: MaintenanceEvent,
+        baseline_dossier: Dict[str, Any],
+        unsupported_reason: str,
+    ) -> Tuple[Dict[str, Any], Path, Path]:
+        """
+        Builds a bounded event review artifact for periodic filings whose reporting
+        period or accounting context is not supported by the automated reconciler.
+        Suppresses valuation calculations, prevents reusing stale numbers, and provides
+        an explicit manual review checklist for the human analyst.
+        """
+        now_utc = datetime.utcnow().isoformat() + "Z"
+        prefix = "REPLAY-" if event.is_replay else "EVENT-"
+        period_clean = (event.reporting_period or "UNKNOWN").replace("-", "")
+        accn_clean = event.accession_number.replace("-", "")
+        artifact_id = f"{prefix}{event.symbol}-{period_clean}-{accn_clean}"
+        baseline_id = baseline_dossier.get("dossier_id") or f"OPP-{event.symbol}-20261016"
+        baseline_cutoff = (
+            baseline_dossier.get("publication_metadata", {}).get("filing_availability_cutoff_utc")
+            or "2026-10-16T20:00:00Z"
+        )
+
+        filing_meta = {
+            "form": event.form,
+            "accession_number": event.accession_number,
+            "filing_date": event.filing_date,
+            "reporting_period": event.reporting_period,
+            "acceptance_datetime_utc": event.acceptance_datetime_utc,
+            "source_url": event.source_url,
+            "primary_document": event.primary_document,
+            "index_url": event.index_url,
+            "index_sha256": event.index_sha256,
+            "submissions_url": event.submissions_url,
+            "company_facts_url": event.company_facts_url,
+            "retrieval_time_utc": event.retrieval_time_utc,
+            "is_replay": event.is_replay,
+            "sha256": event.sha256,
+            "source_receipts": event.source_receipts,
+        }
+
+        artifact = {
+            "artifact_id": artifact_id,
+            "symbol": event.symbol,
+            "company_name": event.company_name,
+            "cik": event.cik,
+            "status": "FINANCIAL_RECONCILIATION_NOT_SUPPORTED_FOR_PERIOD",
+            "processing_state": "DETECTED_UNSUPPORTED_PERIOD",
+            "accepted_baseline_id": baseline_id,
+            "accepted_baseline_cutoff": baseline_cutoff,
+            "unsupported_reason": unsupported_reason,
+            "is_amendment": event.is_amendment,
+            "filing_metadata": filing_meta,
+            "material_financial_changes": [],
+            "reconciliation": None,
+            "valuation_comparison": None,
+            "proposed_disposition": "MANUAL_REVIEW_REQUIRED",
+            "manual_review_checklist": [
+                f"Inspect primary filing directly on SEC EDGAR: {event.source_url or 'URL pending'}",
+                f"Verify period {event.reporting_period} {event.form} financial statements manually (automation limited to Q3 2026 10-Q).",
+                "Establish standalone quarter/annual GAAP financials without reusing prior quarter formulas.",
+                "Re-run DCF and valuation corridor under human analyst supervision.",
+                "Determine whether research conclusion requires CHANGE or MAINTAIN under ARX-DECISION-RESEARCH-PROCESS-V1.",
+            ],
+            "questions_requiring_owner_judgment": [
+                f"Does filing {event.accession_number} for period {event.reporting_period} introduce material structural changes to thesis drivers?",
+                "What accounting conventions apply to this period (e.g. full-year 10-K vs quarterly 10-Q)?",
+                "Should an updated financial reconciliation formula be authored and tested for this period?",
+            ],
+            "publication_boundary": "INTERNAL_REVIEW_ONLY. This event is awaiting human research review. No public research files, watch manifests, or valuation corridors were modified.",
+            "stopping_rule": "Awaiting human analyst review of newly detected filing. Reconciler halted safely without calculating speculative valuations.",
+            "created_at_utc": now_utc,
+            "is_replay": event.is_replay,
+        }
+
+        out_dir = self.output_dir or Path("docs/research/maintenance/packets")
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        json_path = out_dir / f"{artifact_id}.json"
+        md_path = out_dir / f"{artifact_id}.md"
+
+        # Atomic write JSON
+        with tempfile.NamedTemporaryFile("w", dir=out_dir, delete=False, encoding="utf-8") as tf:
+            json.dump(artifact, tf, indent=2)
+            temp_json = Path(tf.name)
+        os.replace(temp_json, json_path)
+
+        # Atomic write Markdown
+        md_content = self.render_unsupported_period_markdown(artifact)
+        with tempfile.NamedTemporaryFile("w", dir=out_dir, delete=False, encoding="utf-8") as tf:
+            tf.write(md_content)
+            temp_md = Path(tf.name)
+        os.replace(temp_md, md_path)
+
+        return artifact, json_path, md_path
+
+    def render_unsupported_period_markdown(self, artifact: Dict[str, Any]) -> str:
+        """Renders Markdown report for an unsupported period filing event."""
+        meta = artifact.get("filing_metadata", {})
+        md = f"""# ARX Research Maintenance Event: {artifact['symbol']} ({artifact['company_name']})
+## Status: `{artifact['status']}`
+
+> **NOTICE**: This primary-source filing was detected and verified by the ARX Research-Maintenance detection path, but its reporting period (`{meta.get('reporting_period')}`) or form (`{meta.get('form')}`) is **not supported** by the current automated financial reconciler.
+> **Valuation and financial recalculations have been strictly suppressed** to prevent fabricating valuations or reusing stale quarter formulas.
+
+---
+
+### 1. Verified Filing Metadata
+| Field | Value |
+| :--- | :--- |
+| **Issuer** | {artifact['company_name']} (`{artifact['symbol']}`, CIK: `{artifact['cik']}`) |
+| **Form** | `{meta.get('form')}` {'**(Amendment)**' if artifact.get('is_amendment') else ''} |
+| **Accession Number** | `{meta.get('accession_number')}` |
+| **Reporting Period** | `{meta.get('reporting_period')}` |
+| **Filing Date** | `{meta.get('filing_date')}` |
+| **Acceptance Time** | `{meta.get('acceptance_datetime_utc') or 'N/A'}` |
+| **Primary Document URL** | [{meta.get('primary_document')}]({meta.get('source_url')}) |
+| **Filing Index URL** | [SEC Index]({meta.get('index_url')}) |
+| **Accepted Baseline** | `{artifact['accepted_baseline_id']}` (Cutoff: `{artifact['accepted_baseline_cutoff']}`) |
+| **Primary Document SHA-256** | `{meta.get('sha256') or 'N/A'}` |
+
+---
+
+### 2. Why Automated Reconciliation Was Withheld
+`{artifact['unsupported_reason']}`
+
+The automated reconciler is validated **only** for Comfort Systems USA, Inc. (`FIX`) Q3 2026 Form 10-Q (period `2026-09-30`). Applying Q3-specific deduction logic to other quarters, annual Form 10-Ks, or amendments would produce mathematically invalid financials and speculative valuations.
+
+---
+
+### 3. Manual Review Checklist for Human Analyst
+"""
+        for item in artifact.get("manual_review_checklist", []):
+            md += f"- [ ] {item}\n"
+
+        md += "\n---\n\n### 4. Questions Requiring Owner Judgment\n"
+        for q in artifact.get("questions_requiring_owner_judgment", []):
+            md += f"- **Q**: {q}\n"
+
+        md += f"""
+---
+
+### 5. Publication Boundary & Stopping Rule
+- **Publication Boundary**: `{artifact['publication_boundary']}`
+- **Stopping Rule**: `{artifact['stopping_rule']}`
+- **Disposition**: `{artifact['proposed_disposition']}`
+- **Artifact Generated At**: `{artifact['created_at_utc']}`
+"""
+        return md
+
     def generate_packet(
         self,
         event: MaintenanceEvent,

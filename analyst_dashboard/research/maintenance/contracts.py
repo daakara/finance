@@ -31,12 +31,26 @@ class EventProcessingState(str, Enum):
     ASSESSED = "ASSESSED"
     PACKET_GENERATED = "PACKET_GENERATED"
     REVIEW_PENDING = "REVIEW_PENDING"
+    DETECTED_UNSUPPORTED_PERIOD = "DETECTED_UNSUPPORTED_PERIOD"
     REVIEW_ACCEPTED = "REVIEW_ACCEPTED"
     REVIEW_REJECTED = "REVIEW_REJECTED"
     REJECTED_MISIDENTIFIED = "REJECTED_MISIDENTIFIED"
     REJECTED_DUPLICATE = "REJECTED_DUPLICATE"
     REJECTED_VALIDATION_FAILED = "REJECTED_VALIDATION_FAILED"
     FAILED = "FAILED"
+
+
+class RunOutcome(str, Enum):
+    """Operational outcomes for scheduled research-maintenance polling runs."""
+    NO_QUALIFYING_EVENT = "NO_QUALIFYING_EVENT"
+    ALREADY_PROCESSED_EVENT = "ALREADY_PROCESSED_EVENT"
+    NEWLY_VERIFIED_EVENT_SUPPORTED = "NEWLY_VERIFIED_EVENT_SUPPORTED"
+    NEWLY_VERIFIED_EVENT_UNSUPPORTED_PERIOD = "NEWLY_VERIFIED_EVENT_UNSUPPORTED_PERIOD"
+    SEC_RETRIEVAL_FAILURE = "SEC_RETRIEVAL_FAILURE"
+    SOURCE_VALIDATION_CONFLICT = "SOURCE_VALIDATION_CONFLICT"
+    STATE_PERSISTENCE_FAILURE = "STATE_PERSISTENCE_FAILURE"
+    PILOT_DORMANT = "PILOT_DORMANT"
+    PILOT_EXPIRED = "PILOT_EXPIRED"
 
 
 class ProposedDisposition(str, Enum):
@@ -113,6 +127,8 @@ class MaintenanceEvent:
     company_facts_url: Optional[str] = None
     processing_state: EventProcessingState = EventProcessingState.REGISTERED
     is_replay: bool = False
+    is_amendment: bool = False
+    unsupported_reason: Optional[str] = None
     sha256: Optional[str] = None
     source_receipts: Optional[Dict[str, Dict[str, Any]]] = None
     successor_draft_id: Optional[str] = None
@@ -274,6 +290,7 @@ class EventRegister:
         return evt.processing_state in (
             EventProcessingState.REVIEW_PENDING,
             EventProcessingState.REVIEW_ACCEPTED,
+            EventProcessingState.DETECTED_UNSUPPORTED_PERIOD,
             EventProcessingState.REJECTED_MISIDENTIFIED,
         )
 
@@ -330,12 +347,15 @@ class EventRegister:
         index_sha256: Optional[str] = None,
         sha256: Optional[str] = None,
         source_receipts: Optional[Dict[str, Any]] = None,
+        unsupported_reason: Optional[str] = None,
     ) -> MaintenanceEvent:
         key = self._make_key(symbol, accession_number, is_replay=is_replay)
         if key not in self.events:
             raise KeyError(f"Event not found in register: {key}")
         evt = self.events[key]
         evt.processing_state = state
+        if unsupported_reason:
+            evt.unsupported_reason = unsupported_reason
         if successor_draft_id:
             evt.successor_draft_id = successor_draft_id
         if review_packet_id:

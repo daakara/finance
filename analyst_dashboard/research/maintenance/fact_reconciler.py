@@ -42,10 +42,12 @@ class FactReconciler:
         cache_dir: Optional[Union[str, Path]] = None,
         offline_mode: bool = False,
         cache_ttl_sec: int = DEFAULT_CACHE_TTL_SEC,
+        budget_tracker: Optional[Any] = None,
     ):
         self.cache_dir = Path(cache_dir) if cache_dir else None
         self.offline_mode = offline_mode
         self.cache_ttl_sec = cache_ttl_sec
+        self.budget_tracker = budget_tracker
         self.user_agent = SEC_USER_AGENT
         self.last_facts_receipt: Optional[Dict[str, Any]] = None
 
@@ -103,6 +105,10 @@ class FactReconciler:
         if self.offline_mode:
             raise FileNotFoundError(f"Offline mode enabled, but cache file {cache_file} was not found.")
 
+        timeout = 15.0
+        if self.budget_tracker:
+            timeout = self.budget_tracker.acquire_request_slot(default_timeout_sec=15.0)
+
         headers = {
             "User-Agent": self.user_agent,
             "Accept-Encoding": "gzip, deflate",
@@ -111,7 +117,7 @@ class FactReconciler:
         req = urllib.request.Request(url, headers=headers)
         import gzip
         try:
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
                 raw = resp.read()
                 if resp.info().get("Content-Encoding") == "gzip" or (len(raw) > 2 and raw[:2] == b"\x1f\x8b"):
                     raw = gzip.decompress(raw)

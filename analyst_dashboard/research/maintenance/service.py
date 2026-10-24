@@ -16,7 +16,7 @@ from datetime import datetime
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple, Union
+from typing import Dict, Any, List, Optional, Tuple, Union, Set
 
 from .contracts import (
     EventProcessingState,
@@ -64,6 +64,8 @@ class ResearchMaintenanceService:
         baseline_snapshot_path: Optional[Union[str, Path]] = None,
         published_manifest_path: Optional[Union[str, Path]] = None,
         offline_mode: bool = False,
+        budget_tracker: Optional[Any] = None,
+        completed_accessions: Optional[Set[str]] = None,
     ):
         self.register_path = Path(register_path) if register_path else DEFAULT_REGISTER_PATH
         self.packets_dir = Path(packets_dir) if packets_dir else DEFAULT_PACKETS_DIR
@@ -71,10 +73,22 @@ class ResearchMaintenanceService:
         self.baseline_snapshot_path = Path(baseline_snapshot_path) if baseline_snapshot_path else DEFAULT_BASELINE_SNAPSHOT
         self.published_manifest_path = Path(published_manifest_path) if published_manifest_path else DEFAULT_PUBLISHED_MANIFEST
         self.offline_mode = offline_mode
+        self.budget_tracker = budget_tracker
+        self.completed_accessions = completed_accessions
 
         self.register = EventRegister(self.register_path)
-        self.poller = SecEventPoller(self.register, cache_dir=self.cache_dir, offline_mode=self.offline_mode)
-        self.reconciler = FactReconciler(cache_dir=self.cache_dir, offline_mode=self.offline_mode)
+        self.poller = SecEventPoller(
+            self.register,
+            cache_dir=self.cache_dir,
+            offline_mode=self.offline_mode,
+            budget_tracker=self.budget_tracker,
+            completed_accessions=self.completed_accessions,
+        )
+        self.reconciler = FactReconciler(
+            cache_dir=self.cache_dir,
+            offline_mode=self.offline_mode,
+            budget_tracker=self.budget_tracker,
+        )
         self.assessor = DecisionAssessor()
         self.packet_generator = PacketGenerator(output_dir=self.packets_dir)
 
@@ -166,7 +180,29 @@ class ResearchMaintenanceService:
 
         self.register.register_event(event, fail_if_duplicate=False, allow_overwrite=force_refresh)
 
-        # Step 4: Reconcile financial facts
+        # Step 4: Check if financial reconciliation is supported for this period and form
+        from .pilot_config import is_reconciliation_supported
+        if not is_reconciliation_supported(clean_sym, event.form, event.reporting_period) or event.is_amendment:
+            unsupported_reason = event.unsupported_reason or (
+                f"Automated reconciliation is validated ONLY for Q3 2026 Form 10-Q (period 2026-09-30). "
+                f"Period '{event.reporting_period}' and Form '{event.form}' require manual accounting review."
+            )
+            event.unsupported_reason = unsupported_reason
+            artifact, json_path, md_path = self.packet_generator.generate_unsupported_period_artifact(
+                event=event,
+                baseline_dossier=baseline_dossier,
+                unsupported_reason=unsupported_reason,
+            )
+            self.register.update_event_state(
+                symbol=clean_sym,
+                accession_number=event.accession_number,
+                state=EventProcessingState.DETECTED_UNSUPPORTED_PERIOD,
+                is_replay=is_replay,
+                unsupported_reason=unsupported_reason,
+            )
+            return None, event, [f"UNSUPPORTED_PERIOD: {unsupported_reason}"]
+
+        # Step 5: Reconcile financial facts (for supported periods)
         try:
             reconciled_profile, changes, exceptions, undisclosed = self.reconciler.reconcile_filing(
                 symbol=clean_sym,
@@ -199,7 +235,7 @@ class ResearchMaintenanceService:
             )
             return None, event, [f"FAILED during reconciliation: {e}"]
 
-        # Step 5: Assess research decision consequences
+        # Step 6: Assess research decision consequences
         try:
             effects, val_comp, disposition, rationale, questions, stopping_rule = self.assessor.assess_consequences(
                 symbol=clean_sym,
@@ -227,7 +263,7 @@ class ResearchMaintenanceService:
             )
             return None, event, [f"FAILED during assessment: {e}"]
 
-        # Step 6: Generate Review Packet
+        # Step 7: Generate Review Packet
         try:
             packet, json_path, md_path = self.packet_generator.generate_packet(
                 event=event,
