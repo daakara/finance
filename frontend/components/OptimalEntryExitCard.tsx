@@ -13,6 +13,7 @@ import {
 } from "../lib/decisionReadiness";
 import { resolvePresentationState } from "../lib/decisionPresentation";
 import { evaluateCorridorLocation } from "../lib/corridorLocation";
+import { resolveFreshCachedVix } from "../lib/preflightEvaluator";
 
 interface OptimalEntryExitCardProps {
   symbol: string;
@@ -118,19 +119,8 @@ export default function OptimalEntryExitCard({
         return val;
       }
     }
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem("FINANCE_MARKET_SNAPSHOTS_V1");
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          const v = parsed?.vix?.value ?? parsed?.vix?.level ?? (typeof parsed?.vix === "number" ? parsed.vix : undefined);
-          if (typeof v === "number" && !isNaN(v) && v > 0) {
-            return v;
-          }
-        }
-      } catch {}
-    }
-    return undefined;
+    const freshCached = resolveFreshCachedVix();
+    return freshCached !== null ? freshCached : undefined;
   })();
 
   // ── Price Authority Resolution (INV-PRICE-001 through INV-PRICE-010) ────────

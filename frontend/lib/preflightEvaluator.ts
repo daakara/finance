@@ -114,6 +114,63 @@ export interface PreFlightEvaluationResult {
   resolvedCatalystState: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR";
 }
 
+/**
+ * Resolves VIX from local browser cache with strict data quality and freshness verification.
+ * Enforces DATA_QUALITY_AND_EDGE_CASE_GOVERNANCE.md (ARCH-GOV-DATA-QUALITY-VNEXT Section 3.4 & EC-01):
+ * - Active Session Max Stale Threshold: 240 minutes (4 hours)
+ * - Pinned Closed Session Max Threshold: 4320 minutes (72 hours / weekend close)
+ * Stale, unverified, future, or cross-ticker snapshots fail closed to null.
+ */
+export function resolveFreshCachedVix(): number | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const cached = localStorage.getItem("FINANCE_MARKET_SNAPSHOTS_V1");
+    if (!cached) return null;
+
+    const parsed = JSON.parse(cached);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+
+    // Reject cross-ticker payloads that lack macro indicators
+    if (!parsed.vix && !parsed.regime) return null;
+
+    const rawVix = parsed?.vix?.value ?? parsed?.vix?.level ?? (typeof parsed?.vix === "number" ? parsed.vix : undefined);
+    if (typeof rawVix !== "number" || isNaN(rawVix) || rawVix <= 0 || rawVix > 100) {
+      return null;
+    }
+
+    // Freshness validation
+    const timestampStr = parsed.updatedAt || parsed.timestamp;
+    if (!timestampStr || typeof timestampStr !== "string") {
+      return null; // Missing timestamp cannot establish freshness
+    }
+
+    const timestamp = new Date(timestampStr).getTime();
+    if (isNaN(timestamp)) {
+      return null;
+    }
+
+    const now = Date.now();
+    const ageMinutes = (now - timestamp) / 60000;
+
+    // Clock skew guard: Reject future timestamps beyond 5m skew
+    if (ageMinutes < -5) {
+      return null;
+    }
+
+    // SLA Window: 4 hours (240m) during active session; 72 hours (4320m) if marketSession === "CLOSED" or settlementPinned
+    const isClosedSession = parsed.marketSession === "CLOSED" || parsed.settlementPinned === true || parsed.isSettlementPinned === true;
+    const maxAgeMinutes = isClosedSession ? 4320 : 240;
+
+    if (ageMinutes > maxAgeMinutes) {
+      return null; // Stale evidence strictly rejected
+    }
+
+    return rawVix;
+  } catch {
+    return null;
+  }
+}
+
 export function evaluatePreFlightChecks(
   inputs: PreFlightChecklistInputs,
   vernacularMode: "PLAIN_ENGLISH" | "PRO_QUANT" = "PLAIN_ENGLISH"
@@ -157,20 +214,10 @@ export function evaluatePreFlightChecks(
   const safeEntryMax = (typeof optimalEntryMax === "number" && !isNaN(optimalEntryMax) && optimalEntryMax > 0) ? optimalEntryMax : null;
   const safePivot = (typeof breakoutPivot === "number" && !isNaN(breakoutPivot) && breakoutPivot > 0) ? breakoutPivot : null;
 
-  // Canonical VIX Resolution: input > browser localStorage cache > null
+  // Canonical VIX Resolution: input > browser localStorage fresh cache > null
   const resolvedVix = (() => {
     if (typeof vix === "number" && !isNaN(vix) && vix > 0) return vix;
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem("FINANCE_MARKET_SNAPSHOTS_V1");
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          const v = parsed?.vix?.value ?? parsed?.vix?.level ?? (typeof parsed?.vix === "number" ? parsed.vix : undefined);
-          if (typeof v === "number" && !isNaN(v) && v > 0) return v;
-        }
-      } catch {}
-    }
-    return null;
+    return resolveFreshCachedVix();
   })();
   const isVixValid = resolvedVix !== null;
   const currentVix = resolvedVix;
@@ -494,6 +541,9 @@ export function evaluatePreFlightChecks(
       return "Confirm forward corporate earnings schedule from authoritative primary source.";
     }
     if (!isMacroPassed) {
+      if (!isVixValid || currentVix === null) {
+        return "Verify live market volatility (VIX) from exchange feed before execution clearance.";
+      }
       return "Wait for systemic market volatility (VIX) to settle below defensive threshold (< 26.0).";
     }
     return "All pre-flight clearance conditions satisfied. Setup cleared for controlled execution.";
