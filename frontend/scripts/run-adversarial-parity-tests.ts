@@ -1,5 +1,5 @@
 /**
- * ARX_UX_DESIGN_PARITY_GATE_V1: Adversarial Gate Mutation Suite
+ * ARX_UX_DESIGN_PARITY_GATE_V1 & V1.1: Adversarial Gate Mutation Suite
  *
  * Deliberately injects one defect at a time into an isolated test environment,
  * verifies that the gate strictly fails and exits nonzero, restores clean state,
@@ -111,11 +111,51 @@ const testCases: AdversarialTestCase[] = [
       return content + "\n{/* <TradeExecutionStepper /> */}\n";
     },
     expectedFailurePattern: "OptimalEntryExitCard must NOT render duplicate 5-step stepper"
+  },
+  {
+    id: "DEFECT_9_MOUNT_DECISION_READINESS_IN_ENTRY_CARD",
+    name: "Mount DecisionReadinessCard in OptimalEntryExitCard",
+    description: "Re-introduces prohibited DecisionReadinessCard into OptimalEntryExitCard",
+    targetFile: path.join(frontendDir, "components/OptimalEntryExitCard.tsx"),
+    mutate: (content: string) => {
+      return content + "\n{/* <DecisionReadinessCard /> */}\n";
+    },
+    expectedFailurePattern: "OptimalEntryExitCard must NOT mount DecisionReadinessCard"
+  },
+  {
+    id: "DEFECT_10_MOUNT_DUPLICATE_MODAL_IN_ENTRY_CARD",
+    name: "Mount Duplicate PreFlightChecklistModal in OptimalEntryExitCard",
+    description: "Re-introduces duplicate PreFlightChecklistModal into OptimalEntryExitCard",
+    targetFile: path.join(frontendDir, "components/OptimalEntryExitCard.tsx"),
+    mutate: (content: string) => {
+      return content + "\n{/* <PreFlightChecklistModal /> */}\n";
+    },
+    expectedFailurePattern: "OptimalEntryExitCard must NOT mount duplicate PreFlightChecklistModal"
+  },
+  {
+    id: "DEFECT_11_UNSUBORDINATE_PRECONDITIONS",
+    name: "Unsubordinate What Needs to Change Stack",
+    description: "Expands What Needs to Change by default instead of collapsing",
+    targetFile: path.join(frontendDir, "components/terminal/StandardTerminalView.tsx"),
+    mutate: (content: string) => {
+      return content.replace("React.useState(false)", "React.useState(true)");
+    },
+    expectedFailurePattern: "StandardTerminalView must collapse What Needs to Change by default"
+  },
+  {
+    id: "DEFECT_12_REMOVE_EXECUTION_LADDER_FROM_VERDICT",
+    name: "Remove Compact Execution Ladder from Verdict Card",
+    description: "Removes compact execution ladder from StandardTerminalView Decision Verdict card",
+    targetFile: path.join(frontendDir, "components/terminal/StandardTerminalView.tsx"),
+    mutate: (content: string) => {
+      return content.replace("Execution Ladder", "Suppressed Ladder");
+    },
+    expectedFailurePattern: "StandardTerminalView must render Execution Ladder inside Decision Verdict card"
   }
 ];
 
 console.log("================================================================================");
-console.log("  ARX_UX_DESIGN_PARITY_GATE_V1: Adversarial Gate Mutation Suite");
+console.log("  ARX_UX_DESIGN_PARITY_GATE_V1 & V1.1: Adversarial Gate Mutation Suite");
 console.log("================================================================================\n");
 
 const results: any[] = [];
@@ -199,7 +239,7 @@ try {
     encoding: "utf8",
     stdio: "pipe"
   });
-  cleanCandidatePassed = cleanGateOutput.includes("ALL ARX_UX_DESIGN_PARITY_GATE_V1 STRUCTURAL ASSERTIONS PASSED");
+  cleanCandidatePassed = cleanGateOutput.includes("ALL ARX_UX_DESIGN_PARITY_GATE_V1 & V1.1 STRUCTURAL ASSERTIONS PASSED");
 } catch (err: any) {
   cleanCandidatePassed = false;
   cleanGateOutput = (err.stdout || "") + "\n" + (err.stderr || "");
@@ -227,7 +267,7 @@ console.log(`\nAdversarial Test Report written to: ${reportPath}`);
 
 console.log("================================================================================");
 console.log(`  ADVERSARIAL GATE TESTING DISPOSITION: ${finalReport.disposition}`);
-console.log(`  8/8 Injected Defects Strictly Blocked • Clean Candidate Certified PASS`);
+console.log(`  ${results.filter(r => r.verdict === "SUCCESSFULLY_BLOCKED").length}/${testCases.length} Injected Defects Strictly Blocked • Clean Candidate Certified PASS`);
 console.log("================================================================================\n");
 
 if (!allAdversarialPassed || !cleanCandidatePassed) {

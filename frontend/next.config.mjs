@@ -1,8 +1,9 @@
 import { fileURLToPath } from "node:url";
+import { execSync } from "node:child_process";
 
 /**
  * Resolves the canonical frontend release identity using strict precedence:
- * CF_PAGES_COMMIT_SHA > NEXT_PUBLIC_ARX_RELEASE > undefined (fail-safe)
+ * CF_PAGES_COMMIT_SHA > NEXT_PUBLIC_ARX_RELEASE > git rev-parse HEAD > undefined (fail-safe)
  *
  * Enforces single-authority build boundary:
  * Cloudflare Pages injects CF_PAGES_COMMIT_SHA, which is mapped here to
@@ -13,7 +14,12 @@ import { fileURLToPath } from "node:url";
  * @returns {string | undefined}
  */
 export function resolveFrontendRelease(env = process.env) {
-  const raw = (env?.CF_PAGES_COMMIT_SHA || env?.NEXT_PUBLIC_ARX_RELEASE || "").trim();
+  let raw = (env?.CF_PAGES_COMMIT_SHA || env?.NEXT_PUBLIC_ARX_RELEASE || "").trim();
+  if (!raw) {
+    try {
+      raw = execSync("git rev-parse HEAD", { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+    } catch {}
+  }
   return raw || undefined;
 }
 
