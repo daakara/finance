@@ -1,95 +1,85 @@
 {
   "schema_version": "2.2.0",
   "document_id": "ARX_EVIDENCE_MANIFEST",
-  "classification": "ARX_UX_DESIGN_PARITY_GATE_V1_IMPLEMENTATION",
-  "verdict": "UX_DESIGN_PARITY_GATE_V1_PASS",
-  "timestamp": "2026-10-25T00:24:00+02:00",
+  "classification": "ARX_P1_PREFLIGHT_RECOVERY_TO_PRODUCTION",
+  "verdict": "ARX_P1_REMEDIATED_PRODUCTION_VERIFIED",
+  "timestamp": "2026-10-25T08:55:00+01:00",
   "research_owner": "David Akara",
   "authorization_mode": "APPROVED",
   "gate_qualification": {
-    "gate_id": "ARX_UX_DESIGN_PARITY_GATE_V1",
+    "gate_id": "ARX_UX_DESIGN_PARITY_GATE_V1_1",
     "mandatory_for_ux_releases": true,
     "disposition": "PASS",
-    "contract_specification": "frontend/tests/contracts/synthesis_e_v3_design_contract.json",
+    "contract_specification": "frontend/tests/contracts/synthesis_e_v1_1_design_contract.json",
     "contract_hash": "2857d19a442153e2399be9e3745cfee04f3b6e75f8ef9adfb3ebdec8cdd9008f"
   },
-  "active_production": {
-    "provider": "cloudflare_pages",
-    "project": "finance",
-    "deployment_id": "642bdcc8",
-    "deployment_url": "https://642bdcc8.finance-xp8.pages.dev",
-    "production_url": "https://www.arxterminal.com",
-    "serving_sha": "83d487372da89f666b6e4fa8331165e3474fc1e6",
-    "base_sha": "aeb589058d0a17554cc0ee593ef7b7a10752a276",
+  "mainline_release": {
+    "target_sha": "64b5f892bf8b20f55b810599393bbbeb4d6aba91",
+    "pr_number": 87,
+    "pr_url": "https://github.com/daakara/finance/pull/87",
     "railway_backend_deployment_id": "059f9d79-6848-4095-aa61-5936ac3ee650",
     "railway_backend_serving_sha": "a86456229d61297bb362e882f5013ded77f4e69f",
     "railway_backend_health": "200_OK_ONLINE"
   },
-  "published_branch": {
-    "branch_name": "feat/arx-synthesis-e-v3-legacy-consolidation",
-    "commit_sha": "83d4873",
-    "commit_message": "feat(governance): implement ARX_UX_DESIGN_PARITY_GATE_V1 and integrate into release qualification",
-    "remote_url": "https://github.com/daakara/finance.git"
+  "active_production": {
+    "provider": "cloudflare_pages",
+    "project": "finance",
+    "deployment_id": "2370f8fe-ba17-4d3b-90e8-585fcac534a5",
+    "deployment_url": "https://2370f8fe.finance-xp8.pages.dev",
+    "production_url": "https://www.arxterminal.com",
+    "serving_sha": "64b5f892bf8b20f55b810599393bbbeb4d6aba91",
+    "railway_backend_deployment_id": "059f9d79-6848-4095-aa61-5936ac3ee650",
+    "railway_backend_serving_sha": "a86456229d61297bb362e882f5013ded77f4e69f",
+    "railway_backend_health": "200_OK_ONLINE",
+    "audit_results_file": "screenshots_consolidation_audit/production_verification_results.json"
   },
   "reference_baseline": {
     "designation": "Synthesis E V3",
-    "file": "scratch/arx-ux-prototypes/synthesis-e-remediation-candidate-v2-layout-accessibility-qa/index.html",
+    "file": "frontend/tests/fixtures/synthesis-e-v3-approved-reference.html",
     "sha256": "2857d19a442153e2399be9e3745cfee04f3b6e75f8ef9adfb3ebdec8cdd9008f",
     "integrity": "VERIFIED_BITWISE_MATCH"
   },
+  "adversarial_gate_results": {
+    "total_mutations_tested": 12,
+    "mutations_successfully_blocked": 12,
+    "disposition": "PASS",
+    "report": "frontend/reports/adversarial_gate_results.json"
+  },
   "pre_deployment_gates": {
     "type_check": "PASSED (tsc --noEmit, 0 errors)",
-    "unit_tests": "PASSED (30 files, 295 tests passed, 0 failed)",
+    "unit_tests": "PASSED (33 files, 385 tests passed, 0 failed)",
     "architecture_tests": "PASSED (34 suites passed, including uxDesignParityGateV1.test.ts, 0 failed)",
     "design_parity_gate": "PASSED (npx tsx tests/uxDesignParityGateV1.test.ts, 100% assertions passed)",
-    "static_export": "PASSED (147/147 SSG static routes prerendered in out/)"
+    "static_export": "PASSED (149/149 SSG static routes prerendered in out/)",
+    "python_tests": "PASSED (Tier 1, Tier 2, Tier 3 passed on Python 3.11 & 3.12)"
   },
   "live_browser_audit": {
-    "audit_file": "screenshots_consolidation_audit/design_parity_gate_v1_results.json",
-    "total_checks": 22,
-    "passed_checks": 22,
-    "failed_checks": 0,
+    "audit_file": "screenshots_consolidation_audit/production_verification_results.json",
+    "viewports_tested": [
+      "desktop-1440",
+      "tablet-768",
+      "mobile-390"
+    ],
+    "symbols_tested": [
+      "AAPL",
+      "NVDA"
+    ],
+    "assertions": {
+      "releaseShaMatchesMain": true,
+      "compactExecutionLadderMounted": true,
+      "zeroLegacyDecisionReadinessCards": true,
+      "macroStatusSynchronized": true,
+      "corridorToleranceAccurate": true,
+      "honestCatalystRunwayDisclosed": true,
+      "nvdaStage4WaitEnforced": true
+    },
     "disposition": "PASS",
-    "aapl": {
-      "http_status": 200,
-      "preflight_bar_mounted": true,
-      "preflight_bar_position": "beneath_chart",
-      "pills_count": 5,
-      "actionability_badge": "AWAITING TRIGGER",
-      "clearance_badge": "NOT CLEARED (4/5)",
-      "confluence_pillars_count": 4,
-      "confluence_pillars": [
-        { "name": "Technical Confluence", "weight": "25% Weight", "score": 75 },
-        { "name": "Fundamental Moat", "weight": "25% Weight", "score": 80 },
-        { "name": "Institutional Flow", "weight": "25% Weight", "score": 55 },
-        { "name": "Macro Environment", "weight": "25% Weight", "score": 85 }
-      ],
-      "institutional_flow_present": true,
-      "stepper_present": false,
-      "duplicate_verdict_h2": 0,
-      "duplicate_bottom_line": 0,
-      "marketing_tutorials_suppressed": true
-    },
-    "nvda": {
-      "http_status": 200,
-      "clearance_badge": "NOT CLEARED — STAGE 4 WAIT",
-      "stage4_wait_enforced": true,
-      "confluence_pillars_count": 4,
-      "institutional_flow_present": true
-    },
-    "domain_tabs": {
-      "smart_money_accessible": true,
-      "factors_macro_accessible": true,
-      "risk_contagion_accessible": true
-    },
     "screenshots": [
-      "after_consolidation_desktop_fullpage.png",
-      "after_consolidation_tablet_fullpage.png",
-      "after_consolidation_mobile_fullpage.png",
-      "four_pillars_aapl_closeup.png",
-      "four_pillars_nvda_closeup.png",
-      "preflight_bar_aapl_closeup.png",
-      "preflight_drawer_expanded.png"
+      "screenshots_consolidation_audit/production_verified_aapl_desktop.png",
+      "screenshots_consolidation_audit/production_verified_aapl_preflight_modal.png",
+      "screenshots_consolidation_audit/production_verified_aapl_tablet.png",
+      "screenshots_consolidation_audit/production_verified_aapl_mobile.png",
+      "screenshots_consolidation_audit/production_verified_nvda_desktop.png"
     ]
   },
   "pipeline_integration": {
@@ -106,8 +96,7 @@
     "HVA_ALGORITHM_ACCEPTANCE": "NOT_AUTHORIZED",
     "RESEARCH_EVIDENCE_MANIPULATION": "PROHIBITED",
     "UNQUALIFIED_PRODUCTION_CHANGE": "PROHIBITED",
-    "PR79_RELEASE": "NOT_AUTHORIZED_BY_THIS_DECISION",
-    "UX_DESIGN_PARITY_GATE_V1": "APPROVED_ENFORCED_PASS",
-    "ARX_QUAL_001_BACKEND": "UNVERIFIED"
+    "UX_DESIGN_PARITY_GATE_V1_1": "APPROVED_ENFORCED_PASS",
+    "ARX_P1_REMEDIATED_PRODUCTION_VERIFIED": true
   }
 }
