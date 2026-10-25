@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "TXN",
+    "name": "Texas Instruments Incorporated",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000097476",
+    "composite_figi": "BBG000BVV7G1",
+    "share_class_figi": "BBG001S5WYZ7",
+    "last_updated_utc": "2026-10-18T06:10:11.416126917Z"
+  },
+  "status": "OK"
+}

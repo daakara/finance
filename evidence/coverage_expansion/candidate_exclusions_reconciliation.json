@@ -1,0 +1,277 @@
+{
+  "reconciliation_id": "RECON_DEV_STORE_151_TO_150_MANIFEST",
+  "reference_date": "2026-10-17",
+  "development_pool_total": 151,
+  "retained_count": 140,
+  "excluded_count": 11,
+  "directory_additions_count": 10,
+  "final_manifest_count": 150,
+  "arithmetic_closure": true,
+  "exclusions": [
+    {
+      "symbol": "BTC-USD",
+      "reason_code": "NON_EQUITY_CRYPTO_ASSET",
+      "rationale": "Digital cryptocurrency asset pair; not a US-listed corporate equity or registered exchange listing.",
+      "observed_in_dev_store": true
+    },
+    {
+      "symbol": "CNT_FRESH",
+      "reason_code": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Synthetic test fixture artifact generated during historical test runs; not a real security.",
+      "observed_in_dev_store": true
+    },
+    {
+      "symbol": "CNT_NULL",
+      "reason_code": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Synthetic test fixture artifact generated during historical test runs; not a real security.",
+      "observed_in_dev_store": true
+    },
+    {
+      "symbol": "CNT_SCORES",
+      "reason_code": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Synthetic test fixture artifact generated during historical test runs; not a real security.",
+      "observed_in_dev_store": true
+    },
+    {
+      "symbol": "CPRX",
+      "reason_code": "UNVERIFIED_DIRECTORY_MISS",
+      "rationale": "Symbol absent from all 3 authoritative directory feeds (SEC EDGAR, Nasdaq Trader, Other Listed).",
+      "observed_in_dev_store": true
+    },
+    {
+      "symbol": "ETH-USD",
+      "reason_code": "NON_EQUITY_CRYPTO_ASSET",
+      "rationale": "Digital cryptocurrency asset pair; not a US-listed corporate equity or registered exchange listing.",
+      "observed_in_dev_store": true
+    },
+    {
+      "symbol": "SYM_TEST_UNKNOWN",
+      "reason_code": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Synthetic test fixture artifact generated during historical test runs; not a real security.",
+      "observed_in_dev_store": true
+    },
+    {
+      "symbol": "TST_CASCADE",
+      "reason_code": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Synthetic test fixture artifact generated during historical test runs; not a real security.",
+      "observed_in_dev_store": true
+    },
+    {
+      "symbol": "TST_DEDUP",
+      "reason_code": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Synthetic test fixture artifact generated during historical test runs; not a real security.",
+      "observed_in_dev_store": true
+    },
+    {
+      "symbol": "TST_STALE",
+      "reason_code": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Synthetic test fixture artifact generated during historical test runs; not a real security.",
+      "observed_in_dev_store": true
+    },
+    {
+      "symbol": "TST_UNSEASONED",
+      "reason_code": "SYNTHETIC_TEST_FIXTURE",
+      "rationale": "Synthetic test fixture artifact generated during historical test runs; not a real security.",
+      "observed_in_dev_store": true
+    }
+  ],
+  "launch_universe_reconciliation": {
+    "reconciliation_id": "RECON_POOL_161_TO_133_LAUNCH_UNIVERSE",
+    "policy_document": "docs/research/radar-us-listed-coverage/RADAR_LAUNCH_UNIVERSE_SELECTION_POLICY.md",
+    "reference_date": "2026-10-17",
+    "total_evaluated_pool": 161,
+    "qualifying_launch_count": 133,
+    "actual_policy_pass_count": 122,
+    "actual_policy_unknown_count": 11,
+    "counterfactual_policy_pass_count": 122,
+    "policy_pass_count": 122,
+    "policy_unknown_count": 11,
+    "observed_turnover_ranked_count": 122,
+    "market_data_fresh_local_count": 35,
+    "validation_sample_fresh_local_count": 38,
+    "market_data_fresh_production_count": 57,
+    "publication_ready_count": 0,
+    "total_excluded_count": 28,
+    "arithmetic_closure": true,
+    "candidate_ceiling": 150,
+    "quota_forced": false,
+    "exclusions_summary": {
+      "EXCHANGE_TRADED_FUND": 11,
+      "AMERICAN_DEPOSITARY_RECEIPT": 5,
+      "SYNTHETIC_TEST_FIXTURE": 8,
+      "NON_EQUITY_CRYPTO_ASSET": 2,
+      "PRICE_FLOOR_VIOLATION": 1,
+      "UNVERIFIED_DIRECTORY_MISS": 1
+    },
+    "exclusions": [
+      {
+        "symbol": "ARKK",
+        "reason_code": "EXCHANGE_TRADED_FUND",
+        "rule": "L01",
+        "rationale": "Exchange-traded fund; excluded by Rule L01 operating company common stock requirement."
+      },
+      {
+        "symbol": "ARM",
+        "reason_code": "AMERICAN_DEPOSITARY_RECEIPT",
+        "rule": "L01",
+        "rationale": "Foreign depositary receipt; excluded by Rule L01 US common equity requirement."
+      },
+      {
+        "symbol": "ASML",
+        "reason_code": "AMERICAN_DEPOSITARY_RECEIPT",
+        "rule": "L01",
+        "rationale": "Foreign depositary receipt; excluded by Rule L01 US common equity requirement."
+      },
+      {
+        "symbol": "BTC-USD",
+        "reason_code": "NON_EQUITY_CRYPTO_ASSET",
+        "rule": "L01",
+        "rationale": "Digital cryptocurrency asset pair; not a US-listed corporate equity or registered exchange listing."
+      },
+      {
+        "symbol": "CNT_FRESH",
+        "reason_code": "SYNTHETIC_TEST_FIXTURE",
+        "rule": "L01",
+        "rationale": "Synthetic test fixture artifact generated during historical test runs; not a real security."
+      },
+      {
+        "symbol": "CNT_NULL",
+        "reason_code": "SYNTHETIC_TEST_FIXTURE",
+        "rule": "L01",
+        "rationale": "Synthetic test fixture artifact generated during historical test runs; not a real security."
+      },
+      {
+        "symbol": "CNT_SCORES",
+        "reason_code": "SYNTHETIC_TEST_FIXTURE",
+        "rule": "L01",
+        "rationale": "Synthetic test fixture artifact generated during historical test runs; not a real security."
+      },
+      {
+        "symbol": "CPRX",
+        "reason_code": "UNVERIFIED_DIRECTORY_MISS",
+        "rule": "L02",
+        "rationale": "Symbol absent from all 3 authoritative directory feeds; fails Rule L02."
+      },
+      {
+        "symbol": "DHLGY",
+        "reason_code": "AMERICAN_DEPOSITARY_RECEIPT",
+        "rule": "L01",
+        "rationale": "Foreign depositary receipt; excluded by Rule L01 US common equity requirement."
+      },
+      {
+        "symbol": "ETH-USD",
+        "reason_code": "NON_EQUITY_CRYPTO_ASSET",
+        "rule": "L01",
+        "rationale": "Digital cryptocurrency asset pair; not a US-listed corporate equity or registered exchange listing."
+      },
+      {
+        "symbol": "GLD",
+        "reason_code": "EXCHANGE_TRADED_FUND",
+        "rule": "L01",
+        "rationale": "Exchange-traded fund; excluded by Rule L01 operating company common stock requirement."
+      },
+      {
+        "symbol": "GLX",
+        "reason_code": "EXCHANGE_TRADED_FUND",
+        "rule": "L01",
+        "rationale": "Exchange-traded fund; excluded by Rule L01 operating company common stock requirement."
+      },
+      {
+        "symbol": "IWM",
+        "reason_code": "EXCHANGE_TRADED_FUND",
+        "rule": "L01",
+        "rationale": "Exchange-traded fund; excluded by Rule L01 operating company common stock requirement."
+      },
+      {
+        "symbol": "JEPI",
+        "reason_code": "EXCHANGE_TRADED_FUND",
+        "rule": "L01",
+        "rationale": "Exchange-traded fund; excluded by Rule L01 operating company common stock requirement."
+      },
+      {
+        "symbol": "NAUT",
+        "reason_code": "PRICE_FLOOR_VIOLATION",
+        "rule": "L03",
+        "rationale": "Observed closing price $1.96 is below $5.00 floor."
+      },
+      {
+        "symbol": "NVO",
+        "reason_code": "AMERICAN_DEPOSITARY_RECEIPT",
+        "rule": "L01",
+        "rationale": "Foreign depositary receipt; excluded by Rule L01 US common equity requirement."
+      },
+      {
+        "symbol": "QQQ",
+        "reason_code": "EXCHANGE_TRADED_FUND",
+        "rule": "L01",
+        "rationale": "Exchange-traded fund; excluded by Rule L01 operating company common stock requirement."
+      },
+      {
+        "symbol": "SPCX",
+        "reason_code": "EXCHANGE_TRADED_FUND",
+        "rule": "L01",
+        "rationale": "Exchange-traded fund; excluded by Rule L01 operating company common stock requirement."
+      },
+      {
+        "symbol": "SPY",
+        "reason_code": "EXCHANGE_TRADED_FUND",
+        "rule": "L01",
+        "rationale": "Exchange-traded fund; excluded by Rule L01 operating company common stock requirement."
+      },
+      {
+        "symbol": "SYM_TEST_UNKNOWN",
+        "reason_code": "SYNTHETIC_TEST_FIXTURE",
+        "rule": "L01",
+        "rationale": "Synthetic test fixture artifact generated during historical test runs; not a real security."
+      },
+      {
+        "symbol": "TLT",
+        "reason_code": "EXCHANGE_TRADED_FUND",
+        "rule": "L01",
+        "rationale": "Exchange-traded fund; excluded by Rule L01 operating company common stock requirement."
+      },
+      {
+        "symbol": "TSM",
+        "reason_code": "AMERICAN_DEPOSITARY_RECEIPT",
+        "rule": "L01",
+        "rationale": "Foreign depositary receipt; excluded by Rule L01 US common equity requirement."
+      },
+      {
+        "symbol": "TST_CASCADE",
+        "reason_code": "SYNTHETIC_TEST_FIXTURE",
+        "rule": "L01",
+        "rationale": "Synthetic test fixture artifact generated during historical test runs; not a real security."
+      },
+      {
+        "symbol": "TST_DEDUP",
+        "reason_code": "SYNTHETIC_TEST_FIXTURE",
+        "rule": "L01",
+        "rationale": "Synthetic test fixture artifact generated during historical test runs; not a real security."
+      },
+      {
+        "symbol": "TST_STALE",
+        "reason_code": "SYNTHETIC_TEST_FIXTURE",
+        "rule": "L01",
+        "rationale": "Synthetic test fixture artifact generated during historical test runs; not a real security."
+      },
+      {
+        "symbol": "TST_UNSEASONED",
+        "reason_code": "SYNTHETIC_TEST_FIXTURE",
+        "rule": "L01",
+        "rationale": "Synthetic test fixture artifact generated during historical test runs; not a real security."
+      },
+      {
+        "symbol": "VOO",
+        "reason_code": "EXCHANGE_TRADED_FUND",
+        "rule": "L01",
+        "rationale": "Exchange-traded fund; excluded by Rule L01 operating company common stock requirement."
+      },
+      {
+        "symbol": "XLE",
+        "reason_code": "EXCHANGE_TRADED_FUND",
+        "rule": "L01",
+        "rationale": "Exchange-traded fund; excluded by Rule L01 operating company common stock requirement."
+      }
+    ]
+  }
+}

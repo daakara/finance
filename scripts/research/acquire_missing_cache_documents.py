@@ -203,7 +203,7 @@ def acquire_missing_documents():
                 "source_url": url,
                 "byte_length": 0,
                 "sha256": "NONE",
-                "status": f"ACQUISITION_FAILURE: {str(e)}",
+                "status": f"ACQUISITION_FAILURE: {str(last_error)}",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             })
 

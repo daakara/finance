@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "HOOD",
+    "name": "Robinhood Markets, Inc. Class A Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001783879",
+    "composite_figi": "BBG008NMBXN8",
+    "share_class_figi": "BBG008NMBXP6",
+    "last_updated_utc": "2026-10-18T06:10:11.415108716Z"
+  },
+  "status": "OK"
+}

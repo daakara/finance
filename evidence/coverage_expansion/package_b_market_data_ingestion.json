@@ -1,0 +1,1965 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "package_id": "PKG-EXPANSION-150-B-MARKET-DATA-INGESTION",
+  "title": "Production Market-Data Ingestion Package (133 Launch Candidates)",
+  "description": "Non-executable specification for historical backfill and incremental freshness update for 133 Radar launch candidates with explicit multi-tier sizing alternatives without executing production writes.",
+  "governance_status": {
+    "ingestion_authorized": false,
+    "is_authorized": false,
+    "authorized_by": null,
+    "execution_mode": "SPECIFICATION_ONLY",
+    "account_entitlement_status": "VERIFIED_DEFICIENT_CREDENTIALS",
+    "acquisition_readiness": "DEPENDENCY_BLOCKED_DEFICIENT_CREDENTIALS",
+    "blocking_rationale": "Live bounded requests on production container revealed: Polygon API key returns HTTP 401 Unauthorized (Unknown API Key); Alpaca feed=sip returns HTTP 403 Forbidden (Free tier lacks SIP entitlement); Alpaca feed=iex is participant-only volume. Production ingestion is blocked pending provisioning of valid consolidated market data credentials."
+  },
+  "target_store": {
+    "environment": "production",
+    "service": "web",
+    "persistent_volume_mount": "/root",
+    "target_db_path": "/root/.finance_market_store.db",
+    "table_name": "asset_ohlcv_daily",
+    "target_session": "2026-10-19"
+  },
+  "acquisition_window_strategy": {
+    "strategy_type": "CALENDAR_WINDOW_REQUEST_STRATEGY",
+    "guarantee_status": "NON_GUARANTEE_REQUEST_STRATEGY",
+    "explanation": "A calendar date window (e.g. 400 calendar days) is a request strategy, not a mathematical guarantee of returned bars. Actual returned rows depend on provider trading session calendar, exchange holidays, security IPO/listing date, and trading halts.",
+    "unseasoned_security_handling": "Securities with insufficient listing history will not be forced to 260 rows. Actual returned rows will be recorded, and consumer readiness evaluated according to actual returned count (e.g. INSUFFICIENT_LISTING_HISTORY for strategy benchmark).",
+    "missing_session_handling": "Provider omissions or missing sessions do not halt pipeline but trigger partial-response review flag.",
+    "consumer_contracts": {
+      "builder_evaluation": {
+        "required_bars": 60,
+        "minimum_bars": 50,
+        "target_calendar_window": "2026-07-16 to 2026-10-19 (95 calendar days / ~65 trading sessions)",
+        "consumer": "UniverseBuilder.evaluate_security_data_readiness"
+      },
+      "downstream_strategy_benchmark": {
+        "required_bars": 260,
+        "target_calendar_window": "2025-09-15 to 2026-10-19 (400 calendar days / ~275 trading sessions)",
+        "consumer": "VCPClassifier / Trend Template (52-week lookback)"
+      }
+    }
+  },
+  "history_requirements_and_consumer_mapping": {
+    "operative_builder_readiness": {
+      "threshold_bars": 60,
+      "minimum_required_bars": 50,
+      "consumer": "DeterministicUniverseBuilder.evaluate_security_data_readiness",
+      "status": "OPERATIVE_CONTRACT"
+    },
+    "downstream_strategy_benchmark": {
+      "threshold_bars": 260,
+      "consumer": "VCPClassifier / Conformance Oracle (52-week lookback, 200 DMA, Minervini trend template)",
+      "status": "DOWNSTREAM_STRATEGY_BENCHMARK"
+    },
+    "illustrative_calendar_year_estimate": {
+      "threshold_bars": 251,
+      "consumer": "Illustrative sizing calculation (US trading sessions in 1 calendar year)",
+      "status": "PROPOSED_ESTIMATE_ONLY"
+    }
+  },
+  "production_readback_reconciliation": {
+    "production_verified_container": "web (tranquil-radiance)",
+    "production_observed_symbols_count": 145,
+    "production_pilot_bar_counts": {
+      "AAPL": 287,
+      "GOOG": 287,
+      "GOOGL": 287
+    },
+    "production_launch_candidates_present": 72,
+    "production_launch_candidates_missing": 61,
+    "production_launch_candidates_fresh": 57,
+    "production_launch_candidates_stale": 15,
+    "production_missing_candidates": {
+      "count": 61,
+      "symbols": [
+        "ABBV",
+        "ABT",
+        "ADI",
+        "AMAT",
+        "AMGN",
+        "BA",
+        "BAC",
+        "BIIB",
+        "BMY",
+        "BSX",
+        "CAT",
+        "CEG",
+        "CHRD",
+        "CMG",
+        "CRM",
+        "CRSP",
+        "CSCO",
+        "CVX",
+        "DE",
+        "DIS",
+        "DPZ",
+        "ENPH",
+        "FSLR",
+        "FTNT",
+        "GILD",
+        "HD",
+        "HON",
+        "HUBS",
+        "IBM",
+        "INTU",
+        "JPM",
+        "LMT",
+        "MA",
+        "MCHP",
+        "MRK",
+        "MRVL",
+        "NEE",
+        "NKE",
+        "NOC",
+        "NVR",
+        "NXPI",
+        "ORCL",
+        "PFE",
+        "PG",
+        "PYPL",
+        "QCOM",
+        "REGN",
+        "ROST",
+        "RTX",
+        "SNOW",
+        "SOFI",
+        "TDG",
+        "TEAM",
+        "TGT",
+        "TJX",
+        "TXN",
+        "UNP",
+        "V",
+        "VST",
+        "WDAY",
+        "WMT"
+      ],
+      "rationale": "Launch candidates confirmed missing from production store during readback; requires historical backfill."
+    },
+    "production_stale_candidates": {
+      "count": 15,
+      "symbols": [
+        "ADBE",
+        "AFRM",
+        "ALNY",
+        "ARWR",
+        "CIEN",
+        "COST",
+        "GE",
+        "GOOG",
+        "INTC",
+        "JNJ",
+        "NFLX",
+        "SBUX",
+        "SEDG",
+        "XOM",
+        "ZS"
+      ],
+      "rationale": "Launch candidates present in production store but with max trade date prior to 2026-10-19; requires incremental freshness update."
+    },
+    "local_developer_store_gap": {
+      "missing_count": 11,
+      "missing_symbols": [
+        "GOOG",
+        "JNJ",
+        "JPM",
+        "PG",
+        "WMT",
+        "BAC",
+        "ABT",
+        "MRK",
+        "PFE",
+        "DIS",
+        "CSCO"
+      ],
+      "stale_count": 101,
+      "fresh_count": 38,
+      "explanation": "Local dev store lacks production synchronization. GOOG is present in production with 287 bars (ending 2026-10-16) but absent locally. JNJ is present in production with 251 bars but absent locally."
+    }
+  },
+  "multi_tier_sizing_alternatives": {
+    "alternative_a_builder_minimum_60_bars": {
+      "bars_per_missing_candidate": 60,
+      "missing_candidates_count": 61,
+      "total_missing_bars": 3660,
+      "stale_refresh_bars": 225,
+      "total_estimated_bars": 3885,
+      "window": "2026-07-16 to 2026-10-19 (95 calendar days / ~65 trading sessions)",
+      "purpose": "Minimum history required to satisfy UniverseBuilder evaluate_security_data_readiness() data readiness gate."
+    },
+    "alternative_b_strategy_benchmark_260_bars": {
+      "bars_per_missing_candidate": 260,
+      "missing_candidates_count": 61,
+      "total_missing_bars": 15860,
+      "stale_refresh_bars": 225,
+      "total_estimated_bars": 16085,
+      "window": "2025-09-15 to 2026-10-19 (400 calendar days / ~275 trading sessions)",
+      "purpose": "Benchmark history required for downstream 52-week lookback, 200-day moving average, and VCP trend template.",
+      "reconciliation_rationale": "1 calendar year (~251-252 trading sessions) is mathematically insufficient to guarantee 260 bars. The calendar window starts on 2025-09-15 (400 calendar days) yielding ~275 trading sessions to safely request >= 260 bars."
+    },
+    "alternative_c_illustrative_calendar_sessions_251": {
+      "bars_per_missing_candidate": 251,
+      "missing_candidates_count": 61,
+      "total_missing_bars": 15311,
+      "stale_refresh_bars": 225,
+      "total_estimated_bars": 15536,
+      "window": "2025-10-19 to 2026-10-19 (365 calendar days / ~251 trading sessions)",
+      "purpose": "Estimated trading sessions for 1 standard US calendar year (illustrative estimate, not an approved consumer contract)."
+    }
+  },
+  "provider_specifications": {
+    "polygon": {
+      "provider_name": "Polygon.io REST API",
+      "endpoint_template": "https://api.polygon.io/v2/aggs/ticker/{stocksTicker}/range/1/day/{from}/{to}",
+      "rate_limit_documented": "5 API requests per minute (Free tier basic)",
+      "historical_lookback_documented": "2 years historical data on basic tier",
+      "account_entitlement_status": "VERIFIED_DEFICIENT_HTTP_401",
+      "reference_data_access_status": "HTTP_401_UNAUTHORIZED",
+      "historical_bar_access_verified": false,
+      "access_readiness": "BLOCKED_HTTP_401_UNKNOWN_KEY",
+      "entitlement_tier": "Configured 23-char key is invalid/unauthorized on Polygon endpoints",
+      "query_parameters": {
+        "adjusted": "true",
+        "sort": "asc",
+        "limit": 50000
+      },
+      "adjustment_semantics": "Split-adjusted daily OHLCV bars (dividends unadjusted per canonical contract)",
+      "feed_scope": "Consolidated US equity market volume (SIP aggregated)",
+      "feed_comparability_notes": "Consolidated SIP volume is standard for liquidity/turnover floor checks (Rule L04).",
+      "example_benchmark_url": "https://api.polygon.io/v2/aggs/ticker/AAPL/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+      "example_builder_url": "https://api.polygon.io/v2/aggs/ticker/AAPL/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000"
+    },
+    "alpaca": {
+      "provider_name": "Alpaca Market Data API v2",
+      "endpoint_template": "https://data.alpaca.markets/v2/stocks/bars",
+      "rate_limit_documented": "200 requests per minute",
+      "historical_lookback_documented": "5 years historical data on basic IEX feed",
+      "account_entitlement_status": "VERIFIED_FREE_TIER_IEX_ONLY",
+      "reference_data_access_status": "FEED_IEX_ACCESSIBLE",
+      "historical_bar_access_verified": false,
+      "access_readiness": "BLOCKED_LACKS_CONSOLIDATED_SIP_ENTITLEMENT",
+      "entitlement_tier": "Free / Basic tier (querying feed=sip returns HTTP 403 Forbidden)",
+      "query_parameters": {
+        "symbols": "{symbol}",
+        "timeframe": "1Day",
+        "start": "{from}",
+        "end": "{to}",
+        "adjustment": "split",
+        "feed": "iex",
+        "limit": 1000
+      },
+      "adjustment_semantics": "Split-adjusted daily OHLCV bars via IEX feed (dividends unadjusted per canonical contract)",
+      "feed_scope": "IEX exchange participant volume only (feed=iex)",
+      "feed_comparability_notes": "IEX volume represents a minority fraction (~2-4%) of consolidated US equity turnover. Direct dollar volume calculations using IEX volume underestimate true market liquidity and cannot be substituted for consolidated market volume.",
+      "example_benchmark_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=AAPL&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=iex&limit=1000",
+      "example_builder_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=AAPL&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=iex&limit=1000"
+    }
+  },
+  "ingestion_scope": {
+    "production_target_backfill": {
+      "missing_candidates_count": 61,
+      "missing_symbols": [
+        "ABBV",
+        "ABT",
+        "ADI",
+        "AMAT",
+        "AMGN",
+        "BA",
+        "BAC",
+        "BIIB",
+        "BMY",
+        "BSX",
+        "CAT",
+        "CEG",
+        "CHRD",
+        "CMG",
+        "CRM",
+        "CRSP",
+        "CSCO",
+        "CVX",
+        "DE",
+        "DIS",
+        "DPZ",
+        "ENPH",
+        "FSLR",
+        "FTNT",
+        "GILD",
+        "HD",
+        "HON",
+        "HUBS",
+        "IBM",
+        "INTU",
+        "JPM",
+        "LMT",
+        "MA",
+        "MCHP",
+        "MRK",
+        "MRVL",
+        "NEE",
+        "NKE",
+        "NOC",
+        "NVR",
+        "NXPI",
+        "ORCL",
+        "PFE",
+        "PG",
+        "PYPL",
+        "QCOM",
+        "REGN",
+        "ROST",
+        "RTX",
+        "SNOW",
+        "SOFI",
+        "TDG",
+        "TEAM",
+        "TGT",
+        "TJX",
+        "TXN",
+        "UNP",
+        "V",
+        "VST",
+        "WDAY",
+        "WMT"
+      ],
+      "target_session": "2026-10-19",
+      "benchmark_window_260": "2025-09-15 to 2026-10-19 (400 calendar days / ~275 trading sessions request window strategy)",
+      "builder_window_60": "2026-07-16 to 2026-10-19 (95 calendar days / ~65 trading sessions request window strategy)",
+      "illustrative_window_251": "2025-10-19 to 2026-10-19 (~1 calendar year / ~251 trading sessions estimate)",
+      "variable_row_count_notice": "Actual returned row count depends on provider session calendar, IPO date, and listing history; 251 rows is an estimate, not a guaranteed fixed constant.",
+      "total_estimated_bars_251_sessions": 15311,
+      "total_estimated_bars_260_bars": 15860,
+      "total_estimated_bars_60_bars": 3660,
+      "per_symbol_parameters": [
+        {
+          "symbol": "ABBV",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/ABBV/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=ABBV&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/ABBV/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=ABBV&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "ABT",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/ABT/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=ABT&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/ABT/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=ABT&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "ADI",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/ADI/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=ADI&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/ADI/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=ADI&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "AMAT",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/AMAT/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=AMAT&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/AMAT/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=AMAT&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "AMGN",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/AMGN/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=AMGN&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/AMGN/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=AMGN&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "BA",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/BA/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=BA&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/BA/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=BA&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "BAC",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/BAC/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=BAC&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/BAC/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=BAC&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "BIIB",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/BIIB/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=BIIB&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/BIIB/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=BIIB&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "BMY",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/BMY/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=BMY&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/BMY/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=BMY&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "BSX",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/BSX/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=BSX&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/BSX/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=BSX&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "CAT",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/CAT/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=CAT&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/CAT/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=CAT&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "CEG",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/CEG/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=CEG&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/CEG/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=CEG&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "CHRD",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/CHRD/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=CHRD&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/CHRD/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=CHRD&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "CMG",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/CMG/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=CMG&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/CMG/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=CMG&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "CRM",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/CRM/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=CRM&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/CRM/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=CRM&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "CRSP",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/CRSP/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=CRSP&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/CRSP/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=CRSP&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "CSCO",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/CSCO/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=CSCO&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/CSCO/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=CSCO&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "CVX",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/CVX/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=CVX&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/CVX/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=CVX&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "DE",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/DE/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=DE&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/DE/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=DE&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "DIS",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/DIS/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=DIS&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/DIS/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=DIS&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "DPZ",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/DPZ/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=DPZ&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/DPZ/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=DPZ&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "ENPH",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/ENPH/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=ENPH&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/ENPH/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=ENPH&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "FSLR",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/FSLR/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=FSLR&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/FSLR/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=FSLR&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "FTNT",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/FTNT/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=FTNT&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/FTNT/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=FTNT&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "GILD",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/GILD/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=GILD&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/GILD/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=GILD&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "HD",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/HD/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=HD&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/HD/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=HD&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "HON",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/HON/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=HON&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/HON/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=HON&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "HUBS",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/HUBS/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=HUBS&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/HUBS/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=HUBS&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "IBM",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/IBM/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=IBM&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/IBM/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=IBM&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "INTU",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/INTU/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=INTU&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/INTU/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=INTU&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "JPM",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/JPM/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=JPM&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/JPM/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=JPM&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "LMT",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/LMT/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=LMT&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/LMT/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=LMT&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "MA",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/MA/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=MA&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/MA/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=MA&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "MCHP",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/MCHP/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=MCHP&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/MCHP/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=MCHP&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "MRK",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/MRK/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=MRK&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/MRK/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=MRK&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "MRVL",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/MRVL/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=MRVL&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/MRVL/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=MRVL&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "NEE",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/NEE/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=NEE&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/NEE/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=NEE&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "NKE",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/NKE/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=NKE&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/NKE/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=NKE&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "NOC",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/NOC/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=NOC&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/NOC/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=NOC&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "NVR",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/NVR/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=NVR&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/NVR/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=NVR&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "NXPI",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/NXPI/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=NXPI&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/NXPI/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=NXPI&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "ORCL",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/ORCL/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=ORCL&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/ORCL/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=ORCL&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "PFE",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/PFE/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=PFE&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/PFE/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=PFE&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "PG",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/PG/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=PG&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/PG/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=PG&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "PYPL",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/PYPL/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=PYPL&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/PYPL/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=PYPL&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "QCOM",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/QCOM/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=QCOM&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/QCOM/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=QCOM&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "REGN",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/REGN/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=REGN&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/REGN/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=REGN&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "ROST",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/ROST/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=ROST&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/ROST/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=ROST&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "RTX",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/RTX/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=RTX&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/RTX/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=RTX&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "SNOW",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/SNOW/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=SNOW&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/SNOW/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=SNOW&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "SOFI",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/SOFI/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=SOFI&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/SOFI/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=SOFI&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "TDG",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/TDG/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=TDG&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/TDG/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=TDG&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "TEAM",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/TEAM/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=TEAM&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/TEAM/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=TEAM&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "TGT",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/TGT/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=TGT&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/TGT/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=TGT&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "TJX",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/TJX/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=TJX&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/TJX/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=TJX&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "TXN",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/TXN/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=TXN&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/TXN/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=TXN&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "UNP",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/UNP/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=UNP&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/UNP/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=UNP&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "V",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/V/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=V&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/V/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=V&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "VST",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/VST/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=VST&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/VST/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=VST&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "WDAY",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/WDAY/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=WDAY&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/WDAY/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=WDAY&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        },
+        {
+          "symbol": "WMT",
+          "type": "HISTORICAL_BACKFILL",
+          "calendar_window_benchmark_260": {
+            "window_start": "2025-09-15",
+            "window_end": "2026-10-19",
+            "required_bars": 260,
+            "calendar_days": 400,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/WMT/range/1/day/2025-09-15/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=WMT&timeframe=1Day&start=2025-09-15&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "calendar_window_builder_60": {
+            "window_start": "2026-07-16",
+            "window_end": "2026-10-19",
+            "required_bars": 60,
+            "calendar_days": 95,
+            "polygon_url": "https://api.polygon.io/v2/aggs/ticker/WMT/range/1/day/2026-07-16/2026-10-19?adjusted=true&sort=asc&limit=50000",
+            "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=WMT&timeframe=1Day&start=2026-07-16&end=2026-10-19&adjustment=split&feed=sip&limit=1000"
+          },
+          "target_session": "2026-10-19",
+          "target_bars_benchmark": 260,
+          "target_bars_screener": 60
+        }
+      ]
+    },
+    "production_target_refresh": {
+      "stale_candidates_count": 15,
+      "stale_symbols": [
+        "ADBE",
+        "AFRM",
+        "ALNY",
+        "ARWR",
+        "CIEN",
+        "COST",
+        "GE",
+        "GOOG",
+        "INTC",
+        "JNJ",
+        "NFLX",
+        "SBUX",
+        "SEDG",
+        "XOM",
+        "ZS"
+      ],
+      "target_session": "2026-10-19",
+      "window": "Day after observed max_date to 2026-10-19 (exact per-symbol windows)",
+      "total_estimated_bars": 225,
+      "per_symbol_parameters": [
+        {
+          "symbol": "ADBE",
+          "type": "INCREMENTAL_REFRESH",
+          "observed_latest_date": "2026-09-02",
+          "window_start": "2026-09-03",
+          "window_end": "2026-10-19",
+          "polygon_url": "https://api.polygon.io/v2/aggs/ticker/ADBE/range/1/day/2026-09-03/2026-10-19?adjusted=true&sort=asc&limit=50000",
+          "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=ADBE&timeframe=1Day&start=2026-09-03&end=2026-10-19&adjustment=split&feed=sip&limit=1000",
+          "target_session": "2026-10-19"
+        },
+        {
+          "symbol": "AFRM",
+          "type": "INCREMENTAL_REFRESH",
+          "observed_latest_date": "2026-09-02",
+          "window_start": "2026-09-03",
+          "window_end": "2026-10-19",
+          "polygon_url": "https://api.polygon.io/v2/aggs/ticker/AFRM/range/1/day/2026-09-03/2026-10-19?adjusted=true&sort=asc&limit=50000",
+          "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=AFRM&timeframe=1Day&start=2026-09-03&end=2026-10-19&adjustment=split&feed=sip&limit=1000",
+          "target_session": "2026-10-19"
+        },
+        {
+          "symbol": "ALNY",
+          "type": "INCREMENTAL_REFRESH",
+          "observed_latest_date": "2026-09-22",
+          "window_start": "2026-09-23",
+          "window_end": "2026-10-19",
+          "polygon_url": "https://api.polygon.io/v2/aggs/ticker/ALNY/range/1/day/2026-09-23/2026-10-19?adjusted=true&sort=asc&limit=50000",
+          "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=ALNY&timeframe=1Day&start=2026-09-23&end=2026-10-19&adjustment=split&feed=sip&limit=1000",
+          "target_session": "2026-10-19"
+        },
+        {
+          "symbol": "ARWR",
+          "type": "INCREMENTAL_REFRESH",
+          "observed_latest_date": "2026-09-02",
+          "window_start": "2026-09-03",
+          "window_end": "2026-10-19",
+          "polygon_url": "https://api.polygon.io/v2/aggs/ticker/ARWR/range/1/day/2026-09-03/2026-10-19?adjusted=true&sort=asc&limit=50000",
+          "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=ARWR&timeframe=1Day&start=2026-09-03&end=2026-10-19&adjustment=split&feed=sip&limit=1000",
+          "target_session": "2026-10-19"
+        },
+        {
+          "symbol": "CIEN",
+          "type": "INCREMENTAL_REFRESH",
+          "observed_latest_date": "2026-10-16",
+          "window_start": "2026-10-17",
+          "window_end": "2026-10-19",
+          "polygon_url": "https://api.polygon.io/v2/aggs/ticker/CIEN/range/1/day/2026-10-17/2026-10-19?adjusted=true&sort=asc&limit=50000",
+          "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=CIEN&timeframe=1Day&start=2026-10-17&end=2026-10-19&adjustment=split&feed=sip&limit=1000",
+          "target_session": "2026-10-19"
+        },
+        {
+          "symbol": "COST",
+          "type": "INCREMENTAL_REFRESH",
+          "observed_latest_date": "2026-09-24",
+          "window_start": "2026-09-25",
+          "window_end": "2026-10-19",
+          "polygon_url": "https://api.polygon.io/v2/aggs/ticker/COST/range/1/day/2026-09-25/2026-10-19?adjusted=true&sort=asc&limit=50000",
+          "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=COST&timeframe=1Day&start=2026-09-25&end=2026-10-19&adjustment=split&feed=sip&limit=1000",
+          "target_session": "2026-10-19"
+        },
+        {
+          "symbol": "GE",
+          "type": "INCREMENTAL_REFRESH",
+          "observed_latest_date": "2026-09-22",
+          "window_start": "2026-09-23",
+          "window_end": "2026-10-19",
+          "polygon_url": "https://api.polygon.io/v2/aggs/ticker/GE/range/1/day/2026-09-23/2026-10-19?adjusted=true&sort=asc&limit=50000",
+          "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=GE&timeframe=1Day&start=2026-09-23&end=2026-10-19&adjustment=split&feed=sip&limit=1000",
+          "target_session": "2026-10-19"
+        },
+        {
+          "symbol": "GOOG",
+          "type": "INCREMENTAL_REFRESH",
+          "observed_latest_date": "2026-10-16",
+          "window_start": "2026-10-17",
+          "window_end": "2026-10-19",
+          "polygon_url": "https://api.polygon.io/v2/aggs/ticker/GOOG/range/1/day/2026-10-17/2026-10-19?adjusted=true&sort=asc&limit=50000",
+          "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=GOOG&timeframe=1Day&start=2026-10-17&end=2026-10-19&adjustment=split&feed=sip&limit=1000",
+          "target_session": "2026-10-19"
+        },
+        {
+          "symbol": "INTC",
+          "type": "INCREMENTAL_REFRESH",
+          "observed_latest_date": "2026-09-08",
+          "window_start": "2026-09-09",
+          "window_end": "2026-10-19",
+          "polygon_url": "https://api.polygon.io/v2/aggs/ticker/INTC/range/1/day/2026-09-09/2026-10-19?adjusted=true&sort=asc&limit=50000",
+          "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=INTC&timeframe=1Day&start=2026-09-09&end=2026-10-19&adjustment=split&feed=sip&limit=1000",
+          "target_session": "2026-10-19"
+        },
+        {
+          "symbol": "JNJ",
+          "type": "INCREMENTAL_REFRESH",
+          "observed_latest_date": "2026-09-22",
+          "window_start": "2026-09-23",
+          "window_end": "2026-10-19",
+          "polygon_url": "https://api.polygon.io/v2/aggs/ticker/JNJ/range/1/day/2026-09-23/2026-10-19?adjusted=true&sort=asc&limit=50000",
+          "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=JNJ&timeframe=1Day&start=2026-09-23&end=2026-10-19&adjustment=split&feed=sip&limit=1000",
+          "target_session": "2026-10-19"
+        },
+        {
+          "symbol": "NFLX",
+          "type": "INCREMENTAL_REFRESH",
+          "observed_latest_date": "2026-10-05",
+          "window_start": "2026-10-06",
+          "window_end": "2026-10-19",
+          "polygon_url": "https://api.polygon.io/v2/aggs/ticker/NFLX/range/1/day/2026-10-06/2026-10-19?adjusted=true&sort=asc&limit=50000",
+          "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=NFLX&timeframe=1Day&start=2026-10-06&end=2026-10-19&adjustment=split&feed=sip&limit=1000",
+          "target_session": "2026-10-19"
+        },
+        {
+          "symbol": "SBUX",
+          "type": "INCREMENTAL_REFRESH",
+          "observed_latest_date": "2026-08-27",
+          "window_start": "2026-08-28",
+          "window_end": "2026-10-19",
+          "polygon_url": "https://api.polygon.io/v2/aggs/ticker/SBUX/range/1/day/2026-08-28/2026-10-19?adjusted=true&sort=asc&limit=50000",
+          "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=SBUX&timeframe=1Day&start=2026-08-28&end=2026-10-19&adjustment=split&feed=sip&limit=1000",
+          "target_session": "2026-10-19"
+        },
+        {
+          "symbol": "SEDG",
+          "type": "INCREMENTAL_REFRESH",
+          "observed_latest_date": "2026-09-09",
+          "window_start": "2026-09-10",
+          "window_end": "2026-10-19",
+          "polygon_url": "https://api.polygon.io/v2/aggs/ticker/SEDG/range/1/day/2026-09-10/2026-10-19?adjusted=true&sort=asc&limit=50000",
+          "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=SEDG&timeframe=1Day&start=2026-09-10&end=2026-10-19&adjustment=split&feed=sip&limit=1000",
+          "target_session": "2026-10-19"
+        },
+        {
+          "symbol": "XOM",
+          "type": "INCREMENTAL_REFRESH",
+          "observed_latest_date": "2026-09-22",
+          "window_start": "2026-09-23",
+          "window_end": "2026-10-19",
+          "polygon_url": "https://api.polygon.io/v2/aggs/ticker/XOM/range/1/day/2026-09-23/2026-10-19?adjusted=true&sort=asc&limit=50000",
+          "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=XOM&timeframe=1Day&start=2026-09-23&end=2026-10-19&adjustment=split&feed=sip&limit=1000",
+          "target_session": "2026-10-19"
+        },
+        {
+          "symbol": "ZS",
+          "type": "INCREMENTAL_REFRESH",
+          "observed_latest_date": "2026-09-28",
+          "window_start": "2026-09-29",
+          "window_end": "2026-10-19",
+          "polygon_url": "https://api.polygon.io/v2/aggs/ticker/ZS/range/1/day/2026-09-29/2026-10-19?adjusted=true&sort=asc&limit=50000",
+          "alpaca_url": "https://data.alpaca.markets/v2/stocks/bars?symbols=ZS&timeframe=1Day&start=2026-09-29&end=2026-10-19&adjustment=split&feed=sip&limit=1000",
+          "target_session": "2026-10-19"
+        }
+      ]
+    },
+    "local_developer_store_gap": {
+      "missing_count": 11,
+      "missing_symbols": [
+        "GOOG",
+        "JNJ",
+        "JPM",
+        "PG",
+        "WMT",
+        "BAC",
+        "ABT",
+        "MRK",
+        "PFE",
+        "DIS",
+        "CSCO"
+      ],
+      "stale_count": 101,
+      "fresh_count": 38,
+      "goog_note": "GOOG has 287 bars present in production store (latest_trade_date: 2026-10-16) but is absent in local dev store. Local absence must NOT generate a production backfill request."
+    },
+    "adjustment_policy": "SPLIT_ADJUSTED_ONLY (Zero dividend adjustments per canonical contract)",
+    "provider_options": [
+      "Alpaca Market Data v2",
+      "Polygon.io REST API"
+    ],
+    "endpoint": "/v2/stocks/bars",
+    "account_entitlement_status": "VERIFIED_DEFICIENT_CREDENTIALS",
+    "entitlement_tier": "Consolidated market data access is unverified/blocked across configured keys"
+  },
+  "bar_validation_specification": {
+    "required_fields": [
+      "symbol",
+      "trade_date",
+      "open",
+      "high",
+      "low",
+      "close",
+      "volume"
+    ],
+    "finite_numeric_values": "open > 0, high > 0, low > 0, close > 0, all values finite, non-null, non-NaN, non-infinite",
+    "valid_dates_and_identity": "trade_date matches ISO 8601 YYYY-MM-DD within requested window, symbol uppercase matching association",
+    "ohlc_consistency": "high >= low, high >= open, high >= close, low <= open, low <= close",
+    "nonnegative_volume": "volume >= 0, integer or non-negative float",
+    "duplicate_handling": "UNIQUE(symbol, trade_date) primary key enforcement; duplicate bars rejected",
+    "adjustment_source_metadata": "split-adjusted daily bars; unadjusted dividends",
+    "failure_and_partial_response_handling": "HTTP non-200, truncated payloads, or row validation failures trigger atomic rollback and fail closed"
+  },
+  "atomic_guarantees": {
+    "idempotent_upsert": "INSERT OR REPLACE INTO asset_ohlcv_daily",
+    "anomaly_rejection": "Full bar_validation_specification enforced prior to insertion",
+    "zero_production_writes_by_preparation": true
+  }
+}

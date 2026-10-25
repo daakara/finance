@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "LMT",
+    "name": "Lockheed Martin Corp.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000936468",
+    "composite_figi": "BBG000C1BW00",
+    "share_class_figi": "BBG001S7PS57",
+    "last_updated_utc": "2026-10-18T06:10:11.415402737Z"
+  },
+  "status": "OK"
+}

@@ -1,0 +1,34 @@
+{
+  "manifestVersion": "2.5.1",
+  "frozenTimestamp": "2026-10-16T06:00:00Z",
+  "provenanceCommit": "cd0922471767775636957df74406a2d5efb8f519",
+  "frozenStrategyVersion": "2.5.0",
+  "releaseAuthorityBinding": "RELEASE_ADDENDUM_002",
+  "ratifiedAuthorityRecord": "docs/releases/2026-10-09-execution-ladder-controlled-release-addendum-002.md",
+  "supersedesManifest": "FROZEN_ENGINE_MANIFEST_V2_5_0.json",
+  "authorityScope": "CURRENT_PRODUCTION_AUTHORITY",
+  "engines": {
+    "optimal_execution": {
+      "filePath": "analyst_dashboard/analyzers/optimal_execution.py",
+      "sha256": "84d1a8b855a5368466b53105fdd58df15c3d60aaab77024286f3fcaaaad95576",
+      "ratificationRecord": "Release Addendum 002 (Binding PO Rejection of EXC-002)",
+      "ratificationCommit": "cd0922471767775636957df74406a2d5efb8f519"
+    },
+    "confluence_engine": {
+      "filePath": "analyst_dashboard/analyzers/confluence_engine.py",
+      "sha256": "147c010eb6068c3470fa3269f08610c0f436ea117b99b3b5217e7020b911e2b1",
+      "ratificationRecord": "Strategy 2.4.0 Baseline Freeze (FROZEN_ENGINE_MANIFEST_V2_4_0.json)",
+      "ratificationCommit": "4e3686296aad24e2210ef580bbc9116054d84fd1"
+    },
+    "decision_hierarchy": {
+      "filePath": "analyst_dashboard/analyzers/decision_hierarchy.py",
+      "sha256": "823f37f81c7f601885213d968934c1118285fbf6c875b2993e091984e9b8ebe3",
+      "ratificationRecord": "Synthesis E Wave 3 Decision Integrity (PRD Addendum 001)",
+      "ratificationCommit": "9d5fc2bc9b5029f02177dbe2ab50e026fbfb5f69"
+    }
+  },
+  "invariants": {
+    "zero_production_mutation": true,
+    "enforced_by": "tests/test_measurement_adversarial_suite.py::test_production_engine_freeze_manifest_compliance"
+  }
+}

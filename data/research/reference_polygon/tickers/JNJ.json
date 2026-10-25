@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "JNJ",
+    "name": "Johnson & Johnson",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000200406",
+    "composite_figi": "BBG000BMHYD1",
+    "share_class_figi": "BBG001S5SHQ9",
+    "last_updated_utc": "2026-10-18T06:10:11.415254694Z"
+  },
+  "status": "OK"
+}

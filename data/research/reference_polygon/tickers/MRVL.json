@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "MRVL",
+    "name": "Marvell Technology, Inc. Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001835632",
+    "composite_figi": "BBG00ZXBJ153",
+    "share_class_figi": "BBG00ZXBJ162",
+    "last_updated_utc": "2026-10-18T06:10:11.415543826Z"
+  },
+  "status": "OK"
+}

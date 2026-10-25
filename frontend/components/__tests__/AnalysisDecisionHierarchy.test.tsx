@@ -486,7 +486,7 @@ describe("ARX Terminal Analysis Decision Hierarchy Acceptance Suite", () => {
 
       render(<StandardTerminalView insight={insight} onOpenSizer={vi.fn()} onOpenWhy={vi.fn()} />);
       expect(screen.getByText(/CONFIRMED ACCUMULATION BREAKOUT/i)).toBeDefined();
-      expect(screen.getByText(/^ACTIONABLE$/i)).toBeDefined();
+      expect(screen.getByTestId("actionability-badge").textContent).toContain("ACTIONABLE");
       expect(screen.getByText(/Size & Execute Position/i)).toBeDefined();
     });
   });

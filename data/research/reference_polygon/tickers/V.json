@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "V",
+    "name": "VISA Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001403161",
+    "composite_figi": "BBG000PSKYX7",
+    "share_class_figi": "BBG001SRCFY3",
+    "last_updated_utc": "2026-10-18T06:10:11.416162515Z"
+  },
+  "status": "OK"
+}

@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "AMAT",
+    "name": "Applied Materials Inc",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000006951",
+    "composite_figi": "BBG000BBPFB9",
+    "share_class_figi": "BBG001S5NMM7",
+    "last_updated_utc": "2026-10-18T06:10:11.413746158Z"
+  },
+  "status": "OK"
+}

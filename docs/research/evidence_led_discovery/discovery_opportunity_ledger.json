@@ -1,0 +1,210 @@
+{
+  "schema_version": "ARX-DISCOVERY-OPPORTUNITY-LEDGER-V2",
+  "task": "ARX-TERMINAL-EVIDENCE-LED-DISCOVERY-PILOT-CORRECTED",
+  "governing_backlog_item": "BACKLOG-RESEARCH-EVIDENCE-DISCOVERY-043",
+  "governing_issue": "https://github.com/daakara/finance/issues/43",
+  "created_at_utc": "2026-10-22T17:20:00Z",
+  "information_cutoff_date": "2026-10-22",
+  "provisional_analytical_horizon_years": "3-5",
+  "examined_universe": {
+    "population_baseline_ref": "docs/research/radar-us-listed-coverage/coverage_capacity_baseline.json",
+    "structural_operating_population_context": 5871,
+    "actual_diagnostic_sample_examined": 14,
+    "comparison_queue_count": 10,
+    "newly_surfaced_count": 4,
+    "deep_investigations_count": 3,
+    "provenance_status": "EXPLORATORY_MANUAL_COMPARISON_NOT_AUTOMATED_DISCOVERY"
+  },
+  "candidate_generation_routes": [
+    {
+      "route_id": "ROUTE-1-FINANCIAL-OPERATING-RESILIENCE",
+      "route_type": "Company-Level",
+      "signal": "High organic cash conversion, manageable or zero debt, and expanding operating margins",
+      "baseline": "FY2025 and 1H 2026 audited SEC filings",
+      "sources": "SEC EDGAR Form 10-K / 10-Q (Statements of Cash Flows, Balance Sheets, MD&A)",
+      "limitations": "Working capital fluctuations and inventory builds can temporarily affect single-period cash flows"
+    },
+    {
+      "route_id": "ROUTE-2-INFRASTRUCTURE-THERMAL-CONSTRAINT",
+      "route_type": "Industry-Level",
+      "signal": "Physical infrastructure constraints (data center 100kW+ rack thermal density and power delivery)",
+      "baseline": "2024-2026 deployment schedules and hyperscaler capex disclosures",
+      "sources": "Hyperscaler 10-K/10-Q capex notes, equipment manufacturer Form 10-K/10-Q disclosures",
+      "limitations": "Manufacturing execution, supply chain lead times, and competitive capacity ramp can compress margins"
+    },
+    {
+      "route_id": "ROUTE-3-CUSTOMER-SUPPLIER-TRACING",
+      "route_type": "Value-Chain Tracing",
+      "signal": "Tracing hyperscaler and accelerator spending down to component and board-level semiconductor enablers",
+      "baseline": "FY2025 customer concentration notes and major customer disclosures",
+      "sources": "Customer Form 10-K Item 1 & Supplier Form 10-K Note on Customer Concentration",
+      "limitations": "Customer concentration grants large hyperscalers monopsony bargaining power"
+    }
+  ],
+  "triage_summary": {
+    "selected_for_deep_investigation": ["ANET", "VRT", "MPWR"],
+    "deferred": ["KLAC", "CDNS", "SNPS", "EME", "PWR", "NOW", "LULU", "ELF", "ODFL", "HUBB", "FICO"]
+  },
+  "deep_investigations": {
+    "ANET": {
+      "symbol": "ANET",
+      "company_name": "Arista Networks, Inc.",
+      "cik": "0001596532",
+      "discovery_provenance": {
+        "routes": ["ROUTE-2-INFRASTRUCTURE-THERMAL-CONSTRAINT", "ROUTE-3-CUSTOMER-SUPPLIER-TRACING"],
+        "origin": "Existing Expansion Queue (Evaluated Contextually via Dual Routes)"
+      },
+      "dimensional_classification": {
+        "research_maturity": "EXPLORATORY_HYPOTHESIS",
+        "opportunity_mechanism": "ETHERNET_AI_BACKEND_NETWORKING_INFLECTION",
+        "expectation_gap_status": "VALUATION_EXPECTATION_GAP_UNRESOLVED",
+        "financial_resilience": "PRISTINE_SELF_FUNDING",
+        "public_publication_eligibility": "INTERNAL_PILOT_RECORD_NOT_ELIGIBLE"
+      },
+      "observable_development": {
+        "nature": "Adoption of 800G and 1.6T high-throughput Ethernet switching in hyperscale AI GPU backend clusters",
+        "baseline_comparison": "FY2025 revenue reached $9,005.7M (+53.7% vs FY23 baseline of $5,860.2M); 1H 2026 revenue reached $5,744.7M; Q2 2026 quarterly revenue was $3,035.7M",
+        "characterization": "Structural networking protocol shift within large-scale hyperscaler infrastructure capex cycle",
+        "primary_filing_evidence": "Form 10-K FY2025 filed 2026-02-17 (Accession 0001596532-26-000013, https://www.sec.gov/Archives/edgar/data/1596532/000159653226000013/anet-20251231.htm); Form 10-Q Q2 2026 filed 2026-08-05 (Accession 0001596532-26-000175, https://www.sec.gov/Archives/edgar/data/1596532/000159653226000175/anet-20260630.htm)"
+      },
+      "economic_significance": {
+        "consolidated_materiality": "Core networking hardware and EOS software represent >85% of revenue",
+        "margins_and_returns": "FY2025 GAAP operating income of $3,856.1M (42.8% op margin); 1H 2026 GAAP operating income of $2,535.8M (44.1% op margin)"
+      },
+      "value_capture": {
+        "competitive_dynamics": "Competes with Nvidia Spectrum-X/InfiniBand, Cisco Systems, and white-box ODMs; single-binary EOS software provides deep operational integration",
+        "customer_bargaining_power": "Material concentration: In FY2025, two customers accounted for 26% and 16% of sales, representing a combined 42% of consolidated revenue (Form 10-K FY25, Note on Concentration)",
+        "capex_and_capital_intensity": "Asset-light fabless model; FY2025 capex was $110.0M (1.2% of revenue); FY25 FCF was $4,261.9M (CFO $4,371.9M less Capex $110.0M; FCF/CFO = 97.5%)",
+        "funded_debt_and_obligations": "Zero long-term debt; zero credit facility borrowings; Cash and cash equivalents of $2,290.2M as of June 30, 2026 (plus substantial marketable securities)",
+        "dilution_and_sbc": "FY2025 stock-based compensation of $439.2M (4.9% of revenue), mitigated by active share repurchase programs"
+      },
+      "price_and_expectations": {
+        "market_pricing_context": "valuation/expectation gap unresolved (dated market multiple and consensus expectations not independently established via primary broker feeds; unresolved expectations are not used as an established reason to promote or downgrade)",
+        "expectation_disaggregation": {
+          "company_guidance": "Management targets continued AI networking expansion across top cloud and enterprise tiers",
+          "sourced_analyst_consensus": "UNRESOLVED_CONSENSUS (Primary broker consensus data not accessible in current environment)",
+          "arx_hypothesis": "Ethernet adoption is structural, but hyperscaler dual-sourcing and two customers accounting for combined 42% of revenue pose periodic pricing and digestion risks"
+        }
+      },
+      "downside_and_survival": {
+        "slowdown_scenario": "Hyperscaler procurement digestion pause or accelerated adoption of competing fabrics could slow revenue growth",
+        "survival_capacity": "Exceptional: Zero debt, liquid cash hoard, fabless variable cost structure"
+      },
+      "assessment_changes": {
+        "strengthening_criteria": "Customer concentration diversifying with non-top-2 revenue growing >30% YoY while GAAP operating margins remain >40.0%",
+        "invalidation_criteria": "Loss of primary switching tier allocation at either of its two primary customers (Customer A or Customer B), or GAAP operating margin compressing below 34.0%"
+      },
+      "research_priority": {
+        "rank": "PRIORITIZED_FOR_INTERNAL_MONITORING",
+        "rationale": "Elite balance sheet and cash generation. Held in internal monitoring queue due to two customers accounting for combined 42% of revenue; valuation/expectation gap remains unresolved."
+      }
+    },
+    "VRT": {
+      "symbol": "VRT",
+      "company_name": "Vertiv Holdings Co",
+      "cik": "0001674101",
+      "discovery_provenance": {
+        "routes": ["ROUTE-2-INFRASTRUCTURE-THERMAL-CONSTRAINT"],
+        "origin": "Existing Expansion Queue (Evaluated Contextually via Infrastructure Constraint Route)"
+      },
+      "dimensional_classification": {
+        "research_maturity": "EXPLORATORY_HYPOTHESIS",
+        "opportunity_mechanism": "FACILITY_LEVEL_POWER_AND_LIQUID_COOLING_INFRASTRUCTURE",
+        "expectation_gap_status": "VALUATION_EXPECTATION_GAP_UNRESOLVED",
+        "financial_resilience": "DELEVERAGED_BALANCE_SHEET_WITH_RESIDUAL_INTANGIBLES",
+        "public_publication_eligibility": "INTERNAL_PILOT_RECORD_NOT_ELIGIBLE"
+      },
+      "observable_development": {
+        "nature": "Escalation in data center power density driving adoption of direct-to-chip liquid cooling systems, coolant distribution units (CDUs), and high-density modular power infrastructure",
+        "baseline_comparison": "FY2025 revenue reached $10,229.9M (+49.1% vs FY23 baseline of $6,863.0M); 1H 2026 revenue reached $5,923.8M; Q2 2026 quarterly revenue was $3,274.3M",
+        "characterization": "Structural physical infrastructure buildout combined with high organic order backlog",
+        "primary_filing_evidence": "Form 10-K FY2025 filed 2026-02-13 (Accession 0001628280-26-005612, https://www.sec.gov/Archives/edgar/data/1674101/000162828026005612/vrt-20251231.htm); Form 10-Q Q2 2026 filed 2026-07-29 (Accession 0001628280-26-050609, https://www.sec.gov/Archives/edgar/data/1674101/000162828026050609/vrt-20260630.htm)"
+      },
+      "economic_significance": {
+        "consolidated_materiality": "Facility power, thermal, and modular management represent 100% of operations",
+        "margins_and_returns": "FY2025 GAAP operating income of $1,829.7M (17.9% op margin, up from 12.6% in FY23); 1H 2026 GAAP operating income of $1,078.0M (18.2% op margin)"
+      },
+      "value_capture": {
+        "competitive_dynamics": "Competes with Schneider Electric, Eaton, and specialized cooling providers; benefits from global service technician network and pre-fabricated modular engineering",
+        "customer_bargaining_power": "Hyperscalers and co-location operators enforce competitive bidding and delivery schedules",
+        "capex_and_capital_intensity": "Industrial manufacturing model; FY2025 capex was $220.0M (2.1% of revenue); FY25 FCF was $1,893.8M (CFO $2,113.8M less Capex $220.0M; FCF/CFO = 89.6%)",
+        "funded_debt_and_obligations": "Substantial balance sheet improvement: Cash was $2,810.6M as of June 30, 2026 against long-term debt of $2,939.8M, reducing Net Funded Debt to $129.2M (down from $2.8B in FY23); FY2025 interest expense fell to $86.1M (4.7% of GAAP operating income)",
+        "balance_sheet_quality": "Goodwill ($2,283.3M) and intangibles ($1,800.8M) remain significant on the balance sheet, but solvency risk has sharply receded due to $2.8B cash position"
+      },
+      "price_and_expectations": {
+        "market_pricing_context": "valuation/expectation gap unresolved (formal expectation gap is unresolved pending dedicated reverse-DCF modeling; not used as an established reason to alter quality candidate status)",
+        "expectation_disaggregation": {
+          "company_guidance": "Management targets organic growth and operating margin expansion through modular manufacturing efficiency",
+          "sourced_analyst_consensus": "UNRESOLVED_CONSENSUS (Primary broker consensus data not accessible in current environment)",
+          "arx_hypothesis": "Thermal demand is durable, but modular liquid cooling execution, component supply chains, and industrial competitor pricing require ongoing monitoring"
+        }
+      },
+      "downside_and_survival": {
+        "slowdown_scenario": "Data center construction delays or competitor capacity expansion could compress operating margins back toward mid-teens",
+        "survival_capacity": "Strongly Improved: With $2.8B in cash, low net debt ($129M), and $2.1B in FY25 operating cash flow, Vertiv's financial resilience has substantially improved compared to its 2023 baseline"
+      },
+      "assessment_changes": {
+        "strengthening_criteria": "Net cash position established and GAAP operating margin exceeding 19.0% sustainably across two consecutive fiscal quarters",
+        "invalidation_criteria": "Major warranty or project write-downs on modular cooling systems, or operating cash flow conversion falling below 70%"
+      },
+      "research_priority": {
+        "rank": "ACTIVE_QUALITY_WATCH_CANDIDATE",
+        "rationale": "Removed previous automatic disqualification. Rapid balance sheet deleveraging (net debt reduced to $129M) and strong cash generation warrant formal Quality-Watch evaluation in a subsequent cycle; valuation/expectation gap remains unresolved."
+      }
+    },
+    "MPWR": {
+      "symbol": "MPWR",
+      "company_name": "Monolithic Power Systems, Inc.",
+      "cik": "0001280452",
+      "discovery_provenance": {
+        "routes": ["ROUTE-3-CUSTOMER-SUPPLIER-TRACING", "ROUTE-1-FINANCIAL-OPERATING-RESILIENCE"],
+        "origin": "Exploratory Candidate Surfaced via Supplier Value-Chain Tracing"
+      },
+      "dimensional_classification": {
+        "research_maturity": "EXPLORATORY_HYPOTHESIS",
+        "opportunity_mechanism": "SILICON_LEVEL_POWER_MANAGEMENT_IC_INNOVATION",
+        "expectation_gap_status": "VALUATION_EXPECTATION_GAP_UNRESOLVED",
+        "financial_resilience": "PRISTINE_SELF_FUNDING",
+        "public_publication_eligibility": "INTERNAL_PILOT_RECORD_NOT_ELIGIBLE"
+      },
+      "observable_development": {
+        "nature": "Rising power delivery content per accelerator (transitioning from 12V to 48V multiphase power management ICs) on high-performance compute boards",
+        "baseline_comparison": "FY2025 revenue reached $2,790.5M (+53.2% vs FY23 baseline of $1,821.1M); 1H 2026 revenue reached $1,784.8M; Q2 2026 quarterly revenue was $980.6M",
+        "characterization": "Structural power content increase within cyclical semiconductor recovery",
+        "primary_filing_evidence": "Form 10-K FY2025 filed 2026-02-27 (Accession 0001437749-26-006113, https://www.sec.gov/Archives/edgar/data/1280452/000143774926006113/mpwr-20251231.htm); Form 10-Q Q2 2026 filed 2026-08-05 (Accession 0001628280-26-053275, https://www.sec.gov/Archives/edgar/data/1280452/000162828026053275/mpwr-20260630.htm)"
+      },
+      "economic_significance": {
+        "consolidated_materiality": "Enterprise Data segment is MPWR's primary growth driver, expanding to >25% of consolidated revenue",
+        "margins_and_returns": "FY2025 GAAP operating income of $728.6M (26.1% op margin); 1H 2026 GAAP operating income of $545.0M (30.5% op margin)"
+      },
+      "value_capture": {
+        "competitive_dynamics": "Competes with Renesas Electronics, Infineon Technologies, Texas Instruments, and Analog Devices; proprietary monolithic BCD process integrates power, analog, and digital logic on single die",
+        "relationship_to_vrt": "Contextual Clarification: MPWR addresses board-level DC-DC silicon power delivery, whereas VRT addresses facility-level cooling and power equipment. These are complementary components of data center infrastructure, not identical bottlenecks or direct substitutes",
+        "customer_bargaining_power": "Accelerator vendors (Nvidia, AMD) and custom ASIC hyperscalers maintain multi-sourcing policies, constraining pricing leverage",
+        "capex_and_capital_intensity": "Fab-lite model; FY2025 capex was $172.0M (6.2% of revenue); FY25 FCF was $666.2M (CFO $838.2M less Capex $172.0M; FCF/CFO = 79.5%)",
+        "funded_debt_and_obligations": "Pristine: Zero funded debt; Cash, cash equivalents, and short-term investments of $1,005.6M as of June 30, 2026",
+        "dilution_and_sbc": "FY2025 stock-based compensation of $227.5M (8.2% of revenue), partially offset by ongoing share buybacks"
+      },
+      "price_and_expectations": {
+        "market_pricing_context": "valuation/expectation gap unresolved (not used as an established reason to alter queue priority)",
+        "expectation_disaggregation": {
+          "company_guidance": "Management targets enterprise data market share expansion and steady gross margins",
+          "sourced_analyst_consensus": "UNRESOLVED_CONSENSUS (Primary broker consensus data not accessible in current environment)",
+          "arx_hypothesis": "MPWR's power density advantage is real, but secondary sourcing by major GPU vendors will prevent full market monopolization"
+        }
+      },
+      "downside_and_survival": {
+        "slowdown_scenario": "Market share loss to Renesas/Infineon on next-gen accelerator reference designs could slow segment growth",
+        "survival_capacity": "Exceptional: Zero debt, $1.0B in liquid cash, and high gross margins ensure financial resilience"
+      },
+      "assessment_changes": {
+        "strengthening_criteria": "Securing primary power stage allocation on next-generation accelerator architectures while maintaining GAAP operating margins >28%",
+        "invalidation_criteria": "Loss of tier-1 reference design sockets to analog competitors or GAAP gross margin compression below 50%"
+      },
+      "research_priority": {
+        "rank": "PRIORITIZED_FOR_INTERNAL_MONITORING",
+        "rationale": "High-growth enabler with zero debt and strong cash generation. Evaluated contextually alongside facility-level enablers without claims of categorical superiority; valuation/expectation gap remains unresolved."
+      }
+    }
+  }
+}

@@ -12,6 +12,7 @@ interface AdvancedTerminalViewProps {
   onOpenWhy: () => void;
   chartSlot?: React.ReactNode;
   planSlot?: React.ReactNode;
+  evidenceSlot?: React.ReactNode;
 }
 
 export default function AdvancedTerminalView({
@@ -20,6 +21,7 @@ export default function AdvancedTerminalView({
   onOpenWhy,
   chartSlot,
   planSlot,
+  evidenceSlot,
 }: AdvancedTerminalViewProps) {
   const adv = insight.advanced;
   const unmetConditions = deriveUnmetConditions(insight);

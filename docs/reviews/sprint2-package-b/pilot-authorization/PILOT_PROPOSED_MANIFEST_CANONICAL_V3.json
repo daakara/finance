@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "manifest_id": "MANIFEST-PILOT-EXPANSION-150-B-003-CANONICAL",
+  "manifest_version": "1.0.0",
+  "title": "Four-Security Historical Market-Data Ingestion Pilot Manifest (Canonical Reconciled)",
+  "governance_status": {
+    "authorization_state": "PROPOSED_NOT_AUTHORIZED",
+    "is_authorized": false,
+    "authorized_by": null,
+    "operational_authority": "G-S2-ACT",
+    "deferred_gate_reference": "G-VCP-012",
+    "generated_at_utc": "2026-10-21T08:30:00Z",
+    "review_status": "CANONICAL_RECONCILED_PREFLIGHT_AWAITING_EXPLICIT_AUTHORIZATION",
+    "supersedes_predecessors": [
+      {
+        "manifest_id": "MANIFEST_PACKAGE_B_FOUR_SECURITY_PILOT_20261021_V3_RECONCILED",
+        "workstream": "Workstream A (finance-sprint2-historical-sip-release)",
+        "sha256": "b75af07e670be42dbb10f39ae37f33d8d369f20228294283cca26fb98710debd",
+        "disposition": "INVALIDATED_SUPERSEDED"
+      },
+      {
+        "manifest_id": "MANIFEST-PILOT-EXPANSION-150-B-001",
+        "workstream": "Workstream B (finance)",
+        "sha256": "8923dad988a10ae07a2b7bda1044127130bf9c90539424d98f25676a9a59f07b",
+        "disposition": "INVALIDATED_SUPERSEDED_HISTORICAL_BOUNDARY_DEFECT"
+      }
+    ],
+    "prohibitions": [
+      "Zero production database mutation permitted under this document.",
+      "Does not authorize production code deployment.",
+      "Does not authorize live ingestion execution.",
+      "Does not authorize Package C universe publication.",
+      "Does not authorize live radar scanner activation.",
+      "Does not authorize Gate 12 release."
+    ]
+  },
+  "target_store": {
+    "environment": "production",
+    "service": "web",
+    "project_id": "a339a92a-7236-4ac0-9a3a-d7ad440f9690",
+    "container_name": "tranquil-radiance",
+    "target_database_path": "/root/.finance_market_store.db",
+    "table_daily_candles": "asset_ohlcv_daily",
+    "table_provenance": "asset_ohlcv_provenance",
+    "journal_mode": "WAL",
+    "connection_mode_read": "file:/root/.finance_market_store.db?mode=ro",
+    "connection_mode_write": "file:/root/.finance_market_store.db?busy_timeout=30000"
+  },
+  "provider_configuration": {
+    "provider_name": "Alpaca Market Data API v2",
+    "endpoint_template": "https://data.alpaca.markets/v2/stocks/{symbol}/bars",
+    "tape_feed": "sip",
+    "prohibited_feeds": [
+      "iex"
+    ],
+    "adjustment_convention": "split",
+    "delay_contract": "15-minute REST SIP delay boundary",
+    "request_boundary_rule": "end <= now_utc - 15 minutes OR completed exchange session close timestamp",
+    "pagination_limit_per_page": 1000,
+    "max_pagination_budget": 25,
+    "retry_policy": {
+      "max_retries": 3,
+      "backoff_base_sec": 1.5,
+      "retryable_status_codes": [
+        500,
+        502,
+        503,
+        504
+      ],
+      "fail_closed_status_codes": [
+        400,
+        401,
+        403,
+        404,
+        422
+      ]
+    }
+  },
+  "acquisition_window": {
+    "strategy_type": "EXPLICIT_FULL_WINDOW_REPLACEMENT_STRATEGY",
+    "requested_start_date": "2025-08-27",
+    "requested_end_date": "2026-10-19",
+    "calendar_days_count": 419,
+    "expected_nyse_sessions_count": 288,
+    "minimum_acceptable_bars": 280,
+    "exchange_calendar_authority": "exchange_calendars:XNYS",
+    "ceiling_determination_rule": "DYNAMIC_LATEST_COMPLETED_SESSION",
+    "boundary_policy_rationale": "Policy B: Expanded window from 2025-08-27 matches earliest stored session in production, eliminating all unprovenanced or foreign outside-scope records."
+  },
+  "backup_policy": {
+    "mandatory_pre_apply_backup": true,
+    "backup_directory": "/root/backups/",
+    "backup_filename_template": "finance_market_store_pre_pilot_%Y%m%d_%H%M%S.db",
+    "backup_method": "SQLITE_ONLINE_BACKUP_API",
+    "verification_checks": [
+      "PRAGMA integrity_check == 'ok'",
+      "Complete preservation of asset_ohlcv_daily and asset_ohlcv_provenance tables",
+      "Bit-for-bit SHA-256 agreement logged to receipt file"
+    ]
+  },
+  "recovery_policy": {
+    "recovery_method": "GUARDED_NONDESTRUCTIVE_INCIDENT_RECOVERY",
+    "prohibited_actions": [
+      "Wildcard file deletion (rm -f *.db*)",
+      "Implicit kill -9 or unverified termination",
+      "Direct unquarantined file overwrite",
+      "Restoration while competing writers or uncommitted transactions exist"
+    ],
+    "mandatory_steps": [
+      "1. Formal operator incident authorization token (G-S2-ACT or INC-G-S2-...).",
+      "2. Mandatory maintenance-mode token (MAINT-...).",
+      "3. Process and handle fencing (scan /proc/*/fd or handle checker).",
+      "4. Non-destructively quarantine affected .db, .db-wal, and .db-shm files into incident evidence directory.",
+      "5. Verify backup file existence, SHA-256 digest match, and PRAGMA integrity_check.",
+      "6. Stage restoration into isolated .restore_candidate file before controlled atomic replacement.",
+      "7. Verify restored schema, row counts, provenance sidecars, and identity consistency via readback.",
+      "8. Reopen application access only after post-restoration verification passes 100%.",
+      "9. Emit cryptographically signed incident and recovery receipt JSON."
+    ],
+    "incident_evidence_directory": "/root/incident_quarantine/",
+    "recovery_cli_tool": "scripts/guarded_market_recovery.py"
+  },
+  "pilot_candidates": [
+    {
+      "symbol": "AAPL",
+      "durable_security_id": "ARX_SEC_0B4C728FE0BE",
+      "listing_association_id": "ASSOC_ARX_SEC_0B4C728FE0BE_XNAS_AAPL_2026-10-17",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0000320193",
+      "share_class": null,
+      "company_name": "Apple Inc.",
+      "pre_execution_store_state": {
+        "daily_bar_count": 288,
+        "provenance_count": 0,
+        "coverage_classification": "PRESENT_FRESH_UNPROVENANCED",
+        "earliest_session": "2025-08-27",
+        "latest_session": "2026-10-16"
+      },
+      "mandated_action": "REPLACE",
+      "action_rationale": "Existing 288 bars lack provenance sidecars; full replacement from 2025-08-27 to 2026-10-19 establishes 100% pure Alpaca SIP split-adjusted lineage with 0 outside-scope remnants.",
+      "acceptance_criteria": {
+        "expected_bars_ingested": 288,
+        "expected_provenance_count": 288,
+        "provenance_provider": "ALPACA",
+        "provenance_adjustment_state": "SPLIT_ADJUSTED_ONLY",
+        "zero_missing_sessions_in_window": true
+      }
+    },
+    {
+      "symbol": "GOOG",
+      "durable_security_id": "ARX_SEC_A11A24D442E2",
+      "listing_association_id": "ASSOC_ARX_SEC_A11A24D442E2_XNAS_GOOG_2026-10-17",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001652044",
+      "share_class": "CLASS_C",
+      "company_name": "Alphabet Inc. (Class C Capital Stock)",
+      "pre_execution_store_state": {
+        "daily_bar_count": 287,
+        "provenance_count": 287,
+        "stored_provider": "MASSIVE_POLYGON",
+        "coverage_classification": "PRESENT_STALE_PROV_CERT",
+        "earliest_session": "2025-08-27",
+        "latest_session": "2026-10-16"
+      },
+      "mandated_action": "REPLACE",
+      "action_rationale": "Existing 287 bars derived from MASSIVE_POLYGON. Lineage homogeneity strictly prohibits provider blending; full replacement from 2025-08-27 eliminates Polygon data and ensures cross-class consistency with GOOGL.",
+      "acceptance_criteria": {
+        "expected_bars_ingested": 288,
+        "expected_provenance_count": 288,
+        "provenance_provider": "ALPACA",
+        "provenance_adjustment_state": "SPLIT_ADJUSTED_ONLY",
+        "zero_missing_sessions_in_window": true
+      }
+    },
+    {
+      "symbol": "GOOGL",
+      "durable_security_id": "ARX_SEC_B7EF9ED7A35A",
+      "listing_association_id": "ASSOC_ARX_SEC_B7EF9ED7A35A_XNAS_GOOGL_2026-10-17",
+      "operating_mic": "XNAS",
+      "issuer_cik": "0001652044",
+      "share_class": "CLASS_A",
+      "company_name": "Alphabet Inc. (Class A Common Stock)",
+      "pre_execution_store_state": {
+        "daily_bar_count": 288,
+        "provenance_count": 0,
+        "coverage_classification": "PRESENT_FRESH_UNPROVENANCED",
+        "earliest_session": "2025-08-27",
+        "latest_session": "2026-10-16"
+      },
+      "mandated_action": "REPLACE",
+      "action_rationale": "Existing 288 bars lack provenance sidecars; full replacement from 2025-08-27 to 2026-10-19 establishes qualified Alpaca SIP lineage while preserving voting/economic isolation from GOOG.",
+      "acceptance_criteria": {
+        "expected_bars_ingested": 288,
+        "expected_provenance_count": 288,
+        "provenance_provider": "ALPACA",
+        "provenance_adjustment_state": "SPLIT_ADJUSTED_ONLY",
+        "zero_missing_sessions_in_window": true
+      }
+    },
+    {
+      "symbol": "ABBV",
+      "durable_security_id": "ARX_SEC_BFA51AC4C0B5",
+      "listing_association_id": "ASSOC_ARX_SEC_BFA51AC4C0B5_XNYS_ABBV_2026-10-19",
+      "operating_mic": "XNYS",
+      "issuer_cik": "0001551152",
+      "share_class": null,
+      "company_name": "AbbVie Inc.",
+      "pre_execution_store_state": {
+        "daily_bar_count": 0,
+        "provenance_count": 0,
+        "coverage_classification": "MISSING",
+        "earliest_session": null,
+        "latest_session": null
+      },
+      "mandated_action": "BACKFILL",
+      "action_rationale": "Package A newly registered NYSE equity. Complete initial historical backfill across the identical 288-session window from 2025-08-27 to 2026-10-19.",
+      "acceptance_criteria": {
+        "expected_bars_ingested": 288,
+        "expected_provenance_count": 288,
+        "provenance_provider": "ALPACA",
+        "provenance_adjustment_state": "SPLIT_ADJUSTED_ONLY",
+        "zero_missing_sessions_in_window": true
+      }
+    }
+  ]
+}

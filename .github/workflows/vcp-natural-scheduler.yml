@@ -1,0 +1,185 @@
+name: VCP Natural Market Close Scheduler
+
+'on':
+  workflow_dispatch:
+    inputs:
+      scheduled_date:
+        description: 'Optional market session date (YYYY-MM-DD). Defaults to current session.'
+        required: false
+        type: string
+        default: ''
+      environment_target:
+        description: 'Target deployment environment'
+        required: true
+        type: choice
+        options:
+          - production
+        default: 'production'
+
+  # NOTE: Automated recurring cron is DISABLED BY DEFAULT in this remediation.
+  # Once supervised first natural execution is certified and authorized by the owner,
+  # the cron trigger can be un-commented.
+  # Target execution is 16:45 ET (45-minute settlement buffer after 16:00 ET close).
+  # UTC seasonal alignment:
+  # - EDT (Summer, UTC-4): 20:45 UTC -> '45 20 * * 1-5'
+  # - EST (Winter, UTC-5): 21:45 UTC -> '45 21 * * 1-5'
+  # schedule:
+  #   - cron: '45 20 * * 1-5'
+
+concurrency:
+  group: vcp-natural-scheduler
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  trigger-natural-scan:
+    name: Trigger Natural VCP EOD Scan
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 5
+
+    steps:
+      - name: Validate Inputs and Environment
+        id: validate
+        env:
+          CONFIGURED_BASE_URL: ${{ vars.ARX_API_BASE_URL }}
+        run: |
+          echo "Initiating VCP Candidate 004 natural execution trigger dispatch."
+          echo "Target Environment: ${{ inputs.environment_target || 'production' }}"
+          echo "Run ID: ${{ github.run_id }} (Attempt: ${{ github.run_attempt }})"
+          
+          # Target base URL: uses repository variable vars.ARX_API_BASE_URL if configured,
+          # otherwise defaults to authoritative live production domain web-production-e370b.up.railway.app.
+          # Prohibits arbitrary input overrides.
+          BASE_URL="${CONFIGURED_BASE_URL:-https://web-production-e370b.up.railway.app}"
+          # Remove any trailing slash
+          BASE_URL="${BASE_URL%/}"
+          
+          # Enforce https:// protocol
+          case "$BASE_URL" in
+            https://*)
+              ;;
+            *)
+              echo "::error::SECURITY_VIOLATION: ARX_API_BASE_URL must use https:// protocol. Got: $BASE_URL"
+              exit 1
+              ;;
+          esac
+          
+          TARGET_URL="${BASE_URL}/api/v1/screener/vcp/natural-scan"
+          echo "Configured production target URL: $TARGET_URL"
+          echo "target_url=$TARGET_URL" >> $GITHUB_OUTPUT
+
+      - name: Dispatch Natural Scan Request
+        id: dispatch
+        env:
+          VCP_SCHEDULER_SECRET: ${{ secrets.VCP_SCHEDULER_SECRET }}
+          SCHEDULED_DATE: ${{ inputs.scheduled_date }}
+          RUN_ID: ${{ github.run_id }}
+          EVENT_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+          TARGET_URL: ${{ steps.validate.outputs.target_url }}
+        run: |
+          if [ -z "$VCP_SCHEDULER_SECRET" ]; then
+            echo "::error::CRITICAL_PRECONDITION_FAILED: VCP_SCHEDULER_SECRET is not provisioned in repository secrets."
+            exit 1
+          fi
+
+          # Construct payload JSON
+          if [ -n "$SCHEDULED_DATE" ]; then
+            PAYLOAD=$(jq -n --arg dt "$SCHEDULED_DATE" '{"scheduled_date": $dt}')
+          else
+            PAYLOAD="{}"
+          fi
+
+          echo "Dispatching POST request to $TARGET_URL with X-Scheduler-Token header..."
+          
+          # Execute synchronous call with 120s timeout
+          HTTP_RESPONSE=$(curl -sS -w "\n%{http_code}" -X POST "$TARGET_URL" \
+            -H "X-Scheduler-Token: $VCP_SCHEDULER_SECRET" \
+            -H "X-Scheduler-Job-Id: job-vcp-natural-gha" \
+            -H "X-Scheduler-Event-Id: evt-$EVENT_ID" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" \
+            --max-time 120)
+
+          # Separate response body and HTTP status code
+          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tail -n1)
+          RESPONSE_BODY=$(echo "$HTTP_RESPONSE" | sed '$d')
+
+          echo "Response HTTP Status: $HTTP_STATUS"
+          echo "Response Payload (Sanitized):"
+          echo "$RESPONSE_BODY" | jq '.' 2>/dev/null || echo "$RESPONSE_BODY"
+
+          # Evaluate and classify response
+          case "$HTTP_STATUS" in
+            200)
+              # Assert valid JSON structure
+              if ! echo "$RESPONSE_BODY" | jq empty 2>/dev/null; then
+                echo "::error::INVALID_PAYLOAD: HTTP 200 returned non-JSON body."
+                exit 1
+              fi
+
+              STATUS=$(echo "$RESPONSE_BODY" | jq -r '.status // empty' 2>/dev/null)
+              SNAP_ID=$(echo "$RESPONSE_BODY" | jq -r '.snapshot_id // empty' 2>/dev/null)
+              CANDIDATE_ID=$(echo "$RESPONSE_BODY" | jq -r '.candidate_generation_id // empty' 2>/dev/null)
+              PUB_STATUS=$(echo "$RESPONSE_BODY" | jq -r '.snapshot_publication_status // empty' 2>/dev/null)
+              EXEC_OUTCOME=$(echo "$RESPONSE_BODY" | jq -r '.execution_outcome // empty' 2>/dev/null)
+              MATCH_CNT=$(echo "$RESPONSE_BODY" | jq -r '.matched_count // empty' 2>/dev/null)
+              UNIV_SIZE=$(echo "$RESPONSE_BODY" | jq -r '.universe_size // empty' 2>/dev/null)
+
+              # Assert status is SUCCESS
+              if [ "$STATUS" != "SUCCESS" ]; then
+                echo "::error::EXECUTION_FAILED: Natural scan returned status='$STATUS' (expected SUCCESS)."
+                exit 1
+              fi
+
+              # Assert snapshot_id is non-empty and not null
+              if [ -z "$SNAP_ID" ] || [ "$SNAP_ID" = "null" ]; then
+                echo "::error::INVALID_PROVENANCE: Missing or empty snapshot_id in HTTP 200 response."
+                exit 1
+              fi
+
+              # Assert candidate generation matches Candidate 004
+              if [ "$CANDIDATE_ID" != "CANDIDATE_GENERATION_004" ]; then
+                echo "::error::CANDIDATE_MISMATCH: Expected CANDIDATE_GENERATION_004, got '$CANDIDATE_ID'."
+                exit 1
+              fi
+
+              # Classify New Success vs Deduplicated Success (Phase B4)
+              if [ "$PUB_STATUS" = "PUBLISH" ] || [ "$EXEC_OUTCOME" = "NEW_SUCCESS" ]; then
+                echo "::notice::VCP Natural Scan NEW_SUCCESS: Published snapshot=$SNAP_ID, Candidate=$CANDIDATE_ID, Matched=$MATCH_CNT/$UNIV_SIZE, Publication=$PUB_STATUS"
+                exit 0
+              elif [ "$PUB_STATUS" = "DEDUPLICATED" ] || [ "$EXEC_OUTCOME" = "ALREADY_SUCCEEDED" ]; then
+                echo "::notice::VCP Natural Scan ALREADY_SUCCEEDED: Verified existing snapshot=$SNAP_ID, Candidate=$CANDIDATE_ID, Matched=$MATCH_CNT/$UNIV_SIZE. Deduplicated without re-publication."
+                exit 0
+              else
+                echo "::error::PUBLICATION_NOT_CONFIRMED: Unexpected snapshot_publication_status='$PUB_STATUS' (expected PUBLISH or DEDUPLICATED)."
+                exit 1
+              fi
+              ;;
+            403)
+              echo "::error::AUTHENTICATION_FAILED (HTTP 403): X-Scheduler-Token was rejected by server."
+              exit 1
+              ;;
+            409)
+              DETAIL=$(echo "$RESPONSE_BODY" | jq -r '.detail // empty' 2>/dev/null)
+              echo "::warning::CONCURRENCY_CONFLICT (HTTP 409): $DETAIL"
+              exit 1
+              ;;
+            422)
+              REASON=$(echo "$RESPONSE_BODY" | jq -r '.reason // .detail.reason // empty' 2>/dev/null)
+              DETAIL=$(echo "$RESPONSE_BODY" | jq -r '.detail // empty' 2>/dev/null)
+              echo "::warning::SESSION_ELIGIBILITY_REJECTED (HTTP 422): Reason=$REASON. Details: $DETAIL"
+              # Session rejection is a valid fail-closed outcome, exit non-zero for manual supervision awareness
+              exit 2
+              ;;
+            503)
+              echo "::error::SCHEDULER_DISABLED (HTTP 503): VCP_NATURAL_SCHEDULER_ENABLED is not active on production backend."
+              exit 1
+              ;;
+            *)
+              echo "::error::UNEXPECTED_SERVER_ERROR (HTTP $HTTP_STATUS): $RESPONSE_BODY"
+              exit 1
+              ;;
+          esac

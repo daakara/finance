@@ -24,7 +24,7 @@ from analyst_dashboard.analyzers.catalysts import CatalystEngine
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 from analyst_dashboard.analyzers.gem_screener import HiddenGemsScreener
 
-pytestmark = pytest.mark.tier2c
+pytestmark = [pytest.mark.tier2c, pytest.mark.usefixtures("published_screener_universe")]
 
 
 client = TestClient(app)
@@ -203,7 +203,7 @@ def test_regression_verified_assets_healthy():
     # NVDA: Bullish compounder
     plan_nvda = engine.calculate_trade_levels(
         price_df=df_100,
-        current_price=120.0,
+        current_price=142.0,
         user_role="INVESTOR"
     )
     assert plan_nvda["execution_status"] in ["IN_BUY_ZONE", "APPROACHING_TARGET", "WAITING_PULLBACK"]
@@ -281,8 +281,8 @@ def test_hidden_gems_screener_fails_closed_on_uncataloged_tickers():
         assert r["lynch_score"] == 0.0
         assert r["greenblatt_score"] == 0.0
         assert r["growth_score"] == 0.0
-        assert r["roic_pct"] == 0.0
-        assert r["peg_ratio"] == 0.0
+        assert r["roic_pct"] is None  # Unavailable fundamentals remain None, not synthetic 0.0
+        assert r["peg_ratio"] is None
         assert "Unverified" in r["expert_model"]
         assert "Unverified" in r["factor_verdict"]
         assert "Unverified" in r["dna_verdict"]

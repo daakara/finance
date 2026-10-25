@@ -18,7 +18,7 @@ import MarketCommandRibbon from "./nav/MarketCommandRibbon";
 import ExperienceModeToggle from "./experience/ExperienceModeToggle";
 import WatchlistDrawerTrigger from "./drawers/WatchlistDrawerTrigger";
 import { CANONICAL_HUBS, buildHubHref, isHubActive, extractActiveSymbol } from "../lib/canonicalNav";
-import { HelpCircle, Compass, Shield, RefreshCw, Zap, Landmark, Radar, Microscope, Briefcase } from "lucide-react";
+import { HelpCircle, Compass, Shield, RefreshCw, Zap, Landmark, Radar, Microscope, Briefcase, FileSearch } from "lucide-react";
 
 interface NavbarProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
@@ -310,9 +310,13 @@ export default function Navbar({
     window.addEventListener("open-shortcuts", handleShortcutsEvent);
     window.addEventListener("open-privacy", handlePrivacyEvent);
 
-    // B4: Auto-show onboarding tour on first visit
+    // B4: Auto-show onboarding tour on first visit (suppressed during active stock analysis)
     try {
-      if (!localStorage.getItem("FINANCE_ONBOARDING_COMPLETED")) {
+      const isAnalyzingStock = typeof window !== "undefined" && (
+        window.location.search.includes("symbol=") || 
+        window.location.pathname.startsWith("/stock")
+      );
+      if (!localStorage.getItem("FINANCE_ONBOARDING_COMPLETED") && !isAnalyzingStock) {
         firstVisitTimerRef.current = setTimeout(() => {
           setIsOnboardingOpen(true);
           firstVisitTimerRef.current = null;
@@ -404,6 +408,17 @@ export default function Navbar({
                     </Link>
                   );
                 })}
+                <Link
+                  href={effectiveSymbol ? `/research/?symbol=${encodeURIComponent(effectiveSymbol)}` : "/research/"}
+                  aria-current={pathname === "/research" || pathname === "/research/" || pathname?.startsWith("/research/") ? "page" : undefined}
+                  className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                    pathname === "/research" || pathname === "/research/" || pathname?.startsWith("/research/")
+                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <span>Research</span>
+                </Link>
               </nav>
             </div>
 
@@ -640,6 +655,20 @@ export default function Navbar({
             </Link>
           );
         })}
+
+        {/* Research Hub Link for Mobile */}
+        <Link
+          href={effectiveSymbol ? `/research/?symbol=${encodeURIComponent(effectiveSymbol)}` : "/research/"}
+          aria-current={pathname === "/research" || pathname === "/research/" || pathname?.startsWith("/research/") ? "page" : undefined}
+          className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-colors min-w-[44px] sm:min-w-[48px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+            pathname === "/research" || pathname === "/research/" || pathname?.startsWith("/research/")
+              ? "bg-[#1b2434] text-cyan-400 font-bold"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <FileSearch className="w-4 h-4 mb-0.5 leading-none shrink-0" aria-hidden="true" />
+          <span className="text-[10px] sm:text-xs tracking-tight">Research</span>
+        </Link>
 
         {/* Quick Horizon Toggle on Mobile Dock */}
         <button

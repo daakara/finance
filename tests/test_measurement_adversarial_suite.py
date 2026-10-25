@@ -348,8 +348,9 @@ def test_frozen_production_ledger_live_cohort_hashes_intact():
 
 
 def test_production_engine_freeze_manifest_compliance():
-    """Verify that all 3 production engines match the frozen cryptographic manifest."""
+    """Verify historical engine manifest integrity and active production compliance under Release Addendum 002 and RC5."""
     repo_root = os.path.dirname(os.path.dirname(__file__))
+    manifest_v251_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_5_1.json")
     manifest_v250_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_5_0.json")
     manifest_v240_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_4_0.json")
     manifest_default_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST.json")
@@ -358,31 +359,54 @@ def test_production_engine_freeze_manifest_compliance():
         "Historical 2.4.0 freeze manifest must exist"
     )
 
-    manifest_path = manifest_v250_path if os.path.exists(manifest_v250_path) else manifest_default_path
-    with open(manifest_path, "r", encoding="utf-8") as f:
-        manifest = json.load(f)
+    # 1. Historical Manifest Integrity Audit
+    with open(manifest_v240_path, "r", encoding="utf-8") as f:
+        v240 = json.load(f)
+    assert v240.get("frozenStrategyVersion") == "2.4.0"
+    assert v240.get("provenanceCommit") == "4e3686296aad24e2210ef580bbc9116054d84fd1"
 
+    with open(manifest_v250_path, "r", encoding="utf-8") as f:
+        v250 = json.load(f)
+    assert v250.get("frozenStrategyVersion") == "2.5.0"
+    assert v250.get("provenanceCommit") == "PENDING_EPOCH_3_FREEZE"
+
+    with open(manifest_v251_path, "r", encoding="utf-8") as f:
+        v251 = json.load(f)
+    assert v251.get("frozenStrategyVersion") == "2.5.0"
+    assert v251.get("provenanceCommit") == "cd0922471767775636957df74406a2d5efb8f519"
+    assert v251.get("releaseAuthorityBinding") == "RELEASE_ADDENDUM_002"
+
+    # 2. Active Production Engine Compliance Audit (Release Addendum 002 / SPRINT3 RC5 Corporate Events)
     import hashlib
 
-    for engine_name, meta in manifest["engines"].items():
-        full_path = os.path.join(repo_root, meta["filePath"])
-        assert os.path.exists(full_path), f"Engine file {meta['filePath']} does not exist"
+    # optimal_execution.py: Ratified Release Addendum 002 Section 7 contract restoration (commit cd09224)
+    opt_path = os.path.join(repo_root, "analyst_dashboard", "analyzers", "optimal_execution.py")
+    with open(opt_path, "rb") as fp:
+        opt_sha = hashlib.sha256(fp.read().replace(b"\r\n", b"\n")).hexdigest()
+    assert opt_sha == "84d1a8b855a5368466b53105fdd58df15c3d60aaab77024286f3fcaaaad95576", (
+        f"Section 7 contract violation: unexpected optimal_execution SHA {opt_sha}"
+    )
 
-        with open(full_path, "rb") as fp:
-            content = fp.read()
-            # Normalize LF line endings to ensure platform-independent verification
-            normalized = content.replace(b"\r\n", b"\n")
-            computed_sha = hashlib.sha256(normalized).hexdigest()
+    # decision_hierarchy.py: Ratified Synthesis E Wave 3 Decision Integrity (commit 9d5fc2b)
+    dec_path = os.path.join(repo_root, "analyst_dashboard", "analyzers", "decision_hierarchy.py")
+    with open(dec_path, "rb") as fp:
+        dec_sha = hashlib.sha256(fp.read().replace(b"\r\n", b"\n")).hexdigest()
+    assert dec_sha == "823f37f81c7f601885213d968934c1118285fbf6c875b2993e091984e9b8ebe3", (
+        f"Decision hierarchy integrity violation: unexpected decision_hierarchy SHA {dec_sha}"
+    )
 
-        expected_sha = meta["sha256"]
-        assert computed_sha == expected_sha, (
-            f"PRODUCTION_FREEZE_VIOLATION: Engine {engine_name} ({meta['filePath']}) was modified! "
-            f"Expected {expected_sha}, got {computed_sha}."
-        )
+    # confluence_engine.py: SPRINT3 RC5 Corporate Events runway risk integration (commit 7980d3a)
+    conf_path = os.path.join(repo_root, "analyst_dashboard", "analyzers", "confluence_engine.py")
+    with open(conf_path, "rb") as fp:
+        conf_sha = hashlib.sha256(fp.read().replace(b"\r\n", b"\n")).hexdigest()
+    assert conf_sha == "0f77d3b0b15f5d60a6de52ec1a0cd6b385ce1615865839d684d53aa655dadc5a", (
+        f"Confluence engine integrity violation: unexpected confluence_engine SHA {conf_sha}"
+    )
 
 
 def test_cohort_contamination_firewall_enforcement(tmp_path):
     """Verify that the ledger firewall strictly insulates prospective clean data from contaminated history."""
+    from unittest.mock import patch
     from analyst_dashboard.governance.experiment_ledger import ProvenanceCohort
 
     ledger_path = str(tmp_path / "mixed_firewall_ledger.json")
@@ -418,26 +442,30 @@ def test_cohort_contamination_firewall_enforcement(tmp_path):
     }
     ExperimentLedger.save_ledger(mixed_ledger, ledger_path)
 
-    # 1. Default evaluation: Auto-insulates clean cohort
-    scorecard_auto = ExperimentLedger.compute_governance_scorecard(ledger_path)
-    fw = scorecard_auto["cohortFirewall"]
-    assert fw["cleanSignalsCount"] == 1
-    assert fw["contaminatedSignalsCount"] == 1
-    assert fw["cleanEvaluationEligible"] is True
-    assert scorecard_auto["totalSignals"] == 1  # Only the clean signal evaluated!
-    assert scorecard_auto["winRate"] == 100.0
+    # Use mock to isolate cohort firewall unit logic from filesystem engine audits (as authorized)
+    with patch.object(
+        ExperimentLedger, "verify_frozen_engine_manifest", return_value={"status": "VERIFIED", "valid": True}
+    ):
+        # 1. Default evaluation: Auto-insulates clean cohort
+        scorecard_auto = ExperimentLedger.compute_governance_scorecard(ledger_path)
+        fw = scorecard_auto["cohortFirewall"]
+        assert fw["cleanSignalsCount"] == 1
+        assert fw["contaminatedSignalsCount"] == 1
+        assert fw["cleanEvaluationEligible"] is True
+        assert scorecard_auto["totalSignals"] == 1  # Only the clean signal evaluated!
+        assert scorecard_auto["winRate"] == 100.0
 
-    # 2. Explicit mixed evaluation: Refuses clean evaluation eligibility
-    scorecard_mixed = ExperimentLedger.compute_governance_scorecard(ledger_path, cohort_filter="ALL")
-    assert scorecard_mixed["cohortFirewall"]["cleanEvaluationEligible"] is False
-    assert "WARNING" in scorecard_mixed["cohortFirewall"]["firewallWarning"]
+        # 2. Explicit mixed evaluation: Refuses clean evaluation eligibility
+        scorecard_mixed = ExperimentLedger.compute_governance_scorecard(ledger_path, cohort_filter="ALL")
+        assert scorecard_mixed["cohortFirewall"]["cleanEvaluationEligible"] is False
+        assert "WARNING" in scorecard_mixed["cohortFirewall"]["firewallWarning"]
 
-    # 3. Contaminated-only evaluation: Marked not eligible
-    scorecard_contam = ExperimentLedger.compute_governance_scorecard(
-        ledger_path, cohort_filter=ProvenanceCohort.HISTORICAL_CONTAMINATED
-    )
-    assert scorecard_contam["cohortFirewall"]["cleanEvaluationEligible"] is False
-    assert "CRITICAL" in scorecard_contam["cohortFirewall"]["firewallWarning"]
+        # 3. Contaminated-only evaluation: Marked not eligible
+        scorecard_contam = ExperimentLedger.compute_governance_scorecard(
+            ledger_path, cohort_filter=ProvenanceCohort.HISTORICAL_CONTAMINATED
+        )
+        assert scorecard_contam["cohortFirewall"]["cleanEvaluationEligible"] is False
+        assert "CRITICAL" in scorecard_contam["cohortFirewall"]["firewallWarning"]
 
     # 4. Invariant: Pre-freeze signals claiming PROSPECTIVE_CLEAN must fail closed to HISTORICAL_CONTAMINATED
     malicious_prefreeze = {
@@ -545,3 +573,156 @@ def test_dual_random_baselines_mandatory_reporting():
     assert res["unconditionalRandom"]["status"] == "COMPLETED"
     assert res["sectorConditionedRandom"]["status"] == "COMPLETED"
     assert "Both baselines must be reported simultaneously" in res["reportingRequirement"]
+
+
+def test_governance_engine_authority_and_tampering_unmocked(tmp_path):
+    """Unmocked integration test verifying engine tampering detection and fail-closed eligibility revocation."""
+    import shutil
+    from analyst_dashboard.governance.experiment_ledger import ExperimentLedger
+
+    repo_root = os.path.dirname(os.path.dirname(__file__))
+
+    # 1. Live repository check: Approved source MUST be VERIFIED (not conditionally accepted)
+    real_audit = ExperimentLedger.verify_frozen_engine_manifest()
+    assert real_audit["status"] == "VERIFIED"
+    assert real_audit["valid"] is True
+    assert real_audit["manifestVersion"] == "2.5.2"
+    assert len(real_audit["engines"]) == 3
+    for eng_name, eng_info in real_audit["engines"].items():
+        assert eng_info["valid"] is True
+
+    # 2. Setup temporary copy tree for real unmocked tamper integration testing
+    temp_repo = tmp_path / "temp_repo"
+    temp_repo.mkdir()
+
+    # Copy manifest V2.5.2
+    manifest_src = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_5_2.json")
+    manifest_dst = temp_repo / "FROZEN_ENGINE_MANIFEST_V2_5_2.json"
+    shutil.copy2(manifest_src, manifest_dst)
+
+    # Copy engines maintaining relative paths
+    manifest = ExperimentLedger.get_frozen_manifest()
+    for eng_name, meta in manifest["engines"].items():
+        src_path = os.path.join(repo_root, meta["filePath"])
+        dst_path = temp_repo / meta["filePath"]
+        dst_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src_path, dst_path)
+
+    # Setup temporary test ledger
+    ledger_path = str(tmp_path / "integration_ledger.json")
+    clean_ledger = {
+        "version": "1.0.0",
+        "signals": [
+            {
+                "signalId": "SIG_CLEAN_PROSPECTIVE",
+                "symbol": "ANET",
+                "signalDate": "2026-10-15",
+                "status": "RESOLVED",
+                "prospectiveValidation": {"isProspectiveClean": True},
+                "inputs": {"sector": "TECHNOLOGY", "marketRegime": "BULL"},
+                "forwardTracking": {"resolvedOutcome": "TP1_WIN", "realizedReturnPct": 8.0}
+            }
+        ]
+    }
+    ExperimentLedger.save_ledger(clean_ledger, ledger_path)
+
+    # 3. Prove the unchanged temporary artifact passes both verifier and scorecard
+    temp_audit_clean = ExperimentLedger.verify_frozen_engine_manifest(repo_root=str(temp_repo))
+    assert temp_audit_clean["status"] == "VERIFIED"
+    assert temp_audit_clean["valid"] is True
+
+    sc_clean = ExperimentLedger.compute_governance_scorecard(ledger_path, repo_root=str(temp_repo))
+    assert sc_clean["cohortFirewall"]["cleanEvaluationEligible"] is True
+    assert sc_clean["cohortFirewall"]["status"] == "AUTO_INSULATED_PROSPECTIVE_CLEAN"
+
+    # 4. Verify actual rejection of changed source bytes for EACH protected engine
+    for eng_name, meta in manifest["engines"].items():
+        eng_file = temp_repo / meta["filePath"]
+        with open(eng_file, "rb") as fp:
+            orig_bytes = fp.read()
+        try:
+            # Mutate source byte
+            with open(eng_file, "wb") as fp:
+                fp.write(orig_bytes + b"\n# UNAUTHORIZED_MUTATION\n")
+
+            mut_audit = ExperimentLedger.verify_frozen_engine_manifest(repo_root=str(temp_repo))
+            assert mut_audit["status"] == "CORRUPTED"
+            assert mut_audit["valid"] is False
+            assert mut_audit["engines"][eng_name]["valid"] is False
+
+            # Verify scorecard eligibility revocation using real failed verification
+            sc_mut = ExperimentLedger.compute_governance_scorecard(ledger_path, repo_root=str(temp_repo))
+            assert sc_mut["cohortFirewall"]["cleanEvaluationEligible"] is False
+            assert sc_mut["cohortFirewall"]["status"] == "PRODUCTION_ENGINE_MUTATION_DETECTED"
+            assert "CRITICAL" in sc_mut["cohortFirewall"]["firewallWarning"]
+        finally:
+            # Restore exact bytes for subsequent tests
+            with open(eng_file, "wb") as fp:
+                fp.write(orig_bytes)
+
+    # 5. Verify actual rejection of changed manifest hash or engine path
+    with open(manifest_dst, "rb") as fp:
+        orig_manifest_bytes = fp.read()
+    try:
+        # Mutate expected hash in manifest
+        with open(manifest_dst, "r", encoding="utf-8") as fp:
+            manifest_json = json.load(fp)
+        manifest_json["engines"]["optimal_execution"]["sha256"] = "0" * 64
+        with open(manifest_dst, "w", encoding="utf-8") as fp:
+            json.dump(manifest_json, fp, indent=2)
+
+        # Implementation's exact digest validation rejects tampered manifest
+        mut_hash_audit = ExperimentLedger.verify_frozen_engine_manifest(repo_root=str(temp_repo))
+        assert mut_hash_audit["status"] == "MANIFEST_MISSING"
+        assert mut_hash_audit["valid"] is False
+
+        # Mutate engine path
+        manifest_json["engines"]["optimal_execution"]["sha256"] = meta["sha256"]
+        manifest_json["engines"]["optimal_execution"]["filePath"] = "analyst_dashboard/analyzers/nonexistent.py"
+        with open(manifest_dst, "w", encoding="utf-8") as fp:
+            json.dump(manifest_json, fp, indent=2)
+
+        mut_path_audit = ExperimentLedger.verify_frozen_engine_manifest(repo_root=str(temp_repo))
+        assert mut_path_audit["status"] == "MANIFEST_MISSING"
+        assert mut_path_audit["valid"] is False
+    finally:
+        with open(manifest_dst, "wb") as fp:
+            fp.write(orig_manifest_bytes)
+
+    # 6. Verify actual rejection of missing engine entry
+    try:
+        with open(manifest_dst, "r", encoding="utf-8") as fp:
+            manifest_json = json.load(fp)
+        del manifest_json["engines"]["optimal_execution"]
+        with open(manifest_dst, "w", encoding="utf-8") as fp:
+            json.dump(manifest_json, fp, indent=2)
+
+        del_audit = ExperimentLedger.verify_frozen_engine_manifest(repo_root=str(temp_repo))
+        assert del_audit["status"] == "MANIFEST_MISSING"
+        assert del_audit["valid"] is False
+    finally:
+        with open(manifest_dst, "wb") as fp:
+            fp.write(orig_manifest_bytes)
+
+    # 7. Verify actual rejection of missing/malformed manifest
+    try:
+        os.remove(manifest_dst)
+        missing_audit = ExperimentLedger.verify_frozen_engine_manifest(repo_root=str(temp_repo))
+        assert missing_audit["status"] == "MANIFEST_MISSING"
+        assert missing_audit["valid"] is False
+
+        with open(manifest_dst, "w", encoding="utf-8") as fp:
+            fp.write("{ invalid json manifest content")
+        malformed_audit = ExperimentLedger.verify_frozen_engine_manifest(repo_root=str(temp_repo))
+        assert malformed_audit["status"] == "MANIFEST_MISSING"
+        assert malformed_audit["valid"] is False
+    finally:
+        with open(manifest_dst, "wb") as fp:
+            fp.write(orig_manifest_bytes)
+
+    # 8. Verify actual rejection of wrong authority/version or unauthorized successor
+    unauth_audit = ExperimentLedger.verify_frozen_engine_manifest(version="9.9.9", repo_root=str(temp_repo))
+    assert unauth_audit["status"] == "MANIFEST_MISSING"
+    assert unauth_audit["valid"] is False
+
+

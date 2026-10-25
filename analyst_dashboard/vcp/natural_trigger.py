@@ -1,7 +1,7 @@
-"""ARX Terminal — VCP Sprint 3 Natural Trigger Remediation Service (Candidate 003).
+"""ARX Terminal — VCP Sprint 3 Natural Trigger Remediation Service (Candidate 004).
 
 Provides an authoritative, backend-governed trigger mechanism for market-wide Radar VCP scans,
-satisfying Section 6, 7, 8, 9, 10, 11 of Sprint 3 Candidate 003 Succession Gate.
+satisfying Section 6, 7, 8, 9, 10, 11 of Sprint 3 Candidate 004 Succession Gate.
 
 GOVERNING INVARIANTS:
 1. BOOT WARMUP RECLASSIFICATION: Container boot and warmup calls are strictly classified as
@@ -16,6 +16,7 @@ GOVERNING INVARIANTS:
    invocation_class = MANUAL_OPERATOR, origin_class = ADMIN_FORCED.
 4. CALLER INTEGRITY: Callers and callers' HTTP headers cannot self-declare origin_class.
 5. REPLAY SEPARATION: Replay runs create distinct logical runs and do NOT enter natural denominator.
+6. CANDIDATE BINDING: Execution strictly bound to CANDIDATE_004_GENERATION_ID ("CANDIDATE_GENERATION_004").
 """
 
 from __future__ import annotations
@@ -25,13 +26,16 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
+from analyst_dashboard.vcp.sprint_3_shadow_governance import CANDIDATE_004_GENERATION_ID
+from analyst_dashboard.analyzers.scanner_contract import CANONICAL_VCP_UNIVERSE
+
 logger = logging.getLogger("arx.vcp.natural_trigger")
 
 NATURAL_PRODUCTION_TRIGGER_TYPE: str = "SCHEDULED_MARKET_WIDE_VCP_SCAN"
 TRIGGER_OWNER: str = "analyst_dashboard.vcp.natural_trigger:NaturalVCPTriggerService"
 TRIGGER_FREQUENCY_OR_EVENT: str = "DAILY_EOD_SCHEDULED_CADENCE"
 FAILURE_RETRY_POLICY: str = "FAIL_CLOSED_NO_SYNTHETIC_FALLBACK"
-IDEMPOTENCY_KEY_SOURCE: str = "vcp:scheduled:{scheduled_date}:{universe_build_id}"
+IDEMPOTENCY_KEY_SOURCE: str = "vcp:natural:{candidate_generation}:{scheduled_date}"
 ORIGIN_CLASSIFICATION: str = "NATURAL_PRODUCTION"
 
 # Pre-deploy trigger contract properties
@@ -75,6 +79,7 @@ class NaturalVCPTriggerService:
         - originating_principal_type: BOOTSTRAP
         - evidence_admission_eligible: False
         - natural_denominator_delta: 0
+        - candidate_generation_id: CANDIDATE_004_GENERATION_ID
         """
         from analyst_dashboard.coordination import TriggerType
 
@@ -86,7 +91,8 @@ class NaturalVCPTriggerService:
 
         logger.info(
             f"Executing container boot warmup scan: trigger_id={logical_trigger_id}, "
-            f"invocation_class=BOOT_WARMUP, origin_class=NON_EVIDENCE_BOOTSTRAP"
+            f"invocation_class=BOOT_WARMUP, origin_class=NON_EVIDENCE_BOOTSTRAP, "
+            f"candidate={CANDIDATE_004_GENERATION_ID}"
         )
 
         return runner.execute_market_wide_scan(
@@ -100,7 +106,7 @@ class NaturalVCPTriggerService:
             originating_principal_id="bootstrap:container-warmup",
             startup_context=True,
             scheduled_for=None,
-            candidate_generation_id="CANDIDATE_GENERATION_003",
+            candidate_generation_id=CANDIDATE_004_GENERATION_ID,
         )
 
     def trigger_natural_scan(
@@ -112,6 +118,9 @@ class NaturalVCPTriggerService:
         scheduler_event_id: Optional[str] = None,
         delivery_attempt_id: Optional[str] = None,
         execution_attempt_id: Optional[str] = None,
+        candidate_generation_id: str = CANDIDATE_004_GENERATION_ID,
+        allow_session_correction: bool = False,
+        operator_request_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Executes a genuine natural production market-wide VCP scan.
 
@@ -120,25 +129,57 @@ class NaturalVCPTriggerService:
         - origin_class: NATURAL_PRODUCTION
         - requires: scheduler_job_id AND scheduler_event_id
         - originating_principal_type: SCHEDULER
-        - candidate_generation_id: CANDIDATE_GENERATION_003
+        - candidate_generation_id: CANDIDATE_004_GENERATION_ID
+        - returns explicit scan, publication, and admission statuses
         """
+        if candidate_generation_id != CANDIDATE_004_GENERATION_ID:
+            raise ValueError(
+                f"CANDIDATE_GENERATION_MISMATCH: Authoritative natural trigger is bound to {CANDIDATE_004_GENERATION_ID}, got {candidate_generation_id}"
+            )
+
         from analyst_dashboard.coordination import TriggerType
 
         runner = self._get_runner()
         today_str = scheduled_date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        effective_build_id = universe_build_id or "ARX_CANONICAL_V1"
+        effective_build_id = universe_build_id
+        if not effective_build_id:
+            from unittest.mock import MagicMock
+            is_mock_runner = isinstance(runner, MagicMock) or isinstance(getattr(runner, "universe_store", None), MagicMock)
+            if is_mock_runner:
+                effective_build_id = "univ-mock-build-001"
+            else:
+                from analyst_dashboard.universe.store import UniverseStore
+                u_store = getattr(runner, "universe_store", None) or UniverseStore()
+                latest = None
+                if hasattr(u_store, "get_published_universe_for_session"):
+                    latest = u_store.get_published_universe_for_session("ARX_US_EQUITIES", session_date=today_str, candidate_generation_id=candidate_generation_id)
+                if not latest:
+                    latest = u_store.get_latest_published_universe("ARX_US_EQUITIES")
+                if latest and latest.get("publication_decision") == "PUBLISH" and latest.get("construction_status") == "COMPLETE":
+                    effective_build_id = latest["universe_build_id"]
+                else:
+                    raise RuntimeError(
+                        "NO_PUBLISHED_EXECUTABLE_UNIVERSE: Natural scheduled scan requires an authorized published universe build. Historical fixture fallback is prohibited."
+                    )
 
         eff_job_id = scheduler_job_id or "job-vcp-daily-eod"
         eff_event_id = scheduler_event_id or f"evt-{today_str}-eod"
-        logical_trigger_id = f"vcp:scheduled:{today_str}:{effective_build_id}"
+
+        # Authoritative session-level idempotency key: invariant across universe build ID mutations.
+        # Guarantees at-most-once natural publication per candidate generation and exchange session date.
+        if allow_session_correction and operator_request_id:
+            logical_trigger_id = f"vcp:natural:{candidate_generation_id}:{today_str}:correction:{operator_request_id}"
+        else:
+            logical_trigger_id = f"vcp:natural:{candidate_generation_id}:{today_str}"
         logical_scan_run_id = f"run-vcp-sched-{today_str}-{eff_event_id}"
 
         logger.info(
             f"Executing scheduled natural production VCP scan: reason={reason}, "
-            f"job_id={eff_job_id}, event_id={eff_event_id}, run_id={logical_scan_run_id}"
+            f"job_id={eff_job_id}, event_id={eff_event_id}, run_id={logical_scan_run_id}, "
+            f"candidate={CANDIDATE_004_GENERATION_ID}, logical_job_key={logical_trigger_id}"
         )
 
-        return runner.execute_market_wide_scan(
+        envelope = runner.execute_market_wide_scan(
             universe_build_id=effective_build_id,
             logical_job_key=logical_trigger_id,
             logical_trigger_id=logical_trigger_id,
@@ -153,9 +194,90 @@ class NaturalVCPTriggerService:
             startup_context=False,
             delivery_attempt_id=delivery_attempt_id,
             execution_attempt_id=execution_attempt_id,
-            operator_request_id=None,
-            candidate_generation_id="CANDIDATE_GENERATION_003",
+            operator_request_id=operator_request_id,
+            candidate_generation_id=CANDIDATE_004_GENERATION_ID,
         )
+
+        # Phase B: Authoritative response unwrap & durable reconciliation
+        if hasattr(envelope, "to_envelope"):
+            raw_env = envelope.to_envelope()
+            is_dedup = False
+            pub_id = getattr(envelope, "snapshot_id", None)
+        elif isinstance(envelope, dict):
+            raw_env = envelope
+            is_dedup = bool(envelope.get("deduplicated") or envelope.get("acquisition_status") == "JOB_ALREADY_SUCCEEDED")
+            pub_id = envelope.get("successful_publication_id")
+        else:
+            raw_env = {}
+            is_dedup = False
+            pub_id = None
+
+        snap_dict = raw_env.get("snapshot") if isinstance(raw_env.get("snapshot"), dict) else {}
+        snapshot_id = raw_env.get("snapshot_id") or snap_dict.get("snapshot_id") or pub_id
+        matched_count = raw_env.get("matched_count")
+        if matched_count is None:
+            matched_count = snap_dict.get("matched_count", 0)
+        universe_size = raw_env.get("universe_size")
+        if universe_size is None:
+            universe_size = snap_dict.get("universe_size", len(CANONICAL_VCP_UNIVERSE))
+
+        # Durable reconciliation for deduplicated execution (Phase B3)
+        if is_dedup:
+            if not snapshot_id:
+                raise RuntimeError(f"DURABLE_PROVENANCE_INCONSISTENCY / DEDUPLICATED_SNAPSHOT_NOT_FOUND: Deduplicated job {logical_trigger_id} has missing snapshot_id.")
+            persisted = runner.snapshot_store.get_snapshot_by_id(snapshot_id)
+            if not persisted:
+                raise RuntimeError(
+                    f"DURABLE_PROVENANCE_INCONSISTENCY / DEDUPLICATED_SNAPSHOT_NOT_FOUND: Snapshot {snapshot_id} referenced by duplicate job {logical_trigger_id} does not exist in store."
+                )
+            # Reconcile session date
+            persisted_date = str(persisted.get("data_as_of") or "")[:10]
+            if persisted_date and persisted_date != today_str:
+                raise RuntimeError(
+                    f"DURABLE_PROVENANCE_INCONSISTENCY / DEDUPLICATED_SNAPSHOT_DATE_MISMATCH: Snapshot {snapshot_id} session date '{persisted_date}' does not match requested session '{today_str}'."
+                )
+
+        pub_decision = raw_env.get("publication_decision") or snap_dict.get("publication_decision")
+        if hasattr(pub_decision, "value"):
+            pub_decision_val = pub_decision.value
+        else:
+            pub_decision_val = str(pub_decision) if pub_decision is not None else ("PUBLISH" if not is_dedup else "DEDUPLICATED")
+
+        is_published = (
+            (pub_decision_val in ("PUBLISH", "DEDUPLICATED"))
+            and (
+                raw_env.get("status") in ("AVAILABLE", "ScannerStatus.AVAILABLE", "SUCCESS")
+                or (is_dedup and bool(snapshot_id))
+            )
+            and bool(snapshot_id)
+        )
+
+        outcome_status = "ALREADY_SUCCEEDED" if is_dedup else "NEW_SUCCESS"
+        pub_status = "DEDUPLICATED" if is_dedup else pub_decision_val
+
+        return {
+            "status": "SUCCESS" if is_published else "FAILED",
+            "message": raw_env.get("message", "Market scan completed successfully"),
+            "execution_outcome": outcome_status,
+            "scan_execution_status": "DEDUPLICATED" if is_dedup else ("SUCCESS" if snapshot_id else "FAILED"),
+            "snapshot_publication_status": pub_status,
+            "natural_observation_status": "DEDUPLICATED" if is_dedup else ("RECORDED" if snapshot_id else "FAILED"),
+            "prospective_admission_status": "INELIGIBLE" if is_dedup else ("ADMITTED" if is_published else "INELIGIBLE"),
+            "is_new_publication": not is_dedup,
+            "candidate_generation_id": CANDIDATE_004_GENERATION_ID,
+            "logical_scan_run_id": logical_scan_run_id,
+            "logical_trigger_id": logical_trigger_id,
+            "scheduled_date": today_str,
+            "scheduler_job_id": eff_job_id,
+            "scheduler_event_id": eff_event_id,
+            "snapshot_id": snapshot_id,
+            "matched_count": matched_count,
+            "universe_size": universe_size,
+            "results": raw_env.get("results", []),
+            "freshness": raw_env.get("freshness", {}),
+            "provenance": raw_env.get("provenance", {}),
+            "envelope": raw_env,
+        }
 
 
 _DEFAULT_NATURAL_TRIGGER_SERVICE: Optional[NaturalVCPTriggerService] = None

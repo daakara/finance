@@ -935,9 +935,9 @@ class HiddenGemsScreener:
                     "greenblatt_score": 0.0,
                     "growth_score": 0.0,
                     "expert_model": "Unverified Asset / Missing Regulatory Filings",
-                    "peg_ratio": 0.0,
-                    "roic_pct": 0.0,
-                    "gross_margin_pct": 0.0,
+                    "peg_ratio": None,
+                    "roic_pct": None,
+                    "gross_margin_pct": None,
                     "risk_rating": "Unverified Risk",
                     "investment_thesis": "Fundamental metrics and SEC disclosures unavailable for this uncataloged asset.",
                     "primary_catalyst": "Awaiting verified corporate disclosures.",
@@ -957,9 +957,9 @@ class HiddenGemsScreener:
                     "greenblatt_score": 0.0,
                     "growth_score": 0.0,
                     "expert_model": "Historical Fundamentals Unverified (Catalog is CURRENT_ONLY)",
-                    "peg_ratio": 0.0,
-                    "roic_pct": 0.0,
-                    "gross_margin_pct": 0.0,
+                    "peg_ratio": None,
+                    "roic_pct": None,
+                    "gross_margin_pct": None,
                     "risk_rating": "Unverified Risk",
                     "investment_thesis": "Static gem catalog cannot be projected backward into historical evaluation without verified point-in-time filing.",
                     "primary_catalyst": "Awaiting point-in-time SEC disclosures.",
@@ -1009,7 +1009,7 @@ class HiddenGemsScreener:
                 "historical_eligible": False,
             })
 
-        return sorted(results, key=lambda x: x["composite_score"], reverse=True)
+        return sorted(results, key=lambda x: (x["composite_score"] is not None, x["composite_score"] if x["composite_score"] is not None else -1.0), reverse=True)
 
     def screen_universe(self, universe: List[str], evaluation_timestamp: Optional[str] = None) -> List[Dict[str, Any]]:
         """Legacy alias method."""

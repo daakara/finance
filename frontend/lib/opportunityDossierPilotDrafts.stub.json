@@ -1,0 +1,9 @@
+{
+  "schema_version": "ARX-OPPORTUNITY-PILOT-DRAFT-STUB-V1",
+  "snapshot_metadata": {
+    "is_stub": true,
+    "notice": "Empty pilot draft stub for production build separation"
+  },
+  "cohort": [],
+  "dossiers": {}
+}

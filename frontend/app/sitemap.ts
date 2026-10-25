@@ -18,7 +18,7 @@ const BASE_URL = "https://www.arxterminal.com";
  * Implements strict Indexable Route Authority policy:
  * - Emits only public, canonical, indexable routes with canonical trailing slash.
  * - Excludes private/internal surfaces (Executive OS, workbench, cockpit, me, research).
- * - Excludes client redirect stubs (/committee, /politician, /strategy).
+ * - Excludes client redirect stubs (/committee, /politician, /strategy, /screener).
  * - Excludes noindex routes (/performance, /journal).
  * - Excludes error routes (/404).
  */
@@ -53,13 +53,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }
   };
 
-  // 1. Root & Core Public Hubs (11 URLs)
+  // 1. Root & Core Public Hubs (10 URLs)
   addUrl("/", 1.0, "daily");
   addUrl("/radar", 0.9, "daily");
   addUrl("/setups", 0.9, "daily");
   addUrl("/smart-money", 0.9, "daily");
   addUrl("/smart-money/late-filers", 0.8, "daily");
-  addUrl("/screener", 0.9, "daily");
   addUrl("/portfolio", 0.8, "daily");
   addUrl("/guide", 0.7, "weekly");
   addUrl("/compare", 0.8, "daily");

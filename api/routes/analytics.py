@@ -18,6 +18,7 @@ from analyst_dashboard.analyzers.trader_archetypes import TraderArchetypeAnalyze
 from analyst_dashboard.analyzers.self_healing_engine import SelfHealingForecastAuditor
 from analyst_dashboard.analyzers.market_graph import MarketGraphEngine
 from analyst_dashboard.analyzers.catalysts import CatalystEngine
+from analyst_dashboard.corporate_events import normalize_corporate_event
 from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
 from analyst_dashboard.data.fred_fetcher import FredMacroFetcher, normalize_macro_payload
 from analyst_dashboard.data.eodhd_fetcher import EODHDMarketFetcher
@@ -1111,12 +1112,26 @@ def get_asset_analytics(
         sector_name = info.get("sector", "") or ""
         industry_name = info.get("industry", "") or ""
         long_name = info.get("longName", "") or info.get("shortName", "") or f"{upper_sym} Corporation"
+        
+        # Extract and normalize corporate events & earnings schedule
+        cal_data = None
+        try:
+            cal_data = ticker_obj.calendar
+        except Exception:
+            pass
+        corporate_event = normalize_corporate_event(
+            symbol=upper_sym,
+            info=info,
+            calendar=cal_data,
+        )
+
         catalyst_report = catalyst_engine.get_asset_catalyst_report(
             symbol=upper_sym,
             current_price=current_price,
             sector=sector_name,
             industry=industry_name,
             company_name=long_name,
+            corporate_event=corporate_event,
         )
 
         # Persist factor scores and catalyst snapshot into SQLite
@@ -1155,6 +1170,10 @@ def get_asset_analytics(
             optimal_execution_plan["live_spot_as_of"] = market_price_state.live_observed_at
             optimal_execution_plan["live_freshness"] = market_price_state.live_freshness
             optimal_execution_plan["market_session"] = market_price_state.market_session
+            optimal_execution_plan["corporate_event"] = corporate_event
+            optimal_execution_plan["days_to_earnings"] = corporate_event.get("days_to_earnings")
+            optimal_execution_plan["has_imminent_earnings"] = corporate_event.get("has_imminent_earnings", False)
+            optimal_execution_plan["catalyst_report"] = catalyst_report
 
         # Log recommendation into persistent History SQLite
         try:
@@ -1373,6 +1392,7 @@ def get_asset_analytics(
             "optimalExecution": optimal_execution_plan,
             "liquidityDefense": optimal_execution_plan.get("liquidity_defense"),
             "catalystForecast": catalyst_report,
+            "corporateEvent": corporate_event,
             "smartMoney": {
                 "status": "AVAILABLE" if (congress_trades or options_flow) else "PIPELINE_PENDING",
                 "congressTrades": congress_trades,

@@ -1,0 +1,685 @@
+{
+  "alcon_v4_extension": {
+    "accumulation_ceilings": {
+      "annual_irr_basis": {
+        "hurdle_100": 60.56,
+        "hurdle_80": 66.31,
+        "hurdle_85": 64.82,
+        "invertibility_verified": true
+      },
+      "calendar_xirr_basis": {
+        "hurdle_100": 60.61,
+        "hurdle_80": 66.36,
+        "hurdle_85": 64.86,
+        "invertibility_verified": true
+      }
+    },
+    "buyback_authority_reconciliation": {
+      "APPROVED_CAPACITY_2026_PROGRAM": {
+        "amount": 1500.0,
+        "authorization_date": "2026-05-05",
+        "expiration_date": "2029-05-05",
+        "source": "2026 AGM Resolution & June 2026 Form 6-K",
+        "status": "BOARD_AND_AGM_AUTHORIZED"
+      },
+      "ASSUMED_FUTURE_AUTHORIZATIONS": {
+        "amount": 600.0,
+        "notes": "Requires future AGM authorization renewal post-2029",
+        "status": "HYPOTHETICAL_EXTENSION"
+      },
+      "EXECUTED_BUYBACKS_2025_PROGRAM": {
+        "amount": 750.0,
+        "completion_date": "2026-01-31",
+        "source": "Form 20-F Note 11 & Official Buyback History",
+        "status": "COMPLETED"
+      },
+      "EXECUTED_UNDER_2026_PROGRAM_H1": {
+        "amount": 300.0,
+        "period": "May 5, 2026 - June 30, 2026",
+        "source": "June 2026 Form 6-K",
+        "status": "EXECUTED"
+      },
+      "FORECAST_BUYBACKS_BASELINE": {
+        "amount": 1800.0,
+        "composition": {
+          "assumed_future_authorization": 600.0,
+          "remaining_approved": 1200.0
+        },
+        "status": "POLICY_ASSUMPTION_5YR"
+      },
+      "REMAINING_APPROVED_CAPACITY": {
+        "amount": 1200.0,
+        "as_of": "2026-06-30",
+        "status": "ACTIVE_REMAINING_CAPACITY"
+      }
+    },
+    "dated_cash_flows": [
+      {
+        "cash_flow": -67.43,
+        "date": "2026-10-22",
+        "days_from_start": 0,
+        "event": "INITIAL_INVESTMENT",
+        "fraction_years": 0.0
+      },
+      {
+        "cash_flow": 0.36,
+        "date": "2027-05-15",
+        "days_from_start": 205,
+        "event": "ANNUAL_DIVIDEND_YEAR_1",
+        "fraction_years": 0.561644
+      },
+      {
+        "cash_flow": 0.39,
+        "date": "2028-05-15",
+        "days_from_start": 571,
+        "event": "ANNUAL_DIVIDEND_YEAR_2",
+        "fraction_years": 1.564384
+      },
+      {
+        "cash_flow": 0.42,
+        "date": "2029-05-15",
+        "days_from_start": 936,
+        "event": "ANNUAL_DIVIDEND_YEAR_3",
+        "fraction_years": 2.564384
+      },
+      {
+        "cash_flow": 0.45,
+        "date": "2030-05-15",
+        "days_from_start": 1301,
+        "event": "ANNUAL_DIVIDEND_YEAR_4",
+        "fraction_years": 3.564384
+      },
+      {
+        "cash_flow": 0.48,
+        "date": "2031-05-15",
+        "days_from_start": 1666,
+        "event": "ANNUAL_DIVIDEND_YEAR_5",
+        "fraction_years": 4.564384
+      },
+      {
+        "cash_flow": 95.00117063705073,
+        "date": "2031-10-22",
+        "days_from_start": 1826,
+        "event": "TERMINAL_SHARE_DISPOSITION",
+        "fraction_years": 5.00274
+      }
+    ],
+    "dividend_schedule_dps": [
+      0.36,
+      0.39,
+      0.42,
+      0.45,
+      0.48
+    ],
+    "historical_v4_baseline": {
+      "metadata": {
+        "data_as_of": "2026-10-21",
+        "owner_decision": "Option B: Scenario-Derived Net Debt Policy (ending_gross_debt - ending_cash)",
+        "spot_price": 67.43,
+        "title": "Alcon Inc. V4 (Fixed Assumption) vs V5 (Scenario-Derived Net Debt) Audit Ledger Comparison"
+      },
+      "scenarios": [
+        {
+          "delta": {
+            "annual_irr_bps": -7.3,
+            "calendar_xirr_bps": -7.3,
+            "ceiling_100": -0.17,
+            "ceiling_80": -0.19,
+            "ceiling_85": -0.18,
+            "terminal_share_price": -0.28,
+            "valuation_net_debt": 130.41
+          },
+          "scenario_id": "CONSERVATIVE",
+          "scenario_name": "Conservative (Scenario-Derived Net Debt)",
+          "v4_baseline": {
+            "annual_irr_percent": 3.18,
+            "calendar_dated_xirr_percent": 3.19,
+            "cash_flow_net_debt": -2045.79,
+            "ceiling_100": 49.16,
+            "ceiling_80": 53.82,
+            "ceiling_85": 52.6,
+            "ending_cash": 2045.79,
+            "ending_gross_debt": 0.0,
+            "net_debt_difference": -130.41,
+            "terminal_share_price": 76.64,
+            "valuation_net_debt": -2176.2
+          },
+          "v5_successor": {
+            "annual_irr_percent": 3.11,
+            "calendar_dated_xirr_percent": 3.12,
+            "cash_flow_net_debt": -2045.79,
+            "ceiling_100": 48.99,
+            "ceiling_80": 53.63,
+            "ceiling_85": 52.42,
+            "ending_cash": 2045.79,
+            "ending_gross_debt": 0.0,
+            "net_debt_difference": 0.0,
+            "terminal_share_price": 76.36,
+            "valuation_net_debt": -2045.79
+          }
+        },
+        {
+          "delta": {
+            "annual_irr_bps": 73.0,
+            "calendar_xirr_bps": 73.1,
+            "ceiling_100": 1.97,
+            "ceiling_80": 2.16,
+            "ceiling_85": 2.12,
+            "terminal_share_price": 3.18,
+            "valuation_net_debt": -1511.35
+          },
+          "scenario_id": "BASE_MULTIPLE",
+          "scenario_name": "Base Case (Exit Multiple, Derived Net Debt)",
+          "v4_baseline": {
+            "annual_irr_percent": 6.5,
+            "calendar_dated_xirr_percent": 6.51,
+            "cash_flow_net_debt": -3687.55,
+            "ceiling_100": 57.47,
+            "ceiling_80": 62.93,
+            "ceiling_85": 61.5,
+            "ending_cash": 3687.55,
+            "ending_gross_debt": 0.0,
+            "net_debt_difference": 1511.35,
+            "terminal_share_price": 90.02,
+            "valuation_net_debt": -2176.2
+          },
+          "v5_successor": {
+            "annual_irr_percent": 7.23,
+            "calendar_dated_xirr_percent": 7.24,
+            "cash_flow_net_debt": -3687.55,
+            "ceiling_100": 59.44,
+            "ceiling_80": 65.09,
+            "ceiling_85": 63.62,
+            "ending_cash": 3687.55,
+            "ending_gross_debt": 0.0,
+            "net_debt_difference": 0.0,
+            "terminal_share_price": 93.2,
+            "valuation_net_debt": -3687.55
+          }
+        },
+        {
+          "delta": {
+            "annual_irr_bps": 71.9,
+            "calendar_xirr_bps": 72.0,
+            "ceiling_100": 1.97,
+            "ceiling_80": 2.16,
+            "ceiling_85": 2.12,
+            "terminal_share_price": 3.18,
+            "valuation_net_debt": -1511.35
+          },
+          "scenario_id": "BASE_DCF",
+          "scenario_name": "Base Case (Gordon Growth DCF, Derived Net Debt)",
+          "v4_baseline": {
+            "annual_irr_percent": 6.92,
+            "calendar_dated_xirr_percent": 6.93,
+            "cash_flow_net_debt": -3687.55,
+            "ceiling_100": 58.59,
+            "ceiling_80": 64.15,
+            "ceiling_85": 62.7,
+            "ending_cash": 3687.55,
+            "ending_gross_debt": 0.0,
+            "net_debt_difference": 1511.35,
+            "terminal_share_price": 91.82,
+            "valuation_net_debt": -2176.2
+          },
+          "v5_successor": {
+            "annual_irr_percent": 7.64,
+            "calendar_dated_xirr_percent": 7.65,
+            "cash_flow_net_debt": -3687.55,
+            "ceiling_100": 60.56,
+            "ceiling_80": 66.31,
+            "ceiling_85": 64.82,
+            "ending_cash": 3687.55,
+            "ending_gross_debt": 0.0,
+            "net_debt_difference": 0.0,
+            "terminal_share_price": 95.0,
+            "valuation_net_debt": -3687.55
+          }
+        },
+        {
+          "delta": {
+            "annual_irr_bps": 116.4,
+            "calendar_xirr_bps": 116.5,
+            "ceiling_100": 4.07,
+            "ceiling_80": 4.46,
+            "ceiling_85": 4.36,
+            "terminal_share_price": 6.55,
+            "valuation_net_debt": -3114.61
+          },
+          "scenario_id": "OPTIMISTIC",
+          "scenario_name": "Optimistic (Scenario-Derived Net Debt)",
+          "v4_baseline": {
+            "annual_irr_percent": 13.34,
+            "calendar_dated_xirr_percent": 13.36,
+            "cash_flow_net_debt": -5290.81,
+            "ceiling_100": 78.2,
+            "ceiling_80": 85.65,
+            "ceiling_85": 83.71,
+            "ending_cash": 5290.81,
+            "ending_gross_debt": 0.0,
+            "net_debt_difference": 3114.61,
+            "terminal_share_price": 123.42,
+            "valuation_net_debt": -2176.2
+          },
+          "v5_successor": {
+            "annual_irr_percent": 14.5,
+            "calendar_dated_xirr_percent": 14.52,
+            "cash_flow_net_debt": -5290.81,
+            "ceiling_100": 82.27,
+            "ceiling_80": 90.11,
+            "ceiling_85": 88.07,
+            "ending_cash": 5290.81,
+            "ending_gross_debt": 0.0,
+            "net_debt_difference": 0.0,
+            "terminal_share_price": 129.97,
+            "valuation_net_debt": -5290.81
+          }
+        },
+        {
+          "delta": {
+            "annual_irr_bps": 0.0,
+            "calendar_xirr_bps": 0.0,
+            "ceiling_100": 0.0,
+            "ceiling_80": 0.0,
+            "ceiling_85": 0.0,
+            "terminal_share_price": 0.0,
+            "valuation_net_debt": 0.0
+          },
+          "scenario_id": "CONSERVATIVE_DYNAMIC",
+          "scenario_name": "Conservative (Cash-Constrained Dynamic)",
+          "v4_baseline": {
+            "annual_irr_percent": 3.2,
+            "calendar_dated_xirr_percent": 3.21,
+            "cash_flow_net_debt": -2645.79,
+            "ceiling_100": 49.2,
+            "ceiling_80": 53.86,
+            "ceiling_85": 52.65,
+            "ending_cash": 3645.79,
+            "ending_gross_debt": 1000.0,
+            "net_debt_difference": 0.0,
+            "terminal_share_price": 76.7,
+            "valuation_net_debt": -2645.79
+          },
+          "v5_successor": {
+            "annual_irr_percent": 3.2,
+            "calendar_dated_xirr_percent": 3.21,
+            "cash_flow_net_debt": -2645.79,
+            "ceiling_100": 49.2,
+            "ceiling_80": 53.86,
+            "ceiling_85": 52.65,
+            "ending_cash": 3645.79,
+            "ending_gross_debt": 1000.0,
+            "net_debt_difference": 0.0,
+            "terminal_share_price": 76.7,
+            "valuation_net_debt": -2645.79
+          }
+        },
+        {
+          "delta": {
+            "annual_irr_bps": 0.0,
+            "calendar_xirr_bps": 0.0,
+            "ceiling_100": 0.0,
+            "ceiling_80": 0.0,
+            "ceiling_85": 0.0,
+            "terminal_share_price": 0.0,
+            "valuation_net_debt": 0.0
+          },
+          "scenario_id": "OPTIMISTIC_DYNAMIC",
+          "scenario_name": "Optimistic (High-Cash Dynamic)",
+          "v4_baseline": {
+            "annual_irr_percent": 14.34,
+            "calendar_dated_xirr_percent": 14.36,
+            "cash_flow_net_debt": -5290.81,
+            "ceiling_100": 81.71,
+            "ceiling_80": 89.49,
+            "ceiling_85": 87.46,
+            "ending_cash": 5290.81,
+            "ending_gross_debt": 0.0,
+            "net_debt_difference": 0.0,
+            "terminal_share_price": 129.06,
+            "valuation_net_debt": -5290.81
+          },
+          "v5_successor": {
+            "annual_irr_percent": 14.34,
+            "calendar_dated_xirr_percent": 14.36,
+            "cash_flow_net_debt": -5290.81,
+            "ceiling_100": 81.71,
+            "ceiling_80": 89.49,
+            "ceiling_85": 87.46,
+            "ending_cash": 5290.81,
+            "ending_gross_debt": 0.0,
+            "net_debt_difference": 0.0,
+            "terminal_share_price": 129.06,
+            "valuation_net_debt": -5290.81
+          }
+        }
+      ]
+    },
+    "holding_period_days": 1826,
+    "holding_period_years": 5.0,
+    "model_version": "v5.0",
+    "net_debt_policy": "SCENARIO_DERIVED_FROM_CASH_FLOWS",
+    "qualitative_evidence_matrix": [
+      {
+        "claim": "Non-equipment recurring sales share",
+        "classification": "AUDITED_AND_CERTIFIED",
+        "finding": "88.37% ($9,119M / $10,319M)",
+        "source": "Form 20-F FY2025 Item 5 / Item 18"
+      },
+      {
+        "claim": "Consoles installed base",
+        "classification": "QUALITATIVE_HYPOTHESIS",
+        "finding": "Not separately audited in 20-F; industry estimate",
+        "source": "Commercial ophthalmic industry surveys"
+      },
+      {
+        "claim": "Consumables gross margin (>75%)",
+        "classification": "UNAUDITED_MANAGEMENT_ASSERTION",
+        "finding": "Consolidated gross margin 55.7%; line P&L unverified",
+        "source": "Form 20-F Consolidated Gross Profit"
+      }
+    ],
+    "timeline_convention": "CONVENTION_A_FIVE_FULL_YEARS"
+  },
+  "central_assessment": {
+    "confidence_assessment": "High confidence on quantitative modeling and valuation math (regression tests pass). Qualitative claims strictly audited: console installed count (>30,000) downgraded to industry estimate; consumables gross margin (>75%) downgraded to unaudited management assertion; non-equipment revenue share (88.4%) certified from audited Form 20-F financial statements.",
+    "disposition": "WATCH_CONDITIONS",
+    "disposition_label": "Watch \u2014 Conditions Required for Entry",
+    "main_uncertainty": "Commercial transition velocity to the next-generation Unity surgical console platform, competitive intraocular lens pricing in EMEA/APAC tenders, and future Swiss AGM approval timing for additional capital return authorizations.",
+    "presentation_summary": "Alcon Inc. is the global market leader in ophthalmology, holding the #1 position in Surgical and #2 in Vision Care. The company operates an exceptional razor-and-blade business model characterized by proprietary surgical consoles (Centurion, Constellation, LuxOR) driving high-margin single-use consumables, cassettes, and intraocular lenses (IOLs). Audited FY2025 Form 20-F disclosures confirm that 88.4% of total net sales ($9,119M of $10,319M) represent non-equipment repeat procedural and consumer replenishment demand (NOT contracted subscription revenue). However, at the frozen October 21, 2026 reference price of $67.43 USD, the market embeds a 6.51% 5-year revenue CAGR at 20.5% operating margin. Under certified Base DCF assumptions with scenario-derived net debt (6.5% CAGR, 18.5% EBIT margin, WACC 7.25%, g 2.50%), the expected 5-year discrete annual IRR is 7.64% (7.65% calendar XIRR). This approaches but remains just below the institutional cost of equity (7.80%) and 8.00% capital hurdle. Retained strictly on watch: entry requires market pullbacks toward the accumulation ceiling of $66.31 (8.0% hurdle) or $64.82 (8.5% hurdle).",
+    "price_watch_condition": "Accumulate only on pullbacks below $66.31 for an 8.0% expected return, or below $64.82 for an 8.5% return ($60.56 for 10.0% hurdle). At current $67.43 reference price, risk/reward remains uncompensated.",
+    "strongest_opposing_evidence": "Expected 5-year IRR of 7.64% remains below institutional cost of equity (7.80%) and provides thin equity risk premium over US 10-year Treasuries (4.10%); significant capital expenditures required for contact lens and intraocular lens manufacturing expansion; approved buyback capacity ($1,200M active) requires future AGM renewals beyond May 2029 to finance modeled $1,800M share repurchases.",
+    "strongest_supporting_evidence": "88.37% non-equipment sales share ($9,119M / $10,319M in FY2025 audited Form 20-F); high surgical console installed base switching friction; global ophthalmic surgical duopoly with steady procedural growth driven by aging global demographics.",
+    "summary_provenance": "DERIVED_SYNTHESIS"
+  },
+  "dossier_id": "ODP-ALC-01",
+  "financial_profile": {
+    "accounting_basis": "IFRS",
+    "accounting_standard": "IFRS IAS 7 & IFRS 16",
+    "bridge_note": "Starting gross debt $4,500.0M minus starting cash $1,200.0M = $3,300.0M net debt bridge",
+    "capital_structure_position": "Investment grade balance sheet; net debt of $3.30B amortized down to net cash (-$3.69B) over 5-year base forecast",
+    "cash_and_equivalents": 1200000000.0,
+    "currency": "USD",
+    "debt_display": "$4.50B",
+    "is_zero_debt": false,
+    "lease_convention_treatment": "IFRS 16 Lease Liabilities are included in total financial debt; interest classified in operating cash flows under IFRS IAS 7",
+    "net_debt_bridge": 3300000000.0,
+    "operating_income": 1528000000.0,
+    "operating_lease_liabilities_asc842": null,
+    "operating_margin_pct": 14.2,
+    "primary_filings": [
+      {
+        "accession_number": "0001167379-26-000014",
+        "filing_date": "2026-02-25",
+        "form": "20-F",
+        "period_end": "2025-12-31",
+        "source_role": "AUDITED_ANNUAL_REPORT_IFRS",
+        "url": "https://www.sec.gov/Archives/edgar/data/1167379/000116737926000014/alc-20251231.htm"
+      },
+      {
+        "accession_number": "0001167379-26-000042",
+        "filing_date": "2026-08-18",
+        "form": "6-K",
+        "period_end": "2026-06-30",
+        "source_role": "INTERIM_FINANCIAL_REPORT_H1_2026",
+        "url": "https://www.sec.gov/Archives/edgar/data/1167379/000116737926000042/alc-20260630.htm"
+      }
+    ],
+    "reporting_currency": "USD",
+    "revenue": 10758000000.0,
+    "revenue_display": "$10.76B",
+    "revenue_period": "TTM (Ended 2026-06-30)",
+    "selected_share_basis": {
+      "basis_type": "DILUTED_SHARES",
+      "measurement_period": "As of June 30, 2026 / October 21, 2026 baseline",
+      "rationale": "Point-in-time diluted share count: 484.524M basic shares plus dilutive awards",
+      "source": "Form 20-F FY2025 Note 8 & Form 6-K H1 2026",
+      "value": 484524000.0
+    },
+    "short_term_investments": 0.0,
+    "total_cash_and_investments": 1200000000.0,
+    "total_financial_debt": 4500000000.0,
+    "zero_debt_support": null
+  },
+  "identity": {
+    "cik": "0001167379",
+    "company_name": "Alcon Inc.",
+    "exchange": "NYSE",
+    "opportunity_route": "Healthcare / Medical Instruments & Supplies (Ophthalmology)",
+    "primary_us_listing": {
+      "currency": "USD",
+      "exchange": "NYSE",
+      "listing_role": "PRIMARY_US_TRADING_LINE",
+      "share_class": "Shares traded directly under Swiss-US bilateral structure (not an ADR ratio)",
+      "ticker": "ALC"
+    },
+    "sec_edgar_browse_url": "https://www.sec.gov/edgar/browse/?CIK=0001167379",
+    "secondary_listings": [
+      {
+        "currency": "CHF",
+        "exchange": "SIX",
+        "exchange_name": "SIX Swiss Exchange",
+        "listing_role": "PRIMARY_HOME_EXCHANGE",
+        "share_class": "Registered Shares (ISIN CH0432492467)",
+        "ticker": "ALC"
+      }
+    ],
+    "symbol": "ALC"
+  },
+  "monitoring": {
+    "baseline_factual_evidence": "Audited Form 20-F FY2025 Item 18 Statements of Income; Form 6-K H1 2026 financial report; May 5, 2026 AGM minutes.",
+    "next_monitoring_trigger": "Q3 2026 earnings release (expected mid-November 2026) focusing on Unity surgical console rollout velocity and intraocular lens volume trends in China VBP (Volume-Based Procurement).",
+    "observable_invalidation_trigger": "Core operating margin drops below 16.5% for two consecutive quarters, or surgical equipment revenue declines >10% YoY, signaling competitive console displacement by Johnson & Johnson Vision or Bausch + Lomb.",
+    "price_watch_condition": "Accumulate below $66.31 for 8.0% return; below $64.82 for 8.5% return; below $60.56 for 10.0% return."
+  },
+  "navigation": {
+    "radar_note": "Inspect technical indicators, moving average alignment, and Minervini Stage 2 status on the ARX Radar console",
+    "radar_url": "/radar?symbol=ALC",
+    "stock_url": "/stock/alc"
+  },
+  "publication_metadata": {
+    "certification_token": "ALC_CROSS_MODEL_OUTPUT_CERTIFIED",
+    "engine_path": "analyst_dashboard/research/sourced_fundamentals/alc_scenario_engine.py",
+    "governing_initiative": "INITIATIVE-S4-ALCON-V4-PUBLICATION",
+    "governing_workstream": "ARX_SPRINT4_ALCON_V4",
+    "holding_period_days": 1826,
+    "holding_period_years": 5.0,
+    "investment_end_date": "2031-10-22",
+    "is_publication_active": false,
+    "is_read_only": true,
+    "market_session_date": "2026-10-21",
+    "model_version": "v5.0",
+    "publication_status": "DRAFT_RESEARCH_CANDIDATE",
+    "schema_version": "ARX-OPPORTUNITY-DOSSIER-V1",
+    "source_ledger_path": "ARX_ALC_CANONICAL_SCENARIO_OUTPUT_LEDGER_V5.json",
+    "source_ledger_sha256": "c4db315f037416a10c01ebf0eb1ccfda52a5ed66fa9396e6f2b8aa9d38256c38",
+    "valuation_date": "2026-10-22"
+  },
+  "valuation": {
+    "calculation_version": "ARX-ALC-CANONICAL-V5.0",
+    "convention_summary": "Discrete 5-Period Annual FCFF Engine (Oct 22, 2026 to Oct 22, 2031, 1,826 days). Base DCF: WACC 7.25%, Terminal g 2.50%, 5Y Rev CAGR 6.50%, Core Operating Margin 18.50%. Reverse DCF at $67.43 spot solves to 6.51% 5Y Revenue CAGR.",
+    "model_type": "Discrete 5-Period Annual FCFF & Reverse-DCF Engine v5.0 (Scenario-Derived Net Debt)",
+    "qualification_notice": "Alcon is an IFRS foreign private issuer reporting under IAS 7 and IFRS 16. Valuation outputs are based on the certified v5.0 canonical scenario ledger under scenario-derived net-debt policy (Option B). Model parameters represent frozen historical research as of October 21, 2026, not live pricing signals.",
+    "reference_date": "2026-10-21",
+    "reference_price": 67.43,
+    "reference_price_label": "Frozen historical reference market close price",
+    "reference_price_source": "NYSE market close October 21, 2026",
+    "resume_conditions": [],
+    "reverse_dcf_parameters": {
+      "base_revenue": 10758000000.0,
+      "current_shares": 488700000.0,
+      "net_debt_bridge": 3248000000.0,
+      "operating_margin_pct": 20.5,
+      "reinvestment_rate_pct": 25.0,
+      "solved_revenue_cagr_pct": 6.51,
+      "target_price": 67.43,
+      "tax_rate_pct": 19.0,
+      "terminal_growth_pct": 2.5,
+      "wacc_pct": 7.35
+    },
+    "roundtrip_delta_cents": 2.0,
+    "roundtrip_value": 67.41,
+    "scenarios": {
+      "base_dcf": {
+        "calendar_dated_xirr_pct": 7.65,
+        "conditional_wording": "Under Base Case (Gordon Growth DCF, Derived Net Debt) assumptions, modeled target share price is $95.00 (+40.9% vs frozen reference price of $67.43).",
+        "cumulative_dividends_per_share": 2.1,
+        "description": "6.5% revenue CAGR, 18.5% EBIT margin, WACC 7.25%, g 2.50%, terminal FCFF $1,970.67M, derived net cash ($3,687.55M).",
+        "ending_diluted_shares": 475.524,
+        "enterprise_value": 41487.79,
+        "equity_value": 45175.34,
+        "exit_method": "gordon_growth",
+        "exit_multiple": 10.8746,
+        "five_period_annual_irr_pct": 7.64,
+        "holding_period_years": 5.0,
+        "name": "Base Case (Gordon Growth DCF, Derived Net Debt)",
+        "net_debt_bridge": -3687.55,
+        "operating_margin_pct": 18.5,
+        "per_share_value": 95.0,
+        "potential_return_pct": 40.89,
+        "revenue_cagr_pct": 6.5,
+        "scenario_key": "base_dcf",
+        "terminal_growth_pct": 2.5,
+        "total_terminal_payout": 97.1,
+        "wacc_pct": 7.25,
+        "year5_ebit": 2663.37,
+        "year5_ebitda": 3815.1,
+        "year5_revenue": 14396.6
+      },
+      "base_multiple": {
+        "calendar_dated_xirr_pct": 7.24,
+        "conditional_wording": "Under Base Case (Exit Multiple, Derived Net Debt) assumptions, modeled target share price is $93.20 (+38.2% vs frozen reference price of $67.43).",
+        "cumulative_dividends_per_share": 2.1,
+        "description": "6.5% revenue CAGR, 18.5% EBIT margin, 10.65x exit multiple, scenario-derived net cash ($3,687.55M).",
+        "ending_diluted_shares": 475.524,
+        "enterprise_value": 40630.82,
+        "equity_value": 44318.36,
+        "exit_method": "multiple",
+        "exit_multiple": 10.65,
+        "five_period_annual_irr_pct": 7.23,
+        "holding_period_years": 5.0,
+        "name": "Base Case (Exit Multiple, Derived Net Debt)",
+        "net_debt_bridge": -3687.55,
+        "operating_margin_pct": 18.5,
+        "per_share_value": 93.2,
+        "potential_return_pct": 38.22,
+        "revenue_cagr_pct": 6.5,
+        "scenario_key": "base_multiple",
+        "terminal_growth_pct": null,
+        "total_terminal_payout": 95.3,
+        "wacc_pct": null,
+        "year5_ebit": 2663.37,
+        "year5_ebitda": 3815.1,
+        "year5_revenue": 14396.6
+      },
+      "conservative": {
+        "calendar_dated_xirr_pct": 3.12,
+        "conditional_wording": "Under Conservative (Scenario-Derived Net Debt) assumptions, modeled target share price is $76.36 (+13.2% vs frozen reference price of $67.43).",
+        "cumulative_dividends_per_share": 2.1,
+        "description": "5.0% revenue CAGR, 16.5% EBIT margin, 10.65x exit multiple, scenario-derived net cash ($2,045.79M).",
+        "ending_diluted_shares": 475.524,
+        "enterprise_value": 34266.38,
+        "equity_value": 36312.17,
+        "exit_method": "multiple",
+        "exit_multiple": 10.65,
+        "five_period_annual_irr_pct": 3.11,
+        "holding_period_years": 5.0,
+        "name": "Conservative (Scenario-Derived Net Debt)",
+        "net_debt_bridge": -2045.79,
+        "operating_margin_pct": 16.5,
+        "per_share_value": 76.36,
+        "potential_return_pct": 13.24,
+        "revenue_cagr_pct": 5.0,
+        "scenario_key": "conservative",
+        "terminal_growth_pct": null,
+        "total_terminal_payout": 78.46,
+        "wacc_pct": null,
+        "year5_ebit": 2212.06,
+        "year5_ebitda": 3217.5,
+        "year5_revenue": 13406.4
+      },
+      "conservative_dynamic": {
+        "calendar_dated_xirr_pct": 3.21,
+        "conditional_wording": "Under Conservative (Cash-Constrained Dynamic) assumptions, modeled target share price is $76.70 (+13.8% vs frozen reference price of $67.43).",
+        "cumulative_dividends_per_share": 2.1,
+        "description": "Conservative growth with buybacks strictly capped at $1.2B remaining approved capacity.",
+        "ending_diluted_shares": 481.062,
+        "enterprise_value": 34252.84,
+        "equity_value": 36898.64,
+        "exit_method": "multiple",
+        "exit_multiple": 10.65,
+        "five_period_annual_irr_pct": 3.2,
+        "holding_period_years": 5.0,
+        "name": "Conservative (Cash-Constrained Dynamic)",
+        "net_debt_bridge": -2645.79,
+        "operating_margin_pct": 16.5,
+        "per_share_value": 76.7,
+        "potential_return_pct": 13.75,
+        "revenue_cagr_pct": 5.0,
+        "scenario_key": "conservative_dynamic",
+        "terminal_growth_pct": null,
+        "total_terminal_payout": 78.8,
+        "wacc_pct": null,
+        "year5_ebit": 2211.16,
+        "year5_ebitda": 3216.23,
+        "year5_revenue": 13400.96
+      },
+      "optimistic": {
+        "calendar_dated_xirr_pct": 14.52,
+        "conditional_wording": "Under Optimistic (Scenario-Derived Net Debt) assumptions, modeled target share price is $129.97 (+92.8% vs frozen reference price of $67.43).",
+        "cumulative_dividends_per_share": 2.1,
+        "description": "8.5% revenue CAGR, 20.0% EBIT margin, 13.00x exit multiple, scenario-derived net cash ($5,290.81M).",
+        "ending_diluted_shares": 475.524,
+        "enterprise_value": 56511.0,
+        "equity_value": 61801.81,
+        "exit_method": "multiple",
+        "exit_multiple": 13.0,
+        "five_period_annual_irr_pct": 14.5,
+        "holding_period_years": 5.0,
+        "name": "Optimistic (Scenario-Derived Net Debt)",
+        "net_debt_bridge": -5290.81,
+        "operating_margin_pct": 20.0,
+        "per_share_value": 129.97,
+        "potential_return_pct": 92.75,
+        "revenue_cagr_pct": 8.5,
+        "scenario_key": "optimistic",
+        "terminal_growth_pct": null,
+        "total_terminal_payout": 132.07,
+        "wacc_pct": null,
+        "year5_ebit": 3161.48,
+        "year5_ebitda": 4347.0,
+        "year5_revenue": 15807.4
+      },
+      "optimistic_dynamic": {
+        "calendar_dated_xirr_pct": 14.36,
+        "conditional_wording": "Under Optimistic (High-Cash Dynamic) assumptions, modeled target share price is $129.06 (+91.4% vs frozen reference price of $67.43).",
+        "cumulative_dividends_per_share": 2.1,
+        "description": "High cash generation with full debt extinguishment and $1.8B buybacks @ $85/sh.",
+        "ending_diluted_shares": 478.348,
+        "enterprise_value": 56443.51,
+        "equity_value": 61734.33,
+        "exit_method": "multiple",
+        "exit_multiple": 13.0,
+        "five_period_annual_irr_pct": 14.34,
+        "holding_period_years": 5.0,
+        "name": "Optimistic (High-Cash Dynamic)",
+        "net_debt_bridge": -5290.81,
+        "operating_margin_pct": 20.0,
+        "per_share_value": 129.06,
+        "potential_return_pct": 91.4,
+        "revenue_cagr_pct": 8.5,
+        "scenario_key": "optimistic_dynamic",
+        "terminal_growth_pct": null,
+        "total_terminal_payout": 131.16,
+        "wacc_pct": null,
+        "year5_ebit": 3157.68,
+        "year5_ebitda": 4341.81,
+        "year5_revenue": 15788.4
+      }
+    },
+    "solved_5y_cagr_pct": 6.51,
+    "suppression_reason": null,
+    "valuation_status": "COMPUTED_VERIFIED",
+    "valuation_status_label": "Computed & Certified"
+  }
+}

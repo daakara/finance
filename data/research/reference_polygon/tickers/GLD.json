@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "GLD",
+    "name": "SPDR Gold Trust, SPDR Gold Shares",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "ARCX",
+    "type": "ETV",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001222333",
+    "composite_figi": "BBG000CRF6Q8",
+    "share_class_figi": "BBG001SCPX28",
+    "last_updated_utc": "2026-10-18T06:10:11.41501618Z"
+  },
+  "status": "OK"
+}

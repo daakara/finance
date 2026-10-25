@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "NVDA",
+    "name": "Nvidia Corp",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001045810",
+    "composite_figi": "BBG000BBJQV0",
+    "share_class_figi": "BBG001S5TZJ6",
+    "last_updated_utc": "2026-10-18T06:10:11.4156355Z"
+  },
+  "status": "OK"
+}

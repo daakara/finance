@@ -5,15 +5,19 @@ import { OptimalExecutionPlan } from "../lib/api";
 import InsightProvenanceModal from "./InsightProvenanceModal";
 import PositionSizerModal from "./PositionSizerModal";
 import AlertTriggerModal from "./AlertTriggerModal";
-import PreFlightChecklistModal from "./PreFlightChecklistModal";
-import TradeExecutionStepper from "./TradeExecutionStepper";
 import { addPortfolioPosition } from "../lib/portfolio";
-import { resolveDecisionReadiness } from "../lib/decisionReadiness";
+import {
+  resolveDecisionReadiness,
+  resolveTacticalExecutionHint,
+  validateCanonicalActionable,
+} from "../lib/decisionReadiness";
 import { resolvePresentationState } from "../lib/decisionPresentation";
-import DecisionReadinessCard from "./DecisionReadinessCard";
+import { evaluateCorridorLocation } from "../lib/corridorLocation";
+import { resolveFreshCachedVix } from "../lib/preflightEvaluator";
 
 interface OptimalEntryExitCardProps {
   symbol: string;
+  onOpenPreFlight?: () => void;
   executionPlan?: OptimalExecutionPlan;
   currentPrice?: number | null;
   liveSpotPrice?: number | null;
@@ -25,14 +29,17 @@ interface OptimalEntryExitCardProps {
   smartMoney?: any;
   macroRegime?: any;
   vix?: number | null;
-  isActionable?: boolean;
+  isActionable?: boolean | string | null;
   canSizeTrade?: boolean;
   decisionState?: string;
   decisionStateLabel?: string;
+  catalystForecast?: any;
+  corporateEvent?: any;
 }
 
 export default function OptimalEntryExitCard({
   symbol,
+  onOpenPreFlight,
   executionPlan,
   currentPrice,
   liveSpotPrice,
@@ -48,10 +55,11 @@ export default function OptimalEntryExitCard({
   canSizeTrade,
   decisionState,
   decisionStateLabel,
+  catalystForecast,
+  corporateEvent,
 }: OptimalEntryExitCardProps) {
   const [isSizerOpen, setIsSizerOpen] = useState<boolean>(false);
   const [isAlertOpen, setIsAlertOpen] = useState<boolean>(false);
-  const [isChecklistOpen, setIsChecklistOpen] = useState<boolean>(false);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
   const [logStatus, setLogStatus] = useState<string | null>(null);
 
@@ -111,19 +119,8 @@ export default function OptimalEntryExitCard({
         return val;
       }
     }
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem("FINANCE_MARKET_SNAPSHOTS_V1");
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          const v = parsed?.vix?.value ?? parsed?.vix?.level ?? (typeof parsed?.vix === "number" ? parsed.vix : undefined);
-          if (typeof v === "number" && !isNaN(v) && v > 0) {
-            return v;
-          }
-        }
-      } catch {}
-    }
-    return undefined;
+    const freshCached = resolveFreshCachedVix();
+    return freshCached !== null ? freshCached : undefined;
   })();
 
   // ── Price Authority Resolution (INV-PRICE-001 through INV-PRICE-010) ────────
@@ -212,15 +209,6 @@ export default function OptimalEntryExitCard({
         <div className="text-[11px] text-slate-400 font-mono bg-[#0b0f17] p-2.5 rounded border border-slate-800/80">
           Status: {executionPlan.execution_status || "INSUFFICIENT_HISTORY"} • Invalidation: {invalidation_condition || "Awaiting verified historical exchange candles"}
         </div>
-
-        {/* 🚦 Synthesis E Wave 4: 3-Gate Decision Readiness Progression (Unavailable Fallback) */}
-        <DecisionReadinessCard
-          symbol={symbol}
-          readinessResult={unavailableReadiness}
-          onSizePosition={() => setIsSizerOpen(true)}
-          onSetAlert={() => setIsAlertOpen(true)}
-          onOpenPreFlight={() => setIsChecklistOpen(true)}
-        />
       </div>
     );
   }
@@ -234,45 +222,27 @@ export default function OptimalEntryExitCard({
   const entryMin = Math.min(optimal_entry_min, optimal_entry_max);
   const entryMax = Math.max(optimal_entry_min, optimal_entry_max);
 
+  const corridorLoc = evaluateCorridorLocation(evalPrice, optimal_entry_min, optimal_entry_max, 0.02);
+
   // Authority for inZone: backend market_location / execution_status has priority
   const isBackendInZone = executionPlan.market_location === "IN_BUY_ZONE" ||
     executionPlan.execution_status === "IN_BUY_ZONE" ||
     executionPlan.execution_status === "READY_TO_BUY";
 
   // Presentation inZone uses evalPrice (live spot / eval_price), NEVER analysis reference price as live
-  const inZone = executionPlan.market_location !== undefined
-    ? isBackendInZone
-    : (evalPrice >= entryMin && evalPrice <= entryMax);
+  // An asset above ceiling or below floor is geometrically NEVER inZone
+  const isEvalPriceInCorridor = evalPrice >= entryMin && evalPrice <= entryMax;
+  const inZone = corridorLoc.isValid && corridorLoc.isInside && isEvalPriceInCorridor && (
+    executionPlan.market_location !== undefined
+      ? isBackendInZone
+      : true
+  );
 
   const zoneWidth = Math.max(0.01, entryMax - entryMin);
   const zonePositionPct = inZone ? ((evalPrice - entryMin) / zoneWidth) * 100 : 50;
   const isStopVisible = executionPlan.execution_stop_visible !== undefined && executionPlan.execution_stop_visible !== null
     ? Boolean(executionPlan.execution_stop_visible)
     : Boolean(isActionable || inZone);
-
-  // Tactical Execution Hint
-  let zoneTacticalHint: { label: string; advice: string; color: string } | null = null;
-  if (!isStage4 && inZone && risk_reward_ratio !== null && risk_reward_ratio >= 1.0) {
-    if (zonePositionPct > 65) {
-      zoneTacticalHint = {
-        label: "⚠️ Near Zone Ceiling",
-        advice: `Spot ($${evalPrice.toFixed(2)}) is near the upper bound of the buy zone. Scale in with 30% initial size or place limit orders near $${entryMin.toFixed(2)} to maximize asymmetric R:R.`,
-        color: "text-amber-300 border-amber-900/60 bg-amber-950/40",
-      };
-    } else if (zonePositionPct < 35) {
-      zoneTacticalHint = {
-        label: "🎯 Near Support Floor",
-        advice: `Spot ($${evalPrice.toFixed(2)}) is at the bottom of the accumulation corridor. Favorable asymmetric entry with tight invalidation floor.`,
-        color: "text-emerald-300 border-emerald-900/60 bg-emerald-950/40",
-      };
-    } else {
-      zoneTacticalHint = {
-        label: "✅ Mid-Zone Value Area",
-        advice: `Spot is comfortably centered within the accumulation corridor with favorable ${risk_reward_ratio}:1 R:R structure.`,
-        color: "text-cyan-300 border-cyan-900/60 bg-cyan-950/40",
-      };
-    }
-  }
 
   const hasSmartMoneyConfluence = Boolean(
     (smartMoney?.optionsFlow && smartMoney.optionsFlow.some((f: any) => f.sentiment === "Bullish" || f.type?.includes("CALL"))) ||
@@ -283,18 +253,76 @@ export default function OptimalEntryExitCard({
     resolvedVix ? resolvedVix > 20 : (macroRegime?.vix && Number(macroRegime.vix) > 20)
   );
 
-  // hasImminentEarnings: true if any catalyst event is of Earnings category
-  // and its expectedDate is within 7 days from today
-  const derivedHasImminentEarnings = (() => {
-    const catalysts = (executionPlan as any)?.catalystForecast?.catalysts;
-    if (!Array.isArray(catalysts)) return false;
-    const now = Date.now();
-    return catalysts.some((c: any) => {
-      if (!c?.expectedDate) return false;
-      const diff = (new Date(c.expectedDate).getTime() - now) / 86400000;
-      return diff >= 0 && diff <= 7 && (c.category === "Earnings" || c.category === "FDA" || c.volatilityImpact === "Very High");
-    });
+  // Canonical Corporate Event & Catalyst State Resolution
+  const resolvedCorporateEvent = corporateEvent || executionPlan.corporate_event || (executionPlan as any)?.catalystForecast?.corporate_event;
+  const resolvedDaysToEarnings: number | null = (() => {
+    if (typeof resolvedCorporateEvent?.days_to_earnings === "number") return resolvedCorporateEvent.days_to_earnings;
+    if (typeof executionPlan.days_to_earnings === "number") return executionPlan.days_to_earnings;
+    if (typeof (catalystForecast as any)?.days_to_earnings === "number") return (catalystForecast as any).days_to_earnings;
+    return null;
   })();
+
+  const resolvedCatalystState: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR" = (() => {
+    // 1. Explicit error states
+    if (resolvedCorporateEvent?.preflight_state === "ERROR") {
+      return "ERROR";
+    }
+
+    // 2. Freshness check: Stale or unverified coverage fails closed to UNAVAILABLE
+    if (resolvedCorporateEvent?.freshness_status && resolvedCorporateEvent.freshness_status !== "LIVE") {
+      return "UNAVAILABLE";
+    }
+
+    // 3. Source hazard precedence: Authoritative source hazard takes precedence over forward runway
+    if (
+      resolvedCorporateEvent?.has_imminent_earnings === true ||
+      resolvedCorporateEvent?.preflight_state === "WARN" ||
+      (resolvedCorporateEvent?.risk_tier && resolvedCorporateEvent.risk_tier !== "NORMAL_RUNWAY" && resolvedCorporateEvent.risk_tier !== "UNVERIFIED_RISK")
+    ) {
+      return "WARN";
+    }
+
+    // 4. Evidence-backed evaluation with Positive Allowlist
+    if (resolvedDaysToEarnings !== null) {
+      if (resolvedDaysToEarnings < 0.0) return "UNAVAILABLE"; // Invariant 3: completed historical event alone cannot establish clean forward runway
+      if (resolvedDaysToEarnings <= 7.0) return "WARN";
+
+      const validStatuses = ["CONFIRMED_UPCOMING", "ESTIMATED_UPCOMING", "COVERED"];
+      const isCoverageValid = Boolean(resolvedCorporateEvent?.coverage_status && validStatuses.includes(resolvedCorporateEvent.coverage_status));
+      const isFresh = resolvedCorporateEvent?.freshness_status === "LIVE";
+
+      if (isCoverageValid && isFresh && resolvedCorporateEvent?.preflight_state !== "WARN") {
+        return "PASS";
+      }
+      return "UNAVAILABLE";
+    }
+
+    if (resolvedCorporateEvent?.preflight_state === "PASS" && resolvedCorporateEvent?.freshness_status === "LIVE") {
+      return "PASS";
+    }
+
+    if (resolvedCorporateEvent?.coverage_status === "DATA_UNAVAILABLE" || resolvedCorporateEvent?.coverage_status === "ABSENT") {
+      return "UNAVAILABLE";
+    }
+    return "UNAVAILABLE";
+  })();
+
+  const derivedHasImminentEarnings = resolvedCatalystState === "WARN";
+
+  const derivedCatalystEvidence = {
+    state: resolvedCatalystState,
+    daysToEarnings: resolvedDaysToEarnings,
+    eventDate: resolvedCorporateEvent?.event_date_et || (catalystForecast as any)?.event_date_et,
+    callTimeEt: resolvedCorporateEvent?.conference_call_time_et,
+    resultsReleaseTimeEt: resolvedCorporateEvent?.results_release_time_et,
+    sourceName: resolvedCorporateEvent?.source_name,
+    confirmationStatus: resolvedCorporateEvent?.confirmation_status,
+    coverageStatus: resolvedCorporateEvent?.coverage_status,
+    freshnessStatus: resolvedCorporateEvent?.freshness_status,
+    riskTier: resolvedCorporateEvent?.risk_tier,
+    isEstimate: resolvedCorporateEvent?.is_estimate,
+    preflightState: resolvedCorporateEvent?.preflight_state,
+  };
 
   // isDistributionTrap: Deprecated options-flow heuristic; single-asset options flow is unconnected.
   // Pre-Flight Check 3 is canonically scoped to Capital Risk evaluated via MASTER_ASSET_CATALOG.
@@ -327,9 +355,14 @@ export default function OptimalEntryExitCard({
     setTimeout(() => setLogStatus(null), 3500);
   };
 
-  const isTriggerConfirmed = isActionable !== undefined
-    ? Boolean(isActionable)
-    : (executionPlan.execution_status === "IN_BUY_ZONE" || executionPlan.execution_status === "READY_TO_BUY");
+  const canonicalActionable = validateCanonicalActionable(isActionable);
+  const isTriggerConfirmed = (executionPlan as any).is_trigger_confirmed !== undefined
+    ? Boolean((executionPlan as any).is_trigger_confirmed)
+    : (executionPlan.execution_status === "READY_TO_BUY" || executionPlan.execution_status === "BREAKOUT_VOLUME_CONFIRMED")
+      ? true
+      : (executionPlan.execution_status === "IN_BUY_ZONE_AWAITING_TRIGGER" || executionPlan.execution_status === "ABOVE_CORRIDOR_AWAITING_PULLBACK")
+      ? false
+      : (isActionable !== undefined && isActionable !== null ? canonicalActionable : false);
 
   const readinessResult = resolveDecisionReadiness({
     currentPrice: evalPrice,
@@ -343,13 +376,29 @@ export default function OptimalEntryExitCard({
     stopLoss: stop_loss,
     takeProfit1: take_profit_1,
     vix: resolvedVix,
+    isActionable: canonicalActionable,
   });
 
   const presentation = resolvePresentationState({
     decisionState,
     decisionStateLabel,
     executionStatus: executionPlan.execution_status,
-    isActionable,
+    isActionable: canonicalActionable,
+    readinessResult,
+  });
+
+  // Tactical Execution Guidance (Slice 1: Truthful Corridor Text & Suppressed Contradictory Action Instructions)
+  const zoneTacticalHint = resolveTacticalExecutionHint({
+    evalPrice,
+    entryMin,
+    entryMax,
+    isStage4,
+    corridorLoc,
+    inZone,
+    zonePositionPct,
+    riskRewardRatio: risk_reward_ratio,
+    isActionable: canonicalActionable,
+    isTriggerConfirmed,
     readinessResult,
   });
 
@@ -366,7 +415,7 @@ export default function OptimalEntryExitCard({
           <div className="flex items-center space-x-2">
             <span
               className={`w-2.5 h-2.5 rounded-full ${
-                isActionable
+                canonicalActionable
                   ? "bg-emerald-400 animate-pulse"
                   : "bg-amber-400"
               }`}
@@ -388,18 +437,18 @@ export default function OptimalEntryExitCard({
             <span
               data-testid="current-action"
               className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold border ${
-                isActionable
+                canonicalActionable
                   ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
                   : "bg-amber-950/80 text-amber-300 border-amber-700/80"
               }`}
             >
-              {isActionable ? "CURRENT ACTION: Execute Setup" : "CURRENT ACTION: Wait"}
+              {canonicalActionable ? "CURRENT ACTION: Execute Setup" : "CURRENT ACTION: Wait"}
             </span>
             <span
               data-testid="plan-status"
               className="px-2 py-0.5 rounded text-xs font-mono bg-[#162030] text-slate-300 border border-[#243044]"
             >
-              Status: {decisionStateLabel || decisionState || (isActionable ? "CONFIRMED_TRIGGER" : "WAIT_FOR_TRIGGER")}
+              Status: {decisionStateLabel || decisionState || (canonicalActionable ? "CONFIRMED_TRIGGER" : "WAIT_FOR_TRIGGER")}
             </span>
           </div>
           <div className="hidden sm:flex flex-wrap items-center gap-2 mt-1.5 text-[11px] font-medium text-slate-400">
@@ -433,6 +482,37 @@ export default function OptimalEntryExitCard({
                 {isPlain ? executionPlan.liquidity_defense.plain_label : executionPlan.liquidity_defense.pro_label}
               </span>
             )}
+            {/* Corporate Event / Catalyst Status Badge */}
+            {resolvedCorporateEvent && resolvedCorporateEvent.coverage_status !== "DATA_UNAVAILABLE" ? (
+              <span
+                className={`px-2 py-0.5 rounded border inline-flex items-center gap-1 font-mono text-[10px] ${
+                  resolvedCatalystState === "WARN"
+                    ? "bg-rose-950/80 text-rose-300 border-rose-700/80"
+                    : "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
+                }`}
+                title={`Source: ${resolvedCorporateEvent.source_name || "Corporate IR"} | Confirmation: ${resolvedCorporateEvent.confirmation_status || "UNVERIFIED"} | Freshness: ${resolvedCorporateEvent.freshness_status || "LIVE"}`}
+              >
+                <span>📅</span>
+                <span>
+                  {isPlain
+                    ? (resolvedDaysToEarnings !== null && resolvedDaysToEarnings <= 1.0
+                        ? `Earnings Imminent (<=${Math.max(1, Math.round(resolvedDaysToEarnings * 24))}h)`
+                        : `Earnings ${resolvedCorporateEvent.event_date_et || "Scheduled"}`)
+                    : `Catalyst: ${resolvedCorporateEvent.event_date_et || "Earnings"}${resolvedCorporateEvent.conference_call_time_et ? ` (${resolvedCorporateEvent.conference_call_time_et} ET Call)` : ""}`}
+                </span>
+                <span className="text-[9px] opacity-75 font-sans">
+                  ({resolvedCorporateEvent.confirmation_status === "CONFIRMED" ? "IR Confirmed" : "Estimate"})
+                </span>
+              </span>
+            ) : (
+              <span
+                className="px-2 py-0.5 rounded bg-slate-900/80 text-slate-400 border border-slate-700/80 inline-flex items-center gap-1 font-mono text-[10px]"
+                title="Corporate event schedule telemetry unavailable from primary exchange source. Pre-Flight event runway uncertified."
+              >
+                <span>📅</span>
+                <span>{isPlain ? "Event Runway: Unverified" : "Catalyst: Coverage Unavailable"}</span>
+              </span>
+            )}
             <span className="hidden sm:inline text-slate-500">•</span>
             <span className="text-slate-400 text-[11px]">{isPlain ? "Automatic risk boundaries" : "Volatility-anchored risk limits"}</span>
           </div>
@@ -461,15 +541,6 @@ export default function OptimalEntryExitCard({
           </span>
         </div>
       </div>
-
-      {/* 🚦 Synthesis E Wave 4: 3-Gate Decision Readiness Progression */}
-      <DecisionReadinessCard
-        symbol={symbol}
-        readinessResult={readinessResult}
-        onSizePosition={() => setIsSizerOpen(true)}
-        onSetAlert={() => setIsAlertOpen(true)}
-        onOpenPreFlight={() => setIsChecklistOpen(true)}
-      />
 
       {/* 🛑 Liquidity Defense Alert Banner (Shadow Observation Mode) */}
       {executionPlan.liquidity_defense?.execution_hazard === true && (
@@ -553,16 +624,6 @@ export default function OptimalEntryExitCard({
           </div>
         </div>
       )}
-
-      {/* 🚀 5-Step Guided Trade Execution Stepper */}
-      <TradeExecutionStepper
-        symbol={symbol}
-        onOpenPreFlight={() => setIsChecklistOpen(true)}
-        onOpenSizer={() => setIsSizerOpen(true)}
-        onOpenAlert={() => setIsAlertOpen(true)}
-        onLogPortfolio={handleLogToPortfolio}
-        logStatus={logStatus}
-      />
 
       {/* Interactive Execution Price Ladder */}
       <div className="space-y-2 bg-[#090d14] p-3.5 rounded-xl border border-[#1e293b]">
@@ -685,7 +746,7 @@ export default function OptimalEntryExitCard({
 
         {/* Tactical Relative Position Execution Badge */}
         {zoneTacticalHint && (
-          <div className={`p-2 rounded-lg border text-xs flex items-start gap-2 ${zoneTacticalHint.color}`}>
+          <div data-testid="tactical-execution-hint" className={`p-2 rounded-lg border text-xs flex items-start gap-2 ${zoneTacticalHint.color}`}>
             <span className="font-bold shrink-0">{zoneTacticalHint.label}:</span>
             <span className="text-xs leading-relaxed text-slate-200 font-sans">{zoneTacticalHint.advice}</span>
           </div>
@@ -766,7 +827,7 @@ export default function OptimalEntryExitCard({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => setIsChecklistOpen(true)}
+            onClick={() => onOpenPreFlight?.()}
             className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-emerald-600/20 hover:bg-emerald-500 hover:text-slate-950 border-emerald-500/60 text-emerald-300 flex items-center gap-1.5 shadow"
           >
             <span>✈️</span>
@@ -808,27 +869,6 @@ export default function OptimalEntryExitCard({
         />
       </div>
 
-      <PreFlightChecklistModal
-        isOpen={isChecklistOpen}
-        onClose={() => setIsChecklistOpen(false)}
-        symbol={symbol}
-        currentPrice={current_price}
-        stopLoss={stop_loss}
-        takeProfit1={take_profit_1}
-        riskRewardRatio={risk_reward_ratio}
-        setupPattern={setup_pattern}
-        isDayTrader={isDayTrader}
-        isStage4={isStage4}
-        optimalEntryMin={optimal_entry_min}
-        optimalEntryMax={optimal_entry_max}
-        breakoutPivot={executionPlan.breakout_pivot || Number((current_price * 1.072).toFixed(2))}
-        vix={resolvedVix}
-        hasImminentEarnings={derivedHasImminentEarnings}
-        isDistributionTrap={derivedIsDistributionTrap}
-        isActionable={isActionable}
-        decisionState={decisionState}
-      />
-
       <PositionSizerModal
         isOpen={isSizerOpen}
         onClose={() => setIsSizerOpen(false)}
@@ -840,7 +880,7 @@ export default function OptimalEntryExitCard({
         isStage4={isStage4}
         adv20d={executionPlan.liquidity_defense?.adv_20d_usd}
         canSizeTrade={canSizeTrade}
-        isActionable={isActionable}
+        isActionable={canonicalActionable}
         decisionStateLabel={decisionStateLabel}
       />
 

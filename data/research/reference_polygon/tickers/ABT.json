@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "ABT",
+    "name": "Abbott Laboratories",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000001800",
+    "composite_figi": "BBG000B9ZXB4",
+    "share_class_figi": "BBG001S5N9M6",
+    "last_updated_utc": "2026-10-18T06:10:11.413568229Z"
+  },
+  "status": "OK"
+}

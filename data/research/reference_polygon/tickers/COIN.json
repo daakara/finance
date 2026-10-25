@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "COIN",
+    "name": "Coinbase Global, Inc. Class A Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001679788",
+    "composite_figi": "BBG00ZGF7771",
+    "share_class_figi": "BBG00ZGF7799",
+    "last_updated_utc": "2026-10-18T06:10:11.414092859Z"
+  },
+  "status": "OK"
+}

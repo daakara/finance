@@ -3,26 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { MASTER_ASSET_CATALOG } from "../lib/masterCatalog";
 import { trackPreFlightOutcome, trackTradePlanCopied } from "../lib/matomo";
+import { evaluatePreFlightChecks, PreFlightChecklistInputs } from "../lib/preflightEvaluator";
 
-interface PreFlightChecklistModalProps {
+export interface PreFlightChecklistModalProps extends PreFlightChecklistInputs {
   isOpen: boolean;
   onClose: () => void;
-  symbol: string;
-  currentPrice: number;
-  stopLoss: number;
-  takeProfit1: number;
-  riskRewardRatio: number;
-  setupPattern?: string;
-  isDayTrader?: boolean;
-  isStage4?: boolean;
-  optimalEntryMin?: number;
-  optimalEntryMax?: number;
-  breakoutPivot?: number;
-  isDistributionTrap?: boolean;
-  hasImminentEarnings?: boolean;
-  vix?: number;
-  isActionable?: boolean;
-  decisionState?: string;
 }
 
 export default function PreFlightChecklistModal({
@@ -40,7 +25,9 @@ export default function PreFlightChecklistModal({
   optimalEntryMax,
   breakoutPivot,
   isDistributionTrap,
-  hasImminentEarnings = false,
+  hasImminentEarnings = null,
+  catalystState,
+  catalystEvidence,
   vix,
   isActionable = false,
   decisionState,
@@ -104,40 +91,71 @@ export default function PreFlightChecklistModal({
   if (!isOpen) return null;
 
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
+  const evalResult = evaluatePreFlightChecks(
+    {
+      symbol,
+      currentPrice,
+      stopLoss,
+      takeProfit1,
+      riskRewardRatio,
+      setupPattern,
+      isDayTrader,
+      isStage4,
+      optimalEntryMin,
+      optimalEntryMax,
+      breakoutPivot,
+      isDistributionTrap,
+      hasImminentEarnings,
+      catalystState,
+      catalystEvidence,
+      vix,
+      isActionable,
+      decisionState,
+    },
+    vernacularMode
+  );
+
+  const {
+    checks,
+    passedCount,
+    convictionPct,
+    activeBlocker,
+    whatNeedsToChange,
+    safePrice,
+    safeStop,
+    safeTarget,
+    safeRR,
+    safeEntryMin,
+    safeEntryMax,
+    safePivot,
+    currentVix,
+    stopLossPct,
+    target1Pct,
+    target2Pct,
+    safeTarget2,
+    entryZoneStr,
+    stopLossStr,
+    target1Str,
+    target2Str,
+    resolvedCatalystState,
+  } = evalResult;
+
+  const isActionableGranted = isActionable === true;
+  const isCleared = isActionableGranted && evalResult.isCleared;
+
   const cleanSym = (symbol || "ASSET").toUpperCase().replace("-USD", "");
   const catalogItem = MASTER_ASSET_CATALOG[cleanSym];
-
-  // Defensive Numeric Guards & Epistemic Verification
   const isPriceValid = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0;
-  const safePrice = isPriceValid ? currentPrice : 0;
-  const hasStopLoss = typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0;
-  const safeStop = hasStopLoss ? stopLoss : null;
-  const hasTarget = typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0;
-  const safeTarget = hasTarget ? takeProfit1 : null;
   const isRRValid = typeof riskRewardRatio === "number" && !isNaN(riskRewardRatio) && riskRewardRatio > 0;
-  const safeRR = isRRValid ? riskRewardRatio : 0;
-  const safeEntryMin = (typeof optimalEntryMin === "number" && !isNaN(optimalEntryMin) && optimalEntryMin > 0) ? optimalEntryMin : null;
-  const safeEntryMax = (typeof optimalEntryMax === "number" && !isNaN(optimalEntryMax) && optimalEntryMax > 0) ? optimalEntryMax : null;
-  const safePivot = (typeof breakoutPivot === "number" && !isNaN(breakoutPivot) && breakoutPivot > 0) ? breakoutPivot : null;
-  const isVixValid = typeof vix === "number" && !isNaN(vix) && vix > 0;
-  const currentVix = isVixValid ? vix : null;
-
-  const stopLossPct = (isPriceValid && safeStop !== null) ? (((safeStop - safePrice) / safePrice) * 100).toFixed(2) : "N/A";
-  const target1Pct = (isPriceValid && safeTarget !== null) ? (((safeTarget - safePrice) / safePrice) * 100).toFixed(2) : "N/A";
-
-  // ── 5-Point Quantitative Decision Checklist ──────────────────────────────
-
-  // Check 1: Asymmetric Risk-Reward (Must have valid R:R >= 2.0:1 AND verified stop/target)
-  const hasExecutionLevels = hasStopLoss && hasTarget;
-  const isRRPassed = isPriceValid && isRRValid && safeRR >= 2.0 && hasExecutionLevels;
-
-  // Check 2: Technical Trend Alignment & Stage Discipline
+  const hasExecutionLevels = safeStop !== null && safeTarget !== null;
+  const isRRPassed = checks[0].passed;
+  const isTrendPassed = checks[1].passed && !isStage4;
   const isExtendedAboveZone = Boolean(safeEntryMax && safePrice > safeEntryMax * 1.02);
-  const isTrendPassed = isPriceValid && !isStage4 && !isExtendedAboveZone && safeEntryMin !== null && safeEntryMax !== null;
-
-  // Check 3: CHK-3-CAPITAL-RISK (Structural Capital Risk & Squeeze Floor)
-  // Epistemic Contract: CLAIM_SET ⊆ EVIDENCE_SET.
-  // Evaluates shortFloat, qualityScore, verdict via MASTER_ASSET_CATALOG.
+  const isWithinTolerance = Boolean(safeEntryMax && safePrice > safeEntryMax && safePrice <= safeEntryMax * 1.02);
+  const isInCorridor = Boolean(safeEntryMin && safeEntryMax && safePrice >= safeEntryMin && safePrice <= safeEntryMax);
+  const isBelowCorridor = Boolean(safeEntryMin && safePrice < safeEntryMin);
+  const isCapitalRiskPassed = checks[2].passed;
+  const isCapitalRiskFailed = checks[2].status === "CAPITAL RISK";
   const hasShortFloat = catalogItem !== undefined && catalogItem.shortFloat !== undefined && catalogItem.shortFloat !== null;
   const hasQualityScore = catalogItem !== undefined && catalogItem.qualityScore !== undefined && catalogItem.qualityScore !== null;
   const capitalRiskEvidenceState: "COMPLETE" | "PARTIAL" | "UNAVAILABLE" =
@@ -146,30 +164,72 @@ export default function PreFlightChecklistModal({
       : hasShortFloat || hasQualityScore
       ? "PARTIAL"
       : "UNAVAILABLE";
+  const isCatalystPassed = checks[3].passed;
+  const isMacroPassed = checks[4].passed;
 
-  const shortFloatNum = Number(catalogItem?.shortFloat) || 0;
-  const qualityScoreNum = Number(catalogItem?.qualityScore) || 0;
-  const isTurnaround = String(catalogItem?.verdict || "").toLowerCase().includes("turnaround");
+  const isVixValid = typeof vix === "number" && !isNaN(vix) && vix > 0;
 
-  const isCapitalRiskFailed = isPriceValid && (
-    (capitalRiskEvidenceState === "COMPLETE" && (shortFloatNum > 12.0 || isTurnaround || qualityScoreNum < 60)) ||
-    isDistributionTrap === true
-  );
+  const renderCheck2Detail = () => {
+    if (isStage4) {
+      return isPlain
+        ? `⚠️ Watchlist Only: Spot price ($${safePrice.toFixed(2)}) is in Stage 4 correction below 50-day average. Await base formation.`
+        : `Stage 4 correction structure: Spot ($${safePrice.toFixed(2)}) requires 50-day breakout pivot ${safePivot !== null ? `above $${safePivot.toFixed(2)}` : "(pivot uncalculated)"}.`;
+    }
+    if (safeEntryMin === null || safeEntryMax === null) {
+      return "Optimal buy zone levels uncalculated. Awaiting technical structure.";
+    }
+    if (isExtendedAboveZone) {
+      return isPlain
+        ? `⚠️ Extended: Price is above ideal buy zone ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}). Wait for pullback.`
+        : "Extended structure: Spot is above value area. Chasing creates negative R:R risk.";
+    }
+    if (isWithinTolerance) {
+      return isPlain
+        ? `Spot price ($${safePrice.toFixed(2)}) is slightly above preferred buying range ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}), within allowable extension tolerance (+2%). Defending key support.`
+        : `Spot price ($${safePrice.toFixed(2)}) is above corridor ceiling ($${safeEntryMax.toFixed(2)}) within +2% extension tolerance. Defending key moving average support (20 EMA / 50 SMA).`;
+    }
+    if (isBelowCorridor) {
+      return isPlain
+        ? `Spot price ($${safePrice.toFixed(2)}) is below preferred buying range ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}).`
+        : `Spot price ($${safePrice.toFixed(2)}) is below preferred accumulation corridor ($${safeEntryMin.toFixed(2)}–$${safeEntryMax.toFixed(2)}).`;
+    }
+    return isPlain
+      ? `Spot price ($${safePrice.toFixed(2)}) is inside the verified buying range defending key support.`
+      : "Defending key moving average support (20 EMA / 50 SMA).";
+  };
 
-  // Mandatory Fail-Closed Rule: PARTIAL_EVIDENCE => NOT_CERTIFIED. Must be COMPLETE to PASS.
-  const isCapitalRiskPassed = isPriceValid && capitalRiskEvidenceState === "COMPLETE" && !isCapitalRiskFailed && isDistributionTrap !== true;
-
-  // Check 4: Catalyst Hazard Buffer
-  const isCatalystPassed = isPriceValid && !hasImminentEarnings;
-
-  // Check 5: Macro Regime Guard (VIX < 26.0 with valid macro reading)
-  // Single authority: binds to canonical macro ribbon VIX. Missing VIX is strictly UNAVAILABLE (never 28.0 or 99.0).
-  const isMacroPassed = isPriceValid && isVixValid && currentVix !== null && currentVix < 26.0;
-
-  const passedCount = [isRRPassed, isTrendPassed, isCapitalRiskPassed, isCatalystPassed, isMacroPassed].filter(Boolean).length;
-  const convictionPct = isPriceValid ? Math.round((passedCount / 5) * 100) : 0;
-  const isActionableGranted = isActionable === true;
-  const isCleared = isActionableGranted && isPriceValid && isRRValid && convictionPct >= 80 && !isStage4 && isCapitalRiskPassed && isTrendPassed;
+  const renderCheck4Detail = () => {
+    if (resolvedCatalystState === "PASS") {
+      const isConfirmed = catalystEvidence?.confirmationStatus === "CONFIRMED";
+      const dteStr = catalystEvidence?.daysToEarnings ? ` (${catalystEvidence.daysToEarnings.toFixed(1)}d DTE)` : "";
+      if (isPlain) {
+        return isConfirmed
+          ? `Verified event runway: Confirmed earnings announcement scheduled beyond the 7-day trade window${dteStr}.`
+          : `Unconfirmed event runway: Estimated announcement scheduled beyond the 7-day trade window${dteStr}, but source confirmation remains unverified.`;
+      }
+      return isConfirmed
+        ? `Catalyst Buffer: Clean window verified (>7 days to confirmed binary catalyst${dteStr}).`
+        : `Catalyst Buffer: Clean window indicated (${catalystEvidence?.daysToEarnings ? catalystEvidence.daysToEarnings.toFixed(1) + "d DTE" : ">7d"}), but corporate event confirmation is unverified.`;
+    }
+    if (resolvedCatalystState === "WARN") {
+      return isPlain
+        ? `⚠️ High Risk: Scheduled earnings announcement ${catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null ? (catalystEvidence.daysToEarnings <= 1.0 ? "in <= 24h" : `in ${catalystEvidence.daysToEarnings.toFixed(1)} days`) : "within 7-day window"}${catalystEvidence?.eventDate ? ` (${catalystEvidence.eventDate})` : ""}.`
+        : `⚠️ Binary Gap Risk: Earnings announcement scheduled for ${catalystEvidence?.eventDate || "imminent"}${catalystEvidence?.callTimeEt ? ` (${catalystEvidence.callTimeEt} ET Call)` : ""}. Position sizing restricted.`;
+    }
+    if (resolvedCatalystState === "ERROR") {
+      return isPlain
+        ? "Technical error retrieving corporate earnings schedule."
+        : "Catalyst Evaluation Error: Provider telemetry stream failed to resolve.";
+    }
+    if (catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null && catalystEvidence.daysToEarnings < 0) {
+      return isPlain
+        ? `Prior earnings reported (${catalystEvidence.eventDate || "historical"}), but forward calendar is unverified. Cannot certify forward runway.`
+        : `Historical Event Elapsed: Prior report on ${catalystEvidence.eventDate || "historical record"}. Forward schedule unverified; runway uncertified.`;
+    }
+    return isPlain
+      ? "Earnings calendar coverage unavailable: Event runway cannot be certified."
+      : "Catalyst Telemetry Unavailable: Corporate event schedule unverified from primary source.";
+  };
 
   // Analytics — inline try/catch, no useEffect needed (stable values within a single open session)
   try {
@@ -179,13 +239,6 @@ export default function PreFlightChecklistModal({
   }
 
   // Trade plan markdown — differentiated by vernacularMode
-  const entryZoneStr = (safeEntryMin !== null && safeEntryMax !== null) ? `$${safeEntryMin.toFixed(2)} – $${safeEntryMax.toFixed(2)}` : "Unavailable (Awaiting Technical Structure)";
-  const stopLossStr = safeStop !== null ? `$${safeStop.toFixed(2)} (${stopLossPct}%)` : "Unavailable (Trader Defined Stop Required)";
-  const target1Str = safeTarget !== null ? `$${safeTarget.toFixed(2)} (+${target1Pct}%)` : "Unavailable (Trader Defined Target Required)";
-  const safeTarget2 = (safePrice > 0 && safeTarget !== null) ? Number((safeTarget * 1.12).toFixed(2)) : null;
-  const target2Pct = (safePrice > 0 && safeTarget2 !== null) ? (((safeTarget2 - safePrice) / safePrice) * 100).toFixed(2) : "N/A";
-  const target2Str = safeTarget2 !== null ? `$${safeTarget2.toFixed(2)} (+${target2Pct}%)` : "Unavailable";
-
   const tradePlanMarkdown = isPlain
     ? `### 📋 ARX Terminal Trade Plan: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
@@ -197,7 +250,7 @@ export default function PreFlightChecklistModal({
 - **Profit Goal 2 (TP2 Runner)**: ${target2Str}
 - **Tactical Rule (Protected Trailing Transition)**: ${safeTarget !== null ? `When Profit Goal 1 ($${safeTarget.toFixed(2)}) is hit, sell 50% of position and immediately move Stop Loss on remaining 50% to purchase price ($${safePrice.toFixed(2)}) to lock in a protected trade.` : "Establish verified target levels before executing tactical scaling rules."}
 - **Setup**: ${setupPattern || "Minervini VCP Pattern"}
-- **Pre-Flight Score**: ${convictionPct}% (${isCleared ? "🟢 CLEARED" : "⚠️ NOT CLEARED — wait for better setup"})
+- **Pre-Flight Score**: ${convictionPct}% Checklist (${isCleared ? "🟢 CLEARED" : `⚠️ NOT CLEARED — ${activeBlocker}`})
 `
     : `### 📋 ARX Institutional Execution Brief: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
@@ -209,8 +262,8 @@ export default function PreFlightChecklistModal({
 - **Execution Rule (Protected Trailing Ratchet)**: ${safeTarget !== null ? `Scale 0.50x tranche @ TP1 ($${safeTarget.toFixed(2)}). Ratchet trailing stop to cost basis ($${safePrice.toFixed(2)}) to ensure protected runner convexity.` : "Establish verified target levels before executing tactical scaling rules."}
 - **Risk/Reward**: ${isRRValid ? `${safeRR.toFixed(2)} : 1.0` : "Unverified"}
 - **Setup Pattern**: ${setupPattern || "Minervini VCP"}
-- **Pre-Flight Clearance**: ${convictionPct}% — ${isCleared ? "🟢 CLEARED FOR EXECUTION" : "⚠️ CONDITIONAL / AWAIT BASE CLEARANCE"}
-- **VIX Regime**: ${currentVix !== null ? currentVix.toFixed(1) : "UNAVAILABLE"} | **Capital Risk**: ${isCapitalRiskPassed ? "PASS" : isCapitalRiskFailed ? "DETECTED" : capitalRiskEvidenceState} | **Earnings Hazard**: ${hasImminentEarnings ? "ACTIVE" : "CLEAR"}
+- **Pre-Flight Clearance**: ${convictionPct}% Checklist — ${isCleared ? "🟢 CLEARED FOR EXECUTION" : `⚠️ NOT CLEARED (${activeBlocker})`}
+- **VIX Regime**: ${currentVix !== null ? currentVix.toFixed(1) : "UNAVAILABLE"} | **Capital Risk**: ${isCapitalRiskPassed ? "PASS" : isCapitalRiskFailed ? "DETECTED" : capitalRiskEvidenceState} | **Earnings Hazard**: ${resolvedCatalystState === "PASS" ? "CLEAR" : resolvedCatalystState === "WARN" ? "HAZARD" : resolvedCatalystState}
 `;
 
   const handleCopy = async () => {
@@ -310,8 +363,8 @@ export default function PreFlightChecklistModal({
                 {isPlain ? "Trade Readiness Score" : "Quantitative Clearance Status"}
               </span>
               <div className="text-base sm:text-lg font-extrabold flex items-center gap-1.5">
-                <span>{isCleared ? "🟢 CLEARED TO EXECUTE" : "⚠️ CONDITIONAL / NOT CLEARED"}</span>
-                <span className="text-xs font-mono font-normal">({convictionPct}% Pass)</span>
+                <span>{isCleared ? "🟢 CLEARED TO EXECUTE" : `⚠️ NOT CLEARED — ${activeBlocker}`}</span>
+                <span className="text-xs font-mono font-normal">({convictionPct}% Checklist)</span>
               </div>
             </div>
             <div className="text-right font-mono">
@@ -347,19 +400,7 @@ export default function PreFlightChecklistModal({
                   <span>{isPlain ? "2. Trend & Moving Averages (Price in upward corridor)" : "2. Technical Structure (Above 20 EMA / 50 SMA Pivot)"}</span>
                 </div>
                 <p className="text-[11px] text-slate-400 pl-5">
-                  {isStage4
-                    ? (isPlain
-                        ? `⚠️ Watchlist Only: Spot price ($${safePrice.toFixed(2)}) is in Stage 4 correction below 50-day average. Await base formation.`
-                        : `Stage 4 correction structure: Spot ($${safePrice.toFixed(2)}) requires 50-day breakout pivot ${safePivot !== null ? `above $${safePivot.toFixed(2)}` : "(pivot uncalculated)"}.`)
-                    : (safeEntryMin === null || safeEntryMax === null
-                        ? "Optimal buy zone levels uncalculated. Awaiting technical structure."
-                        : (isExtendedAboveZone
-                            ? (isPlain
-                                ? `⚠️ Extended: Price is above ideal buy zone ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}). Wait for pullback.`
-                                : `Extended structure: Spot is above value area. Chasing creates negative R:R risk.`)
-                            : (isPlain
-                                ? `Spot price ($${safePrice.toFixed(2)}) is inside the verified buying range defending key support.`
-                                : `Defending key moving average support (20 EMA / 50 SMA).`)))}
+                  {renderCheck2Detail()}
                 </p>
               </div>
               <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
@@ -407,22 +448,40 @@ export default function PreFlightChecklistModal({
             <div className="p-3 rounded-lg bg-[#111722] border border-[#1e293b] flex items-start justify-between gap-3">
               <div className="space-y-0.5">
                 <div className="font-bold text-slate-100 flex items-center gap-1.5">
-                  <span>{isCatalystPassed ? "✅" : "⚠️"}</span>
-                  <span>{isPlain ? "4. News Event Safety (No surprise earnings report tomorrow)" : "4. Catalyst Hazard Buffer (>7 Days to Binary Earnings)"}</span>
+                  <span>
+                    {resolvedCatalystState === "PASS"
+                      ? "✅"
+                      : resolvedCatalystState === "WARN"
+                      ? "⚠️"
+                      : "⚪"}
+                  </span>
+                  <span>
+                    {isPlain
+                      ? "4. News Event Safety (No surprise earnings report tomorrow)"
+                      : "4. Catalyst Hazard Buffer (>7 Days to Binary Earnings)"}
+                  </span>
                 </div>
                 <p className="text-[11px] text-slate-400 pl-5">
-                  {isCatalystPassed
-                    ? (isPlain
-                        ? "Sufficient time window to manage trade without overnight earnings gap risk."
-                        : "Catalyst Buffer: Clean window (>7 days to binary catalyst).")
-                    : (isPlain
-                        ? "⚠️ High Risk: Imminent binary earnings announcement / major FDA event within 48 hours."
-                        : "⚠️ Imminent Binary Event: Overnight gap risk exceeds standard stop constraint.")}
+                  {renderCheck4Detail()}
                 </p>
               </div>
               <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
-                isCatalystPassed ? "bg-emerald-950 text-emerald-300 border-emerald-800" : "bg-amber-950 text-amber-300 border-amber-800"
-              }`}>{isCatalystPassed ? "PASS" : "HAZARD"}</span>
+                resolvedCatalystState === "PASS"
+                  ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                  : resolvedCatalystState === "WARN"
+                  ? "bg-rose-950 text-rose-300 border-rose-800"
+                  : resolvedCatalystState === "ERROR"
+                  ? "bg-rose-950/80 text-rose-300 border-rose-800"
+                  : "bg-slate-900 text-slate-400 border-slate-700"
+              }`}>
+                {resolvedCatalystState === "PASS"
+                  ? "PASS"
+                  : resolvedCatalystState === "WARN"
+                  ? "HAZARD"
+                  : resolvedCatalystState === "ERROR"
+                  ? "ERROR"
+                  : "UNAVAILABLE"}
+              </span>
             </div>
 
             {/* Check 5 */}

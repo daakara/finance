@@ -82,3 +82,58 @@ def seed_test_market_database():
                     conn.commit()
     except Exception as e:
         print(f"[conftest] Note: Market database seeding skipped: {e}")
+
+
+@pytest.fixture
+def published_screener_universe(tmp_path):
+    """Scoped fixture providing an authorized published universe build for screener tests.
+
+    Constructed strictly via the real supported lifecycle:
+    SourcePopulationSnapshot -> DeterministicUniverseBuilder -> UniverseStore.save_universe_build.
+    Isolates both UniverseStore and ScannerSnapshotStore in a temporary directory and
+    restores the original store and cache on teardown.
+    """
+    from analyst_dashboard.universe.contracts import (
+        UNIVERSE_ID,
+        PublicationDecision,
+        ConstructionStatus,
+    )
+    from analyst_dashboard.universe.fixtures import create_canonical_fixture_snapshot
+    from analyst_dashboard.universe.builder import DeterministicUniverseBuilder
+    from analyst_dashboard.universe.store import UniverseStore
+    from analyst_dashboard.data.scanner_store import ScannerSnapshotStore
+    from api.routes.screener import vcp_scanner_runner
+
+    univ_db_path = str(tmp_path / "test_universe.db")
+    test_univ_store = UniverseStore(db_path=univ_db_path)
+
+    snap_db_path = str(tmp_path / "test_scanner_snapshots.db")
+    test_snap_store = ScannerSnapshotStore(db_path=snap_db_path)
+
+    snapshot = create_canonical_fixture_snapshot(snapshot_id="test-fixture-snap-001")
+    builder = DeterministicUniverseBuilder()
+    attestation, elig_rows, ready_rows = builder.build_universe(
+        snapshot=snapshot, build_id="test-fixture-ubuild-001"
+    )
+
+    attestation.reconciliation_summary["candidate_generation_id"] = "CANDIDATE_GENERATION_004"
+    attestation.publication_decision = PublicationDecision.PUBLISH
+    attestation.construction_status = ConstructionStatus.COMPLETE
+
+    test_univ_store.save_source_snapshot(snapshot)
+    test_univ_store.save_universe_build(attestation, elig_rows, ready_rows)
+
+    orig_univ_store = vcp_scanner_runner.universe_store
+    orig_snap_store = vcp_scanner_runner.snapshot_store
+    orig_cached = vcp_scanner_runner._cached_active_snapshot
+
+    vcp_scanner_runner.universe_store = test_univ_store
+    vcp_scanner_runner.snapshot_store = test_snap_store
+    vcp_scanner_runner._cached_active_snapshot = None
+
+    try:
+        yield test_univ_store
+    finally:
+        vcp_scanner_runner.universe_store = orig_univ_store
+        vcp_scanner_runner.snapshot_store = orig_snap_store
+        vcp_scanner_runner._cached_active_snapshot = orig_cached

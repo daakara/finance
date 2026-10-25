@@ -90,7 +90,9 @@ def test_stale_fundamentals_with_fresh_tape_fails_closed():
     assert state["state"] == DecisionState.EVIDENCE_INCOMPLETE.value
     assert state["isActionable"] is False
     assert state["canSizeTrade"] is False
-    assert "Fundamentals Missing" in state["label"]
+    assert "Evidence Incomplete" in state["label"]
+    assert "Corporate Operating Company" in state["label"]
+    assert "financial filings are unverified" in state.get("disqualificationReason", "")
 
 
 def test_negative_margins_and_nan_ratios_safe_scoring():

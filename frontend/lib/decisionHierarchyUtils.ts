@@ -1,4 +1,6 @@
 import { QuantitativeInsight } from "../types/insight";
+import { evaluateCorridorLocation } from "./corridorLocation";
+import { validateCanonicalActionable } from "./decisionReadiness";
 
 export interface UnmetConditionItem {
   id: string;
@@ -15,7 +17,7 @@ export interface UnmetConditionItem {
 export function deriveUnmetConditions(insight: QuantitativeInsight): UnmetConditionItem[] {
   const conditions: UnmetConditionItem[] = [];
   const kl = insight.standard?.keyLevels;
-  const isActionable = Boolean(insight.terminalState?.isActionable);
+  const isActionable = validateCanonicalActionable(insight.terminalState?.isActionable);
   const eligibility = insight.terminalState?.overallEligibility;
   const price = insight.price;
 
@@ -33,33 +35,41 @@ export function deriveUnmetConditions(insight: QuantitativeInsight): UnmetCondit
       }
     }
 
-    if (lower != null && upper != null && !isNaN(lower) && !isNaN(upper) && lower > 0 && upper > 0) {
-      const canonicalLower = Math.min(lower, upper);
-      const canonicalUpper = Math.max(lower, upper);
-      const isInCorridor = price >= canonicalLower && price <= canonicalUpper;
+    const corridorLoc = evaluateCorridorLocation(price, lower, upper, 0.02);
 
-      if (isInCorridor) {
+    if (corridorLoc.isValid) {
+      if (corridorLoc.spatialRelation === "INSIDE") {
         conditions.push({
           id: "corridor",
           category: "CORRIDOR",
           title: "Price Inside Accumulation Corridor",
-          description: `Current spot ($${price.toFixed(2)}) is positioned within the preferred risk corridor (${kl.watchZone || `$${canonicalLower.toFixed(2)} – $${canonicalUpper.toFixed(2)}`}).`,
+          description: `Current spot ($${price.toFixed(2)}) is positioned within the preferred risk corridor (${kl.watchZone || `$${corridorLoc.entryMin!.toFixed(2)} – $${corridorLoc.entryMax!.toFixed(2)}`}).`,
           status: "MET",
         });
-      } else if (price > canonicalUpper) {
-        conditions.push({
-          id: "corridor",
-          category: "CORRIDOR",
-          title: "Pullback into Accumulation Corridor",
-          description: `Price ($${price.toFixed(2)}) is extended above preferred entry corridor (${kl.watchZone || `$${canonicalLower.toFixed(2)} – $${canonicalUpper.toFixed(2)}`}). Wait for low-volume pullback.`,
-          status: "UNMET",
-        });
+      } else if (corridorLoc.spatialRelation === "ABOVE") {
+        if (corridorLoc.isWithinTolerance) {
+          conditions.push({
+            id: "corridor",
+            category: "CORRIDOR",
+            title: "Entry Corridor Clearance (Implementation Tolerance Applied)",
+            description: `Spot ($${price.toFixed(2)}) is above corridor ceiling ($${corridorLoc.entryMax!.toFixed(2)}), but within existing 2% implementation tolerance. Low-volume pullback preferred for optimal asymmetry, but corridor gate is cleared.`,
+            status: "MET",
+          });
+        } else {
+          conditions.push({
+            id: "corridor",
+            category: "CORRIDOR",
+            title: "Pullback into Accumulation Corridor",
+            description: `Price ($${price.toFixed(2)}) is extended >2% above preferred entry corridor (${kl.watchZone || `$${corridorLoc.entryMin!.toFixed(2)} – $${corridorLoc.entryMax!.toFixed(2)}`}). Mandatory low-volume pullback required before entry.`,
+            status: "UNMET",
+          });
+        }
       } else {
         conditions.push({
           id: "corridor",
           category: "CORRIDOR",
           title: "Reclaim Base Floor",
-          description: `Price ($${price.toFixed(2)}) is testing lower bounds below corridor (${kl.watchZone || `$${canonicalLower.toFixed(2)}`}). Requires stabilization before entry.`,
+          description: `Price ($${price.toFixed(2)}) is testing lower bounds below corridor (${kl.watchZone || `$${corridorLoc.entryMin!.toFixed(2)}`}). Requires stabilization before entry.`,
           status: "UNMET",
         });
       }

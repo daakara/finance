@@ -1,0 +1,160 @@
+{
+  "associations": [
+    {
+      "conflict_reason": "EXACT_PLAN_APPROVAL_ABSENT",
+      "effective_date_status": "OBSERVATION_BOUNDED_HISTORICAL_INCEPTION_PENDING",
+      "effective_from": "2026-10-17",
+      "effective_to": null,
+      "is_creation": true,
+      "is_mechanically_plannable": true,
+      "matched_existing_association_id": null,
+      "observation_date": "2026-10-17",
+      "operating_mic": "XNAS",
+      "proposed_durable_association_id": "ASSOC_ARX_SEC_0B4C728FE0BE_XNAS_AAPL_2026-10-17",
+      "provisional_association_id": "PROV_ASSOC_PROV_SEC_A562B55CDF_XNAS_AAPL_20261017",
+      "provisional_security_id": "PROV_SEC_A562B55CDF",
+      "status": "MECHANICALLY_READY_UNAPPROVED",
+      "symbol": "AAPL",
+      "target_durable_security_id": "ARX_SEC_0B4C728FE0BE"
+    },
+    {
+      "conflict_reason": "EXACT_PLAN_APPROVAL_ABSENT",
+      "effective_date_status": "OBSERVATION_BOUNDED_HISTORICAL_INCEPTION_PENDING",
+      "effective_from": "2026-10-17",
+      "effective_to": null,
+      "is_creation": true,
+      "is_mechanically_plannable": true,
+      "matched_existing_association_id": null,
+      "observation_date": "2026-10-17",
+      "operating_mic": "XNAS",
+      "proposed_durable_association_id": "ASSOC_ARX_SEC_A11A24D442E2_XNAS_GOOG_2026-10-17",
+      "provisional_association_id": "PROV_ASSOC_PROV_SEC_BC68113BFE_XNAS_GOOG_20261017",
+      "provisional_security_id": "PROV_SEC_BC68113BFE",
+      "status": "MECHANICALLY_READY_UNAPPROVED",
+      "symbol": "GOOG",
+      "target_durable_security_id": "ARX_SEC_A11A24D442E2"
+    },
+    {
+      "conflict_reason": "EXACT_PLAN_APPROVAL_ABSENT",
+      "effective_date_status": "OBSERVATION_BOUNDED_HISTORICAL_INCEPTION_PENDING",
+      "effective_from": "2026-10-17",
+      "effective_to": null,
+      "is_creation": true,
+      "is_mechanically_plannable": true,
+      "matched_existing_association_id": null,
+      "observation_date": "2026-10-17",
+      "operating_mic": "XNAS",
+      "proposed_durable_association_id": "ASSOC_ARX_SEC_B7EF9ED7A35A_XNAS_GOOGL_2026-10-17",
+      "provisional_association_id": "PROV_ASSOC_PROV_SEC_6907BAAE38_XNAS_GOOGL_20261017",
+      "provisional_security_id": "PROV_SEC_6907BAAE38",
+      "status": "MECHANICALLY_READY_UNAPPROVED",
+      "symbol": "GOOGL",
+      "target_durable_security_id": "ARX_SEC_B7EF9ED7A35A"
+    }
+  ],
+  "authorization": {
+    "allow_reference_identity_registration": true,
+    "application_authorized": false,
+    "authorization_timestamp_utc": null,
+    "authorization_token": null,
+    "authorized_by": null,
+    "exact_plan_approval": "ABSENT",
+    "is_authorized": false,
+    "notes": "PO approved architectural principle: evidence-resolved reference identity registration independently of strategy eligibility and R06 admission status. Exact candidate plan approval is ABSENT; application is unauthorized (application_authorized=False); production target is PROPOSED_NOT_INITIALIZED.",
+    "production_target": "PROPOSED_NOT_INITIALIZED",
+    "scope": "REFERENCE_IDENTITY_REGISTRATION"
+  },
+  "blocked_operations": [],
+  "conflicts": [],
+  "created_at_utc": "2026-10-18T12:00:00Z",
+  "eligibility_separation_note": "GOVERNANCE INVARIANT: Adoption of an internal security entity or listing association registers identity in the internal master only. It does NOT imply primary-listing sufficiency, SourceSecurity conversion authority, or universe admission under Rule R06. Real-candidate adoption remains policy-unresolved pending primary-listing evidence closure.",
+  "entities": [
+    {
+      "is_creation": true,
+      "is_mechanically_plannable": true,
+      "issuer_cik": "0000320193",
+      "matched_existing_security_id": null,
+      "primary_symbol": "AAPL",
+      "proposed_durable_security_id": "ARX_SEC_0B4C728FE0BE",
+      "provisional_security_id": "PROV_SEC_A562B55CDF",
+      "rationale": "Candidate is mechanically ready for reference identity registration under PO-approved architectural principle separating identity from Rule R06. Exact candidate plan approval is ABSENT; application is unauthorized (application_authorized=False).",
+      "share_class": null,
+      "status": "MECHANICALLY_READY_UNAPPROVED"
+    },
+    {
+      "is_creation": true,
+      "is_mechanically_plannable": true,
+      "issuer_cik": "0001652044",
+      "matched_existing_security_id": null,
+      "primary_symbol": "GOOG",
+      "proposed_durable_security_id": "ARX_SEC_A11A24D442E2",
+      "provisional_security_id": "PROV_SEC_BC68113BFE",
+      "rationale": "Candidate is mechanically ready for reference identity registration under PO-approved architectural principle separating identity from Rule R06. Exact candidate plan approval is ABSENT; application is unauthorized (application_authorized=False).",
+      "share_class": "CLASS_C",
+      "status": "MECHANICALLY_READY_UNAPPROVED"
+    },
+    {
+      "is_creation": true,
+      "is_mechanically_plannable": true,
+      "issuer_cik": "0001652044",
+      "matched_existing_security_id": null,
+      "primary_symbol": "GOOGL",
+      "proposed_durable_security_id": "ARX_SEC_B7EF9ED7A35A",
+      "provisional_security_id": "PROV_SEC_6907BAAE38",
+      "rationale": "Candidate is mechanically ready for reference identity registration under PO-approved architectural principle separating identity from Rule R06. Exact candidate plan approval is ABSENT; application is unauthorized (application_authorized=False).",
+      "share_class": "CLASS_A",
+      "status": "MECHANICALLY_READY_UNAPPROVED"
+    }
+  ],
+  "evaluation_reference_date": "2026-10-17",
+  "missing_evidence_or_authorization": [],
+  "plan_content_digest": "3c5d8b5e3d39453332141dcb5ab818eba5f503fba43f67dbf7d464b298f365c6",
+  "plan_id": "PLAN_ADOPT_3C5D8B5E3D39",
+  "primary_listing_states": {
+    "AAPL": {
+      "claimed_primary_listing": null,
+      "evidence_sufficiency": "INSUFFICIENT_IN_RAW_FEEDS",
+      "issuer_home_market": "US (NASDAQ)",
+      "primary_exchange_for_instrument": "NASDAQ",
+      "rule_r06_admitted": false,
+      "selected_us_assessment_listing": true,
+      "status_note": "Primary-listing evidence remains disaggregated from internal identity adoption. Rule R06 eligibility requires verified primary listing; None remains UNKNOWN."
+    },
+    "GOOG": {
+      "claimed_primary_listing": null,
+      "evidence_sufficiency": "INSUFFICIENT_IN_RAW_FEEDS",
+      "issuer_home_market": "US (NASDAQ)",
+      "primary_exchange_for_instrument": "NASDAQ",
+      "rule_r06_admitted": false,
+      "selected_us_assessment_listing": true,
+      "status_note": "Primary-listing evidence remains disaggregated from internal identity adoption. Rule R06 eligibility requires verified primary listing; None remains UNKNOWN."
+    },
+    "GOOGL": {
+      "claimed_primary_listing": null,
+      "evidence_sufficiency": "INSUFFICIENT_IN_RAW_FEEDS",
+      "issuer_home_market": "US (NASDAQ)",
+      "primary_exchange_for_instrument": "NASDAQ",
+      "rule_r06_admitted": false,
+      "selected_us_assessment_listing": true,
+      "status_note": "Primary-listing evidence remains disaggregated from internal identity adoption. Rule R06 eligibility requires verified primary listing; None remains UNKNOWN."
+    }
+  },
+  "provisional_to_durable_map": {
+    "PROV_SEC_6907BAAE38": "ARX_SEC_B7EF9ED7A35A",
+    "PROV_SEC_A562B55CDF": "ARX_SEC_0B4C728FE0BE",
+    "PROV_SEC_BC68113BFE": "ARX_SEC_A11A24D442E2"
+  },
+  "summary": {
+    "associations_approved_creation": 0,
+    "associations_blocked": 0,
+    "associations_matched_existing": 0,
+    "associations_mechanically_ready": 3,
+    "conflicts_count": 0,
+    "entities_approved_creation": 0,
+    "entities_blocked": 0,
+    "entities_matched_existing": 0,
+    "entities_mechanically_ready": 3,
+    "total_proposals": 3
+  },
+  "target_state_digest": "ea11990ec0e3790abcb0b4293bfadd7ae4e58ca050e79e949e688a82437a93ee"
+}

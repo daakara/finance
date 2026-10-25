@@ -1,0 +1,214 @@
+{
+  "schema_version": "ARX-DISCOVERY-CYCLE-2-LEDGER-V1",
+  "task": "ARX-TERMINAL-EVIDENCE-LED-DISCOVERY-CYCLE-2",
+  "governing_backlog_item": "BACKLOG-RESEARCH-EVIDENCE-DISCOVERY-046",
+  "governing_standard": "ARX-DECISION-RESEARCH-PROCESS-V1",
+  "created_at_utc": "2026-10-22T19:30:00Z",
+  "information_cutoff_date": "2026-10-22",
+  "provisional_analytical_horizon_years": "2026-2028",
+  "examined_universe": [
+    "TMDX",
+    "PODD",
+    "NVR",
+    "APP",
+    "LNTH",
+    "TDG",
+    "MEDP",
+    "ETN",
+    "CEG",
+    "POWI",
+    "HUBB",
+    "GEV",
+    "PWR",
+    "VRT"
+  ],
+  "candidate_generation_routes": {
+    "ROUTE_A": {
+      "route_name": "Company-Led Operating Model Inflection & Transition to Self-Funding",
+      "hypothesis": "Operating commercial enterprises transitioning from cash-burning clinical/hardware development to turnkey recurring service models achieve inflection in free cash flow per share that consensus models often lag.",
+      "candidates_screened": [
+        "TMDX",
+        "PODD",
+        "NVR",
+        "APP",
+        "LNTH",
+        "TDG",
+        "MEDP"
+      ]
+    },
+    "ROUTE_B": {
+      "route_name": "Industry-Led Value-Chain Constraint Tracing (High-Voltage Grid Bottleneck)",
+      "hypothesis": "Hyperscale AI data center construction is constrained by electrical utility interconnection lead times and high-voltage substation switchgear shortages, directly benefiting entrenched electrical power equipment manufacturers.",
+      "candidates_screened": [
+        "ETN",
+        "CEG",
+        "POWI",
+        "HUBB",
+        "GEV",
+        "PWR",
+        "VRT"
+      ]
+    }
+  },
+  "triage_summary": {
+    "total_screened": 14,
+    "novel_candidates": 10,
+    "prior_cohort_references": 4,
+    "advanced_to_deep_investigation": 2,
+    "prioritized_for_internal_monitoring": 4,
+    "deferred_with_documented_reasons": 5,
+    "maintained_in_expansion_queue": 3
+  },
+  "deep_investigations": {
+    "TMDX": {
+      "symbol": "TMDX",
+      "company_name": "TransMedics Group, Inc.",
+      "cik": "0001756262",
+      "discovery_provenance": {
+        "cycle": "CYCLE_2",
+        "route": "ROUTE_A",
+        "search_observation_date": "2026-10-22",
+        "screening_basis": "Inflection in operating cash flow and GAAP profitability driven by National OCS Program (NOP) dedicated aviation logistics."
+      },
+      "dimensional_classification": {
+        "research_maturity": "EXPLORATORY_DISCOVERY_CANDIDATE",
+        "opportunity_mechanism": "ORGAN_PERFUSION_AND_AVIATION_LOGISTICS_TRANSFORMATION",
+        "expectation_gap_status": "VALUATION_EXPECTATION_GAP_UNRESOLVED",
+        "financial_resilience": "OPERATIONALLY_SELF_FUNDING_WITH_FINANCING_LEASES",
+        "public_publication_eligibility": "INTERNAL_PILOT_RECORD_NOT_ELIGIBLE"
+      },
+      "observable_development": {
+        "classification": "OPERATING_MODEL_INFLECTION",
+        "timing_and_baseline": "FY2025 revenue reached $605.5M (+37.1% YoY vs $441.5M in FY2024 and $241.6M in FY2023). Operating income expanded to $108.6M (17.9% margin) following initial operating profitability in FY2024 ($37.5M). 1H 2026 sustained momentum with Q2 2026 revenue of $189.9M (+21% YoY) and GAAP net income of $14.7M.",
+        "primary_filing_evidence": "Form 10-K FY2025 for period ended December 31, 2025, filed February 24, 2026 (CIK: 0001756262, Accession: 0001193125-26-067032, https://www.sec.gov/Archives/edgar/data/1756262/000119312526067032/tmdx-20251231.htm); Form 10-Q Q2 2026 filed August 4, 2026 (Accession: 0001193125-26-332843, https://www.sec.gov/Archives/edgar/data/1756262/000119312526332843/tmdx-20260630.htm)."
+      },
+      "economic_significance": {
+        "materiality": "HIGH_CONSOLIDATED_DRIVER",
+        "financial_reconciliation": {
+          "fy2025_revenue_usd_m": 605.494,
+          "fy2025_gross_profit_usd_m": 362.806,
+          "fy2025_gross_margin_pct": 59.919,
+          "fy2025_operating_income_usd_m": 108.583,
+          "fy2025_operating_margin_pct": 17.933,
+          "fy2025_net_income_usd_m": 190.291,
+          "fy2025_cfo_usd_m": 192.840,
+          "fy2025_capex_usd_m": 59.251,
+          "fy2025_fcf_usd_m": 133.589,
+          "fy2025_fcf_cfo_conversion_pct": 69.2745,
+          "tax_valuation_allowance_benefit_usd_m": 103.3
+        }
+      },
+      "value_capture": {
+        "competitive_moat": "FDA-approved multi-organ warm machine perfusion platform (OCS Heart, Lung, Liver) integrated with dedicated National OCS Program aviation logistics network, creating high transplant center switching costs.",
+        "capex_and_reinvestment": "Cash PP&E purchases were $59.3M in FY2025. In the six months ended June 30, 2026, noncash finance-lease additions of right-of-use aircraft were $340.0M, resulting in a finance lease liability of $347.7M as of June 30, 2026.",
+        "dilution_and_sbc": "FY2025 stock-based compensation was $44.5M (7.3% of revenue)."
+      },
+      "price_and_expectations": {
+        "market_pricing_context": "valuation/expectation gap unresolved (dated market multiple and consensus expectations not independently established via primary broker feeds; unresolved expectations are not used as an established reason to alter queue priority)",
+        "expectation_disaggregation": {
+          "company_guidance": "Management targets continued double-digit procedural expansion and European aviation integration via PAD Aviation",
+          "sourced_analyst_consensus": "UNRESOLVED_CONSENSUS (Primary broker consensus data not accessible in current environment)",
+          "reverse_dcf_solved_condition": null
+        }
+      },
+      "downside_and_survival": {
+        "debt_bridge_q2_2026": {
+          "cash_and_equivalents_usd_m": 472.675,
+          "convertible_notes_principal_usd_m": 459.996,
+          "other_borrowings_principal_usd_m": 60.000,
+          "funded_debt_excl_leases_usd_m": 519.996,
+          "finance_lease_liabilities_usd_m": 347.660,
+          "total_debt_and_leases_usd_m": 867.656,
+          "net_debt_excl_leases_usd_m": 47.321,
+          "net_debt_incl_leases_usd_m": 394.981
+        },
+        "solvency_assessment": "Under the standard convention (net debt = included debt obligations minus cash), net debt is +$47.321M excluding finance leases ($519.996M funded debt less $472.675M cash) and +$394.981M including finance leases ($867.656M debt and finance leases less $472.675M cash). Operating cash flow covers cash PP&E, but obligations exceed liquid reserves."
+      },
+      "assessment_changes": {
+        "disconfirmation_criteria": [
+          "Consolidated gross margin contraction below 55.0% indicating severe aviation cost escalation",
+          "FAA safety grounding or regulatory disruption affecting NOP flight operations",
+          "US organ perfusion procedure volume growth decelerating below 10.0% YoY"
+        ]
+      },
+      "research_priority": {
+        "rank": "PRIORITIZED_FOR_INTERNAL_MONITORING",
+        "rationale": "High procedural growth with self-funding operating cash flow. Retained internally for monitoring aircraft lease leverage and European aviation execution without public Quality Watch authorization."
+      }
+    },
+    "ETN": {
+      "symbol": "ETN",
+      "company_name": "Eaton Corporation plc",
+      "cik": "0001551182",
+      "discovery_provenance": {
+        "cycle": "CYCLE_2",
+        "route": "ROUTE_B",
+        "search_observation_date": "2026-10-22",
+        "screening_basis": "Market leadership in electrical distribution and switchgear addressing multi-year datacenter high-voltage substation interconnection bottleneck."
+      },
+      "dimensional_classification": {
+        "research_maturity": "ACTIVE_QUALITY_WATCH_CANDIDATE",
+        "opportunity_mechanism": "DATACENTER_SUBSTATION_AND_ELECTRICAL_INFRASTRUCTURE_EXPANSION",
+        "expectation_gap_status": "VALUATION_EXPECTATION_GAP_UNRESOLVED",
+        "financial_resilience": "INVESTMENT_GRADE_RESILIENT",
+        "public_publication_eligibility": "INTERNAL_PILOT_RECORD_NOT_ELIGIBLE"
+      },
+      "observable_development": {
+        "classification": "VALUE_CHAIN_STRUCTURAL_SHIFT",
+        "timing_and_baseline": "FY2025 net sales reached $27,448.0M (+10.1% YoY, 8% organic). Electrical Americas segment margin expanded to 29.9% ($3,972M operating profit) on strong datacenter and utility megaproject order intake.",
+        "primary_filing_evidence": "Form 10-K FY2025 for period ended December 31, 2025, filed February 25, 2026 (CIK: 0001551182, Accession: 0001551182-26-000007, https://www.sec.gov/Archives/edgar/data/1551182/000155118226000007/etn-20251231.htm); Form 10-Q Q2 2026 filed July 31, 2026 (Accession: 0001551182-26-000030, https://www.sec.gov/Archives/edgar/data/1551182/000155118226000030/etn-20260630.htm)."
+      },
+      "economic_significance": {
+        "materiality": "HIGH_CONSOLIDATED_DRIVER",
+        "financial_reconciliation": {
+          "fy2025_revenue_usd_m": 27448.0,
+          "fy2025_gross_profit_usd_m": 10317.0,
+          "fy2025_gross_margin_pct": 37.587,
+          "fy2025_total_segment_operating_profit_usd_m": 6713.0,
+          "fy2025_total_segment_operating_margin_pct": 24.457,
+          "fy2025_net_income_usd_m": 4087.0,
+          "fy2025_cfo_usd_m": 4472.0,
+          "fy2025_capex_usd_m": 919.0,
+          "fy2025_fcf_usd_m": 3553.0,
+          "fy2025_fcf_cfo_conversion_pct": 79.4499,
+          "electrical_americas_sales_usd_m": 13276.0,
+          "electrical_americas_op_profit_usd_m": 3972.0,
+          "electrical_americas_op_margin_pct": 29.919
+        }
+      },
+      "value_capture": {
+        "competitive_moat": "Entrenched engineering specification and contractor distribution moat across high-voltage switchgear, medium-voltage distribution transformers, and UPS lineups.",
+        "capex_and_reinvestment": "Capex intensity of 3.3% of net sales ($919M on $27,448M) enables 79.5% FCF conversion to fund steady dividends and share repurchases.",
+        "dilution_and_sbc": "Minimal dilution; ongoing share buyback program more than offsets executive stock compensation."
+      },
+      "price_and_expectations": {
+        "market_pricing_context": "valuation/expectation gap unresolved (dated market multiple and consensus expectations not independently established via primary broker feeds; unresolved expectations are not used as an established reason to alter queue priority)",
+        "expectation_disaggregation": {
+          "company_guidance": "Management targets above-GDP organic compounding through 2028 supported by electrical super-cycle megaproject backlog",
+          "sourced_analyst_consensus": "UNRESOLVED_CONSENSUS (Primary broker consensus data not accessible in current environment)",
+          "reverse_dcf_solved_condition": null
+        }
+      },
+      "downside_and_survival": {
+        "debt_bridge_fy2025": {
+          "total_debt_usd_m": 9895.0,
+          "cash_and_short_term_investments_usd_m": 803.0,
+          "net_debt_usd_m": 9092.0,
+          "net_debt_to_ebitda": 1.6
+        },
+        "solvency_assessment": "Investment-grade balance sheet ('A-' / 'A3') with net debt of +$9,092.0M (~1.6x net debt / EBITDA), >14x interest coverage, and staggered multi-decade debt maturities."
+      },
+      "assessment_changes": {
+        "disconfirmation_criteria": [
+          "Electrical Americas book-to-bill falling below 0.95x indicating megaproject order cancellations",
+          "Electrical Americas segment operating margins contracting below 24.0%",
+          "FCF / CFO conversion dropping below 70.0% due to unabsorbed fixed capacity"
+        ]
+      },
+      "research_priority": {
+        "rank": "ACTIVE_QUALITY_WATCH_CANDIDATE",
+        "rationale": "Upstream electrical equipment manufacturing enabler with 79.5% FCF conversion and multi-year megaproject backlog. Maintained in the prospective Quality Watch expansion queue."
+      }
+    }
+  }
+}

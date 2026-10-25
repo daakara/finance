@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "KLAC",
+    "name": "KLA Corporation Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000319201",
+    "composite_figi": "BBG000BMTFR4",
+    "share_class_figi": "BBG001S5SLM4",
+    "last_updated_utc": "2026-10-18T06:10:11.415318145Z"
+  },
+  "status": "OK"
+}

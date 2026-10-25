@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "NOC",
+    "name": "Northrop Grumman Corp.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001133421",
+    "composite_figi": "BBG000BQ2C28",
+    "share_class_figi": "BBG001S5TP26",
+    "last_updated_utc": "2026-10-18T06:10:11.415610533Z"
+  },
+  "status": "OK"
+}

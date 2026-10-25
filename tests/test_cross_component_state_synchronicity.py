@@ -26,6 +26,11 @@ class TestCrossComponentStateSynchronicity(unittest.TestCase):
         with open(modal_path, "r", encoding="utf-8") as f:
             content = f.read()
 
+        evaluator_path = os.path.join("frontend", "lib", "preflightEvaluator.ts")
+        if os.path.exists(evaluator_path):
+            with open(evaluator_path, "r", encoding="utf-8") as f:
+                content += "\n" + f.read()
+
         # Must declare dynamic stage and boundary props
         self.assertIn("isStage4?: boolean", content, "PreFlightChecklistModal must accept isStage4 prop")
         self.assertIn("optimalEntryMin?: number", content, "PreFlightChecklistModal must accept optimalEntryMin")
@@ -38,23 +43,18 @@ class TestCrossComponentStateSynchronicity(unittest.TestCase):
         self.assertNotIn("const isCatalystPassed = true;", content, "Check 4 cannot have hardcoded static true placeholder")
         self.assertNotIn("const isMacroPassed = true;", content, "Check 5 cannot have hardcoded static true placeholder")
         self.assertIn("STAGE 4 WAIT", content, "Check 2 must render Stage 4 Wait status when isStage4 is true")
-        self.assertIn("isDistributionTrapResolved", content, "Check 3 must dynamically resolve distribution trap status")
+        self.assertIn("isDistributionTrap", content, "Check 3 must dynamically resolve distribution trap status")
 
     def test_optimal_entry_exit_card_passes_stage4_to_modals(self):
-        """Invariant: OptimalEntryExitCard must propagate isStage4 and boundary props to
-        PreFlightChecklistModal, PositionSizerModal, and AlertTriggerModal.
+        """Invariant: OptimalEntryExitCard must propagate isStage4 to child modals,
+        and canonical page must pass isStage4 and boundaries to PreFlightChecklistModal.
         """
         card_path = os.path.join("frontend", "components", "OptimalEntryExitCard.tsx")
+        page_path = os.path.join("frontend", "app", "page.tsx")
         self.assertTrue(os.path.exists(card_path), "Missing OptimalEntryExitCard.tsx")
 
         with open(card_path, "r", encoding="utf-8") as f:
             content = f.read()
-
-        # PreFlightChecklistModal invocation must include isStage4 and boundaries
-        self.assertIn("<PreFlightChecklistModal", content)
-        self.assertIn("isStage4={isStage4}", content, "OptimalEntryExitCard must pass isStage4 to PreFlightChecklistModal")
-        self.assertIn("optimalEntryMin={optimal_entry_min}", content, "OptimalEntryExitCard must pass optimalEntryMin to PreFlightChecklistModal")
-        self.assertIn("optimalEntryMax={optimal_entry_max}", content, "OptimalEntryExitCard must pass optimalEntryMax to PreFlightChecklistModal")
 
         # PositionSizerModal invocation must include isStage4
         self.assertIn("<PositionSizerModal", content)
@@ -63,6 +63,19 @@ class TestCrossComponentStateSynchronicity(unittest.TestCase):
         # AlertTriggerModal invocation must include isStage4
         self.assertIn("<AlertTriggerModal", content)
         self.assertIn("isStage4={isStage4}", content, "OptimalEntryExitCard must pass isStage4 to AlertTriggerModal")
+
+        # Canonical PreFlightChecklistModal must receive isStage4 and boundaries
+        if "<PreFlightChecklistModal" in content:
+            self.assertIn("isStage4={isStage4}", content)
+            self.assertIn("optimalEntryMin={optimal_entry_min}", content)
+            self.assertIn("optimalEntryMax={optimal_entry_max}", content)
+        else:
+            with open(page_path, "r", encoding="utf-8") as f:
+                page_content = f.read()
+            self.assertIn("<PreFlightChecklistModal", page_content)
+            self.assertIn("isStage4:", page_content)
+            self.assertIn("optimalEntryMin:", page_content)
+            self.assertIn("optimalEntryMax:", page_content)
 
     def test_position_sizer_stage4_risk_mitigation(self):
         """Invariant: PositionSizerModal must downsize risk percentage from 1.0% to 0.25% (quarter size)

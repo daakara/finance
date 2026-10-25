@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "ACLS",
+    "name": "Axcelis Technologies Inc",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001113232",
+    "composite_figi": "BBG000DW34S2",
+    "share_class_figi": "BBG001SF8W86",
+    "last_updated_utc": "2026-10-18T06:10:11.413575853Z"
+  },
+  "status": "OK"
+}

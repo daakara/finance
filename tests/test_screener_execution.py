@@ -93,8 +93,8 @@ def test_screener_differential_subsets():
 
 def test_screener_disjoint_execution_states():
     """Verify that execution state categories are mutually exclusive (disjoint)."""
-    buy_zone_data = run_screener_get(filter_type="in_buy_zone")
-    tp_target_data = run_screener_get(filter_type="approaching_target")
+    buy_zone_data = run_screener_get(filter_type="in_buy_zone", user_role="DAY_TRADER")
+    tp_target_data = run_screener_get(filter_type="approaching_target", user_role="DAY_TRADER")
 
     buy_zone_syms = set(c["symbol"] for c in buy_zone_data.get("candidates", []))
     tp_target_syms = set(c["symbol"] for c in tp_target_data.get("candidates", []))
@@ -113,7 +113,7 @@ def test_screener_candidate_data_integrity():
         sym = c["symbol"]
         assert c["currentPrice"] > 0, f"{sym}: Price must be positive"
         assert c["gemScore"] >= 0 and c["gemScore"] <= 100, f"{sym}: GemScore out of bounds"
-        if c["executionStatus"] not in ["INSUFFICIENT_HISTORY", "UNVERIFIED_ASSET"]:
+        if c["executionStatus"] not in ["INSUFFICIENT_HISTORY", "UNVERIFIED_ASSET", "DELISTED_SECURITY"]:
             assert c["stopLoss"] < c["optimalEntryMin"] <= c["optimalEntryMax"] < c["takeProfit1"], f"{sym}: Invalid level ladder"
         else:
             assert c["stopLoss"] is None
@@ -149,7 +149,7 @@ def test_screener_custom_tickers_on_demand():
     assert "AAPL" in syms and "AMD" in syms and "META" in syms, "Custom symbols must match parsed input"
     for c in candidates:
         assert c["currentPrice"] > 0
-        if c["executionStatus"] not in ["INSUFFICIENT_HISTORY", "UNVERIFIED_ASSET"]:
+        if c["executionStatus"] not in ["INSUFFICIENT_HISTORY", "UNVERIFIED_ASSET", "DELISTED_SECURITY"]:
             assert c["stopLoss"] < c["optimalEntryMin"] <= c["optimalEntryMax"] < c["takeProfit1"]
         else:
             assert c["stopLoss"] is None
@@ -207,7 +207,7 @@ def test_screener_liquidity_non_contamination():
 import unittest
 
 import pytest
-pytestmark = pytest.mark.tier2b
+pytestmark = [pytest.mark.tier2b, pytest.mark.usefixtures("published_screener_universe")]
 
 
 class TestScreenerExecution(unittest.TestCase):

@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "TDG",
+    "name": "TransDigm Group Incorporated",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001260221",
+    "composite_figi": "BBG000L8CBX4",
+    "share_class_figi": "BBG001SPV1C1",
+    "last_updated_utc": "2026-10-18T06:10:11.416042637Z"
+  },
+  "status": "OK"
+}

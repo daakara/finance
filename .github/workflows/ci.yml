@@ -17,6 +17,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
@@ -27,7 +29,7 @@ jobs:
     - name: Install test dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt pytest pytest-cov httpx starlette
+        pip install -r requirements.txt pytest pytest-cov httpx starlette pyyaml pytest-asyncio
 
     - name: Run Tier 1 Core Invariant Gate
       env:
@@ -41,8 +43,60 @@ jobs:
       run: |
         pytest tests/ -m "tier2a or tier2b or tier2c" -v
 
+    - name: Run Focused Fundamentals & Research Invariant Gate
+      env:
+        PYTHONPATH: "."
+      run: |
+        pytest tests/test_fundamentals_api.py tests/test_sourced_fundamentals_pilot.py tests/test_generate_opportunity_dossier_snapshot.py tests/test_prepare_opportunity_dossier.py -v
+
+    - name: Verify Opportunity Dossier Snapshot Determinism
+      env:
+        PYTHONPATH: "."
+      run: |
+        python scripts/research/generate_opportunity_dossier_snapshot.py --check
+        python scripts/research/prepare_opportunity_dossier.py --check
+
+    - name: Run Historical SIP Ingestion & Registration Expansion Suite
+      env:
+        PYTHONPATH: "."
+      run: |
+        pytest tests/test_bounded_150_candidate_expansion.py \
+               tests/test_identity_adoption_dry_run.py \
+               tests/test_identity_persistence.py \
+               tests/test_three_candidate_registration_plan.py \
+               tests/test_registration_execution_wrapper.py \
+               tests/test_alpaca_historical_sip_ingestion.py \
+               tests/test_market_db.py \
+               tests/test_market_evidence_f13a.py -v
+
+    - name: Run Sprint 2 Package B Recovery and Admission Safety Gate
+      env:
+        PYTHONPATH: "."
+      run: |
+        pytest tests/test_pilot_identity_and_guarded_recovery.py \
+               tests/test_universe_admission_mappings.py \
+               tests/test_package_b_deployment_rehearsal.py -v
+
+    - name: Run Sprint 2 Package C Canonical Contract & Governance Gate
+      env:
+        PYTHONPATH: "."
+      run: |
+        pytest tests/test_package_b_v3_canonical_consumer.py \
+               tests/test_strategy_governance_adversarial.py \
+               tests/test_lookback_threshold_boundaries.py -v
+
+    - name: VCP Research Conformance & Reproducibility
+      env:
+        PYTHONPATH: "."
+      run: |
+        python -m pytest \
+          tests/test_vcp_candidate_005_conformance.py \
+          tests/test_vcp_candidate_006_conformance.py \
+          tests/test_vcp_candidate_reproducibility.py \
+          -v --strict-markers
+
     - name: Run Tier 3 Pre-Flight Release Gate
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      if: github.base_ref == 'main' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
       env:
         PYTHONPATH: "."
       run: |
@@ -82,6 +136,8 @@ jobs:
         python -m py_compile analyst_dashboard/analyzers/gem_screener.py
         python -m py_compile analyst_dashboard/analyzers/optimal_execution.py
         python -m py_compile analyst_dashboard/analyzers/confluence_engine.py
+        python -m py_compile scripts/ingest_alpaca_historical.py
+        python -m py_compile scripts/apply_registration_plan_wrapper.py
 
   build_and_export:
     name: Static SSG Export & Integrity Gate
@@ -103,9 +159,21 @@ jobs:
       working-directory: frontend
       run: npm ci
 
-    - name: Compile 98 Static SSG Routes
+    - name: Run Frontend Architectural & Invariant Tests
       working-directory: frontend
-      run: npm run build
+      run: npm run test:arch
+
+    - name: Enforce ARX UX Design Parity Gate V1 (Structural Invariants)
+      working-directory: frontend
+      run: npm run test:parity
+
+    - name: Enforce Opportunity Dossier Snapshot Integrity Gate
+      working-directory: frontend
+      run: npm run check:dossier
+
+    - name: Compile Static SSG Routes (145 Pages)
+      working-directory: frontend
+      run: npm run build:verified
 
     - name: Verify Static Export Integrity
       working-directory: frontend
@@ -122,35 +190,4 @@ jobs:
           exit 1
         else
           echo "✅ Data integrity verified: Zero synthetic generation in production paths"
-        fi
-
-  deploy_and_purge_cache:
-    name: Production Deployment & Edge Cache Invalidation
-    runs-on: ubuntu-latest
-    needs: [build_and_export]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
-
-    - name: Warm Up Render Backend
-      run: |
-        echo "Pinging Render backend API health endpoint..."
-        curl -s -X POST "https://finance-backend-api-qis0.onrender.com/api/v1/cache/clear" || echo "Backend warming up..."
-
-    - name: Invalidate Cloudflare CDN Edge Cache
-      env:
-        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-      run: |
-        if [ -n "$CLOUDFLARE_ZONE_ID" ] && [ -n "$CLOUDFLARE_API_TOKEN" ]; then
-          echo "Purging Cloudflare Edge Cache..."
-          curl -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d '{"purge_everything":true}'
-          echo "✅ Cloudflare edge cache purged successfully."
-        else
-          echo "Cloudflare zone purge skipped (Pages automatically serves updated SSG assets)."
         fi

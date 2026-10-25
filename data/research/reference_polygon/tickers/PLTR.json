@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "PLTR",
+    "name": "Palantir Technologies Inc. Class A Common Stock",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001321655",
+    "composite_figi": "BBG000N7QR55",
+    "share_class_figi": "BBG001T53796",
+    "last_updated_utc": "2026-10-18T06:10:11.415736122Z"
+  },
+  "status": "OK"
+}

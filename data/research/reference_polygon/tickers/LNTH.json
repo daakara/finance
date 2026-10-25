@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "LNTH",
+    "name": "Lantheus Holdings, Inc",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001521036",
+    "composite_figi": "BBG006Q52RD0",
+    "share_class_figi": "BBG006Q52RF8",
+    "last_updated_utc": "2026-10-18T06:10:11.415404941Z"
+  },
+  "status": "OK"
+}

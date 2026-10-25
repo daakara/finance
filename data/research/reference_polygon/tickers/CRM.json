@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "CRM",
+    "name": "Salesforce, Inc.",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNYS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0001108524",
+    "composite_figi": "BBG000BN2DC2",
+    "share_class_figi": "BBG001SDLP09",
+    "last_updated_utc": "2026-10-18T06:10:11.41411446Z"
+  },
+  "status": "OK"
+}

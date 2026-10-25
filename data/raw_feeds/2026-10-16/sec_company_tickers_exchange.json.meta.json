@@ -1,0 +1,19 @@
+{
+  "source_id": "sec_company_tickers_exchange",
+  "requested_url": "https://www.sec.gov/files/company_tickers_exchange.json",
+  "final_url": "https://www.sec.gov/files/company_tickers_exchange.json",
+  "retrieval_start_utc": "2026-10-16T19:40:56.397078+00:00",
+  "retrieval_end_utc": "2026-10-16T19:40:56.978834+00:00",
+  "http_status": 200,
+  "content_type": "application/json",
+  "byte_length": 523925,
+  "content_sha256": "d04923d674c6d0084dc56e67efd9cb5756f965366affe9d3e18d38b379ffd45f",
+  "etag": null,
+  "last_modified": "Thu, 15 Oct 2026 13:39:20 GMT",
+  "publisher_timestamp": null,
+  "acquisition_version": "1.0.0",
+  "outcome": "SUCCESS",
+  "raw_artifact_path": "C:\\Users\\akara\\Documents\\Projects\\finance-sprint-2-listing-acquisition\\data\\raw_feeds\\2026-10-16\\sec_company_tickers_exchange.json",
+  "metadata_artifact_path": "C:\\Users\\akara\\Documents\\Projects\\finance-sprint-2-listing-acquisition\\data\\raw_feeds\\2026-10-16\\sec_company_tickers_exchange.json.meta.json",
+  "error_message": null
+}

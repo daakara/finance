@@ -1,0 +1,17 @@
+{
+  "results": {
+    "ticker": "SNPS",
+    "name": "Synopsys Inc",
+    "market": "stocks",
+    "locale": "us",
+    "primary_exchange": "XNAS",
+    "type": "CS",
+    "active": true,
+    "currency_name": "usd",
+    "cik": "0000883241",
+    "composite_figi": "BBG000BSFRF3",
+    "share_class_figi": "BBG001S5VTR8",
+    "last_updated_utc": "2026-10-18T06:10:11.415964758Z"
+  },
+  "status": "OK"
+}
