@@ -18,6 +18,8 @@ import signal
 import tempfile
 import subprocess
 import pytest
+
+pytestmark = pytest.mark.tier2c
 psycopg2 = pytest.importorskip("psycopg2")
 from psycopg2.extras import RealDictCursor
 pgserver = pytest.importorskip("pgserver")

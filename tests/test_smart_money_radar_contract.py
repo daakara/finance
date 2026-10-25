@@ -10,6 +10,8 @@ Verifies the complete integration contract:
 """
 
 import pytest
+
+pytestmark = pytest.mark.tier2c
 from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
 from api.main import app

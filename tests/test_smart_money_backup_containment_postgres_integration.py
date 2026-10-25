@@ -13,6 +13,8 @@ import os
 import json
 import tempfile
 import pytest
+
+pytestmark = pytest.mark.tier2c
 from datetime import datetime, timezone, timedelta
 psycopg2 = pytest.importorskip("psycopg2")
 from psycopg2.extras import RealDictCursor

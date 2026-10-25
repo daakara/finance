@@ -12,6 +12,8 @@ Verifies:
 import sys
 import os
 import pytest
+
+pytestmark = pytest.mark.tier2c
 from contextlib import contextmanager
 
 

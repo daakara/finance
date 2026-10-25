@@ -5,6 +5,8 @@ and that attempting to use PostgreSQL features without drivers fails closed.
 """
 
 import pytest
+
+pytestmark = pytest.mark.tier2c
 from analyst_dashboard.smart_money.storage.factory import (
     get_smart_money_storage_backend,
     get_smart_money_scanner_runner,

@@ -16,6 +16,8 @@ import time
 import uuid
 import tempfile
 import pytest
+
+pytestmark = pytest.mark.tier2c
 psycopg2 = pytest.importorskip("psycopg2")
 pgserver = pytest.importorskip("pgserver")
 

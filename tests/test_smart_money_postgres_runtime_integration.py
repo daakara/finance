@@ -16,6 +16,8 @@ import json
 import tempfile
 import sqlite3
 import pytest
+
+pytestmark = pytest.mark.tier2c
 from datetime import datetime
 psycopg2 = pytest.importorskip("psycopg2")
 from psycopg2.extras import RealDictCursor, Json
