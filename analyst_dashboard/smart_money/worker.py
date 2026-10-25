@@ -16,7 +16,7 @@ import time
 import signal
 import logging
 from enum import Enum
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 from analyst_dashboard.smart_money.storage.config import (
     get_database_url,
