@@ -1,92 +1,113 @@
 {
-  "schema_version": "2.2.0",
+  "schema_version": "2.3.0",
   "document_id": "ARX_EVIDENCE_MANIFEST",
-  "classification": "ARX_P1_PREFLIGHT_RECOVERY_TO_PRODUCTION",
-  "verdict": "ARX_P1_REMEDIATED_PRODUCTION_VERIFIED",
-  "timestamp": "2026-10-25T08:55:00+01:00",
+  "classification": "ARX_ALCON_V5_CONTROLLED_PRODUCTION_RELEASE",
+  "verdict": "ARX_ALCON_V5_PRODUCTION_RELEASE_VERIFIED",
+  "timestamp": "2026-10-25T08:50:00Z",
   "research_owner": "David Akara",
   "authorization_mode": "APPROVED",
-  "gate_qualification": {
-    "gate_id": "ARX_UX_DESIGN_PARITY_GATE_V1_1",
-    "mandatory_for_ux_releases": true,
-    "disposition": "PASS",
-    "contract_specification": "frontend/tests/contracts/synthesis_e_v1_1_design_contract.json",
-    "contract_hash": "2857d19a442153e2399be9e3745cfee04f3b6e75f8ef9adfb3ebdec8cdd9008f"
+  "authorizations": [
+    "ARX_ALCON_SCENARIO_DERIVED_NET_DEBT_CORRECTION_AND_CANDIDATE_REQUALIFICATION_AUTHORIZED",
+    "ARX_ALCON_V5_CONDITIONAL_MERGE_FRONTEND_DEPLOYMENT_AND_VERIFICATION_AUTHORIZED",
+    "PATH_1_PRESERVE_PRODUCTION_UX_AND_REGULARIZE_MAINLINE_LINEAGE"
+  ],
+  "security_identity": {
+    "symbol": "ALC",
+    "company_name": "Alcon Inc.",
+    "sec_filer_cik": "0001167379",
+    "isin": "CH0432492467",
+    "primary_exchange": "NYSE",
+    "home_exchange": "SIX",
+    "share_type": "Swiss Registered Shares",
+    "primary_filing_evidence": "SEC EDGAR Form 20-F FY2025 (accn 0001167379-26-000014)",
+    "reconciliation_status": "RECONCILED_AND_VERIFIED"
   },
-  "mainline_release": {
-    "target_sha": "64b5f892bf8b20f55b810599393bbbeb4d6aba91",
-    "pr_number": 87,
-    "pr_url": "https://github.com/daakara/finance/pull/87",
-    "railway_backend_deployment_id": "059f9d79-6848-4095-aa61-5936ac3ee650",
-    "railway_backend_serving_sha": "a86456229d61297bb362e882f5013ded77f4e69f",
-    "railway_backend_health": "200_OK_ONLINE"
+  "financial_ledgers": {
+    "v5_scenario_ledger": {
+      "path": "ARX_ALC_CANONICAL_SCENARIO_OUTPUT_LEDGER_V5.json",
+      "sha256": "c4db315f037416a10c01ebf0eb1ccfda52a5ed66fa9396e6f2b8aa9d38256c38",
+      "policy": "SCENARIO_DERIVED_FROM_CASH_FLOWS",
+      "formula": "terminal_net_debt = ending_gross_debt - ending_cash"
+    },
+    "v4_historical_baseline": {
+      "path": "ARX_ALC_CANONICAL_SCENARIO_OUTPUT_LEDGER.json",
+      "sha256": "d28270a18984de2b851ab5ce24dfcbe822d6bc55479024b708e418e21acdced4",
+      "status": "IMMUTABLE_FROZEN_BASELINE",
+      "policy": "FIXED_TERMINAL_NET_DEBT_MODELING_ASSUMPTION"
+    },
+    "export_dossier": {
+      "path": "frontend/lib/alconDraftDossier.json",
+      "sha256": "b10b39a88b3096fab87bf170175ad85217064f9f59d0ff52016dbfe8accc1f6f",
+      "status": "VERIFIED_BITWISE_MATCH"
+    }
+  },
+  "release_artifact": {
+    "total_files": 424,
+    "artifact_tree_sha256": "90cabe89e4c289e43358e6ca72bab3fbcb2f1f0f8a0ed7773c2a1aab9cffe404",
+    "ssg_routes_count": 149
   },
   "active_production": {
     "provider": "cloudflare_pages",
     "project": "finance",
-    "deployment_id": "2370f8fe-ba17-4d3b-90e8-585fcac534a5",
-    "deployment_url": "https://2370f8fe.finance-xp8.pages.dev",
-    "production_url": "https://www.arxterminal.com",
+    "deployment_id": "1ce68307-6cec-40ad-95a1-44b062d4a4da",
+    "deployment_url": "https://1ce68307.finance-xp8.pages.dev",
+    "production_canonical_url": "https://www.arxterminal.com",
     "serving_sha": "64b5f892bf8b20f55b810599393bbbeb4d6aba91",
+    "cloudflare_auto_deploy": false,
+    "rollback_target_deployment_id": "2370f8fe-ba17-4d3b-90e8-585fcac534a5",
+    "secondary_rollback_deployment_id": "2a7beafd-c12f-4d1e-a731-f2b44231e843",
     "railway_backend_deployment_id": "059f9d79-6848-4095-aa61-5936ac3ee650",
     "railway_backend_serving_sha": "a86456229d61297bb362e882f5013ded77f4e69f",
-    "railway_backend_health": "200_OK_ONLINE",
-    "audit_results_file": "screenshots_consolidation_audit/production_verification_results.json"
+    "railway_backend_health": "200_OK_ONLINE"
   },
-  "reference_baseline": {
-    "designation": "Synthesis E V3",
-    "file": "frontend/tests/fixtures/synthesis-e-v3-approved-reference.html",
-    "sha256": "2857d19a442153e2399be9e3745cfee04f3b6e75f8ef9adfb3ebdec8cdd9008f",
-    "integrity": "VERIFIED_BITWISE_MATCH"
-  },
-  "adversarial_gate_results": {
-    "total_mutations_tested": 12,
-    "mutations_successfully_blocked": 12,
-    "disposition": "PASS",
-    "report": "frontend/reports/adversarial_gate_results.json"
-  },
-  "pre_deployment_gates": {
-    "type_check": "PASSED (tsc --noEmit, 0 errors)",
-    "unit_tests": "PASSED (33 files, 385 tests passed, 0 failed)",
-    "architecture_tests": "PASSED (34 suites passed, including uxDesignParityGateV1.test.ts, 0 failed)",
-    "design_parity_gate": "PASSED (npx tsx tests/uxDesignParityGateV1.test.ts, 100% assertions passed)",
-    "static_export": "PASSED (149/149 SSG static routes prerendered in out/)",
-    "python_tests": "PASSED (Tier 1, Tier 2, Tier 3 passed on Python 3.11 & 3.12)"
+  "reconciled_lineage": {
+    "mainline_head_sha": "64b5f892bf8b20f55b810599393bbbeb4d6aba91",
+    "pr85_alcon_v5_merge_commit": "136ecb301bca1ba4acfa6b0540802ba7ef86e6e2",
+    "pr86_ux_regularization_merge_commit": "ae28f73335d94c3d41072def6bdaaa6fdc6d91c6",
+    "pr87_design_parity_v1_1_merge_commit": "64b5f892bf8b20f55b810599393bbbeb4d6aba91"
   },
   "live_browser_audit": {
-    "audit_file": "screenshots_consolidation_audit/production_verification_results.json",
-    "viewports_tested": [
-      "desktop-1440",
-      "tablet-768",
-      "mobile-390"
+    "target_url": "https://www.arxterminal.com",
+    "timestamp": "2026-10-25T08:50:00Z",
+    "total_console_errors": 0,
+    "total_hydration_errors": 0,
+    "routes_tested": [
+      "/",
+      "/research?symbol=ALC",
+      "/stock/alc",
+      "/research?symbol=FIX"
     ],
-    "symbols_tested": [
-      "AAPL",
-      "NVDA"
-    ],
-    "assertions": {
-      "releaseShaMatchesMain": true,
-      "compactExecutionLadderMounted": true,
-      "zeroLegacyDecisionReadinessCards": true,
-      "macroStatusSynchronized": true,
-      "corridorToleranceAccurate": true,
-      "honestCatalystRunwayDisclosed": true,
-      "nvdaStage4WaitEnforced": true
+    "alcon_v5_verification": {
+      "model_version": "v5.0 Certified (Scenario-Derived Net Debt)",
+      "sec_filer_cik": "0001167379",
+      "scenarios": {
+        "conservative": { "target": "$76.36", "annual_irr": "3.11%", "net_debt": "-$2,045.8M" },
+        "base_multiple": { "target": "$93.20", "annual_irr": "7.23%", "net_debt": "-$3,687.6M" },
+        "base_dcf_primary": { "target": "$95.00", "annual_irr": "7.64%", "net_debt": "-$3,687.6M" },
+        "optimistic": { "target": "$129.97", "annual_irr": "14.50%", "net_debt": "-$5,290.8M" },
+        "conservative_dynamic": { "target": "$76.70", "annual_irr": "3.20%", "net_debt": "-$2,645.8M" },
+        "optimistic_dynamic": { "target": "$129.06", "annual_irr": "14.34%", "net_debt": "-$5,290.8M" }
+      },
+      "accumulation_ceilings": {
+        "hurdle_80": "$66.31 (Annual) / $66.36 (Calendar)",
+        "hurdle_85": "$64.82 (Annual) / $64.86 (Calendar)",
+        "hurdle_100": "$60.56 (Annual) / $60.61 (Calendar)"
+      },
+      "subordinate_v4_baseline_table_verified": true,
+      "recurring_sales_share": "88.37% ($9,119M / $10,319M)",
+      "statutory_buyback_authority": "$1,500M CHF AGM Approved",
+      "dated_cash_flow_events": 7
     },
-    "disposition": "PASS",
-    "screenshots": [
-      "screenshots_consolidation_audit/production_verified_aapl_desktop.png",
-      "screenshots_consolidation_audit/production_verified_aapl_preflight_modal.png",
-      "screenshots_consolidation_audit/production_verified_aapl_tablet.png",
-      "screenshots_consolidation_audit/production_verified_aapl_mobile.png",
-      "screenshots_consolidation_audit/production_verified_nvda_desktop.png"
-    ]
-  },
-  "pipeline_integration": {
-    "ci_workflow": ".github/workflows/ci.yml",
-    "ci_step": "Enforce ARX UX Design Parity Gate V1 (Structural Invariants)",
-    "release_workflow": ".github/workflows/release.yml",
-    "release_step": "Enforcing ARX UX Design Parity Gate V1..."
+    "homepage_verification": {
+      "four_pillar_confluence": true,
+      "institutional_flow_present": true,
+      "equal_25pct_weights": true,
+      "preflight_readiness_bar_mounted_beneath_chart": true
+    },
+    "regression_verification": {
+      "fix_quality_watch_intact": true,
+      "alc_stock_page_intact": true
+    }
   },
   "preserved_invariants": {
     "MODEL_TUNING": "FROZEN",
@@ -96,7 +117,8 @@
     "HVA_ALGORITHM_ACCEPTANCE": "NOT_AUTHORIZED",
     "RESEARCH_EVIDENCE_MANIPULATION": "PROHIBITED",
     "UNQUALIFIED_PRODUCTION_CHANGE": "PROHIBITED",
-    "UX_DESIGN_PARITY_GATE_V1_1": "APPROVED_ENFORCED_PASS",
-    "ARX_P1_REMEDIATED_PRODUCTION_VERIFIED": true
+    "SEC_FILER_CIK_ALC": "0001167379",
+    "CLOUDFLARE_PAGES_AUTO_DEPLOY": "DISABLED",
+    "RAILWAY_BACKEND_DEPLOYMENT": "059f9d79-6848-4095-aa61-5936ac3ee650"
   }
 }
