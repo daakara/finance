@@ -18,9 +18,9 @@ import signal
 import tempfile
 import subprocess
 import pytest
-import psycopg2
+psycopg2 = pytest.importorskip('psycopg2')
 from psycopg2.extras import RealDictCursor
-import pgserver
+pgserver = pytest.importorskip('pgserver')
 
 from analyst_dashboard.smart_money.storage.postgres_schema import (
     initialize_postgres_schema,

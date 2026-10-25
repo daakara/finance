@@ -52,11 +52,18 @@ class TestSecurityPrivilegeAndRoleSeparation:
         # Simulated unprivileged connection
         mock_conn = MagicMock()
         mock_cur = MagicMock()
-        import psycopg2
-        mock_cur.execute.side_effect = psycopg2.ProgrammingError("permission denied for table pg_authid")
+        try:
+            import psycopg2
+            prog_err_cls = psycopg2.ProgrammingError
+        except ImportError:
+            class MockProgrammingError(Exception):
+                pass
+            prog_err_cls = MockProgrammingError
+
+        mock_cur.execute.side_effect = prog_err_cls("permission denied for table pg_authid")
         mock_conn.cursor.return_value.__enter__.return_value = mock_cur
 
-        with pytest.raises(psycopg2.ProgrammingError) as exc_info:
+        with pytest.raises(prog_err_cls) as exc_info:
             with mock_conn.cursor() as cur:
                 cur.execute("SELECT count(*) FROM pg_catalog.pg_authid;")
         assert "permission denied for table pg_authid" in str(exc_info.value)

@@ -50,10 +50,14 @@ def get_smart_money_repository(dsn: Optional[str] = None) -> Any:
     try:
         from analyst_dashboard.smart_money.storage.postgres_repository import (
             PostgresSmartMoneyRepository,
+            PSYCOPG2_AVAILABLE,
         )
+        if not PSYCOPG2_AVAILABLE:
+            raise ImportError("psycopg2 is not available")
     except ImportError as exc:
         raise RuntimeError(
-            "POSTGRESQL_DRIVER_UNAVAILABLE: PostgreSQL storage backend was selected, "
+            "CANONICAL_POSTGRES_DRIVER_UNAVAILABLE / POSTGRESQL_DRIVER_UNAVAILABLE: "
+            "PostgreSQL storage backend was selected, "
             "but the required PostgreSQL client libraries (psycopg2) could not be loaded. "
             "Install psycopg2-binary to use PostgreSQL storage."
         ) from exc

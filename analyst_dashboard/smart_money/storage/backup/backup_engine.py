@@ -22,8 +22,15 @@ from datetime import datetime
 from urllib.parse import urlparse
 from typing import Dict, Any, Optional
 
-import psycopg2
-from psycopg2.extras import Json
+try:
+    import psycopg2
+    from psycopg2.extras import Json
+    PSYCOPG2_AVAILABLE = True
+except ImportError:
+    psycopg2 = None
+    def Json(val):  # type: ignore[no-redef]
+        return json.dumps(val)
+    PSYCOPG2_AVAILABLE = False
 
 from analyst_dashboard.smart_money.storage.config import (
     get_database_url,
@@ -108,6 +115,11 @@ class SmartMoneyBackupEngine:
         backup_id = custom_backup_id or f"sm-backup-{datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:8]}"
 
         # 1. Establish session connection and acquire mutual exclusion lock
+        if not PSYCOPG2_AVAILABLE:
+            raise RuntimeError(
+                "CANONICAL_POSTGRES_DRIVER_UNAVAILABLE / POSTGRESQL_DRIVER_UNAVAILABLE: "
+                "psycopg2 is required for SmartMoneyBackupEngine, but is not installed."
+            )
         lock_conn = psycopg2.connect(self.dsn)
         try:
             if not acquire_backup_lock(lock_conn):

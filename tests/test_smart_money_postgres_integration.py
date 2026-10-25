@@ -12,10 +12,10 @@ import tempfile
 import sqlite3
 import pytest
 from datetime import datetime
-import psycopg2
+psycopg2 = pytest.importorskip('psycopg2')
 from psycopg2.extras import RealDictCursor
 
-import pgserver
+pgserver = pytest.importorskip('pgserver')
 
 from analyst_dashboard.smart_money.storage.config import (
     SMART_MONEY_POSTGRES_SCHEMA_VERSION,
