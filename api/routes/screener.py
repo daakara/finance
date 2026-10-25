@@ -240,52 +240,39 @@ def get_radar_capabilities(
     elif vcp_snapshot:
         snap_status = vcp_snapshot.get("status")
         freshness_info = vcp_snapshot.get("freshness", {})
+        u_meta = vcp_snapshot.get("universe", {})
+        if u_meta:
+            pop_denom = pop_denom or u_meta.get("eligible_universe_count") or vcp_snapshot.get("snapshot", {}).get("universe_size")
+            build_id = build_id or u_meta.get("universe_build_id")
+            univ_id = univ_id or u_meta.get("scope_class") or "ARX_US_EQUITIES"
+            pub_digest = pub_digest or u_meta.get("membership_hash")
+            membership_status = "AVAILABLE" if pop_denom else membership_status
+
         if snap_status == "AVAILABLE":
             raw_matched = vcp_snapshot.get("matched_count")
-            is_valid_count = type(raw_matched) is int and raw_matched >= 0
-            matched_count = raw_matched if is_valid_count else 0
+            is_valid_op = type(raw_matched) is int and raw_matched >= 0
+            matched_count = raw_matched if is_valid_op else None
             caps["VCP"] = {
-                "status": "AVAILABLE",
-                "universeScreening": "AVAILABLE",
+                "status": "AVAILABLE" if is_valid_op else "PIPELINE_PENDING",
+                "universeScreening": "AVAILABLE" if is_valid_op else "PIPELINE_PENDING",
                 "singleAssetAnalysis": "AVAILABLE",
                 "matchedCount": matched_count,
                 "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
                 "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
                 "snapshotId": vcp_snapshot.get("snapshot_id"),
-                "freshnessStatus": freshness_info.get("status", "FRESH"),
-                "populationDenominator": pop_denom or vcp_snapshot.get("population_denominator"),
-                "universeBuildId": build_id,
-                "universeId": univ_id,
-                "publicationDigest": pub_digest,
-                "isRollback": is_rollback,
-                "rollbackReason": rollback_reason,
-                "membershipStatus": membership_status,
-                "lifecycleState": "SCANNER_OPERATIONAL",
-                "rationale": "Authentic Minervini Volatility Contraction Pattern universe screening active with deterministic publication integrity.",
-            }
-        elif snap_status == "NO_SCAN_PERFORMED":
-            caps["VCP"] = {
-                "status": "PIPELINE_PENDING",
-                "universeScreening": "PIPELINE_PENDING",
-                "singleAssetAnalysis": "AVAILABLE",
-                "matchedCount": None,
-                "dataAsOf": None,
-                "generatedAt": None,
-                "snapshotId": None,
-                "freshnessStatus": "UNKNOWN",
-                "reason": "NO_SCAN_PERFORMED",
+                "freshnessStatus": freshness_info.get("status", "LIVE"),
                 "populationDenominator": pop_denom,
                 "universeBuildId": build_id,
                 "universeId": univ_id,
                 "publicationDigest": pub_digest,
-                "isRollback": is_rollback,
-                "rollbackReason": rollback_reason,
+                "isRollback": False,
+                "rollbackReason": None,
                 "membershipStatus": membership_status,
-                "lifecycleState": "COMMITTED_PUBLICATION_SCANNER_NOT_ENROLLED" if pop_denom else "NO_COMMITTED_PUBLICATION",
-                "rationale": "No VCP market-wide scan has been executed for the current session.",
+                "lifecycleState": "SCANNER_OPERATIONAL" if is_valid_op else "SCANNER_OUTPUT_INCOMPLETE",
+                "rationale": "Authentic Minervini Volatility Contraction Pattern universe screening active with deterministic publication integrity.",
             }
-        elif snap_status == "UNENROLLED_PENDING_ACTIVATION":
-            reason = vcp_snapshot.get("reason", "UNENROLLED_PENDING_ACTIVATION")
+        elif snap_status == "PIPELINE_PENDING":
+            reason = vcp_snapshot.get("reason", "UNCOMPUTED_CLASSIFICATION" if vcp_snapshot.get("snapshot_id") else "NO_ACTIVE_SNAPSHOT")
             caps["VCP"] = {
                 "status": "PIPELINE_PENDING",
                 "universeScreening": "PIPELINE_PENDING",
@@ -351,6 +338,7 @@ def get_radar_capabilities(
                 "rationale": "VCP scanner snapshot is stale past freshness policy cutoff.",
             }
     elif pop_denom:
+        # No active scanner snapshot, but publication pointer exists at membership layer
         caps["VCP"] = {
             "status": "PIPELINE_PENDING",
             "universeScreening": "PIPELINE_PENDING",
