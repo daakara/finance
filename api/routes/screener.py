@@ -406,7 +406,6 @@ def get_radar_capabilities(
             "populationDenominator": 0,
             "rationale": "Automated market-wide SEC Form 4 insider conviction screening is pending operational pipeline activation.",
         }
-        }
     return caps
 
 
