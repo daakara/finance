@@ -282,6 +282,63 @@ assert.ok(
 );
 console.log("   [PASS] Navbar onboarding popup suppressed during active symbol analysis");
 
+// 4i. Increment 5: Touch target compliance (min-h-[44px]) for PreFlight buttons, conviction card, and workspace tabs
+const preflightBarSource = fs.readFileSync(
+  path.join(__dirname, "../components/PreFlightReadinessBar.tsx"),
+  "utf8"
+);
+assert.ok(
+  preflightBarSource.includes('id="toggle-preflight-details-btn"') &&
+  preflightBarSource.includes("min-h-[44px]"),
+  "toggle-preflight-details-btn must enforce min-h-[44px] touch target"
+);
+assert.ok(
+  preflightBarSource.includes('data-testid="inline-open-modal-btn"') &&
+  preflightBarSource.includes("min-h-[44px]"),
+  "inline-open-modal-btn must enforce min-h-[44px] touch target"
+);
+assert.ok(
+  convictionCardSource.includes('id="why-score-btn"') &&
+  convictionCardSource.includes("min-h-[44px]"),
+  "#why-score-btn must enforce min-h-[44px] touch target"
+);
+assert.ok(
+  pageSource.includes('activeTab === "SMART_MONEY"') &&
+  pageSource.includes("min-h-[44px]"),
+  "Workspace tab buttons must enforce min-h-[44px] touch targets"
+);
+console.log("   [PASS] Touch target compliance (min-h-[44px]) enforced across all interactive controls (DEF-H1-05)");
+
+// 4j. Increment 5: Tab URL state normalization and orphaned tab cleanup (DEF-H2-06)
+assert.ok(
+  !pageSource.includes('activeTab === "EXECUTION"'),
+  "Orphaned activeTab === EXECUTION render block must be completely removed"
+);
+assert.ok(
+  pageSource.includes('urlTab === "EXECUTION"') &&
+  pageSource.includes('setActiveTab("SMART_MONEY")'),
+  "page.tsx must normalize legacy urlTab === EXECUTION to SMART_MONEY"
+);
+console.log("   [PASS] Tab URL state normalization and orphaned tab cleanup verified (DEF-H2-06)");
+
+// 4k. Increment 5: Interactive In-Line Telemetry Drawer Expansion (DEF-H1-06)
+assert.ok(
+  preflightBarSource.includes("isDrawerExpanded?: boolean") &&
+  preflightBarSource.includes("onToggleDrawer?: (expanded: boolean) => void"),
+  "PreFlightReadinessBar must support controlled isDrawerExpanded and onToggleDrawer props"
+);
+assert.ok(
+  pageSource.includes("isPreflightDrawerExpanded") &&
+  pageSource.includes("onToggleDrawer={setIsPreflightDrawerExpanded}"),
+  "page.tsx must pass controlled isDrawerExpanded and onToggleDrawer to PreFlightReadinessBar"
+);
+assert.ok(
+  pageSource.includes("setIsPreflightDrawerExpanded(true)") &&
+  pageSource.includes("preflight-readiness-bar"),
+  "CompositeConvictionCard onOpenWhy must trigger in-line telemetry drawer expansion and element scroll"
+);
+console.log("   [PASS] Interactive In-Line Telemetry Drawer expansion and scroll verified (DEF-H1-06)");
+
 // -----------------------------------------------------------------------------
 // 5. Semantic Consistency: Corridors, Execution Triggers & Risk Levels
 // -----------------------------------------------------------------------------
