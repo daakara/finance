@@ -159,14 +159,24 @@ const testCases: AdversarialTestCase[] = [
     targetFile: path.join(frontendDir, "lib/preflightEvaluator.ts"),
     mutate: (content: string) => {
       return content.replace(
-        "if (ageMinutes > maxAgeMinutes) {\n      return null; // Stale evidence strictly rejected\n    }",
-        "if (ageMinutes > maxAgeMinutes) {\n      return rawVix; // MUTATED: PERMISSIVE STALE BYPASS\n    }"
-      ).replace(
-        "if (ageMinutes > maxAgeMinutes) {\r\n      return null; // Stale evidence strictly rejected\r\n    }",
-        "if (ageMinutes > maxAgeMinutes) {\r\n      return rawVix; // MUTATED: PERMISSIVE STALE BYPASS\r\n    }"
+        "const maxAgeMinutes = hasQualifiedClosedSettlement ? 4320 : 240;",
+        "const maxAgeMinutes = 999999; // MUTATED: PERMISSIVE STALE BYPASS"
       );
     },
-    expectedFailurePattern: "Stale macro cache (> 240m open) must fail closed to UNAVAILABLE"
+    expectedFailurePattern: "resolveFreshMacroEvidence must enforce 240m active / 4320m qualified closed freshness SLA"
+  },
+  {
+    id: "DEFECT_14_OBSERVATION_TIMESTAMP_BYPASS",
+    name: "Observation Timestamp Governance Bypass",
+    description: "Ignores market observation timestamp age, allowing stale market bars in fresh API delivery wrappers to pass",
+    targetFile: path.join(frontendDir, "lib/preflightEvaluator.ts"),
+    mutate: (content: string) => {
+      return content.replace(
+        "const obsTimeStr = parsed?.vix?.observationTime || parsed?.observationTime || parsed?.vix?.observed_at;",
+        "const obsTimeStr = undefined; // MUTATED: IGNORE OBS TIMESTAMP"
+      );
+    },
+    expectedFailurePattern: "Stale market observation must govern over fresh API delivery"
   }
 ];
 
