@@ -155,7 +155,7 @@ function verifySnapshotIntegrity() {
     process.exit(1);
   }
 
-  const expectedPublishedSymbols = ["FIX", "DUOL", "ULTA", "MEDP", "ISRG", "DECK"];
+  const expectedPublishedSymbols = ["FIX", "DUOL", "ULTA", "MEDP", "ISRG", "DECK", "ALC"];
   assertArrayEquals(pubManifest.published_symbols, expectedPublishedSymbols, "Published symbols mismatch in manifest");
 
   const ulta = pubManifest.accepted_additions?.ULTA;
@@ -227,6 +227,24 @@ function verifySnapshotIntegrity() {
   }
   if (deck.financial_profile.operating_lease_liabilities_asc842 !== 472334000.0) {
     console.error("❌ DECK lease liabilities failed parity check");
+    process.exit(1);
+  }
+
+  const alc = pubManifest.accepted_additions?.ALC;
+  if (!alc) {
+    console.error("❌ FATAL: ALC missing from published watch manifest accepted_additions");
+    process.exit(1);
+  }
+  if (alc.valuation.reference_price !== 67.43) {
+    console.error("❌ ALC valuation in published watch manifest failed parity check");
+    process.exit(1);
+  }
+  if (alc.financial_profile.total_financial_debt !== 4500000000.0) {
+    console.error("❌ ALC debt failed parity check");
+    process.exit(1);
+  }
+  if (!alc.alcon_v4_extension || !alc.alcon_v4_extension.accumulation_ceilings) {
+    console.error("❌ ALC extension missing or invalid");
     process.exit(1);
   }
   if (!pubManifest.excluded_historical_symbols?.includes("MU") || !pubManifest.excluded_draft_symbols?.includes("PLTR")) {

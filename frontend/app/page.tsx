@@ -36,6 +36,7 @@ import { resolveAssetAlias } from "../lib/assetRegistry";
 import { isETF, resolveCapabilities } from "../lib/assetTypeUtils";
 import { emitEtfIntentAttempt } from "../lib/telemetry/etfIntentClient";
 import TerminalSsrShell from "../components/TerminalSsrShell";
+import { resolveFreshCachedVix } from "../lib/preflightEvaluator";
 import { Target, Landmark, BarChart3, Shield } from "lucide-react";
 
 type WorkspaceTab = "EXECUTION" | "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
@@ -243,6 +244,50 @@ function TerminalContent() {
     };
   }, [selectedSymbol, interval, userRole]);
 
+  const canonicalPreflightInputs = useMemo(() => {
+    const rawCorporate = (data as any)?.corporateEvent;
+    const catalystEvidence = rawCorporate ? {
+      state: rawCorporate.preflight_state,
+      daysToEarnings: rawCorporate.days_to_earnings,
+      eventDate: rawCorporate.event_date_et,
+      callTimeEt: rawCorporate.conference_call_time_et,
+      resultsReleaseTimeEt: rawCorporate.results_release_time_et,
+      sourceName: rawCorporate.source_name,
+      confirmationStatus: rawCorporate.confirmation_status,
+      coverageStatus: rawCorporate.coverage_status,
+      freshnessStatus: rawCorporate.freshness_status,
+      riskTier: rawCorporate.risk_tier,
+      isEstimate: rawCorporate.is_estimate,
+    } : null;
+
+    const fromMacro = (macroData as any)?.vix?.value ?? (macroData as any)?.vix?.level ?? (typeof (macroData as any)?.vix === "number" ? (macroData as any).vix : undefined);
+    const resolvedVix = (() => {
+      if (typeof fromMacro === "number" && !isNaN(fromMacro) && fromMacro > 0) return fromMacro;
+      const freshCached = resolveFreshCachedVix();
+      return freshCached !== null ? freshCached : undefined;
+    })();
+
+    return {
+      symbol: selectedSymbol,
+      currentPrice: data?.currentPrice ?? (SpotPriceRegistry.get(selectedSymbol)?.price || 0),
+      stopLoss: data?.optimalExecution?.stop_loss ?? undefined,
+      takeProfit1: data?.optimalExecution?.take_profit_1 ?? undefined,
+      riskRewardRatio: data?.optimalExecution?.risk_reward_ratio ?? undefined,
+      setupPattern: data?.optimalExecution?.setup_pattern,
+      isDayTrader: userRole === "DAY_TRADER",
+      isStage4: Boolean(data?.optimalExecution?.stage_phase?.toLowerCase().includes("stage 4") || (data?.technicals as any)?.is_stage4),
+      optimalEntryMin: data?.optimalExecution?.optimal_entry_min ?? undefined,
+      optimalEntryMax: data?.optimalExecution?.optimal_entry_max ?? undefined,
+      breakoutPivot: data?.optimalExecution?.breakout_pivot ?? undefined,
+      vix: typeof resolvedVix === "number" && !isNaN(resolvedVix) && resolvedVix > 0 ? resolvedVix : undefined,
+      hasImminentEarnings: ((rawCorporate?.days_to_earnings != null && rawCorporate?.days_to_earnings <= 7.0 && rawCorporate?.days_to_earnings >= 0) || rawCorporate?.preflight_state === "WARN"),
+      catalystState: rawCorporate?.preflight_state,
+      catalystEvidence,
+      isActionable: data?.decisionTrace?.isActionable ?? (data?.canonicalDecision as any)?.is_actionable,
+      decisionState: data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state,
+    };
+  }, [selectedSymbol, data, macroData, userRole]);
+
   return (
     <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] flex flex-col font-sans selection:bg-cyan-500 selection:text-black transition-colors duration-200">
       {/* Skip to Main Content Link for Keyboard Accessibility */}
@@ -426,35 +471,7 @@ function TerminalContent() {
                   </div>
                 ) : (
                   <PreFlightReadinessBar
-                    symbol={selectedSymbol}
-                    currentPrice={data?.currentPrice ?? (SpotPriceRegistry.get(selectedSymbol)?.price || 0)}
-                    stopLoss={data?.optimalExecution?.stop_loss ?? undefined}
-                    takeProfit1={data?.optimalExecution?.take_profit_1 ?? undefined}
-                    riskRewardRatio={data?.optimalExecution?.risk_reward_ratio ?? undefined}
-                    setupPattern={data?.optimalExecution?.setup_pattern}
-                    isDayTrader={userRole === "DAY_TRADER"}
-                    isStage4={Boolean(data?.optimalExecution?.stage_phase?.toLowerCase().includes("stage 4") || (data?.technicals as any)?.is_stage4)}
-                    optimalEntryMin={data?.optimalExecution?.optimal_entry_min ?? undefined}
-                    optimalEntryMax={data?.optimalExecution?.optimal_entry_max ?? undefined}
-                    breakoutPivot={data?.optimalExecution?.breakout_pivot ?? undefined}
-                    vix={(macroData as any)?.vix?.value ?? (macroData as any)?.vix?.level ?? (typeof (macroData as any)?.vix === "number" ? (macroData as any).vix : undefined)}
-                    hasImminentEarnings={((data as any)?.corporateEvent?.days_to_earnings != null && (data as any)?.corporateEvent?.days_to_earnings <= 7.0 && (data as any)?.corporateEvent?.days_to_earnings >= 0) || (data as any)?.corporateEvent?.preflight_state === "WARN"}
-                    catalystState={(data as any)?.corporateEvent?.preflight_state}
-                    catalystEvidence={(data as any)?.corporateEvent ? {
-                      state: (data as any).corporateEvent.preflight_state,
-                      daysToEarnings: (data as any).corporateEvent.days_to_earnings,
-                      eventDate: (data as any).corporateEvent.event_date_et,
-                      callTimeEt: (data as any).corporateEvent.conference_call_time_et,
-                      resultsReleaseTimeEt: (data as any).corporateEvent.results_release_time_et,
-                      sourceName: (data as any).corporateEvent.source_name,
-                      confirmationStatus: (data as any).corporateEvent.confirmation_status,
-                      coverageStatus: (data as any).corporateEvent.coverage_status,
-                      freshnessStatus: (data as any).corporateEvent.freshness_status,
-                      riskTier: (data as any).corporateEvent.risk_tier,
-                      isEstimate: (data as any).corporateEvent.is_estimate,
-                    } : null}
-                    isActionable={data?.decisionTrace?.isActionable ?? (data?.canonicalDecision as any)?.is_actionable}
-                    decisionState={data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state}
+                    {...canonicalPreflightInputs}
                     onOpenModal={() => setIsPreflightModalOpen(true)}
                   />
                 )
@@ -480,6 +497,7 @@ function TerminalContent() {
                 ) : capabilities.canRenderStockExecution ? (
                   <OptimalEntryExitCard
                     symbol={selectedSymbol}
+                    onOpenPreFlight={() => setIsPreflightModalOpen(true)}
                     executionPlan={data?.optimalExecution}
                     currentPrice={data?.currentPrice}
                     liveSpotPrice={data?.liveSpotPrice}
@@ -518,35 +536,7 @@ function TerminalContent() {
           <PreFlightChecklistModal
             isOpen={isPreflightModalOpen}
             onClose={() => setIsPreflightModalOpen(false)}
-            symbol={selectedSymbol}
-            currentPrice={data?.currentPrice ?? (SpotPriceRegistry.get(selectedSymbol)?.price || 0)}
-            stopLoss={data?.optimalExecution?.stop_loss || 0}
-            takeProfit1={data?.optimalExecution?.take_profit_1 || 0}
-            riskRewardRatio={data?.optimalExecution?.risk_reward_ratio || 0}
-            setupPattern={data?.optimalExecution?.setup_pattern}
-            isDayTrader={userRole === "DAY_TRADER"}
-            isStage4={Boolean(data?.optimalExecution?.stage_phase?.toLowerCase().includes("stage 4") || (data?.technicals as any)?.is_stage4)}
-            optimalEntryMin={data?.optimalExecution?.optimal_entry_min ?? undefined}
-            optimalEntryMax={data?.optimalExecution?.optimal_entry_max ?? undefined}
-            breakoutPivot={data?.optimalExecution?.breakout_pivot ?? undefined}
-            vix={(macroData as any)?.vix?.value ?? (macroData as any)?.vix?.level ?? (typeof (macroData as any)?.vix === "number" ? (macroData as any).vix : undefined)}
-            hasImminentEarnings={((data as any)?.corporateEvent?.days_to_earnings != null && (data as any)?.corporateEvent?.days_to_earnings <= 7.0 && (data as any)?.corporateEvent?.days_to_earnings >= 0) || (data as any)?.corporateEvent?.preflight_state === "WARN"}
-            catalystState={(data as any)?.corporateEvent?.preflight_state}
-            catalystEvidence={(data as any)?.corporateEvent ? {
-              state: (data as any).corporateEvent.preflight_state,
-              daysToEarnings: (data as any).corporateEvent.days_to_earnings,
-              eventDate: (data as any).corporateEvent.event_date_et,
-              callTimeEt: (data as any).corporateEvent.conference_call_time_et,
-              resultsReleaseTimeEt: (data as any).corporateEvent.results_release_time_et,
-              sourceName: (data as any).corporateEvent.source_name,
-              confirmationStatus: (data as any).corporateEvent.confirmation_status,
-              coverageStatus: (data as any).corporateEvent.coverage_status,
-              freshnessStatus: (data as any).corporateEvent.freshness_status,
-              riskTier: (data as any).corporateEvent.risk_tier,
-              isEstimate: (data as any).corporateEvent.is_estimate,
-            } : null}
-            isActionable={data?.decisionTrace?.isActionable ?? (data?.canonicalDecision as any)?.is_actionable}
-            decisionState={data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state}
+            {...canonicalPreflightInputs}
           />
 
           {/* Intelligent Did You Mean Ticker Recommendation Banner */}

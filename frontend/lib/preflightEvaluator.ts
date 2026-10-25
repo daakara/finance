@@ -114,6 +114,63 @@ export interface PreFlightEvaluationResult {
   resolvedCatalystState: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR";
 }
 
+/**
+ * Resolves VIX from local browser cache with strict data quality and freshness verification.
+ * Enforces DATA_QUALITY_AND_EDGE_CASE_GOVERNANCE.md (ARCH-GOV-DATA-QUALITY-VNEXT Section 3.4 & EC-01):
+ * - Active Session Max Stale Threshold: 240 minutes (4 hours)
+ * - Pinned Closed Session Max Threshold: 4320 minutes (72 hours / weekend close)
+ * Stale, unverified, future, or cross-ticker snapshots fail closed to null.
+ */
+export function resolveFreshCachedVix(): number | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const cached = localStorage.getItem("FINANCE_MARKET_SNAPSHOTS_V1");
+    if (!cached) return null;
+
+    const parsed = JSON.parse(cached);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+
+    // Reject cross-ticker payloads that lack macro indicators
+    if (!parsed.vix && !parsed.regime) return null;
+
+    const rawVix = parsed?.vix?.value ?? parsed?.vix?.level ?? (typeof parsed?.vix === "number" ? parsed.vix : undefined);
+    if (typeof rawVix !== "number" || isNaN(rawVix) || rawVix <= 0 || rawVix > 100) {
+      return null;
+    }
+
+    // Freshness validation
+    const timestampStr = parsed.updatedAt || parsed.timestamp;
+    if (!timestampStr || typeof timestampStr !== "string") {
+      return null; // Missing timestamp cannot establish freshness
+    }
+
+    const timestamp = new Date(timestampStr).getTime();
+    if (isNaN(timestamp)) {
+      return null;
+    }
+
+    const now = Date.now();
+    const ageMinutes = (now - timestamp) / 60000;
+
+    // Clock skew guard: Reject future timestamps beyond 5m skew
+    if (ageMinutes < -5) {
+      return null;
+    }
+
+    // SLA Window: 4 hours (240m) during active session; 72 hours (4320m) if marketSession === "CLOSED" or settlementPinned
+    const isClosedSession = parsed.marketSession === "CLOSED" || parsed.settlementPinned === true || parsed.isSettlementPinned === true;
+    const maxAgeMinutes = isClosedSession ? 4320 : 240;
+
+    if (ageMinutes > maxAgeMinutes) {
+      return null; // Stale evidence strictly rejected
+    }
+
+    return rawVix;
+  } catch {
+    return null;
+  }
+}
+
 export function evaluatePreFlightChecks(
   inputs: PreFlightChecklistInputs,
   vernacularMode: "PLAIN_ENGLISH" | "PRO_QUANT" = "PLAIN_ENGLISH"
@@ -156,8 +213,14 @@ export function evaluatePreFlightChecks(
   const safeEntryMin = (typeof optimalEntryMin === "number" && !isNaN(optimalEntryMin) && optimalEntryMin > 0) ? optimalEntryMin : null;
   const safeEntryMax = (typeof optimalEntryMax === "number" && !isNaN(optimalEntryMax) && optimalEntryMax > 0) ? optimalEntryMax : null;
   const safePivot = (typeof breakoutPivot === "number" && !isNaN(breakoutPivot) && breakoutPivot > 0) ? breakoutPivot : null;
-  const isVixValid = typeof vix === "number" && !isNaN(vix) && vix > 0;
-  const currentVix = isVixValid ? vix! : null;
+
+  // Canonical VIX Resolution: input > browser localStorage fresh cache > null
+  const resolvedVix = (() => {
+    if (typeof vix === "number" && !isNaN(vix) && vix > 0) return vix;
+    return resolveFreshCachedVix();
+  })();
+  const isVixValid = resolvedVix !== null;
+  const currentVix = resolvedVix;
 
   const stopLossPct = (isPriceValid && safeStop !== null) ? (((safeStop - safePrice) / safePrice) * 100).toFixed(2) : "N/A";
   const target1Pct = (isPriceValid && safeTarget !== null) ? (((safeTarget - safePrice) / safePrice) * 100).toFixed(2) : "N/A";
@@ -188,6 +251,10 @@ export function evaluatePreFlightChecks(
 
   // ── Check 2: Technical Trend Alignment & Stage Discipline ───────────────
   const isExtendedAboveZone = Boolean(safeEntryMax && safePrice > safeEntryMax * 1.02);
+  const isWithinTolerance = Boolean(safeEntryMax && safePrice > safeEntryMax && safePrice <= safeEntryMax * 1.02);
+  const isInCorridor = Boolean(safeEntryMin && safeEntryMax && safePrice >= safeEntryMin && safePrice <= safeEntryMax);
+  const isBelowCorridor = Boolean(safeEntryMin && safePrice < safeEntryMin);
+
   const isTrendPassed = isPriceValid && !isStage4 && !isExtendedAboveZone && safeEntryMin !== null && safeEntryMax !== null;
   const chk2Status: CheckStatus = isTrendPassed
     ? "PASS"
@@ -207,13 +274,21 @@ export function evaluatePreFlightChecks(
       ? "bg-amber-950/80 text-amber-300 border-amber-700/80"
       : "bg-rose-950/80 text-rose-300 border-rose-700/80",
     passed: isTrendPassed,
-    summary: isTrendPassed ? "In Corridor" : isStage4 ? "Stage 4 Correction" : "Out of Corridor",
+    summary: isTrendPassed
+      ? (isWithinTolerance ? "Within Tolerance (+2%)" : isInCorridor ? "In Corridor" : "Below Corridor")
+      : isStage4
+      ? "Stage 4 Correction"
+      : "Out of Corridor",
     detail: isStage4
       ? `Stage 4 correction structure: Spot ($${safePrice.toFixed(2)}) requires base breakout pivot ${safePivot !== null ? `above $${safePivot.toFixed(2)}` : "above 50-day SMA"}.`
       : safeEntryMin === null || safeEntryMax === null
       ? "Optimal buy zone levels uncalculated. Awaiting technical structure."
       : isExtendedAboveZone
       ? `Extended structure: Spot ($${safePrice.toFixed(2)}) is >2% above entry corridor ($${safeEntryMin.toFixed(2)}–$${safeEntryMax.toFixed(2)}). Chasing creates negative R:R risk.`
+      : isWithinTolerance
+      ? `Spot price ($${safePrice.toFixed(2)}) is slightly above preferred corridor ($${safeEntryMin.toFixed(2)}–$${safeEntryMax.toFixed(2)}) within allowable extension tolerance (+2%).`
+      : isBelowCorridor
+      ? `Spot price ($${safePrice.toFixed(2)}) is below preferred accumulation corridor ($${safeEntryMin.toFixed(2)}–$${safeEntryMax.toFixed(2)}).`
       : `Spot price ($${safePrice.toFixed(2)}) is positioned within the accumulation corridor defending key moving average support.`,
     icon: isTrendPassed ? "✓" : isStage4 ? "⏳" : "⚠️",
   };
@@ -322,6 +397,7 @@ export function evaluatePreFlightChecks(
     return "UNAVAILABLE";
   })();
 
+  const isCatalystConfirmed = catalystEvidence?.confirmationStatus === "CONFIRMED";
   const isCatalystPassed = isPriceValid && resolvedCatalystState === "PASS";
   const chk4Status: CheckStatus = resolvedCatalystState === "PASS"
     ? "PASS"
@@ -330,6 +406,27 @@ export function evaluatePreFlightChecks(
     : resolvedCatalystState === "ERROR"
     ? "ERROR"
     : "UNAVAILABLE";
+
+  const chk4Summary = resolvedCatalystState === "PASS"
+    ? (isCatalystConfirmed
+        ? `Runway > 7d (${catalystEvidence?.daysToEarnings?.toFixed(1) || ">7"}d)`
+        : `Runway > 7d (Unconfirmed)`)
+    : resolvedCatalystState === "WARN"
+    ? "Imminent Earnings Event"
+    : "Coverage Unavailable";
+
+  const chk4Detail = resolvedCatalystState === "PASS"
+    ? (isCatalystConfirmed
+        ? `Clean runway verified (>7 days to confirmed binary earnings event${catalystEvidence?.daysToEarnings ? `, ${catalystEvidence.daysToEarnings.toFixed(1)}d DTE` : ""}).`
+        : `Clean runway indicated (>7 days to estimated earnings${catalystEvidence?.daysToEarnings ? `, ${catalystEvidence.daysToEarnings.toFixed(1)}d DTE` : ""}), but event confirmation is unverified by primary source.`)
+    : resolvedCatalystState === "WARN"
+    ? `Scheduled earnings announcement within 7-day risk window${catalystEvidence?.eventDate ? ` (${catalystEvidence.eventDate})` : ""}. Position sizing restricted.`
+    : resolvedCatalystState === "ERROR"
+    ? "Technical error retrieving corporate earnings schedule."
+    : catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null && catalystEvidence.daysToEarnings < 0
+    ? `Historical Event Elapsed (${catalystEvidence.eventDate || "prior"}). Forward calendar unverified; runway uncertified.`
+    : "Earnings calendar coverage unavailable: Event runway cannot be certified.";
+
   const chk4Item: PreFlightCheckItem = {
     id: "CHK-4",
     tag: "CHK-4 CATALYST",
@@ -343,20 +440,8 @@ export function evaluatePreFlightChecks(
       ? "bg-rose-950/80 text-rose-300 border-rose-700/80"
       : "bg-slate-900 text-slate-400 border-slate-700",
     passed: isCatalystPassed,
-    summary: resolvedCatalystState === "PASS"
-      ? `Runway > 7d (${catalystEvidence?.daysToEarnings?.toFixed(1) || ">7"}d)`
-      : resolvedCatalystState === "WARN"
-      ? "Imminent Earnings Event"
-      : "Coverage Unavailable",
-    detail: resolvedCatalystState === "PASS"
-      ? `Clean runway verified (>7 days to binary earnings event${catalystEvidence?.daysToEarnings ? `, ${catalystEvidence.daysToEarnings.toFixed(1)}d DTE` : ""}).`
-      : resolvedCatalystState === "WARN"
-      ? `Scheduled earnings announcement within 7-day risk window${catalystEvidence?.eventDate ? ` (${catalystEvidence.eventDate})` : ""}. Position sizing restricted.`
-      : resolvedCatalystState === "ERROR"
-      ? "Technical error retrieving corporate earnings schedule."
-      : catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null && catalystEvidence.daysToEarnings < 0
-      ? `Historical Event Elapsed (${catalystEvidence.eventDate || "prior"}). Forward calendar unverified; runway uncertified.`
-      : "Earnings calendar coverage unavailable: Event runway cannot be certified.",
+    summary: chk4Summary,
+    detail: chk4Detail,
     icon: resolvedCatalystState === "PASS" ? "✓" : resolvedCatalystState === "WARN" ? "⚠️" : "⚪",
   };
 
@@ -456,6 +541,9 @@ export function evaluatePreFlightChecks(
       return "Confirm forward corporate earnings schedule from authoritative primary source.";
     }
     if (!isMacroPassed) {
+      if (!isVixValid || currentVix === null) {
+        return "Verify live market volatility (VIX) from exchange feed before execution clearance.";
+      }
       return "Wait for systemic market volatility (VIX) to settle below defensive threshold (< 26.0).";
     }
     return "All pre-flight clearance conditions satisfied. Setup cleared for controlled execution.";

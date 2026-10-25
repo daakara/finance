@@ -82,8 +82,49 @@ describe("PreFlightChecklistModal — Catalyst & Corporate Events Fail-Closed St
     const passBadges = screen.getAllByText("PASS");
     expect(passBadges.length).toBeGreaterThan(0);
     expect(
-      screen.getByText(/Verified event runway: No earnings announcement scheduled within the 7-day trade window/i)
+      screen.getByText(/Verified event runway: Confirmed earnings announcement scheduled beyond the 7-day trade window/i)
     ).toBeDefined();
+  });
+
+  it("6. Negative fixture: Missing coverage or freshness fails closed to UNAVAILABLE (never PASS)", () => {
+    render(
+      <PreFlightChecklistModal
+        {...baseProps}
+        catalystEvidence={{
+          daysToEarnings: 14.5,
+          eventDate: "2026-11-06",
+          confirmationStatus: "CONFIRMED",
+          // coverageStatus and freshnessStatus deliberately omitted
+        }}
+      />
+    );
+
+    const unavailableBadges = screen.getAllByText("UNAVAILABLE");
+    expect(unavailableBadges.length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(/Earnings calendar coverage unavailable: Event runway cannot be certified/i)
+    ).toBeDefined();
+  });
+
+  it("7. Unverified source: Clean runway with UNVERIFIED confirmation never claims verified provenance", () => {
+    render(
+      <PreFlightChecklistModal
+        {...baseProps}
+        catalystEvidence={{
+          daysToEarnings: 14.5,
+          eventDate: "2026-11-06",
+          confirmationStatus: "UNVERIFIED",
+          coverageStatus: "CONFIRMED_UPCOMING",
+          freshnessStatus: "LIVE",
+          riskTier: "NORMAL_RUNWAY",
+        }}
+      />
+    );
+
+    expect(
+      screen.getByText(/Unconfirmed event runway: Estimated announcement scheduled beyond the 7-day trade window/i)
+    ).toBeDefined();
+    expect(screen.queryByText(/Verified event runway/i)).toBeNull();
   });
 
   it("4. Elapsed prior earnings alone (negative DTE) evaluates to UNAVAILABLE (Invariant 3 & 4: cannot certify forward runway)", () => {

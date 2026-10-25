@@ -1,8 +1,9 @@
 import { fileURLToPath } from "node:url";
+import { execSync } from "node:child_process";
 
 /**
  * Resolves the canonical frontend release identity using strict precedence:
- * CF_PAGES_COMMIT_SHA > NEXT_PUBLIC_ARX_RELEASE > undefined (fail-safe)
+ * CF_PAGES_COMMIT_SHA > NEXT_PUBLIC_ARX_RELEASE > git rev-parse HEAD > undefined (fail-safe)
  *
  * Enforces single-authority build boundary:
  * Cloudflare Pages injects CF_PAGES_COMMIT_SHA, which is mapped here to
@@ -13,7 +14,12 @@ import { fileURLToPath } from "node:url";
  * @returns {string | undefined}
  */
 export function resolveFrontendRelease(env = process.env) {
-  const raw = (env?.CF_PAGES_COMMIT_SHA || env?.NEXT_PUBLIC_ARX_RELEASE || "").trim();
+  let raw = (env?.CF_PAGES_COMMIT_SHA || env?.NEXT_PUBLIC_ARX_RELEASE || "").trim();
+  if (!raw) {
+    try {
+      raw = execSync("git rev-parse HEAD", { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+    } catch {}
+  }
   return raw || undefined;
 }
 
@@ -30,6 +36,8 @@ const nextConfig = {
     ...(effectiveRelease ? { NEXT_PUBLIC_ARX_RELEASE: effectiveRelease } : {}),
   },
   webpack: (config) => {
+    config.resolve.alias = config.resolve.alias || {};
+
     // In production builds (where pilot drafts are NOT explicitly enabled),
     // alias the pilot drafts JSON to an empty stub so Webpack excludes draft research
     // from client bundles and static export chunks entirely.
@@ -37,7 +45,6 @@ const nextConfig = {
       const stubPath = fileURLToPath(
         new URL("./lib/opportunityDossierPilotDrafts.stub.json", import.meta.url)
       );
-      config.resolve.alias = config.resolve.alias || {};
       config.resolve.alias["./opportunityDossierPilotDrafts.json"] = stubPath;
       config.resolve.alias["./opportunityDossierPilotDrafts.json$"] = stubPath;
       config.resolve.alias["@/lib/opportunityDossierPilotDrafts.json"] = stubPath;
@@ -45,6 +52,24 @@ const nextConfig = {
         fileURLToPath(new URL("./lib/opportunityDossierPilotDrafts.json", import.meta.url))
       ] = stubPath;
     }
+
+    // In production builds, alias alconDraftDossier.json to an empty stub so Webpack
+    // excludes it from production client bundles and static export chunks entirely.
+    if (
+      process.env.NODE_ENV === "production" ||
+      process.env.NEXT_PUBLIC_ENABLE_ALCON_DEV_PREVIEW !== "true"
+    ) {
+      const alconStubPath = fileURLToPath(
+        new URL("./lib/alconDraftDossier.stub.json", import.meta.url)
+      );
+      config.resolve.alias["./alconDraftDossier.json"] = alconStubPath;
+      config.resolve.alias["./alconDraftDossier.json$"] = alconStubPath;
+      config.resolve.alias["@/lib/alconDraftDossier.json"] = alconStubPath;
+      config.resolve.alias[
+        fileURLToPath(new URL("./lib/alconDraftDossier.json", import.meta.url))
+      ] = alconStubPath;
+    }
+
     return config;
   },
 };

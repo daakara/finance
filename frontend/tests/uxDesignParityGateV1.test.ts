@@ -5,7 +5,7 @@ import * as crypto from "node:crypto";
 import { evaluatePreFlightChecks } from "../lib/preflightEvaluator";
 
 console.log("================================================================================");
-console.log("  ARX_UX_DESIGN_PARITY_GATE_V1: Release Qualification & Structural Invariants");
+console.log("  ARX_UX_DESIGN_PARITY_GATE_V1 & V1.1: Release Qualification & Structural Invariants");
 console.log("================================================================================\n");
 
 // -----------------------------------------------------------------------------
@@ -43,13 +43,20 @@ if (!prototypeFound) {
   process.exit(1);
 }
 
-// Verify contract JSON exists and matches expectations
-const contractPath = path.join(__dirname, "contracts/synthesis_e_v3_design_contract.json");
-assert.ok(fs.existsSync(contractPath), "Design contract specification must exist");
-const contract = JSON.parse(fs.readFileSync(contractPath, "utf8"));
-assert.strictEqual(contract.gateId, "ARX_UX_DESIGN_PARITY_GATE_V1");
-assert.strictEqual(contract.authoritativeBaseline.sha256, EXPECTED_PROTOTYPE_SHA);
-console.log(`   [PASS] Machine-readable design contract verified: ${contract.gateId}`);
+// Verify V1 and V1.1 contracts exist and match baseline identity
+const contractPathV1 = path.join(__dirname, "contracts/synthesis_e_v3_design_contract.json");
+assert.ok(fs.existsSync(contractPathV1), "Design contract V1 specification must exist");
+const contractV1 = JSON.parse(fs.readFileSync(contractPathV1, "utf8"));
+assert.strictEqual(contractV1.gateId, "ARX_UX_DESIGN_PARITY_GATE_V1");
+assert.strictEqual(contractV1.authoritativeBaseline.sha256, EXPECTED_PROTOTYPE_SHA);
+console.log(`   [PASS] Machine-readable design contract verified: ${contractV1.gateId}`);
+
+const contractPathV1_1 = path.join(__dirname, "contracts/synthesis_e_v1_1_design_contract.json");
+assert.ok(fs.existsSync(contractPathV1_1), "Design contract V1.1 specification must exist");
+const contractV1_1 = JSON.parse(fs.readFileSync(contractPathV1_1, "utf8"));
+assert.strictEqual(contractV1_1.gateId, "ARX_UX_DESIGN_PARITY_GATE_V1_1");
+assert.strictEqual(contractV1_1.authoritativeBaseline.sha256, EXPECTED_PROTOTYPE_SHA);
+console.log(`   [PASS] Machine-readable design contract verified: ${contractV1_1.gateId}`);
 
 // -----------------------------------------------------------------------------
 // 2. Canonical Pre-Flight Authority & Algorithmic Single-Source
@@ -104,6 +111,24 @@ assert.ok(
 );
 console.log("   [PASS] PreFlightReadinessBar mounted directly beneath chart in StandardTerminalView");
 
+// 2c. Execution ladder mounted inside Decision Verdict card
+assert.ok(
+  standardTerminalSource.includes("Execution Ladder"),
+  "StandardTerminalView must render Execution Ladder inside Decision Verdict card"
+);
+assert.ok(
+  standardTerminalSource.includes("Buy Zone"),
+  "StandardTerminalView execution ladder must render Buy Zone"
+);
+console.log("   [PASS] Compact Execution Ladder rendered inside Decision Verdict card");
+
+// 2d. Subordinated 'What Needs to Change' is collapsed by default
+assert.ok(
+  standardTerminalSource.includes("isPreconditionsOpen, setIsPreconditionsOpen] = React.useState(false)") || standardTerminalSource.includes("isPreconditionsOpen, setIsPreconditionsOpen] = useState(false)"),
+  "StandardTerminalView must collapse What Needs to Change by default (isPreconditionsOpen: false)"
+);
+console.log("   [PASS] 'What Needs to Change' stack subordinated and collapsed by default");
+
 // -----------------------------------------------------------------------------
 // 3. Four-Pillar Confluence Presentation & Institutional Flow Preservation
 // -----------------------------------------------------------------------------
@@ -155,7 +180,7 @@ assert.ok(
   "CompositeConvictionCard must NOT emit independent green-light verdict titles"
 );
 
-// Negative assertion: Duplicate h2 verdict and duplicate "The Bottom Line" box must be removed
+// Negative assertion: Duplicate h2 verdict and duplicate 'The Bottom Line' box must be removed
 assert.ok(
   !convictionCardSource.includes("<h2>{synthesis.verdictTitle}</h2>"),
   "CompositeConvictionCard must NOT duplicate primary verdict title"
@@ -172,18 +197,33 @@ console.log("   [PASS] Duplicate verdict titles and bottom-line callouts elimina
 // -----------------------------------------------------------------------------
 console.log("\n4. Verifying Superseded Legacy Surfaces Elimination...");
 
-// 4a. OptimalEntryExitCard must NOT render TradeExecutionStepper
 const entryExitCardSource = fs.readFileSync(
   path.join(__dirname, "../components/OptimalEntryExitCard.tsx"),
   "utf8"
 );
+
+// 4a. OptimalEntryExitCard must NOT render TradeExecutionStepper
 assert.ok(
   !entryExitCardSource.includes("<TradeExecutionStepper"),
   "OptimalEntryExitCard must NOT render duplicate 5-step stepper"
 );
 console.log("   [PASS] TradeExecutionStepper eliminated from OptimalEntryExitCard");
 
-// 4b. DecisionReadinessCard must be subordinated as advisory workflow
+// 4b. OptimalEntryExitCard must NOT mount DecisionReadinessCard
+assert.ok(
+  !entryExitCardSource.includes("<DecisionReadinessCard"),
+  "OptimalEntryExitCard must NOT mount DecisionReadinessCard"
+);
+console.log("   [PASS] DecisionReadinessCard eliminated from OptimalEntryExitCard");
+
+// 4c. OptimalEntryExitCard must NOT mount duplicate PreFlightChecklistModal
+assert.ok(
+  !entryExitCardSource.includes("<PreFlightChecklistModal"),
+  "OptimalEntryExitCard must NOT mount duplicate PreFlightChecklistModal"
+);
+console.log("   [PASS] Duplicate PreFlightChecklistModal eliminated from OptimalEntryExitCard");
+
+// 4d. DecisionReadinessCard itself is subordinated as advisory workflow
 const readinessCardSource = fs.readFileSync(
   path.join(__dirname, "../components/DecisionReadinessCard.tsx"),
   "utf8"
@@ -196,9 +236,9 @@ assert.ok(
   readinessCardSource.includes("Canonical clearance is governed exclusively by the Pre-Flight engine above"),
   "DecisionReadinessCard must explicitly subordinate authority to Pre-Flight engine"
 );
-console.log("   [PASS] DecisionReadinessCard authority successfully subordinated");
+console.log("   [PASS] DecisionReadinessCard standalone authority successfully subordinated");
 
-// 4c. Page.tsx must pass CompositeConvictionCard via evidenceSlot and eliminate standalone duplicate
+// 4e. Page.tsx must pass CompositeConvictionCard via evidenceSlot and eliminate standalone duplicate
 const pageSource = fs.readFileSync(
   path.join(__dirname, "../app/page.tsx"),
   "utf8"
@@ -207,7 +247,6 @@ assert.ok(
   pageSource.includes("evidenceSlot={") && pageSource.includes("<CompositeConvictionCard"),
   "page.tsx must supply CompositeConvictionCard via evidenceSlot"
 );
-// Ensure CompositeConvictionCard is NOT rendered standalone in workspace tabs
 const standaloneMatches = pageSource.match(/<CompositeConvictionCard/g);
 assert.strictEqual(
   standaloneMatches?.length,
@@ -216,7 +255,7 @@ assert.strictEqual(
 );
 console.log("   [PASS] CompositeConvictionCard rendered exactly once inside evidenceSlot");
 
-// 4d. Active analysis symbol guard on discovery components
+// 4f. Active analysis symbol guard on discovery components
 assert.ok(
   pageSource.includes("{!hasExplicitSymbol && (") &&
   pageSource.includes("<PageIntro"),
@@ -224,12 +263,24 @@ assert.ok(
 );
 console.log("   [PASS] Onboarding tutorials suppressed during active symbol analysis");
 
-// 4e. Workspace tabs: EXECUTION tab eliminated, default is SMART_MONEY
+// 4g. Workspace tabs: EXECUTION tab eliminated, default is SMART_MONEY
 assert.ok(
   !pageSource.includes('{ id: "EXECUTION"'),
   "Redundant Execution & Levels tab must be removed from domain tabs"
 );
 console.log("   [PASS] Redundant Execution tab removed from domain tabs");
+
+// 4h. Navbar auto-onboarding suppression during active symbol analysis
+const navbarSource = fs.readFileSync(
+  path.join(__dirname, "../components/Navbar.tsx"),
+  "utf8"
+);
+assert.ok(
+  navbarSource.includes("isAnalyzingStock") &&
+  navbarSource.includes("setIsOnboardingOpen(true)"),
+  "Navbar must guard auto-onboarding against active symbol navigation"
+);
+console.log("   [PASS] Navbar onboarding popup suppressed during active symbol analysis");
 
 // -----------------------------------------------------------------------------
 // 5. Semantic Consistency: Corridors, Execution Triggers & Risk Levels
@@ -252,7 +303,8 @@ const outOfCorridorResult = evaluatePreFlightChecks({
   catalystEvidence: {
     state: "PASS",
     daysToEarnings: 15.0,
-    freshnessStatus: "LIVE"
+    freshnessStatus: "LIVE",
+    confirmationStatus: "CONFIRMED"
   }
 });
 
@@ -277,7 +329,8 @@ const stage4Result = evaluatePreFlightChecks({
   catalystEvidence: {
     state: "PASS",
     daysToEarnings: 30.0,
-    freshnessStatus: "LIVE"
+    freshnessStatus: "LIVE",
+    confirmationStatus: "CONFIRMED"
   }
 });
 
@@ -313,6 +366,268 @@ assert.strictEqual(fullyClearedResult.checks[1].status, "PASS");
 assert.strictEqual(fullyClearedResult.checks[4].status, "PASS");
 console.log("   [PASS] Full compliance produces actionable checks and valid evaluation");
 
+// Test D: Corridor Semantics within +2% Tolerance Band
+const toleranceResult = evaluatePreFlightChecks({
+  symbol: "AAPL",
+  currentPrice: 226.50, // Above max 225.0, but <= 225.0 * 1.02 (229.50)
+  stopLoss: 210.0,
+  takeProfit1: 245.0,
+  riskRewardRatio: 2.5,
+  optimalEntryMin: 215.0,
+  optimalEntryMax: 225.0,
+  breakoutPivot: 228.0,
+  isActionable: true,
+  vix: 16.0,
+  catalystState: "PASS",
+  catalystEvidence: {
+    state: "PASS",
+    daysToEarnings: 12.0,
+    freshnessStatus: "LIVE",
+    confirmationStatus: "CONFIRMED"
+  }
+});
+
+assert.strictEqual(toleranceResult.checks[1].summary, "Within Tolerance (+2%)");
+assert.strictEqual(toleranceResult.checks[1].status, "PASS");
+assert.ok(
+  toleranceResult.checks[1].detail.includes("slightly above preferred corridor"),
+  "Detail must state slightly above preferred corridor"
+);
+assert.ok(
+  !toleranceResult.checks[1].detail.includes("inside the verified buying range"),
+  "Must NEVER claim inside buying range when spot exceeds corridor ceiling"
+);
+console.log("   [PASS] Corridor tolerance (+2%) accurately described without claiming inside buying range");
+
+// Test E: Catalyst Provenance - Unverified Source
+const unverifiedCatalystResult = evaluatePreFlightChecks({
+  symbol: "AAPL",
+  currentPrice: 220.0,
+  stopLoss: 210.0,
+  takeProfit1: 245.0,
+  riskRewardRatio: 2.5,
+  optimalEntryMin: 215.0,
+  optimalEntryMax: 225.0,
+  breakoutPivot: 228.0,
+  isActionable: true,
+  vix: 16.0,
+  catalystState: "PASS",
+  catalystEvidence: {
+    state: "PASS",
+    daysToEarnings: 12.0,
+    coverageStatus: "CONFIRMED_UPCOMING",
+    freshnessStatus: "LIVE",
+    confirmationStatus: "UNVERIFIED",
+    sourceName: "Yahoo Finance (Aggregator)"
+  }
+});
+
+assert.strictEqual(unverifiedCatalystResult.checks[3].status, "PASS");
+assert.ok(
+  unverifiedCatalystResult.checks[3].detail.includes("unverified by primary source"),
+  "Unverified source must disclose unverified by primary source"
+);
+assert.ok(
+  !unverifiedCatalystResult.checks[3].detail.includes("Verified event runway"),
+  "Unverified source must NEVER claim 'Verified event runway'"
+);
+assert.ok(
+  !unverifiedCatalystResult.checks[3].detail.includes("Clean runway verified: Confirmed earnings"),
+  "Unverified source must NEVER claim 'Clean runway verified: Confirmed earnings'"
+);
+console.log("   [PASS] Catalyst unverified provenance strictly enforced with mandatory disclaimer");
+
+// Test F: Catalyst Provenance - Missing Coverage or Freshness Fails Closed to UNAVAILABLE
+const missingFreshnessResult = evaluatePreFlightChecks({
+  symbol: "AAPL",
+  currentPrice: 220.0,
+  stopLoss: 210.0,
+  takeProfit1: 245.0,
+  riskRewardRatio: 2.5,
+  optimalEntryMin: 215.0,
+  optimalEntryMax: 225.0,
+  breakoutPivot: 228.0,
+  isActionable: true,
+  vix: 16.0,
+  catalystState: "PASS",
+  catalystEvidence: {
+    state: "PASS",
+    daysToEarnings: 12.0,
+    freshnessStatus: "MISSING", // Missing freshness
+    confirmationStatus: "CONFIRMED"
+  }
+});
+
+assert.strictEqual(missingFreshnessResult.checks[3].status, "UNAVAILABLE");
+assert.strictEqual(missingFreshnessResult.isCleared, false, "Missing freshness must block clearance");
+console.log("   [PASS] Missing catalyst freshness fails closed to UNAVAILABLE and blocks clearance");
+
+// Test G: Macro Parity & Single-Source VIX Resolution
+const elevatedVixResult = evaluatePreFlightChecks({
+  symbol: "AAPL",
+  currentPrice: 220.0,
+  stopLoss: 210.0,
+  takeProfit1: 245.0,
+  riskRewardRatio: 2.5,
+  optimalEntryMin: 215.0,
+  optimalEntryMax: 225.0,
+  breakoutPivot: 228.0,
+  isActionable: true,
+  vix: 28.5, // Elevated VIX >= 26.0
+  catalystState: "PASS",
+  catalystEvidence: {
+    state: "PASS",
+    daysToEarnings: 12.0,
+    freshnessStatus: "LIVE",
+    confirmationStatus: "CONFIRMED"
+  }
+});
+
+assert.strictEqual(elevatedVixResult.checks[4].status, "HIGH VIX");
+assert.strictEqual(elevatedVixResult.isCleared, false, "Elevated VIX must block clearance");
+console.log("   [PASS] Macro VIX >= 26.0 strictly blocks clearance");
+
+// Test H: Macro Freshness & Edge-Case Governance (ARCH-GOV-DATA-QUALITY-VNEXT Section 3.4 & EC-01)
+// Enforces that browser cache cannot provide unverified, stale, or cross-ticker Macro PASS.
+const preflightSource = fs.readFileSync(
+  path.join(__dirname, "../lib/preflightEvaluator.ts"),
+  "utf8"
+);
+assert.ok(
+  preflightSource.includes("export function resolveFreshCachedVix"),
+  "preflightEvaluator.ts must export resolveFreshCachedVix"
+);
+assert.ok(
+  preflightSource.includes("isClosedSession ? 4320 : 240"),
+  "resolveFreshCachedVix must enforce 240m active / 4320m closed freshness SLA"
+);
+
+let mockStorage: Record<string, string> = {};
+(global as any).window = {};
+(global as any).localStorage = {
+  getItem: (key: string) => mockStorage[key] || null,
+  setItem: (key: string, val: string) => { mockStorage[key] = val; },
+  removeItem: (key: string) => { delete mockStorage[key]; },
+  clear: () => { mockStorage = {}; }
+};
+
+try {
+  // H.1: Fresh live feed takes precedence
+  const freshLiveResult = evaluatePreFlightChecks({
+    symbol: "AAPL",
+    currentPrice: 220.0,
+    stopLoss: 210.0,
+    takeProfit1: 245.0,
+    riskRewardRatio: 2.5,
+    optimalEntryMin: 215.0,
+    optimalEntryMax: 225.0,
+    breakoutPivot: 228.0,
+    isActionable: true,
+    vix: 18.2,
+    catalystState: "PASS"
+  });
+  assert.strictEqual(freshLiveResult.checks[4].status, "PASS");
+  assert.strictEqual(freshLiveResult.checks[4].summary, "VIX 18.2 (Normal)");
+  console.log("   [PASS] Fresh live exchange VIX feed evaluates to PASS");
+
+  // H.2: Fresh cached VIX (10 mins old) during feed outage
+  mockStorage["FINANCE_MARKET_SNAPSHOTS_V1"] = JSON.stringify({
+    vix: { value: 16.5, level: 16.5 },
+    updatedAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    marketSession: "REGULAR"
+  });
+  const freshCacheResult = evaluatePreFlightChecks({
+    symbol: "AAPL",
+    currentPrice: 220.0,
+    stopLoss: 210.0,
+    takeProfit1: 245.0,
+    riskRewardRatio: 2.5,
+    optimalEntryMin: 215.0,
+    optimalEntryMax: 225.0,
+    breakoutPivot: 228.0,
+    isActionable: true,
+    vix: undefined,
+    catalystState: "PASS"
+  });
+  assert.strictEqual(freshCacheResult.checks[4].status, "PASS");
+  assert.strictEqual(freshCacheResult.checks[4].summary, "VIX 16.5 (Normal)");
+  console.log("   [PASS] Fresh cached VIX (within 240m SLA) cleanly covers transient feed outage");
+
+  // H.3: Stale cached VIX (> 240m open session) MUST FAIL CLOSED to UNAVAILABLE
+  mockStorage["FINANCE_MARKET_SNAPSHOTS_V1"] = JSON.stringify({
+    vix: { value: 14.8, level: 14.8 },
+    updatedAt: new Date(Date.now() - 300 * 60 * 1000).toISOString(),
+    marketSession: "REGULAR"
+  });
+  const staleActiveCacheResult = evaluatePreFlightChecks({
+    symbol: "AAPL",
+    currentPrice: 220.0,
+    stopLoss: 210.0,
+    takeProfit1: 245.0,
+    riskRewardRatio: 2.5,
+    optimalEntryMin: 215.0,
+    optimalEntryMax: 225.0,
+    breakoutPivot: 228.0,
+    isActionable: true,
+    vix: undefined,
+    catalystState: "PASS"
+  });
+  assert.strictEqual(staleActiveCacheResult.checks[4].status, "UNAVAILABLE", "Stale macro cache (> 240m open) must fail closed to UNAVAILABLE");
+  assert.strictEqual(staleActiveCacheResult.checks[4].passed, false);
+  assert.strictEqual(staleActiveCacheResult.checks[4].summary, "VIX Unavailable");
+  assert.strictEqual(staleActiveCacheResult.isCleared, false, "Stale macro cache must strictly block clearance");
+  console.log("   [PASS] Stale cache (> 240m open) strictly rejected as UNAVAILABLE and blocks clearance");
+
+  // H.4: Stale weekend cache (> 4320m / 72h) MUST FAIL CLOSED to UNAVAILABLE
+  mockStorage["FINANCE_MARKET_SNAPSHOTS_V1"] = JSON.stringify({
+    vix: { value: 15.0, level: 15.0 },
+    updatedAt: new Date(Date.now() - 80 * 3600 * 1000).toISOString(),
+    marketSession: "CLOSED",
+    settlementPinned: true
+  });
+  const staleWeekendResult = evaluatePreFlightChecks({
+    symbol: "AAPL",
+    currentPrice: 220.0,
+    stopLoss: 210.0,
+    takeProfit1: 245.0,
+    riskRewardRatio: 2.5,
+    optimalEntryMin: 215.0,
+    optimalEntryMax: 225.0,
+    breakoutPivot: 228.0,
+    isActionable: true,
+    vix: undefined,
+    catalystState: "PASS"
+  });
+  assert.strictEqual(staleWeekendResult.checks[4].status, "UNAVAILABLE");
+  assert.strictEqual(staleWeekendResult.isCleared, false, "Stale weekend cache must strictly block clearance");
+  console.log("   [PASS] Stale weekend pinned session (> 72h) strictly rejected as UNAVAILABLE");
+
+  // H.5: Missing cache / Corrupted JSON / Cross-ticker cache MUST FAIL CLOSED
+  mockStorage["FINANCE_MARKET_SNAPSHOTS_V1"] = JSON.stringify({
+    symbol: "AAPL",
+    price: 220.0
+  });
+  const crossTickerResult = evaluatePreFlightChecks({
+    symbol: "AAPL",
+    currentPrice: 220.0,
+    stopLoss: 210.0,
+    takeProfit1: 245.0,
+    riskRewardRatio: 2.5,
+    optimalEntryMin: 215.0,
+    optimalEntryMax: 225.0,
+    breakoutPivot: 228.0,
+    isActionable: true,
+    vix: undefined,
+    catalystState: "PASS"
+  });
+  assert.strictEqual(crossTickerResult.checks[4].status, "UNAVAILABLE");
+  assert.strictEqual(crossTickerResult.isCleared, false);
+  console.log("   [PASS] Cross-ticker payload strictly fails closed to UNAVAILABLE");
+} finally {
+  delete (global as any).window;
+  delete (global as any).localStorage;
+}
+
 console.log("\n================================================================================");
-console.log("  ALL ARX_UX_DESIGN_PARITY_GATE_V1 STRUCTURAL ASSERTIONS PASSED (100%)");
+console.log("  ALL ARX_UX_DESIGN_PARITY_GATE_V1 & V1.1 STRUCTURAL ASSERTIONS PASSED (100%)");
 console.log("================================================================================\n");

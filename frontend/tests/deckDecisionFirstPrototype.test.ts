@@ -468,7 +468,7 @@ assert.ok(controlMarkup.includes("aria-controls="), "Progressive disclosure cont
 
 // Cohort size check
 const cohort = listOpportunityCohort();
-assert.strictEqual(cohort.length, 6, "Must have exactly 6 published Quality Watch assets");
+assert.strictEqual(cohort.length, 7, "Must have exactly 7 published Quality Watch assets");
 
 console.log("===============================================================================");
 console.log("ALL BEHAVIORAL AND FIXTURE TESTS PASSED SUCCESSFULLY! ✅");

@@ -97,6 +97,26 @@ export default function StandardTerminalView({
               </span>
               <p>{insight.standard.bottomLine}</p>
             </div>
+
+            {/* Compact Execution Ladder / Key Levels */}
+            <div data-testid="cockpit-execution-ladder" className="grid grid-cols-2 gap-2 pt-2.5 border-t border-[#182335] text-xs font-mono">
+              <div className="p-2 rounded-lg bg-[#070b13] border border-[#1b2639]">
+                <span className="text-[10px] text-slate-400 block uppercase font-bold">Buy Zone</span>
+                <span className="text-amber-300 font-bold truncate block">{kl.watchZone || "Awaiting Setup"}</span>
+              </div>
+              <div className="p-2 rounded-lg bg-[#070b13] border border-[#1b2639]">
+                <span className="text-[10px] text-slate-400 block uppercase font-bold">Reward : Risk</span>
+                <span className="text-emerald-400 font-bold block">{kl.profitRiskRatio ? `${kl.profitRiskRatio.toFixed(2)} : 1.0` : "N/A"}</span>
+              </div>
+              <div className="p-2 rounded-lg bg-[#070b13] border border-[#1b2639]">
+                <span className="text-[10px] text-slate-400 block uppercase font-bold">Target 1</span>
+                <span className="text-emerald-400 font-bold block">{kl.target1 ? `$${kl.target1.toFixed(2)}` : "N/A"}</span>
+              </div>
+              <div className="p-2 rounded-lg bg-[#070b13] border border-[#1b2639]">
+                <span className="text-[10px] text-slate-400 block uppercase font-bold">Stop Loss</span>
+                <span className="text-rose-400 font-bold block">{kl.stopLoss ? `$${kl.stopLoss.toFixed(2)}` : "N/A"}</span>
+              </div>
+            </div>
           </div>
 
           {/* 3. WHAT NEEDS TO CHANGE (Unmet Conditions & Preconditions) */}
@@ -125,13 +145,13 @@ export default function StandardTerminalView({
                 <span className="text-[11px] sm:text-xs text-slate-400 font-mono">
                   {isActionable ? "Preconditions Cleared" : "Awaiting Confirmation"}
                 </span>
-                <span className="sm:hidden text-slate-400 text-xs" aria-hidden="true">
+                <span className="text-slate-400 text-xs" aria-hidden="true">
                   {isPreconditionsOpen ? "▲" : "▼"}
                 </span>
               </div>
             </div>
 
-            <div className={`${isPreconditionsOpen ? "grid" : "hidden sm:grid"} grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1 gap-1.5 sm:gap-2.5 text-xs`}>
+            <div className={`${isPreconditionsOpen ? "grid" : "hidden"} grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1 gap-1.5 sm:gap-2.5 text-xs`}>
               {unmetConditions.map((cond) => (
                 <div
                   key={cond.id}
