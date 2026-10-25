@@ -16,6 +16,8 @@ psycopg2 = pytest.importorskip("psycopg2")
 from psycopg2.extras import RealDictCursor
 pgserver = pytest.importorskip("pgserver")
 
+pytestmark = pytest.mark.tier2c
+
 from analyst_dashboard.smart_money.storage.config import (
     SMART_MONEY_POSTGRES_SCHEMA_VERSION,
     ROLE_WEB,
@@ -568,9 +570,14 @@ class TestDatabaseRolePermissions:
         # Build web role connection URI
         import urllib.parse
         parsed = urllib.parse.urlparse(real_postgres_uri)
+        netloc = "smart_money_web:test_web_pass@"
+        if parsed.hostname:
+            netloc += parsed.hostname
+        if parsed.port:
+            netloc += f":{parsed.port}"
         web_uri = urllib.parse.urlunparse((
-            parsed.scheme,
-            f"smart_money_web:test_web_pass@{parsed.hostname}:{parsed.port}",
+            parsed.scheme or "postgresql",
+            netloc,
             parsed.path,
             parsed.params,
             parsed.query,

@@ -155,14 +155,22 @@ class SmartMoneyBackupEngine:
                 receipt_globals = None
                 if include_globals:
                     pg_dumpall_bin = find_pg_binary("pg_dumpall")
-                    cmd_globals = [
-                        pg_dumpall_bin,
-                        "-h", conn_info["host"],
-                        "-p", conn_info["port"],
-                        "-U", conn_info["user"],
-                        "--globals-only",
-                        "-f", globals_local_path,
-                    ]
+                    if self.dsn.startswith("postgres://") or self.dsn.startswith("postgresql://"):
+                        cmd_globals = [
+                            pg_dumpall_bin,
+                            "-d", self.dsn,
+                            "--globals-only",
+                            "-f", globals_local_path,
+                        ]
+                    else:
+                        cmd_globals = [
+                            pg_dumpall_bin,
+                            "-h", conn_info["host"],
+                            "-p", conn_info["port"],
+                            "-U", conn_info["user"],
+                            "--globals-only",
+                            "-f", globals_local_path,
+                        ]
                     proc_globals = subprocess.run(cmd_globals, env=env, capture_output=True, text=True)
                     if proc_globals.returncode != 0:
                         raise RuntimeError(f"PG_DUMPALL_FAILED: {proc_globals.stderr}")
@@ -173,17 +181,27 @@ class SmartMoneyBackupEngine:
 
                 # 4. Capture Database Custom Dump via pg_dump -Fc
                 pg_dump_bin = find_pg_binary("pg_dump")
-                cmd_dump = [
-                    pg_dump_bin,
-                    "-h", conn_info["host"],
-                    "-p", conn_info["port"],
-                    "-U", conn_info["user"],
-                    "-d", conn_info["dbname"],
-                    "-Fc",
-                    "--no-owner",
-                    "--no-privileges",
-                    "-f", dump_local_path,
-                ]
+                if self.dsn.startswith("postgres://") or self.dsn.startswith("postgresql://"):
+                    cmd_dump = [
+                        pg_dump_bin,
+                        "-d", self.dsn,
+                        "-Fc",
+                        "--no-owner",
+                        "--no-privileges",
+                        "-f", dump_local_path,
+                    ]
+                else:
+                    cmd_dump = [
+                        pg_dump_bin,
+                        "-h", conn_info["host"],
+                        "-p", conn_info["port"],
+                        "-U", conn_info["user"],
+                        "-d", conn_info["dbname"],
+                        "-Fc",
+                        "--no-owner",
+                        "--no-privileges",
+                        "-f", dump_local_path,
+                    ]
                 proc_dump = subprocess.run(cmd_dump, env=env, capture_output=True, text=True)
                 if proc_dump.returncode != 0:
                     raise RuntimeError(f"PG_DUMP_FAILED: {proc_dump.stderr}")
