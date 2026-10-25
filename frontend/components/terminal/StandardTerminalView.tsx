@@ -49,75 +49,222 @@ export default function StandardTerminalView({
         {/* Left Column (lg:col-span-5 xl:col-span-5): Verdict Card & Preconditions */}
         <div className="lg:col-span-5 xl:col-span-5 space-y-2.5 sm:space-y-4 min-w-0 order-1 lg:order-1 xl:order-1">
           {/* 1. DECISION VERDICT (Dominant Visual Weight) & 2. DECISION REASON */}
-          <div
+          <article
+            id="verdict-card"
             data-testid="decision-verdict"
-            className="bg-[#0b101b] border border-[#1d293d] rounded-2xl p-3 sm:p-5 shadow-xl space-y-2 sm:space-y-3"
+            className="verdict-card bg-[#0b101b] border border-[#1d293d] rounded-2xl p-3 sm:p-5 shadow-xl space-y-3 font-sans text-slate-100"
+            aria-label="ARX Bottom Line and Execution Decision"
           >
-            <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3 border-b border-[#182335] pb-2 sm:pb-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">
-                    ARX Analytical Verdict
-                  </span>
-                  {isDemo && (
+            {/* Ticker & Price Deck */}
+            <div className="deck-top border-b border-[#182335] pb-3 space-y-2">
+              <div className="symbol-title-group flex flex-wrap items-start justify-between gap-2">
+                <div className="space-y-0.5">
+                  <div className="symbol-row flex items-center gap-2 flex-wrap">
+                    <span id="card-symbol" className="symbol-text mono font-mono font-black text-2xl sm:text-3xl text-white tracking-tight">
+                      {insight.symbol || "UNAVAILABLE"}
+                    </span>
+                    <span id="card-exchange" className="macro-item px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#141c2e] text-slate-400 border border-[#2b3a52]">
+                      {(insight.advanced as any)?.exchange || (insight as any)?.exchange || "EXCHANGE UNAVAILABLE"}
+                    </span>
                     <span
-                      id="demo-asset-tag"
-                      className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-800/80"
+                      id="card-status-badge"
+                      className={`status-badge px-2.5 py-0.5 rounded text-xs font-mono font-bold border ${
+                        isActionable
+                          ? "badge-positive bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
+                          : "badge-caution bg-amber-950/80 text-amber-300 border-amber-700/80"
+                      }`}
                     >
-                      Demo Asset
+                      {isActionable ? "IN BUY ZONE" : (kl.entryMin && hasValidPrice && (rawPrice as number) < kl.entryMin ? "WAITING PULLBACK" : (kl.entryMax && hasValidPrice && (rawPrice as number) > kl.entryMax ? "EXTENDED" : "AWAITING SETUP"))}
+                    </span>
+                    {isDemo && (
+                      <span
+                        id="demo-asset-tag"
+                        className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-800/80"
+                      >
+                        Demo Asset
+                      </span>
+                    )}
+                  </div>
+                  <span id="card-name" className="asset-name text-xs text-slate-400 font-sans block">
+                    {insight.companyName || "Asset Overview"}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span
+                    data-testid="actionability-badge"
+                    className={`px-3 py-1 rounded-md text-xs font-mono font-bold border ${
+                      isActionable
+                        ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
+                        : "bg-slate-900/80 text-slate-400 border-slate-700/80"
+                    }`}
+                  >
+                    {isActionable ? "ACTIONABLE" : "NOT ACTIONABLE"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Price Line & Subdeck */}
+              <div className="price-group space-y-1">
+                <div className="price-line flex items-baseline gap-3 flex-wrap">
+                  <span id="card-price" className="price-text mono font-mono font-black text-2xl sm:text-3xl text-white tabular-nums">
+                    {hasValidPrice ? `$${(rawPrice as number).toFixed(2)}` : "UNAVAILABLE"}
+                  </span>
+                  {hasValidPrice && (
+                    <span
+                      id="card-delta"
+                      className={`delta-text mono font-mono font-bold text-sm tabular-nums flex items-center gap-0.5 ${
+                        (insight.changePct || 0) >= 0 ? "delta-up text-emerald-400" : "delta-down text-rose-400"
+                      }`}
+                    >
+                      {(insight.changePct || 0) >= 0 ? "+" : ""}${Math.abs(((rawPrice as number) * (insight.changePct || 0)) / 100).toFixed(2)} ({(insight.changePct || 0) >= 0 ? "+" : ""}{(insight.changePct || 0).toFixed(2)}%)
                     </span>
                   )}
                 </div>
-                <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight mt-0.5">
-                  {insight.verdictLabel}
-                </h2>
+                <div id="price-subdeck" className="price-subdeck flex items-center gap-2 text-[11px] font-mono text-slate-400 flex-wrap" aria-label="Price Authority and Session Metadata">
+                  <span id="price-role" className="price-tag px-1.5 py-0.5 rounded bg-[#141c2e] text-cyan-300 font-semibold border border-[#2b3a52]">Setup Spot Reference</span>
+                  <span>·</span>
+                  <span id="price-session" className="price-tag">{(insight.advanced as any)?.marketSession || "Market Closed"}</span>
+                  <span>·</span>
+                  <span id="price-asof" className="price-tag mono">
+                    {insight.terminalState.modelProvenance?.calculatedAt
+                      ? `As of ${new Date(insight.terminalState.modelProvenance.calculatedAt).toISOString().replace("T", " ").slice(0, 16)} UTC`
+                      : "Timestamp provenance unavailable"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Verdict & Score Banner */}
+            <div className="verdict-banner p-3 sm:p-4 rounded-xl bg-[#080e18] border border-[#182335] space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="verdict-info space-y-0.5 min-w-0">
+                  <span id="card-verdict-label" className="verdict-label text-[10px] font-mono font-black text-cyan-400 uppercase tracking-widest block">
+                    ARX BOTTOM LINE VERDICT
+                  </span>
+                  <h2 id="card-verdict-title" className="verdict-title text-base sm:text-lg font-black text-white tracking-tight leading-snug">
+                    {insight.verdictLabel}
+                  </h2>
+                </div>
+
+                {/* Setup Score Pill & Why Score Button */}
+                <div className="score-box flex flex-col items-center gap-1 shrink-0">
+                  <div
+                    id="card-score-pill"
+                    onClick={onOpenWhy}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onOpenWhy();
+                      }
+                    }}
+                    title="Setup Score: click to inspect confluence attribution"
+                    className="score-pill px-3 py-1 rounded-xl bg-[#141c2e] border border-cyan-500/40 text-center shadow-md cursor-pointer hover:border-cyan-400 transition-all"
+                  >
+                    <span id="card-score-num" className="score-num mono font-mono font-black text-base text-cyan-400 leading-none">
+                      {insight.setupScore}
+                    </span>
+                    <span id="card-score-den" className="score-den font-mono text-xs text-slate-400">
+                      /100
+                    </span>
+                  </div>
+                  <button
+                    id="card-why-score-btn"
+                    type="button"
+                    onClick={onOpenWhy}
+                    aria-label="Inspect Score Confluence"
+                    className="why-score-btn text-[10px] font-mono text-cyan-400 hover:underline cursor-pointer flex items-center gap-1 min-h-[36px]"
+                  >
+                    <span id="why-score-text">Why Score?</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span
-                  data-testid="actionability-badge"
-                  className={`px-3 py-1 rounded-md text-xs font-mono font-bold border ${
-                    isActionable
-                      ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
-                      : "bg-slate-900/80 text-slate-400 border-slate-700/80"
-                  }`}
-                >
-                  {isActionable ? "ACTIONABLE" : "NOT ACTIONABLE"}
+              {/* 2. CANONICAL REASON (Directly Below Verdict) */}
+              <div
+                data-testid="decision-reason"
+                className="text-xs text-slate-300 font-sans leading-relaxed"
+              >
+                <span className="text-[10px] text-slate-400 font-mono font-bold block uppercase mb-0.5 tracking-wider">Reason / Bottom Line:</span>
+                <p id="card-verdict-summary" className="verdict-summary">{insight.standard.bottomLine}</p>
+              </div>
+            </div>
+
+            {/* Middle Panel: Risk & Execution Ladder */}
+            <div id="card-middle-panel" className="middle-panel space-y-2 pt-1">
+              <div className="panel-head flex items-center justify-between text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                <span id="middle-panel-title">Execution Ladder</span>
+                <span id="middle-panel-sub" className="mono text-cyan-300">
+                  R:R {kl.profitRiskRatio ? `${kl.profitRiskRatio.toFixed(2)} : 1.0` : "N/A"}
                 </span>
               </div>
+              <div id="middle-panel-content" data-testid="cockpit-execution-ladder" className="ladder-grid grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+                <div className="ladder-cell p-2.5 rounded-xl bg-[#070b13] border border-[#1b2639]">
+                  <span className="cell-lbl text-[10px] text-slate-400 block uppercase font-bold">Pivot</span>
+                  <span id="cell-pivot" className="cell-val mono text-white font-bold block truncate mt-0.5">
+                    {(kl as any)?.breakoutPivot ? `$${(kl as any)?.breakoutPivot.toFixed(2)}` : (kl.entryMin ? `$${kl.entryMin.toFixed(2)}` : "N/A")}
+                  </span>
+                </div>
+                <div className="ladder-cell p-2.5 rounded-xl bg-[#070b13] border border-[#1b2639]">
+                  <span className="cell-lbl text-[10px] text-slate-400 block uppercase font-bold">Buy Zone</span>
+                  <span id="cell-entry" className="cell-val mono text-amber-300 font-bold block truncate mt-0.5">
+                    {kl.watchZone || "Awaiting Setup"}
+                  </span>
+                </div>
+                <div className="ladder-cell p-2.5 rounded-xl bg-[#070b13] border border-[#1b2639]">
+                  <span className="cell-lbl text-[10px] text-slate-400 block uppercase font-bold">Stop Loss</span>
+                  <span id="cell-stop" className="cell-val negative mono text-rose-400 font-bold block truncate mt-0.5">
+                    {kl.stopLoss ? `$${kl.stopLoss.toFixed(2)}` : "N/A"}
+                  </span>
+                </div>
+                <div className="ladder-cell p-2.5 rounded-xl bg-[#070b13] border border-[#1b2639]">
+                  <span className="cell-lbl text-[10px] text-slate-400 block uppercase font-bold">Target 1</span>
+                  <span id="cell-target" className="cell-val positive mono text-emerald-400 font-bold block truncate mt-0.5">
+                    {kl.target1 ? `$${kl.target1.toFixed(2)}` : "N/A"}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {/* 2. CANONICAL REASON (Directly Below Verdict) */}
-            <div
-              data-testid="decision-reason"
-              className="text-xs sm:text-sm text-slate-200 font-sans leading-snug sm:leading-relaxed pt-0.5 sm:pt-1"
-            >
-              <span className="text-xs text-slate-400 font-bold block uppercase mb-0.5 sm:mb-1">
-                Reason / Bottom Line:
-              </span>
-              <p>{insight.standard.bottomLine}</p>
+            {/* Position Sizing & Risk Presentation */}
+            <div id="card-sizing-bar" className="sizing-bar border-t border-[#182335] pt-2 space-y-1.5 text-xs font-mono">
+              <div className="sizing-meta flex items-center justify-between text-slate-300">
+                <span id="sizing-line-1">
+                  Position Size:{" "}
+                  <button
+                    type="button"
+                    onClick={onOpenSizer}
+                    id="sizing-shares"
+                    className="sizing-bold mono font-bold text-cyan-400 hover:underline cursor-pointer inline-flex items-center gap-1"
+                    title="Open Position Sizer to configure shares"
+                  >
+                    Awaiting Sizer Calculation
+                  </button>
+                </span>
+                <span id="sizing-max-allowance" className="sizing-val text-slate-400 text-[11px]">
+                  Risk Budget: User Configured
+                </span>
+              </div>
+              <div className="sizing-matrix-grid grid grid-cols-2 gap-2 text-[11px]">
+                <div className="sizing-cell p-2 rounded-lg bg-[#070b13] border border-[#1b2639]">
+                  <span className="sizing-lbl text-[10px] text-slate-400 block">Stop Distance</span>
+                  <span id="sizing-stop-loss" className="sizing-val negative mono font-bold text-rose-400 block">
+                    {kl.stopLoss && hasValidPrice
+                      ? `-${Math.abs(kl.stopLossPct || (((rawPrice as number) - kl.stopLoss) / (rawPrice as number)) * 100).toFixed(2)}% (Risk/Share: $${Math.abs((rawPrice as number) - kl.stopLoss).toFixed(2)})`
+                      : "N/A"}
+                  </span>
+                </div>
+                <div className="sizing-cell p-2 rounded-lg bg-[#070b13] border border-[#1b2639]">
+                  <span className="sizing-lbl text-[10px] text-slate-400 block">Budget Utilization</span>
+                  <span id="sizing-utilization" className="sizing-val mono font-bold text-slate-400 block">
+                    Awaiting Sizer
+                  </span>
+                </div>
+              </div>
             </div>
-
-            {/* Compact Execution Ladder / Key Levels */}
-            <div data-testid="cockpit-execution-ladder" className="grid grid-cols-2 gap-2 pt-2.5 border-t border-[#182335] text-xs font-mono">
-              <div className="p-2 rounded-lg bg-[#070b13] border border-[#1b2639]">
-                <span className="text-[10px] text-slate-400 block uppercase font-bold">Buy Zone</span>
-                <span className="text-amber-300 font-bold truncate block">{kl.watchZone || "Awaiting Setup"}</span>
-              </div>
-              <div className="p-2 rounded-lg bg-[#070b13] border border-[#1b2639]">
-                <span className="text-[10px] text-slate-400 block uppercase font-bold">Reward : Risk</span>
-                <span className="text-emerald-400 font-bold block">{kl.profitRiskRatio ? `${kl.profitRiskRatio.toFixed(2)} : 1.0` : "N/A"}</span>
-              </div>
-              <div className="p-2 rounded-lg bg-[#070b13] border border-[#1b2639]">
-                <span className="text-[10px] text-slate-400 block uppercase font-bold">Target 1</span>
-                <span className="text-emerald-400 font-bold block">{kl.target1 ? `$${kl.target1.toFixed(2)}` : "N/A"}</span>
-              </div>
-              <div className="p-2 rounded-lg bg-[#070b13] border border-[#1b2639]">
-                <span className="text-[10px] text-slate-400 block uppercase font-bold">Stop Loss</span>
-                <span className="text-rose-400 font-bold block">{kl.stopLoss ? `$${kl.stopLoss.toFixed(2)}` : "N/A"}</span>
-              </div>
-            </div>
-          </div>
+          </article>
 
           {/* 3. WHAT NEEDS TO CHANGE (Unmet Conditions & Preconditions) */}
           <div

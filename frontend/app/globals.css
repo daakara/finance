@@ -1,4 +1,6 @@
 @import "../styles/horizon-tokens.css";
+@import "../styles/synthesis-e-v3-tokens.css";
+@import "../styles/synthesis-e-v3-components.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
