@@ -36,6 +36,7 @@ import { resolveAssetAlias } from "../lib/assetRegistry";
 import { isETF, resolveCapabilities } from "../lib/assetTypeUtils";
 import { emitEtfIntentAttempt } from "../lib/telemetry/etfIntentClient";
 import TerminalSsrShell from "../components/TerminalSsrShell";
+import { resolveFreshCachedVix } from "../lib/preflightEvaluator";
 import { Target, Landmark, BarChart3, Shield } from "lucide-react";
 
 type WorkspaceTab = "EXECUTION" | "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
@@ -262,17 +263,8 @@ function TerminalContent() {
     const fromMacro = (macroData as any)?.vix?.value ?? (macroData as any)?.vix?.level ?? (typeof (macroData as any)?.vix === "number" ? (macroData as any).vix : undefined);
     const resolvedVix = (() => {
       if (typeof fromMacro === "number" && !isNaN(fromMacro) && fromMacro > 0) return fromMacro;
-      if (typeof window !== "undefined") {
-        try {
-          const cached = localStorage.getItem("FINANCE_MARKET_SNAPSHOTS_V1");
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            const v = parsed?.vix?.value ?? parsed?.vix?.level ?? (typeof parsed?.vix === "number" ? parsed.vix : undefined);
-            if (typeof v === "number" && !isNaN(v) && v > 0) return v;
-          }
-        } catch {}
-      }
-      return undefined;
+      const freshCached = resolveFreshCachedVix();
+      return freshCached !== null ? freshCached : undefined;
     })();
 
     return {

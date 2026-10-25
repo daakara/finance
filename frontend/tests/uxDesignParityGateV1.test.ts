@@ -487,6 +487,147 @@ assert.strictEqual(elevatedVixResult.checks[4].status, "HIGH VIX");
 assert.strictEqual(elevatedVixResult.isCleared, false, "Elevated VIX must block clearance");
 console.log("   [PASS] Macro VIX >= 26.0 strictly blocks clearance");
 
+// Test H: Macro Freshness & Edge-Case Governance (ARCH-GOV-DATA-QUALITY-VNEXT Section 3.4 & EC-01)
+// Enforces that browser cache cannot provide unverified, stale, or cross-ticker Macro PASS.
+const preflightSource = fs.readFileSync(
+  path.join(__dirname, "../lib/preflightEvaluator.ts"),
+  "utf8"
+);
+assert.ok(
+  preflightSource.includes("export function resolveFreshCachedVix"),
+  "preflightEvaluator.ts must export resolveFreshCachedVix"
+);
+assert.ok(
+  preflightSource.includes("isClosedSession ? 4320 : 240"),
+  "resolveFreshCachedVix must enforce 240m active / 4320m closed freshness SLA"
+);
+
+let mockStorage: Record<string, string> = {};
+(global as any).window = {};
+(global as any).localStorage = {
+  getItem: (key: string) => mockStorage[key] || null,
+  setItem: (key: string, val: string) => { mockStorage[key] = val; },
+  removeItem: (key: string) => { delete mockStorage[key]; },
+  clear: () => { mockStorage = {}; }
+};
+
+try {
+  // H.1: Fresh live feed takes precedence
+  const freshLiveResult = evaluatePreFlightChecks({
+    symbol: "AAPL",
+    currentPrice: 220.0,
+    stopLoss: 210.0,
+    takeProfit1: 245.0,
+    riskRewardRatio: 2.5,
+    optimalEntryMin: 215.0,
+    optimalEntryMax: 225.0,
+    breakoutPivot: 228.0,
+    isActionable: true,
+    vix: 18.2,
+    catalystState: "PASS"
+  });
+  assert.strictEqual(freshLiveResult.checks[4].status, "PASS");
+  assert.strictEqual(freshLiveResult.checks[4].summary, "VIX 18.2 (Normal)");
+  console.log("   [PASS] Fresh live exchange VIX feed evaluates to PASS");
+
+  // H.2: Fresh cached VIX (10 mins old) during feed outage
+  mockStorage["FINANCE_MARKET_SNAPSHOTS_V1"] = JSON.stringify({
+    vix: { value: 16.5, level: 16.5 },
+    updatedAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    marketSession: "REGULAR"
+  });
+  const freshCacheResult = evaluatePreFlightChecks({
+    symbol: "AAPL",
+    currentPrice: 220.0,
+    stopLoss: 210.0,
+    takeProfit1: 245.0,
+    riskRewardRatio: 2.5,
+    optimalEntryMin: 215.0,
+    optimalEntryMax: 225.0,
+    breakoutPivot: 228.0,
+    isActionable: true,
+    vix: undefined,
+    catalystState: "PASS"
+  });
+  assert.strictEqual(freshCacheResult.checks[4].status, "PASS");
+  assert.strictEqual(freshCacheResult.checks[4].summary, "VIX 16.5 (Normal)");
+  console.log("   [PASS] Fresh cached VIX (within 240m SLA) cleanly covers transient feed outage");
+
+  // H.3: Stale cached VIX (> 240m open session) MUST FAIL CLOSED to UNAVAILABLE
+  mockStorage["FINANCE_MARKET_SNAPSHOTS_V1"] = JSON.stringify({
+    vix: { value: 14.8, level: 14.8 },
+    updatedAt: new Date(Date.now() - 300 * 60 * 1000).toISOString(),
+    marketSession: "REGULAR"
+  });
+  const staleActiveCacheResult = evaluatePreFlightChecks({
+    symbol: "AAPL",
+    currentPrice: 220.0,
+    stopLoss: 210.0,
+    takeProfit1: 245.0,
+    riskRewardRatio: 2.5,
+    optimalEntryMin: 215.0,
+    optimalEntryMax: 225.0,
+    breakoutPivot: 228.0,
+    isActionable: true,
+    vix: undefined,
+    catalystState: "PASS"
+  });
+  assert.strictEqual(staleActiveCacheResult.checks[4].status, "UNAVAILABLE", "Stale macro cache (> 240m open) must fail closed to UNAVAILABLE");
+  assert.strictEqual(staleActiveCacheResult.checks[4].passed, false);
+  assert.strictEqual(staleActiveCacheResult.checks[4].summary, "VIX Unavailable");
+  assert.strictEqual(staleActiveCacheResult.isCleared, false, "Stale macro cache must strictly block clearance");
+  console.log("   [PASS] Stale cache (> 240m open) strictly rejected as UNAVAILABLE and blocks clearance");
+
+  // H.4: Stale weekend cache (> 4320m / 72h) MUST FAIL CLOSED to UNAVAILABLE
+  mockStorage["FINANCE_MARKET_SNAPSHOTS_V1"] = JSON.stringify({
+    vix: { value: 15.0, level: 15.0 },
+    updatedAt: new Date(Date.now() - 80 * 3600 * 1000).toISOString(),
+    marketSession: "CLOSED",
+    settlementPinned: true
+  });
+  const staleWeekendResult = evaluatePreFlightChecks({
+    symbol: "AAPL",
+    currentPrice: 220.0,
+    stopLoss: 210.0,
+    takeProfit1: 245.0,
+    riskRewardRatio: 2.5,
+    optimalEntryMin: 215.0,
+    optimalEntryMax: 225.0,
+    breakoutPivot: 228.0,
+    isActionable: true,
+    vix: undefined,
+    catalystState: "PASS"
+  });
+  assert.strictEqual(staleWeekendResult.checks[4].status, "UNAVAILABLE");
+  assert.strictEqual(staleWeekendResult.isCleared, false, "Stale weekend cache must strictly block clearance");
+  console.log("   [PASS] Stale weekend pinned session (> 72h) strictly rejected as UNAVAILABLE");
+
+  // H.5: Missing cache / Corrupted JSON / Cross-ticker cache MUST FAIL CLOSED
+  mockStorage["FINANCE_MARKET_SNAPSHOTS_V1"] = JSON.stringify({
+    symbol: "AAPL",
+    price: 220.0
+  });
+  const crossTickerResult = evaluatePreFlightChecks({
+    symbol: "AAPL",
+    currentPrice: 220.0,
+    stopLoss: 210.0,
+    takeProfit1: 245.0,
+    riskRewardRatio: 2.5,
+    optimalEntryMin: 215.0,
+    optimalEntryMax: 225.0,
+    breakoutPivot: 228.0,
+    isActionable: true,
+    vix: undefined,
+    catalystState: "PASS"
+  });
+  assert.strictEqual(crossTickerResult.checks[4].status, "UNAVAILABLE");
+  assert.strictEqual(crossTickerResult.isCleared, false);
+  console.log("   [PASS] Cross-ticker payload strictly fails closed to UNAVAILABLE");
+} finally {
+  delete (global as any).window;
+  delete (global as any).localStorage;
+}
+
 console.log("\n================================================================================");
 console.log("  ALL ARX_UX_DESIGN_PARITY_GATE_V1 & V1.1 STRUCTURAL ASSERTIONS PASSED (100%)");
 console.log("================================================================================\n");

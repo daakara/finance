@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-10-25T07:01:02.360Z",
-  "totalMutationsTested": 12,
-  "mutationsSuccessfullyBlocked": 12,
+  "timestamp": "2026-10-25T08:38:30.026Z",
+  "totalMutationsTested": 13,
+  "mutationsSuccessfullyBlocked": 13,
   "cleanCandidateRestoredAndPassed": true,
   "disposition": "PASS",
   "results": [
@@ -96,6 +96,14 @@
     {
       "id": "DEFECT_12_REMOVE_EXECUTION_LADDER_FROM_VERDICT",
       "name": "Remove Compact Execution Ladder from Verdict Card",
+      "defectInjected": true,
+      "gateExitedNonZero": true,
+      "rejectionPatternMatched": true,
+      "verdict": "SUCCESSFULLY_BLOCKED"
+    },
+    {
+      "id": "DEFECT_13_PERMISSIVE_STALE_MACRO_PASS",
+      "name": "Permissive Stale Macro Cache Bypass",
       "defectInjected": true,
       "gateExitedNonZero": true,
       "rejectionPatternMatched": true,

@@ -19,11 +19,26 @@
     "activeBlockerTestId": "active-blocker-callout",
     "telemetryDrawerTestId": "preflight-details-drawer",
     "requiredPills": [
-      { "id": "inline-chk-pill-1", "name": "CHK-1 R:R" },
-      { "id": "inline-chk-pill-2", "name": "CHK-2 STRUCTURE" },
-      { "id": "inline-chk-pill-3", "name": "CHK-3 CAPITAL" },
-      { "id": "inline-chk-pill-4", "name": "CHK-4 CATALYST" },
-      { "id": "inline-chk-pill-5", "name": "CHK-5 MACRO" }
+      {
+        "id": "inline-chk-pill-1",
+        "name": "CHK-1 R:R"
+      },
+      {
+        "id": "inline-chk-pill-2",
+        "name": "CHK-2 STRUCTURE"
+      },
+      {
+        "id": "inline-chk-pill-3",
+        "name": "CHK-3 CAPITAL"
+      },
+      {
+        "id": "inline-chk-pill-4",
+        "name": "CHK-4 CATALYST"
+      },
+      {
+        "id": "inline-chk-pill-5",
+        "name": "CHK-5 MACRO"
+      }
     ]
   },
   "fourPillarConfluence": {
@@ -57,16 +72,31 @@
         "fallbackAllowed": false
       }
     ],
-    "prohibitedTokens": ["undefined", "null", "NaN"]
+    "prohibitedTokens": [
+      "undefined",
+      "null",
+      "NaN"
+    ]
   },
   "domainWorkspaceTabs": {
     "requiredTabs": [
-      { "id": "SMART_MONEY", "label": "Smart Money" },
-      { "id": "FUNDAMENTALS", "label": "Factors & Macro" },
-      { "id": "RISK_CONTAGION", "label": "Risk & Contagion" }
+      {
+        "id": "SMART_MONEY",
+        "label": "Smart Money"
+      },
+      {
+        "id": "FUNDAMENTALS",
+        "label": "Factors & Macro"
+      },
+      {
+        "id": "RISK_CONTAGION",
+        "label": "Risk & Contagion"
+      }
     ],
     "defaultTab": "SMART_MONEY",
-    "prohibitedTabs": ["EXECUTION"]
+    "prohibitedTabs": [
+      "EXECUTION"
+    ]
   },
   "supersededLegacySurfaces": [
     {
@@ -125,12 +155,18 @@
       "missingFreshnessOrCoverageFailsToUnavailable": true
     },
     "corridorSemantics": {
-      "toleranceThresholdPct": 2.0,
+      "toleranceThresholdPct": 2,
       "neverClaimInsideBuyingRangeWhenAboveMax": true
     },
     "cockpitComposition": {
       "executionLadderInVerdictCard": true,
       "preconditionsSubordinatedByDefault": true
+    },
+    "macroFreshness": {
+      "rejectStaleMacroCache": true,
+      "maxActiveStaleMinutes": 240,
+      "maxClosedStaleMinutes": 4320,
+      "requireFreshExchangeFeed": true
     }
   }
 }

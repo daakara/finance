@@ -151,6 +151,22 @@ const testCases: AdversarialTestCase[] = [
       return content.replace("Execution Ladder", "Suppressed Ladder");
     },
     expectedFailurePattern: "StandardTerminalView must render Execution Ladder inside Decision Verdict card"
+  },
+  {
+    id: "DEFECT_13_PERMISSIVE_STALE_MACRO_PASS",
+    name: "Permissive Stale Macro Cache Bypass",
+    description: "Bypasses freshness SLA check to allow stale VIX cache to evaluate to PASS",
+    targetFile: path.join(frontendDir, "lib/preflightEvaluator.ts"),
+    mutate: (content: string) => {
+      return content.replace(
+        "if (ageMinutes > maxAgeMinutes) {\n      return null; // Stale evidence strictly rejected\n    }",
+        "if (ageMinutes > maxAgeMinutes) {\n      return rawVix; // MUTATED: PERMISSIVE STALE BYPASS\n    }"
+      ).replace(
+        "if (ageMinutes > maxAgeMinutes) {\r\n      return null; // Stale evidence strictly rejected\r\n    }",
+        "if (ageMinutes > maxAgeMinutes) {\r\n      return rawVix; // MUTATED: PERMISSIVE STALE BYPASS\r\n    }"
+      );
+    },
+    expectedFailurePattern: "Stale macro cache (> 240m open) must fail closed to UNAVAILABLE"
   }
 ];
 
