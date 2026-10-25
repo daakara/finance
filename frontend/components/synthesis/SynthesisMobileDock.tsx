@@ -51,17 +51,32 @@ export default function SynthesisMobileDock({ activeSymbol = "AAPL" }: Synthesis
           <span>Analysis</span>
         </Link>
 
-        <button
-          type="button"
-          onClick={() => {
-            const el = document.getElementById("optimal-entry-exit-card");
-            if (el) el.scrollIntoView({ behavior: "smooth" });
-          }}
-          className="flex flex-col items-center justify-center p-1.5 rounded-xl font-mono text-[10px] min-h-[48px] text-[var(--text-muted)] hover:text-white transition-colors cursor-pointer"
-        >
-          <ShieldCheck className="w-5 h-5 mb-0.5" />
-          <span>Plan</span>
-        </button>
+        {/* Plan button: scroll to execution section on Analysis page; navigate to /setups on other pages */}
+        {pathname === "/" || pathname === "" ? (
+          <button
+            type="button"
+            onClick={() => {
+              const el = document.getElementById("optimal-entry-exit-card");
+              if (el) el.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="flex flex-col items-center justify-center p-1.5 rounded-xl font-mono text-[10px] min-h-[48px] text-[var(--text-muted)] hover:text-white transition-colors cursor-pointer"
+          >
+            <ShieldCheck className="w-5 h-5 mb-0.5" />
+            <span>Plan</span>
+          </button>
+        ) : (
+          <Link
+            href={activeSymbol ? `/setups?ticker=${activeSymbol}` : "/setups"}
+            className={`flex flex-col items-center justify-center p-1.5 rounded-xl font-mono text-[10px] min-h-[48px] transition-colors ${
+              pathname === "/setups"
+                ? "text-cyan-400 font-bold bg-[var(--surface-active)]"
+                : "text-[var(--text-muted)] hover:text-white"
+            }`}
+          >
+            <ShieldCheck className="w-5 h-5 mb-0.5" />
+            <span>Plan</span>
+          </Link>
+        )}
 
         <Link
           href="/portfolio"

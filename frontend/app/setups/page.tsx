@@ -24,6 +24,8 @@ import { validateFillParams, generateIdempotencyKey } from '../../lib/tradeLifec
 import { isStatusActionable, isDecisionActionable } from '../../types/decisionContract';
 import { formatConfluenceScore } from '../../lib/confluenceFormat';
 import { trackSetupToPortfolio } from '../../lib/matomo';
+import SynthesisGuideBanner from '../../components/synthesis/SynthesisGuideBanner';
+import SynthesisMobileDock from '../../components/synthesis/SynthesisMobileDock';
 
 type SetupLoadState = 'LOADING' | 'ACTIONABLE' | 'SUPPRESSED_CRITERIA' | 'UNSUPPORTED_ASSET' | 'REQUEST_FAILURE' | 'BROWSE_ALL';
 
@@ -217,6 +219,7 @@ function SetupsContent() {
                 userRole,
                 setupName: opt.setup_pattern,
                 entryPivot: opt.optimal_entry_max,
+                entryMin: opt.optimal_entry_min ?? undefined,
                 stopLoss: opt.stop_loss,
                 target1: opt.take_profit_1 || 0,
                 target2: opt.take_profit_2 || 0,
@@ -278,6 +281,7 @@ function SetupsContent() {
   const effectiveSetup: TradeSetupSpec = selectedSetup || {
     ticker: tickerParam?.toUpperCase() || "AWAITING_SELECTION",
     setupName: "Awaiting Setup Selection",
+    entryMin: undefined,
     entryPivot: 0,
     stopLoss: 0,
     target1: 0,
@@ -460,7 +464,8 @@ function SetupsContent() {
       activeHub="setups"
       activeSymbol={selectedSetup?.ticker || (tickerParam ? tickerParam.trim().toUpperCase() : null)}
     >
-      <div className="space-y-6">
+      <SynthesisGuideBanner />
+      <div className="space-y-6 pb-20 md:pb-0">
         {/* Hub Guidance & Orientation (A3-AC1, A3-AC2, A3-AC5) */}
         <PageIntro
           hubId="setups"
@@ -485,7 +490,7 @@ function SetupsContent() {
           <div
             role="tablist"
             aria-label="Execution Modes"
-            className="flex flex-wrap items-center gap-1 p-1 bg-slate-950 rounded-xl border border-slate-800 max-w-full"
+            className="flex flex-wrap items-center gap-1 p-1 bg-[var(--surface-1)] rounded-xl border border-[var(--border-subtle)] max-w-full"
           >
             <button
               type="button"
@@ -610,8 +615,8 @@ function SetupsContent() {
 
         {/* State: BROWSE_ALL (No ticker param provided) */}
         {loadState === 'BROWSE_ALL' && (
-          <div className="space-y-6">
-            <div className="p-6 rounded-2xl border border-slate-800 bg-slate-900/40 space-y-3">
+          <div className="space-y-6 pb-20 md:pb-0">
+            <div className="p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-400">
                   Authoritative API Setup Catalog
@@ -646,7 +651,7 @@ function SetupsContent() {
             )}
 
             {availableSetups.length === 0 && !browseError && (
-              <div className="p-8 text-center text-slate-400 font-mono text-xs border border-slate-800/80 rounded-xl bg-slate-900/20">
+              <div className="p-8 text-center text-[var(--text-2)] font-mono text-xs border border-[var(--border-subtle)] rounded-xl bg-[var(--surface-1)]">
                 No active tactical setups currently meet criteria on the exchange tape.
               </div>
             )}
@@ -656,7 +661,7 @@ function SetupsContent() {
                 <button
                   key={setup.ticker}
                   onClick={() => handleSelectSetup(setup)}
-                  className="p-4 rounded-xl text-left transition-all border border-slate-800 bg-slate-900/60 hover:bg-slate-900 hover:border-cyan-500/60 hover:shadow-lg space-y-2 group"
+                  className="p-4 rounded-xl text-left transition-all border border-[var(--border-subtle)] bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] hover:border-cyan-500/60 hover:shadow-lg space-y-2 group"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-base font-bold font-mono text-white group-hover:text-cyan-300">{setup.ticker}</span>
@@ -682,7 +687,7 @@ function SetupsContent() {
             {availableSetups.length > 0 && (
               <div className="space-y-2">
                 {/* Mobile Selected Setup Compact Bar (S01 / AC8 / AC9) */}
-                <div className="sm:hidden flex items-center justify-between p-3 rounded-xl border border-slate-800 bg-slate-900/60 font-mono text-xs">
+                <div className="sm:hidden flex items-center justify-between p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] font-mono text-xs">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-white font-bold text-sm">{effectiveSetup.ticker}</span>
                     <span className="text-slate-200 font-bold font-mono">{formatConfluenceScore(effectiveSetup.confluenceScore)}</span>
@@ -780,8 +785,8 @@ function SetupsContent() {
 
             {/* Selected Setup Execution Ticket & Governor Sizing */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 p-6 rounded-2xl border border-slate-800 bg-slate-900/40 space-y-6">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="lg:col-span-2 p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] space-y-6">
+                <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4">
                   <div>
                     <h2 className="text-xl font-bold text-white tracking-tight">
                       {effectiveSetup.ticker} — {effectiveSetup.setupName}
@@ -804,36 +809,41 @@ function SetupsContent() {
                 {/* Level 0: Asymmetric Execution Ticket Ladder */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
                   {/* Risk Bracket: Entry Pivot & Stop Loss */}
-                  <div className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 space-y-3">
+                  <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-3">
                     <div className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-400 tracking-wider">
                       <span>Risk Definition Bracket</span>
                       <span className="text-rose-400">Stop: -{formatPct(sizing.stopDistancePct)}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <span className="text-[10px] text-slate-500 uppercase block">LMT $ (Entry)</span>
-                        <span className="text-xl font-bold text-white">{formatPrice(sizing.entryPivot)}</span>
+                        <span className="text-[10px] text-[var(--text-muted)] uppercase block">Buy Zone (Entry Corridor)</span>
+                        <span className="text-base font-bold text-white font-mono">
+                          {formatPrice(effectiveSetup.entryMin || sizing.entryPivot)}
+                          {effectiveSetup.entryMin && effectiveSetup.entryMin !== sizing.entryPivot && (
+                            <span className="text-slate-400"> &mdash; {formatPrice(sizing.entryPivot)}</span>
+                          )}
+                        </span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-500 uppercase block">STP $ (Floor)</span>
+                        <span className="text-[10px] text-[var(--text-muted)] uppercase block">STP $ (Floor)</span>
                         <span className="text-xl font-bold text-rose-400">{formatPrice(sizing.stopLoss)}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Reward Milestones: Target 1 & Target 2 */}
-                  <div className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 space-y-3">
+                  <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-3">
                     <div className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-400 tracking-wider">
                       <span>Asymmetric Reward Milestones</span>
                       <span className="text-emerald-400">R:R {sizing.rMultipleTarget1}R+</span>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <span className="text-[10px] text-slate-500 uppercase block">TGT $ (Primary TP1)</span>
+                        <span className="text-[10px] text-[var(--text-muted)] uppercase block">TGT $ (Primary TP1)</span>
                         <span className="text-xl font-bold text-emerald-400">{formatPrice(effectiveSetup.target1)}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-500 uppercase block">TGT $ (Runner TP2)</span>
+                        <span className="text-[10px] text-[var(--text-muted)] uppercase block">TGT $ (Runner TP2)</span>
                         <span className="text-xl font-bold text-purple-400">{formatPrice(effectiveSetup.target2)}</span>
                       </div>
                     </div>
@@ -847,7 +857,7 @@ function SetupsContent() {
                     id="panel-mode-standard"
                     aria-labelledby="tab-mode-standard"
                     tabIndex={0}
-                    className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 space-y-3 text-xs font-mono focus-ring"
+                    className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-3 text-xs font-mono focus-ring"
                   >
                     <div className="text-xs font-bold text-slate-300">Order Execution Summary</div>
                     <div className="grid grid-cols-2 gap-3 text-xs">
@@ -880,7 +890,7 @@ function SetupsContent() {
                     className="space-y-4 focus-ring"
                   >
                     {/* Confluence Rationale */}
-                    <div className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 space-y-2.5 text-xs font-mono">
+                    <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-2.5 text-xs font-mono">
                       <div className="text-xs font-bold text-cyan-400 uppercase">Why Take This Trade?</div>
                       <div className="space-y-1.5 text-slate-300 text-[11px] leading-relaxed">
                         <div className="flex items-center gap-2">
@@ -919,7 +929,7 @@ function SetupsContent() {
                     tabIndex={0}
                     className="space-y-4 font-mono text-xs focus-ring"
                   >
-                    <div className="p-4 rounded-xl bg-slate-950/90 border border-purple-800/60 space-y-3">
+                    <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-purple-800/60 space-y-3">
                       <div className="flex justify-between items-center text-purple-400 font-bold uppercase">
                         <span>🔬 Quantitative Modeling &amp; Risk Metrics</span>
                         <span className="text-[10px] text-slate-500">1,000 Monte Carlo Paths</span>
@@ -1194,6 +1204,7 @@ function SetupsContent() {
           </div>
         )}
       </div>
+      <SynthesisMobileDock activeSymbol={selectedSetup?.ticker || tickerParam || null} />
     </TerminalShell>
   );
 }

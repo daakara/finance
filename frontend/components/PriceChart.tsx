@@ -190,11 +190,13 @@ const DAY_TRADER_INTERVALS = [
 ];
 
 // 🏛️ Dedicated Long-Term Macro Horizons (Expanded from 1-Month to 5-Year Deep History)
+// 1D = explicit Daily Candle view (1Y window, 1d bars)
+// 1W = explicit Weekly Candle view (3Y window, 1wk bars)
 const LONG_TERM_INTERVALS = [
   { label: "1M", value: "1m_hist", desc: "1-Month Swing (Daily)" },
   { label: "6M", value: "6m_hist", desc: "6-Month Cyclical (Daily)" },
-  { label: "1Y", value: "1y_hist", desc: "1-Year Macro (Daily)" },
-  { label: "3Y", value: "3y_hist", desc: "3-Year Multi-Year (Weekly)" },
+  { label: "1D", value: "1y_hist", desc: "Daily Candles - 1 Year" },
+  { label: "1W", value: "3y_hist", desc: "Weekly Candles - 3 Years" },
   { label: "5Y", value: "5y_hist", desc: "5-Year Secular (Monthly)" },
 ];
 
