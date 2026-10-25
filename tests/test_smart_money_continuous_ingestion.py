@@ -673,3 +673,55 @@ class TestSmartMoneyContinuousIngestion:
         with patch.dict(os.environ, {"ARX_ENVIRONMENT": "production"}):
             with pytest.raises(RuntimeError, match="TEST_MODE_PROHIBITED_IN_PRODUCTION"):
                 SmartMoneyContinuousPipeline(allow_test_mode=True)
+
+    # ── Test 29: UTC cron dual-trigger preserves 22:30 NY across EDT & EST ─────
+    def test_utc_cron_dst_dual_trigger_behavior(self):
+        scheduler = SmartMoneyTimezoneScheduler()
+
+        # EDT (Summer - Wednesday July 15, 2026)
+        # Trigger 1 at 02:30 UTC on July 16 = 22:30 EDT on July 15 (Target time)
+        edt_t1 = datetime(2026, 7, 16, 2, 30, tzinfo=timezone.utc)
+        should_run_edt1, reason_edt1 = scheduler.should_execute_now(now=edt_t1)
+        assert should_run_edt1 is True
+        assert "WITHIN_EXECUTION_WINDOW" in reason_edt1
+        assert "22:30 EDT" in reason_edt1
+
+        # Trigger 2 at 03:30 UTC on July 16 = 23:30 EDT (Cycle already ran for July 15)
+        edt_t2 = datetime(2026, 7, 16, 3, 30, tzinfo=timezone.utc)
+        should_run_edt2, reason_edt2 = scheduler.should_execute_now(
+            now=edt_t2,
+            last_executed_ny_date=scheduler.get_ny_now(edt_t2).date(),
+        )
+        assert should_run_edt2 is False
+        assert "ALREADY_EXECUTED_TODAY" in reason_edt2
+
+        # EST (Winter - Wednesday Jan 14, 2026)
+        # Trigger 1 at 02:30 UTC on Jan 15 = 21:30 EST on Jan 14 (60m before target 22:30)
+        est_t1 = datetime(2026, 1, 15, 2, 30, tzinfo=timezone.utc)
+        should_run_est1, reason_est1 = scheduler.should_execute_now(now=est_t1)
+        assert should_run_est1 is False
+        assert "BEFORE_SCHEDULED_TIME" in reason_est1
+        assert "21:30 EST" in reason_est1
+
+        # Trigger 2 at 03:30 UTC on Jan 15 = 22:30 EST on Jan 14 (Target time)
+        est_t2 = datetime(2026, 1, 15, 3, 30, tzinfo=timezone.utc)
+        should_run_est2, reason_est2 = scheduler.should_execute_now(now=est_t2)
+        assert should_run_est2 is True
+        assert "WITHIN_EXECUTION_WINDOW" in reason_est2
+        assert "22:30 EST" in reason_est2
+
+    # ── Test 30: Weekend and holiday non-dissemination skips ───────────────────
+    def test_non_dissemination_weekend_and_holiday_skips(self):
+        scheduler = SmartMoneyTimezoneScheduler()
+
+        # Sunday at 22:30 NY time
+        sunday_dt = datetime(2026, 10, 25, 22, 30, tzinfo=timezone.utc).astimezone(NY_TZ)
+        should_run_sun, reason_sun = scheduler.should_execute_now(now=sunday_dt)
+        assert should_run_sun is False
+        assert "NON_DISSEMINATION_DAY" in reason_sun
+
+        # Christmas Day (Friday Dec 25, 2026) at 22:30 NY time
+        xmas_dt = datetime(2026, 12, 25, 22, 30, tzinfo=timezone.utc).astimezone(NY_TZ)
+        should_run_xmas, reason_xmas = scheduler.should_execute_now(now=xmas_dt)
+        assert should_run_xmas is False
+        assert "NON_DISSEMINATION_DAY" in reason_xmas

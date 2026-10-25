@@ -91,7 +91,27 @@ def main():
 
     # 1. Evaluate schedule unless force flag is provided
     scheduler = SmartMoneyTimezoneScheduler()
-    should_run, reason = scheduler.should_execute_now(force=args.force)
+    last_executed_date = None
+    try:
+        from analyst_dashboard.smart_money.storage.postgres_repository import PostgresSmartMoneyRepository
+        from analyst_dashboard.smart_money.storage.config import get_database_url
+        dsn = get_database_url()
+        if dsn and not args.dry_run:
+            repo = PostgresSmartMoneyRepository(dsn=dsn)
+            snap = repo.get_latest_active_snapshot()
+            if snap and snap.get("data_as_of"):
+                as_of_val = snap["data_as_of"]
+                if isinstance(as_of_val, str):
+                    last_executed_date = datetime.strptime(as_of_val[:10], "%Y-%m-%d").date()
+                elif hasattr(as_of_val, "date"):
+                    last_executed_date = as_of_val.date()
+    except Exception as e:
+        logger.debug(f"Could not query last executed date from repository: {e}")
+
+    should_run, reason = scheduler.should_execute_now(
+        last_executed_ny_date=last_executed_date,
+        force=args.force,
+    )
 
     if not should_run and not args.dry_run:
         logger.warning(f"SCHEDULE_CHECK_DECLINED: {reason}")
