@@ -64,7 +64,7 @@ export default function StandardTerminalView({
                       {insight.symbol || "UNAVAILABLE"}
                     </span>
                     <span id="card-exchange" className="macro-item px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#141c2e] text-slate-400 border border-[#2b3a52]">
-                      {(insight.advanced as any)?.exchange || "NASDAQ"}
+                      {(insight.advanced as any)?.exchange || (insight as any)?.exchange || "EXCHANGE UNAVAILABLE"}
                     </span>
                     <span
                       id="card-status-badge"
@@ -129,7 +129,7 @@ export default function StandardTerminalView({
                   <span id="price-asof" className="price-tag mono">
                     {insight.terminalState.modelProvenance?.calculatedAt
                       ? `As of ${new Date(insight.terminalState.modelProvenance.calculatedAt).toISOString().replace("T", " ").slice(0, 16)} UTC`
-                      : "Verified Production Feed · Fail-Closed Authority"}
+                      : "Timestamp provenance unavailable"}
                   </span>
                 </div>
               </div>
@@ -187,6 +187,7 @@ export default function StandardTerminalView({
                 data-testid="decision-reason"
                 className="text-xs text-slate-300 font-sans leading-relaxed"
               >
+                <span className="text-[10px] text-slate-400 font-mono font-bold block uppercase mb-0.5 tracking-wider">Reason / Bottom Line:</span>
                 <p id="card-verdict-summary" className="verdict-summary">{insight.standard.bottomLine}</p>
               </div>
             </div>
@@ -231,27 +232,37 @@ export default function StandardTerminalView({
             <div id="card-sizing-bar" className="sizing-bar border-t border-[#182335] pt-2 space-y-1.5 text-xs font-mono">
               <div className="sizing-meta flex items-center justify-between text-slate-300">
                 <span id="sizing-line-1">
-                  Position Size: <span id="sizing-shares" className="sizing-bold mono font-bold text-white">100 Shares</span>
+                  Position Size:{" "}
+                  <button
+                    type="button"
+                    onClick={onOpenSizer}
+                    id="sizing-shares"
+                    className="sizing-bold mono font-bold text-cyan-400 hover:underline cursor-pointer inline-flex items-center gap-1"
+                    title="Open Position Sizer to configure shares"
+                  >
+                    Awaiting Sizer Calculation
+                  </button>
                 </span>
                 <span id="sizing-max-allowance" className="sizing-val text-slate-400 text-[11px]">
-                  Max Risk: $2,500.00 (2.0%)
+                  Risk Budget: User Configured
                 </span>
               </div>
               <div className="sizing-matrix-grid grid grid-cols-2 gap-2 text-[11px]">
                 <div className="sizing-cell p-2 rounded-lg bg-[#070b13] border border-[#1b2639]">
-                  <span className="sizing-lbl text-[10px] text-slate-400 block">Modeled Loss at Stop</span>
+                  <span className="sizing-lbl text-[10px] text-slate-400 block">Stop Distance</span>
                   <span id="sizing-stop-loss" className="sizing-val negative mono font-bold text-rose-400 block">
-                    {kl.stopLoss && hasValidPrice ? `-$${Math.abs(((rawPrice as number) - kl.stopLoss) * 100).toFixed(2)}` : "-$490.00 (-3.88%)"}
+                    {kl.stopLoss && hasValidPrice
+                      ? `-${Math.abs(kl.stopLossPct || (((rawPrice as number) - kl.stopLoss) / (rawPrice as number)) * 100).toFixed(2)}% (Risk/Share: $${Math.abs((rawPrice as number) - kl.stopLoss).toFixed(2)})`
+                      : "N/A"}
                   </span>
                 </div>
                 <div className="sizing-cell p-2 rounded-lg bg-[#070b13] border border-[#1b2639]">
                   <span className="sizing-lbl text-[10px] text-slate-400 block">Budget Utilization</span>
-                  <span id="sizing-utilization" className="sizing-val mono font-bold text-slate-200 block">
-                    19.68%
+                  <span id="sizing-utilization" className="sizing-val mono font-bold text-slate-400 block">
+                    Awaiting Sizer
                   </span>
                 </div>
               </div>
-
             </div>
           </article>
 

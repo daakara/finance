@@ -36,9 +36,9 @@ export interface SynthesisVerdictCardProps {
 export default function SynthesisVerdictCard({
   symbol,
   companyName,
-  exchange = "NASDAQ",
-  statusBadge = "IN BUY ZONE",
-  statusBadgeType = "positive",
+  exchange,
+  statusBadge = "AWAITING SETUP",
+  statusBadgeType = "neutral",
   currentPrice,
   changePct,
   changeAmount,
@@ -58,7 +58,7 @@ export default function SynthesisVerdictCard({
   preflightTotalChecks = 5,
   activeBlockerText,
   volumeStatement,
-  dataFreshnessText = "Verified Production Feed · Fail-Closed Authority",
+  dataFreshnessText = "Data timestamp unavailable",
   onReviewBlockers,
   onOpenTradePlan,
 }: SynthesisVerdictCardProps) {
@@ -88,7 +88,7 @@ export default function SynthesisVerdictCard({
               {symbol}
             </span>
             <span id="card-exchange" className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[var(--surface-2)] text-[var(--text-muted)] border border-[var(--border-subtle)]">
-              {exchange}
+              {exchange || "EXCHANGE UNAVAILABLE"}
             </span>
             <span id="card-status-badge" className={`px-2.5 py-0.5 rounded text-xs font-mono font-bold border ${badgeClass}`}>
               {statusBadge}
