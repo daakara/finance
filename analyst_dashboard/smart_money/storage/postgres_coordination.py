@@ -8,8 +8,14 @@ and transaction-scoped run serialization.
 import hashlib
 import logging
 from contextlib import contextmanager
-from typing import Generator
-from psycopg2.extensions import connection as PgConnection
+from typing import Generator, Any
+
+try:
+    from psycopg2.extensions import connection as PgConnection
+    PSYCOPG2_AVAILABLE = True
+except ImportError:
+    PgConnection = Any
+    PSYCOPG2_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 

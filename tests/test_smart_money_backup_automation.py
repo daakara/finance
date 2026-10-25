@@ -14,8 +14,8 @@ import os
 import json
 import tempfile
 import pytest
-import psycopg2
-import pgserver
+psycopg2 = pytest.importorskip("psycopg2")
+pgserver = pytest.importorskip("pgserver")
 
 from analyst_dashboard.smart_money.storage.postgres_schema import initialize_postgres_schema
 from analyst_dashboard.smart_money.storage.postgres_repository import PostgresSmartMoneyRepository

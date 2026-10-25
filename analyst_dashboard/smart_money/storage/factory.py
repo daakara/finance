@@ -20,7 +20,6 @@ from analyst_dashboard.smart_money.storage.config import (
     get_database_url,
     validate_storage_configuration,
 )
-from analyst_dashboard.smart_money.storage.postgres_repository import PostgresSmartMoneyRepository
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +29,10 @@ def get_smart_money_storage_backend() -> str:
     return get_storage_backend()
 
 
-def get_smart_money_repository(dsn: Optional[str] = None) -> PostgresSmartMoneyRepository:
+def get_smart_money_repository(dsn: Optional[str] = None) -> Any:
     """
     Returns an instance of PostgresSmartMoneyRepository configured with the authoritative DSN.
-    Raises RuntimeError if storage backend is not configured for PostgreSQL.
+    Raises RuntimeError if storage backend is not configured for PostgreSQL or driver unavailable.
     """
     url = dsn or get_database_url()
     if not url:
@@ -41,6 +40,7 @@ def get_smart_money_repository(dsn: Optional[str] = None) -> PostgresSmartMoneyR
             "CANONICAL_POSTGRES_REPOSITORY_UNAVAILABLE: "
             "SMART_MONEY_DATABASE_URL is not configured."
         )
+    from analyst_dashboard.smart_money.storage.postgres_repository import PostgresSmartMoneyRepository
     return PostgresSmartMoneyRepository(dsn=url)
 
 

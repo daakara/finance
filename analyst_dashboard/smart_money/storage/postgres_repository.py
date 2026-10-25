@@ -11,8 +11,18 @@ import uuid
 import hashlib
 import logging
 from typing import Dict, Any, List, Optional, Set
-from psycopg2.extras import RealDictCursor, Json
-from psycopg2.extensions import connection as PgConnection
+
+try:
+    import psycopg2
+    from psycopg2.extras import RealDictCursor, Json
+    from psycopg2.extensions import connection as PgConnection
+    PSYCOPG2_AVAILABLE = True
+except ImportError:
+    psycopg2 = None
+    RealDictCursor = None
+    Json = None
+    PgConnection = Any
+    PSYCOPG2_AVAILABLE = False
 
 from analyst_dashboard.smart_money.storage.postgres_connection import get_connection, transaction
 

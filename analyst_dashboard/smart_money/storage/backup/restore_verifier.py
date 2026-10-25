@@ -20,8 +20,14 @@ import subprocess
 from typing import Dict, Any, Optional
 from urllib.parse import urlparse
 
-import psycopg2
-from psycopg2.extras import RealDictCursor
+try:
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+    PSYCOPG2_AVAILABLE = True
+except ImportError:
+    psycopg2 = None
+    RealDictCursor = None
+    PSYCOPG2_AVAILABLE = False
 
 from analyst_dashboard.smart_money.storage.backup.storage_adapter import (
     BackupStorageAdapter,
@@ -132,6 +138,11 @@ class BackupRestoreVerifier:
                 raise RuntimeError(f"PG_RESTORE_FAILED: {proc_restore.stderr}")
 
             # 5. Connect and Verify Structural Parity
+            if not PSYCOPG2_AVAILABLE:
+                raise RuntimeError(
+                    "CANONICAL_POSTGRES_DRIVER_UNAVAILABLE: "
+                    "psycopg2 is required for restore verification, but is not installed."
+                )
             conn = psycopg2.connect(target_dsn)
             try:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:

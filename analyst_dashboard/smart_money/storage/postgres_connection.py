@@ -8,10 +8,20 @@ and transactional context managers for Smart Money services.
 import logging
 import threading
 from contextlib import contextmanager
-from typing import Generator, Optional
-import psycopg2
-from psycopg2.pool import ThreadedConnectionPool
-from psycopg2.extras import RealDictCursor
+from typing import Generator, Optional, Any
+
+try:
+    import psycopg2
+    from psycopg2.pool import ThreadedConnectionPool
+    from psycopg2.extras import RealDictCursor
+    from psycopg2.extensions import connection as PgConnection
+    PSYCOPG2_AVAILABLE = True
+except ImportError:
+    psycopg2 = None
+    ThreadedConnectionPool = None
+    RealDictCursor = None
+    PgConnection = Any
+    PSYCOPG2_AVAILABLE = False
 
 from analyst_dashboard.smart_money.storage.config import (
     get_database_url,
@@ -35,10 +45,15 @@ _global_pool: Optional[ThreadedConnectionPool] = None
 _pool_dsn: Optional[str] = None
 
 
-def get_connection_pool(dsn: Optional[str] = None, role: Optional[str] = None) -> ThreadedConnectionPool:
+def get_connection_pool(dsn: Optional[str] = None, role: Optional[str] = None) -> Any:
     """
     Returns or initializes the global ThreadedConnectionPool.
     """
+    if not PSYCOPG2_AVAILABLE:
+        raise RuntimeError(
+            "CANONICAL_POSTGRES_DRIVER_UNAVAILABLE: "
+            "psycopg2 is required for PostgreSQL connection pool, but is not installed."
+        )
     global _global_pool, _pool_dsn
     target_dsn = dsn or get_database_url()
     if not target_dsn:
@@ -83,11 +98,16 @@ def close_connection_pool() -> None:
 
 
 @contextmanager
-def get_connection(dsn: Optional[str] = None, role: Optional[str] = None) -> Generator[psycopg2.extensions.connection, None, None]:
+def get_connection(dsn: Optional[str] = None, role: Optional[str] = None) -> Generator[Any, None, None]:
     """
     Context manager yielding a connection from the pool and returning it upon exit.
     Applies role-appropriate statement_timeout.
     """
+    if not PSYCOPG2_AVAILABLE:
+        raise RuntimeError(
+            "CANONICAL_POSTGRES_DRIVER_UNAVAILABLE: "
+            "psycopg2 is required for PostgreSQL connection, but is not installed."
+        )
     pool = get_connection_pool(dsn=dsn, role=role)
     conn = pool.getconn()
     active_role = role or get_database_role()
@@ -104,7 +124,7 @@ def get_connection(dsn: Optional[str] = None, role: Optional[str] = None) -> Gen
 
 
 @contextmanager
-def transaction(conn: Optional[psycopg2.extensions.connection] = None, dsn: Optional[str] = None, role: Optional[str] = None) -> Generator[psycopg2.extensions.cursor, None, None]:
+def transaction(conn: Optional[Any] = None, dsn: Optional[str] = None, role: Optional[str] = None) -> Generator[Any, None, None]:
     """
     Transactional context manager. Automatically commits on success or rolls back on exception.
     """

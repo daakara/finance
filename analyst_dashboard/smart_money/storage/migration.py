@@ -15,8 +15,16 @@ import sqlite3
 import logging
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Tuple
-import psycopg2
-from psycopg2.extras import RealDictCursor, Json
+
+try:
+    import psycopg2
+    from psycopg2.extras import RealDictCursor, Json
+    PSYCOPG2_AVAILABLE = True
+except ImportError:
+    psycopg2 = None
+    RealDictCursor = None
+    Json = None
+    PSYCOPG2_AVAILABLE = False
 
 from analyst_dashboard.smart_money.storage.postgres_schema import initialize_postgres_schema
 
@@ -50,6 +58,11 @@ class SmartMoneySqliteMigrator:
         pg_dsn: str,
         release_sha: str = "b72ea23937cf6ed7b8c4b60096630767a7c4592b",
     ):
+        if not PSYCOPG2_AVAILABLE:
+            raise RuntimeError(
+                "CANONICAL_POSTGRES_DRIVER_UNAVAILABLE: "
+                "psycopg2 is required for SmartMoneySqliteMigrator, but is not installed."
+            )
         self.sqlite_db_path = sqlite_db_path
         self.pg_dsn = pg_dsn
         self.release_sha = release_sha
