@@ -6,6 +6,7 @@ Implements deterministic market-wide universe execution for:
 - SMART_MONEY
 """
 
+import os
 import json
 import hashlib
 import time
@@ -1073,7 +1074,13 @@ class SmartMoneyScannerRunner:
         """
         Retrieves the latest verified, published snapshot from ScannerSnapshotStore.
         If no published snapshot is present, returns fail-closed PIPELINE_PENDING envelope.
+        Enforces Control A: Emergency web read disablement via ARX_SMART_MONEY_POSTGRES_READ_ENABLED=false.
         """
+        read_enabled = os.environ.get("ARX_SMART_MONEY_POSTGRES_READ_ENABLED", "true").strip().lower()
+        if read_enabled in ("false", "0", "no"):
+            logger.warning("Smart Money postgres read disabled via ARX_SMART_MONEY_POSTGRES_READ_ENABLED=false (Control A)")
+            return self.get_status_envelope()
+
         if self.backend == "postgres":
             persisted = self.snapshot_store.get_latest_active_snapshot("SMART_MONEY")
             if persisted is not None:
