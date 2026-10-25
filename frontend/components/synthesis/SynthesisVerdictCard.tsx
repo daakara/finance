@@ -194,9 +194,9 @@ export default function SynthesisVerdictCard({
         </div>
 
         <div id="middle-panel-content" className="grid grid-cols-2 gap-2 text-xs font-mono">
-          <div className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)]">
+          <div className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] min-w-0">
             <span className="text-[10px] text-[var(--text-muted)] block uppercase font-bold">Buy Zone</span>
-            <span className="text-amber-300 font-bold truncate block mt-0.5">{buyZone || "Awaiting Setup"}</span>
+            <span className="text-amber-300 font-bold block mt-0.5 whitespace-normal break-words text-xs leading-tight">{buyZone || "Awaiting Setup"}</span>
           </div>
           <div className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)]">
             <span className="text-[10px] text-[var(--text-muted)] block uppercase font-bold">Reward : Risk</span>

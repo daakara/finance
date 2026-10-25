@@ -815,9 +815,9 @@ function SetupsContent() {
                       <span className="text-rose-400">Stop: -{formatPct(sizing.stopDistancePct)}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-[10px] text-[var(--text-muted)] uppercase block">Buy Zone (Entry Corridor)</span>
-                        <span className="text-base font-bold text-white font-mono">
+                        <span className="text-base font-bold text-white font-mono block whitespace-normal break-words leading-tight">
                           {formatPrice(effectiveSetup.entryMin || sizing.entryPivot)}
                           {effectiveSetup.entryMin && effectiveSetup.entryMin !== sizing.entryPivot && (
                             <span className="text-slate-400"> &mdash; {formatPrice(sizing.entryPivot)}</span>

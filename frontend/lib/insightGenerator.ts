@@ -378,6 +378,14 @@ export function generateQuantitativeInsight(
     }
   }
 
+  if (freshnessStatus === "STALE_HISTORICAL" || freshnessStatus === "STALE") {
+    terminalState.decisionState = "STALE_DATA";
+    terminalState.isActionable = false;
+    terminalState.canSizeTrade = false;
+    terminalState.uiStateLabel = "Stale Historical Tape (> 4 Days)";
+    terminalState.headlineExplanation = "Market data is historical/stale (>4 days lag); live trade triggers are suspended.";
+  }
+
   const factors: FactorAttributionItem[] = domains.map((d) => ({
     factorId: d.domainId,
     factorName: d.domainName,

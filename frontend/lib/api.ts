@@ -1628,7 +1628,7 @@ export async function fetchAssetAnalytics(
           // Reject STALE_HISTORICAL, UNAVAILABLE, or COMPLETED_SESSION backend data from being labeled live
           const freshnessStatus = data.freshness?.status;
           const isBackendCompletedSession = data.quoteStatus === "COMPLETED_SESSION" || data.freshness?.priceSemantic === "COMPLETED_SESSION" || freshnessStatus === "COMPLETED_SESSION" || interval === "1d" || interval.includes("hist");
-          const isBackendStale = freshnessStatus === "STALE_HISTORICAL" || freshnessStatus === "UNAVAILABLE";
+          const isBackendStale = freshnessStatus === "STALE_HISTORICAL" || freshnessStatus === "UNAVAILABLE" || Boolean(data.freshness?.stalenessDays && data.freshness.stalenessDays > 4);
 
           // Extract authentic observation timestamp strictly from provider metadata.
           // Invariant: Never infer quote freshness from a daily candle date (YYYY-MM-DD) or lastTradeDate.
@@ -1675,9 +1675,13 @@ export async function fetchAssetAnalytics(
             _dataSource: isObservationFresh ? ("live" as const) : ("historical" as const),
             freshness: data.freshness ? {
               ...data.freshness,
-              status: isBackendCompletedSession ? "COMPLETED_SESSION" : (data.freshness.status || "RECENT"),
-              isRealtime: !isBackendCompletedSession && isObservationFresh,
-              priceSemantic: isBackendCompletedSession ? "COMPLETED_SESSION" : (data.freshness.priceSemantic || "LIVE_INTRADAY"),
+              status: isBackendStale
+                ? (freshnessStatus === "UNAVAILABLE" ? "UNAVAILABLE" : "STALE_HISTORICAL")
+                : (isBackendCompletedSession ? "COMPLETED_SESSION" : (data.freshness.status || "RECENT")),
+              isRealtime: !isBackendStale && !isBackendCompletedSession && isObservationFresh,
+              priceSemantic: isBackendStale
+                ? "STALE_HISTORICAL"
+                : (isBackendCompletedSession ? "COMPLETED_SESSION" : (data.freshness.priceSemantic || "LIVE_INTRADAY")),
             } : undefined,
             factorScores: data.factorScores || data.dnaScores,
           };
