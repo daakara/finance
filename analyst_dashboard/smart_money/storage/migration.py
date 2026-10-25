@@ -60,7 +60,7 @@ class SmartMoneySqliteMigrator:
     ):
         if not PSYCOPG2_AVAILABLE:
             raise RuntimeError(
-                "CANONICAL_POSTGRES_DRIVER_UNAVAILABLE: "
+                "CANONICAL_POSTGRES_DRIVER_UNAVAILABLE: POSTGRESQL_DRIVER_UNAVAILABLE: "
                 "psycopg2 is required for SmartMoneySqliteMigrator, but is not installed."
             )
         self.sqlite_db_path = sqlite_db_path

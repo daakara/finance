@@ -114,17 +114,52 @@ VALUE_GARP_MODELS = {
 }
 
 
-def get_radar_capabilities(sm_snapshot: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    caps = dict(RADAR_CAPABILITY_CONTRACT)
+def get_radar_capabilities(
+    *args,
+    vcp_snapshot: Optional[Dict[str, Any]] = None,
+    publication_pointer: Optional[Any] = None,
+    sm_snapshot: Optional[Dict[str, Any]] = None,
+    **kwargs,
+) -> Dict[str, Any]:
+    # Support positional calls from Candidate 006 (sm_snapshot) and main (vcp_snapshot, publication_pointer)
+    if args:
+        first_arg = args[0]
+        if len(args) >= 2:
+            vcp_snapshot = first_arg
+            publication_pointer = args[1]
+        elif isinstance(first_arg, dict) and ("snapshot_id" in first_arg or "universe" in first_arg):
+            vcp_snapshot = first_arg
+        else:
+            # Candidate 006 backwards compatibility: single positional dict is sm_snapshot
+            sm_snapshot = first_arg
+
+    caps = {k: dict(v) for k, v in RADAR_CAPABILITY_CONTRACT.items()}
+
+    # Evaluate VCP capability from snapshot if provided
+    if vcp_snapshot and vcp_snapshot.get("status") == "AVAILABLE":
+        raw_vcp_matched = vcp_snapshot.get("matched_count")
+        is_valid_vcp = type(raw_vcp_matched) is int and raw_vcp_matched >= 0
+        caps["VCP"] = {
+            "status": "AVAILABLE",
+            "universeScreening": "AVAILABLE",
+            "singleAssetAnalysis": "AVAILABLE",
+            "matchedCount": raw_vcp_matched if is_valid_vcp else 0,
+            "dataAsOf": vcp_snapshot.get("freshness", {}).get("data_as_of") or vcp_snapshot.get("data_as_of"),
+            "rationale": "Authentic Minervini Volatility Contraction Pattern universe screening active.",
+        }
+
+    # Evaluate SMART_MONEY capability from authoritative snapshot
     if sm_snapshot and sm_snapshot.get("status") == "AVAILABLE":
-        matched_cnt = sm_snapshot.get("matched_count", 0)
+        raw_matched = sm_snapshot.get("matched_count")
+        is_valid_count = type(raw_matched) is int and raw_matched >= 0
+        matched_cnt = raw_matched if is_valid_count else 0
         caps["SMART_MONEY"] = {
             "status": "AVAILABLE",
             "universeScreening": "AVAILABLE",
             "singleAssetAnalysis": "AVAILABLE",
             "subsignal": "INSIDER_FORM4",
             "matchedCount": matched_cnt,
-            "dataAsOf": sm_snapshot.get("freshness", {}).get("data_as_of"),
+            "dataAsOf": sm_snapshot.get("freshness", {}).get("data_as_of") or sm_snapshot.get("data_as_of"),
             "rationale": "Authentic market-wide SEC Form 4 insider accumulation screening active with point-in-time certification.",
         }
     else:
@@ -133,6 +168,7 @@ def get_radar_capabilities(sm_snapshot: Optional[Dict[str, Any]] = None) -> Dict
             "universeScreening": "PIPELINE_PENDING",
             "singleAssetAnalysis": "AVAILABLE",
             "subsignal": "INSIDER_FORM4",
+            "matchedCount": None,
             "rationale": "Single-asset SEC Form 4 and Congressional STOCK Act disclosures active on /smart-money; universe-level institutional accumulation screener pipeline is pending deployment.",
         }
     return caps
