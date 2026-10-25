@@ -17,6 +17,8 @@ import pytest
 psycopg2 = pytest.importorskip("psycopg2")
 pgserver = pytest.importorskip("pgserver")
 
+pytestmark = pytest.mark.tier2c
+
 from analyst_dashboard.smart_money.storage.postgres_schema import initialize_postgres_schema
 from analyst_dashboard.smart_money.storage.postgres_repository import PostgresSmartMoneyRepository
 from analyst_dashboard.smart_money.storage.backup.storage_adapter import (

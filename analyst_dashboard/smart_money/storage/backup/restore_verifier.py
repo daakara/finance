@@ -106,32 +106,50 @@ class BackupRestoreVerifier:
             # 3. Restore Globals via psql (only if present)
             if local_globals:
                 psql_bin = find_pg_binary("psql")
-                cmd_globals = [
-                    psql_bin,
-                    "-h", conn_info["host"],
-                    "-p", conn_info["port"],
-                    "-U", conn_info["user"],
-                    "-d", conn_info["dbname"],
-                    "-f", local_globals,
-                ]
+                if target_dsn.startswith("postgres://") or target_dsn.startswith("postgresql://"):
+                    cmd_globals = [
+                        psql_bin,
+                        "-d", target_dsn,
+                        "-f", local_globals,
+                    ]
+                else:
+                    cmd_globals = [
+                        psql_bin,
+                        "-h", conn_info["host"],
+                        "-p", conn_info["port"],
+                        "-U", conn_info["user"],
+                        "-d", conn_info["dbname"],
+                        "-f", local_globals,
+                    ]
                 proc_globals = subprocess.run(cmd_globals, env=env, capture_output=True, text=True)
                 if proc_globals.returncode != 0:
                     logger.warning(f"psql globals restore warnings: {proc_globals.stderr}")
 
             # 4. Restore Database via pg_restore
             pg_restore_bin = find_pg_binary("pg_restore")
-            cmd_restore = [
-                pg_restore_bin,
-                "-h", conn_info["host"],
-                "-p", conn_info["port"],
-                "-U", conn_info["user"],
-                "-d", conn_info["dbname"],
-                "--clean",
-                "--if-exists",
-                "--no-owner",
-                "--no-privileges",
-                local_dump,
-            ]
+            if target_dsn.startswith("postgres://") or target_dsn.startswith("postgresql://"):
+                cmd_restore = [
+                    pg_restore_bin,
+                    "-d", target_dsn,
+                    "--clean",
+                    "--if-exists",
+                    "--no-owner",
+                    "--no-privileges",
+                    local_dump,
+                ]
+            else:
+                cmd_restore = [
+                    pg_restore_bin,
+                    "-h", conn_info["host"],
+                    "-p", conn_info["port"],
+                    "-U", conn_info["user"],
+                    "-d", conn_info["dbname"],
+                    "--clean",
+                    "--if-exists",
+                    "--no-owner",
+                    "--no-privileges",
+                    local_dump,
+                ]
             proc_restore = subprocess.run(cmd_restore, env=env, capture_output=True, text=True)
             # pg_restore returns 0 on success, or 1 if non-fatal warnings (e.g. drop table if not exists)
             if proc_restore.returncode not in (0, 1):

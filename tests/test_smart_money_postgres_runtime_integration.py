@@ -22,6 +22,8 @@ from psycopg2.extras import RealDictCursor, Json
 from fastapi import Response
 pgserver = pytest.importorskip("pgserver")
 
+pytestmark = pytest.mark.tier2c
+
 from analyst_dashboard.smart_money.storage.config import (
     SMART_MONEY_POSTGRES_SCHEMA_VERSION,
     POSTGRES_MAJOR_VERSION_SUPPORTED,
