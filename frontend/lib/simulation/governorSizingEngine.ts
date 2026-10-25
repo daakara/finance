@@ -173,7 +173,8 @@ export function getTraderContextFromUnifiedCockpit(
 export interface TradeSetupSpec {
   ticker: string;
   setupName: string;
-  entryPivot: number;
+  entryPivot: number;   // Upper bound of buy zone (optimal_entry_max)
+  entryMin?: number;    // Lower bound of buy zone (optimal_entry_min)
   stopLoss: number;
   target1?: number;
   target2?: number;

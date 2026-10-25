@@ -35,6 +35,8 @@ import { MASTER_ASSET_CATALOG } from "../../lib/masterCatalog";
 import { resolveAssetAlias, getCanonicalAssetName } from "../../lib/assetRegistry";
 import { trackMatomoEvent } from "../../lib/matomo";
 import MacroStressTestSimulator from "../../components/MacroStressTestSimulator";
+import SynthesisGuideBanner from "../../components/synthesis/SynthesisGuideBanner";
+import SynthesisMobileDock from "../../components/synthesis/SynthesisMobileDock";
 
 export default function PortfolioPage() {
   const [positions, setPositions] = useState<PortfolioPosition[]>([]);
@@ -617,6 +619,7 @@ export default function PortfolioPage() {
 
   return (
     <TerminalShell activeHub="portfolio" activeSymbol={activeSymbol}>
+      <SynthesisGuideBanner />
       <div role="region" aria-label="Portfolio Risk Ledger" className="max-w-[1450px] mx-auto p-4 sm:p-6 space-y-6 pb-28 sm:pb-8">
         {/* Hub Guidance & Orientation (A3-AC1, A3-AC2, A3-AC6, Finding T02) */}
         <PageIntro
@@ -639,7 +642,7 @@ export default function PortfolioPage() {
               type="button"
               onClick={() => refreshQuotes(positions)}
               disabled={isRefreshing}
-              className={`px-3 py-2 bg-[#162030] hover:bg-[#1f2d44] border border-[#243044] text-slate-200 rounded-xl text-xs font-mono font-bold shadow-sm flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer ${
+              className={`px-3 py-2 bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border-subtle)] text-[var(--text-1)] rounded-xl text-xs font-mono font-bold shadow-sm flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer ${
                 isRefreshing ? "opacity-60 cursor-not-allowed" : ""
               }`}
             >
@@ -650,7 +653,7 @@ export default function PortfolioPage() {
             <button
               type="button"
               onClick={handleExportCsv}
-              className="px-3 py-2 bg-[#162030] hover:bg-[#1f2d44] border border-[#243044] text-slate-200 rounded-xl text-xs font-mono font-bold shadow-sm flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
+              className="px-3 py-2 bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border-subtle)] text-[var(--text-1)] rounded-xl text-xs font-mono font-bold shadow-sm flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
             >
               <span>📥</span>
               <span className="hidden sm:inline">Export CSV</span>
@@ -659,14 +662,14 @@ export default function PortfolioPage() {
         </PageIntro>
 
         {/* Level 0: Asymmetric Capital at Risk & Portfolio Heat Hero */}
-        <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 p-5 md:p-6 shadow-2xl space-y-4">
+        <div className="relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-5 md:p-6 shadow-2xl space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider font-bold bg-rose-950/80 text-rose-400 border border-rose-800/80">
                   Level 0 · Portfolio Heat
                 </span>
-                <span className="text-xs text-slate-400 font-sans">
+                <span className="text-xs text-[var(--text-2)] font-sans">
                   What can hurt me if all stop floors trigger?
                 </span>
               </div>
@@ -678,33 +681,33 @@ export default function PortfolioPage() {
                   ({riskPctOfEquity !== null ? `${riskPctOfEquity.toFixed(2)}% Capital at Risk` : "--"})
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-sans max-w-xl">
+              <p className="text-xs text-[var(--text-2)] font-sans max-w-xl">
                 Maximum portfolio exposure defined strictly by your stop-loss exit floors. Risk is distributed across {summary.positionsCount} active {summary.positionsCount === 1 ? 'position' : 'positions'}.
               </p>
             </div>
 
             {/* Right Rail: Total Capital & Deployment */}
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3 shrink-0 font-mono text-xs">
-              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase block">Tracked Portfolio Equity</span>
+              <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)]">
+                <span className="text-[10px] text-[var(--text-muted)] uppercase block">Tracked Portfolio Equity</span>
                 <span className="text-base font-bold text-white tabular-nums">
                   {totalNetWorth !== null ? `$${totalNetWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "--"}
                 </span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase block">Active Holdings</span>
+              <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)]">
+                <span className="text-[10px] text-[var(--text-muted)] uppercase block">Active Holdings</span>
                 <span className="text-base font-bold text-slate-100 tabular-nums">
                   {investedEquity !== null ? `$${investedEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${investedPct?.toFixed(0)}%)` : <span className="text-amber-400">Incomplete ({summary.unpricedCount} unpriced)</span>}
                 </span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase block">Cash Buying Power</span>
+              <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)]">
+                <span className="text-[10px] text-[var(--text-muted)] uppercase block">Cash Buying Power</span>
                 <span className="text-base font-bold text-emerald-400 tabular-nums">
                   ${cashReserves.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {cashPct !== null ? `(${cashPct.toFixed(0)}%)` : ""}
                 </span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase block">Unrealized P&amp;L</span>
+              <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)]">
+                <span className="text-[10px] text-[var(--text-muted)] uppercase block">Unrealized P&amp;L</span>
                 <span className={`text-base font-bold tabular-nums ${isPositive === true ? 'text-emerald-400' : isPositive === false ? 'text-rose-400' : 'text-slate-400'}`}>
                   {summary.totalUnrealizedPnL !== null ? (isPositive ? `+$${summary.totalUnrealizedPnL.toFixed(2)}` : `-$${Math.abs(summary.totalUnrealizedPnL).toFixed(2)}`) : <span className="text-amber-400 font-normal text-xs">-- (Unpriced)</span>}
                 </span>
@@ -728,7 +731,7 @@ export default function PortfolioPage() {
                   </span>
                 ))}
               </div>
-              <span className="text-[11px] text-slate-400 font-sans">Execute disciplined exit to preserve capital</span>
+              <span className="text-[11px] text-[var(--text-2)] font-sans">Execute disciplined exit to preserve capital</span>
             </div>
           )}
         </div>
@@ -744,7 +747,7 @@ export default function PortfolioPage() {
             </div>
             
             <div className="flex items-center gap-2">
-              <label htmlFor="portfolio-total-wallet-input" className="text-[11px] text-slate-400">Total Wallet:</label>
+              <label htmlFor="portfolio-total-wallet-input" className="text-[11px] text-[var(--text-2)]">Total Wallet:</label>
               <div className="flex items-center gap-1 bg-[#06090f] border border-[#24334b] rounded-lg px-2 py-1.5 min-h-[32px] sm:min-h-0">
                 <span className="text-xs text-slate-500 font-bold">$</span>
                 <input

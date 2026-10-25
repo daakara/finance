@@ -37,6 +37,7 @@ import { resolveAssetAlias } from "../lib/assetRegistry";
 import { isETF, resolveCapabilities } from "../lib/assetTypeUtils";
 import { emitEtfIntentAttempt } from "../lib/telemetry/etfIntentClient";
 import TerminalSsrShell from "../components/TerminalSsrShell";
+import SynthesisMobileDock from "../components/synthesis/SynthesisMobileDock";
 import { resolveFreshCachedVix, resolveFreshMacroEvidence } from "../lib/preflightEvaluator";
 import { Target, Landmark, BarChart3, Shield } from "lucide-react";
 
