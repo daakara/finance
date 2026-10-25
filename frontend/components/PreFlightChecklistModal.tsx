@@ -29,6 +29,8 @@ export default function PreFlightChecklistModal({
   catalystState,
   catalystEvidence,
   vix,
+  vixObservationTime,
+  macroEvidence,
   isActionable = false,
   decisionState,
 }: PreFlightChecklistModalProps) {
@@ -109,6 +111,8 @@ export default function PreFlightChecklistModal({
       catalystState,
       catalystEvidence,
       vix,
+      vixObservationTime,
+      macroEvidence,
       isActionable,
       decisionState,
     },

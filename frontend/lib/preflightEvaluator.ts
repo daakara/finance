@@ -17,6 +17,15 @@
 
 import { MASTER_ASSET_CATALOG } from "./masterCatalog";
 
+export interface MacroEvidence {
+  vix?: number | null;
+  observationTime?: string | null;
+  marketSession?: "OPEN" | "REGULAR" | "PRE_MARKET" | "AFTER_HOURS" | "CLOSED" | string | null;
+  settlementPinned?: boolean | null;
+  sourceName?: string | null;
+  freshnessStatus?: "LIVE" | "CACHED_FRESH" | "STALE" | "EXPIRED" | "UNAVAILABLE" | "ELEVATED" | string | null;
+}
+
 export interface PreFlightChecklistInputs {
   symbol: string;
   currentPrice?: number | null;
@@ -47,6 +56,8 @@ export interface PreFlightChecklistInputs {
     preflightState?: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR";
   } | null;
   vix?: number | null;
+  vixObservationTime?: string | null;
+  macroEvidence?: MacroEvidence | null;
   isActionable?: boolean | null;
   decisionState?: string;
   evidenceStatus?: string;
@@ -112,16 +123,19 @@ export interface PreFlightEvaluationResult {
   target1Str: string;
   target2Str: string;
   resolvedCatalystState: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR";
+  resolvedMacroEvidence: MacroEvidence | null;
 }
 
 /**
- * Resolves VIX from local browser cache with strict data quality and freshness verification.
+ * Resolves MacroEvidence from local browser cache with strict data quality and freshness verification.
  * Enforces DATA_QUALITY_AND_EDGE_CASE_GOVERNANCE.md (ARCH-GOV-DATA-QUALITY-VNEXT Section 3.4 & EC-01):
  * - Active Session Max Stale Threshold: 240 minutes (4 hours)
  * - Pinned Closed Session Max Threshold: 4320 minutes (72 hours / weekend close)
+ * - Market Observation Time Governance: vix.observationTime governs over API generatedAt/updatedAt response times.
+ * - Pinned Settlement Gate: CLOSED session requires authenticated settlementPinned === true.
  * Stale, unverified, future, or cross-ticker snapshots fail closed to null.
  */
-export function resolveFreshCachedVix(): number | null {
+export function resolveFreshMacroEvidence(): MacroEvidence | null {
   if (typeof window === "undefined") return null;
   try {
     const cached = localStorage.getItem("FINANCE_MARKET_SNAPSHOTS_V1");
@@ -138,37 +152,83 @@ export function resolveFreshCachedVix(): number | null {
       return null;
     }
 
-    // Freshness validation
-    const timestampStr = parsed.updatedAt || parsed.timestamp;
-    if (!timestampStr || typeof timestampStr !== "string") {
-      return null; // Missing timestamp cannot establish freshness
-    }
-
-    const timestamp = new Date(timestampStr).getTime();
-    if (isNaN(timestamp)) {
+    // Explicitly reject historical default fixtures (M14)
+    if (parsed.updatedAt === "2026-09-07T12:00:00Z" || parsed.dataSource === "STATIC_FIXTURE") {
       return null;
     }
 
-    const now = Date.now();
-    const ageMinutes = (now - timestamp) / 60000;
+    // 1. Observation Timestamp Resolution (M05)
+    // The market bar observation timestamp takes priority over API generatedAt/updatedAt timestamps.
+    const obsTimeStr = parsed?.vix?.observationTime || parsed?.observationTime || parsed?.vix?.observed_at;
+    const apiTimeStr = parsed?.updatedAt || parsed?.timestamp || parsed?.generatedAt;
 
-    // Clock skew guard: Reject future timestamps beyond 5m skew
+    const effectiveTimeStr = obsTimeStr || apiTimeStr;
+    if (!effectiveTimeStr || typeof effectiveTimeStr !== "string") {
+      return null; // Missing timestamp cannot establish freshness (M03)
+    }
+
+    const obsTimestamp = obsTimeStr ? new Date(obsTimeStr).getTime() : NaN;
+    const apiTimestamp = apiTimeStr ? new Date(apiTimeStr).getTime() : NaN;
+    const effectiveTimestamp = !isNaN(obsTimestamp) ? obsTimestamp : apiTimestamp;
+
+    if (isNaN(effectiveTimestamp)) {
+      return null; // Malformed timestamp (M11)
+    }
+
+    const now = Date.now();
+    const ageMinutes = (now - effectiveTimestamp) / 60000;
+
+    // Clock skew guard: Reject future timestamps beyond 5m skew (M11)
     if (ageMinutes < -5) {
       return null;
     }
 
-    // SLA Window: 4 hours (240m) during active session; 72 hours (4320m) if marketSession === "CLOSED" or settlementPinned
-    const isClosedSession = parsed.marketSession === "CLOSED" || parsed.settlementPinned === true || parsed.isSettlementPinned === true;
-    const maxAgeMinutes = isClosedSession ? 4320 : 240;
+    // 2. Closed-Session and Pinned Settlement Qualification (M07 & M08)
+    // In accordance with EC-01, only authenticated closed-session pinned settlements qualify for 72h SLA.
+    // An unauthenticated CLOSED flag without settlementPinned is capped at the 240m active threshold.
+    const isClosedSession = parsed.marketSession === "CLOSED" || parsed.market_session === "CLOSED";
+    const isPinnedSettlement = parsed.settlementPinned === true || parsed.isSettlementPinned === true;
+    const hasQualifiedClosedSettlement = isClosedSession && isPinnedSettlement;
 
-    if (ageMinutes > maxAgeMinutes) {
-      return null; // Stale evidence strictly rejected
+    const maxAgeMinutes = hasQualifiedClosedSettlement ? 4320 : 240;
+
+    // 3. Stale Observation Rejection (M04 & M05)
+    // If the observation itself is older than the max age, reject even if API response was generated recently.
+    if (!isNaN(obsTimestamp)) {
+      const obsAgeMinutes = (now - obsTimestamp) / 60000;
+      if (obsAgeMinutes > maxAgeMinutes || obsAgeMinutes < -5) {
+        return null;
+      }
     }
 
-    return rawVix;
+    // Check API payload age
+    if (!isNaN(apiTimestamp)) {
+      const apiAgeMinutes = (now - apiTimestamp) / 60000;
+      if (apiAgeMinutes > maxAgeMinutes) {
+        return null;
+      }
+    }
+
+    if (ageMinutes > maxAgeMinutes) {
+      return null; // Expired pinned settlement or stale active cache (M06, M09)
+    }
+
+    return {
+      vix: rawVix,
+      observationTime: effectiveTimeStr,
+      marketSession: parsed.marketSession || "REGULAR",
+      settlementPinned: isPinnedSettlement,
+      sourceName: parsed.vix?.provider || parsed.dataSource || "CBOE_VIX_INDEX",
+      freshnessStatus: hasQualifiedClosedSettlement ? "CACHED_FRESH" : "LIVE"
+    };
   } catch {
     return null;
   }
+}
+
+export function resolveFreshCachedVix(): number | null {
+  const evidence = resolveFreshMacroEvidence();
+  return evidence ? (evidence.vix ?? null) : null;
 }
 
 export function evaluatePreFlightChecks(
@@ -214,11 +274,101 @@ export function evaluatePreFlightChecks(
   const safeEntryMax = (typeof optimalEntryMax === "number" && !isNaN(optimalEntryMax) && optimalEntryMax > 0) ? optimalEntryMax : null;
   const safePivot = (typeof breakoutPivot === "number" && !isNaN(breakoutPivot) && breakoutPivot > 0) ? breakoutPivot : null;
 
-  // Canonical VIX Resolution: input > browser localStorage fresh cache > null
-  const resolvedVix = (() => {
-    if (typeof vix === "number" && !isNaN(vix) && vix > 0) return vix;
-    return resolveFreshCachedVix();
+  // Canonical Macro Resolution (INV-MACRO-FRESHNESS-001):
+  // 1. Direct macroEvidence envelope or vix with observation timestamp
+  // 2. Fresh browser cache (resolveFreshMacroEvidence)
+  // 3. Fallback for elevated VIX (>= 26.0) as safety blocker
+  // 4. Missing/unverified/stale observation fails closed to null (UNAVAILABLE)
+  const resolvedMacroEvidence: MacroEvidence | null = (() => {
+    // 1. Direct macroEvidence envelope
+    if (inputs.macroEvidence && typeof inputs.macroEvidence === "object") {
+      const ev = inputs.macroEvidence;
+      const evVix = (typeof ev.vix === "number" && !isNaN(ev.vix) && ev.vix > 0)
+        ? ev.vix
+        : (typeof vix === "number" && !isNaN(vix) && vix > 0 ? vix : null);
+
+      if (evVix !== null) {
+        // Missing observation timestamp fails closed (M03)
+        if (!ev.observationTime || typeof ev.observationTime !== "string") {
+          return null;
+        }
+        if (ev.freshnessStatus === "STALE" || ev.freshnessStatus === "EXPIRED" || ev.freshnessStatus === "UNAVAILABLE") {
+          return null;
+        }
+
+        const obsTime = new Date(ev.observationTime).getTime();
+        if (isNaN(obsTime)) return null;
+
+        const now = Date.now();
+        const ageMinutes = (now - obsTime) / 60000;
+        if (ageMinutes < -5) return null; // Future clock skew (M11)
+
+        const isClosed = (ev.marketSession === "CLOSED") && (ev.settlementPinned === true);
+        const maxAge = isClosed ? 4320 : 240;
+
+        if (ageMinutes > maxAge) return null; // Stale observation (M04)
+
+        return {
+          vix: evVix,
+          observationTime: ev.observationTime,
+          marketSession: ev.marketSession || "REGULAR",
+          settlementPinned: ev.settlementPinned ?? false,
+          sourceName: ev.sourceName || "DIRECT_MACRO_EVIDENCE",
+          freshnessStatus: ev.freshnessStatus || (isClosed ? "CACHED_FRESH" : "LIVE")
+        };
+      }
+    }
+
+    // Direct vix with direct observation timestamp
+    if (typeof vix === "number" && !isNaN(vix) && vix > 0 && inputs.vixObservationTime && typeof inputs.vixObservationTime === "string") {
+      const obsTime = new Date(inputs.vixObservationTime).getTime();
+      if (!isNaN(obsTime)) {
+        const now = Date.now();
+        const ageMinutes = (now - obsTime) / 60000;
+        if (ageMinutes >= -5 && ageMinutes <= 240) {
+          return {
+            vix,
+            observationTime: inputs.vixObservationTime,
+            marketSession: "REGULAR",
+            settlementPinned: false,
+            sourceName: "DIRECT_TIMED_OBSERVATION",
+            freshnessStatus: "LIVE"
+          };
+        }
+      }
+      return null;
+    }
+
+    // 2. Fresh browser cache fallback
+    const cachedEvidence = resolveFreshMacroEvidence();
+    if (cachedEvidence) return cachedEvidence;
+
+    // 3. Fallback for direct bare vix input:
+    if (evidenceStatus === "STALE" || evidenceStatus === "EXPIRED" || evidenceStatus === "UNAVAILABLE") {
+      return null;
+    }
+
+    // If bare vix is provided without trustworthy timestamp:
+    if (typeof vix === "number" && !isNaN(vix) && vix > 0) {
+      // VIX >= 26.0 is an absolute defensive blocker (M02)
+      if (vix >= 26.0) {
+        return {
+          vix,
+          observationTime: null,
+          marketSession: "REGULAR",
+          settlementPinned: false,
+          sourceName: "DEFENSIVE_BLOCKER",
+          freshnessStatus: "ELEVATED"
+        };
+      }
+      // VIX < 26.0 without trustworthy timestamp cannot grant unsupported PASS (M03)
+      return null;
+    }
+
+    return null;
   })();
+
+  const resolvedVix = resolvedMacroEvidence?.vix ?? null;
   const isVixValid = resolvedVix !== null;
   const currentVix = resolvedVix;
 
@@ -605,5 +755,6 @@ export function evaluatePreFlightChecks(
     target1Str,
     target2Str,
     resolvedCatalystState,
+    resolvedMacroEvidence,
   };
 }
