@@ -178,6 +178,7 @@ export default function UniversalOmniSearch() {
             <form onSubmit={handleFormSubmit} className="relative flex items-center">
               <span className="absolute left-3.5 text-cyan-400 text-base" aria-hidden="true">🔍</span>
               <input
+                id="omni-search-input"
                 ref={inputRef}
                 type="text"
                 value={query}
@@ -198,7 +199,7 @@ export default function UniversalOmniSearch() {
             </form>
 
             {/* Live Matches / Direct Submission */}
-            <div className="overflow-y-auto space-y-2 flex-1 pr-1" role="listbox">
+            <div id="search-dropdown" className="overflow-y-auto space-y-2 flex-1 pr-1" role="listbox">
               {/* 💡 Intelligent Did You Mean Recommendation Card */}
               {aliasMatch && (
                 <button

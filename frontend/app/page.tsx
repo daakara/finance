@@ -7,6 +7,7 @@ import { useEffect, useState, useRef, useCallback, useMemo, Suspense } from "rea
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Navbar from "../components/Navbar";
+import SynthesisGuideBanner from "../components/synthesis/SynthesisGuideBanner";
 import WatchlistSidebar from "../components/WatchlistSidebar";
 import PriceChart from "../components/PriceChart";
 import RiskMetricsCard from "../components/RiskMetricsCard";
@@ -311,6 +312,7 @@ function TerminalContent() {
         onRoleChange={handleRoleChange}
         activeSymbol={urlSymbol ? urlSymbol.toUpperCase() : (hasExplicitSymbol ? selectedSymbol : null)}
       />
+      <SynthesisGuideBanner />
 
       {/* Semantic Main Content Landmark */}
       <main id="main-content" role="main" className="flex-1 max-w-[1750px] w-full mx-auto p-2.5 sm:p-5 grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-5 pb-28 sm:pb-5">
