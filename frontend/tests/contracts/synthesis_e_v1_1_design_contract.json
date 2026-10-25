@@ -166,7 +166,10 @@
       "rejectStaleMacroCache": true,
       "maxActiveStaleMinutes": 240,
       "maxClosedStaleMinutes": 4320,
-      "requireFreshExchangeFeed": true
+      "requireFreshExchangeFeed": true,
+      "requireObservationTimeGovernance": true,
+      "closedSessionRequiresPinnedSettlement": true,
+      "unverifiedTimestampFailsClosed": true
     }
   }
 }

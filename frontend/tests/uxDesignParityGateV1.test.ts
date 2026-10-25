@@ -351,6 +351,7 @@ const fullyClearedResult = evaluatePreFlightChecks({
   breakoutPivot: 228.0,
   isActionable: true,
   vix: 16.0,
+  vixObservationTime: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
   catalystState: "PASS",
   catalystEvidence: {
     state: "PASS",
@@ -378,6 +379,7 @@ const toleranceResult = evaluatePreFlightChecks({
   breakoutPivot: 228.0,
   isActionable: true,
   vix: 16.0,
+  vixObservationTime: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
   catalystState: "PASS",
   catalystEvidence: {
     state: "PASS",
@@ -411,6 +413,7 @@ const unverifiedCatalystResult = evaluatePreFlightChecks({
   breakoutPivot: 228.0,
   isActionable: true,
   vix: 16.0,
+  vixObservationTime: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
   catalystState: "PASS",
   catalystEvidence: {
     state: "PASS",
@@ -449,6 +452,7 @@ const missingFreshnessResult = evaluatePreFlightChecks({
   breakoutPivot: 228.0,
   isActionable: true,
   vix: 16.0,
+  vixObservationTime: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
   catalystState: "PASS",
   catalystEvidence: {
     state: "PASS",
@@ -498,8 +502,12 @@ assert.ok(
   "preflightEvaluator.ts must export resolveFreshCachedVix"
 );
 assert.ok(
-  preflightSource.includes("isClosedSession ? 4320 : 240"),
-  "resolveFreshCachedVix must enforce 240m active / 4320m closed freshness SLA"
+  preflightSource.includes("export function resolveFreshMacroEvidence"),
+  "preflightEvaluator.ts must export resolveFreshMacroEvidence"
+);
+assert.ok(
+  preflightSource.includes("hasQualifiedClosedSettlement ? 4320 : 240"),
+  "resolveFreshMacroEvidence must enforce 240m active / 4320m qualified closed freshness SLA"
 );
 
 let mockStorage: Record<string, string> = {};
@@ -524,6 +532,7 @@ try {
     breakoutPivot: 228.0,
     isActionable: true,
     vix: 18.2,
+    vixObservationTime: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
     catalystState: "PASS"
   });
   assert.strictEqual(freshLiveResult.checks[4].status, "PASS");
@@ -623,6 +632,75 @@ try {
   assert.strictEqual(crossTickerResult.checks[4].status, "UNAVAILABLE");
   assert.strictEqual(crossTickerResult.isCleared, false);
   console.log("   [PASS] Cross-ticker payload strictly fails closed to UNAVAILABLE");
+
+  // H.6: Bare numeric VIX without timestamp metadata MUST FAIL CLOSED to UNAVAILABLE (M03)
+  mockStorage["FINANCE_MARKET_SNAPSHOTS_V1"] = "";
+  const bareVixResult = evaluatePreFlightChecks({
+    symbol: "AAPL",
+    currentPrice: 220.0,
+    stopLoss: 210.0,
+    takeProfit1: 245.0,
+    riskRewardRatio: 2.5,
+    optimalEntryMin: 215.0,
+    optimalEntryMax: 225.0,
+    breakoutPivot: 228.0,
+    isActionable: true,
+    vix: 17.5, // Untrusted bare numeric input without timestamp
+    catalystState: "PASS"
+  });
+  assert.strictEqual(bareVixResult.checks[4].status, "UNAVAILABLE", "Bare numeric VIX without timestamp must fail closed");
+  assert.strictEqual(bareVixResult.isCleared, false);
+  console.log("   [PASS] Bare numeric VIX without trustworthy timestamp strictly fails closed to UNAVAILABLE");
+
+  // H.7: Stale observation time delivered in fresh API payload MUST FAIL CLOSED (M05)
+  mockStorage["FINANCE_MARKET_SNAPSHOTS_V1"] = JSON.stringify({
+    vix: {
+      value: 16.0,
+      observationTime: new Date(Date.now() - 300 * 60 * 1000).toISOString() // 5 hours old observation
+    },
+    updatedAt: new Date().toISOString(), // fresh delivery wrapper
+    marketSession: "REGULAR"
+  });
+  const staleObsResult = evaluatePreFlightChecks({
+    symbol: "AAPL",
+    currentPrice: 220.0,
+    stopLoss: 210.0,
+    takeProfit1: 245.0,
+    riskRewardRatio: 2.5,
+    optimalEntryMin: 215.0,
+    optimalEntryMax: 225.0,
+    breakoutPivot: 228.0,
+    isActionable: true,
+    vix: undefined,
+    catalystState: "PASS"
+  });
+  assert.strictEqual(staleObsResult.checks[4].status, "UNAVAILABLE", "Stale market observation must govern over fresh API delivery");
+  assert.strictEqual(staleObsResult.isCleared, false);
+  console.log("   [PASS] Market observation timestamp governance strictly prevents stale bar pass in fresh API wrapper");
+
+  // H.8: Unpinned closed-session snapshot capped at active 240m threshold (M07)
+  mockStorage["FINANCE_MARKET_SNAPSHOTS_V1"] = JSON.stringify({
+    vix: { value: 15.2, level: 15.2 },
+    updatedAt: new Date(Date.now() - 300 * 60 * 1000).toISOString(), // 5h old
+    marketSession: "CLOSED",
+    settlementPinned: false // Unauthenticated settlement pin
+  });
+  const unpinnedClosedResult = evaluatePreFlightChecks({
+    symbol: "AAPL",
+    currentPrice: 220.0,
+    stopLoss: 210.0,
+    takeProfit1: 245.0,
+    riskRewardRatio: 2.5,
+    optimalEntryMin: 215.0,
+    optimalEntryMax: 225.0,
+    breakoutPivot: 228.0,
+    isActionable: true,
+    vix: undefined,
+    catalystState: "PASS"
+  });
+  assert.strictEqual(unpinnedClosedResult.checks[4].status, "UNAVAILABLE", "Unpinned CLOSED session must not receive 72h window");
+  assert.strictEqual(unpinnedClosedResult.isCleared, false);
+  console.log("   [PASS] Unpinned CLOSED session snapshot strictly capped at 240m active threshold");
 } finally {
   delete (global as any).window;
   delete (global as any).localStorage;

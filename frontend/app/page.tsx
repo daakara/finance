@@ -36,7 +36,7 @@ import { resolveAssetAlias } from "../lib/assetRegistry";
 import { isETF, resolveCapabilities } from "../lib/assetTypeUtils";
 import { emitEtfIntentAttempt } from "../lib/telemetry/etfIntentClient";
 import TerminalSsrShell from "../components/TerminalSsrShell";
-import { resolveFreshCachedVix } from "../lib/preflightEvaluator";
+import { resolveFreshCachedVix, resolveFreshMacroEvidence } from "../lib/preflightEvaluator";
 import { Target, Landmark, BarChart3, Shield } from "lucide-react";
 
 type WorkspaceTab = "EXECUTION" | "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
@@ -261,10 +261,10 @@ function TerminalContent() {
     } : null;
 
     const fromMacro = (macroData as any)?.vix?.value ?? (macroData as any)?.vix?.level ?? (typeof (macroData as any)?.vix === "number" ? (macroData as any).vix : undefined);
+    const freshMacroEvidence = resolveFreshMacroEvidence();
     const resolvedVix = (() => {
       if (typeof fromMacro === "number" && !isNaN(fromMacro) && fromMacro > 0) return fromMacro;
-      const freshCached = resolveFreshCachedVix();
-      return freshCached !== null ? freshCached : undefined;
+      return freshMacroEvidence?.vix ?? undefined;
     })();
 
     return {
@@ -280,6 +280,7 @@ function TerminalContent() {
       optimalEntryMax: data?.optimalExecution?.optimal_entry_max ?? undefined,
       breakoutPivot: data?.optimalExecution?.breakout_pivot ?? undefined,
       vix: typeof resolvedVix === "number" && !isNaN(resolvedVix) && resolvedVix > 0 ? resolvedVix : undefined,
+      macroEvidence: freshMacroEvidence,
       hasImminentEarnings: ((rawCorporate?.days_to_earnings != null && rawCorporate?.days_to_earnings <= 7.0 && rawCorporate?.days_to_earnings >= 0) || rawCorporate?.preflight_state === "WARN"),
       catalystState: rawCorporate?.preflight_state,
       catalystEvidence,

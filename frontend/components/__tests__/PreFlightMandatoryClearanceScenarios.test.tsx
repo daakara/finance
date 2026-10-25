@@ -21,6 +21,7 @@ describe("Track A Pre-Flight 16 Mandatory Safety Scenarios (S01–S16)", () => {
     setupPattern: "Minervini VCP",
     isActionable: true,
     vix: 14.5,
+    vixObservationTime: new Date().toISOString(),
     isStage4: false,
     optimalEntryMin: 215.0,
     optimalEntryMax: 222.0,
