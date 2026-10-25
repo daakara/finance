@@ -278,6 +278,8 @@ class SmartMoneyIngestionWorker:
         self.heartbeat_interval_sec = int(os.environ.get("SMART_MONEY_HEARTBEAT_INTERVAL_SEC", "10"))
         self.stale_recovery_interval_sec = int(os.environ.get("SMART_MONEY_STALE_RECOVERY_INTERVAL_SEC", "30"))
         self._last_stale_recovery_at = 0.0
+        self._is_executing_cycle = False
+        self._shutdown_requested = False
 
     def validate_preflight(self) -> None:
         """
@@ -357,13 +359,22 @@ class SmartMoneyIngestionWorker:
 
     def _handle_shutdown_signal(self, signum: int, frame: Any) -> None:
         """
-        Control B: Catches SIGTERM / SIGINT and immediately drops session advisory lock (<= 1.0s).
+        Control B: Catches SIGTERM / SIGINT and drops session advisory lock (<= 1.0s).
+        If a work cycle is currently in-flight, defers lock release until cycle completion
+        to prevent dropping the session advisory lock underneath active state modification.
         """
         logger.info(
-            f"Worker {self.worker_id} received shutdown signal {signum}. "
-            "Executing immediate Control B teardown (dropping advisory lock <= 1.0s)..."
+            f"Worker {self.worker_id} received shutdown signal {signum}."
         )
         self._running = False
+        if getattr(self, "_is_executing_cycle", False):
+            logger.warning(
+                f"Worker {self.worker_id} is currently executing cycle; deferring lock release until cycle completion."
+            )
+            self._shutdown_requested = True
+            return
+
+        logger.info("Executing immediate Control B teardown (dropping advisory lock <= 1.0s)...")
         self.release_egress_authority()
         if getattr(self, "backup_scheduler", None):
             self.backup_scheduler.stop()
@@ -417,12 +428,14 @@ class SmartMoneyIngestionWorker:
             logger.warning(f"Aborting completion of request {req_id}: backup became stale during execution.")
             return 0
 
-        pipeline = SmartMoneyContinuousPipeline(
-            dsn=self.dsn,
-            containment_gate=self.containment_gate,
-            repository=self.repository,
-        )
+        self._is_executing_cycle = True
         try:
+            pipeline = SmartMoneyContinuousPipeline(
+                dsn=self.dsn,
+                containment_gate=self.containment_gate,
+                repository=self.repository,
+                allow_test_mode=False,
+            )
             res = pipeline.execute_cycle(
                 run_request_id=req_id,
                 lease_token=lease_token,
@@ -445,6 +458,16 @@ class SmartMoneyIngestionWorker:
             except Exception as fail_err:
                 logger.warning(f"Could not record failure status for request {req_id}: {fail_err}")
             return 0
+        finally:
+            self._is_executing_cycle = False
+            if getattr(self, "_shutdown_requested", False):
+                logger.info(
+                    f"Worker {self.worker_id} completed in-flight cycle; executing deferred shutdown."
+                )
+                self.release_egress_authority()
+                if getattr(self, "backup_scheduler", None):
+                    self.backup_scheduler.stop()
+                sys.exit(0)
 
     def run_cycle(self) -> None:
         """Executes a single operational work cycle."""

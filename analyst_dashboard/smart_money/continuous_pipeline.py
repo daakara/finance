@@ -65,9 +65,17 @@ from analyst_dashboard.smart_money.form4_models import (
     SmartMoneyTransaction,
     SmartMoneyFiling,
     OwnershipNature,
+    SmartMoneySignalType,
+    SmartMoneyIssuerState,
 )
 from analyst_dashboard.smart_money.form4_parser import Form4XmlParser
 from analyst_dashboard.smart_money.form4_scanner import SmartMoneyForm4Scanner
+from analyst_dashboard.analyzers.scanner_contract import (
+    ScannerCandidateResult,
+    ScannerStatus,
+    PublicationDecision,
+    FreshnessStatus,
+)
 
 logger = logging.getLogger("smart_money.continuous_pipeline")
 
@@ -87,6 +95,43 @@ DEFAULT_GOVERNED_ISSUERS = [
 ]
 
 
+def _normalize_to_transaction_obj(tx: Any) -> SmartMoneyTransaction:
+    """Normalizes a transaction dict or SmartMoneyTransaction instance into SmartMoneyTransaction."""
+    if isinstance(tx, SmartMoneyTransaction):
+        return tx
+    if isinstance(tx, dict):
+        is_buy = tx.get("is_open_market_purchase_evidence", False) or tx.get("transaction_code") == "P"
+        sig_type = SmartMoneySignalType.OPEN_MARKET_PURCHASE if is_buy else (
+            SmartMoneySignalType.OPEN_MARKET_SALE if tx.get("transaction_code") == "S" else SmartMoneySignalType.OTHER
+        )
+        return SmartMoneyTransaction(
+            record_key=tx.get("transaction_id", tx.get("record_key", str(uuid.uuid4()))),
+            accession_number=tx.get("accession_number", "0000000000-00-000000"),
+            issuer_cik=tx.get("issuer_cik", ""),
+            issuer_symbol=tx.get("issuer_symbol", tx.get("ticker", tx.get("symbol", ""))),
+            issuer_name=tx.get("issuer_name", tx.get("company_name", "")),
+            reporting_owner_cik=tx.get("reporting_owner_cik", tx.get("reporting_owner_name", "insider-1")),
+            reporting_owner_name=tx.get("reporting_owner_name", "Insider"),
+            is_officer=tx.get("is_officer", False),
+            officer_title=tx.get("officer_title"),
+            is_director=tx.get("is_director", False),
+            is_ten_percent_owner=tx.get("is_ten_percent", tx.get("is_ten_percent_owner", False)),
+            filing_date=tx.get("filing_date", tx.get("transaction_date", "2026-10-25")),
+            transaction_date=tx.get("transaction_date", "2026-10-25"),
+            transaction_code=tx.get("transaction_code", "P" if is_buy else "S"),
+            signal_type=sig_type,
+            shares=float(tx.get("shares", 0.0)),
+            price_per_share=float(tx.get("price_per_share", 0.0)),
+            total_value_usd=float(tx.get("total_value_usd", 0.0)),
+            acquired_disposed=tx.get("acquired_disposed", "A" if is_buy else "D"),
+            ownership_nature=OwnershipNature.DIRECT if tx.get("ownership_type", "D") in ("D", "DIRECT", OwnershipNature.DIRECT) else OwnershipNature.INDIRECT,
+            is_derivative=tx.get("is_derivative", False),
+            is_open_market_purchase_evidence=is_buy,
+            is_positive_buying_conviction=is_buy,
+        )
+    raise TypeError(f"UNSUPPORTED_TRANSACTION_TYPE: Cannot convert {type(tx)} to SmartMoneyTransaction")
+
+
 class SmartMoneyContinuousPipeline:
     """
     10-step continuous daily ingestion and snapshot publication pipeline.
@@ -104,7 +149,16 @@ class SmartMoneyContinuousPipeline:
         issuers: Optional[List[Dict[str, str]]] = None,
         rate_limiter: Optional[RateLimiter] = None,
         sec_fetcher: Optional[Any] = None,
+        scanner: Optional[SmartMoneyForm4Scanner] = None,
+        allow_test_mode: bool = False,
     ):
+        arx_env = os.environ.get("ARX_ENVIRONMENT", "").strip().lower()
+        if arx_env == "production" and allow_test_mode:
+            raise RuntimeError(
+                "TEST_MODE_PROHIBITED_IN_PRODUCTION: allow_test_mode is strictly prohibited in production environment."
+            )
+
+        self.allow_test_mode = allow_test_mode
         self.dsn = dsn or get_database_url()
         self.storage_adapter = storage_adapter or get_backup_storage_adapter()
         self.backup_engine = backup_engine or (
@@ -112,6 +166,11 @@ class SmartMoneyContinuousPipeline:
             if self.dsn
             else None
         )
+        if not self.allow_test_mode and self.backup_engine is None:
+            raise RuntimeError(
+                "BACKUP_ENGINE_REQUIRED: Live continuous pipeline requires verified backup engine"
+            )
+
         self.retention_manager = retention_manager or BackupRetentionManager(
             storage_adapter=self.storage_adapter,
             retention_count=10,
@@ -139,6 +198,7 @@ class SmartMoneyContinuousPipeline:
         # Strict token bucket <= 8.0 req/s (SEC ceiling is 10)
         self.rate_limiter = rate_limiter or RateLimiter(max_per_second=8.0)
         self.sec_fetcher = sec_fetcher
+        self.scanner = scanner or SmartMoneyForm4Scanner()
         self._lock_conn = None
 
     def execute_cycle(
@@ -303,6 +363,10 @@ class SmartMoneyContinuousPipeline:
     def _step2_and_3_pre_backup(self, cycle_id: str) -> Dict[str, Any]:
         """Captures pre-ingestion logical dump and uploads to off-host storage."""
         if not self.backup_engine:
+            if not self.allow_test_mode:
+                raise RuntimeError(
+                    "BACKUP_ENGINE_REQUIRED: Live continuous pipeline requires verified backup engine"
+                )
             logger.warning("No backup engine configured, skipping pre-backup (test mode).")
             return {"backup_id": f"mock-pre-backup-{cycle_id}", "status": "MOCKED"}
 
@@ -387,12 +451,13 @@ class SmartMoneyContinuousPipeline:
         raw_filings: List[Dict[str, Any]],
         cycle_id: str,
         as_of: Optional[str] = None,
-    ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    ) -> Tuple[List[SmartMoneyTransaction], Dict[str, Any]]:
         """
         Parses Form 4 XML into normalized transactions and persists them.
         Generates and saves immutable cryptographic reconciliation receipt.
         """
-        parsed_txs: List[Dict[str, Any]] = []
+        parsed_tx_objs: List[SmartMoneyTransaction] = []
+        raw_tx_dicts: List[Dict[str, Any]] = []
         now_iso = datetime.now(timezone.utc).isoformat()
         watermark = as_of or now_iso
 
@@ -400,9 +465,18 @@ class SmartMoneyContinuousPipeline:
             xml = f.get("xml_content")
             if not xml:
                 continue
-            parsed_filing = Form4XmlParser.parse_filing(xml, accession_number=f["accession_number"])
+            accession = f.get("accession_number", "UNKNOWN")
+            parsed_filing = Form4XmlParser.parse_filing(xml, accession_number=accession)
             if parsed_filing and parsed_filing.transactions:
                 for tx in parsed_filing.transactions:
+                    if not tx.issuer_symbol:
+                        tx.issuer_symbol = f.get("ticker") or f.get("symbol")
+                    if not tx.issuer_cik:
+                        tx.issuer_cik = f.get("cik") or parsed_filing.issuer_cik
+                    if not tx.issuer_name:
+                        tx.issuer_name = f.get("company_name") or parsed_filing.issuer_name
+
+                    parsed_tx_objs.append(tx)
                     tx_dict = {
                         "transaction_id": tx.record_key,
                         "accession_number": tx.accession_number,
@@ -419,13 +493,13 @@ class SmartMoneyContinuousPipeline:
                         "officer_title": tx.officer_title,
                         "ownership_type": tx.ownership_nature.value if hasattr(tx.ownership_nature, "value") else str(tx.ownership_nature),
                     }
-                    parsed_txs.append(tx_dict)
+                    raw_tx_dicts.append(tx_dict)
 
-        if self.repository and parsed_txs:
-            self.repository.save_parsed_transactions(parsed_txs)
+        if self.repository and raw_tx_dicts:
+            self.repository.save_parsed_transactions(raw_tx_dicts)
 
         # Cryptographic reconciliation receipt
-        reconcile_str = f"{cycle_id}:{watermark}:{len(raw_filings)}:{len(parsed_txs)}"
+        reconcile_str = f"{cycle_id}:{watermark}:{len(raw_filings)}:{len(parsed_tx_objs)}"
         reconciliation_hash = hashlib.sha256(reconcile_str.encode("utf-8")).hexdigest()
 
         receipt_meta = {
@@ -447,11 +521,11 @@ class SmartMoneyContinuousPipeline:
         if self.repository:
             self.repository.save_reconciliation_receipt(receipt_meta)
 
-        return parsed_txs, receipt_meta
+        return parsed_tx_objs, receipt_meta
 
     def _step8_publish_snapshot(
         self,
-        parsed_txs: List[Dict[str, Any]],
+        parsed_txs: List[Any],
         receipt_meta: Dict[str, Any],
         cycle_id: str,
         run_request_id: Optional[str] = None,
@@ -461,51 +535,197 @@ class SmartMoneyContinuousPipeline:
         """
         Builds immutable snapshot and atomically publishes to scanner_snapshots and
         scanner_active_snapshots via repository.publish_scanner_snapshot_atomic.
+        Fails closed: Rejects publication if coverage is incomplete, any issuer fails
+        evaluation, or reconciliation hash is missing.
         """
         now_ts = int(time.time())
         snapshot_id = f"SNAP_SM_{now_ts}_{uuid.uuid4().hex[:8]}"
+        run_id = f"RUN_SM_{now_ts}_{uuid.uuid4().hex[:6]}"
+        now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         as_of_watermark = as_of or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        release_sha = os.environ.get("ARX_RELEASE_SHA", "b9588f95188ab7e204474773f67dacbc9f6afb1f")
 
-        # Evaluate scanner candidate results for each governed issuer
-        matched_results: List[Dict[str, Any]] = []
-        scanner = SmartMoneyForm4Scanner()
+        # 1. Reconciliation gate check
+        recon_hash = receipt_meta.get("reconciliation_hash") if receipt_meta else None
+        if not recon_hash:
+            raise RuntimeError("SNAPSHOT_PUBLICATION_REJECTED: Missing reconciliation receipt hash")
 
-        # Group txs by symbol
-        txs_by_sym: Dict[str, List[SmartMoneyTransaction]] = {}
+        # 2. Normalize incoming transactions to SmartMoneyTransaction objects
+        tx_objects: List[SmartMoneyTransaction] = []
         for tx in parsed_txs:
-            sym = tx.get("reporting_owner_role", "")  # fallback grouping
-            # In repository, symbol is linked via form4_raw_filings or tx dict
-            # We also evaluate transactions from repository if available
-            pass
+            try:
+                tx_objects.append(_normalize_to_transaction_obj(tx))
+            except Exception as e:
+                logger.error(f"Error normalizing transaction: {e}")
+                raise RuntimeError(f"SNAPSHOT_PUBLICATION_REJECTED: Transaction normalization failed: {e}")
 
-        # Build snapshot record
+        # 3. Evaluate scanner candidate results for each governed issuer
+        scanned_successfully_count = 0
+        data_complete_count = 0
+        unavailable_symbol_count = 0
+        unavailable_reasons: Dict[str, str] = {}
+        qualifying_states: List[Tuple[SmartMoneyIssuerState, List[str]]] = []
+
+        total_universe = len(self.issuers)
+        if total_universe == 0:
+            raise RuntimeError("SNAPSHOT_PUBLICATION_REJECTED: Governed universe is empty")
+
+        for issuer in self.issuers:
+            ticker = issuer["ticker"]
+            cik = issuer["cik"]
+            company_name = issuer.get("company_name", ticker)
+
+            # Filter transactions for this issuer
+            issuer_txs = [
+                tx for tx in tx_objects
+                if (tx.issuer_symbol and tx.issuer_symbol.upper() == ticker.upper())
+                or (tx.issuer_cik and tx.issuer_cik.lstrip("0") == cik.lstrip("0"))
+            ]
+
+            try:
+                state = self.scanner.evaluate_issuer_transactions(
+                    symbol=ticker,
+                    transactions=issuer_txs,
+                    lookback_days=30,
+                    now_date=as_of_watermark,
+                )
+                scanned_successfully_count += 1
+                data_complete_count += 1
+
+                if state.qualifies_for_radar:
+                    accessions = list({tx.accession_number for tx in issuer_txs if tx.accession_number})
+                    qualifying_states.append((state, accessions))
+            except Exception as e:
+                unavailable_symbol_count += 1
+                unavailable_reasons[ticker] = f"SCANNER_EVALUATION_FAILED: {str(e)}"
+                logger.error(f"Scanner evaluation failed for {ticker}: {e}")
+
+        scan_coverage_pct = round((scanned_successfully_count / total_universe) * 100.0, 1)
+        data_completeness_pct = round((data_complete_count / total_universe) * 100.0, 1)
+        is_complete = (unavailable_symbol_count == 0 and scanned_successfully_count == total_universe)
+        coverage_status = "COMPLETE" if is_complete else ("FAILED" if scanned_successfully_count == 0 else "PARTIAL")
+
+        # 4. Fail closed if coverage is incomplete
+        if not is_complete or coverage_status != "COMPLETE":
+            logger.error(
+                f"Snapshot publication rejected: Coverage status is '{coverage_status}' "
+                f"(unavailable={unavailable_symbol_count}/{total_universe}). Preserving existing snapshot."
+            )
+            raise RuntimeError(
+                f"SNAPSHOT_PUBLICATION_REJECTED: Coverage incomplete (status={coverage_status}, "
+                f"unavailable_count={unavailable_symbol_count})"
+            )
+
+        # 5. Build candidate results sorted by conviction score descending
+        qualifying_states.sort(key=lambda item: item[0].conviction_score, reverse=True)
+        matched_results: List[Dict[str, Any]] = []
+
+        for rank, (state, accessions) in enumerate(qualifying_states, start=1):
+            evidence = {
+                "symbol": state.symbol,
+                "companyName": state.issuer_name,
+                "subsignal": "INSIDER_FORM4",
+                "convictionScore": round(float(state.conviction_score), 1),
+                "reasons": state.conviction_reasons,
+                "openMarketPurchaseCount": state.open_market_purchase_count,
+                "openMarketSaleCount": state.open_market_sale_count,
+                "distinctBuyerCount": state.distinct_buyer_count,
+                "grossPurchaseValueUsd": round(float(state.gross_purchase_value_usd), 2),
+                "netPurchaseValueUsd": round(float(state.net_purchase_value_usd), 2),
+                "clusterBuy": state.cluster_buy,
+                "cSuiteBuying": state.c_suite_buying,
+                "topInsiderTitles": state.top_insider_titles,
+                "signalStatus": "QUALIFIED_INSIDER_ACCUMULATION",
+                "provenance": {
+                    "issuer_cik": state.issuer_cik,
+                    "statutory_basis": "SEC Form 4 Section 16(a)",
+                    "filing_accession_numbers": sorted(accessions),
+                    "conviction_score": round(float(state.conviction_score), 1),
+                },
+            }
+            candidate = ScannerCandidateResult(
+                symbol=state.symbol,
+                rank=rank,
+                score=round(float(state.conviction_score), 1),
+                current_price=0.0,
+                scanner_evidence=evidence,
+            )
+            matched_results.append(candidate.to_dict())
+
+        membership_hash = hashlib.sha256(
+            "".join(sorted(i["ticker"] for i in self.issuers)).encode("utf-8")
+        ).hexdigest()
+
+        fingerprint_payload = {
+            "scanner_id": "SMART_MONEY",
+            "snapshot_id": snapshot_id,
+            "data_as_of": as_of_watermark,
+            "universe_id": GOVERNED_UNIVERSE_ID,
+            "matched_count": len(matched_results),
+            "results": matched_results,
+            "reconciliation_hash": recon_hash,
+        }
+        semantic_fingerprint = hashlib.sha256(
+            json.dumps(fingerprint_payload, sort_keys=True).encode("utf-8")
+        ).hexdigest()
+
         snapshot = {
             "snapshot_id": snapshot_id,
             "scanner_id": "SMART_MONEY",
+            "run_id": run_id,
+            "api_contract_version": "1.0.0",
+            "ruleset_version": "1.0.0",
+            "evidence_schema_version": "1.0.0",
+            "score_model_version": "1.0.0",
+            "data_provenance_version": "1.0.0",
+            "universe_version": "sm-eligibility-v2.0",
+            "freshness_policy_version": "1.0.0",
+            "implementation_release_sha": release_sha,
+            "semantic_fingerprint": semantic_fingerprint,
+            "generated_at": now_iso,
             "data_as_of": as_of_watermark,
-            "universe_size": len(self.issuers),
+            "status_at_publication": "AVAILABLE",
+            "universe_id": GOVERNED_UNIVERSE_ID,
+            "universe_size": total_universe,
             "matched_count": len(matched_results),
+            "results": matched_results,
+            "results_json": matched_results,
             "publication_decision": "PUBLISH",
             "coverage_status": "COMPLETE",
-            "universe_id": GOVERNED_UNIVERSE_ID,
-            "universe_version": "sm-eligibility-v2.0",
-            "reconciliation_hash": receipt_meta["reconciliation_hash"],
-            "results": matched_results,
-            "universe_meta": {
-                "display_name": "Smart Money Governed Equities Cohort",
-                "source_population_count": len(self.issuers),
-                "eligible_universe_count": len(self.issuers),
-                "membership_hash": hashlib.sha256(
-                    "".join(sorted(i["ticker"] for i in self.issuers)).encode("utf-8")
-                ).hexdigest(),
+            "reconciliation_hash": recon_hash,
+            "provenance": {
+                "subsignal": "INSIDER_FORM4",
+                "statutory_basis": "SEC Form 4 Section 16(a)",
+                "role": "INSIDER_FORM4_POINT_IN_TIME_FLOW",
+                "reconciliation_receipt_id": receipt_meta.get("receipt_id"),
+                "reconciliation_hash": recon_hash,
+                "release_sha": release_sha,
             },
-            "coverage_meta": {
+            "freshness": {
+                "status": "LIVE",
+                "data_as_of": as_of_watermark,
+                "generated_at": now_iso,
+            },
+            "universe_metadata": {
+                "scope_class": "US_EQUITIES",
+                "display_name": "Smart Money Governed Equities Cohort",
+                "source_population_count": total_universe,
+                "eligible_universe_count": total_universe,
+                "universe_id": GOVERNED_UNIVERSE_ID,
+                "universe_version": "sm-eligibility-v2.0",
+                "membership_hash": membership_hash,
+                "construction_status": "COMPLETE",
+            },
+            "coverage_metadata": {
                 "coverage_status": "COMPLETE",
-                "scanned_successfully_count": len(self.issuers),
-                "data_complete_count": len(self.issuers),
+                "scanned_successfully_count": scanned_successfully_count,
+                "data_complete_count": data_complete_count,
                 "matched_count": len(matched_results),
-                "data_completeness_pct": 100.0,
-                "scan_coverage_pct": 100.0,
+                "unavailable_symbol_count": unavailable_symbol_count,
+                "unresolved_symbol_count": 0,
+                "data_completeness_pct": data_completeness_pct,
+                "scan_coverage_pct": scan_coverage_pct,
+                "unavailable_reasons": unavailable_reasons,
             },
         }
 
@@ -516,12 +736,18 @@ class SmartMoneyContinuousPipeline:
                 lease_token=lease_token,
             )
 
-        logger.info(f"Published immutable snapshot {snapshot_id} (matches={len(matched_results)}).")
+        logger.info(
+            f"Published immutable snapshot {snapshot_id} (matches={len(matched_results)}/{total_universe})."
+        )
         return snapshot
 
     def _step9_post_backup(self, cycle_id: str) -> Dict[str, Any]:
         """Captures post-ingestion logical dump and uploads to off-host storage."""
         if not self.backup_engine:
+            if not self.allow_test_mode:
+                raise RuntimeError(
+                    "BACKUP_ENGINE_REQUIRED: Live continuous pipeline requires verified backup engine"
+                )
             logger.warning("No backup engine configured, skipping post-backup (test mode).")
             return {"backup_id": f"mock-post-backup-{cycle_id}", "status": "MOCKED"}
 

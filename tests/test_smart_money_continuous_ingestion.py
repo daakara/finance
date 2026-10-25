@@ -142,12 +142,12 @@ class TestSmartMoneyContinuousIngestion:
         assert limiter.max_per_second == 8.0
         assert limiter.interval == pytest.approx(1.0 / 8.0, rel=1e-3)
 
-        pipeline = SmartMoneyContinuousPipeline(rate_limiter=limiter)
+        pipeline = SmartMoneyContinuousPipeline(rate_limiter=limiter, allow_test_mode=True)
         assert pipeline.rate_limiter.max_per_second <= 8.0
 
     # ── Test 4: Worker-only egress enforcement ───────────────────────────────
     def test_worker_only_egress_enforcement(self):
-        pipeline = SmartMoneyContinuousPipeline()
+        pipeline = SmartMoneyContinuousPipeline(allow_test_mode=True)
 
         with patch.dict(os.environ, {"ARX_SEC_EGRESS_ROLE": "VIEWER"}):
             with pytest.raises(RuntimeError, match="UNAUTHORIZED_WORKER_ROLE"):
@@ -210,7 +210,7 @@ class TestSmartMoneyContinuousIngestion:
         mock_repo = MagicMock()
         mock_repo.save_raw_filing.return_value = True
 
-        pipeline = SmartMoneyContinuousPipeline(repository=mock_repo)
+        pipeline = SmartMoneyContinuousPipeline(repository=mock_repo, allow_test_mode=True)
         mock_fetcher = MagicMock()
         mock_fetcher.fetch_form4_filings.return_value = [
             {
@@ -233,7 +233,7 @@ class TestSmartMoneyContinuousIngestion:
         mock_gate = MagicMock()
         mock_gate.check_ingestion_eligibility.return_value = True
 
-        pipeline = SmartMoneyContinuousPipeline(containment_gate=mock_gate)
+        pipeline = SmartMoneyContinuousPipeline(containment_gate=mock_gate, allow_test_mode=True)
         # Freshness gate check should succeed
         pipeline._step4_freshness_gate_check()
         mock_gate.check_ingestion_eligibility.assert_called_once()
@@ -243,7 +243,7 @@ class TestSmartMoneyContinuousIngestion:
         mock_backup = MagicMock()
         mock_backup.create_backup.return_value = {"status": "FAILED", "error": "Disk full"}
 
-        pipeline = SmartMoneyContinuousPipeline(backup_engine=mock_backup)
+        pipeline = SmartMoneyContinuousPipeline(backup_engine=mock_backup, allow_test_mode=True)
         with pytest.raises(RuntimeError, match="PRE_BACKUP_FAILED"):
             pipeline._step2_and_3_pre_backup("test-cycle")
 
@@ -266,6 +266,7 @@ class TestSmartMoneyContinuousIngestion:
             backup_engine=mock_backup,
             containment_gate=mock_gate,
             repository=mock_repo,
+            allow_test_mode=True,
         )
         # Mock preflight and lock to bypass environment constraints
         pipeline._step1_preflight = MagicMock()
@@ -280,7 +281,7 @@ class TestSmartMoneyContinuousIngestion:
     # ── Test 11: Snapshot publication atomicity ──────────────────────────────
     def test_snapshot_publication_atomicity(self):
         mock_repo = MagicMock()
-        pipeline = SmartMoneyContinuousPipeline(repository=mock_repo)
+        pipeline = SmartMoneyContinuousPipeline(repository=mock_repo, allow_test_mode=True)
 
         receipt = {"reconciliation_hash": "hash-abc-123"}
         snapshot = pipeline._step8_publish_snapshot(
@@ -404,3 +405,271 @@ class TestSmartMoneyContinuousIngestion:
         assert elapsed < 1.0
         assert worker.state == WorkerHealthState.OWNER_LOCK_LOST
         mock_conn.close.assert_called_once()
+
+    # ── Test 18: In-flight work cycle defers advisory lock release ───────────
+    def test_worker_in_flight_cycle_defers_shutdown(self):
+        worker = SmartMoneyIngestionWorker.__new__(SmartMoneyIngestionWorker)
+        worker.worker_id = "test-worker-18"
+        worker._owner_conn = MagicMock()
+        worker._owner_conn.closed = False
+        worker.release_egress_authority = MagicMock()
+        worker._is_executing_cycle = True
+        worker._shutdown_requested = False
+
+        # In-flight shutdown signal should not immediately drop the lock
+        worker._handle_shutdown_signal(15, None)
+
+        assert worker._shutdown_requested is True
+        worker.release_egress_authority.assert_not_called()
+
+    # ── Test 19: Valid qualifying transactions produce candidates ────────────
+    def test_valid_qualifying_transactions_produce_candidates(self):
+        mock_repo = MagicMock()
+        pipeline = SmartMoneyContinuousPipeline(repository=mock_repo, allow_test_mode=True)
+
+        qualifying_tx = {
+            "transaction_id": "tx-nvda-buy-001",
+            "accession_number": "0001045810-26-000099",
+            "issuer_symbol": "NVDA",
+            "issuer_cik": "0001045810",
+            "issuer_name": "NVIDIA CORP",
+            "reporting_owner_cik": "0001111111",
+            "reporting_owner_name": "Jensen Huang",
+            "is_officer": True,
+            "officer_title": "Chief Executive Officer",
+            "is_director": True,
+            "is_ten_percent": False,
+            "transaction_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "transaction_code": "P",
+            "shares": 10000.0,
+            "price_per_share": 120.0,
+            "total_value_usd": 1200000.0,
+            "acquired_disposed": "A",
+            "ownership_type": "D",
+            "is_derivative": False,
+            "is_open_market_purchase_evidence": True,
+        }
+
+        receipt = {"reconciliation_hash": "hash-nvda-123", "receipt_id": "rcpt-001"}
+        snapshot = pipeline._step8_publish_snapshot(
+            parsed_txs=[qualifying_tx],
+            receipt_meta=receipt,
+            cycle_id="cycle-nvda",
+        )
+
+        assert snapshot["matched_count"] == 1
+        assert len(snapshot["results"]) == 1
+        cand = snapshot["results"][0]
+        assert cand["symbol"] == "NVDA"
+        assert cand["rank"] == 1
+        assert cand["score"] > 0
+        evidence = cand["scanner_evidence"]
+        assert evidence["subsignal"] == "INSIDER_FORM4"
+        assert evidence["cSuiteBuying"] is True
+        assert evidence["openMarketPurchaseCount"] == 1
+        assert evidence["grossPurchaseValueUsd"] == 1200000.0
+        assert "provenance" in evidence
+        assert evidence["provenance"]["issuer_cik"] == "0001045810"
+
+    # ── Test 20: Legitimate zero match produces complete coverage ────────────
+    def test_legitimate_zero_match_produces_complete_coverage(self):
+        mock_repo = MagicMock()
+        pipeline = SmartMoneyContinuousPipeline(repository=mock_repo, allow_test_mode=True)
+
+        receipt = {"reconciliation_hash": "hash-zero-match", "receipt_id": "rcpt-zero"}
+        snapshot = pipeline._step8_publish_snapshot(
+            parsed_txs=[],
+            receipt_meta=receipt,
+            cycle_id="cycle-zero",
+        )
+
+        assert snapshot["coverage_status"] == "COMPLETE"
+        assert snapshot["matched_count"] == 0
+        assert snapshot["results"] == []
+        assert snapshot["publication_decision"] == "PUBLISH"
+        assert snapshot["coverage_metadata"]["scanned_successfully_count"] == len(pipeline.issuers)
+        assert snapshot["coverage_metadata"]["scan_coverage_pct"] == 100.0
+        assert snapshot["coverage_metadata"]["unavailable_symbol_count"] == 0
+        mock_repo.publish_scanner_snapshot_atomic.assert_called_once()
+
+    # ── Test 21: Incomplete issuer coverage blocks publication ───────────────
+    def test_incomplete_issuer_coverage_blocks_publication(self):
+        mock_repo = MagicMock()
+        mock_scanner = MagicMock()
+        # Fail evaluation for one ticker
+        def mock_eval(symbol, transactions, **kwargs):
+            if symbol == "NVDA":
+                raise RuntimeError("SEC connection dropped during issuer evaluation")
+            state = MagicMock()
+            state.qualifies_for_radar = False
+            state.conviction_score = 0.0
+            return state
+
+        mock_scanner.evaluate_issuer_transactions.side_effect = mock_eval
+
+        pipeline = SmartMoneyContinuousPipeline(
+            repository=mock_repo,
+            scanner=mock_scanner,
+            allow_test_mode=True,
+        )
+
+        receipt = {"reconciliation_hash": "hash-partial", "receipt_id": "rcpt-partial"}
+        with pytest.raises(RuntimeError, match="SNAPSHOT_PUBLICATION_REJECTED.*Coverage incomplete"):
+            pipeline._step8_publish_snapshot(
+                parsed_txs=[],
+                receipt_meta=receipt,
+                cycle_id="cycle-partial",
+            )
+        # Atomic publication must never be invoked on incomplete coverage
+        mock_repo.publish_scanner_snapshot_atomic.assert_not_called()
+
+    # ── Test 22: Scanner exception blocks publication fail-closed ─────────────
+    def test_scanner_exception_blocks_publication(self):
+        mock_repo = MagicMock()
+        mock_scanner = MagicMock()
+        mock_scanner.evaluate_issuer_transactions.side_effect = Exception("General scanner explosion")
+
+        pipeline = SmartMoneyContinuousPipeline(
+            repository=mock_repo,
+            scanner=mock_scanner,
+            allow_test_mode=True,
+        )
+
+        receipt = {"reconciliation_hash": "hash-fail", "receipt_id": "rcpt-fail"}
+        with pytest.raises(RuntimeError, match="SNAPSHOT_PUBLICATION_REJECTED"):
+            pipeline._step8_publish_snapshot(
+                parsed_txs=[],
+                receipt_meta=receipt,
+                cycle_id="cycle-fail",
+            )
+        mock_repo.publish_scanner_snapshot_atomic.assert_not_called()
+
+    # ── Test 23: Matched count strictly equals results length ────────────────
+    def test_matched_count_equals_results_length(self):
+        mock_repo = MagicMock()
+        pipeline = SmartMoneyContinuousPipeline(repository=mock_repo, allow_test_mode=True)
+
+        now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        tx_nvda = {
+            "transaction_id": "tx-nvda",
+            "accession_number": "acc-1",
+            "issuer_symbol": "NVDA",
+            "issuer_cik": "0001045810",
+            "transaction_date": now_str,
+            "transaction_code": "P",
+            "shares": 5000.0,
+            "price_per_share": 100.0,
+            "total_value_usd": 500000.0,
+            "is_open_market_purchase_evidence": True,
+        }
+        tx_aapl = {
+            "transaction_id": "tx-aapl",
+            "accession_number": "acc-2",
+            "issuer_symbol": "AAPL",
+            "issuer_cik": "0000320193",
+            "transaction_date": now_str,
+            "transaction_code": "P",
+            "shares": 1000.0,
+            "price_per_share": 200.0,
+            "total_value_usd": 200000.0,
+            "is_open_market_purchase_evidence": True,
+        }
+
+        receipt = {"reconciliation_hash": "hash-matched-count", "receipt_id": "rcpt-mc"}
+        snapshot = pipeline._step8_publish_snapshot(
+            parsed_txs=[tx_nvda, tx_aapl],
+            receipt_meta=receipt,
+            cycle_id="cycle-mc",
+        )
+
+        assert snapshot["matched_count"] == len(snapshot["results"])
+        assert snapshot["matched_count"] == 2
+        assert snapshot["coverage_metadata"]["matched_count"] == 2
+
+    # ── Test 24: Published candidate results preserve provenance ─────────────
+    def test_published_results_preserve_provenance(self):
+        mock_repo = MagicMock()
+        pipeline = SmartMoneyContinuousPipeline(repository=mock_repo, allow_test_mode=True)
+
+        tx = {
+            "transaction_id": "tx-prov",
+            "accession_number": "0001045810-26-000077",
+            "issuer_symbol": "NVDA",
+            "issuer_cik": "0001045810",
+            "transaction_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "transaction_code": "P",
+            "shares": 500.0,
+            "price_per_share": 100.0,
+            "total_value_usd": 50000.0,
+            "is_open_market_purchase_evidence": True,
+        }
+
+        receipt = {"reconciliation_hash": "hash-prov", "receipt_id": "rcpt-prov"}
+        snapshot = pipeline._step8_publish_snapshot(
+            parsed_txs=[tx],
+            receipt_meta=receipt,
+            cycle_id="cycle-prov",
+        )
+
+        cand = snapshot["results"][0]
+        prov = cand["scanner_evidence"]["provenance"]
+        assert prov["issuer_cik"] == "0001045810"
+        assert prov["statutory_basis"] == "SEC Form 4 Section 16(a)"
+        assert "0001045810-26-000077" in prov["filing_accession_numbers"]
+        assert prov["conviction_score"] == cand["score"]
+
+    # ── Test 25: Missing reconciliation hash rejects snapshot publication ─────
+    def test_reconciliation_failure_preserves_active_snapshot(self):
+        mock_repo = MagicMock()
+        pipeline = SmartMoneyContinuousPipeline(repository=mock_repo, allow_test_mode=True)
+
+        with pytest.raises(RuntimeError, match="SNAPSHOT_PUBLICATION_REJECTED.*Missing reconciliation"):
+            pipeline._step8_publish_snapshot(
+                parsed_txs=[],
+                receipt_meta={"reconciliation_hash": None},
+                cycle_id="cycle-no-recon",
+            )
+        mock_repo.publish_scanner_snapshot_atomic.assert_not_called()
+
+    # ── Test 26: Snapshot payload matches Radar API envelope contract ─────────
+    def test_output_compatible_with_radar_api_contract(self):
+        mock_repo = MagicMock()
+        pipeline = SmartMoneyContinuousPipeline(repository=mock_repo, allow_test_mode=True)
+
+        receipt = {"reconciliation_hash": "hash-envelope", "receipt_id": "rcpt-env"}
+        snapshot = pipeline._step8_publish_snapshot(
+            parsed_txs=[],
+            receipt_meta=receipt,
+            cycle_id="cycle-env",
+        )
+
+        runner = SmartMoneyScannerRunner(snapshot_store=MagicMock(), backend="postgres")
+        envelope = runner._to_envelope(snapshot)
+
+        # Assert contract shape required by api/routes/screener.py
+        assert envelope["scanner_id"] == "SMART_MONEY"
+        assert envelope["api_contract_version"] == "1.0.0"
+        assert envelope["status"] == "AVAILABLE"
+        assert "methodology" in envelope
+        assert "provenance" in envelope
+        assert "freshness" in envelope
+        assert "snapshot" in envelope
+        assert envelope["snapshot"]["matched_count"] == 0
+        assert "universe" in envelope
+        assert envelope["universe"]["source_population_count"] == 10
+        assert "coverage" in envelope
+        assert envelope["coverage"]["coverage_status"] == "COMPLETE"
+        assert envelope["coverage"]["scan_coverage_pct"] == 100.0
+        assert envelope["results"] == []
+
+    # ── Test 27: Missing backup engine fails closed without test mode ─────────
+    def test_mocked_backup_fails_closed_without_test_mode(self):
+        # Without allow_test_mode=True, missing backup engine must raise BACKUP_ENGINE_REQUIRED
+        with pytest.raises(RuntimeError, match="BACKUP_ENGINE_REQUIRED"):
+            SmartMoneyContinuousPipeline(backup_engine=None, allow_test_mode=False)
+
+    # ── Test 28: Production environment rejects allow_test_mode ───────────────
+    def test_production_rejects_test_mode(self):
+        with patch.dict(os.environ, {"ARX_ENVIRONMENT": "production"}):
+            with pytest.raises(RuntimeError, match="TEST_MODE_PROHIBITED_IN_PRODUCTION"):
+                SmartMoneyContinuousPipeline(allow_test_mode=True)

@@ -102,7 +102,7 @@ def main():
     print(f"[SCHEDULE] Schedule check verified: {reason}")
 
     # 2. Execute 10-step continuous pipeline
-    pipeline = SmartMoneyContinuousPipeline()
+    pipeline = SmartMoneyContinuousPipeline(allow_test_mode=args.dry_run)
     try:
         result = pipeline.execute_cycle(
             run_request_id=args.request_id,
