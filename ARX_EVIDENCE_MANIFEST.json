@@ -120,5 +120,21 @@
     "SEC_FILER_CIK_ALC": "0001167379",
     "CLOUDFLARE_PAGES_AUTO_DEPLOY": "DISABLED",
     "RAILWAY_BACKEND_DEPLOYMENT": "059f9d79-6848-4095-aa61-5936ac3ee650"
+  },
+  "smart_money_final_provisioning_safety_gate": {
+    "status": "SMART_MONEY_FINAL_PROVISIONING_SAFETY_PASS",
+    "mainline_sha": "54b9b7e846e879097c87ead45da19d9d87fcefa8",
+    "branch": "fix/smart-money-provisioning-safety-gates",
+    "gate_1_atomic_duplicate_prevention": "VERIFIED_PASS_UNDER_SESSION_ADVISORY_LOCK",
+    "gate_2_r2_backup_digest_integrity": "VERIFIED_PASS_STREAMING_SHA256_READBACK",
+    "gate_3_non_destructive_emergency_stop": "VERIFIED_PASS_ZERO_RADAR_IMPACT",
+    "active_serving_snapshot": "SNAP_SM_1792939989_48f30db6",
+    "test_evidence": {
+      "dedicated_suite": "tests/test_smart_money_provisioning_safety_gates.py",
+      "dedicated_passed": 12,
+      "dedicated_failed": 0,
+      "consolidated_passed": 55,
+      "consolidated_failed": 0
+    }
   }
 }

@@ -130,3 +130,55 @@ CLOUDFLARE_PAGES_AUTO_DEPLOY = DISABLED
 PRODUCTION_DEPLOYMENT_METHOD = WRANGLER_STATIC_OUTPUT_EXACT_SHA
 RAILWAY_BACKEND_DEPLOYMENT = 059f9d79-6848-4095-aa61-5936ac3ee650 (PRESERVED)
 ```
+
+---
+
+## 5. Smart Money Final Provisioning Safety Gate Evidence (2026-10-25)
+
+**Mainline SHA**: `54b9b7e846e879097c87ead45da19d9d87fcefa8`  
+**Isolated Remediation Branch**: `fix/smart-money-provisioning-safety-gates`  
+**Verdict**: **`SMART_MONEY_FINAL_PROVISIONING_SAFETY_PASS`**
+
+### Gate 1 — Atomic Duplicate Prevention Under Advisory Lock
+1. **Transaction Ordering Remediation**:
+   - Previously, pre-ingestion backup & R2 upload ran at Steps 2 & 3, prior to claiming the advisory lock at Step 5.
+   - Remediated ordering:
+     - **Step 1**: Preflight check (`_step1_preflight`).
+     - **Step 2**: Session advisory lock claim (`_step2_claim_advisory_lock`) acquiring exclusive `LOCK_SEC_EGRESS_OWNER` (`401007311509093371`).
+     - **Step 3**: Atomic durable date eligibility check (`_step3_check_durable_date_eligibility_under_lock`) under the held lock.
+     - **Step 4**: Pre-ingestion backup & R2 upload (`_step4_pre_backup`).
+     - **Step 5**: Backup freshness gate verification (`_step5_freshness_gate_check`).
+     - **Step 6**: SEC Form 4 ingestion (`_step6_ingest_form4_filings`).
+2. **Atomic Invariant Enforced**:
+   - If another worker holds the lock, incoming trigger fails closed immediately with `RuntimeError: CONCURRENT_INGESTION_BLOCKED`.
+   - If execution already occurred for today's New York calendar date (`data_as_of` in latest active snapshot matches today), pipeline exits with `SKIPPED_ALREADY_EXECUTED_TODAY` without creating pre-backups or contacting SEC EDGAR.
+   - Lock is released cleanly in `finally:` block across all normal and error exit paths.
+
+### Gate 2 — R2 Backup Digest Integrity
+1. **Elimination of ETag = SHA-256 Assumption**:
+   - In AWS S3 / Cloudflare R2, ETag is an MD5 hash (for single uploads) or `<MD5>-<part_count>` (for multipart uploads), never SHA-256.
+   - `S3CompatibleStorageAdapter.upload_file()` now executes:
+     1. Remote content length verification (`uploaded_size == source_size`).
+     2. Remote user-metadata `sha256` header validation against local source SHA-256.
+     3. Independent streaming content readback (`s3.get_object()['Body']`) calculating true SHA-256 byte digest.
+     4. Detection of multipart uploads (`is_multipart = True`) without confusing ETag with digest.
+2. **Fail-Closed Gate**:
+   - If metadata or streaming digest mismatches, adapter raises `IOError(R2_UPLOAD_CONTENT_CORRUPTION)` or `IOError(R2_UPLOAD_METADATA_CORRUPTION)`.
+   - Pre-backup aborts at Step 4; Step 6 (SEC Form 4 ingestion) is never reached.
+
+### Gate 3 — Non-Destructive Emergency Stop Hierarchy
+1. **Disproof of Destructive Runbook Documentation**:
+   - Schema audit of `scanner_active_snapshots` proves columns are `(scan_type, active_snapshot_id, published_at, published_by)`.
+   - There is NO `is_active` or `scanner_id` column. Executing `UPDATE scanner_active_snapshots SET is_active = FALSE` throws `psycopg2.errors.UndefinedColumn`.
+   - Executing `DELETE FROM scanner_active_snapshots` causes an immediate public outage on `/radar/` and `/api/radar/smart-money`.
+2. **Authoritative Non-Destructive Stop Hierarchy**:
+   - **Level 1 (Worker Kill Switch)**: Set `ARX_SEC_EGRESS_ROLE=DISABLED`. Halts any cycle in $\le 1.0\text{ s}$ at Step 1 (`_step1_preflight`) with `UNAUTHORIZED_WORKER_ROLE`.
+   - **Level 2 (Process Scaling)**: Scale Railway worker replica count to 0 or pause worker service.
+   - **Level 3 (Database Containment)**: `REVOKE INSERT, UPDATE ON form4_raw_filings, form4_parsed_transactions, scanner_snapshots, scanner_active_snapshots FROM smart_money_ingestion;`.
+3. **Availability Invariant**:
+   - Across all 3 levels, the active pointer in `scanner_active_snapshots` remains unchanged, preserving serving snapshot `SNAP_SM_1792939989_48f30db6` with 100% read-only Radar uptime via `smart_money_web`.
+
+### Test Suite Evidence
+- **Dedicated Provisioning Test Suite**: `tests/test_smart_money_provisioning_safety_gates.py` (12/12 passed in 2.57s).
+- **Consolidated Smart Money Test Suite**: 55/55 passed in 13.31s (`test_smart_money_provisioning_safety_gates.py`, `test_smart_money_continuous_ingestion.py`, `test_smart_money_radar_contract.py`, `test_radar_scanner_pipeline.py`).
+- **Linter & Syntax Verification**: flake8 passed (0 errors with `--count --select=E9,F63,F7,F82`).

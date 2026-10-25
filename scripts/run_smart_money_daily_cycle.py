@@ -154,7 +154,7 @@ def main():
 
         print("================================================================================\n")
 
-        if result.get("status") in ("SUCCESS", "DRY_RUN_SUCCESS"):
+        if result.get("status") in ("SUCCESS", "DRY_RUN_SUCCESS", "SKIPPED_ALREADY_EXECUTED_TODAY", "SKIPPED_NOT_ELIGIBLE"):
             sys.exit(0)
         elif result.get("status") == "DEGRADED_POST_BACKUP_FAILED":
             logger.warning("Pipeline completed in DEGRADED_POST_BACKUP_FAILED state.")

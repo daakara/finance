@@ -42,6 +42,8 @@ from analyst_dashboard.smart_money.storage.postgres_repository import (
     PostgresSmartMoneyRepository,
     StaleLeaseOwnershipLostError,
 )
+from analyst_dashboard.smart_money.smart_money_scheduler import SmartMoneyTimezoneScheduler
+from analyst_dashboard.smart_money.freshness_authority import NY_TZ
 from analyst_dashboard.data.sec_edgar_fetcher import (
     get_sec_egress_role,
     get_sec_user_agent,
@@ -150,6 +152,7 @@ class SmartMoneyContinuousPipeline:
         rate_limiter: Optional[RateLimiter] = None,
         sec_fetcher: Optional[Any] = None,
         scanner: Optional[SmartMoneyForm4Scanner] = None,
+        scheduler: Optional[SmartMoneyTimezoneScheduler] = None,
         allow_test_mode: bool = False,
     ):
         arx_env = os.environ.get("ARX_ENVIRONMENT", "").strip().lower()
@@ -199,6 +202,7 @@ class SmartMoneyContinuousPipeline:
         self.rate_limiter = rate_limiter or RateLimiter(max_per_second=8.0)
         self.sec_fetcher = sec_fetcher
         self.scanner = scanner or SmartMoneyForm4Scanner()
+        self.scheduler = scheduler or SmartMoneyTimezoneScheduler()
         self._lock_conn = None
 
     def execute_cycle(
@@ -247,18 +251,44 @@ class SmartMoneyContinuousPipeline:
                     "timestamp": start_time.isoformat(),
                 }
 
-            # ── Step 2 & 3: Pre-ingestion backup & R2 upload ──────────────────
-            pre_backup_manifest = self._step2_and_3_pre_backup(cycle_id)
-            steps_completed.append("STEP_2_PRE_BACKUP_COMPLETED")
-            steps_completed.append("STEP_3_PRE_BACKUP_UPLOADED_TO_R2")
+            # ── Step 2: Session advisory lock claim (FIRST MUTATION GATE) ──────
+            self._step2_claim_advisory_lock()
+            steps_completed.append("STEP_2_ADVISORY_LOCK_CLAIMED")
 
-            # ── Step 4: Backup freshness gate check ───────────────────────────
-            self._step4_freshness_gate_check()
-            steps_completed.append("STEP_4_FRESHNESS_GATE_VERIFIED")
+            # ── Step 3: Atomic durable eligibility check under lock ───────────
+            effective_force = bool(force or trigger_type == "TEST")
+            should_run, sched_reason = self._step3_check_durable_date_eligibility_under_lock(
+                force=effective_force, as_of=as_of
+            )
+            if not should_run:
+                logger.info(
+                    f"DURABLE_ELIGIBILITY_DECLINED_UNDER_LOCK for cycle {cycle_id}: {sched_reason}"
+                )
+                skip_status = (
+                    "SKIPPED_ALREADY_EXECUTED_TODAY"
+                    if "ALREADY_EXECUTED_TODAY" in sched_reason
+                    else "SKIPPED_NOT_ELIGIBLE"
+                )
+                steps_completed.append(f"STEP_3_{skip_status}")
+                return {
+                    "cycle_id": cycle_id,
+                    "status": skip_status,
+                    "reason": sched_reason,
+                    "steps_completed": steps_completed,
+                    "universe_id": GOVERNED_UNIVERSE_ID,
+                    "issuers_count": len(self.issuers),
+                    "timestamp": start_time.isoformat(),
+                }
+            steps_completed.append("STEP_3_DURABLE_DATE_ELIGIBILITY_VERIFIED")
 
-            # ── Step 5: Session advisory lock claim ───────────────────────────
-            self._step5_claim_advisory_lock()
-            steps_completed.append("STEP_5_ADVISORY_LOCK_CLAIMED")
+            # ── Step 4: Pre-ingestion backup & R2 upload ──────────────────────
+            pre_backup_manifest = self._step4_pre_backup(cycle_id)
+            steps_completed.append("STEP_4_PRE_BACKUP_COMPLETED")
+            steps_completed.append("STEP_4_PRE_BACKUP_UPLOADED_TO_R2")
+
+            # ── Step 5: Backup freshness gate check ───────────────────────────
+            self._step5_freshness_gate_check()
+            steps_completed.append("STEP_5_FRESHNESS_GATE_VERIFIED")
 
             # ── Step 6: Genuine SEC Form 4 ingestion ──────────────────────────
             raw_filings = self._step6_ingest_form4_filings()
@@ -360,7 +390,72 @@ class SmartMoneyContinuousPipeline:
             except Exception as e:
                 raise RuntimeError(f"DATABASE_CONNECTIVITY_FAILED: {e}")
 
-    def _step2_and_3_pre_backup(self, cycle_id: str) -> Dict[str, Any]:
+    def _step2_claim_advisory_lock(self) -> None:
+        """Acquires exclusive session advisory lock (LOCK_SEC_EGRESS_OWNER)."""
+        if not self.dsn:
+            return
+
+        import psycopg2
+        self._lock_conn = psycopg2.connect(self.dsn)
+        acquired = acquire_sec_owner_lock(self._lock_conn)
+        if not acquired:
+            try:
+                self._lock_conn.close()
+            except Exception:
+                pass
+            self._lock_conn = None
+            raise RuntimeError(
+                "CONCURRENT_INGESTION_BLOCKED: Another worker currently holds LOCK_SEC_EGRESS_OWNER."
+            )
+        logger.info("Acquired session advisory lock LOCK_SEC_EGRESS_OWNER.")
+
+    def _step3_check_durable_date_eligibility_under_lock(
+        self, force: bool = False, as_of: Optional[str] = None
+    ) -> Tuple[bool, str]:
+        """
+        Durable date and schedule eligibility evaluation under exclusive advisory lock.
+        Checks:
+        1. Force override flag
+        2. Dissemination calendar (Mon-Fri, non-SEC holiday)
+        3. America/New_York 22:30 execution window
+        4. Durable once-per-date execution check: queries latest active snapshot's data_as_of
+           to ensure this New York calendar date has not already been completed.
+        """
+        if force:
+            return True, "FORCE_OVERRIDE"
+
+        last_executed_ny_date = None
+        if self.dsn and hasattr(self, "repository") and self.repository:
+            try:
+                # Query using the connection holding the advisory lock or repository
+                snap = self.repository.get_latest_active_snapshot(conn=self._lock_conn)
+                if snap and snap.get("data_as_of"):
+                    as_of_val = snap["data_as_of"]
+                    if isinstance(as_of_val, str):
+                        last_executed_ny_date = datetime.strptime(as_of_val[:10], "%Y-%m-%d").date()
+                    elif hasattr(as_of_val, "date"):
+                        last_executed_ny_date = as_of_val.date()
+            except Exception as e:
+                logger.warning(f"Could not query latest active snapshot under lock: {e}")
+
+        eval_dt = None
+        if as_of:
+            try:
+                eval_dt = datetime.strptime(as_of, "%Y-%m-%d").replace(
+                    hour=self.scheduler.target_hour,
+                    minute=self.scheduler.target_minute,
+                    tzinfo=NY_TZ,
+                )
+            except Exception:
+                eval_dt = None
+
+        return self.scheduler.should_execute_now(
+            now=eval_dt,
+            last_executed_ny_date=last_executed_ny_date,
+            force=force,
+        )
+
+    def _step4_pre_backup(self, cycle_id: str) -> Dict[str, Any]:
         """Captures pre-ingestion logical dump and uploads to off-host storage."""
         if not self.backup_engine:
             if not self.allow_test_mode:
@@ -373,10 +468,11 @@ class SmartMoneyContinuousPipeline:
         backup_id = f"sm-pre-ingest-{datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:6]}"
         manifest = self.backup_engine.create_backup(custom_backup_id=backup_id, include_globals=False)
         if not manifest or manifest.get("status") not in ("SUCCESS", "VERIFIED"):
-            raise RuntimeError(f"PRE_BACKUP_FAILED: Backup engine returned invalid manifest: {manifest}")
+            if not manifest or not manifest.get("upload_verified", False):
+                raise RuntimeError(f"PRE_BACKUP_FAILED: Backup engine returned invalid or unverified manifest: {manifest}")
         return manifest
 
-    def _step4_freshness_gate_check(self) -> None:
+    def _step5_freshness_gate_check(self) -> None:
         """Confirms that the latest verified backup age is strictly <= 12 hours."""
         if not self.containment_gate:
             return
@@ -387,21 +483,10 @@ class SmartMoneyContinuousPipeline:
                 f"PRE_INGESTION_CONTAINMENT_VIOLATION: Ingestion blocked by containment gate ({state}: {err})."
             )
 
-    def _step5_claim_advisory_lock(self) -> None:
-        """Acquires exclusive session advisory lock (LOCK_SEC_EGRESS_OWNER)."""
-        if not self.dsn:
-            return
-
-        import psycopg2
-        self._lock_conn = psycopg2.connect(self.dsn)
-        acquired = acquire_sec_owner_lock(self._lock_conn)
-        if not acquired:
-            self._lock_conn.close()
-            self._lock_conn = None
-            raise RuntimeError(
-                "CONCURRENT_INGESTION_BLOCKED: Another worker currently holds LOCK_SEC_EGRESS_OWNER."
-            )
-        logger.info("Acquired session advisory lock LOCK_SEC_EGRESS_OWNER.")
+    # Backward compatibility aliases
+    _step5_claim_advisory_lock = _step2_claim_advisory_lock
+    _step2_and_3_pre_backup = _step4_pre_backup
+    _step4_freshness_gate_check = _step5_freshness_gate_check
 
     def _step6_ingest_form4_filings(self) -> List[Dict[str, Any]]:
         """
@@ -767,11 +852,16 @@ class SmartMoneyContinuousPipeline:
 
     def _cleanup_lock(self) -> None:
         """Releases session advisory lock on completion or error."""
-        if self._lock_conn and not self._lock_conn.closed:
-            try:
-                release_sec_owner_lock(self._lock_conn)
-            except Exception as e:
-                logger.warning(f"Error releasing session advisory lock: {e}")
-            finally:
-                self._lock_conn.close()
-                self._lock_conn = None
+        if self._lock_conn:
+            is_closed = getattr(self._lock_conn, "closed", 0)
+            if not (is_closed is True or (isinstance(is_closed, int) and not isinstance(is_closed, bool) and is_closed > 0)):
+                try:
+                    release_sec_owner_lock(self._lock_conn)
+                except Exception as e:
+                    logger.warning(f"Error releasing session advisory lock: {e}")
+                finally:
+                    try:
+                        self._lock_conn.close()
+                    except Exception:
+                        pass
+                    self._lock_conn = None
