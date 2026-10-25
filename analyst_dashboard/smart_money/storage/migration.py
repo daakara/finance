@@ -15,8 +15,13 @@ import sqlite3
 import logging
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Tuple
-import psycopg2
-from psycopg2.extras import RealDictCursor, Json
+try:
+    import psycopg2
+    from psycopg2.extras import RealDictCursor, Json
+except ImportError:
+    psycopg2 = None
+    RealDictCursor = None
+    Json = None
 
 from analyst_dashboard.smart_money.storage.postgres_schema import initialize_postgres_schema
 
@@ -50,6 +55,11 @@ class SmartMoneySqliteMigrator:
         pg_dsn: str,
         release_sha: str = "b72ea23937cf6ed7b8c4b60096630767a7c4592b",
     ):
+        if psycopg2 is None:
+            raise RuntimeError(
+                "POSTGRESQL_DRIVER_UNAVAILABLE: psycopg2 is required for SmartMoneySqliteMigrator. "
+                "Install with `pip install psycopg2-binary` or configure a supported PostgreSQL environment."
+            )
         self.sqlite_db_path = sqlite_db_path
         self.pg_dsn = pg_dsn
         self.release_sha = release_sha
@@ -432,6 +442,11 @@ def verify_migration_parity(sqlite_db_path: str, pg_dsn: str) -> Dict[str, Any]:
     Forensic verification comparing SQLite source and PostgreSQL target:
     Checks count parity, primary-key parity, PIT query parity, amendment parity, and snapshot parity.
     """
+    if psycopg2 is None:
+        raise RuntimeError(
+            "POSTGRESQL_DRIVER_UNAVAILABLE: psycopg2 is required for verify_migration_parity. "
+            "Install with `pip install psycopg2-binary` or configure a supported PostgreSQL environment."
+        )
     sqlite_conn = sqlite3.connect(sqlite_db_path)
     sqlite_conn.row_factory = sqlite3.Row
     pg_conn = psycopg2.connect(pg_dsn)

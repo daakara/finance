@@ -6,7 +6,11 @@ and immutable triggers enforcing append-only semantics.
 """
 
 import logging
-from psycopg2.extensions import connection as PgConnection
+from typing import Any
+try:
+    from psycopg2.extensions import connection as PgConnection
+except ImportError:
+    PgConnection = Any
 from analyst_dashboard.smart_money.storage.config import SMART_MONEY_POSTGRES_SCHEMA_VERSION
 
 logger = logging.getLogger(__name__)
