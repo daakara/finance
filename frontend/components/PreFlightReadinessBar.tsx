@@ -11,12 +11,23 @@ import {
 export interface PreFlightReadinessBarProps extends PreFlightChecklistInputs {
   onOpenModal?: () => void;
   className?: string;
+  isDrawerExpanded?: boolean;
+  onToggleDrawer?: (expanded: boolean) => void;
 }
 
 export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps) {
-  const { onOpenModal, className = "", ...evalInputs } = props;
-  const [isDrawerExpanded, setIsDrawerExpanded] = useState<boolean>(false);
+  const { onOpenModal, className = "", isDrawerExpanded: controlledDrawerExpanded, onToggleDrawer, ...evalInputs } = props;
+  const [internalDrawerExpanded, setInternalDrawerExpanded] = useState<boolean>(false);
+  const isDrawerExpanded = controlledDrawerExpanded !== undefined ? controlledDrawerExpanded : internalDrawerExpanded;
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
+
+  const handleToggleDrawer = () => {
+    if (onToggleDrawer) {
+      onToggleDrawer(!isDrawerExpanded);
+    } else {
+      setInternalDrawerExpanded((prev) => !prev);
+    }
+  };
 
   React.useEffect(() => {
     try {
@@ -201,8 +212,8 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
             data-testid="inline-toggle-details-btn"
             aria-expanded={isDrawerExpanded}
             aria-controls="preflight-details-drawer"
-            onClick={() => setIsDrawerExpanded((prev) => !prev)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs font-semibold bg-[#111723] hover:bg-[#1a2334] text-slate-200 border border-[#223048] transition-colors cursor-pointer min-h-[38px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+            onClick={handleToggleDrawer}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs font-semibold bg-[#111723] hover:bg-[#1a2334] text-slate-200 border border-[#223048] transition-colors cursor-pointer min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
           >
             <span>{isDrawerExpanded ? "Collapse Telemetry ▲" : "Inspect Telemetry ▾"}</span>
           </button>
@@ -213,7 +224,7 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
               type="button"
               data-testid="inline-open-modal-btn"
               onClick={onOpenModal}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs font-bold bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/80 transition-colors cursor-pointer min-h-[38px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs font-bold bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/80 transition-colors cursor-pointer min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
             >
               <span>✈️ Full Checklist & Plan</span>
             </button>

@@ -310,7 +310,7 @@ export default function CompositeConvictionCard({
               type="button"
               onClick={onOpenWhy}
               aria-label={`Why Score ${synthesis.score}? Inspect Confluence Attribution`}
-              className="text-xs text-cyan-400 hover:text-cyan-300 font-mono font-bold cursor-pointer py-2 px-3 rounded-xl border border-cyan-800/60 bg-[#090d14] hover:bg-[#121b2a] transition-colors inline-flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-cyan-400"
+              className="text-xs text-cyan-400 hover:text-cyan-300 font-mono font-bold cursor-pointer py-2 px-3 rounded-xl border border-cyan-800/60 bg-[#090d14] hover:bg-[#121b2a] transition-colors inline-flex items-center gap-1.5 min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400"
             >
               <span>Inspect Telemetry</span>
               <span>→</span>

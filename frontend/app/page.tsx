@@ -39,7 +39,7 @@ import TerminalSsrShell from "../components/TerminalSsrShell";
 import { resolveFreshCachedVix, resolveFreshMacroEvidence } from "../lib/preflightEvaluator";
 import { Target, Landmark, BarChart3, Shield } from "lucide-react";
 
-type WorkspaceTab = "EXECUTION" | "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
+type WorkspaceTab = "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
 
 function TerminalContent() {
   const dataSource = useDataSource();
@@ -55,7 +55,7 @@ function TerminalContent() {
   const [interval, setInterval] = useState<string>("1y_hist");
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(
-    (urlTab === "SMART_MONEY" || urlTab === "FUNDAMENTALS" || urlTab === "RISK_CONTAGION" || urlTab === "EXECUTION")
+    (urlTab === "FUNDAMENTALS" || urlTab === "RISK_CONTAGION")
       ? urlTab as WorkspaceTab
       : "SMART_MONEY"
   );
@@ -64,6 +64,7 @@ function TerminalContent() {
   const capabilities = useMemo(() => resolveCapabilities(data, data?.optimalExecution), [data]);
   const [lastUpdatedTime, setLastUpdatedTime] = useState<string>("");
   const [isPreflightModalOpen, setIsPreflightModalOpen] = useState<boolean>(false);
+  const [isPreflightDrawerExpanded, setIsPreflightDrawerExpanded] = useState<boolean>(false);
   const cacheRef = useRef<Map<string, AnalyticsResponse>>(new Map());
 
   useEffect(() => {
@@ -94,12 +95,18 @@ function TerminalContent() {
   }, [urlSymbol]);
 
   useEffect(() => {
-    if (urlTab && (urlTab === "SMART_MONEY" || urlTab === "FUNDAMENTALS" || urlTab === "RISK_CONTAGION" || urlTab === "EXECUTION")) {
-      if (urlTab !== activeTab) {
-        setActiveTab(urlTab as WorkspaceTab);
+    if (urlTab) {
+      if (urlTab === "EXECUTION" || urlTab === "SMART_MONEY") {
+        if (activeTab !== "SMART_MONEY") {
+          setActiveTab("SMART_MONEY");
+        }
+      } else if (urlTab === "FUNDAMENTALS" || urlTab === "RISK_CONTAGION") {
+        if (urlTab !== activeTab) {
+          setActiveTab(urlTab as WorkspaceTab);
+        }
       }
     }
-  }, [urlTab]);
+  }, [urlTab, activeTab]);
 
   const handleTabChange = useCallback((tab: WorkspaceTab, label: string) => {
     setActiveTab(tab);
@@ -473,6 +480,8 @@ function TerminalContent() {
                 ) : (
                   <PreFlightReadinessBar
                     {...canonicalPreflightInputs}
+                    isDrawerExpanded={isPreflightDrawerExpanded}
+                    onToggleDrawer={setIsPreflightDrawerExpanded}
                     onOpenModal={() => setIsPreflightModalOpen(true)}
                   />
                 )
@@ -484,7 +493,13 @@ function TerminalContent() {
                   macro={macroData}
                   insiders={insiderTrades}
                   userRole={userRole}
-                  onOpenWhy={() => setIsPreflightModalOpen(true)}
+                  onOpenWhy={() => {
+                    setIsPreflightDrawerExpanded(true);
+                    if (typeof document !== "undefined") {
+                      const el = document.getElementById("preflight-readiness-bar");
+                      if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    }
+                  }}
                 />
               }
               planSlot={
@@ -593,7 +608,7 @@ function TerminalContent() {
                 role="tab"
                 aria-selected={activeTab === "SMART_MONEY"}
                 onClick={() => handleTabChange("SMART_MONEY", "Smart Money")}
-                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[40px] cursor-pointer ${
+                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[44px] cursor-pointer ${
                   activeTab === "SMART_MONEY"
                     ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
@@ -607,7 +622,7 @@ function TerminalContent() {
                 role="tab"
                 aria-selected={activeTab === "FUNDAMENTALS"}
                 onClick={() => handleTabChange("FUNDAMENTALS", "Factors & Macro")}
-                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[40px] cursor-pointer ${
+                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[44px] cursor-pointer ${
                   activeTab === "FUNDAMENTALS"
                     ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
@@ -621,7 +636,7 @@ function TerminalContent() {
                 role="tab"
                 aria-selected={activeTab === "RISK_CONTAGION"}
                 onClick={() => handleTabChange("RISK_CONTAGION", "Risk & Contagion")}
-                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[40px] cursor-pointer ${
+                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[44px] cursor-pointer ${
                   activeTab === "RISK_CONTAGION"
                     ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
@@ -631,39 +646,6 @@ function TerminalContent() {
                 <span className="whitespace-nowrap"><span className="sm:hidden">Risk</span><span className="hidden sm:inline">Risk & Contagion</span></span>
               </button>
             </div>
-
-            {/* TAB 1: EXECUTION & LEVELS */}
-            {activeTab === "EXECUTION" && (
-              <div className="space-y-4 sm:space-y-5 animate-fadeIn">
-                {loading ? (
-                  <div className="bg-[#111722] border border-[#243044] rounded-xl p-5 shadow-xl text-slate-500 font-mono text-xs flex items-center justify-center space-x-2">
-                    <span className="w-2 h-2 rounded-full bg-slate-500 animate-pulse" />
-                    <span>Resolving authoritative execution routing...</span>
-                  </div>
-                ) : capabilities.canUseETFWorkflow ? (
-                  <EtfCostOfOwnershipCard symbol={selectedSymbol} />
-                ) : capabilities.canRenderStockExecution ? (
-                  <>
-                    {userRole === "DAY_TRADER" && data && (
-                      <DayTraderPositionSizer symbol={selectedSymbol} data={data} />
-                    )}
-
-                  </>
-                ) : (
-                  <div className="bg-[#111722] border border-[#243044] rounded-xl p-5 shadow-xl space-y-2 font-mono text-slate-300">
-                    <div className="flex items-center space-x-2 text-slate-400">
-                      <span className="w-2 h-2 rounded-full bg-slate-500" />
-                      <h3 className="text-sm font-bold text-slate-200">🎯 {selectedSymbol} Execution Unresolved</h3>
-                    </div>
-                    <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                      {capabilities.disqualificationReason ||
-                        `Asset classification for "${selectedSymbol}" is unverified. Under ARX Terminal quantitative integrity rules, swing execution ladders are constrained to verified operating equities, and ETF cost analysis is constrained to verified fund instruments.`
-                      }
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* TAB 2: SMART MONEY & INSIDER DISCLOSURES */}
             {activeTab === "SMART_MONEY" && (
