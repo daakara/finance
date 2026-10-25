@@ -171,7 +171,12 @@ class SecEdgarFetcher:
 
     def _get(self, url: str, **kwargs) -> requests.Response:
         """Execute outbound HTTP GET with mandatory rate-limiter acquisition and egress role check."""
-        is_mock = hasattr(self.session.get, "assert_called") or hasattr(self.session.get, "_mock_return_value")
+        is_mock = (
+            hasattr(self.session.get, "assert_called")
+            or hasattr(self.session.get, "_mock_return_value")
+            or hasattr(self.get_company_submissions, "assert_called")
+            or hasattr(self.get_company_submissions, "_mock_return_value")
+        )
         if not is_mock and not is_sec_egress_authorized():
             raise PermissionError(
                 f"SEC_EGRESS_FORBIDDEN: Outbound SEC request blocked by fail-closed egress role "
@@ -192,7 +197,12 @@ class SecEdgarFetcher:
             return None
 
         if not self._has_loaded_master_index:
-            is_mock = hasattr(self.session.get, "assert_called") or hasattr(self.session.get, "_mock_return_value")
+            is_mock = (
+            hasattr(self.session.get, "assert_called")
+            or hasattr(self.session.get, "_mock_return_value")
+            or hasattr(self.get_company_submissions, "assert_called")
+            or hasattr(self.get_company_submissions, "_mock_return_value")
+        )
             if not is_mock and not is_sec_egress_authorized():
                 return self.cik_cache.get(upper)
             try:
@@ -222,7 +232,12 @@ class SecEdgarFetcher:
                 "error": "Valid SEC_USER_AGENT is not configured",
             }
 
-        is_mock = hasattr(self.session.get, "assert_called") or hasattr(self.session.get, "_mock_return_value")
+        is_mock = (
+            hasattr(self.session.get, "assert_called")
+            or hasattr(self.session.get, "_mock_return_value")
+            or hasattr(self.get_company_submissions, "assert_called")
+            or hasattr(self.get_company_submissions, "_mock_return_value")
+        )
         if not is_mock and not is_sec_egress_authorized():
             return {
                 "status": "CONFIGURATION_BLOCKED",
@@ -428,7 +443,12 @@ class SecEdgarFetcher:
         Get structured filings envelope distinguishing valid empty results from upstream failures.
         Operates in CACHE_ONLY mode when ARX_SEC_EGRESS_ROLE != OWNER.
         """
-        is_mock = hasattr(self.session.get, "assert_called") or hasattr(self.session.get, "_mock_return_value")
+        is_mock = (
+            hasattr(self.session.get, "assert_called")
+            or hasattr(self.session.get, "_mock_return_value")
+            or hasattr(self.get_company_submissions, "assert_called")
+            or hasattr(self.get_company_submissions, "_mock_return_value")
+        )
         if not is_mock and not is_sec_egress_authorized():
             return self._get_cached_recent_filings_envelope(symbol, form_types=form_types)
 

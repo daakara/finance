@@ -176,19 +176,16 @@ def get_sec_filings(symbol: str, response: Response = None):
 
 @router.get("/finra-darkpool/{symbol}")
 def get_finra_darkpool(symbol: str, response: Response = None):
-    """Retrieve FINRA dark-pool research status (Feature held in read-only MVP)."""
+    """Fetch official FINRA Alternative Trading System (ATS) dark pool shares & short volumes."""
     if response is not None and hasattr(response, "headers"):
         response.headers["Cache-Control"] = "public, max-age=120, s-maxage=600, stale-while-revalidate=86400, stale-if-error=86400"
         response.headers["CDN-Cache-Control"] = "max-age=600, stale-while-revalidate=86400, stale-if-error=86400"
         response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=600, stale-while-revalidate=86400, stale-if-error=86400"
     valid_sym = _validate_symbol(symbol)
+    metrics = finra_fetcher.get_ats_metrics(valid_sym)
     return {
         "symbol": valid_sym,
-        "status": "FEATURE_HELD",
-        "data_classification": "SYNTHETIC_RESEARCH_NOT_PUBLIC",
-        "is_live": False,
-        "is_observed_finra_data": False,
-        "available": False,
-        "metrics": None,
-        "message": "FINRA-style dark-pool research metrics are not included in the current read-only release.",
+        "available": metrics is not None,
+        "metrics": metrics,
+        "message": None if metrics is not None else "FINRA ATS off-exchange transparency data is unavailable for this ticker.",
     }

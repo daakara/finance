@@ -392,7 +392,7 @@ def get_radar_capabilities(
             "matchedCount": None,
             "dataAsOf": None,
             "populationDenominator": 0,
-            "rationale": "Automated market-wide SEC Form 4 insider conviction screening is pending operational pipeline activation.",
+            "rationale": RADAR_CAPABILITY_CONTRACT["SMART_MONEY"]["rationale"],
         }
     return caps
 

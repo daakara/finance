@@ -18,8 +18,6 @@ Covers all 10 mandatory regression vectors:
 import os
 import tempfile
 import pytest
-
-pytestmark = pytest.mark.tier2c
 from unittest.mock import MagicMock, patch
 
 from datetime import datetime, timezone, timedelta
