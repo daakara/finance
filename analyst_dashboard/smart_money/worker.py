@@ -53,6 +53,7 @@ from analyst_dashboard.smart_money.storage.backup.containment_gate import (
     ContainmentState,
     BackupAgeContainmentViolationException,
 )
+from analyst_dashboard.smart_money.continuous_pipeline import SmartMoneyContinuousPipeline
 import threading
 
 logger = logging.getLogger("smart_money.worker")
@@ -354,6 +355,28 @@ class SmartMoneyIngestionWorker:
                 self._owner_conn = None
         self.state = WorkerHealthState.OWNER_LOCK_LOST
 
+    def _handle_shutdown_signal(self, signum: int, frame: Any) -> None:
+        """
+        Control B: Catches SIGTERM / SIGINT and immediately drops session advisory lock (<= 1.0s).
+        """
+        logger.info(
+            f"Worker {self.worker_id} received shutdown signal {signum}. "
+            "Executing immediate Control B teardown (dropping advisory lock <= 1.0s)..."
+        )
+        self._running = False
+        self.release_egress_authority()
+        if getattr(self, "backup_scheduler", None):
+            self.backup_scheduler.stop()
+        sys.exit(0)
+
+    def _setup_signals(self) -> None:
+        """Registers signal handlers for graceful shutdown (Control B)."""
+        try:
+            signal.signal(signal.SIGTERM, self._handle_shutdown_signal)
+            signal.signal(signal.SIGINT, self._handle_shutdown_signal)
+        except (ValueError, AttributeError):
+            pass
+
     def process_run_requests(self) -> int:
         """
         Checks for pending operator run requests, claims them with atomic lease,
@@ -394,18 +417,33 @@ class SmartMoneyIngestionWorker:
             logger.warning(f"Aborting completion of request {req_id}: backup became stale during execution.")
             return 0
 
-        result_gen = f"gen-{req_id[:8]}"
+        pipeline = SmartMoneyContinuousPipeline(
+            dsn=self.dsn,
+            containment_gate=self.containment_gate,
+            repository=self.repository,
+        )
         try:
-            self.repository.complete_run_request(
-                req_id,
-                result_generation_id=result_gen,
+            res = pipeline.execute_cycle(
+                run_request_id=req_id,
                 lease_token=lease_token,
-                status="COMPLETED",
+                trigger_type="OPERATOR",
             )
-            logger.info(f"Completed operator run request: {req_id} -> {result_gen}")
+            logger.info(f"Completed operator run request: {req_id} -> snapshot {res.get('snapshot_id')}")
             return 1
         except StaleLeaseOwnershipLostError as e:
             logger.warning(f"Lease lost for request {req_id} (stale worker fenced): {e}")
+            return 0
+        except Exception as e:
+            logger.error(f"Failed processing operator run request {req_id}: {e}")
+            try:
+                self.repository.complete_run_request(
+                    req_id,
+                    lease_token=lease_token,
+                    status="FAILED",
+                    failure_code=str(type(e).__name__),
+                )
+            except Exception as fail_err:
+                logger.warning(f"Could not record failure status for request {req_id}: {fail_err}")
             return 0
 
     def run_cycle(self) -> None:
@@ -431,6 +469,7 @@ class SmartMoneyIngestionWorker:
     def start(self, single_cycle: bool = False, poll_interval_sec: float = 5.0) -> None:
         """Starts worker event loop."""
         self.validate_preflight()
+        self._setup_signals()
         if not self.acquire_egress_authority():
             sys.exit(1)
 

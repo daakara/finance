@@ -13,8 +13,14 @@ Adheres to strict fail-closed production safety:
 import time
 import uuid
 import logging
+from datetime import datetime, date, timedelta, timezone
 from dataclasses import dataclass, asdict
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
+
+from analyst_dashboard.smart_money.freshness_authority import (
+    is_sec_dissemination_date,
+    NY_TZ,
+)
 
 from analyst_dashboard.coordination import (
     DurableRunCoordinator,
@@ -128,3 +134,89 @@ class SmartMoneyMarketWideScheduler:
                 status="FAILED",
                 error=str(e),
             )
+
+
+class SmartMoneyTimezoneScheduler:
+    """
+    Timezone-safe scheduler for Smart Money continuous daily ingestion.
+    Enforces:
+    - 22:30 America/New_York target execution window (Mon-Fri)
+    - DST invariance (automatically handles EDT vs EST shifts relative to UTC)
+    - SEC EDGAR dissemination calendar awareness (skips weekends and federal dissemination holidays)
+    - Duplicate execution avoidance for the same calendar date
+    - Execution window tolerance and catchup policy
+    """
+    def __init__(
+        self,
+        target_hour: int = 22,
+        target_minute: int = 30,
+        window_minutes: int = 60,
+    ):
+        self.target_hour = target_hour
+        self.target_minute = target_minute
+        self.window_minutes = window_minutes
+
+    def get_ny_now(self, now: Optional[datetime] = None) -> datetime:
+        if now is None:
+            now = datetime.now(timezone.utc)
+        elif now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
+        return now.astimezone(NY_TZ)
+
+    def is_dissemination_day(self, dt: Optional[datetime] = None) -> bool:
+        ny_dt = self.get_ny_now(dt)
+        return is_sec_dissemination_date(ny_dt.date())
+
+    def should_execute_now(
+        self,
+        now: Optional[datetime] = None,
+        last_executed_ny_date: Optional[date] = None,
+        force: bool = False,
+    ) -> Tuple[bool, str]:
+        """
+        Evaluates whether an ingestion cycle should execute at this moment.
+        Returns: (should_run: bool, reason: str)
+        """
+        if force:
+            return True, "FORCE_OVERRIDE"
+
+        ny_now = self.get_ny_now(now)
+        today = ny_now.date()
+
+        # Check if today is a dissemination day
+        if not is_sec_dissemination_date(today):
+            return False, f"NON_DISSEMINATION_DAY: {today.strftime('%A')} ({today.isoformat()}) is not an SEC filing day"
+
+        # Check if already executed today
+        if last_executed_ny_date and last_executed_ny_date == today:
+            return False, f"ALREADY_EXECUTED_TODAY: cycle already recorded for {today.isoformat()}"
+
+        # Target time today in NY
+        target_time = datetime(today.year, today.month, today.day, self.target_hour, self.target_minute, tzinfo=NY_TZ)
+        window_end = target_time + timedelta(minutes=self.window_minutes)
+
+        if ny_now < target_time:
+            diff = (target_time - ny_now).total_seconds() / 60
+            return False, f"BEFORE_SCHEDULED_TIME: current time {ny_now.strftime('%H:%M %Z')} is {diff:.1f}m before target {target_time.strftime('%H:%M %Z')}"
+
+        if ny_now > window_end:
+            return False, f"MISSED_WINDOW: current time {ny_now.strftime('%H:%M %Z')} is past execution window closing {window_end.strftime('%H:%M %Z')}"
+
+        return True, f"WITHIN_EXECUTION_WINDOW: {ny_now.strftime('%H:%M %Z')} matches daily target {target_time.strftime('%H:%M %Z')}"
+
+    def next_scheduled_run(self, from_dt: Optional[datetime] = None) -> datetime:
+        """Calculates the next scheduled run datetime in America/New_York."""
+        ny_from = self.get_ny_now(from_dt)
+        candidate_date = ny_from.date()
+        target_today = datetime(candidate_date.year, candidate_date.month, candidate_date.day, self.target_hour, self.target_minute, tzinfo=NY_TZ)
+
+        if ny_from < target_today and is_sec_dissemination_date(candidate_date):
+            return target_today
+
+        # Find next valid dissemination day
+        curr = candidate_date + timedelta(days=1)
+        while not is_sec_dissemination_date(curr):
+            curr += timedelta(days=1)
+
+        return datetime(curr.year, curr.month, curr.day, self.target_hour, self.target_minute, tzinfo=NY_TZ)
+
