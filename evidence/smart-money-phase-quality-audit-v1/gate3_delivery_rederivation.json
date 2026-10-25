@@ -1,0 +1,22 @@
+{
+  "audit": "PHASE_QUALITY_AND_EVIDENCE_INTEGRITY_AUDIT_V1",
+  "scheduler_inspection": {
+    "file": "scripts/run_natural_scheduler.py",
+    "lines": "295-298",
+    "lookup_path": "evidence/gate3_authorizations/SMART_MONEY_GATE3_ACTIVE_AUTHORIZATION.json or --authorization-path"
+  },
+  "summary": "There is no remote delivery channel or authenticated fetch mechanism. The scheduled runner relies entirely on local unauthenticated file presence.",
+  "target": "Gate-3 authorization retrieval in CI and scheduler",
+  "verdict_metrics": {
+    "GATE3_AUTHORIZATION_STORE": "LOCAL_FILESYSTEM_REPOSITORY_PATH",
+    "GATE3_DURABLE_DELIVERY": "NOT_IMPLEMENTED",
+    "GATE3_FETCH_IMPLEMENTED": "NO",
+    "GATE3_LOCAL_FILE_SUBSTITUTION_RISK": "HIGH"
+  },
+  "workflow_inspection": {
+    "contains_download_step": false,
+    "contains_fetch_step": false,
+    "file": ".github/workflows/smart_money_rooting.yml",
+    "retrieves_external_secret_or_object": false
+  }
+}

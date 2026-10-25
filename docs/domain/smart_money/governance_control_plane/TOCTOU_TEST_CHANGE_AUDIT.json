@@ -1,0 +1,27 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/toctou-test-change-audit.json",
+  "change_class": "FIXTURE_TIME_MAINTENANCE",
+  "changed_lines": "expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)",
+  "current_behavior": "Uses dynamic relative expiry (datetime.now(timezone.utc) + timedelta(minutes=15)) ensuring the authorization token is unexpired while exercising context root mismatch protection at exercise.",
+  "expected_exception_after": "DecisionAuthorizationMismatchError",
+  "expected_exception_before": "DecisionAuthorizationMismatchError",
+  "generated_at": "2026-10-12T15:30:00Z",
+  "generator_or_test_ref": "tests/test_smart_money_canonical_input_authority.py::test_61_toctou_context_root_mismatch_at_exercise",
+  "input_hashes": {
+    "test_canonical_input_authority_hash": "5ed1e9317fcad683fe3adb5978ab680fedeaebc24f36fc601117ad10511b233c"
+  },
+  "previous_behavior": "Used a static timestamp fixture that caused false-positive expiry failures during test execution.",
+  "root_mismatch_still_exercised": true,
+  "security_property_after": "Exercise with mismatched context root rejected with DecisionAuthorizationMismatchError",
+  "security_property_before": "Exercise with mismatched context root rejected with DecisionAuthorizationMismatchError",
+  "source_freeze_sha": "cf62c54badd9b39e7711edbab5e2de9e2e1efd98",
+  "source_tree_oid": "43ae64571ce86c15e67ee72e71a8466730f9857d",
+  "test_id": "test_61_toctou_context_root_mismatch_at_exercise",
+  "toctou_root_mismatch_negative_control": {
+    "negative_control_test_location": "tests/test_smart_money_finding_identity_claim_semantics.py::TestMatrix62TOCTOUTestAuditAndNegativeControl::test_79_toctou_root_mismatch_negative_control_fails_on_bypass",
+    "protection_present_test_passes": true,
+    "protection_removed_or_bypassed_test_fails": true
+  },
+  "toctou_test_safety_assertion_weakened": false,
+  "verdict": "PASS"
+}

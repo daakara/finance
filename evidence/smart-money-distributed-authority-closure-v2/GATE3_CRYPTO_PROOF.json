@@ -1,0 +1,8 @@
+{
+  "claim": "Gate-3 cryptographic signature verified against Fulcio root and Rekor log",
+  "evidence_class": "CRYPTOGRAPHIC_VERIFICATION",
+  "independent_verifier_result": "BLOCKED per Section 10.1 and Section 31",
+  "observed_result": "Offline cryptographic verification cannot contact Rekor or verify Fulcio certificate chains without external connectivity and Sigstore tooling.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_final_natural_authority_chain_closure.py -k test_gate3_cryptographic_witness",
+  "status": "BLOCKED"
+}

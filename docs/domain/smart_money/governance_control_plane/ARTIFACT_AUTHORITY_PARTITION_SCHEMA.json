@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ArtifactAuthorityPartitionSchema",
+  "description": "Schema enforcing clean separation between Source Authority and Evidence Authority artifacts.",
+  "type": "object",
+  "required": [
+    "schema_id",
+    "version",
+    "partition_rules",
+    "artifacts"
+  ],
+  "properties": {
+    "schema_id": {
+      "type": "string",
+      "const": "https://arx.terminal/schemas/v1/artifact-authority-partition.json"
+    },
+    "version": {
+      "type": "string"
+    },
+    "partition_rules": {
+      "type": "object",
+      "required": ["source_classes", "evidence_classes"],
+      "properties": {
+        "source_classes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "evidence_classes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "artifact_class",
+          "authority_domain",
+          "generated_or_static",
+          "canonical_input",
+          "verification_output"
+        ],
+        "properties": {
+          "path": { "type": "string" },
+          "artifact_class": { "type": "string" },
+          "authority_domain": {
+            "type": "string",
+            "enum": ["SOURCE", "EVIDENCE"]
+          },
+          "generated_or_static": {
+            "type": "string",
+            "enum": ["STATIC", "GENERATED"]
+          },
+          "canonical_input": { "type": "boolean" },
+          "verification_output": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

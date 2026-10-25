@@ -1,0 +1,45 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/post-architecture-cold-reconstruction-audit.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "predecessor_evidence_seal_sha": "30f50d877970293c08955c62baf52d645ebec0d2",
+  "generated_at": "2026-10-12T18:00:00Z",
+  "cold_reconstruction_methodology": "Reconstructed from scratch in causal order: Git tree blobs -> Evidence Manifest -> Claims -> Facts -> Finding Registry -> DAG -> Theorems -> Context -> Decision.",
+  "findings": {
+    "registered": 15,
+    "admitted": 13,
+    "duplicates": 2,
+    "active_architecture_defects": 0,
+    "active_non_architecture_blockers": 5,
+    "active_blockers_total": 5,
+    "active_blocker_ids": [
+      "FND-ARCH-002",
+      "FND-ARCH-003",
+      "FND-ARCH-005",
+      "FND-ARCH-006",
+      "FND-ARCH-009"
+    ]
+  },
+  "historical_findings": {
+    "registered": 15,
+    "admitted": 13,
+    "duplicates": 2,
+    "active_architecture_defects": 0,
+    "active_non_architecture_blockers": 13,
+    "active_blockers_total": 13
+  },
+  "reconstructed_governance_decision": {
+    "architecture_closure_status": "CLOSED",
+    "remediation_status": "NONE_OR_VERIFIED_COMPLETE",
+    "global_provisioning_readiness": "BLOCKED",
+    "provisioning_authorization_status": "NOT_ISSUABLE",
+    "runtime_action": "NONE",
+    "natural_denominator": 0,
+    "natural_observer_arming": "NOT_AUTHORIZED",
+    "natural_observation_authorization": "NOT_AUTHORIZED",
+    "production_readiness": "NOT_AUTHORIZED",
+    "model_tuning": "FROZEN",
+    "learning_claim": "NOT_AUTHORIZED"
+  },
+  "verdict": "PASS"
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/gate3-transition-negative-control-audit.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T17:30:00Z",
+  "adversarial_cases": {
+    "case_a_live_owner_commit": {
+      "description": "Run A claims, lease is alive, Run A commits",
+      "result": "PASS"
+    },
+    "case_b_expired_owner_commit_before_recovery": {
+      "description": "Run A claims, lease expires, Run A attempts commit before recover_expired_claims()",
+      "result": "REJECT",
+      "exception": "Gate3LeaseExpiredError"
+    },
+    "case_c_expired_owner_commit_after_recovery": {
+      "description": "Run A claims, lease expires, recover_expired_claims() transitions to LEASE_EXPIRED_RECOVERABLE, Run A attempts commit",
+      "result": "REJECT",
+      "exception": "Gate3LeaseExpiredError"
+    },
+    "case_d_old_owner_commit_after_reclaim": {
+      "description": "Run A lease expires, Run B reclaims, Run A attempts commit",
+      "result": "REJECT",
+      "exception": "Gate3LeaseExpiredError"
+    },
+    "case_e_new_owner_commit": {
+      "description": "Run B validly reclaims and commits before lease expiry",
+      "result": "PASS"
+    },
+    "case_f_committed_claim_rollback_rejection": {
+      "description": "Attempt to rollback a claim already in COMMITTED state",
+      "result": "REJECT",
+      "exception": "CommittedClaimImmutableError"
+    },
+    "case_g_committed_claim_recovery_rejection": {
+      "description": "recover_expired_claims() never touches rows in COMMITTED state",
+      "result": "PASS",
+      "committed_rows_mutated": 0
+    },
+    "case_h_abort_only_allowed_from_pending": {
+      "description": "rollback_claim only succeeds if claim_state == CLAIMED_PENDING_COMMIT",
+      "result": "PASS"
+    }
+  },
+  "verdict": "PASS"
+}

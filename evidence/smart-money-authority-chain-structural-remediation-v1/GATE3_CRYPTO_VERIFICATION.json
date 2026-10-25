@@ -1,0 +1,4 @@
+{
+  "reason": "Sigstore Python SDK and Cosign CLI tooling are not installed locally; live cryptographic verification fails closed per Section 6.4 and Section 27.",
+  "status": "BLOCKED"
+}

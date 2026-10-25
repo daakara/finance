@@ -1,0 +1,54 @@
+{
+  "controls": {
+    "10_raw_evidence_downstream_failure_quarantine": {
+      "external_live": "NOT_RUN",
+      "substrate": "PASS"
+    },
+    "11_attempted_raw_evidence_deletion": {
+      "external_live": "BLOCKED",
+      "substrate": "BLOCKED"
+    },
+    "12_second_genesis_attempt": {
+      "external_live": "NOT_RUN",
+      "substrate": "PASS"
+    },
+    "1_stale_runner_write": {
+      "external_live": "NOT_RUN",
+      "substrate": "PASS"
+    },
+    "2_duplicate_gate3_consume": {
+      "external_live": "NOT_RUN",
+      "substrate": "PASS"
+    },
+    "3_replayed_gate3_authorization": {
+      "external_live": "NOT_RUN",
+      "substrate": "PASS"
+    },
+    "4_superseded_gate3_authorization": {
+      "external_live": "NOT_RUN",
+      "substrate": "PASS"
+    },
+    "5_consumer_self_authorization": {
+      "external_live": "NOT_RUN",
+      "substrate": "PASS"
+    },
+    "6_rollback_to_older_global_head": {
+      "external_live": "NOT_RUN",
+      "substrate": "PASS"
+    },
+    "7_simulated_response_loss_after_commit": {
+      "external_live": "NOT_RUN",
+      "substrate": "PASS"
+    },
+    "8_local_cache_state_deletion": {
+      "external_live": "NOT_RUN",
+      "substrate": "PASS"
+    },
+    "9_total_runner_local_state_loss": {
+      "external_live": "BLOCKED",
+      "substrate": "BLOCKED"
+    }
+  },
+  "schema_version": "LIVE_NEGATIVE_CONTROLS_STATUS_V1",
+  "verdict": "BLOCKED_PENDING_EXTERNAL_INFRASTRUCTURE"
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/finding-hash-domain-semantics-audit.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T18:00:00Z",
+  "admission_hash_fields": [
+    "finding_id",
+    "assertion_status",
+    "admission_status",
+    "lifecycle_status",
+    "duplicate_of",
+    "superseded_by"
+  ],
+  "field_mutation_ablation_results": {
+    "A_change_admission_status_only": true,
+    "B_change_lifecycle_status_only": true,
+    "C_change_resolution_evidence_only": false,
+    "D_change_reclassified_layer_only": false,
+    "E_change_derived_blocks_only": false,
+    "F_change_immutable_identity_only": false
+  },
+  "summary": {
+    "LIFECYCLE_AFFECTS_ADMISSION_HASH": true,
+    "RESOLUTION_EVIDENCE_AFFECTS_ADMISSION_HASH": false,
+    "CLASSIFICATION_AFFECTS_ADMISSION_HASH": false,
+    "BLOCKING_OUTPUTS_AFFECT_ADMISSION_HASH": false,
+    "IDENTITY_AFFECTS_ADMISSION_HASH": false
+  },
+  "domain_separation_explanation": "compute_admission_registry_hash() binds admission governance and lifecycle progression state. Finding remediation transitions lifecycle_status to VERIFIED_RESOLVED, legitimately modifying admission_registry_hash while identity_registry_hash remains strictly invariant.",
+  "verdict": "PASS"
+}

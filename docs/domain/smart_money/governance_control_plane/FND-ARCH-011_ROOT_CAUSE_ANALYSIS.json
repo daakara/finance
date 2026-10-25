@@ -1,0 +1,38 @@
+{
+  "finding_id": "FND-ARCH-011",
+  "immutable_subject": "Stored and derived denominator predicates were not proven logically equivalent.",
+  "observed_failure": "The predicate used in pre-arm natural record qualification differed in preconditions and temporal evaluation from the denominator increment condition in transactional storage.",
+  "affected_components": [
+    "analyst_dashboard/smart_money/public_availability/transactional_state_backend.py",
+    "analyst_dashboard/smart_money/governance_control_plane/canonical_context.py"
+  ],
+  "canonical_invariant_violated": "DENOMINATOR_PREDICATE_EQUIVALENCE: The stored denominator increment condition and the derived denominator eligibility predicate must be mathematically and logically identical across all 11 evaluation states.",
+  "root_cause": "Predicate evaluation logic was authored separately in two modules with subtle differences in duplicate and staleness checks.",
+  "contributing_causes": [
+    "Lack of a unified AuthoritativeDenominatorAdmissionPredicate function",
+    "Absence of an explicit truth-table equivalence model"
+  ],
+  "existing_behavior": "Pre-arm admission check and storage increment condition use independent implementations.",
+  "required_behavior": "Both must consume AuthoritativeDenominatorAdmissionPredicate, verified across the 11-case truth table in DENOMINATOR_PREDICATE_EQUIVALENCE_MODEL.json.",
+  "implementation_scope": [
+    "Create AuthoritativeDenominatorAdmissionPredicate",
+    "Generate DENOMINATOR_PREDICATE_EQUIVALENCE_MODEL.json with 11-case truth table",
+    "Bind storage and pre-arm evaluations to AuthoritativeDenominatorAdmissionPredicate"
+  ],
+  "contracts_affected": [
+    "docs/domain/smart_money/governance_control_plane/PREDICATE_DSL_SPEC.md"
+  ],
+  "schemas_affected": [
+    "docs/domain/smart_money/governance_control_plane/DENOMINATOR_PREDICATE_EQUIVALENCE_MODEL.json"
+  ],
+  "policies_affected": [],
+  "tests_affected": [
+    "tests/test_smart_money_architecture_remediation.py"
+  ],
+  "non_target_findings_touched": [],
+  "cross_layer_dependency": false,
+  "planned_fix": "Unify denominator evaluation under AuthoritativeDenominatorAdmissionPredicate and verify 11-case equivalence.",
+  "planned_negative_control": "Introduce divergence in synthetic or duplicate check; verify equivalence test fails.",
+  "planned_causal_ablation": "Bypass unified predicate with divergent logic; verify mismatch detected.",
+  "status": "ANALYZED_PENDING_IMPLEMENTATION"
+}

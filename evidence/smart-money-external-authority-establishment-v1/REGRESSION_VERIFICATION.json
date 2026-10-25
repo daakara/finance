@@ -1,0 +1,53 @@
+{
+  "execution_time_seconds": 18.56,
+  "overall_regression_status": "PASS",
+  "schema_version": "REGRESSION_VERIFICATION_V1",
+  "section": "14_REGRESSION_VERIFICATION",
+  "suites": [
+    {
+      "failed": 0,
+      "file": "tests/test_smart_money_final_natural_authority_chain_closure.py",
+      "passed": 12,
+      "skipped": 0,
+      "status": "PASS"
+    },
+    {
+      "failed": 0,
+      "file": "tests/test_smart_money_distributed_authority_substrate.py",
+      "passed": 10,
+      "skipped": 0,
+      "status": "PASS"
+    },
+    {
+      "failed": 0,
+      "file": "tests/test_sprint_3_candidate_004_epoch_and_migration.py",
+      "passed": 15,
+      "skipped": 0,
+      "status": "PASS"
+    },
+    {
+      "failed": 0,
+      "file": "tests/test_canonical_decision_context.py",
+      "passed": 7,
+      "skipped": 0,
+      "status": "PASS"
+    },
+    {
+      "failed": 0,
+      "file": "tests/test_phase21_decision_parity.py",
+      "passed": 7,
+      "skipped": 0,
+      "status": "PASS"
+    },
+    {
+      "failed": 0,
+      "file": "tests/test_prospective_decision_capture.py",
+      "passed": 17,
+      "skipped": 0,
+      "status": "PASS"
+    }
+  ],
+  "total_failed": 0,
+  "total_passed": 68,
+  "total_skipped": 0
+}

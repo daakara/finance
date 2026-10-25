@@ -1,0 +1,87 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/decision-chain-adversarial-execution-audit.json",
+  "audit_id": "urn:arx:audit:decision-chain-adversarial-execution:2026-10-12",
+  "generated_at": "2026-10-12T18:15:00Z",
+  "source_freeze_sha": "4aa35839dc0f5d2496d4a13c80e6c72cdee53eda",
+  "source_tree_oid": "794300d2ac694bf5f1c182f274b67fc037962eb5",
+  "test_suite": "tests/test_smart_money_decision_authorization_boundary.py",
+  "test_results": {
+    "case_1_wrong_predecessor_hash": {
+      "description": "Arbitrary or forged 64-character hex predecessor hash supplied for sequence 3",
+      "test_id": "tests/test_smart_money_decision_authorization_boundary.py::test_case_1_wrong_predecessor_hash_rejected",
+      "expected_rejection": "DecisionPredecessorMismatchError",
+      "authorized": false,
+      "committed": false,
+      "current": false,
+      "verdict": "REJECTED_PASS"
+    },
+    "case_2_sequence_skip": {
+      "description": "Sequence skip (seq 3 referencing seq 1, or seq 4 referencing seq 2 without seq 3)",
+      "test_id": "tests/test_smart_money_decision_authorization_boundary.py::test_case_2_sequence_skip_rejected",
+      "expected_rejection": "DecisionSequenceContinuityError",
+      "authorized": false,
+      "committed": false,
+      "current": false,
+      "verdict": "REJECTED_PASS"
+    },
+    "case_3_invalidated_or_stale_predecessor": {
+      "description": "Predecessor marked INVALIDATED_NON_CANONICAL or already superseded",
+      "test_id": "tests/test_smart_money_decision_authorization_boundary.py::test_case_3_invalidated_or_stale_predecessor_rejected",
+      "expected_rejection": "DecisionPredecessorInvalidatedError / DecisionPredecessorStaleError",
+      "authorized": false,
+      "committed": false,
+      "current": false,
+      "verdict": "REJECTED_PASS"
+    },
+    "case_4_foreign_epoch": {
+      "description": "Predecessor or candidate belonging to a foreign governance epoch (e.g., epoch-gov-001 vs epoch-gov-002)",
+      "test_id": "tests/test_smart_money_decision_authorization_boundary.py::test_case_4_foreign_epoch_rejected",
+      "expected_rejection": "DecisionEpochMismatchError",
+      "authorized": false,
+      "committed": false,
+      "current": false,
+      "verdict": "REJECTED_PASS"
+    },
+    "case_5_wrong_source_context": {
+      "description": "Predecessor decision hash does not match authoritative active chain context",
+      "test_id": "tests/test_smart_money_decision_authorization_boundary.py::test_case_5_wrong_source_context_rejected",
+      "expected_rejection": "DecisionPredecessorMismatchError",
+      "authorized": false,
+      "committed": false,
+      "current": false,
+      "verdict": "REJECTED_PASS"
+    },
+    "case_6_same_sequence_equivocation": {
+      "description": "Two distinct decision payloads submitted for the same (epoch, sequence)",
+      "test_id": "tests/test_smart_money_decision_authorization_boundary.py::test_case_6_same_sequence_equivocation_rejected",
+      "expected_rejection": "DuplicateDecisionSequenceError",
+      "authorized": false,
+      "committed": false,
+      "current": false,
+      "verdict": "REJECTED_PASS"
+    },
+    "case_7_two_current_decisions": {
+      "description": "Attempt to create or observe two simultaneous CURRENT decisions in the same epoch",
+      "test_id": "tests/test_smart_money_decision_authorization_boundary.py::test_case_7_two_current_decisions_rejected",
+      "expected_rejection": "DecisionCurrentnessConflictError",
+      "count_current_observable": 1,
+      "verdict": "REJECTED_PASS"
+    },
+    "case_8_restart_durability": {
+      "description": "Process destruction and reload preserves committed decisions and rejects stale re-commit",
+      "test_id": "tests/test_smart_money_decision_authorization_boundary.py::test_case_8_restart_durability",
+      "reloaded_head_sequence": 3,
+      "reloaded_current_count": 1,
+      "verdict": "PASS"
+    },
+    "case_9_concurrent_successor_race": {
+      "description": "10 concurrent worker threads competing to commit sequence 3 with differing hashes",
+      "test_id": "tests/test_smart_money_decision_authorization_boundary.py::test_case_9_concurrent_successor_race",
+      "successful_canonical_commits": 1,
+      "losing_commits_rejected": 9,
+      "current_decisions_after": 1,
+      "verdict": "PASS"
+    }
+  },
+  "overall_adversarial_verdict": "ALL_CASES_REJECTED_FAIL_CLOSED_PASS"
+}

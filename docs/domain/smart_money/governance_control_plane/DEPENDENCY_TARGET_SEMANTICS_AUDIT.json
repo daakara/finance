@@ -1,0 +1,21 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/dependency-target-semantics-audit.json",
+  "audit_id": "urn:arx:audit:dependency-target-semantics:2026-10-12",
+  "generated_at": "2026-10-12T16:03:25Z",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "dependency_target_status_semantics": {
+    "READY_means": "All antecedent prerequisite edges in the declarative DAG evaluation path are satisfied; the target node is structurally eligible for evaluation.",
+    "BLOCKED_means": "One or more antecedent prerequisite edges in the DAG failed, unresolved, or cycle detected; target node evaluation cannot proceed.",
+    "UNRESOLVED_means": "Prerequisites are missing, cyclic, or have indeterminate evaluation state.",
+    "relation_to_governance_output": "Dependency DAG target readiness (READY) reflects structural DAG eligibility only. GovernanceDecisionEngine independently enforces the conjunction of active blocker count (must be 0) and evidence completeness (no NOT_ESTABLISHED/STALE/REVOKED), deriving final governance status BLOCKED."
+  },
+  "theorem_semantics": {
+    "dependency_eligibility": "Evaluated through DAG edges; denotes predicate input availability.",
+    "theorem_evaluation_outcome": "Outcome of formal mathematical or empirical evaluation.",
+    "theorem_authority_state": "Ratified authoritative governance state; eligible != established."
+  },
+  "verdict": "PASS",
+  "source_change_required": false,
+  "report_repair_required": true
+}

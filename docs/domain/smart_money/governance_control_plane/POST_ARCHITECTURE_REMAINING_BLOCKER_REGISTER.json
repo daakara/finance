@@ -1,0 +1,76 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/post-architecture-remaining-blocker-register.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T18:00:00Z",
+  "active_blockers_count": 5,
+  "blockers": [
+    {
+      "finding_id": "FND-ARCH-002",
+      "original_subject": "Genesis release provenance was unsupported or not derived from authoritative evidence.",
+      "current_layer": "EXTERNAL_EVIDENCE_GAP",
+      "lifecycle": "OPEN",
+      "blocks": [
+        "PROVISIONING",
+        "THEOREM_A"
+      ],
+      "resolution_criteria": "Generate and verify cryptographic Sigstore bundle attesting Candidate 004 commit SHA.",
+      "missing_authority_or_evidence": "External Sigstore bundle attesting Candidate 004 commit SHA",
+      "recommended_next_gate": "SMART_MONEY_EXTERNAL_EVIDENCE_CLOSURE_V1"
+    },
+    {
+      "finding_id": "FND-ARCH-003",
+      "original_subject": "Timestamp-authority provenance was claimed without adequate authoritative evidence.",
+      "current_layer": "PROVIDER_SELECTION_PREREQUISITE",
+      "lifecycle": "OPEN",
+      "blocks": [
+        "PROVISIONING",
+        "THEOREM_B",
+        "THEOREM_D"
+      ],
+      "resolution_criteria": "Operator selection and endpoint configuration of RFC 3161 compliant timestamp authority.",
+      "missing_authority_or_evidence": "RFC 3161 timestamping authority provider selection and endpoint configuration",
+      "recommended_next_gate": "SMART_MONEY_PROVIDER_SELECTION_V1"
+    },
+    {
+      "finding_id": "FND-ARCH-005",
+      "original_subject": "Evidence-custody contract conflated provider-specific storage semantics.",
+      "current_layer": "PROVIDER_SELECTION_PREREQUISITE",
+      "lifecycle": "OPEN",
+      "blocks": [
+        "PROVISIONING",
+        "THEOREM_D"
+      ],
+      "resolution_criteria": "Provision concrete WORM storage target and bind provider-neutral custody adapter.",
+      "missing_authority_or_evidence": "Provider-specific storage custody and retention verification",
+      "recommended_next_gate": "SMART_MONEY_EXTERNAL_EVIDENCE_CLOSURE_V1"
+    },
+    {
+      "finding_id": "FND-ARCH-006",
+      "original_subject": "OIDC identity binding was insufficiently scoped or incomplete.",
+      "current_layer": "IMPLEMENTATION_PREREQUISITE",
+      "lifecycle": "OPEN",
+      "blocks": [
+        "PROVISIONING",
+        "THEOREM_B"
+      ],
+      "resolution_criteria": "Implement explicit assertion of repository_id, runner_environment, and ref claims in qualify_sigstore_oidc.py.",
+      "missing_authority_or_evidence": "OIDC identity binding completion and audience qualification",
+      "recommended_next_gate": "SMART_MONEY_AUTHORITY_QUALIFICATION_V1"
+    },
+    {
+      "finding_id": "FND-ARCH-009",
+      "original_subject": "Transient evidence-fetch/server failures were over-classified as terminal failures.",
+      "current_layer": "POLICY_DEFECT",
+      "lifecycle": "OPEN",
+      "blocks": [
+        "PROVISIONING",
+        "THEOREM_D"
+      ],
+      "resolution_criteria": "Update policy error classification rule to distinguish transient network 5xx timeouts from corrupted payload bytes.",
+      "missing_authority_or_evidence": "Transient evidence-fetch classification and retry policy qualification",
+      "recommended_next_gate": "SMART_MONEY_NON_ARCHITECTURE_BLOCKER_CLOSURE_V1"
+    }
+  ],
+  "verdict": "ESTABLISHED"
+}

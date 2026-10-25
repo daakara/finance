@@ -1,0 +1,44 @@
+{
+  "artifact_count": 7,
+  "artifacts": [
+    {
+      "byte_length": 741,
+      "relative_path": "natural_authority_event.json",
+      "sha256": "69e2badde4eab31dad9d1cad68dc9029240e34ad48f51c12f4fd4c9f8b6f40d7"
+    },
+    {
+      "byte_length": 1693,
+      "relative_path": "natural_dry_run_summary.json",
+      "sha256": "15c0cb6813ffbf4b820a390a6e35a1c1033a567309a39fd192a663b6fdf3854a"
+    },
+    {
+      "byte_length": 8601,
+      "relative_path": "natural_r1.sigstore.json",
+      "sha256": "6e66f3095e5355901a610e661866f530c52f6464463bb965b385ea5e3b29a5ba"
+    },
+    {
+      "byte_length": 668,
+      "relative_path": "natural_r1_payload.json",
+      "sha256": "4e7f38ddd357d37e928ba4e1ef55b2cf88b7bdabd6c757c676e4c859048058db"
+    },
+    {
+      "byte_length": 8601,
+      "relative_path": "natural_r2.sigstore.json",
+      "sha256": "b9fb819313e0e5a1a51b66e1e09447d1bcdbbeeb87a3f8f5aa4386f247830d27"
+    },
+    {
+      "byte_length": 1084,
+      "relative_path": "natural_r2_payload.json",
+      "sha256": "9270c4850427c870729037ea634b210d139cdccfec1ec56e3666ffbd079a36c0"
+    },
+    {
+      "byte_length": 646,
+      "relative_path": "natural_safe_oidc_claims.json",
+      "sha256": "32d1667d023c4e28da8057714c122b7c26a65ffdb4f0be932e66e24315f9d55b"
+    }
+  ],
+  "gate": "SMART_MONEY_FINAL_NATURAL_AUTHORITY_CHAIN_CLOSURE_V1",
+  "generated_at_utc": "2026-10-11T20:39:07.418789+00:00",
+  "manifest_sha256": "3e47c03cd4c938172459cd0c6825fb36470e9ad5fc412332d1aeea3f2bf81ae1",
+  "manifest_version": "1.0.0"
+}

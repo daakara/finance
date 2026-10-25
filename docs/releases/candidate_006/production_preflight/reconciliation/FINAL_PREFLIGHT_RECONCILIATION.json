@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contract": "ARX_SMART_MONEY_PRODUCTION_PREFLIGHT_RECONCILIATION_V1",
+  "evaluation_timestamp": "2026-10-14T07:30:00Z",
+  "execution_mode": "PRODUCTION_PREFLIGHT_EVIDENCE_RECONCILIATION_AND_ROLLBACK_DISPROOF",
+  "authorization_state": "PRODUCTION_MUTATIONS_PROHIBITED",
+  "verdict": "CANDIDATE_006_PREFLIGHT_EVIDENCE_RECONCILED_READY_FOR_OWNER_REVIEW",
+  "candidate_release": {
+    "commit_sha": "76a8691339c30edc35e4e056d5b295509a81fe3a",
+    "tree_sha": "80309593afb6b1b722bed87c111bf2b58056c688",
+    "origin_branch": "arx/smart-money-candidate-006-r2-security-remediation",
+    "remote_custody": "PUSH_VERIFIED",
+    "preflight_documentation_sha": "bbc645f21f6e332181513d45c720071c4737319b",
+    "preflight_documentation_tree": "ec2d00324f44047d8f9373bbb25453ff6bdf9317"
+  },
+  "production_baseline_reconciled": {
+    "environment_id": "11cad5e1-358e-430e-84fc-189953cff48a",
+    "service_id": "56e38249-b78c-4a60-80d7-303ce7451bd8",
+    "service_name": "web",
+    "active_deployment_id": "0b2544ed-075a-46a8-97a8-e1b45b4d73b3",
+    "deployed_commit_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+    "actual_tree_sha": "13d14564baf94eceab215478280241668a9b1d71",
+    "disproved_tree_sha": "5e89694e9f7336cb474136979603f9c6d4baec1d",
+    "actual_startup_command": "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2",
+    "disproved_startup_command": "uvicorn web.app:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2",
+    "production_web_count": 1,
+    "production_worker_count": 0,
+    "production_postgresql_count": 0,
+    "persistent_volume_name": "web-volume",
+    "persistent_volume_mount": "/root",
+    "persistent_volume_used_mb": 205.67,
+    "production_drift": "0.00%"
+  },
+  "rehearsal_state_verified": {
+    "environment_id": "7f7e4317-2b76-4a0e-bff1-33227da71e5d",
+    "worker_service_id": "929874a7-bcd9-41b3-9bc7-d5cd7720f7bf",
+    "worker_deployment_id": "bbc0507e-4282-4e2b-9b94-d3fd1e49ae6c",
+    "worker_runtime_commit": "76a8691339c30edc35e4e056d5b295509a81fe3a",
+    "web_service_id": "6b53ad3f-0d59-4a7f-83dc-8731efe48cf5",
+    "web_deployment_id": "a0bf4e4e-dcab-4f32-8459-76deeceefde4",
+    "web_runtime_commit": "76a8691339c30edc35e4e056d5b295509a81fe3a",
+    "rehearsal_parity": "100_PERCENT"
+  },
+  "r2_backup_artifact_reconciled": {
+    "backup_id": "sm-backup-20261014T054332Z-9c75ae7f",
+    "r2_bucket": "arx-smart-money-backups",
+    "r2_prefix": "rehearsal/",
+    "dump_object_key": "rehearsal/smart_money_sm-backup-20261014T054332Z-9c75ae7f.dump",
+    "manifest_object_key": "rehearsal/manifest_sm-backup-20261014T054332Z-9c75ae7f.json",
+    "actual_dump_size_bytes": 33642,
+    "disproved_dump_size_bytes": 5242880,
+    "size_discrepancy_cause": "Round 5MB (5*1024*1024) estimate mistakenly transcribed into preflight report narrative; authoritative R2 dump length is 33,642 bytes",
+    "sha256_checksum": "45f745b321812249e313a1519ec1113473d69c026986f4cdbb830e325d864aaa",
+    "archive_format": "PostgreSQL Custom Format (1.16.0)",
+    "backup_role": "arx_backup_role",
+    "role_attributes": "NOSUPERUSER NOCREATEROLE",
+    "pg_authid_access": "REVOKED",
+    "globals_artifact": null,
+    "download_duration_s": 8.15,
+    "restore_execution_s": 0.26,
+    "total_recovery_duration_s": 8.41,
+    "billable_recovery_spend_usd": 0.0
+  },
+  "adversarial_test_suite_reconciled": {
+    "disproved_claim": "48/48 PASS across 6 suites citing test_smart_money_r2_adversarial.py",
+    "actual_test_files": [
+      "tests/test_smart_money_candidate_006_readiness_adversarial.py",
+      "tests/test_smart_money_backup_security_adversarial.py",
+      "tests/test_smart_money_backup_automation.py",
+      "tests/test_smart_money_r2_adapter_compatibility.py",
+      "tests/test_smart_money_sole_owner_fido2_governance.py",
+      "tests/test_smart_money_worker_lease_recovery.py"
+    ],
+    "total_tests_executed": 48,
+    "passed_tests": 47,
+    "failed_tests": 1,
+    "failing_test_name": "test_smart_money_backup_security_adversarial.py::TestRetentionAndGovernanceInvariants::test_governance_authorization_bypass_prevention",
+    "failure_root_cause": "Hardcoded timestamp valid_until='2026-10-14T06:00:00Z' expired when test ran at 06:55 UTC, causing validator to reject with ReleaseApprovalExpiredException prior to checking MFA assertion. Test fails closed.",
+    "remediation_required": "Parametrize test with relative time (timedelta(hours=4)) or explicit current_time fixture on remediation branch."
+  },
+  "rollback_scenarios_reconciled": {
+    "scenario_a_web_failure": {
+      "designed": true,
+      "unit_tested": false,
+      "nonproduction_executed": false,
+      "status": "UNKNOWN_NOT_TRAFFIC_REHEARSED"
+    },
+    "scenario_b_worker_lease_failure": {
+      "designed": true,
+      "unit_tested": true,
+      "nonproduction_executed": true,
+      "status": "DEFECTIVE_SQL_CORRECTED",
+      "defect_detail": "WHERE objid = 401007311509093371 always returns 0 because objid is 32-bit. Corrected to bit-shift query checking classid 93366790 and objid 1926593531."
+    },
+    "scenario_c_database_migration_failure": {
+      "designed": true,
+      "unit_tested": true,
+      "nonproduction_executed": false,
+      "status": "UNSAFE_DDL_CORRECTED",
+      "defect_detail": "DROP SCHEMA public CASCADE is destructive and eliminated. Replaced with row-count verification and R2 point-in-time restore."
+    },
+    "scenario_d_r2_backup_failure": {
+      "designed": true,
+      "unit_tested": true,
+      "nonproduction_executed": true,
+      "status": "VERIFIED_FAIL_CLOSED"
+    },
+    "scenario_e_partial_cutover": {
+      "designed": true,
+      "unit_tested": false,
+      "nonproduction_executed": false,
+      "status": "UNSAFE_DELETION_CORRECTED",
+      "defect_detail": "Immediate service teardown eliminated. Replaced with read-only freeze and forensic R2 snapshot."
+    },
+    "scenario_f_data_integrity_regression": {
+      "designed": true,
+      "unit_tested": false,
+      "nonproduction_executed": false,
+      "status": "IMMUTABILITY_CONFLICT_CORRECTED",
+      "defect_detail": "Physical DELETE on scanner_snapshots is rejected by trg_snapshots_append_only. Replaced with superseding quarantine snapshot publication."
+    },
+    "scenario_g_security_incident": {
+      "designed": true,
+      "unit_tested": false,
+      "nonproduction_executed": false,
+      "status": "DESIGNED_NOT_LIVE_REHEARSED"
+    }
+  },
+  "rpo_rto_durability_reconciled": {
+    "filing_data_rpo_hours": 0,
+    "internal_certified_state_rpo_hours": 6,
+    "sec_replay_limitation": "SEC EDGAR accession replay rebuilds raw filings and transactions, but CANNOT recover sm_audit_events, sm_reconciliation_receipts, or historical snapshot publication IDs.",
+    "proposed_production_rpo_hours": 6,
+    "proposed_production_rto_minutes": 30,
+    "measured_rehearsal_duration_s": 8.41,
+    "stale_backup_operational_policy": "POLICY_CHOICE_PENDING_OWNER_SELECTION (Policy A: Fail-Closed Halt recommended)"
+  },
+  "retention_and_cost_reconciled": {
+    "observed_dump_size_bytes": 33642,
+    "daily_backup_count": 4,
+    "thirty_day_baseline_mb": 3.85,
+    "twelve_month_projected_steady_state_gb": 1.2,
+    "cloudflare_r2_monthly_usd": 0.0,
+    "railway_compute_monthly_usd_range": [14.0, 23.5],
+    "proposed_cost_ceiling_usd": 30.0,
+    "cost_ceiling_status": "PROPOSED_AWAITING_OWNER_APPROVAL"
+  },
+  "governance_gates_reconciled": {
+    "policy_reference": "ARX_SOLE_OWNER_TEMPORARY_FIDO2_SUSPENSION_V1",
+    "gate_1_policy_document_exists": "PASS",
+    "gate_2_valid_suspension_rationale": "PASS",
+    "gate_3_owner_identity_established": "PASS",
+    "gate_4_mfa_evidence_present": "PENDING",
+    "gate_5_approval_bound_to_exact_sha": "PENDING",
+    "gate_6_approval_unexpired": "PENDING",
+    "gate_7_fido2_reactivation_documented": "PASS",
+    "gate_8_explicit_owner_authorization": "PENDING",
+    "active_suspension_status": "INACTIVE",
+    "owner_decision": "PENDING"
+  },
+  "production_boundaries": {
+    "PRODUCTION_DEPLOYMENT": "NOT_AUTHORIZED",
+    "PRODUCTION_POSTGRES_PROVISIONING": "NOT_AUTHORIZED",
+    "PRODUCTION_SCHEMA_MIGRATION": "NOT_AUTHORIZED",
+    "PRODUCTION_WORKER_ACTIVATION": "NOT_AUTHORIZED",
+    "PRODUCTION_CUTOVER": "NOT_AUTHORIZED",
+    "OWNER_AUTHORIZATION": "PENDING",
+    "MODEL_TUNING": "FROZEN",
+    "EMPIRICAL_QUALITY": "NOT_ESTABLISHED"
+  }
+}

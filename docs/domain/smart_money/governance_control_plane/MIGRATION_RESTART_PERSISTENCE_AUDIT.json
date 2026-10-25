@@ -1,0 +1,19 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/migration-restart-persistence-audit.json",
+  "artifact_type": "MIGRATION_RESTART_PERSISTENCE_AUDIT",
+  "corrupt_legacy_chain_selected_as_current": false,
+  "lineage": {
+    "generated_at_utc": "2026-10-12T21:15:15Z",
+    "generator_path": "scripts/generate_chain_migration_evidence.py",
+    "generator_sha256": "98658eb74aafd87771326262cb31d4c4f1ea25c0e632843171e68d8e9fc0ff5f",
+    "git_head": "e41cc6d729a2af1fab6cdaace764af8e1739f87f",
+    "invocation": "python scripts/generate_chain_migration_evidence.py",
+    "source_sha": "3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11"
+  },
+  "migration_receipt_restored": true,
+  "migration_version_restored": true,
+  "quarantined_legacy_decisions_restored": 2,
+  "trusted_current_count": 1,
+  "trusted_head_restored": true,
+  "verdict": "PASS"
+}

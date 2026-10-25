@@ -1,0 +1,25 @@
+{
+  "total_count": 1,
+  "artifacts": [
+    {
+      "id": 11714318247,
+      "node_id": "MDg6QXJ0aWZhY3QxMTcxNDMxODI0Nw==",
+      "name": "sigstore-natural-scheduler-dry-run-artifacts",
+      "size_in_bytes": 22164,
+      "url": "https://api.github.com/repos/daakara/finance/actions/artifacts/11714318247",
+      "archive_download_url": "https://api.github.com/repos/daakara/finance/actions/artifacts/11714318247/zip",
+      "expired": false,
+      "digest": "sha256:e21753bef9a6726a32e13a74c88d7c075c5a7d90a02b01b00ffc63dc4d578d02",
+      "created_at": "2026-10-11T20:39:09Z",
+      "updated_at": "2026-10-11T20:39:09Z",
+      "expires_at": "2026-10-25T20:39:08Z",
+      "workflow_run": {
+        "id": 38173080201,
+        "repository_id": 1087399232,
+        "head_repository_id": 1087399232,
+        "head_branch": "main",
+        "head_sha": "bab9776b8013646b634871c49b52e61e4234d36b"
+      }
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/corrupted-sequence-3-difference-audit.json",
+  "artifact_type": "CORRUPTED_SEQUENCE_3_DIFFERENCE_AUDIT",
+  "decision_hash": "205fe158e61fd1a0d2da8589f9d07619c8343c45cf43c4a4f7fbafb81a2f0b64",
+  "decision_id": "urn:arx:decision:epoch-gov-002:3:82e99bf8c82f",
+  "defect_classification": "HISTORICAL_CANONICAL_STATE_MUTATION",
+  "field_comparisons": [
+    {
+      "authentic_value": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+      "changed": true,
+      "corrupted_persisted_value": "4aa35839dc0f5d2496d4a13c80e6c72cdee53eda",
+      "field": "source_freeze_sha",
+      "identity_material": true
+    },
+    {
+      "authentic_value": "652af9d2ccfdb4b685ba71498377366eb9fd52df554b31ffbe370b3370dcd514",
+      "changed": true,
+      "corrupted_persisted_value": "3b8d91c7a4f91048e27c19a48910482019482019482019482019482019482019",
+      "field": "evidence_manifest_hash",
+      "identity_material": true
+    },
+    {
+      "authentic_value": "2026-10-12T16:03:25Z",
+      "changed": true,
+      "corrupted_persisted_value": "2026-10-12T18:15:00Z",
+      "field": "derived_at",
+      "identity_material": true
+    },
+    {
+      "authentic_value": "f2f6fdd2a92ec882abd6f7524261cbe6269c5ed8201f9ab3ca3ecd1ff499a10e",
+      "changed": false,
+      "corrupted_persisted_value": "f2f6fdd2a92ec882abd6f7524261cbe6269c5ed8201f9ab3ca3ecd1ff499a10e",
+      "field": "finding_registry_hash",
+      "identity_material": true
+    },
+    {
+      "authentic_value": "d82e9fb9970a4040c9291d23ed019b89848f1f97a3c57a3375c34971ab40b7df",
+      "changed": false,
+      "corrupted_persisted_value": "d82e9fb9970a4040c9291d23ed019b89848f1f97a3c57a3375c34971ab40b7df",
+      "field": "dependency_policy_hash",
+      "identity_material": true
+    },
+    {
+      "authentic_value": "2f9ebea3adfb038953c84c7a42f09286a68d32dbd4af8f5b4fbda3391c2d7714",
+      "changed": false,
+      "corrupted_persisted_value": "2f9ebea3adfb038953c84c7a42f09286a68d32dbd4af8f5b4fbda3391c2d7714",
+      "field": "dependency_resolution_hash",
+      "identity_material": true
+    },
+    {
+      "authentic_value": "52ba3e67d8aa20cc12b205e2ea3162fd88a40975c7b33608ffa97e5c6d1782c3",
+      "changed": false,
+      "corrupted_persisted_value": "52ba3e67d8aa20cc12b205e2ea3162fd88a40975c7b33608ffa97e5c6d1782c3",
+      "field": "decision_context_hash",
+      "identity_material": true
+    }
+  ],
+  "lineage": {
+    "generated_at_utc": "2026-10-12T21:15:15Z",
+    "generator_path": "scripts/generate_chain_migration_evidence.py",
+    "generator_sha256": "98658eb74aafd87771326262cb31d4c4f1ea25c0e632843171e68d8e9fc0ff5f",
+    "git_head": "e41cc6d729a2af1fab6cdaace764af8e1739f87f",
+    "invocation": "python scripts/generate_chain_migration_evidence.py",
+    "source_sha": "3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11"
+  },
+  "quarantine_required": true,
+  "root_cause_analysis": "Persisted Sequence-3 record contained identity-material mutation diverging from authentic derivation while retaining the authentic decision hash."
+}

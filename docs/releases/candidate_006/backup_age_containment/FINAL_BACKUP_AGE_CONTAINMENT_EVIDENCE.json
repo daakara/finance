@@ -1,0 +1,96 @@
+{
+  "schema_version": "ARX_BACKUP_AGE_CONTAINMENT_EVIDENCE_V1",
+  "generated_at": "2026-10-14T08:25:00Z",
+  "execution_mode": "NONPRODUCTION_BACKUP_DURABILITY_REMEDIATION_AND_REQUALIFICATION",
+  "recommended_verdict": "BACKUP_AGE_CONTAINMENT_IMPLEMENTED_LOCAL_VERIFIED",
+  "identities": {
+    "repository": "daakara/finance",
+    "active_branch": "arx/smart-money-candidate-006-backup-age-containment",
+    "base_commit_sha": "b5da9545e35608fd918d95f989b510a4cbfd1c1a",
+    "candidate_006_code_sha": "76a8691339c30edc35e4e056d5b295509a81fe3a",
+    "production_web_baseline_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+    "railway_project_id": "a339a92a-7236-4ac0-9a3a-d7ad440f9690",
+    "railway_rehearsal_env_id": "7f7e4317-2b76-4a0e-bff1-33227da71e5d",
+    "railway_production_env_id": "11cad5e1-358e-430e-84fc-189953cff48a"
+  },
+  "governance_status": {
+    "production_mutations": "PROHIBITED",
+    "production_deployment": "NOT_AUTHORIZED",
+    "production_database_provisioning": "NOT_AUTHORIZED",
+    "production_migration": "NOT_AUTHORIZED",
+    "production_cutover": "NOT_AUTHORIZED",
+    "merge_to_main": "NOT_AUTHORIZED",
+    "rehearsal_deployment": "PENDING_EXPLICIT_AUTHORIZATION",
+    "policy_a_threshold": "PENDING_OWNER_RATIFICATION",
+    "owner_approval": "PENDING"
+  },
+  "policy_contract": {
+    "policy_id": "ARX_POLICY_SMART_MONEY_BACKUP_CONTAINMENT_V1",
+    "proposed_threshold_seconds": 43200.0,
+    "warning_threshold_ratio": 0.8,
+    "clock_skew_tolerance_seconds": 300.0,
+    "recheck_interval_seconds": 60.0,
+    "production_authorization_gate": "ENFORCED_FAIL_CLOSED"
+  },
+  "test_execution_summary": {
+    "total_tests_executed": 145,
+    "total_passed": 145,
+    "total_failed": 0,
+    "pass_rate_pct": 100.0,
+    "adversarial_containment_vectors": {
+      "suite": "tests/test_smart_money_backup_containment_adversarial.py",
+      "count": 30,
+      "passed": 30,
+      "failed": 0,
+      "categories": {
+        "freshness_evaluation_vectors_1_to_10": "10/10 PASS",
+        "concurrency_and_race_vectors_11_to_17": "7/7 PASS",
+        "recovery_and_resumption_vectors_18_to_23": "6/6 PASS",
+        "governance_and_compatibility_vectors_24_to_30": "7/7 PASS"
+      }
+    },
+    "core_regression_battery": {
+      "candidate_006_readiness": "7/7 PASS",
+      "backup_security_adversarial": "17/17 PASS",
+      "backup_automation": "5/5 PASS",
+      "r2_adapter_compatibility": "9/9 PASS",
+      "sole_owner_fido2_governance": "7/7 PASS",
+      "worker_lease_recovery": "10/10 PASS"
+    },
+    "extended_regression_battery": {
+      "postgres_unit": "12/12 PASS",
+      "point_in_time": "5/5 PASS",
+      "legislative": "8/8 PASS",
+      "governance_control_plane_authority": "35/35 PASS"
+    }
+  },
+  "fault_injection_lifecycle": {
+    "script": "scratch/run_fault_injection_lifecycle.py",
+    "total_steps": 11,
+    "steps_verified": 11,
+    "duplicate_accessions_created": 0,
+    "data_integrity_preserved": true,
+    "steps": [
+      { "step": "T0", "state": "HEALTHY", "eligible": true, "status": "PASS", "detail": "Fresh backup verified (age=3600.0s)" },
+      { "step": "T1", "state": "HEALTHY", "eligible": true, "status": "PASS", "detail": "Recorded accession 0001437749-26-000001" },
+      { "step": "T2", "state": "FRESHNESS_WARNING", "eligible": true, "status": "PASS", "detail": "Backup age 37800.0s (10.5h) crossed 80% threshold" },
+      { "step": "T3", "state": "INGESTION_SUSPENDED", "eligible": false, "status": "PASS", "detail": "Backup age 43500.0s exceeds 12h threshold" },
+      { "step": "T4", "state": "INGESTION_SUSPENDED", "eligible": false, "status": "PASS_BLOCKED", "detail": "Database mutation rejected fail-closed" },
+      { "step": "T5", "state": "INGESTION_SUSPENDED", "eligible": false, "status": "PASS", "detail": "Simulated backup upload failed, gate remains suspended" },
+      { "step": "T6", "state": "INGESTION_SUSPENDED", "eligible": false, "status": "PASS_BLOCKED", "detail": "Ingestion retry blocked during active fault" },
+      { "step": "T7", "state": "HEALTHY", "eligible": true, "status": "PASS", "detail": "Successful backup verified, gate transitioned to HEALTHY" },
+      { "step": "T8", "state": "HEALTHY", "eligible": true, "status": "PASS", "detail": "Gate re-evaluates to HEALTHY (resumptions: 1)" },
+      { "step": "T9", "state": "HEALTHY", "eligible": true, "status": "PASS", "detail": "SEC egress lock acquired, worker lease verified" },
+      { "step": "T10", "state": "HEALTHY", "eligible": true, "status": "PASS", "detail": "Cycle complete, 0 duplicates, data integrity intact" }
+    ]
+  },
+  "implementation_files": [
+    "analyst_dashboard/smart_money/storage/backup/freshness_authority.py",
+    "analyst_dashboard/smart_money/storage/backup/containment_gate.py",
+    "analyst_dashboard/smart_money/storage/backup/storage_adapter.py",
+    "analyst_dashboard/smart_money/storage/backup/__init__.py",
+    "analyst_dashboard/smart_money/storage/postgres_repository.py",
+    "analyst_dashboard/smart_money/worker.py",
+    "tests/test_smart_money_backup_containment_adversarial.py"
+  ]
+}

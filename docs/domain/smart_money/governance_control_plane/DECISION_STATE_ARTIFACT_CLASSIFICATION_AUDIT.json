@@ -1,0 +1,36 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/decision-state-artifact-classification-audit.json",
+  "artifact_classifications": {
+    "CANONICAL_DECISION_CHAIN_STATE.json": "GOVERNED_STATE",
+    "DECISION_AUTHORIZATION_BOUNDARY_AUDIT.json": "EVIDENCE",
+    "DECISION_CHAIN_ADVERSARIAL_EXECUTION_AUDIT.json": "EVIDENCE",
+    "DECISION_INVALIDATION_REGISTRY.json": "SOURCE",
+    "POST_ARCHITECTURE_CANONICAL_BASELINE_V3.json": "DERIVED_REPORT",
+    "decision_engine.py": "SOURCE",
+    "finding_registry.py": "SOURCE"
+  },
+  "audit_id": "urn:arx:audit:decision-state-artifact-classification:2026-10-12",
+  "canonical_decision_chain_state_role": {
+    "artifact_class": "GOVERNED_STATE",
+    "authoritative_for_currentness": true,
+    "authoritative_for_predecessor": true,
+    "authoritative_for_restart": true,
+    "authoritative_for_sequence": true,
+    "authoritative_for_supersession": true
+  },
+  "chain_state_path_model": {
+    "committed_version_role": "IMMUTABLE_HISTORICAL_SNAPSHOT",
+    "historical_git_version_immutable": true,
+    "live_mutation_allowed": true,
+    "semantic_conflict": false,
+    "working_tree_role": "MUTABLE_LIVE_GOVERNED_STATE"
+  },
+  "generated_at": "2026-10-12T20:30:00Z",
+  "prior_source_to_seal_classification_correction": {
+    "contamination": false,
+    "corrected_chronology": "SOURCE -> GOVERNED_STATE -> EVIDENCE",
+    "prior_claim": "100% evidence-only seal",
+    "prior_status": "INCORRECT"
+  },
+  "verdict": "PASS"
+}

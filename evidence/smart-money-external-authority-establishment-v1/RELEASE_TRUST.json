@@ -1,0 +1,34 @@
+{
+  "a1_protected_default_branch": {
+    "evidence": "REMOTE_BRANCH_PROTECTION.json",
+    "remote_main_protected": "NO",
+    "status": "BLOCKED"
+  },
+  "a2_immutable_release_identity": {
+    "evidence": "Unprotected remote branch cannot guarantee release immutability.",
+    "qualified_release_sha": "N/A",
+    "remote_release_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+    "status": "BLOCKED",
+    "target_commit_sha": "ab32ec91bff0dce73a35938af73e1af8d43e5c68"
+  },
+  "a3_reproducibility": {
+    "deterministic_build": true,
+    "poetry_lock_present": true,
+    "pyproject_toml_present": true,
+    "status": "PASS"
+  },
+  "a4_external_release_witness": {
+    "evidence": "No external transparency log (Rekor/Sigstore) witness entry established for release commit.",
+    "rekor_entry_uuid": "NONE",
+    "release_trust_root": "NOT_ESTABLISHED",
+    "status": "BLOCKED"
+  },
+  "push_control": {
+    "commits_held_locally": 4,
+    "posture": "BLOCKED_PENDING_OPERATOR_AUTHORIZATION",
+    "rule": "Do not push to remote origin before release-trust prerequisites are satisfied."
+  },
+  "schema_version": "THEOREM_A_RELEASE_TRUST_V1",
+  "theorem": "A_RELEASE_TRUST",
+  "verdict": "BLOCKED"
+}

@@ -1,0 +1,6 @@
+{
+  "authority_event_crash": "ATOMIC_RESUME",
+  "r1_crash_recovery": "IDEMPOTENT_REUSE",
+  "r2_failure": "SUSPEND_AUTHORITY",
+  "status": "PASS"
+}

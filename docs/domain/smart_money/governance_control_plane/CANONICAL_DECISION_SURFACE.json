@@ -1,0 +1,50 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/canonical-decision-surface.json",
+  "surface_id": "urn:arx:surface:decision:v1",
+  "version": "1.0.0",
+  "required_outputs": [
+    "THEOREM_A",
+    "THEOREM_B",
+    "THEOREM_C",
+    "THEOREM_D",
+    "THEOREM_E",
+    "ARCHITECTURE_CLOSURE_STATUS",
+    "REMEDIATION_STATUS",
+    "GLOBAL_PROVISIONING_READINESS",
+    "PROVISIONING_AUTHORIZATION_STATUS",
+    "RUNTIME_ACTION"
+  ],
+  "required_claim_classes": [
+    "GOVERNANCE_ROOT",
+    "EXTERNAL_LEDGER",
+    "EXTERNAL_WITNESS",
+    "CANDIDATE_FREEZE_IDENTITY",
+    "CANDIDATE_SEMANTIC_CLOSURE",
+    "FINDING_BLOCKERS",
+    "DENOMINATOR_ALIGNMENT",
+    "GOVERNANCE_POLICY",
+    "RELEASE_PROVENANCE"
+  ],
+  "theorems": {
+    "THEOREM_A": {
+      "title": "Release Trust & Provenance",
+      "required_claims": ["CLAIM-RELEASE-PROVENANCE", "CLAIM-CANDIDATE004-FREEZE-FILE-IDENTITY"]
+    },
+    "THEOREM_B": {
+      "title": "Authorization Authority & Governance Root",
+      "required_claims": ["CLAIM-GOVERNANCE-ROOT", "CLAIM-GOVERNANCE-POLICY"]
+    },
+    "THEOREM_C": {
+      "title": "Transactional State Authority & External Ledger",
+      "required_claims": ["CLAIM-EXTERNAL-LEDGER"]
+    },
+    "THEOREM_D": {
+      "title": "Evidence Custody & External Witness",
+      "required_claims": ["CLAIM-EXTERNAL-WITNESS"]
+    },
+    "THEOREM_E": {
+      "title": "Live Recovery & Production Observation Qualification",
+      "required_claims": ["CLAIM-DENOMINATOR-ALIGNMENT"]
+    }
+  }
+}

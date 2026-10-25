@@ -1,0 +1,8 @@
+{
+  "claim": "Object metadata coupling enables reconstruction of accession identity from object store alone",
+  "evidence_class": "DESIGN_AND_UNIT_TEST",
+  "independent_verifier_result": "PASS",
+  "observed_result": "Metadata-object coupling verified; outbox promotion moves staged objects to committed state atomically.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_distributed_authority_substrate.py -k test_evidence_custody_staging_quarantine_and_replay",
+  "status": "PASS"
+}

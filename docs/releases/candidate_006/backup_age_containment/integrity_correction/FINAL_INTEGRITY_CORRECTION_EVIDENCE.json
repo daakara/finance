@@ -1,0 +1,106 @@
+{
+  "schema_version": "ARX_INTEGRITY_CORRECTION_EVIDENCE_V1",
+  "generated_at": "2026-10-14T11:36:00Z",
+  "execution_mode": "NONPRODUCTION_INTEGRITY_CORRECTION_AND_EVIDENCE_REQUALIFICATION",
+  "recommended_verdict": "CANDIDATE_006_INTEGRITY_CORRECTION_LOCAL_VERIFIED",
+  "identities": {
+    "repository": "daakara/finance",
+    "active_branch": "arx/smart-money-candidate-006-backup-age-containment",
+    "base_candidate_sha": "9fdcc69fc2a291b8552cd9df8d56e3a2343cda04",
+    "base_candidate_tree": "e173684639c99b569408070a2e539ce075cbafbf",
+    "production_web_baseline_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+    "rollback_reference_sha": "76a8691339c30edc35e4e056d5b295509a81fe3a",
+    "schema_version": "SMART_MONEY_POSTGRES_SCHEMA_V2",
+    "railway_project_id": "a339a92a-7236-4ac0-9a3a-d7ad440f9690",
+    "railway_rehearsal_env_id": "7f7e4317-2b76-4a0e-bff1-33227da71e5d",
+    "railway_production_env_id": "11cad5e1-358e-430e-84fc-189953cff48a"
+  },
+  "governance_status": {
+    "production_mutations": "PROHIBITED",
+    "production_deployment": "NOT_AUTHORIZED",
+    "production_database_provisioning": "NOT_AUTHORIZED",
+    "production_schema_migration": "NOT_AUTHORIZED",
+    "production_worker_activation": "NOT_AUTHORIZED",
+    "production_cutover": "NOT_AUTHORIZED",
+    "production_backup_policy": "PENDING_OWNER_RATIFICATION",
+    "production_spending_ceiling": "PENDING_OWNER_APPROVAL",
+    "owner_release_authorization": "PENDING",
+    "rehearsal_deployment": "NOT_AUTHORIZED",
+    "model_tuning": "FROZEN",
+    "empirical_quality": "NOT_ESTABLISHED"
+  },
+  "three_mandatory_corrections": {
+    "correction_1_remote_checksum_metadata": {
+      "status": "IMPLEMENTED_AND_VERIFIED",
+      "rule": "Reject missing, empty, or malformed remote checksum metadata fail-closed as UNVERIFIABLE",
+      "canonicalization": "Case-insensitive hex normalized to lowercase",
+      "test_suite": "tests/test_smart_money_backup_checksum_integrity_adversarial.py",
+      "test_count": 12,
+      "test_passed": 12,
+      "test_status": "12/12 PASS"
+    },
+    "correction_2_completed_at_timestamp_authority": {
+      "status": "IMPLEMENTED_AND_VERIFIED",
+      "rule": "started_at fallback strictly eliminated; completed_at is sole authority with chronological and clock skew checks",
+      "causal_order_enforced": true,
+      "future_skew_limit_seconds": 300.0,
+      "test_suite": "tests/test_smart_money_backup_timestamp_authority_adversarial.py",
+      "test_count": 12,
+      "test_passed": 12,
+      "test_status": "12/12 PASS"
+    },
+    "correction_3_fault_injection_and_postgres_integration": {
+      "status": "IMPLEMENTED_AND_VERIFIED",
+      "rule": "T0-T10 reclassified as LOCAL_SIMULATED_FAULT_INJECTION; 17-item real PostgreSQL 16 integration verified separately",
+      "simulated_test_suite": "tests/test_smart_money_backup_containment_fault_injection.py",
+      "postgres_test_suite": "tests/test_smart_money_backup_containment_postgres_integration.py",
+      "postgres_version": "PostgreSQL 16.2 via pgserver",
+      "advisory_locks_verified": true,
+      "test_status": "PASS"
+    }
+  },
+  "adjacent_failure_modes_remediated": {
+    "multi_manifest_candidate_search": {
+      "status": "RESOLVED",
+      "description": "Descending iteration through up to 10 manifest candidates until verifiable recovery point found"
+    },
+    "path_traversal_prevention": {
+      "status": "RESOLVED",
+      "description": "Rejects .., /, \\, null bytes, and non-conforming dump filenames fail-closed"
+    },
+    "fail_closed_configuration_parsing": {
+      "status": "RESOLVED",
+      "description": "_parse_safety_float rejects negative, zero, NaN, Inf, and malformed strings fail-closed"
+    },
+    "bounded_cache_lifetime": {
+      "status": "RESOLVED",
+      "description": "Cache projection clamped to max_verified_age_seconds to prevent unauthorized write extension"
+    }
+  },
+  "test_execution_summary": {
+    "targeted_containment_suite": {
+      "tests/test_smart_money_backup_checksum_integrity_adversarial.py": "12/12 PASS",
+      "tests/test_smart_money_backup_timestamp_authority_adversarial.py": "12/12 PASS",
+      "tests/test_smart_money_backup_containment_postgres_integration.py": "1/1 PASS (17 steps)",
+      "tests/test_smart_money_backup_containment_fault_injection.py": "1/1 PASS (11 steps)",
+      "tests/test_smart_money_backup_containment_adversarial.py": "37/37 PASS",
+      "total_targeted_tests": 63,
+      "total_targeted_passed": 63
+    },
+    "full_smart_money_test_battery": {
+      "total_tests_executed": 675,
+      "total_passed": 675,
+      "total_failed": 0,
+      "pass_rate_pct": 100.0
+    }
+  },
+  "evidence_documentation_manifest": [
+    "docs/releases/candidate_006/backup_age_containment/integrity_correction/REMOTE_CHECKSUM_CONTRACT_AND_DISPROOF.md",
+    "docs/releases/candidate_006/backup_age_containment/integrity_correction/BACKUP_COMPLETION_TIMESTAMP_AUTHORITY.md",
+    "docs/releases/candidate_006/backup_age_containment/integrity_correction/FAULT_INJECTION_EVIDENCE_RECLASSIFICATION.md",
+    "docs/releases/candidate_006/backup_age_containment/integrity_correction/POSTGRES_INTEGRATION_TEST_RESULTS.md",
+    "docs/releases/candidate_006/backup_age_containment/integrity_correction/ADJACENT_FAILURE_MODE_AUDIT.md",
+    "docs/releases/candidate_006/backup_age_containment/integrity_correction/REGRESSION_AND_COMPATIBILITY_REPORT.md",
+    "docs/releases/candidate_006/backup_age_containment/integrity_correction/REHEARSAL_READINESS_REASSESSMENT.md"
+  ]
+}

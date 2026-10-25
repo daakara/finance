@@ -1,0 +1,36 @@
+{
+  "gate": "ARX_SMART_MONEY_CANDIDATE_006_REMEDIATION_V1",
+  "evaluated_at": "2026-10-14T01:05:00+02:00",
+  "verdict": "SMART_MONEY_CANDIDATE_006_CODE_VERIFIED_INFRASTRUCTURE_PENDING",
+  "verdict_reasoning": "Code implementation and local isolated verification of both worker lease recovery and automated backup pipelines are fully completed and verified across 19 unit and integration tests. Real external off-host cloud custody (e.g. production S3 bucket provisioning) remains pending infrastructure deployment.",
+  "blockers_resolved": [
+    {
+      "code": "WORKER_STALE_RUNNING_REQUEST_RECOVERY_NOT_IMPLEMENTED",
+      "resolution": "Implemented V2 lease contract on sm_run_requests with SKIP LOCKED atomic claim, heartbeat renewal, exponential backoff stale claim recovery, and cryptographic token fencing."
+    },
+    {
+      "code": "AUTOMATED_CONTINUOUS_BACKUP_PIPELINE_NOT_PROVISIONED",
+      "resolution": "Implemented SmartMoneyBackupEngine with least-privilege smart_money_backup role, LOCK_BACKUP_EXECUTION advisory lock, pg_dumpall/pg_dump archive generation, SHA-256 validation, retention management, and BackupRestoreVerifier."
+    }
+  ],
+  "remaining_blockers": [
+    {
+      "code": "REAL_EXTERNAL_BACKUP_CUSTODY_PROVISIONING_PENDING",
+      "description": "Production S3/R2 storage bucket and credentials must be provisioned during production deployment gate."
+    },
+    {
+      "code": "FIDO2_QUORUM_DEFERRED",
+      "description": "ARX_SOLE_OWNER_FIDO2_TEMPORARY_SUSPENSION_GOVERNANCE_AMENDMENT_V1 deferred to production release readiness."
+    }
+  ],
+  "governance": {
+    "fido2_amendment": "DEFERRED_TO_PRODUCTION_RELEASE_READINESS",
+    "fido2_quorum_satisfied": false,
+    "execution_ladder": "PARKED",
+    "vcp_authority_changed": false,
+    "model_tuned": false,
+    "empirical_quality": "INSUFFICIENT_EVIDENCE",
+    "learning_claim": "NOT_AUTHORIZED"
+  },
+  "next_authorized_gate": "PRODUCTION_RELEASE_READINESS_REVIEW"
+}

@@ -1,0 +1,8 @@
+{
+  "claim": "Immutable WORM object store holds raw SEC accession bytes and metadata",
+  "evidence_class": "OBJECT_STORAGE",
+  "independent_verifier_result": "BLOCKED per Section 8.1 and Section 31",
+  "observed_result": "DurableEvidenceCustodyStore verified locally; external cloud WORM object store with bucket delete-protection policy is not provisioned.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_distributed_authority_substrate.py -k test_evidence_custody_staging_quarantine_and_replay",
+  "status": "BLOCKED"
+}

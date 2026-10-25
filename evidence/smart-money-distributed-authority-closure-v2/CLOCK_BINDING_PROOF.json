@@ -1,0 +1,8 @@
+{
+  "claim": "Clock evidence binds synchronized time source, offset, uncertainty, and status into observation run",
+  "evidence_class": "DESIGN_AND_UNIT_TEST",
+  "independent_verifier_result": "PASS",
+  "observed_result": "ClockAuthorityRecord correctly binds NTP_POOL_MONOTONIC, SNTP_V4, offset_ms, and uncertainty_ms <= 500ms into observer DB.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_final_natural_authority_chain_closure.py -k test_observer_db_durability",
+  "status": "PASS"
+}

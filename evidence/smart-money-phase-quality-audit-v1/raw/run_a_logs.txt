@@ -1,0 +1,670 @@
+﻿2026-10-11T20:38:09.5751666Z Current runner version: '2.337.0'
+2026-10-11T20:38:09.5771674Z ##[group]Runner Image Provisioner
+2026-10-11T20:38:09.5772294Z Hosted Compute Agent
+2026-10-11T20:38:09.5772718Z Version: 20261002.596
+2026-10-11T20:38:09.5773145Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+2026-10-11T20:38:09.5773594Z Build Date: 2026-10-02T22:28:27Z
+2026-10-11T20:38:09.5774097Z Worker ID: {1ab5ab4b-42fa-49fe-853b-01f00f82400d}
+2026-10-11T20:38:09.5774549Z Region: southcentralus
+2026-10-11T20:38:09.5774911Z Cloud: Azure
+2026-10-11T20:38:09.5775304Z ##[endgroup]
+2026-10-11T20:38:09.5776185Z ##[group]Operating System
+2026-10-11T20:38:09.5776649Z Ubuntu
+2026-10-11T20:38:09.5777026Z 24.04.5
+2026-10-11T20:38:09.5777345Z LTS
+2026-10-11T20:38:09.5777723Z ##[endgroup]
+2026-10-11T20:38:09.5778076Z ##[group]Runner Image
+2026-10-11T20:38:09.5778547Z Image: ubuntu-24.04
+2026-10-11T20:38:09.5778956Z Version: 20261004.327.1
+2026-10-11T20:38:09.5779857Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-11T20:38:09.5780895Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+2026-10-11T20:38:09.5781844Z ##[endgroup]
+2026-10-11T20:38:09.5782578Z ##[group]GITHUB_TOKEN Permissions
+2026-10-11T20:38:09.5784041Z Contents: read
+2026-10-11T20:38:09.5784420Z Metadata: read
+2026-10-11T20:38:09.5784829Z ##[endgroup]
+2026-10-11T20:38:09.5786314Z Secret source: Actions
+2026-10-11T20:38:09.5786882Z Cache mode: write
+2026-10-11T20:38:09.5787420Z Prepare workflow directory
+2026-10-11T20:38:09.6004196Z Prepare all required actions
+2026-10-11T20:38:09.6038055Z Getting action download info
+2026-10-11T20:38:09.8912060Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-11T20:38:09.9529876Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+2026-10-11T20:38:10.0355948Z Download action repository 'sigstore/cosign-installer@v3.5.0' (SHA:59acb6260d9c0ba8f4a2f9d9b48431a222b68e20)
+2026-10-11T20:38:10.2141929Z Download action repository 'actions/cache@v4' (SHA:0057852bfaa89a56745cba8c7296529d2fc39830)
+2026-10-11T20:38:10.3706724Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-10-11T20:38:10.6683937Z Complete job name: Execute Governed Smart Money Rooting Scheduler
+2026-10-11T20:38:10.7593448Z ##[group]Run actions/checkout@v4
+2026-10-11T20:38:10.7593905Z with:
+2026-10-11T20:38:10.7594151Z   repository: daakara/finance
+2026-10-11T20:38:10.7596295Z   token: ***
+2026-10-11T20:38:10.7596528Z   ssh-strict: true
+2026-10-11T20:38:10.7596769Z   ssh-user: git
+2026-10-11T20:38:10.7597024Z   persist-credentials: true
+2026-10-11T20:38:10.7597292Z   clean: true
+2026-10-11T20:38:10.7597539Z   sparse-checkout-cone-mode: true
+2026-10-11T20:38:10.7597821Z   fetch-depth: 1
+2026-10-11T20:38:10.7598054Z   fetch-tags: false
+2026-10-11T20:38:10.7598307Z   show-progress: true
+2026-10-11T20:38:10.7598556Z   lfs: false
+2026-10-11T20:38:10.7598831Z   submodules: false
+2026-10-11T20:38:10.7599091Z   set-safe-directory: true
+2026-10-11T20:38:10.7599369Z   allow-unsafe-pr-checkout: false
+2026-10-11T20:38:10.7599738Z ##[endgroup]
+2026-10-11T20:38:10.8296395Z Syncing repository: daakara/finance
+2026-10-11T20:38:10.8297964Z ##[group]Getting Git version info
+2026-10-11T20:38:10.8298660Z Working directory is '/home/runner/work/finance/finance'
+2026-10-11T20:38:10.8299606Z [command]/usr/bin/git version
+2026-10-11T20:38:10.8499579Z git version 2.55.0
+2026-10-11T20:38:10.8512997Z ##[endgroup]
+2026-10-11T20:38:10.8524650Z Temporarily overriding HOME='/home/runner/work/_temp/2e7f1819-630b-4172-9879-bb8a92cf695e' before making global git config changes
+2026-10-11T20:38:10.8525951Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-11T20:38:10.8529200Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/finance/finance
+2026-10-11T20:38:10.8731260Z Deleting the contents of '/home/runner/work/finance/finance'
+2026-10-11T20:38:10.8734694Z ##[group]Initializing the repository
+2026-10-11T20:38:10.8738089Z [command]/usr/bin/git init /home/runner/work/finance/finance
+2026-10-11T20:38:10.8930730Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-11T20:38:10.8932048Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-11T20:38:10.8933061Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-11T20:38:10.8933908Z hint: call:
+2026-10-11T20:38:10.8934483Z hint:
+2026-10-11T20:38:10.8935109Z hint: 	git config --global init.defaultBranch <name>
+2026-10-11T20:38:10.8935764Z hint:
+2026-10-11T20:38:10.8936416Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-11T20:38:10.8937357Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-11T20:38:10.8938160Z hint:
+2026-10-11T20:38:10.8938672Z hint: 	git branch -m <name>
+2026-10-11T20:38:10.8939249Z hint:
+2026-10-11T20:38:10.8939951Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-11T20:38:10.8941307Z Initialized empty Git repository in /home/runner/work/finance/finance/.git/
+2026-10-11T20:38:10.8943549Z [command]/usr/bin/git remote add origin https://github.com/daakara/finance
+2026-10-11T20:38:10.9322604Z ##[endgroup]
+2026-10-11T20:38:10.9323464Z ##[group]Disabling automatic garbage collection
+2026-10-11T20:38:10.9328989Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-11T20:38:10.9529756Z ##[endgroup]
+2026-10-11T20:38:10.9532207Z ##[group]Setting up auth
+2026-10-11T20:38:10.9536449Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-11T20:38:10.9568762Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-11T20:38:10.9866491Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-11T20:38:10.9897119Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-11T20:38:11.0079226Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-11T20:38:11.0108515Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-11T20:38:11.0287840Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-11T20:38:11.0844208Z ##[endgroup]
+2026-10-11T20:38:11.0845016Z ##[group]Fetching the repository
+2026-10-11T20:38:11.0852387Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +bab9776b8013646b634871c49b52e61e4234d36b:refs/remotes/origin/main
+2026-10-11T20:38:13.3349497Z From https://github.com/daakara/finance
+2026-10-11T20:38:13.3350499Z  * [new ref]         bab9776b8013646b634871c49b52e61e4234d36b -> origin/main
+2026-10-11T20:38:13.3353097Z ##[endgroup]
+2026-10-11T20:38:13.3355240Z ##[group]Determining the checkout info
+2026-10-11T20:38:13.3355544Z ##[endgroup]
+2026-10-11T20:38:13.3359845Z [command]/usr/bin/git sparse-checkout disable
+2026-10-11T20:38:13.3564003Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-11T20:38:13.3656735Z ##[group]Checking out the ref
+2026-10-11T20:38:13.3660449Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-10-11T20:38:13.5954169Z Switched to a new branch 'main'
+2026-10-11T20:38:13.6163887Z branch 'main' set up to track 'origin/main'.
+2026-10-11T20:38:13.6177232Z ##[endgroup]
+2026-10-11T20:38:13.6219999Z [command]/usr/bin/git log -1 --format=%H
+2026-10-11T20:38:13.6245596Z bab9776b8013646b634871c49b52e61e4234d36b
+2026-10-11T20:38:13.6587992Z ##[group]Run actions/setup-python@v5
+2026-10-11T20:38:13.6588411Z with:
+2026-10-11T20:38:13.6588575Z   python-version: 3.11
+2026-10-11T20:38:13.6588739Z   check-latest: false
+2026-10-11T20:38:13.6590171Z   token: ***
+2026-10-11T20:38:13.6590328Z   update-environment: true
+2026-10-11T20:38:13.6590498Z   allow-prereleases: false
+2026-10-11T20:38:13.6590767Z   freethreaded: false
+2026-10-11T20:38:13.6590926Z ##[endgroup]
+2026-10-11T20:38:13.7520171Z ##[group]Installed versions
+2026-10-11T20:38:13.7812864Z (node:2081) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-11T20:38:13.7813468Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-11T20:38:13.7813926Z Successfully set up CPython (3.11.17)
+2026-10-11T20:38:13.7814381Z ##[endgroup]
+2026-10-11T20:38:13.8481449Z ##[group]Run sigstore/cosign-installer@v3.5.0
+2026-10-11T20:38:13.8481715Z with:
+2026-10-11T20:38:13.8481904Z   cosign-release: v2.2.4
+2026-10-11T20:38:13.8482088Z   install-dir: $HOME/.cosign
+2026-10-11T20:38:13.8482252Z   use-sudo: false
+2026-10-11T20:38:13.8482401Z env:
+2026-10-11T20:38:13.8482579Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:13.8482866Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-11T20:38:13.8483137Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:13.8483385Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:13.8483627Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:13.8483872Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-11T20:38:13.8484080Z ##[endgroup]
+2026-10-11T20:38:13.8553925Z ##[start-action display=Run #!/bin/bash;id=__sigstore_cosign-installer.__run]
+2026-10-11T20:38:13.9142021Z ##[group]Run #!/bin/bash
+2026-10-11T20:38:13.9142718Z [36;1m#!/bin/bash[0m
+2026-10-11T20:38:13.9142883Z [36;1m# cosign install script[0m
+2026-10-11T20:38:13.9143067Z [36;1mshopt -s expand_aliases[0m
+2026-10-11T20:38:13.9143259Z [36;1mif [ -z "$NO_COLOR" ]; then[0m
+2026-10-11T20:38:13.9143476Z [36;1m  alias log_info="echo -e \"\033[1;32mINFO\033[0m:\""[0m
+2026-10-11T20:38:13.9143721Z [36;1m  alias log_error="echo -e \"\033[1;31mERROR\033[0m:\""[0m
+2026-10-11T20:38:13.9143929Z [36;1melse[0m
+2026-10-11T20:38:13.9144085Z [36;1m  alias log_info="echo \"INFO:\""[0m
+2026-10-11T20:38:13.9144301Z [36;1m  alias log_error="echo \"ERROR:\""[0m
+2026-10-11T20:38:13.9144477Z [36;1mfi[0m
+2026-10-11T20:38:13.9144613Z [36;1mset -e[0m
+2026-10-11T20:38:13.9144752Z [36;1m[0m
+2026-10-11T20:38:13.9144898Z [36;1mmkdir -p $HOME/.cosign[0m
+2026-10-11T20:38:13.9145062Z [36;1m[0m
+2026-10-11T20:38:13.9145199Z [36;1mif [[ v2.2.4 == "main" ]]; then[0m
+2026-10-11T20:38:13.9145442Z [36;1m  log_info "installing cosign via 'go install' from its main version"[0m
+2026-10-11T20:38:13.9145686Z [36;1m  GOBIN=$(go env GOPATH)/bin[0m
+2026-10-11T20:38:13.9145897Z [36;1m  go install github.com/sigstore/cosign/cmd/cosign@main[0m
+2026-10-11T20:38:13.9146131Z [36;1m  ln -s $GOBIN/cosign $HOME/.cosign/cosign[0m
+2026-10-11T20:38:13.9146318Z [36;1m  exit 0[0m
+2026-10-11T20:38:13.9146454Z [36;1mfi[0m
+2026-10-11T20:38:13.9146583Z [36;1m[0m
+2026-10-11T20:38:13.9146716Z [36;1mshaprog() {[0m
+2026-10-11T20:38:13.9146868Z [36;1m  case Linux in[0m
+2026-10-11T20:38:13.9147025Z [36;1m    Linux|linux)[0m
+2026-10-11T20:38:13.9147191Z [36;1m      sha256sum $1 | cut -d' ' -f1[0m
+2026-10-11T20:38:13.9147366Z [36;1m      ;;[0m
+2026-10-11T20:38:13.9147508Z [36;1m    macOS|macos)[0m
+2026-10-11T20:38:13.9147673Z [36;1m      shasum -a256 $1 | cut -d' ' -f1[0m
+2026-10-11T20:38:13.9147849Z [36;1m      ;;[0m
+2026-10-11T20:38:13.9147991Z [36;1m    Windows|windows)[0m
+2026-10-11T20:38:13.9148307Z [36;1m      powershell -command "(Get-FileHash $1 -Algorithm SHA256 | Select-Object -ExpandProperty Hash).ToLower()"[0m
+2026-10-11T20:38:13.9148616Z [36;1m      ;;[0m
+2026-10-11T20:38:13.9148751Z [36;1m    *)[0m
+2026-10-11T20:38:13.9149074Z [36;1m      log_error "unsupported OS Linux"[0m
+2026-10-11T20:38:13.9149259Z [36;1m      exit 1[0m
+2026-10-11T20:38:13.9149400Z [36;1m      ;;[0m
+2026-10-11T20:38:13.9149533Z [36;1m  esac[0m
+2026-10-11T20:38:13.9149667Z [36;1m}[0m
+2026-10-11T20:38:13.9149798Z [36;1m[0m
+2026-10-11T20:38:13.9149939Z [36;1mbootstrap_version='v2.2.4'[0m
+2026-10-11T20:38:13.9150238Z [36;1mbootstrap_linux_amd64_sha='97a6a1e15668a75fc4ff7a4dc4cb2f098f929cbea2f12faa9de31db6b42b17d7'[0m
+2026-10-11T20:38:13.9150840Z [36;1mbootstrap_linux_arm_sha='ad0338117c8c97a555e48ee194f400aad56803aaa1f39f537a3ede9261bc9aa7'[0m
+2026-10-11T20:38:13.9151223Z [36;1mbootstrap_linux_arm64_sha='658087351e1d4f9c396b5f59ee5437461c06128f4ce80ba899ccaa1c0b6a8a62'[0m
+2026-10-11T20:38:13.9151759Z [36;1mbootstrap_darwin_amd64_sha='0e5a77a86115e4c00ba4243db01abceacb13cc06981c45e53ee71f2e1db8ce25'[0m
+2026-10-11T20:38:13.9152167Z [36;1mbootstrap_darwin_arm64_sha='fcd310e64ecddc1eaa13fe814ac1c9fc02f6f9eacd9a58480ab8160eb8ca381e'[0m
+2026-10-11T20:38:13.9152583Z [36;1mbootstrap_windows_amd64_sha='9e9b71bd3fa2a6abfa903b5f784d9ca0fbc29c563d2b084c1a82c593c2bab001'[0m
+2026-10-11T20:38:13.9152883Z [36;1mcosign_executable_name=cosign[0m
+2026-10-11T20:38:13.9153056Z [36;1m[0m
+2026-10-11T20:38:13.9153200Z [36;1mtrap "popd >/dev/null" EXIT[0m
+2026-10-11T20:38:13.9153403Z [36;1m[0m
+2026-10-11T20:38:13.9153577Z [36;1mpushd $HOME/.cosign > /dev/null[0m
+2026-10-11T20:38:13.9153745Z [36;1m[0m
+2026-10-11T20:38:13.9153879Z [36;1mcase Linux in[0m
+2026-10-11T20:38:13.9154030Z [36;1m  Linux|linux)[0m
+2026-10-11T20:38:13.9154184Z [36;1m    case X64 in[0m
+2026-10-11T20:38:13.9154340Z [36;1m      X64|amd64)[0m
+2026-10-11T20:38:13.9154520Z [36;1m        bootstrap_filename='cosign-linux-amd64'[0m
+2026-10-11T20:38:13.9154756Z [36;1m        bootstrap_sha=${bootstrap_linux_amd64_sha}[0m
+2026-10-11T20:38:13.9154987Z [36;1m        desired_cosign_filename='cosign-linux-amd64'[0m
+2026-10-11T20:38:13.9155249Z [36;1m        # v0.6.0 had different filename structures from all other releases[0m
+2026-10-11T20:38:13.9155499Z [36;1m        if [[ v2.2.4 == 'v0.6.0' ]]; then[0m
+2026-10-11T20:38:13.9155744Z [36;1m          desired_cosign_filename='cosign_linux_amd64_0.6.0_linux_amd64'[0m
+2026-10-11T20:38:13.9156047Z [36;1m          desired_cosign_v060_signature='cosign_linux_amd64_0.6.0_linux_amd64.sig'[0m
+2026-10-11T20:38:13.9156296Z [36;1m        fi[0m
+2026-10-11T20:38:13.9156450Z [36;1m        ;;[0m
+2026-10-11T20:38:13.9156587Z [36;1m[0m
+2026-10-11T20:38:13.9156718Z [36;1m      ARM|arm)[0m
+2026-10-11T20:38:13.9156891Z [36;1m        bootstrap_filename='cosign-linux-arm'[0m
+2026-10-11T20:38:13.9157109Z [36;1m        bootstrap_sha=${bootstrap_linux_arm_sha}[0m
+2026-10-11T20:38:13.9157340Z [36;1m        desired_cosign_filename='cosign-linux-arm'[0m
+2026-10-11T20:38:13.9157548Z [36;1m        if [[ v2.2.4 == 'v0.6.0' ]]; then[0m
+2026-10-11T20:38:13.9157764Z [36;1m          log_error "linux-arm build not available at v0.6.0"[0m
+2026-10-11T20:38:13.9157977Z [36;1m          exit 1[0m
+2026-10-11T20:38:13.9158125Z [36;1m        fi[0m
+2026-10-11T20:38:13.9158265Z [36;1m        ;;[0m
+2026-10-11T20:38:13.9158402Z [36;1m[0m
+2026-10-11T20:38:13.9158535Z [36;1m      ARM64|arm64)[0m
+2026-10-11T20:38:13.9158716Z [36;1m        bootstrap_filename='cosign-linux-arm64'[0m
+2026-10-11T20:38:13.9158938Z [36;1m        bootstrap_sha=${bootstrap_linux_arm64_sha}[0m
+2026-10-11T20:38:13.9159165Z [36;1m        desired_cosign_filename='cosign-linux-arm64'[0m
+2026-10-11T20:38:13.9159376Z [36;1m        if [[ v2.2.4 == 'v0.6.0' ]]; then[0m
+2026-10-11T20:38:13.9159597Z [36;1m          log_error "linux-arm64 build not available at v0.6.0"[0m
+2026-10-11T20:38:13.9159810Z [36;1m          exit 1[0m
+2026-10-11T20:38:13.9159964Z [36;1m        fi[0m
+2026-10-11T20:38:13.9160103Z [36;1m        ;;[0m
+2026-10-11T20:38:13.9160241Z [36;1m[0m
+2026-10-11T20:38:13.9160369Z [36;1m      *)[0m
+2026-10-11T20:38:13.9160535Z [36;1m        log_error "unsupported architecture X64"[0m
+2026-10-11T20:38:13.9160933Z [36;1m        exit 1[0m
+2026-10-11T20:38:13.9161081Z [36;1m        ;;[0m
+2026-10-11T20:38:13.9161218Z [36;1m    esac[0m
+2026-10-11T20:38:13.9161357Z [36;1m    ;;[0m
+2026-10-11T20:38:13.9161490Z [36;1m[0m
+2026-10-11T20:38:13.9161623Z [36;1m  macOS|macos)[0m
+2026-10-11T20:38:13.9161772Z [36;1m    case X64 in[0m
+2026-10-11T20:38:13.9161923Z [36;1m      X64|amd64)[0m
+2026-10-11T20:38:13.9162102Z [36;1m        bootstrap_filename='cosign-darwin-amd64'[0m
+2026-10-11T20:38:13.9162327Z [36;1m        bootstrap_sha=${bootstrap_darwin_amd64_sha}[0m
+2026-10-11T20:38:13.9162557Z [36;1m        desired_cosign_filename='cosign-darwin-amd64'[0m
+2026-10-11T20:38:13.9162915Z [36;1m        # v0.6.0 had different filename structures from all other releases[0m
+2026-10-11T20:38:13.9163161Z [36;1m        if [[ v2.2.4 == 'v0.6.0' ]]; then[0m
+2026-10-11T20:38:13.9163397Z [36;1m          desired_cosign_filename='cosign_darwin_amd64_0.6.0_darwin_amd64'[0m
+2026-10-11T20:38:13.9163709Z [36;1m          desired_cosign_v060_signature='cosign_darwin_amd64_0.6.0_darwin_amd64.sig'[0m
+2026-10-11T20:38:13.9163957Z [36;1m        fi[0m
+2026-10-11T20:38:13.9164098Z [36;1m        ;;[0m
+2026-10-11T20:38:13.9164234Z [36;1m[0m
+2026-10-11T20:38:13.9164367Z [36;1m      ARM64|arm64)[0m
+2026-10-11T20:38:13.9164552Z [36;1m        bootstrap_filename='cosign-darwin-arm64'[0m
+2026-10-11T20:38:13.9164780Z [36;1m        bootstrap_sha=${bootstrap_darwin_arm64_sha}[0m
+2026-10-11T20:38:13.9165011Z [36;1m        desired_cosign_filename='cosign-darwin-arm64'[0m
+2026-10-11T20:38:13.9165269Z [36;1m        # v0.6.0 had different filename structures from all other releases[0m
+2026-10-11T20:38:13.9165509Z [36;1m        if [[ v2.2.4 == 'v0.6.0' ]]; then[0m
+2026-10-11T20:38:13.9165750Z [36;1m          desired_cosign_filename='cosign_darwin_arm64_0.6.0_darwin_arm64'[0m
+2026-10-11T20:38:13.9166062Z [36;1m          desired_cosign_v060_signature='cosign_darwin_arm64_0.6.0_darwin_arm64.sig'[0m
+2026-10-11T20:38:13.9166313Z [36;1m        fi[0m
+2026-10-11T20:38:13.9166454Z [36;1m        ;;[0m
+2026-10-11T20:38:13.9166592Z [36;1m[0m
+2026-10-11T20:38:13.9166724Z [36;1m      *)[0m
+2026-10-11T20:38:13.9166889Z [36;1m        log_error "unsupported architecture X64"[0m
+2026-10-11T20:38:13.9167082Z [36;1m        exit 1[0m
+2026-10-11T20:38:13.9167229Z [36;1m        ;;[0m
+2026-10-11T20:38:13.9167369Z [36;1m    esac[0m
+2026-10-11T20:38:13.9167504Z [36;1m    ;;[0m
+2026-10-11T20:38:13.9167636Z [36;1m[0m
+2026-10-11T20:38:13.9167771Z [36;1m  Windows|windows)[0m
+2026-10-11T20:38:13.9167928Z [36;1m    case X64 in[0m
+2026-10-11T20:38:13.9168078Z [36;1m      X64|amd64)[0m
+2026-10-11T20:38:13.9168269Z [36;1m        bootstrap_filename='cosign-windows-amd64.exe'[0m
+2026-10-11T20:38:13.9168505Z [36;1m        bootstrap_sha=${bootstrap_windows_amd64_sha}[0m
+2026-10-11T20:38:13.9168744Z [36;1m        desired_cosign_filename='cosign-windows-amd64.exe'[0m
+2026-10-11T20:38:13.9168978Z [36;1m        cosign_executable_name=cosign.exe[0m
+2026-10-11T20:38:13.9169219Z [36;1m        # v0.6.0 had different filename structures from all other releases[0m
+2026-10-11T20:38:13.9169459Z [36;1m        if [[ v2.2.4 == 'v0.6.0' ]]; then[0m
+2026-10-11T20:38:13.9169709Z [36;1m          desired_cosign_filename='cosign_windows_amd64_0.6.0_windows_amd64.exe'[0m
+2026-10-11T20:38:13.9170040Z [36;1m          desired_cosign_v060_signature='cosign_windows_amd64_0.6.0_windows_amd64.exe.sig'[0m
+2026-10-11T20:38:13.9170305Z [36;1m        fi[0m
+2026-10-11T20:38:13.9170448Z [36;1m        ;;[0m
+2026-10-11T20:38:13.9170670Z [36;1m      *)[0m
+2026-10-11T20:38:13.9170836Z [36;1m        log_error "unsupported architecture X64"[0m
+2026-10-11T20:38:13.9171032Z [36;1m        exit 1[0m
+2026-10-11T20:38:13.9171181Z [36;1m        ;;[0m
+2026-10-11T20:38:13.9171320Z [36;1m    esac[0m
+2026-10-11T20:38:13.9171455Z [36;1m    ;;[0m
+2026-10-11T20:38:13.9171588Z [36;1m  *)[0m
+2026-10-11T20:38:13.9171845Z [36;1m    log_error "unsupported os Linux"[0m
+2026-10-11T20:38:13.9172031Z [36;1m    exit 1[0m
+2026-10-11T20:38:13.9172172Z [36;1m    ;;[0m
+2026-10-11T20:38:13.9172306Z [36;1mesac[0m
+2026-10-11T20:38:13.9172435Z [36;1m[0m
+2026-10-11T20:38:13.9172563Z [36;1mSUDO=[0m
+2026-10-11T20:38:13.9172746Z [36;1mif [[ "false" == "true" ]] && command -v sudo >/dev/null; then[0m
+2026-10-11T20:38:13.9172960Z [36;1m  SUDO=sudo[0m
+2026-10-11T20:38:13.9173103Z [36;1mfi[0m
+2026-10-11T20:38:13.9173231Z [36;1m[0m
+2026-10-11T20:38:13.9173398Z [36;1mexpected_bootstrap_version_digest=${bootstrap_sha}[0m
+2026-10-11T20:38:13.9174043Z [36;1mlog_info "Downloading bootstrap version '${bootstrap_version}' of cosign to verify version to be installed...\n      https://github.com/sigstore/cosign/releases/download/${bootstrap_version}/${bootstrap_filename}"[0m
+2026-10-11T20:38:13.9174741Z [36;1m$SUDO curl -sL https://github.com/sigstore/cosign/releases/download/${bootstrap_version}/${bootstrap_filename} -o ${cosign_executable_name}[0m
+2026-10-11T20:38:13.9175155Z [36;1mshaBootstrap=$(shaprog ${cosign_executable_name});[0m
+2026-10-11T20:38:13.9175428Z [36;1mif [[ $shaBootstrap != ${expected_bootstrap_version_digest} ]]; then[0m
+2026-10-11T20:38:13.9175703Z [36;1m  log_error "Unable to validate cosign version: 'v2.2.4'"[0m
+2026-10-11T20:38:13.9175914Z [36;1m  exit 1[0m
+2026-10-11T20:38:13.9176050Z [36;1mfi[0m
+2026-10-11T20:38:13.9176207Z [36;1m$SUDO chmod +x ${cosign_executable_name}[0m
+2026-10-11T20:38:13.9176389Z [36;1m[0m
+2026-10-11T20:38:13.9176593Z [36;1m# If the bootstrap and specified `cosign` releases are the same, we're done.[0m
+2026-10-11T20:38:13.9176862Z [36;1mif [[ v2.2.4 == ${bootstrap_version} ]]; then[0m
+2026-10-11T20:38:13.9177179Z [36;1m  log_info "bootstrap version successfully verified and matches requested version so nothing else to do"[0m
+2026-10-11T20:38:13.9177471Z [36;1m  exit 0[0m
+2026-10-11T20:38:13.9177606Z [36;1mfi[0m
+2026-10-11T20:38:13.9177736Z [36;1m[0m
+2026-10-11T20:38:13.9177914Z [36;1msemver='^v([0-9]+\.){0,2}(\*|[0-9]+)(-?r?c?)(\.[0-9]+)$'[0m
+2026-10-11T20:38:13.9200101Z [36;1mif [[ v2.2.4 =~ $semver ]]; then[0m
+2026-10-11T20:38:13.9200343Z [36;1m  log_info "Custom cosign version 'v2.2.4' requested"[0m
+2026-10-11T20:38:13.9200681Z [36;1melse[0m
+2026-10-11T20:38:13.9200945Z [36;1m  log_error "Unable to validate requested cosign version: 'v2.2.4'"[0m
+2026-10-11T20:38:13.9201178Z [36;1m  exit 1[0m
+2026-10-11T20:38:13.9201318Z [36;1mfi[0m
+2026-10-11T20:38:13.9201468Z [36;1m[0m
+2026-10-11T20:38:13.9201611Z [36;1m# Download custom cosign[0m
+2026-10-11T20:38:13.9202035Z [36;1mlog_info "Downloading platform-specific version 'v2.2.4' of cosign...\n      https://github.com/sigstore/cosign/releases/download/v2.2.4/${desired_cosign_filename}"[0m
+2026-10-11T20:38:13.9202610Z [36;1m$SUDO curl -sL https://github.com/sigstore/cosign/releases/download/v2.2.4/${desired_cosign_filename} -o cosign_v2.2.4[0m
+2026-10-11T20:38:13.9202952Z [36;1mshaCustom=$(shaprog cosign_v2.2.4);[0m
+2026-10-11T20:38:13.9203134Z [36;1m[0m
+2026-10-11T20:38:13.9203288Z [36;1m# same hash means it is the same release[0m
+2026-10-11T20:38:13.9203504Z [36;1mif [[ $shaCustom != $shaBootstrap ]]; then[0m
+2026-10-11T20:38:13.9203724Z [36;1m  if [[ v2.2.4 == 'v0.6.0' && Linux == 'Linux' ]]; then[0m
+2026-10-11T20:38:13.9203974Z [36;1m    # v0.6.0's linux release has a dependency on `libpcsclite1`[0m
+2026-10-11T20:38:13.9204267Z [36;1m    log_info "Installing libpcsclite1 package if necessary..."[0m
+2026-10-11T20:38:13.9204489Z [36;1m    set +e[0m
+2026-10-11T20:38:13.9204648Z [36;1m    sudo dpkg -s libpcsclite1[0m
+2026-10-11T20:38:13.9204827Z [36;1m    if [ $? -eq 0 ]; then[0m
+2026-10-11T20:38:13.9205034Z [36;1m        log_info "libpcsclite1 package is already installed"[0m
+2026-10-11T20:38:13.9205253Z [36;1m    else[0m
+2026-10-11T20:38:13.9205466Z [36;1m         log_info "libpcsclite1 package is not installed, installing it now."[0m
+2026-10-11T20:38:13.9205928Z [36;1m         sudo apt-get update -q -q[0m
+2026-10-11T20:38:13.9206135Z [36;1m         sudo apt-get install -yq libpcsclite1[0m
+2026-10-11T20:38:13.9206324Z [36;1m    fi[0m
+2026-10-11T20:38:13.9206464Z [36;1m    set -e[0m
+2026-10-11T20:38:13.9206607Z [36;1m  fi[0m
+2026-10-11T20:38:13.9206739Z [36;1m[0m
+2026-10-11T20:38:13.9206881Z [36;1m  if [[ v2.2.4 == 'v0.6.0' ]]; then[0m
+2026-10-11T20:38:13.9207350Z [36;1m    log_info "Downloading detached signature for platform-specific 'v2.2.4' of cosign...\n      https://github.com/sigstore/cosign/releases/download/v2.2.4/${desired_cosign_v060_signature}"[0m
+2026-10-11T20:38:13.9207997Z [36;1m    $SUDO curl -sL https://github.com/sigstore/cosign/releases/download/v2.2.4/${desired_cosign_v060_signature} -o ${desired_cosign_filename}.sig[0m
+2026-10-11T20:38:13.9208471Z [36;1m  else[0m
+2026-10-11T20:38:13.9208871Z [36;1m    log_info "Downloading detached signature for platform-specific 'v2.2.4' of cosign...\n      https://github.com/sigstore/cosign/releases/download/v2.2.4/${desired_cosign_filename}.sig"[0m
+2026-10-11T20:38:13.9209447Z [36;1m    $SUDO curl -sLO https://github.com/sigstore/cosign/releases/download/v2.2.4/${desired_cosign_filename}.sig[0m
+2026-10-11T20:38:13.9209752Z [36;1m  fi[0m
+2026-10-11T20:38:13.9209887Z [36;1m[0m
+2026-10-11T20:38:13.9210028Z [36;1m  if [[ v2.2.4 < 'v0.6.0' ]]; then[0m
+2026-10-11T20:38:13.9210418Z [36;1m    log_info "Downloading cosign public key 'v2.2.4' of cosign...\n    https://raw.githubusercontent.com/sigstore/cosign/v2.2.4/.github/workflows/cosign.pub"[0m
+2026-10-11T20:38:13.9211118Z [36;1m    RELEASE_COSIGN_PUB_KEY=https://raw.githubusercontent.com/sigstore/cosign/v2.2.4/.github/workflows/cosign.pub[0m
+2026-10-11T20:38:13.9211433Z [36;1m  else[0m
+2026-10-11T20:38:13.9211789Z [36;1m    log_info "Downloading cosign public key 'v2.2.4' of cosign...\n    https://raw.githubusercontent.com/sigstore/cosign/v2.2.4/release/release-cosign.pub"[0m
+2026-10-11T20:38:13.9212313Z [36;1m    RELEASE_COSIGN_PUB_KEY=https://raw.githubusercontent.com/sigstore/cosign/v2.2.4/release/release-cosign.pub[0m
+2026-10-11T20:38:13.9212628Z [36;1m  fi[0m
+2026-10-11T20:38:13.9212763Z [36;1m[0m
+2026-10-11T20:38:13.9212981Z [36;1m  log_info "Using bootstrap cosign to verify signature of desired cosign version"[0m
+2026-10-11T20:38:13.9213430Z [36;1m  ./cosign verify-blob --insecure-ignore-tlog --key $RELEASE_COSIGN_PUB_KEY --signature ${desired_cosign_filename}.sig cosign_v2.2.4[0m
+2026-10-11T20:38:13.9213776Z [36;1m[0m
+2026-10-11T20:38:13.9213913Z [36;1m  $SUDO rm cosign[0m
+2026-10-11T20:38:13.9214101Z [36;1m  $SUDO mv cosign_v2.2.4 ${cosign_executable_name}[0m
+2026-10-11T20:38:13.9214327Z [36;1m  $SUDO chmod +x ${cosign_executable_name}[0m
+2026-10-11T20:38:13.9214532Z [36;1m  log_info "Installation complete!"[0m
+2026-10-11T20:38:13.9214714Z [36;1mfi[0m
+2026-10-11T20:38:13.9597503Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-11T20:38:13.9597774Z env:
+2026-10-11T20:38:13.9597988Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:13.9598275Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-11T20:38:13.9598546Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:13.9598796Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:13.9599045Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:13.9599289Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-11T20:38:13.9599502Z ##[endgroup]
+2026-10-11T20:38:13.9737076Z [1;32mINFO[0m: Downloading bootstrap version 'v2.2.4' of cosign to verify version to be installed...
+2026-10-11T20:38:13.9737753Z       https://github.com/sigstore/cosign/releases/download/v2.2.4/cosign-linux-amd64
+2026-10-11T20:38:14.6271118Z [1;32mINFO[0m: bootstrap version successfully verified and matches requested version so nothing else to do
+2026-10-11T20:38:14.6283154Z ##[end-action id=__sigstore_cosign-installer.__run;outcome=success;conclusion=success;duration_ms=772]
+2026-10-11T20:38:14.6287575Z ##[start-action display=Run echo "$HOME/.cosign" >> $GITHUB_PATH;id=__sigstore_cosign-installer.__run_2]
+2026-10-11T20:38:14.6304965Z ##[group]Run echo "$HOME/.cosign" >> $GITHUB_PATH
+2026-10-11T20:38:14.6305200Z [36;1mecho "$HOME/.cosign" >> $GITHUB_PATH[0m
+2026-10-11T20:38:14.6361384Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-11T20:38:14.6361578Z env:
+2026-10-11T20:38:14.6361737Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:14.6361979Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-11T20:38:14.6362210Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:14.6362420Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:14.6362783Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:14.6362997Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-11T20:38:14.6363185Z ##[endgroup]
+2026-10-11T20:38:14.6443189Z ##[end-action id=__sigstore_cosign-installer.__run_2;outcome=success;conclusion=success;duration_ms=15]
+2026-10-11T20:38:14.6445934Z ##[start-action display=Run echo "$HOME/.cosign" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append;id=__sigstore_cosign-installer.__run_3]
+2026-10-11T20:38:14.6449572Z ##[end-action id=__sigstore_cosign-installer.__run_3;outcome=skipped;conclusion=skipped;duration_ms=0]
+2026-10-11T20:38:14.6475310Z ##[group]Run cosign version
+2026-10-11T20:38:14.6475477Z [36;1mcosign version[0m
+2026-10-11T20:38:14.6530265Z shell: /usr/bin/bash -e {0}
+2026-10-11T20:38:14.6530410Z env:
+2026-10-11T20:38:14.6530644Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:14.6530891Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-11T20:38:14.6531132Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:14.6531353Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:14.6531581Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:14.6531798Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-11T20:38:14.6531982Z ##[endgroup]
+2026-10-11T20:38:14.6787457Z   ______   ______        _______. __    _______ .__   __.
+2026-10-11T20:38:14.6788097Z  /      | /  __  \      /       ||  |  /  _____||  \ |  |
+2026-10-11T20:38:14.6788829Z |  ,----'|  |  |  |    |   (----`|  | |  |  __  |   \|  |
+2026-10-11T20:38:14.6789053Z |  |     |  |  |  |     \   \    |  | |  | |_ | |  . `  |
+2026-10-11T20:38:14.6789234Z |  `----.|  `--'  | .----)   |   |  | |  |__| | |  |\   |
+2026-10-11T20:38:14.6789435Z  \______| \______/  |_______/    |__|  \______| |__| \__|
+2026-10-11T20:38:14.6789700Z cosign: A tool for Container Signing, Verification and Storage in an OCI registry.
+2026-10-11T20:38:14.6789886Z 
+2026-10-11T20:38:14.6789940Z GitVersion:    v2.2.4
+2026-10-11T20:38:14.6790102Z GitCommit:     fb651b4ddd8176bd81756fca2d988dd8611f514d
+2026-10-11T20:38:14.6790297Z GitTreeState:  clean
+2026-10-11T20:38:14.6790470Z BuildDate:     2024-04-10T21:57:27Z
+2026-10-11T20:38:14.6790784Z GoVersion:     go1.21.8
+2026-10-11T20:38:14.6790913Z Compiler:      gc
+2026-10-11T20:38:14.6791058Z Platform:      linux/amd64
+2026-10-11T20:38:14.6791150Z 
+2026-10-11T20:38:14.6828991Z ##[group]Run pip install cryptography requests
+2026-10-11T20:38:14.6829210Z [36;1mpip install cryptography requests[0m
+2026-10-11T20:38:14.6886021Z shell: /usr/bin/bash -e {0}
+2026-10-11T20:38:14.6886165Z env:
+2026-10-11T20:38:14.6886323Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:14.6886566Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-11T20:38:14.6886806Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:14.6887020Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:14.6887230Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:14.6887577Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-11T20:38:14.6887757Z ##[endgroup]
+2026-10-11T20:38:15.5737763Z Collecting cryptography
+2026-10-11T20:38:15.6493403Z   Downloading cryptography-50.0.2-cp311-abi3-manylinux_2_34_x86_64.whl.metadata (4.4 kB)
+2026-10-11T20:38:15.6769313Z Collecting requests
+2026-10-11T20:38:15.6869552Z   Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+2026-10-11T20:38:15.7525672Z Collecting cffi>=2.0.0 (from cryptography)
+2026-10-11T20:38:15.7629377Z   Downloading cffi-2.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.5 kB)
+2026-10-11T20:38:15.8407784Z Collecting charset_normalizer<4,>=2 (from requests)
+2026-10-11T20:38:15.8515496Z   Downloading charset_normalizer-3.5.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (46 kB)
+2026-10-11T20:38:15.8838146Z Collecting idna<4,>=2.5 (from requests)
+2026-10-11T20:38:15.8938099Z   Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+2026-10-11T20:38:15.9189986Z Collecting urllib3<3,>=1.26 (from requests)
+2026-10-11T20:38:15.9289350Z   Downloading urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+2026-10-11T20:38:15.9527720Z Collecting certifi>=2023.5.7 (from requests)
+2026-10-11T20:38:15.9628926Z   Downloading certifi-2026.7.22-py3-none-any.whl.metadata (2.5 kB)
+2026-10-11T20:38:15.9838783Z Collecting pycparser (from cffi>=2.0.0->cryptography)
+2026-10-11T20:38:15.9941212Z   Downloading pycparser-3.11-py3-none-any.whl.metadata (8.2 kB)
+2026-10-11T20:38:16.0067411Z Downloading cryptography-50.0.2-cp311-abi3-manylinux_2_34_x86_64.whl (4.8 MB)
+2026-10-11T20:38:16.1029719Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.8/4.8 MB 58.1 MB/s  0:00:00
+2026-10-11T20:38:16.1143214Z Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+2026-10-11T20:38:16.1261444Z Downloading charset_normalizer-3.5.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (269 kB)
+2026-10-11T20:38:16.1378853Z Downloading idna-3.20-py3-none-any.whl (69 kB)
+2026-10-11T20:38:16.1615732Z Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+2026-10-11T20:38:16.1731775Z Downloading certifi-2026.7.22-py3-none-any.whl (136 kB)
+2026-10-11T20:38:16.1847367Z Downloading cffi-2.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (217 kB)
+2026-10-11T20:38:16.1966203Z Downloading pycparser-3.11-py3-none-any.whl (51 kB)
+2026-10-11T20:38:16.2418196Z Installing collected packages: urllib3, pycparser, idna, charset_normalizer, certifi, requests, cffi, cryptography
+2026-10-11T20:38:16.5476063Z 
+2026-10-11T20:38:16.5484276Z Successfully installed certifi-2026.7.22 cffi-2.1.1 charset_normalizer-3.5.2 cryptography-50.0.2 idna-3.20 pycparser-3.11 requests-2.34.2 urllib3-2.8.0
+2026-10-11T20:38:16.6147700Z ##[group]Run actions/cache/restore@v4
+2026-10-11T20:38:16.6147872Z with:
+2026-10-11T20:38:16.6147984Z   path: durable_state/
+2026-10-11T20:38:16.6148138Z   key: smart-money-durable-state-v2-38173031386
+2026-10-11T20:38:16.6148334Z   restore-keys: smart-money-durable-state-v2-
+
+2026-10-11T20:38:16.6148525Z   enableCrossOsArchive: false
+2026-10-11T20:38:16.6148668Z   fail-on-cache-miss: false
+2026-10-11T20:38:16.6148802Z   lookup-only: false
+2026-10-11T20:38:16.6148917Z env:
+2026-10-11T20:38:16.6149064Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:16.6149301Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-11T20:38:16.6149536Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:16.6149749Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:16.6149962Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:16.6150195Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-11T20:38:16.6150376Z ##[endgroup]
+2026-10-11T20:38:16.6863222Z (node:2136) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-11T20:38:16.6863654Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-11T20:38:16.8518013Z Cache not found for input keys: smart-money-durable-state-v2-38173031386, smart-money-durable-state-v2-
+2026-10-11T20:38:16.8618767Z ##[group]Run python -c "
+2026-10-11T20:38:16.8618937Z [36;1mpython -c "[0m
+2026-10-11T20:38:16.8619060Z [36;1mimport os, sys[0m
+2026-10-11T20:38:16.8619332Z [36;1mfrom analyst_dashboard.smart_money.public_availability.durable_state_manager import DurableStateManager[0m
+2026-10-11T20:38:16.8619647Z [36;1mmgr = DurableStateManager('durable_state')[0m
+2026-10-11T20:38:16.8619827Z [36;1mok, msg = mgr.hydrate_state()[0m
+2026-10-11T20:38:16.8620009Z [36;1mprint(f'State Rehydration Verification: {msg}')[0m
+2026-10-11T20:38:16.8620184Z [36;1mif not ok:[0m
+2026-10-11T20:38:16.8620306Z [36;1m    sys.exit(1)[0m
+2026-10-11T20:38:16.8620426Z [36;1m"[0m
+2026-10-11T20:38:16.8673825Z shell: /usr/bin/bash -e {0}
+2026-10-11T20:38:16.8673971Z env:
+2026-10-11T20:38:16.8674122Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:16.8674381Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-11T20:38:16.8674650Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:16.8674864Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:16.8675074Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:16.8675292Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-11T20:38:16.8675474Z ##[endgroup]
+2026-10-11T20:38:17.0128452Z State Rehydration Verification: GENESIS_CLEAN_INITIALIZATION
+2026-10-11T20:38:17.0371110Z ##[group]Run python scripts/run_natural_scheduler.py --mode dry-run
+2026-10-11T20:38:17.0371408Z [36;1mpython scripts/run_natural_scheduler.py --mode dry-run[0m
+2026-10-11T20:38:17.0424529Z shell: /usr/bin/bash -e {0}
+2026-10-11T20:38:17.0424669Z env:
+2026-10-11T20:38:17.0424823Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:17.0425081Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-11T20:38:17.0425324Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:17.0425538Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:17.0425750Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:17.0425965Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-11T20:38:17.0426147Z ##[endgroup]
+2026-10-11T20:38:21.4837532Z ======================================================================
+2026-10-11T20:38:21.4838050Z SMART MONEY GOVERNED NATURAL SCHEDULER EXECUTION
+2026-10-11T20:38:21.4838355Z ======================================================================
+2026-10-11T20:38:21.4838544Z 
+2026-10-11T20:38:21.4838732Z --- STEP 1: Loading and verifying frozen workload identity policy ---
+2026-10-11T20:38:21.4839300Z Frozen workload policy verified (SHA-256: 01dd7702246a9801bc88e0534accce4ad112f87acf22338a21afcda9348b7af7)
+2026-10-11T20:38:21.4839691Z 
+2026-10-11T20:38:21.4839788Z --- STEP 2: Rehydrating durable state ---
+2026-10-11T20:38:21.4840071Z Durable state status: GENESIS_CLEAN_INITIALIZATION
+2026-10-11T20:38:21.4840273Z 
+2026-10-11T20:38:21.4840417Z --- STEP 3: Acquiring OIDC token and extracting safe claims ---
+2026-10-11T20:38:21.4840852Z Safe claims:
+2026-10-11T20:38:21.4841094Z   iss: https://token.actions.githubusercontent.com
+2026-10-11T20:38:21.4841403Z   sub: repo:daakara/finance:ref:refs/heads/main
+2026-10-11T20:38:21.4841650Z   aud: sigstore
+2026-10-11T20:38:21.4841839Z   repository: daakara/finance
+2026-10-11T20:38:21.4842064Z   repository_id: 1087399232
+2026-10-11T20:38:21.4842270Z   repository_owner: daakara
+2026-10-11T20:38:21.4842478Z   repository_owner_id: 53128824
+2026-10-11T20:38:21.4842706Z   workflow: Smart Money Rooting Scheduler
+2026-10-11T20:38:21.4843114Z   job_workflow_ref: daakara/finance/.github/workflows/smart_money_rooting.yml@refs/heads/main
+2026-10-11T20:38:21.4843506Z   ref: refs/heads/main
+2026-10-11T20:38:21.4843985Z   sha: bab9776b8013646b634871c49b52e61e4234d36b
+2026-10-11T20:38:21.4844235Z   environment: 
+2026-10-11T20:38:21.4844422Z   event_name: workflow_dispatch
+2026-10-11T20:38:21.4844631Z   run_id: 38173031386
+2026-10-11T20:38:21.4844814Z   run_attempt: 1
+2026-10-11T20:38:21.4844918Z 
+2026-10-11T20:38:21.4845059Z --- STEP 4: Enforcing exact workload identity verification ---
+2026-10-11T20:38:21.4845369Z Workload identity verification: PASS
+2026-10-11T20:38:21.4845530Z 
+2026-10-11T20:38:21.4845655Z --- STEP 5: Evaluating Gate-3 Pre-Arm Authorization ---
+2026-10-11T20:38:21.4846063Z No Gate-3 authorization artifact present -> Defaulting safely to PRE_ARM_DRY_RUN
+2026-10-11T20:38:21.4846349Z 
+2026-10-11T20:38:21.4846531Z --- STEP 6: Constructing canonical R1 payload (Scope: PRE_ARM_DRY_RUN) ---
+2026-10-11T20:38:21.4846783Z 
+2026-10-11T20:38:21.4846893Z --- STEP 7: Live Sigstore keyless signing of R1 ---
+2026-10-11T20:38:21.4847873Z Executing: cosign sign-blob --bundle /home/runner/work/finance/finance/evidence/sigstore-natural-scheduler-dry-run-v1/natural_r1.sigstore.json --yes /home/runner/work/finance/finance/evidence/sigstore-natural-scheduler-dry-run-v1/natural_r1_payload.json
+2026-10-11T20:38:21.4849102Z Generated /home/runner/work/finance/finance/evidence/sigstore-natural-scheduler-dry-run-v1/natural_r1.sigstore.json
+2026-10-11T20:38:21.4851360Z Executing: cosign verify-blob --bundle /home/runner/work/finance/finance/evidence/sigstore-natural-scheduler-dry-run-v1/natural_r1.sigstore.json --certificate-identity-regexp ^https://github\.com/daakara/finance/.github/workflows/smart_money_rooting.yml@refs/heads/main$ --certificate-oidc-issuer https://token.actions.githubusercontent.com /home/runner/work/finance/finance/evidence/sigstore-natural-scheduler-dry-run-v1/natural_r1_payload.json
+2026-10-11T20:38:21.4853207Z Verified OK: /home/runner/work/finance/finance/evidence/sigstore-natural-scheduler-dry-run-v1/natural_r1.sigstore.json
+2026-10-11T20:38:21.4853839Z R1 Bundle SHA-256: 2cad73158f54a33e21ac2c6ed7d7f4d21e4bde30cebe378e380b538b9c816abc
+2026-10-11T20:38:21.4854236Z R1 Rekor Log Index: 3214219497
+2026-10-11T20:38:21.4854386Z 
+2026-10-11T20:38:21.4854480Z --- STEP 8: Creating authority event ---
+2026-10-11T20:38:21.4854872Z Authority Event SHA-256: f651b7577d27f5d69248183b98ccf4f27c23154b0aa825417d42196e35d19b8d
+2026-10-11T20:38:21.4855181Z 
+2026-10-11T20:38:21.4855358Z --- STEP 9: Constructing canonical R2 payload (Scope: PRE_ARM_DRY_RUN) ---
+2026-10-11T20:38:21.4855616Z 
+2026-10-11T20:38:21.4855733Z --- STEP 10: Live Sigstore keyless signing of R2 ---
+2026-10-11T20:38:21.4856718Z Executing: cosign sign-blob --bundle /home/runner/work/finance/finance/evidence/sigstore-natural-scheduler-dry-run-v1/natural_r2.sigstore.json --yes /home/runner/work/finance/finance/evidence/sigstore-natural-scheduler-dry-run-v1/natural_r2_payload.json
+2026-10-11T20:38:21.4857810Z Generated /home/runner/work/finance/finance/evidence/sigstore-natural-scheduler-dry-run-v1/natural_r2.sigstore.json
+2026-10-11T20:38:21.4859494Z Executing: cosign verify-blob --bundle /home/runner/work/finance/finance/evidence/sigstore-natural-scheduler-dry-run-v1/natural_r2.sigstore.json --certificate-identity-regexp ^https://github\.com/daakara/finance/.github/workflows/smart_money_rooting.yml@refs/heads/main$ --certificate-oidc-issuer https://token.actions.githubusercontent.com /home/runner/work/finance/finance/evidence/sigstore-natural-scheduler-dry-run-v1/natural_r2_payload.json
+2026-10-11T20:38:21.4871456Z Verified OK: /home/runner/work/finance/finance/evidence/sigstore-natural-scheduler-dry-run-v1/natural_r2.sigstore.json
+2026-10-11T20:38:21.4872052Z R2 Bundle SHA-256: 82b899c0c1c3897b28e5b891198e69d8f11aeeae23470fad0e2c0bbce130295f
+2026-10-11T20:38:21.4872414Z R2 Rekor Log Index: 3214219852
+2026-10-11T20:38:21.4872552Z 
+2026-10-11T20:38:21.4872684Z --- STEP 11: Validating bindings and signer continuity ---
+2026-10-11T20:38:21.4872984Z Bindings & Signer Continuity: PASS
+2026-10-11T20:38:21.4873133Z 
+2026-10-11T20:38:21.4873237Z --- STEP 12: Checkpointing durable state ---
+2026-10-11T20:38:21.4873931Z Durable state checkpoint created: CHECKPOINT_SUCCESS (SHA-256: 22acdfea3eced796e586620c286633c274773b9ec237e4820e2847ad8bc9fc02)
+2026-10-11T20:38:21.4874944Z Manifest created: /home/runner/work/finance/finance/evidence/sigstore-natural-scheduler-dry-run-v1/SIGSTORE_NATURAL_SCHEDULER_DRY_RUN_MANIFEST_V1.json (SHA-256: 0071f8872ace73947c3d3a1c56607a4969c55fc93f2e29e30e4e296133b8fc58)
+2026-10-11T20:38:21.4875747Z NATURAL SCHEDULER EXECUTION COMPLETED SUCCESSFULLY
+2026-10-11T20:38:21.5087678Z ##[group]Run python -c "
+2026-10-11T20:38:21.5087867Z [36;1mpython -c "[0m
+2026-10-11T20:38:21.5087992Z [36;1mimport os, sys, json[0m
+2026-10-11T20:38:21.5088213Z [36;1mmanifest_path = os.path.join('durable_state', 'DURABLE_STATE_MANIFEST.json')[0m
+2026-10-11T20:38:21.5088463Z [36;1mif not os.path.exists(manifest_path):[0m
+2026-10-11T20:38:21.5088684Z [36;1m    print('CRITICAL: Durable state manifest missing after execution')[0m
+2026-10-11T20:38:21.5088904Z [36;1m    sys.exit(1)[0m
+2026-10-11T20:38:21.5089050Z [36;1mwith open(manifest_path, 'r') as f:[0m
+2026-10-11T20:38:21.5089207Z [36;1m    m = json.load(f)[0m
+2026-10-11T20:38:21.5089351Z [36;1mseq = m.get('checkpoint_sequence', 0)[0m
+2026-10-11T20:38:21.5089503Z [36;1mif seq < 1:[0m
+2026-10-11T20:38:21.5089661Z [36;1m    print(f'CRITICAL: Invalid checkpoint sequence {seq}')[0m
+2026-10-11T20:38:21.5089845Z [36;1m    sys.exit(1)[0m
+2026-10-11T20:38:21.5090144Z [36;1mprint(f'Checkpoint Verified OK: Sequence={seq}, SHA={m.get(\"manifest_sha256\")} ({m.get(\"artifact_count\")} artifacts)')[0m
+2026-10-11T20:38:21.5090434Z [36;1m"[0m
+2026-10-11T20:38:21.5146477Z shell: /usr/bin/bash -e {0}
+2026-10-11T20:38:21.5146627Z env:
+2026-10-11T20:38:21.5146784Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:21.5147033Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-11T20:38:21.5147275Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:21.5147495Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:21.5147709Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:21.5147918Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-11T20:38:21.5148097Z ##[endgroup]
+2026-10-11T20:38:21.5330085Z Checkpoint Verified OK: Sequence=1, SHA=22acdfea3eced796e586620c286633c274773b9ec237e4820e2847ad8bc9fc02 (8 artifacts)
+2026-10-11T20:38:21.5397017Z ##[group]Run actions/cache/save@v4
+2026-10-11T20:38:21.5397281Z with:
+2026-10-11T20:38:21.5397461Z   path: durable_state/
+2026-10-11T20:38:21.5397701Z   key: smart-money-durable-state-v2-38173031386
+2026-10-11T20:38:21.5397969Z   enableCrossOsArchive: false
+2026-10-11T20:38:21.5398201Z env:
+2026-10-11T20:38:21.5398444Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:21.5398840Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-11T20:38:21.5399223Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:21.5399584Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:21.5399934Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:21.5400296Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-11T20:38:21.5400772Z ##[endgroup]
+2026-10-11T20:38:21.6163194Z (node:2183) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-11T20:38:21.6163726Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-11T20:38:21.6266652Z [command]/usr/bin/tar --posix -cf cache.tzst --exclude cache.tzst -P -C /home/runner/work/finance/finance --files-from manifest.txt --use-compress-program zstdmt
+2026-10-11T20:38:21.7791655Z (node:2183) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-11T20:38:21.9269080Z Sent 3811 of 3811 (100.0%), 0.0 MBs/sec
+2026-10-11T20:38:22.0509275Z Cache saved with key: smart-money-durable-state-v2-38173031386
+2026-10-11T20:38:22.0599312Z ##[group]Run actions/upload-artifact@v4
+2026-10-11T20:38:22.0599480Z with:
+2026-10-11T20:38:22.0599631Z   name: sigstore-natural-scheduler-dry-run-artifacts
+2026-10-11T20:38:22.0599884Z   path: evidence/sigstore-natural-scheduler-dry-run-v1/
+durable_state/
+
+2026-10-11T20:38:22.0600100Z   retention-days: 14
+2026-10-11T20:38:22.0600228Z   if-no-files-found: warn
+2026-10-11T20:38:22.0600362Z   compression-level: 6
+2026-10-11T20:38:22.0600485Z   overwrite: false
+2026-10-11T20:38:22.0600824Z   include-hidden-files: false
+2026-10-11T20:38:22.0601039Z env:
+2026-10-11T20:38:22.0601258Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:22.0601627Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-11T20:38:22.0602050Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:22.0602332Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:22.0602573Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-11T20:38:22.0602793Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-11T20:38:22.0602977Z ##[endgroup]
+2026-10-11T20:38:22.1705059Z (node:2204) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-11T20:38:22.1705736Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-11T20:38:22.1790087Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-10-11T20:38:22.1792251Z The least common ancestor is /home/runner/work/finance/finance. This will be the root directory of the artifact
+2026-10-11T20:38:22.1792820Z With the provided path, there will be 17 files uploaded
+2026-10-11T20:38:22.1797379Z Artifact name is valid!
+2026-10-11T20:38:22.1797871Z Root directory input is valid!
+2026-10-11T20:38:22.4973198Z Beginning upload of artifact content to blob storage
+2026-10-11T20:38:22.5212874Z (node:2204) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-11T20:38:22.7068790Z Uploaded bytes 21935
+2026-10-11T20:38:22.7521831Z Finished uploading artifact content to blob storage!
+2026-10-11T20:38:22.7522443Z SHA256 digest of uploaded artifact zip is 15caff383dfe777dafdf05bc581c5c0b3b1b8a2023751b617a6daf021ba2e5f3
+2026-10-11T20:38:22.7522956Z Finalizing artifact upload
+2026-10-11T20:38:23.0073114Z Artifact sigstore-natural-scheduler-dry-run-artifacts.zip successfully finalized. Artifact ID 11714447699
+2026-10-11T20:38:23.0073702Z Artifact sigstore-natural-scheduler-dry-run-artifacts has been successfully uploaded! Final size is 21935 bytes. Artifact ID is 11714447699
+2026-10-11T20:38:23.0078668Z Artifact download URL: https://github.com/daakara/finance/actions/runs/38173031386/artifacts/11714447699
+2026-10-11T20:38:23.0219772Z Post job cleanup.
+2026-10-11T20:38:23.1020469Z (node:2216) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-11T20:38:23.1021033Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-11T20:38:23.1182744Z Post job cleanup.
+2026-10-11T20:38:23.1789648Z [command]/usr/bin/git version
+2026-10-11T20:38:23.1825779Z git version 2.55.0
+2026-10-11T20:38:23.1853433Z Temporarily overriding HOME='/home/runner/work/_temp/cecbac61-428a-466c-86af-9326b4554079' before making global git config changes
+2026-10-11T20:38:23.1853976Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-11T20:38:23.1858039Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/finance/finance
+2026-10-11T20:38:23.1897917Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-11T20:38:23.1931680Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-11T20:38:23.2146390Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-11T20:38:23.2177963Z http.https://github.com/.extraheader
+2026-10-11T20:38:23.2212895Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-11T20:38:23.2275467Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-11T20:38:23.2538609Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-11T20:38:23.2571781Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-11T20:38:23.2903945Z Cleaning up orphan processes
+2026-10-11T20:38:23.3119670Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache/restore@v4, actions/cache/save@v4, actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

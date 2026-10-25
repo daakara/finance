@@ -1,0 +1,30 @@
+{
+  "audit_closed_at_utc": "2026-10-11T22:54:50.486903+00:00",
+  "audit_started_at_utc": "2026-10-11T22:10:00+00:00",
+  "audit_timestamp_canonicalization": "PASS",
+  "file_hashes": {
+    ".github/workflows/smart_money_rooting.yml": "23ab5e293cbb5bddeb462a57cf3faac99cf15767ef78a61b084ce813c33323f7",
+    "analyst_dashboard/smart_money/public_availability/decision_validator.py": "87fc0167f87ae27c3817f92c6e58dfd5b9fa3887d0fbf82db4729902ddec4b5c",
+    "analyst_dashboard/smart_money/public_availability/durable_state_manager.py": "4c50726ad22e7b3e7b63dad551ff0612c5a18b5c551472efa6b9aa15202a7ed3",
+    "analyst_dashboard/smart_money/public_availability/evidence_custody.py": "309870190898456e378fdc1e36835a7074c79a8882fb6ac091acb3801c937c78",
+    "analyst_dashboard/smart_money/public_availability/gate3_authority_substrate.py": "1d7a70dc813f01e19db91d978bf2d02f7f80f44ef651667e65d0355caca50d2d",
+    "analyst_dashboard/smart_money/public_availability/gate3_authorization.py": "0cb2e2a7d4436c8a1036e46ebdb2752f0cd8c0712635967b5aa188c7460f8a7d",
+    "analyst_dashboard/smart_money/public_availability/models.py": "594e8299e57096cc1dd706bff665c292d962cb21ae0277ef29cdf9fd0ef64653",
+    "analyst_dashboard/smart_money/public_availability/observer_engine.py": "d8692faa8dbebe6dd57d1ae3b890dd3fbdbbed08efa0361cf108a007e3ae8d1c",
+    "analyst_dashboard/smart_money/public_availability/observer_state_machine.py": "51f24415e0b3d8ec2b3365358720c234a00228f0ed668d754fb90be83397c34d",
+    "analyst_dashboard/smart_money/public_availability/transactional_state_backend.py": "6c45e2af453a1b5972783ad60fbc7d73443fba32a45e3f2507b76dcfc346c7cc",
+    "analyst_dashboard/smart_money/public_availability/workload_identity_verifier.py": "53b4d9c36d2e497c4d48247071c8a1bee6a7054b083978614db2e8b0ace4b8a9",
+    "scripts/run_natural_scheduler.py": "52b9296ec192c3ba45392c7246ad64f3771f42c275c8a75c5ce75783c0fb7c93"
+  },
+  "local_branch": "main",
+  "local_head_sha": "379a1388e8bd7d21a3771d22178d53b8d3bb9043",
+  "local_remediation_sha_present": true,
+  "local_remediation_sha_reachable_from_main": true,
+  "local_remediation_sha_remote_visible": false,
+  "origin_main_sha_close": "bab9776b8013646b634871c49b52e61e4234d36b",
+  "origin_main_sha_start": "bab9776b8013646b634871c49b52e61e4234d36b",
+  "remote_integration_status": "BLOCKED_PENDING_OPERATOR_AUTHORIZATION",
+  "remote_main_protected": false,
+  "repository_rulesets": "NONE_VISIBLE",
+  "schema_version": "SMART_MONEY_BASELINE_V2_1"
+}

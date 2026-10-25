@@ -1,0 +1,11 @@
+{
+  "atomicity_scope": [
+    "Claim authorization + advance state generation",
+    "Record accession + verify non-synthetic + increment denominator",
+    "Checkpoint state + compute manifest hash + link previous checkpoint"
+  ],
+  "distributed_boundary": "Distributed CAS + fencing token mutation on external transactional store",
+  "local_boundary": "SQLite BEGIN IMMEDIATE transaction with WAL mode and fsync",
+  "schema_version": "SMART_MONEY_TRANSACTION_BOUNDARIES_V1",
+  "status": "BOUNDARIES_FORMALIZED"
+}

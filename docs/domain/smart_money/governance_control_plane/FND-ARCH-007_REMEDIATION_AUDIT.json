@@ -1,0 +1,33 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/per-finding-remediation-audit.json",
+  "finding_id": "FND-ARCH-007",
+  "rationale": "Gate-3 authorization lifecycle state machine implemented with recoverable crash state and expired lease reclaiming.",
+  "lifecycle_transition": {
+    "from": "OPEN",
+    "to": "VERIFIED_RESOLVED"
+  },
+  "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-007:v1",
+  "verification_evidence": "urn:arx:evidence:verification:fnd-arch-007:v1",
+  "tests_verified": [
+    {
+      "finding_id": "FND-ARCH-007",
+      "test_files": [
+        "tests/test_smart_money_architecture_remediation.py"
+      ],
+      "test_ids": [
+        "test_fnd_arch_007_claim_commit_lifecycle_positive"
+      ],
+      "negative_controls": [
+        "test_fnd_arch_007_crash_recovery_expired_lease_negative_control"
+      ],
+      "mutation_controls": [
+        "test_fnd_arch_007_committed_claim_cannot_be_reclaimed"
+      ],
+      "expected_invariants": [
+        "Gate3ClaimState lifecycle state machine; expired lease reclaiming"
+      ]
+    }
+  ],
+  "causal_proof": "CONFIRMED",
+  "verdict": "PASS"
+}

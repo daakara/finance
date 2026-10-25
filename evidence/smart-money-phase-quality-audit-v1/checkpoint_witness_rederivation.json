@@ -1,0 +1,29 @@
+{
+  "audit": "PHASE_QUALITY_AND_EVIDENCE_INTEGRITY_AUDIT_V1",
+  "claimed_checkpoint_rekor_inclusion": "PASS",
+  "claimed_checkpoint_signature": "PASS",
+  "investigation": {
+    "bundle_present": false,
+    "checkpoint_sigstore_witness_file": "evidence/smart-money-final-natural-authority-chain-closure-v1/checkpoint_sigstore_witness.json",
+    "contents": {
+      "checkpoint_manifest": "DURABLE_STATE_MANIFEST.json",
+      "external_witness_mechanism": "SIGSTORE_REKOR_TRANSPARENCY_LOG",
+      "manifest_binding": "EXACT_SHA256",
+      "primary_rekor_log_index": 3213838530,
+      "rekor_inclusion_proven": true,
+      "status": "PASS"
+    },
+    "signature_present": false,
+    "signer_identity_proven": false
+  },
+  "summary": "checkpoint_sigstore_witness.json is a non-authoritative assertion file lacking cryptographic signature and bundle backing. The log index was borrowed from an earlier run.",
+  "verdict_metrics": {
+    "CHECKPOINT_BUNDLE_PATH": "NONE",
+    "CHECKPOINT_BUNDLE_SHA": "NONE",
+    "CHECKPOINT_MANIFEST_SHA": "22acdfea3eced796e586620c286633c274773b9ec237e4820e2847ad8bc9fc02 (Run A) / fd47e4ab2f07cbfc61789a0fddf455374aa6d503f62a76e7271bbd3835d17d48 (Run B)",
+    "CHECKPOINT_REKOR_BINDING": "FAIL",
+    "CHECKPOINT_REKOR_INDEX": "3213838530 (ASSERTED_ONLY)",
+    "CHECKPOINT_SIGNER_IDENTITY": "UNPROVEN",
+    "CHECKPOINT_WITNESS_ASSERTION": "NON_AUTHORITATIVE"
+  }
+}

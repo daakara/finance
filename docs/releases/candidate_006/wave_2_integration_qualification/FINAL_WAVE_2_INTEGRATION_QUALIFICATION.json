@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "qualification_id": "QUAL-CANDIDATE-006-WAVE-2-20261014",
+  "generated_at": "2026-10-14T13:54:55Z",
+  "baseline": {
+    "repository": "daakara/finance",
+    "branch": "arx/smart-money-candidate-006-backup-age-containment",
+    "baseline_head_sha": "1693e2c0f39cb1276e5d44b22673b0db89c5f8bf",
+    "baseline_application_sha": "1cc9fa886d28908270df4794e64536d4cb1948e2",
+    "baseline_tree_sha": "7c591dbef50562a051c2a3fd88ed43a19576d022",
+    "rehearsal_environment_id": "7f7e4317-2b76-4a0e-bff1-33227da71e5d",
+    "rehearsal_worker_service_id": "929874a7-bcd9-41b3-9bc7-d5cd7720f7bf",
+    "rehearsal_web_service_id": "6b53ad3f-0d59-4a7f-83dc-8731efe48cf5",
+    "rehearsal_worker_deployment_id": "89d26e9b-ac0d-4b59-9c6b-549a46522d62",
+    "rehearsal_web_deployment_id": "3f699880-6818-473f-9c69-6f2e5b82f820"
+  },
+  "candidate": {
+    "status": "UNCOMMITTED_LOCAL_QUALIFIED",
+    "release_candidate_sha": "NOT_YET_ASSIGNED",
+    "changed_files": [
+      {
+        "path": "analyst_dashboard/smart_money/worker.py",
+        "sha256": "C377C9B8E201A3C9B84B6893DE4F57C512C02AC9DBE3EDF7BB68B4353F5871E5",
+        "status": "modified"
+      },
+      {
+        "path": "analyst_dashboard/smart_money/storage/backup/alerting.py",
+        "sha256": "CE352A0C17E42666008E47DFDC2241D4FF71FAB6D8FA3AEDADA8EAA679FDC1ED",
+        "status": "new"
+      },
+      {
+        "path": "tests/test_smart_money_backup_scheduler_lifecycle.py",
+        "sha256": "F1CF2F27EAD4D685062749C9CCB723008AEA404F765A5FC0E932493EAFFC2AE8",
+        "status": "modified"
+      }
+    ]
+  },
+  "test_results": {
+    "focused_tests": {
+      "passed": 114,
+      "failed": 0,
+      "skipped": 0,
+      "duration_sec": 15.17
+    },
+    "full_smart_money": {
+      "passed": 707,
+      "failed": 0,
+      "skipped": 0,
+      "duration_sec": 440.89
+    },
+    "integration_tests": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "duration_sec": 357.61
+    },
+    "canonical_invariants": {
+      "passed": 161,
+      "failed": 0,
+      "skipped": 0,
+      "duration_sec": 11.98
+    }
+  },
+  "gate_evaluations": {
+    "source_integrity": "PASSED",
+    "scheduler_lifecycle": "PASSED",
+    "health_semantics": "PASSED",
+    "alert_safety": "PASSED",
+    "canonical_noninterference": "PASSED",
+    "backup_integrity": "PASSED",
+    "restore_readiness": "PASSED",
+    "full_regression": "PASSED",
+    "configuration_compatibility": "PASSED",
+    "rollback_safety": "PASSED",
+    "credential_exposure": "EXCEPTION_ACTIVE_DEFERRED_BY_OWNER"
+  },
+  "verdicts": {
+    "baseline_sha": "1693e2c0f39cb1276e5d44b22673b0db89c5f8bf",
+    "baseline_tree": "7c591dbef50562a051c2a3fd88ed43a19576d022",
+    "worktree_status": "CLEAN_LOCAL_MODIFICATIONS",
+    "wave_2_changed_files": 3,
+    "full_regression_result": "707_PASSED_0_FAILED",
+    "scheduler_health_verdict": "HEALTH_SEMANTICS_QUALIFIED",
+    "alerting_security_verdict": "ALERT_SECURITY_QUALIFIED",
+    "backup_restore_verdict": "RESTORE_VERIFIED_ISOLATED_ONLY",
+    "canonical_noninterference_verdict": "ZERO_INTERFERENCE_CONFIRMED",
+    "rehearsal_configuration_verdict": "COMPATIBLE_ZERO_MIGRATIONS",
+    "rollback_verdict": "ROLLBACK_PREPARED_NON_DESTRUCTIVE",
+    "release_candidate_sha": "NOT_YET_ASSIGNED",
+    "release_qualification_verdict": "WAVE_2_REHEARSAL_RELEASE_QUALIFIED"
+  },
+  "governance_restrictions": {
+    "wave_2_railway_deployment": "NOT_AUTHORIZED",
+    "production_deployment": "NOT_AUTHORIZED",
+    "production_infrastructure": "NOT_AUTHORIZED",
+    "production_credential_reuse": "PROHIBITED",
+    "rehearsal_credential_rotation": "DEFERRED_BY_OWNER",
+    "model_tuning": "FROZEN",
+    "empirical_quality": "NOT_ESTABLISHED"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/dr-protocol-coherence-audit.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T17:30:00Z",
+  "custody_contract": {
+    "acknowledged_governance_event_requires_sync_durability": true,
+    "document_ref": "EVIDENCE_CUSTODY_AND_RETENTION_CONTRACT.md"
+  },
+  "dr_protocol": {
+    "acknowledged_governance_event_requires_sync_durability": true,
+    "document_ref": "GOVERNANCE_DR_AND_EPOCH_TRANSITION_PROTOCOL.md"
+  },
+  "async_replication_scope": "bulk_non_authoritative_evidence",
+  "rpo_zero_contradiction": 0,
+  "external_operational_rpo_zero": "NOT_ESTABLISHED",
+  "no_source_change_required": true,
+  "verdict": "PASS"
+}

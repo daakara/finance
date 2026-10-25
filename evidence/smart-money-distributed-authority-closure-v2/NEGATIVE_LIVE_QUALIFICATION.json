@@ -1,0 +1,7 @@
+{
+  "claim": "Negative production-topology qualification with injected failures on live runner",
+  "evidence_class": "LIVE_GITHUB_RUNNER",
+  "independent_verifier_result": "BLOCKED per Theorem E and Section 31",
+  "observed_result": "Negative live runner qualification blocked pending operator authorization.",
+  "status": "BLOCKED"
+}

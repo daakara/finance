@@ -1,0 +1,34 @@
+{
+  "finding_id": "FND-ARCH-014",
+  "immutable_subject": "Transaction-log divergence from consensus.",
+  "observed_failure": "No formal authority hierarchy existed between the write-ahead transaction log and derived consensus state, allowing silent divergence or ambiguous authority during partition recovery.",
+  "affected_components": [
+    "analyst_dashboard/smart_money/public_availability/transactional_state_backend.py",
+    "analyst_dashboard/smart_money/anchor_finalization/finalization_ledger.py"
+  ],
+  "canonical_invariant_violated": "TRANSACTION_LOG_CONSENSUS_COHERENCE: The transaction log is the primary authoritative source of truth; consensus state is a derived projection. Any divergence must immediately trigger fail-closed ConsensusLogDivergenceError.",
+  "root_cause": "Consensus view and WAL maintained separate state transitions without cryptographic anti-entropy cross-validation.",
+  "contributing_causes": [
+    "Lack of periodic checkpoint log-hash vs consensus-hash coherence verification"
+  ],
+  "existing_behavior": "Consensus state and transaction log operate with independent state checks.",
+  "required_behavior": "Transaction log establishes primacy; periodic verify_log_consensus_coherence compares log head hash with consensus replay; divergence raises ConsensusLogDivergenceError and halts write admission.",
+  "implementation_scope": [
+    "Implement verify_log_consensus_coherence in transactional_state_backend.py",
+    "Raise ConsensusLogDivergenceError when state hashes diverge"
+  ],
+  "contracts_affected": [
+    "docs/domain/smart_money/governance_control_plane/GOVERNANCE_AUTHORITY_LEDGER_SPEC.md"
+  ],
+  "schemas_affected": [],
+  "policies_affected": [],
+  "tests_affected": [
+    "tests/test_smart_money_architecture_remediation.py"
+  ],
+  "non_target_findings_touched": [],
+  "cross_layer_dependency": false,
+  "planned_fix": "Establish Transaction Log primacy and add cryptographic cross-validation with fail-closed divergence exception.",
+  "planned_negative_control": "Inject mismatched consensus checkpoint hash; verify ConsensusLogDivergenceError is raised and writes are blocked.",
+  "planned_causal_ablation": "Ignore divergence; verify test detects failure to fail-closed.",
+  "status": "ANALYZED_PENDING_IMPLEMENTATION"
+}

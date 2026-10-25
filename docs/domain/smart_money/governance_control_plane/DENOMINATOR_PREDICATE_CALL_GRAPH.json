@@ -1,0 +1,26 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/denominator-predicate-call-graph.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T17:30:00Z",
+  "canonical_predicate_authorities": 1,
+  "canonical_predicate_symbol": "authoritative_denominator_admission_predicate",
+  "pre_arm_uses_canonical_predicate": true,
+  "storage_uses_canonical_predicate": true,
+  "shadow_or_duplicate_predicates": 0,
+  "call_graph_edges": [
+    {
+      "caller": "TransactionalStateBackend.record_accession_and_denominator",
+      "file": "analyst_dashboard/smart_money/public_availability/transactional_state_backend.py",
+      "predicate_invoked": "authoritative_denominator_admission_predicate",
+      "semantic_role": "STORAGE_INCREMENT_AUTHORITY"
+    },
+    {
+      "caller": "ObservationEngine._evaluate_natural_accession",
+      "file": "analyst_dashboard/smart_money/public_availability/observer_engine.py",
+      "predicate_invoked": "authoritative_denominator_admission_predicate",
+      "semantic_role": "PRE_ARM_PROSPECTIVE_QUALIFICATION"
+    }
+  ],
+  "verdict": "PASS"
+}

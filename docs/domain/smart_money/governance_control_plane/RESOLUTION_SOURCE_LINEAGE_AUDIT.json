@@ -1,0 +1,185 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/resolution-source-lineage-audit.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T18:00:00Z",
+  "resolved_architecture_finding_count": 8,
+  "self_referential_source_freeze_bindings": 0,
+  "unexplained_source_freeze_bindings": 0,
+  "resolution_source_lineage": "PASS",
+  "findings": [
+    {
+      "finding_id": "FND-ARCH-001",
+      "original_subject": "Candidate 004 freeze-file SHA-256 was conflated with Candidate 004 semantic-closure hash.",
+      "identity_hash_component": "0251e0efea884f17f9195a0894fcb7f60856b44eb8ff98e92a4793eef4925820",
+      "admission_status": "ADMITTED",
+      "lifecycle_status": "VERIFIED_RESOLVED",
+      "reclassified_layer": "ARCHITECTURE_DEFECT",
+      "is_blocking": false,
+      "resolution_policy_version": "1.0.0",
+      "resolution_evidence_valid": true,
+      "resolution_evidence_hash": "b2c2d2e2f2002b2c2d2e2f2002b2c2d2e2f2002b2c2d2e2f2002b2c2d2e2f200",
+      "verification_evidence_hash": "8658b702fab2c1a7d7189f4871040e68c9d538001fd920d909b058f4a8daa36d",
+      "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d",
+      "source_freeze_role": "PREDECESSOR_SOURCE",
+      "causal_ordering": "Predecessor targeted remediation evidence seal (098e221) -> validated resolution evidence -> Canonical Promotion S2 (9e92780) preserves validated resolutions.",
+      "negative_control_ids": [
+        "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_001_domain_separation_negative_control",
+        "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_001_bypass_failure"
+      ],
+      "causal_proof_hash": "a1b1c1d1e1f1001a1b1c1d1e1f1001a1b1c1d1e1f1001a1b1c1d1e1f1001a1b1"
+    },
+    {
+      "finding_id": "FND-ARCH-004",
+      "original_subject": "Zero-event RPO requirement conflicted with asynchronous replication semantics.",
+      "identity_hash_component": "788bcfa98f7d75c756bfcdabd4e1a93047ae5602f91929484553f87b04630f41",
+      "admission_status": "ADMITTED",
+      "lifecycle_status": "VERIFIED_RESOLVED",
+      "reclassified_layer": "ARCHITECTURE_DEFECT",
+      "is_blocking": false,
+      "resolution_policy_version": "1.0.0",
+      "resolution_evidence_valid": true,
+      "resolution_evidence_hash": "b4c4d4e4f4004b4c4d4e4f4004b4c4d4e4f4004b4c4d4e4f4004b4c4d4e4f400",
+      "verification_evidence_hash": "283af5c7514ef53cc7161c212968558e63fee009e174fecc0ade54cdbfef153a",
+      "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d",
+      "source_freeze_role": "PREDECESSOR_SOURCE",
+      "causal_ordering": "Predecessor targeted remediation evidence seal (098e221) -> validated resolution evidence -> Canonical Promotion S2 (9e92780) preserves validated resolutions.",
+      "negative_control_ids": [
+        "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_004_async_crr_for_governance_rejected"
+      ],
+      "causal_proof_hash": "a4b4c4d4e4f4004a4b4c4d4e4f4004a4b4c4d4e4f4004a4b4c4d4e4f4004a4b4"
+    },
+    {
+      "finding_id": "FND-ARCH-007",
+      "original_subject": "Claimed-but-uncommitted Gate3 state lacked complete durable recovery semantics.",
+      "identity_hash_component": "8de36692c295b49dbaeec468f30f0efb42709f7087e14d6b37e322169afa6a94",
+      "admission_status": "ADMITTED",
+      "lifecycle_status": "VERIFIED_RESOLVED",
+      "reclassified_layer": "ARCHITECTURE_DEFECT",
+      "is_blocking": false,
+      "resolution_policy_version": "1.0.0",
+      "resolution_evidence_valid": true,
+      "resolution_evidence_hash": "b7c7d7e7f7007b7c7d7e7f7007b7c7d7e7f7007b7c7d7e7f7007b7c7d7e7f700",
+      "verification_evidence_hash": "0d94e145037fd45c501ca82876a68358abf9e07b1887ed52d418912219a29c79",
+      "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d",
+      "source_freeze_role": "PREDECESSOR_SOURCE",
+      "causal_ordering": "Predecessor targeted remediation evidence seal (098e221) -> validated resolution evidence -> Canonical Promotion S2 (9e92780) preserves validated resolutions.",
+      "negative_control_ids": [
+        "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_007_concurrent_claim_collision_rejected",
+        "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_007_committed_claim_cannot_be_reclaimed",
+        "tests/test_smart_money_architecture_remediation.py::test_gate3_expired_owner_cannot_commit_before_recovery",
+        "tests/test_smart_money_architecture_remediation.py::test_gate3_expired_owner_cannot_commit_after_recovery",
+        "tests/test_smart_money_architecture_remediation.py::test_gate3_committed_claim_cannot_rollback"
+      ],
+      "causal_proof_hash": "a7b7c7d7e7f7007a7b7c7d7e7f7007a7b7c7d7e7f7007a7b7c7d7e7f7007a7b7"
+    },
+    {
+      "finding_id": "FND-ARCH-008",
+      "original_subject": "Gate3 claim contention was incorrectly mapped to semantic evidence quarantine.",
+      "identity_hash_component": "67df236637e9959c615c6d4c36085c8786d0535b1c4a16a4875a7f59923982f0",
+      "admission_status": "ADMITTED",
+      "lifecycle_status": "VERIFIED_RESOLVED",
+      "reclassified_layer": "ARCHITECTURE_DEFECT",
+      "is_blocking": false,
+      "resolution_policy_version": "1.0.0",
+      "resolution_evidence_valid": true,
+      "resolution_evidence_hash": "b8c8d8e8f8008b8c8d8e8f8008b8c8d8e8f8008b8c8d8e8f8008b8c8d8e8f800",
+      "verification_evidence_hash": "2f6f8de572cf9565f00e582e44972d6990674c9bfb4d63998fbe18a2292baa72",
+      "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d",
+      "source_freeze_role": "PREDECESSOR_SOURCE",
+      "causal_ordering": "Predecessor targeted remediation evidence seal (098e221) -> validated resolution evidence -> Canonical Promotion S2 (9e92780) preserves validated resolutions.",
+      "negative_control_ids": [
+        "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_008_quarantine_not_triggered_by_contention",
+        "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_008_semantic_failure_quarantined"
+      ],
+      "causal_proof_hash": "a8b8c8d8e8f8008a8b8c8d8e8f8008a8b8c8d8e8f8008a8b8c8d8e8f8008a8b8"
+    },
+    {
+      "finding_id": "FND-ARCH-010",
+      "original_subject": "Stale fencing-token rejection was over-classified as a system terminal hold rather than normal stale-writer rejection.",
+      "identity_hash_component": "95c580691833837942ad2774a25c5efd742fdb08fb8459448654513679068d0b",
+      "admission_status": "ADMITTED",
+      "lifecycle_status": "VERIFIED_RESOLVED",
+      "reclassified_layer": "ARCHITECTURE_DEFECT",
+      "is_blocking": false,
+      "resolution_policy_version": "1.0.0",
+      "resolution_evidence_valid": true,
+      "resolution_evidence_hash": "b10c10d10e10010b10c10d10e10010b10c10d10e10010b10c10d10e10010b10",
+      "verification_evidence_hash": "f7f4f8288df7ac4a67eae8f67f0ef2d2df564d665f287a569b38bef1608a35ad",
+      "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d",
+      "source_freeze_role": "PREDECESSOR_SOURCE",
+      "causal_ordering": "Predecessor targeted remediation evidence seal (098e221) -> validated resolution evidence -> Canonical Promotion S2 (9e92780) preserves validated resolutions.",
+      "negative_control_ids": [
+        "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_010_no_false_terminal_hold_negative_control"
+      ],
+      "causal_proof_hash": "a10b10c10d10010a10b10c10d10010a10b10c10d10010a10b10c10d10010a10"
+    },
+    {
+      "finding_id": "FND-ARCH-011",
+      "original_subject": "Stored and derived denominator predicates were not proven logically equivalent.",
+      "identity_hash_component": "0dca76bdc60e4173756735d1652f7961b840e85492171a8df416ab7fc15b69e4",
+      "admission_status": "ADMITTED",
+      "lifecycle_status": "VERIFIED_RESOLVED",
+      "reclassified_layer": "ARCHITECTURE_DEFECT",
+      "is_blocking": false,
+      "resolution_policy_version": "1.0.0",
+      "resolution_evidence_valid": true,
+      "resolution_evidence_hash": "b11c11d11e11011b11c11d11e11011b11c11d11e11011b11c11d11e11011b11",
+      "verification_evidence_hash": "4122d83ae3c8cc374aeeb02620fb31c0cfdec99a37c514a2e32ad098247f28c7",
+      "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d",
+      "source_freeze_role": "PREDECESSOR_SOURCE",
+      "causal_ordering": "Predecessor targeted remediation evidence seal (098e221) -> validated resolution evidence -> Canonical Promotion S2 (9e92780) preserves validated resolutions.",
+      "negative_control_ids": [
+        "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_011_admission_rejected_on_predicate_failure",
+        "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_011_duplicate_accession_rejected"
+      ],
+      "causal_proof_hash": "a11b11c11d11011a11b11c11d11011a11b11c11d11011a11b11c11d11011a11"
+    },
+    {
+      "finding_id": "FND-ARCH-012",
+      "original_subject": "Git commit SHA truncation in Genesis Manifest.",
+      "identity_hash_component": "17afacf6937ccae415be0cf3bbfee90d55b2410643729d6d301fbcd578d07ac9",
+      "admission_status": "ADMITTED",
+      "lifecycle_status": "VERIFIED_RESOLVED",
+      "reclassified_layer": "ARCHITECTURE_DEFECT",
+      "is_blocking": false,
+      "resolution_policy_version": "1.0.0",
+      "resolution_evidence_valid": true,
+      "resolution_evidence_hash": "b12c12d12e12012b12c12d12e12012b12c12d12e12012b12c12d12e12012b12",
+      "verification_evidence_hash": "d6eacfb833877cdc1b93ad8d8b6d2bb5f51bdb3c49900da4b31cfaf4fe6a6209",
+      "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d",
+      "source_freeze_role": "PREDECESSOR_SOURCE",
+      "causal_ordering": "Predecessor targeted remediation evidence seal (098e221) -> validated resolution evidence -> Canonical Promotion S2 (9e92780) preserves validated resolutions.",
+      "negative_control_ids": [
+        "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_012_truncated_sha_rejected",
+        "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_012_invalid_hex_rejected"
+      ],
+      "causal_proof_hash": "a12b12c12d12012a12b12c12d12012a12b12c12d12012a12b12c12d12012a12"
+    },
+    {
+      "finding_id": "FND-ARCH-014",
+      "original_subject": "Transaction-log divergence from consensus.",
+      "identity_hash_component": "222c6a8c4459fe5f18c223d661f8b29036ea642c7e13720e1e4e844b5a09b471",
+      "admission_status": "ADMITTED",
+      "lifecycle_status": "VERIFIED_RESOLVED",
+      "reclassified_layer": "ARCHITECTURE_DEFECT",
+      "is_blocking": false,
+      "resolution_policy_version": "1.0.0",
+      "resolution_evidence_valid": true,
+      "resolution_evidence_hash": "b14c14d14e14014b14c14d14e14014b14c14d14e14014b14c14d14e14014b14",
+      "verification_evidence_hash": "e26053fb9a2322913e1ed93378a54b627c3582c072167073a0e429505662f0dc",
+      "source_freeze_sha": "098e221e011ae94e155e96b82e6c0c74cab99e2d",
+      "source_freeze_role": "PREDECESSOR_SOURCE",
+      "causal_ordering": "Predecessor targeted remediation evidence seal (098e221) -> validated resolution evidence -> Canonical Promotion S2 (9e92780) preserves validated resolutions.",
+      "negative_control_ids": [
+        "tests/test_smart_money_architecture_remediation.py::test_fnd_arch_014_log_divergence_fails_closed",
+        "tests/test_smart_money_architecture_remediation.py::test_consensus_ahead_of_log_rejected",
+        "tests/test_smart_money_architecture_remediation.py::test_empty_log_checkpoint_rejected",
+        "tests/test_smart_money_architecture_remediation.py::test_wrong_hash_rejected",
+        "tests/test_smart_money_architecture_remediation.py::test_failed_checkpoint_does_not_mutate_authoritative_state"
+      ],
+      "causal_proof_hash": "a14b14c14d14014a14b14c14d14014a14b14c14d14014a14b14c14d14014a14"
+    }
+  ],
+  "verdict": "PASS"
+}

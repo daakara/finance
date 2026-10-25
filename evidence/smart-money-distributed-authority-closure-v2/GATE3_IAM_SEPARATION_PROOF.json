@@ -1,0 +1,8 @@
+{
+  "claim": "Enforced IAM separation prevents Gate3 consumer from self-authorizing",
+  "evidence_class": "IAM_POLICY",
+  "independent_verifier_result": "BLOCKED per Section 5.1 and Section 31",
+  "observed_result": "GitHub Actions workflow runs under identical repository credentials without separate IAM role boundaries; Gate-3 separation cannot be enforced within a single standard repo runner.",
+  "rederivation_command": "inspect repository Actions permissions and OIDC subject customization",
+  "status": "BLOCKED"
+}

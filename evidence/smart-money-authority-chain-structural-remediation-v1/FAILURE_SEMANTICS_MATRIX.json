@@ -1,0 +1,7 @@
+{
+  "gate3_invalid": "FAIL_CLOSED_PRE_ARM_DRY_RUN",
+  "readiness_missing": "FAIL_CLOSED_REJECTION",
+  "state_machine_illegal_transition": "FAIL_CLOSED_TERMINAL_HOLD",
+  "status": "PASS",
+  "unverified_signature": "FAIL_CLOSED_REJECTION"
+}

@@ -1,0 +1,102 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/is-blocking-equivalence-audit.json",
+  "duplicate_counted_as_blocker": 0,
+  "exact_predicate": "f.is_blocking <=> (f.admission_status == 'ADMITTED' and f.lifecycle_status not in [FindingStatus.RESOLVED, FindingStatus.DISPROVED, FindingStatus.WAIVED] and len(f.derived_blocks) > 0)",
+  "generated_at": "2026-10-12T15:30:00Z",
+  "generator_or_test_ref": "analyst_dashboard/smart_money/governance_control_plane/finding_registry.py::Finding.is_blocking",
+  "input_hashes": {
+    "finding_admission_hash": "5b0dbdb7b8bed01e61820b610c351e08687e6a6c5f058c17875c5b6b20352523",
+    "finding_registry_hash": "db7549ed5ad6271fb0fe072b6343374a92533e9ce423996f4364c80904fe2647"
+  },
+  "is_blocking_equivalent_to_canonical_blocker_predicate": "PASS",
+  "mechanically_recomputed_population": {
+    "active_architecture_defects": 8,
+    "active_blockers": 13,
+    "active_non_architecture_blockers": 5,
+    "admitted_findings": 13,
+    "architecture_defect_targets": [
+      "FND-ARCH-001",
+      "FND-ARCH-004",
+      "FND-ARCH-007",
+      "FND-ARCH-008",
+      "FND-ARCH-010",
+      "FND-ARCH-011",
+      "FND-ARCH-012",
+      "FND-ARCH-014"
+    ],
+    "duplicates": 2,
+    "non_architecture_blocker_ids": [
+      "FND-ARCH-002",
+      "FND-ARCH-003",
+      "FND-ARCH-005",
+      "FND-ARCH-006",
+      "FND-ARCH-009"
+    ],
+    "registered_findings": 15
+  },
+  "pending_review_counted_as_blocker": 0,
+  "resolved_counted_as_blocker": 0,
+  "source_freeze_sha": "cf62c54badd9b39e7711edbab5e2de9e2e1efd98",
+  "source_tree_oid": "43ae64571ce86c15e67ee72e71a8466730f9857d",
+  "truth_table": [
+    {
+      "admission_status": "ADMITTED",
+      "derived_blocks": [
+        "PROVISIONING"
+      ],
+      "expected_is_blocking": true,
+      "lifecycle_status": "OPEN",
+      "observed_is_blocking": true,
+      "verdict": "PASS"
+    },
+    {
+      "admission_status": "ASSERTED_PENDING_REVIEW",
+      "derived_blocks": [
+        "PROVISIONING"
+      ],
+      "expected_is_blocking": false,
+      "lifecycle_status": "OPEN",
+      "observed_is_blocking": false,
+      "verdict": "PASS"
+    },
+    {
+      "admission_status": "REJECTED",
+      "derived_blocks": [
+        "PROVISIONING"
+      ],
+      "expected_is_blocking": false,
+      "lifecycle_status": "OPEN",
+      "observed_is_blocking": false,
+      "verdict": "PASS"
+    },
+    {
+      "admission_status": "DUPLICATE",
+      "derived_blocks": [
+        "PROVISIONING"
+      ],
+      "expected_is_blocking": false,
+      "lifecycle_status": "OPEN",
+      "observed_is_blocking": false,
+      "verdict": "PASS"
+    },
+    {
+      "admission_status": "ADMITTED",
+      "derived_blocks": [
+        "PROVISIONING"
+      ],
+      "expected_is_blocking": false,
+      "lifecycle_status": "RESOLVED",
+      "observed_is_blocking": false,
+      "verdict": "PASS"
+    },
+    {
+      "admission_status": "ADMITTED",
+      "derived_blocks": [],
+      "expected_is_blocking": false,
+      "lifecycle_status": "OPEN",
+      "observed_is_blocking": false,
+      "verdict": "PASS"
+    }
+  ],
+  "verdict": "PASS"
+}

@@ -1,0 +1,35 @@
+{
+  "audit": "PHASE_QUALITY_AND_EVIDENCE_INTEGRITY_AUDIT_V1",
+  "findings": [
+    {
+      "classification": "SYNTHETIC_FIXTURES_MASQUERADING_AS_PRODUCTION",
+      "notes": "Unit test verified dictionary format parsing only, but was cited as proof of cryptographic authenticity and disk artifact resolution.",
+      "synthetic_fixtures": [
+        "clock_evidence_hash = 'a'*64",
+        "sec_calendar_evidence_hash = 'b'*64",
+        "sec_endpoint_evidence_hash = 'c'*64",
+        "sigstore_readiness_hash = 'd'*64",
+        "tuf_readiness_hash = 'e'*64",
+        "runtime_state_hash = 'f'*64",
+        "denominator_attestation_hash = '1'*64",
+        "candidate004_firewall_hash = '2'*64",
+        "sigstore_bundle_reference = 'evidence/gate3_authorizations/AUTH_V2_TEST_001.sigstore.json' (non-existent)"
+      ],
+      "test": "test_gate3_v2_schema_and_freshness"
+    },
+    {
+      "classification": "UNVERIFIED_PRODUCTION_FIXTURES",
+      "notes": "Used hardcoded index from earlier gate run.",
+      "synthetic_fixtures": [
+        "rekor_log_index = 3213838530"
+      ],
+      "test": "test_checkpoint_sigstore_witness"
+    }
+  ],
+  "target_test_file": "tests/test_smart_money_final_natural_authority_chain_closure.py",
+  "verdict_metrics": {
+    "SYNTHETIC_FIXTURES_MASQUERADING_AS_PRODUCTION": 8,
+    "TEST_TO_PRODUCTION_FIDELITY": "FAIL",
+    "UNVERIFIED_PRODUCTION_FIXTURES": 10
+  }
+}

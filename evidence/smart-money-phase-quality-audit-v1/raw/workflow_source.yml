@@ -1,0 +1,104 @@
+name: Smart Money Rooting Scheduler
+
+"on":
+  schedule:
+    # Runs during SEC EDGAR business hours (Monday-Friday, 10:07 to 22:07 UTC)
+    # Minute 07 avoids top-of-hour GitHub Actions shared queue delays.
+    - cron: '7 10-22/2 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Execution mode (dry-run or natural)'
+        required: true
+        default: 'dry-run'
+        type: choice
+        options:
+          - dry-run
+          - natural
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: smart-money-natural-scheduler
+  cancel-in-progress: false
+
+jobs:
+  natural-rooting-scheduler:
+    name: Execute Governed Smart Money Rooting Scheduler
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 2. Set up Python runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Sigstore Cosign
+        uses: sigstore/cosign-installer@v3.5.0
+
+      - name: Verify Cosign Installation
+        run: cosign version
+
+      - name: Install Python Dependencies
+        run: pip install cryptography requests
+
+      - name: 3. Restore Durable State Cache
+        uses: actions/cache/restore@v4
+        id: restore-state
+        with:
+          path: durable_state/
+          key: smart-money-durable-state-v2-${{ github.run_id }}
+          restore-keys: |
+            smart-money-durable-state-v2-
+
+      - name: 4. Verify Restored State Integrity
+        run: |
+          python -c "
+          import os, sys
+          from analyst_dashboard.smart_money.public_availability.durable_state_manager import DurableStateManager
+          mgr = DurableStateManager('durable_state')
+          ok, msg = mgr.hydrate_state()
+          print(f'State Rehydration Verification: {msg}')
+          if not ok:
+              sys.exit(1)
+          "
+
+      - name: 5. Execute Governed Natural Scheduler
+        run: python scripts/run_natural_scheduler.py --mode ${{ github.event.inputs.mode || 'dry-run' }}
+
+      - name: 6. Verify Checkpoint Result & Anti-Rollback Integrity
+        run: |
+          python -c "
+          import os, sys, json
+          manifest_path = os.path.join('durable_state', 'DURABLE_STATE_MANIFEST.json')
+          if not os.path.exists(manifest_path):
+              print('CRITICAL: Durable state manifest missing after execution')
+              sys.exit(1)
+          with open(manifest_path, 'r') as f:
+              m = json.load(f)
+          seq = m.get('checkpoint_sequence', 0)
+          if seq < 1:
+              print(f'CRITICAL: Invalid checkpoint sequence {seq}')
+              sys.exit(1)
+          print(f'Checkpoint Verified OK: Sequence={seq}, SHA={m.get(\"manifest_sha256\")} ({m.get(\"artifact_count\")} artifacts)')
+          "
+
+      - name: 7. Save Durable State Cache
+        uses: actions/cache/save@v4
+        if: success()
+        with:
+          path: durable_state/
+          key: smart-money-durable-state-v2-${{ github.run_id }}
+
+      - name: 8. Upload Natural Scheduler Evidence Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sigstore-natural-scheduler-dry-run-artifacts
+          path: |
+            evidence/sigstore-natural-scheduler-dry-run-v1/
+            durable_state/
+          retention-days: 14

@@ -1,0 +1,8 @@
+{
+  "claim": "Natural accession admission and denominator increment execute in a single atomic ACID transaction",
+  "evidence_class": "DESIGN_AND_UNIT_TEST",
+  "independent_verifier_result": "PASS",
+  "observed_result": "record_accession_and_denominator commits admission and natural_denominator atomically within single transaction; duplicate accession rejected.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_distributed_authority_substrate.py -k test_response_loss_idempotent_retry",
+  "status": "PASS"
+}

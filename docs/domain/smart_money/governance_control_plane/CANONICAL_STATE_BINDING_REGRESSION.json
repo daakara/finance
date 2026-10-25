@@ -1,0 +1,37 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/canonical-state-binding-regression.json",
+  "audit_id": "urn:arx:audit:canonical-state-binding-regression:2026-10-12",
+  "detached_worktree": ".wt_state_binding",
+  "detached_worktree_verified": true,
+  "generated_at": "2026-10-12T20:30:00Z",
+  "parent_sha": "3c93b8f04e9edbbdd38adad7e77fd22b8f5abc25",
+  "regression_totals": {
+    "failed": 0,
+    "passed": 513,
+    "required_suites_not_run": 0,
+    "suites": 17,
+    "tests": 513
+  },
+  "source_freeze_sha": "2d024e815eb73d3fb587d5823b6f78c68031e777",
+  "source_tree_oid": "8a048e118a2d8d5910345255efa62566bcb65b09",
+  "suite_breakdown": {
+    "test_smart_money_anchor_ledger.py": 39,
+    "test_smart_money_candidate004_invariants.py": 27,
+    "test_smart_money_canonical_decision_succession.py": 22,
+    "test_smart_money_cross_worktree_decision_authority.py": 18,
+    "test_smart_money_decision_authorization_boundary.py": 17,
+    "test_smart_money_decision_chain_invariants.py": 24,
+    "test_smart_money_dependency_resolution.py": 28,
+    "test_smart_money_evidence_manifest_audit.py": 32,
+    "test_smart_money_finding_registry.py": 36,
+    "test_smart_money_gate3_invariants.py": 41,
+    "test_smart_money_governance_engine.py": 32,
+    "test_smart_money_hash_chain_tamper.py": 38,
+    "test_smart_money_historical_predecessor_recovery.py": 15,
+    "test_smart_money_public_observer.py": 44,
+    "test_smart_money_resolution_lineage.py": 20,
+    "test_smart_money_state_machine_recovery.py": 35,
+    "test_smart_money_wal_durability.py": 45
+  },
+  "verdict": "PASS"
+}

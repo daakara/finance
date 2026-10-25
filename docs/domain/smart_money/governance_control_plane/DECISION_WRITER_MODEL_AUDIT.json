@@ -1,0 +1,22 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/decision-writer-model-audit.json",
+  "audit_id": "urn:arx:audit:decision-writer-model:2026-10-12",
+  "canonical_decision_writer_model": {
+    "enforcement": "file_lock",
+    "implementation": "CanonicalDecisionWriterLock",
+    "intended_writers": "SINGLE",
+    "platform_primitives": {
+      "posix": "fcntl.flock(LOCK_EX | LOCK_NB)",
+      "win32": "msvcrt.locking(LK_NBLCK)"
+    },
+    "second_process_can_open_same_state_for_write": false
+  },
+  "generated_at": "2026-10-12T20:30:00Z",
+  "multi_process_cas_required": false,
+  "single_writer_enforcement": {
+    "result": "WriterLockAcquisitionError raised on conflicting writer",
+    "test": "Simultaneous writer lock acquisition",
+    "verdict": "PASS"
+  },
+  "verdict": "PASS"
+}

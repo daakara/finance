@@ -22,7 +22,7 @@ from analyst_dashboard.smart_money.certification_models import (
     CertificationDisputeState,
     AuditDispute,
 )
-from analyst_dashboard.smart_money.form4_ingestion import DEFAULT_SMART_MONEY_DB
+from analyst_dashboard.smart_money.form4_ingestion import DEFAULT_SMART_MONEY_DB, connect_smart_money_db
 
 
 class AuditDisputeEngine:
@@ -45,7 +45,7 @@ class AuditDisputeEngine:
         self.db_path = db_path
 
     def _get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
+        conn = connect_smart_money_db(self.db_path)
         conn.row_factory = sqlite3.Row
         return conn
 

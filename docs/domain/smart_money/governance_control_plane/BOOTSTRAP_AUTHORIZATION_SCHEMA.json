@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BootstrapAuthorization",
+  "type": "object",
+  "required": [
+    "bootstrap_authorization_id",
+    "purpose",
+    "governance_epoch",
+    "ratification_reference",
+    "authorized_bootstrap_roles",
+    "allowed_actions",
+    "prohibited_actions",
+    "issued_at",
+    "not_before",
+    "expires_at",
+    "single_use",
+    "consumption_state",
+    "expected_genesis_policy_hash",
+    "expected_root_model_hash",
+    "expected_genesis_manifest_hash",
+    "authorization_hash",
+    "approval_evidence",
+    "extinguishment_required"
+  ],
+  "properties": {
+    "bootstrap_authorization_id": {
+      "type": "string",
+      "pattern": "^urn:arx:auth:bootstrap:[a-z0-9\\-_:]+$"
+    },
+    "purpose": {
+      "type": "string",
+      "const": "ESTABLISH_OPERATIONAL_GOVERNANCE_CONTROL_PLANE"
+    },
+    "governance_epoch": {
+      "type": "string",
+      "pattern": "^epoch-gov-[0-9]{3}$"
+    },
+    "ratification_reference": {
+      "type": "string",
+      "pattern": "^urn:arx:ratification:[a-z0-9\\-_:]+$"
+    },
+    "authorized_bootstrap_roles": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "allowed_actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "enum": [
+          "RATIFY_ROOT_IDENTITY_MODEL",
+          "REGISTER_INITIAL_ROOT_IDENTITIES",
+          "REGISTER_INITIAL_ROOT_KEYS",
+          "CREATE_GOVERNANCE_LEDGER",
+          "CREATE_GOVERNANCE_WITNESS",
+          "RATIFY_GENESIS_POLICY",
+          "PUBLISH_GENESIS_MANIFEST",
+          "PUBLISH_GENESIS_LEDGER_EVENT",
+          "VERIFY_GENESIS_WITNESS",
+          "ACTIVATE_NORMAL_GOVERNANCE_AUTHORITY",
+          "EXTINGUISH_BOOTSTRAP_AUTHORITY"
+        ]
+      }
+    },
+    "prohibited_actions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "PROVISION_THEOREM_A",
+          "PROVISION_THEOREM_B",
+          "PROVISION_THEOREM_C",
+          "PROVISION_THEOREM_D",
+          "QUALIFY_THEOREM_E",
+          "ARM_NATURAL_OBSERVER",
+          "ALTER_NATURAL_DENOMINATOR",
+          "MODIFY_CANDIDATE_GENERATION_004",
+          "SUPPRESS_FINDING",
+          "DELETE_FINDING",
+          "WAIVE_NON_WAIVABLE_FINDING",
+          "ALTER_MODEL_OUTPUT",
+          "TUNE_MODEL",
+          "AUTHORIZE_PRODUCTION",
+          "DELETE_LEDGER_HISTORY",
+          "REWRITE_GENESIS"
+        ]
+      }
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "not_before": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "single_use": {
+      "type": "boolean",
+      "const": true
+    },
+    "consumption_state": {
+      "type": "string",
+      "enum": [
+        "NOT_RATIFIED",
+        "RATIFIED_NOT_ACTIVE",
+        "ACTIVE",
+        "CONSUMED_PENDING_EXTINGUISHMENT",
+        "EXTINGUISHED",
+        "EXPIRED",
+        "REVOKED"
+      ]
+    },
+    "expected_genesis_policy_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "expected_root_model_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "expected_genesis_manifest_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "authorization_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "approval_evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["approver", "key_id", "signature", "signed_at"],
+        "properties": {
+          "approver": { "type": "string" },
+          "key_id": { "type": "string" },
+          "signature": { "type": "string" },
+          "signed_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "extinguishment_required": {
+      "type": "boolean",
+      "const": true
+    }
+  },
+  "additionalProperties": false
+}

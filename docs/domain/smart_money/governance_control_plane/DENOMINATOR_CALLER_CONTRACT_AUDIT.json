@@ -1,0 +1,19 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/denominator-caller-contract-audit.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T17:30:00Z",
+  "callers_enumerated": [
+    {
+      "caller": "TransactionalStateBackend.record_accession_and_denominator",
+      "explicitly_supplies_is_natural_source": true,
+      "explicitly_supplies_is_valid_evidence": true,
+      "explicitly_supplies_is_fresh": true,
+      "source_of_values": "governed_evaluation_parameters",
+      "authoritative_or_derived": "AUTHORITATIVE"
+    }
+  ],
+  "defaults_reachable_from_authority_path": false,
+  "authority_bearing_admission_with_implicit_positive_facts": 0,
+  "verdict": "PASS"
+}

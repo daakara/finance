@@ -1,0 +1,49 @@
+{
+  "$schema": "urn:arx:schema:governance:policy_amendment:v1",
+  "policy_id": "ARX_SOLE_OWNER_TEMPORARY_FIDO2_SUSPENSION_V1",
+  "prior_policy_ref": "urn:arx:contract:governance:root_identity_model:v1",
+  "operating_model": "SOLE_OWNER",
+  "effective_at": "2026-10-14T01:30:00Z",
+  "review_checkpoint_date": "2027-01-12T01:30:00Z",
+  "applicable_environments": [
+    "production",
+    "smart-money-rehearsal"
+  ],
+  "fido2": {
+    "requirement_status": "TEMPORARILY_SUSPENDED",
+    "validation_performed": false,
+    "quorum_satisfied": false,
+    "reason": "HARDWARE_DEVICE_NOT_YET_AVAILABLE",
+    "reactivation_supported": true,
+    "review_interval_days": 90
+  },
+  "release_authorization": {
+    "required_human_owners": 1,
+    "explicit_owner_approval": "REQUIRED",
+    "existing_account_mfa": "REQUIRED",
+    "exact_release_sha_binding": "REQUIRED",
+    "technical_verification": "REQUIRED",
+    "security_verification": "REQUIRED",
+    "recovery_verification": "REQUIRED",
+    "rollback_plan": "REQUIRED",
+    "immutable_audit_record": "REQUIRED"
+  },
+  "production": {
+    "automatic_authorization": false,
+    "deployment_requires_separate_approval": true
+  },
+  "reinstatement_protocol": {
+    "lifecycle_stages": [
+      "TEMPORARILY_SUSPENDED",
+      "ENROLLMENT_READY",
+      "FIDO2_REQUIRED"
+    ],
+    "prerequisites_for_fido2_required": [
+      "HARDWARE_SECURITY_KEY_ENROLLED",
+      "SUCCESSFUL_WEBAUTHN_AUTHENTICATION_TEST",
+      "RECOVERY_PROCEDURE_TESTED_AND_LOGGED",
+      "POLICY_UPDATE_RATIFIED"
+    ],
+    "review_checkpoint_behavior": "EVALUATE_DEVICE_AVAILABILITY_WITHOUT_LOCKOUT"
+  }
+}

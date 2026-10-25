@@ -1,0 +1,19 @@
+{
+  "aud": "sigstore",
+  "environment": "",
+  "event_name": "workflow_dispatch",
+  "exp": 1791751397,
+  "iss": "https://token.actions.githubusercontent.com",
+  "job_workflow_ref": "daakara/finance/.github/workflows/smart_money_rooting.yml@refs/heads/main",
+  "nbf": 1791750797,
+  "ref": "refs/heads/main",
+  "repository": "daakara/finance",
+  "repository_id": "1087399232",
+  "repository_owner": "daakara",
+  "repository_owner_id": "53128824",
+  "run_attempt": "1",
+  "run_id": "38173031386",
+  "sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+  "sub": "repo:daakara/finance:ref:refs/heads/main",
+  "workflow": "Smart Money Rooting Scheduler"
+}

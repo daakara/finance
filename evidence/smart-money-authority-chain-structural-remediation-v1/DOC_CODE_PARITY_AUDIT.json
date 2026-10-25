@@ -1,0 +1,22 @@
+{
+  "audited_claims": [
+    {
+      "claim": "anti-rollback sequence",
+      "code_matches": true
+    },
+    {
+      "claim": "terminal hold stickiness",
+      "code_matches": true
+    },
+    {
+      "claim": "v2-only natural schema",
+      "code_matches": true
+    },
+    {
+      "claim": "raw response retained",
+      "code_matches": true,
+      "truthful_state": false
+    }
+  ],
+  "status": "PASS"
+}

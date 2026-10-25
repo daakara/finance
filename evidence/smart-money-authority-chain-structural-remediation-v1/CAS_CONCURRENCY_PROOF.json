@@ -1,0 +1,4 @@
+{
+  "reason": "No distributed transactional CAS backend exists. Single-runner SQLite transaction is proven, but multi-runner CAS requires external transactional store.",
+  "status": "BLOCKED"
+}

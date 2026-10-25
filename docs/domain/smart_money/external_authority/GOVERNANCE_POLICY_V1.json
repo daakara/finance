@@ -1,0 +1,373 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/governance-policy.json",
+  "policy_id": "urn:arx:policy:governance_engine:v1",
+  "policy_version": "GOVERNANCE_POLICY_V1",
+  "generated_at_utc": "2026-10-12T01:24:00Z",
+  "canonicalization": {
+    "format": "RFC_8785_JSON_CANONICALIZATION_SCHEME",
+    "encoding": "UTF-8",
+    "hash": "SHA-256",
+    "hash_version": "JCS-SHA256-V1"
+  },
+  "rules": {
+    "R-GOV-001": {
+      "title": "Non-safety-critical UNKNOWN evidence propagation",
+      "unknown_propagation": {
+        "ARCHITECTURE_CLOSURE": {
+          "authority_integrity": "BLOCK",
+          "safety_control": "BLOCK",
+          "theorem_contract": "BLOCK",
+          "documentation_only": "INFORMATIONAL"
+        },
+        "GLOBAL_PROVISIONING_READINESS": {
+          "required_provisioning_control": "BLOCK",
+          "optional_implementation_detail": "INFORMATIONAL",
+          "documentation_only": "INFORMATIONAL"
+        },
+        "THEOREM_A_PROVISIONING": { "release_trust_evidence": "BLOCK" },
+        "THEOREM_B_PROVISIONING": { "authorization_evidence": "BLOCK" },
+        "THEOREM_C_PROVISIONING": { "transactional_state_evidence": "BLOCK" },
+        "THEOREM_D_PROVISIONING": { "custody_evidence": "BLOCK" },
+        "THEOREM_E_EXECUTION": {
+          "any_A_to_D_prerequisite": "BLOCK",
+          "qualification_isolation": "BLOCK",
+          "fault_injection_control": "BLOCK"
+        },
+        "PRODUCTION_ARMING": { "any_required_safety_or_authority_evidence": "BLOCK" },
+        "NATURAL_OBSERVER_ARMING": { "any_required_qualification_or_custody_evidence": "BLOCK" }
+      }
+    },
+    "R-GOV-002": {
+      "title": "Separation of duties between remediation and verification",
+      "separation_of_duties": {
+        "LOW": { "same_person_allowed": true, "second_reviewer_required": false },
+        "MEDIUM": { "same_person_allowed": false, "second_reviewer_required": true },
+        "HIGH": { "same_person_allowed": false, "independent_verifier_required": true },
+        "CRITICAL": { "same_person_allowed": false, "independent_verifier_required": true, "governance_review_required": true }
+      }
+    },
+    "R-GOV-003": {
+      "title": "Final non-waivable finding classes",
+      "non_waivable_defect_classes": [
+        "AUTHORITY_INTEGRITY_CONTRADICTION",
+        "SECOND_GENESIS_VULNERABILITY",
+        "CONSUMER_SELF_AUTHORIZATION_PATH",
+        "EVIDENCE_MUTABILITY_VIOLATING_CUSTODY",
+        "STATE_ROLLBACK_VULNERABILITY",
+        "QUALIFICATION_TO_NATURAL_CONTAMINATION",
+        "UNVERIFIABLE_AUTHORITY_BOUNDARY",
+        "UNSUPPORTED_AUTHORITY_PROVENANCE"
+      ],
+      "conditional_non_waivable": [
+        "ARCHITECTURE_CONTRADICTION",
+        "SECURITY_BOUNDARY_INCOMPLETE",
+        "FAILURE_SEMANTICS_INCOMPLETE",
+        "POLICY_CONTRADICTION",
+        "STALE_EVIDENCE"
+      ]
+    },
+    "R-GOV-004": {
+      "title": "Maximum evidence status assignable by automated source type",
+      "automated_evidence_status_authority": {
+        "automated_contract_test": { "ASSERTED": true, "REPRODUCED": true, "VERIFIED": false },
+        "static_analysis": { "ASSERTED": true, "REPRODUCED": true, "VERIFIED": false },
+        "replayed_decision": {
+          "ASSERTED": true,
+          "REPRODUCED": true,
+          "VERIFIED": true,
+          "conditions": ["historical_inputs_are_hash_bound", "replay_hash_matches", "replay_engine_version_is_authorized"]
+        },
+        "runtime_monitor": {
+          "ASSERTED": true,
+          "REPRODUCED": true,
+          "VERIFIED": false,
+          "conditions": ["authoritative_source_is_bound", "evidence_is_immutable"]
+        },
+        "runtime_incident_pipeline": { "ASSERTED": true, "REPRODUCED": true, "VERIFIED": false },
+        "human_review": {
+          "ASSERTED": true,
+          "REPRODUCED": true,
+          "VERIFIED": true,
+          "conditions": ["reviewer_is_authorized", "evidence_is_authoritative", "independence_requirements_are_satisfied"]
+        },
+        "external_audit": {
+          "ASSERTED": true,
+          "REPRODUCED": true,
+          "VERIFIED": true,
+          "conditions": ["auditor_identity_is_bound", "audit_scope_is_explicit", "evidence_is_current"]
+        }
+      }
+    },
+    "R-GOV-005": {
+      "title": "Complete UNKNOWN propagation matrix",
+      "unknown_gate_matrix": {
+        "ARCHITECTURE_CLOSURE": {
+          "authority_or_safety_prerequisite": "BLOCKED",
+          "theorem_contract_prerequisite": "BLOCKED",
+          "documentation_only": "INFORMATIONAL"
+        },
+        "GLOBAL_PROVISIONING_READINESS": {
+          "architecture_input": "BLOCKED",
+          "mandatory_provisioning_input": "BLOCKED",
+          "authority_boundary_input": "BLOCKED",
+          "optional_provider_detail": "INFORMATIONAL",
+          "documentation_only": "INFORMATIONAL"
+        },
+        "THEOREM_A_PROVISIONING": {
+          "release_identity": "BLOCKED",
+          "genesis_provenance": "BLOCKED",
+          "supply_chain": "BLOCKED",
+          "non-authority_documentation": "INFORMATIONAL"
+        },
+        "THEOREM_B_PROVISIONING": {
+          "authorization_chain": "BLOCKED",
+          "claim_validation": "BLOCKED",
+          "self-authorization_detection": "BLOCKED",
+          "non-authority_documentation": "INFORMATIONAL"
+        },
+        "THEOREM_C_PROVISIONING": {
+          "transactional_state": "BLOCKED",
+          "fencing": "BLOCKED",
+          "rollback_detection": "BLOCKED",
+          "non-authority_documentation": "INFORMATIONAL"
+        },
+        "THEOREM_D_PROVISIONING": {
+          "evidence_custody": "BLOCKED",
+          "immutability": "BLOCKED",
+          "retention": "BLOCKED",
+          "provenance": "BLOCKED",
+          "non-authority_documentation": "INFORMATIONAL"
+        },
+        "THEOREM_A_QUALIFICATION": {
+          "release_trust": "NOT_READY",
+          "qualification_namespace": "NOT_READY"
+        },
+        "THEOREM_B_QUALIFICATION": { "authorization_proof": "NOT_READY" },
+        "THEOREM_C_QUALIFICATION": { "state_proof": "NOT_READY" },
+        "THEOREM_D_QUALIFICATION": { "custody_proof": "NOT_READY" },
+        "THEOREM_E_EXECUTION": {
+          "any_A_to_D_input": "NOT_READY",
+          "fault_injection_control": "NOT_READY",
+          "qualification_isolation": "NOT_READY"
+        },
+        "PRODUCTION_ARMING": { "any_required_control": "BLOCKED" },
+        "NATURAL_OBSERVER_ARMING": { "any_required_qualification_or_custody_control": "BLOCKED" }
+      }
+    },
+    "R-GOV-006": {
+      "title": "Waiver expiration behavior",
+      "waiver_expiration": {
+        "transition": "WAIVER_ACTIVE -> WAIVER_EXPIRED",
+        "underlying_finding_state": "REMAINS_OPEN_OR_CONTESTED",
+        "blocking_finding_effect": "ACTIVE_BLOCKER",
+        "non_blocking_finding_effect": "REMAINS_OPEN_NO_GATE_CHANGE",
+        "retroactive_renewal_allowed": false
+      }
+    },
+    "R-GOV-007": {
+      "title": "Policy authorship, approval, and critical-rule review",
+      "policy_change_authority": {
+        "author": ["governance_engine_owner", "security_architecture_owner", "theorem_owner"],
+        "required_reviewers": { "ordinary_rule_change": 2, "critical_rule_change": 3 },
+        "mandatory_reviewer_roles": {
+          "ordinary_rule_change": ["governance_engine_owner", "independent_reviewer"],
+          "critical_rule_change": ["governance_engine_owner", "security_authority", "independent_governance_authority"]
+        },
+        "final_approval": {
+          "ordinary_rule_change": "governance_authority",
+          "critical_rule_change": "governance_authority_plus_security_authority"
+        }
+      }
+    },
+    "R-GOV-008": {
+      "title": "Contested-finding adjudication authority and gate effect",
+      "contested_finding_policy": {
+        "adjudication_authority": {
+          "low_medium": "governance_engine_owner_plus_independent_reviewer",
+          "high_critical": "governance_authority_plus_security_authority"
+        },
+        "default_gate_effect": {
+          "safety_critical": "BLOCKING",
+          "authority_integrity": "BLOCKING",
+          "documentation_only": "NON_BLOCKING"
+        },
+        "permitted_outcomes": ["OPEN", "DISPROVED", "VERIFIED_RESOLVED", "SUPERSEDED"]
+      }
+    },
+    "R-GOV-009": {
+      "title": "Governance-engine ownership and approval quorum",
+      "governance_engine_ownership": {
+        "finding_schema": { "owner": "governance_engine_owner", "approval_quorum": 2 },
+        "policy_schema": { "owner": "governance_authority", "approval_quorum": 3 },
+        "rule_registry": { "owner": "governance_engine_owner", "approval_quorum": 3 },
+        "decision_engine_implementation": { "owner": "engineering_owner", "approval_quorum": 2 },
+        "replay_engine": { "owner": "engineering_owner", "approval_quorum": 3 },
+        "gate_state_certification": { "certifier": "governance_authority" }
+      }
+    },
+    "R-GOV-010": {
+      "title": "Exact lifecycle transitions",
+      "allowed_lifecycle_transitions": {
+        "OPEN": ["IN_REMEDIATION", "CONTESTED", "DISPROVED", "DUPLICATE", "SUPERSEDED", "STALE"],
+        "IN_REMEDIATION": ["OPEN", "FIXED_PENDING_VERIFICATION", "CONTESTED", "STALE"],
+        "FIXED_PENDING_VERIFICATION": ["IN_REMEDIATION", "VERIFIED_RESOLVED", "CONTESTED", "STALE"],
+        "VERIFIED_RESOLVED": ["OPEN", "IN_REMEDIATION", "STALE"],
+        "CONTESTED": ["OPEN", "DISPROVED", "VERIFIED_RESOLVED", "SUPERSEDED", "STALE"],
+        "SUPERSEDED": ["STALE"],
+        "DUPLICATE": ["STALE"],
+        "DISPROVED": ["OPEN", "STALE"],
+        "STALE": ["OPEN", "IN_REMEDIATION", "CONTESTED"]
+      },
+      "prohibited_transitions": ["OPEN -> VERIFIED_RESOLVED"]
+    },
+    "R-GOV-011": {
+      "title": "Default effects for every defect class",
+      "defect_class_default_effects": {
+        "ARCHITECTURE_CONTRADICTION": { "architecture_closure": "BLOCK", "provisioning": "BLOCK", "remediation": "REQUIRED" },
+        "UNSUPPORTED_CONSTANT": { "architecture_closure": "BLOCK", "provisioning": "BLOCK", "remediation": "REQUIRED" },
+        "UNRESOLVED_REQUIREMENT": { "architecture_closure": "BLOCK", "provisioning": "BLOCK", "remediation": "REQUIRED" },
+        "SECURITY_BOUNDARY_INCOMPLETE": { "architecture_closure": "BLOCK", "provisioning": "BLOCK", "qualification": "BLOCK", "remediation": "REQUIRED" },
+        "FAILURE_SEMANTICS_INCOMPLETE": { "architecture_closure": "BLOCK", "provisioning": "BLOCK", "qualification": "CONDITIONAL", "remediation": "REQUIRED" },
+        "PROVIDER_CAPABILITY_UNSPECIFIED": { "architecture_closure": "BLOCK", "provisioning": "BLOCK", "remediation": "REQUIRED" },
+        "POLICY_UNRATIFIED": { "architecture_closure": "BLOCK", "provisioning": "BLOCK", "qualification": "BLOCK", "remediation": "REQUIRED" },
+        "EVIDENCE_GAP": { "architecture_closure": "CONDITIONAL", "provisioning": "BLOCK_IF_REQUIRED_EVIDENCE", "qualification": "BLOCK_IF_REQUIRED_EVIDENCE", "remediation": "REQUIRED" },
+        "IMPLEMENTATION_GAP": { "architecture_closure": "NO_EFFECT_IF_CONTRACT_COMPLETE", "provisioning": "BLOCK_IF_REQUIRED_IMPLEMENTATION", "qualification": "BLOCK_IF_REQUIRED_IMPLEMENTATION", "remediation": "REQUIRED" },
+        "TEST_COVERAGE_GAP": { "architecture_closure": "BLOCK_IF_REQUIRED_AUDIT", "provisioning": "CONDITIONAL", "qualification": "BLOCK_IF_REQUIRED_PROOF", "remediation": "REQUIRED" },
+        "DOCUMENTATION_DEFECT": { "architecture_closure": "NO_EFFECT", "provisioning": "NO_EFFECT", "qualification": "NO_EFFECT", "remediation": "REQUIRED" },
+        "GOVERNANCE_ENGINE_DEFECT": { "architecture_closure": "BLOCK", "provisioning": "BLOCK", "qualification": "BLOCK", "remediation": "REQUIRED" },
+        "STALE_EVIDENCE": { "architecture_closure": "BLOCK_IF_SAFETY_OR_AUTHORITY_RELATED", "provisioning": "BLOCK", "qualification": "BLOCK", "remediation": "REQUIRED" },
+        "POLICY_CONTRADICTION": { "architecture_closure": "BLOCK", "provisioning": "BLOCK", "qualification": "BLOCK", "remediation": "REQUIRED" }
+      }
+    },
+    "R-GOV-012": {
+      "title": "Exact remediation-status treatment of findings",
+      "remediation_status_effects": {
+        "OPEN": { "remediation_required": true, "status_effect": "REQUIRED" },
+        "IN_REMEDIATION": { "remediation_required": true, "status_effect": "IN_PROGRESS" },
+        "FIXED_PENDING_VERIFICATION": { "remediation_required": true, "status_effect": "COMPLETE_PENDING_VERIFICATION" },
+        "VERIFIED_RESOLVED": { "remediation_required": false },
+        "CONTESTED": { "remediation_required": true, "status_effect": "REQUIRED" },
+        "STALE": { "remediation_required": true, "status_effect": "REQUIRED" },
+        "SUPERSEDED": { "remediation_required": false },
+        "DUPLICATE": { "remediation_required": false },
+        "DISPROVED": { "remediation_required": false },
+        "WAIVED": { "remediation_required": true, "status_effect": "REQUIRED" }
+      }
+    },
+    "R-GOV-013": {
+      "title": "Exact cross-gate inheritance",
+      "cross_gate_inheritance": {
+        "ARCHITECTURE_CLOSURE": ["architecture_scope", "governance_scope", "theorem_scope", "policy_engine_scope", "safety_effect_UNSAFE", "unresolved_required_evidence"],
+        "GLOBAL_PROVISIONING_READINESS": ["architecture_closure_blockers", "provisioning_scope", "authority_integrity_scope", "stale_safety_critical_evidence", "unresolved_mandatory_inputs"],
+        "THEOREM_A_QUALIFICATION": ["THEOREM_A_RELEASE_TRUST", "SUPPLY_CHAIN", "genesis_provenance", "release_identity"],
+        "THEOREM_B_QUALIFICATION": ["THEOREM_B_AUTHORIZATION", "B_C_COMMIT", "self_authorization", "claim_validation"],
+        "THEOREM_C_QUALIFICATION": ["THEOREM_C_STATE", "C_D_COMMIT", "rollback", "fencing"],
+        "THEOREM_D_QUALIFICATION": ["THEOREM_D_CUSTODY", "B_D_COMMIT", "evidence_mutability", "retention"],
+        "THEOREM_E_EXECUTION": ["all_A_to_D_qualification_blockers", "B_C_D_RECOVERY", "QUALIFICATION_ISOLATION", "fault_injection_controls"],
+        "PRODUCTION_ARMING": ["all_required_A_to_E_blockers", "runtime_safety_blockers", "production_authorization_findings"],
+        "NATURAL_OBSERVER_ARMING": ["all_production_arming_blockers", "natural_contamination_findings", "denominator_predicate_findings"]
+      }
+    },
+    "R-GOV-014": {
+      "title": "Runtime-action precedence and live-authority determination",
+      "runtime_action_precedence": ["INCIDENT_RESPONSE", "TERMINAL_HOLD", "HALT_NEW_ADMISSIONS", "NONE"],
+      "runtime_action_rules": {
+        "pre_live": "NONE",
+        "live": {
+          "VERIFIED_INCIDENT_RESPONSE": "INCIDENT_RESPONSE",
+          "VERIFIED_TERMINAL_HOLD": "TERMINAL_HOLD",
+          "VERIFIED_HALT_NEW_ADMISSIONS": "HALT_NEW_ADMISSIONS",
+          "REPRODUCED_UNSAFE": "HALT_NEW_ADMISSIONS",
+          "ASSERTED_UNSAFE": "NONE",
+          "UNKNOWN": "NONE"
+        }
+      }
+    },
+    "R-GOV-015": {
+      "title": "Required audit completion semantics",
+      "required_audit_schema": ["audit_id", "status", "owner", "completed_at", "evidence_refs", "evidence_hash", "policy_version", "reviewer"],
+      "valid_audit_statuses": ["NOT_STARTED", "IN_PROGRESS", "PASS", "FAIL", "BLOCKED"],
+      "closure_prerequisite": "ALL_MANDATORY_AUDITS_MUST_BE_PASS"
+    },
+    "R-GOV-016": {
+      "title": "Explicit override eligibility",
+      "override_eligibility": {
+        "DOCUMENTATION_DEFECT": { "allowed": true, "approval": "governance_engine_owner" },
+        "TEST_COVERAGE_GAP": { "allowed": true, "approval": "governance_authority", "requires_compensating_control": true },
+        "IMPLEMENTATION_GAP": { "allowed": true, "approval": "governance_authority", "requires_expiry": true },
+        "EVIDENCE_GAP": { "allowed": true, "approval": "governance_authority", "requires_expiry": true, "prohibited_if_authority_critical": true }
+      },
+      "prohibited_override_classes": ["NON_WAIVABLE_DEFECT_CLASSES"]
+    },
+    "R-GOV-017": {
+      "title": "Historical snapshot and sequence conflict handling",
+      "conflict_handling": {
+        "cas_mutation_against_previous_hash": true,
+        "mismatch_action": "REGISTRY_CONFLICT",
+        "auto_merge_permitted_on_conflict": false,
+        "decision_sequence_strictly_monotonic": true
+      }
+    },
+    "R-GOV-018": {
+      "title": "Canonicalization and hash algorithm",
+      "canonicalization_rules": {
+        "scheme": "RFC_8785",
+        "encoding": "UTF-8",
+        "hash_algorithm": "SHA-256",
+        "timestamp_format": "RFC_3339_UTC"
+      }
+    },
+    "R-GOV-019": {
+      "title": "Policy self-consistency failure handling",
+      "self_consistency_fail_closed_triggers": [
+        "POLICY_RULE_CONTRADICTIONS",
+        "DEPENDENCY_CYCLES",
+        "UNKNOWN_BLOCK_TARGETS",
+        "UNKNOWN_SCOPES",
+        "UNKNOWN_SEVERITIES",
+        "UNKNOWN_DEFECT_CLASSES",
+        "NONDETERMINISTIC_OVERRIDES"
+      ],
+      "fail_closed_gate_effect": {
+        "GOVERNANCE_DECISION_ENGINE_CONTRACT_CLOSURE": "BLOCKED",
+        "GLOBAL_PROVISIONING_READINESS": "BLOCKED",
+        "THEOREM_QUALIFICATION_READINESS": "NOT_READY"
+      }
+    },
+    "R-GOV-020": {
+      "title": "Final gate-state certification authority",
+      "gate_state_certification": {
+        "derived_by": "decision_engine",
+        "certified_by": "governance_authority",
+        "prohibited_actions": [
+          "manual_override_of_derived_state",
+          "certification_without_snapshot_hash",
+          "certification_without_replay",
+          "certification_with_unresolved_governance_questions"
+        ]
+      }
+    }
+  },
+  "required_approvals_register": {
+    "1_UNKNOWN_PROPAGATION_MATRIX": "APPROVED",
+    "2_REMEDIATION_VERIFICATION_SEPARATION": "APPROVED",
+    "3_NON_WAIVABLE_DEFECT_CLASS_LIST": "APPROVED",
+    "4_AUTOMATED_EVIDENCE_STATUS_AUTHORITY": "APPROVED",
+    "5_WAIVER_EXPIRATION_SEMANTICS": "APPROVED",
+    "6_POLICY_CHANGE_AUTHORITY_AND_QUORUM": "APPROVED",
+    "7_CONTESTED_FINDING_ADJUDICATION": "APPROVED",
+    "8_GOVERNANCE_ENGINE_OWNERSHIP_AND_QUORUM": "APPROVED",
+    "9_FINDING_LIFECYCLE_STATE_MACHINE": "APPROVED",
+    "10_DEFECT_CLASS_DEFAULT_EFFECTS": "APPROVED",
+    "11_REMEDIATION_STATUS_EFFECTS": "APPROVED",
+    "12_CROSS_GATE_INHERITANCE": "APPROVED",
+    "13_RUNTIME_ACTION_PRECEDENCE": "APPROVED",
+    "14_REQUIRED_AUDIT_COMPLETION": "APPROVED",
+    "15_OVERRIDE_ELIGIBILITY": "APPROVED",
+    "16_CONCURRENCY_CONFLICT_HANDLING": "APPROVED",
+    "17_SNAPSHOT_CANONICALIZATION": "APPROVED",
+    "18_POLICY_SELF_CONSISTENCY_FAIL_CLOSED_BEHAVIOR": "APPROVED",
+    "19_FINAL_GATE_STATE_CERTIFICATION": "APPROVED"
+  },
+  "unresolved_governance_engine_questions": 0
+}

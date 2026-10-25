@@ -1,0 +1,23 @@
+{
+  "cloud_custody_store": {
+    "delete_protection_active": "NO",
+    "external_worm_bucket_provisioned": "NO",
+    "retention_policy_enforced": "NO",
+    "runner_loss_durability_proven": "NO"
+  },
+  "local_custody_store": {
+    "independent_sha256_replay": "PASS",
+    "metadata_tuple_completeness": "PASS",
+    "quarantine_on_downstream_failure": "PASS",
+    "verbatim_byte_preservation": "PASS"
+  },
+  "quarantine": "PASS_LOCAL_SUBSTRATE",
+  "rationale": "No external WORM-compliant object storage with retention locks provisioned to safeguard raw SEC evidence.",
+  "raw_evidence_delete_resistance": "BLOCKED",
+  "raw_evidence_replay": "BLOCKED_EXTERNALLY",
+  "raw_evidence_versioned": "BLOCKED",
+  "raw_sec_bytes_durable": "NO",
+  "schema_version": "THEOREM_D_EVIDENCE_CUSTODY_V1",
+  "theorem": "D_EVIDENCE_CUSTODY",
+  "verdict": "BLOCKED"
+}

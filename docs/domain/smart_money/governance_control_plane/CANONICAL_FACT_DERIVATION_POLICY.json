@@ -1,0 +1,71 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/canonical-fact-derivation-policy.json",
+  "policy_id": "urn:arx:policy:fact-derivation:v1",
+  "policy_version": "1.0.0",
+  "description": "Governed Fact Derivation Policy mapping canonical claims to predicate facts.",
+  "rules": [
+    {
+      "fact_id": "fact_governance_root_status",
+      "source_claim_id": "CLAIM-GOVERNANCE-ROOT",
+      "derivation_version": "1.0.0",
+      "output_type": "string",
+      "allowed_claim_states": ["ESTABLISHED", "NOT_ESTABLISHED", "UNKNOWN", "CONFLICT", "STALE", "REVOKED"]
+    },
+    {
+      "fact_id": "fact_candidate_freeze_valid",
+      "source_claim_id": "CLAIM-CANDIDATE004-FREEZE-FILE-IDENTITY",
+      "derivation_version": "1.0.0",
+      "output_type": "string",
+      "allowed_claim_states": ["ESTABLISHED", "NOT_ESTABLISHED", "UNKNOWN", "CONFLICT", "STALE", "REVOKED"]
+    },
+    {
+      "fact_id": "fact_candidate_semantic_closure_valid",
+      "source_claim_id": "CLAIM-CANDIDATE004-SEMANTIC-CLOSURE-IDENTITY",
+      "derivation_version": "1.0.0",
+      "output_type": "string",
+      "allowed_claim_states": ["ESTABLISHED", "NOT_ESTABLISHED", "UNKNOWN", "CONFLICT", "STALE", "REVOKED"]
+    },
+    {
+      "fact_id": "fact_ext_ledger_status",
+      "source_claim_id": "CLAIM-EXTERNAL-LEDGER",
+      "derivation_version": "1.0.0",
+      "output_type": "string",
+      "allowed_claim_states": ["ESTABLISHED", "NOT_ESTABLISHED", "UNKNOWN", "CONFLICT", "STALE", "REVOKED"]
+    },
+    {
+      "fact_id": "fact_ext_witness_status",
+      "source_claim_id": "CLAIM-EXTERNAL-WITNESS",
+      "derivation_version": "1.0.0",
+      "output_type": "string",
+      "allowed_claim_states": ["ESTABLISHED", "NOT_ESTABLISHED", "UNKNOWN", "CONFLICT", "STALE", "REVOKED"]
+    },
+    {
+      "fact_id": "fact_active_blockers_count",
+      "source_claim_id": "CLAIM-FINDING-BLOCKERS",
+      "derivation_version": "1.0.0",
+      "output_type": "string",
+      "allowed_claim_states": ["ESTABLISHED", "NOT_ESTABLISHED", "UNKNOWN", "CONFLICT", "STALE", "REVOKED"]
+    },
+    {
+      "fact_id": "fact_denominator_alignment_status",
+      "source_claim_id": "CLAIM-DENOMINATOR-ALIGNMENT",
+      "derivation_version": "1.0.0",
+      "output_type": "string",
+      "allowed_claim_states": ["ESTABLISHED", "NOT_ESTABLISHED", "UNKNOWN", "CONFLICT", "STALE", "REVOKED"]
+    },
+    {
+      "fact_id": "fact_gov_policy_status",
+      "source_claim_id": "CLAIM-GOVERNANCE-POLICY",
+      "derivation_version": "1.0.0",
+      "output_type": "string",
+      "allowed_claim_states": ["ESTABLISHED", "NOT_ESTABLISHED", "UNKNOWN", "CONFLICT", "STALE", "REVOKED"]
+    },
+    {
+      "fact_id": "fact_release_provenance_status",
+      "source_claim_id": "CLAIM-RELEASE-PROVENANCE",
+      "derivation_version": "1.0.0",
+      "output_type": "string",
+      "allowed_claim_states": ["ESTABLISHED", "NOT_ESTABLISHED", "UNKNOWN", "CONFLICT", "STALE", "REVOKED"]
+    }
+  ]
+}

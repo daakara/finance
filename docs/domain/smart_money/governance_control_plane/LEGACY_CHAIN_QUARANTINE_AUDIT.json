@@ -1,0 +1,18 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/legacy-chain-quarantine-audit.json",
+  "artifact_type": "LEGACY_CHAIN_QUARANTINE_AUDIT",
+  "corrupt_chain_path": "C:\\Users\\akara\\Documents\\Projects\\finance\\docs\\domain\\smart_money\\governance_control_plane\\PRE_MIGRATION_CORRUPT_CHAIN_RAW.json",
+  "exception_message": "LEGACY_CHAIN_QUARANTINED: Unmigrated chain format v1.0.0 detected at 'C:\\Users\\akara\\Documents\\Projects\\finance\\docs\\domain\\smart_money\\governance_control_plane\\PRE_MIGRATION_CORRUPT_CHAIN_RAW.json'. Unmigrated legacy chains are quarantined and cannot serve as canonical current authority. Execute versioned migration to format v2.0.0.",
+  "exception_type": "LegacyChainQuarantinedError",
+  "lineage": {
+    "generated_at_utc": "2026-10-12T21:15:15Z",
+    "generator_path": "scripts/generate_chain_migration_evidence.py",
+    "generator_sha256": "98658eb74aafd87771326262cb31d4c4f1ea25c0e632843171e68d8e9fc0ff5f",
+    "git_head": "e41cc6d729a2af1fab6cdaace764af8e1739f87f",
+    "invocation": "python scripts/generate_chain_migration_evidence.py",
+    "source_sha": "3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11"
+  },
+  "load_attempt_status": "REJECTED",
+  "quarantine_verified": true,
+  "verdict": "PASS"
+}

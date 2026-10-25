@@ -19,7 +19,7 @@ from typing import Dict, Any, Tuple, Optional, Set
 
 SCHEMA_VERSION_V1 = "SMART_MONEY_PRE_ARM_AUTHORIZATION_V1"
 SCHEMA_VERSION_V2 = "SMART_MONEY_PRE_ARM_AUTHORIZATION_V2"
-SCHEMA_VERSION = SCHEMA_VERSION_V1  # Retained for backward compatibility with V1 tests
+SCHEMA_VERSION = SCHEMA_VERSION_V2  # Canonical schema version is V2
 MAX_GATE3_AUTHORIZATION_TTL_SECONDS = 7200  # 2 hours maximum
 DEFAULT_EPOCH_ID = "EPOCH_SMART_MONEY_001"
 
@@ -52,9 +52,12 @@ def validate_gate3_authorization(
     current_consumer_mode: Optional[str] = None,
     current_commit_sha: Optional[str] = None,
     readiness_evidence_dir: Optional[str] = None,
+    natural_authority_mode: bool = False,
+    require_cryptographic_verification: bool = False,
 ) -> Tuple[bool, str]:
     """
-    Validates a Gate-3 Pre-Arm Authorization artifact (supporting V1 and V2).
+    Validates a Gate-3 Pre-Arm Authorization artifact.
+    In natural_authority_mode, rejects V1 schemas and requires all mandatory authority fields.
     Returns (True, 'PASS') or (False, '<exact rejection reason>').
     """
     if current_time_utc is None:
@@ -64,8 +67,12 @@ def validate_gate3_authorization(
 
     # 1. Schema check
     sv = auth_doc.get("schema_version")
-    if sv not in (SCHEMA_VERSION_V1, SCHEMA_VERSION_V2):
-        return False, f"REJECTED: Invalid schema_version '{sv}' (expected {SCHEMA_VERSION_V1} or {SCHEMA_VERSION_V2})"
+    if natural_authority_mode:
+        if sv != SCHEMA_VERSION_V2:
+            return False, f"REJECTED: Natural authority requires {SCHEMA_VERSION_V2} (got '{sv}')"
+    else:
+        if sv not in (SCHEMA_VERSION_V1, SCHEMA_VERSION_V2):
+            return False, f"REJECTED: Invalid schema_version '{sv}' (expected {SCHEMA_VERSION_V1} or {SCHEMA_VERSION_V2})"
 
     # 2. Authorization ID & Replay check
     auth_id = auth_doc.get("authorization_id")
@@ -114,27 +121,70 @@ def validate_gate3_authorization(
     if total_ttl > max_ttl + 60:
         return False, f"REJECTED: Authorization validity duration ({total_ttl}s) exceeds maximum_ttl_seconds ({max_ttl}s)"
 
+    # 6.1 Mandatory Fields Enforcement in Natural Mode
+    if natural_authority_mode:
+        mandatory_fields = [
+            "authorization_id",
+            "authorization_sequence",
+            "nonce",
+            "schema_version",
+            "epoch_id",
+            "authorization_scope",
+            "issuer",
+            "issuer_workload_identity",
+            "authorized_event_name",
+            "authorized_consumer_mode",
+            "target_repository",
+            "repository_id",
+            "target_workflow",
+            "target_commit_sha",
+            "scheduler_ref",
+            "oidc_subject",
+            "policy_hash",
+            "natural_denominator_expected",
+            "issued_at",
+            "not_before",
+            "expires_at",
+            "single_use",
+            "revocation_state",
+            "canonical_payload_sha256",
+            "sigstore_bundle_reference",
+            "rekor_log_index",
+            "signer_identity",
+            "signer_issuer",
+        ]
+        for mf in mandatory_fields:
+            if mf not in auth_doc or auth_doc[mf] is None or auth_doc[mf] == "":
+                return False, f"REJECTED: Missing mandatory authority binding field '{mf}'"
+
     # 7. Exact Invocation Binding
-    if current_event_name and auth_doc.get("authorized_event_name"):
-        if current_event_name != auth_doc.get("authorized_event_name"):
+    if current_event_name is not None:
+        if auth_doc.get("authorized_event_name") != current_event_name:
             return False, (
                 f"REJECTED: Event name binding mismatch: '{current_event_name}' != "
                 f"'{auth_doc.get('authorized_event_name')}'"
             )
+    elif natural_authority_mode:
+        return False, "REJECTED: Missing current_event_name for natural authority verification"
 
-    if current_consumer_mode and auth_doc.get("authorized_consumer_mode"):
-        if current_consumer_mode != auth_doc.get("authorized_consumer_mode"):
+    if current_consumer_mode is not None:
+        if auth_doc.get("authorized_consumer_mode") != current_consumer_mode:
             return False, (
                 f"REJECTED: Consumer mode binding mismatch: '{current_consumer_mode}' != "
                 f"'{auth_doc.get('authorized_consumer_mode')}'"
             )
+    elif natural_authority_mode:
+        return False, "REJECTED: Missing current_consumer_mode for natural authority verification"
 
-    if current_commit_sha and auth_doc.get("scheduler_commit_sha"):
-        if current_commit_sha != auth_doc.get("scheduler_commit_sha"):
+    if current_commit_sha is not None:
+        target_sha = auth_doc.get("scheduler_commit_sha") or auth_doc.get("target_commit_sha")
+        if target_sha != current_commit_sha:
             return False, (
                 f"REJECTED: Commit SHA binding mismatch: '{current_commit_sha}' != "
-                f"'{auth_doc.get('scheduler_commit_sha')}'"
+                f"'{target_sha}'"
             )
+    elif natural_authority_mode:
+        return False, "REJECTED: Missing current_commit_sha for natural authority verification"
 
     # 8. Workflow & Identity Binding
     expected_workflow = "daakara/finance/.github/workflows/smart_money_rooting.yml@refs/heads/main"
@@ -172,6 +222,10 @@ def validate_gate3_authorization(
         if not hval or len(str(hval)) != 64:
             return False, f"REJECTED: Missing or malformed {hname}"
 
+    if natural_authority_mode:
+        if not readiness_evidence_dir or not os.path.exists(readiness_evidence_dir):
+            return False, "REJECTED: Readiness evidence directory missing or inaccessible"
+
     if readiness_evidence_dir and os.path.exists(readiness_evidence_dir):
         # Resolve artifacts on disk
         for hname in required_hashes:
@@ -204,6 +258,9 @@ def validate_gate3_authorization(
     signer_issuer = auth_doc.get("signer_issuer")
     if signer_issuer != "https://token.actions.githubusercontent.com":
         return False, f"REJECTED: Invalid signer_issuer '{signer_issuer}'"
+
+    if require_cryptographic_verification:
+        return False, "REJECTED: External cryptographic Sigstore verification capability not available"
 
     # 12. Canonical Payload Hash Verification
     core_payload = dict(auth_doc)

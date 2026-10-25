@@ -1,0 +1,22 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/sequence-4-source-binding-audit.json",
+  "audit_id": "urn:arx:audit:sequence-4-source-binding:2026-10-12",
+  "generated_at": "2026-10-12T20:20:32Z",
+  "sequence_4_source_binding": {
+    "commit_author_timestamp": "2026-10-12T20:17:44+02:00",
+    "commit_committer_timestamp": "2026-10-12T20:17:44+02:00",
+    "decision_derived_at": "2026-10-12T18:15:00Z",
+    "derivation_engine_hash": "cfe33343699b893c28ec328a6e33b5359af845f7657db734db8762d1e6d67dbb",
+    "derivation_engine_source_sha": "ab32ec91bff0dce73a35938af73e1af8d43e5c68",
+    "overall": "TEMPORAL_CAUSALITY_VIOLATION",
+    "source_freeze_contract_match": true,
+    "source_freeze_sha": "4aa35839dc0f5d2496d4a13c80e6c72cdee53eda",
+    "source_tree_match": true,
+    "source_tree_oid": "794300d2ac694bf5f1c182f274b67fc037962eb5",
+    "temporal_causality": "FAIL",
+    "temporal_causality_detail": "derived_at (2026-10-12T18:15:00Z) preceded Git commit 4aa3583 creation (2026-10-12T20:17:44+02:00 = 18:17:44Z) by 164 seconds."
+  },
+  "sequence_5_authorization_rule": "PROHIBITED: Sequence 3 body hash integrity failed, triggering STOP rule under Section 7 & 33.",
+  "sequence_5_required": false,
+  "verdict": "FAIL_TEMPORAL_CAUSALITY"
+}

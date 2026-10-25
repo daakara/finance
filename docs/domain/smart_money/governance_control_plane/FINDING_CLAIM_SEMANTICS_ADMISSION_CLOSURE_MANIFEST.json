@@ -1,0 +1,92 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/finding-claim-semantics-admission-closure-manifest.json",
+  "manifest_version": "1.0.0",
+  "gate_title": "ARX TERMINAL — SMART MONEY — FINDING IDENTITY, CLAIM SEMANTICS & ADMISSION AUTHORITY REPAIR V1",
+  "generated_at": "2026-10-12T10:35:00Z",
+  "source_freeze": {
+    "commit_sha": "38fbec379a0fc7788ab11ac4f566e445a7b4802d",
+    "tree_hash": "4a92a5d39931caa879bcbe3cb8a9ca1624ff76e8",
+    "baseline_ref": "bab9776b8013646b634871c49b52e61e4234d36b"
+  },
+  "candidate": {
+    "candidate_id": "CANDIDATE_GENERATION_004",
+    "freeze_file_sha256": "297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90",
+    "semantic_closure_hash": "53b6372349cfdb1046a4ddbd678f628bba28c7778cef2fe381e02f9097f7a9e6",
+    "raw_bytes_verified": true,
+    "diff_against_freeze": 0
+  },
+  "governance_epoch": {
+    "epoch": "epoch-gov-002",
+    "successor_sequence": 2,
+    "previous_decision_hash": "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f",
+    "successor_decision_id": "urn:arx:decision:epoch-gov-002:2:fa3df68578c4",
+    "successor_decision_hash": "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c"
+  },
+  "finding_population": {
+    "total_registered_findings": 15,
+    "admitted_finding_count": 13,
+    "duplicate_finding_count": 2,
+    "rejected_finding_count": 0,
+    "superseded_finding_count": 0,
+    "active_blocker_count": 13,
+    "unresolved_architecture_defects": 8,
+    "active_non_architecture_blockers": 5,
+    "split_hashes": {
+      "finding_identity_registry_hash": "dfbe45012e6a25b163beb93acce1f6ad62167c73da5c4ab2613aeefec39ce937",
+      "finding_admission_registry_hash": "4334368524600fca87473eb944053295cab255be8a7ace827cf1c275029497de",
+      "active_blocker_set_hash": "ae56d3e2675258e12473ff91f9655feac967285e3d2b46ce0942abc0efe15310"
+    }
+  },
+  "foreign_findings_audit": {
+    "candidate_foreign_subjects_audited": 10,
+    "disproved_count": 10,
+    "admitted_count": 0,
+    "unsupported_new_findings_admitted": 0
+  },
+  "blocker_ablation": {
+    "active_blocker_count": 13,
+    "ablation_cases_executed": 13,
+    "ablation_cases_passed": 13,
+    "ablation_cases_failed": 0,
+    "parity_confirmed": true
+  },
+  "decision_context": {
+    "decision_context_hash": "cad190ce404bdd814a9c923d1349ab8a9b2a5469956ac265b231d9ebef43fd7e",
+    "evaluator_bundle_hash": "e6ba33582dcdcea59907cce6b249e5714278430c78030765b2bb10ee8d98d93a"
+  },
+  "invariants": {
+    "FINDING_ID_SUBJECT_MUTATIONS_REMAINING": 0,
+    "HISTORICAL_FINDING_IDS_REUSED_FOR_NEW_SUBJECTS": 0,
+    "UNSUPPORTED_NEW_FINDINGS_ADMITTED": 0,
+    "CLAIM_STATE_AUTHORITY_DIMENSIONS_SEPARATED": "PASS",
+    "CONFLICT_COLLAPSED_TO_NOT_ESTABLISHED": 0,
+    "CONFLICT_COLLAPSED_TO_UNKNOWN": 0,
+    "UNKNOWN_LAUNDERED_AS_NOT_ESTABLISHED": 0,
+    "NOT_ESTABLISHED_WITHOUT_COMPLETE_STATE_BASIS": 0,
+    "OPERATOR_RATIFIED_WITHOUT_RATIFICATION_ARTIFACT": 0,
+    "DUPLICATE_WITHOUT_ROOT_CAUSE_EQUIVALENCE": 0,
+    "DUPLICATE_WITHOUT_CANONICAL_TARGET": 0,
+    "DUPLICATE_CYCLE_COUNT": 0,
+    "FINDING_ADJUDICATION_EQUIVOCATION": 0,
+    "BLOCKING_DERIVED_FROM_SEVERITY_ONLY": 0,
+    "ADMITTED_OPEN_FINDINGS_WITHOUT_CAUSAL_MAPPING": 0,
+    "ACTIVE_BLOCKERS_WITHOUT_DEPENDENCY_PATH": 0,
+    "ACTIVE_BLOCKER_COUNT": 13,
+    "ABLATION_CASES_EXECUTED": 13,
+    "ABLATION_CASES_PASSED": 13,
+    "ABLATION_CASES_FAILED": 0,
+    "FORGED_CANONICAL_CONTEXT_ACCEPTED": 0,
+    "SEMANTIC_CLAIM_CHANGE_WITHOUT_CONTEXT_HASH_CHANGE": 0,
+    "ADMISSION_CHANGE_WITHOUT_CONTEXT_HASH_CHANGE": 0,
+    "REUSED_INVALIDATED_SEQUENCE_SLOT": 0,
+    "CANDIDATE004_DIFF": 0,
+    "NATURAL_OBSERVER_ARMING": "NOT_AUTHORIZED",
+    "NATURAL_DENOMINATOR": 0
+  },
+  "test_verification": {
+    "total_tests_passed": 350,
+    "total_tests_failed": 0,
+    "gate_test_suite_passed": 52,
+    "full_governance_regression_passed": true
+  }
+}

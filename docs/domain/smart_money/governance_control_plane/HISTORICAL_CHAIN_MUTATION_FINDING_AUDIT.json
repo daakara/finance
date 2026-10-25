@@ -1,0 +1,27 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/historical-chain-mutation-finding-audit.json",
+  "admission_status": "ADMITTED",
+  "artifact_type": "HISTORICAL_CHAIN_MUTATION_FINDING_AUDIT",
+  "classification": "ARCHITECTURE_DEFECT",
+  "defect_class": "HISTORICAL_CANONICAL_STATE_MUTATION",
+  "derived_blocks": [
+    "DECISION_AUTHORITY",
+    "CANONICAL_RECONCILIATION",
+    "PROVISIONING"
+  ],
+  "finding_id": "FND-ARCH-017",
+  "lifecycle_status": "VERIFIED_RESOLVED",
+  "lineage": {
+    "generated_at_utc": "2026-10-12T21:15:15Z",
+    "generator_path": "scripts/generate_chain_migration_evidence.py",
+    "generator_sha256": "98658eb74aafd87771326262cb31d4c4f1ea25c0e632843171e68d8e9fc0ff5f",
+    "git_head": "e41cc6d729a2af1fab6cdaace764af8e1739f87f",
+    "invocation": "python scripts/generate_chain_migration_evidence.py",
+    "source_sha": "3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11"
+  },
+  "original_subject": "Canonical committed decision history permitted identity-material mutation without regeneration of canonical decision identity.",
+  "remediation_status": "VERIFIED_RESOLVED",
+  "resolution_criteria": "Execute versioned historical-chain migration superseding corrupted records, preserving corrupt chain as evidence, and re-establishing single trusted canonical current decision.",
+  "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-017:v1",
+  "verification_evidence": "urn:arx:evidence:verification:fnd-arch-017:v1"
+}

@@ -1,0 +1,203 @@
+{
+  "scenarios": [
+    {
+      "denominator": 0,
+      "governance_state": "PRE_OBSERVATION_HOLD",
+      "process_result": "EXIT_HOLD",
+      "scenario": "Gate3 fetch unavailable",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "TERMINAL_HOLD",
+      "process_result": "EXIT_HOLD",
+      "scenario": "Gate3 stale (expired TTL)",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "TERMINAL_HOLD",
+      "process_result": "EXIT_HOLD",
+      "scenario": "Gate3 superseded",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "TERMINAL_HOLD",
+      "process_result": "EXIT_HOLD",
+      "scenario": "Gate3 revoked",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "TERMINAL_HOLD",
+      "process_result": "EXIT_HOLD",
+      "scenario": "Gate3 signer mismatch",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "TERMINAL_HOLD",
+      "process_result": "EXIT_HOLD",
+      "scenario": "Gate3 bundle tampered",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "TERMINAL_HOLD",
+      "process_result": "EXIT_HOLD",
+      "scenario": "Gate3 readiness mismatch",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "TERMINAL_HOLD",
+      "process_result": "EXIT_FATAL",
+      "scenario": "State backend unavailable",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "CLAIM_REJECTED",
+      "process_result": "EXIT_IDLE",
+      "scenario": "CAS conflict (concurrent claim)",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "FENCING_REJECTED",
+      "process_result": "EXIT_FATAL",
+      "scenario": "Generation conflict (stale writer)",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "TERMINAL_HOLD",
+      "process_result": "EXIT_FATAL",
+      "scenario": "Checkpoint stale / fork",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "QUARANTINE_HOLD",
+      "process_result": "EXIT_HOLD",
+      "scenario": "Object storage failure",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "QUARANTINE_HOLD",
+      "process_result": "EXIT_HOLD",
+      "scenario": "Raw evidence hash mismatch",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "CLOCK_UNSYNCHRONIZED_HOLD",
+      "process_result": "EXIT_HOLD",
+      "scenario": "Clock stale / unsynchronized",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "TRANSPORT_403_HOLD",
+      "process_result": "EXIT_HOLD",
+      "scenario": "SEC 403 Forbidden",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "RATE_LIMITED_HOLD",
+      "process_result": "EXIT_HOLD",
+      "scenario": "SEC 429 Rate Limit",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "ENDPOINT_UNHEALTHY_HOLD",
+      "process_result": "EXIT_HOLD",
+      "scenario": "SEC 5xx Server Error",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "NETWORK_TIMEOUT_HOLD",
+      "process_result": "EXIT_HOLD",
+      "scenario": "SEC Timeout",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "QUARANTINE_HOLD",
+      "process_result": "EXIT_FATAL",
+      "scenario": "R1 sign failure",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "QUARANTINE_HOLD",
+      "process_result": "EXIT_FATAL",
+      "scenario": "R1 verify failure",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "TERMINAL_HOLD",
+      "process_result": "EXIT_FATAL",
+      "scenario": "Authority-event DB failure",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "QUARANTINE_HOLD",
+      "process_result": "EXIT_FATAL",
+      "scenario": "R2 sign failure",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "TERMINAL_HOLD",
+      "process_result": "EXIT_FATAL",
+      "scenario": "Checkpoint witness failure",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "TERMINAL_HOLD",
+      "process_result": "EXIT_FATAL",
+      "scenario": "Admission failure",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "TERMINAL_HOLD",
+      "process_result": "EXIT_FATAL",
+      "scenario": "Denominator transaction failure",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "TERMINAL_HOLD",
+      "process_result": "EXIT_FATAL",
+      "scenario": "GitHub cache deleted",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "REHYDRATED_SAFE_HOLD",
+      "process_result": "ORPHANED",
+      "scenario": "Runner terminated mid-run",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "denominator": 0,
+      "governance_state": "COMMIT_MISMATCH_REJECTED",
+      "process_result": "EXIT_HOLD",
+      "scenario": "Manual dispatch wrong SHA",
+      "status": "FAIL_CLOSED"
+    }
+  ],
+  "schema_version": "SMART_MONEY_FAILURE_SEMANTICS_V1",
+  "total_scenarios": 28,
+  "unknown_semantics_count": 0
+}

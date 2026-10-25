@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arx.terminal/schemas/v1/canonical-evidence-manifest.json",
+  "title": "ARX Canonical Evidence Manifest Schema",
+  "description": "Normative schema for ARX Smart Money Canonical Evidence Manifests (Section 7).",
+  "type": "object",
+  "required": [
+    "manifest_id",
+    "manifest_version",
+    "source_freeze_sha",
+    "records",
+    "summary",
+    "manifest_hash"
+  ],
+  "properties": {
+    "manifest_id": {
+      "type": "string",
+      "description": "Unique URN identifying this evidence manifest instance."
+    },
+    "manifest_version": {
+      "type": "string",
+      "description": "Semantic version of the evidence manifest schema."
+    },
+    "source_freeze_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$",
+      "description": "Exact 40-character hexadecimal git commit SHA of the frozen source tree."
+    },
+    "records": {
+      "type": "array",
+      "description": "Sorted, deduplicated array of canonical evidence records.",
+      "items": {
+        "type": "object",
+        "required": [
+          "evidence_id",
+          "claim_id",
+          "evidence_state",
+          "provenance_class",
+          "authority_class",
+          "validity",
+          "observed_at"
+        ],
+        "properties": {
+          "evidence_id": {
+            "type": "string"
+          },
+          "claim_id": {
+            "type": "string"
+          },
+          "evidence_state": {
+            "type": "string",
+            "enum": ["ESTABLISHED", "NOT_ESTABLISHED", "STALE", "REVOKED"]
+          },
+          "provenance_class": {
+            "type": "string",
+            "enum": [
+              "CANONICAL_LEDGER",
+              "EXTERNAL_OPERATIONAL",
+              "REPOSITORY_BOUND",
+              "OPERATOR_RATIFIED",
+              "LOCAL_REFERENCE",
+              "DESIGN_CONTRACT",
+              "NONE"
+            ]
+          },
+          "authority_class": {
+            "type": "string",
+            "enum": ["AUTHORITATIVE", "NON_AUTHORITATIVE", "NOT_APPLICABLE"]
+          },
+          "source": {
+            "type": ["string", "null"]
+          },
+          "content_hash": {
+            "type": ["string", "null"],
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "validity": {
+            "type": "string",
+            "enum": ["CURRENT", "STALE", "REVOKED"]
+          },
+          "observed_at": {
+            "type": "string"
+          },
+          "canonical_hash": {
+            "type": ["string", "null"],
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "authoritative_present",
+        "supporting_present",
+        "not_established",
+        "stale",
+        "revoked",
+        "synthetic",
+        "test_double"
+      ],
+      "properties": {
+        "authoritative_present": { "type": "integer", "minimum": 0 },
+        "supporting_present": { "type": "integer", "minimum": 0 },
+        "not_established": { "type": "integer", "minimum": 0 },
+        "stale": { "type": "integer", "minimum": 0 },
+        "revoked": { "type": "integer", "minimum": 0 },
+        "synthetic": { "type": "integer", "minimum": 0, "maximum": 0 },
+        "test_double": { "type": "integer", "minimum": 0, "maximum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "manifest_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "RFC 8785 JCS canonical SHA-256 hash of the manifest body."
+    }
+  },
+  "additionalProperties": false
+}

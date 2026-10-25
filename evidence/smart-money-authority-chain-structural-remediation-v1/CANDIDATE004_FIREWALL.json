@@ -1,0 +1,22 @@
+{
+  "anchor_commit_sha": "63131b9604707ed9c3820e3afd3e9d47d1914397",
+  "candidate004_diff": 0,
+  "candidate_generation_id": "CANDIDATE_GENERATION_004",
+  "canonical_freeze_manifest": "docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_004_FREEZE.json",
+  "canonical_manifest_sha256": "297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90",
+  "firewall_status": "PASS",
+  "generated_at_utc": "2026-10-11T21:43:01.585465+00:00",
+  "git_diff_lines_against_anchor": 0,
+  "paths_evaluated": [
+    "analyst_dashboard/data/shadow_evidence.db",
+    "shadow_evidence.db",
+    "analyst_dashboard/vcp",
+    "natural_trigger.py",
+    "docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_004_FREEZE.json",
+    "docs/releases/2026-10-10-radar-sprint-3-production-shadow-candidate-004.md",
+    "tests/test_sprint_3_candidate_004_epoch_and_migration.py"
+  ],
+  "schema_version": "1.0.0",
+  "semantic_closure_hash": "53b6372349cfdb1046a4ddbd678f628bba28c7778cef2fe381e02f9097f7a9e6",
+  "unit_test_result": "15 passed in 12.02s"
+}

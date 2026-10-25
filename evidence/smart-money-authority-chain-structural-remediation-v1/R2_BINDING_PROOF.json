@@ -1,0 +1,5 @@
+{
+  "binds_r1_and_authority_event": true,
+  "payload_schema": "NATURAL_R2_V1",
+  "status": "PASS"
+}

@@ -1,0 +1,472 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/canonical-decision-causal-ablation-audit.json",
+  "ablation_cases": [
+    {
+      "ablated_decision_hash": "da692898fccc0c7d191a07268c66975e4fa9923065be1ee5143b03c8fdf05a83",
+      "ablation_verdict": "PASS",
+      "baseline_decision_hash": "7ff5df6401ee08908f686a705e923a9bee996bdf70f3dda0715b0932a624ed4b",
+      "decision_engine_reevaluated": true,
+      "expected_affected_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "architecture_closure_status",
+        "remediation_status",
+        "theorem_readiness"
+      ],
+      "finding_id": "FND-ARCH-001",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_A",
+        "THEOREM_B"
+      ],
+      "isolated_decision_hash": "9e4cedbfa5ee01b454df4b0138314893a442dd42967d3e24d0d0114c6af65778",
+      "observed_changed_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "architecture_closure_status",
+        "remediation_status",
+        "theorem_readiness"
+      ],
+      "restored_subject": "Candidate 004 freeze-file SHA-256 was conflated with Candidate 004 semantic-closure hash.",
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "target_removed_from_blocker_set": true,
+      "unexpected_changed_outputs": []
+    },
+    {
+      "ablated_decision_hash": "da692898fccc0c7d191a07268c66975e4fa9923065be1ee5143b03c8fdf05a83",
+      "ablation_verdict": "PASS",
+      "baseline_decision_hash": "7ff5df6401ee08908f686a705e923a9bee996bdf70f3dda0715b0932a624ed4b",
+      "decision_engine_reevaluated": true,
+      "expected_affected_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "theorem_readiness"
+      ],
+      "finding_id": "FND-ARCH-002",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_A"
+      ],
+      "isolated_decision_hash": "6e321b63d5606216e4bf0b6dac07d666fbe799224bde3ff926d9c2ecd681c106",
+      "observed_changed_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "theorem_readiness"
+      ],
+      "restored_subject": "Genesis release provenance was unsupported or not derived from authoritative evidence.",
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "target_removed_from_blocker_set": true,
+      "unexpected_changed_outputs": []
+    },
+    {
+      "ablated_decision_hash": "da692898fccc0c7d191a07268c66975e4fa9923065be1ee5143b03c8fdf05a83",
+      "ablation_verdict": "PASS",
+      "baseline_decision_hash": "7ff5df6401ee08908f686a705e923a9bee996bdf70f3dda0715b0932a624ed4b",
+      "decision_engine_reevaluated": true,
+      "expected_affected_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "theorem_readiness"
+      ],
+      "finding_id": "FND-ARCH-003",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_B",
+        "THEOREM_D"
+      ],
+      "isolated_decision_hash": "1484ae48f5a9f43ead6d5ecc2c195b3ad4de8430fc7a83aeafec1004f57a4834",
+      "observed_changed_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "theorem_readiness"
+      ],
+      "restored_subject": "Timestamp-authority provenance was claimed without adequate authoritative evidence.",
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "target_removed_from_blocker_set": true,
+      "unexpected_changed_outputs": []
+    },
+    {
+      "ablated_decision_hash": "da692898fccc0c7d191a07268c66975e4fa9923065be1ee5143b03c8fdf05a83",
+      "ablation_verdict": "PASS",
+      "baseline_decision_hash": "7ff5df6401ee08908f686a705e923a9bee996bdf70f3dda0715b0932a624ed4b",
+      "decision_engine_reevaluated": true,
+      "expected_affected_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "architecture_closure_status",
+        "remediation_status",
+        "theorem_readiness"
+      ],
+      "finding_id": "FND-ARCH-004",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_C"
+      ],
+      "isolated_decision_hash": "cecf3ff58972a55b22d0a071fccc08b6eef29aa75bfc1f014c6e65d328177cf8",
+      "observed_changed_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "architecture_closure_status",
+        "remediation_status",
+        "theorem_readiness"
+      ],
+      "restored_subject": "Zero-event RPO requirement conflicted with asynchronous replication semantics.",
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "target_removed_from_blocker_set": true,
+      "unexpected_changed_outputs": []
+    },
+    {
+      "ablated_decision_hash": "da692898fccc0c7d191a07268c66975e4fa9923065be1ee5143b03c8fdf05a83",
+      "ablation_verdict": "PASS",
+      "baseline_decision_hash": "7ff5df6401ee08908f686a705e923a9bee996bdf70f3dda0715b0932a624ed4b",
+      "decision_engine_reevaluated": true,
+      "expected_affected_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "theorem_readiness"
+      ],
+      "finding_id": "FND-ARCH-005",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_D"
+      ],
+      "isolated_decision_hash": "3b00f4b59aa55fb916d192d8b94230471e333dbed68db2a49afd7fc649571b8c",
+      "observed_changed_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "theorem_readiness"
+      ],
+      "restored_subject": "Evidence-custody contract conflated provider-specific storage semantics.",
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "target_removed_from_blocker_set": true,
+      "unexpected_changed_outputs": []
+    },
+    {
+      "ablated_decision_hash": "da692898fccc0c7d191a07268c66975e4fa9923065be1ee5143b03c8fdf05a83",
+      "ablation_verdict": "PASS",
+      "baseline_decision_hash": "7ff5df6401ee08908f686a705e923a9bee996bdf70f3dda0715b0932a624ed4b",
+      "decision_engine_reevaluated": true,
+      "expected_affected_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "theorem_readiness"
+      ],
+      "finding_id": "FND-ARCH-006",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_B"
+      ],
+      "isolated_decision_hash": "02854ac19e23468efe7674e1d5c413691b528a1bb36643201be795e3e3e73186",
+      "observed_changed_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "theorem_readiness"
+      ],
+      "restored_subject": "OIDC identity binding was insufficiently scoped or incomplete.",
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "target_removed_from_blocker_set": true,
+      "unexpected_changed_outputs": []
+    },
+    {
+      "ablated_decision_hash": "da692898fccc0c7d191a07268c66975e4fa9923065be1ee5143b03c8fdf05a83",
+      "ablation_verdict": "PASS",
+      "baseline_decision_hash": "7ff5df6401ee08908f686a705e923a9bee996bdf70f3dda0715b0932a624ed4b",
+      "decision_engine_reevaluated": true,
+      "expected_affected_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "architecture_closure_status",
+        "remediation_status",
+        "theorem_readiness"
+      ],
+      "finding_id": "FND-ARCH-007",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_B",
+        "THEOREM_C"
+      ],
+      "isolated_decision_hash": "b3e3787652d7b144f22626e60384f9c608784c8b03089c90045a96a2566c30ad",
+      "observed_changed_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "architecture_closure_status",
+        "remediation_status",
+        "theorem_readiness"
+      ],
+      "restored_subject": "Claimed-but-uncommitted Gate3 state lacked complete durable recovery semantics.",
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "target_removed_from_blocker_set": true,
+      "unexpected_changed_outputs": []
+    },
+    {
+      "ablated_decision_hash": "da692898fccc0c7d191a07268c66975e4fa9923065be1ee5143b03c8fdf05a83",
+      "ablation_verdict": "PASS",
+      "baseline_decision_hash": "7ff5df6401ee08908f686a705e923a9bee996bdf70f3dda0715b0932a624ed4b",
+      "decision_engine_reevaluated": true,
+      "expected_affected_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "architecture_closure_status",
+        "remediation_status",
+        "theorem_readiness"
+      ],
+      "finding_id": "FND-ARCH-008",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_C"
+      ],
+      "isolated_decision_hash": "0293061bf437a133620400db8751b0ab483a0d6ceefa904ef1b0dec1b2f95842",
+      "observed_changed_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "architecture_closure_status",
+        "remediation_status",
+        "theorem_readiness"
+      ],
+      "restored_subject": "Gate3 claim contention was incorrectly mapped to semantic evidence quarantine.",
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "target_removed_from_blocker_set": true,
+      "unexpected_changed_outputs": []
+    },
+    {
+      "ablated_decision_hash": "da692898fccc0c7d191a07268c66975e4fa9923065be1ee5143b03c8fdf05a83",
+      "ablation_verdict": "PASS",
+      "baseline_decision_hash": "7ff5df6401ee08908f686a705e923a9bee996bdf70f3dda0715b0932a624ed4b",
+      "decision_engine_reevaluated": true,
+      "expected_affected_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "theorem_readiness"
+      ],
+      "finding_id": "FND-ARCH-009",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_D"
+      ],
+      "isolated_decision_hash": "94530dea82f3f8d3559d7debdc5b8387d0013c76cb94f79ace2d2f43e167147f",
+      "observed_changed_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "theorem_readiness"
+      ],
+      "restored_subject": "Transient evidence-fetch/server failures were over-classified as terminal failures.",
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "target_removed_from_blocker_set": true,
+      "unexpected_changed_outputs": []
+    },
+    {
+      "ablated_decision_hash": "da692898fccc0c7d191a07268c66975e4fa9923065be1ee5143b03c8fdf05a83",
+      "ablation_verdict": "PASS",
+      "baseline_decision_hash": "7ff5df6401ee08908f686a705e923a9bee996bdf70f3dda0715b0932a624ed4b",
+      "decision_engine_reevaluated": true,
+      "expected_affected_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "architecture_closure_status",
+        "remediation_status",
+        "theorem_readiness"
+      ],
+      "finding_id": "FND-ARCH-010",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_C"
+      ],
+      "isolated_decision_hash": "43b5b8bdd57efec1e3dfa3b4a0322c00a0e545828ac716b1581895d591282e61",
+      "observed_changed_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "architecture_closure_status",
+        "remediation_status",
+        "theorem_readiness"
+      ],
+      "restored_subject": "Stale fencing-token rejection was over-classified as a system terminal hold rather than normal stale-writer rejection.",
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "target_removed_from_blocker_set": true,
+      "unexpected_changed_outputs": []
+    },
+    {
+      "ablated_decision_hash": "da692898fccc0c7d191a07268c66975e4fa9923065be1ee5143b03c8fdf05a83",
+      "ablation_verdict": "PASS",
+      "baseline_decision_hash": "7ff5df6401ee08908f686a705e923a9bee996bdf70f3dda0715b0932a624ed4b",
+      "decision_engine_reevaluated": true,
+      "expected_affected_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "architecture_closure_status",
+        "remediation_status",
+        "theorem_readiness"
+      ],
+      "finding_id": "FND-ARCH-011",
+      "isolated_blocks": [
+        "NATURAL_PRE_ARM",
+        "PROVISIONING"
+      ],
+      "isolated_decision_hash": "8a8dc3072326c2c47285dde5ed76a1bb5fe21eafeb7b68900a21302f5e2b4676",
+      "observed_changed_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "architecture_closure_status",
+        "remediation_status",
+        "theorem_readiness"
+      ],
+      "restored_subject": "Stored and derived denominator predicates were not proven logically equivalent.",
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "target_removed_from_blocker_set": true,
+      "unexpected_changed_outputs": []
+    },
+    {
+      "ablated_decision_hash": "da692898fccc0c7d191a07268c66975e4fa9923065be1ee5143b03c8fdf05a83",
+      "ablation_verdict": "PASS",
+      "baseline_decision_hash": "7ff5df6401ee08908f686a705e923a9bee996bdf70f3dda0715b0932a624ed4b",
+      "decision_engine_reevaluated": true,
+      "expected_affected_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "architecture_closure_status",
+        "remediation_status",
+        "theorem_readiness"
+      ],
+      "finding_id": "FND-ARCH-012",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_A"
+      ],
+      "isolated_decision_hash": "ab1b7f729b06a2e985f43961babedff59643e230843e108cb984c0d3da0e981c",
+      "observed_changed_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "architecture_closure_status",
+        "remediation_status",
+        "theorem_readiness"
+      ],
+      "restored_subject": "Git commit SHA truncation in Genesis Manifest.",
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "target_removed_from_blocker_set": true,
+      "unexpected_changed_outputs": []
+    },
+    {
+      "ablated_decision_hash": "da692898fccc0c7d191a07268c66975e4fa9923065be1ee5143b03c8fdf05a83",
+      "ablation_verdict": "PASS",
+      "baseline_decision_hash": "7ff5df6401ee08908f686a705e923a9bee996bdf70f3dda0715b0932a624ed4b",
+      "decision_engine_reevaluated": true,
+      "expected_affected_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "architecture_closure_status",
+        "remediation_status",
+        "theorem_readiness"
+      ],
+      "finding_id": "FND-ARCH-014",
+      "isolated_blocks": [
+        "PROVISIONING",
+        "THEOREM_C"
+      ],
+      "isolated_decision_hash": "2b3ec59c10ddc756a4973599ad67d6d98ea518005d1885f99f0928df180f0886",
+      "observed_changed_outputs": [
+        "decision_hash",
+        "finding_registry_hash",
+        "active_blocker_set_hash",
+        "architecture_closure_status",
+        "remediation_status",
+        "theorem_readiness"
+      ],
+      "restored_subject": "Transaction-log divergence from consensus.",
+      "step_1_isolated_fixture_created": true,
+      "step_2_other_blockers_resolved": true,
+      "step_3_isolated_blocks_verified": true,
+      "step_4_target_blocker_resolved": true,
+      "step_5_causal_blocking_cleared": true,
+      "target_removed_from_blocker_set": true,
+      "unexpected_changed_outputs": []
+    }
+  ],
+  "active_blockers": 13,
+  "canonical_decision_ablations_executed": 13,
+  "canonical_decision_ablations_failed": 0,
+  "canonical_decision_ablations_passed": 13,
+  "generated_at": "2026-10-12T15:30:00Z",
+  "generator_or_test_ref": "analyst_dashboard/smart_money/governance_control_plane/ablation_runner.py::execute_fresh_blocker_ablation",
+  "input_hashes": {
+    "ablation_runner_hash": "a362ad20803edaab03bee8d3dd0b4034d69b334ca0a9ad0d253784084e0de012",
+    "decision_engine_hash": "4e7ade957d252730395c7ccc5da59eb2c9b384d9b8e05a41a8a79e8cc68e3ec7",
+    "finding_admission_hash": "5b0dbdb7b8bed01e61820b610c351e08687e6a6c5f058c17875c5b6b20352523",
+    "finding_registry_hash": "db7549ed5ad6271fb0fe072b6343374a92533e9ce423996f4364c80904fe2647"
+  },
+  "source_freeze_sha": "cf62c54badd9b39e7711edbab5e2de9e2e1efd98",
+  "source_tree_oid": "43ae64571ce86c15e67ee72e71a8466730f9857d",
+  "unrelated_output_drift": 0,
+  "verdict": "PASS"
+}

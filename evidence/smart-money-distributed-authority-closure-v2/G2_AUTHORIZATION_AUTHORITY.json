@@ -1,0 +1,8 @@
+{
+  "claim": "Independent Gate-3 authorization authority with IAM issuer/consumer separation and durable delivery (Theorem B)",
+  "evidence_class": "IAM_POLICY",
+  "independent_verifier_result": "BLOCKED per Theorem B and Section 31",
+  "observed_result": "Substrate contracts enforce non-self-issuable and supersession rules in code; external GitHub platform IAM role separation and external KMS/OIDC delivery store are not provisioned.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_distributed_authority_substrate.py -k \"test_gate3_iam or test_gate3_lifecycle\"",
+  "status": "BLOCKED"
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/decision-logical-append-only-audit.json",
+  "audit_id": "urn:arx:audit:decision-logical-append-only:2026-10-12",
+  "controls": {
+    "CHANGE_HISTORICAL_PREDECESSOR_LINK": "REJECTED",
+    "DELETE_HISTORICAL_RECORD": "REJECTED",
+    "MUTATE_HISTORICAL_RECORD": "REJECTED",
+    "REORDER_HISTORY": "REJECTED",
+    "TRUNCATE_HISTORY": "REJECTED"
+  },
+  "enforcement_boundary": "CanonicalDecisionCommitAuthority._validate_chain_integrity",
+  "error_type": "DecisionChainIntegrityError",
+  "generated_at": "2026-10-12T20:30:00Z",
+  "verdict": "PASS"
+}

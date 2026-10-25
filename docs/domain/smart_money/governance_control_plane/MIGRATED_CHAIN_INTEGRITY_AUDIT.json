@@ -1,0 +1,78 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/migrated-chain-integrity-audit.json",
+  "append_only_integrity": "PASS",
+  "artifact_type": "MIGRATED_CHAIN_INTEGRITY_AUDIT",
+  "chain_table": [
+    {
+      "body_hash_integrity": "PASS",
+      "context_binding": "PASS",
+      "decision_hash": "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f",
+      "decision_id": "urn:arx:decision:epoch-gov-002:1:c3277609a97c",
+      "epoch": "epoch-gov-002",
+      "epoch_continuity": "PASS",
+      "predecessor_hash_integrity": "PASS",
+      "previous_decision_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "sequence": 1,
+      "sequence_continuity": "PASS",
+      "source_provenance": "PASS",
+      "status": "INVALIDATED_NON_CANONICAL"
+    },
+    {
+      "body_hash_integrity": "PASS",
+      "context_binding": "PASS",
+      "decision_hash": "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c",
+      "decision_id": "urn:arx:decision:epoch-gov-002:2:fa3df68578c4",
+      "epoch": "epoch-gov-002",
+      "epoch_continuity": "PASS",
+      "predecessor_hash_integrity": "PASS",
+      "previous_decision_hash": "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f",
+      "sequence": 2,
+      "sequence_continuity": "PASS",
+      "source_provenance": "PASS",
+      "status": "SUPERSEDED"
+    },
+    {
+      "body_hash_integrity": "PASS",
+      "context_binding": "PASS",
+      "decision_hash": "205fe158e61fd1a0d2da8589f9d07619c8343c45cf43c4a4f7fbafb81a2f0b64",
+      "decision_id": "urn:arx:decision:epoch-gov-002:3:82e99bf8c82f",
+      "epoch": "epoch-gov-002",
+      "epoch_continuity": "PASS",
+      "predecessor_hash_integrity": "PASS",
+      "previous_decision_hash": "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c",
+      "sequence": 3,
+      "sequence_continuity": "PASS",
+      "source_provenance": "PASS",
+      "status": "SUPERSEDED"
+    },
+    {
+      "body_hash_integrity": "PASS",
+      "context_binding": "PASS",
+      "decision_hash": "174cecf6e3aef1e8ab2e46d8137faa1b72d282d2aa0a0c2b868abdab38500c07",
+      "decision_id": "urn:arx:decision:epoch-gov-002:4:4371c653837c",
+      "epoch": "epoch-gov-002",
+      "epoch_continuity": "PASS",
+      "predecessor_hash_integrity": "PASS",
+      "previous_decision_hash": "205fe158e61fd1a0d2da8589f9d07619c8343c45cf43c4a4f7fbafb81a2f0b64",
+      "sequence": 4,
+      "sequence_continuity": "PASS",
+      "source_provenance": "PASS",
+      "status": "CURRENT"
+    }
+  ],
+  "chain_version": "2.0.0",
+  "epoch_continuity": "PASS",
+  "head_decision_hash": "174cecf6e3aef1e8ab2e46d8137faa1b72d282d2aa0a0c2b868abdab38500c07",
+  "head_sequence": 4,
+  "lineage": {
+    "generated_at_utc": "2026-10-12T21:15:15Z",
+    "generator_path": "scripts/generate_chain_migration_evidence.py",
+    "generator_sha256": "98658eb74aafd87771326262cb31d4c4f1ea25c0e632843171e68d8e9fc0ff5f",
+    "git_head": "e41cc6d729a2af1fab6cdaace764af8e1739f87f",
+    "invocation": "python scripts/generate_chain_migration_evidence.py",
+    "source_sha": "3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11"
+  },
+  "predecessor_integrity": "PASS",
+  "sequence_continuity": "PASS",
+  "verdict": "PASS"
+}

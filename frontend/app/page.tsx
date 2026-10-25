@@ -77,7 +77,7 @@ function TerminalContent() {
       if (isCurrent) setMacroData(res);
     });
     fetchSecForm4Insiders(selectedSymbol).then((res) => {
-      if (isCurrent) setInsiderTrades(res);
+      if (isCurrent) setInsiderTrades(res.items ?? []);
     });
     return () => {
       isCurrent = false;

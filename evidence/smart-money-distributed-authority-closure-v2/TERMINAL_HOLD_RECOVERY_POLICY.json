@@ -1,0 +1,20 @@
+{
+  "governed_recovery_requirements": [
+    "incident_id",
+    "root_cause",
+    "operator_identity",
+    "remediation_evidence",
+    "recovery_authorization_id",
+    "prior_generation",
+    "new_generation",
+    "prior_terminal_state_hash"
+  ],
+  "policy_verdict": "ACTIVE_MANDATORY_ENFORCEMENT",
+  "prohibited_recovery_actions": [
+    "delete state",
+    "reset database",
+    "clear cache",
+    "reinitialize epoch"
+  ],
+  "schema_version": "SMART_MONEY_TERMINAL_HOLD_RECOVERY_POLICY_V1"
+}

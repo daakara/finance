@@ -1,0 +1,17 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/regression-manifest-temporal-semantics-audit.json",
+  "authorization_relevant": false,
+  "blocking": false,
+  "freshness_relevant": false,
+  "generated_at": "2026-10-12T15:30:00Z",
+  "generator_or_test_ref": "tools/generate_final_verification_and_purification_evidence.py",
+  "input_hashes": {
+    "regression_manifest_hash": "3e7257e13ad070f933b6b33df0cec02c01da69cab1cb6974aace7e4ab8ef24f2"
+  },
+  "manifest_timestamp": "2026-10-12T12:00:00Z",
+  "ordering_relevant": false,
+  "regression_manifest_timestamp_role": "DETERMINISTIC_LOGICAL_EPOCH",
+  "source_freeze_sha": "cf62c54badd9b39e7711edbab5e2de9e2e1efd98",
+  "source_tree_oid": "43ae64571ce86c15e67ee72e71a8466730f9857d",
+  "verdict": "PASS"
+}

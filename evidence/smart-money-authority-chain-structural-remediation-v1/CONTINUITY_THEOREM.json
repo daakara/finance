@@ -1,0 +1,18 @@
+{
+  "blocking_reasons": [
+    "No external epoch-head authority exists outside runner / GitHub Actions cache.",
+    "No durable transactional state backend with compare-and-swap (CAS) exists; GitHub cache is ephemeral."
+  ],
+  "evaluations": {
+    "cache_role_downgrade": "PASS",
+    "external_epoch_head": "BLOCKED",
+    "genesis_ambiguity_eliminated": "PASS",
+    "real_transactional_cas": "BLOCKED",
+    "sqlite_snapshot_consistency": "PASS",
+    "state_machine_rehydration": "PASS",
+    "terminal_hold_stickiness": "PASS",
+    "transition_result_propagation": "PASS"
+  },
+  "status": "BLOCKED",
+  "theorem": "T3_CONTINUITY_THEOREM"
+}

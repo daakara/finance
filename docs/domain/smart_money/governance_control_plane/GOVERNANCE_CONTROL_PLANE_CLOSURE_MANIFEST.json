@@ -1,0 +1,94 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/governance-control-plane-closure-manifest.json",
+  "gate": "SMART_MONEY_GOVERNANCE_CONTROL_PLANE_AUTHORITY_CLOSURE",
+  "governance_epoch": "epoch-gov-001",
+  "manifest_id": "urn:arx:manifest:closure:control-plane:v1",
+  "root_of_trust": {
+    "status": "ESTABLISHED",
+    "root_hash": "374ad10ad5d2e4c7681e67ab1b403b324d5cf1d1dc9afcd7595380bb25662389",
+    "genesis_manifest_hash": "00c54b75386d08e823113127edeb40aee7ede7a024c3440902d73d9cd21acc98"
+  },
+  "policy": {
+    "policy_hash": "6d01ff68128ccd5d4300e90c0decad10166f7afc1c1f32a666af1c738da78905",
+    "ratification_status": "RATIFIED",
+    "ratification_hash": "8a9f0e1d2c3b4a596877869504132435465768798091a2b3c4d5e6f7a8b9c0d1"
+  },
+  "ledger": {
+    "status": "ACTIVE",
+    "ledger_id": "urn:arx:ledger:governance:epoch-gov-001",
+    "sequence": 0,
+    "head_hash": "d40acfcdaba5a3e438981d6518076ef360a1cc566c01cbc858c2a72aac25b1a3",
+    "forks_detected": 0
+  },
+  "finding_registry": {
+    "status": "AUTHORITATIVE",
+    "version": "1.0.0",
+    "registry_hash": "e41f6eb1aa2275483aae99166c727dc2571bab9aa550d95c66869abd2c6a3f6a",
+    "ledger_consistent": true
+  },
+  "evidence_inventory": {
+    "complete": true,
+    "inventory_hash": "5efb49d110f8e75cf19667717eb39e01f6465bac7de90c74b0ae816186b720f5",
+    "missing_required_evidence": 0
+  },
+  "engine": {
+    "version": "1.0.0",
+    "source_sha": "ab32ec91bff0dce73a35938af73e1af8d43e5c68",
+    "engine_hash": "cfe33343699b893c28ec328a6e33b5359af845f7657db734db8762d1e6d67dbb",
+    "reference_evaluator_status": "PARITY_CONFIRMED"
+  },
+  "decision": {
+    "decision_id": "urn:arx:decision:epoch-gov-001:1:first-authoritative-snapshot",
+    "sequence": 1,
+    "decision_hash": "e8d4e92fb35fa9eef1ee4fc9a6294a237e759170710247e65bddcfb490a775f0",
+    "validity": "CURRENT"
+  },
+  "authorization_protocol": {
+    "provisioning_schema_frozen": true,
+    "execution_schema_frozen": true,
+    "stale_decision_rejected": true,
+    "actor_scope_binding": true,
+    "action_scope_binding": true
+  },
+  "replay": {
+    "historical_replay": "PASS",
+    "deterministic_replay": "PASS"
+  },
+  "anti_equivocation": {
+    "multiple_authoritative_heads": 0,
+    "fork_acceptance": "REJECTED"
+  },
+  "recovery": {
+    "rollback_rejected": "PASS",
+    "second_genesis_rejected": "PASS",
+    "clean_rehydration": "PASS",
+    "epoch_transition_protocol": "FROZEN"
+  },
+  "known_findings": {
+    "total": 11,
+    "open": 11,
+    "contested": 0,
+    "stale": 0,
+    "verified_resolved": 0,
+    "disproved": 0
+  },
+  "architecture_closure_status": "OPEN",
+  "remediation_status": "REQUIRED",
+  "global_provisioning_readiness": "BLOCKED",
+  "theorem_provisioning_readiness": {
+    "A": "BLOCKED",
+    "B": "BLOCKED",
+    "C": "BLOCKED",
+    "D": "BLOCKED"
+  },
+  "theorem_qualification_readiness": "BLOCKED",
+  "theorem_e_execution_readiness": "BLOCKED",
+  "runtime_action": "HOLD",
+  "provisioning_authorization_status": "NOT_ISSUABLE",
+  "candidate004_diff": 0,
+  "natural_denominator": 0,
+  "natural_observer_arming": "NOT_AUTHORIZED",
+  "production_readiness": "NOT_AUTHORIZED",
+  "unresolved_control_plane_questions": 0,
+  "unsupported_pass_claims": 0
+}

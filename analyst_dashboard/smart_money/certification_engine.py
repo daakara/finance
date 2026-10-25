@@ -37,6 +37,7 @@ from analyst_dashboard.smart_money.certification_models import (
 from analyst_dashboard.smart_money.form4_ingestion import (
     Form4IngestionManager,
     DEFAULT_SMART_MONEY_DB,
+    connect_smart_money_db,
 )
 
 
@@ -61,7 +62,7 @@ class CertificationAuthorityEngine:
         self.ingestion_mgr = Form4IngestionManager(db_path=self.db_path)
 
     def _get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
+        conn = connect_smart_money_db(self.db_path)
         conn.row_factory = sqlite3.Row
         return conn
 
@@ -458,7 +459,7 @@ class CertificationAuthorityEngine:
                 (candidate_frontier,),
             )
             rows = [dict(r) for r in cur.fetchall()]
-            unresolved = sum(1 for r in rows if r["relationship"] == "UNRESOLVED_AMENDMENT")
+            unresolved = sum(1 for r in rows if r["relationship"] in ("UNRESOLVED_AMENDMENT", "AMENDMENT_TARGET_AMBIGUOUS"))
             return compute_canonical_hash(rows), unresolved
         finally:
             conn.close()

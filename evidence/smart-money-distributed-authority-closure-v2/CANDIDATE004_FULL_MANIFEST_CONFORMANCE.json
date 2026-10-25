@@ -1,0 +1,77 @@
+{
+  "anchor_sha": "63131b9604707ed9c3820e3afd3e9d47d1914397",
+  "authorities_checked": [
+    "vcp_ruleset_hash",
+    "universe_builder_hash",
+    "data_interpretation_hash",
+    "dependency_lock_hash",
+    "runtime_config_hash",
+    "semantic_closure_hash",
+    "governance_hash",
+    "ddl_hash",
+    "database_schema_version",
+    "durability_schema_version",
+    "migration_identity",
+    "natural_evidence_epoch_id",
+    "denominator_policy_version",
+    "all_17_semantic_closure_items"
+  ],
+  "candidate004_diff": 0,
+  "evidence_class": "DESIGN_AND_UNIT_TEST",
+  "freeze_manifest": "docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_004_FREEZE.json",
+  "hashes_rederived": [
+    {
+      "authority": "semantic_closure_hash",
+      "expected": "53b6372349cfdb1046a4ddbd678f628bba28c7778cef2fe381e02f9097f7a9e6",
+      "observed": "53b6372349cfdb1046a4ddbd678f628bba28c7778cef2fe381e02f9097f7a9e6",
+      "status": "MATCH"
+    },
+    {
+      "authority": "governance_hash",
+      "expected": "ce9ca0a1ca32390ee0f3d4818a76bb3739a1a336b1d0c4fdbb8dc0d1f128d207",
+      "observed": "ce9ca0a1ca32390ee0f3d4818a76bb3739a1a336b1d0c4fdbb8dc0d1f128d207",
+      "status": "MATCH"
+    },
+    {
+      "authority": "vcp_ruleset_hash",
+      "expected": "d07a209bf1f71d62196798473a083871f6d81d31a91d8d4ae7a523248d4600ca",
+      "observed": "d07a209bf1f71d62196798473a083871f6d81d31a91d8d4ae7a523248d4600ca",
+      "status": "MATCH"
+    },
+    {
+      "authority": "universe_builder_hash",
+      "expected": "5ed36d43912e9468b461062509ad79a7e61fe77855a63dfaf553148a03e0e38b",
+      "observed": "5ed36d43912e9468b461062509ad79a7e61fe77855a63dfaf553148a03e0e38b",
+      "status": "MATCH"
+    },
+    {
+      "authority": "data_interpretation_hash",
+      "expected": "ed6195638d0c1e8cca230e9cd55920bbf978d0f2a14087a75fd4ad2cf97e97a7",
+      "observed": "ed6195638d0c1e8cca230e9cd55920bbf978d0f2a14087a75fd4ad2cf97e97a7",
+      "status": "MATCH"
+    },
+    {
+      "authority": "dependency_lock_hash",
+      "expected": "3eb917b44689050dae2e20176d86bcaefdec5d3ad4479fcf6a48ae08af86c40b",
+      "observed": "3eb917b44689050dae2e20176d86bcaefdec5d3ad4479fcf6a48ae08af86c40b",
+      "status": "MATCH"
+    },
+    {
+      "authority": "runtime_config_hash",
+      "expected": "c0a949db07c96cf83dd8243b3c10834347f0cec9c1c4da3624acbfd1245ae366",
+      "observed": "c0a949db07c96cf83dd8243b3c10834347f0cec9c1c4da3624acbfd1245ae366",
+      "status": "MATCH"
+    },
+    {
+      "authority": "ddl_hash",
+      "expected": "ab82282210aef8c8873da0ea4a31fe2c865b0c2a63e1bbdce86320e9e67dde0b",
+      "observed": "ab82282210aef8c8873da0ea4a31fe2c865b0c2a63e1bbdce86320e9e67dde0b",
+      "status": "MATCH"
+    }
+  ],
+  "independent_verifier_result": "PASS",
+  "mismatches": [],
+  "observed_result": "100% of Candidate 004 freeze manifest authorities and hashes verified with zero diff lines",
+  "rederivation_command": "python -m pytest tests/test_smart_money_distributed_authority_substrate.py -k test_candidate004_full_manifest_conformance",
+  "status": "PASS"
+}

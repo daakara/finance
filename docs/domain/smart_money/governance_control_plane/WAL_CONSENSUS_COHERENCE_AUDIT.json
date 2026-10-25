@@ -1,0 +1,47 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/wal-consensus-coherence-audit.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T17:30:00Z",
+  "contract_ref": "TRANSACTION_LOG_CONSENSUS_COHERENCE_CONTRACT.md",
+  "missing_wal_row_fail_closed": true,
+  "checkpoint_committed_without_wal_entry": 0,
+  "undetected_log_consensus_divergence": 0,
+  "adversarial_matrix": {
+    "consensus_ahead_of_wal": {
+      "scenario": "WAL head 5, checkpoint 6",
+      "result": "REJECT",
+      "exception": "ConsensusLogDivergenceError"
+    },
+    "empty_wal_checkpoint": {
+      "scenario": "WAL empty, checkpoint 1",
+      "result": "REJECT",
+      "exception": "ConsensusLogDivergenceError"
+    },
+    "log_gap_checkpoint": {
+      "scenario": "WAL has sequences 1, 2, 4, checkpoint 3",
+      "result": "REJECT",
+      "exception": "ConsensusLogDivergenceError"
+    },
+    "hash_mismatch": {
+      "scenario": "WAL sequence N exists with different hash",
+      "result": "REJECT",
+      "exception": "ConsensusLogDivergenceError"
+    },
+    "exact_log_match": {
+      "scenario": "WAL sequence N exists with identical hash",
+      "result": "ACCEPT"
+    },
+    "checkpoint_rollback": {
+      "scenario": "Checkpoint sequence <= authoritative latest checkpoint sequence",
+      "result": "REJECT",
+      "exception": "GlobalRollbackError"
+    },
+    "stale_fencing_token": {
+      "scenario": "Checkpoint attempted with stale generation or fencing token",
+      "result": "REJECT",
+      "state_mutated": false
+    }
+  },
+  "verdict": "PASS"
+}

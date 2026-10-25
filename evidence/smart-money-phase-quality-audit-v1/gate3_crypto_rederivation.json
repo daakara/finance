@@ -1,0 +1,38 @@
+{
+  "analysis": {
+    "binds_signed_payload_to_core_payload": false,
+    "checks_integrated_timestamp_cryptographically": false,
+    "checks_performed": [
+      "schema_version in (V1, V2)",
+      "authorization_id non-empty",
+      "single_use is True",
+      "scope == FIRST_NATURAL_CAPTURE",
+      "revocation_state == VALID",
+      "timestamps ISO-8601 parsed and TTL <= 7200s",
+      "authorized_event_name exact string match",
+      "authorized_consumer_mode exact string match",
+      "scheduler_commit_sha exact string match",
+      "scheduler_workflow exact string match",
+      "rekor_log_index is integer > 0",
+      "signer_identity non-empty",
+      "signer_issuer == https://token.actions.githubusercontent.com",
+      "canonical_payload_sha256 self-hash matches dictionary canonicalization"
+    ],
+    "opens_sigstore_bundle": false,
+    "verifies_cryptographic_signatures": false,
+    "verifies_fulcio_cert_chain": false,
+    "verifies_rekor_inclusion_proof": false,
+    "verifies_tuf_trust_root": false
+  },
+  "audit": "PHASE_QUALITY_AND_EVIDENCE_INTEGRITY_AUDIT_V1",
+  "summary": "Cryptographic authenticity was claimed based solely on dictionary metadata checks and self-hashing. No actual cryptographic signature or bundle verification takes place.",
+  "target": "validate_gate3_authorization in analyst_dashboard/smart_money/public_availability/gate3_authorization.py",
+  "verdict_metrics": {
+    "GATE3_FULCIO_IDENTITY_VERIFICATION": "FAIL",
+    "GATE3_PAYLOAD_SIGNATURE_BINDING": "FAIL",
+    "GATE3_REKOR_INCLUSION_CRYPTOGRAPHIC_VERIFICATION": "FAIL",
+    "GATE3_SIGSTORE_BUNDLE_CRYPTOGRAPHIC_VERIFICATION": "FAIL",
+    "GATE3_TRUST_ROOT_VERIFICATION": "FAIL",
+    "GATE3_WITNESS_METADATA_VALIDATION": "PASS"
+  }
+}

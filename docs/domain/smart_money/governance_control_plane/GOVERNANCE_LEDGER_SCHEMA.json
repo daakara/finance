@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GovernanceAuthorityLedgerEvent",
+  "type": "object",
+  "required": [
+    "event_id",
+    "governance_epoch",
+    "sequence",
+    "event_type",
+    "timestamp_utc",
+    "actor_identity",
+    "payload",
+    "previous_event_hash",
+    "event_hash",
+    "head_hash"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "pattern": "^urn:arx:event:epoch-gov-[0-9]{3}:[0-9]+:[a-f0-9\\-]+$"
+    },
+    "governance_epoch": {
+      "type": "string",
+      "pattern": "^epoch-gov-[0-9]{3}$"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "POLICY_RATIFIED",
+        "POLICY_SUPERSEDED",
+        "FINDING_CREATED",
+        "FINDING_UPDATED",
+        "FINDING_RESOLVED",
+        "FINDING_REOPENED",
+        "EVIDENCE_REGISTERED",
+        "EVIDENCE_REVOKED",
+        "WAIVER_GRANTED",
+        "WAIVER_EXPIRED",
+        "DECISION_PUBLISHED",
+        "AUTHORIZATION_ISSUED",
+        "AUTHORIZATION_CONSUMED",
+        "AUTHORIZATION_EXPIRED",
+        "AUTHORIZATION_REVOKED",
+        "GOVERNANCE_INCIDENT",
+        "EPOCH_TRANSITION",
+        "RECOVERY_COMPLETED"
+      ]
+    },
+    "timestamp_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "actor_identity": {
+      "type": "string",
+      "pattern": "^urn:arx:[a-z0-9\\-_:]+$"
+    },
+    "payload": {
+      "type": "object"
+    },
+    "previous_event_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "event_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "head_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "additionalProperties": false
+}

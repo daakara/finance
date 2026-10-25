@@ -1,0 +1,150 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/governance-replay-fixtures.json",
+  "fixture_version": "1.0.0",
+  "generated_at_utc": "2026-10-12T01:25:00Z",
+  "policy_version": "GOVERNANCE_POLICY_V1",
+  "fixtures": [
+    {
+      "rule_id": "R-GOV-001",
+      "test_case": "unknown_evidence_on_theorem_a_blocks_provisioning",
+      "input": {
+        "gate": "THEOREM_A_PROVISIONING",
+        "evidence_type": "release_trust_evidence",
+        "status": "UNKNOWN"
+      },
+      "expected_output": {
+        "effect": "BLOCK",
+        "gate_status": "BLOCKED"
+      }
+    },
+    {
+      "rule_id": "R-GOV-001",
+      "test_case": "unknown_documentation_only_is_informational",
+      "input": {
+        "gate": "ARCHITECTURE_CLOSURE",
+        "evidence_type": "documentation_only",
+        "status": "UNKNOWN"
+      },
+      "expected_output": {
+        "effect": "INFORMATIONAL",
+        "gate_status": "UNBLOCKED"
+      }
+    },
+    {
+      "rule_id": "R-GOV-002",
+      "test_case": "critical_remediation_requires_independent_verifier_and_governance_review",
+      "input": {
+        "finding_severity": "CRITICAL",
+        "implementer": "operator_alice",
+        "verifier": "operator_alice"
+      },
+      "expected_output": {
+        "valid": false,
+        "violation": "IMPLEMENTER_CANNOT_VERIFY_CRITICAL"
+      }
+    },
+    {
+      "rule_id": "R-GOV-003",
+      "test_case": "waiver_attempt_on_second_genesis_rejected",
+      "input": {
+        "defect_class": "SECOND_GENESIS_VULNERABILITY",
+        "waiver_requested": true
+      },
+      "expected_output": {
+        "waiver_permitted": false,
+        "non_waivable": true
+      }
+    },
+    {
+      "rule_id": "R-GOV-004",
+      "test_case": "automated_contract_test_cannot_assign_verified",
+      "input": {
+        "source_type": "automated_contract_test",
+        "target_status": "VERIFIED"
+      },
+      "expected_output": {
+        "permitted": false,
+        "max_status": "REPRODUCED"
+      }
+    },
+    {
+      "rule_id": "R-GOV-006",
+      "test_case": "expired_waiver_reactivates_blocker",
+      "input": {
+        "finding_id": "FINDING-042",
+        "initial_waiver_status": "WAIVER_ACTIVE",
+        "current_time_utc": "2026-10-12T01:30:00Z",
+        "waiver_expires_at_utc": "2026-10-12T01:00:00Z",
+        "is_blocking_finding": true
+      },
+      "expected_output": {
+        "new_waiver_status": "WAIVER_EXPIRED",
+        "finding_status": "OPEN",
+        "gate_effect": "BLOCKED"
+      }
+    },
+    {
+      "rule_id": "R-GOV-010",
+      "test_case": "direct_transition_open_to_verified_resolved_prohibited",
+      "input": {
+        "from_state": "OPEN",
+        "to_state": "VERIFIED_RESOLVED"
+      },
+      "expected_output": {
+        "transition_valid": false,
+        "error": "PROHIBITED_TRANSITION"
+      }
+    },
+    {
+      "rule_id": "R-GOV-014",
+      "test_case": "pre_live_findings_produce_no_runtime_action",
+      "input": {
+        "authority_live": false,
+        "finding_severity": "CRITICAL",
+        "finding_status": "VERIFIED"
+      },
+      "expected_output": {
+        "runtime_action": "NONE"
+      }
+    },
+    {
+      "rule_id": "R-GOV-014",
+      "test_case": "live_authority_verified_incident_produces_incident_response",
+      "input": {
+        "authority_live": true,
+        "finding_severity": "CRITICAL",
+        "finding_status": "VERIFIED",
+        "condition": "INCIDENT_RESPONSE"
+      },
+      "expected_output": {
+        "runtime_action": "INCIDENT_RESPONSE"
+      }
+    },
+    {
+      "rule_id": "R-GOV-018",
+      "test_case": "deterministic_canonical_snapshot_hash",
+      "input": {
+        "snapshot": {
+          "z_field": "last",
+          "a_field": "first",
+          "numeric": 42
+        }
+      },
+      "expected_canonical_json": "{\"a_field\":\"first\",\"numeric\":42,\"z_field\":\"last\"}",
+      "expected_sha256": "cc873a41da893ee114991a8c7d8f7ba1d44e08e1c7c78282b74160b9c969c565"
+    },
+    {
+      "rule_id": "R-GOV-019",
+      "test_case": "policy_contradiction_fails_closed_every_gate",
+      "input": {
+        "self_consistency_metric": "POLICY_RULE_CONTRADICTIONS",
+        "value": 1
+      },
+      "expected_output": {
+        "GOVERNANCE_DECISION_ENGINE_CONTRACT_CLOSURE": "BLOCKED",
+        "GLOBAL_PROVISIONING_READINESS": "BLOCKED",
+        "THEOREM_QUALIFICATION_READINESS": "NOT_READY"
+      }
+    }
+  ]
+}

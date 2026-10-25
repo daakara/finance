@@ -1,0 +1,5 @@
+{
+  "description": "Runs during SEC business hours (10:07-22:07 UTC M-F)",
+  "schedule_cron": "7 10-22/2 * * 1-5",
+  "status": "CONSISTENT"
+}

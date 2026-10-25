@@ -1,0 +1,46 @@
+{
+  "generated_at_utc": "2026-10-11T21:43:01.585465+00:00",
+  "quarantined_artifacts": [
+    {
+      "artifact": "SMART_MONEY_FINAL_NATURAL_AUTHORITY_CHAIN_MANIFEST_V1",
+      "classification": "QUARANTINED_ASSERTION",
+      "original_claim": "Signed manifest with Rekor log index 3213838530",
+      "reason": "Rekor log index belonged to earlier run 38170921980 R2 payload; zero cryptographic binding to manifest.",
+      "replacement_evidence": null,
+      "sha256": "47a3e7becefa5fb019f2066fa5fcb7964b0f4438fa741913f412580ce6c4aebe"
+    },
+    {
+      "artifact": "checkpoint_sigstore_witness.json",
+      "classification": "AUTHORITATIVE_BUT_DEFECTIVE",
+      "original_claim": "CHECKPOINT_SIGNATURE = PASS",
+      "reason": "Static JSON assertion asserting PASS without Fulcio certificate, Rekor proof, or signed bundle.",
+      "replacement_evidence": null,
+      "sha256": "3cb49a7a92268b813b10292fe46d47cf0834316d218d6a8a1eb2a9a79c32bb43"
+    },
+    {
+      "artifact": "SMART_MONEY_GATE3_ACTIVE_AUTHORIZATION.json",
+      "classification": "AUTHORITATIVE_BUT_DEFECTIVE",
+      "original_claim": "Valid Gate-3 pre-arm authorization",
+      "reason": "Self-generated without independent issuing identity; unverified Sigstore witness; unanchored Rekor index.",
+      "replacement_evidence": null,
+      "sha256": "f8a0026e7929a5840d21e8d64fe305ca7675f288ea4e4142f1cf5b8dbe39f82d"
+    },
+    {
+      "artifact": "RUN_A_38173031386_GOVERNANCE_CONCLUSION",
+      "classification": "QUARANTINED_ASSERTION",
+      "original_claim": "Production-Topology Run A Passed Governance",
+      "reason": "Observer State Machine transitioned illegally to TERMINAL_HOLD and returned False; ignored by scheduler and exited 0.",
+      "replacement_evidence": null,
+      "sha256": "N/A"
+    },
+    {
+      "artifact": "RUN_B_38173080201_GOVERNANCE_CONCLUSION",
+      "classification": "QUARANTINED_ASSERTION",
+      "original_claim": "Production-Topology Run B Passed Governance",
+      "reason": "Observer State Machine transitioned illegally to TERMINAL_HOLD and returned False; ignored by scheduler and exited 0.",
+      "replacement_evidence": null,
+      "sha256": "N/A"
+    }
+  ],
+  "schema_version": "1.0.0"
+}

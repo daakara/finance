@@ -1,0 +1,46 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/genesis-ceremony-state-machine.json",
+  "state_machine_id": "urn:arx:sm:genesis-ceremony:v1",
+  "governance_epoch": "epoch-gov-001",
+  "total_steps": 14,
+  "steps": [
+    { "id": 1, "action": "RATIFY_ROOT_MODEL", "requires": [] },
+    { "id": 2, "action": "BIND_ROOT_IDENTITIES_AND_CREDENTIALS", "requires": [1] },
+    { "id": 3, "action": "RATIFY_BOOTSTRAP_AUTHORIZATION", "requires": [2] },
+    { "id": 4, "action": "PROVISION_AUTHORITATIVE_GOVERNANCE_LEDGER", "requires": [3] },
+    { "id": 5, "action": "PROVISION_INDEPENDENT_WITNESS", "requires": [4] },
+    { "id": 6, "action": "VERIFY_LEDGER_AND_WITNESS_CONFIGURATION", "requires": [5] },
+    { "id": 7, "action": "RATIFY_GENESIS_POLICY_HASH", "requires": [6] },
+    { "id": 8, "action": "PUBLISH_GENESIS_MANIFEST", "requires": [7] },
+    { "id": 9, "action": "APPEND_GENESIS_LEDGER_EVENT", "requires": [8] },
+    { "id": 10, "action": "OBTAIN_GENESIS_WITNESS_PROOF", "requires": [9] },
+    { "id": 11, "action": "VERIFY_GENESIS_CHAIN", "requires": [10] },
+    { "id": 12, "action": "ACTIVATE_NORMAL_GOVERNANCE_AUTHORITY", "requires": [11] },
+    { "id": 13, "action": "CONSUME_AND_EXTINGUISH_BOOTSTRAP_AUTHORITY", "requires": [12] },
+    { "id": 14, "action": "PRODUCE_FIRST_NORMAL_AUTHORITY_SNAPSHOT", "requires": [13] }
+  ],
+  "allowed_failure_actions": [
+    "RETRY",
+    "RESUME",
+    "ROLLBACK_NON_AUTHORITATIVE_PREPARATION",
+    "TERMINAL_HOLD"
+  ],
+  "failure_state_mappings": {
+    "ROOT_RATIFICATION_INCOMPLETE": { "action": "TERMINAL_HOLD", "retryable": false },
+    "CREDENTIAL_BINDING_INCOMPLETE": { "action": "TERMINAL_HOLD", "retryable": false },
+    "LEDGER_CREATION_FAILED": { "action": "RETRY", "retryable": true },
+    "WITNESS_UNAVAILABLE": { "action": "TERMINAL_HOLD", "retryable": false },
+    "GENESIS_APPEND_RESPONSE_LOST": { "action": "RESUME", "retryable": true },
+    "LEDGER_APPEND_SUCCEEDED_WITNESS_FAILED": { "action": "RETRY", "retryable": true },
+    "WITNESS_SUCCEEDED_LOCAL_RESPONSE_LOST": { "action": "RESUME", "retryable": true },
+    "ROOT_MEMBER_REVOKED_MID_CEREMONY": { "action": "ROLLBACK_NON_AUTHORITATIVE_PREPARATION", "retryable": false },
+    "BOOTSTRAP_EXPIRED_MID_CEREMONY": { "action": "TERMINAL_HOLD", "retryable": false }
+  },
+  "invariants": {
+    "strict_ordering_required": true,
+    "skipped_step_allowed": false,
+    "duplicate_genesis_allowed": false,
+    "ambiguous_failure_state_allowed": false,
+    "normal_authority_requires_extinguishment": true
+  }
+}

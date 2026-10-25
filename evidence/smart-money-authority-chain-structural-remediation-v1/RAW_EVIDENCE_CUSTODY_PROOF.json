@@ -1,0 +1,4 @@
+{
+  "reason": "No durable WORM object store exists; raw_response_retained is truthfully set to False.",
+  "status": "BLOCKED"
+}
