@@ -1,0 +1,120 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/architecture-remediation-dependency-dag.json",
+  "version": "1.0.0",
+  "status": "COMPLETED_VERIFIED",
+  "source_freeze_sha": "28d66d943644613225abbd89a3be19867e1c33cd",
+  "execution_sequence": [
+    "FND-ARCH-001",
+    "FND-ARCH-012",
+    "FND-ARCH-011",
+    "FND-ARCH-014",
+    "FND-ARCH-004",
+    "FND-ARCH-007",
+    "FND-ARCH-008",
+    "FND-ARCH-010"
+  ],
+  "targets": {
+    "FND-ARCH-001": {
+      "title": "hash domain separation",
+      "depends_on": [],
+      "blocks": [
+        "FND-ARCH-012"
+      ],
+      "shared_components": [
+        "canonicalization.py"
+      ],
+      "remediation_status": "VERIFIED_RESOLVED"
+    },
+    "FND-ARCH-012": {
+      "title": "git commit sha truncation",
+      "depends_on": [
+        "FND-ARCH-001"
+      ],
+      "blocks": [
+        "FND-ARCH-011"
+      ],
+      "shared_components": [
+        "root_identity.py",
+        "canonical_context.py"
+      ],
+      "remediation_status": "VERIFIED_RESOLVED"
+    },
+    "FND-ARCH-011": {
+      "title": "denominator predicate alignment",
+      "depends_on": [
+        "FND-ARCH-012"
+      ],
+      "blocks": [
+        "FND-ARCH-014"
+      ],
+      "shared_components": [
+        "transactional_state_backend.py",
+        "DENOMINATOR_PREDICATE_EQUIVALENCE_MODEL.json"
+      ],
+      "remediation_status": "VERIFIED_RESOLVED"
+    },
+    "FND-ARCH-014": {
+      "title": "transaction log divergence from consensus",
+      "depends_on": [
+        "FND-ARCH-011"
+      ],
+      "blocks": [
+        "FND-ARCH-004"
+      ],
+      "shared_components": [
+        "transactional_state_backend.py"
+      ],
+      "remediation_status": "VERIFIED_RESOLVED"
+    },
+    "FND-ARCH-004": {
+      "title": "RPO vs asynchronous replication contradiction",
+      "depends_on": [
+        "FND-ARCH-014"
+      ],
+      "blocks": [
+        "FND-ARCH-007"
+      ],
+      "shared_components": [
+        "EVIDENCE_CUSTODY_AND_RETENTION_CONTRACT.md"
+      ],
+      "remediation_status": "VERIFIED_RESOLVED"
+    },
+    "FND-ARCH-007": {
+      "title": "Gate-3 claimed-but-uncommitted lease recovery",
+      "depends_on": [
+        "FND-ARCH-004"
+      ],
+      "blocks": [
+        "FND-ARCH-008"
+      ],
+      "shared_components": [
+        "transactional_state_backend.py"
+      ],
+      "remediation_status": "VERIFIED_RESOLVED"
+    },
+    "FND-ARCH-008": {
+      "title": "disambiguate contention from quarantine",
+      "depends_on": [
+        "FND-ARCH-007"
+      ],
+      "blocks": [
+        "FND-ARCH-010"
+      ],
+      "shared_components": [
+        "transactional_state_backend.py"
+      ],
+      "remediation_status": "VERIFIED_RESOLVED"
+    },
+    "FND-ARCH-010": {
+      "title": "stale fencing-token handling",
+      "depends_on": [
+        "FND-ARCH-008"
+      ],
+      "blocks": [],
+      "shared_components": [
+        "transactional_state_backend.py"
+      ],
+      "remediation_status": "VERIFIED_RESOLVED"
+    }
+  }
+}

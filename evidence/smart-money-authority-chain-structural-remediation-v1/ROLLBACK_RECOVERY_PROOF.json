@@ -1,0 +1,6 @@
+{
+  "regression_detection": "PASS",
+  "sequence_monotonicity": "PASS",
+  "status": "PASS",
+  "test_suite": "test_checkpoint_anti_rollback_chain (PASS)"
+}

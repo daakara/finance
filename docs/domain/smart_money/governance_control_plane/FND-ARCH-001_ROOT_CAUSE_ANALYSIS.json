@@ -1,0 +1,41 @@
+{
+  "finding_id": "FND-ARCH-001",
+  "immutable_subject": "Candidate 004 freeze-file SHA-256 was conflated with Candidate 004 semantic-closure hash.",
+  "observed_failure": "Raw byte SHA-256 digest and canonical semantic closure hash were treated as interchangeable strings without domain separation, risking domain confusion and false positive equality checks.",
+  "affected_components": [
+    "analyst_dashboard/smart_money/governance_control_plane/canonicalization.py",
+    "analyst_dashboard/smart_money/governance_control_plane/canonical_context.py",
+    "analyst_dashboard/smart_money/governance_control_plane/root_identity.py"
+  ],
+  "canonical_invariant_violated": "CANONICAL_HASH_DOMAIN_SEPARATION: Hashes from disparate domains (raw file bytes, semantic closure, Git commit OID, Git tree OID) must never be compared or treated as interchangeable.",
+  "root_cause": "Lack of explicit cryptographic typing or domain tag encapsulation on hash identifiers across governance control plane components.",
+  "contributing_causes": [
+    "Legacy string-only representation of 64-char hex digests",
+    "Absence of a machine-readable hash domain registry"
+  ],
+  "existing_behavior": "Hashes are stored as untyped str primitives and compared via standard string equality without domain assertion.",
+  "required_behavior": "Hashes must be wrapped in TypedHash value objects with explicit HashDomain tags; cross-domain comparison raises CrossDomainHashComparisonError.",
+  "implementation_scope": [
+    "Introduce HashDomain enum and TypedHash class in canonicalization.py",
+    "Create HASH_DOMAIN_REGISTRY.json",
+    "Enforce domain assertions in canonical context building"
+  ],
+  "contracts_affected": [
+    "docs/domain/smart_money/governance_control_plane/SOURCE_EVIDENCE_FREEZE_MODEL.md"
+  ],
+  "schemas_affected": [
+    "docs/domain/smart_money/governance_control_plane/HASH_DOMAIN_REGISTRY.json"
+  ],
+  "policies_affected": [
+    "docs/domain/smart_money/governance_control_plane/CANONICAL_HASH_IDENTITY_REGISTRY.json"
+  ],
+  "tests_affected": [
+    "tests/test_smart_money_architecture_remediation.py"
+  ],
+  "non_target_findings_touched": [],
+  "cross_layer_dependency": false,
+  "planned_fix": "Implement HashDomain enum, TypedHash with __eq__ enforcement, and compile HASH_DOMAIN_REGISTRY.json.",
+  "planned_negative_control": "Attempt cross-domain equality between raw SHA-256 and semantic closure hash; verify CrossDomainHashComparisonError is raised.",
+  "planned_causal_ablation": "Remove domain checking; verify test fails.",
+  "status": "ANALYZED_PENDING_IMPLEMENTATION"
+}

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/decision-chain-contract-audit.json",
+  "audit_id": "urn:arx:audit:decision-chain-contract:2026-10-12",
+  "generated_at": "2026-10-12T18:15:00Z",
+  "source_freeze_sha": "4aa35839dc0f5d2496d4a13c80e6c72cdee53eda",
+  "source_tree_oid": "794300d2ac694bf5f1c182f274b67fc037962eb5",
+  "contract_invariants": {
+    "PREDECESSOR_HASH_MATCH": {
+      "formal_definition": "supplied_previous_decision_hash == authoritative_predecessor.decision_hash",
+      "enforcing_error": "DecisionPredecessorMismatchError",
+      "verdict": "VERIFIED_ENFORCED"
+    },
+    "SEQUENCE_CONTINUITY": {
+      "formal_definition": "requested_sequence == authoritative_predecessor.sequence + 1",
+      "enforcing_error": "DecisionSequenceContinuityError",
+      "verdict": "VERIFIED_ENFORCED"
+    },
+    "EPOCH_CONTINUITY": {
+      "formal_definition": "requested_epoch == authoritative_predecessor.epoch == active_epoch",
+      "enforcing_error": "DecisionEpochMismatchError",
+      "verdict": "VERIFIED_ENFORCED"
+    },
+    "PREDECESSOR_NOT_INVALIDATED": {
+      "formal_definition": "authoritative_predecessor.decision_hash not in invalidated_hashes",
+      "enforcing_error": "DecisionPredecessorInvalidatedError",
+      "verdict": "VERIFIED_ENFORCED"
+    },
+    "PREDECESSOR_NOT_STALE": {
+      "formal_definition": "authoritative_predecessor.status == CURRENT (or immediate valid predecessor for next sequence)",
+      "enforcing_error": "DecisionPredecessorStaleError",
+      "verdict": "VERIFIED_ENFORCED"
+    },
+    "CURRENTNESS_TRANSITION": {
+      "formal_definition": "old CURRENT -> SUPERSEDED, new decision -> CURRENT, count(CURRENT) == 1 strictly",
+      "enforcing_error": "DecisionCurrentnessConflictError",
+      "verdict": "VERIFIED_ENFORCED"
+    },
+    "ANTI_EQUIVOCATION": {
+      "formal_definition": "No two distinct decisions may commit with the same (epoch, sequence)",
+      "enforcing_error": "DuplicateDecisionSequenceError",
+      "verdict": "VERIFIED_ENFORCED"
+    }
+  },
+  "preintegration_rejection_contract": {
+    "exception_class": "PreIntegrationSnapshotRejectedError",
+    "purpose": "Rejects invalidated pre-integration snapshots from having decision_validity == 'CURRENT' during structural validation",
+    "trigger_conditions": [
+      "decision_hash in INVALIDATED_PRE_INTEGRATION_DECISION_HASHES and decision_validity == 'CURRENT'",
+      "canonical_status == 'INVALIDATED_NON_CANONICAL' and decision_validity == 'CURRENT'"
+    ],
+    "boundary": "validate_canonical_decision_snapshot",
+    "verdict": "VERIFIED_ENFORCED"
+  },
+  "error_hierarchy": {
+    "base": "DecisionChainError",
+    "subclasses": [
+      "DecisionPredecessorMismatchError",
+      "DecisionSequenceContinuityError",
+      "DecisionEpochMismatchError",
+      "DecisionPredecessorInvalidatedError",
+      "DecisionPredecessorStaleError",
+      "DecisionCurrentnessConflictError",
+      "DecisionAuthorizationRejectedError",
+      "DuplicateDecisionSequenceError"
+    ]
+  },
+  "verdict": "CLOSED_VERIFIED"
+}

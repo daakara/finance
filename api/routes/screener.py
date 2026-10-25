@@ -25,8 +25,32 @@ from analyst_dashboard.data.market_evidence import (
 )
 from analyst_dashboard.analyzers.scanner_contract import CANONICAL_VCP_UNIVERSE, RADAR_SCOPE_LABEL
 from analyst_dashboard.analyzers.scanner_runner import VCPScannerRunner, SmartMoneyScannerRunner
+from analyst_dashboard.smart_money.storage import (
+    get_smart_money_scanner_runner,
+    get_smart_money_storage_backend,
+    get_smart_money_repository,
+)
 
-OPERATOR_TOKEN: str = os.getenv("ARX_OPERATOR_TOKEN", "arx-operator-secret-v1")
+from datetime import datetime
+import hashlib
+import hmac
+
+def get_operator_token() -> str:
+    """Returns the configured operator authorization token. Fails closed (empty string) if unset."""
+    return os.getenv("ARX_OPERATOR_TOKEN", "").strip()
+
+OPERATOR_TOKEN: str = get_operator_token()
+
+
+def verify_operator_token(candidate_token: Optional[str]) -> bool:
+    """
+    Constant-time comparison against configured ARX_OPERATOR_TOKEN.
+    Fails closed if ARX_OPERATOR_TOKEN is unset, empty, or candidate does not match.
+    """
+    expected = get_operator_token() or OPERATOR_TOKEN
+    if not expected or not candidate_token:
+        return False
+    return hmac.compare_digest(candidate_token.strip().encode("utf-8"), expected.encode("utf-8"))
 
 import hmac
 
@@ -63,7 +87,7 @@ confluence_engine = ConfluenceEngine()
 smart_money_engine = SmartMoneyEngine()
 market_db = MarketDatabaseEngine()
 vcp_scanner_runner = VCPScannerRunner(market_db=market_db, confluence_engine=confluence_engine)
-smart_money_scanner_runner = SmartMoneyScannerRunner()
+smart_money_scanner_runner = get_smart_money_scanner_runner()
 
 
 # Authentic Multi-Sector Dual-Horizon Universes (60 Total Quality Assets)
@@ -157,9 +181,24 @@ VALUE_GARP_MODELS = {
 
 
 def get_radar_capabilities(
+    *args,
     vcp_snapshot: Optional[Dict[str, Any]] = None,
     publication_pointer: Optional[Any] = None,
+    sm_snapshot: Optional[Dict[str, Any]] = None,
+    **kwargs,
 ) -> Dict[str, Any]:
+    # Support positional calls from Candidate 006 (sm_snapshot) and main (vcp_snapshot, publication_pointer)
+    if args:
+        first_arg = args[0]
+        if len(args) >= 2:
+            vcp_snapshot = first_arg
+            publication_pointer = args[1]
+        elif isinstance(first_arg, dict) and ("snapshot_id" in first_arg or "universe" in first_arg or "published_symbols" in first_arg):
+            vcp_snapshot = first_arg
+        else:
+            # Candidate 006 backwards compatibility: single positional dict is sm_snapshot
+            sm_snapshot = first_arg
+
     caps = {k: dict(v) for k, v in RADAR_CAPABILITY_CONTRACT.items()}
 
     # Resolve publication identity & population denominator if pointer or snapshot provided
@@ -198,9 +237,7 @@ def get_radar_capabilities(
             "reason": "ROLLED_BACK_PUBLICATION_POINTER",
             "rationale": f"Publication build '{build_id}' was rolled back ({rollback_reason or 'No reason specified'}). Scanner execution is suspended.",
         }
-        return caps
-
-    if vcp_snapshot:
+    elif vcp_snapshot:
         snap_status = vcp_snapshot.get("status")
         freshness_info = vcp_snapshot.get("freshness", {})
         u_meta = vcp_snapshot.get("universe", {})
@@ -318,6 +355,45 @@ def get_radar_capabilities(
             "reason": "SCANNER_NOT_ENROLLED",
             "rationale": f"Universe publication '{build_id}' active with {pop_denom} scannable symbols; batch scanner pipeline is pending operational activation.",
         }
+
+    # Evaluate SMART_MONEY capability from authoritative snapshot
+    if sm_snapshot and sm_snapshot.get("status") == "AVAILABLE":
+        raw_matched = sm_snapshot.get("matched_count")
+        is_valid_count = type(raw_matched) is int and raw_matched >= 0
+        matched_cnt = raw_matched if is_valid_count else 0
+        caps["SMART_MONEY"] = {
+            "status": "AVAILABLE",
+            "universeScreening": "AVAILABLE",
+            "singleAssetAnalysis": "AVAILABLE",
+            "subsignal": "INSIDER_FORM4",
+            "matchedCount": matched_cnt,
+            "dataAsOf": sm_snapshot.get("freshness", {}).get("data_as_of") or sm_snapshot.get("data_as_of"),
+            "populationDenominator": sm_snapshot.get("population_denominator", 0),
+            "rationale": "Authentic market-wide SEC Form 4 insider accumulation screening active with point-in-time certification.",
+        }
+    elif sm_snapshot and sm_snapshot.get("status") == "ERROR":
+        caps["SMART_MONEY"] = {
+            "status": "ERROR",
+            "universeScreening": "ERROR",
+            "singleAssetAnalysis": "AVAILABLE",
+            "subsignal": "INSIDER_FORM4",
+            "matchedCount": None,
+            "dataAsOf": None,
+            "populationDenominator": 0,
+            "rationale": sm_snapshot.get("detail", "Smart Money screening pipeline error."),
+        }
+    else:
+        # Canonical baseline: PIPELINE_PENDING with matchedCount: None
+        caps["SMART_MONEY"] = {
+            "status": "PIPELINE_PENDING",
+            "universeScreening": "PIPELINE_PENDING",
+            "singleAssetAnalysis": "AVAILABLE",
+            "subsignal": "INSIDER_FORM4",
+            "matchedCount": None,
+            "dataAsOf": None,
+            "populationDenominator": 0,
+            "rationale": RADAR_CAPABILITY_CONTRACT["SMART_MONEY"]["rationale"],
+        }
     return caps
 
 
@@ -328,6 +404,7 @@ def derive_canonical_radar_categories(
     gross_margin_pct: Optional[float],
     symbol: str,
     vcp_matched_symbols: Optional[set] = None,
+    smart_money_matched_symbols: Optional[set] = None,
 ) -> List[str]:
     """
     Authoritative deterministic classifier: analytical evidence -> explicit category.
@@ -350,8 +427,9 @@ def derive_canonical_radar_categories(
     if vcp_matched_symbols is not None and symbol in vcp_matched_symbols:
         cats.append("VCP")
 
-    # SMART_MONEY: Universe screening pipeline remains PIPELINE_PENDING.
-    # No candidate-level category membership is manufactured or inferred.
+    # SMART_MONEY: Backed by active verified snapshot from SmartMoneyScannerRunner
+    if smart_money_matched_symbols is not None and symbol in smart_money_matched_symbols:
+        cats.append("SMART_MONEY")
 
     return cats
 
@@ -424,6 +502,15 @@ def run_screener_get(
     # Retrieve active VCP scanner snapshot for authentic category qualification
     vcp_snapshot = vcp_scanner_runner.get_active_or_latest_snapshot()
     vcp_matched_symbols = {r["symbol"] for r in vcp_snapshot.get("results", []) if "symbol" in r}
+
+    # Retrieve active Smart Money scanner snapshot for authentic category qualification
+    sm_runner = get_smart_money_scanner_runner()
+    sm_snapshot = sm_runner.get_active_or_latest_snapshot()
+    sm_matched_symbols = (
+        {r["symbol"] for r in sm_snapshot.get("results", []) if "symbol" in r}
+        if sm_snapshot.get("status") == "AVAILABLE"
+        else set()
+    )
 
     # Map candidate fields with live optimal execution levels
     mapped_candidates = []
@@ -661,6 +748,7 @@ def run_screener_get(
             gross_margin_pct=margin_val,
             symbol=sym,
             vcp_matched_symbols=vcp_matched_symbols,
+            smart_money_matched_symbols=sm_matched_symbols,
         )
         cand_evidence = classify_candidate_category_evidence(cand_categories)
 
@@ -855,7 +943,7 @@ def run_screener_get(
         "gemsFound": len(filtered),
         "activeFilter": filter_type,
         "userRole": user_role,
-        "capabilities": get_radar_capabilities(vcp_snapshot=vcp_snapshot),
+        "capabilities": get_radar_capabilities(vcp_snapshot=vcp_snapshot, sm_snapshot=sm_snapshot),
         "macroContextId": shared_macro_context_id,
         "macroDifficulty": shared_macro,
         "population": population_model,
@@ -873,8 +961,64 @@ def get_vcp_snapshot():
 
 @router.get("/smart-money/snapshot")
 def get_smart_money_snapshot():
-    """Retrieve status envelope for Smart Money scanner (Section 9 & 18; fail-closed PIPELINE_PENDING)."""
-    return smart_money_scanner_runner.get_status_envelope()
+    """Retrieve status envelope for Smart Money scanner (Section 9 & 18; returns active snapshot or PIPELINE_PENDING)."""
+    runner = get_smart_money_scanner_runner()
+    return runner.get_active_or_latest_snapshot()
+
+
+@router.post("/smart-money/scan")
+def trigger_smart_money_scan(
+    response: Response = None,
+    x_operator_token: Optional[str] = Header(None, alias="X-Operator-Token"),
+    x_operator_request_id: Optional[str] = Header(None, alias="X-Operator-Request-Id"),
+    as_of_watermark: Optional[str] = None,
+    universe_build_id: Optional[str] = None,
+):
+    """
+    Operator-only trigger for Smart Money Form 4 market-wide scan (Gate B5 & B6).
+    Rejects public unauthenticated requests. Enforces distributed lease & idempotency.
+    In PostgreSQL profile: Enqueues an asynchronous run request in sm_run_requests (HTTP 202).
+    In SQLite profile: Executes local synchronous scan.
+    """
+    if not verify_operator_token(x_operator_token):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="PUBLIC_MARKET_WIDE_SCAN_FORBIDDEN: Operator authorization required to trigger market-wide scanner.",
+        )
+
+    if get_smart_money_storage_backend() == "postgres":
+        repo = get_smart_money_repository()
+        subject_hash = hashlib.sha256(
+            f"{as_of_watermark}:{universe_build_id}:{x_operator_request_id}".encode("utf-8")
+        ).hexdigest()
+        req_id = repo.create_run_request(
+            request_type="MARKET_WIDE_FORM4_SCAN",
+            subject_hash=subject_hash,
+        )
+        if response is not None and hasattr(response, "status_code"):
+            response.status_code = status.HTTP_202_ACCEPTED
+        return {
+            "status": "ACCEPTED",
+            "request_id": req_id,
+            "request_type": "MARKET_WIDE_FORM4_SCAN",
+            "submitted_at": datetime.utcnow().isoformat() + "Z",
+            "mode": "ASYNCHRONOUS_QUEUE",
+        }
+
+    runner = get_smart_money_scanner_runner()
+    try:
+        return runner.execute_market_wide_scan(
+            as_of_watermark=as_of_watermark,
+            universe_build_id=universe_build_id,
+            operator_request_id=x_operator_request_id,
+        )
+    except RuntimeError as e:
+        if "OVERLAPPING_SMART_MONEY_SCANS_PROHIBITED" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(e),
+            )
+        raise
 
 
 @router.post("/vcp/scan")
@@ -888,7 +1032,7 @@ def trigger_vcp_scan(
     Operator-only trigger for Minervini VCP market-wide scan (Section 16).
     Rejects public unauthenticated requests. Enforces distributed lease & idempotency.
     """
-    if not x_operator_token or x_operator_token != OPERATOR_TOKEN:
+    if not verify_operator_token(x_operator_token):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="PUBLIC_MARKET_WIDE_SCAN_FORBIDDEN: Operator authorization required to trigger market-wide scanner.",

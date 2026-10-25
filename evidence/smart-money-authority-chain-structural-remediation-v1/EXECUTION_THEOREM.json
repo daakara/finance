@@ -1,0 +1,16 @@
+{
+  "blocking_reasons": [
+    "Checkpoint external witness cannot be cryptographically anchored without live Sigstore/Rekor tooling locally."
+  ],
+  "evaluations": {
+    "authority_event_transactionality": "PASS",
+    "checkpoint_external_witness": "BLOCKED",
+    "r1_event_r2_crash_recovery": "PASS",
+    "r1_evidence_binding": "PASS",
+    "real_clock_binding": "PASS",
+    "remove_simulation_from_natural": "PASS",
+    "trigger_mode_authority_separation": "PASS"
+  },
+  "status": "BLOCKED",
+  "theorem": "T5_EXECUTION_THEOREM"
+}

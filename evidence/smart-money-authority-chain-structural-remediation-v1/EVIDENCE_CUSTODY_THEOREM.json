@@ -1,0 +1,15 @@
+{
+  "blocking_reasons": [
+    "No durable WORM object custody backend (e.g. S3 Object Lock, GCS Bucket Lock) exists for raw SEC bytes.",
+    "raw_response_retained is truthfully set to False until durable custody is provisioned."
+  ],
+  "evaluations": {
+    "github_artifact_classification": "PASS",
+    "independent_raw_evidence_replay": "PASS",
+    "raw_evidence_quarantine": "PASS",
+    "raw_sec_bytes_durable_custody": "BLOCKED",
+    "truthful_retention_flag": "PASS"
+  },
+  "status": "BLOCKED",
+  "theorem": "T4_EVIDENCE_CUSTODY_THEOREM"
+}

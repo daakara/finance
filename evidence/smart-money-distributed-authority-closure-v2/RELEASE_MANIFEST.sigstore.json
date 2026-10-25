@@ -1,0 +1,6 @@
+{
+  "bundle": null,
+  "classification": "UNVERIFIED_LOCAL_PLACEHOLDER",
+  "reason": "Cryptographic witness cannot be minted offline or without independent identity. Awaiting live OIDC runner.",
+  "status": "QUARANTINED_PENDING_EXTERNAL_SIGNING"
+}

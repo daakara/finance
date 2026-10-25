@@ -1,0 +1,400 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/normative-decision-cases.json",
+  "version": "2.0.0",
+  "description": "Comprehensive normative decision oracle cases defining ground-truth outcomes derived from ratified governance contracts.",
+  "cases": [
+    {
+      "case_id": "CURRENT_PRELIVE_BASELINE",
+      "description": "Current baseline state: admitted open architecture defects, unprovisioned external authorities",
+      "expected": {
+        "architecture_closure_status": "OPEN",
+        "remediation_status": "REQUIRED",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "BLOCKED",
+          "B": "BLOCKED",
+          "C": "BLOCKED",
+          "D": "BLOCKED",
+          "E": "BLOCKED"
+        }
+      }
+    },
+    {
+      "case_id": "ALL_DEFECTS_RESOLVED_EXTERNAL_PROVISIONED",
+      "description": "Hypothetical future state: all architecture defects verified resolved, all external authorities provisioned and established",
+      "expected": {
+        "architecture_closure_status": "CLOSED",
+        "remediation_status": "NONE_OR_VERIFIED_COMPLETE",
+        "global_provisioning_readiness": "READY",
+        "provisioning_authorization_status": "ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "READY",
+          "B": "READY",
+          "C": "READY",
+          "D": "READY",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "DEFECTS_RESOLVED_BUT_WITNESS_NOT_ESTABLISHED",
+      "description": "Zero architecture defects but Theorem D external witness NOT_ESTABLISHED",
+      "expected": {
+        "architecture_closure_status": "CLOSED",
+        "remediation_status": "NONE_OR_VERIFIED_COMPLETE",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "READY",
+          "B": "READY",
+          "C": "READY",
+          "D": "BLOCKED",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "DEFECTS_RESOLVED_BUT_LEDGER_CONFLICT",
+      "description": "Zero architecture defects but Theorem C external ledger state CONFLICT",
+      "expected": {
+        "architecture_closure_status": "CLOSED",
+        "remediation_status": "NONE_OR_VERIFIED_COMPLETE",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "READY",
+          "B": "READY",
+          "C": "BLOCKED",
+          "D": "READY",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "ISOLATED_BLOCKER_FND_ARCH_001",
+      "description": "Only FND-ARCH-001 remains open while all other blockers are resolved and external authorities provisioned",
+      "finding_id": "FND-ARCH-001",
+      "expected": {
+        "architecture_closure_status": "OPEN",
+        "remediation_status": "REQUIRED",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "BLOCKED",
+          "B": "BLOCKED",
+          "C": "READY",
+          "D": "READY",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "ISOLATED_BLOCKER_FND_ARCH_002",
+      "description": "Only FND-ARCH-002 remains open while all other blockers are resolved and external authorities provisioned",
+      "finding_id": "FND-ARCH-002",
+      "expected": {
+        "architecture_closure_status": "CLOSED",
+        "remediation_status": "NONE_OR_VERIFIED_COMPLETE",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "BLOCKED",
+          "B": "READY",
+          "C": "READY",
+          "D": "READY",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "ISOLATED_BLOCKER_FND_ARCH_003",
+      "description": "Only FND-ARCH-003 remains open while all other blockers are resolved and external authorities provisioned",
+      "finding_id": "FND-ARCH-003",
+      "expected": {
+        "architecture_closure_status": "CLOSED",
+        "remediation_status": "NONE_OR_VERIFIED_COMPLETE",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "READY",
+          "B": "BLOCKED",
+          "C": "READY",
+          "D": "BLOCKED",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "ISOLATED_BLOCKER_FND_ARCH_004",
+      "description": "Only FND-ARCH-004 remains open while all other blockers are resolved and external authorities provisioned",
+      "finding_id": "FND-ARCH-004",
+      "expected": {
+        "architecture_closure_status": "OPEN",
+        "remediation_status": "REQUIRED",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "READY",
+          "B": "BLOCKED",
+          "C": "BLOCKED",
+          "D": "READY",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "ISOLATED_BLOCKER_FND_ARCH_005",
+      "description": "Only FND-ARCH-005 remains open while all other blockers are resolved and external authorities provisioned",
+      "finding_id": "FND-ARCH-005",
+      "expected": {
+        "architecture_closure_status": "CLOSED",
+        "remediation_status": "NONE_OR_VERIFIED_COMPLETE",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "READY",
+          "B": "READY",
+          "C": "READY",
+          "D": "BLOCKED",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "ISOLATED_BLOCKER_FND_ARCH_006",
+      "description": "Only FND-ARCH-006 remains open while all other blockers are resolved and external authorities provisioned",
+      "finding_id": "FND-ARCH-006",
+      "expected": {
+        "architecture_closure_status": "CLOSED",
+        "remediation_status": "NONE_OR_VERIFIED_COMPLETE",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "READY",
+          "B": "BLOCKED",
+          "C": "READY",
+          "D": "READY",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "ISOLATED_BLOCKER_FND_ARCH_007",
+      "description": "Only FND-ARCH-007 remains open while all other blockers are resolved and external authorities provisioned",
+      "finding_id": "FND-ARCH-007",
+      "expected": {
+        "architecture_closure_status": "OPEN",
+        "remediation_status": "REQUIRED",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "READY",
+          "B": "BLOCKED",
+          "C": "BLOCKED",
+          "D": "READY",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "ISOLATED_BLOCKER_FND_ARCH_008",
+      "description": "Only FND-ARCH-008 remains open while all other blockers are resolved and external authorities provisioned",
+      "finding_id": "FND-ARCH-008",
+      "expected": {
+        "architecture_closure_status": "OPEN",
+        "remediation_status": "REQUIRED",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "READY",
+          "B": "READY",
+          "C": "BLOCKED",
+          "D": "READY",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "ISOLATED_BLOCKER_FND_ARCH_009",
+      "description": "Only FND-ARCH-009 remains open while all other blockers are resolved and external authorities provisioned",
+      "finding_id": "FND-ARCH-009",
+      "expected": {
+        "architecture_closure_status": "CLOSED",
+        "remediation_status": "NONE_OR_VERIFIED_COMPLETE",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "READY",
+          "B": "READY",
+          "C": "READY",
+          "D": "BLOCKED",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "ISOLATED_BLOCKER_FND_ARCH_010",
+      "description": "Only FND-ARCH-010 remains open while all other blockers are resolved and external authorities provisioned",
+      "finding_id": "FND-ARCH-010",
+      "expected": {
+        "architecture_closure_status": "OPEN",
+        "remediation_status": "REQUIRED",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "READY",
+          "B": "READY",
+          "C": "BLOCKED",
+          "D": "READY",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "ISOLATED_BLOCKER_FND_ARCH_011",
+      "description": "Only FND-ARCH-011 remains open while all other blockers are resolved and external authorities provisioned",
+      "finding_id": "FND-ARCH-011",
+      "expected": {
+        "architecture_closure_status": "OPEN",
+        "remediation_status": "REQUIRED",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "READY",
+          "B": "READY",
+          "C": "READY",
+          "D": "READY",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "ISOLATED_BLOCKER_FND_ARCH_012",
+      "description": "Only FND-ARCH-012 remains open while all other blockers are resolved and external authorities provisioned",
+      "finding_id": "FND-ARCH-012",
+      "expected": {
+        "architecture_closure_status": "OPEN",
+        "remediation_status": "REQUIRED",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "BLOCKED",
+          "B": "READY",
+          "C": "READY",
+          "D": "READY",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "ISOLATED_BLOCKER_FND_ARCH_014",
+      "description": "Only FND-ARCH-014 remains open while all other blockers are resolved and external authorities provisioned",
+      "finding_id": "FND-ARCH-014",
+      "expected": {
+        "architecture_closure_status": "OPEN",
+        "remediation_status": "REQUIRED",
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE",
+        "runtime_action": "NONE",
+        "theorems": {
+          "A": "READY",
+          "B": "READY",
+          "C": "BLOCKED",
+          "D": "READY",
+          "E": "READY"
+        }
+      }
+    },
+    {
+      "case_id": "SEMANTIC_CLAIM_UNKNOWN",
+      "description": "Claim state is UNKNOWN due to missing state basis, failing closed to BLOCKED",
+      "expected": {
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE"
+      }
+    },
+    {
+      "case_id": "SEMANTIC_CLAIM_NOT_ESTABLISHED",
+      "description": "Claim state is NOT_ESTABLISHED with valid state basis, cleanly failing closed",
+      "expected": {
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE"
+      }
+    },
+    {
+      "case_id": "SEMANTIC_CLAIM_CONFLICT",
+      "description": "Conflicting evidence records preserve CONFLICT state and block authorization",
+      "expected": {
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE"
+      }
+    },
+    {
+      "case_id": "SEMANTIC_CLAIM_STALE",
+      "description": "Stale claim validity triggers expiration and blocks authorization",
+      "expected": {
+        "global_provisioning_readiness": "BLOCKED",
+        "provisioning_authorization_status": "NOT_ISSUABLE"
+      }
+    },
+    {
+      "case_id": "FINDING_ADMISSION_CHANGE",
+      "description": "Admission status changes from ASSERTED_PENDING_REVIEW to ADMITTED",
+      "expected": {
+        "finding_admission_registry_hash_changes": true
+      }
+    },
+    {
+      "case_id": "FINDING_DUPLICATE_CHANGE",
+      "description": "Finding marked DUPLICATE drops from active blocker set",
+      "expected": {
+        "active_blocker_set_hash_changes": true
+      }
+    },
+    {
+      "case_id": "CANDIDATE_FREEZE_MISMATCH",
+      "description": "Candidate freeze SHA mismatch raises RepositoryEvidenceRecomputationError",
+      "expected": {
+        "error_raised": "RepositoryEvidenceRecomputationError"
+      }
+    },
+    {
+      "case_id": "SEMANTIC_CLOSURE_MISMATCH",
+      "description": "Candidate semantic closure hash mismatch rejected",
+      "expected": {
+        "error_raised": "CallerConstructedCanonicalContextRejectedError"
+      }
+    },
+    {
+      "case_id": "DEPENDENCY_POLICY_MISMATCH",
+      "description": "Tampered dependency policy rejected during canonical evaluation",
+      "expected": {
+        "error_raised": "CallerConstructedCanonicalContextRejectedError"
+      }
+    },
+    {
+      "case_id": "FINDING_REGISTRY_MISMATCH",
+      "description": "Tampered finding registry hash rejected during canonical evaluation",
+      "expected": {
+        "error_raised": "CallerConstructedCanonicalContextRejectedError"
+      }
+    }
+  ]
+}

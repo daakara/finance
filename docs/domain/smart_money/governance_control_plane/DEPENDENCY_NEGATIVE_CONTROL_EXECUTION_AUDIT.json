@@ -1,0 +1,64 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/dependency-negative-control-execution-audit.json",
+  "audit_id": "urn:arx:audit:dependency-negative-control-execution:2026-10-12",
+  "generated_at": "2026-10-12T16:03:25Z",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "executed_cases": {
+    "case_1_prerequisite_fail": {
+      "input": "Mandatory prerequisite fails",
+      "expected_outcome": "Target not active / authorized (BLOCKED)",
+      "observed_outcome": "BLOCKED",
+      "passed": true
+    },
+    "case_2_prerequisite_not_established": {
+      "input": "3 unestablished evidence records (ev-ext-ledger-state, ev-ext-witness-state, ev-gov-genesis)",
+      "expected_outcome": "Target not active / authorized (BLOCKED)",
+      "observed_outcome": "BLOCKED",
+      "passed": true
+    },
+    "case_3_prerequisite_unknown": {
+      "input": "FACT-NATURAL-DENOMINATOR-ZERO establishment=NOT_ESTABLISHED",
+      "expected_outcome": "Target not active / authorized (BLOCKED)",
+      "observed_unresolved_targets": [
+        "RUNTIME_ACTION",
+        "THEOREM_B",
+        "THEOREM_C",
+        "THEOREM_D"
+      ],
+      "passed": true
+    },
+    "case_4_prerequisite_conflict": {
+      "input": "Conflicting values (0 vs 1) at identical provenance precedence",
+      "expected_outcome": "Conflict detected, target not active / authorized (BLOCKED)",
+      "observed_conflicts": [
+        "FACT-NATURAL-DENOMINATOR-ZERO"
+      ],
+      "passed": true
+    },
+    "case_5_prerequisite_stale": {
+      "input": "FACT-NATURAL-DENOMINATOR-ZERO validity=STALE",
+      "expected_outcome": "Target not active / authorized (BLOCKED)",
+      "observed_unresolved_targets": [
+        "RUNTIME_ACTION",
+        "THEOREM_B",
+        "THEOREM_C",
+        "THEOREM_D"
+      ],
+      "passed": true
+    },
+    "case_6_local_authority_cannot_satisfy_external": {
+      "input": "Local repository authority asserting external claims",
+      "expected_outcome": "External claim unsatisfied, authorization NOT_ISSUABLE",
+      "observed_outcome": "NOT_ISSUABLE",
+      "passed": true
+    },
+    "case_7_arch_closed_cannot_satisfy_unrelated": {
+      "input": "Architecture closure CLOSED with 5 active non-arch blockers",
+      "expected_outcome": "Global readiness BLOCKED, authorization NOT_ISSUABLE",
+      "observed_outcome": "BLOCKED / NOT_ISSUABLE",
+      "passed": true
+    }
+  },
+  "verdict": "PASS"
+}

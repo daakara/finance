@@ -1,0 +1,98 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/governance-regression-report.json",
+  "collected": 452,
+  "failed": 0,
+  "generated_at": "2026-10-12T15:30:00Z",
+  "generator_or_test_ref": "pytest",
+  "input_hashes": {
+    "manifest_hash": "3e7257e13ad070f933b6b33df0cec02c01da69cab1cb6974aace7e4ab8ef24f2"
+  },
+  "manifest_version": "2.0.0",
+  "passed": 452,
+  "required_suites_not_run": 0,
+  "return_code": 0,
+  "skipped": 0,
+  "source_freeze_sha": "cf62c54badd9b39e7711edbab5e2de9e2e1efd98",
+  "source_tree_oid": "43ae64571ce86c15e67ee72e71a8466730f9857d",
+  "suite_breakdown": {
+    "tests/test_canonical_decision_context.py": {
+      "failed": 0,
+      "passed": 7,
+      "warnings": 0
+    },
+    "tests/test_external_authority_architecture_contract_closure.py": {
+      "failed": 0,
+      "passed": 8,
+      "warnings": 0
+    },
+    "tests/test_governance_decision_engine_policy.py": {
+      "failed": 0,
+      "passed": 8,
+      "warnings": 0
+    },
+    "tests/test_smart_money_api.py": {
+      "failed": 0,
+      "passed": 3,
+      "warnings": 1
+    },
+    "tests/test_smart_money_canonical_decision_integration.py": {
+      "failed": 0,
+      "passed": 48,
+      "warnings": 0
+    },
+    "tests/test_smart_money_canonical_input_authority.py": {
+      "failed": 0,
+      "passed": 68,
+      "warnings": 0
+    },
+    "tests/test_smart_money_conditional_dependency_authority.py": {
+      "failed": 0,
+      "passed": 48,
+      "warnings": 0
+    },
+    "tests/test_smart_money_distributed_authority_substrate.py": {
+      "failed": 0,
+      "passed": 10,
+      "warnings": 0
+    },
+    "tests/test_smart_money_final_natural_authority_chain_closure.py": {
+      "failed": 0,
+      "passed": 11,
+      "warnings": 0
+    },
+    "tests/test_smart_money_finding_identity_claim_semantics.py": {
+      "failed": 0,
+      "passed": 84,
+      "warnings": 0
+    },
+    "tests/test_smart_money_governance_bootstrap_authority.py": {
+      "failed": 0,
+      "passed": 61,
+      "warnings": 0
+    },
+    "tests/test_smart_money_governance_control_plane_authority.py": {
+      "failed": 0,
+      "passed": 35,
+      "warnings": 0
+    },
+    "tests/test_smart_money_governance_reconciliation_freeze.py": {
+      "failed": 0,
+      "passed": 38,
+      "warnings": 0
+    },
+    "tests/test_smart_money_legislative.py": {
+      "failed": 0,
+      "passed": 8,
+      "warnings": 0
+    },
+    "tests/test_sprint_3_candidate_004_epoch_and_migration.py": {
+      "failed": 0,
+      "passed": 15,
+      "warnings": 0
+    }
+  },
+  "suites_executed": 15,
+  "suites_required": 15,
+  "verdict": "PASS",
+  "warnings": 1
+}

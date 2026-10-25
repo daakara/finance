@@ -1,0 +1,40 @@
+{
+  "audit": "PHASE_QUALITY_AND_EVIDENCE_INTEGRITY_AUDIT_V1",
+  "checkpoint_manifest_sha256": "22acdfea3eced796e586620c286633c274773b9ec237e4820e2847ad8bc9fc02",
+  "checkpoint_sequence": 1,
+  "ci_status": "success",
+  "defect_cause": "The run completed and produced durable state, but internally failed state-machine validation and reached TERMINAL_HOLD. Reporting this run as a valid governance closure proof was an overstatement.",
+  "evidence_classification": "AUTHORITATIVE_BUT_DEFECTIVE",
+  "head_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+  "process_exit_code": 0,
+  "run_id": "38173031386",
+  "state_machine_final_state": "TERMINAL_HOLD",
+  "state_machine_transitions": [
+    {
+      "reason": "INITIAL_STATE",
+      "state": "PRE_OBSERVATION_READY"
+    },
+    {
+      "reason": "No Gate-3 artifact present",
+      "state": "SAFE_HOLD"
+    },
+    {
+      "reason": "FAIL_CLOSED: INVALID_STATE_TRANSITION: Cannot transition from SAFE_HOLD to AUTHORITY_EVENT_RECORDED. Allowed targets: ['PRE_OBSERVATION_READY']",
+      "state": "TERMINAL_HOLD"
+    },
+    {
+      "reason": "FAIL_CLOSED: INVALID_STATE_TRANSITION: Cannot transition from TERMINAL_HOLD to R2_CLOSED. Allowed targets: []",
+      "state": "TERMINAL_HOLD"
+    },
+    {
+      "reason": "FAIL_CLOSED: INVALID_STATE_TRANSITION: Cannot transition from TERMINAL_HOLD to PRE_OBSERVATION_READY. Allowed targets: []",
+      "state": "TERMINAL_HOLD"
+    }
+  ],
+  "verdict_metrics": {
+    "RUN_A_CHECKPOINT_SEQUENCE": 1,
+    "RUN_A_CI_STATUS": "success",
+    "RUN_A_PROCESS_EXIT_CODE": 0,
+    "RUN_A_STATE_MACHINE_FINAL_STATE": "TERMINAL_HOLD"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/post-architecture-dependency-reconciliation-audit.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T18:00:00Z",
+  "dependency_graph_version": "1.0.0",
+  "dependency_policy_hash": "d82e9fb9970a4040c9291d23ed019b89848f1f97a3c57a3375c34971ab40b7df",
+  "dependency_resolution_hash": "2f9ebea3adfb038953c84c7a42f09286a68d32dbd4af8f5b4fbda3391c2d7714",
+  "predicate_context_hash": "aa4e45e6c5c801b89dbf5046eb37ea96fe2b5dc13aa0c5029383f87a517cf670",
+  "nodes_count": 19,
+  "edges_count": 12,
+  "target_statuses": {
+    "THEOREM_A": "READY",
+    "THEOREM_B": "BLOCKED",
+    "THEOREM_C": "BLOCKED",
+    "THEOREM_D": "BLOCKED",
+    "THEOREM_E": "READY",
+    "ARCHITECTURE_CLOSURE_STATUS": "READY",
+    "REMEDIATION_STATUS": "READY",
+    "GLOBAL_PROVISIONING_READINESS": "READY",
+    "PROVISIONING_AUTHORIZATION_STATUS": "READY",
+    "RUNTIME_ACTION": "BLOCKED"
+  },
+  "unresolved_target_ids": [
+    "RUNTIME_ACTION",
+    "THEOREM_B",
+    "THEOREM_C",
+    "THEOREM_D"
+  ],
+  "impacted_target_ids": [
+    "RUNTIME_ACTION",
+    "THEOREM_B",
+    "THEOREM_C",
+    "THEOREM_D"
+  ],
+  "unaffected_target_ids": [
+    "ARCHITECTURE_CLOSURE_STATUS",
+    "GLOBAL_PROVISIONING_READINESS",
+    "PROVISIONING_AUTHORIZATION_STATUS",
+    "REMEDIATION_STATUS",
+    "THEOREM_A",
+    "THEOREM_E"
+  ],
+  "architecture_edge_transition": {
+    "edge": "dep_blockers_to_arch",
+    "declared_requirement": "CONDITIONAL",
+    "source_claim": "CLAIM-FINDING-BLOCKERS",
+    "target_output": "ARCHITECTURE_CLOSURE_STATUS",
+    "previous_status": "BLOCKED / UNSATISFIED",
+    "reconciled_status": "READY / SATISFIED",
+    "rationale": "Active architecture defect count == 0 satisfies predicate; architecture closure resolves to READY."
+  },
+  "verdict": "PASS"
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/epoch-gate3-state-consistency-audit.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T17:30:00Z",
+  "authoritative_epoch_governance_state_meaning": "GLOBAL_SYSTEM_POSTURE",
+  "consumed_gate3_claims_claim_state_meaning": "SPECIFIC_GATE3_CLAIM_LIFECYCLE",
+  "intentional_domain_separation": true,
+  "divergence": "NOT_APPLICABLE",
+  "rationale": "Global governance state in authoritative_epoch tracks macro system posture (e.g. AUTHORIZATION_CLAIMED / ACTIVE), whereas consumed_gate3_claims tracks the granular CAS lifecycle of individual authorizations.",
+  "verdict": "PASS"
+}

@@ -1,0 +1,7 @@
+{
+  "claim": "Run B restores state without depending on Run A workspace",
+  "evidence_class": "LIVE_GITHUB_RUNNER",
+  "independent_verifier_result": "BLOCKED",
+  "observed_result": "Live remote execution blocked.",
+  "status": "BLOCKED"
+}

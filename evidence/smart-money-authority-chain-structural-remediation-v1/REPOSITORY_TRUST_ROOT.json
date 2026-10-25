@@ -1,0 +1,8 @@
+{
+  "branch_protection_ruleset": "NOT_ENFORCED",
+  "default_branch": "main",
+  "repository": "daakara/finance",
+  "signed_release_witness": "NOT_ESTABLISHED",
+  "status": "BLOCKED",
+  "verdict": "BLOCKED per Section 5.5 and Section 27"
+}

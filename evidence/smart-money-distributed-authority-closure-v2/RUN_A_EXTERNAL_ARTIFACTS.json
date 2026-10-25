@@ -1,0 +1,7 @@
+{
+  "claim": "External artifacts for Run A collected and cryptographically verified",
+  "evidence_class": "LIVE_GITHUB_RUNNER",
+  "independent_verifier_result": "BLOCKED",
+  "observed_result": "No live remote Run A executed.",
+  "status": "BLOCKED"
+}

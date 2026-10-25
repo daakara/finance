@@ -1,0 +1,110 @@
+{
+  "audit": "PHASE_QUALITY_AND_EVIDENCE_INTEGRITY_AUDIT_V1",
+  "authority_call_graph_complete": "NO",
+  "blocking_broken_edges": [
+    "AUTH_CLAIM -> STATE_MACHINE (failure ignored; silent TERMINAL_HOLD)",
+    "R2 -> ADMISSION (record_natural_accession uncalled in scheduler)",
+    "ADMISSION -> DENOMINATOR (unwired in scheduler)",
+    "GATE3_LOOKUP (remote durable fetch not implemented)",
+    "GATE3_VALIDATE (readiness dir not passed, bundle crypto unverified)"
+  ],
+  "edges": [
+    {
+      "from": "WORKFLOW",
+      "notes": "actions/cache/restore@v4 in smart_money_rooting.yml",
+      "status": "IMPLEMENTED_ON_MAIN",
+      "to": "CACHE_RESTORE"
+    },
+    {
+      "from": "CACHE_RESTORE",
+      "notes": "mgr.hydrate_state() in step 4",
+      "status": "IMPLEMENTED_ON_MAIN",
+      "to": "DURABLE_STATE_HYDRATE"
+    },
+    {
+      "from": "DURABLE_STATE_HYDRATE",
+      "notes": "run_natural_scheduler.py requests Actions ID token",
+      "status": "IMPLEMENTED_ON_MAIN",
+      "to": "OIDC"
+    },
+    {
+      "from": "OIDC",
+      "notes": "verify_workload_identity called",
+      "status": "IMPLEMENTED_ON_MAIN",
+      "to": "IDENTITY_VERIFY"
+    },
+    {
+      "from": "IDENTITY_VERIFY",
+      "notes": "Local filesystem lookup only; remote delivery NOT_IMPLEMENTED",
+      "status": "IMPLEMENTED_ON_MAIN",
+      "to": "GATE3_LOOKUP"
+    },
+    {
+      "from": "GATE3_LOOKUP",
+      "notes": "validate_gate3_authorization called; readiness_evidence_dir omitted",
+      "status": "IMPLEMENTED_ON_MAIN",
+      "to": "GATE3_VALIDATE"
+    },
+    {
+      "from": "GATE3_VALIDATE",
+      "notes": "state_mgr.claim_authorization called",
+      "status": "IMPLEMENTED_ON_MAIN",
+      "to": "AUTH_CLAIM"
+    },
+    {
+      "from": "AUTH_CLAIM",
+      "notes": "transition() return value ignored; illegal transitions fail to TERMINAL_HOLD silently",
+      "status": "IMPLEMENTED_BUT_NOT_WIRED",
+      "to": "STATE_MACHINE"
+    },
+    {
+      "from": "STATE_MACHINE",
+      "notes": "PublicObserverEngine wired to SQLite DB",
+      "status": "IMPLEMENTED_ON_MAIN",
+      "to": "OBSERVER"
+    },
+    {
+      "from": "OBSERVER",
+      "notes": "Constructs real observation evidence dictionary in natural mode",
+      "status": "IMPLEMENTED_ON_MAIN",
+      "to": "R1"
+    },
+    {
+      "from": "R1",
+      "notes": "Conditioned on R1 bundle",
+      "status": "IMPLEMENTED_ON_MAIN",
+      "to": "AUTHORITY_EVENT"
+    },
+    {
+      "from": "AUTHORITY_EVENT",
+      "notes": "Links to R1 witness and authority event digest",
+      "status": "IMPLEMENTED_ON_MAIN",
+      "to": "R2"
+    },
+    {
+      "from": "R2",
+      "notes": "record_natural_accession is NOT called by run_natural_scheduler.py",
+      "status": "IMPLEMENTED_BUT_NOT_WIRED",
+      "to": "ADMISSION"
+    },
+    {
+      "from": "ADMISSION",
+      "notes": "Denominator increment is within record_natural_accession which is not called in scheduler",
+      "status": "IMPLEMENTED_BUT_NOT_WIRED",
+      "to": "DENOMINATOR"
+    },
+    {
+      "from": "DENOMINATOR",
+      "notes": "state_mgr.checkpoint_state called in step 12",
+      "status": "IMPLEMENTED_ON_MAIN",
+      "to": "CHECKPOINT"
+    },
+    {
+      "from": "CHECKPOINT",
+      "notes": "actions/cache/save@v4 with if: success()",
+      "status": "IMPLEMENTED_ON_MAIN",
+      "to": "CACHE_SAVE"
+    }
+  ],
+  "timestamp_utc": "2026-10-11T21:12:02.935401+00:00"
+}

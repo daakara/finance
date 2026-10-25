@@ -1,0 +1,34 @@
+{
+  "audit": "PHASE_QUALITY_AND_EVIDENCE_INTEGRITY_AUDIT_V1",
+  "authoritative_but_defective_count": 4,
+  "items": [
+    {
+      "artifact": "Run A (38173031386) Durable State Checkpoint (Sequence 1)",
+      "authoritative_existence": true,
+      "canonical_governance_evidence": false,
+      "defect_cause": "Produced during execution that internally encountered illegal state leap (SAFE_HOLD -> AUTHORITY_EVENT_RECORDED) and reached TERMINAL_HOLD.",
+      "exists": true
+    },
+    {
+      "artifact": "Run B (38173080201) Durable State Checkpoint (Sequence 2)",
+      "authoritative_existence": true,
+      "canonical_governance_evidence": false,
+      "defect_cause": "Successor run that restored Run A state and persisted TERMINAL_HOLD.",
+      "exists": true
+    },
+    {
+      "artifact": "Run A & Run B Uploaded Dry Run Evidence Artifacts",
+      "authoritative_existence": true,
+      "canonical_governance_evidence": false,
+      "defect_cause": "Summaries reported execution success masking internal TERMINAL_HOLD.",
+      "exists": true
+    },
+    {
+      "artifact": "SMART_MONEY_FINAL_NATURAL_AUTHORITY_CHAIN_MANIFEST_V1.json",
+      "authoritative_existence": true,
+      "canonical_governance_evidence": false,
+      "defect_cause": "Asserted Rekor log index 3213838530 which does not sign or bind this manifest.",
+      "exists": true
+    }
+  ]
+}

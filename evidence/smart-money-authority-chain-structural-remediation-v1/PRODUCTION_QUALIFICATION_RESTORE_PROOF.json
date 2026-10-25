@@ -1,0 +1,4 @@
+{
+  "reason": "Live GitHub Actions qualification requires remote execution with provisioned external state backend; currently blocked by Section 27.",
+  "status": "BLOCKED"
+}

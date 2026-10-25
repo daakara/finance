@@ -1,0 +1,133 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/governance-invariants.json",
+  "registry_id": "urn:arx:registry:governance-control-plane-invariants:v1",
+  "governance_epoch": "epoch-gov-001",
+  "invariants": [
+    {
+      "id": "INV-CP-001",
+      "statement": "Policy cannot self-ratify. Policy authority must be established exclusively via an external ratification certificate signed by a verified cryptographic quorum.",
+      "proof_requirement": "The policy engine rejects any policy document that lacks an external ratification certificate matching its canonical SHA-256 hash with at least 3-of-4 bootstrap signatures.",
+      "negative_control": "Supply GOVERNANCE_POLICY_V1 with an internal self-ratification claim but no external ratification certificate; evaluation must fail closed.",
+      "requalification_trigger": "Any policy modification, key rotation, or quorum modification."
+    },
+    {
+      "id": "INV-CP-002",
+      "statement": "There is exactly one authoritative ledger head per governance epoch. Silent forking or competing branches are strictly rejected.",
+      "proof_requirement": "Every event extends the unique existing head hash. Any event specifying a parent that is not the current head produces a FORK_DETECTED fault.",
+      "negative_control": "Attempt to append two conflicting events with sequence N+1 pointing to the same parent; engine must reject the second and halt.",
+      "requalification_trigger": "Any ledger synchronization or recovery event."
+    },
+    {
+      "id": "INV-CP-003",
+      "statement": "Historical ledger events are immutable. Historical event payloads and cryptographic hashes cannot be altered, reordered, or deleted.",
+      "proof_requirement": "Re-evaluation of the entire event chain from sequence 0 to head must produce bit-for-bit hash parity across all events.",
+      "negative_control": "Mutate one byte in event sequence 1 payload; chain verification must fail with EVENT_HASH_MISMATCH.",
+      "requalification_trigger": "Every ledger read or rehydration."
+    },
+    {
+      "id": "INV-CP-004",
+      "statement": "The Finding Registry must remain strictly consistent with the Authority Ledger. The active finding state is a deterministic projection of ledger events.",
+      "proof_requirement": "The computed finding_registry_hash must match the registry hash emitted in the latest FINDING_* ledger event.",
+      "negative_control": "Inject an out-of-band finding directly into memory without a supporting ledger event; verification must fail with REGISTRY_LEDGER_DIVERGENCE.",
+      "requalification_trigger": "Every finding update or decision generation."
+    },
+    {
+      "id": "INV-CP-005",
+      "statement": "Evidence completeness is strictly required for READY. An internally consistent but selectively incomplete evidence set cannot drive READY.",
+      "proof_requirement": "EVIDENCE_SET_COMPLETE must equal TRUE, and missing_required_evidence_refs must equal 0 before GLOBAL_PROVISIONING_READINESS can evaluate to READY.",
+      "negative_control": "Omit one mandatory evidence item from the inventory while all findings are clean; decision must evaluate to BLOCKED.",
+      "requalification_trigger": "Every evidence registration or revocation."
+    },
+    {
+      "id": "INV-CP-006",
+      "statement": "Every mandatory audit must emit either explicit findings or an authoritative ZERO_FINDING_ATTESTATION bound to audit ID, hash, and reviewer.",
+      "proof_requirement": "Any mandatory audit lacking both recorded findings and an active zero-finding attestation fails evidence completeness.",
+      "negative_control": "Register an audit completion without findings and without an attestation certificate; decision must fail closed.",
+      "requalification_trigger": "Every audit cycle."
+    },
+    {
+      "id": "INV-CP-007",
+      "statement": "Stale decisions cannot authorize actions. A decision snapshot is valid only for its exact bound inputs; any change invalidates eligibility.",
+      "proof_requirement": "If current ledger head, policy hash, registry hash, or evidence inventory differs from decision snapshot, decision_validity evaluates to STALE.",
+      "negative_control": "Attempt to issue an authorization against a decision whose bound ledger head is older than current ledger head; must reject with DECISION_STALE.",
+      "requalification_trigger": "Every authorization issuance request."
+    },
+    {
+      "id": "INV-CP-008",
+      "statement": "Decision does not equal authorization. A readiness decision of READY indicates eligibility only and does not confer execution or provisioning authority.",
+      "proof_requirement": "Separate schemas, cryptographic signatures, and lifecycle states exist for decisions versus authorizations.",
+      "negative_control": "Attempt to invoke a provisioning or execution runtime operation by supplying only a READY decision snapshot; must reject with AUTHORIZATION_REQUIRED.",
+      "requalification_trigger": "Every runtime operational call."
+    },
+    {
+      "id": "INV-CP-009",
+      "statement": "Authorizations must explicitly bind the exact evaluated decision snapshot hash.",
+      "proof_requirement": "An authorization without decision_hash or with a mismatched decision_hash is rejected by execution guardians.",
+      "negative_control": "Submit an authorization with an arbitrary or mismatched decision_hash; execution must reject with INVALID_DECISION_BINDING.",
+      "requalification_trigger": "Every authorization validation."
+    },
+    {
+      "id": "INV-CP-010",
+      "statement": "Authorizations must be strictly bound to explicit operator identity, allowed actions, and least-authority resource scopes.",
+      "proof_requirement": "Operational entrypoint validates that actor identity matches, requested action is in allowed_actions, and target resources are within resource_scope.",
+      "negative_control": "Attempt an action outside allowed_actions (e.g. ARM_NATURAL_OBSERVER on a PROVISIONING authorization); must reject with OUT_OF_SCOPE_ACTION.",
+      "requalification_trigger": "Every authorization evaluation."
+    },
+    {
+      "id": "INV-CP-011",
+      "statement": "Authorizations are immediately invalidated by any authority-head change prior to execution (TOCTOU protection).",
+      "proof_requirement": "Before an authorized operation executes, the guardian re-verifies that CURRENT_LEDGER_HEAD == AUTHORIZATION.ledger_head_hash.",
+      "negative_control": "Append a new ledger event between authorization issuance and execution; execution must reject with TOCTOU_VALIDATION_FAILED.",
+      "requalification_trigger": "Every authorization consumption."
+    },
+    {
+      "id": "INV-CP-012",
+      "statement": "Finding ordering does not affect decision outcome. The decision engine is mathematically order-independent across all permutations of findings.",
+      "proof_requirement": "evaluate(permute(findings)) == evaluate(findings) for all permutations.",
+      "negative_control": "Evaluate finding set in reverse order; resulting decision hash and gate statuses must be identical.",
+      "requalification_trigger": "Every decision engine build or test suite execution."
+    },
+    {
+      "id": "INV-CP-013",
+      "statement": "Adding blockers cannot improve readiness (monotonic safety property).",
+      "proof_requirement": "Adding an active blocking finding, reopening a finding, or expiring a waiver can never transition readiness from BLOCKED to READY.",
+      "negative_control": "Inject an additional critical finding into an already BLOCKED or READY state; readiness must never advance or improve.",
+      "requalification_trigger": "Every test suite execution."
+    },
+    {
+      "id": "INV-CP-014",
+      "statement": "Governance rollback is strictly rejected. Restored governance state must prove sequence monotonicity and ancestry to prior witnessed head.",
+      "proof_requirement": "Restored state with sequence < witnessed sequence or divergent hash chain fails closed with GOVERNANCE_ROLLBACK_DETECTED.",
+      "negative_control": "Attempt to restore an older ledger state (sequence N-1) when sequence N has been witnessed; must fail closed.",
+      "requalification_trigger": "Every recovery or state restore operation."
+    },
+    {
+      "id": "INV-CP-015",
+      "statement": "Second governance genesis is strictly prohibited. Genesis sequence 0 occurs exactly once across the lifetime of the governance system.",
+      "proof_requirement": "The genesis constructor checks external custody; if any prior epoch or genesis exists, creation fails closed.",
+      "negative_control": "Call create_genesis() in an environment where an authoritative epoch already exists; must raise SECOND_GENESIS_PROHIBITED.",
+      "requalification_trigger": "Every initialization routine."
+    },
+    {
+      "id": "INV-CP-016",
+      "statement": "Historical decision snapshots replay exactly. Given historical input hashes and engine version, recomputation yields identical decision payload and hash.",
+      "proof_requirement": "historical_replay(snapshot[t]) == snapshot[t].decision_hash.",
+      "negative_control": "Replay historical snapshot with altered policy or registry; replay must produce hash mismatch.",
+      "requalification_trigger": "Every release verification and audit."
+    },
+    {
+      "id": "INV-CP-017",
+      "statement": "Future infrastructure provisioning evidence must ingest directly into the same authoritative governance ledger and evidence inventory.",
+      "proof_requirement": "Provisioning evidence emitted by operator scripts must be formatted as EVIDENCE_REGISTERED ledger events and evaluated by the same decision engine.",
+      "negative_control": "Attempt to qualify Theorem A-D via an un-ingested sidecar report; gate evaluation must reject with MISSING_GOVERNANCE_EVIDENCE.",
+      "requalification_trigger": "Every provisioning and qualification phase."
+    },
+    {
+      "id": "INV-CP-018",
+      "statement": "Candidate 004 freeze manifest remains completely invariant across all governance control plane operations (Candidate 004 diff = 0).",
+      "proof_requirement": "git diff against CANDIDATE_GENERATION_004_FREEZE.json is 0 bytes and hash matches 297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90.",
+      "negative_control": "Modify any byte in Candidate 004 freeze files; pre-commit and test checks must immediately fail.",
+      "requalification_trigger": "Every gate evaluation."
+    }
+  ]
+}

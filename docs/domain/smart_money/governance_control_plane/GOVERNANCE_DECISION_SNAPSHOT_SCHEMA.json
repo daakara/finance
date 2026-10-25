@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GovernanceDecisionSnapshot",
+  "type": "object",
+  "required": [
+    "decision_id",
+    "governance_epoch",
+    "decision_sequence",
+    "previous_decision_hash",
+    "policy_hash",
+    "policy_ratification_hash",
+    "finding_registry_hash",
+    "evidence_inventory_hash",
+    "contract_set_hash",
+    "theorem_state_hash",
+    "derivation_engine_source_sha",
+    "derivation_engine_hash",
+    "derivation_engine_version",
+    "normalization_version",
+    "canonicalization_version",
+    "architecture_closure_status",
+    "remediation_status",
+    "global_provisioning_readiness",
+    "theorem_readiness",
+    "runtime_action",
+    "derived_at",
+    "decision_validity",
+    "decision_hash"
+  ],
+  "properties": {
+    "decision_id": {
+      "type": "string",
+      "pattern": "^urn:arx:decision:epoch-gov-[0-9]{3}:[0-9]+:[a-f0-9\\-]+$"
+    },
+    "governance_epoch": {
+      "type": "string",
+      "pattern": "^epoch-gov-[0-9]{3}$"
+    },
+    "decision_sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "previous_decision_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "policy_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "policy_ratification_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "finding_registry_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "evidence_inventory_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "contract_set_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "theorem_state_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "derivation_engine_source_sha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "derivation_engine_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "derivation_engine_version": {
+      "type": "string"
+    },
+    "normalization_version": {
+      "type": "string",
+      "const": "ARX-GOV-NORMALIZE-V1"
+    },
+    "canonicalization_version": {
+      "type": "string",
+      "const": "RFC8785-JCS"
+    },
+    "architecture_closure_status": {
+      "type": "string",
+      "enum": ["OPEN", "CLOSED"]
+    },
+    "remediation_status": {
+      "type": "string",
+      "enum": ["REQUIRED", "NONE_OR_VERIFIED_COMPLETE"]
+    },
+    "global_provisioning_readiness": {
+      "type": "string",
+      "enum": ["READY", "BLOCKED"]
+    },
+    "theorem_readiness": {
+      "type": "object",
+      "required": ["A", "B", "C", "D", "E"],
+      "properties": {
+        "A": { "type": "string", "enum": ["READY", "BLOCKED"] },
+        "B": { "type": "string", "enum": ["READY", "BLOCKED"] },
+        "C": { "type": "string", "enum": ["READY", "BLOCKED"] },
+        "D": { "type": "string", "enum": ["READY", "BLOCKED"] },
+        "E": { "type": "string", "enum": ["READY", "BLOCKED"] }
+      }
+    },
+    "runtime_action": {
+      "type": "string",
+      "enum": ["HOLD", "PROVISION", "EXECUTE"]
+    },
+    "derived_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "decision_validity": {
+      "type": "string",
+      "enum": ["CURRENT", "STALE", "REVOKED"]
+    },
+    "decision_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "additionalProperties": false
+}

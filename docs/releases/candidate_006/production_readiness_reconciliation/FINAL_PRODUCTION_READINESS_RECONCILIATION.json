@@ -1,0 +1,84 @@
+{
+  "contract": "ARX_SMART_MONEY_CANDIDATE_006_PRODUCTION_READINESS_RECONCILIATION_V1",
+  "evaluated_at": "2026-10-14T10:25:00Z",
+  "repository": "daakara/finance",
+  "branch": "arx/smart-money-candidate-006-backup-age-containment",
+  "application_candidate_sha": "1cc9fa886d28908270df4794e64536d4cb1948e2",
+  "authoritative_remote_head_sha": "1693e2c0f39cb1276e5d44b22673b0db89c5f8bf",
+  "erroneous_reported_doc_sha": "1693e2cdce70a316b2ebfae852934bb6a30c5053",
+  "lineage_reconciliation": {
+    "git_lineage_verdict": "VERIFIED_WITH_REPORTING_ERRATA_RECONCILED",
+    "discrepancy_root_cause": "Transcription erratum in prior summary text; actual commit generated and pushed to origin was 1693e2c0f39cb1276e5d44b22673b0db89c5f8bf",
+    "application_sha_is_ancestor": true,
+    "code_diff_between_app_and_doc_commit": "ZERO_LINES (docs only)",
+    "local_tree_sha": "7c591dbef50562a051c2a3fd88ed43a19576d022"
+  },
+  "railway_runtime_identity": {
+    "project_id": "a339a92a-7236-4ac0-9a3a-d7ad440f9690",
+    "environment_id": "7f7e4317-2b76-4a0e-bff1-33227da71e5d",
+    "worker_service_id": "929874a7-bcd9-41b3-9bc7-d5cd7720f7bf",
+    "web_service_id": "6b53ad3f-0d59-4a7f-83dc-8731efe48cf5",
+    "active_worker_deployment": {
+      "id": "e116ba9c-2fc0-47bb-8efa-fe3cac69f99f",
+      "status": "SUCCESS",
+      "runtime_sha": "1693e2c0f39cb1276e5d44b22673b0db89c5f8bf",
+      "code_parity": "100_PERCENT_MATCH_TO_1cc9fa8"
+    },
+    "active_web_deployment": {
+      "id": "0c35ee64-2ea8-468a-b77b-223907bd9f36",
+      "status": "SUCCESS",
+      "runtime_sha": "1693e2c0f39cb1276e5d44b22673b0db89c5f8bf",
+      "code_parity": "100_PERCENT_MATCH_TO_1cc9fa8"
+    }
+  },
+  "scheduler_operational_evidence": {
+    "scheduler_startup": "VERIFIED",
+    "scheduled_backup_execution": "VERIFIED_AUTOMATED",
+    "backup_lock_independence": "VERIFIED",
+    "primary_worker_lock_key": 401007311509093371,
+    "backup_execution_lock_key": 872055449083353674,
+    "latest_r2_recovery_point": "sm-backup-20261014T101809Z-31d5e534",
+    "latest_backup_size_bytes": 34360,
+    "latest_backup_sha256": "7f8bc0a3b89e7ff1990a42767ebff24cff618035ea6f54c9a4fa4349cbef1db4",
+    "freshness_advancement": "VERIFIED",
+    "sustained_scheduling": "NOT_YET_ESTABLISHED"
+  },
+  "containment_evidence_classification": {
+    "gate_intercepts_pre_mutation": true,
+    "database_row_invariance_verified": true,
+    "snapshot_publication_blocking_verified": true,
+    "recovery_mechanism": "SIMULATED_POLICY_RESTORE_VERIFIED_DYNAMIC_DAEMON_RECOVERY_UNOBSERVED"
+  },
+  "credential_exposure_assessment": {
+    "git_tracked_status": "CLEAN",
+    "production_environment_sharing": "NEGATIVE",
+    "rehearsal_activity_status": "ACTIVE",
+    "unauthorized_access_disproval": "NOT_ESTABLISHED",
+    "rotation_readiness": "PLAN_READY_AWAITING_OWNER"
+  },
+  "production_infrastructure_state": {
+    "production_environment_id": "11cad5e1-358e-430e-84fc-189953cff48a",
+    "smart_money_postgres_provisioned": false,
+    "smart_money_worker_provisioned": false,
+    "smart_money_r2_configured": false
+  },
+  "release_gates": {
+    "1_immutable_git_lineage": "PASS",
+    "2_rehearsal_runtime_sha_parity": "PASS",
+    "3_worker_startup_and_exclusive_ownership": "PASS",
+    "4_backup_scheduler_execution": "PASS",
+    "5_backup_integrity": "PASS",
+    "6_backup_restore_readiness": "CONDITIONAL",
+    "7_containment_enforcement": "PASS",
+    "8_operational_worker_suspension_and_resumption": "CONDITIONAL",
+    "9_database_and_snapshot_integrity": "PASS",
+    "10_credential_security": "CONDITIONAL",
+    "11_monitoring_and_alerting": "CONDITIONAL",
+    "12_rollback_readiness": "PASS",
+    "13_production_infrastructure_plan": "CONDITIONAL",
+    "14_production_cost_approval": "NOT_ESTABLISHED",
+    "15_production_backup_policy_approval": "NOT_ESTABLISHED",
+    "16_owner_production_release_authorization": "NOT_GRANTED"
+  },
+  "verdict": "CANDIDATE_006_PRODUCTION_AUTHORIZATION_CONDITIONAL"
+}

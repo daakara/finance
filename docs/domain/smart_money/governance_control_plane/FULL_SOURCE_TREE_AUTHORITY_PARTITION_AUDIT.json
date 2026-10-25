@@ -1,0 +1,45 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/full-source-tree-authority-partition-audit.json",
+  "class_breakdown": {
+    "CONTRACT": 180,
+    "GOVERNED_STATE": 10,
+    "POLICY": 18,
+    "SCHEMA": 33,
+    "SOURCE_CODE": 1154,
+    "STATIC_EXECUTION_FIXTURE": 422,
+    "TEST_SOURCE": 254
+  },
+  "classified_files": 2071,
+  "evidence_authority_files": 0,
+  "evidence_paths_present_in_source_tree": [],
+  "generated_at": "2026-10-12T15:30:00Z",
+  "generator_or_test_ref": "tools/generate_final_verification_and_purification_evidence.py",
+  "historical_predecessor_freeze_audit": {
+    "classified_files": 2078,
+    "evidence_authority_files": 7,
+    "evidence_paths_present_in_source_tree": [
+      "docs/domain/smart_money/governance_control_plane/DECISION_SUCCESSION_CONTRACT_AUDIT.json",
+      "docs/domain/smart_money/governance_control_plane/FINDING_IDENTITY_HASH_BINDING_AUDIT.json",
+      "docs/domain/smart_money/governance_control_plane/FOREIGN_FINDING_TERMINOLOGY_AUDIT.json",
+      "docs/domain/smart_money/governance_control_plane/SEMANTIC_REPAIR_CRITICAL_INVARIANTS.json",
+      "docs/domain/smart_money/governance_control_plane/SEMANTIC_REPAIR_FINAL_ATTESTATION_MANIFEST.json",
+      "docs/domain/smart_money/governance_control_plane/SEMANTIC_REPAIR_SOURCE_FREEZE_REGRESSION.json",
+      "docs/domain/smart_money/governance_control_plane/SOURCE_EVIDENCE_PARTITION_AUDIT.json"
+    ],
+    "predecessor_source_freeze_sha": "18af98ab49be5ac0df958697af161ff487d1bd84",
+    "source_authority_files": 2071,
+    "total_tracked_files": 2078,
+    "verdict": "FAIL"
+  },
+  "input_hashes": {
+    "partition_contract_hash": "dd566bd0c232dadc3369cb7212a4c7b3762364613b12bf79e25dc5a2a91da9a8",
+    "partition_schema_hash": "dae4de258258f26b4f163c9a752f0dc7a59d45cf7b4ecb5d546c6fd33296b2e7"
+  },
+  "source_authority_files": 2071,
+  "source_freeze_sha": "cf62c54badd9b39e7711edbab5e2de9e2e1efd98",
+  "source_tree_oid": "43ae64571ce86c15e67ee72e71a8466730f9857d",
+  "total_tracked_files": 2071,
+  "unclassified_files": 0,
+  "unclassified_paths": [],
+  "verdict": "PASS"
+}

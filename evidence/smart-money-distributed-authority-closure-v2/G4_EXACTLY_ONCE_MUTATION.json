@@ -1,0 +1,8 @@
+{
+  "claim": "Atomic exactly-once mutation and distributed fencing across concurrent runners (Theorem C)",
+  "evidence_class": "DISTRIBUTED_CONCURRENCY",
+  "independent_verifier_result": "BLOCKED per Theorem C and Section 31",
+  "observed_result": "Single-node SQLite transaction and response-loss idempotency verified locally; distributed cross-runner CAS and fencing require external cloud transactional backend.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_distributed_authority_substrate.py -k test_response_loss_idempotent_retry",
+  "status": "BLOCKED"
+}

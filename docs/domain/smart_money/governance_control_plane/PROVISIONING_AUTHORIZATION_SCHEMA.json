@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GovernanceProvisioningAuthorization",
+  "type": "object",
+  "required": [
+    "authorization_id",
+    "authorization_type",
+    "governance_epoch",
+    "decision_hash",
+    "policy_hash",
+    "ledger_head_hash",
+    "registry_hash",
+    "operator_identity",
+    "allowed_actions",
+    "resource_scope",
+    "theorem_scope",
+    "issued_sequence",
+    "issued_at",
+    "expires_at",
+    "single_use",
+    "max_uses",
+    "precondition_hashes",
+    "authorization_hash",
+    "signature_or_ratification_ref"
+  ],
+  "properties": {
+    "authorization_id": {
+      "type": "string",
+      "pattern": "^urn:arx:auth:prov:[a-z0-9\\-_:]+$"
+    },
+    "authorization_type": {
+      "type": "string",
+      "const": "PROVISIONING"
+    },
+    "governance_epoch": {
+      "type": "string",
+      "pattern": "^epoch-gov-[0-9]{3}$"
+    },
+    "decision_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "policy_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "ledger_head_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "registry_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "operator_identity": {
+      "type": "string",
+      "pattern": "^urn:arx:identity:[a-z0-9\\-_:]+$"
+    },
+    "allowed_actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "resource_scope": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "theorem_scope": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "enum": ["A", "B", "C", "D"]
+      }
+    },
+    "issued_sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "single_use": {
+      "type": "boolean"
+    },
+    "max_uses": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "precondition_hashes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      }
+    },
+    "authorization_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "signature_or_ratification_ref": {
+      "type": "string",
+      "pattern": "^urn:arx:(ratification|sig):[a-z0-9\\-_:]+$"
+    }
+  },
+  "additionalProperties": false
+}

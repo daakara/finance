@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Gate3ClaimStateMachine",
+  "description": "Formal state machine specification for Gate-3 claim lifecycle, enforcing single-winner CAS semantics, atomic lease expiry, and terminal claim immutability (Theorem C, FND-ARCH-007, Hard Blockers B & C).",
+  "version": "1.0.0",
+  "states": [
+    {
+      "name": "UNCLAIMED",
+      "description": "Initial state for an authorization before any runner has claimed an execution lease.",
+      "is_terminal": false
+    },
+    {
+      "name": "CLAIMED_PENDING_COMMIT",
+      "description": "An active runner holds a time-bounded lease to execute and anchor the Gate-3 authorization.",
+      "is_terminal": false
+    },
+    {
+      "name": "COMMITTED",
+      "description": "Terminal immutable state indicating successful atomic commit and final execution consumption. No further transitions permitted.",
+      "is_terminal": true
+    },
+    {
+      "name": "LEASE_EXPIRED_RECOVERABLE",
+      "description": "The claiming runner failed or timed out before committing. The authorization is safely reclaimable by subsequent runs.",
+      "is_terminal": false
+    },
+    {
+      "name": "ABORTED_RELEASED",
+      "description": "The claiming runner aborted or rolled back in-flight execution. The authorization is safely reclaimable by subsequent runs.",
+      "is_terminal": false
+    }
+  ],
+  "permitted_transitions": [
+    {
+      "from": "UNCLAIMED",
+      "to": "CLAIMED_PENDING_COMMIT",
+      "trigger": "claim_authorization_cas",
+      "guard": "Epoch generation and fencing token match; no existing COMMITTED or active CLAIMED_PENDING_COMMIT claim."
+    },
+    {
+      "from": "CLAIMED_PENDING_COMMIT",
+      "to": "COMMITTED",
+      "trigger": "commit_claim_atomic",
+      "guard": "Atomic CAS: claiming_run_id matches, state is CLAIMED_PENDING_COMMIT, and lease_expires_at_utc > now_utc (rowcount == 1)."
+    },
+    {
+      "from": "CLAIMED_PENDING_COMMIT",
+      "to": "LEASE_EXPIRED_RECOVERABLE",
+      "trigger": "recover_expired_claims",
+      "guard": "now_utc >= lease_expires_at_utc and state is CLAIMED_PENDING_COMMIT."
+    },
+    {
+      "from": "CLAIMED_PENDING_COMMIT",
+      "to": "ABORTED_RELEASED",
+      "trigger": "rollback_claim",
+      "guard": "claiming_run_id matches and state is CLAIMED_PENDING_COMMIT."
+    },
+    {
+      "from": "LEASE_EXPIRED_RECOVERABLE",
+      "to": "CLAIMED_PENDING_COMMIT",
+      "trigger": "claim_authorization_cas",
+      "guard": "Fresh runner claims authorization; lease has expired; epoch advances generation."
+    },
+    {
+      "from": "ABORTED_RELEASED",
+      "to": "CLAIMED_PENDING_COMMIT",
+      "trigger": "claim_authorization_cas",
+      "guard": "Fresh runner claims authorization; prior runner released claim; epoch advances generation."
+    }
+  ],
+  "forbidden_transitions": [
+    {
+      "from": "COMMITTED",
+      "to": "ABORTED_RELEASED",
+      "violation": "COMMITTED_TO_ABORTED_RELEASED_VIOLATION",
+      "rationale": "COMMITTED state is strictly immutable and cannot be rolled back or aborted."
+    },
+    {
+      "from": "COMMITTED",
+      "to": "LEASE_EXPIRED_RECOVERABLE",
+      "violation": "COMMITTED_TO_LEASE_EXPIRED_VIOLATION",
+      "rationale": "COMMITTED state cannot expire or be recovered."
+    },
+    {
+      "from": "COMMITTED",
+      "to": "CLAIMED_PENDING_COMMIT",
+      "violation": "COMMITTED_TO_CLAIMED_VIOLATION",
+      "rationale": "COMMITTED state cannot be reclaimed or overwritten."
+    },
+    {
+      "from": "LEASE_EXPIRED_RECOVERABLE",
+      "to": "COMMITTED",
+      "violation": "EXPIRED_OWNER_COMMIT_VIOLATION",
+      "rationale": "Expired owner cannot commit without obtaining a fresh valid lease via claim_authorization_cas."
+    },
+    {
+      "from": "ABORTED_RELEASED",
+      "to": "COMMITTED",
+      "violation": "ABORTED_OWNER_COMMIT_VIOLATION",
+      "rationale": "Aborted owner cannot commit without obtaining a fresh valid lease via claim_authorization_cas."
+    },
+    {
+      "from": "UNCLAIMED",
+      "to": "COMMITTED",
+      "violation": "UNCLAIMED_DIRECT_COMMIT_VIOLATION",
+      "rationale": "Authorizations cannot be directly committed without acquiring a lease in CLAIMED_PENDING_COMMIT."
+    }
+  ],
+  "invariants": {
+    "COMMITTED_TO_ABORTED_RELEASED": 0,
+    "COMMITTED_TO_LEASE_EXPIRED_RECOVERABLE": 0,
+    "COMMITTED_TO_CLAIMED_PENDING_COMMIT": 0,
+    "EXPIRED_OWNER_COMMIT_ATTEMPTS_ACCEPTED": 0,
+    "ATOMIC_CAS_ROWCOUNT_REQUIRED": 1,
+    "TERMINAL_STATE_MUTABILITY": "IMMUTABLE"
+  }
+}

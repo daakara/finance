@@ -1,0 +1,187 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/external-authority-invariants.json",
+  "registry_version": "1.0.0",
+  "generated_at_utc": "2026-10-12T00:55:00Z",
+  "invariants": [
+    {
+      "id": "INV-EXT-001",
+      "theorem": "A",
+      "statement": "Remote default branch main must be protected by remote branch protection rulesets enforcing pull request reviews, status checks, and deletion/force-push prevention.",
+      "scope": "EXTERNAL",
+      "proof_requirement": "GitHub API query against /branches/main/protection and /rulesets returning active enforcement configuration.",
+      "negative_control": "Direct git push to origin/main rejected by remote pre-receive hook or branch rule.",
+      "requalification_triggers": ["workflow_change", "release_sha_change", "github_action_dependency_change"]
+    },
+    {
+      "id": "INV-EXT-002",
+      "theorem": "A",
+      "statement": "Every qualifying release must be bound to an immutable Git commit SHA witnessed by an external transparency log root.",
+      "scope": "EXTERNAL",
+      "proof_requirement": "Rekor transparency log entry matching the release commit SHA and cryptographic signature.",
+      "negative_control": "Unwitnessed release SHA rejected during pre-commit verification.",
+      "requalification_triggers": ["release_sha_change", "issuer_key_rotation"]
+    },
+    {
+      "id": "INV-EXT-003",
+      "theorem": "CROSS_AUTHORITY",
+      "statement": "The Gate-3 consumer workflow cannot self-authorize and must not have permissions to mint, sign, overwrite, supersede, or revoke its own authorization.",
+      "scope": "ARCHITECTURE",
+      "proof_requirement": "Cloud IAM role policy validation verifying consumer has zero kms:Sign permissions and only read/verify access.",
+      "negative_control": "Runner attempting to self-issue Gate-3 authorization rejected with ConsumerCannotSelfAuthorizeError.",
+      "requalification_triggers": ["iam_policy_change", "workflow_change", "gate3_scope_change"]
+    },
+    {
+      "id": "INV-EXT-004",
+      "theorem": "B",
+      "statement": "Gate-3 authorizations must possess single-use semantics; once claimed, an authorization cannot be claimed again or replayed.",
+      "scope": "EXTERNAL",
+      "proof_requirement": "Linearizable CAS claim in state backend transitioning voucher status from ACTIVE to CLAIMED.",
+      "negative_control": "Duplicate claim attempt returns HTTP 409 Conflict and Gate3AlreadyConsumedError.",
+      "requalification_triggers": ["transaction_protocol_change", "gate3_scope_change"]
+    },
+    {
+      "id": "INV-EXT-005",
+      "theorem": "B",
+      "statement": "An authorization voucher superseded by a higher sequence number within scope cannot be consumed.",
+      "scope": "ARCHITECTURE",
+      "proof_requirement": "CAS precondition verifying voucher sequence number equals the maximum active sequence in scope.",
+      "negative_control": "Consuming superseded voucher rejected with SupersededGate3AuthorizationError.",
+      "requalification_triggers": ["gate3_scope_change", "protocol_version_change"]
+    },
+    {
+      "id": "INV-EXT-006",
+      "theorem": "CROSS_AUTHORITY",
+      "statement": "A stale runner presenting an outdated fencing token cannot mutate the latest global state head.",
+      "scope": "ARCHITECTURE",
+      "proof_requirement": "Conditional write condition asserting fencing_token > current_committed_fencing_token.",
+      "negative_control": "Stale fencing token write rejected with StaleWriterFencingError.",
+      "requalification_triggers": ["transaction_protocol_change", "state_schema_change"]
+    },
+    {
+      "id": "INV-EXT-007",
+      "theorem": "CROSS_AUTHORITY",
+      "statement": "A second genesis cannot occur while an authoritative epoch head already exists in the state backend.",
+      "scope": "ARCHITECTURE",
+      "proof_requirement": "Genesis insertion condition asserting attribute_not_exists(epoch_id).",
+      "negative_control": "Second genesis attempt raises SecondGenesisAttemptError and forces TERMINAL_HOLD.",
+      "requalification_triggers": ["state_schema_change", "state_backend_provider_change"]
+    },
+    {
+      "id": "INV-EXT-008",
+      "theorem": "C",
+      "statement": "An accession admission and its corresponding denominator increment must execute within an atomic, indivisible transaction.",
+      "scope": "ARCHITECTURE",
+      "proof_requirement": "ACID transactional write guarantees both admission row insertion and counter increment commit together.",
+      "negative_control": "Simulated database write error rolls back entire transaction leaving denominator unchanged.",
+      "requalification_triggers": ["state_schema_change", "transaction_protocol_change"]
+    },
+    {
+      "id": "INV-EXT-009",
+      "theorem": "C",
+      "statement": "Duplicate execution of the same logical operation following network response loss must be strictly idempotent.",
+      "scope": "ARCHITECTURE",
+      "proof_requirement": "State backend keys transactions by deterministic idempotency key and returns existing commit without re-incrementing counter.",
+      "negative_control": "Retried commit returns COMMITTED_PREVIOUSLY with zero delta to denominator.",
+      "requalification_triggers": ["transaction_protocol_change"]
+    },
+    {
+      "id": "INV-EXT-010",
+      "theorem": "CROSS_AUTHORITY",
+      "statement": "The authoritative natural denominator counter must exactly equal the count of valid admitted natural accessions.",
+      "scope": "ARCHITECTURE",
+      "proof_requirement": "Audit check asserts stored_denominator == count(admissions where status == ADMITTED).",
+      "negative_control": "Divergence between stored and derived counter triggers immediate TERMINAL_HOLD.",
+      "requalification_triggers": ["state_schema_change", "disaster_recovery_event"]
+    },
+    {
+      "id": "INV-EXT-011",
+      "theorem": "D",
+      "statement": "Raw SEC evidence octets must be persisted verbatim without modification and protected by WORM Compliance Mode locks.",
+      "scope": "EXTERNAL",
+      "proof_requirement": "S3/GCS Object Lock in Compliance Mode with minimum 7-year retention period active.",
+      "negative_control": "Attempted DeleteObject or DeleteObjectVersion returns HTTP 403 Forbidden.",
+      "requalification_triggers": ["retention_policy_change", "evidence_store_provider_change"]
+    },
+    {
+      "id": "INV-EXT-012",
+      "theorem": "CROSS_AUTHORITY",
+      "statement": "An admission record cannot reference non-existent, un-anchored, or un-verified raw evidence.",
+      "scope": "ARCHITECTURE",
+      "proof_requirement": "Atomic commit precondition asserts existence and SHA-256 match of raw evidence object in WORM storage.",
+      "negative_control": "Commit referencing missing object ID rejected with MissingEvidenceObjectError.",
+      "requalification_triggers": ["transaction_protocol_change", "evidence_metadata_schema_change"]
+    },
+    {
+      "id": "INV-EXT-013",
+      "theorem": "CROSS_AUTHORITY",
+      "statement": "Raw evidence cannot be silently rewritten or altered; content identity is strictly self-attesting via SHA-256.",
+      "scope": "ARCHITECTURE",
+      "proof_requirement": "Independent replay verification recalculates SHA-256 of stored bytes against custody tuple.",
+      "negative_control": "Tampered byte payload triggers EvidenceTamperDetectedError and TERMINAL_HOLD.",
+      "requalification_triggers": ["evidence_store_provider_change"]
+    },
+    {
+      "id": "INV-EXT-014",
+      "theorem": "D",
+      "statement": "Downstream processing, parsing, or candidate classification failures must quarantine the evidence without deleting or rewriting the raw bytes.",
+      "scope": "ARCHITECTURE",
+      "proof_requirement": "Failure records status CAPTURED_QUARANTINED while preserving raw evidence object in WORM storage.",
+      "negative_control": "Quarantined record produces zero increment to natural denominator.",
+      "requalification_triggers": ["evidence_metadata_schema_change"]
+    },
+    {
+      "id": "INV-EXT-015",
+      "theorem": "E",
+      "statement": "Qualification test executions must execute in an isolated namespace and must never mutate natural production data or the natural denominator.",
+      "scope": "LIVE_QUALIFICATION",
+      "proof_requirement": "Qualification writes restricted to partition 'QUALIFICATION'; natural denominator delta is asserted to be zero.",
+      "negative_control": "Qualification execution attempting write to 'NATURAL' partition rejected by schema constraint.",
+      "requalification_triggers": ["workflow_change", "gate3_scope_change"]
+    },
+    {
+      "id": "INV-EXT-016",
+      "theorem": "E",
+      "statement": "A fresh independent runner with zero local cache or database must be capable of forensically reconstructing the state head solely from external authorities.",
+      "scope": "LIVE_QUALIFICATION",
+      "proof_requirement": "Run B executes in clean VM and verifies state head, Gate-3 claim, and evidence hash without prior runner disk.",
+      "negative_control": "Runner failing to rehydrate external state aborts qualification with RehydrationFailedError.",
+      "requalification_triggers": ["FULL_A_E_REQUALIFICATION"]
+    },
+    {
+      "id": "INV-EXT-017",
+      "theorem": "E",
+      "statement": "Under concurrent contender execution, exactly one runner may claim a voucher and commit an admission.",
+      "scope": "LIVE_QUALIFICATION",
+      "proof_requirement": "Simultaneous runner contention test proves exactly one 200 OK and one 409 Conflict.",
+      "negative_control": "Dual winner condition detected trips invariant alarm and aborts qualification.",
+      "requalification_triggers": ["FULL_A_E_REQUALIFICATION"]
+    },
+    {
+      "id": "INV-EXT-018",
+      "theorem": "CROSS_AUTHORITY",
+      "statement": "Emergency break-glass procedures may halt execution globally but may never authorize execution, edit state, or delete evidence.",
+      "scope": "ARCHITECTURE",
+      "proof_requirement": "Break-glass implementation sets state status to TERMINAL_HOLD and has zero write paths to admission records.",
+      "negative_control": "Break-glass attempt to increment denominator or mint authorization rejected.",
+      "requalification_triggers": ["break_glass_event", "iam_policy_change"]
+    },
+    {
+      "id": "INV-EXT-019",
+      "theorem": "CROSS_AUTHORITY",
+      "statement": "System runners must reject execution if system clock skew relative to backend clock exceeds 5000 milliseconds.",
+      "scope": "ARCHITECTURE",
+      "proof_requirement": "Pre-commit clock check verifies |runner_time - backend_time| <= 5000ms.",
+      "negative_control": "Simulated 6-second clock skew causes immediate abort with ClockSkewExceededError.",
+      "requalification_triggers": ["runtime_config_change"]
+    },
+    {
+      "id": "INV-EXT-020",
+      "theorem": "CROSS_AUTHORITY",
+      "statement": "Downgrade of protocol versions is strictly prohibited; runners executing older protocols cannot interact with newer state backends.",
+      "scope": "ARCHITECTURE",
+      "proof_requirement": "State backend asserts runner_protocol_version >= backend_protocol_version.",
+      "negative_control": "Outdated protocol client rejected with ProtocolVersionMismatchError.",
+      "requalification_triggers": ["protocol_version_change"]
+    }
+  ]
+}

@@ -61,7 +61,7 @@ export default function SmartMoneyDetailModal({
           <div>
             <div className="flex items-center space-x-2">
               <span className="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-bold uppercase tracking-wider">
-                {congressItem ? "🏛️ Capitol Hill STOCK Act Disclosure" : "⚡ FINRA ATS & Institutional Options Sweep"}
+                {congressItem ? "🏛️ Capitol Hill STOCK Act Disclosure" : "⚡ Institutional Options Sweep (Curated Case Study)"}
               </span>
               <span className="text-xs text-slate-500 font-mono">
                 {congressItem ? `Chamber: ${congressItem.chamber}` : `Time: ${optionsItem?.time} EST`}
@@ -249,8 +249,8 @@ export default function SmartMoneyDetailModal({
 
             {/* Regulatory Transparency Footprint */}
             <div className="bg-[#070a10] p-3 rounded-lg border border-[#162030] flex items-center justify-between text-[11px] text-slate-400">
-              <span>Regulatory Source: <strong>FINRA ATS Weekly Reports & Public Regulatory Records</strong></span>
-              <span className="text-cyan-400 font-semibold text-[10px]">✓ Curated Regulatory Case Study</span>
+              <span>Regulatory Source: <strong>Curated Options &amp; Regulatory Archive (Not Live Data)</strong></span>
+              <span className="text-cyan-400 font-semibold text-[10px]">✓ Curated Case Study</span>
             </div>
           </div>
         )}

@@ -1,0 +1,31 @@
+{
+  "finding_id": "FND-ARCH-008",
+  "immutable_subject": "Gate3 claim contention was incorrectly mapped to semantic evidence quarantine.",
+  "observed_failure": "When two concurrent runners attempted to claim the same Gate3 claim ID or anchor slot, contention was handled by raising an error that caused evidence to be quarantined as malformed or fraudulent.",
+  "affected_components": [
+    "analyst_dashboard/smart_money/public_availability/transactional_state_backend.py"
+  ],
+  "canonical_invariant_violated": "CONTENTION_SEMANTIC_SEPARATION: Concurrency contention (lock/lease conflicts) is transient and retryable; only genuine semantic invalidity or evidence tampering warrants quarantine.",
+  "root_cause": "Generic exception handling mapped all claim assertion failures to EvidenceSemanticQuarantineError.",
+  "contributing_causes": [
+    "Single error handling path for both concurrency collisions and schema validation failures"
+  ],
+  "existing_behavior": "Lock contention maps to QUARANTINED status.",
+  "required_behavior": "Contention raises Gate3ContentionError with retry backoff A4_ANCHOR_RETRY_WAIT; quarantine is reserved for EvidenceSemanticQuarantineError.",
+  "implementation_scope": [
+    "Define Gate3ContentionError distinct from EvidenceSemanticQuarantineError",
+    "Ensure contention returns retryable status rather than terminal quarantine"
+  ],
+  "contracts_affected": [],
+  "schemas_affected": [],
+  "policies_affected": [],
+  "tests_affected": [
+    "tests/test_smart_money_architecture_remediation.py"
+  ],
+  "non_target_findings_touched": [],
+  "cross_layer_dependency": false,
+  "planned_fix": "Separate Gate3ContentionError from semantic quarantine exceptions.",
+  "planned_negative_control": "Inject concurrent claim collision; verify Gate3ContentionError is raised and record is NOT quarantined.",
+  "planned_causal_ablation": "Revert to generic quarantine on collision; verify test fails contention separation invariant.",
+  "status": "ANALYZED_PENDING_IMPLEMENTATION"
+}

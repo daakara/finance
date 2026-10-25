@@ -1,0 +1,33 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/per-finding-remediation-audit.json",
+  "finding_id": "FND-ARCH-014",
+  "rationale": "Transaction log established as authoritative primary with verify_log_consensus_coherence anti-entropy and ConsensusLogDivergenceError fail-closed trigger.",
+  "lifecycle_transition": {
+    "from": "OPEN",
+    "to": "VERIFIED_RESOLVED"
+  },
+  "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-014:v1",
+  "verification_evidence": "urn:arx:evidence:verification:fnd-arch-014:v1",
+  "tests_verified": [
+    {
+      "finding_id": "FND-ARCH-014",
+      "test_files": [
+        "tests/test_smart_money_architecture_remediation.py"
+      ],
+      "test_ids": [
+        "test_fnd_arch_014_log_consensus_coherence_positive"
+      ],
+      "negative_controls": [
+        "test_fnd_arch_014_divergence_negative_control"
+      ],
+      "mutation_controls": [
+        "test_fnd_arch_014_undetected_divergence_prevention"
+      ],
+      "expected_invariants": [
+        "ConsensusLogDivergenceError on log gap or hash break; fail-closed"
+      ]
+    }
+  ],
+  "causal_proof": "CONFIRMED",
+  "verdict": "PASS"
+}

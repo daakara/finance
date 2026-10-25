@@ -1,0 +1,20 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/decision-baseline-authority-role-audit.json",
+  "audit_id": "urn:arx:audit:decision-baseline-authority-role:2026-10-12",
+  "generated_at": "2026-10-12T18:15:00Z",
+  "source_freeze_sha": "4aa35839dc0f5d2496d4a13c80e6c72cdee53eda",
+  "source_tree_oid": "794300d2ac694bf5f1c182f274b67fc037962eb5",
+  "baseline_role_evaluation": {
+    "BASELINE_V2_ROLE": "DERIVED_REPORT",
+    "BASELINE_SELF_ATTESTATION_CYCLE": false,
+    "semantic_direction": "CanonicalDecisionCommitAuthority commits decision -> state journaled to CANONICAL_DECISION_CHAIN_STATE.json -> Baseline V3 derives from authoritative journal",
+    "prohibited_direction": "Baseline artifact declares decision CURRENT without underlying transition authority"
+  },
+  "prior_evidence_correction": {
+    "prior_gate_claim": "Wrong Predecessor Hash: Rejected",
+    "prior_gate_actual_mechanics": "Snapshot constructor evaluate_canonical() accepted arbitrary previous_decision_hash into the candidate object; mismatch was only detected during downstream comparison.",
+    "PRIOR_NEGATIVE_CONTROL_CLASSIFICATION": "CORRECTED",
+    "distinction": "DETECTED vs REJECTED: Constructor previously DETECTED mismatch post-hoc. Remediated commit boundary now REJECTS wrong predecessor fail-closed before commitment."
+  },
+  "verdict": "ROLE_REPAIRED_AND_CIRCULARITY_ELIMINATED"
+}

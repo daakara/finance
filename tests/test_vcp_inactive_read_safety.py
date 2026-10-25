@@ -61,6 +61,9 @@ def isolated_vcp_environment(monkeypatch):
     Provisions an isolated SQLite snapshot store and mounts it onto screener_module.vcp_scanner_runner.
     Instruments spies across execution, coordination, and publication paths to guarantee 0 side effects.
     """
+    from api.middleware.rate_limiter import in_memory_rate_store
+    in_memory_rate_store.clear()
+
     tmp_dir = tempfile.mkdtemp()
     db_path = os.path.join(tmp_dir, "test_vcp_scanner_store.db")
     store = ScannerSnapshotStore(db_path=db_path)

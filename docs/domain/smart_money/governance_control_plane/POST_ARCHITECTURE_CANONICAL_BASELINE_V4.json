@@ -1,0 +1,75 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/post-architecture-canonical-baseline-v4.json",
+  "baseline_id": "urn:arx:baseline:smart-money:post-architecture:v4",
+  "candidate": {
+    "candidate_id": "CANDIDATE_GENERATION_004",
+    "raw_identity_state": "ESTABLISHED",
+    "raw_sha256": "297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90",
+    "semantic_closure_state": "NOT_ESTABLISHED"
+  },
+  "decision_chain": {
+    "architecture_model": "MODEL_B",
+    "authority_boundary_type": "CanonicalDecisionCommitAuthority",
+    "authority_durable_state": "docs/domain/smart_money/governance_control_plane/CANONICAL_DECISION_CHAIN_STATE.json",
+    "count_current_decisions": 1,
+    "current_hash": "be701fe0d0a56836c9c9cf4f541037e6ae325f4312d36401528665418e8ae62d",
+    "current_id": "urn:arx:decision:epoch-gov-002:4:58cea4ca4b41",
+    "current_status": "CURRENT",
+    "current_unique": true,
+    "predecessor_hash": "205fe158e61fd1a0d2da8589f9d07619c8343c45cf43c4a4f7fbafb81a2f0b64",
+    "predecessor_id": "urn:arx:decision:epoch-gov-002:3:82e99bf8c82f",
+    "predecessor_link_valid": true,
+    "predecessor_status": "SUPERSEDED"
+  },
+  "dependency": {
+    "policy_hash": "d82e9fb9970a4040c9291d23ed019b89848f1f97a3c57a3375c34971ab40b7df",
+    "resolution_hash": "70b2f0012048ba9a24e2a276eed8b33d07c37c1141bdbb70adde9861634ba9a4",
+    "target_status_semantics": "ELIGIBILITY_SATISFIED_DISTINCT_FROM_GOVERNANCE_OUTCOME"
+  },
+  "empirical": {
+    "learning_claim": "NOT_AUTHORIZED",
+    "model_tuning": "FROZEN",
+    "production_readiness": "NOT_AUTHORIZED"
+  },
+  "evidence": {
+    "record_parity_verdict": "PASS"
+  },
+  "findings": {
+    "active_architecture": 0,
+    "active_blocker_ids": [
+      "FND-ARCH-002",
+      "FND-ARCH-003",
+      "FND-ARCH-005",
+      "FND-ARCH-006",
+      "FND-ARCH-009"
+    ],
+    "active_blockers": 5,
+    "active_non_architecture": 5,
+    "admitted": 14,
+    "discovered_registered": 1,
+    "duplicates": 2,
+    "historical_registered": 15,
+    "registered": 16
+  },
+  "generated_at": "2026-10-12T20:30:00Z",
+  "governance": {
+    "architecture_closure_status": "CLOSED",
+    "global_provisioning_readiness": "BLOCKED",
+    "provisioning_authorization_status": "NOT_ISSUABLE",
+    "runtime_action": "NONE"
+  },
+  "observation": {
+    "authorization": "NOT_AUTHORIZED",
+    "natural_denominator": 0,
+    "observer_arming": "NOT_AUTHORIZED"
+  },
+  "resolution_authority": {
+    "lineage_verdict": "PASS",
+    "provenance_contract_verdict": "PASS"
+  },
+  "source": {
+    "source_freeze_sha": "4aa35839dc0f5d2496d4a13c80e6c72cdee53eda",
+    "source_tree_oid": "794300d2ac694bf5f1c182f274b67fc037962eb5"
+  },
+  "verdict": "ESTABLISHED"
+}

@@ -141,16 +141,45 @@ export async function fetchFredMacroRegime(): Promise<FredMacroData> {
   return CURRENT_FRED_MACRO_SNAPSHOT;
 }
 
-export async function fetchSecForm4Insiders(symbol?: string): Promise<SecForm4Trade[]> {
-  if (!symbol) return [];
+export type SecFilingsStatus =
+  | "AVAILABLE_WITH_RESULTS"
+  | "AVAILABLE_NO_RESULTS"
+  | "UPSTREAM_RATE_LIMITED"
+  | "UPSTREAM_TIMEOUT"
+  | "UPSTREAM_SERVER_ERROR"
+  | "UPSTREAM_NOT_FOUND"
+  | "STRUCTURALLY_INVALID"
+  | "TRANSPORT_INCOMPLETE"
+  | "CONFIGURATION_BLOCKED"
+  | "UNKNOWN_FAIL_CLOSED";
+
+export interface SecFilingsResult {
+  status: SecFilingsStatus;
+  items: SecForm4Trade[] | null;
+  message?: string | null;
+}
+
+export async function fetchSecForm4Insiders(symbol?: string): Promise<SecFilingsResult> {
+  if (!symbol) {
+    return {
+      status: "AVAILABLE_NO_RESULTS",
+      items: [],
+      message: "No symbol provided",
+    };
+  }
   const symClean = symbol.toUpperCase().replace("-USD", "");
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
   try {
     const res = await fetch(`${API_BASE}/smart-money/sec-filings/${symClean}`);
     if (res.ok) {
       const data = await res.json();
-      if (data && data.filings && Array.isArray(data.filings) && data.filings.length > 0) {
-        return data.filings.map((f: any) => ({
+      const status: SecFilingsStatus = (data && data.status)
+        ? (data.status as SecFilingsStatus)
+        : (data && Array.isArray(data.filings) && data.filings.length > 0 ? "AVAILABLE_WITH_RESULTS" : "AVAILABLE_NO_RESULTS");
+
+      if (status === "AVAILABLE_WITH_RESULTS") {
+        const rawList = Array.isArray(data.items) ? data.items : (Array.isArray(data.filings) ? data.filings : []);
+        const mapped: SecForm4Trade[] = rawList.map((f: any) => ({
           ticker: symClean,
           companyName: `${symClean} SEC Reporting Issuer`,
           insiderName: f.description || `Form ${f.form} Regulatory Filing`,
@@ -163,10 +192,47 @@ export async function fetchSecForm4Insiders(symbol?: string): Promise<SecForm4Tr
           secEdgarUrl: f.sec_url,
           isSignificantBuy: false,
         }));
+        return {
+          status: "AVAILABLE_WITH_RESULTS",
+          items: mapped,
+          message: data.message || null,
+        };
       }
+
+      if (status === "AVAILABLE_NO_RESULTS") {
+        return {
+          status: "AVAILABLE_NO_RESULTS",
+          items: [],
+          message: data.message || "0 filings match criteria",
+        };
+      }
+
+      // Explicit upstream failure/unavailable states preserve items: null
+      return {
+        status,
+        items: null,
+        message: data.message || null,
+      };
+    } else {
+      const status: SecFilingsStatus = res.status === 429
+        ? "UPSTREAM_RATE_LIMITED"
+        : res.status === 404
+        ? "UPSTREAM_NOT_FOUND"
+        : res.status >= 500
+        ? "UPSTREAM_SERVER_ERROR"
+        : "UNKNOWN_FAIL_CLOSED";
+      return {
+        status,
+        items: null,
+        message: `HTTP error ${res.status}`,
+      };
     }
-  } catch (err) {
+  } catch (err: any) {
     console.warn("Live SEC EDGAR filings fetch failed:", err);
+    return {
+      status: "TRANSPORT_INCOMPLETE",
+      items: null,
+      message: err?.message || "Transport connection failed",
+    };
   }
-  return [];
 }

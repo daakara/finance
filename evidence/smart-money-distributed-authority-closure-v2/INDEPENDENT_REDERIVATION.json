@@ -1,0 +1,8 @@
+{
+  "claim": "Independent rederivation verifies baseline hashes and Candidate 004 firewall without calling generator verdict logic",
+  "evidence_class": "DESIGN_AND_UNIT_TEST",
+  "independent_verifier_result": "PASS",
+  "observed_result": "Candidate 004 diff = 0 lines; head commit sha verified; natural denominator = 0.",
+  "rederivation_command": "git diff 63131b9604707ed9c3820e3afd3e9d47d1914397 -- tests/test_sprint_3_candidate_004_epoch_and_migration.py; git rev-parse HEAD",
+  "status": "PASS"
+}

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/conditional-dependency-closure-manifest.json",
+  "gate": "SMART_MONEY_CONDITIONAL_DEPENDENCY_PREDICATE_AUTHORITY_CLOSURE_V1",
+  "repository": {
+    "pre_gate_sha": "3df70abc37def3c02ebc163f21f4d8584a2ec9e6",
+    "closure_sha": "1492ace1f26b7330fafc3252b1c8da86b2a803b6",
+    "origin_main_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+    "remote_push_executed": false,
+    "final_worktree_clean": true
+  },
+  "predicate_model": {
+    "result_states": ["TRUE", "FALSE", "UNKNOWN", "CONFLICT"],
+    "dsl_version": "ARX-PREDICATE-DSL-V1",
+    "evaluator_version": "1.0.0",
+    "evaluation_strategy": "CANONICAL_AST_ORDER"
+  },
+  "compile_gate": {
+    "syntax_errors": 0,
+    "type_errors": 0,
+    "cycles": 0,
+    "self_disabling_guards": 0,
+    "undeclared_facts": 0,
+    "non_deterministic_operations": 0,
+    "side_effects": 0
+  },
+  "provenance": {
+    "synthetic_decisive_inputs_accepted": 0,
+    "test_double_decisive_inputs_accepted": 0,
+    "stale_decisive_inputs_accepted": 0,
+    "revoked_decisive_inputs_accepted": 0
+  },
+  "locality": {
+    "unrelated_branch_block_count": 0
+  },
+  "change_control": {
+    "weaker_changes_without_approval": 0,
+    "incomparable_changes_without_approval": 0
+  },
+  "snapshot_binding": {
+    "dependency_policy_hash": "9704f8fe8a42b3c300d13b77f78f02e4f1f9a61b03257bda28546fab99b84d57",
+    "predicate_set_hash": "434799d4f01b99a3c11c8beae90b22f379d4635dead6e50f901c9911e04029a0",
+    "predicate_context_hash": "aba4ca14009c23fc50b52463da42c886ce327c25db49f16b2262605371ce573e",
+    "dependency_resolution_hash": "6f778a93474895555adc75118ef2c75937f8c94140179a879994d46605e91ee4"
+  },
+  "authorization": {
+    "unresolved_guard_authorizations_issued": 0,
+    "non_authoritative_guard_authorizations_issued": 0
+  },
+  "candidate004": {
+    "freeze_file_sha256": "297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90",
+    "semantic_closure_hash": "53b6372349cfdb1046a4ddbd678f628bba28c7778cef2fe381e02f9097f7a9e6",
+    "diff": 0
+  },
+  "architecture_closure_status": "OPEN",
+  "remediation_status": "REQUIRED",
+  "global_provisioning_readiness": "BLOCKED",
+  "provisioning_authorization_status": "NOT_ISSUABLE",
+  "runtime_action": "NONE",
+  "natural_denominator": 0,
+  "natural_observer_arming": "NOT_AUTHORIZED",
+  "production_readiness": "NOT_AUTHORIZED",
+  "unresolved_predicate_design_questions": 0,
+  "unsupported_pass_claims": 0
+}

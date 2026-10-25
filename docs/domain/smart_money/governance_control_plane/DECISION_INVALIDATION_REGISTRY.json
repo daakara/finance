@@ -1,0 +1,47 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/decision-invalidation-registry.json",
+  "version": "1.0.0",
+  "registered_at": "2026-10-12T12:00:00Z",
+  "total_invalidated_decisions": 3,
+  "invalidation_invariants": {
+    "PRE_INTEGRATION_SNAPSHOT_ACCEPTED_AS_CURRENT_CANONICAL": 0,
+    "PRE_INTEGRATION_AUTHORIZATION_EXERCISABLE": 0,
+    "DUPLICATE_DECISION_SEQUENCE_WITH_DIFFERENT_HASH": 0,
+    "REUSED_INVALIDATED_SEQUENCE_SLOT": 0
+  },
+  "invalidated_decisions": [
+    {
+      "decision_hash": "3dc851a90e213da557a79027fc4b3a07287713bc84d88effcf92dadd0b539e41",
+      "epoch": "epoch-gov-001",
+      "sequence": 1,
+      "reason_code": "BOOTSTRAP_PRE_INTEGRATION_CONTAMINATION",
+      "reason_description": "Legacy imperative evaluation lacking declarative DAG integration.",
+      "invalidation_authority": "urn:arx:authority:governance-control-plane:v1",
+      "invalidated_at": "2026-10-12T10:00:00Z",
+      "successor_ref": "urn:arx:decision:epoch-gov-002:1:c70c304cc779",
+      "invalidation_hash": "8322039f066ee583c0864665fc84c4b18b07fa14e7b854462116142e0270d20e"
+    },
+    {
+      "decision_hash": "2563e663a7717bbb411229ea0bbab3ad0da58d3ff8a100bce14099132e096254",
+      "epoch": "epoch-gov-001",
+      "sequence": 1,
+      "reason_code": "CALLER_INJECTED_CANONICAL_CONTEXT_CONTAMINATION",
+      "reason_description": "Caller-constructed in-memory canonical context lacking git tree blob recomputation.",
+      "invalidation_authority": "urn:arx:authority:governance-control-plane:v1",
+      "invalidated_at": "2026-10-12T10:00:00Z",
+      "successor_ref": "urn:arx:decision:epoch-gov-002:1:c70c304cc779",
+      "invalidation_hash": "ed7232cd2efa0bb470834a57775813c05c2744f532755e139fb3182087d4cc46"
+    },
+    {
+      "decision_hash": "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f",
+      "epoch": "epoch-gov-002",
+      "sequence": 1,
+      "reason_code": "MUTATED_FINDING_IDENTITY_AND_CLAIM_LATTICE_CONTAMINATION",
+      "reason_description": "Derived from mutated finding titles, scalar claim lattice conflation, and false operator ratification labels.",
+      "invalidation_authority": "urn:arx:authority:governance-control-plane:v1",
+      "invalidated_at": "2026-10-12T12:00:00Z",
+      "successor_ref": "urn:arx:decision:epoch-gov-002:2:successor",
+      "invalidation_hash": "2fe4a476d1a617a08f5e9db7a80b02c69dd7287c28c2a469ba61487ab8b97a95"
+    }
+  ]
+}

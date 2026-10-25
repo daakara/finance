@@ -1,0 +1,27 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/detached-source-evidence-partition-audit.json",
+  "audit_id": "urn:arx:audit:detached-source-evidence-partition:2026-10-12",
+  "generated_at": "2026-10-12T16:03:25Z",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "detached_worktree": {
+    "worktree_path": ".wt_reconciliation_closure",
+    "detached_worktree_head": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+    "detached_worktree_cwd": "c:\\Users\\akara\\Documents\\Projects\\finance\\.wt_reconciliation_closure",
+    "detached_worktree_clean": true
+  },
+  "partition_invariants": {
+    "evidence_authority_files_in_source": 0,
+    "unclassified_source_files": 0
+  },
+  "governed_regression": {
+    "suites_required": 16,
+    "suites_executed": 16,
+    "tests_collected": 496,
+    "tests_passed": 496,
+    "tests_failed": 0,
+    "tests_skipped": 0,
+    "execution_time_seconds": 79.64
+  },
+  "verdict": "PASS"
+}

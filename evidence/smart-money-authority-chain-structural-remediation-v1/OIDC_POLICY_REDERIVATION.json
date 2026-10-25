@@ -1,0 +1,14 @@
+{
+  "dimensions": {
+    "aud": "sigstore",
+    "iss": "https://token.actions.githubusercontent.com",
+    "ref": "refs/heads/main",
+    "repository": "daakara/finance",
+    "repository_id": "1087399232",
+    "repository_owner": "daakara",
+    "workflow": ".github/workflows/smart_money_rooting.yml"
+  },
+  "expected_sha256": "01dd7702246a9801bc88e0534accce4ad112f87acf22338a21afcda9348b7af7",
+  "policy_id": "SMART_MONEY_STATIC_WORKLOAD_IDENTITY_POLICY_V1",
+  "status": "PASS"
+}

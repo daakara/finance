@@ -1,0 +1,23 @@
+{
+  "audit": "PHASE_QUALITY_AND_EVIDENCE_INTEGRITY_AUDIT_V1",
+  "callee_implementation": {
+    "checks_format_when_dir_none": true,
+    "opens_files_when_dir_none": false,
+    "recomputes_hashes_when_dir_none": false
+  },
+  "caller_inspection": {
+    "call_lines": "316-322",
+    "caller_file": "scripts/run_natural_scheduler.py",
+    "effective_value": null,
+    "readiness_evidence_dir_passed": false
+  },
+  "summary": "The scheduler caller in run_natural_scheduler.py does not pass readiness_evidence_dir. As a result, the code path that opens files and verifies SHA digests on disk is completely bypassed in production.",
+  "target": "validate_gate3_authorization readiness hash resolution",
+  "verdict_metrics": {
+    "READINESS_ARTIFACT_FILES_OPENED": "NO",
+    "READINESS_ARTIFACT_HASHES_RECOMPUTED": "NO",
+    "READINESS_ARTIFACT_PATH_SUPPLIED": "NO",
+    "READINESS_ARTIFACT_RESOLUTION_ON_MAIN_PATH": "FAIL",
+    "READINESS_HASH_FORMAT_VALIDATION": "PASS"
+  }
+}

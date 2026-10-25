@@ -1,0 +1,79 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/canonical-decision-integration-closure-manifest.json",
+  "gate": "SMART_MONEY_CANONICAL_DECISION_INTEGRATION_AND_EVIDENCE_PARITY_REPAIR_V1",
+  "source_freeze_sha": "20582b5d38488f5164c971bc1393d48d7f5eb6ca",
+  "origin_main_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+  "remote_push_executed": false,
+  "final_worktree_clean": true,
+  "candidate004": {
+    "freeze_file_sha256": "297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90",
+    "diff": 0
+  },
+  "canonical_evidence": {
+    "synthetic_records": 0,
+    "test_double_records": 0,
+    "placeholder_hashes": 0,
+    "test_personas": 0,
+    "not_established_handling": "EXPLICIT_NONE_PROVENANCE_NULL_DIGEST"
+  },
+  "finding_registry": {
+    "registered_findings_count": 15,
+    "admitted_findings_count": 13,
+    "duplicate_findings_count": 2,
+    "parity_status": "PASS",
+    "adjudications": {
+      "FND-ARCH-012": "ADMITTED",
+      "FND-ARCH-013": "DUPLICATE_OF_FND_ARCH_007",
+      "FND-ARCH-014": "ADMITTED",
+      "FND-ARCH-015": "DUPLICATE_OF_FND_ARCH_011"
+    }
+  },
+  "dependency_dag_and_logic": {
+    "self_disabling_guards_undetected": 0,
+    "structural_cycles": 0,
+    "target_reference_cycles": 0,
+    "descendant_cycles": 0,
+    "logic_semantics_version": "ARX-PARTIAL-LOGIC-4X4-V1",
+    "logic_semantics_hash": "217465cfe477f3d2939e1948a81e5c1fd648094a788e671b51e85c8d0ec13e7c",
+    "undefined_cells": 0,
+    "multivalued_cells": 0
+  },
+  "canonical_decision_roots": {
+    "decision_hash": "2563e663a7717bbb411229ea0bbab3ad0da58d3ff8a100bce14099132e096254",
+    "evidence_manifest_hash": "c38e78d9ce8ea99a4709cdd44cf41d4fc93345ff3ac78e7b352927d3af28317b",
+    "finding_registry_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+    "dependency_resolution_hash": "adc0f649721a4cd1e981e65405a48a24e5004a10491c96104d473430c0e95d16"
+  },
+  "authorization": {
+    "stale_dependency_authorization_accepted": 0,
+    "stale_evidence_authorization_accepted": 0,
+    "stale_finding_registry_authorization_accepted": 0,
+    "unbound_authorization_accepted": 0
+  },
+  "regression_baseline": {
+    "baseline_suite_count": 12,
+    "current_suite_count": 13,
+    "baseline_test_nodes": 252,
+    "current_test_nodes": 300,
+    "unexplained_deleted_tests": 0,
+    "unexplained_weakened_tests": 0
+  },
+  "legacy_dag_parity": {
+    "parity_pass": true,
+    "mismatches": 0,
+    "canonical_readiness_derivation_authorities": 1,
+    "legacy_readiness_path_can_issue_canonical_decision": false
+  },
+  "governance_state": {
+    "architecture_closure_status": "OPEN",
+    "remediation_status": "REQUIRED",
+    "global_provisioning_readiness": "BLOCKED",
+    "provisioning_authorization_status": "NOT_ISSUABLE",
+    "runtime_action": "NONE",
+    "natural_denominator": 0,
+    "natural_observer_arming": "NOT_AUTHORIZED",
+    "production_readiness": "NOT_AUTHORIZED",
+    "model_tuning": "FROZEN",
+    "learning_claim": "NOT_AUTHORIZED"
+  }
+}

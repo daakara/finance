@@ -1,0 +1,8 @@
+{
+  "claim": "Fencing token prevents stale writers from mutating state after runner suspension",
+  "evidence_class": "DESIGN_AND_UNIT_TEST",
+  "independent_verifier_result": "PASS",
+  "observed_result": "Stale runner write rejected with StaleWriterFencingError when generation/fencing token is superseded.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_distributed_authority_substrate.py -k test_stale_runner_write_fencing_rejection",
+  "status": "PASS"
+}

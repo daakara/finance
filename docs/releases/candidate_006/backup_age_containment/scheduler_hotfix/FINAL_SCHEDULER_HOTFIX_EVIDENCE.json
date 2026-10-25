@@ -1,0 +1,59 @@
+{
+  "contract": "ARX_SMART_MONEY_CANDIDATE_006_SCHEDULER_HOTFIX_V1",
+  "evaluated_at": "2026-10-14T10:17:00Z",
+  "repository": "daakara/finance",
+  "branch": "arx/smart-money-candidate-006-backup-age-containment",
+  "baseline_rehearsal_candidate_sha": "0dd2d8136e157672cdc5f9f645c4bb49f86a6bd0",
+  "deployed_hotfixed_candidate_sha": "1cc9fa886d28908270df4794e64536d4cb1948e2",
+  "deployed_hotfixed_tree_sha": "63c4dfad80b71963f62b9e70fc138269c29d06e5",
+  "railway_project_id": "a339a92a-7236-4ac0-9a3a-d7ad440f9690",
+  "rehearsal_environment_id": "7f7e4317-2b76-4a0e-bff1-33227da71e5d",
+  "prior_rehearsal_verdict": "CANDIDATE_006_RAILWAY_REHEARSAL_CONDITIONAL",
+  "local_hotfix_verdict": "SCHEDULER_HOTFIX_LOCAL_VERIFIED",
+  "live_rehearsal_verdict": "CANDIDATE_006_HOTFIX_REHEARSAL_VERIFIED",
+  "rehearsal_deployments": {
+    "worker": {
+      "service_id": "929874a7-bcd9-41b3-9bc7-d5cd7720f7bf",
+      "deployment_id": "89d26e9b-ac0d-4b59-9c6b-549a46522d62",
+      "status": "SUCCESS",
+      "runtime_sha": "1cc9fa886d28908270df4794e64536d4cb1948e2",
+      "scheduler_status": "OPERATIONAL_PASS_COMPLETED",
+      "generated_backup_id": "sm-backup-20261014T101110Z-723fe2e2",
+      "backup_size_bytes": 34222,
+      "backup_sha256": "218907f4daed95da209b4b2408d11c71b370241c594fc9a28a270c4bebbdc7d6",
+      "advisory_lock_held": 401007311509093371,
+      "advisory_lock_released": 872055449083353674
+    },
+    "web": {
+      "service_id": "6b53ad3f-0d59-4a7f-83dc-8731efe48cf5",
+      "deployment_id": "3f699880-6818-473f-9c69-6f2e5b82f820",
+      "status": "SUCCESS",
+      "runtime_sha": "1cc9fa886d28908270df4794e64536d4cb1948e2",
+      "http_health_status": "ONLINE_200_OK"
+    }
+  },
+  "security_containment_triage": {
+    "exposure_vector": "Orchestration tool arguments in prior rehearsal transcript",
+    "git_exposure_audit": "CLEAN_ZERO_CREDENTIALS_COMMITTED",
+    "production_environment_sharing": "NEGATIVE_PRODUCTION_CONTAINS_ZERO_R2_VARIABLES",
+    "r2_unauthorized_operations_audit": "CLEAN_AUTHORIZED_REHEARSAL_OBJECTS_ONLY",
+    "rotation_status": "PLAN_PREPARED_AWAITING_OWNER_AUTHORIZATION"
+  },
+  "cloud_containment_fault_injection": {
+    "t0_healthy_evaluation": "PASSED",
+    "t1_staleness_suspension": "PASSED",
+    "t2_protected_gates_blocked": "PASSED",
+    "t3_database_row_invariance": "PASSED",
+    "t4_recovery_and_resumption": "PASSED",
+    "all_steps_passed": true
+  },
+  "test_verification": {
+    "scheduler_lifecycle_tests": "10_OF_10_PASSED",
+    "focused_containment_battery": "73_OF_73_PASSED",
+    "full_smart_money_suite": "685_OF_685_PASSED"
+  },
+  "production_cutover_gate": {
+    "production_changes_authorized": false,
+    "next_mandatory_step": "Owner review for production durability threshold and production deployment scheduling"
+  }
+}

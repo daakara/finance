@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arx.terminal/schemas/v1/claim-registry.json",
+  "title": "ARX Canonical Claim Registry Schema",
+  "description": "Normative schema for ARX Smart Money Canonical Claim Registry and Claim-Fact Semantic Bindings (Sections 9 and 23).",
+  "type": "object",
+  "required": [
+    "registry_id",
+    "claims",
+    "claim_fact_bindings"
+  ],
+  "properties": {
+    "registry_id": {
+      "type": "string",
+      "description": "Unique URN identifying this claim registry instance."
+    },
+    "claims": {
+      "type": "array",
+      "description": "List of canonical governance claims.",
+      "items": {
+        "type": "object",
+        "required": [
+          "claim_id",
+          "claim_type",
+          "semantic_subject",
+          "current_state",
+          "source_evidence_ids",
+          "derivation_function",
+          "derivation_version"
+        ],
+        "properties": {
+          "claim_id": {
+            "type": "string"
+          },
+          "claim_type": {
+            "type": "string"
+          },
+          "semantic_subject": {
+            "type": "string"
+          },
+          "current_state": {
+            "type": "string",
+            "enum": ["ESTABLISHED", "NOT_ESTABLISHED", "STALE", "REVOKED", "CONFLICT"]
+          },
+          "source_evidence_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "derivation_function": {
+            "type": "string"
+          },
+          "derivation_version": {
+            "type": "string"
+          },
+          "claim_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "claim_fact_bindings": {
+      "type": "object",
+      "description": "Mapping from claim_id to all bound semantic fact aliases for anti-self-disable analysis.",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

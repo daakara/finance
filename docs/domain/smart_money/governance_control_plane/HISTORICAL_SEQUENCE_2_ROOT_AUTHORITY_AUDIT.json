@@ -1,0 +1,25 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/historical-sequence-2-root-authority-audit.json",
+  "artifact_type": "HISTORICAL_SEQUENCE_2_ROOT_AUTHORITY_AUDIT",
+  "decision_context_hash": "cad190ce404bdd814a9c923d1349ab8a9b2a5469956ac265b231d9ebef43fd7e",
+  "decision_id": "urn:arx:decision:epoch-gov-002:2:fa3df68578c4",
+  "governance_epoch": "epoch-gov-002",
+  "historical_authority_status": "PASS",
+  "lineage": {
+    "generated_at_utc": "2026-10-12T21:15:15Z",
+    "generator_path": "scripts/generate_chain_migration_evidence.py",
+    "generator_sha256": "98658eb74aafd87771326262cb31d4c4f1ea25c0e632843171e68d8e9fc0ff5f",
+    "git_head": "e41cc6d729a2af1fab6cdaace764af8e1739f87f",
+    "invocation": "python scripts/generate_chain_migration_evidence.py",
+    "source_sha": "3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11"
+  },
+  "manifest_blob_oid": "c6e5b5c370192f12c8b9e3c0aeb0a33af25afa03",
+  "manifest_seal_commit": "457896fb9b56821b34f56091a171a1611638ad6e",
+  "manifest_tree_oid": "a91d601b064d018a625f96d99ef02e17b0e5b2b2",
+  "match": true,
+  "recomputed_decision_hash": "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c",
+  "sequence": 2,
+  "source_freeze_git_object_exists": true,
+  "source_freeze_sha": "38fbec379a0fc7788ab11ac4f566e445a7b4802d",
+  "stored_decision_hash": "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c"
+}

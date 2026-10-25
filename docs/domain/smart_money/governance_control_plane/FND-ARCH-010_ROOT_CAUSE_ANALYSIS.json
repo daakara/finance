@@ -1,0 +1,31 @@
+{
+  "finding_id": "FND-ARCH-010",
+  "immutable_subject": "Stale fencing-token rejection was over-classified as a system terminal hold rather than normal stale-writer rejection.",
+  "observed_failure": "When an epoch fencing token from an older writer was presented, the system placed the entire consensus engine into TERMINAL_HOLD instead of safely rejecting the stale writer and allowing current epoch to proceed.",
+  "affected_components": [
+    "analyst_dashboard/smart_money/public_availability/transactional_state_backend.py"
+  ],
+  "canonical_invariant_violated": "STALE_FENCING_SAFETY_ISOLATION: Stale fencing tokens must be rejected without mutating state or triggering a global terminal governance halt.",
+  "root_cause": "Fencing token mismatch was treated as a fatal ledger corruption event rather than expected concurrency fencing behavior.",
+  "contributing_causes": [
+    "Overly broad fail-closed assertion on any fencing divergence"
+  ],
+  "existing_behavior": "Stale fence triggers TERMINAL_HOLD status.",
+  "required_behavior": "Stale fence raises StaleFencingTokenError resulting in STALE_WRITER_REJECTED while current epoch state remains active and healthy.",
+  "implementation_scope": [
+    "Define StaleFencingTokenError and STALE_WRITER_REJECTED outcome in transactional_state_backend.py",
+    "Prevent epoch transition or global hold on stale write rejection"
+  ],
+  "contracts_affected": [],
+  "schemas_affected": [],
+  "policies_affected": [],
+  "tests_affected": [
+    "tests/test_smart_money_architecture_remediation.py"
+  ],
+  "non_target_findings_touched": [],
+  "cross_layer_dependency": false,
+  "planned_fix": "Classify stale fence as STALE_WRITER_REJECTED and isolate rejection to writer without halting engine.",
+  "planned_negative_control": "Submit write with fence N when engine is at N+1; verify write rejected, engine remains active at N+1, and no terminal hold is set.",
+  "planned_causal_ablation": "Trigger global terminal hold on stale fence; verify test detects false terminal hold.",
+  "status": "ANALYZED_PENDING_IMPLEMENTATION"
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/historical-chain-migration-execution-audit.json",
+  "artifact_type": "HISTORICAL_CHAIN_MIGRATION_EXECUTION_AUDIT",
+  "committed_count": 4,
+  "current_decision_hash": "174cecf6e3aef1e8ab2e46d8137faa1b72d282d2aa0a0c2b868abdab38500c07",
+  "current_decision_id": "urn:arx:decision:epoch-gov-002:4:4371c653837c",
+  "head_decision_hash": "174cecf6e3aef1e8ab2e46d8137faa1b72d282d2aa0a0c2b868abdab38500c07",
+  "head_sequence": 4,
+  "lineage": {
+    "generated_at_utc": "2026-10-12T21:15:15Z",
+    "generator_path": "scripts/generate_chain_migration_evidence.py",
+    "generator_sha256": "98658eb74aafd87771326262cb31d4c4f1ea25c0e632843171e68d8e9fc0ff5f",
+    "git_head": "e41cc6d729a2af1fab6cdaace764af8e1739f87f",
+    "invocation": "python scripts/generate_chain_migration_evidence.py",
+    "source_sha": "3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11"
+  },
+  "migrated_at": "2026-10-12T21:08:32Z",
+  "migration_id": "mig-gov-002-canonical-repair-v1",
+  "migration_status": "SUCCESS",
+  "migration_version": "2.0.0",
+  "quarantined_count": 2,
+  "source_chain_raw_sha256": "ffaa7f272eef226c86f001a9c58e09ebd8c3388715e1e177e35d19887c53352b"
+}

@@ -1,0 +1,69 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/post-architecture-canonical-baseline-v2.json",
+  "baseline_id": "urn:arx:baseline:smart-money:post-architecture:v2",
+  "generated_at": "2026-10-12T16:03:25Z",
+  "source": {
+    "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+    "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01"
+  },
+  "candidate": {
+    "candidate_id": "CANDIDATE_GENERATION_004",
+    "raw_identity_state": "ESTABLISHED",
+    "raw_sha256": "297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90",
+    "semantic_closure_state": "NOT_ESTABLISHED"
+  },
+  "findings": {
+    "registered": 15,
+    "admitted": 13,
+    "duplicates": 2,
+    "active_architecture": 0,
+    "active_non_architecture": 5,
+    "active_blockers": 5,
+    "active_blocker_ids": [
+      "FND-ARCH-002",
+      "FND-ARCH-003",
+      "FND-ARCH-005",
+      "FND-ARCH-006",
+      "FND-ARCH-009"
+    ]
+  },
+  "resolution_authority": {
+    "provenance_contract_verdict": "PASS_OR_NAMING_HARDENING",
+    "lineage_verdict": "PASS"
+  },
+  "dependency": {
+    "policy_hash": "d82e9fb9970a4040c9291d23ed019b89848f1f97a3c57a3375c34971ab40b7df",
+    "resolution_hash": "2f9ebea3adfb038953c84c7a42f09286a68d32dbd4af8f5b4fbda3391c2d7714",
+    "target_status_semantics": "ELIGIBILITY_SATISFIED_DISTINCT_FROM_GOVERNANCE_OUTCOME"
+  },
+  "decision_chain": {
+    "predecessor_id": "urn:arx:decision:epoch-gov-002:2:fa3df68578c4",
+    "predecessor_hash": "66a2e4f3185fc97a8c2abcdaaab65b3ce0a59fdd6e402f2a2367cd06ee61336c",
+    "predecessor_status": "SUPERSEDED",
+    "current_id": "urn:arx:decision:epoch-gov-002:3:82e99bf8c82f",
+    "current_hash": "205fe158e61fd1a0d2da8589f9d07619c8343c45cf43c4a4f7fbafb81a2f0b64",
+    "current_status": "CURRENT",
+    "predecessor_link_valid": true,
+    "current_unique": true
+  },
+  "evidence": {
+    "record_parity_verdict": "PASS"
+  },
+  "governance": {
+    "architecture_closure_status": "CLOSED",
+    "global_provisioning_readiness": "BLOCKED",
+    "provisioning_authorization_status": "NOT_ISSUABLE",
+    "runtime_action": "NONE"
+  },
+  "observation": {
+    "natural_denominator": 0,
+    "observer_arming": "NOT_AUTHORIZED",
+    "authorization": "NOT_AUTHORIZED"
+  },
+  "empirical": {
+    "production_readiness": "NOT_AUTHORIZED",
+    "model_tuning": "FROZEN",
+    "learning_claim": "NOT_AUTHORIZED"
+  },
+  "verdict": "ESTABLISHED"
+}

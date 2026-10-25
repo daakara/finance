@@ -1,0 +1,61 @@
+{
+  "artifacts": {
+    "claim_ledger": {
+      "fields": [
+        "claimed_authorizations",
+        "active_runs",
+        "fencing_tokens"
+      ]
+    },
+    "consumed_authorizations": {
+      "fields": [
+        "consumed_ids",
+        "consumption_receipts"
+      ]
+    },
+    "denominator_state": {
+      "fields": [
+        "natural_denominator",
+        "natural_accessions_captured",
+        "synthetic_records_count",
+        "dry_run_records_count"
+      ]
+    },
+    "epoch_state": {
+      "fields": [
+        "epoch_id",
+        "epoch_initialized",
+        "latest_checkpoint_sequence",
+        "latest_checkpoint_sha256",
+        "genesis_commit_sha"
+      ]
+    },
+    "idempotency_state": {
+      "fields": [
+        "processed_request_ids",
+        "execution_records"
+      ]
+    },
+    "manifest": {
+      "fields": [
+        "manifest_version",
+        "epoch_id",
+        "artifacts",
+        "checkpoint_sequence",
+        "checkpoint_sha256"
+      ]
+    },
+    "observer_state": {
+      "fields": [
+        "current_state",
+        "previous_state",
+        "state_history",
+        "last_transition_reason",
+        "terminal_hold"
+      ]
+    }
+  },
+  "epoch_id": "smart-money-durable-state-v2",
+  "schema_version": "SMART_MONEY_STATE_SCHEMA_V2",
+  "status": "SCHEMA_DEFINED_AND_VALIDATED"
+}

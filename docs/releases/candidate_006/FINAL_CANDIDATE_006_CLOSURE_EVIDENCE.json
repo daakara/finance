@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "evidence_id": "ARX_SMART_MONEY_CANDIDATE_006_FINAL_CLOSURE_EVIDENCE_V1",
+  "generated_at": "2026-10-14T07:52:00Z",
+  "execution_mode": "NONPRODUCTION_SECURITY_PARITY_AND_RECOVERY_CLOSURE",
+  "git_lineage": {
+    "remediation_commit_sha": "9cad087868386d40dc24970be80776abb3f8756a",
+    "remediation_tree_sha": "82f9903306ed3a0027549d55454d563143bbeb7b",
+    "remediation_branch": "arx/smart-money-candidate-006-r2-security-remediation",
+    "remote_tracking": "origin/arx/smart-money-candidate-006-r2-security-remediation",
+    "worktree_status": "CLEAN"
+  },
+  "railway_runtime_parity": {
+    "project_id": "a339a92a-7236-4ac0-9a3a-d7ad440f9690",
+    "rehearsal_environment_id": "7f7e4317-2b76-4a0e-bff1-33227da71e5d",
+    "services": {
+      "worker": {
+        "service_id": "929874a7-bcd9-41b3-9bc7-d5cd7720f7bf",
+        "deployment_id": "6b61acea-acf2-47c8-bf91-96aa300a227b",
+        "status": "SUCCESS",
+        "commit_hash": "9cad087868386d40dc24970be80776abb3f8756a",
+        "source_branch": "arx/smart-money-candidate-006-r2-security-remediation"
+      },
+      "web": {
+        "service_id": "6b53ad3f-0d59-4a7f-83dc-8731efe48cf5",
+        "deployment_id": "8935d1d1-c7b8-4d18-8b38-f9fafaad39d8",
+        "status": "SUCCESS",
+        "commit_hash": "9cad087868386d40dc24970be80776abb3f8756a",
+        "source_branch": "arx/smart-money-candidate-006-r2-security-remediation"
+      },
+      "postgres": {
+        "service_id": "ac8c4b61-0b3e-42ee-8694-18d24f55aa56",
+        "version": "16.15",
+        "image": "postgres:16-alpine",
+        "volume_id": "53bf30d9-0e66-424d-88df-1ee0e51ac392"
+      }
+    }
+  },
+  "postgres_role_security": {
+    "role_name": "smart_money_ingestion",
+    "rolsuper": false,
+    "rolcreaterole": false,
+    "rolcreatedb": false,
+    "has_elevated_membership": false,
+    "pg_authid_access_permitted": false,
+    "pg_authid_query_error": "ERROR: permission denied for table pg_authid",
+    "credentials_rotated": true,
+    "table_grants_verified": {
+      "canonical_tables_count": 12,
+      "select_grants_count": 12,
+      "unprivileged_backup_supported": true
+    }
+  },
+  "cloudflare_r2_recovery_point": {
+    "bucket": "arx-smart-money-backups",
+    "prefix": "rehearsal/",
+    "active_backup_id": "sm-backup-20261014T054332Z-9c75ae7f",
+    "manifest_key": "rehearsal/manifest_sm-backup-20261014T054332Z-9c75ae7f.json",
+    "dump_key": "rehearsal/smart_money_sm-backup-20261014T054332Z-9c75ae7f.dump",
+    "dump_size_bytes": 33642,
+    "dump_sha256": "45f745b321812249e313a1519ec1113473d69c026986f4cdbb830e325d864aaa",
+    "globals_artifact": null,
+    "include_globals": false,
+    "upload_verified": true,
+    "classification": "VALID_ROUTINE_UNPRIVILEGED"
+  },
+  "archive_forensics_and_independent_restore": {
+    "dump_client_binary": "/usr/bin/pg_dump (PostgreSQL 17.11 Debian)",
+    "dump_archive_format_version": "1.16.0",
+    "failing_client_binary": "pgserver pg_restore 16.2 (Max format supported: 1.15.0)",
+    "compatible_restore_binary": "EnterpriseDB pg_restore 17.2",
+    "target_database_server": "Isolated local PostgreSQL 16.2",
+    "isolation_status": "ZERO_CLOUD_PROVISIONING_ZERO_COST",
+    "restore_execution_seconds": 0.26,
+    "total_recovery_duration_seconds": 8.41,
+    "restored_tables_count": 12,
+    "restored_triggers_count": 8,
+    "restored_indexes_count": 30,
+    "application_read_parity_verified": true,
+    "active_snapshot_resolved": "snap-final-717f17e4",
+    "status": "INDEPENDENT_INFRASTRUCTURE_RECOVERY_VERIFIED_PASS"
+  },
+  "backup_scheduler_operational_verification": {
+    "thread_name": "SmartMoneyBackupSchedulerThread",
+    "interval_seconds": 21600,
+    "advisory_lock": "BACKUP_EXECUTION (872055449083353674)",
+    "ingestion_advisory_lock": "SEC_EGRESS_OWNER (401007311509093371)",
+    "concurrency_verified": true,
+    "non_interactive_autonomous": true,
+    "retention_safety_verified": true
+  },
+  "regression_tests_summary": {
+    "total_tests_run": 48,
+    "total_tests_passed": 48,
+    "total_tests_failed": 0,
+    "suites": {
+      "test_smart_money_worker_lease_recovery.py": "8/8 PASS",
+      "test_smart_money_candidate_006_readiness_adversarial.py": "7/7 PASS",
+      "test_smart_money_backup_automation.py": "5/5 PASS",
+      "test_smart_money_r2_adapter_compatibility.py": "10/10 PASS",
+      "test_smart_money_backup_security_adversarial.py": "11/11 PASS",
+      "test_smart_money_sole_owner_fido2_governance.py": "7/7 PASS"
+    }
+  },
+  "production_baseline_verification": {
+    "environment_id": "11cad5e1-358e-430e-84fc-189953cff48a",
+    "release_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+    "services_count": 1,
+    "services": ["web"],
+    "database_present": false,
+    "worker_present": false,
+    "mutation_status": "STRICTLY_UNTOUCHED"
+  },
+  "verdict": "CANDIDATE_006_SECURITY_AND_RECOVERY_VERIFIED",
+  "authorization_boundary": {
+    "production_deployment": "NOT_AUTHORIZED",
+    "production_postgres_provisioning": "NOT_AUTHORIZED",
+    "production_migration": "NOT_AUTHORIZED",
+    "production_cutover": "NOT_AUTHORIZED",
+    "model_tuning_frozen": true,
+    "empirical_quality_not_established": true
+  }
+}

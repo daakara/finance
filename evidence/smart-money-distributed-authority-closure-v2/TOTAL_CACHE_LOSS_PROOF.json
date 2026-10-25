@@ -1,0 +1,8 @@
+{
+  "claim": "System safely recovers without second-genesis risk after total GitHub cache eviction",
+  "evidence_class": "DISTRIBUTED_STORAGE",
+  "independent_verifier_result": "BLOCKED per Section 6.2 and Section 31",
+  "observed_result": "Genesis safety verified locally (SecondGenesisAttemptError raised); total cache loss recovery requires external transactional backend to survive.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_distributed_authority_substrate.py -k test_genesis_theorem_second_genesis_prevention",
+  "status": "BLOCKED"
+}

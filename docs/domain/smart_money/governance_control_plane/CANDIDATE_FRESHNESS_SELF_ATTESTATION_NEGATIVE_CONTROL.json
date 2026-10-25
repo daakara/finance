@@ -1,0 +1,17 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/candidate-freshness-self-attestation-negative-control.json",
+  "audit_id": "urn:arx:audit:candidate-freshness-self-attestation-negative-control:2026-10-12",
+  "generated_at": "2026-10-12T20:20:32Z",
+  "stale_matching_expected_attack": {
+    "authority_authoritative_context_hash": "b162123b3315b0b17ed6de4a14bcb701684dbd2d53ec596cd16cda160c45b6f4",
+    "caller_supplied_expected_context_hash": "52ba3e67d8aa20cc12b205e2ea3162fd88a40975c7b33608ffa97e5c6d1782c3",
+    "candidate_context_hash": "52ba3e67d8aa20cc12b205e2ea3162fd88a40975c7b33608ffa97e5c6d1782c3",
+    "candidate_hash_matches_actual_current_authoritative_context": false,
+    "candidate_hash_matches_supplied_expected_hash": true,
+    "committed": false,
+    "exception": "OtherException: DUPLICATE_DECISION_SEQUENCE_WITH_DIFFERENT_HASH == 0: Sequence 4 in epoch-gov-002 already committed with different hash be701fe0d0a56836c9c9cf4f541037e6ae325f4312d36401528665418e8ae62d.",
+    "result": "REJECTED_FAIL_CLOSED",
+    "verdict": "PASS"
+  },
+  "verdict": "PASS"
+}

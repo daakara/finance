@@ -11,6 +11,9 @@ import json
 import os
 import pytest
 
+# Ensure non-empty operator token is available for authorized test suites
+os.environ.setdefault("ARX_OPERATOR_TOKEN", "test-operator-auth-token-xyz")
+
 
 @pytest.fixture(scope="session", autouse=True)
 def seed_test_market_database():
@@ -134,4 +137,3 @@ def published_screener_universe(tmp_path):
         vcp_scanner_runner.universe_store = orig_univ_store
         vcp_scanner_runner.snapshot_store = orig_snap_store
         vcp_scanner_runner._cached_active_snapshot = orig_cached
-

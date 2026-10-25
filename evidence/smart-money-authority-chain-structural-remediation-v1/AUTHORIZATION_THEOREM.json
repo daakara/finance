@@ -1,0 +1,17 @@
+{
+  "blocking_reasons": [
+    "Gate-3 independent issuing identity is not established; authorization is self-issued.",
+    "Local environment lacks Sigstore / Cosign cryptographic verification tooling.",
+    "No durable authenticated Gate-3 delivery store exists outside repository JSON."
+  ],
+  "evaluations": {
+    "durable_authenticated_gate3_delivery": "BLOCKED",
+    "independent_issuer": "BLOCKED",
+    "mandatory_binding_fields_enforced": "PASS",
+    "readiness_artifact_resolution": "PASS",
+    "real_sigstore_verification": "BLOCKED",
+    "schema_v2_only_for_natural": "PASS"
+  },
+  "status": "BLOCKED",
+  "theorem": "T2_AUTHORIZATION_THEOREM"
+}

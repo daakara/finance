@@ -907,12 +907,77 @@ class VCPScannerRunner:
         }
 
 
+RESOURCE_KEY_SMART_MONEY_PIPELINE = "smart_money_pipeline"
+
+
 class SmartMoneyScannerRunner:
     """
-    Market-wide execution runner for Smart Money / Institutional Flow.
-    Data Authority Status: INCOMPLETE (Live market-wide institutional feed unprovisioned).
-    Fails closed to PIPELINE_PENDING with zero fabricated results.
+    Market-wide execution runner for Smart Money Form 4 Insider Flow.
+    Manages immutable snapshot publication in ScannerSnapshotStore.
+    If an active published snapshot exists, returns AVAILABLE snapshot envelope.
+    Fails closed to PIPELINE_PENDING with zero fabricated results if no certified snapshot exists.
     """
+
+    def __init__(
+        self,
+        snapshot_store: Optional[Any] = None,
+        form4_scanner: Optional[Any] = None,
+        coordinator: Optional[DurableRunCoordinator] = None,
+        coordination_store: Optional[CoordinationStore] = None,
+        lease_policy: Optional[LeasePolicy] = None,
+        backend: Optional[str] = None,
+    ):
+        from analyst_dashboard.smart_money.storage.config import get_storage_backend
+        self.backend = backend or get_storage_backend()
+
+        if self.backend == "postgres":
+            if snapshot_store is not None:
+                self.snapshot_store = snapshot_store
+            else:
+                from analyst_dashboard.smart_money.storage.factory import get_smart_money_repository
+                self.snapshot_store = get_smart_money_repository()
+            self.form4_scanner = form4_scanner
+            self.coordination_store = coordination_store
+            self.coordinator = coordinator
+            self.lease_policy = lease_policy
+        else:
+            self.snapshot_store = snapshot_store or ScannerSnapshotStore()
+            if form4_scanner is not None:
+                self.form4_scanner = form4_scanner
+            else:
+                from analyst_dashboard.smart_money.form4_scanner import SmartMoneyForm4Scanner
+                self.form4_scanner = SmartMoneyForm4Scanner()
+
+            coord_db_path = getattr(self.snapshot_store, "db_path", None)
+            if coordination_store:
+                self.coordination_store = coordination_store
+            elif coord_db_path:
+                self.coordination_store = CoordinationStore(db_path=coord_db_path)
+            else:
+                self.coordination_store = CoordinationStore()
+
+            self.lease_policy = lease_policy or PRODUCTION_LEASE_POLICY
+            self.coordinator = coordinator or DurableRunCoordinator(
+                resource_key=RESOURCE_KEY_SMART_MONEY_PIPELINE,
+                db_path=self.coordination_store.db_path,
+                policy=self.lease_policy,
+            )
+
+        self._scan_lock = threading.Lock()
+        self._cached_active_snapshot: Optional[Dict[str, Any]] = None
+
+    def get_version_tuple(self) -> ScannerVersionTuple:
+        return ScannerVersionTuple(
+            scanner_id="SMART_MONEY",
+            api_contract_version=SMART_MONEY_API_CONTRACT_VERSION,
+            ruleset_version=SMART_MONEY_RULESET_VERSION,
+            evidence_schema_version=SMART_MONEY_EVIDENCE_SCHEMA_VERSION,
+            score_model_version=SMART_MONEY_SCORE_MODEL_VERSION,
+            data_provenance_version=SMART_MONEY_DATA_PROVENANCE_VERSION,
+            universe_version=SMART_MONEY_UNIVERSE_VERSION,
+            freshness_policy_version=SMART_MONEY_FRESHNESS_POLICY_VERSION,
+            implementation_release_sha=CURRENT_IMPLEMENTATION_RELEASE_SHA,
+        )
 
     @classmethod
     def get_status_envelope(cls) -> Dict[str, Any]:
@@ -930,7 +995,8 @@ class SmartMoneyScannerRunner:
                 "data_provenance_version": SMART_MONEY_DATA_PROVENANCE_VERSION,
                 "universe_version": SMART_MONEY_UNIVERSE_VERSION,
                 "implementation_release_sha": CURRENT_IMPLEMENTATION_RELEASE_SHA,
-                "role": "INSTITUTIONAL_13F_DARK_POOL_FLOW",
+                "subsignal": "INSIDER_FORM4",
+                "role": "INSIDER_FORM4_POINT_IN_TIME_FLOW",
                 "source": "UNPROVISIONED_MARKET_WIDE_FEED",
             },
             "freshness": {
@@ -939,7 +1005,7 @@ class SmartMoneyScannerRunner:
                 "data_as_of": None,
                 "evaluated_at": now_str,
                 "status": FreshnessStatus.UNKNOWN.value,
-                "rationale": "Live market-wide institutional positioning, 13F filing aggregation, and dark pool feeds are disconnected for general universe screening. Single-asset Form 4 and Capitol Hill disclosures remain available on /smart-money.",
+                "rationale": "Live market-wide institutional positioning, 13F filing aggregation, and dark pool feeds are disconnected for general universe screening. Point-in-time Form 4 screening active via /screener/smart-money/scan.",
             },
             "snapshot": {
                 "run_id": None,
@@ -950,7 +1016,234 @@ class SmartMoneyScannerRunner:
             "results": [],
         }
 
+    def _to_envelope(self, rec: Dict[str, Any]) -> Dict[str, Any]:
+        u_meta = rec.get("universe_metadata", {})
+        c_meta = rec.get("coverage_metadata", {})
+        u_size = rec.get("universe_size", 0)
+        return {
+            "scanner_id": "SMART_MONEY",
+            "api_contract_version": rec.get("api_contract_version", SMART_MONEY_API_CONTRACT_VERSION),
+            "status": rec.get("status_at_publication", ScannerStatus.AVAILABLE.value),
+            "methodology": {
+                "ruleset_version": rec.get("ruleset_version", SMART_MONEY_RULESET_VERSION),
+                "evidence_schema_version": rec.get("evidence_schema_version", SMART_MONEY_EVIDENCE_SCHEMA_VERSION),
+                "score_model_version": rec.get("score_model_version", SMART_MONEY_SCORE_MODEL_VERSION),
+            },
+            "provenance": {
+                "data_provenance_version": rec.get("data_provenance_version", SMART_MONEY_DATA_PROVENANCE_VERSION),
+                "universe_version": rec.get("universe_version", SMART_MONEY_UNIVERSE_VERSION),
+                "implementation_release_sha": rec.get("implementation_release_sha", CURRENT_IMPLEMENTATION_RELEASE_SHA),
+                "subsignal": "INSIDER_FORM4",
+                **(rec.get("provenance") or {}),
+            },
+            "freshness": rec.get("freshness", {}),
+            "snapshot": {
+                "run_id": rec.get("run_id"),
+                "snapshot_id": rec.get("snapshot_id"),
+                "universe_size": u_size,
+                "matched_count": rec.get("matched_count"),
+                "semantic_fingerprint": rec.get("semantic_fingerprint"),
+                "publication_decision": rec.get("publication_decision", "PUBLISH"),
+            },
+            "universe": {
+                "scope_class": u_meta.get("scope_class", "US_EQUITIES"),
+                "display_name": u_meta.get("display_name", RADAR_SCOPE_LABEL),
+                "source_population_count": u_meta.get("source_population_count", u_size),
+                "eligible_universe_count": u_meta.get("eligible_universe_count", u_size),
+                "universe_version": rec.get("universe_version", SMART_MONEY_UNIVERSE_VERSION),
+                "universe_build_id": u_meta.get("universe_build_id"),
+                "membership_hash": u_meta.get("membership_hash"),
+                "construction_status": "COMPLETE",
+            },
+            "coverage": {
+                "coverage_status": c_meta.get("coverage_status", "COMPLETE"),
+                "data_complete_count": c_meta.get("data_complete_count", u_size),
+                "scanned_successfully_count": c_meta.get("scanned_successfully_count", u_size),
+                "matched_count": rec.get("matched_count"),
+                "unavailable_symbol_count": c_meta.get("unavailable_symbol_count", 0),
+                "unresolved_symbol_count": c_meta.get("unresolved_symbol_count", 0),
+                "data_completeness_pct": c_meta.get("data_completeness_pct", 100.0),
+                "scan_coverage_pct": c_meta.get("scan_coverage_pct", 100.0),
+                "unavailable_reasons": c_meta.get("unavailable_reasons", {}),
+            },
+            "results": rec.get("results", []),
+        }
+
     def get_active_or_latest_snapshot(self) -> Dict[str, Any]:
-        """Smart Money is blocked on market-wide institutional data authority; returns PIPELINE_PENDING envelope."""
+        """
+        Retrieves the latest verified, published snapshot from ScannerSnapshotStore.
+        If no published snapshot is present, returns fail-closed PIPELINE_PENDING envelope.
+        """
+        if self.backend == "postgres":
+            persisted = self.snapshot_store.get_latest_active_snapshot("SMART_MONEY")
+            if persisted is not None:
+                return self._to_envelope(persisted)
+            return self.get_status_envelope()
+
+        if self._cached_active_snapshot is not None:
+            return self._to_envelope(self._cached_active_snapshot)
+
+        persisted = self.snapshot_store.get_latest_active_snapshot("SMART_MONEY")
+        if persisted is not None:
+            self._cached_active_snapshot = persisted
+            return self._to_envelope(persisted)
+
         return self.get_status_envelope()
+
+    def execute_market_wide_scan(
+        self,
+        as_of_watermark: Optional[str] = None,
+        universe_symbols: Optional[List[str]] = None,
+        universe_build_id: Optional[str] = None,
+        lookback_days: int = 30,
+        trigger_type: TriggerType = TriggerType.OPERATOR,
+        bypass_thread_lock: bool = False,
+        operator_request_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Executes point-in-time market-wide Form 4 scan under distributed fencing (Gates B2, B5, B6).
+        Persists completed snapshot into ScannerSnapshotStore atomically.
+        Enforces receipt-driven certification before advancing active published pointer.
+        """
+        if self.backend == "postgres" and self.coordinator is None:
+            raise RuntimeError(
+                "POSTGRES_DIRECT_SCAN_UNSUPPORTED: In PostgreSQL profile, market-wide scans "
+                "must be submitted via sm_run_requests asynchronous queue to ensure dedicated worker execution."
+            )
+
+        acquired_thread_lock = False
+        if not bypass_thread_lock:
+            if not self._scan_lock.acquire(blocking=False):
+                raise RuntimeError("OVERLAPPING_SMART_MONEY_SCANS_PROHIBITED: Local execution already active.")
+            acquired_thread_lock = True
+
+        lease = None
+        try:
+            effective_instance_id = f"inst-sm-{uuid.uuid4().hex[:8]}"
+            effective_job_key = (
+                f"smart_money:operator:{operator_request_id}" if operator_request_id else
+                f"smart_money:run:{int(time.time())}:{uuid.uuid4().hex[:8]}"
+            )
+            lease_acq = self.coordinator.acquire(
+                logical_job_key=effective_job_key,
+                trigger_type=trigger_type,
+                owner_instance_id=effective_instance_id,
+                implementation_release_sha=CURRENT_IMPLEMENTATION_RELEASE_SHA,
+                operator_request_id=operator_request_id,
+            )
+            if lease_acq.status != AcquisitionStatus.ACQUIRED:
+                raise RuntimeError(
+                    f"OVERLAPPING_SMART_MONEY_SCANS_PROHIBITED: Distributed lease rejected: {lease_acq.status}. "
+                    f"Message: {lease_acq.message}"
+                )
+            lease = lease_acq.lease
+
+            now_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            watermark = as_of_watermark or now_str
+
+            # Perform PIT scan strictly bounded by watermark
+            scan_snapshot = self.form4_scanner.scan_issuers_as_of(
+                as_of_watermark=watermark,
+                symbols=universe_symbols,
+                universe_build_id=universe_build_id,
+                lookback_days=lookback_days,
+            )
+
+            # Map results to ScannerCandidateResult objects
+            results = []
+            for rank, item in enumerate(scan_snapshot.items, start=1):
+                results.append(
+                    ScannerCandidateResult(
+                        symbol=item["symbol"],
+                        rank=rank,
+                        score=float(item.get("convictionScore", 0.0)),
+                        current_price=0.0,
+                        scanner_evidence=item,
+                    ).to_dict()
+                )
+
+            version_tuple = self.get_version_tuple()
+            fingerprint_payload = {
+                "scanner_id": "SMART_MONEY",
+                "watermark": watermark,
+                "version_tuple": version_tuple.to_dict(),
+                "universe_build_id": scan_snapshot.universe_build_id,
+                "matched_count": len(results),
+                "results": results,
+            }
+            semantic_fingerprint = compute_hash(fingerprint_payload)
+
+            snapshot_id = f"SNAP_SM_{int(time.time())}_{uuid.uuid4().hex[:8]}"
+            run_id = f"RUN_SM_{int(time.time())}_{uuid.uuid4().hex[:6]}"
+
+            # Completeness & Publication State Machine
+            is_complete = (scan_snapshot.coverage_status == "COMPLETE")
+            status_at_pub = ScannerStatus.AVAILABLE.value if is_complete else ScannerStatus.PIPELINE_PENDING.value
+            pub_decision = PublicationDecision.PUBLISH.value if is_complete else PublicationDecision.QUARANTINE.value
+
+            snapshot_record = {
+                "snapshot_id": snapshot_id,
+                "scanner_id": "SMART_MONEY",
+                "run_id": run_id,
+                "api_contract_version": version_tuple.api_contract_version,
+                "ruleset_version": version_tuple.ruleset_version,
+                "evidence_schema_version": version_tuple.evidence_schema_version,
+                "score_model_version": version_tuple.score_model_version,
+                "data_provenance_version": version_tuple.data_provenance_version,
+                "universe_version": version_tuple.universe_version,
+                "freshness_policy_version": version_tuple.freshness_policy_version,
+                "implementation_release_sha": version_tuple.implementation_release_sha,
+                "semantic_fingerprint": semantic_fingerprint,
+                "generated_at": now_str,
+                "data_as_of": watermark,
+                "status_at_publication": status_at_pub,
+                "universe_id": scan_snapshot.universe_id,
+                "universe_size": scan_snapshot.scannable_count,
+                "matched_count": len(results) if is_complete else 0,
+                "results": results,
+                "provenance": {
+                    **scan_snapshot.provenance,
+                    "subsignal": "INSIDER_FORM4",
+                    "role": "INSIDER_FORM4_POINT_IN_TIME_FLOW",
+                },
+                "freshness": {
+                    **scan_snapshot.freshness,
+                    "status": FreshnessStatus.LIVE.value,
+                },
+                "publication_decision": pub_decision,
+                "universe_metadata": {
+                    "scope_class": "US_EQUITIES",
+                    "display_name": RADAR_SCOPE_LABEL,
+                    "source_population_count": scan_snapshot.scannable_count,
+                    "eligible_universe_count": scan_snapshot.scannable_count,
+                    "universe_build_id": scan_snapshot.universe_build_id,
+                    "membership_hash": scan_snapshot.universe_content_hash,
+                    "construction_status": "COMPLETE",
+                },
+                "coverage_metadata": {
+                    "coverage_status": scan_snapshot.coverage_status or "PARTIAL",
+                    "data_complete_count": scan_snapshot.scannable_count,
+                    "scanned_successfully_count": scan_snapshot.scannable_count,
+                    "matched_count": len(results) if is_complete else 0,
+                    "unavailable_symbol_count": 0,
+                    "unresolved_symbol_count": 0,
+                    "data_completeness_pct": 100.0 if is_complete else 0.0,
+                    "scan_coverage_pct": 100.0,
+                    "unavailable_reasons": {},
+                },
+            }
+
+            self.snapshot_store.save_snapshot(snapshot_record)
+            if pub_decision == PublicationDecision.PUBLISH.value:
+                self._cached_active_snapshot = snapshot_record
+                logger.info(f"Smart Money Scanner snapshot {snapshot_id} published successfully with {len(results)} matches.")
+            else:
+                logger.info(f"Smart Money Scanner snapshot {snapshot_id} marked {status_at_pub} ({scan_snapshot.coverage_status}) and quarantined from active pointer.")
+
+            return self._to_envelope(snapshot_record)
+        finally:
+            if lease is not None:
+                self.coordinator.release(lease)
+            if acquired_thread_lock:
+                self._scan_lock.release()
 

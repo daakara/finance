@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arx.terminal/schemas/v1/predicate-fact-schema.json",
+  "title": "PredicateFactSchema",
+  "type": "object",
+  "required": [
+    "fact_id",
+    "value",
+    "value_type",
+    "provenance",
+    "validity",
+    "establishment",
+    "observed_at",
+    "fact_schema_version",
+    "canonical_hash"
+  ],
+  "properties": {
+    "fact_id": {
+      "type": "string"
+    },
+    "value": {},
+    "value_type": {
+      "type": "string",
+      "enum": ["string", "integer", "float", "boolean", "null", "list", "dict"]
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["evidence_id", "evidence_hash", "provenance_class", "authority_class"],
+      "properties": {
+        "evidence_id": { "type": "string" },
+        "evidence_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "provenance_class": {
+          "type": "string",
+          "enum": [
+            "CANONICAL_LEDGER",
+            "EXTERNAL_OPERATIONAL",
+            "REPOSITORY_BOUND",
+            "OPERATOR_RATIFIED",
+            "LOCAL_REFERENCE",
+            "DESIGN_CONTRACT",
+            "SYNTHETIC_FIXTURE",
+            "TEST_DOUBLE"
+          ]
+        },
+        "authority_class": {
+          "type": "string",
+          "enum": ["AUTHORITATIVE", "NON_AUTHORITATIVE"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "validity": {
+      "type": "string",
+      "enum": ["CURRENT", "STALE", "REVOKED"]
+    },
+    "establishment": {
+      "type": "string",
+      "enum": ["ESTABLISHED", "NOT_ESTABLISHED"]
+    },
+    "observed_at": {
+      "type": "string"
+    },
+    "valid_from": {
+      "type": "string"
+    },
+    "valid_until": {
+      "type": "string"
+    },
+    "fact_schema_version": {
+      "type": "string"
+    },
+    "canonical_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,128 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/architecture-remediation-dependency-dag.json",
+  "dag_id": "urn:arx:dag:architecture-remediation:v1",
+  "version": "1.0.0",
+  "remediation_target_count": 8,
+  "nodes": [
+    {
+      "finding_id": "FND-ARCH-001",
+      "title": "semantic hash identity collision",
+      "defect_class": "HASH_CANONICALIZATION_AMBIGUITY",
+      "depends_on": [],
+      "blocks": ["FND-ARCH-012", "FND-ARCH-011", "FND-ARCH-014"],
+      "shared_components": [
+        "analyst_dashboard/smart_money/governance_control_plane/canonicalization.py",
+        "analyst_dashboard/smart_money/governance_control_plane/canonical_context.py"
+      ],
+      "root_cause_overlap": [],
+      "recommended_order": 1,
+      "reason": "Foundational cryptographic typing. Establishes strict domain boundaries between raw SHA-256, semantic closure, and Git OIDs."
+    },
+    {
+      "finding_id": "FND-ARCH-012",
+      "title": "git commit sha truncation",
+      "defect_class": "SHA_TRUNCATION_RISK",
+      "depends_on": ["FND-ARCH-001"],
+      "blocks": ["FND-ARCH-011"],
+      "shared_components": [
+        "analyst_dashboard/smart_money/governance_control_plane/root_identity.py",
+        "docs/domain/smart_money/governance_control_plane/GOVERNANCE_GENESIS_MANIFEST.json"
+      ],
+      "root_cause_overlap": ["FND-ARCH-001"],
+      "recommended_order": 2,
+      "reason": "Enforces full 40-character Git object identity for Genesis Manifest and root contracts, consuming typed GitCommitOid domain."
+    },
+    {
+      "finding_id": "FND-ARCH-011",
+      "title": "denominator predicate alignment",
+      "defect_class": "SEMANTIC_INVARIANT_MISALIGNMENT",
+      "depends_on": ["FND-ARCH-001"],
+      "blocks": ["FND-ARCH-007"],
+      "shared_components": [
+        "analyst_dashboard/smart_money/public_availability/transactional_state_backend.py",
+        "analyst_dashboard/vcp/sprint_3_durable_storage.py"
+      ],
+      "root_cause_overlap": [],
+      "recommended_order": 3,
+      "reason": "Mathematical unification of pre-arm admission predicate and persisted denominator increment condition."
+    },
+    {
+      "finding_id": "FND-ARCH-014",
+      "title": "transaction log divergence from consensus",
+      "defect_class": "REPLICATION_DIVERGENCE",
+      "depends_on": ["FND-ARCH-001"],
+      "blocks": ["FND-ARCH-004"],
+      "shared_components": [
+        "analyst_dashboard/smart_money/public_availability/transactional_state_backend.py",
+        "analyst_dashboard/smart_money/anchor_finalization/finalization_ledger.py"
+      ],
+      "root_cause_overlap": [],
+      "recommended_order": 4,
+      "reason": "Defines authority hierarchy between Transaction Log (source of truth) and Consensus State (derived view), with anti-entropy detection."
+    },
+    {
+      "finding_id": "FND-ARCH-004",
+      "title": "RPO vs asynchronous replication contradiction",
+      "defect_class": "REPLICATION_RPO_CONTRADICTION",
+      "depends_on": ["FND-ARCH-014"],
+      "blocks": ["FND-ARCH-007"],
+      "shared_components": [
+        "docs/domain/smart_money/external_authority/EVIDENCE_CUSTODY_AND_RETENTION_CONTRACT.md",
+        "docs/domain/smart_money/governance_control_plane/GOVERNANCE_DR_AND_EPOCH_TRANSITION_PROTOCOL.md"
+      ],
+      "root_cause_overlap": ["FND-ARCH-014"],
+      "recommended_order": 5,
+      "reason": "Resolves RPO=0 contradiction by specifying synchronous dual-region durable write acknowledgment for governance-critical committed events."
+    },
+    {
+      "finding_id": "FND-ARCH-007",
+      "title": "claimed-but-uncommitted Gate3 recovery semantics",
+      "defect_class": "CRASH_RECOVERY_AMBIGUITY",
+      "depends_on": ["FND-ARCH-004", "FND-ARCH-011"],
+      "blocks": ["FND-ARCH-008", "FND-ARCH-010"],
+      "shared_components": [
+        "analyst_dashboard/smart_money/public_availability/transactional_state_backend.py"
+      ],
+      "root_cause_overlap": [],
+      "recommended_order": 6,
+      "reason": "Implements deterministic recovery state machine (UNCLAIMED, CLAIMED_PENDING_COMMIT, COMMITTED, LEASE_EXPIRED) preventing orphaned claims."
+    },
+    {
+      "finding_id": "FND-ARCH-008",
+      "title": "claim contention vs quarantine semantics",
+      "defect_class": "STATE_MACHINE_AMBIGUITY",
+      "depends_on": ["FND-ARCH-007"],
+      "blocks": ["FND-ARCH-010"],
+      "shared_components": [
+        "analyst_dashboard/smart_money/public_availability/transactional_state_backend.py",
+        "analyst_dashboard/smart_money/anchor_finalization/models.py"
+      ],
+      "root_cause_overlap": ["FND-ARCH-007"],
+      "recommended_order": 7,
+      "reason": "Separates transient retryable concurrency contention from permanent non-retryable semantic evidence quarantine."
+    },
+    {
+      "finding_id": "FND-ARCH-010",
+      "title": "stale fencing-token handling",
+      "defect_class": "CONCURRENCY_FENCING_DEFECT",
+      "depends_on": ["FND-ARCH-007", "FND-ARCH-008"],
+      "blocks": [],
+      "shared_components": [
+        "analyst_dashboard/smart_money/public_availability/transactional_state_backend.py"
+      ],
+      "root_cause_overlap": ["FND-ARCH-007", "FND-ARCH-008"],
+      "recommended_order": 8,
+      "reason": "Classifies stale fencing token rejection as safe concurrency-safety result without locking system into terminal hold."
+    }
+  ],
+  "execution_sequence": [
+    "FND-ARCH-001",
+    "FND-ARCH-012",
+    "FND-ARCH-011",
+    "FND-ARCH-014",
+    "FND-ARCH-004",
+    "FND-ARCH-007",
+    "FND-ARCH-008",
+    "FND-ARCH-010"
+  ]
+}

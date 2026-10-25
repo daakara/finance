@@ -1,0 +1,13 @@
+{
+  "backoff_policy": "EXPONENTIAL_WITH_JITTER",
+  "error_handling": {
+    "403": "TERMINAL_FAIL_CLOSED",
+    "429": "RATE_LIMITED_BACKOFF_HOLD",
+    "5xx": "RETRY_WITH_BUDGET_THEN_HOLD",
+    "timeout": "FAIL_CLOSED_PRESERVE_DENOMINATOR"
+  },
+  "rate_limit_max_rps": 10.0,
+  "schema_version": "SMART_MONEY_SEC_TRANSPORT_POLICY_V1",
+  "status": "TRANSPORT_POLICY_FROZEN",
+  "user_agent_format": "Sample Company Name AdminContact@<sample company domain>.com"
+}

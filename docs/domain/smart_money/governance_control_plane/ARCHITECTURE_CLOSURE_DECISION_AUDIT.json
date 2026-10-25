@@ -1,0 +1,21 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/architecture-closure-decision-audit.json",
+  "decision_id": "urn:arx:decision:epoch-gov-001:1:87650459add9",
+  "architecture_closure_status": "CLOSED",
+  "remediation_status": "NONE_OR_VERIFIED_COMPLETE",
+  "global_provisioning_readiness": "BLOCKED",
+  "provisioning_authorization_status": "NOT_ISSUABLE",
+  "runtime_action": "NONE",
+  "natural_denominator": 0,
+  "natural_observer_arming": "NOT_AUTHORIZED",
+  "natural_observation_authorization": "NOT_AUTHORIZED",
+  "production_readiness": "NOT_AUTHORIZED",
+  "model_tuning": "FROZEN",
+  "learning_claim": "NOT_AUTHORIZED",
+  "governance_control_plane_operational_authority": "NOT_ESTABLISHED",
+  "root_model_operator_ratification": "PENDING_OPERATOR_RATIFICATION",
+  "active_architecture_defect_count": 0,
+  "active_non_architecture_blocker_count": 5,
+  "decision_validity": "CURRENT",
+  "verdict": "CLOSED_VERIFIED"
+}

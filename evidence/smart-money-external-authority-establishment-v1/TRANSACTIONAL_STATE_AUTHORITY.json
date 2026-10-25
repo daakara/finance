@@ -1,0 +1,28 @@
+{
+  "authoritative_state_backend": "NOT_ESTABLISHED",
+  "distributed_authority": {
+    "external_backend_provisioned": "NO",
+    "live_concurrent_contenders_test": "NOT_RUN",
+    "live_fencing_rejection_test": "NOT_RUN",
+    "live_response_loss_test": "NOT_RUN",
+    "live_second_genesis_test": "NOT_RUN",
+    "target_candidate_systems": [
+      "AWS_DynamoDB",
+      "PostgreSQL_Serializable"
+    ]
+  },
+  "global_latest_head": "UNANCHORED",
+  "local_substrate": {
+    "admission_denominator_atomicity_verified": "PASS",
+    "anti_second_genesis_verified": "PASS",
+    "atomic_cas_verified": "PASS",
+    "backend_type": "SQLite3_WAL",
+    "fencing_token_verified": "PASS",
+    "response_loss_idempotency_verified": "PASS",
+    "rollback_detection_verified": "PASS"
+  },
+  "rationale": "SQLite is a single-host embedded database and cannot act as a distributed state authority across independent runners.",
+  "schema_version": "THEOREM_C_TRANSACTIONAL_STATE_AUTHORITY_V1",
+  "theorem": "C_TRANSACTIONAL_STATE_AUTHORITY",
+  "verdict": "BLOCKED"
+}

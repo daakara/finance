@@ -1,0 +1,15 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/timestamp-authority-audit.json",
+  "audit_id": "urn:arx:audit:timestamp-authority:2026-10-12",
+  "generated_at": "2026-10-12T20:20:32Z",
+  "timestamp_authority": {
+    "actual_utc": true,
+    "head_commit_author_timestamp": "2026-10-12T22:17:46+02:00",
+    "head_commit_committer_timestamp": "2026-10-12T22:17:46+02:00",
+    "manually_synthesized": false,
+    "mislabeled_local_as_utc": false,
+    "system_utc_timestamp": "2026-10-12T20:20:32Z",
+    "verdict": "PASS"
+  },
+  "verdict": "PASS"
+}

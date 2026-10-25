@@ -1,0 +1,20 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/post-architecture-dependency-negative-control-audit.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T18:00:00Z",
+  "negative_controls": {
+    "LATER_GATE_ACTIVE_WITH_UNSATISFIED_MANDATORY_PREREQ": 0,
+    "LATER_GATE_ACTIVE_WITH_NOT_ESTABLISHED_MANDATORY_PREREQ": 0,
+    "LATER_GATE_ACTIVE_WITH_UNKNOWN_MANDATORY_PREREQ": 0,
+    "LATER_GATE_ACTIVE_WITH_CONFLICT_MANDATORY_PREREQ": 0,
+    "LATER_GATE_ACTIVE_WITH_STALE_MANDATORY_PREREQ": 0,
+    "ARCHITECTURE_PASS_IMPLICITLY_SATISFIES_UNRELATED_CLAIMS": 0,
+    "LOCAL_AUTHORITY_SATISFIES_EXTERNAL_AUTHORITY_EDGE": 0
+  },
+  "anti_bypass_theorems": {
+    "ARCHITECTURE_CLOSED_NOT_EQUALS_PROVISIONING_READY": "PROVEN: Provisioning remains BLOCKED due to 5 non-architecture blockers, unresolved theorems B/C/D, and unestablished external evidence.",
+    "ARCHITECTURE_CLOSED_NOT_EQUALS_AUTHORIZATION_ISSUABLE": "PROVEN: Provisioning authorization remains NOT_ISSUABLE."
+  },
+  "verdict": "PASS"
+}

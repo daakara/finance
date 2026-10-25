@@ -1,0 +1,18 @@
+{
+  "anchor_commit_sha": "63131b9604707ed9c3820e3afd3e9d47d1914397",
+  "candidate004_diff": 0,
+  "claim": "Candidate 004 assets remain strictly frozen with zero diff lines across all canonical paths",
+  "evidence_class": "DESIGN_AND_UNIT_TEST",
+  "independent_verifier_result": "PASS",
+  "natural_denominator": 0,
+  "observed_result": "0 diff lines observed across all canonical candidate 004 paths",
+  "paths_verified": [
+    "tests/test_sprint_3_candidate_004_epoch_and_migration.py",
+    "analyst_dashboard/governance/experiment_ledger.py",
+    "analyst_dashboard/governance/passive_capture.py",
+    "analyst_dashboard/data/shadow_evidence.db",
+    "docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_004_FREEZE.json"
+  ],
+  "rederivation_command": "git diff 63131b9604707ed9c3820e3afd3e9d47d1914397 -- tests/test_sprint_3_candidate_004_epoch_and_migration.py analyst_dashboard/governance/experiment_ledger.py analyst_dashboard/governance/passive_capture.py analyst_dashboard/data/shadow_evidence.db docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_004_FREEZE.json",
+  "status": "PASS"
+}

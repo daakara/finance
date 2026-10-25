@@ -1,0 +1,15 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/candidate-freshness-trust-anchor-audit.json",
+  "audit_id": "urn:arx:audit:candidate-freshness-trust-anchor:2026-10-12",
+  "candidate_freshness_trust_anchor": {
+    "authoritative_context_source": "CanonicalDecisionCommitAuthority._resolve_authoritative_context_hash()",
+    "caller_supplied": false,
+    "candidate_freshness_model": "INDEPENDENTLY_ANCHORED",
+    "derived_from_current_context": true,
+    "loaded_from_governed_state": true,
+    "safe_contract_guarantee": "candidate.context_hash == caller.expected_context_hash == authority.current_context_hash, where authority.current_context_hash is independently resolved.",
+    "stored_by_authority": true
+  },
+  "generated_at": "2026-10-12T20:20:32Z",
+  "verdict": "PASS"
+}

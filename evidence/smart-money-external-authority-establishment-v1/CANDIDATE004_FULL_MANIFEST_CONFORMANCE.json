@@ -1,0 +1,14 @@
+{
+  "candidate004_diff": 0,
+  "candidate_id": "CANDIDATE_GENERATION_004",
+  "freeze_path": "docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_004_FREEZE.json",
+  "freeze_sha256": "297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90",
+  "full_manifest_conformance": "PASS",
+  "learning_claim": "NOT_AUTHORIZED",
+  "model_tuning": "FROZEN",
+  "scanner_changes": "NONE",
+  "schema_version": "CANDIDATE004_FULL_MANIFEST_CONFORMANCE_V1",
+  "semantic_closure": "UNTOUCHED",
+  "threshold_changes": "NONE",
+  "universe_changes": "NONE"
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/attestation-generator-replay-audit.json",
+  "byte_identical": true,
+  "deterministic_raw_bytes": true,
+  "deterministic_semantic_content": true,
+  "generated_at": "2026-10-12T15:30:00Z",
+  "generator_or_test_ref": "tools/generate_final_verification_and_purification_evidence.py",
+  "generator_replay_1_hash": "611976a9e45f7e98a28caa0471aae8c9798665005eb27369707311382e10ee57",
+  "generator_replay_2_hash": "611976a9e45f7e98a28caa0471aae8c9798665005eb27369707311382e10ee57",
+  "input_hashes": {
+    "generator_hash": "c68b6d7eaf6fe38c386f219cdd43ce4860c00975620804b820afeaea5f62f307"
+  },
+  "nondeterministic_fields": [],
+  "source_freeze_sha": "cf62c54badd9b39e7711edbab5e2de9e2e1efd98",
+  "source_tree_oid": "43ae64571ce86c15e67ee72e71a8466730f9857d",
+  "verdict": "PASS"
+}

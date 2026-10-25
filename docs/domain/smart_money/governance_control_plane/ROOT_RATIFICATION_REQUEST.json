@@ -1,0 +1,60 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/root-ratification-request.json",
+  "ratification_request_id": "urn:arx:ratification-request:root-model:epoch-gov-001",
+  "governance_epoch": "epoch-gov-001",
+  "root_model_hash": "374ad10ad5d2e4c7681e67ab1b403b324d5cf1d1dc9afcd7595380bb25662389",
+  "proposed_roles": [
+    {
+      "role_id": "urn:arx:role:security-officer:v1",
+      "role_name": "Security Officer Alpha",
+      "responsibilities": ["Cryptographic key enrollment", "Security policy enforcement"],
+      "status": "ROLE_TEMPLATE"
+    },
+    {
+      "role_id": "urn:arx:role:governance-lead:v1",
+      "role_name": "Governance Lead Bravo",
+      "responsibilities": ["Governance ledger stewardship", "Audit oversight"],
+      "status": "ROLE_TEMPLATE"
+    },
+    {
+      "role_id": "urn:arx:role:architecture-lead:v1",
+      "role_name": "Architecture Lead Charlie",
+      "responsibilities": ["Architecture closure validation", "System boundary defense"],
+      "status": "ROLE_TEMPLATE"
+    },
+    {
+      "role_id": "urn:arx:role:independent-auditor:v1",
+      "role_name": "Independent Auditor Delta",
+      "responsibilities": ["Zero-finding audit attestations", "External witness verification"],
+      "status": "ROLE_TEMPLATE"
+    }
+  ],
+  "proposed_quorum": {
+    "threshold": 3,
+    "total_population": 4,
+    "unanimous_for_constitution": true
+  },
+  "allowed_root_actions": [
+    "RATIFY_POLICY",
+    "SUPERSEDE_POLICY",
+    "ENROLL_KEY",
+    "ROTATE_KEY",
+    "REVOKE_KEY",
+    "EXECUTE_QUORUM_RECOVERY",
+    "AUTHORIZE_EPOCH_TRANSITION"
+  ],
+  "prohibited_root_actions": [
+    "DIRECT_OPERATOR_PROVISIONING_BYPASS",
+    "RETROSPECTIVE_FINDING_DELETION",
+    "DENOMINATOR_MUTATION",
+    "NATURAL_OBSERVER_ARMING",
+    "UNILATERAL_POLICY_OVERRIDE"
+  ],
+  "bootstrap_authority_model_hash": "051a89bb6ea861a052ff698889ff21dcfc2d7faefea101ad4148bcae9fa7f4a2",
+  "genesis_protocol_hash": "9c1b7890def1234567890abcdef1234567890abcdef1234567890abcdef12345",
+  "decision_requested": "APPROVE",
+  "allowed_decisions": ["APPROVE", "REJECT", "REQUEST_CHANGES"],
+  "status": "PENDING_OPERATOR_RATIFICATION",
+  "agent_may_approve": false,
+  "submitted_at": "2026-10-12T03:58:00Z"
+}

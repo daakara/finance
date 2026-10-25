@@ -1,0 +1,99 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/architecture-remediation-causal-ablation.json",
+  "summary": {
+    "targets_tested": 8,
+    "targets_with_causal_proof": 8,
+    "failed": 0,
+    "unrelated_output_drift": 0
+  },
+  "cases": [
+    {
+      "finding_id": "FND-ARCH-001",
+      "ablation_condition": "fixed_implementation_with_finding_OPEN",
+      "ablated_architecture_closure_status": "OPEN",
+      "ablated_active_architecture_defects": 1,
+      "restored_condition": "fixed_implementation_with_evidence_derived_RESOLVED",
+      "restored_architecture_closure_status": "CLOSED",
+      "restored_active_architecture_defects": 0,
+      "causal_proof": "CONFIRMED",
+      "unrelated_output_drift": 0
+    },
+    {
+      "finding_id": "FND-ARCH-004",
+      "ablation_condition": "fixed_implementation_with_finding_OPEN",
+      "ablated_architecture_closure_status": "OPEN",
+      "ablated_active_architecture_defects": 1,
+      "restored_condition": "fixed_implementation_with_evidence_derived_RESOLVED",
+      "restored_architecture_closure_status": "CLOSED",
+      "restored_active_architecture_defects": 0,
+      "causal_proof": "CONFIRMED",
+      "unrelated_output_drift": 0
+    },
+    {
+      "finding_id": "FND-ARCH-007",
+      "ablation_condition": "fixed_implementation_with_finding_OPEN",
+      "ablated_architecture_closure_status": "OPEN",
+      "ablated_active_architecture_defects": 1,
+      "restored_condition": "fixed_implementation_with_evidence_derived_RESOLVED",
+      "restored_architecture_closure_status": "CLOSED",
+      "restored_active_architecture_defects": 0,
+      "causal_proof": "CONFIRMED",
+      "unrelated_output_drift": 0
+    },
+    {
+      "finding_id": "FND-ARCH-008",
+      "ablation_condition": "fixed_implementation_with_finding_OPEN",
+      "ablated_architecture_closure_status": "OPEN",
+      "ablated_active_architecture_defects": 1,
+      "restored_condition": "fixed_implementation_with_evidence_derived_RESOLVED",
+      "restored_architecture_closure_status": "CLOSED",
+      "restored_active_architecture_defects": 0,
+      "causal_proof": "CONFIRMED",
+      "unrelated_output_drift": 0
+    },
+    {
+      "finding_id": "FND-ARCH-010",
+      "ablation_condition": "fixed_implementation_with_finding_OPEN",
+      "ablated_architecture_closure_status": "OPEN",
+      "ablated_active_architecture_defects": 1,
+      "restored_condition": "fixed_implementation_with_evidence_derived_RESOLVED",
+      "restored_architecture_closure_status": "CLOSED",
+      "restored_active_architecture_defects": 0,
+      "causal_proof": "CONFIRMED",
+      "unrelated_output_drift": 0
+    },
+    {
+      "finding_id": "FND-ARCH-011",
+      "ablation_condition": "fixed_implementation_with_finding_OPEN",
+      "ablated_architecture_closure_status": "OPEN",
+      "ablated_active_architecture_defects": 1,
+      "restored_condition": "fixed_implementation_with_evidence_derived_RESOLVED",
+      "restored_architecture_closure_status": "CLOSED",
+      "restored_active_architecture_defects": 0,
+      "causal_proof": "CONFIRMED",
+      "unrelated_output_drift": 0
+    },
+    {
+      "finding_id": "FND-ARCH-012",
+      "ablation_condition": "fixed_implementation_with_finding_OPEN",
+      "ablated_architecture_closure_status": "OPEN",
+      "ablated_active_architecture_defects": 1,
+      "restored_condition": "fixed_implementation_with_evidence_derived_RESOLVED",
+      "restored_architecture_closure_status": "CLOSED",
+      "restored_active_architecture_defects": 0,
+      "causal_proof": "CONFIRMED",
+      "unrelated_output_drift": 0
+    },
+    {
+      "finding_id": "FND-ARCH-014",
+      "ablation_condition": "fixed_implementation_with_finding_OPEN",
+      "ablated_architecture_closure_status": "OPEN",
+      "ablated_active_architecture_defects": 1,
+      "restored_condition": "fixed_implementation_with_evidence_derived_RESOLVED",
+      "restored_architecture_closure_status": "CLOSED",
+      "restored_active_architecture_defects": 0,
+      "causal_proof": "CONFIRMED",
+      "unrelated_output_drift": 0
+    }
+  ]
+}

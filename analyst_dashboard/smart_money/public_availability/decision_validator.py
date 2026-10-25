@@ -1,6 +1,6 @@
 """
 Form 4 Decision-Input Contract Validator — Epoch 001.
-Evaluates Form 4 XML content against SMART_MONEY_OPEN_MARKET_PURCHASE_V1 contract.
+Evaluates Form 4 XML content against SMART_MONEY_REPORTED_PURCHASE_TRANSACTION_V1 contract.
 Deterministic reason codes, strict P/A semantics, and precise footnote scoping.
 """
 
@@ -215,7 +215,7 @@ def parse_and_validate_form4_decision_inputs(
             DecisionInputCompleteness.INCOMPLETE,
             DecisionInputReasonCode.REQUIRED_TRANSACTION_CODE_MISSING,
             {
-                "error": "No open-market purchase transaction (Code P + Acquired A) found",
+                "error": "No reported purchase transaction (Code P + Acquired A) found",
                 "contains_code_A_grant": has_grant_a,
                 "evaluated_txs": tx_eval_details,
             },

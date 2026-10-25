@@ -1,0 +1,23 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/decision-authority-map.json",
+  "audit_id": "urn:arx:audit:decision-authority-map:2026-10-12",
+  "generated_at": "2026-10-12T16:03:25Z",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "decision_authority_map": {
+    "decision_record_authority": "FINDING_CLAIM_SEMANTICS_ADMISSION_CLOSURE_MANIFEST.json, POST_ARCHITECTURE_CANONICAL_BASELINE_V2.json, and GovernanceDecisionEngine",
+    "currentness_authority": "POST_ARCHITECTURE_CANONICAL_BASELINE_V2.json (bound to CURRENT decision urn:arx:decision:epoch-gov-002:3:82e99bf8c82f)",
+    "supersession_authority": "Decision succession lineage: evaluating Sequence N+1 with previous_decision_hash = Hash(Sequence N) deterministically transitions Sequence N to SUPERSEDED",
+    "sequence_authority": "epoch-gov-002 monotonic integer sequence in GovernanceDecisionEngine and DECISION_SEQUENCE_EQUIVOCATION_AUDIT.json",
+    "predecessor_link_authority": "previous_decision_hash embedded in canonical decision payload, verified against SHA-256 of predecessor snapshot",
+    "decision_hash_authority": "sha256_canonical(canonical_body) in GovernanceDecisionEngine.evaluate_canonical()"
+  },
+  "decision_status_model": {
+    "type": "HYBRID",
+    "current_definition": "A decision snapshot with the highest sequence number in the active epoch, uninvalidated, binding the previous decision hash, and marked CURRENT in canonical baseline.",
+    "superseded_definition": "A valid decision snapshot whose decision_hash is bound as previous_decision_hash by a successor decision in the same epoch.",
+    "stale_definition": "A decision whose evaluation timestamp exceeds clock skew limits or whose underlying source/finding inputs have mutated without recomputation.",
+    "invalidated_definition": "A decision explicitly recorded in DECISION_INVALIDATION_REGISTRY.json with an invalidation authority, timestamp, and reason code, forbidding sequence reuse."
+  },
+  "verdict": "PASS"
+}

@@ -1,0 +1,13 @@
+{
+  "action": "HALT_E_EXECUTION",
+  "checkpoint": "PRE_E_QUALIFICATION_CHECKPOINT",
+  "prerequisites": {
+    "A_RELEASE_TRUST": "BLOCKED",
+    "B_AUTHORIZATION_AUTHORITY": "BLOCKED",
+    "C_TRANSACTIONAL_STATE_AUTHORITY": "BLOCKED",
+    "D_EVIDENCE_CUSTODY": "BLOCKED"
+  },
+  "rule": "Prerequisites A through D must all PASS before Theorem E live recovery qualification can be attempted.",
+  "schema_version": "PRE_E_QUALIFICATION_CHECKPOINT_V1",
+  "verdict": "BLOCKED"
+}

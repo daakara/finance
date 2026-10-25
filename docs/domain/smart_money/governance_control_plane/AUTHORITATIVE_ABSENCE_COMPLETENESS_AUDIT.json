@@ -1,0 +1,30 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/authoritative-absence-completeness-audit.json",
+  "generated_at": "2026-10-12T15:30:00Z",
+  "generator_or_test_ref": "tests/test_smart_money_finding_identity_claim_semantics.py::TestMatrix61AuthoritativeAbsenceCompletenessDerivation",
+  "input_hashes": {
+    "claim_derivation_hash": "ad6397a292ba486142a2194dede719f46ebe0d495daa9b35f661c3cbb58541b4",
+    "claim_derivation_policy_hash": "b51fdebce8dc12ecc3a3d73738f1389663624c55bb495bed6a78b059aeb59676"
+  },
+  "negative_control": {
+    "caller_declared_authoritative_absence_without_completeness_proof_produced_not_established": 0,
+    "description": "Caller asserts authoritative absence with naked authority label and no completeness proof",
+    "observed_claim_state": "UNKNOWN",
+    "verdict": "PASS"
+  },
+  "positive_control": {
+    "authoritative_not_established_requires_proven_completeness": "PASS",
+    "authority_label_alone_sufficient": false,
+    "completeness_derivation_mechanism": "Recognized canonical manifest URNs ('urn:arx:authority:canonical-manifest', etc.) or explicit completeness_proven=True with bound search scope, source set hash, and enumeration method",
+    "description": "Legitimate authoritative absence derived with canonical completeness mechanism and recognized manifest URN",
+    "observed_claim_state": "NOT_ESTABLISHED",
+    "verdict": "PASS"
+  },
+  "provenance_class_none_safety": {
+    "absence_laundering_prevented": true,
+    "overconstrained_rule_imposed": false
+  },
+  "source_freeze_sha": "cf62c54badd9b39e7711edbab5e2de9e2e1efd98",
+  "source_tree_oid": "43ae64571ce86c15e67ee72e71a8466730f9857d",
+  "verdict": "PASS"
+}

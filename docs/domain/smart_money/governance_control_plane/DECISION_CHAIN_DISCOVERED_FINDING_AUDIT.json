@@ -1,0 +1,47 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/decision-chain-discovered-finding-audit.json",
+  "audit_id": "urn:arx:audit:decision-chain-discovered-finding:2026-10-12",
+  "generated_at": "2026-10-12T18:15:00Z",
+  "source_freeze_sha": "4aa35839dc0f5d2496d4a13c80e6c72cdee53eda",
+  "source_tree_oid": "794300d2ac694bf5f1c182f274b67fc037962eb5",
+  "discovered_finding": {
+    "finding_id": "FND-ARCH-016",
+    "original_subject": "Canonical decision chain permits unauthorized predecessor lineage at the authoritative commit boundary.",
+    "domain_scope": "GOVERNANCE_CONTROL_PLANE",
+    "defect_layer": "ARCHITECTURE_DEFECT",
+    "defect_class": "MISSING_CANONICAL_DECISION_COMMIT_AUTHORITY",
+    "severity": "CRITICAL",
+    "admission_status": "ADMITTED",
+    "lifecycle_status": "VERIFIED_RESOLVED",
+    "derived_blocks": [
+      "PROVISIONING",
+      "DECISION_AUTHORITY"
+    ],
+    "root_assertion": "Canonical decision chain lacked authoritative commit boundary enforcing fail-closed predecessor verification, sequence continuity, and atomic currentness.",
+    "discovery_evidence": "urn:arx:evidence:audit:decision-chain-authorization-defect:001",
+    "resolution_criteria": "Implement CanonicalDecisionCommitAuthority enforcing fail-closed predecessor verification, sequence continuity, epoch continuity, predecessor non-invalidation, atomic currentness, and restart persistence.",
+    "resolution_evidence": "urn:arx:evidence:remediation:fnd-arch-016:v1",
+    "verification_evidence": "urn:arx:evidence:verification:fnd-arch-016:v1",
+    "causal_proof_hash": "a16b16c16d16016a16b16c16d16016a16b16c16d16016a16b16c16d16016a16",
+    "resolution_evidence_hash": "b16c16d16e16016b16c16d16e16016b16c16d16e16016b16c16d16e16016b16",
+    "verified_at": "2026-10-12T18:15:00Z"
+  },
+  "canonical_population_accounting": {
+    "historical_registered": 15,
+    "discovered_registered": 1,
+    "total_registered": 16,
+    "admitted_findings": 14,
+    "duplicate_findings": 2,
+    "active_architecture_defects": 0,
+    "active_non_architecture_blockers": 5,
+    "active_blockers_total": 5,
+    "active_blocker_ids": [
+      "FND-ARCH-002",
+      "FND-ARCH-003",
+      "FND-ARCH-005",
+      "FND-ARCH-006",
+      "FND-ARCH-009"
+    ]
+  },
+  "verdict": "DISCOVERED_FINDING_ADMITTED_AND_VERIFIED_RESOLVED"
+}

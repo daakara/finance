@@ -238,6 +238,21 @@ def execute_cosign_verification(payload_path: str, bundle_path: str, expected_wo
     print(f"Verified OK: {bundle_path}")
 
 
+def check_transition(
+    sm: ObserverStateMachine,
+    target: ObserverState,
+    reason: str,
+    metadata: Optional[Dict[str, Any]] = None,
+) -> bool:
+    """Fails closed with TerminalHoldError if state transition is rejected."""
+    ok, msg = sm.transition(target, reason=reason, metadata=metadata)
+    if not ok:
+        raise TerminalHoldError(
+            f"CRITICAL STATE MACHINE TRANSITION FAILURE: Cannot transition from {sm.current_state.value} to {target.value}: {msg}"
+        )
+    return ok
+
+
 def main():
     parser = argparse.ArgumentParser(description="Smart Money Natural Scheduler Engine")
     parser.add_argument("--mode", choices=["dry-run", "natural"], default="dry-run", help="Requested mode (CLI-only)")
@@ -245,6 +260,18 @@ def main():
     parser.add_argument("--state-dir", default=os.path.join(PROJECT_ROOT, "durable_state"), help="Durable state directory")
     parser.add_argument("--simulate-natural-candidate", action="store_true", help="TEST_ONLY simulation of natural candidate")
     args = parser.parse_args()
+
+    # Fail-closed guard for read-only research deployment profile
+    release_mode = os.environ.get("SMART_MONEY_RELEASE_MODE", "READ_ONLY_RESEARCH").upper()
+    autonomous_enabled = os.environ.get("AUTONOMOUS_ROOTING_ENABLED", "false").lower() in ["true", "1"]
+    if release_mode == "READ_ONLY_RESEARCH" or not autonomous_enabled:
+        if args.mode == "natural":
+            raise RuntimeError(
+                f"FAIL-CLOSED: Autonomous natural scheduler execution is disarmed. "
+                f"Current profile: SMART_MONEY_RELEASE_MODE='{release_mode}', "
+                f"AUTONOMOUS_ROOTING_ENABLED={autonomous_enabled}. "
+                "Natural rooting is prohibited in read-only research deployments."
+            )
 
     print("======================================================================")
     print("SMART MONEY GOVERNED NATURAL SCHEDULER EXECUTION")
@@ -313,12 +340,15 @@ def main():
             raise TerminalHoldError(f"TERMINAL_HOLD: Corrupt Gate-3 authorization artifact JSON: {e}")
 
         # Validate with V2 schema
+        readiness_dir = os.path.join(PROJECT_ROOT, "evidence", "readiness_artifacts")
         auth_valid, auth_msg = validate_gate3_authorization(
             auth_doc,
             consumed_auth_ids=state_mgr.consumed_authorizations,
             current_event_name=safe_claims.get("event_name"),
             current_consumer_mode=args.mode,
             current_commit_sha=safe_claims.get("sha"),
+            readiness_evidence_dir=readiness_dir if os.path.exists(readiness_dir) else None,
+            natural_authority_mode=(args.mode == "natural"),
         )
 
         if auth_valid:
@@ -329,23 +359,27 @@ def main():
             claim_ok, claim_msg = state_mgr.claim_authorization(auth_id, run_id_val, safe_claims.get("sha", ""))
             if not claim_ok:
                 print(f"Authorization claim failed ({claim_msg}) -> Defaulting safely to PRE_ARM_DRY_RUN")
-                state_machine.transition(ObserverState.SAFE_HOLD, reason=claim_msg)
+                check_transition(state_machine, ObserverState.SAFE_HOLD, reason=claim_msg)
             else:
-                state_machine.transition(ObserverState.GATE3_VERIFIED, reason="Valid Gate-3 V2 verified")
-                state_machine.transition(ObserverState.AUTHORIZATION_CLAIMED, reason="Atomic claim accepted")
-                state_machine.transition(ObserverState.OBSERVER_ARMED, reason="Observer armed (ARM_ONLY)")
-                state_machine.transition(ObserverState.AWAITING_NATURAL_EVENT, reason="Awaiting SEC event")
+                check_transition(state_machine, ObserverState.GATE3_VERIFIED, reason="Valid Gate-3 V2 verified")
+                check_transition(state_machine, ObserverState.AUTHORIZATION_CLAIMED, reason="Atomic claim accepted")
+                check_transition(state_machine, ObserverState.OBSERVER_ARMED, reason="Observer armed (ARM_ONLY)")
+                check_transition(state_machine, ObserverState.AWAITING_NATURAL_EVENT, reason="Awaiting SEC event")
                 execution_scope = "NATURAL_ARMED"
                 active_auth_doc = auth_doc
         else:
             print(f"Gate-3 authorization invalid ({auth_msg}) -> Failing closed to PRE_ARM_DRY_RUN")
-            state_machine.transition(ObserverState.SAFE_HOLD, reason=f"Gate-3 invalid: {auth_msg}")
+            check_transition(state_machine, ObserverState.SAFE_HOLD, reason=f"Gate-3 invalid: {auth_msg}")
     else:
         print("No Gate-3 authorization artifact present -> Defaulting safely to PRE_ARM_DRY_RUN")
-        state_machine.transition(ObserverState.SAFE_HOLD, reason="No Gate-3 artifact present")
+        check_transition(state_machine, ObserverState.SAFE_HOLD, reason="No Gate-3 artifact present")
         if args.mode == "natural":
             print("WARNING: CLI requested --mode natural but no valid Gate-3 authorization exists.")
             print("CLI input alone CANNOT activate natural path. Remaining in PRE_ARM_DRY_RUN.")
+
+    # Guard: simulation is strictly prohibited in real natural mode
+    if args.mode == "natural" and getattr(args, "simulate_natural_candidate", False):
+        raise RuntimeError("CRITICAL REJECTION: --simulate-natural-candidate is strictly prohibited in natural mode")
 
     # Wire Public Observer Engine with persistent database
     observer_engine = PublicObserverEngine(state_mgr.observer_db_path)
@@ -354,11 +388,11 @@ def main():
 
     # 6. Construct Canonical R1 Payload
     print(f"\n--- STEP 6: Constructing canonical R1 payload (Scope: {execution_scope}) ---")
-    if execution_scope == "NATURAL_ARMED" and args.simulate_natural_candidate:
+    if execution_scope == "NATURAL_ARMED" and getattr(args, "simulate_natural_candidate", False):
         # TEST_ONLY simulated natural observation through exact production code path
-        state_machine.transition(ObserverState.NATURAL_CANDIDATE_DETECTED, reason="Simulated candidate detected")
-        state_machine.transition(ObserverState.NATURAL_CANDIDATE_QUALIFIED, reason="Simulated candidate qualified")
-        state_machine.transition(ObserverState.RAW_EVIDENCE_CAPTURED, reason="Raw evidence captured")
+        check_transition(state_machine, ObserverState.NATURAL_CANDIDATE_DETECTED, reason="Simulated candidate detected")
+        check_transition(state_machine, ObserverState.NATURAL_CANDIDATE_QUALIFIED, reason="Simulated candidate qualified")
+        check_transition(state_machine, ObserverState.RAW_EVIDENCE_CAPTURED, reason="Raw evidence captured")
 
         clock_rec = ClockAuthorityRecord(
             clock_source="NTP_POOL_MONOTONIC",
@@ -464,7 +498,8 @@ def main():
 
     auth_event_hash = sha256_hex(auth_event_canon.encode("utf-8"))
     print(f"Authority Event SHA-256: {auth_event_hash}")
-    state_machine.transition(ObserverState.AUTHORITY_EVENT_RECORDED, reason="Authority event recorded")
+    if execution_scope == "NATURAL_ARMED":
+        check_transition(state_machine, ObserverState.AUTHORITY_EVENT_RECORDED, reason="Authority event recorded")
 
     # 9. Construct Canonical R2 Payload
     print(f"\n--- STEP 9: Constructing canonical R2 payload (Scope: {execution_scope}) ---")
@@ -530,7 +565,8 @@ def main():
     r2_meta = parse_bundle(r2_bundle_path)
     print(f"R2 Bundle SHA-256: {r2_meta['bundle_sha256']}")
     print(f"R2 Rekor Log Index: {r2_meta['log_index']}")
-    state_machine.transition(ObserverState.R2_CLOSED, reason="R2 closed and signed")
+    if execution_scope == "NATURAL_ARMED":
+        check_transition(state_machine, ObserverState.R2_CLOSED, reason="R2 closed and signed")
 
     # 11. Validating Cryptographic Bindings
     print("\n--- STEP 11: Validating bindings and signer continuity ---")
@@ -541,7 +577,15 @@ def main():
 
     # 12. Checkpointing Durable State with Anti-Rollback Sequence Increment
     print("\n--- STEP 12: Checkpointing durable state ---")
-    state_machine.transition(ObserverState.PRE_OBSERVATION_READY, reason="Run concluded")
+    if state_machine.current_state == ObserverState.SAFE_HOLD:
+        check_transition(state_machine, ObserverState.PRE_OBSERVATION_READY, reason="Dry run concluded legally")
+    elif execution_scope == "NATURAL_ARMED":
+        check_transition(state_machine, ObserverState.SAFE_HOLD, reason="Natural observation window concluded without accession")
+        check_transition(state_machine, ObserverState.PRE_OBSERVATION_READY, reason="Natural armed cycle concluded legally")
+
+    assert state_machine.current_state == ObserverState.PRE_OBSERVATION_READY, f"CRITICAL: Final state {state_machine.current_state.value} != PRE_OBSERVATION_READY"
+    assert state_mgr.denominator_state.get("natural_denominator", 0) == 0, "CRITICAL: Natural denominator mutated!"
+
     state_mgr.observer_state["last_completed_run_id"] = run_id
     state_mgr.observer_state["current_status"] = state_machine.current_state.value
     state_mgr.observer_state["state_machine_history"] = state_machine.to_dict()

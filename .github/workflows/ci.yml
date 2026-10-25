@@ -29,7 +29,7 @@ jobs:
     - name: Install test dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt pytest pytest-cov httpx starlette pyyaml pytest-asyncio
+        pip install -r requirements.txt pytest pytest-cov httpx starlette pyyaml pytest-asyncio pgserver psycopg2-binary
 
     - name: Run Tier 1 Core Invariant Gate
       env:
@@ -94,6 +94,12 @@ jobs:
           tests/test_vcp_candidate_006_conformance.py \
           tests/test_vcp_candidate_reproducibility.py \
           -v --strict-markers
+
+    - name: Smart Money & Hosted PostgreSQL 16 Integration Gate
+      env:
+        PYTHONPATH: "."
+      run: |
+        python scripts/run_postgres_integration_gate.py
 
     - name: Run Tier 3 Pre-Flight Release Gate
       if: github.base_ref == 'main' || (github.ref == 'refs/heads/main' && github.event_name == 'push')

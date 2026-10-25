@@ -1,0 +1,42 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/final-attestation-verification-manifest.json",
+  "absence_completeness_audit_hash": "3da4ce84066a2f6bc81dd868e9b4a92e861213c78f40a72e64383a347d709bd8",
+  "active_blocker_set_hash": "ae56d3e2675258e12473ff91f9655feac967285e3d2b46ce0942abc0efe15310",
+  "candidate004_independent_recomputation": "NOT_ESTABLISHED",
+  "candidate004_raw_sha256": "297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90",
+  "candidate004_semantic_closure_hash": "53b6372349cfdb1046a4ddbd678f628bba28c7778cef2fe381e02f9097f7a9e6",
+  "causal_ablation_audit_hash": "ed5a93895daa9d91bddab991124e1ff962511d5746030dfcf6f7e8452fa0616d",
+  "final_verdict": "CLOSED_VERIFIED",
+  "finding_admission_registry_hash": "5b0dbdb7b8bed01e61820b610c351e08687e6a6c5f058c17875c5b6b20352523",
+  "finding_identity_registry_hash": "db7549ed5ad6271fb0fe072b6343374a92533e9ce423996f4364c80904fe2647",
+  "full_regression_hash": "6c981d427d97dbc37403b9e30df05bea5f0e252b620b380f54bf5c498ca4e8af",
+  "full_tree_partition_audit_hash": "d6303c01d653d188ea5c39d7a73440fea97f6fbac391ab098ea9b4271e27af99",
+  "generated_at": "2026-10-12T15:30:00Z",
+  "governance_regression_manifest_hash": "3e7257e13ad070f933b6b33df0cec02c01da69cab1cb6974aace7e4ab8ef24f2",
+  "is_blocking_equivalence_audit_hash": "73c805e7ae4ff1001f63a4a419021b5e70735908dbb9fc74bba0cdc025d2e6da",
+  "manifest_derived_from_completed_evidence": "PASS",
+  "manifest_id": "urn:arx:manifest:final-attestation-verification-and-source-purification:v1",
+  "next_authorized_gate": "SMART_MONEY_DISTRIBUTED_AUTHORITY_TARGETED_ARCHITECTURE_REMEDIATION_V1",
+  "posture_assertions": {
+    "learning_claim": "NOT_AUTHORIZED",
+    "model_tuning": "FROZEN",
+    "natural_denominator": 0,
+    "natural_observer_arming": "NOT_AUTHORIZED",
+    "production_readiness": "NOT_AUTHORIZED",
+    "provisioning_authorization_status": "NOT_ISSUABLE",
+    "unsupported_pass_claims": 0
+  },
+  "recomputed_population": {
+    "active_architecture_defects": 8,
+    "active_blockers": 13,
+    "active_non_architecture_blockers": 5,
+    "admitted_findings": 13,
+    "duplicates": 2,
+    "registered_findings": 15
+  },
+  "reference_hash_mismatches": 0,
+  "source_freeze_sha": "cf62c54badd9b39e7711edbab5e2de9e2e1efd98",
+  "source_tree_oid": "43ae64571ce86c15e67ee72e71a8466730f9857d",
+  "toctou_change_audit_hash": "66489b2bcae90ccc6acb3fc1a807fc149201fcf8a7617ff8927b709d33522109",
+  "version": "1.0.0"
+}

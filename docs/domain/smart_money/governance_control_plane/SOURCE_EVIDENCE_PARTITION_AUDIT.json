@@ -1,0 +1,17 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/source-evidence-partition-audit.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T17:30:00Z",
+  "evidence_authority_files_in_source": 0,
+  "unclassified_files": 0,
+  "governed_classifications": {
+    "FND-ARCH-*_ROOT_CAUSE_ANALYSIS.json": "DESIGN_RECORD",
+    "ARCHITECTURE_REMEDIATION_DEPENDENCY_DAG.json": "DESIGN_RECORD",
+    "HASH_DOMAIN_REGISTRY.json": "GOVERNED_STATE",
+    "DENOMINATOR_PREDICATE_EQUIVALENCE_MODEL.json": "GOVERNED_STATE",
+    "GATE3_CLAIM_STATE_MACHINE.json": "CONTRACT",
+    "TRANSACTION_LOG_CONSENSUS_COHERENCE_CONTRACT.md": "CONTRACT"
+  },
+  "verdict": "PASS"
+}

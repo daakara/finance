@@ -1,0 +1,19 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/sequence-4-temporal-semantics-audit.json",
+  "artifact_type": "SEQUENCE_4_TEMPORAL_SEMANTICS_AUDIT",
+  "derived_at_contract": {
+    "clock_skew_policy_seconds": 300,
+    "semantic_meaning": "effective/logical evaluation timestamp bounded by clock skew policy",
+    "wall_clock_required": false
+  },
+  "lineage": {
+    "generated_at_utc": "2026-10-12T21:15:15Z",
+    "generator_path": "scripts/generate_chain_migration_evidence.py",
+    "generator_sha256": "98658eb74aafd87771326262cb31d4c4f1ea25c0e632843171e68d8e9fc0ff5f",
+    "git_head": "e41cc6d729a2af1fab6cdaace764af8e1739f87f",
+    "invocation": "python scripts/generate_chain_migration_evidence.py",
+    "source_sha": "3c5e13b85fb10190afe23b0f8aa1fc300e1fcf11"
+  },
+  "sequence_4_temporal_causality": "PASS",
+  "verdict": "PASS"
+}

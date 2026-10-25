@@ -1,0 +1,8 @@
+{
+  "claim": "Downstream authority failure after capture routes evidence to immutable quarantine and blocks admission",
+  "evidence_class": "DESIGN_AND_UNIT_TEST",
+  "independent_verifier_result": "PASS",
+  "observed_result": "Downstream failure routes evidence to quarantine_objects/ with status CAPTURED_QUARANTINED; admissible=False; natural denominator protected.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_distributed_authority_substrate.py -k test_evidence_custody_staging_quarantine_and_replay",
+  "status": "PASS"
+}

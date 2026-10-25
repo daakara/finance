@@ -1,0 +1,23 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/canonical-recomputation-audit.json",
+  "pre_remediation": {
+    "finding_identity_registry_hash": "dfbe45012e6a25b163beb93acce1f6ad62167c73da5c4ab2613aeefec39ce937",
+    "finding_admission_registry_hash": "4334368524600fca87473eb944053295cab255be8a7ace827cf1c275029497de",
+    "active_blocker_set_hash": "ae56d3e2675258e12473ff91f9655feac967285e3d2b46ce0942abc0efe15310",
+    "active_blockers_count": 13,
+    "active_architecture_defects_count": 8,
+    "active_non_architecture_blockers_count": 5
+  },
+  "post_remediation": {
+    "finding_identity_registry_hash": "dfbe45012e6a25b163beb93acce1f6ad62167c73da5c4ab2613aeefec39ce937",
+    "finding_admission_registry_hash": "9d9ccc323db2575473f4afe32e30ea191726f7edc8d6870a93bec2d9dc5772fc",
+    "active_blocker_set_hash": "d50ac2dea79ceec67a884dbcc30956a37498aad1b69a7ecbae94b7ef0796bc92",
+    "active_blockers_count": 5,
+    "active_architecture_defects_count": 0,
+    "active_non_architecture_blockers_count": 5
+  },
+  "identity_invariance": {
+    "identity_hash_matches": true,
+    "verdict": "PASS"
+  }
+}

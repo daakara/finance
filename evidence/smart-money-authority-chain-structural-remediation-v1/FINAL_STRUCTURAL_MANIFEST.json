@@ -1,0 +1,200 @@
+{
+  "artifact_count": 38,
+  "artifacts": [
+    {
+      "byte_length": 1016,
+      "relative_path": "ACTION_PIN_REGISTER.json",
+      "sha256": "cb02cb7061e234e6ebcfad953daab64b8251facf5a07bc982812513cc6c3de69"
+    },
+    {
+      "byte_length": 425,
+      "relative_path": "ADMISSION_CALL_GRAPH.json",
+      "sha256": "53030d91080e603d132925815dd32e477e87bfcacb8b2b92e9767a86f0f7a95f"
+    },
+    {
+      "byte_length": 339,
+      "relative_path": "ADMISSION_THEOREM.json",
+      "sha256": "29e45651ee2d34b06ddeb55bcf10a5f4f356c5de3b8d4788e41bcdd3ec515ff5"
+    },
+    {
+      "byte_length": 103,
+      "relative_path": "AUTHORITY_EVENT_TRANSACTION_PROOF.json",
+      "sha256": "201ef5b7c8ca595c7574c471c3ffaf68a76a895f50eefb590471e50162498eca"
+    },
+    {
+      "byte_length": 670,
+      "relative_path": "AUTHORIZATION_THEOREM.json",
+      "sha256": "213281682fcec94e5d9cb0ef9dbc2071c29941534ecda5072c21269f6b17d2c9"
+    },
+    {
+      "byte_length": 1452,
+      "relative_path": "BASELINE.json",
+      "sha256": "043a13510ac9a1446c2ccae5d82cc1493a2e100036365b6801f8cb41f9c085f5"
+    },
+    {
+      "byte_length": 1056,
+      "relative_path": "CANDIDATE004_FIREWALL.json",
+      "sha256": "2348b8e612b85a6d0d5e2bc90babd7c2bd30ebda3293c1e22e28496950241820"
+    },
+    {
+      "byte_length": 196,
+      "relative_path": "CAS_CONCURRENCY_PROOF.json",
+      "sha256": "57efb30e64d5a87d5cb43a955ebec135c532ddafa30b22c85fa28d27a443c9d0"
+    },
+    {
+      "byte_length": 654,
+      "relative_path": "CONTINUITY_THEOREM.json",
+      "sha256": "9a587d51aadd3836fcd90bb9e7f3f5ab1e7f8ad6770d911965fa85cd1b547a6e"
+    },
+    {
+      "byte_length": 151,
+      "relative_path": "CRASH_RECOVERY_MATRIX.json",
+      "sha256": "c89fd2a11fb0bb37e353cc3e8b2dbd5366ca3ccca3f4ecd9a13fd9b1c6e0430d"
+    },
+    {
+      "byte_length": 1084,
+      "relative_path": "DENOMINATOR_NEGATIVE_CONTROLS.json",
+      "sha256": "14d40ce231ad4a2a8117e837124b6b15efa00081d9d3c9d18499e10154f35bfb"
+    },
+    {
+      "byte_length": 210,
+      "relative_path": "DEPENDENCY_LOCK_ATTESTATION.json",
+      "sha256": "d4cc491a24f9b8f4113fdfe78bcd0f8120f4c54a59cb5fb451abb3bde775c42a"
+    },
+    {
+      "byte_length": 425,
+      "relative_path": "DOC_CODE_PARITY_AUDIT.json",
+      "sha256": "ac931d61dc4bceb8b674a4dcfda14b2038c3a4a782f0d44e555ab587d4cbdcff"
+    },
+    {
+      "byte_length": 558,
+      "relative_path": "EVIDENCE_CUSTODY_THEOREM.json",
+      "sha256": "8fb0a1d8d61c0fdb8223acaaa1f2e3d41bdf42954e38a8b6ac6d987c57d357dd"
+    },
+    {
+      "byte_length": 545,
+      "relative_path": "EXECUTION_THEOREM.json",
+      "sha256": "b54e53babf11823d3dc95df70d9c587377d2591f5cf0f8b5f6cef9d6aae9b5ab"
+    },
+    {
+      "byte_length": 144,
+      "relative_path": "EXTERNAL_EPOCH_HEAD_PROOF.json",
+      "sha256": "e97a8c04ccbdfb0ca8169424f0f54960fa3c6f145d79c0fe735073ebcb64d3d0"
+    },
+    {
+      "byte_length": 244,
+      "relative_path": "FAILURE_SEMANTICS_MATRIX.json",
+      "sha256": "831f6a8c0997a6313e0a6c19b38a61d97b45a90e1728517ebb5ef7f38f7e30cf"
+    },
+    {
+      "byte_length": 149,
+      "relative_path": "FORM4_SEMANTIC_AUTHORITY.json",
+      "sha256": "3102075ee7af0ca9a8059bd61d3b3b64ccc03a65f3da9abbf22edcb5569f8266"
+    },
+    {
+      "byte_length": 190,
+      "relative_path": "GATE3_CRYPTO_VERIFICATION.json",
+      "sha256": "7220a4add0a99a8b931e1acfe0b5b1bd54e4b3fa866159628b11fc02b468cb93"
+    },
+    {
+      "byte_length": 183,
+      "relative_path": "GATE3_DELIVERY_PROOF.json",
+      "sha256": "e2204f9e6b0aa11f277a4461f1693231d499e4f41099ef98fd8bec5e7a63ef1b"
+    },
+    {
+      "byte_length": 264,
+      "relative_path": "GATE3_SCHEMA_CONTRACT.json",
+      "sha256": "b0b2f6c45b44f53cbb6f1383944e005796db279b765c1e539e7f5f5a2dcb10f3"
+    },
+    {
+      "byte_length": 145,
+      "relative_path": "OBSERVATION_CADENCE_CLAIM_AUDIT.json",
+      "sha256": "771e4947c894a8c661311096e88d1221a86834e0e644130678843fee76e2d4cb"
+    },
+    {
+      "byte_length": 490,
+      "relative_path": "OIDC_POLICY_REDERIVATION.json",
+      "sha256": "9a5cd89a10e49e66b96ca2b844a1d1c83cc2cf4ff6a762fe85449bf9ec736878"
+    },
+    {
+      "byte_length": 177,
+      "relative_path": "PRODUCTION_QUALIFICATION_RESTORE_PROOF.json",
+      "sha256": "b0ae0ebb6c1f3ae9a1c8f30522346e01f06cd3f2ef87f7984a3b55040155e738"
+    },
+    {
+      "byte_length": 313,
+      "relative_path": "PRODUCTION_QUALIFICATION_RUN_A.json",
+      "sha256": "f0b8dbb529d8cfdc96612bfd7e0e45b60f503713643e4b444c293cda2115688f"
+    },
+    {
+      "byte_length": 229,
+      "relative_path": "PRODUCTION_QUALIFICATION_RUN_B.json",
+      "sha256": "6bc314e4f6c0cf2c9efff73923541f4934e6d85484fef25e9523652a6602f497"
+    },
+    {
+      "byte_length": 120,
+      "relative_path": "QUARANTINE_FAILURE_PROOF.json",
+      "sha256": "c429bce61f55c2d8fe646aea67d09476c8978c20b9af5e85c7dbf654859a8ce6"
+    },
+    {
+      "byte_length": 2249,
+      "relative_path": "QUARANTINE_REGISTER.json",
+      "sha256": "19934faf0e4519a16671679aaaf7b2503d3f0dc8270131f6f52cb1dfbcac4128"
+    },
+    {
+      "byte_length": 92,
+      "relative_path": "R1_BINDING_PROOF.json",
+      "sha256": "cc644f20e156c91fdabc7bb207ce2b9d5de129393123526576c8d4216f70da34"
+    },
+    {
+      "byte_length": 103,
+      "relative_path": "R2_BINDING_PROOF.json",
+      "sha256": "c36ec13f01011349b0634df58b8940619bf0acc6c8bc37f98f7231c1b8490276"
+    },
+    {
+      "byte_length": 130,
+      "relative_path": "RAW_EVIDENCE_CUSTODY_PROOF.json",
+      "sha256": "d2eab27f3f02b7872190311dec237bc2405e4432473b6a676029e46c13c7c6a8"
+    },
+    {
+      "byte_length": 103,
+      "relative_path": "RAW_EVIDENCE_REPLAY_PROOF.json",
+      "sha256": "ea0676c55eabcd99f2ce7c5f85c1b5c06e463c61a78971de2116b062f6190bf6"
+    },
+    {
+      "byte_length": 893,
+      "relative_path": "READINESS_ARTIFACT_REDERIVATION.json",
+      "sha256": "17d1959c5a3d81bd486480bde55e158a1dcbf69c4bd4a5ff148a6773a6961568"
+    },
+    {
+      "byte_length": 244,
+      "relative_path": "REPOSITORY_TRUST_ROOT.json",
+      "sha256": "c3223deee9e995429bcb04f877215ccb3c3f5a4fcddd9f28accf466d5fbf6180"
+    },
+    {
+      "byte_length": 158,
+      "relative_path": "ROLLBACK_RECOVERY_PROOF.json",
+      "sha256": "eaca6e740fe387797227e64559ca8a63e7911e7525aad56636d7f369bbd83e09"
+    },
+    {
+      "byte_length": 143,
+      "relative_path": "STATE_MACHINE_REHYDRATION_PROOF.json",
+      "sha256": "589b156baf4f5083d08cb17af8f4cebf5fb792d3258f2680e06c4cc2dfa5f9af"
+    },
+    {
+      "byte_length": 152,
+      "relative_path": "TEST_FIDELITY_MATRIX.json",
+      "sha256": "0f87013f8548d77a5b1e71a02d10287d4435241b776c59f534d561287308a857"
+    },
+    {
+      "byte_length": 539,
+      "relative_path": "TRUST_THEOREM.json",
+      "sha256": "4d358524f5046b85055a67715602b9776f5e2ab482270eef3b3474f718f8028e"
+    }
+  ],
+  "gate": "SMART_MONEY_AUTHORITY_CHAIN_STRUCTURAL_REMEDIATION_V1",
+  "generated_at_utc": "2026-10-11T21:43:01.585465+00:00",
+  "manifest_sha256": "9ca58d0ec40d5396b65cad64beeec5eb56e944000c1e9e682a1b05dc00d1bf0e",
+  "manifest_version": "1.0.0",
+  "verdict": "BLOCKED"
+}

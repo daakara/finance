@@ -1,0 +1,49 @@
+{
+  "audit": "PHASE_QUALITY_AND_EVIDENCE_INTEGRITY_AUDIT_V1",
+  "reproduction": {
+    "allowed_targets_from_safe_hold": [
+      "PRE_OBSERVATION_READY"
+    ],
+    "dry_run_initial_state": "PRE_OBSERVATION_READY",
+    "next_transition_attempt": "AUTHORITY_EVENT_RECORDED (line 467)",
+    "process_exit_code": 0,
+    "return_value_checked": false,
+    "state_after_gate3_absent": "SAFE_HOLD (line 345)",
+    "state_after_invalid_transition": "TERMINAL_HOLD",
+    "state_persisted_to_durable_state": "TERMINAL_HOLD",
+    "subsequent_transitions_attempted": [
+      {
+        "state": "TERMINAL_HOLD",
+        "target": "R2_CLOSED (line 533)",
+        "valid": false
+      },
+      {
+        "state": "TERMINAL_HOLD",
+        "target": "PRE_OBSERVATION_READY (line 544)",
+        "valid": false
+      }
+    ],
+    "transition_return_value": [
+      false,
+      "INVALID_STATE_TRANSITION: Cannot transition from SAFE_HOLD to AUTHORITY_EVENT_RECORDED. Allowed targets: ['PRE_OBSERVATION_READY']"
+    ],
+    "transition_valid": false,
+    "workflow_conclusion": "success"
+  },
+  "summary": "CRITICAL GOVERNANCE FAILURE: scripts/run_natural_scheduler.py ignores return values from state_machine.transition(). The state machine enters TERMINAL_HOLD due to an illegal transition leap, but the script continues, writes out checkpoints, logs success, and exits 0. CI success completely masks internal TERMINAL_HOLD.",
+  "target": "ObserverStateMachine runtime enforcement in scripts/run_natural_scheduler.py",
+  "verdict_metrics": {
+    "DRY_RUN_INITIAL_STATE": "PRE_OBSERVATION_READY",
+    "DRY_RUN_STATE_AFTER_GATE3_ABSENT": "SAFE_HOLD",
+    "INVALID_TRANSITION_CAN_STILL_EXIT_SUCCESS": "YES",
+    "NEXT_TRANSITION_ATTEMPT": "AUTHORITY_EVENT_RECORDED",
+    "PROCESS_EXIT_CODE": 0,
+    "RETURN_VALUE_CHECKED": "NO",
+    "STATE_AFTER_INVALID_TRANSITION": "TERMINAL_HOLD",
+    "STATE_MACHINE_RUNTIME_ENFORCEMENT": "FAIL",
+    "TERMINAL_HOLD_CAN_BE_REPORTED_AS_SUCCESS": "YES",
+    "TRANSITION_RETURN_VALUE": "FALSE_INVALID_TRANSITION",
+    "TRANSITION_VALID": "NO",
+    "WORKFLOW_CONCLUSION": "success"
+  }
+}

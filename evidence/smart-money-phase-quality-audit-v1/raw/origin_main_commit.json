@@ -1,0 +1,7 @@
+{
+  "commit_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+  "author_name": "Antigravity AI",
+  "author_email": "akara@finance.app",
+  "date": "2026-10-11T22:37:46+02:00",
+  "message": "fix(smart-money): version cache key to smart-money-durable-state-v2 for epoch-001 isolation\n"
+}

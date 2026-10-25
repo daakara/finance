@@ -1,0 +1,66 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/legacy-dag-parity-report.json",
+  "gate": "SMART_MONEY_CANONICAL_DECISION_INTEGRATION_AND_EVIDENCE_PARITY_REPAIR_V1",
+  "generated_at": "2026-10-12T08:45:00Z",
+  "parity_summary": {
+    "parity_pass": true,
+    "mismatches": 0,
+    "diffs": [],
+    "evaluated_scenarios": [
+      {
+        "scenario": "CANONICAL_BASELINE_GOVERNANCE_STATE",
+        "description": "Admitted canonical architecture findings (FND-ARCH-001..015) and canonical evidence manifest",
+        "legacy_readiness": "BLOCKED",
+        "dag_readiness": "BLOCKED",
+        "parity_match": true
+      },
+      {
+        "scenario": "ZERO_FINDINGS_INCOMPLETE_EVIDENCE",
+        "description": "Zero findings present but unfulfilled conditional evidence obligations in DAG",
+        "legacy_readiness": "BLOCKED",
+        "dag_readiness": "BLOCKED",
+        "parity_match": true
+      },
+      {
+        "scenario": "UNRESOLVED_PREDICATE_EVALUATION",
+        "description": "Context missing facts for safety-critical guard obligations",
+        "legacy_readiness": "BLOCKED",
+        "dag_readiness": "BLOCKED",
+        "parity_match": true
+      }
+    ]
+  },
+  "canonical_state_evaluation": {
+    "legacy_outputs": {
+      "architecture_closure_status": "OPEN",
+      "remediation_status": "REQUIRED",
+      "global_provisioning_readiness": "BLOCKED",
+      "runtime_action": "NONE",
+      "theorem_readiness": {
+        "A": "BLOCKED",
+        "B": "BLOCKED",
+        "C": "BLOCKED",
+        "D": "BLOCKED",
+        "E": "BLOCKED"
+      }
+    },
+    "dag_outputs": {
+      "architecture_closure_status": "OPEN",
+      "remediation_status": "REQUIRED",
+      "global_provisioning_readiness": "BLOCKED",
+      "runtime_action": "NONE",
+      "theorem_readiness": {
+        "A": "BLOCKED",
+        "B": "BLOCKED",
+        "C": "BLOCKED",
+        "D": "BLOCKED",
+        "E": "BLOCKED"
+      }
+    }
+  },
+  "authority_convergence": {
+    "canonical_readiness_derivation_authorities": 1,
+    "legacy_readiness_path_can_issue_canonical_decision": false,
+    "derivation_authorities_converged": true
+  }
+}

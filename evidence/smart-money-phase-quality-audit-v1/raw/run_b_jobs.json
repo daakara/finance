@@ -1,0 +1,153 @@
+{
+  "total_count": 1,
+  "jobs": [
+    {
+      "id": 114569626594,
+      "run_id": 38173080201,
+      "workflow_name": "Smart Money Rooting Scheduler",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/daakara/finance/actions/runs/38173080201",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOQNBlQM8AAAAarOHD4g",
+      "head_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+      "url": "https://api.github.com/repos/daakara/finance/actions/jobs/114569626594",
+      "html_url": "https://github.com/daakara/finance/actions/runs/38173080201/job/114569626594",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-10-11T20:38:51Z",
+      "started_at": "2026-10-11T20:38:53Z",
+      "completed_at": "2026-10-11T20:39:13Z",
+      "name": "Execute Governed Smart Money Rooting Scheduler",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-11T20:38:54Z",
+          "completed_at": "2026-10-11T20:38:55Z"
+        },
+        {
+          "name": "1. Checkout repository",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-11T20:38:55Z",
+          "completed_at": "2026-10-11T20:38:58Z"
+        },
+        {
+          "name": "2. Set up Python runtime",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-11T20:38:58Z",
+          "completed_at": "2026-10-11T20:38:58Z"
+        },
+        {
+          "name": "Install Sigstore Cosign",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-11T20:38:58Z",
+          "completed_at": "2026-10-11T20:38:59Z"
+        },
+        {
+          "name": "Verify Cosign Installation",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-11T20:38:59Z",
+          "completed_at": "2026-10-11T20:38:59Z"
+        },
+        {
+          "name": "Install Python Dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-11T20:38:59Z",
+          "completed_at": "2026-10-11T20:39:02Z"
+        },
+        {
+          "name": "3. Restore Durable State Cache",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-11T20:39:02Z",
+          "completed_at": "2026-10-11T20:39:02Z"
+        },
+        {
+          "name": "4. Verify Restored State Integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-10-11T20:39:02Z",
+          "completed_at": "2026-10-11T20:39:03Z"
+        },
+        {
+          "name": "5. Execute Governed Natural Scheduler",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-10-11T20:39:03Z",
+          "completed_at": "2026-10-11T20:39:07Z"
+        },
+        {
+          "name": "6. Verify Checkpoint Result & Anti-Rollback Integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-10-11T20:39:07Z",
+          "completed_at": "2026-10-11T20:39:07Z"
+        },
+        {
+          "name": "7. Save Durable State Cache",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-10-11T20:39:07Z",
+          "completed_at": "2026-10-11T20:39:08Z"
+        },
+        {
+          "name": "8. Upload Natural Scheduler Evidence Artifacts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-10-11T20:39:08Z",
+          "completed_at": "2026-10-11T20:39:09Z"
+        },
+        {
+          "name": "Post 2. Set up Python runtime",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 23,
+          "started_at": "2026-10-11T20:39:09Z",
+          "completed_at": "2026-10-11T20:39:09Z"
+        },
+        {
+          "name": "Post 1. Checkout repository",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 24,
+          "started_at": "2026-10-11T20:39:09Z",
+          "completed_at": "2026-10-11T20:39:09Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 25,
+          "started_at": "2026-10-11T20:39:09Z",
+          "completed_at": "2026-10-11T20:39:10Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/daakara/finance/check-runs/114569626594",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000013098,
+      "runner_name": "GitHub Actions 1000013098",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    }
+  ]
+}

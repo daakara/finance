@@ -1,0 +1,116 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/post-architecture-evidence-inventory-audit.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T18:00:00Z",
+  "evidence_manifest_hash": "652af9d2ccfdb4b685ba71498377366eb9fd52df554b31ffbe370b3370dcd514",
+  "evidence_summary": {
+    "authoritative_present": 5,
+    "supporting_present": 0,
+    "not_established": 3,
+    "stale": 0,
+    "revoked": 0,
+    "synthetic": 0,
+    "test_double": 0
+  },
+  "records": [
+    {
+      "evidence_id": "ev-ext-ledger-state",
+      "claim_id": "CLAIM-EXTERNAL-LEDGER",
+      "evidence_state": "NOT_ESTABLISHED",
+      "provenance_class": "NONE",
+      "authority_class": "AUTHORITATIVE",
+      "source": "urn:arx:authority:canonical-manifest",
+      "content_hash": null,
+      "validity": "CURRENT",
+      "observed_at": "2026-10-12T16:03:25Z",
+      "canonical_hash": "4143c905fe4651049043b402a21df53ec9bc1e8860e27e6ca1c975f78fd59632"
+    },
+    {
+      "evidence_id": "ev-ext-witness-state",
+      "claim_id": "CLAIM-EXTERNAL-WITNESS",
+      "evidence_state": "NOT_ESTABLISHED",
+      "provenance_class": "NONE",
+      "authority_class": "AUTHORITATIVE",
+      "source": "urn:arx:authority:canonical-manifest",
+      "content_hash": null,
+      "validity": "CURRENT",
+      "observed_at": "2026-10-12T16:03:25Z",
+      "canonical_hash": "b8949e1bef2930be377229bfd24b79602918da9ca5bb00065f13a43520982b10"
+    },
+    {
+      "evidence_id": "ev-finding-admission-registry",
+      "claim_id": "CLAIM-FINDING-BLOCKERS",
+      "evidence_state": "ESTABLISHED",
+      "provenance_class": "CANONICAL_LEDGER",
+      "authority_class": "AUTHORITATIVE",
+      "source": "urn:arx:finding:registry:canonical",
+      "content_hash": "d147312d5c1ef1d3d3237e2b1f456764de9a937a4796a759c6ef1d7a069375ce",
+      "validity": "CURRENT",
+      "observed_at": "2026-10-12T16:03:25Z",
+      "canonical_hash": "41f99aae4dd673e70378aeca06d37e1837005fecd71ef33b500aa833ff1457c9"
+    },
+    {
+      "evidence_id": "ev-gov-genesis",
+      "claim_id": "CLAIM-GOVERNANCE-ROOT",
+      "evidence_state": "NOT_ESTABLISHED",
+      "provenance_class": "NONE",
+      "authority_class": "AUTHORITATIVE",
+      "source": "urn:arx:authority:canonical-manifest",
+      "content_hash": null,
+      "validity": "CURRENT",
+      "observed_at": "2026-10-12T16:03:25Z",
+      "canonical_hash": "faf0857dc637ca77afa16de5ab75d0710fa705f22aafcad3f1f90c538733099b"
+    },
+    {
+      "evidence_id": "ev-gov-policy-ratification",
+      "claim_id": "CLAIM-GOVERNANCE-POLICY",
+      "evidence_state": "ESTABLISHED",
+      "provenance_class": "LOCAL_REFERENCE",
+      "authority_class": "AUTHORITATIVE",
+      "source": "urn:arx:policy:bootstrap:v1",
+      "content_hash": "9882541f05816b714eec035b8b63e2befb69a550cc2568c303c2946b0b8b81d1",
+      "validity": "CURRENT",
+      "observed_at": "2026-10-12T16:03:25Z",
+      "canonical_hash": "50e30361310d74c4c1753b652c1dac064989465773a27cdc3cd8c14c6bdfc859"
+    },
+    {
+      "evidence_id": "ev-natural-denominator-ledger",
+      "claim_id": "CLAIM-DENOMINATOR-ALIGNMENT",
+      "evidence_state": "ESTABLISHED",
+      "provenance_class": "CANONICAL_LEDGER",
+      "authority_class": "AUTHORITATIVE",
+      "source": "urn:arx:denominator:ledger:zero",
+      "content_hash": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+      "validity": "CURRENT",
+      "observed_at": "2026-10-12T16:03:25Z",
+      "canonical_hash": "9357aadec7584cf83a43cdf807e1f3aad094dfe1591c095771e261844614d1ed"
+    },
+    {
+      "evidence_id": "ev-repo-candidate004-freeze",
+      "claim_id": "CLAIM-CANDIDATE004-FREEZE-FILE-IDENTITY",
+      "evidence_state": "ESTABLISHED",
+      "provenance_class": "CANONICAL_LEDGER",
+      "authority_class": "AUTHORITATIVE",
+      "source": "git:9e9278010964be25214db49703e8b51a7b2ebe5f:docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_004_FREEZE.json",
+      "content_hash": "297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90",
+      "validity": "CURRENT",
+      "observed_at": "2026-10-12T16:03:25Z",
+      "canonical_hash": "ef2a7014b20024a85640dd600dfdef62716198d85b799ae99c9181a790755877"
+    },
+    {
+      "evidence_id": "ev-source-freeze-commit",
+      "claim_id": "CLAIM-RELEASE-PROVENANCE",
+      "evidence_state": "ESTABLISHED",
+      "provenance_class": "REPOSITORY_BOUND",
+      "authority_class": "AUTHORITATIVE",
+      "source": "git:commit:9e9278010964be25214db49703e8b51a7b2ebe5f",
+      "content_hash": "faa694a73c6e56cf1f14008065e58ed2258a0ace4a18f484ba054b766bb960f2",
+      "validity": "CURRENT",
+      "observed_at": "2026-10-12T16:03:25Z",
+      "canonical_hash": "ab372d05eb166b6134037618bab35722ed3079ed1bbce3cd2df0e1ff95511077"
+    }
+  ],
+  "external_authority_posture": "NOT_ESTABLISHED (Fail-closed; honest absence)",
+  "verdict": "PASS"
+}

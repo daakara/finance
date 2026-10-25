@@ -1,0 +1,86 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/decision-authorization-boundary-map.json",
+  "map_version": "1.0.0",
+  "generated_at": "2026-10-12T18:15:00Z",
+  "governance_epoch": "epoch-gov-002",
+  "architecture_classification": {
+    "initial_discovered_model": "MODEL_C",
+    "initial_discovered_class": "MISSING_CANONICAL_DECISION_COMMIT_AUTHORITY",
+    "remediated_architecture_model": "MODEL_B",
+    "model_description": "Candidate snapshot constructed by evaluate_canonical() -> Authoritative verification & atomic commit by CanonicalDecisionCommitAuthority -> Authoritative Canonical Decision"
+  },
+  "boundaries": {
+    "snapshot_constructor": {
+      "function": "GovernanceDecisionEngine.evaluate_canonical",
+      "file": "analyst_dashboard/smart_money/governance_control_plane/decision_engine.py",
+      "responsibilities": [
+        "Evaluates FindingRegistry and CanonicalEvidenceManifest against CompiledDependencyPolicy",
+        "Derives theorem readiness and global provisioning readiness",
+        "Computes JCS-SHA256 canonical decision body and deterministic decision hash",
+        "Emits uncommitted candidate DecisionSnapshot"
+      ]
+    },
+    "snapshot_validator": {
+      "function": "validate_canonical_decision_snapshot",
+      "file": "analyst_dashboard/smart_money/governance_control_plane/decision_engine.py",
+      "responsibilities": [
+        "Verifies structural presence of required canonical hash bindings",
+        "Rejects invalidated pre-integration snapshots (PreIntegrationSnapshotRejectedError)",
+        "Rejects epoch-001 snapshot supplied as current canonical in epoch-002",
+        "Verifies canonical and authority eligibility flags"
+      ]
+    },
+    "authorization_boundary": {
+      "function": "CanonicalDecisionCommitAuthority.validate_lineage",
+      "file": "analyst_dashboard/smart_money/governance_control_plane/decision_engine.py",
+      "responsibilities": [
+        "Enforces supplied_previous_decision_hash == authoritative_predecessor.decision_hash",
+        "Enforces requested_sequence == authoritative_predecessor.sequence + 1",
+        "Enforces requested_epoch == authoritative_predecessor.epoch",
+        "Verifies predecessor is not listed in invalidation registry",
+        "Verifies predecessor is not stale or already superseded",
+        "Fails closed with specific error types"
+      ]
+    },
+    "commit_boundary": {
+      "function": "CanonicalDecisionCommitAuthority.commit_canonical_decision",
+      "file": "analyst_dashboard/smart_money/governance_control_plane/decision_engine.py",
+      "responsibilities": [
+        "Acquires concurrency lock for linearizable commit ordering",
+        "Validates structural snapshot and lineage prerequisites",
+        "Atomically transitions old CURRENT decision to SUPERSEDED",
+        "Atomically transitions new decision to CURRENT",
+        "Asserts exactly 1 CURRENT decision exists for active epoch",
+        "Persists append-only state to durable storage"
+      ]
+    },
+    "decision_record_authority": {
+      "type": "DURABLE_APPEND_ONLY_CHAIN_LEDGER",
+      "location": "docs/domain/smart_money/governance_control_plane/CANONICAL_DECISION_CHAIN_STATE.json"
+    },
+    "sequence_authority": {
+      "type": "CANONICAL_SEQUENCE_INDEX",
+      "location": "CanonicalDecisionCommitAuthority._sequence_index"
+    },
+    "predecessor_authority": {
+      "type": "AUTHORITATIVE_CHAIN_HEAD_LOOKUP",
+      "location": "CanonicalDecisionCommitAuthority._head"
+    },
+    "currentness_authority": {
+      "type": "ATOMIC_EPOCH_HEAD_REGISTRY",
+      "location": "CanonicalDecisionCommitAuthority._current_decision_hash"
+    },
+    "supersession_authority": {
+      "type": "ATOMIC_STATE_TRANSITION",
+      "location": "CanonicalDecisionCommitAuthority.commit_canonical_decision"
+    },
+    "invalidation_authority": {
+      "type": "RECONCILED_INVALIDATION_REGISTRY",
+      "location": "docs/domain/smart_money/governance_control_plane/DECISION_INVALIDATION_REGISTRY.json"
+    },
+    "anti_equivocation_authority": {
+      "type": "LINEARIZABLE_CAS_LOCK",
+      "location": "CanonicalDecisionCommitAuthority._lock"
+    }
+  }
+}

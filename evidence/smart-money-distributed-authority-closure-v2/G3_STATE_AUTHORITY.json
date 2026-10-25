@@ -1,0 +1,8 @@
+{
+  "claim": "Authoritative state backend provides monotonic epoch head, CAS, and fencing resilient against total cache loss (Theorem C)",
+  "evidence_class": "DISTRIBUTED_STORAGE",
+  "independent_verifier_result": "BLOCKED per Theorem C and Section 31",
+  "observed_result": "TransactionalStateBackend substrate code verified locally; external distributed transactional store (PostgreSQL/DynamoDB) is not provisioned.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_distributed_authority_substrate.py -k \"test_transactional_cas or test_stale_runner or test_genesis\"",
+  "status": "BLOCKED"
+}

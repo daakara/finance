@@ -1,0 +1,120 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/canonical-hash-identity-registry.json",
+  "schema_id": "ARX_CANONICAL_HASH_IDENTITY_REGISTRY_V1",
+  "governance_epoch": "epoch-gov-001",
+  "hashes": [
+    {
+      "hash_id": "HASH-CANDIDATE004-FREEZE-FILE",
+      "artifact": "CANDIDATE_GENERATION_004_FREEZE.json",
+      "purpose": "Byte identity of Candidate Generation 004 freeze manifest file",
+      "hash_domain": "RAW_BYTES",
+      "algorithm": "SHA-256",
+      "normalization_version": "NONE",
+      "canonicalization_version": "NONE",
+      "source_paths": [
+        "docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_004_FREEZE.json"
+      ],
+      "recompute_command_or_function": "hashlib.sha256(Path('docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_004_FREEZE.json').read_bytes()).hexdigest()",
+      "fixture_allowed": false,
+      "canonical_authority": "urn:arx:authority:candidate-custody:v1",
+      "hash_value": "297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90"
+    },
+    {
+      "hash_id": "HASH-CANDIDATE004-SEMANTIC-CLOSURE",
+      "artifact": "CandidateSemanticClosure:Candidate004",
+      "purpose": "Canonical semantic closure identity of Candidate Generation 004",
+      "hash_domain": "SEMANTIC_CLOSURE",
+      "algorithm": "SHA-256",
+      "normalization_version": "ARX-SEMANTIC-CLOSURE-V1",
+      "canonicalization_version": "RFC_8785_JCS",
+      "source_paths": [
+        "analyst_dashboard/vcp/sprint_3_shadow_governance.py",
+        "docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_004_FREEZE.json"
+      ],
+      "recompute_command_or_function": "analyst_dashboard.vcp.sprint_3_shadow_governance.CANONICAL_SPRINT_3_GOVERNANCE_SHA256",
+      "fixture_allowed": false,
+      "canonical_authority": "urn:arx:authority:semantic-evaluator:v1",
+      "hash_value": "53b6372349cfdb1046a4ddbd678f628bba28c7778cef2fe381e02f9097f7a9e6"
+    },
+    {
+      "hash_id": "HASH-POLICY-FILE",
+      "artifact": "GOVERNANCE_POLICY_V1.json",
+      "purpose": "Raw byte identity of Governance Policy V1 document",
+      "hash_domain": "RAW_BYTES",
+      "algorithm": "SHA-256",
+      "normalization_version": "NONE",
+      "canonicalization_version": "NONE",
+      "source_paths": [
+        "docs/domain/smart_money/external_authority/GOVERNANCE_POLICY_V1.json"
+      ],
+      "recompute_command_or_function": "hashlib.sha256(Path('docs/domain/smart_money/external_authority/GOVERNANCE_POLICY_V1.json').read_bytes()).hexdigest()",
+      "fixture_allowed": false,
+      "canonical_authority": "urn:arx:authority:bootstrap-council:v1",
+      "hash_value": "6d01ff68128ccd5d4300e90c0decad10166f7afc1c1f32a666af1c738da78905"
+    },
+    {
+      "hash_id": "HASH-POLICY-CANONICAL-JCS",
+      "artifact": "GOVERNANCE_POLICY_V1.json",
+      "purpose": "RFC 8785 Canonical JSON identity of Governance Policy V1 rules",
+      "hash_domain": "RFC8785_CANONICAL_JSON",
+      "algorithm": "SHA-256",
+      "normalization_version": "NONE",
+      "canonicalization_version": "RFC_8785_JCS",
+      "source_paths": [
+        "docs/domain/smart_money/external_authority/GOVERNANCE_POLICY_V1.json"
+      ],
+      "recompute_command_or_function": "sha256_canonical(json.loads(Path('docs/domain/smart_money/external_authority/GOVERNANCE_POLICY_V1.json').read_bytes()))",
+      "fixture_allowed": false,
+      "canonical_authority": "urn:arx:authority:bootstrap-council:v1",
+      "hash_value": "a777313284f497941522948d75ddc6b0dd644f68ab17dadcc09c3277032f9262"
+    },
+    {
+      "hash_id": "HASH-CONTRACT-SET",
+      "artifact": "urn:arx:manifest:contract_set:v1",
+      "purpose": "RFC 8785 Canonical JSON identity of all 9 governance contracts",
+      "hash_domain": "RFC8785_CANONICAL_JSON",
+      "algorithm": "SHA-256",
+      "normalization_version": "ARX-GOV-NORMALIZE-V1",
+      "canonicalization_version": "RFC_8785_JCS",
+      "source_paths": [
+        "analyst_dashboard/smart_money/governance_control_plane/decision_engine.py"
+      ],
+      "recompute_command_or_function": "compute_canonical_contract_set_hash()",
+      "fixture_allowed": false,
+      "canonical_authority": "urn:arx:authority:governance-control-plane:v1",
+      "hash_value": "946cadbb551f5457ba314f45b1f80bc6ec8f1ddd8ab4a16ff5daefe8e2dbc72e"
+    },
+    {
+      "hash_id": "HASH-THEOREM-STATE",
+      "artifact": "urn:arx:manifest:theorem_state:v1",
+      "purpose": "RFC 8785 Canonical JSON identity of Theorems A-E prelive status",
+      "hash_domain": "RFC8785_CANONICAL_JSON",
+      "algorithm": "SHA-256",
+      "normalization_version": "ARX-GOV-NORMALIZE-V1",
+      "canonicalization_version": "RFC_8785_JCS",
+      "source_paths": [
+        "analyst_dashboard/smart_money/governance_control_plane/decision_engine.py"
+      ],
+      "recompute_command_or_function": "compute_canonical_theorem_state_hash()",
+      "fixture_allowed": false,
+      "canonical_authority": "urn:arx:authority:governance-control-plane:v1",
+      "hash_value": "2e11806c63c88b085b1a80bacb173be2cd26c45fff39aa6c42823837da154af9"
+    },
+    {
+      "hash_id": "HASH-ENGINE-METADATA",
+      "artifact": "GovernanceDecisionEngine:metadata",
+      "purpose": "RFC 8785 Canonical JSON identity of engine runtime metadata",
+      "hash_domain": "RFC8785_CANONICAL_JSON",
+      "algorithm": "SHA-256",
+      "normalization_version": "ARX-GOV-NORMALIZE-V1",
+      "canonicalization_version": "RFC_8785_JCS",
+      "source_paths": [
+        "analyst_dashboard/smart_money/governance_control_plane/decision_engine.py"
+      ],
+      "recompute_command_or_function": "GovernanceDecisionEngine().compute_engine_hash()",
+      "fixture_allowed": false,
+      "canonical_authority": "urn:arx:authority:governance-control-plane:v1",
+      "hash_value": "cfe33343699b893c28ec328a6e33b5359af845f7657db734db8762d1e6d67dbb"
+    }
+  ]
+}
