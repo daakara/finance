@@ -310,9 +310,13 @@ export default function Navbar({
     window.addEventListener("open-shortcuts", handleShortcutsEvent);
     window.addEventListener("open-privacy", handlePrivacyEvent);
 
-    // B4: Auto-show onboarding tour on first visit
+    // B4: Auto-show onboarding tour on first visit (suppressed during active stock analysis)
     try {
-      if (!localStorage.getItem("FINANCE_ONBOARDING_COMPLETED")) {
+      const isAnalyzingStock = typeof window !== "undefined" && (
+        window.location.search.includes("symbol=") || 
+        window.location.pathname.startsWith("/stock")
+      );
+      if (!localStorage.getItem("FINANCE_ONBOARDING_COMPLETED") && !isAnalyzingStock) {
         firstVisitTimerRef.current = setTimeout(() => {
           setIsOnboardingOpen(true);
           firstVisitTimerRef.current = null;

@@ -5,7 +5,6 @@ import { OptimalExecutionPlan } from "../lib/api";
 import InsightProvenanceModal from "./InsightProvenanceModal";
 import PositionSizerModal from "./PositionSizerModal";
 import AlertTriggerModal from "./AlertTriggerModal";
-import PreFlightChecklistModal from "./PreFlightChecklistModal";
 import { addPortfolioPosition } from "../lib/portfolio";
 import {
   resolveDecisionReadiness,
@@ -14,10 +13,10 @@ import {
 } from "../lib/decisionReadiness";
 import { resolvePresentationState } from "../lib/decisionPresentation";
 import { evaluateCorridorLocation } from "../lib/corridorLocation";
-import DecisionReadinessCard from "./DecisionReadinessCard";
 
 interface OptimalEntryExitCardProps {
   symbol: string;
+  onOpenPreFlight?: () => void;
   executionPlan?: OptimalExecutionPlan;
   currentPrice?: number | null;
   liveSpotPrice?: number | null;
@@ -39,6 +38,7 @@ interface OptimalEntryExitCardProps {
 
 export default function OptimalEntryExitCard({
   symbol,
+  onOpenPreFlight,
   executionPlan,
   currentPrice,
   liveSpotPrice,
@@ -59,7 +59,6 @@ export default function OptimalEntryExitCard({
 }: OptimalEntryExitCardProps) {
   const [isSizerOpen, setIsSizerOpen] = useState<boolean>(false);
   const [isAlertOpen, setIsAlertOpen] = useState<boolean>(false);
-  const [isChecklistOpen, setIsChecklistOpen] = useState<boolean>(false);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
   const [logStatus, setLogStatus] = useState<string | null>(null);
 
@@ -220,15 +219,6 @@ export default function OptimalEntryExitCard({
         <div className="text-[11px] text-slate-400 font-mono bg-[#0b0f17] p-2.5 rounded border border-slate-800/80">
           Status: {executionPlan.execution_status || "INSUFFICIENT_HISTORY"} • Invalidation: {invalidation_condition || "Awaiting verified historical exchange candles"}
         </div>
-
-        {/* 🚦 Synthesis E Wave 4: 3-Gate Decision Readiness Progression (Unavailable Fallback) */}
-        <DecisionReadinessCard
-          symbol={symbol}
-          readinessResult={unavailableReadiness}
-          onSizePosition={() => setIsSizerOpen(true)}
-          onSetAlert={() => setIsAlertOpen(true)}
-          onOpenPreFlight={() => setIsChecklistOpen(true)}
-        />
       </div>
     );
   }
@@ -562,15 +552,6 @@ export default function OptimalEntryExitCard({
         </div>
       </div>
 
-      {/* 🚦 Synthesis E Wave 4: 3-Gate Decision Readiness Progression */}
-      <DecisionReadinessCard
-        symbol={symbol}
-        readinessResult={readinessResult}
-        onSizePosition={() => setIsSizerOpen(true)}
-        onSetAlert={() => setIsAlertOpen(true)}
-        onOpenPreFlight={() => setIsChecklistOpen(true)}
-      />
-
       {/* 🛑 Liquidity Defense Alert Banner (Shadow Observation Mode) */}
       {executionPlan.liquidity_defense?.execution_hazard === true && (
         <div className="bg-amber-950/30 border border-amber-800/60 rounded-xl p-3.5 text-xs flex items-start gap-3 shadow-lg">
@@ -856,7 +837,7 @@ export default function OptimalEntryExitCard({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => setIsChecklistOpen(true)}
+            onClick={() => onOpenPreFlight?.()}
             className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-emerald-600/20 hover:bg-emerald-500 hover:text-slate-950 border-emerald-500/60 text-emerald-300 flex items-center gap-1.5 shadow"
           >
             <span>✈️</span>
@@ -897,29 +878,6 @@ export default function OptimalEntryExitCard({
           userRole={userRole}
         />
       </div>
-
-      <PreFlightChecklistModal
-        isOpen={isChecklistOpen}
-        onClose={() => setIsChecklistOpen(false)}
-        symbol={symbol}
-        currentPrice={current_price}
-        stopLoss={stop_loss}
-        takeProfit1={take_profit_1}
-        riskRewardRatio={risk_reward_ratio}
-        setupPattern={setup_pattern}
-        isDayTrader={isDayTrader}
-        isStage4={isStage4}
-        optimalEntryMin={optimal_entry_min}
-        optimalEntryMax={optimal_entry_max}
-        breakoutPivot={executionPlan.breakout_pivot || Number((current_price * 1.072).toFixed(2))}
-        vix={resolvedVix}
-        hasImminentEarnings={derivedHasImminentEarnings}
-        catalystState={resolvedCatalystState}
-        catalystEvidence={derivedCatalystEvidence}
-        isDistributionTrap={derivedIsDistributionTrap}
-        isActionable={canonicalActionable}
-        decisionState={decisionState}
-      />
 
       <PositionSizerModal
         isOpen={isSizerOpen}

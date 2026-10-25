@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-10-24T22:39:07.459Z",
-  "totalMutationsTested": 8,
-  "mutationsSuccessfullyBlocked": 8,
+  "timestamp": "2026-10-25T07:01:02.360Z",
+  "totalMutationsTested": 12,
+  "mutationsSuccessfullyBlocked": 12,
   "cleanCandidateRestoredAndPassed": true,
   "disposition": "PASS",
   "results": [
@@ -64,6 +64,38 @@
     {
       "id": "DEFECT_8_BREAK_MOBILE_RESPONSIVE_COMPOSITION",
       "name": "Remove 5-Step Stepper Suppression",
+      "defectInjected": true,
+      "gateExitedNonZero": true,
+      "rejectionPatternMatched": true,
+      "verdict": "SUCCESSFULLY_BLOCKED"
+    },
+    {
+      "id": "DEFECT_9_MOUNT_DECISION_READINESS_IN_ENTRY_CARD",
+      "name": "Mount DecisionReadinessCard in OptimalEntryExitCard",
+      "defectInjected": true,
+      "gateExitedNonZero": true,
+      "rejectionPatternMatched": true,
+      "verdict": "SUCCESSFULLY_BLOCKED"
+    },
+    {
+      "id": "DEFECT_10_MOUNT_DUPLICATE_MODAL_IN_ENTRY_CARD",
+      "name": "Mount Duplicate PreFlightChecklistModal in OptimalEntryExitCard",
+      "defectInjected": true,
+      "gateExitedNonZero": true,
+      "rejectionPatternMatched": true,
+      "verdict": "SUCCESSFULLY_BLOCKED"
+    },
+    {
+      "id": "DEFECT_11_UNSUBORDINATE_PRECONDITIONS",
+      "name": "Unsubordinate What Needs to Change Stack",
+      "defectInjected": true,
+      "gateExitedNonZero": true,
+      "rejectionPatternMatched": true,
+      "verdict": "SUCCESSFULLY_BLOCKED"
+    },
+    {
+      "id": "DEFECT_12_REMOVE_EXECUTION_LADDER_FROM_VERDICT",
+      "name": "Remove Compact Execution Ladder from Verdict Card",
       "defectInjected": true,
       "gateExitedNonZero": true,
       "rejectionPatternMatched": true,

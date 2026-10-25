@@ -374,11 +374,20 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         for p in [preflight_path, divergence_path, historical_path, stress_path]:
             self.assertTrue(os.path.exists(p), f"Missing decision intelligence component: {p}")
 
-        # Optimal Entry Card must trigger Pre-Flight Checklist
+        # Optimal Entry Card must trigger Pre-Flight Checklist via canonical trigger
         with open(optimal_card_path, "r", encoding="utf-8") as f:
             optimal_content = f.read()
-        self.assertIn("PreFlightChecklistModal", optimal_content)
+        self.assertTrue(
+            "PreFlightChecklistModal" in optimal_content or "onOpenPreFlight" in optimal_content,
+            "OptimalEntryExitCard must support triggering Pre-Flight Checklist"
+        )
         self.assertIn("Pre-Flight Checklist", optimal_content)
+
+        # Canonical analysis page must mount PreFlightChecklistModal
+        main_page_path = os.path.join("frontend", "app", "page.tsx")
+        with open(main_page_path, "r", encoding="utf-8") as f:
+            main_page_content = f.read()
+        self.assertIn("PreFlightChecklistModal", main_page_content)
 
         # Smart Money page must render SmartMoneyDivergenceRadar
         with open(smart_page_path, "r", encoding="utf-8") as f:

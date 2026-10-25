@@ -3,41 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { MASTER_ASSET_CATALOG } from "../lib/masterCatalog";
 import { trackPreFlightOutcome, trackTradePlanCopied } from "../lib/matomo";
-import { evaluatePreFlightChecks } from "../lib/preflightEvaluator";
+import { evaluatePreFlightChecks, PreFlightChecklistInputs } from "../lib/preflightEvaluator";
 
-interface PreFlightChecklistModalProps {
+export interface PreFlightChecklistModalProps extends PreFlightChecklistInputs {
   isOpen: boolean;
   onClose: () => void;
-  symbol: string;
-  currentPrice: number;
-  stopLoss: number;
-  takeProfit1: number;
-  riskRewardRatio: number;
-  setupPattern?: string;
-  isDayTrader?: boolean;
-  isStage4?: boolean;
-  optimalEntryMin?: number;
-  optimalEntryMax?: number;
-  breakoutPivot?: number;
-  isDistributionTrap?: boolean;
-  hasImminentEarnings?: boolean | null;
-  catalystState?: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR";
-  catalystEvidence?: {
-    state?: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR";
-    daysToEarnings?: number | null;
-    eventDate?: string | null;
-    callTimeEt?: string | null;
-    resultsReleaseTimeEt?: string | null;
-    sourceName?: string | null;
-    confirmationStatus?: "CONFIRMED" | "ESTIMATED" | "UNVERIFIED" | null;
-    coverageStatus?: string | null;
-    freshnessStatus?: "LIVE" | "STALE" | "EXPIRED" | string | null;
-    riskTier?: string | null;
-    isEstimate?: boolean | null;
-  } | null;
-  vix?: number;
-  isActionable?: boolean;
-  decisionState?: string;
 }
 
 export default function PreFlightChecklistModal({
@@ -181,6 +151,9 @@ export default function PreFlightChecklistModal({
   const isRRPassed = checks[0].passed;
   const isTrendPassed = checks[1].passed && !isStage4;
   const isExtendedAboveZone = Boolean(safeEntryMax && safePrice > safeEntryMax * 1.02);
+  const isWithinTolerance = Boolean(safeEntryMax && safePrice > safeEntryMax && safePrice <= safeEntryMax * 1.02);
+  const isInCorridor = Boolean(safeEntryMin && safeEntryMax && safePrice >= safeEntryMin && safePrice <= safeEntryMax);
+  const isBelowCorridor = Boolean(safeEntryMin && safePrice < safeEntryMin);
   const isCapitalRiskPassed = checks[2].passed;
   const isCapitalRiskFailed = checks[2].status === "CAPITAL RISK";
   const hasShortFloat = catalogItem !== undefined && catalogItem.shortFloat !== undefined && catalogItem.shortFloat !== null;
@@ -195,6 +168,69 @@ export default function PreFlightChecklistModal({
   const isMacroPassed = checks[4].passed;
 
   const isVixValid = typeof vix === "number" && !isNaN(vix) && vix > 0;
+
+  const renderCheck2Detail = () => {
+    if (isStage4) {
+      return isPlain
+        ? `⚠️ Watchlist Only: Spot price ($${safePrice.toFixed(2)}) is in Stage 4 correction below 50-day average. Await base formation.`
+        : `Stage 4 correction structure: Spot ($${safePrice.toFixed(2)}) requires 50-day breakout pivot ${safePivot !== null ? `above $${safePivot.toFixed(2)}` : "(pivot uncalculated)"}.`;
+    }
+    if (safeEntryMin === null || safeEntryMax === null) {
+      return "Optimal buy zone levels uncalculated. Awaiting technical structure.";
+    }
+    if (isExtendedAboveZone) {
+      return isPlain
+        ? `⚠️ Extended: Price is above ideal buy zone ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}). Wait for pullback.`
+        : "Extended structure: Spot is above value area. Chasing creates negative R:R risk.";
+    }
+    if (isWithinTolerance) {
+      return isPlain
+        ? `Spot price ($${safePrice.toFixed(2)}) is slightly above preferred buying range ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}), within allowable extension tolerance (+2%). Defending key support.`
+        : `Spot price ($${safePrice.toFixed(2)}) is above corridor ceiling ($${safeEntryMax.toFixed(2)}) within +2% extension tolerance. Defending key moving average support (20 EMA / 50 SMA).`;
+    }
+    if (isBelowCorridor) {
+      return isPlain
+        ? `Spot price ($${safePrice.toFixed(2)}) is below preferred buying range ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}).`
+        : `Spot price ($${safePrice.toFixed(2)}) is below preferred accumulation corridor ($${safeEntryMin.toFixed(2)}–$${safeEntryMax.toFixed(2)}).`;
+    }
+    return isPlain
+      ? `Spot price ($${safePrice.toFixed(2)}) is inside the verified buying range defending key support.`
+      : "Defending key moving average support (20 EMA / 50 SMA).";
+  };
+
+  const renderCheck4Detail = () => {
+    if (resolvedCatalystState === "PASS") {
+      const isConfirmed = catalystEvidence?.confirmationStatus === "CONFIRMED";
+      const dteStr = catalystEvidence?.daysToEarnings ? ` (${catalystEvidence.daysToEarnings.toFixed(1)}d DTE)` : "";
+      if (isPlain) {
+        return isConfirmed
+          ? `Verified event runway: Confirmed earnings announcement scheduled beyond the 7-day trade window${dteStr}.`
+          : `Unconfirmed event runway: Estimated announcement scheduled beyond the 7-day trade window${dteStr}, but source confirmation remains unverified.`;
+      }
+      return isConfirmed
+        ? `Catalyst Buffer: Clean window verified (>7 days to confirmed binary catalyst${dteStr}).`
+        : `Catalyst Buffer: Clean window indicated (${catalystEvidence?.daysToEarnings ? catalystEvidence.daysToEarnings.toFixed(1) + "d DTE" : ">7d"}), but corporate event confirmation is unverified.`;
+    }
+    if (resolvedCatalystState === "WARN") {
+      return isPlain
+        ? `⚠️ High Risk: Scheduled earnings announcement ${catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null ? (catalystEvidence.daysToEarnings <= 1.0 ? "in <= 24h" : `in ${catalystEvidence.daysToEarnings.toFixed(1)} days`) : "within 7-day window"}${catalystEvidence?.eventDate ? ` (${catalystEvidence.eventDate})` : ""}.`
+        : `⚠️ Binary Gap Risk: Earnings announcement scheduled for ${catalystEvidence?.eventDate || "imminent"}${catalystEvidence?.callTimeEt ? ` (${catalystEvidence.callTimeEt} ET Call)` : ""}. Position sizing restricted.`;
+    }
+    if (resolvedCatalystState === "ERROR") {
+      return isPlain
+        ? "Technical error retrieving corporate earnings schedule."
+        : "Catalyst Evaluation Error: Provider telemetry stream failed to resolve.";
+    }
+    if (catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null && catalystEvidence.daysToEarnings < 0) {
+      return isPlain
+        ? `Prior earnings reported (${catalystEvidence.eventDate || "historical"}), but forward calendar is unverified. Cannot certify forward runway.`
+        : `Historical Event Elapsed: Prior report on ${catalystEvidence.eventDate || "historical record"}. Forward schedule unverified; runway uncertified.`;
+    }
+    return isPlain
+      ? "Earnings calendar coverage unavailable: Event runway cannot be certified."
+      : "Catalyst Telemetry Unavailable: Corporate event schedule unverified from primary source.";
+  };
+
   // Analytics — inline try/catch, no useEffect needed (stable values within a single open session)
   try {
     trackPreFlightOutcome(symbol, passedCount, isCleared);
@@ -364,19 +400,7 @@ export default function PreFlightChecklistModal({
                   <span>{isPlain ? "2. Trend & Moving Averages (Price in upward corridor)" : "2. Technical Structure (Above 20 EMA / 50 SMA Pivot)"}</span>
                 </div>
                 <p className="text-[11px] text-slate-400 pl-5">
-                  {isStage4
-                    ? (isPlain
-                        ? `⚠️ Watchlist Only: Spot price ($${safePrice.toFixed(2)}) is in Stage 4 correction below 50-day average. Await base formation.`
-                        : `Stage 4 correction structure: Spot ($${safePrice.toFixed(2)}) requires 50-day breakout pivot ${safePivot !== null ? `above $${safePivot.toFixed(2)}` : "(pivot uncalculated)"}.`)
-                    : (safeEntryMin === null || safeEntryMax === null
-                        ? "Optimal buy zone levels uncalculated. Awaiting technical structure."
-                        : (isExtendedAboveZone
-                            ? (isPlain
-                                ? `⚠️ Extended: Price is above ideal buy zone ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}). Wait for pullback.`
-                                : `Extended structure: Spot is above value area. Chasing creates negative R:R risk.`)
-                            : (isPlain
-                                ? `Spot price ($${safePrice.toFixed(2)}) is inside the verified buying range defending key support.`
-                                : `Defending key moving average support (20 EMA / 50 SMA).`)))}
+                  {renderCheck2Detail()}
                 </p>
               </div>
               <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
@@ -438,25 +462,7 @@ export default function PreFlightChecklistModal({
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400 pl-5">
-                  {resolvedCatalystState === "PASS"
-                    ? (isPlain
-                        ? `Verified event runway: No earnings announcement scheduled within the 7-day trade window${catalystEvidence?.daysToEarnings ? ` (${catalystEvidence.daysToEarnings.toFixed(1)}d DTE)` : ""}.`
-                        : `Catalyst Buffer: Clean window verified (>7 days to binary catalyst${catalystEvidence?.daysToEarnings ? `, ${catalystEvidence.daysToEarnings.toFixed(1)}d DTE` : ""}).`)
-                    : resolvedCatalystState === "WARN"
-                    ? (isPlain
-                        ? `⚠️ High Risk: Scheduled earnings announcement ${catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null ? (catalystEvidence.daysToEarnings <= 1.0 ? "in <= 24h" : `in ${catalystEvidence.daysToEarnings.toFixed(1)} days`) : "within 7-day window"}${catalystEvidence?.eventDate ? ` (${catalystEvidence.eventDate})` : ""}.`
-                        : `⚠️ Binary Gap Risk: Earnings announcement scheduled for ${catalystEvidence?.eventDate || "imminent"}${catalystEvidence?.callTimeEt ? ` (${catalystEvidence.callTimeEt} ET Call)` : ""}. Position sizing restricted.`)
-                    : resolvedCatalystState === "ERROR"
-                    ? (isPlain
-                        ? "Technical error retrieving corporate earnings schedule."
-                        : "Catalyst Evaluation Error: Provider telemetry stream failed to resolve.")
-                    : (isPlain
-                        ? (catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null && catalystEvidence.daysToEarnings < 0
-                            ? `Prior earnings reported (${catalystEvidence.eventDate || "historical"}), but forward calendar is unverified. Cannot certify forward runway.`
-                            : "Earnings calendar coverage unavailable: Event runway cannot be certified.")
-                        : (catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null && catalystEvidence.daysToEarnings < 0
-                            ? `Historical Event Elapsed: Prior report on ${catalystEvidence.eventDate || "historical record"}. Forward schedule unverified; runway uncertified.`
-                            : "Catalyst Telemetry Unavailable: Corporate event schedule unverified from primary source."))}
+                  {renderCheck4Detail()}
                 </p>
               </div>
               <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
