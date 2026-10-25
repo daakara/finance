@@ -14,6 +14,21 @@ jobs:
       matrix:
         python-version: ['3.11', '3.12']
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: arx_test
+          POSTGRES_USER: arx_user
+          POSTGRES_PASSWORD: arx_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -29,7 +44,7 @@ jobs:
     - name: Install test dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt pytest pytest-cov httpx starlette pyyaml pytest-asyncio
+        pip install -r requirements.txt pytest pytest-cov httpx starlette pyyaml pytest-asyncio pgserver
 
     - name: Run Tier 1 Core Invariant Gate
       env:
@@ -94,6 +109,28 @@ jobs:
           tests/test_vcp_candidate_006_conformance.py \
           tests/test_vcp_candidate_reproducibility.py \
           -v --strict-markers
+
+    - name: Smart Money & Hosted PostgreSQL Integration Gate
+      env:
+        PYTHONPATH: "."
+        SMART_MONEY_DATABASE_URL: "postgresql://arx_user:arx_password@localhost:5432/arx_test"
+      run: |
+        python -m pytest \
+          tests/test_smart_money_lazy_imports.py \
+          tests/test_smart_money_radar_contract.py \
+          tests/test_smart_money_sm1_lazy_import_and_radar.py \
+          tests/test_smart_money_api.py \
+          tests/test_smart_money_pipeline.py \
+          tests/test_smart_money_scanner_runner.py \
+          tests/test_smart_money_postgres_integration.py \
+          tests/test_smart_money_postgres_runtime_integration.py \
+          tests/test_smart_money_worker_lease_recovery.py \
+          tests/test_smart_money_backup_automation.py \
+          tests/test_smart_money_backup_containment_postgres_integration.py \
+          tests/test_smart_money_candidate_006_readiness_adversarial.py \
+          tests/test_screener_execution.py \
+          tests/test_screener_actionability_boundary.py \
+          -v
 
     - name: Run Tier 3 Pre-Flight Release Gate
       if: github.base_ref == 'main' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
