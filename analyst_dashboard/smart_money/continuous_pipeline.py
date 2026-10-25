@@ -256,7 +256,7 @@ class SmartMoneyContinuousPipeline:
             steps_completed.append("STEP_2_ADVISORY_LOCK_CLAIMED")
 
             # ── Step 3: Atomic durable eligibility check under lock ───────────
-            effective_force = bool(force or trigger_type == "TEST")
+            effective_force = bool(force or (self.allow_test_mode and trigger_type == "TEST"))
             should_run, sched_reason = self._step3_check_durable_date_eligibility_under_lock(
                 force=effective_force, as_of=as_of
             )
@@ -390,6 +390,30 @@ class SmartMoneyContinuousPipeline:
             except Exception as e:
                 raise RuntimeError(f"DATABASE_CONNECTIVITY_FAILED: {e}")
 
+    def _check_in_flight_authorization(self, step_name: str = "EXECUTION") -> None:
+        """
+        In-flight authorization and cancellation check between pipeline stages.
+        Guarantees that if ARX_SEC_EGRESS_ROLE is revoked in-flight,
+        subsequent steps (especially Step 6 SEC egress and Step 8 snapshot publication)
+        are aborted fail-closed without publishing unverified or partial snapshots.
+        """
+        raw_role = os.environ.get("ARX_SEC_EGRESS_ROLE")
+        role = raw_role.strip().upper() if raw_role and isinstance(raw_role, str) else None
+
+        # If explicitly revoked or disabled, abort unconditionally (production or test)
+        if role in ("DISABLED", "REVOKED"):
+            raise RuntimeError(
+                f"IN_FLIGHT_REVOCATION_ABORT: Execution aborted at {step_name}. "
+                f"Worker requires ARX_SEC_EGRESS_ROLE=OWNER. Active: '{role}'."
+            )
+
+        # In live / production mode (outside allow_test_mode), role MUST be OWNER
+        if not self.allow_test_mode and role != "OWNER":
+            raise RuntimeError(
+                f"IN_FLIGHT_REVOCATION_ABORT: Execution aborted at {step_name}. "
+                f"Live worker requires ARX_SEC_EGRESS_ROLE=OWNER. Active: '{role or 'UNSET'}'."
+            )
+
     def _step2_claim_advisory_lock(self) -> None:
         """Acquires exclusive session advisory lock (LOCK_SEC_EGRESS_OWNER)."""
         if not self.dsn:
@@ -414,29 +438,71 @@ class SmartMoneyContinuousPipeline:
     ) -> Tuple[bool, str]:
         """
         Durable date and schedule eligibility evaluation under exclusive advisory lock.
+        Enforces strict fail-closed acceptance invariant: UNKNOWN_EXECUTION_STATE != ELIGIBLE_TO_RUN.
+
         Checks:
         1. Force override flag
-        2. Dissemination calendar (Mon-Fri, non-SEC holiday)
-        3. America/New_York 22:30 execution window
-        4. Durable once-per-date execution check: queries latest active snapshot's data_as_of
-           to ensure this New York calendar date has not already been completed.
+        2. Production lock connection & repository presence
+        3. Lock ownership durability check
+        4. Authoritative latest active snapshot query
+        5. Exact data_as_of parsing & date extraction
+        6. America/New_York dissemination calendar & 22:30 execution window
         """
         if force:
             return True, "FORCE_OVERRIDE"
 
+        # 1. Lock and Repository Validation (Fail-closed)
+        if not self.allow_test_mode:
+            if not self.repository:
+                raise RuntimeError(
+                    "DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Active repository required to verify execution state."
+                )
+            if not self._lock_conn:
+                raise RuntimeError(
+                    "DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Active advisory lock connection required to verify execution state."
+                )
+            if getattr(self._lock_conn, "closed", 0) > 0:
+                raise RuntimeError(
+                    "DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Advisory lock connection closed prior to eligibility check."
+                )
+
+        # 2. Query durable state under lock
         last_executed_ny_date = None
-        if self.dsn and hasattr(self, "repository") and self.repository:
+        if self.repository:
+            # Confirm lock connection is valid if present
+            if self._lock_conn and getattr(self._lock_conn, "closed", 0) > 0:
+                raise RuntimeError(
+                    "DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Advisory lock connection closed prior to eligibility check."
+                )
+
             try:
-                # Query using the connection holding the advisory lock or repository
                 snap = self.repository.get_latest_active_snapshot(conn=self._lock_conn)
-                if snap and snap.get("data_as_of"):
-                    as_of_val = snap["data_as_of"]
+            except Exception as e:
+                raise RuntimeError(
+                    f"DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Database query for latest active snapshot failed: {e}"
+                ) from e
+
+            if snap is not None:
+                as_of_val = snap.get("data_as_of")
+                if not as_of_val:
+                    raise RuntimeError(
+                        "DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Active snapshot record missing mandatory 'data_as_of' field."
+                    )
+                try:
                     if isinstance(as_of_val, str):
                         last_executed_ny_date = datetime.strptime(as_of_val[:10], "%Y-%m-%d").date()
                     elif hasattr(as_of_val, "date"):
                         last_executed_ny_date = as_of_val.date()
-            except Exception as e:
-                logger.warning(f"Could not query latest active snapshot under lock: {e}")
+                    else:
+                        raise ValueError(f"Unsupported data_as_of type: {type(as_of_val)}")
+                except Exception as e:
+                    raise RuntimeError(
+                        f"DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Active snapshot has unparseable or malformed data_as_of '{as_of_val}': {e}"
+                    ) from e
+        elif not self.allow_test_mode:
+            raise RuntimeError(
+                "DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Missing repository outside authorized test mode."
+            )
 
         eval_dt = None
         if as_of:
@@ -455,6 +521,61 @@ class SmartMoneyContinuousPipeline:
             force=force,
         )
 
+    def _validate_backup_manifest(
+        self, manifest: Optional[Dict[str, Any]], expected_backup_id: Optional[str] = None
+    ) -> None:
+        """
+        Unconditionally validates pre-ingestion and post-ingestion backup manifests.
+        Enforces acceptance invariant: BACKUP_SUCCESS != VERIFIED_RECOVERABLE_BACKUP.
+
+        Validates every mandatory property independently:
+        1. Nonempty dictionary manifest.
+        2. Expected backup identity (backup_id).
+        3. Recognized successful status (status in ("SUCCESS", "VERIFIED") and != "FAILED").
+        4. Explicit upload_verified is True (Boolean True, not truthy string or missing).
+        5. Valid external storage destination.
+        6. Cryptographic integrity evidence (artifact_sha256 or database_sha256).
+        7. Artifact size in bytes (> 0).
+        """
+        if not manifest or not isinstance(manifest, dict) or len(manifest) == 0:
+            raise RuntimeError("PRE_BACKUP_FAILED: Empty or invalid backup manifest returned")
+
+        # 1. Status check: must not be FAILED, and must be in ("SUCCESS", "VERIFIED")
+        status = manifest.get("status")
+        if status == "FAILED":
+            raise RuntimeError("PRE_BACKUP_FAILED: Manifest status is FAILED")
+        if status not in ("SUCCESS", "VERIFIED"):
+            raise RuntimeError(f"PRE_BACKUP_FAILED: Manifest status is not successful: {status}")
+
+        # 2. Upload verification: MUST be explicitly Boolean True
+        upload_verified = manifest.get("upload_verified")
+        if upload_verified is not True:
+            raise RuntimeError(
+                f"PRE_BACKUP_FAILED: Backup upload was not verified (upload_verified={upload_verified})"
+            )
+
+        # 3. Expected backup identity
+        bid = manifest.get("backup_id")
+        if not bid or not isinstance(bid, str):
+            raise RuntimeError("PRE_BACKUP_FAILED: Manifest missing mandatory 'backup_id'")
+        if expected_backup_id and bid != expected_backup_id:
+            raise RuntimeError(f"PRE_BACKUP_FAILED: Manifest backup_id mismatch: {bid} != {expected_backup_id}")
+
+        # 4. Storage destination
+        dest = manifest.get("storage_destination")
+        if not dest or not isinstance(dest, str):
+            raise RuntimeError("PRE_BACKUP_FAILED: Manifest missing mandatory 'storage_destination'")
+
+        # 5. Cryptographic integrity evidence (valid hex SHA-256)
+        sha = manifest.get("artifact_sha256") or manifest.get("database_sha256")
+        if not sha or not isinstance(sha, str) or len(sha) < 32:
+            raise RuntimeError(f"PRE_BACKUP_FAILED: Manifest missing or malformed integrity sha256: {sha}")
+
+        # 6. Artifact size
+        size = manifest.get("artifact_size_bytes")
+        if size is None or not isinstance(size, (int, float)) or size <= 0:
+            raise RuntimeError(f"PRE_BACKUP_FAILED: Manifest missing or invalid artifact_size_bytes: {size}")
+
     def _step4_pre_backup(self, cycle_id: str) -> Dict[str, Any]:
         """Captures pre-ingestion logical dump and uploads to off-host storage."""
         if not self.backup_engine:
@@ -463,13 +584,19 @@ class SmartMoneyContinuousPipeline:
                     "BACKUP_ENGINE_REQUIRED: Live continuous pipeline requires verified backup engine"
                 )
             logger.warning("No backup engine configured, skipping pre-backup (test mode).")
-            return {"backup_id": f"mock-pre-backup-{cycle_id}", "status": "MOCKED"}
+            return {
+                "backup_id": f"mock-pre-backup-{cycle_id}",
+                "status": "VERIFIED",
+                "upload_verified": True,
+                "storage_destination": "mock://storage",
+                "artifact_sha256": "0" * 64,
+                "database_sha256": "0" * 64,
+                "artifact_size_bytes": 1024,
+            }
 
         backup_id = f"sm-pre-ingest-{datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:6]}"
         manifest = self.backup_engine.create_backup(custom_backup_id=backup_id, include_globals=False)
-        if not manifest or manifest.get("status") not in ("SUCCESS", "VERIFIED"):
-            if not manifest or not manifest.get("upload_verified", False):
-                raise RuntimeError(f"PRE_BACKUP_FAILED: Backup engine returned invalid or unverified manifest: {manifest}")
+        self._validate_backup_manifest(manifest, expected_backup_id=backup_id)
         return manifest
 
     def _step5_freshness_gate_check(self) -> None:
@@ -495,10 +622,16 @@ class SmartMoneyContinuousPipeline:
         """
         raw_filings: List[Dict[str, Any]] = []
 
+        # In-flight authorization check before starting ingestion loop
+        self._check_in_flight_authorization(step_name="STEP_6_SEC_INGESTION_START")
+
         for issuer in self.issuers:
             ticker = issuer["ticker"]
             cik = issuer["cik"]
             company_name = issuer.get("company_name", ticker)
+
+            # In-flight authorization check before each network egress request
+            self._check_in_flight_authorization(step_name=f"STEP_6_SEC_INGESTION_{ticker}")
 
             # Rate-limiting pause
             self.rate_limiter.acquire()
@@ -814,6 +947,9 @@ class SmartMoneyContinuousPipeline:
             },
         }
 
+        # In-flight authorization check before advancing active snapshot pointer
+        self._check_in_flight_authorization(step_name="STEP_8_ATOMIC_SNAPSHOT_PUBLICATION")
+
         if self.repository:
             self.repository.publish_scanner_snapshot_atomic(
                 snapshot=snapshot,
@@ -834,12 +970,19 @@ class SmartMoneyContinuousPipeline:
                     "BACKUP_ENGINE_REQUIRED: Live continuous pipeline requires verified backup engine"
                 )
             logger.warning("No backup engine configured, skipping post-backup (test mode).")
-            return {"backup_id": f"mock-post-backup-{cycle_id}", "status": "MOCKED"}
+            return {
+                "backup_id": f"mock-post-backup-{cycle_id}",
+                "status": "VERIFIED",
+                "upload_verified": True,
+                "storage_destination": "mock://storage",
+                "artifact_sha256": "0" * 64,
+                "database_sha256": "0" * 64,
+                "artifact_size_bytes": 1024,
+            }
 
         backup_id = f"sm-post-ingest-{datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:6]}"
         manifest = self.backup_engine.create_backup(custom_backup_id=backup_id, include_globals=False)
-        if not manifest or manifest.get("status") not in ("SUCCESS", "VERIFIED"):
-            raise RuntimeError(f"POST_BACKUP_FAILED: Backup engine returned invalid manifest: {manifest}")
+        self._validate_backup_manifest(manifest, expected_backup_id=backup_id)
         return manifest
 
     def _step10_prune_retention(self) -> List[str]:

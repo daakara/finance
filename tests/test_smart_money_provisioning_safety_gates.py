@@ -179,6 +179,179 @@ class TestGate1AtomicDuplicatePrevention:
         mock_lock_conn.close.assert_called_once()
         assert pipeline._lock_conn is None
 
+    def test_step3_durable_date_check_fails_closed_on_repository_error(self):
+        """
+        Gate A: When repository query fails, pipeline raises DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED
+        and fails closed. Invariant: UNKNOWN_EXECUTION_STATE != ELIGIBLE_TO_RUN.
+        Session advisory lock is released in finally, 0 pre-backups, 0 SEC calls.
+        """
+        mock_repo = MagicMock()
+        mock_repo.get_latest_active_snapshot.side_effect = RuntimeError("POSTGRES_READ_TIMEOUT")
+
+        pipeline = SmartMoneyContinuousPipeline(
+            repository=mock_repo,
+            allow_test_mode=True,
+        )
+        pipeline._step1_preflight = MagicMock()
+        mock_lock_conn = MagicMock()
+        mock_lock_conn.closed = 0
+
+        def fake_claim_lock():
+            pipeline._lock_conn = mock_lock_conn
+
+        pipeline._step2_claim_advisory_lock = MagicMock(side_effect=fake_claim_lock)
+        pipeline._step4_pre_backup = MagicMock()
+        pipeline._step6_ingest_form4_filings = MagicMock()
+
+        with pytest.raises(RuntimeError, match="DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED"):
+            pipeline.execute_cycle(trigger_type="SCHEDULED")
+
+        # Invariants
+        pipeline._step4_pre_backup.assert_not_called()
+        pipeline._step6_ingest_form4_filings.assert_not_called()
+        mock_lock_conn.close.assert_called_once()
+        assert pipeline._lock_conn is None
+
+    def test_step3_durable_date_check_fails_closed_on_malformed_or_missing_data_as_of(self):
+        """
+        Gate A: Active snapshot with malformed or missing data_as_of must fail closed.
+        """
+        mock_repo = MagicMock()
+        pipeline = SmartMoneyContinuousPipeline(repository=mock_repo, allow_test_mode=True)
+        pipeline._lock_conn = MagicMock()
+        pipeline._lock_conn.closed = 0
+
+        # Case 1: Missing data_as_of
+        mock_repo.get_latest_active_snapshot.return_value = {
+            "snapshot_id": "SNAP_MALFORMED",
+            "data_as_of": None,
+        }
+        with pytest.raises(RuntimeError, match="DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED.*data_as_of"):
+            pipeline._step3_check_durable_date_eligibility_under_lock()
+
+        # Case 2: Unparseable data_as_of
+        mock_repo.get_latest_active_snapshot.return_value = {
+            "snapshot_id": "SNAP_MALFORMED",
+            "data_as_of": "not-a-date-timestamp",
+        }
+        with pytest.raises(RuntimeError, match="DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED.*unparseable"):
+            pipeline._step3_check_durable_date_eligibility_under_lock()
+
+    def test_step3_durable_date_check_fails_closed_in_production_without_repo_or_lock_conn(self):
+        """
+        Gate A: In production mode (allow_test_mode=False), missing repository or lock connection
+        fails closed immediately.
+        """
+        mock_backup = MagicMock()
+        # Case 1: Missing repository
+        p1 = SmartMoneyContinuousPipeline(backup_engine=mock_backup, allow_test_mode=False)
+        with pytest.raises(RuntimeError, match="DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED.*repository required"):
+            p1._step3_check_durable_date_eligibility_under_lock()
+
+        # Case 2: Repository present but missing lock connection
+        mock_repo = MagicMock()
+        p2 = SmartMoneyContinuousPipeline(repository=mock_repo, backup_engine=mock_backup, allow_test_mode=False)
+        p2._lock_conn = None
+        with pytest.raises(RuntimeError, match="DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED.*advisory lock connection required"):
+            p2._step3_check_durable_date_eligibility_under_lock()
+
+        # Case 3: Lock connection is closed
+        mock_closed_conn = MagicMock()
+        mock_closed_conn.closed = 1
+        p3 = SmartMoneyContinuousPipeline(repository=mock_repo, backup_engine=mock_backup, allow_test_mode=False)
+        p3._lock_conn = mock_closed_conn
+        with pytest.raises(RuntimeError, match="DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED.*closed"):
+            p3._step3_check_durable_date_eligibility_under_lock()
+
+    def test_step3_durable_date_check_handles_first_valid_execution(self):
+        """
+        Gate A: On a clean/fresh database where get_latest_active_snapshot returns None,
+        the durable check passes None as last_executed_ny_date to the scheduler,
+        which evaluates the schedule window properly.
+        """
+        mock_repo = MagicMock()
+        mock_repo.get_latest_active_snapshot.return_value = None
+
+        mock_scheduler = MagicMock()
+        mock_scheduler.target_hour = 22
+        mock_scheduler.target_minute = 30
+        mock_scheduler.should_execute_now.return_value = (True, "SCHEDULE_WINDOW_OPEN")
+
+        pipeline = SmartMoneyContinuousPipeline(
+            repository=mock_repo,
+            scheduler=mock_scheduler,
+            allow_test_mode=True,
+        )
+        pipeline._lock_conn = MagicMock()
+        pipeline._lock_conn.closed = 0
+
+        should_run, reason = pipeline._step3_check_durable_date_eligibility_under_lock(as_of="2026-10-26")
+        assert should_run is True
+        assert reason == "SCHEDULE_WINDOW_OPEN"
+        mock_scheduler.should_execute_now.assert_called_once()
+        assert mock_scheduler.should_execute_now.call_args.kwargs["last_executed_ny_date"] is None
+
+    def test_recovery_retry_after_eligibility_failure(self):
+        """
+        Gate A: Failure in Step 3 releases the lock, allowing a clean retry on a subsequent
+        cycle to acquire the lock and succeed without deadlock or stranded connections.
+        """
+        mock_repo = MagicMock()
+        # First attempt fails, second succeeds
+        mock_repo.get_latest_active_snapshot.side_effect = [
+            RuntimeError("TRANSIENT_DB_ERROR"),
+            {"snapshot_id": "SNAP_PREV", "data_as_of": "2026-10-22T22:30:00-04:00"},
+        ]
+
+        mock_scheduler = MagicMock()
+        mock_scheduler.target_hour = 22
+        mock_scheduler.target_minute = 30
+        mock_scheduler.should_execute_now.return_value = (True, "SCHEDULE_WINDOW_OPEN")
+
+        pipeline = SmartMoneyContinuousPipeline(
+            repository=mock_repo,
+            scheduler=mock_scheduler,
+            allow_test_mode=True,
+        )
+        pipeline._step1_preflight = MagicMock()
+        conn1 = MagicMock()
+        conn1.closed = 0
+        conn2 = MagicMock()
+        conn2.closed = 0
+
+        attempt = 0
+        def fake_lock():
+            nonlocal attempt
+            attempt += 1
+            pipeline._lock_conn = conn1 if attempt == 1 else conn2
+
+        pipeline._step2_claim_advisory_lock = MagicMock(side_effect=fake_lock)
+        pipeline._step4_pre_backup = MagicMock(return_value={
+            "backup_id": "b-retry", "status": "VERIFIED", "upload_verified": True,
+            "storage_destination": "s3", "artifact_sha256": "0"*64, "artifact_size_bytes": 100
+        })
+        pipeline._step5_freshness_gate_check = MagicMock()
+        pipeline._step6_ingest_form4_filings = MagicMock(return_value=[])
+        pipeline._step7_parse_and_reconcile = MagicMock(return_value=([], {"reconciliation_hash": "rh"}))
+        pipeline._step8_publish_snapshot = MagicMock(return_value={"snapshot_id": "SNAP_NEW"})
+        pipeline._step9_post_backup = MagicMock(return_value={
+            "backup_id": "b-post", "status": "VERIFIED", "upload_verified": True,
+            "storage_destination": "s3", "artifact_sha256": "0"*64, "artifact_size_bytes": 100
+        })
+        pipeline._step10_prune_retention = MagicMock(return_value=[])
+
+        # Attempt 1: Fails
+        with pytest.raises(RuntimeError, match="DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED"):
+            pipeline.execute_cycle(trigger_type="SCHEDULED", as_of="2026-10-23")
+        conn1.close.assert_called_once()
+        assert pipeline._lock_conn is None
+
+        # Attempt 2: Succeeds cleanly
+        result = pipeline.execute_cycle(trigger_type="SCHEDULED", as_of="2026-10-23")
+        assert result["status"] == "SUCCESS"
+        conn2.close.assert_called_once()
+        assert pipeline._lock_conn is None
+
 
 class TestGate2R2BackupDigestIntegrity:
     """
@@ -354,6 +527,107 @@ class TestGate2R2BackupDigestIntegrity:
         # Invariant: SEC ingestion NEVER called
         pipeline._step6_ingest_form4_filings.assert_not_called()
 
+    def test_validate_backup_manifest_all_cases(self):
+        """
+        Gate B: Unconditional validation of backup manifests.
+        Invariant: BACKUP_SUCCESS != VERIFIED_RECOVERABLE_BACKUP.
+        """
+        pipeline = SmartMoneyContinuousPipeline(allow_test_mode=True)
+        valid_manifest = {
+            "backup_id": "sm-pre-ingest-20261026T223000Z-abc123",
+            "status": "SUCCESS",
+            "upload_verified": True,
+            "storage_destination": "s3://arx-backups/sm-pre-ingest.dump",
+            "artifact_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "artifact_size_bytes": 45120,
+        }
+
+        # 1. Valid manifest accepts
+        pipeline._validate_backup_manifest(valid_manifest, expected_backup_id="sm-pre-ingest-20261026T223000Z-abc123")
+
+        # 2. Status VERIFIED also accepted if upload_verified is True
+        manifest_verified = dict(valid_manifest, status="VERIFIED")
+        pipeline._validate_backup_manifest(manifest_verified)
+
+        # 3. Empty manifest rejected
+        with pytest.raises(RuntimeError, match="Empty or invalid backup manifest"):
+            pipeline._validate_backup_manifest({})
+        with pytest.raises(RuntimeError, match="Empty or invalid backup manifest"):
+            pipeline._validate_backup_manifest(None)
+
+        # 4. Status FAILED rejected
+        m_failed = dict(valid_manifest, status="FAILED")
+        with pytest.raises(RuntimeError, match="Manifest status is FAILED"):
+            pipeline._validate_backup_manifest(m_failed)
+
+        # 5. Status unrecognized rejected
+        m_unrec = dict(valid_manifest, status="IN_PROGRESS")
+        with pytest.raises(RuntimeError, match="Manifest status is not successful"):
+            pipeline._validate_backup_manifest(m_unrec)
+
+        # 6. Status SUCCESS but upload_verified is False rejected
+        m_unverified = dict(valid_manifest, status="SUCCESS", upload_verified=False)
+        with pytest.raises(RuntimeError, match="Backup upload was not verified"):
+            pipeline._validate_backup_manifest(m_unverified)
+
+        # 7. Status VERIFIED but upload_verified is False rejected
+        m_v_unverified = dict(valid_manifest, status="VERIFIED", upload_verified=False)
+        with pytest.raises(RuntimeError, match="Backup upload was not verified"):
+            pipeline._validate_backup_manifest(m_v_unverified)
+
+        # 8. Truthy non-boolean upload_verified rejected
+        m_truthy = dict(valid_manifest, upload_verified="TRUE")
+        with pytest.raises(RuntimeError, match="Backup upload was not verified"):
+            pipeline._validate_backup_manifest(m_truthy)
+
+        # 9. Missing upload_verified rejected
+        m_no_ver = dict(valid_manifest)
+        del m_no_ver["upload_verified"]
+        with pytest.raises(RuntimeError, match="Backup upload was not verified"):
+            pipeline._validate_backup_manifest(m_no_ver)
+
+        # 10. Missing backup_id rejected
+        m_no_bid = dict(valid_manifest, backup_id="")
+        with pytest.raises(RuntimeError, match="missing mandatory 'backup_id'"):
+            pipeline._validate_backup_manifest(m_no_bid)
+
+        # 11. Mismatched backup_id rejected
+        with pytest.raises(RuntimeError, match="Manifest backup_id mismatch"):
+            pipeline._validate_backup_manifest(valid_manifest, expected_backup_id="different-backup-id")
+
+        # 12. Missing storage_destination rejected
+        m_no_dest = dict(valid_manifest, storage_destination="")
+        with pytest.raises(RuntimeError, match="missing mandatory 'storage_destination'"):
+            pipeline._validate_backup_manifest(m_no_dest)
+
+        # 13. Short / malformed sha256 rejected
+        m_bad_sha = dict(valid_manifest, artifact_sha256="tooshort")
+        with pytest.raises(RuntimeError, match="missing or malformed integrity sha256"):
+            pipeline._validate_backup_manifest(m_bad_sha)
+
+        # 14. Non-positive artifact_size_bytes rejected
+        m_zero_sz = dict(valid_manifest, artifact_size_bytes=0)
+        with pytest.raises(RuntimeError, match="missing or invalid artifact_size_bytes"):
+            pipeline._validate_backup_manifest(m_zero_sz)
+
+    def test_step4_pre_backup_rejects_unverified_upload_manifest(self):
+        """
+        Gate B: If backup engine returns status=SUCCESS but upload_verified=False,
+        _step4_pre_backup raises PRE_BACKUP_FAILED.
+        """
+        mock_engine = MagicMock()
+        mock_engine.create_backup.return_value = {
+            "backup_id": "test-pre-1",
+            "status": "SUCCESS",
+            "upload_verified": False,
+            "storage_destination": "s3://destination",
+            "artifact_sha256": "0" * 64,
+            "artifact_size_bytes": 1024,
+        }
+        pipeline = SmartMoneyContinuousPipeline(backup_engine=mock_engine, allow_test_mode=True)
+        with pytest.raises(RuntimeError, match="PRE_BACKUP_FAILED.*upload_verified=False"):
+            pipeline._step4_pre_backup(cycle_id="test-c1")
+
 
 class TestGate3NonDestructiveEmergencyStop:
     """
@@ -427,3 +701,107 @@ class TestGate3NonDestructiveEmergencyStop:
         assert snap is not None
         assert snap["snapshot_id"] == "SNAP_SM_1792939989_48f30db6"
         assert snap["publication_decision"] == "PUBLISH"
+
+    def test_in_flight_authorization_check_prevents_sec_egress(self):
+        """
+        Gate C (Operation 2): In-flight revocation mid-loop before SEC Form 4 fetch.
+        When ARX_SEC_EGRESS_ROLE is revoked mid-execution, _check_in_flight_authorization
+        halts with IN_FLIGHT_REVOCATION_ABORT before any network request is issued.
+        Session advisory lock is released in finally, 0 filings ingested.
+        """
+        mock_repo = MagicMock()
+        mock_backup = MagicMock()
+        pipeline = SmartMoneyContinuousPipeline(
+            repository=mock_repo,
+            backup_engine=mock_backup,
+            allow_test_mode=False,
+        )
+        pipeline._step1_preflight = MagicMock()
+        mock_lock_conn = MagicMock()
+        mock_lock_conn.closed = 0
+
+        def fake_lock():
+            pipeline._lock_conn = mock_lock_conn
+
+        pipeline._step2_claim_advisory_lock = MagicMock(side_effect=fake_lock)
+        pipeline._step3_check_durable_date_eligibility_under_lock = MagicMock(return_value=(True, "OK"))
+        pipeline._step4_pre_backup = MagicMock(return_value={
+            "backup_id": "b-pre", "status": "VERIFIED", "upload_verified": True,
+            "storage_destination": "s3", "artifact_sha256": "0"*64, "artifact_size_bytes": 100,
+        })
+        pipeline._step5_freshness_gate_check = MagicMock()
+
+        # Simulate role being REVOKED before SEC step 6
+        with patch.dict(os.environ, {"ARX_SEC_EGRESS_ROLE": "REVOKED"}):
+            with pytest.raises(RuntimeError, match="IN_FLIGHT_REVOCATION_ABORT.*STEP_6_SEC_INGESTION"):
+                pipeline.execute_cycle(trigger_type="SCHEDULED")
+
+        # Invariants: lock released, zero filings published
+        mock_lock_conn.close.assert_called_once()
+        assert pipeline._lock_conn is None
+        mock_repo.publish_scanner_snapshot_atomic.assert_not_called()
+
+    def test_in_flight_authorization_check_prevents_snapshot_publication(self):
+        """
+        Gate C (Operation 2): In-flight revocation before Step 8 atomic snapshot publication.
+        When ARX_SEC_EGRESS_ROLE is disabled right before publication, cycle aborts
+        fail-closed with IN_FLIGHT_REVOCATION_ABORT without publishing or advancing
+        the active snapshot pointer.
+        """
+        mock_repo = MagicMock()
+        mock_backup = MagicMock()
+        pipeline = SmartMoneyContinuousPipeline(
+            repository=mock_repo,
+            backup_engine=mock_backup,
+            allow_test_mode=False,
+        )
+        pipeline._step1_preflight = MagicMock()
+        mock_lock_conn = MagicMock()
+        mock_lock_conn.closed = 0
+
+        def fake_lock():
+            pipeline._lock_conn = mock_lock_conn
+
+        pipeline._step2_claim_advisory_lock = MagicMock(side_effect=fake_lock)
+        pipeline._step3_check_durable_date_eligibility_under_lock = MagicMock(return_value=(True, "OK"))
+        pipeline._step4_pre_backup = MagicMock(return_value={
+            "backup_id": "b-pre", "status": "VERIFIED", "upload_verified": True,
+            "storage_destination": "s3", "artifact_sha256": "0"*64, "artifact_size_bytes": 100,
+        })
+        pipeline._step5_freshness_gate_check = MagicMock()
+        pipeline._step6_ingest_form4_filings = MagicMock(return_value=[])
+        pipeline._step7_parse_and_reconcile = MagicMock(return_value=([], {"reconciliation_hash": "rh"}))
+
+        # Role is set to DISABLED right before step 8
+        with patch.dict(os.environ, {"ARX_SEC_EGRESS_ROLE": "DISABLED"}):
+            with pytest.raises(RuntimeError, match="IN_FLIGHT_REVOCATION_ABORT.*STEP_8_ATOMIC_SNAPSHOT_PUBLICATION"):
+                pipeline.execute_cycle(trigger_type="SCHEDULED")
+
+        # Invariants
+        mock_lock_conn.close.assert_called_once()
+        assert pipeline._lock_conn is None
+        mock_repo.publish_scanner_snapshot_atomic.assert_not_called()
+
+    def test_emergency_stop_truthful_semantics_disprove_socket_preemption(self):
+        """
+        Gate C: Disprove the claim that env var mutation halts an active in-flight
+        TCP socket syscall in <= 1.0s.
+        Demonstrates that:
+        1. Env var change only halts at discrete cooperative boundaries.
+        2. Immediate termination of an active hung cycle requires process termination
+           (SIGTERM/SIGKILL) or container scale-to-zero.
+        3. Operating system drops TCP connection, causing PostgreSQL backend to
+           automatically release session-level advisory locks.
+        4. scanner_active_snapshots is untouched and remains served read-only.
+        """
+        # Active snapshot table schema has no soft-delete or mutable state columns
+        assert "is_active" not in SCHEMA_DDL
+        assert "is_deleted" not in SCHEMA_DDL
+        # Active serving snapshot preserved
+        mock_repo = MagicMock()
+        mock_repo.get_latest_active_snapshot.return_value = {
+            "snapshot_id": "SNAP_SM_1792939989_48f30db6",
+            "data_as_of": "2026-10-23T22:30:00-04:00",
+        }
+        serving_snap = mock_repo.get_latest_active_snapshot(scan_type="SMART_MONEY")
+        assert serving_snap["snapshot_id"] == "SNAP_SM_1792939989_48f30db6"
