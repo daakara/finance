@@ -39,6 +39,7 @@ export default function SynthesisGuideBanner() {
   return (
     <section
       id="guide-banner"
+      data-testid="synthesis-guide-banner"
       role="region"
       aria-label="Workflow Guide Navigation"
       className="w-full bg-[var(--surface-1)] border-b border-[var(--border-subtle)] text-xs font-mono transition-all duration-200"

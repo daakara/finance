@@ -836,7 +836,7 @@ function RadarContent() {
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
             {/* Category Filter Tabs (WAI-ARIA Tablist) */}
             <div
-              className="w-full md:w-auto overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x pb-1 md:pb-0"
+              className="w-full min-w-0 max-w-full md:w-auto overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x pb-1 md:pb-0"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
               <div
@@ -950,7 +950,7 @@ function RadarContent() {
                     handleOnDemandScan(cleanQ);
                   }
                 }}
-                className="relative flex-1 sm:w-72 min-w-[220px]"
+                className="relative flex-1 w-full sm:w-72 min-w-0"
               >
                 <input
                   type="text"
@@ -997,27 +997,27 @@ function RadarContent() {
                 </span>
               )}
 
-              <div className="flex flex-wrap items-center gap-1 bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-lg p-1 text-xs font-mono shrink-0">
-                <span className="text-[10px] text-[var(--text-muted)] px-2 uppercase">Sort:</span>
+              <div className="flex flex-wrap items-center gap-1 bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-lg p-1 text-xs font-mono max-w-full">
+                <span className="text-[10px] text-[var(--text-muted)] px-1.5 uppercase">Sort:</span>
                 <button
                   type="button"
                   onClick={() => setSortBy('SCORE')}
                   title="Sort by Confluence Score (Technical execution setup, RSI momentum, and smart money flow — not intrinsic valuation discount)"
-                  className={`focus-ring px-3 py-2 min-h-[44px] inline-flex items-center justify-center rounded ${sortBy === 'SCORE' ? 'bg-[var(--surface-2)] text-[var(--text-1)] font-bold' : 'text-[var(--text-2)] hover:text-[var(--text-1)]'}`}
+                  className={`focus-ring px-2.5 py-2 min-h-[44px] inline-flex items-center justify-center rounded ${sortBy === 'SCORE' ? 'bg-[var(--surface-2)] text-[var(--text-1)] font-bold' : 'text-[var(--text-2)] hover:text-[var(--text-1)]'}`}
                 >
-                  Score (Confluence)
+                  Score<span className="hidden sm:inline"> (Confluence)</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setSortBy('RVOL')}
-                  className={`focus-ring px-3 py-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded ${sortBy === 'RVOL' ? 'bg-[var(--surface-2)] text-[var(--text-1)] font-bold' : 'text-[var(--text-2)] hover:text-[var(--text-1)]'}`}
+                  className={`focus-ring px-2.5 py-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded ${sortBy === 'RVOL' ? 'bg-[var(--surface-2)] text-[var(--text-1)] font-bold' : 'text-[var(--text-2)] hover:text-[var(--text-1)]'}`}
                 >
                   RVOL
                 </button>
                 <button
                   type="button"
                   onClick={() => setSortBy('PRICE')}
-                  className={`focus-ring px-3 py-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded ${sortBy === 'PRICE' ? 'bg-[var(--surface-2)] text-[var(--text-1)] font-bold' : 'text-[var(--text-2)] hover:text-[var(--text-1)]'}`}
+                  className={`focus-ring px-2.5 py-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded ${sortBy === 'PRICE' ? 'bg-[var(--surface-2)] text-[var(--text-1)] font-bold' : 'text-[var(--text-2)] hover:text-[var(--text-1)]'}`}
                 >
                   Price
                 </button>
@@ -1028,7 +1028,7 @@ function RadarContent() {
           {/* Secondary Row: Portfolio Ownership Filter Chips & Degraded Status */}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[var(--border-subtle)]">
             <div
-              className="w-full sm:w-auto overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x pb-1 sm:pb-0"
+              className="w-full min-w-0 max-w-full sm:w-auto overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x pb-1 sm:pb-0"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
               <div className="flex items-center gap-1.5 min-w-max" role="group" aria-label="Portfolio Ownership Filter">
