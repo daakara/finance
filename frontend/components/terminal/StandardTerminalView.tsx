@@ -585,6 +585,9 @@ export default function StandardTerminalView({
               optimalEntryMax={kl.entryMax}
               isActionable={isActionable}
               decisionState={insight.decisionTrace?.decisionState}
+              dataSource={(insight as any).dataSource || (insight as any)._dataSource}
+              isHistorical={(insight as any).dataSource === 'historical' || (insight as any)._dataSource === 'historical'}
+              isSynthetic={Boolean(isDemo || (insight as any).isSynthetic)}
             />
           )}
         </div>

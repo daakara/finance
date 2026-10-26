@@ -61,7 +61,22 @@ export interface PreFlightChecklistInputs {
   isActionable?: boolean | null;
   decisionState?: string;
   evidenceStatus?: string;
+  // Provenance & Authority Inputs (Gate 2 Invariants)
+  dataSource?: "live" | "historical" | "synthetic" | "curated" | "fallback" | "unavailable" | string | null;
+  isSynthetic?: boolean | null;
+  isHistorical?: boolean | null;
+  quoteStatus?: string | null;
+  liveSource?: string | null;
+  liveFreshnessStatus?: string | null;
+  marketSession?: string | null;
+  observationTime?: string | number | null;
 }
+
+export type ProvenanceCategory =
+  | "LIVE_OBSERVATION"
+  | "HISTORICAL_EOD"
+  | "SYNTHETIC_FIXTURE"
+  | "UNVERIFIED";
 
 export type CheckStatus =
   | "PASS"
@@ -106,6 +121,8 @@ export interface PreFlightEvaluationResult {
   activeBlocker: string;
   whatNeedsToChange: string;
   evidenceMeta: string;
+  provenanceCategory: ProvenanceCategory;
+  isSimulatedClearance: boolean;
   safePrice: number;
   safeStop: number | null;
   safeTarget: number | null;
@@ -712,6 +729,60 @@ export function evaluatePreFlightChecks(
     return "NONE";
   })();
 
+  // ── Provenance & Epistemic Authority Classification (Gate 2 Invariants) ──
+  const rawDataSource = (inputs.dataSource || "").toLowerCase();
+  const rawQuoteStatus = (inputs.quoteStatus || "").toUpperCase();
+  const rawEvidenceStatus = (inputs.evidenceStatus || "").trim();
+
+  const isSyntheticFixture = Boolean(
+    inputs.isSynthetic ||
+    rawDataSource === "synthetic" ||
+    rawDataSource === "fixture" ||
+    rawDataSource === "static_fixture" ||
+    rawQuoteStatus === "SYNTHETIC" ||
+    rawEvidenceStatus.toUpperCase().includes("SYNTHETIC") ||
+    rawEvidenceStatus.toUpperCase().includes("FIXTURE") ||
+    rawEvidenceStatus.toUpperCase().includes("SIMULATED")
+  );
+
+  const isHistoricalEOD = Boolean(
+    !isSyntheticFixture && (
+      inputs.isHistorical ||
+      rawDataSource === "historical" ||
+      rawQuoteStatus === "HISTORICAL_EOD" ||
+      rawQuoteStatus === "HISTORICAL" ||
+      rawEvidenceStatus.toUpperCase().includes("HISTORICAL") ||
+      rawEvidenceStatus.toUpperCase().includes("EOD")
+    )
+  );
+
+  const isExplicitLiveSource = Boolean(
+    rawDataSource === "live" ||
+    inputs.liveSource === "ALPACA_IEX" ||
+    inputs.liveSource === "EXCHANGE_FEED" ||
+    inputs.liveSource === "exchange_feed"
+  );
+
+  const isLiveObservation = Boolean(
+    !isSyntheticFixture &&
+    !isHistoricalEOD &&
+    isExplicitLiveSource &&
+    isPriceValid &&
+    (inputs.liveFreshnessStatus === "LIVE" ||
+     inputs.liveFreshnessStatus === "REALTIME" ||
+     inputs.macroEvidence?.freshnessStatus === "LIVE")
+  );
+
+  const provenanceCategory: ProvenanceCategory = isSyntheticFixture
+    ? "SYNTHETIC_FIXTURE"
+    : isHistoricalEOD
+    ? "HISTORICAL_EOD"
+    : isLiveObservation
+    ? "LIVE_OBSERVATION"
+    : "UNVERIFIED";
+
+  const isSimulatedClearance = Boolean(isCleared && isSyntheticFixture);
+
   // What Needs to Change Callout
   const whatNeedsToChange = (() => {
     if (!isActionableGranted) {
@@ -749,6 +820,17 @@ export function evaluatePreFlightChecks(
       }
       return "Wait for systemic market volatility (VIX) to settle below defensive threshold (< 26.0).";
     }
+
+    // Invariant 5: Simulated preflight clearance must not imply live order-execution authorization.
+    if (isSyntheticFixture) {
+      return "All pre-flight clearance conditions satisfied in simulation. Notice: Synthetic fixture — not authorized for live order execution.";
+    }
+    if (isHistoricalEOD) {
+      return "All pre-flight clearance conditions satisfied on historical close. Notice: Historical EOD data — requires live market confirmation before execution.";
+    }
+    if (provenanceCategory === "UNVERIFIED") {
+      return "All pre-flight clearance conditions satisfied. Notice: Unverified market feed — requires verified real-time data before execution.";
+    }
     return "All pre-flight clearance conditions satisfied. Setup cleared for controlled execution.";
   })();
 
@@ -772,11 +854,35 @@ export function evaluatePreFlightChecks(
   const target2Pct = (safePrice > 0 && safeTarget2 !== null) ? (((safeTarget2 - safePrice) / safePrice) * 100).toFixed(2) : "N/A";
   const target2Str = safeTarget2 !== null ? `$${safeTarget2.toFixed(2)} (+${target2Pct}%)` : "Unavailable";
 
-  const evidenceMeta = evidenceStatus || (
-    isPriceValid && mandatoryChecksVerified
-      ? "Evidence: LIVE MARKET OBSERVATION · 5/5 Mandatory Checks"
-      : "Evidence: SYNTHETIC FIXTURE / RECONCILED LEDGER"
-  );
+  // Invariants 1-4: Canonical evidenceMeta evaluation
+  const evidenceMeta = (() => {
+    // If an explicit evidenceStatus was supplied, sanitize against false LIVE claims on synthetic/historical
+    if (rawEvidenceStatus) {
+      if (isSyntheticFixture && rawEvidenceStatus.toUpperCase().includes("LIVE")) {
+        return "Evidence: SYNTHETIC FIXTURE · Simulated Pre-Flight Verification";
+      }
+      if (isHistoricalEOD && rawEvidenceStatus.toUpperCase().includes("LIVE")) {
+        return "Evidence: HISTORICAL EOD · Reconciled Close Observation";
+      }
+      return rawEvidenceStatus;
+    }
+
+    switch (provenanceCategory) {
+      case "SYNTHETIC_FIXTURE":
+        return mandatoryChecksVerified
+          ? "Evidence: SYNTHETIC FIXTURE · Simulated Pre-Flight Verification"
+          : "Evidence: SYNTHETIC FIXTURE · Reconciled Ledger";
+      case "HISTORICAL_EOD":
+        return "Evidence: HISTORICAL EOD · Reconciled Close Observation";
+      case "LIVE_OBSERVATION":
+        return mandatoryChecksVerified
+          ? "Evidence: LIVE MARKET OBSERVATION · 5/5 Mandatory Checks"
+          : "Evidence: LIVE MARKET OBSERVATION · Preflight Verification Pending";
+      case "UNVERIFIED":
+      default:
+        return "Evidence: UNVERIFIED PROVENANCE · Feed Verification Required";
+    }
+  })();
 
   return {
     symbol,
@@ -791,6 +897,8 @@ export function evaluatePreFlightChecks(
     activeBlocker,
     whatNeedsToChange,
     evidenceMeta,
+    provenanceCategory,
+    isSimulatedClearance,
     safePrice,
     safeStop,
     safeTarget,

@@ -295,6 +295,14 @@ function TerminalContent() {
       catalystEvidence,
       isActionable: data?.decisionTrace?.isActionable ?? (data?.canonicalDecision as any)?.is_actionable,
       decisionState: data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state,
+      dataSource: data?._dataSource,
+      isSynthetic: Boolean((data?._dataSource as string) === 'synthetic' || (data as any)?.isSynthetic),
+      isHistorical: Boolean(data?._dataSource === 'historical' || data?.quoteStatus === 'HISTORICAL_EOD'),
+      marketSession: data?.marketSession || data?.marketPriceState?.marketSession,
+      quoteStatus: data?.quoteStatus,
+      liveSource: data?.liveSource,
+      liveFreshnessStatus: (data?.liveFreshness as any)?.status || ((data?.marketPriceState as any)?.liveFreshness as any)?.status,
+      observationTime: data?.liveObservedAt || (data?.marketPriceState as any)?.asOfTimestamp,
     };
   }, [selectedSymbol, data, macroData, userRole]);
 
