@@ -345,10 +345,12 @@ export function generateQuantitativeInsight(
 
   // Phase 21 Epistemic Alignment: Honor authoritative backend decisionTrace if provided
   if (decisionTrace) {
-    terminalState.decisionState = decisionTrace.decisionState;
+    if (terminalState.decisionState !== "UNVERIFIED") {
+      terminalState.decisionState = decisionTrace.decisionState;
+    }
     const canonicalStateLabel = decisionTrace.decisionStateLabel || decisionTrace.stateLabel;
 
-    if (decisionTrace.decisionState === "UNVERIFIED" || isDegradedDecision) {
+    if (decisionTrace.decisionState === "UNVERIFIED" || isDegradedDecision || terminalState.decisionState === "UNVERIFIED") {
       terminalState.posture = "RESEARCH";
       terminalState.uiStateLabel = canonicalStateLabel || "Unverified Asset — Live Tape Required";
       terminalState.headlineExplanation = decisionTrace.disqualificationReason || (
@@ -379,12 +381,12 @@ export function generateQuantitativeInsight(
       }
     }
 
-    // Bind canSizeTrade and allowed actions directly from decisionTrace
+    // Bind canSizeTrade and allowed actions directly from decisionTrace, strictly bounded by terminalState fail-closed gating
     for (const action of terminalState.availableActions) {
       if (action.id === "size_trade") {
-        action.enabled = decisionTrace.canSizeTrade;
-        if (!decisionTrace.canSizeTrade) {
-          action.reason = decisionTrace.disqualificationReason || "Trade sizing disabled until trigger confirmed";
+        action.enabled = Boolean(terminalState.canSizeTrade) && Boolean(decisionTrace.canSizeTrade);
+        if (!action.enabled) {
+          action.reason = decisionTrace.disqualificationReason || action.reason || "Trade sizing disabled until trigger confirmed";
         }
       }
     }
@@ -414,11 +416,11 @@ export function generateQuantitativeInsight(
     whatWouldChangeAssessment: d.whatWouldChangeAssessment,
   }));
 
-  const finalVerdict = (decisionTrace?.decisionState === "UNVERIFIED" || isDegradedDecision)
+  const finalVerdict = (decisionTrace?.decisionState === "UNVERIFIED" || isDegradedDecision || terminalState.decisionState === "UNVERIFIED")
     ? "UNVERIFIED"
     : (terminalState.posture === "AVOID"
         ? "AVOID_STAGE_4"
-        : (decisionTrace?.isActionable ? "ACTIONABLE_BUY_ZONE" : "WAIT_FOR_TRIGGER"));
+        : (decisionTrace?.isActionable && terminalState.canSizeTrade ? "ACTIONABLE_BUY_ZONE" : "WAIT_FOR_TRIGGER"));
 
   const smaLevelRelation = evaluateLevelRelation(safePrice, sma50, "50-day moving average", symbol);
 

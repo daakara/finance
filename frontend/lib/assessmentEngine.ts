@@ -237,7 +237,78 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     }
   }
 
-  // 5. Derive Contextual Actions
+  // 4a. Resolve Precedence-Enforced DecisionState (Phase 20A / Phase 21 / Phase 2)
+  // Preserving genuine upstream model decision state separately from runtime safety restrictions
+  const deriveFallbackDecisionState = (): DecisionState => {
+    if (!isPriceValid || agreement.evaluated === 0 || effectiveFreshnessStatus === "UNAVAILABLE") {
+      return "UNVERIFIED";
+    }
+    if (isStale) {
+      return "STALE_DATA";
+    }
+    if (!isTrendAvailable) {
+      return "INSUFFICIENT_DATA";
+    }
+    if (!isHealthAvailable || overallEligibility !== "ELIGIBLE" || !isCoreEvidenceAvailable || isActuallyBreached || posture === "AVOID" || posture === "EXIT_REVIEW") {
+      return "EVIDENCE_INCOMPLETE";
+    }
+    if (posture === "ACQUIRE") {
+      return "ACTIONABLE_SETUP";
+    }
+    return "VALID_SETUP";
+  };
+
+  const authoritativeDecisionState: DecisionState =
+    decisionTrace?.decisionState || deriveFallbackDecisionState();
+
+  let decisionState: DecisionState = "VALID_SETUP";
+  if (!isPriceValid || agreement.evaluated === 0 || effectiveFreshnessStatus === "UNAVAILABLE") {
+    decisionState = "UNVERIFIED";
+  } else if (isStale) {
+    decisionState = "STALE_DATA";
+  } else if (isActuallyBreached || posture === "AVOID" || posture === "EXIT_REVIEW") {
+    decisionState = "EVIDENCE_INCOMPLETE";
+  } else if (!isTrendAvailable) {
+    decisionState = "INSUFFICIENT_DATA";
+  } else if (!isHealthAvailable || overallEligibility !== "ELIGIBLE" || !isCoreEvidenceAvailable) {
+    decisionState = "EVIDENCE_INCOMPLETE";
+  } else if (decisionTrace) {
+    decisionState = decisionTrace.decisionState;
+    const canonicalStateLabel = decisionTrace.decisionStateLabel || decisionTrace.stateLabel;
+    if (canonicalStateLabel && ownershipState !== "OWNED") {
+      uiStateLabel = canonicalStateLabel;
+    }
+    if (decisionTrace.disqualificationReason && posture !== "ACQUIRE") {
+      headlineExplanation = decisionTrace.disqualificationReason;
+    }
+  } else if (posture === "ACQUIRE") {
+    decisionState = "ACTIONABLE_SETUP";
+  } else {
+    decisionState = "VALID_SETUP";
+  }
+
+  // 5. Fail-Closed Execution & Sizing Gating
+  // Sizing and actionability strictly require ALL preconditions:
+  // valid price, connected feed, fresh tape, unbreached risk floor, evaluated evidence,
+  // eligible overall status, and mandatory trend evidence.
+  const isEvidenceInsufficient =
+    agreement.evaluated === 0 ||
+    overallEligibility === "INELIGIBLE" ||
+    !isTrendAvailable;
+
+  const isExecutionBlocked =
+    !isPriceValid ||
+    effectiveFreshnessStatus === "UNAVAILABLE" ||
+    isStale ||
+    isActuallyBreached ||
+    isEvidenceInsufficient ||
+    posture === "AVOID" ||
+    posture === "EXIT_REVIEW";
+
+  const canSizeTrade = isExecutionBlocked ? false : Boolean(decisionTrace ? decisionTrace.canSizeTrade : (posture === "ACQUIRE"));
+  const isActionable = isExecutionBlocked ? false : Boolean(decisionTrace ? decisionTrace.isActionable : (posture === "ACQUIRE"));
+
+  // 6. Derive Contextual Actions
   const levelRel = evaluateLevelRelation(safePrice, reclaimMilestonePrice, "50-day SMA", symbol);
   const alertActionLabel = reclaimMilestonePrice !== undefined
     ? (levelRel.status === "BELOW"
@@ -245,7 +316,7 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
         : `Set Alert for $${reclaimMilestonePrice.toFixed(2)}`)
     : "Set Price Alert";
 
-  const canSize = decisionTrace ? decisionTrace.canSizeTrade : (posture === "ACQUIRE");
+  const canSize = canSizeTrade;
   const availableActions: ARXAction[] = [
     {
       id: "set_alert",
@@ -258,7 +329,9 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
       type: "SIZE_POSITION",
       label: "Calculate Position Size",
       enabled: canSize,
-      reason: !canSize ? (decisionTrace?.disqualificationReason || "Only actionable when in Buy Zone") : undefined,
+      reason: !canSize
+        ? (decisionTrace?.disqualificationReason || (posture !== "ACQUIRE" ? uiStateLabel : "Only actionable when in Buy Zone"))
+        : undefined,
     },
     {
       id: "review_invalidation",
@@ -274,39 +347,6 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
       enabled: true,
     },
   ];
-
-  // 4a. Resolve Precedence-Enforced DecisionState (Phase 20A / Phase 21 / Phase 2)
-  // Preserving authoritative model decision state
-  const authoritativeDecisionState: DecisionState =
-    decisionTrace?.decisionState || (posture === "ACQUIRE" ? "ACTIONABLE_SETUP" : "VALID_SETUP");
-
-  let decisionState: DecisionState = "VALID_SETUP";
-  if (!isPriceValid || agreement.evaluated === 0 || effectiveFreshnessStatus === "UNAVAILABLE") {
-    decisionState = "UNVERIFIED";
-  } else if (isStale) {
-    decisionState = "STALE_DATA";
-  } else if (decisionTrace) {
-    decisionState = decisionTrace.decisionState;
-    const canonicalStateLabel = decisionTrace.decisionStateLabel || decisionTrace.stateLabel;
-    if (canonicalStateLabel && posture !== "AVOID" && ownershipState !== "OWNED") {
-      uiStateLabel = canonicalStateLabel;
-    }
-    if (decisionTrace.disqualificationReason && posture !== "ACQUIRE") {
-      headlineExplanation = decisionTrace.disqualificationReason;
-    }
-  } else if (!isTrendAvailable) {
-    decisionState = "INSUFFICIENT_DATA";
-  } else if (!isHealthAvailable) {
-    decisionState = "EVIDENCE_INCOMPLETE";
-  } else if (posture === "ACQUIRE") {
-    decisionState = "ACTIONABLE_SETUP";
-  } else {
-    decisionState = "VALID_SETUP";
-  }
-
-  const isExecutionBlocked = !isPriceValid || effectiveFreshnessStatus === "UNAVAILABLE" || isStale || isActuallyBreached;
-  const canSizeTrade = isExecutionBlocked ? false : (decisionTrace ? decisionTrace.canSizeTrade : (posture === "ACQUIRE"));
-  const isActionable = isExecutionBlocked ? false : (decisionTrace ? decisionTrace.isActionable : (posture === "ACQUIRE"));
 
   return {
     symbol: symbol.toUpperCase(),

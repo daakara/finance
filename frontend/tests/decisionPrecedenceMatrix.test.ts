@@ -524,6 +524,286 @@ console.log("Scenario DP16: Incomplete trend evidence (<50 sessions) blocks setu
   console.log("  ✓ DP16 PASS: Missing trend evidence blocks setup.\n");
 }
 
+// ── DP17: Adversarial Contradiction — Zero Evaluated Evidence (agreement.evaluated === 0) ──
+console.log("Scenario DP17: Adversarial contradiction — zero evaluated evidence blocks sizing/actionability...");
+{
+  const contradictoryTrace: DecisionTrace = {
+    symbol: "NVDA",
+    decisionState: "ACTIONABLE_SETUP",
+    decisionStateLabel: "Rogue Actionable Approval",
+    canSizeTrade: true, // rogue upstream claim
+    isActionable: true, // rogue upstream claim
+    disqualificationReason: null,
+    allowedActions: ["SIZE_TRADE", "SET_ALERT"],
+  };
+
+  const state = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 182.0, // valid fresh price
+    changePct: 1.5,
+    horizon: "SWING",
+    ownershipState: "NOT_OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: [], // agreement.evaluated === 0
+    isInvalidationBreached: false, // no floor breach
+    freshness: { status: "LIVE", stalenessDays: 0 },
+    decisionTrace: contradictoryTrace,
+  });
+
+  assert.strictEqual(state.factorAgreement.evaluated, 0, "Evaluated factors must be 0");
+  assert.strictEqual(state.posture, "RESEARCH", "Posture must be RESEARCH when evaluated === 0");
+  assert.strictEqual(state.decisionState, "UNVERIFIED", "Effective decision state must be UNVERIFIED");
+  assert.strictEqual(state.canSizeTrade, false, "canSizeTrade must be blocked fail-closed");
+  assert.strictEqual(state.isActionable, false, "isActionable must be blocked fail-closed");
+  const sizeAction = state.availableActions.find(a => a.id === "size_trade");
+  assert.strictEqual(sizeAction?.enabled, false, "size_trade action must be disabled");
+  assert.strictEqual(state.authoritativeDecisionState, "ACTIONABLE_SETUP", "Authoritative provenance preserved without authorization override");
+  console.log("  ✓ DP17 PASS: Zero evaluated evidence strictly blocks sizing and actionability despite rogue upstream claim.\n");
+}
+
+// ── DP18: Adversarial Contradiction — Unavailable Feed Overrides Upstream Claims ──
+console.log("Scenario DP18: Adversarial contradiction — unavailable feed blocks sizing/actionability...");
+{
+  const state = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 182.0,
+    changePct: 1.5,
+    horizon: "SWING",
+    ownershipState: "NOT_OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: baseDomainAssessments,
+    freshnessStatus: "UNAVAILABLE",
+    freshness: { status: "UNAVAILABLE" },
+    decisionTrace: mockActionableTrace, // claims canSizeTrade: true, isActionable: true
+  });
+
+  assert.strictEqual(state.posture, "RESEARCH");
+  assert.strictEqual(state.decisionState, "UNVERIFIED");
+  assert.strictEqual(state.canSizeTrade, false);
+  assert.strictEqual(state.isActionable, false);
+  const sizeAction = state.availableActions.find(a => a.id === "size_trade");
+  assert.strictEqual(sizeAction?.enabled, false);
+  console.log("  ✓ DP18 PASS: Unavailable feed strictly blocks sizing and actionability.\n");
+}
+
+// ── DP19: Adversarial Contradiction — Invalid Price Zero Overrides Upstream Claims ──
+console.log("Scenario DP19: Adversarial contradiction — invalid price zero blocks sizing/actionability...");
+{
+  const state = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 0,
+    changePct: 0,
+    horizon: "SWING",
+    ownershipState: "NOT_OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: baseDomainAssessments,
+    freshness: { status: "LIVE", stalenessDays: 0 },
+    decisionTrace: mockActionableTrace, // claims canSizeTrade: true, isActionable: true
+  });
+
+  assert.strictEqual(state.decisionState, "UNVERIFIED");
+  assert.strictEqual(state.canSizeTrade, false);
+  assert.strictEqual(state.isActionable, false);
+  const sizeAction = state.availableActions.find(a => a.id === "size_trade");
+  assert.strictEqual(sizeAction?.enabled, false);
+  console.log("  ✓ DP19 PASS: Zero price strictly blocks sizing and actionability.\n");
+}
+
+// ── DP20: Adversarial Contradiction — Breached Floor Overrides Upstream Claims ──
+console.log("Scenario DP20: Adversarial contradiction — breached floor blocks sizing/actionability...");
+{
+  const state = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 160.0,
+    changePct: -8.0,
+    horizon: "SWING",
+    ownershipState: "NOT_OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: baseDomainAssessments,
+    invalidationPrice: 170.0,
+    isInvalidationBreached: true,
+    freshness: { status: "LIVE", stalenessDays: 0 },
+    decisionTrace: mockActionableTrace, // claims canSizeTrade: true, isActionable: true
+  });
+
+  assert.strictEqual(state.posture, "AVOID");
+  assert.strictEqual(state.decisionState, "EVIDENCE_INCOMPLETE");
+  assert.strictEqual(state.canSizeTrade, false);
+  assert.strictEqual(state.isActionable, false);
+  const sizeAction = state.availableActions.find(a => a.id === "size_trade");
+  assert.strictEqual(sizeAction?.enabled, false);
+  console.log("  ✓ DP20 PASS: Breached floor strictly blocks sizing and actionability.\n");
+}
+
+// ── DP21: Adversarial Contradiction — Incomplete Mandatory Evidence Overrides Claims ──
+console.log("Scenario DP21: Adversarial contradiction — missing trend blocks sizing/actionability...");
+{
+  const missingTrendDomains: DomainAssessment[] = baseDomainAssessments.map(d =>
+    d.domainId === "trend"
+      ? { ...d, availability: "UNAVAILABLE" as const, status: "UNAVAILABLE" as const }
+      : d
+  );
+
+  const state = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 182.0,
+    changePct: 1.5,
+    horizon: "SWING",
+    ownershipState: "NOT_OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: missingTrendDomains,
+    freshness: { status: "LIVE", stalenessDays: 0 },
+    decisionTrace: mockActionableTrace, // claims canSizeTrade: true, isActionable: true
+  });
+
+  assert.strictEqual(state.posture, "RESEARCH");
+  assert.strictEqual(state.decisionState, "INSUFFICIENT_DATA");
+  assert.strictEqual(state.canSizeTrade, false);
+  assert.strictEqual(state.isActionable, false);
+  const sizeAction = state.availableActions.find(a => a.id === "size_trade");
+  assert.strictEqual(sizeAction?.enabled, false);
+  console.log("  ✓ DP21 PASS: Missing trend strictly blocks sizing and actionability.\n");
+}
+
+// ── DP22: Fallback authoritativeDecisionState Construction Without Upstream Trace ──
+console.log("Scenario DP22: Fallback authoritativeDecisionState construction never fabricates VALID_SETUP...");
+{
+  // A. Zero evaluated factors -> UNVERIFIED (never VALID_SETUP)
+  const stateZeroEval = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 182.0,
+    changePct: 1.5,
+    horizon: "SWING",
+    ownershipState: "NOT_OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: [],
+    freshness: { status: "LIVE", stalenessDays: 0 },
+  });
+  assert.strictEqual(stateZeroEval.authoritativeDecisionState, "UNVERIFIED");
+
+  // B. Unavailable feed -> UNVERIFIED (never VALID_SETUP)
+  const stateUnavail = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 182.0,
+    changePct: 1.5,
+    horizon: "SWING",
+    ownershipState: "NOT_OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: baseDomainAssessments,
+    freshnessStatus: "UNAVAILABLE",
+    freshness: { status: "UNAVAILABLE" },
+  });
+  assert.strictEqual(stateUnavail.authoritativeDecisionState, "UNVERIFIED");
+
+  // C. Invalid price zero -> UNVERIFIED (never VALID_SETUP)
+  const stateZeroPrice = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 0,
+    changePct: 0,
+    horizon: "SWING",
+    ownershipState: "NOT_OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: baseDomainAssessments,
+    freshness: { status: "LIVE", stalenessDays: 0 },
+  });
+  assert.strictEqual(stateZeroPrice.authoritativeDecisionState, "UNVERIFIED");
+
+  // D. Missing trend -> INSUFFICIENT_DATA (never VALID_SETUP)
+  const missingTrend: DomainAssessment[] = baseDomainAssessments.map(d =>
+    d.domainId === "trend" ? { ...d, availability: "UNAVAILABLE" as const, status: "UNAVAILABLE" as const } : d
+  );
+  const stateNoTrend = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 182.0,
+    changePct: 1.5,
+    horizon: "SWING",
+    ownershipState: "NOT_OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: missingTrend,
+    freshness: { status: "LIVE", stalenessDays: 0 },
+  });
+  assert.strictEqual(stateNoTrend.authoritativeDecisionState, "INSUFFICIENT_DATA");
+
+  // E. Breached floor -> EVIDENCE_INCOMPLETE (never VALID_SETUP)
+  const stateBreached = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 160.0,
+    changePct: -8.0,
+    horizon: "SWING",
+    ownershipState: "NOT_OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: baseDomainAssessments,
+    invalidationPrice: 170.0,
+    isInvalidationBreached: true,
+    freshness: { status: "LIVE", stalenessDays: 0 },
+  });
+  assert.strictEqual(stateBreached.authoritativeDecisionState, "EVIDENCE_INCOMPLETE");
+
+  // F. Genuine unbreached setup awaiting trigger -> VALID_SETUP
+  const stateValid = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 182.0,
+    changePct: 1.5,
+    horizon: "SWING",
+    ownershipState: "NOT_OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: baseDomainAssessments,
+    freshness: { status: "LIVE", stalenessDays: 0 },
+  });
+  assert.strictEqual(stateValid.authoritativeDecisionState, "VALID_SETUP");
+  console.log("  ✓ DP22 PASS: Fallback authoritativeDecisionState strictly respects data eligibility without fabrication.\n");
+}
+
+// ── DP23: Downstream Consumer Non-Override Verification ──
+console.log("Scenario DP23: Downstream consumer generateQuantitativeInsight does not override fail-closed state...");
+{
+  const contradictoryTrace: DecisionTrace = {
+    symbol: "NVDA",
+    decisionState: "ACTIONABLE_SETUP",
+    decisionStateLabel: "Rogue Actionable Approval",
+    canSizeTrade: true,
+    isActionable: true,
+    disqualificationReason: null,
+    allowedActions: ["SIZE_TRADE", "SET_ALERT"],
+  };
+
+  const insight = generateQuantitativeInsight(
+    "NVDA",
+    "NVIDIA Corp",
+    182.0,
+    1.5,
+    90,
+    2,
+    "SWING",
+    "NOT_OWNED",
+    "USER_DECLARED",
+    [], // 0 candles -> evaluated === 0
+    "live",
+    undefined,
+    contradictoryTrace,
+    undefined,
+    "LIVE"
+  );
+
+  assert.strictEqual(insight.terminalState.canSizeTrade, false, "Insight terminalState canSizeTrade must be false");
+  assert.strictEqual(insight.terminalState.isActionable, false, "Insight terminalState isActionable must be false");
+  const sizeAction = insight.availableActions.find(a => a.id === "size_trade");
+  assert.strictEqual(sizeAction?.enabled, false, "Insight size_trade action must be disabled");
+  assert.strictEqual(insight.verdict, "UNVERIFIED", "Insight verdict must be UNVERIFIED (not ACTIONABLE_BUY_ZONE)");
+  console.log("  ✓ DP23 PASS: Downstream insightGenerator strictly blocks sizing and actionability on insufficient evidence.\n");
+}
+
 console.log("=====================================================================");
-console.log("ALL 16 DECISION PRECEDENCE MATRIX SCENARIOS (DP01 - DP16) PASSED");
+console.log("ALL 23 DECISION PRECEDENCE MATRIX SCENARIOS (DP01 - DP23) PASSED");
 console.log("=====================================================================\n");
