@@ -85,9 +85,22 @@ class DecisionHierarchyEngine:
         asset_class: Optional[Any] = None,
         has_fund_profile: bool = True,
         execution_status: Optional[str] = None,
+        execution_hazard: Optional[Any] = None,
+        liquidity_status: Optional[str] = None,
+        adv_20d: Optional[float] = None,
+        liquidity_defense: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Resolve the active decision state and execution eligibility following strict precedence."""
         clean_sym = symbol.upper().strip()
+
+        # Ingest liquidity defense dictionary if provided
+        if isinstance(liquidity_defense, dict):
+            if execution_hazard is None:
+                execution_hazard = liquidity_defense.get("execution_hazard")
+            if liquidity_status is None:
+                liquidity_status = liquidity_defense.get("evidence_status")
+            if adv_20d is None:
+                adv_20d = liquidity_defense.get("adv_20d_usd")
 
         # ── Canonical Security Master & Evidence Contract Resolution ─────────
         # Routes evidence requirements canonically through security master.
@@ -230,6 +243,10 @@ class DecisionHierarchyEngine:
 
         clean_exec = execution_status.upper().strip() if isinstance(execution_status, str) else None
         rr = risk_reward_ratio if risk_reward_ratio is not None else 0.0
+
+        is_severe_hazard = (execution_hazard is True) or (isinstance(execution_hazard, str) and execution_hazard.upper() == "TRUE")
+        is_liq_unknown = (execution_hazard == "UNKNOWN") or (liquidity_status in ("UNAVAILABLE", "UNKNOWN"))
+
         if (
             confluence_score >= 75.0
             and is_in_buy_zone
@@ -237,6 +254,8 @@ class DecisionHierarchyEngine:
             and is_stage_eligible
             and rr >= 2.0
             and clean_exec != "STOPPED_OUT"
+            and not is_severe_hazard
+            and not is_liq_unknown
         ):
             return {
                 "symbol": clean_sym,
@@ -249,10 +268,18 @@ class DecisionHierarchyEngine:
             }
 
         # ── Precedence 5: VALID_SETUP (Default when verified data is sound) ───
-        # Sound verified data, but currently awaiting breakout, in Stage 4, outside buy zone, or stopped out
+        # Sound verified data, but currently awaiting breakout, in Stage 4, outside buy zone, stopped out, or liquidity restricted
         reason = "Awaiting volume breakout confirmation."
         if clean_exec == "STOPPED_OUT":
-            reason = "Setup invalidated: Price breached stop-loss threshold."
+            if is_severe_hazard:
+                reason = "Setup invalidated: Price breached stop-loss threshold. Notice: Authoritative liquidity assessment confirms severe execution hazard."
+            else:
+                reason = "Setup invalidated: Price breached stop-loss threshold."
+        elif is_severe_hazard:
+            adv_str = f" (${adv_20d:,.0f}/day)" if adv_20d is not None and adv_20d > 0 else ""
+            reason = f"Execution hazard: Severe liquidity risk detected{adv_str}. Capital allocation prohibited."
+        elif is_liq_unknown:
+            reason = "Liquidity unverified: Insufficient historical volume or price impact telemetry to clear execution."
         elif norm_stage == 4:
             reason = "Stage 4 distribution: price below 50-day SMA; wait for floor formation."
         elif norm_stage == 1:
@@ -275,6 +302,13 @@ class DecisionHierarchyEngine:
         label = "Valid Setup — Awaiting Trigger"
         if clean_exec == "STOPPED_OUT":
             label = "Setup Invalidated — Stopped Out"
+        elif is_severe_hazard:
+            label = "Valid Setup — Liquidity Restricted"
+        elif is_liq_unknown:
+            label = "Valid Setup — Liquidity Unverified"
+
+        is_restricted = (clean_exec == "STOPPED_OUT") or is_severe_hazard or is_liq_unknown
+        allowed_actions = ["ADD_WATCHLIST", "RESEARCH_PROFILE"] if is_restricted else ["SET_ALERT", "ADD_WATCHLIST", "RESEARCH_PROFILE"]
 
         return {
             "symbol": clean_sym,
@@ -282,6 +316,6 @@ class DecisionHierarchyEngine:
             "label": label,
             "isActionable": False,
             "canSizeTrade": False,
-            "allowedActions": ["ADD_WATCHLIST", "RESEARCH_PROFILE"] if clean_exec == "STOPPED_OUT" else ["SET_ALERT", "ADD_WATCHLIST", "RESEARCH_PROFILE"],
+            "allowedActions": allowed_actions,
             "disqualificationReason": reason,
         }

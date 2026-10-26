@@ -788,6 +788,8 @@ def run_screener_get(
                 is_confirmed=False,  # Invariant: Screener represents structural discovery only; cannot confirm execution triggers
                 user_role=user_role,
                 execution_status=execution_status,
+                execution_hazard=execution.get("execution_hazard"),
+                liquidity_defense=liq_def,
             )
 
         mapped_candidates.append({
@@ -1163,14 +1165,25 @@ def calculate_trade_position_size(
     entry_price: float = 100.0,
     stop_loss: float = 95.0,
     take_profit_1: float = 105.0,
+    is_actionable: bool = True,
+    can_size_trade: bool = True,
+    execution_hazard: Optional[str] = None,
+    adv_20d: Optional[float] = None,
 ):
     """Interactive Position Sizer calculating exact share quantities, risk limit, and Kelly allocation."""
+    hazard_bool = None
+    if execution_hazard is not None:
+        hazard_bool = execution_hazard.lower() in ("true", "1", "yes")
     return ConfluenceEngine.calculate_position_size(
         account_equity=account_equity,
         risk_pct=risk_pct,
         entry_price=entry_price,
         stop_loss=stop_loss,
         take_profit_1=take_profit_1,
+        is_actionable=is_actionable,
+        can_size_trade=can_size_trade,
+        execution_hazard=hazard_bool,
+        adv_20d=adv_20d,
     )
 
 
