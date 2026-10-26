@@ -377,8 +377,54 @@ export function evaluatePreFlightChecks(
 
   // ── Check 1: Asymmetric Risk-Reward ──────────────────────────────────────
   const hasExecutionLevels = hasStopLoss && hasTarget;
-  const isRRPassed = isPriceValid && isRRValid && safeRR >= 2.0 && hasExecutionLevels;
-  const chk1Status: CheckStatus = isRRPassed ? "PASS" : (!hasExecutionLevels ? "MISSING LEVELS" : "FAIL");
+  const isLevelDirectionValid =
+    isPriceValid &&
+    hasExecutionLevels &&
+    safeStop! < safePrice &&
+    safeTarget! > safePrice;
+
+  // Independent Prospective Risk/Reward Verification
+  let computedRRAtSpot = 0;
+  if (isLevelDirectionValid) {
+    const risk = safePrice - safeStop!;
+    const reward = safeTarget! - safePrice;
+    if (risk > 0 && reward > 0) {
+      computedRRAtSpot = Number((reward / risk).toFixed(2));
+    }
+  }
+
+  // Canonical Effective RR Resolution:
+  // Must be verified by BOTH the execution levels at current market spot AND any model ratio.
+  // If either is below 2.0:1, the trade fails to provide institutional payoff asymmetry.
+  const effectiveRR = isLevelDirectionValid
+    ? (isRRValid ? Math.min(safeRR, computedRRAtSpot) : computedRRAtSpot)
+    : 0;
+
+  const isRRPassed = isPriceValid && hasExecutionLevels && isLevelDirectionValid && effectiveRR >= 2.0;
+  const chk1Status: CheckStatus = !hasExecutionLevels
+    ? "MISSING LEVELS"
+    : !isLevelDirectionValid
+    ? "FAIL"
+    : isRRPassed
+    ? "PASS"
+    : "FAIL";
+
+  const chk1Summary = !hasExecutionLevels
+    ? "N/A"
+    : !isLevelDirectionValid
+    ? "Invalid Levels"
+    : `${effectiveRR.toFixed(2)}:1.0`;
+
+  const chk1Detail = !hasExecutionLevels
+    ? "Execution levels missing: Stop loss and target required."
+    : !isLevelDirectionValid
+    ? (safeStop! >= safePrice
+        ? `Inverted risk boundary: Stop loss ($${safeStop!.toFixed(2)}) is above current price ($${safePrice.toFixed(2)}). Execution risk floor breached.`
+        : `Inverted reward boundary: Profit target ($${safeTarget!.toFixed(2)}) is below current price ($${safePrice.toFixed(2)}). Target boundary inverted.`)
+    : isRRPassed
+    ? "Adequate upside cushion (R:R >= 2.0:1)."
+    : `Hazard: Prospective reward relative to downside risk (${effectiveRR.toFixed(2)}:1) is below 2.0:1 institutional floor.`;
+
   const chk1Item: PreFlightCheckItem = {
     id: "CHK-1",
     tag: "CHK-1 R:R",
@@ -388,14 +434,8 @@ export function evaluatePreFlightChecks(
       ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
       : "bg-rose-950/80 text-rose-300 border-rose-700/80",
     passed: isRRPassed,
-    summary: isRRValid && hasExecutionLevels ? `${safeRR.toFixed(2)}:1.0` : "N/A",
-    detail: isRRPassed
-      ? "Adequate upside cushion (R:R >= 2.0:1)."
-      : !hasExecutionLevels
-      ? "Execution levels missing: Stop loss and target required."
-      : isRRValid
-      ? "Hazard: Upside potential too small relative to downside risk (< 2.0:1)."
-      : "Evidence incomplete: Risk-reward ratio unverified.",
+    summary: chk1Summary,
+    detail: chk1Detail,
     icon: isRRPassed ? "✓" : "✕",
   };
 
@@ -642,14 +682,15 @@ export function evaluatePreFlightChecks(
   const isCleared =
     isActionableGranted &&
     isPriceValid &&
-    isRRValid &&
+    isLevelDirectionValid &&
     !isStage4 &&
     mandatoryChecksVerified;
 
   // Active Blocker Resolution
   const activeBlocker = (() => {
     if (!isActionableGranted) return "CANONICAL SETUP NON-ACTIONABLE";
-    if (!isPriceValid || !isRRValid) return "UNVERIFIED EXECUTION LEVELS";
+    if (!isPriceValid || !hasExecutionLevels) return "UNVERIFIED EXECUTION LEVELS";
+    if (!isLevelDirectionValid) return "INVERTED EXECUTION BOUNDARIES";
     if (isStage4) return "STAGE 4 DISTRIBUTION STRUCTURE";
     if (!isRRPassed) return "REWARD/RISK ASYMMETRY (< 2.0:1)";
     if (!isTrendPassed) return "TECHNICAL STRUCTURE NOT CONFIRMED";
@@ -669,8 +710,13 @@ export function evaluatePreFlightChecks(
     if (!isActionableGranted) {
       return "Wait for price action to confirm the canonical setup trigger within the accumulation corridor before sizing.";
     }
-    if (!isPriceValid || !isRRValid) {
+    if (!isPriceValid || !hasExecutionLevels) {
       return "Establish verified spot price and quantitative execution boundaries (stop loss and target levels).";
+    }
+    if (!isLevelDirectionValid) {
+      return safeStop! >= safePrice
+        ? "Establish valid stop loss below current market price to define defensive risk floor."
+        : "Establish valid profit target above current market price to define prospective reward objective.";
     }
     if (isStage4) {
       return "Wait for post-breakout base consolidation above the 50-day moving average before accumulation.";
@@ -741,7 +787,7 @@ export function evaluatePreFlightChecks(
     safePrice,
     safeStop,
     safeTarget,
-    safeRR,
+    safeRR: effectiveRR,
     safeEntryMin,
     safeEntryMax,
     safePivot,

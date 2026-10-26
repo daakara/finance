@@ -458,11 +458,11 @@ export default function StandardTerminalView({
             >
               <h3 className="text-xs sm:text-sm font-bold text-cyan-300 uppercase font-mono tracking-wide flex items-center gap-2">
                 <span>🎯</span>
-                <span>What Needs to Change (Execution Preconditions)</span>
+                <span>What Needs to Change (Setup Criteria)</span>
               </h3>
               <div className="flex items-center gap-1.5">
                 <span className="text-[11px] sm:text-xs text-slate-400 font-mono">
-                  {isActionable ? "Preconditions Cleared" : "Awaiting Confirmation"}
+                  {isActionable ? "Setup Criteria Met" : "Awaiting Setup Triggers"}
                 </span>
                 <span className="text-slate-400 text-xs" aria-hidden="true">
                   {isPreconditionsOpen ? "▲" : "▼"}
