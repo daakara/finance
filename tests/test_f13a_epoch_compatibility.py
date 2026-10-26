@@ -93,26 +93,26 @@ def test_current_production_engine_compliance():
         content = fp.read().replace(b"\r\n", b"\n")
         opt_sha = hashlib.sha256(content).hexdigest()
 
-    # Section 7 ratified contract invariant (PO rejection of EXC-002)
-    assert opt_sha == "84d1a8b855a5368466b53105fdd58df15c3d60aaab77024286f3fcaaaad95576", (
+    # Section 7 ratified contract invariant (Sprint 4 input normalization)
+    assert opt_sha == "26247e91e97b564601bd72bc759a40f831646b0232c9b8a9f6e289fd92dba209", (
         f"Section 7 contract violation: unexpected optimal_execution SHA {opt_sha}"
     )
 
-    # Synthesis E Wave 3 Decision Integrity invariant
+    # Synthesis E Wave 3 / Sprint 4 Decision Integrity invariant
     dec_hier_path = os.path.join(repo_root, "analyst_dashboard", "analyzers", "decision_hierarchy.py")
     with open(dec_hier_path, "rb") as fp:
         content = fp.read().replace(b"\r\n", b"\n")
         dec_sha = hashlib.sha256(content).hexdigest()
-    assert dec_sha == "823f37f81c7f601885213d968934c1118285fbf6c875b2993e091984e9b8ebe3", (
+    assert dec_sha == "177840eec7dae88f6ae5957159cc4cdb3856933619b268859793d07622c6cc87", (
         f"Decision hierarchy integrity violation: unexpected decision_hierarchy SHA {dec_sha}"
     )
 
-    # Confluence engine invariant (SPRINT3 RC5 Corporate Events runway risk integration)
+    # Confluence engine invariant (Sprint 4 Liquidity Hazard & Actionability Sizing integration)
     conf_path = os.path.join(repo_root, "analyst_dashboard", "analyzers", "confluence_engine.py")
     with open(conf_path, "rb") as fp:
         content = fp.read().replace(b"\r\n", b"\n")
         conf_sha = hashlib.sha256(content).hexdigest()
-    assert conf_sha == "0f77d3b0b15f5d60a6de52ec1a0cd6b385ce1615865839d684d53aa655dadc5a", (
+    assert conf_sha == "75ea2687886b0624f7961848c8ec127fa176b80531e52b4a9e274fe83bd5a4e4", (
         f"Confluence engine integrity violation: unexpected confluence_engine SHA {conf_sha}"
     )
 
