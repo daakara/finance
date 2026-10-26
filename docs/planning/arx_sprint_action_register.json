@@ -1,0 +1,1886 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-10-26T22:50:51.017041+00:00",
+  "source_backlog_file": "docs/planning/arx_canonical_backlog.json",
+  "source_backlog_sha": "de5d2463cc4c6503bd700bcaf2b1bc36fd5e03d9",
+  "active_sprint": "SPRINT_4",
+  "sprint_board": {
+    "total_tasks": 43,
+    "execution_tasks": [
+      "ARX-S4-GOV-001",
+      "ARX-S4-ARCH-001",
+      "ARX-S3-004",
+      "ARX-S3-005",
+      "ARX-S3-006",
+      "ARX-S3-010",
+      "ARX-S3-016",
+      "ARX-S4-ARCH-002"
+    ],
+    "discovery_tasks": [
+      "ARX-S4-RADAR-001",
+      "ARX-S1-006",
+      "ARX-S2-001",
+      "ARX-S2-005",
+      "ARX-S2-007",
+      "ARX-S2-008",
+      "ARX-S2-009",
+      "ARX-S3-013"
+    ],
+    "blocked_tasks": [],
+    "owner_gated_tasks": [
+      "ARX-S1-003",
+      "ARX-S2-002",
+      "ARX-S2-006",
+      "ARX-S2-010",
+      "ARX-S3-003",
+      "ARX-S3-007",
+      "ARX-S3-008",
+      "ARX-S3-009",
+      "ARX-S3-014",
+      "ARX-S3-015"
+    ],
+    "completed_tasks": [
+      "ARX-S1-001",
+      "ARX-S1-002",
+      "ARX-S1-004",
+      "ARX-S1-005",
+      "ARX-S2-003",
+      "ARX-S2-004",
+      "ARX-S2-011",
+      "ARX-S2-012",
+      "ARX-S2-013",
+      "ARX-S2-014",
+      "ARX-S2-015",
+      "ARX-S2-016",
+      "ARX-S3-001",
+      "ARX-S3-002",
+      "ARX-S3-011",
+      "ARX-S3-012",
+      "ARX-S3-017"
+    ]
+  },
+  "action_queue": [
+    {
+      "task_id": "ARX-S1-001",
+      "title": "VCP Inactive Read-Safety Contract Enforcement",
+      "priority": "P0",
+      "workstream": "RADAR_VCP",
+      "assigned_sprint": "SPRINT_1",
+      "accountable_owner": "ARX_CORE_TEAM",
+      "next_action": "Verify production telemetry and archive closure receipt",
+      "checkpoint_target_date": null,
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": true,
+        "closure_eligibility": "ALREADY_CLOSED",
+        "unmet_dimensions": [],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S2-012",
+      "title": "Candlestick Chart Visibility & Container Synchronization",
+      "priority": "P0",
+      "workstream": "UX_WORKSTATION",
+      "assigned_sprint": "SPRINT_3",
+      "accountable_owner": "daakara",
+      "next_action": "Awaiting sprint planning intake",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": true,
+        "closure_eligibility": "SUPERSEDED_HISTORICAL",
+        "unmet_dimensions": [],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S3-004",
+      "title": "Radar Reliability: Fail-Closed Error-versus-Zero Semantics & UI Retry",
+      "priority": "P0",
+      "workstream": "RADAR_VCP",
+      "assigned_sprint": "SPRINT_4",
+      "accountable_owner": "daakara",
+      "next_action": "Complete CI verification and submit PR [98] for owner review",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "INELIGIBLE_ACTIVE_WORK_REMAINING",
+        "unmet_dimensions": [
+          "integration=PARTIAL",
+          "repository_publication=DRAFT_PR"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S3-007",
+      "title": "Scanner Safety: VCP History-Boundary Containment & Operational Repair",
+      "priority": "P0",
+      "workstream": "RADAR_VCP",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "accountable_owner": "daakara",
+      "next_action": "Preserve holding queue isolation pending: Product Owner activation authorization of Minervini VCP scanner",
+      "checkpoint_target_date": null,
+      "active_blocker": "Historical repair merged; production scanner activation held (G-VCP-012 = ACTIVATION_DEFERRED)",
+      "resolution_trigger": "Product Owner activation authorization of Minervini VCP scanner",
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "BLOCKED_HOLDING_QUEUE",
+        "unmet_dimensions": [
+          "production_evidence=INSUFFICIENT (expected VERIFIED for DEPLOYED_DORMANT)"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": [
+          "owner_authorization=HOLD"
+        ]
+      }
+    },
+    {
+      "task_id": "ARX-S3-010",
+      "title": "Evidence Quality Audit: Pre-Flight Disclosures & Smart Money Truthfulness",
+      "priority": "P0",
+      "workstream": "SMART_MONEY",
+      "assigned_sprint": "SPRINT_4",
+      "accountable_owner": "daakara",
+      "next_action": "Complete CI verification and submit PR [72, 87, 100] for owner review",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "INELIGIBLE_ACTIVE_WORK_REMAINING",
+        "unmet_dimensions": [
+          "implementation=PARTIAL",
+          "integration=PARTIAL",
+          "repository_publication=DRAFT_PR"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S3-017",
+      "title": "Smart Money Phase 1: Operational Readiness, Worker Fencing & Observability",
+      "priority": "P0",
+      "workstream": "SMART_MONEY",
+      "assigned_sprint": "SPRINT_3",
+      "accountable_owner": "ARX_CORE_TEAM",
+      "next_action": "Verify production telemetry and archive closure receipt",
+      "checkpoint_target_date": null,
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "STALE",
+      "completion_predicate": {
+        "is_complete": true,
+        "closure_eligibility": "ALREADY_CLOSED",
+        "unmet_dimensions": [],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S4-ARCH-002",
+      "title": "Liquidity Hazard & Canonical Actionability Enforcement (GAP-WS41-003)",
+      "priority": "P0",
+      "workstream": "ARCHITECTURE",
+      "assigned_sprint": "SPRINT_4",
+      "accountable_owner": "daakara",
+      "next_action": "Complete CI verification and submit PR [105] for owner review",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "INELIGIBLE_ACTIVE_WORK_REMAINING",
+        "unmet_dimensions": [
+          "implementation=IN_PROGRESS",
+          "integration=PARTIAL",
+          "repository_publication=DRAFT_PR"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S4-GOV-001",
+      "title": "Cross-Sprint Backlog Integrity, Historical Recovery and Automated Closure Enforcement",
+      "priority": "P1",
+      "workstream": "GOVERNANCE",
+      "assigned_sprint": "SPRINT_4",
+      "accountable_owner": "daakara",
+      "next_action": "Complete CI verification and submit PR [101, 102] for owner review",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": true,
+        "closure_eligibility": "ELIGIBLE_FOR_CLOSURE",
+        "unmet_dimensions": [],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S4-ARCH-001",
+      "title": "Holistic Cross-Engine Architecture and Decision-Coherence Audit",
+      "priority": "P1",
+      "workstream": "ARCHITECTURE",
+      "assigned_sprint": "SPRINT_4",
+      "accountable_owner": "daakara",
+      "next_action": "Implement task acceptance criteria on isolated feature branch",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "INELIGIBLE_ACTIVE_WORK_REMAINING",
+        "unmet_dimensions": [
+          "implementation=NOT_STARTED",
+          "integration=NOT_STARTED",
+          "verification=PENDING"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S4-RADAR-001",
+      "title": "Minervini VCP / Radar Operational Truth & Scanner Pending Remediation",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "assigned_sprint": "SPRINT_4",
+      "accountable_owner": "daakara",
+      "next_action": "Draft discovery synthesis memo and define Sprint 5 architecture boundaries",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "INELIGIBLE_ACTIVE_WORK_REMAINING",
+        "unmet_dimensions": [
+          "implementation=NOT_STARTED",
+          "integration=NOT_STARTED",
+          "verification=PENDING"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S1-002",
+      "title": "Candidate 004 Universe-Wiring Reintroduction",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "assigned_sprint": "SPRINT_1",
+      "accountable_owner": "ARX_CORE_TEAM",
+      "next_action": "Verify production telemetry and archive closure receipt",
+      "checkpoint_target_date": null,
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": true,
+        "closure_eligibility": "ALREADY_CLOSED",
+        "unmet_dimensions": [],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S1-003",
+      "title": "Production Universe Preparation & Publication Tooling",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "accountable_owner": "daakara",
+      "next_action": "Preserve holding queue isolation pending: Product Owner authorization of live primary listing acquisition",
+      "checkpoint_target_date": null,
+      "active_blocker": "Offline components merged; live network acquisition held pending primary agency certification",
+      "resolution_trigger": "Product Owner authorization of live primary listing acquisition",
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "BLOCKED_HOLDING_QUEUE",
+        "unmet_dimensions": [
+          "implementation=PARTIAL",
+          "integration=PARTIAL",
+          "verification=PARTIAL",
+          "production_evidence=INSUFFICIENT (expected VERIFIED for DEPLOYED_DORMANT)"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": [
+          "owner_authorization=HOLD"
+        ]
+      }
+    },
+    {
+      "task_id": "ARX-S1-005",
+      "title": "Canonical Decision-State Consistency & Truthful Corridor Location",
+      "priority": "P1",
+      "workstream": "UX_WORKSTATION",
+      "assigned_sprint": "SPRINT_1",
+      "accountable_owner": "ARX_CORE_TEAM",
+      "next_action": "Verify production telemetry and archive closure receipt",
+      "checkpoint_target_date": null,
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "STALE",
+      "completion_predicate": {
+        "is_complete": true,
+        "closure_eligibility": "ALREADY_CLOSED",
+        "unmet_dimensions": [],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S1-006",
+      "title": "Radar US-Listed Coverage & Requirements Reconciliation",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "assigned_sprint": "SPRINT_4",
+      "accountable_owner": "daakara",
+      "next_action": "Draft discovery synthesis memo and define Sprint 5 architecture boundaries",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "INELIGIBLE_ACTIVE_WORK_REMAINING",
+        "unmet_dimensions": [
+          "implementation=PARTIAL",
+          "integration=NOT_STARTED",
+          "verification=PARTIAL",
+          "repository_publication=LOCAL_ONLY"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S2-001",
+      "title": "US-Listed Population and Strategy Boundaries Specification",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "assigned_sprint": "SPRINT_4",
+      "accountable_owner": "daakara",
+      "next_action": "Draft discovery synthesis memo and define Sprint 5 architecture boundaries",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "INELIGIBLE_ACTIVE_WORK_REMAINING",
+        "unmet_dimensions": [
+          "implementation=PARTIAL",
+          "integration=NOT_STARTED",
+          "verification=PARTIAL",
+          "repository_publication=LOCAL_ONLY"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S2-003",
+      "title": "Security Identity & SqliteIdentityRepository Implementation",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "assigned_sprint": "SPRINT_2",
+      "accountable_owner": "ARX_CORE_TEAM",
+      "next_action": "Verify production telemetry and archive closure receipt",
+      "checkpoint_target_date": null,
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "STALE",
+      "completion_predicate": {
+        "is_complete": true,
+        "closure_eligibility": "ALREADY_CLOSED",
+        "unmet_dimensions": [],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S2-004",
+      "title": "Connected Adapter -> Validator -> Builder Integration Core",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "assigned_sprint": "SPRINT_2",
+      "accountable_owner": "ARX_CORE_TEAM",
+      "next_action": "Verify production telemetry and archive closure receipt",
+      "checkpoint_target_date": null,
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "STALE",
+      "completion_predicate": {
+        "is_complete": true,
+        "closure_eligibility": "ALREADY_CLOSED",
+        "unmet_dimensions": [],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S2-006",
+      "title": "Governed Build / Publication Tooling & Isolated State Machine",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "accountable_owner": "daakara",
+      "next_action": "Preserve holding queue isolation pending: Product Owner authorization of Package C production publication",
+      "checkpoint_target_date": null,
+      "active_blocker": "Code implemented in PR #42; publication hold preserved pending accounting defect fix (SD-06)",
+      "resolution_trigger": "Product Owner authorization of Package C production publication",
+      "evidence_freshness": "STALE",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "BLOCKED_HOLDING_QUEUE",
+        "unmet_dimensions": [
+          "integration=PARTIAL",
+          "repository_publication=DRAFT_PR"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": [
+          "owner_authorization=HOLD"
+        ]
+      }
+    },
+    {
+      "task_id": "ARX-S2-007",
+      "title": "Scanner and Radar Membership Integration",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "assigned_sprint": "SPRINT_4",
+      "accountable_owner": "daakara",
+      "next_action": "Draft discovery synthesis memo and define Sprint 5 architecture boundaries",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "INELIGIBLE_ACTIVE_WORK_REMAINING",
+        "unmet_dimensions": [
+          "implementation=PARTIAL",
+          "integration=NOT_STARTED",
+          "verification=PENDING",
+          "repository_publication=DRAFT_PR"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S2-008",
+      "title": "S2-08 Full-Population Assessment Accounting and Telemetry Envelope",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "assigned_sprint": "SPRINT_4",
+      "accountable_owner": "daakara",
+      "next_action": "Draft discovery synthesis memo and define Sprint 5 architecture boundaries",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "INELIGIBLE_ACTIVE_WORK_REMAINING",
+        "unmet_dimensions": [
+          "integration=PARTIAL",
+          "repository_publication=DRAFT_PR"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S2-009",
+      "title": "Radar Coverage Disclosure & Analysis Handoff Alignment",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "assigned_sprint": "SPRINT_4",
+      "accountable_owner": "daakara",
+      "next_action": "Draft discovery synthesis memo and define Sprint 5 architecture boundaries",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "INELIGIBLE_ACTIVE_WORK_REMAINING",
+        "unmet_dimensions": [
+          "implementation=PARTIAL",
+          "integration=NOT_STARTED",
+          "verification=PENDING",
+          "repository_publication=DRAFT_PR"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S2-010",
+      "title": "Operational Acceptance & Controlled Activation Framework",
+      "priority": "P1",
+      "workstream": "GOVERNANCE",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "accountable_owner": "daakara",
+      "next_action": "Preserve holding queue isolation pending: Product Owner execution of Sprint 4 activation decision gate",
+      "checkpoint_target_date": null,
+      "active_blocker": "Activation remains strictly held pending completion of Sprint 4 discovery",
+      "resolution_trigger": "Product Owner execution of Sprint 4 activation decision gate",
+      "evidence_freshness": "STALE",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "BLOCKED_HOLDING_QUEUE",
+        "unmet_dimensions": [
+          "implementation=NOT_STARTED",
+          "integration=NOT_STARTED",
+          "verification=PENDING"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": [
+          "owner_authorization=HOLD"
+        ]
+      }
+    },
+    {
+      "task_id": "ARX-S2-013",
+      "title": "ARX Sprint 2 Release Candidate 1 Consolidated Integration",
+      "priority": "P1",
+      "workstream": "GOVERNANCE",
+      "assigned_sprint": "SPRINT_3",
+      "accountable_owner": "daakara",
+      "next_action": "Awaiting sprint planning intake",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": true,
+        "closure_eligibility": "SUPERSEDED_HISTORICAL",
+        "unmet_dimensions": [
+          "repository_publication=DRAFT_PR"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S3-003",
+      "title": "Corporate Events RC5: Quarterly Earnings Risk Integration & Telemetry",
+      "priority": "P1",
+      "workstream": "CORPORATE_EVENTS",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "accountable_owner": "daakara",
+      "next_action": "Preserve holding queue isolation pending: Product Owner activation authorization of Corporate Events live telemetry",
+      "checkpoint_target_date": null,
+      "active_blocker": "Code merged; live telemetry ingestion held (CORPORATE_EVENTS_TELEMETRY_ACTIVATION = NOT_AUTHORIZED)",
+      "resolution_trigger": "Product Owner activation authorization of Corporate Events live telemetry",
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "BLOCKED_HOLDING_QUEUE",
+        "unmet_dimensions": [
+          "production_evidence=INSUFFICIENT (expected VERIFIED for DEPLOYED_DORMANT)"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": [
+          "owner_authorization=HOLD"
+        ]
+      }
+    },
+    {
+      "task_id": "ARX-S3-005",
+      "title": "Radar Candidate Truth: Eligibility Contracts, False Affordances & Date Provenance",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "assigned_sprint": "SPRINT_4",
+      "accountable_owner": "daakara",
+      "next_action": "Complete CI verification and submit PR [98] for owner review",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "INELIGIBLE_ACTIVE_WORK_REMAINING",
+        "unmet_dimensions": [
+          "integration=PARTIAL",
+          "repository_publication=DRAFT_PR"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S3-006",
+      "title": "Research Workstation: Decision-First Layout Rollout (Quality Watch Collection)",
+      "priority": "P1",
+      "workstream": "UX_WORKSTATION",
+      "assigned_sprint": "SPRINT_4",
+      "accountable_owner": "daakara",
+      "next_action": "Complete CI verification and submit PR [86, 98] for owner review",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "INELIGIBLE_ACTIVE_WORK_REMAINING",
+        "unmet_dimensions": [
+          "integration=PARTIAL",
+          "repository_publication=DRAFT_PR"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S3-013",
+      "title": "Implementation Acceptance: Minervini VCP Pattern & Stage Analysis Verification",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "assigned_sprint": "SPRINT_4",
+      "accountable_owner": "daakara",
+      "next_action": "Draft discovery synthesis memo and define Sprint 5 architecture boundaries",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "INELIGIBLE_ACTIVE_WORK_REMAINING",
+        "unmet_dimensions": [
+          "implementation=PARTIAL",
+          "integration=PARTIAL",
+          "repository_publication=DRAFT_PR",
+          "production_evidence=INSUFFICIENT (expected VERIFIED for DEPLOYED_DORMANT)"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S3-016",
+      "title": "Synthesis E V3 Application-Wide UX Parity & Decision Hierarchy",
+      "priority": "P1",
+      "workstream": "UX_WORKSTATION",
+      "assigned_sprint": "SPRINT_4",
+      "accountable_owner": "daakara",
+      "next_action": "Complete CI verification and submit PR [98] for owner review",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "INELIGIBLE_ACTIVE_WORK_REMAINING",
+        "unmet_dimensions": [
+          "integration=PARTIAL",
+          "repository_publication=DRAFT_PR"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S1-004",
+      "title": "Data.gov Discovery and Primary-Source Qualification",
+      "priority": "P2",
+      "workstream": "RESEARCH_CUSTODY",
+      "assigned_sprint": "SPRINT_1",
+      "accountable_owner": "ARX_CORE_TEAM",
+      "next_action": "Verify production telemetry and archive closure receipt",
+      "checkpoint_target_date": null,
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": true,
+        "closure_eligibility": "ALREADY_CLOSED",
+        "unmet_dimensions": [],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S2-002",
+      "title": "Comprehensive Listing Acquisition & Preserved Source Evidence",
+      "priority": "P2",
+      "workstream": "INFRASTRUCTURE",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "accountable_owner": "daakara",
+      "next_action": "Preserve holding queue isolation pending: Product Owner authorization of Package B live network ingestion",
+      "checkpoint_target_date": null,
+      "active_blocker": "Network ingestion blocked pending SIP provider entitlement and AAPL reconciliation",
+      "resolution_trigger": "Product Owner authorization of Package B live network ingestion",
+      "evidence_freshness": "STALE",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "BLOCKED_HOLDING_QUEUE",
+        "unmet_dimensions": [
+          "integration=PARTIAL",
+          "repository_publication=DRAFT_PR"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": [
+          "owner_authorization=HOLD"
+        ]
+      }
+    },
+    {
+      "task_id": "ARX-S2-005",
+      "title": "Market-Data Coverage and Processing Capacity Verification",
+      "priority": "P2",
+      "workstream": "INFRASTRUCTURE",
+      "assigned_sprint": "SPRINT_4",
+      "accountable_owner": "daakara",
+      "next_action": "Draft discovery synthesis memo and define Sprint 5 architecture boundaries",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "INELIGIBLE_ACTIVE_WORK_REMAINING",
+        "unmet_dimensions": [
+          "implementation=PARTIAL",
+          "integration=NOT_STARTED",
+          "verification=PENDING",
+          "repository_publication=LOCAL_ONLY"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S2-011",
+      "title": "Mobile Research Navigation Dock Accessibility",
+      "priority": "P2",
+      "workstream": "UX_WORKSTATION",
+      "assigned_sprint": "SPRINT_3",
+      "accountable_owner": "daakara",
+      "next_action": "Awaiting sprint planning intake",
+      "checkpoint_target_date": "2026-10-27T18:00:00Z",
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": true,
+        "closure_eligibility": "SUPERSEDED_HISTORICAL",
+        "unmet_dimensions": [],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S2-014",
+      "title": "Evidence-Led Opportunity Discovery Pilot Cycle 1 (Issue #43)",
+      "priority": "P2",
+      "workstream": "RESEARCH_VALUATION",
+      "assigned_sprint": "SPRINT_2",
+      "accountable_owner": "ARX_CORE_TEAM",
+      "next_action": "Verify production telemetry and archive closure receipt",
+      "checkpoint_target_date": null,
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": true,
+        "closure_eligibility": "ALREADY_CLOSED",
+        "unmet_dimensions": [],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S2-015",
+      "title": "Evidence-Led Opportunity Discovery Cycle 2 (14 Candidates)",
+      "priority": "P2",
+      "workstream": "RESEARCH_VALUATION",
+      "assigned_sprint": "SPRINT_2",
+      "accountable_owner": "ARX_CORE_TEAM",
+      "next_action": "Verify production telemetry and archive closure receipt",
+      "checkpoint_target_date": null,
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": true,
+        "closure_eligibility": "ALREADY_CLOSED",
+        "unmet_dimensions": [],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S2-016",
+      "title": "Candidate Priority Reassessment After Discovery Cycle 2",
+      "priority": "P2",
+      "workstream": "RESEARCH_VALUATION",
+      "assigned_sprint": "SPRINT_2",
+      "accountable_owner": "ARX_CORE_TEAM",
+      "next_action": "Verify production telemetry and archive closure receipt",
+      "checkpoint_target_date": null,
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": true,
+        "closure_eligibility": "ALREADY_CLOSED",
+        "unmet_dimensions": [],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S3-008",
+      "title": "Research Supply-Chain: External Research Evidence Custody & Sigstore Verification",
+      "priority": "P2",
+      "workstream": "RESEARCH_CUSTODY",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "accountable_owner": "daakara",
+      "next_action": "Preserve holding queue isolation pending: Research Owner authorization of Sigstore / external evidence custody",
+      "checkpoint_target_date": null,
+      "active_blocker": "External custody infrastructure drafted in PR #75; external custody activation held (EXTERNAL_CUSTODY_ACTIVATION = NOT_AUTHORIZED)",
+      "resolution_trigger": "Research Owner authorization of Sigstore / external evidence custody",
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "BLOCKED_HOLDING_QUEUE",
+        "unmet_dimensions": [
+          "integration=PARTIAL",
+          "repository_publication=DRAFT_PR"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": [
+          "owner_authorization=HOLD"
+        ]
+      }
+    },
+    {
+      "task_id": "ARX-S3-009",
+      "title": "UX Governance: Human Pilot P00 & Frozen Prototype Local Access",
+      "priority": "P2",
+      "workstream": "UX_WORKSTATION",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "accountable_owner": "daakara",
+      "next_action": "Preserve holding queue isolation pending: Research Owner authorization of formative human participant testing",
+      "checkpoint_target_date": null,
+      "active_blocker": "Drafted in PR #75; participant research held (UX_PARTICIPANT_RESEARCH = NOT_AUTHORIZED)",
+      "resolution_trigger": "Research Owner authorization of formative human participant testing",
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "BLOCKED_HOLDING_QUEUE",
+        "unmet_dimensions": [
+          "integration=PARTIAL",
+          "repository_publication=DRAFT_PR"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": [
+          "owner_authorization=HOLD"
+        ]
+      }
+    },
+    {
+      "task_id": "ARX-S3-011",
+      "title": "Research Closure: Air Lease Corporation (ALC) Analysis & Valuation Reproduction",
+      "priority": "P2",
+      "workstream": "RESEARCH_VALUATION",
+      "assigned_sprint": "SPRINT_3",
+      "accountable_owner": "daakara",
+      "next_action": "Verify production telemetry and archive closure receipt",
+      "checkpoint_target_date": null,
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "STALE",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "INELIGIBLE_ACTIVE_WORK_REMAINING",
+        "unmet_dimensions": [
+          "repository_publication=LOCAL_ONLY"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S3-014",
+      "title": "HVA01 Wave 4B-S Restricted Canonicalization and Schema Remediation",
+      "priority": "P2",
+      "workstream": "RESEARCH_CUSTODY",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "accountable_owner": "daakara",
+      "next_action": "Preserve holding queue isolation pending: Research Owner formal protocol ratification",
+      "checkpoint_target_date": null,
+      "active_blocker": "Drafted in PR #78; evaluation held (HVA01_HUMAN_EVALUATION = NOT_AUTHORIZED)",
+      "resolution_trigger": "Research Owner formal protocol ratification",
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "BLOCKED_HOLDING_QUEUE",
+        "unmet_dimensions": [
+          "integration=PARTIAL",
+          "repository_publication=DRAFT_PR"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": [
+          "owner_authorization=HOLD"
+        ]
+      }
+    },
+    {
+      "task_id": "ARX-S3-015",
+      "title": "HVA01 Wave 4C-1 Dual-TSA Timestamp Verification",
+      "priority": "P2",
+      "workstream": "RESEARCH_CUSTODY",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "accountable_owner": "daakara",
+      "next_action": "Preserve holding queue isolation pending: Research Owner formal protocol ratification",
+      "checkpoint_target_date": null,
+      "active_blocker": "Drafted in PR #83; timestamp authority held (HVA00_PROTOCOL_RATIFICATION = NOT_GRANTED)",
+      "resolution_trigger": "Research Owner formal protocol ratification",
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": false,
+        "closure_eligibility": "BLOCKED_HOLDING_QUEUE",
+        "unmet_dimensions": [
+          "integration=PARTIAL",
+          "repository_publication=DRAFT_PR"
+        ],
+        "unmet_criteria": [],
+        "held_dimensions": [
+          "owner_authorization=HOLD"
+        ]
+      }
+    },
+    {
+      "task_id": "ARX-S3-001",
+      "title": "Test Issue Permission Check (Issue #58)",
+      "priority": "P3",
+      "workstream": "GOVERNANCE",
+      "assigned_sprint": "SPRINT_3",
+      "accountable_owner": "daakara",
+      "next_action": "Verify production telemetry and archive closure receipt",
+      "checkpoint_target_date": null,
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": true,
+        "closure_eligibility": "SUPERSEDED_HISTORICAL",
+        "unmet_dimensions": [],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S3-002",
+      "title": "Sprint 3 Initiative Test (Issue #59)",
+      "priority": "P3",
+      "workstream": "GOVERNANCE",
+      "assigned_sprint": "SPRINT_3",
+      "accountable_owner": "daakara",
+      "next_action": "Verify production telemetry and archive closure receipt",
+      "checkpoint_target_date": null,
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": true,
+        "closure_eligibility": "SUPERSEDED_HISTORICAL",
+        "unmet_dimensions": [],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    },
+    {
+      "task_id": "ARX-S3-012",
+      "title": "Research Acceptance: DECK Undervaluation Post-Release & Valuation Parity",
+      "priority": "P3",
+      "workstream": "RESEARCH_VALUATION",
+      "assigned_sprint": "SPRINT_3",
+      "accountable_owner": "daakara",
+      "next_action": "Verify production telemetry and archive closure receipt",
+      "checkpoint_target_date": null,
+      "active_blocker": null,
+      "resolution_trigger": null,
+      "evidence_freshness": "FRESH",
+      "completion_predicate": {
+        "is_complete": true,
+        "closure_eligibility": "ALREADY_CLOSED",
+        "unmet_dimensions": [],
+        "unmet_criteria": [],
+        "held_dimensions": []
+      }
+    }
+  ],
+  "release_matrix": [
+    {
+      "task_id": "ARX-S4-GOV-001",
+      "title": "Cross-Sprint Backlog Integrity, Historical Recovery and Automated Closure Enforcement",
+      "github_prs": [
+        101,
+        102
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": "9813453f31cab0455bcbbc281f99bb5c44225452",
+      "deployment_status": "NOT_APPLICABLE",
+      "production_evidence": "NOT_APPLICABLE",
+      "operational_authorized": "CONDITIONALLY_PREAPPROVED"
+    },
+    {
+      "task_id": "ARX-S4-ARCH-001",
+      "title": "Holistic Cross-Engine Architecture and Decision-Coherence Audit",
+      "github_prs": [],
+      "pr_status": "NONE",
+      "ci_conclusion": "NOT_RUN",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_APPLICABLE",
+      "production_evidence": "NOT_APPLICABLE",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S4-RADAR-001",
+      "title": "Minervini VCP / Radar Operational Truth & Scanner Pending Remediation",
+      "github_prs": [
+        73
+      ],
+      "pr_status": "UNKNOWN",
+      "ci_conclusion": "UNKNOWN",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_APPLICABLE",
+      "production_evidence": "INSUFFICIENT",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S1-001",
+      "title": "VCP Inactive Read-Safety Contract Enforcement",
+      "github_prs": [
+        4
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": "787c1977b0071f2b31c4ad3d36a7f872147ad59e",
+      "deployment_status": "DEPLOYED_ACTIVE",
+      "production_evidence": "VERIFIED",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S1-002",
+      "title": "Candidate 004 Universe-Wiring Reintroduction",
+      "github_prs": [
+        5
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": "2eb032b2aec18ac4fea0f654eee8fb6c028466fe",
+      "deployment_status": "DEPLOYED_ACTIVE",
+      "production_evidence": "VERIFIED",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S1-003",
+      "title": "Production Universe Preparation & Publication Tooling",
+      "github_prs": [
+        6,
+        8
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": "5f26f3fcf8a4fa3140401bb16a687ec86c53de0d",
+      "deployment_status": "DEPLOYED_DORMANT",
+      "production_evidence": "INSUFFICIENT",
+      "operational_authorized": "HOLD"
+    },
+    {
+      "task_id": "ARX-S1-004",
+      "title": "Data.gov Discovery and Primary-Source Qualification",
+      "github_prs": [],
+      "pr_status": "NONE",
+      "ci_conclusion": "NOT_RUN",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_APPLICABLE",
+      "production_evidence": "VERIFIED",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S1-005",
+      "title": "Canonical Decision-State Consistency & Truthful Corridor Location",
+      "github_prs": [
+        7
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": "11d6813500270788085989bde228190b5b6d3629",
+      "deployment_status": "DEPLOYED_ACTIVE",
+      "production_evidence": "VERIFIED",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S1-006",
+      "title": "Radar US-Listed Coverage & Requirements Reconciliation",
+      "github_prs": [],
+      "pr_status": "NONE",
+      "ci_conclusion": "NOT_RUN",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_APPLICABLE",
+      "production_evidence": "INSUFFICIENT",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S2-001",
+      "title": "US-Listed Population and Strategy Boundaries Specification",
+      "github_prs": [],
+      "pr_status": "NONE",
+      "ci_conclusion": "NOT_RUN",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_APPLICABLE",
+      "production_evidence": "NOT_APPLICABLE",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S2-002",
+      "title": "Comprehensive Listing Acquisition & Preserved Source Evidence",
+      "github_prs": [
+        35
+      ],
+      "pr_status": "OPEN_DRAFT",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_DEPLOYED",
+      "production_evidence": "INSUFFICIENT",
+      "operational_authorized": "HOLD"
+    },
+    {
+      "task_id": "ARX-S2-003",
+      "title": "Security Identity & SqliteIdentityRepository Implementation",
+      "github_prs": [
+        37
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "DEPLOYED_DORMANT",
+      "production_evidence": "VERIFIED",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S2-004",
+      "title": "Connected Adapter -> Validator -> Builder Integration Core",
+      "github_prs": [
+        37
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "DEPLOYED_DORMANT",
+      "production_evidence": "VERIFIED",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S2-005",
+      "title": "Market-Data Coverage and Processing Capacity Verification",
+      "github_prs": [],
+      "pr_status": "NONE",
+      "ci_conclusion": "NOT_RUN",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_APPLICABLE",
+      "production_evidence": "NOT_APPLICABLE",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S2-006",
+      "title": "Governed Build / Publication Tooling & Isolated State Machine",
+      "github_prs": [
+        42
+      ],
+      "pr_status": "OPEN_DRAFT",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_DEPLOYED",
+      "production_evidence": "INSUFFICIENT",
+      "operational_authorized": "HOLD"
+    },
+    {
+      "task_id": "ARX-S2-007",
+      "title": "Scanner and Radar Membership Integration",
+      "github_prs": [
+        42
+      ],
+      "pr_status": "OPEN_DRAFT",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_DEPLOYED",
+      "production_evidence": "NOT_APPLICABLE",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S2-008",
+      "title": "S2-08 Full-Population Assessment Accounting and Telemetry Envelope",
+      "github_prs": [
+        44
+      ],
+      "pr_status": "OPEN_DRAFT",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_DEPLOYED",
+      "production_evidence": "INSUFFICIENT",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S2-009",
+      "title": "Radar Coverage Disclosure & Analysis Handoff Alignment",
+      "github_prs": [
+        42
+      ],
+      "pr_status": "OPEN_DRAFT",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_DEPLOYED",
+      "production_evidence": "NOT_APPLICABLE",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S2-010",
+      "title": "Operational Acceptance & Controlled Activation Framework",
+      "github_prs": [],
+      "pr_status": "NONE",
+      "ci_conclusion": "NOT_RUN",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_APPLICABLE",
+      "production_evidence": "NOT_APPLICABLE",
+      "operational_authorized": "HOLD"
+    },
+    {
+      "task_id": "ARX-S2-011",
+      "title": "Mobile Research Navigation Dock Accessibility",
+      "github_prs": [
+        38
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "DEPLOYED_ACTIVE",
+      "production_evidence": "VERIFIED",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S2-012",
+      "title": "Candlestick Chart Visibility & Container Synchronization",
+      "github_prs": [
+        40
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "DEPLOYED_ACTIVE",
+      "production_evidence": "VERIFIED",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S2-013",
+      "title": "ARX Sprint 2 Release Candidate 1 Consolidated Integration",
+      "github_prs": [
+        47
+      ],
+      "pr_status": "OPEN_DRAFT",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_DEPLOYED",
+      "production_evidence": "NOT_APPLICABLE",
+      "operational_authorized": "NOT_GRANTED"
+    },
+    {
+      "task_id": "ARX-S2-014",
+      "title": "Evidence-Led Opportunity Discovery Pilot Cycle 1 (Issue #43)",
+      "github_prs": [
+        45
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_APPLICABLE",
+      "production_evidence": "VERIFIED",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S2-015",
+      "title": "Evidence-Led Opportunity Discovery Cycle 2 (14 Candidates)",
+      "github_prs": [
+        46
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_APPLICABLE",
+      "production_evidence": "VERIFIED",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S2-016",
+      "title": "Candidate Priority Reassessment After Discovery Cycle 2",
+      "github_prs": [
+        48
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_APPLICABLE",
+      "production_evidence": "VERIFIED",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S3-001",
+      "title": "Test Issue Permission Check (Issue #58)",
+      "github_prs": [],
+      "pr_status": "NONE",
+      "ci_conclusion": "NOT_RUN",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_APPLICABLE",
+      "production_evidence": "NOT_APPLICABLE",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S3-002",
+      "title": "Sprint 3 Initiative Test (Issue #59)",
+      "github_prs": [],
+      "pr_status": "NONE",
+      "ci_conclusion": "NOT_RUN",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_APPLICABLE",
+      "production_evidence": "NOT_APPLICABLE",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S3-003",
+      "title": "Corporate Events RC5: Quarterly Earnings Risk Integration & Telemetry",
+      "github_prs": [
+        53,
+        79
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": "8404b6e4645b5f9f8237e70517dcab3b6afdda7f",
+      "deployment_status": "DEPLOYED_DORMANT",
+      "production_evidence": "INSUFFICIENT",
+      "operational_authorized": "HOLD"
+    },
+    {
+      "task_id": "ARX-S3-004",
+      "title": "Radar Reliability: Fail-Closed Error-versus-Zero Semantics & UI Retry",
+      "github_prs": [
+        98
+      ],
+      "pr_status": "OPEN_DRAFT",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_DEPLOYED",
+      "production_evidence": "NOT_APPLICABLE",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S3-005",
+      "title": "Radar Candidate Truth: Eligibility Contracts, False Affordances & Date Provenance",
+      "github_prs": [
+        98
+      ],
+      "pr_status": "OPEN_DRAFT",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_DEPLOYED",
+      "production_evidence": "NOT_APPLICABLE",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S3-006",
+      "title": "Research Workstation: Decision-First Layout Rollout (Quality Watch Collection)",
+      "github_prs": [
+        86,
+        98
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": "ae28f73335d94c3d41072def6bdaaa6fdc6d91c6",
+      "deployment_status": "NOT_DEPLOYED",
+      "production_evidence": "NOT_APPLICABLE",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S3-007",
+      "title": "Scanner Safety: VCP History-Boundary Containment & Operational Repair",
+      "github_prs": [
+        73,
+        76
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": "a8a23f8f6bc3460833691e95d950a984bdbaa79b",
+      "deployment_status": "DEPLOYED_DORMANT",
+      "production_evidence": "INSUFFICIENT",
+      "operational_authorized": "HOLD"
+    },
+    {
+      "task_id": "ARX-S3-008",
+      "title": "Research Supply-Chain: External Research Evidence Custody & Sigstore Verification",
+      "github_prs": [
+        75
+      ],
+      "pr_status": "OPEN_DRAFT",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_DEPLOYED",
+      "production_evidence": "INSUFFICIENT",
+      "operational_authorized": "HOLD"
+    },
+    {
+      "task_id": "ARX-S3-009",
+      "title": "UX Governance: Human Pilot P00 & Frozen Prototype Local Access",
+      "github_prs": [
+        75
+      ],
+      "pr_status": "OPEN_DRAFT",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_DEPLOYED",
+      "production_evidence": "INSUFFICIENT",
+      "operational_authorized": "HOLD"
+    },
+    {
+      "task_id": "ARX-S3-010",
+      "title": "Evidence Quality Audit: Pre-Flight Disclosures & Smart Money Truthfulness",
+      "github_prs": [
+        72,
+        87,
+        100
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": "64b5f892bf8b20f55b810599393bbbeb4d6aba91",
+      "deployment_status": "DEPLOYED_DORMANT",
+      "production_evidence": "VERIFIED",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S3-011",
+      "title": "Research Closure: Air Lease Corporation (ALC) Analysis & Valuation Reproduction",
+      "github_prs": [],
+      "pr_status": "NONE",
+      "ci_conclusion": "NOT_RUN",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_APPLICABLE",
+      "production_evidence": "VERIFIED",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S3-012",
+      "title": "Research Acceptance: DECK Undervaluation Post-Release & Valuation Parity",
+      "github_prs": [],
+      "pr_status": "NONE",
+      "ci_conclusion": "NOT_RUN",
+      "merged_main_sha": null,
+      "deployment_status": "DEPLOYED_ACTIVE",
+      "production_evidence": "VERIFIED",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S3-013",
+      "title": "Implementation Acceptance: Minervini VCP Pattern & Stage Analysis Verification",
+      "github_prs": [
+        73,
+        76
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": "a8a23f8f6bc3460833691e95d950a984bdbaa79b",
+      "deployment_status": "DEPLOYED_DORMANT",
+      "production_evidence": "INSUFFICIENT",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S3-014",
+      "title": "HVA01 Wave 4B-S Restricted Canonicalization and Schema Remediation",
+      "github_prs": [
+        78
+      ],
+      "pr_status": "OPEN_DRAFT",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_DEPLOYED",
+      "production_evidence": "INSUFFICIENT",
+      "operational_authorized": "HOLD"
+    },
+    {
+      "task_id": "ARX-S3-015",
+      "title": "HVA01 Wave 4C-1 Dual-TSA Timestamp Verification",
+      "github_prs": [
+        83
+      ],
+      "pr_status": "OPEN_DRAFT",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_DEPLOYED",
+      "production_evidence": "INSUFFICIENT",
+      "operational_authorized": "HOLD"
+    },
+    {
+      "task_id": "ARX-S3-016",
+      "title": "Synthesis E V3 Application-Wide UX Parity & Decision Hierarchy",
+      "github_prs": [
+        98
+      ],
+      "pr_status": "OPEN_DRAFT",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "DEPLOYED_DORMANT",
+      "production_evidence": "VERIFIED",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S3-017",
+      "title": "Smart Money Phase 1: Operational Readiness, Worker Fencing & Observability",
+      "github_prs": [
+        100
+      ],
+      "pr_status": "MERGED",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": "4bf9f3b1b68bf7af8ca13b243c732afb909aa4e6",
+      "deployment_status": "DEPLOYED_DORMANT",
+      "production_evidence": "VERIFIED",
+      "operational_authorized": "AUTHORIZED"
+    },
+    {
+      "task_id": "ARX-S4-ARCH-002",
+      "title": "Liquidity Hazard & Canonical Actionability Enforcement (GAP-WS41-003)",
+      "github_prs": [
+        105
+      ],
+      "pr_status": "OPEN_DRAFT",
+      "ci_conclusion": "SUCCESS",
+      "merged_main_sha": null,
+      "deployment_status": "NOT_APPLICABLE",
+      "production_evidence": "NOT_APPLICABLE",
+      "operational_authorized": "AUTHORIZED"
+    }
+  ],
+  "reconciliation_summary": {
+    "total_checks_run": 10,
+    "error_count": 4,
+    "warning_count": 32,
+    "info_count": 0,
+    "verdict": "FAIL_CLOSED",
+    "findings": [
+      {
+        "check_id": "CHECK_INCONSISTENT_CLAIMS",
+        "severity": "WARNING",
+        "task_id": "ARX-S4-ARCH-001",
+        "accountable_owner": "daakara",
+        "inconsistency": "Architecture audit deliverables (CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json) exist, but backlog records implementation='NOT_STARTED' and verification='PENDING'",
+        "required_correction": "Update dimensions to implementation='DONE', verification='PASS', and advance status to ready for closure"
+      },
+      {
+        "check_id": "CHECK_UNRESOLVED_DEPENDENCIES",
+        "severity": "WARNING",
+        "task_id": "ARX-S4-ARCH-001",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task is 'READY' but depends on uncompleted task 'ARX-S4-GOV-001' (status: 'READY')",
+        "required_correction": "Block execution of 'ARX-S4-ARCH-001' until 'ARX-S4-GOV-001' is certified complete"
+      },
+      {
+        "check_id": "CHECK_UNRESOLVED_DEPENDENCIES",
+        "severity": "WARNING",
+        "task_id": "ARX-S4-RADAR-001",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task is 'READY' but depends on uncompleted task 'ARX-S4-GOV-001' (status: 'READY')",
+        "required_correction": "Block execution of 'ARX-S4-RADAR-001' until 'ARX-S4-GOV-001' is certified complete"
+      },
+      {
+        "check_id": "CHECK_EVIDENCE_FRESHNESS",
+        "severity": "WARNING",
+        "task_id": "ARX-S1-005",
+        "accountable_owner": "ARX_CORE_TEAM",
+        "inconsistency": "Citing nonexistent evidence file: 'tests/corridorDecisionConsistency.test.ts'",
+        "required_correction": "Verify evidence file path or generate missing verification receipt"
+      },
+      {
+        "check_id": "CHECK_UNCLASSIFIED_CARRYFORWARDS",
+        "severity": "WARNING",
+        "task_id": "ARX-S1-006",
+        "accountable_owner": "daakara",
+        "inconsistency": "Sprint 4 discovery task 'ARX-S1-006' has no documented Sprint 5 carryforward disposition or rationale",
+        "required_correction": "Record sprint_exit_disposition='CARRYFORWARD_SPRINT5' and specify discovery continuation scope"
+      },
+      {
+        "check_id": "CHECK_UNRESOLVED_DEPENDENCIES",
+        "severity": "WARNING",
+        "task_id": "ARX-S2-001",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task is 'READY' but depends on uncompleted task 'ARX-S1-006' (status: 'READY')",
+        "required_correction": "Block execution of 'ARX-S2-001' until 'ARX-S1-006' is certified complete"
+      },
+      {
+        "check_id": "CHECK_UNCLASSIFIED_CARRYFORWARDS",
+        "severity": "WARNING",
+        "task_id": "ARX-S2-001",
+        "accountable_owner": "daakara",
+        "inconsistency": "Sprint 4 discovery task 'ARX-S2-001' has no documented Sprint 5 carryforward disposition or rationale",
+        "required_correction": "Record sprint_exit_disposition='CARRYFORWARD_SPRINT5' and specify discovery continuation scope"
+      },
+      {
+        "check_id": "CHECK_EVIDENCE_FRESHNESS",
+        "severity": "WARNING",
+        "task_id": "ARX-S2-002",
+        "accountable_owner": "daakara",
+        "inconsistency": "Citing nonexistent evidence file: 'docs/reviews/sprint2-package-b/B_DATA_QUALITY_CONTRACT.md'",
+        "required_correction": "Verify evidence file path or generate missing verification receipt"
+      },
+      {
+        "check_id": "CHECK_EVIDENCE_FRESHNESS",
+        "severity": "WARNING",
+        "task_id": "ARX-S2-002",
+        "accountable_owner": "daakara",
+        "inconsistency": "Citing nonexistent evidence file: 'docs/reviews/sprint2-convergence/SPRINT2_PACKAGE_B_DATA_READINESS_AND_PROVENANCE_PLAN.md'",
+        "required_correction": "Verify evidence file path or generate missing verification receipt"
+      },
+      {
+        "check_id": "CHECK_EVIDENCE_FRESHNESS",
+        "severity": "WARNING",
+        "task_id": "ARX-S2-003",
+        "accountable_owner": "ARX_CORE_TEAM",
+        "inconsistency": "Citing nonexistent evidence file: 'analyst_dashboard/universe/identity_repository.py'",
+        "required_correction": "Verify evidence file path or generate missing verification receipt"
+      },
+      {
+        "check_id": "CHECK_EVIDENCE_FRESHNESS",
+        "severity": "WARNING",
+        "task_id": "ARX-S2-003",
+        "accountable_owner": "ARX_CORE_TEAM",
+        "inconsistency": "Citing nonexistent evidence file: 'docs/reviews/sprint2-convergence/SPRINT2_PR37_AUTHORIZED_MERGE_EXECUTION_RECORD.md'",
+        "required_correction": "Verify evidence file path or generate missing verification receipt"
+      },
+      {
+        "check_id": "CHECK_EVIDENCE_FRESHNESS",
+        "severity": "WARNING",
+        "task_id": "ARX-S2-004",
+        "accountable_owner": "ARX_CORE_TEAM",
+        "inconsistency": "Citing nonexistent evidence file: 'docs/reviews/sprint2-convergence/SPRINT2_PACKAGE_BC_INTEGRATION_CHECKPOINT.md'",
+        "required_correction": "Verify evidence file path or generate missing verification receipt"
+      },
+      {
+        "check_id": "CHECK_UNCLASSIFIED_CARRYFORWARDS",
+        "severity": "WARNING",
+        "task_id": "ARX-S2-005",
+        "accountable_owner": "daakara",
+        "inconsistency": "Sprint 4 discovery task 'ARX-S2-005' has no documented Sprint 5 carryforward disposition or rationale",
+        "required_correction": "Record sprint_exit_disposition='CARRYFORWARD_SPRINT5' and specify discovery continuation scope"
+      },
+      {
+        "check_id": "CHECK_EVIDENCE_FRESHNESS",
+        "severity": "WARNING",
+        "task_id": "ARX-S2-006",
+        "accountable_owner": "daakara",
+        "inconsistency": "Citing nonexistent evidence file: 'docs/reviews/sprint2-convergence/SPRINT2_FINAL_ACCEPTANCE_SAFETY_DELTA.md'",
+        "required_correction": "Verify evidence file path or generate missing verification receipt"
+      },
+      {
+        "check_id": "CHECK_UNRESOLVED_DEPENDENCIES",
+        "severity": "WARNING",
+        "task_id": "ARX-S2-007",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task is 'READY' but depends on uncompleted task 'ARX-S2-006' (status: 'BLOCKED')",
+        "required_correction": "Block execution of 'ARX-S2-007' until 'ARX-S2-006' is certified complete"
+      },
+      {
+        "check_id": "CHECK_UNCLASSIFIED_CARRYFORWARDS",
+        "severity": "WARNING",
+        "task_id": "ARX-S2-007",
+        "accountable_owner": "daakara",
+        "inconsistency": "Sprint 4 discovery task 'ARX-S2-007' has no documented Sprint 5 carryforward disposition or rationale",
+        "required_correction": "Record sprint_exit_disposition='CARRYFORWARD_SPRINT5' and specify discovery continuation scope"
+      },
+      {
+        "check_id": "CHECK_UNRESOLVED_DEPENDENCIES",
+        "severity": "WARNING",
+        "task_id": "ARX-S2-008",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task is 'READY' but depends on uncompleted task 'ARX-S2-007' (status: 'READY')",
+        "required_correction": "Block execution of 'ARX-S2-008' until 'ARX-S2-007' is certified complete"
+      },
+      {
+        "check_id": "CHECK_UNCLASSIFIED_CARRYFORWARDS",
+        "severity": "WARNING",
+        "task_id": "ARX-S2-008",
+        "accountable_owner": "daakara",
+        "inconsistency": "Sprint 4 discovery task 'ARX-S2-008' has no documented Sprint 5 carryforward disposition or rationale",
+        "required_correction": "Record sprint_exit_disposition='CARRYFORWARD_SPRINT5' and specify discovery continuation scope"
+      },
+      {
+        "check_id": "CHECK_UNRESOLVED_DEPENDENCIES",
+        "severity": "WARNING",
+        "task_id": "ARX-S2-009",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task is 'READY' but depends on uncompleted task 'ARX-S2-008' (status: 'READY')",
+        "required_correction": "Block execution of 'ARX-S2-009' until 'ARX-S2-008' is certified complete"
+      },
+      {
+        "check_id": "CHECK_EVIDENCE_FRESHNESS",
+        "severity": "WARNING",
+        "task_id": "ARX-S2-010",
+        "accountable_owner": "daakara",
+        "inconsistency": "Citing nonexistent evidence file: 'docs/reviews/sprint2-convergence/SPRINT2_POST_DEPLOYMENT_ACCEPTANCE_PLAN.md'",
+        "required_correction": "Verify evidence file path or generate missing verification receipt"
+      },
+      {
+        "check_id": "CHECK_UNRESOLVED_DEPENDENCIES",
+        "severity": "WARNING",
+        "task_id": "ARX-S3-004",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task is 'READY' but depends on uncompleted task 'ARX-S4-GOV-001' (status: 'READY')",
+        "required_correction": "Block execution of 'ARX-S3-004' until 'ARX-S4-GOV-001' is certified complete"
+      },
+      {
+        "check_id": "CHECK_UNRESOLVED_DEPENDENCIES",
+        "severity": "WARNING",
+        "task_id": "ARX-S3-005",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task is 'READY' but depends on uncompleted task 'ARX-S4-GOV-001' (status: 'READY')",
+        "required_correction": "Block execution of 'ARX-S3-005' until 'ARX-S4-GOV-001' is certified complete"
+      },
+      {
+        "check_id": "CHECK_STALE_PR_MERGE",
+        "severity": "ERROR",
+        "task_id": "ARX-S3-006",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task claims repository_publication='DRAFT_PR', but PR #86 is already merged on main (commit ae28f73)",
+        "required_correction": "Update repository_publication to 'PUBLISHED_MERGED' and record merged mainline SHA"
+      },
+      {
+        "check_id": "CHECK_UNRESOLVED_DEPENDENCIES",
+        "severity": "WARNING",
+        "task_id": "ARX-S3-006",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task is 'READY' but depends on uncompleted task 'ARX-S4-GOV-001' (status: 'READY')",
+        "required_correction": "Block execution of 'ARX-S3-006' until 'ARX-S4-GOV-001' is certified complete"
+      },
+      {
+        "check_id": "CHECK_STALE_PR_MERGE",
+        "severity": "ERROR",
+        "task_id": "ARX-S3-010",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task claims repository_publication='DRAFT_PR', but PR #87 is already merged on main (commit 64b5f89)",
+        "required_correction": "Update repository_publication to 'PUBLISHED_MERGED' and record merged mainline SHA"
+      },
+      {
+        "check_id": "CHECK_STALE_PR_MERGE",
+        "severity": "ERROR",
+        "task_id": "ARX-S3-010",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task claims repository_publication='DRAFT_PR', but PR #100 is already merged on main (commit 4bf9f3b)",
+        "required_correction": "Update repository_publication to 'PUBLISHED_MERGED' and record merged mainline SHA"
+      },
+      {
+        "check_id": "CHECK_UNRESOLVED_DEPENDENCIES",
+        "severity": "WARNING",
+        "task_id": "ARX-S3-010",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task is 'READY' but depends on uncompleted task 'ARX-S4-GOV-001' (status: 'READY')",
+        "required_correction": "Block execution of 'ARX-S3-010' until 'ARX-S4-GOV-001' is certified complete"
+      },
+      {
+        "check_id": "CHECK_EVIDENCE_FRESHNESS",
+        "severity": "WARNING",
+        "task_id": "ARX-S3-011",
+        "accountable_owner": "daakara",
+        "inconsistency": "Citing nonexistent evidence file: 'ARX_ALC_FINAL_CERTIFICATION_DECISION_V3.md'",
+        "required_correction": "Verify evidence file path or generate missing verification receipt"
+      },
+      {
+        "check_id": "CHECK_EVIDENCE_FRESHNESS",
+        "severity": "WARNING",
+        "task_id": "ARX-S3-011",
+        "accountable_owner": "daakara",
+        "inconsistency": "Citing nonexistent evidence file: 'ARX_ALC_VALUATION_REPRODUCTION_AUDIT.md'",
+        "required_correction": "Verify evidence file path or generate missing verification receipt"
+      },
+      {
+        "check_id": "CHECK_STALE_PR_MERGE",
+        "severity": "ERROR",
+        "task_id": "ARX-S3-013",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task claims repository_publication='DRAFT_PR', but PR #76 is already merged on main (commit a8a23f8)",
+        "required_correction": "Update repository_publication to 'PUBLISHED_MERGED' and record merged mainline SHA"
+      },
+      {
+        "check_id": "CHECK_UNRESOLVED_DEPENDENCIES",
+        "severity": "WARNING",
+        "task_id": "ARX-S3-013",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task is 'READY' but depends on uncompleted task 'ARX-S4-RADAR-001' (status: 'READY')",
+        "required_correction": "Block execution of 'ARX-S3-013' until 'ARX-S4-RADAR-001' is certified complete"
+      },
+      {
+        "check_id": "CHECK_UNRESOLVED_DEPENDENCIES",
+        "severity": "WARNING",
+        "task_id": "ARX-S3-016",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task is 'READY' but depends on uncompleted task 'ARX-S4-GOV-001' (status: 'READY')",
+        "required_correction": "Block execution of 'ARX-S3-016' until 'ARX-S4-GOV-001' is certified complete"
+      },
+      {
+        "check_id": "CHECK_INCOMPLETE_CRITERIA",
+        "severity": "WARNING",
+        "task_id": "ARX-S3-016",
+        "accountable_owner": "daakara",
+        "inconsistency": "PR #98 is unmerged and pending owner visual acceptance, but backlog marks deployment='DEPLOYED_DORMANT'",
+        "required_correction": "Classify PR #98 as awaiting explicit owner review before claiming deployment parity"
+      },
+      {
+        "check_id": "CHECK_EVIDENCE_FRESHNESS",
+        "severity": "WARNING",
+        "task_id": "ARX-S3-017",
+        "accountable_owner": "ARX_CORE_TEAM",
+        "inconsistency": "Citing nonexistent evidence file: 'docs/governance/sprint3/SMART_MONEY_PHASE1_PRODUCTION_SAFETY_CASE.md'",
+        "required_correction": "Verify evidence file path or generate missing verification receipt"
+      },
+      {
+        "check_id": "CHECK_UNRESOLVED_DEPENDENCIES",
+        "severity": "WARNING",
+        "task_id": "ARX-S4-ARCH-002",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task is 'READY' but depends on uncompleted task 'ARX-S4-ARCH-001' (status: 'READY')",
+        "required_correction": "Block execution of 'ARX-S4-ARCH-002' until 'ARX-S4-ARCH-001' is certified complete"
+      },
+      {
+        "check_id": "CHECK_UNRESOLVED_DEPENDENCIES",
+        "severity": "WARNING",
+        "task_id": "ARX-S4-ARCH-002",
+        "accountable_owner": "daakara",
+        "inconsistency": "Task is 'READY' but depends on uncompleted task 'ARX-S4-GOV-001' (status: 'READY')",
+        "required_correction": "Block execution of 'ARX-S4-ARCH-002' until 'ARX-S4-GOV-001' is certified complete"
+      }
+    ]
+  }
+}

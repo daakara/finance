@@ -229,6 +229,44 @@
         },
         "superseded_by": {
           "type": ["string", "null"]
+        },
+        "action_tracking": {
+          "type": "object",
+          "properties": {
+            "accountable_owner": { "type": "string" },
+            "next_action": { "type": "string" },
+            "checkpoint_target_date": { "type": ["string", "null"] },
+            "active_blocker": { "type": ["string", "null"] },
+            "resolution_trigger": { "type": ["string", "null"] },
+            "evidence_freshness": {
+              "type": "string",
+              "enum": ["FRESH", "STALE", "EXPIRED", "UNVERIFIED", "NOT_APPLICABLE"]
+            },
+            "release_linkage": {
+              "type": "object",
+              "properties": {
+                "pr_number": { "type": ["integer", "null"] },
+                "head_sha": { "type": ["string", "null"] },
+                "merged_main_sha": { "type": ["string", "null"] },
+                "ci_run_id": { "type": ["string", "null"] },
+                "ci_conclusion": { "type": ["string", "null"] },
+                "deployment_url": { "type": ["string", "null"] },
+                "production_verified": { "type": "boolean" },
+                "operational_authorized": { "type": "boolean" }
+              }
+            },
+            "sprint_exit_disposition": {
+              "type": "string",
+              "enum": [
+                "CLOSED_VERIFIED",
+                "CARRYFORWARD_SPRINT5",
+                "HOLDING_QUEUE_OWNER_GATED",
+                "SUPERSEDED",
+                "RETAIN_ACTIVE",
+                "UNCLASSIFIED"
+              ]
+            }
+          }
         }
       }
     }

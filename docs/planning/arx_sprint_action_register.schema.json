@@ -1,0 +1,218 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARXSprintActionRegister",
+  "description": "Authoritative schema for derived ARX Terminal sprint control action registers, execution views, and reconciliation findings.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "source_backlog_file",
+    "source_backlog_sha",
+    "active_sprint",
+    "sprint_board",
+    "action_queue",
+    "release_matrix",
+    "reconciliation_summary"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0.0"]
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_backlog_file": {
+      "type": "string"
+    },
+    "source_backlog_sha": {
+      "type": "string"
+    },
+    "active_sprint": {
+      "type": "string"
+    },
+    "sprint_board": {
+      "type": "object",
+      "required": [
+        "total_tasks",
+        "execution_tasks",
+        "discovery_tasks",
+        "blocked_tasks",
+        "owner_gated_tasks",
+        "completed_tasks"
+      ],
+      "properties": {
+        "total_tasks": { "type": "integer" },
+        "execution_tasks": { "type": "array", "items": { "type": "string" } },
+        "discovery_tasks": { "type": "array", "items": { "type": "string" } },
+        "blocked_tasks": { "type": "array", "items": { "type": "string" } },
+        "owner_gated_tasks": { "type": "array", "items": { "type": "string" } },
+        "completed_tasks": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "action_queue": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ActionQueueItem"
+      }
+    },
+    "release_matrix": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ReleaseMatrixItem"
+      }
+    },
+    "reconciliation_summary": {
+      "type": "object",
+      "required": [
+        "total_checks_run",
+        "error_count",
+        "warning_count",
+        "info_count",
+        "verdict",
+        "findings"
+      ],
+      "properties": {
+        "total_checks_run": { "type": "integer" },
+        "error_count": { "type": "integer" },
+        "warning_count": { "type": "integer" },
+        "info_count": { "type": "integer" },
+        "verdict": {
+          "type": "string",
+          "enum": ["PASS", "FAIL_CLOSED", "WARNINGS_PRESENT"]
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ReconciliationFinding"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "ActionQueueItem": {
+      "type": "object",
+      "required": [
+        "task_id",
+        "title",
+        "priority",
+        "workstream",
+        "assigned_sprint",
+        "accountable_owner",
+        "next_action",
+        "checkpoint_target_date",
+        "active_blocker",
+        "resolution_trigger",
+        "evidence_freshness",
+        "completion_predicate"
+      ],
+      "properties": {
+        "task_id": { "type": "string" },
+        "title": { "type": "string" },
+        "priority": { "type": "string" },
+        "workstream": { "type": "string" },
+        "assigned_sprint": { "type": "string" },
+        "accountable_owner": { "type": "string" },
+        "next_action": { "type": "string" },
+        "checkpoint_target_date": { "type": ["string", "null"] },
+        "active_blocker": { "type": ["string", "null"] },
+        "resolution_trigger": { "type": ["string", "null"] },
+        "evidence_freshness": {
+          "type": "string",
+          "enum": ["FRESH", "STALE", "EXPIRED", "UNVERIFIED", "NOT_APPLICABLE"]
+        },
+        "completion_predicate": {
+          "type": "object",
+          "required": [
+            "is_complete",
+            "closure_eligibility",
+            "unmet_dimensions",
+            "unmet_criteria",
+            "held_dimensions"
+          ],
+          "properties": {
+            "is_complete": { "type": "boolean" },
+            "closure_eligibility": {
+              "type": "string",
+              "enum": [
+                "ELIGIBLE_FOR_CLOSURE",
+                "CONDITIONAL_CLOSURE_OWNER_HELD",
+                "INELIGIBLE_ACTIVE_WORK_REMAINING",
+                "BLOCKED_HOLDING_QUEUE",
+                "SUPERSEDED_HISTORICAL",
+                "ALREADY_CLOSED"
+              ]
+            },
+            "unmet_dimensions": { "type": "array", "items": { "type": "string" } },
+            "unmet_criteria": { "type": "array", "items": { "type": "string" } },
+            "held_dimensions": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "ReleaseMatrixItem": {
+      "type": "object",
+      "required": [
+        "task_id",
+        "title",
+        "github_prs",
+        "pr_status",
+        "ci_conclusion",
+        "merged_main_sha",
+        "deployment_status",
+        "production_evidence",
+        "operational_authorized"
+      ],
+      "properties": {
+        "task_id": { "type": "string" },
+        "title": { "type": "string" },
+        "github_prs": { "type": "array", "items": { "type": "integer" } },
+        "pr_status": {
+          "type": "string",
+          "enum": ["MERGED", "OPEN_DRAFT", "OPEN_REVIEW", "CLOSED_UNMERGED", "NONE", "UNKNOWN"]
+        },
+        "ci_conclusion": {
+          "type": "string",
+          "enum": ["SUCCESS", "FAILURE", "IN_PROGRESS", "NEUTRAL", "NOT_RUN", "UNKNOWN"]
+        },
+        "merged_main_sha": { "type": ["string", "null"] },
+        "deployment_status": {
+          "type": "string",
+          "enum": ["DEPLOYED_ACTIVE", "DEPLOYED_DORMANT", "NOT_DEPLOYED", "NOT_APPLICABLE", "UNKNOWN"]
+        },
+        "production_evidence": {
+          "type": "string",
+          "enum": ["VERIFIED", "INSUFFICIENT", "NOT_APPLICABLE", "UNKNOWN"]
+        },
+        "operational_authorized": {
+          "type": "string",
+          "enum": ["AUTHORIZED", "CONDITIONALLY_PREAPPROVED", "HOLD", "NOT_GRANTED", "NOT_AUTHORIZED", "NOT_APPLICABLE"]
+        }
+      }
+    },
+    "ReconciliationFinding": {
+      "type": "object",
+      "required": [
+        "check_id",
+        "severity",
+        "task_id",
+        "accountable_owner",
+        "inconsistency",
+        "required_correction"
+      ],
+      "properties": {
+        "check_id": { "type": "string" },
+        "severity": {
+          "type": "string",
+          "enum": ["ERROR", "WARNING", "INFO"]
+        },
+        "task_id": { "type": "string" },
+        "accountable_owner": { "type": "string" },
+        "inconsistency": { "type": "string" },
+        "required_correction": { "type": "string" }
+      }
+    }
+  }
+}
