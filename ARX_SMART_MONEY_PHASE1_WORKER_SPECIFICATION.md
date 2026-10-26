@@ -97,7 +97,7 @@ Under `tests/test_smart_money_worker_lifecycle_and_fencing.py::TestWorkerMemoryP
   - *Peak Batch Parsing (100 Form 4 XML documents):* `~33.2 MB`
 - **Incremental Workload Delta:** Traced Python heap peak of **0.034 MB**; RSS delta **< 0.05 MB**.
 - **Net Allocation Headroom:** **15.4x** against the 512 MB Railway container budget.
-- **OOM Protection:** With 512 MB allocation, isolated worker peak consumption remains under 6.5% of allocated memory, eliminating risk of unexpected OOM kills while preventing runaway memory accumulation.
+- **OOM Protection & Operational Boundaries:** The isolated synthetic worker profile recorded approximately 33.16 MB peak RSS against the configured 512 MB budget. This demonstrates substantial headroom for the tested configuration. It does not establish an upper bound for all production workloads, sustained ingestion, dependency growth, process-tree memory, or future operational conditions. Production memory behavior remains subject to separate operational verification.
 - **Production Boundary:** Long-duration continuous memory behavior over multi-day uptime remains **UNVERIFIED** (subject to Phase 2 observation).
 
 ---
