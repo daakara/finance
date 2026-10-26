@@ -17,7 +17,7 @@ import time
 import logging
 import tempfile
 import subprocess
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from urllib.parse import urlparse
 
 try:
@@ -36,8 +36,16 @@ from analyst_dashboard.smart_money.storage.backup.storage_adapter import (
 )
 from analyst_dashboard.smart_money.storage.backup.backup_engine import find_pg_binary
 from analyst_dashboard.smart_money.storage.postgres_repository import PostgresSmartMoneyRepository
+from analyst_dashboard.smart_money.storage.config import get_database_url
 
 logger = logging.getLogger(__name__)
+
+CANONICAL_REQUIRED_TABLES = [
+    "scanner_active_snapshots",
+    "scanner_snapshots",
+    "form4_raw_filings",
+    "sm_run_requests",
+]
 
 
 class BackupRestoreVerifier:
@@ -50,12 +58,27 @@ class BackupRestoreVerifier:
         self,
         backup_id: str,
         target_dsn: str,
+        allow_production_override: bool = False,
+        required_tables: Optional[List[str]] = None,
+        require_active_snapshot: bool = True,
     ) -> Dict[str, Any]:
         """
         Executes complete verification of a backup against target_dsn.
+        Enforces destination safety fencing, cryptographic integrity,
+        and post-restore structural and semantic parity.
         Returns machine-readable verification receipt.
         """
         start_time = time.time()
+
+        # Gate 0: Destination Safety Fencing
+        # Prevent accidental restore over the configured primary production database
+        primary_dsn = get_database_url()
+        if primary_dsn and target_dsn.strip() == primary_dsn.strip() and not allow_production_override:
+            raise RuntimeError(
+                "DESTINATION_SAFETY_VIOLATION: Restoring directly into active primary database "
+                "is strictly forbidden without allow_production_override=True."
+            )
+
         parsed = urlparse(target_dsn)
         conn_info = {
             "user": parsed.username or "postgres",
@@ -72,16 +95,27 @@ class BackupRestoreVerifier:
             self.storage_adapter.download_file(manifest_name, local_manifest)
 
             with open(local_manifest, "r", encoding="utf-8") as f:
-                manifest = json.load(f)
+                try:
+                    manifest = json.load(f)
+                except Exception as e:
+                    raise ValueError(f"MANIFEST_CORRUPT: Failed to parse JSON manifest: {e}")
+
+            if not isinstance(manifest, dict) or "backup_id" not in manifest:
+                raise ValueError("MANIFEST_INVALID: Manifest missing required 'backup_id' field.")
 
             # 2. Download dump (and globals if present)
             globals_name = manifest.get("globals_filename") or manifest.get("globals_artifact")
             dump_name = manifest.get("dump_filename") or manifest.get("database_artifact")
+            if not dump_name:
+                raise ValueError("MANIFEST_INVALID: Missing dump artifact filename in manifest.")
 
             local_dump = os.path.join(tmp_dir, dump_name)
             self.storage_adapter.download_file(dump_name, local_dump)
 
+            sha_start = time.time()
             dl_dump_sha = compute_sha256(local_dump)
+            sha_duration_sec = time.time() - sha_start
+
             expected_dump_sha = manifest.get("artifact_sha256") or manifest.get("database_sha256")
             if dl_dump_sha != expected_dump_sha:
                 raise ValueError(
@@ -102,6 +136,29 @@ class BackupRestoreVerifier:
             env = os.environ.copy()
             if conn_info["password"]:
                 env["PGPASSWORD"] = conn_info["password"]
+
+            # Gate: Target Connection & Version Verification Pre-check
+            if not PSYCOPG2_AVAILABLE:
+                raise RuntimeError(
+                    "CANONICAL_POSTGRES_DRIVER_UNAVAILABLE: "
+                    "psycopg2 is required for restore verification, but is not installed."
+                )
+
+            try:
+                test_conn = psycopg2.connect(target_dsn)
+                with test_conn.cursor() as cur:
+                    cur.execute("SHOW server_version_num;")
+                    target_ver_num = int(cur.fetchone()[0])
+                    target_major = target_ver_num // 10000
+                    manifest_major = manifest.get("postgres_major_version")
+                    if manifest_major and target_major != int(manifest_major):
+                        raise RuntimeError(
+                            f"POSTGRES_VERSION_MISMATCH: Manifest specifies major version {manifest_major}, "
+                            f"but target database is running version {target_major}."
+                        )
+                test_conn.close()
+            except psycopg2.OperationalError as e:
+                raise ConnectionError(f"DATABASE_CONNECTION_FAILED: Unable to connect to target database: {e}")
 
             # 3. Restore Globals via psql (only if present)
             if local_globals:
@@ -155,21 +212,25 @@ class BackupRestoreVerifier:
             if proc_restore.returncode not in (0, 1):
                 raise RuntimeError(f"PG_RESTORE_FAILED: {proc_restore.stderr}")
 
-            # 5. Connect and Verify Structural Parity
-            if not PSYCOPG2_AVAILABLE:
-                raise RuntimeError(
-                    "CANONICAL_POSTGRES_DRIVER_UNAVAILABLE: "
-                    "psycopg2 is required for restore verification, but is not installed."
-                )
+            # 5. Connect and Verify Structural and Semantic Parity
             conn = psycopg2.connect(target_dsn)
             try:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
                     # Count tables
                     cur.execute("""
-                        SELECT count(*) FROM information_schema.tables
+                        SELECT table_name FROM information_schema.tables
                         WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
                     """)
-                    table_count = cur.fetchone()["count"]
+                    present_tables = {row["table_name"] for row in cur.fetchall()}
+                    table_count = len(present_tables)
+
+                    # Verify required tables
+                    required = required_tables or CANONICAL_REQUIRED_TABLES
+                    missing = [t for t in required if t not in present_tables]
+                    if missing:
+                        raise RuntimeError(
+                            f"PARTIAL_RESTORE_DETECTED: Restored database missing required tables: {missing}"
+                        )
 
                     # Count immutable triggers
                     cur.execute("""
@@ -178,10 +239,22 @@ class BackupRestoreVerifier:
                     """)
                     trigger_count = cur.fetchone()["count"]
 
+                    # Count rows per core table
+                    row_counts = {}
+                    for t in required:
+                        if t in present_tables:
+                            cur.execute(f"SELECT count(*) FROM {t};")
+                            row_counts[t] = cur.fetchone()["count"]
+
                     # Active pointer
                     cur.execute("SELECT * FROM scanner_active_snapshots WHERE scan_type = 'SMART_MONEY';")
                     active_ptr = cur.fetchone()
                     active_snap_id = active_ptr["active_snapshot_id"] if active_ptr else None
+
+                    if require_active_snapshot and not active_snap_id:
+                        raise RuntimeError(
+                            "PARTIAL_RESTORE_DETECTED: Restored database missing active snapshot pointer in scanner_active_snapshots."
+                        )
 
                     # Verify application read contract via repo
                     repo = PostgresSmartMoneyRepository(dsn=target_dsn)
@@ -191,10 +264,13 @@ class BackupRestoreVerifier:
                         "backup_id": backup_id,
                         "status": "VERIFIED_RECOVERABLE",
                         "tables_count": table_count,
+                        "present_tables": sorted(list(present_tables)),
+                        "row_counts": row_counts,
                         "triggers_count": trigger_count,
                         "active_snapshot_id": active_snap_id,
                         "globals_restored": bool(local_globals),
                         "application_read_successful": bool(active_snap is not None),
+                        "sha256_overhead_sec": round(sha_duration_sec, 4),
                         "verification_duration_sec": round(time.time() - start_time, 3),
                         "verified_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                     }
