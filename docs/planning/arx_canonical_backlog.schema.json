@@ -74,6 +74,9 @@
           "type": "string",
           "minLength": 5
         },
+        "description": {
+          "type": "string"
+        },
         "origin_sprint": {
           "type": "string",
           "enum": ["SPRINT_1", "SPRINT_2", "SPRINT_3", "SPRINT_4", "UNASSIGNED"]

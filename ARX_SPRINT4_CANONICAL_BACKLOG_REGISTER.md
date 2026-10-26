@@ -138,13 +138,13 @@ Radar UI (capabilities.VCP.universeScreening = 'PIPELINE_PENDING' → 'Universe 
 | **#38** | feat(mobile): direct Research access in mobile navigation dock | `feat/mobile-research-discoverability` | Draft (Dirty) | `ARX-S2-011` | **`SUPERSEDED`** (Integrated via PR #96 / PR #98 Synthesis E V3) |
 | **#40** | fix(chart): restore candlestick chart visibility | `fix/production-candle-chart-visibility` | Draft (Dirty) | `ARX-S2-012` | **`SUPERSEDED`** (Hardened in PR #86 / PR #87 mainline merge) |
 | **#42** | feat(sprint2): governed publication, scanner membership | `fix/sprint2-publication-accounting-closure-semantics` | Draft (Dirty) | `ARX-S2-006`, `S2-07` | **`SPRINT4_DISCOVERY`** (Publication held; membership carried forward) |
-| **#44** | feat(universe): S2-08 full-population assessment accounting | `feat/sprint-2-s208-full-population-instrumentation` | Draft (Dirty) | `ARX-S2-008` | **`SPRINT4_DISCOVERY`** (Accounting engine verified; carried forward) |
+| **#44** | S2-08 full-population assessment accounting and telemetry envelope | `feat/sprint-2-s208-full-population-instrumentation` | Draft (Dirty) | `ARX-S2-008` | **`SPRINT4_DISCOVERY`** (Accounting engine verified; retains parent dependency on PR #42) |
 | **#47** | ARX Sprint 2 RC1 — Consolidated Integration | `release/arx-sprint2-rc1-preparation` | Draft (Dirty) | `ARX-S2-013` | **`SUPERSEDED`** (Superseded by Sprint 3 mainline integration) |
 | **#72** | fix(smart-money): statutory reporting lag, copy remediation | `fix/issue67-disclosure-remediation` | Draft (Behind) | `ARX-S3-010` | **`SPRINT4_EXECUTION`** (Statutory lag copy to be integrated into main) |
-| **#73** | Activate canonical Minervini VCP universe screening | `feat/radar-minervini-vcp-activation` | Draft (Dirty) | `ARX-S3-007`, `S3-013` | **`SUPERSEDED / INCOMPLETE`** (Superseded by ARX-S4-RADAR-001) |
+| **#73** | Activate canonical Minervini VCP universe screening | `feat/radar-minervini-vcp-activation` | Draft (Dirty) | `ARX-S3-007`, `S3-013` | **`SPRINT4_DISCOVERY`** (Algorithmic pass; held candidate for offline rebase) |
 | **#75** | research(arx): INSTR-001 evidence custody | `research/arx-ux-instr-001-durability` | Draft (Behind) | `ARX-S3-008`, `S3-009` | **`SPRINT4_OWNER_GATED`** (External custody held; prototype local-only) |
-| **#78** | fix(hva01): Wave 4B-S restricted canonicalization | `research/arx-hva01-v2-1-wave4b-synthetic-witness` | Draft (Behind) | `ARX-S3-014` | **`SPRINT4_OWNER_GATED`** (Research draft held pending ratification) |
-| **#83** | feat(hva01): Wave 4C-1 dual-TSA timestamp verification | `research/arx-hva01-v2-1-wave4c1-dual-tsa-local` | Draft (Clean) | `ARX-S3-015` | **`SPRINT4_OWNER_GATED`** (Stacked on PR #78; held pending ratification) |
+| **#78** | HVA01 Wave 4B-S restricted canonicalization and schema remediation | `research/arx-hva01-v2-1-wave4b-synthetic-witness` | Draft (Behind) | `ARX-S3-014` | **`SPRINT4_OWNER_GATED`** (Research draft held under CF-01 pending physical key ceremony) |
+| **#83** | HVA01 Wave 4C-1 dual-TSA timestamp verification | `research/arx-hva01-v2-1-wave4c1-dual-tsa-local` | Draft (Clean) | `ARX-S3-015` | **`SPRINT4_OWNER_GATED`** (Stacked on PR #78; held under CF-01) |
 | **#98** | feat(ux): Synthesis E V3 application-wide UX parity | `feat/synthesis-e-v3-ux-parity-clean` | Draft (Behind) | `ARX-S3-016` | **`SPRINT4_EXECUTION`** (Clean candidate ready for final review) |
 
 ### Open Issues (#58 to #70):
