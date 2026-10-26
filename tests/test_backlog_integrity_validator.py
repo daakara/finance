@@ -7,8 +7,10 @@ sprint closure integrity, and adversarial edge cases.
 import copy
 import json
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 import pytest
 
 from tools.governance.validate_backlog_integrity import (
@@ -475,22 +477,74 @@ class TestBacklogIntegrityValidator:
         assert verdict == "PASS"
         assert len([f for f in findings if f.severity == "ERROR"]) == 0
 
-    # 21. Directive Scenario 1: Modified backlog on a clean GitHub Actions checkout
+    # 21. Directive Scenario 1: Modified backlog on clean checkout vs Mainline
     def test_21_regression_modified_backlog_on_clean_checkout(self):
         """
         Verifies that when a PR branch touches governance/backlog files on a clean
-        checkout against origin/main, detect_scoped_governance_changes accurately
-        triggers scoped enforcement and passes cleanly on valid data.
+        checkout against an authoritative base revision, detect_scoped_governance_changes
+        accurately triggers scoped enforcement (scoped=True) and identifies the changed files.
+        Also verifies that in a mainline/no-change context (HEAD == base), detection accurately
+        returns scoped=False, ensuring environment-independent determinism without ambient repository leakage.
         """
-        scoped, matched, method = detect_scoped_governance_changes(base_ref="origin/main")
-        assert scoped is True
-        assert any("arx_canonical_backlog" in f or "ARX_SPRINT" in f or "validate_backlog" in f for f in matched)
-        
-        # Running validator CLI with --stage scoped against this branch succeeds with exit code 0
-        cmd = [sys.executable, "tools/governance/validate_backlog_integrity.py", "--stage", "scoped", "--base-ref", "origin/main"]
-        res = subprocess.run(cmd, capture_output=True, text=True)
-        assert res.returncode == 0
-        assert "Verdict: PASS" in res.stdout
+        tmp_dir = tempfile.mkdtemp(prefix="arx_test21_")
+        curr_dir = os.getcwd()
+        try:
+            # 1. Initialize deterministic base revision
+            subprocess.run(["git", "init", "-b", "main"], cwd=tmp_dir, check=True, capture_output=True)
+            subprocess.run(["git", "config", "user.name", "ARX Test Runner"], cwd=tmp_dir, check=True)
+            subprocess.run(["git", "config", "user.email", "test@arxterminal.local"], cwd=tmp_dir, check=True)
+
+            # 2. Create baseline governance file on main
+            gov_dir = os.path.join(tmp_dir, "docs", "planning")
+            os.makedirs(gov_dir, exist_ok=True)
+            gov_file = os.path.join(gov_dir, "arx_canonical_backlog.json")
+            with open(gov_file, "w", encoding="utf-8") as f:
+                json.dump(MINIMAL_VALID_BACKLOG, f)
+            subprocess.run(["git", "add", "."], cwd=tmp_dir, check=True)
+            subprocess.run(["git", "commit", "-m", "init: add baseline canonical backlog"], cwd=tmp_dir, check=True)
+
+            # 6. Verify the mainline/no-change case returns scoped=False
+            try:
+                os.chdir(tmp_dir)
+                scoped_main, matched_main, method_main = detect_scoped_governance_changes(base_ref="main")
+                assert scoped_main is False
+                assert len(matched_main) == 0
+            finally:
+                os.chdir(curr_dir)
+
+            # 3. Create feature branch containing a governance modification
+            subprocess.run(["git", "checkout", "-b", "feature/gov-update"], cwd=tmp_dir, check=True, capture_output=True)
+            mod_data = copy.deepcopy(MINIMAL_VALID_BACKLOG)
+            mod_data["tasks"][0]["title"] = "Updated Minimal Task"
+            with open(gov_file, "w", encoding="utf-8") as f:
+                json.dump(mod_data, f)
+            subprocess.run(["git", "add", "."], cwd=tmp_dir, check=True)
+            subprocess.run(["git", "commit", "-m", "feat: update task title in canonical backlog"], cwd=tmp_dir, check=True)
+
+            # 4. Verify merge-base change detection returns scoped=True on feature branch
+            # 5. Verify the detected file is the expected governance path
+            # 7. Verify the expected change-detection method
+            try:
+                os.chdir(tmp_dir)
+                scoped_feat, matched_feat, method_feat = detect_scoped_governance_changes(base_ref="main")
+                assert scoped_feat is True
+                assert any("arx_canonical_backlog.json" in f for f in matched_feat)
+                assert "main" in method_feat
+
+                # Verify CLI invocation with --stage scoped against base_ref
+                validator_script = os.path.abspath(
+                    os.path.join(os.path.dirname(__file__), "..", "tools", "governance", "validate_backlog_integrity.py")
+                )
+                cmd = [sys.executable, validator_script, "--stage", "scoped", "--base-ref", "main", "--backlog", gov_file]
+                res = subprocess.run(cmd, capture_output=True, text=True, cwd=tmp_dir)
+                assert res.returncode == 0
+                assert "Verdict: PASS" in res.stdout
+                assert "Scope Detected: True" in res.stdout
+            finally:
+                os.chdir(curr_dir)
+        finally:
+            # 8. Clean up all temporary resources
+            shutil.rmtree(tmp_dir, ignore_errors=True)
 
     # 22. Directive Scenario 2: Deleted historical task
     def test_22_regression_deleted_historical_task(self):
