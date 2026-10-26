@@ -16,6 +16,7 @@ from tools.governance.validate_backlog_integrity import (
     Finding,
     classify_github_issue_record,
     reconcile_github_inventory,
+    detect_scoped_governance_changes,
 )
 
 # Minimal valid canonical backlog fixture
@@ -473,3 +474,212 @@ class TestBacklogIntegrityValidator:
         verdict, findings = validator.validate_all()
         assert verdict == "PASS"
         assert len([f for f in findings if f.severity == "ERROR"]) == 0
+
+    # 21. Directive Scenario 1: Modified backlog on a clean GitHub Actions checkout
+    def test_21_regression_modified_backlog_on_clean_checkout(self):
+        """
+        Verifies that when a PR branch touches governance/backlog files on a clean
+        checkout against origin/main, detect_scoped_governance_changes accurately
+        triggers scoped enforcement and passes cleanly on valid data.
+        """
+        scoped, matched, method = detect_scoped_governance_changes(base_ref="origin/main")
+        assert scoped is True
+        assert any("arx_canonical_backlog" in f or "ARX_SPRINT" in f or "validate_backlog" in f for f in matched)
+        
+        # Running validator CLI with --stage scoped against this branch succeeds with exit code 0
+        cmd = [sys.executable, "tools/governance/validate_backlog_integrity.py", "--stage", "scoped", "--base-ref", "origin/main"]
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        assert res.returncode == 0
+        assert "Verdict: PASS" in res.stdout
+
+    # 22. Directive Scenario 2: Deleted historical task
+    def test_22_regression_deleted_historical_task(self):
+        """
+        Verifies that deleting a previously completed historical task fails closed under BI-012.
+        """
+        baseline = copy.deepcopy(MINIMAL_VALID_BACKLOG)
+        baseline["tasks"].append({
+            "task_id": "ARX-S1-HISTORICAL-001",
+            "title": "Historical Completed Task",
+            "description": "Historical task in baseline",
+            "origin_sprint": "SPRINT_1",
+            "assigned_sprint": "SPRINT_1",
+            "priority": "P1",
+            "workstream": "CORE",
+            "owner": "daakara",
+            "status": "COMPLETED",
+            "disposition": "CLOSED_VERIFIED",
+            "dimensions": {
+                "requirements": "DONE", "implementation": "DONE", "integration": "DONE",
+                "verification": "PASS", "repository_publication": "MERGED_MAINLINE", "deployment": "DEPLOYED_ACTIVE",
+                "operational_execution": "NOT_APPLICABLE", "production_evidence": "NOT_APPLICABLE",
+                "owner_authorization": "AUTHORIZED"
+            },
+            "acceptance_criteria": ["Historical acceptance"],
+            "dependencies": [],
+            "evidence_refs": ["commit_sha_12345678"],
+            "github_issues": [],
+            "github_prs": [1],
+            "authorization_boundary": "MERGED_MAINLINE",
+            "operational_state": "ACTIVE_SERVING",
+            "carryforward_reason": None,
+            "reopening_trigger": None,
+            "historical_aliases": [],
+            "superseded_by": None
+        })
+
+        # Current backlog is missing ARX-S1-HISTORICAL-001
+        current = copy.deepcopy(MINIMAL_VALID_BACKLOG)
+        validator = BacklogValidator(current, baseline_data=baseline)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert validator.continuity_status == "FAILED"
+        assert any(f.rule_id == "BI-012" and "silently removed" in f.message for f in findings)
+
+    # 23. Directive Scenario 3: Missing baseline never proves task continuity
+    def test_23_regression_missing_baseline(self, tmp_path):
+        """
+        Verifies that missing historical baseline never proves task continuity.
+        Specifying a non-existent baseline file fails closed with SOURCE_UNAVAILABLE (exit code 2).
+        When no baseline is provided, continuity_status is UNVERIFIED.
+        """
+        nonexistent = str(tmp_path / "nonexistent_baseline.json")
+        cmd = [sys.executable, "tools/governance/validate_backlog_integrity.py", "--baseline", nonexistent]
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        assert res.returncode == 2
+        assert "SOURCE_UNAVAILABLE" in res.stderr
+
+        # Validator object without baseline reports UNVERIFIED
+        validator = BacklogValidator(copy.deepcopy(MINIMAL_VALID_BACKLOG), baseline_data=None)
+        verdict, findings = validator.validate_all()
+        assert validator.continuity_status == "UNVERIFIED"
+
+        # If baseline is explicitly required, missing baseline produces a BI-012 error
+        validator_req = BacklogValidator(copy.deepcopy(MINIMAL_VALID_BACKLOG), baseline_data=None, require_baseline=True)
+        verdict_req, findings_req = validator_req.validate_all()
+        assert verdict_req == "FAIL"
+        assert any(f.rule_id == "BI-012" for f in findings_req)
+
+    # 24. Directive Scenario 4: Missing GitHub inventory never means zero issues or PRs
+    def test_24_regression_missing_github_inventory(self, tmp_path):
+        """
+        Verifies that missing GitHub inventory fails closed if an invalid path is specified,
+        and never falsely asserts zero open issues or PRs.
+        """
+        nonexistent = str(tmp_path / "nonexistent_prs.json")
+        cmd = [sys.executable, "tools/governance/validate_backlog_integrity.py", "--prs-inventory", nonexistent]
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        assert res.returncode == 2
+        assert "SOURCE_UNAVAILABLE" in res.stderr
+
+        # Validator object without inventory reports NOT_PERFORMED
+        validator = BacklogValidator(copy.deepcopy(MINIMAL_VALID_BACKLOG), prs_inventory=None)
+        verdict, findings = validator.validate_all()
+        assert validator.reconciliation_status == "NOT_PERFORMED"
+
+        # When external inventory is required (e.g. closure certification), missing inventory produces BI-007 ERROR
+        validator_req = BacklogValidator(copy.deepcopy(MINIMAL_VALID_BACKLOG), prs_inventory=None, require_external_inventory=True)
+        verdict_req, findings_req = validator_req.validate_all()
+        assert verdict_req == "FAIL"
+        assert any(f.rule_id == "BI-007" for f in findings_req)
+
+    # 25. Directive Scenario 5: Valid controlled carry-forward
+    def test_25_regression_valid_controlled_carryforward(self):
+        """
+        Verifies that a task carried forward from Sprint 3 to Sprint 4 with valid
+        receiving sprint, non-empty reason, and non-active operational state passes completely.
+        """
+        data = copy.deepcopy(MINIMAL_VALID_BACKLOG)
+        data["tasks"].append({
+            "task_id": "ARX-S3-RADAR-RELIABILITY",
+            "title": "Radar VCP Reliability Alignment",
+            "description": "Legitimate carry-forward task",
+            "origin_sprint": "SPRINT_3",
+            "assigned_sprint": "SPRINT_4",
+            "priority": "P1",
+            "workstream": "RADAR",
+            "owner": "daakara",
+            "status": "READY",
+            "disposition": "SPRINT4_EXECUTION",
+            "dimensions": {
+                "requirements": "DONE", "implementation": "IN_PROGRESS", "integration": "NOT_STARTED",
+                "verification": "PENDING", "repository_publication": "LOCAL_ONLY", "deployment": "NOT_APPLICABLE",
+                "operational_execution": "NOT_APPLICABLE", "production_evidence": "NOT_APPLICABLE",
+                "owner_authorization": "AUTHORIZED"
+            },
+            "acceptance_criteria": ["Execute in Sprint 4"],
+            "dependencies": [],
+            "evidence_refs": ["ARX_CROSS_WORKSTREAM_GOVERNANCE_FINAL_DECISION.md"],
+            "github_issues": [],
+            "github_prs": [],
+            "authorization_boundary": "BOUNDED_ENGINEERING",
+            "operational_state": "QUEUED",
+            "carryforward_reason": "Sprint 3 closed with controlled carryforward into Sprint 4 execution",
+            "reopening_trigger": "Sprint 4 Increment 1 Activation",
+            "historical_aliases": [],
+            "superseded_by": None
+        })
+        validator = BacklogValidator(data)
+        verdict, findings = validator.validate_all()
+        assert verdict == "PASS"
+        assert len([f for f in findings if f.severity == "ERROR"]) == 0
+
+    # 26. Directive Scenario 6: Unrelated code PR in scoped mode
+    def test_26_regression_unrelated_code_pr(self, monkeypatch):
+        """
+        Verifies that an unrelated application PR (e.g. modifying only api/main.py)
+        does not trigger scoped governance failure and runs report-only exiting 0.
+        """
+        original_run = subprocess.run
+        def mock_git_diff(*args, **kwargs):
+            cmd = args[0] if args else kwargs.get("args", [])
+            if isinstance(cmd, list) and "diff" in cmd:
+                class MockRes:
+                    returncode = 0
+                    stdout = "api/main.py\nfrontend/components/Navbar.tsx\n"
+                    stderr = ""
+                return MockRes()
+            return original_run(*args, **kwargs)
+
+        monkeypatch.setattr(subprocess, "run", mock_git_diff)
+        scoped, matched, method = detect_scoped_governance_changes(base_ref="origin/main")
+        assert scoped is False
+        assert len(matched) == 0
+
+    # 27. Directive Scenario 7: Failed closure validation and correct nonzero CI exit status
+    def test_27_regression_failed_closure_validation_nonzero_exit(self, tmp_path):
+        """
+        Verifies that when a backlog file contains errors or closure validation fails,
+        the validator CLI exits with nonzero status (1), and cannot be masked by report-only
+        when closure certification is requested.
+        """
+        invalid_backlog = copy.deepcopy(MINIMAL_VALID_BACKLOG)
+        invalid_backlog["tasks"].append({
+            "task_id": "ARX-S4-GOV-001",  # Duplicate task_id
+            "title": "Duplicate ID task",
+            "origin_sprint": "SPRINT_4",
+            "assigned_sprint": "SPRINT_4",
+            "status": "IN_PROGRESS",
+            "disposition": "SPRINT4_EXECUTION"
+        })
+        bad_file = tmp_path / "invalid_backlog.json"
+        with open(bad_file, "w", encoding="utf-8") as f:
+            json.dump(invalid_backlog, f)
+
+        # 1. Scoped mode fails with code 1
+        cmd_scoped = [sys.executable, "tools/governance/validate_backlog_integrity.py", "--backlog", str(bad_file), "--stage", "strict"]
+        res_scoped = subprocess.run(cmd_scoped, capture_output=True, text=True)
+        assert res_scoped.returncode == 1
+        assert "Verdict: FAIL" in res_scoped.stdout
+
+        # 2. Closure certification flag overrides report-only and cannot be masked
+        cmd_closure = [
+            sys.executable, "tools/governance/validate_backlog_integrity.py",
+            "--backlog", str(bad_file),
+            "--stage", "report-only",
+            "--closure-certification"
+        ]
+        res_closure = subprocess.run(cmd_closure, capture_output=True, text=True)
+        assert res_closure.returncode == 1
+        assert "Verdict: FAIL" in res_closure.stdout
+

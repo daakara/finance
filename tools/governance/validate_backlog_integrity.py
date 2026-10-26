@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
 ARX Terminal — Cross-Sprint Backlog Integrity Validator (GOV-001)
-Enforces Rules BI-001 through BI-012 across canonical backlog registers.
+Enforces Rules BI-000 through BI-012 across canonical backlog registers.
 
 Rules:
+  BI-000: Schema Validation (backlog complies with JSON Schema Draft-07)
   BI-001: Unique Identity (every task_id is unique and matches format ^ARX-S[1-4]-[A-Z0-9\\-]+$)
   BI-002: Accountable Ownership (active executable tasks must have valid owner)
   BI-003: Sprint Assignment (executable tasks assigned to valid sprint; holding queues for gated)
@@ -20,6 +21,8 @@ Rules:
 GitHub Invariant:
   GitHub /issues returns both issues and PRs. Records containing the 'pull_request' key
   are Pull Requests; records lacking 'pull_request' are genuine issues.
+  Missing GitHub inventory never means zero issues or PRs.
+  Missing historical baseline never proves task continuity.
 """
 
 import argparse
@@ -30,6 +33,12 @@ import re
 import subprocess
 import sys
 from typing import Any, Dict, List, Optional, Set, Tuple
+
+try:
+    import jsonschema
+    HAS_JSONSCHEMA = True
+except ImportError:
+    HAS_JSONSCHEMA = False
 
 VALID_DISPOSITIONS = {
     "CLOSED_VERIFIED",
@@ -62,6 +71,15 @@ VALID_SPRINTS = {
 }
 
 TASK_ID_REGEX = re.compile(r"^ARX-S[1-4]-[A-Z0-9\-]+$")
+
+GOVERNANCE_PATH_PATTERNS = [
+    "docs/planning/",
+    "docs/sprints/",
+    "tools/governance/",
+    "tests/test_backlog_integrity_validator.py",
+    "ARX_SPRINT",
+    "arx_canonical_backlog",
+]
 
 
 class Finding:
@@ -140,21 +158,39 @@ class BacklogValidator:
         prs_inventory: Optional[Dict[str, Any]] = None,
         issues_inventory: Optional[Dict[str, Any]] = None,
         baseline_data: Optional[Dict[str, Any]] = None,
+        schema_data: Optional[Dict[str, Any]] = None,
+        require_baseline: bool = False,
+        require_external_inventory: bool = False,
+        require_closure: bool = False,
     ):
         self.data = backlog_data
-        self.prs_inventory = prs_inventory or {}
-        self.issues_inventory = issues_inventory or {}
+        self.prs_inventory = prs_inventory
+        self.issues_inventory = issues_inventory
         self.baseline_data = baseline_data
+        self.schema_data = schema_data
+        self.require_baseline = require_baseline
+        self.require_external_inventory = require_external_inventory
+        self.require_closure = require_closure
         self.findings: List[Finding] = []
+
+        # Audit statuses
+        self.schema_status = "SKIPPED_NO_SCHEMA"
+        self.continuity_status = "UNVERIFIED"
+        self.reconciliation_status = "NOT_PERFORMED"
+        self.reconciliation_counts = {"genuine_issues": 0, "pull_requests": 0}
 
     def validate_all(self) -> Tuple[str, List[Finding]]:
         self.findings = []
+
+        # 0. Schema Validation (BI-000)
+        self._check_bi_000_schema_validation()
+
         tasks = self.data.get("tasks", [])
         if not isinstance(tasks, list):
             self.findings.append(Finding("BI-001", None, "ERROR", "Backlog 'tasks' field must be a list"))
             return "FAIL", self.findings
 
-        # Execute rules
+        # Execute rules BI-001 to BI-012
         self._check_bi_001_unique_identity(tasks)
         self._check_bi_002_accountable_ownership(tasks)
         self._check_bi_003_sprint_assignment(tasks)
@@ -180,6 +216,31 @@ class BacklogValidator:
 
         return status, self.findings
 
+    def _check_bi_000_schema_validation(self):
+        if not self.schema_data:
+            self.schema_status = "SKIPPED_NO_SCHEMA"
+            return
+
+        if HAS_JSONSCHEMA:
+            try:
+                jsonschema.validate(instance=self.data, schema=self.schema_data)
+                self.schema_status = "VERIFIED"
+            except jsonschema.ValidationError as e:
+                self.schema_status = "FAILED"
+                loc = "/".join(str(p) for p in e.path) if e.path else "root"
+                self.findings.append(Finding("BI-000", None, "ERROR", f"Schema validation error at '{loc}': {e.message}"))
+            except Exception as e:
+                self.schema_status = "FAILED"
+                self.findings.append(Finding("BI-000", None, "ERROR", f"Schema validation failed: {str(e)}"))
+        else:
+            required_top = ["schema_version", "backlog_name", "tasks"]
+            missing_top = [k for k in required_top if k not in self.data]
+            if missing_top:
+                self.schema_status = "FAILED"
+                self.findings.append(Finding("BI-000", None, "ERROR", f"Missing required top-level schema fields: {missing_top}"))
+            else:
+                self.schema_status = "VERIFIED (STRUCTURAL_FALLBACK)"
+
     def _check_bi_001_unique_identity(self, tasks: List[Dict[str, Any]]):
         seen_ids = set()
         for t in tasks:
@@ -198,7 +259,6 @@ class BacklogValidator:
             tid = t.get("task_id")
             disp = t.get("disposition")
             owner = t.get("owner")
-            # Active executable or discovery tasks must have an accountable owner
             if disp in ("SPRINT4_EXECUTION", "SPRINT4_DISCOVERY"):
                 if not owner or owner in ("OWNER_UNASSIGNED", "UNASSIGNED", "None", ""):
                     self.findings.append(Finding("BI-002", tid, "ERROR", f"Active task '{tid}' has no accountable owner assigned (found: '{owner}')"))
@@ -262,10 +322,13 @@ class BacklogValidator:
                         self.findings.append(Finding("BI-006", tid, "ERROR", f"Task '{tid}' contains empty string in evidence references"))
 
     def _check_bi_007_pr_traceability(self, tasks: List[Dict[str, Any]]):
-        if not self.prs_inventory:
-            return  # No external PR inventory passed, skip
+        if self.prs_inventory is None:
+            self.reconciliation_status = "NOT_PERFORMED"
+            if self.require_external_inventory or self.require_closure:
+                self.findings.append(Finding("BI-007", None, "ERROR", "External GitHub PR inventory is required for closure certification but missing"))
+            return
 
-        # Extract all referenced PR numbers from tasks
+        self.reconciliation_status = "PERFORMED"
         tracked_prs = set()
         for t in tasks:
             for pr in t.get("github_prs", []):
@@ -274,7 +337,6 @@ class BacklogValidator:
                 except (ValueError, TypeError):
                     pass
 
-        # PRs inventory can be dict with 'open_prs', 'pull_requests', or list of ints
         open_prs_list = []
         if isinstance(self.prs_inventory, dict):
             prs_data = (
@@ -293,6 +355,8 @@ class BacklogValidator:
                         open_prs_list.append(p)
         elif isinstance(self.prs_inventory, list):
             open_prs_list = [int(x) for x in self.prs_inventory if isinstance(x, int) or str(x).isdigit()]
+
+        self.reconciliation_counts["pull_requests"] = len(open_prs_list)
 
         for pr_num in open_prs_list:
             if pr_num not in tracked_prs:
@@ -336,21 +400,13 @@ class BacklogValidator:
             op_state = t.get("operational_state", "")
             auth_boundary = t.get("authorization_boundary", "")
 
-            # If operational_state claims ACTIVE_SERVING, owner authorization must be AUTHORIZED
             if op_state == "ACTIVE_SERVING" and owner_auth not in ("AUTHORIZED", "NOT_APPLICABLE"):
                 self.findings.append(Finding("BI-009", tid, "ERROR", f"Task '{tid}' claims operational_state '{op_state}' while owner_authorization is '{owner_auth}'"))
 
-            # If authorization boundary is OWNER_GATE_REQUIRED or ACTIVATION_HOLD, cannot claim AUTHORIZED unless explicitly granted
             if auth_boundary in ("OWNER_GATE_REQUIRED", "ACTIVATION_HOLD") and owner_auth == "AUTHORIZED":
                 self.findings.append(Finding("BI-009", tid, "ERROR", f"Task '{tid}' has boundary '{auth_boundary}' but owner_authorization claims 'AUTHORIZED' without grant evidence"))
 
     def _check_bi_010_closure_consistency(self, tasks: List[Dict[str, Any]]):
-        """
-        Sprint Closure Integrity Contract:
-        A closed sprint (SPRINT_1, SPRINT_2, SPRINT_3) may close only when every committed task
-        has a supported disposition (CLOSED_VERIFIED, TEST_OR_ADMINISTRATIVE, SUPERSEDED, or
-        explicitly carried forward to an active sprint/queue).
-        """
         for t in tasks:
             tid = t.get("task_id")
             origin = t.get("origin_sprint")
@@ -373,64 +429,157 @@ class BacklogValidator:
             deployment = dims.get("deployment")
             impl = dims.get("implementation")
 
-            # Merged implementation or deployment cannot automatically claim operational execution
             if op_exec == "EXECUTED" and prod_ev != "VERIFIED":
                 self.findings.append(Finding("BI-011", tid, "ERROR", f"Task '{tid}' claims operational_execution 'EXECUTED' but production_evidence is '{prod_ev}' (must be VERIFIED)"))
 
-            # Cannot claim DEPLOYED_ACTIVE if implementation is NOT_STARTED
             if deployment == "DEPLOYED_ACTIVE" and impl in ("NOT_STARTED", "NOT_APPLICABLE"):
                 self.findings.append(Finding("BI-011", tid, "ERROR", f"Task '{tid}' claims deployment '{deployment}' while implementation is '{impl}'"))
 
     def _check_bi_012_historical_continuity(self, tasks: List[Dict[str, Any]]):
-        if not self.baseline_data:
-            return  # No prior baseline provided
+        if self.baseline_data is None:
+            self.continuity_status = "UNVERIFIED"
+            if self.require_baseline or self.require_closure:
+                self.findings.append(Finding("BI-012", None, "ERROR", "Historical baseline is required but missing or unparseable; task continuity cannot be verified"))
+            return
 
         baseline_tasks = self.baseline_data.get("tasks", [])
         current_tids = {t.get("task_id") for t in tasks if t.get("task_id")}
 
+        deleted_completed = []
         for bt in baseline_tasks:
             btid = bt.get("task_id")
             bstatus = bt.get("status")
             if btid and bstatus == "COMPLETED":
                 if btid not in current_tids:
+                    deleted_completed.append(btid)
                     self.findings.append(Finding("BI-012", btid, "ERROR", f"Previously completed historical task '{btid}' was silently removed from canonical backlog"))
 
+        if deleted_completed:
+            self.continuity_status = "FAILED"
+        else:
+            self.continuity_status = "VERIFIED"
 
-def is_scoped_change_detected(backlog_path: str) -> bool:
+
+def detect_scoped_governance_changes(
+    base_ref: Optional[str] = None
+) -> Tuple[bool, List[str], str]:
     """
-    Checks git diff to see if the canonical backlog or governance files have been modified.
-    If git is not available, defaults to True (fail-safe).
+    Detects whether canonical backlog or governance files have been modified against
+    an authoritative Git base reference, not merely uncommitted working-tree changes.
+
+    Returns:
+        (is_scoped_change_detected, matching_files_list, detection_method_description)
     """
+    candidate_refs = []
+    if base_ref:
+        candidate_refs.append(base_ref)
+
+    env_base = os.environ.get("GITHUB_BASE_REF")
+    if env_base:
+        candidate_refs.append(f"origin/{env_base}")
+        candidate_refs.append(env_base)
+
+    candidate_refs.extend(["origin/main", "main", "HEAD~1"])
+
+    changed_files = set()
+    detection_method = "UNKNOWN"
+
+    for ref in candidate_refs:
+        try:
+            # 1. Try 3-dot diff: changes introduced on current branch since branching from ref
+            cmd = ["git", "diff", "--name-only", f"{ref}...HEAD"]
+            res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            if res.returncode == 0:
+                for line in res.stdout.splitlines():
+                    if line.strip():
+                        changed_files.add(line.strip())
+                detection_method = f"git diff {ref}...HEAD"
+                break
+
+            # 2. Try 2-dot diff
+            cmd = ["git", "diff", "--name-only", ref, "HEAD"]
+            res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            if res.returncode == 0:
+                for line in res.stdout.splitlines():
+                    if line.strip():
+                        changed_files.add(line.strip())
+                detection_method = f"git diff {ref} HEAD"
+                break
+        except Exception:
+            continue
+
+    # Also inspect working tree (staged & unstaged)
     try:
-        res = subprocess.run(
-            ["git", "diff", "--name-only", "HEAD~1"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        if res.returncode == 0:
-            changed_files = res.stdout.splitlines()
-            target_patterns = ["arx_canonical_backlog", "ARX_SPRINT", "tools/governance/"]
-            for cf in changed_files:
-                if any(p in cf for p in target_patterns):
-                    return True
-            return False
+        res_wt = subprocess.run(["git", "diff", "--name-only", "HEAD"], capture_output=True, text=True, timeout=3)
+        if res_wt.returncode == 0:
+            for line in res_wt.stdout.splitlines():
+                if line.strip():
+                    changed_files.add(line.strip())
+
+        res_cached = subprocess.run(["git", "diff", "--name-only", "--cached"], capture_output=True, text=True, timeout=3)
+        if res_cached.returncode == 0:
+            for line in res_cached.stdout.splitlines():
+                if line.strip():
+                    changed_files.add(line.strip())
     except Exception:
         pass
-    return True
+
+    if not changed_files and detection_method == "UNKNOWN":
+        return True, ["GIT_UNAVAILABLE_FAIL_SAFE"], "FAIL_SAFE_FALLBACK"
+
+    matched_governance_files = []
+    for f in changed_files:
+        if any(pat in f for pat in GOVERNANCE_PATH_PATTERNS):
+            matched_governance_files.append(f)
+
+    return (len(matched_governance_files) > 0), matched_governance_files, detection_method
+
+
+def extract_git_baseline(base_ref: Optional[str] = None, file_path: str = "docs/planning/arx_canonical_backlog.json") -> Tuple[Optional[Dict[str, Any]], str]:
+    """
+    Attempts to retrieve the authoritative historical baseline directly from Git.
+    """
+    candidate_refs = []
+    if base_ref:
+        candidate_refs.append(base_ref)
+
+    env_base = os.environ.get("GITHUB_BASE_REF")
+    if env_base:
+        candidate_refs.append(f"origin/{env_base}")
+        candidate_refs.append(env_base)
+
+    candidate_refs.extend(["origin/main", "main"])
+
+    for ref in candidate_refs:
+        try:
+            cmd = ["git", "show", f"{ref}:{file_path}"]
+            res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            if res.returncode == 0 and res.stdout.strip():
+                data = json.loads(res.stdout)
+                return data, f"git show {ref}:{file_path}"
+        except Exception:
+            continue
+
+    return None, "NO_GIT_BASELINE_FOUND"
 
 
 def main():
     parser = argparse.ArgumentParser(description="ARX Terminal Backlog Integrity Validator (GOV-001)")
     parser.add_argument("--backlog", default="docs/planning/arx_canonical_backlog.json", help="Path to canonical backlog JSON")
+    parser.add_argument("--schema", default="docs/planning/arx_canonical_backlog.schema.json", help="Path to JSON Schema")
     parser.add_argument("--prs-inventory", default=None, help="Path to GitHub PR inventory JSON")
     parser.add_argument("--issues-inventory", default=None, help="Path to GitHub Issues inventory JSON")
-    parser.add_argument("--baseline", default=None, help="Path to previous baseline backlog JSON for continuity check")
+    parser.add_argument("--baseline", default=None, help="Path to explicit baseline backlog JSON")
+    parser.add_argument("--base-ref", default=None, help="Authoritative Git base ref (e.g. origin/main)")
     parser.add_argument("--stage", choices=["report-only", "scoped", "strict"], default="scoped", help="Progressive enforcement stage")
-    parser.add_argument("--strict", action="store_true", help="Fail closed on warnings as well as errors (overrides stage)")
+    parser.add_argument("--strict", action="store_true", help="Fail closed on warnings as well as errors")
+    parser.add_argument("--closure-certification", action="store_true", help="Enforce full closure certification requirements (cannot be masked by report-only)")
+    parser.add_argument("--require-baseline", action="store_true", help="Fail closed if historical baseline is unavailable")
+    parser.add_argument("--require-external-inventory", action="store_true", help="Fail closed if external GitHub inventory is missing")
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON output")
     args = parser.parse_args()
 
+    # 1. Load canonical backlog (Fail closed on missing source)
     if not os.path.isfile(args.backlog):
         print(f"SOURCE_UNAVAILABLE: Backlog file not found at '{args.backlog}'", file=sys.stderr)
         sys.exit(2)
@@ -442,77 +591,149 @@ def main():
         print(f"SOURCE_UNAVAILABLE: Failed to parse backlog JSON: {e}", file=sys.stderr)
         sys.exit(2)
 
+    # 2. Load Schema
+    schema_data = None
+    if args.schema:
+        if not os.path.isfile(args.schema):
+            if args.schema != "docs/planning/arx_canonical_backlog.schema.json":
+                print(f"SOURCE_UNAVAILABLE: Specified schema file not found at '{args.schema}'", file=sys.stderr)
+                sys.exit(2)
+        else:
+            try:
+                with open(args.schema, "r", encoding="utf-8") as f:
+                    schema_data = json.load(f)
+            except Exception as e:
+                print(f"SOURCE_UNAVAILABLE: Failed to parse schema JSON: {e}", file=sys.stderr)
+                sys.exit(2)
+
+    # 3. Load Inventories (Fail closed if explicitly requested path is missing)
     prs_inventory = None
-    if args.prs_inventory and os.path.isfile(args.prs_inventory):
+    if args.prs_inventory is not None:
+        if not os.path.isfile(args.prs_inventory):
+            print(f"SOURCE_UNAVAILABLE: Specified PRs inventory file not found at '{args.prs_inventory}'", file=sys.stderr)
+            sys.exit(2)
         try:
             with open(args.prs_inventory, "r", encoding="utf-8") as f:
                 prs_inventory = json.load(f)
-        except Exception:
-            prs_inventory = None
+        except Exception as e:
+            print(f"SOURCE_UNAVAILABLE: Failed to parse PRs inventory JSON: {e}", file=sys.stderr)
+            sys.exit(2)
 
     issues_inventory = None
-    if args.issues_inventory and os.path.isfile(args.issues_inventory):
+    if args.issues_inventory is not None:
+        if not os.path.isfile(args.issues_inventory):
+            print(f"SOURCE_UNAVAILABLE: Specified issues inventory file not found at '{args.issues_inventory}'", file=sys.stderr)
+            sys.exit(2)
         try:
             with open(args.issues_inventory, "r", encoding="utf-8") as f:
                 issues_inventory = json.load(f)
-        except Exception:
-            issues_inventory = None
+        except Exception as e:
+            print(f"SOURCE_UNAVAILABLE: Failed to parse issues inventory JSON: {e}", file=sys.stderr)
+            sys.exit(2)
 
+    # 4. Load Baseline (Explicit file or Git show)
     baseline_data = None
-    if args.baseline and os.path.isfile(args.baseline):
+    baseline_source_desc = "NONE"
+    if args.baseline is not None:
+        if not os.path.isfile(args.baseline):
+            print(f"SOURCE_UNAVAILABLE: Specified baseline file not found at '{args.baseline}'", file=sys.stderr)
+            sys.exit(2)
         try:
             with open(args.baseline, "r", encoding="utf-8") as f:
                 baseline_data = json.load(f)
-        except Exception:
-            baseline_data = None
+            baseline_source_desc = f"file: {args.baseline}"
+        except Exception as e:
+            print(f"SOURCE_UNAVAILABLE: Failed to parse baseline JSON: {e}", file=sys.stderr)
+            sys.exit(2)
+    else:
+        git_baseline, desc = extract_git_baseline(args.base_ref, args.backlog)
+        if git_baseline:
+            baseline_data = git_baseline
+            baseline_source_desc = desc
+        else:
+            baseline_source_desc = "NONE (Initial backlog creation or baseline not present on base branch)"
 
+    # 5. Detect Scoped Governance Changes against Authoritative Git Base
+    scoped_detected, matched_files, detection_desc = detect_scoped_governance_changes(args.base_ref)
+
+    # 6. Instantiate & Validate
     validator = BacklogValidator(
         backlog_data,
         prs_inventory=prs_inventory,
         issues_inventory=issues_inventory,
         baseline_data=baseline_data,
+        schema_data=schema_data,
+        require_baseline=(args.require_baseline or args.closure_certification),
+        require_external_inventory=(args.require_external_inventory or args.closure_certification),
+        require_closure=args.closure_certification,
     )
     verdict, findings = validator.validate_all()
 
-    # Determine exit behavior based on progressive enforcement stage
-    effective_stage = "strict" if args.strict else args.stage
+    # 7. Determine Progressive Enforcement & Exit Code
+    has_errors = any(f.severity == "ERROR" for f in findings)
+    effective_stage = "strict" if (args.strict or args.closure_certification) else args.stage
 
-    if effective_stage == "report-only":
+    if args.closure_certification:
+        exit_code = 0 if verdict == "PASS" else 1
+    elif effective_stage == "report-only":
         exit_code = 0
     elif effective_stage == "scoped":
-        # Check if governance files were touched
-        if is_scoped_change_detected(args.backlog):
+        if scoped_detected:
             exit_code = 0 if verdict in ("PASS", "PASS_WITH_WARNINGS") else 1
         else:
             exit_code = 0
     else:  # strict
-        if args.strict and verdict == "PASS_WITH_WARNINGS":
-            verdict = "FAIL"
-            exit_code = 1
+        if args.strict:
+            exit_code = 0 if verdict == "PASS" else 1
         else:
             exit_code = 0 if verdict in ("PASS", "PASS_WITH_WARNINGS") else 1
 
+    # 8. Diagnostics Emission
     if args.json:
         out = {
             "verdict": verdict,
             "stage": effective_stage,
             "exit_code": exit_code,
+            "scoped_governance_change_detected": scoped_detected,
+            "matched_governance_files": matched_files,
+            "git_diff_method": detection_desc,
             "total_tasks": len(backlog_data.get("tasks", [])),
+            "schema_validation": {
+                "status": validator.schema_status,
+                "schema_path": args.schema if schema_data else None,
+            },
+            "historical_continuity": {
+                "status": validator.continuity_status,
+                "baseline_source": baseline_source_desc,
+                "note": "Missing historical baseline never proves task continuity" if validator.continuity_status == "UNVERIFIED" else "Verified against baseline"
+            },
+            "external_reconciliation": {
+                "status": validator.reconciliation_status,
+                "pull_requests_evaluated": validator.reconciliation_counts["pull_requests"],
+                "note": "Deterministic local run; missing inventory never means zero issues/PRs" if validator.reconciliation_status == "NOT_PERFORMED" else "Reconciled against provided inventory"
+            },
             "total_findings": len(findings),
             "errors": [f.to_dict() for f in findings if f.severity == "ERROR"],
             "warnings": [f.to_dict() for f in findings if f.severity == "WARNING"],
         }
         print(json.dumps(out, indent=2))
     else:
-        print(f"===========================================================")
-        print(f"ARX TERMINAL — BACKLOG INTEGRITY VALIDATOR (GOV-001)")
+        print("===========================================================")
+        print("ARX TERMINAL — BACKLOG INTEGRITY VALIDATOR (GOV-001)")
         print(f"File: {args.backlog} | Tasks: {len(backlog_data.get('tasks', []))}")
-        print(f"Stage: {effective_stage} | Verdict: {verdict}")
-        print(f"===========================================================")
+        print(f"Stage: {effective_stage} | Scope Detected: {scoped_detected}")
+        print(f"Git Diff Base: {detection_desc}")
+        if matched_files:
+            print(f"Governance Files Modified ({len(matched_files)}): {', '.join(matched_files[:3])}{'...' if len(matched_files) > 3 else ''}")
+        print(f"Schema Validation: {validator.schema_status}")
+        print(f"Historical Continuity: {validator.continuity_status} ({baseline_source_desc})")
+        print(f"External Reconciliation: {validator.reconciliation_status}")
+        print(f"Verdict: {verdict} | Exit Code: {exit_code}")
+        print("===========================================================")
         for f in findings:
             print(str(f))
         if not findings:
-            print("All rules (BI-001 to BI-012) verified with zero errors or warnings.")
+            print("All rules (BI-000 to BI-012) verified with zero errors or warnings.")
 
     sys.exit(exit_code)
 

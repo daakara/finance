@@ -189,3 +189,60 @@ MODEL_TUNING = FROZEN
 * **Pull Request:** [#101](https://github.com/daakara/finance/pull/101)  
 * **Merge Authorization:** Not requested / Not authorized. Awaiting separate Research Owner merge directive.
 * **Production Deployment:** Disabled.
+
+---
+
+## 10. Addendum — Directive ARX_S4_GOV001_PR101_FINAL_ENFORCEMENT_GATE_001
+
+### 10.1 CI Workflow & Exact Enforcement Command
+- **Workflow:** `.github/workflows/ci.yml`
+- **Job:** `Backend Test Suite (Python ${{ matrix.python-version }})` (matrix: `['3.11', '3.12']`)
+- **Step 1 (Test Suite Execution):**
+  ```bash
+  pytest tests/test_backlog_integrity_validator.py -v
+  ```
+- **Step 2 (Active Closure & Backlog Integrity Gate):**
+  ```bash
+  python tools/governance/validate_backlog_integrity.py --stage scoped --base-ref origin/main
+  ```
+- **Step 3 (Syntax & Bytecode Compilation Gate in `lint_and_security`):**
+  ```bash
+  python -m py_compile tools/governance/validate_backlog_integrity.py
+  python -m py_compile tests/test_backlog_integrity_validator.py
+  ```
+
+### 10.2 Trigger Conditions
+- Triggered automatically on all `pull_request` and `push` events targeting `main` and `develop`.
+- Scoped detection evaluates three-dot diff (`origin/main...HEAD`) and working tree against governance patterns (`docs/planning/`, `docs/sprints/`, `tools/governance/`, `tests/test_backlog_integrity_validator.py`, `ARX_SPRINT`, `arx_canonical_backlog`).
+- **Enforcement Modes:**
+  - `Governance files modified`: STRICT fail-closed enforcement (exit code 1 on any error).
+  - `Unrelated application changes`: REPORT_ONLY execution (diagnostics printed, exit code 0, zero false-positive blocks).
+  - `--closure-certification`: Strict mode enforced unconditionally; cannot be masked by report-only.
+
+### 10.3 Historical Baseline Authority
+- Retrieved directly from Git: `git show origin/main:docs/planning/arx_canonical_backlog.json` or explicitly passed via `--baseline <path>`.
+- For PR #101 (initial backlog creation), accurately diagnosed and reported as `UNVERIFIED (Initial backlog creation)`.
+- For all subsequent PRs (PR #102+), `origin/main:docs/planning/arx_canonical_backlog.json` serves as the authoritative immutable baseline for task continuity (BI-012).
+
+### 10.4 Evidence Source Failure Behavior
+- Missing or malformed backlog JSON: fails closed with `SOURCE_UNAVAILABLE` (exit code 2).
+- Missing schema JSON: fails closed with `SOURCE_UNAVAILABLE` (exit code 2).
+- Missing explicitly specified baseline or inventories: fails closed with `SOURCE_UNAVAILABLE` (exit code 2).
+- Missing baseline NEVER proves task continuity (reported as `UNVERIFIED`).
+- Missing GitHub inventory NEVER means zero issues or PRs (reported as `NOT_PERFORMED`).
+- Closure certification with missing required inputs fails closed with `ERROR` (exit code 1).
+
+### 10.5 Focused Test Results (27/27 Passing)
+All 27 automated test scenarios passing in `tests/test_backlog_integrity_validator.py` (pytest 8.4.2, Python 3.11.0):
+- [x] Scenario 1 (`test_21`): Modified backlog on a clean GitHub Actions checkout against `origin/main`.
+- [x] Scenario 2 (`test_22`): Deleted historical task detected and rejected under Rule BI-012.
+- [x] Scenario 3 (`test_23`): Missing baseline fails closed; missing baseline never proves continuity.
+- [x] Scenario 4 (`test_24`): Missing GitHub inventory fails closed; missing inventory never means zero issues/PRs.
+- [x] Scenario 5 (`test_25`): Valid controlled carry-forward validated and passed.
+- [x] Scenario 6 (`test_26`): Unrelated code PR correctly executes in report-only mode without blocking build.
+- [x] Scenario 7 (`test_27`): Failed closure validation produces nonzero exit status (exit code 1); cannot be masked by report-only.
+
+### 10.6 Release Verdict
+```text
+PR101_GOV001_FINAL_GATE_PASS_MERGE_READY
+```

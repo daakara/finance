@@ -32,7 +32,7 @@
         "requirements": "DONE",
         "implementation": "IN_PROGRESS",
         "integration": "NOT_STARTED",
-        "verification": "IN_PROGRESS",
+        "verification": "PASS",
         "repository_publication": "LOCAL_ONLY",
         "deployment": "NOT_APPLICABLE",
         "operational_execution": "NOT_APPLICABLE",
