@@ -566,10 +566,23 @@ class SmartMoneyContinuousPipeline:
         if not dest or not isinstance(dest, str):
             raise RuntimeError("PRE_BACKUP_FAILED: Manifest missing mandatory 'storage_destination'")
 
-        # 5. Cryptographic integrity evidence (valid hex SHA-256)
+        # 5. Cryptographic integrity evidence (strictly valid 64-character hexadecimal SHA-256)
         sha = manifest.get("artifact_sha256") or manifest.get("database_sha256")
-        if not sha or not isinstance(sha, str) or len(sha) < 32:
+        if (
+            not sha
+            or not isinstance(sha, str)
+            or len(sha) != 64
+            or not all(c in "0123456789abcdefABCDEF" for c in sha)
+        ):
             raise RuntimeError(f"PRE_BACKUP_FAILED: Manifest missing or malformed integrity sha256: {sha}")
+
+        # Consistency invariant: if both artifact_sha256 and database_sha256 exist, they must match
+        art_sha = manifest.get("artifact_sha256")
+        db_sha = manifest.get("database_sha256")
+        if art_sha and db_sha and art_sha != db_sha:
+            raise RuntimeError(
+                f"PRE_BACKUP_FAILED: Manifest integrity sha256 mismatch: artifact_sha256 '{art_sha}' != database_sha256 '{db_sha}'"
+            )
 
         # 6. Artifact size
         size = manifest.get("artifact_size_bytes")

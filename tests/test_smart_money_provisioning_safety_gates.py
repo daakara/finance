@@ -605,6 +605,44 @@ class TestGate2R2BackupDigestIntegrity:
         with pytest.raises(RuntimeError, match="missing or malformed integrity sha256"):
             pipeline._validate_backup_manifest(m_bad_sha)
 
+        # 13b. 32-character MD5 hash strictly rejected (must be 64-character SHA-256)
+        m_md5 = dict(valid_manifest, artifact_sha256="d41d8cd98f00b204e9800998ecf8427e")
+        with pytest.raises(RuntimeError, match="missing or malformed integrity sha256"):
+            pipeline._validate_backup_manifest(m_md5)
+
+        # 13c. 40-character SHA-1 hash strictly rejected
+        m_sha1 = dict(valid_manifest, artifact_sha256="a" * 40)
+        with pytest.raises(RuntimeError, match="missing or malformed integrity sha256"):
+            pipeline._validate_backup_manifest(m_sha1)
+
+        # 13d. 63-character and 65-character hashes strictly rejected
+        with pytest.raises(RuntimeError, match="missing or malformed integrity sha256"):
+            pipeline._validate_backup_manifest(dict(valid_manifest, artifact_sha256="a" * 63))
+        with pytest.raises(RuntimeError, match="missing or malformed integrity sha256"):
+            pipeline._validate_backup_manifest(dict(valid_manifest, artifact_sha256="a" * 65))
+
+        # 13e. 64-character non-hexadecimal string strictly rejected
+        m_non_hex = dict(valid_manifest, artifact_sha256="z" * 64)
+        with pytest.raises(RuntimeError, match="missing or malformed integrity sha256"):
+            pipeline._validate_backup_manifest(m_non_hex)
+
+        # 13f. Mismatched artifact_sha256 and database_sha256 strictly rejected
+        m_mismatch = dict(
+            valid_manifest,
+            artifact_sha256="a" * 64,
+            database_sha256="b" * 64,
+        )
+        with pytest.raises(RuntimeError, match="integrity sha256 mismatch"):
+            pipeline._validate_backup_manifest(m_mismatch)
+
+        # 13g. Valid matching artifact_sha256 and database_sha256 accepted
+        m_matching = dict(
+            valid_manifest,
+            artifact_sha256="a" * 64,
+            database_sha256="a" * 64,
+        )
+        pipeline._validate_backup_manifest(m_matching)
+
         # 14. Non-positive artifact_size_bytes rejected
         m_zero_sz = dict(valid_manifest, artifact_size_bytes=0)
         with pytest.raises(RuntimeError, match="missing or invalid artifact_size_bytes"):
