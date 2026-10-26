@@ -267,7 +267,7 @@ class VCPScannerRunner:
                 eligible_count = len(universe)
                 scannable_count = len(universe)
                 unavailable_count = 0
-            elif target_build_id is not None or scannable_symbols:
+            elif scannable_symbols:
                 # For natural scheduled scan, enforce published build validity (INV-U02, INV-U08, INV-U09)
                 if is_natural_scheduled and build_attestation:
                     if build_attestation.get("publication_decision") != "PUBLISH" or build_attestation.get("construction_status") != "COMPLETE":
@@ -284,7 +284,7 @@ class VCPScannerRunner:
                     raise RuntimeError(
                         f"NO_PUBLISHED_EXECUTABLE_UNIVERSE: Natural scheduled scan requires an authorized published universe build. Historical fixture fallback is prohibited for invocation_class='{invocation_class}'."
                     )
-                universe = list(dict.fromkeys(CANONICAL_VCP_UNIVERSE))
+                universe = list(dict.fromkeys(CANONICAL_VCP_UNIVERSE)) if target_build_id is None else []
                 eligible_count = len(universe)
                 scannable_count = len(universe)
                 unavailable_count = 0
@@ -314,8 +314,27 @@ class VCPScannerRunner:
 
                 # R3 Provenance Integration: Retrieve stored daily candles along with factual evidence provenance
                 try:
+                    db_candles = None
+                    evidence = None
                     if hasattr(self.market_db, "get_daily_candles_with_evidence"):
-                        db_candles, evidence = self.market_db.get_daily_candles_with_evidence(clean_sym, limit=60)
+                        ret = self.market_db.get_daily_candles_with_evidence(clean_sym, limit=60)
+                        if isinstance(ret, tuple) and len(ret) == 2:
+                            cand_candidate, evid_candidate = ret
+                            if isinstance(cand_candidate, list):
+                                db_candles = cand_candidate
+                                evidence = evid_candidate
+
+                    if db_candles is None and hasattr(self.market_db, "get_daily_candles"):
+                        db_candles = self.market_db.get_daily_candles(clean_sym, limit=60)
+                        adj_state = AdjustmentState.UNKNOWN
+                        adj_prov = {
+                            "adjustment_state": adj_state,
+                            "provider": "UNKNOWN",
+                            "structural_quality": "UNKNOWN",
+                            "splits_locally_applied": False,
+                            "continuous_series_attested": False,
+                        }
+                    elif db_candles is not None:
                         adj_state = (
                             getattr(evidence.provenance, "adjustment_state", AdjustmentState.UNKNOWN)
                             if (evidence and hasattr(evidence, "provenance"))
@@ -332,15 +351,7 @@ class VCPScannerRunner:
                             ),
                         }
                     else:
-                        db_candles = self.market_db.get_daily_candles(clean_sym, limit=60)
-                        adj_state = AdjustmentState.UNKNOWN
-                        adj_prov = {
-                            "adjustment_state": adj_state,
-                            "provider": "UNKNOWN",
-                            "structural_quality": "UNKNOWN",
-                            "splits_locally_applied": False,
-                            "continuous_series_attested": False,
-                        }
+                        raise ValueError(f"Unable to retrieve daily candles for {clean_sym}")
                 except Exception as exc:
                     err_reason = self._classify_fetch_error(exc)
                     unavailable_reasons[err_reason] = unavailable_reasons.get(err_reason, 0) + 1

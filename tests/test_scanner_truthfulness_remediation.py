@@ -127,17 +127,18 @@ def test_remediation_scanner_runner_uncomputed_vcp_emits_pipeline_pending(tmp_pa
 
 
 def test_remediation_scanner_runner_scenario_a_empty_universe_is_available_zero(tmp_path):
-    """Requirement 4 (Scenario A): Completed evaluation with 0 matches emits AVAILABLE with matched_count=0."""
+    """Requirement 4 (Scenario A): Under R1, empty universe fails closed to ERROR with failure_reason='EMPTY_UNIVERSE'."""
     db_path = str(tmp_path / "test_scanner_a.db")
     snapshot_store = ScannerSnapshotStore(db_path=db_path)
     runner = VCPScannerRunner(snapshot_store=snapshot_store)
 
-    # Executing scan with empty universe (Scenario A: completed scan with zero matches)
+    # Executing scan with empty universe (Scenario A: empty universe fails closed under R1)
     result = runner.execute_market_wide_scan(universe_override=[])
 
-    assert result["status"] == "AVAILABLE"
-    assert result["snapshot"]["matched_count"] == 0
-    assert result["coverage"]["matched_count"] == 0
+    assert result["status"] == "ERROR"
+    assert result["snapshot"]["matched_count"] is None
+    assert result["coverage"]["matched_count"] is None
+    assert result["coverage"]["failure_reason"] == "EMPTY_UNIVERSE"
     assert len(result["results"]) == 0
 
 
