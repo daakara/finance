@@ -241,21 +241,56 @@ class S3CompatibleStorageAdapter(BackupStorageAdapter):
                 Metadata={"sha256": source_sha},
             )
 
-        # Verify upload via head_object
+        # Gate 2: Verify upload via head_object
         head = s3.head_object(Bucket=self.bucket, Key=key)
         uploaded_size = head.get("ContentLength", 0)
         if uploaded_size != source_size:
-            raise IOError(f"S3_UPLOAD_CORRUPTION: Uploaded size {uploaded_size} != source size {source_size}")
+            raise IOError(f"R2_UPLOAD_SIZE_MISMATCH: Uploaded size {uploaded_size} != source size {source_size}")
+
+        # Gate 2: Verify metadata SHA-256 header (do not assume ETag equals SHA-256)
+        meta = head.get("Metadata", {})
+        meta_sha = meta.get("sha256")
+        if not meta_sha:
+            raise IOError(f"R2_UPLOAD_METADATA_MISSING: Metadata 'sha256' header not returned by S3/R2 for {remote_filename}")
+        if meta_sha.lower() != source_sha.lower():
+            raise IOError(
+                f"R2_UPLOAD_METADATA_CORRUPTION: Remote metadata sha256 '{meta_sha}' != local source '{source_sha}'"
+            )
+
+        # Gate 2: End-to-end content checksum verification via streaming readback
+        # In S3/R2, ETag is MD5 or multipart MD5 (e.g. hash-N), never true SHA-256.
+        # We perform an independent streaming content readback to verify true byte digest.
+        hasher = hashlib.sha256()
+        obj = s3.get_object(Bucket=self.bucket, Key=key)
+        body = obj.get("Body")
+        if body:
+            while chunk := body.read(65536):
+                hasher.update(chunk)
+        remote_stream_sha = hasher.hexdigest()
+
+        if remote_stream_sha.lower() != source_sha.lower():
+            raise IOError(
+                f"R2_UPLOAD_CONTENT_CORRUPTION: Remote content SHA-256 '{remote_stream_sha}' != local source '{source_sha}'"
+            )
+
+        etag_str = (head.get("ETag") or "").strip('"')
+        is_multipart = bool("-" in etag_str)
 
         receipt = {
             "remote_filename": remote_filename,
             "destination": f"s3://{self.bucket}/{key}",
             "size_bytes": uploaded_size,
             "sha256": source_sha,
+            "verified_remote_sha256": remote_stream_sha,
+            "verified_metadata_sha256": meta_sha,
+            "etag": etag_str,
+            "is_multipart": is_multipart,
+            "integrity_verified": True,
+            "verification_method": "END_TO_END_STREAMING_SHA256",
             "uploaded_at": datetime.utcnow().isoformat() + "Z",
             "is_external": True,
         }
-        logger.info(f"Uploaded backup to S3: s3://{self.bucket}/{key}")
+        logger.info(f"Uploaded and verified backup on S3/R2: s3://{self.bucket}/{key} (sha256: {source_sha[:8]}...)")
         return receipt
 
     def download_file(self, remote_filename: str, local_dest_path: str) -> str:

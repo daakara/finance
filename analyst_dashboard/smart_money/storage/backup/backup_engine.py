@@ -222,6 +222,7 @@ class SmartMoneyBackupEngine:
                 # 6. Build Manifest
                 manifest = {
                     "backup_id": backup_id,
+                    "status": "SUCCESS",
                     "source_environment": os.environ.get("ARX_ENVIRONMENT", "rehearsal"),
                     "source_database": conn_info["dbname"],
                     "source_release_sha": os.environ.get("ARX_RELEASE_SHA", "c8cc1cda0be5a2a62816d3024b6499515e97101a"),
