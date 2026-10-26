@@ -90,10 +90,15 @@ Resource allocation for the worker is set to **0.5 vCPU** and **512 MB RAM**.
 
 ### Empirical Memory Profile (Measured on Form 4 Parsing)
 Under `tests/test_smart_money_worker_lifecycle_and_fencing.py::TestWorkerMemoryProfiling`:
-- **Baseline Idle RSS:** `~85 MB`
-- **Peak Batch Parsing RSS (100 Form 4 XML documents):** `~185 MB - 215 MB`
-- **Net Allocation Headroom:** **2.38x**
-- **OOM Protection:** With 512 MB allocation, peak consumption remains under 42% of allocated memory, eliminating risk of unexpected OOM kills while preventing runaway memory leaks.
+- **Shared Test-Runner Baseline RSS:** `~600 MB` (accumulated across 1,000+ tests during comprehensive test suite execution in CI).
+- **Isolated Clean Worker Process RSS:**
+  - *Interpreter Startup:* `~16.8 MB`
+  - *Post-Import (Worker + Observability + Data):* `~33.0 MB`
+  - *Peak Batch Parsing (100 Form 4 XML documents):* `~33.2 MB`
+- **Incremental Workload Delta:** Traced Python heap peak of **0.034 MB**; RSS delta **< 0.05 MB**.
+- **Net Allocation Headroom:** **15.4x** against the 512 MB Railway container budget.
+- **OOM Protection:** With 512 MB allocation, isolated worker peak consumption remains under 6.5% of allocated memory, eliminating risk of unexpected OOM kills while preventing runaway memory accumulation.
+- **Production Boundary:** Long-duration continuous memory behavior over multi-day uptime remains **UNVERIFIED** (subject to Phase 2 observation).
 
 ---
 

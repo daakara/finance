@@ -69,7 +69,8 @@ All 10 scenarios were tested against isolated PostgreSQL 16 instances and mocked
 
 ### SC-07: Backup Restore Structural & Semantic Parity
 - **Mechanism:** Automated restore rehearsal verifies all 12 tables, triggers, and active snapshot pointers.
-- **Result:** 100% structural parity verified. Application repository read contract passed without errors.
+- **Result:** 100% structural parity verified. Application repository read contract passed without errors. Synthetic local restore duration **1.842s**.
+- **Production Boundary:** Production RTO is **UNVERIFIED** (15–30 min planning target). Production RPO is **UNVERIFIED** (< 6 hr planning target). Recovery estimates are planning assumptions, not operational attestations. SEC filing replay constitutes partial DR only and does not recover lease chronology, snapshot history, or idempotency state.
 - **Residual Risk:** Restoring into an un-isolated database could overwrite primary data. *Mitigation:* `DESTINATION_SAFETY_VIOLATION` gate strictly blocks restores against primary database URLs.
 
 ### SC-08: Valid Zero-Match Daily Cycle

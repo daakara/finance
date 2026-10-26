@@ -39,15 +39,19 @@ Every operational guarantee is backed by automated tests, cryptographic digests,
 - **Preflight Enforcement:** `analyst_dashboard/smart_money/infra/worker_specification.py` validates `ARX_SEC_EGRESS_ROLE=DISABLED`, `SMART_MONEY_SCHEDULE_ENABLED=FALSE`, and detects placeholder User-Agents.
 - **Session Locking:** `ARX_LOCK_SEC_EGRESS_OWNER` prevents concurrent instances via PostgreSQL session-level advisory locking. The runtime deterministically derives the 63-bit integer lock key via SHA-256 (`401007311509093371`); `7283401` was an obsolete documentation placeholder and is not runtime authority. PostgreSQL mutual-exclusion and fencing semantics remain unchanged.
 - **Socket Drop Release:** Kernel-level TCP disconnect frees PostgreSQL session advisory lock immediately.
-- **Memory Footprint:** Peak RSS under batch Form 4 XML parsing measured at **215 MB**, well within the 512 MB allocation (2.38x headroom).
-- **Test Evidence:** `tests/test_smart_money_worker_lifecycle_and_fencing.py` (9 tests passed in 10.13s).
+- **Memory Footprint:** Verified across two complementary dimensions:
+  - *Incremental Parser Allocation:* Traced Python heap peak of **0.034 MB** and RSS delta of **< 0.05 MB** under 100 Form 4 XML filing batch parses.
+  - *Isolated Worker Capacity:* Dedicated clean child process peak RSS of **33.16 MB**, well within the 512 MB Railway allocation (15.4x headroom). Shared test-runner process baseline RSS (~600 MB) was isolated to prevent runner contamination.
+  - *Production Caveat:* Production long-duration memory behavior over multi-day continuous uptime remains **UNVERIFIED** (subject to Phase 2 observation).
+- **Test Evidence:** `tests/test_smart_money_worker_lifecycle_and_fencing.py` (12 tests passed in 13.58s).
 
 ### 3.2 SM_GATE_03: Backup & Restore Recoverability
 - **Restore Verifier:** `analyst_dashboard/smart_money/storage/backup/restore_verifier.py` updated with `DESTINATION_SAFETY_VIOLATION` primary database overwrite prevention, PostgreSQL version checking, and table/snapshot presence verification.
 - **Table & Trigger Parity:** Restored target verified with 12/12 public base tables, 4 immutable triggers, and 100% row counts.
 - **Application Read Contract:** `PostgresSmartMoneyRepository.get_latest_active_snapshot("SMART_MONEY")` verified on restored target.
 - **10 Adversarial Modes:** Corrupted archive, missing manifest, tampered hash, PostgreSQL major version mismatch, missing schema tables, interrupted restore, missing snapshot pointer, stale sequence, primary overwrite attempt, and invalid credentials all fail closed.
-- **Restore Performance:** Synthetic restore duration **1.84s**; SHA-256 overhead **0.0034s**.
+- **Restore Performance:** Synthetic local restore duration **1.842s** (measured in local rehearsal); SHA-256 overhead **0.0034s**.
+- **Production Recovery Targets:** Production RTO is **UNVERIFIED** (15–30 min is an operational planning target, not an operational attestation). Production RPO is **UNVERIFIED** (< 6 hours planning target). SEC filing replay constitutes partial disaster recovery only and does not recover lease chronology, active snapshot history, or idempotency metadata.
 - **Test Evidence:** `tests/test_smart_money_restore_rehearsal_adversarial.py` (11 tests passed in 109.07s).
 
 ### 3.3 SM_GATE_06: Observability & Alert Readiness
