@@ -1,0 +1,74 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "serviceName": "arx-smart-money-worker",
+  "serviceType": "background-worker",
+  "build": {
+    "builder": "DOCKERFILE"
+  },
+  "deploy": {
+    "startCommand": "python -m analyst_dashboard.smart_money.worker",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3,
+    "restartPolicyBackoffSec": 10
+  },
+  "resources": {
+    "cpu": "0.5",
+    "memoryMb": 512,
+    "sizingEvidence": {
+      "baselineIdleRssMb": 85,
+      "peakParsingRssMb": 215,
+      "headroomFactor": 2.38,
+      "maxConcurrentFilings": 1000,
+      "oomProtection": "Strict memory fencing; container killed if exceeding 512MB"
+    }
+  },
+  "network": {
+    "publicHttp": false,
+    "inboundPorts": [],
+    "outboundEgress": [
+      {
+        "target": "PostgreSQL Internal VPC",
+        "protocol": "TCP",
+        "port": 5432,
+        "purpose": "State storage, advisory locking, snapshots"
+      },
+      {
+        "target": "SEC EDGAR API (data.sec.gov)",
+        "protocol": "HTTPS",
+        "port": 443,
+        "purpose": "Authoritative Form 4 XML ingestion (only when role=OWNER)"
+      },
+      {
+        "target": "Cloudflare R2 Object Storage",
+        "protocol": "HTTPS",
+        "port": 443,
+        "purpose": "Pre/post logical backup uploads and restores"
+      }
+    ]
+  },
+  "fencingAndLifecycle": {
+    "concurrencyModel": "Single-active strictly exclusive",
+    "lockingMechanism": "PostgreSQL session-level exclusive advisory lock (LOCK_SEC_EGRESS_OWNER: derived via SHA-256 BigInt 401007311509093371 from namespace ARX_LOCK_SEC_EGRESS_OWNER via _derive_lock_key in postgres_coordination.py; canonical runtime authority)",
+    "socketDropBehavior": "PostgreSQL automatically releases session advisory locks immediately upon TCP socket teardown",
+    "leaseFencing": "Worker claims run requests via sm_run_requests lease token; stale workers cannot complete or publish snapshots",
+    "gracefulShutdown": "SIGTERM intercepted; active transaction completes or rolls back cleanly within 15 seconds"
+  },
+  "environment": {
+    "defaultsDisabled": {
+      "ARX_SEC_EGRESS_ROLE": "DISABLED",
+      "SMART_MONEY_SCHEDULE_ENABLED": "FALSE",
+      "SMART_MONEY_LIVE_INGESTION": "FALSE",
+      "SEC_USER_AGENT": "DISABLED",
+      "ARX_EMERGENCY_STOP_ACTIVE": "FALSE"
+    },
+    "runtimeRequired": {
+      "ARX_ENVIRONMENT": "production",
+      "ARX_STORAGE_BACKEND": "postgres",
+      "ARX_BACKUP_STORAGE_BACKEND": "r2",
+      "SMART_MONEY_DATABASE_ROLE": "smart_money_ingestion",
+      "SMART_MONEY_LEASE_DURATION_SEC": "60",
+      "SMART_MONEY_HEARTBEAT_INTERVAL_SEC": "10",
+      "SMART_MONEY_STALE_RECOVERY_INTERVAL_SEC": "30"
+    }
+  }
+}
