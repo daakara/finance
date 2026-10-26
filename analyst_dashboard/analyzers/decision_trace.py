@@ -54,6 +54,8 @@ class DecisionTraceEngine:
             stage = optimal_execution.get("stage_phase") or optimal_execution.get("setup_pattern")
 
         effective_role = user_role or (optimal_execution.get("user_role") if optimal_execution else None)
+        exec_hazard = optimal_execution.get("execution_hazard") if optimal_execution else None
+        liq_defense = optimal_execution.get("liquidity_defense") if optimal_execution else None
 
         # 1. Resolve State via Canonical Precedence Hierarchy
         decision_state = DecisionHierarchyEngine.resolve_decision_state(
@@ -72,6 +74,9 @@ class DecisionTraceEngine:
             security_type=security_type,
             asset_class=asset_class,
             has_fund_profile=has_fund_profile,
+            execution_status=exec_status,
+            execution_hazard=exec_hazard,
+            liquidity_defense=liq_defense,
         )
 
         # 2. Extract Pillar Statuses

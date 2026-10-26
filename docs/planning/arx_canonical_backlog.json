@@ -26,14 +26,14 @@
       "priority": "P1",
       "workstream": "GOVERNANCE",
       "owner": "daakara",
-      "status": "IN_PROGRESS",
+      "status": "READY",
       "disposition": "SPRINT4_EXECUTION",
       "dimensions": {
         "requirements": "DONE",
-        "implementation": "IN_PROGRESS",
-        "integration": "NOT_STARTED",
+        "implementation": "DONE",
+        "integration": "DONE",
         "verification": "PASS",
-        "repository_publication": "LOCAL_ONLY",
+        "repository_publication": "PUBLISHED_MERGED",
         "deployment": "NOT_APPLICABLE",
         "operational_execution": "NOT_APPLICABLE",
         "production_evidence": "NOT_APPLICABLE",
@@ -52,11 +52,13 @@
         "docs/planning/arx_canonical_backlog.schema.json",
         "tools/governance/validate_backlog_integrity.py",
         "tests/test_backlog_integrity_validator.py",
-        "https://github.com/daakara/finance/pull/101"
+        "https://github.com/daakara/finance/pull/101",
+        "https://github.com/daakara/finance/pull/102"
       ],
       "github_issues": [],
       "github_prs": [
-        101
+        101,
+        102
       ],
       "authorization_boundary": "BOUNDED_ENGINEERING",
       "operational_state": "ACTIVE_DEVELOPMENT",
@@ -1988,6 +1990,67 @@
       ],
       "superseded_by": null,
       "description": "Smart Money Phase 1: Operational Readiness, Worker Fencing & Observability. Managed under SMART_MONEY workstream for SPRINT_3."
+    },
+    {
+      "task_id": "ARX-S4-ARCH-002",
+      "title": "Liquidity Hazard & Canonical Actionability Enforcement (GAP-WS41-003)",
+      "origin_sprint": "SPRINT_4",
+      "assigned_sprint": "SPRINT_4",
+      "priority": "P0",
+      "workstream": "ARCHITECTURE",
+      "owner": "daakara",
+      "status": "READY",
+      "disposition": "SPRINT4_EXECUTION",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "IN_PROGRESS",
+        "integration": "PARTIAL",
+        "verification": "PASS",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "NOT_APPLICABLE",
+        "operational_execution": "NOT_APPLICABLE",
+        "production_evidence": "NOT_APPLICABLE",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "AC-LIQ-01: Extend DecisionHierarchyEngine.resolve_decision_state() with an optional execution_hazard: bool parameter (defaulting to False when evidence is unavailable, while enforcing fail-closed actionability).",
+        "AC-LIQ-02: Enforce Precedence in DecisionHierarchyEngine: If execution_hazard is True, the setup MUST be disqualified from ACTIONABLE_SETUP, setting state=VALID_SETUP, isActionable=False, canSizeTrade=False, label='Valid Setup — Liquidity Hazard', and allowedActions=['ADD_WATCHLIST', 'RESEARCH_PROFILE'].",
+        "AC-LIQ-03: Set disqualificationReason to explicit liquidity warning: 'Trade execution suppressed: Severe liquidity hazard detected (ADV / slippage friction exceeds safety threshold).'",
+        "AC-LIQ-04: Wire execution_hazard from OptimalExecutionEngine raw_plan['liquidity_defense']['execution_hazard'] into api/routes/analytics.py, api/routes/screener.py, and DecisionTraceEngine.",
+        "AC-LIQ-05: Preserve F_10 governance invariant: Missing liquidity evidence (UNAVAILABLE/UNKNOWN) must fail closed without synthesizing fictitious zero-hazard fallbacks.",
+        "AC-LIQ-06: Strict separation invariant: STOPPED_OUT price-floor invalidation and execution_hazard liquidity friction must remain distinct, non-conflated precedence branches."
+      ],
+      "negative_regression_tests": [
+        "NEG-LIQ-01: Micro-cap illiquid fixture (ADV $85k, Amihud 4.2) with confluence 88.0 inside buy zone strictly produces isActionable=False and canSizeTrade=False.",
+        "NEG-LIQ-02: Illiquid setup suppresses position sizing in GovernorSizingEngine with 0 shares.",
+        "NEG-LIQ-03: Missing volume profile (None) produces execution_hazard=True (fail-closed) and blocks ACTIONABLE_SETUP.",
+        "NEG-LIQ-04: Setup with execution_hazard=True and execution_status=STOPPED_OUT produces label 'Setup Invalidated — Stopped Out' (STOPPED_OUT takes precedence over liquidity friction)."
+      ],
+      "dependencies": [
+        "ARX-S4-ARCH-001",
+        "ARX-S4-GOV-001"
+      ],
+      "evidence_refs": [
+        "analyst_dashboard/analyzers/liquidity_guard.py",
+        "analyst_dashboard/analyzers/optimal_execution.py",
+        "analyst_dashboard/analyzers/decision_hierarchy.py",
+        "tests/test_optimal_execution.py",
+        "tests/test_cross_engine_coherence.py"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        105
+      ],
+      "authorization_boundary": "LOCAL_CODE_ONLY",
+      "operational_state": "ACTIVE_DEVELOPMENT",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "GAP-WS41-003",
+        "LIQUIDITY-HAZARD-ACTIONABILITY"
+      ],
+      "superseded_by": null,
+      "description": "Enforce liquidity defense and execution hazard friction in canonical decision hierarchy. Prevents severely illiquid stocks from transitioning to ACTIONABLE_SETUP regardless of technical pattern quality. Verified in WS4.2 frontend presentation."
     }
   ]
 }

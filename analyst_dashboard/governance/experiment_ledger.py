@@ -238,6 +238,85 @@ class ExperimentLedger:
         return cls.verify_frozen_engine_manifest(version="2.5.0")
 
     @classmethod
+    def get_candidate_engine_manifest(
+        cls, candidate_manifest_file: str = "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json", repo_root: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Loads an authorized candidate-scoped engine manifest."""
+        if repo_root is None:
+            repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        manifest_path = os.path.join(repo_root, candidate_manifest_file)
+        if not os.path.exists(manifest_path):
+            return None
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return None
+
+    @classmethod
+    def verify_candidate_engine_manifest(
+        cls, candidate_manifest_file: str = "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json", repo_root: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Verifies repository engines against an authorized, candidate-scoped integrity manifest.
+
+        Strictly enforces that the candidate manifest is labeled UNRATIFIED_DEVELOPMENT_CANDIDATE
+        with isProductionRatified=False so that candidate development cannot masquerade as production release.
+        """
+        if repo_root is None:
+            repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        manifest_path = os.path.join(repo_root, candidate_manifest_file)
+        if not os.path.exists(manifest_path):
+            return {"status": "MANIFEST_MISSING", "valid": False, "error": "CANDIDATE_MANIFEST_NOT_FOUND"}
+
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+        except Exception:
+            return {"status": "CORRUPTED", "valid": False, "error": "MALFORMED_CANDIDATE_MANIFEST"}
+
+        if not isinstance(manifest, dict) or "engines" not in manifest:
+            return {"status": "CORRUPTED", "valid": False, "error": "INVALID_CANDIDATE_MANIFEST_SCHEMA"}
+
+        # Development candidate cannot be represented as a ratified production release
+        if manifest.get("isProductionRatified") is not False:
+            return {
+                "status": "CORRUPTED",
+                "valid": False,
+                "error": "UNAUTHORIZED_PRODUCTION_RATIFICATION_CLAIM",
+                "isProductionRatified": manifest.get("isProductionRatified"),
+            }
+
+        engine_results = {}
+        all_valid = True
+        for engine_name, meta in manifest.get("engines", {}).items():
+            full_path = os.path.join(repo_root, meta.get("filePath", ""))
+            if not os.path.exists(full_path):
+                engine_results[engine_name] = {"valid": False, "error": "FILE_MISSING"}
+                all_valid = False
+                continue
+            with open(full_path, "rb") as fp:
+                content = fp.read().replace(b"\r\n", b"\n")
+                h = hashlib.sha256(content).hexdigest()
+            is_match = (h == meta.get("sha256"))
+            engine_results[engine_name] = {
+                "valid": is_match,
+                "sha256": h,
+                "expectedSha256": meta.get("sha256"),
+            }
+            if not is_match:
+                all_valid = False
+
+        return {
+            "status": "CANDIDATE_VERIFIED" if all_valid else "CORRUPTED",
+            "valid": all_valid,
+            "manifestType": manifest.get("manifestType"),
+            "candidateId": manifest.get("candidateId"),
+            "isProductionRatified": False,
+            "authorityScope": manifest.get("authorityScope"),
+            "engines": engine_results,
+        }
+
+    @classmethod
     def get_epoch1_manifest(cls) -> Optional[Dict[str, Any]]:
         """Loads the Epoch 1 observation governance manifest if available."""
         repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))

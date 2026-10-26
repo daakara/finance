@@ -1,0 +1,33 @@
+{
+  "manifestType": "CANDIDATE_ENGINE_MANIFEST",
+  "candidateId": "SPRINT_4_LIQUIDITY_ACTIONABILITY_CANDIDATE",
+  "assignedSprint": "SPRINT_4",
+  "taskReference": "ARX-S4-ARCH-002",
+  "directiveReference": "ARX_S4_PR105_FROZEN_ENGINE_GOVERNANCE_CHALLENGE_007",
+  "status": "UNRATIFIED_DEVELOPMENT_CANDIDATE",
+  "isProductionRatified": false,
+  "authorityScope": "CANDIDATE_DEVELOPMENT_ONLY",
+  "baseProductionAuthority": "SPRINT3_RC5_CORPORATE_EVENTS_RATIFICATION",
+  "baseProductionManifest": "FROZEN_ENGINE_MANIFEST_V2_5_2.json",
+  "engines": {
+    "optimal_execution": {
+      "filePath": "analyst_dashboard/analyzers/optimal_execution.py",
+      "sha256": "26247e91e97b564601bd72bc759a40f831646b0232c9b8a9f6e289fd92dba209",
+      "candidateScope": "Sprint 4 input normalization & STOPPED_OUT price-floor semantics"
+    },
+    "decision_hierarchy": {
+      "filePath": "analyst_dashboard/analyzers/decision_hierarchy.py",
+      "sha256": "177840eec7dae88f6ae5957159cc4cdb3856933619b268859793d07622c6cc87",
+      "candidateScope": "Synthesis E Wave 3 / Sprint 4 Liquidity Hazard Precedence"
+    },
+    "confluence_engine": {
+      "filePath": "analyst_dashboard/analyzers/confluence_engine.py",
+      "sha256": "75ea2687886b0624f7961848c8ec127fa176b80531e52b4a9e274fe83bd5a4e4",
+      "candidateScope": "Sprint 4 Liquidity Hazard & Actionability Sizing Demotion"
+    }
+  },
+  "invariants": {
+    "zero_unauthorized_mutation": true,
+    "production_ratification_prohibited": true
+  }
+}
