@@ -48,12 +48,24 @@ def test_frozen_engine_manifest_hashes_unmodified():
 def test_frozen_engine_historical_manifest_integrity():
     """Verify that historical frozen engine manifests retain cryptographic integrity and schema validity."""
     repo_root = os.path.dirname(os.path.dirname(__file__))
+    v252_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_5_2.json")
     v251_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_5_1.json")
     v250_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_5_0.json")
     v240_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_4_0.json")
+    assert os.path.exists(v252_path), "FROZEN_ENGINE_MANIFEST_V2_5_2.json missing!"
     assert os.path.exists(v251_path), "FROZEN_ENGINE_MANIFEST_V2_5_1.json missing!"
     assert os.path.exists(v250_path), "FROZEN_ENGINE_MANIFEST_V2_5_0.json missing!"
     assert os.path.exists(v240_path), "FROZEN_ENGINE_MANIFEST_V2_4_0.json missing!"
+
+    # Verify V2.5.2 historical release manifest integrity
+    with open(v252_path, "r", encoding="utf-8") as f:
+        v252 = json.load(f)
+    assert v252.get("manifestVersion") == "2.5.2"
+    assert v252.get("provenanceCommit") == "7980d3a6e5dde0fe172d215c729ec213b9a164b1"
+    assert v252.get("releaseAuthorityBinding") == "SPRINT3_RC5_CORPORATE_EVENTS_RATIFICATION"
+    assert v252["engines"]["optimal_execution"]["sha256"] == "84d1a8b855a5368466b53105fdd58df15c3d60aaab77024286f3fcaaaad95576"
+    assert v252["engines"]["decision_hierarchy"]["sha256"] == "823f37f81c7f601885213d968934c1118285fbf6c875b2993e091984e9b8ebe3"
+    assert v252["engines"]["confluence_engine"]["sha256"] == "0f77d3b0b15f5d60a6de52ec1a0cd6b385ce1615865839d684d53aa655dadc5a"
 
     # Verify V2.5.1 historical release manifest integrity
     with open(v251_path, "r", encoding="utf-8") as f:
@@ -86,35 +98,58 @@ def test_frozen_engine_historical_manifest_integrity():
 
 
 def test_current_production_engine_compliance():
-    """Verify that active production engines comply with ratified Release Addendum 002 and RC5 contracts."""
+    """Verify active engine compliance under ratified production contracts or authorized candidate manifest.
+    
+    Strictly prevents candidate development code from masquerading as a production release while
+    enforcing deterministic integrity verification for candidate-scoped changes under Sprint 4.
+    """
     repo_root = os.path.dirname(os.path.dirname(__file__))
     opt_exec_path = os.path.join(repo_root, "analyst_dashboard", "analyzers", "optimal_execution.py")
     with open(opt_exec_path, "rb") as fp:
         content = fp.read().replace(b"\r\n", b"\n")
         opt_sha = hashlib.sha256(content).hexdigest()
 
-    # Section 7 ratified contract invariant (Sprint 4 input normalization)
-    assert opt_sha == "26247e91e97b564601bd72bc759a40f831646b0232c9b8a9f6e289fd92dba209", (
-        f"Section 7 contract violation: unexpected optimal_execution SHA {opt_sha}"
-    )
-
-    # Synthesis E Wave 3 / Sprint 4 Decision Integrity invariant
     dec_hier_path = os.path.join(repo_root, "analyst_dashboard", "analyzers", "decision_hierarchy.py")
     with open(dec_hier_path, "rb") as fp:
         content = fp.read().replace(b"\r\n", b"\n")
         dec_sha = hashlib.sha256(content).hexdigest()
-    assert dec_sha == "177840eec7dae88f6ae5957159cc4cdb3856933619b268859793d07622c6cc87", (
-        f"Decision hierarchy integrity violation: unexpected decision_hierarchy SHA {dec_sha}"
-    )
 
-    # Confluence engine invariant (Sprint 4 Liquidity Hazard & Actionability Sizing integration)
     conf_path = os.path.join(repo_root, "analyst_dashboard", "analyzers", "confluence_engine.py")
     with open(conf_path, "rb") as fp:
         content = fp.read().replace(b"\r\n", b"\n")
         conf_sha = hashlib.sha256(content).hexdigest()
-    assert conf_sha == "75ea2687886b0624f7961848c8ec127fa176b80531e52b4a9e274fe83bd5a4e4", (
-        f"Confluence engine integrity violation: unexpected confluence_engine SHA {conf_sha}"
-    )
+
+    cand_manifest_path = os.path.join(repo_root, "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json")
+    if os.path.exists(cand_manifest_path):
+        # Active candidate development scope (PR #105 / ARX-S4-ARCH-002)
+        from analyst_dashboard.governance.experiment_ledger import ExperimentLedger
+        cand_audit = ExperimentLedger.verify_candidate_engine_manifest(repo_root=repo_root)
+        assert cand_audit["status"] == "CANDIDATE_VERIFIED", f"Candidate integrity audit failed: {cand_audit}"
+        assert cand_audit["valid"] is True
+        assert cand_audit["isProductionRatified"] is False, "Candidate manifest must never claim production ratification"
+
+        # Explicit fail-closed boundary: unratified candidate code MUST fail production verification
+        prod_audit = ExperimentLedger.verify_frozen_engine_manifest(repo_root=repo_root)
+        assert prod_audit["status"] == "CORRUPTED", (
+            "Governance safety violation: Candidate development code must fail production freeze manifest verification"
+        )
+        assert prod_audit["valid"] is False
+
+        # Verify candidate engine hashes match candidate manifest
+        assert opt_sha == "26247e91e97b564601bd72bc759a40f831646b0232c9b8a9f6e289fd92dba209"
+        assert dec_sha == "177840eec7dae88f6ae5957159cc4cdb3856933619b268859793d07622c6cc87"
+        assert conf_sha == "75ea2687886b0624f7961848c8ec127fa176b80531e52b4a9e274fe83bd5a4e4"
+    else:
+        # Canonical production checkout: strict single-hash enforcement
+        assert opt_sha == "84d1a8b855a5368466b53105fdd58df15c3d60aaab77024286f3fcaaaad95576", (
+            f"Section 7 contract violation: unexpected optimal_execution SHA {opt_sha}"
+        )
+        assert dec_sha == "823f37f81c7f601885213d968934c1118285fbf6c875b2993e091984e9b8ebe3", (
+            f"Decision hierarchy integrity violation: unexpected decision_hierarchy SHA {dec_sha}"
+        )
+        assert conf_sha == "0f77d3b0b15f5d60a6de52ec1a0cd6b385ce1615865839d684d53aa655dadc5a", (
+            f"Confluence engine integrity violation: unexpected confluence_engine SHA {conf_sha}"
+        )
 
 
 # ── 2. Legacy MarketDatabaseEngine Output Invariance ─────────────────────────
