@@ -1,0 +1,1948 @@
+{
+  "schema_version": "1.0.0",
+  "backlog_name": "ARX Terminal Canonical Enterprise Backlog",
+  "last_reconciled": "2026-10-26T13:45:00+01:00",
+  "active_sprint": "SPRINT_4",
+  "governance_framework": "ARX Closure Model v2 + Governance Efficiency v1.1",
+  "immutable_holds": {
+    "SPRINT3": "CLOSED_WITH_CONTROLLED_CARRYFORWARD",
+    "SMART_MONEY_WORKER_ACTIVATION": "NOT_AUTHORIZED",
+    "SMART_MONEY_SEC_EGRESS": "DISABLED",
+    "SMART_MONEY_RECURRING_INGESTION": "NOT_AUTHORIZED",
+    "CORPORATE_EVENTS_TELEMETRY_ACTIVATION": "NOT_AUTHORIZED",
+    "HVA00_PROTOCOL_RATIFICATION": "NOT_GRANTED",
+    "HVA01_HUMAN_EVALUATION": "NOT_AUTHORIZED",
+    "HVA02_ALGORITHM_ACCEPTANCE": "NOT_AUTHORIZED",
+    "EXTERNAL_CUSTODY_ACTIVATION": "NOT_AUTHORIZED",
+    "UX_PARTICIPANT_RESEARCH": "NOT_AUTHORIZED",
+    "MODEL_TUNING": "FROZEN"
+  },
+  "tasks": [
+    {
+      "task_id": "ARX-S4-GOV-001",
+      "title": "Cross-Sprint Backlog Integrity, Historical Recovery and Automated Closure Enforcement",
+      "origin_sprint": "SPRINT_4",
+      "assigned_sprint": "SPRINT_4",
+      "priority": "P1",
+      "workstream": "GOVERNANCE",
+      "owner": "daakara",
+      "status": "IN_PROGRESS",
+      "disposition": "SPRINT4_EXECUTION",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "IN_PROGRESS",
+        "integration": "NOT_STARTED",
+        "verification": "IN_PROGRESS",
+        "repository_publication": "LOCAL_ONLY",
+        "deployment": "NOT_APPLICABLE",
+        "operational_execution": "NOT_APPLICABLE",
+        "production_evidence": "NOT_APPLICABLE",
+        "owner_authorization": "CONDITIONALLY_PREAPPROVED"
+      },
+      "acceptance_criteria": [
+        "Machine-readable canonical backlog schema and JSON register established",
+        "Automated backlog integrity validator enforcing rules BI-001 through BI-012 implemented",
+        "Adversarial and functional test suite with 15+ scenarios passing",
+        "Historical reconciliation across Sprints 1, 2, 3 and open GitHub issues/PRs complete",
+        "Feature branch created, single non-activating PR published, CI verified"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "docs/planning/arx_canonical_backlog.schema.json",
+        "docs/planning/arx_canonical_backlog.json",
+        "tools/governance/validate_backlog_integrity.py",
+        "tests/test_backlog_integrity_validator.py"
+      ],
+      "github_issues": [],
+      "github_prs": [],
+      "authorization_boundary": "BOUNDED_ENGINEERING",
+      "operational_state": "ACTIVE_DEVELOPMENT",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "GOV-001",
+        "INITIATIVE-S4-GOV-001"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S4-ARCH-001",
+      "title": "Holistic Cross-Engine Architecture and Decision-Coherence Audit",
+      "origin_sprint": "SPRINT_4",
+      "assigned_sprint": "SPRINT_4",
+      "priority": "P1",
+      "workstream": "ARCHITECTURE",
+      "owner": "daakara",
+      "status": "READY",
+      "disposition": "SPRINT4_EXECUTION",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "NOT_STARTED",
+        "integration": "NOT_STARTED",
+        "verification": "PENDING",
+        "repository_publication": "NOT_APPLICABLE",
+        "deployment": "NOT_APPLICABLE",
+        "operational_execution": "NOT_APPLICABLE",
+        "production_evidence": "NOT_APPLICABLE",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Audit cross-engine state transitions and canonical context identity across all 5 engines",
+        "Verify market-session and price authority propagation across Radar, Analysis, and Trade Plan",
+        "Detect and eliminate contradictory decision recommendations across engines",
+        "Produce cross-engine dependency map and audit report"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "evidence_refs": [
+        "docs/architecture/ARX_CANONICAL_SECURITY_MASTER_DESIGN.md",
+        "FROZEN_ENGINE_MANIFEST_V2_5_1.json"
+      ],
+      "github_issues": [],
+      "github_prs": [],
+      "authorization_boundary": "READ_ONLY_AUDIT",
+      "operational_state": "PLANNED",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "ARCH-001",
+        "INITIATIVE-S4-CROSS-ENGINE-COHERENCE"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S4-RADAR-001",
+      "title": "Minervini VCP / Radar Operational Truth & Scanner Pending Remediation",
+      "origin_sprint": "SPRINT_4",
+      "assigned_sprint": "SPRINT_4",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "owner": "daakara",
+      "status": "READY",
+      "disposition": "SPRINT4_DISCOVERY",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "NOT_STARTED",
+        "integration": "NOT_STARTED",
+        "verification": "PENDING",
+        "repository_publication": "NOT_APPLICABLE",
+        "deployment": "NOT_APPLICABLE",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "INSUFFICIENT",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Complete root-cause tracing of 'Universe Scanner Pending' status across all 12 authority chain points",
+        "Formulate passive observation scanner execution design decoupled from HVA01 research",
+        "Reconcile Radar category metadata to distinguish PIPELINE_PENDING from authentic zero matches",
+        "Prepare controlled activation specification for Research/Product Owner review"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "evidence_refs": [
+        "frontend/app/radar/page.tsx",
+        "api/routes/screener.py",
+        "analyst_dashboard/analyzers/scanner_runner.py"
+      ],
+      "github_issues": [
+        61,
+        62,
+        64,
+        70
+      ],
+      "github_prs": [
+        73
+      ],
+      "authorization_boundary": "DISCOVERY_ONLY",
+      "operational_state": "PENDING_ACTIVATION",
+      "carryforward_reason": "Carried forward from Sprint 3 (Issues #61, #62, #64, #70) for root-cause resolution",
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "RADAR-001",
+        "ARX-S4-RADAR-VCP-TRUTH"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S1-001",
+      "title": "VCP Inactive Read-Safety Contract Enforcement",
+      "origin_sprint": "SPRINT_1",
+      "assigned_sprint": "SPRINT_1",
+      "priority": "P0",
+      "workstream": "RADAR_VCP",
+      "owner": "ARX_CORE_TEAM",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "PUBLISHED_MERGED",
+        "deployment": "DEPLOYED_ACTIVE",
+        "operational_execution": "EXECUTED",
+        "production_evidence": "VERIFIED",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Eliminate scan-on-read execution, lease races, and side-effects on GET requests",
+        "Fails closed to PIPELINE_PENDING on missing snapshots without triggering scan"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/4",
+        "tests/test_vcp_inactive_read_safety.py",
+        "docs/sprints/SPRINT_1_CLOSEOUT.md"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        4
+      ],
+      "authorization_boundary": "MERGED_MAINLINE",
+      "operational_state": "ACTIVE_SERVING",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "BACKLOG-VCP-READ-SAFETY-001"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S1-002",
+      "title": "Candidate 004 Universe-Wiring Reintroduction",
+      "origin_sprint": "SPRINT_1",
+      "assigned_sprint": "SPRINT_1",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "owner": "ARX_CORE_TEAM",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "PUBLISHED_MERGED",
+        "deployment": "DEPLOYED_ACTIVE",
+        "operational_execution": "EXECUTED",
+        "production_evidence": "VERIFIED",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Reintroduced Candidate 004 universe wiring cleanly separated from public read paths",
+        "Preserved relational denominator and epoch membership verification"
+      ],
+      "dependencies": [
+        "ARX-S1-001"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/5",
+        "tests/test_vcp_c004_universe_wiring.py",
+        "docs/sprints/SPRINT_1_CLOSEOUT.md"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        5
+      ],
+      "authorization_boundary": "MERGED_MAINLINE",
+      "operational_state": "ACTIVE_SERVING",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "BACKLOG-VCP-UNIVERSE-WIRING-002"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S1-003",
+      "title": "Production Universe Preparation & Publication Tooling",
+      "origin_sprint": "SPRINT_1",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "owner": "daakara",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "PARTIAL",
+        "integration": "PARTIAL",
+        "verification": "PARTIAL",
+        "repository_publication": "PUBLISHED_MERGED",
+        "deployment": "DEPLOYED_DORMANT",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "INSUFFICIENT",
+        "owner_authorization": "HOLD"
+      },
+      "acceptance_criteria": [
+        "Implement validation core (PR #6) and offline adapters (PR #8)",
+        "Live network acquisition and production universe publication require separate Owner grant"
+      ],
+      "dependencies": [
+        "ARX-S1-002"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/6",
+        "https://github.com/daakara/finance/pull/8",
+        "docs/research/vcp-production-universe-inputs/PLANNING_HANDOFF.md"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        6,
+        8
+      ],
+      "authorization_boundary": "OWNER_GATE_REQUIRED",
+      "operational_state": "DORMANT_MERGED",
+      "carryforward_reason": "Offline components merged; live network acquisition held pending primary agency certification",
+      "reopening_trigger": "Product Owner authorization of live primary listing acquisition",
+      "historical_aliases": [
+        "BACKLOG-VCP-PROD-UNIVERSE-003"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S1-004",
+      "title": "Data.gov Discovery and Primary-Source Qualification",
+      "origin_sprint": "SPRINT_1",
+      "assigned_sprint": "SPRINT_1",
+      "priority": "P2",
+      "workstream": "RESEARCH_CUSTODY",
+      "owner": "ARX_CORE_TEAM",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "PUBLISHED_MERGED",
+        "deployment": "NOT_APPLICABLE",
+        "operational_execution": "NOT_APPLICABLE",
+        "production_evidence": "VERIFIED",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Qualify Data.gov as search catalog rather than runtime authority",
+        "Establish direct primary agency qualification matrix (SEC, CFTC, Treasury, BLS)"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "docs/research/data-gov-discovery/DISCOVERY_REPORT.md",
+        "docs/sprints/SPRINT_1_CLOSEOUT.md"
+      ],
+      "github_issues": [],
+      "github_prs": [],
+      "authorization_boundary": "RESEARCH_ONLY",
+      "operational_state": "COMPLETED_RESEARCH",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "BACKLOG-DATA-GOV-DISCOVERY-001"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S1-005",
+      "title": "Canonical Decision-State Consistency & Truthful Corridor Location",
+      "origin_sprint": "SPRINT_1",
+      "assigned_sprint": "SPRINT_1",
+      "priority": "P1",
+      "workstream": "UX_WORKSTATION",
+      "owner": "ARX_CORE_TEAM",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "PUBLISHED_MERGED",
+        "deployment": "DEPLOYED_ACTIVE",
+        "operational_execution": "EXECUTED",
+        "production_evidence": "VERIFIED",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Eliminate spatial copy contradictions where price extended above ceiling was claimed inside corridor",
+        "Suppress scale-in hints on blocked technical gates",
+        "3-tier readiness presentation verified"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/7",
+        "tests/corridorDecisionConsistency.test.ts",
+        "docs/sprints/SPRINT_1_CLOSEOUT.md"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        7
+      ],
+      "authorization_boundary": "MERGED_MAINLINE",
+      "operational_state": "ACTIVE_SERVING",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "BACKLOG-ARX-ANALYSIS-001",
+        "UX-ANALYSIS-001"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S1-006",
+      "title": "Radar US-Listed Coverage & Requirements Reconciliation",
+      "origin_sprint": "SPRINT_1",
+      "assigned_sprint": "SPRINT_4",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "owner": "daakara",
+      "status": "READY",
+      "disposition": "SPRINT4_DISCOVERY",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "PARTIAL",
+        "integration": "NOT_STARTED",
+        "verification": "PARTIAL",
+        "repository_publication": "LOCAL_ONLY",
+        "deployment": "NOT_APPLICABLE",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "INSUFFICIENT",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Define mathematical accounting closure across 6 disjoint outcomes",
+        "Structure 10-package phased implementation sequence (S2-01 to S2-10)",
+        "Reconcile against active market-wide radar scanner requirements"
+      ],
+      "dependencies": [
+        "ARX-S1-001"
+      ],
+      "evidence_refs": [
+        "docs/research/radar-us-listed-coverage/COVERAGE_ACCEPTANCE_CONTRACT.md",
+        "docs/research/radar-us-listed-coverage/DELIVERY_CHECKLIST.md"
+      ],
+      "github_issues": [],
+      "github_prs": [],
+      "authorization_boundary": "DISCOVERY_RECONCILIATION",
+      "operational_state": "RECONCILED_SPECIFICATION",
+      "carryforward_reason": "Strategic product requirement carried forward from Sprint 1 Track E into Sprint 4",
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "BACKLOG-RADAR-US-LISTED-COVERAGE-001"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S2-001",
+      "title": "US-Listed Population and Strategy Boundaries Specification",
+      "origin_sprint": "SPRINT_2",
+      "assigned_sprint": "SPRINT_4",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "owner": "daakara",
+      "status": "READY",
+      "disposition": "SPRINT4_DISCOVERY",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "PARTIAL",
+        "integration": "NOT_STARTED",
+        "verification": "PARTIAL",
+        "repository_publication": "LOCAL_ONLY",
+        "deployment": "NOT_APPLICABLE",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "NOT_APPLICABLE",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Define explicit population scope separating US-listed equities from ADRs/REITs",
+        "Preserve non-inference boundaries for missing or ambiguous security classifications"
+      ],
+      "dependencies": [
+        "ARX-S1-006"
+      ],
+      "evidence_refs": [
+        "docs/sprints/SPRINT_2_KICKOFF.md",
+        "docs/research/sprint-2-identity-adoption/"
+      ],
+      "github_issues": [],
+      "github_prs": [],
+      "authorization_boundary": "BOUNDED_DISCOVERY",
+      "operational_state": "PLANNED",
+      "carryforward_reason": "Carried forward from Sprint 2 Package 1 foundation",
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "S2-01"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S2-002",
+      "title": "Comprehensive Listing Acquisition & Preserved Source Evidence",
+      "origin_sprint": "SPRINT_2",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "priority": "P2",
+      "workstream": "INFRASTRUCTURE",
+      "owner": "daakara",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "PARTIAL",
+        "verification": "PASS",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "NOT_DEPLOYED",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "INSUFFICIENT",
+        "owner_authorization": "HOLD"
+      },
+      "acceptance_criteria": [
+        "SEC EDGAR and Nasdaq Trader directory fetchers implemented with archival storage",
+        "Live network acquisition held closed until owner authorizes production egress"
+      ],
+      "dependencies": [
+        "ARX-S2-001"
+      ],
+      "evidence_refs": [
+        "docs/reviews/sprint2-package-b/B_DATA_QUALITY_CONTRACT.md",
+        "docs/reviews/sprint2-convergence/SPRINT2_PACKAGE_B_DATA_READINESS_AND_PROVENANCE_PLAN.md"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        35
+      ],
+      "authorization_boundary": "OWNER_GATE_REQUIRED",
+      "operational_state": "DORMANT_HELD",
+      "carryforward_reason": "Network ingestion blocked pending SIP provider entitlement and AAPL reconciliation",
+      "reopening_trigger": "Product Owner authorization of Package B live network ingestion",
+      "historical_aliases": [
+        "S2-02",
+        "PACKAGE_B_INGESTION"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S2-003",
+      "title": "Security Identity & SqliteIdentityRepository Implementation",
+      "origin_sprint": "SPRINT_2",
+      "assigned_sprint": "SPRINT_2",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "owner": "ARX_CORE_TEAM",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "PUBLISHED_MERGED",
+        "deployment": "DEPLOYED_DORMANT",
+        "operational_execution": "EXECUTED",
+        "production_evidence": "VERIFIED",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Unique listing identity resolution without conflating CIK and Symbol",
+        "SqliteIdentityRepository implemented and verified"
+      ],
+      "dependencies": [
+        "ARX-S2-001"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/37",
+        "analyst_dashboard/universe/identity_repository.py",
+        "docs/reviews/sprint2-convergence/SPRINT2_PR37_AUTHORIZED_MERGE_EXECUTION_RECORD.md"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        37
+      ],
+      "authorization_boundary": "MERGED_MAINLINE",
+      "operational_state": "DORMANT_MERGED",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "S2-03"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S2-004",
+      "title": "Connected Adapter -> Validator -> Builder Integration Core",
+      "origin_sprint": "SPRINT_2",
+      "assigned_sprint": "SPRINT_2",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "owner": "ARX_CORE_TEAM",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "PUBLISHED_MERGED",
+        "deployment": "DEPLOYED_DORMANT",
+        "operational_execution": "EXECUTED",
+        "production_evidence": "VERIFIED",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "End-to-end integration core connecting raw listing feeds through validator to builder",
+        "Verified in isolated tests without live network calls"
+      ],
+      "dependencies": [
+        "ARX-S2-003"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/37",
+        "docs/reviews/sprint2-convergence/SPRINT2_PACKAGE_BC_INTEGRATION_CHECKPOINT.md"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        37
+      ],
+      "authorization_boundary": "MERGED_MAINLINE",
+      "operational_state": "DORMANT_MERGED",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "S2-04"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S2-005",
+      "title": "Market-Data Coverage and Processing Capacity Verification",
+      "origin_sprint": "SPRINT_2",
+      "assigned_sprint": "SPRINT_4",
+      "priority": "P2",
+      "workstream": "INFRASTRUCTURE",
+      "owner": "daakara",
+      "status": "READY",
+      "disposition": "SPRINT4_DISCOVERY",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "PARTIAL",
+        "integration": "NOT_STARTED",
+        "verification": "PENDING",
+        "repository_publication": "LOCAL_ONLY",
+        "deployment": "NOT_APPLICABLE",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "NOT_APPLICABLE",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Measure quote coverage and execution capacity across full US-listed equity population",
+        "Verify memory and compute bounds under Railway 512MB container limits"
+      ],
+      "dependencies": [
+        "ARX-S2-004"
+      ],
+      "evidence_refs": [
+        "docs/planning/ENGINEERING_BACKLOG.md",
+        "docs/sprints/SPRINT_2_KICKOFF.md"
+      ],
+      "github_issues": [],
+      "github_prs": [],
+      "authorization_boundary": "BENCHMARK_DISCOVERY",
+      "operational_state": "PLANNED",
+      "carryforward_reason": "Carried forward from Sprint 2 capacity planning into Sprint 4",
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "S2-05"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S2-006",
+      "title": "Governed Build / Publication Tooling & Isolated State Machine",
+      "origin_sprint": "SPRINT_2",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "owner": "daakara",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "PARTIAL",
+        "verification": "PASS",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "NOT_DEPLOYED",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "INSUFFICIENT",
+        "owner_authorization": "HOLD"
+      },
+      "acceptance_criteria": [
+        "IsolatedPublicationStateMachine implemented with immutable digests",
+        "Publication execution strictly gated by Owner authorization"
+      ],
+      "dependencies": [
+        "ARX-S2-004"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/42",
+        "analyst_dashboard/universe/isolated_publication.py",
+        "docs/reviews/sprint2-convergence/SPRINT2_FINAL_ACCEPTANCE_SAFETY_DELTA.md"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        42
+      ],
+      "authorization_boundary": "OWNER_GATE_REQUIRED",
+      "operational_state": "DORMANT_HELD",
+      "carryforward_reason": "Code implemented in PR #42; publication hold preserved pending accounting defect fix (SD-06)",
+      "reopening_trigger": "Product Owner authorization of Package C production publication",
+      "historical_aliases": [
+        "S2-06",
+        "PACKAGE_C_PUBLICATION"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S2-007",
+      "title": "Scanner and Radar Membership Integration",
+      "origin_sprint": "SPRINT_2",
+      "assigned_sprint": "SPRINT_4",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "owner": "daakara",
+      "status": "READY",
+      "disposition": "SPRINT4_DISCOVERY",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "PARTIAL",
+        "integration": "NOT_STARTED",
+        "verification": "PENDING",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "NOT_DEPLOYED",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "NOT_APPLICABLE",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Ensure published membership drives scanner assessment",
+        "Fixed candidate lists do not discard valid out-of-list results"
+      ],
+      "dependencies": [
+        "ARX-S2-006"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/42",
+        "docs/planning/ENGINEERING_BACKLOG.md"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        42
+      ],
+      "authorization_boundary": "BOUNDED_DISCOVERY",
+      "operational_state": "PLANNED",
+      "carryforward_reason": "Carried forward from Sprint 2 Package C into Sprint 4 Radar truthfulness workstream",
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "S2-07"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S2-008",
+      "title": "Full-Population Assessment Outcome Accounting and Telemetry",
+      "origin_sprint": "SPRINT_2",
+      "assigned_sprint": "SPRINT_4",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "owner": "daakara",
+      "status": "READY",
+      "disposition": "SPRINT4_DISCOVERY",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "PARTIAL",
+        "verification": "PASS",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "NOT_DEPLOYED",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "INSUFFICIENT",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Enforce 6-outcome arithmetic denominator closure across all assessed securities",
+        "Zero synthetic data fabricated; honest operational telemetry default to NOT_MEASURED"
+      ],
+      "dependencies": [
+        "ARX-S2-007"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/44",
+        "tests/test_full_population_assessment_accounting.py"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        44
+      ],
+      "authorization_boundary": "BOUNDED_DISCOVERY",
+      "operational_state": "VERIFIED_BRANCH",
+      "carryforward_reason": "PR #44 unmerged draft; accounting engine to be cleanly integrated in Sprint 4",
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "S2-08"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S2-009",
+      "title": "Radar Coverage Disclosure & Analysis Handoff Alignment",
+      "origin_sprint": "SPRINT_2",
+      "assigned_sprint": "SPRINT_4",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "owner": "daakara",
+      "status": "READY",
+      "disposition": "SPRINT4_DISCOVERY",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "PARTIAL",
+        "integration": "NOT_STARTED",
+        "verification": "PENDING",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "NOT_DEPLOYED",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "NOT_APPLICABLE",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Disclose coverage, timestamps, and limitations clearly on Radar UI",
+        "Analysis view seamlessly preserves selected evaluation context"
+      ],
+      "dependencies": [
+        "ARX-S2-008"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/42",
+        "frontend/app/radar/page.tsx"
+      ],
+      "github_issues": [
+        61,
+        62
+      ],
+      "github_prs": [
+        42
+      ],
+      "authorization_boundary": "BOUNDED_DISCOVERY",
+      "operational_state": "PLANNED",
+      "carryforward_reason": "Carried forward into Sprint 4 Radar truthfulness workstream",
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "S2-09"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S2-010",
+      "title": "Operational Acceptance & Controlled Activation Framework",
+      "origin_sprint": "SPRINT_2",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "priority": "P1",
+      "workstream": "GOVERNANCE",
+      "owner": "daakara",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "NOT_STARTED",
+        "integration": "NOT_STARTED",
+        "verification": "PENDING",
+        "repository_publication": "NOT_APPLICABLE",
+        "deployment": "NOT_APPLICABLE",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "NOT_APPLICABLE",
+        "owner_authorization": "HOLD"
+      },
+      "acceptance_criteria": [
+        "Exchange calendar and timezone-aware operational cadence verified",
+        "Controlled activation framework ready for separate owner sign-off"
+      ],
+      "dependencies": [
+        "ARX-S2-009"
+      ],
+      "evidence_refs": [
+        "docs/planning/ENGINEERING_BACKLOG.md",
+        "docs/reviews/sprint2-convergence/SPRINT2_POST_DEPLOYMENT_ACCEPTANCE_PLAN.md"
+      ],
+      "github_issues": [],
+      "github_prs": [],
+      "authorization_boundary": "OWNER_GATE_REQUIRED",
+      "operational_state": "HOLD",
+      "carryforward_reason": "Activation remains strictly held pending completion of Sprint 4 discovery",
+      "reopening_trigger": "Product Owner execution of Sprint 4 activation decision gate",
+      "historical_aliases": [
+        "S2-10",
+        "G-S2-ACT"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S2-011",
+      "title": "Mobile Research Navigation Dock Accessibility",
+      "origin_sprint": "SPRINT_2",
+      "assigned_sprint": "SPRINT_3",
+      "priority": "P2",
+      "workstream": "UX_WORKSTATION",
+      "owner": "daakara",
+      "status": "SUPERSEDED",
+      "disposition": "SUPERSEDED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "PUBLISHED_MERGED",
+        "deployment": "DEPLOYED_ACTIVE",
+        "operational_execution": "EXECUTED",
+        "production_evidence": "VERIFIED",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Direct mobile navigation dock link to Research with 44px touch target"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/38",
+        "https://github.com/daakara/finance/pull/96",
+        "frontend/components/Navbar.tsx"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        38
+      ],
+      "authorization_boundary": "MERGED_MAINLINE",
+      "operational_state": "SUPERSEDED_IN_MAIN",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "UX-MOBILE-001"
+      ],
+      "superseded_by": "ARX-S3-016"
+    },
+    {
+      "task_id": "ARX-S2-012",
+      "title": "Candlestick Chart Visibility & Container Synchronization",
+      "origin_sprint": "SPRINT_2",
+      "assigned_sprint": "SPRINT_3",
+      "priority": "P0",
+      "workstream": "UX_WORKSTATION",
+      "owner": "daakara",
+      "status": "SUPERSEDED",
+      "disposition": "SUPERSEDED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "PUBLISHED_MERGED",
+        "deployment": "DEPLOYED_ACTIVE",
+        "operational_execution": "EXECUTED",
+        "production_evidence": "VERIFIED",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Eliminate blank candlestick rendering in production and ensure preview proxy parity"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/40",
+        "https://github.com/daakara/finance/pull/86",
+        "https://github.com/daakara/finance/pull/87"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        40
+      ],
+      "authorization_boundary": "MERGED_MAINLINE",
+      "operational_state": "SUPERSEDED_IN_MAIN",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "INC-CHART-VISIBILITY-001"
+      ],
+      "superseded_by": "ARX-S3-016"
+    },
+    {
+      "task_id": "ARX-S2-013",
+      "title": "ARX Sprint 2 Release Candidate 1 Consolidated Integration",
+      "origin_sprint": "SPRINT_2",
+      "assigned_sprint": "SPRINT_3",
+      "priority": "P1",
+      "workstream": "GOVERNANCE",
+      "owner": "daakara",
+      "status": "SUPERSEDED",
+      "disposition": "SUPERSEDED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "NOT_DEPLOYED",
+        "operational_execution": "NOT_APPLICABLE",
+        "production_evidence": "NOT_APPLICABLE",
+        "owner_authorization": "NOT_GRANTED"
+      },
+      "acceptance_criteria": [
+        "Consolidated integration of PRs #40, #42, #44 for nonproduction CI testing"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/47"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        47
+      ],
+      "authorization_boundary": "SUPERSEDED_PR",
+      "operational_state": "SUPERSEDED",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "SPRINT2_RC1"
+      ],
+      "superseded_by": "ARX-S4-GOV-001"
+    },
+    {
+      "task_id": "ARX-S2-014",
+      "title": "Evidence-Led Opportunity Discovery Pilot Cycle 1 (Issue #43)",
+      "origin_sprint": "SPRINT_2",
+      "assigned_sprint": "SPRINT_2",
+      "priority": "P2",
+      "workstream": "RESEARCH_VALUATION",
+      "owner": "ARX_CORE_TEAM",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "PUBLISHED_MERGED",
+        "deployment": "NOT_APPLICABLE",
+        "operational_execution": "EXECUTED",
+        "production_evidence": "VERIFIED",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Codify ARX-DECISION-RESEARCH-PROCESS-V1",
+        "Evaluate discovery pilot across 6 Quality Watch symbols"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/45",
+        "https://github.com/daakara/finance/issues/43",
+        "docs/research/DECISION_FOCUSED_RESEARCH_PROCESS.md"
+      ],
+      "github_issues": [
+        43
+      ],
+      "github_prs": [
+        45
+      ],
+      "authorization_boundary": "RESEARCH_ONLY",
+      "operational_state": "COMPLETED_RESEARCH",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "BACKLOG-RESEARCH-EVIDENCE-DISCOVERY-043"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S2-015",
+      "title": "Evidence-Led Opportunity Discovery Cycle 2 (14 Candidates)",
+      "origin_sprint": "SPRINT_2",
+      "assigned_sprint": "SPRINT_2",
+      "priority": "P2",
+      "workstream": "RESEARCH_VALUATION",
+      "owner": "ARX_CORE_TEAM",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "PUBLISHED_MERGED",
+        "deployment": "NOT_APPLICABLE",
+        "operational_execution": "EXECUTED",
+        "production_evidence": "VERIFIED",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Execute 2 discovery routes (operating change vs structural change) across 14 operating companies",
+        "Adopt research dossiers into mainline via PR #46"
+      ],
+      "dependencies": [
+        "ARX-S2-014"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/46"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        46
+      ],
+      "authorization_boundary": "RESEARCH_ONLY",
+      "operational_state": "COMPLETED_RESEARCH",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "BACKLOG-RESEARCH-EVIDENCE-DISCOVERY-046"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S2-016",
+      "title": "Candidate Priority Reassessment After Discovery Cycle 2",
+      "origin_sprint": "SPRINT_2",
+      "assigned_sprint": "SPRINT_2",
+      "priority": "P2",
+      "workstream": "RESEARCH_VALUATION",
+      "owner": "ARX_CORE_TEAM",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "PUBLISHED_MERGED",
+        "deployment": "NOT_APPLICABLE",
+        "operational_execution": "EXECUTED",
+        "production_evidence": "VERIFIED",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Reconcile TMDX and ETN research queues against Form 10-K and 10-Q filings",
+        "Codify 4-dimensional priority framework across 14 candidates"
+      ],
+      "dependencies": [
+        "ARX-S2-015"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/48"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        48
+      ],
+      "authorization_boundary": "RESEARCH_ONLY",
+      "operational_state": "COMPLETED_RESEARCH",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "BACKLOG-RESEARCH-PRIORITY-REASSESSMENT-047"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S3-001",
+      "title": "Test Issue Permission Check (Issue #58)",
+      "origin_sprint": "SPRINT_3",
+      "assigned_sprint": "SPRINT_3",
+      "priority": "P3",
+      "workstream": "GOVERNANCE",
+      "owner": "daakara",
+      "status": "COMPLETED",
+      "disposition": "TEST_OR_ADMINISTRATIVE",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "NOT_APPLICABLE",
+        "deployment": "NOT_APPLICABLE",
+        "operational_execution": "NOT_APPLICABLE",
+        "production_evidence": "NOT_APPLICABLE",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Administrative token permission verification probe"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/58"
+      ],
+      "github_issues": [
+        58
+      ],
+      "github_prs": [],
+      "authorization_boundary": "ADMINISTRATIVE",
+      "operational_state": "CLOSED_PROBE",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "ISSUE-58"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S3-002",
+      "title": "Sprint 3 Initiative Test (Issue #59)",
+      "origin_sprint": "SPRINT_3",
+      "assigned_sprint": "SPRINT_3",
+      "priority": "P3",
+      "workstream": "GOVERNANCE",
+      "owner": "daakara",
+      "status": "COMPLETED",
+      "disposition": "TEST_OR_ADMINISTRATIVE",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "NOT_APPLICABLE",
+        "deployment": "NOT_APPLICABLE",
+        "operational_execution": "NOT_APPLICABLE",
+        "production_evidence": "NOT_APPLICABLE",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Administrative test issue tracking format verification"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/59"
+      ],
+      "github_issues": [
+        59
+      ],
+      "github_prs": [],
+      "authorization_boundary": "ADMINISTRATIVE",
+      "operational_state": "CLOSED_PROBE",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "ISSUE-59"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S3-003",
+      "title": "Corporate Events RC5: Quarterly Earnings Risk Integration & Telemetry",
+      "origin_sprint": "SPRINT_3",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "priority": "P1",
+      "workstream": "CORPORATE_EVENTS",
+      "owner": "daakara",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "PUBLISHED_MERGED",
+        "deployment": "DEPLOYED_DORMANT",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "INSUFFICIENT",
+        "owner_authorization": "HOLD"
+      },
+      "acceptance_criteria": [
+        "RC5 earnings risk calculation and temporal guards merged in PR #53",
+        "Telemetry persistence implemented in PR #79",
+        "Operational live telemetry activation strictly held pending owner authorization"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/60",
+        "https://github.com/daakara/finance/pull/53",
+        "https://github.com/daakara/finance/pull/79"
+      ],
+      "github_issues": [
+        60
+      ],
+      "github_prs": [
+        53,
+        79
+      ],
+      "authorization_boundary": "OWNER_GATE_REQUIRED",
+      "operational_state": "DORMANT_MERGED",
+      "carryforward_reason": "Code merged; live telemetry ingestion held (CORPORATE_EVENTS_TELEMETRY_ACTIVATION = NOT_AUTHORIZED)",
+      "reopening_trigger": "Product Owner activation authorization of Corporate Events live telemetry",
+      "historical_aliases": [
+        "INITIATIVE-S3-CORP-EVENTS-RC5",
+        "ISSUE-60"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S3-004",
+      "title": "Radar Reliability: Fail-Closed Error-versus-Zero Semantics & UI Retry",
+      "origin_sprint": "SPRINT_3",
+      "assigned_sprint": "SPRINT_4",
+      "priority": "P0",
+      "workstream": "RADAR_VCP",
+      "owner": "daakara",
+      "status": "READY",
+      "disposition": "SPRINT4_EXECUTION",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "PARTIAL",
+        "verification": "PASS",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "NOT_DEPLOYED",
+        "operational_execution": "NOT_APPLICABLE",
+        "production_evidence": "NOT_APPLICABLE",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Missing API connectivity not represented as 0 qualifying candidates",
+        "Explicit UI error states, retry affordances, and zero-count distinction"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/61",
+        "https://github.com/daakara/finance/pull/98",
+        "frontend/app/radar/page.tsx"
+      ],
+      "github_issues": [
+        61
+      ],
+      "github_prs": [
+        98
+      ],
+      "authorization_boundary": "BOUNDED_ENGINEERING",
+      "operational_state": "DRAFT_PR_AWAITING_MERGE",
+      "carryforward_reason": "Addressed in PR #98; pending PR #98 review and merge",
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "INITIATIVE-S3-RADAR-RELIABILITY-G6",
+        "ISSUE-61"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S3-005",
+      "title": "Radar Candidate Truth: Eligibility Contracts, False Affordances & Date Provenance",
+      "origin_sprint": "SPRINT_3",
+      "assigned_sprint": "SPRINT_4",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "owner": "daakara",
+      "status": "READY",
+      "disposition": "SPRINT4_EXECUTION",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "PARTIAL",
+        "verification": "PASS",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "NOT_DEPLOYED",
+        "operational_execution": "NOT_APPLICABLE",
+        "production_evidence": "NOT_APPLICABLE",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Eliminate false execution affordances on discovery scanner candidates (isActionable=false)",
+        "Transparent price observation dates and candidate eligibility contracts"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/62",
+        "https://github.com/daakara/finance/pull/98",
+        "frontend/app/radar/page.tsx"
+      ],
+      "github_issues": [
+        62
+      ],
+      "github_prs": [
+        98
+      ],
+      "authorization_boundary": "BOUNDED_ENGINEERING",
+      "operational_state": "DRAFT_PR_AWAITING_MERGE",
+      "carryforward_reason": "Addressed in PR #98; pending PR #98 review and merge",
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "INITIATIVE-S3-RADAR-CANDIDATE-TRUTH",
+        "ISSUE-62"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S3-006",
+      "title": "Research Workstation: Decision-First Layout Rollout (Quality Watch Collection)",
+      "origin_sprint": "SPRINT_3",
+      "assigned_sprint": "SPRINT_4",
+      "priority": "P1",
+      "workstream": "UX_WORKSTATION",
+      "owner": "daakara",
+      "status": "READY",
+      "disposition": "SPRINT4_EXECUTION",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "PARTIAL",
+        "verification": "PASS",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "NOT_DEPLOYED",
+        "operational_execution": "NOT_APPLICABLE",
+        "production_evidence": "NOT_APPLICABLE",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Decision-first layout rollout across FIX, DUOL, ULTA, MEDP, ISRG, DECK",
+        "Four-pillar confluence and inline preflight readiness bar unified in UX"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/63",
+        "https://github.com/daakara/finance/pull/86",
+        "https://github.com/daakara/finance/pull/98"
+      ],
+      "github_issues": [
+        63
+      ],
+      "github_prs": [
+        86,
+        98
+      ],
+      "authorization_boundary": "BOUNDED_ENGINEERING",
+      "operational_state": "DRAFT_PR_AWAITING_MERGE",
+      "carryforward_reason": "Components unified in PR #98; pending final PR #98 review",
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "INITIATIVE-S3-RESEARCH-DECISION-FIRST",
+        "ISSUE-63"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S3-007",
+      "title": "Scanner Safety: VCP History-Boundary Containment & Operational Repair",
+      "origin_sprint": "SPRINT_3",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "priority": "P0",
+      "workstream": "RADAR_VCP",
+      "owner": "daakara",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "PUBLISHED_MERGED",
+        "deployment": "DEPLOYED_DORMANT",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "INSUFFICIENT",
+        "owner_authorization": "HOLD"
+      },
+      "acceptance_criteria": [
+        "Causal segmentation and frozen replay fixtures merged in PR #76",
+        "Scanner activation and live enrollment remain strictly held (G-VCP-012)"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/64",
+        "https://github.com/daakara/finance/pull/76",
+        "https://github.com/daakara/finance/pull/73"
+      ],
+      "github_issues": [
+        64
+      ],
+      "github_prs": [
+        73,
+        76
+      ],
+      "authorization_boundary": "OWNER_GATE_REQUIRED",
+      "operational_state": "DORMANT_HELD",
+      "carryforward_reason": "Historical repair merged; production scanner activation held (G-VCP-012 = ACTIVATION_DEFERRED)",
+      "reopening_trigger": "Product Owner activation authorization of Minervini VCP scanner",
+      "historical_aliases": [
+        "INITIATIVE-S3-SCANNER-SAFETY-VCP",
+        "ISSUE-64"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S3-008",
+      "title": "Research Supply-Chain: External Research Evidence Custody & Sigstore Verification",
+      "origin_sprint": "SPRINT_3",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "priority": "P2",
+      "workstream": "RESEARCH_CUSTODY",
+      "owner": "daakara",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "PARTIAL",
+        "verification": "PASS",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "NOT_DEPLOYED",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "INSUFFICIENT",
+        "owner_authorization": "HOLD"
+      },
+      "acceptance_criteria": [
+        "INSTR-001 evidence custody and synthetic observer validation drafted in PR #75",
+        "External custody activation held until owner ratification"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/65",
+        "https://github.com/daakara/finance/pull/75"
+      ],
+      "github_issues": [
+        65
+      ],
+      "github_prs": [
+        75
+      ],
+      "authorization_boundary": "OWNER_GATE_REQUIRED",
+      "operational_state": "HOLD",
+      "carryforward_reason": "External custody infrastructure drafted in PR #75; external custody activation held (EXTERNAL_CUSTODY_ACTIVATION = NOT_AUTHORIZED)",
+      "reopening_trigger": "Research Owner authorization of Sigstore / external evidence custody",
+      "historical_aliases": [
+        "INITIATIVE-S3-RESEARCH-EVIDENCE-CUSTODY",
+        "ISSUE-65"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S3-009",
+      "title": "UX Governance: Human Pilot P00 & Frozen Prototype Local Access",
+      "origin_sprint": "SPRINT_3",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "priority": "P2",
+      "workstream": "UX_WORKSTATION",
+      "owner": "daakara",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "PARTIAL",
+        "verification": "PASS",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "NOT_DEPLOYED",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "INSUFFICIENT",
+        "owner_authorization": "HOLD"
+      },
+      "acceptance_criteria": [
+        "Local-only prototype harness for participant research P00",
+        "Live human participant evaluation held until owner authorizes"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/66",
+        "https://github.com/daakara/finance/pull/75"
+      ],
+      "github_issues": [
+        66
+      ],
+      "github_prs": [
+        75
+      ],
+      "authorization_boundary": "OWNER_GATE_REQUIRED",
+      "operational_state": "HOLD",
+      "carryforward_reason": "Drafted in PR #75; participant research held (UX_PARTICIPANT_RESEARCH = NOT_AUTHORIZED)",
+      "reopening_trigger": "Research Owner authorization of formative human participant testing",
+      "historical_aliases": [
+        "INITIATIVE-S3-UX-HUMAN-PILOT-P00",
+        "ISSUE-66"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S3-010",
+      "title": "Evidence Quality Audit: Pre-Flight Disclosures & Smart Money Truthfulness",
+      "origin_sprint": "SPRINT_3",
+      "assigned_sprint": "SPRINT_4",
+      "priority": "P0",
+      "workstream": "SMART_MONEY",
+      "owner": "daakara",
+      "status": "READY",
+      "disposition": "SPRINT4_EXECUTION",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "PARTIAL",
+        "integration": "PARTIAL",
+        "verification": "PASS",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "DEPLOYED_DORMANT",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "VERIFIED",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Preflight fail-closed execution clearance merged in PR #87 and PR #89",
+        "Smart Money Phase 1 dormant readiness merged in PR #100",
+        "Statutory reporting lag disclosures from PR #72 integrated"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/67",
+        "https://github.com/daakara/finance/pull/72",
+        "https://github.com/daakara/finance/pull/87",
+        "https://github.com/daakara/finance/pull/100"
+      ],
+      "github_issues": [
+        67
+      ],
+      "github_prs": [
+        72,
+        87,
+        100
+      ],
+      "authorization_boundary": "BOUNDED_ENGINEERING",
+      "operational_state": "PARTIALLY_MERGED",
+      "carryforward_reason": "PR #72 statutory lag copy remediation pending final integration with merged PR #100",
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "INITIATIVE-S3-AUDIT-PREFLIGHT-SMART-MONEY",
+        "ISSUE-67"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S3-011",
+      "title": "Research Closure: Air Lease Corporation (ALC) Analysis & Valuation Reproduction",
+      "origin_sprint": "SPRINT_3",
+      "assigned_sprint": "SPRINT_3",
+      "priority": "P2",
+      "workstream": "RESEARCH_VALUATION",
+      "owner": "daakara",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "LOCAL_ONLY",
+        "deployment": "NOT_APPLICABLE",
+        "operational_execution": "EXECUTED",
+        "production_evidence": "VERIFIED",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Reproduce ALC valuation and XIRR under conservative economic assumptions",
+        "Certify research record and update institutional dossier"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/68",
+        "ARX_ALC_FINAL_CERTIFICATION_DECISION_V3.md",
+        "ARX_ALC_VALUATION_REPRODUCTION_AUDIT.md"
+      ],
+      "github_issues": [
+        68
+      ],
+      "github_prs": [],
+      "authorization_boundary": "RESEARCH_ONLY",
+      "operational_state": "COMPLETED_RESEARCH",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "INITIATIVE-S3-RESEARCH-ALC-CLOSURE",
+        "ISSUE-68"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S3-012",
+      "title": "Research Acceptance: DECK Undervaluation Post-Release & Valuation Parity",
+      "origin_sprint": "SPRINT_3",
+      "assigned_sprint": "SPRINT_3",
+      "priority": "P3",
+      "workstream": "RESEARCH_VALUATION",
+      "owner": "daakara",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "PUBLISHED_MERGED",
+        "deployment": "DEPLOYED_ACTIVE",
+        "operational_execution": "EXECUTED",
+        "production_evidence": "VERIFIED",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Verify post-release valuation parity for Deckers Outdoor (DECK)",
+        "Preserve conservative expectation-gap model and quality watch criteria"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/69",
+        "docs/research/evidence_led_discovery/PILOT_EVALUATION_REPORT.md"
+      ],
+      "github_issues": [
+        69
+      ],
+      "github_prs": [],
+      "authorization_boundary": "RESEARCH_ONLY",
+      "operational_state": "COMPLETED_RESEARCH",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "INITIATIVE-S3-RESEARCH-DECK-ACCEPTANCE",
+        "ISSUE-69"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S3-013",
+      "title": "Implementation Acceptance: Minervini VCP Pattern & Stage Analysis Verification",
+      "origin_sprint": "SPRINT_3",
+      "assigned_sprint": "SPRINT_4",
+      "priority": "P1",
+      "workstream": "RADAR_VCP",
+      "owner": "daakara",
+      "status": "READY",
+      "disposition": "SPRINT4_DISCOVERY",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "PARTIAL",
+        "integration": "PARTIAL",
+        "verification": "PASS",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "DEPLOYED_DORMANT",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "INSUFFICIENT",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Algorithmic verification of 4-stage Minervini trend template and contraction sequence",
+        "Historical replay test fixtures merged in PR #76",
+        "Passive observation universe screening specification ready for Sprint 4"
+      ],
+      "dependencies": [
+        "ARX-S4-RADAR-001"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/70",
+        "https://github.com/daakara/finance/pull/73",
+        "https://github.com/daakara/finance/pull/76"
+      ],
+      "github_issues": [
+        70
+      ],
+      "github_prs": [
+        73,
+        76
+      ],
+      "authorization_boundary": "BOUNDED_DISCOVERY",
+      "operational_state": "ALGORITHM_VERIFIED_SCANNER_PENDING",
+      "carryforward_reason": "Algorithm verified on main; operational universe activation carried forward to Sprint 4",
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "INITIATIVE-S3-VCP-IMPLEMENTATION-ACCEPTANCE",
+        "ISSUE-70"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S3-014",
+      "title": "HVA-01 Wave 4B-S Restricted Canonicalization and Schema Remediation",
+      "origin_sprint": "SPRINT_3",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "priority": "P2",
+      "workstream": "RESEARCH_CUSTODY",
+      "owner": "daakara",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "PARTIAL",
+        "verification": "PASS",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "NOT_DEPLOYED",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "INSUFFICIENT",
+        "owner_authorization": "HOLD"
+      },
+      "acceptance_criteria": [
+        "Wave 4B-S synthetic witness and schema canonicalization drafted in PR #78",
+        "Protocol ratification remains ungranted (HVA00_PROTOCOL_RATIFICATION = NOT_GRANTED)"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/78"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        78
+      ],
+      "authorization_boundary": "OWNER_GATE_REQUIRED",
+      "operational_state": "HOLD",
+      "carryforward_reason": "Drafted in PR #78; evaluation held (HVA01_HUMAN_EVALUATION = NOT_AUTHORIZED)",
+      "reopening_trigger": "Research Owner formal protocol ratification",
+      "historical_aliases": [
+        "HVA01_WAVE_4B_S"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S3-015",
+      "title": "HVA-01 Wave 4C-1 Dual-TSA Timestamp Verification",
+      "origin_sprint": "SPRINT_3",
+      "assigned_sprint": "HOLDING_QUEUE_OWNER_GATED",
+      "priority": "P2",
+      "workstream": "RESEARCH_CUSTODY",
+      "owner": "daakara",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "PARTIAL",
+        "verification": "PASS",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "NOT_DEPLOYED",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "INSUFFICIENT",
+        "owner_authorization": "HOLD"
+      },
+      "acceptance_criteria": [
+        "Dual-TSA timestamp verification engine drafted in PR #83 (stacked on PR #78)",
+        "Operational timestamp authority held until ratification"
+      ],
+      "dependencies": [
+        "ARX-S3-014"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/83"
+      ],
+      "github_issues": [],
+      "github_prs": [
+        83
+      ],
+      "authorization_boundary": "OWNER_GATE_REQUIRED",
+      "operational_state": "HOLD",
+      "carryforward_reason": "Drafted in PR #83; timestamp authority held (HVA00_PROTOCOL_RATIFICATION = NOT_GRANTED)",
+      "reopening_trigger": "Research Owner formal protocol ratification",
+      "historical_aliases": [
+        "HVA01_WAVE_4C_1"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S3-016",
+      "title": "Synthesis E V3 Application-Wide UX Parity & Decision Hierarchy",
+      "origin_sprint": "SPRINT_3",
+      "assigned_sprint": "SPRINT_4",
+      "priority": "P1",
+      "workstream": "UX_WORKSTATION",
+      "owner": "daakara",
+      "status": "READY",
+      "disposition": "SPRINT4_EXECUTION",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "PARTIAL",
+        "verification": "PASS",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "DEPLOYED_DORMANT",
+        "operational_execution": "NOT_APPLICABLE",
+        "production_evidence": "VERIFIED",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Comprehensive application-wide UX parity across Radar, Analysis, Trade Plan, Portfolio, Research",
+        "PR #98 clean candidate verified against mainline and ready for final review"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/98",
+        "https://github.com/daakara/finance/pull/94",
+        "https://github.com/daakara/finance/pull/96"
+      ],
+      "github_issues": [
+        61,
+        62,
+        63
+      ],
+      "github_prs": [
+        98
+      ],
+      "authorization_boundary": "BOUNDED_ENGINEERING",
+      "operational_state": "DRAFT_PR_AWAITING_MERGE",
+      "carryforward_reason": "PR #98 clean candidate branch prepared; pending owner review and merge",
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "SYNTHESIS_E_V3",
+        "PR-98"
+      ],
+      "superseded_by": null
+    },
+    {
+      "task_id": "ARX-S3-017",
+      "title": "Smart Money Phase 1: Operational Readiness, Worker Fencing & Observability",
+      "origin_sprint": "SPRINT_3",
+      "assigned_sprint": "SPRINT_3",
+      "priority": "P0",
+      "workstream": "SMART_MONEY",
+      "owner": "ARX_CORE_TEAM",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "dimensions": {
+        "requirements": "DONE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "PUBLISHED_MERGED",
+        "deployment": "DEPLOYED_DORMANT",
+        "operational_execution": "NOT_PERFORMED",
+        "production_evidence": "VERIFIED",
+        "owner_authorization": "AUTHORIZED"
+      },
+      "acceptance_criteria": [
+        "Dormant worker lifecycle and session advisory fencing (pg_try_advisory_lock)",
+        "Disaster recovery runbook with verified rehearsal restore procedures",
+        "Observability metrics and alerts with dormant suppression",
+        "Merged to main via PR #100 commit 4bf9f3b"
+      ],
+      "dependencies": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/100",
+        "tests/test_smart_money_worker_lifecycle_and_fencing.py",
+        "docs/governance/sprint3/SMART_MONEY_PHASE1_PRODUCTION_SAFETY_CASE.md"
+      ],
+      "github_issues": [
+        67
+      ],
+      "github_prs": [
+        100
+      ],
+      "authorization_boundary": "MERGED_MAINLINE",
+      "operational_state": "DORMANT_MERGED",
+      "carryforward_reason": null,
+      "reopening_trigger": null,
+      "historical_aliases": [
+        "SMART_MONEY_PHASE1",
+        "PR-100"
+      ],
+      "superseded_by": null
+    }
+  ]
+}

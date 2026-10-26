@@ -1,0 +1,233 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARXCanonicalBacklog",
+  "description": "Authoritative machine-readable schema for ARX Terminal enterprise backlog and task lifecycle tracking.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "backlog_name",
+    "last_reconciled",
+    "active_sprint",
+    "governance_framework",
+    "immutable_holds",
+    "tasks"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0.0"]
+    },
+    "backlog_name": {
+      "type": "string"
+    },
+    "last_reconciled": {
+      "type": "string"
+    },
+    "active_sprint": {
+      "type": "string",
+      "enum": ["SPRINT_1", "SPRINT_2", "SPRINT_3", "SPRINT_4"]
+    },
+    "governance_framework": {
+      "type": "string"
+    },
+    "immutable_holds": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/CanonicalTask"
+      }
+    }
+  },
+  "definitions": {
+    "CanonicalTask": {
+      "type": "object",
+      "required": [
+        "task_id",
+        "title",
+        "origin_sprint",
+        "assigned_sprint",
+        "priority",
+        "workstream",
+        "owner",
+        "status",
+        "disposition",
+        "dimensions",
+        "acceptance_criteria",
+        "dependencies",
+        "evidence_refs",
+        "github_issues",
+        "github_prs",
+        "authorization_boundary",
+        "operational_state"
+      ],
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "pattern": "^ARX-S[1-4]-[A-Z0-9\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 5
+        },
+        "origin_sprint": {
+          "type": "string",
+          "enum": ["SPRINT_1", "SPRINT_2", "SPRINT_3", "SPRINT_4", "UNASSIGNED"]
+        },
+        "assigned_sprint": {
+          "type": "string",
+          "enum": [
+            "SPRINT_1",
+            "SPRINT_2",
+            "SPRINT_3",
+            "SPRINT_4",
+            "HOLDING_QUEUE_OWNER_GATED",
+            "DEFERRED_BACKLOG",
+            "SPRINT_UNASSIGNED"
+          ]
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["P0", "P1", "P2", "P3"]
+        },
+        "workstream": {
+          "type": "string",
+          "enum": [
+            "GOVERNANCE",
+            "ARCHITECTURE",
+            "RADAR_VCP",
+            "SMART_MONEY",
+            "CORPORATE_EVENTS",
+            "UX_WORKSTATION",
+            "RESEARCH_CUSTODY",
+            "RESEARCH_VALUATION",
+            "INFRASTRUCTURE"
+          ]
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 2
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "IN_PROGRESS",
+            "READY",
+            "BLOCKED",
+            "DEFERRED",
+            "COMPLETED",
+            "SUPERSEDED"
+          ]
+        },
+        "disposition": {
+          "type": "string",
+          "enum": [
+            "CLOSED_VERIFIED",
+            "SPRINT4_EXECUTION",
+            "SPRINT4_DISCOVERY",
+            "SPRINT4_OWNER_GATED",
+            "EXISTING_SPRINT_ASSIGNED",
+            "SUPERSEDED",
+            "TEST_OR_ADMINISTRATIVE",
+            "UNVERIFIED"
+          ]
+        },
+        "dimensions": {
+          "type": "object",
+          "required": [
+            "requirements",
+            "implementation",
+            "integration",
+            "verification",
+            "repository_publication",
+            "deployment",
+            "operational_execution",
+            "production_evidence",
+            "owner_authorization"
+          ],
+          "properties": {
+            "requirements": {
+              "type": "string",
+              "enum": ["DONE", "IN_PROGRESS", "PENDING", "NOT_APPLICABLE"]
+            },
+            "implementation": {
+              "type": "string",
+              "enum": ["DONE", "PARTIAL", "IN_PROGRESS", "NOT_STARTED", "NOT_APPLICABLE"]
+            },
+            "integration": {
+              "type": "string",
+              "enum": ["DONE", "PARTIAL", "NOT_STARTED", "NOT_APPLICABLE"]
+            },
+            "verification": {
+              "type": "string",
+              "enum": ["PASS", "PARTIAL", "PENDING", "NOT_APPLICABLE"]
+            },
+            "repository_publication": {
+              "type": "string",
+              "enum": ["PUBLISHED_MERGED", "DRAFT_PR", "LOCAL_ONLY", "NOT_APPLICABLE"]
+            },
+            "deployment": {
+              "type": "string",
+              "enum": ["DEPLOYED_DORMANT", "DEPLOYED_ACTIVE", "NOT_DEPLOYED", "NOT_APPLICABLE"]
+            },
+            "operational_execution": {
+              "type": "string",
+              "enum": ["EXECUTED", "PARTIAL", "NOT_PERFORMED", "NOT_APPLICABLE"]
+            },
+            "production_evidence": {
+              "type": "string",
+              "enum": ["VERIFIED", "INSUFFICIENT", "NOT_APPLICABLE"]
+            },
+            "owner_authorization": {
+              "type": "string",
+              "enum": ["AUTHORIZED", "CONDITIONALLY_PREAPPROVED", "HOLD", "NOT_GRANTED", "NOT_APPLICABLE"]
+            }
+          }
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "github_issues": {
+          "type": "array",
+          "items": { "type": "integer" }
+        },
+        "github_prs": {
+          "type": "array",
+          "items": { "type": "integer" }
+        },
+        "authorization_boundary": {
+          "type": "string"
+        },
+        "operational_state": {
+          "type": "string"
+        },
+        "carryforward_reason": {
+          "type": ["string", "null"]
+        },
+        "reopening_trigger": {
+          "type": ["string", "null"]
+        },
+        "historical_aliases": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "superseded_by": {
+          "type": ["string", "null"]
+        }
+      }
+    }
+  }
+}
