@@ -295,12 +295,12 @@ export default function StandardTerminalView({
                   R:R {kl.profitRiskRatio ? `${kl.profitRiskRatio.toFixed(2)} : 1.0` : "N/A"}
                 </span>
               </div>
-              <div id="middle-panel-content" data-testid="cockpit-execution-ladder" className="ladder-grid grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+              <div id="middle-panel-content" data-testid="cockpit-execution-ladder" className="ladder-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs font-mono">
                 <div className="ladder-cell min-w-0 p-2.5 rounded-xl bg-[#070b13] border border-[#1b2639]">
                   <span className="cell-lbl text-[10px] text-slate-400 block uppercase font-bold">
                     {isStaleTape ? "Historical Pivot" : "Pivot"}
                   </span>
-                  <span id="cell-pivot" className="cell-val mono text-white font-bold block mt-0.5 whitespace-normal break-words text-xs leading-tight tabular-nums">
+                  <span id="cell-pivot" className="cell-val mono text-white font-bold block mt-0.5 whitespace-nowrap text-xs leading-tight tabular-nums">
                     {pivotPrice != null ? `$${pivotPrice.toFixed(2)}` : "N/A"}
                   </span>
                 </div>
@@ -308,15 +308,15 @@ export default function StandardTerminalView({
                   <span className="cell-lbl text-[10px] text-slate-400 block uppercase font-bold">
                     {isStaleTape ? "Historical Zone" : "Buy Zone"}
                   </span>
-                  <span id="cell-entry" className="cell-val mono text-amber-300 font-bold block mt-0.5 whitespace-normal break-words text-xs leading-tight">
+                  <span id="cell-entry" className="cell-val mono text-amber-300 font-bold block mt-0.5 text-xs leading-tight">
                     {kl.entryMin != null && kl.entryMax != null ? (
-                      <span className="flex flex-col sm:inline">
-                        <span className="tabular-nums">${kl.entryMin.toFixed(2)}</span>
-                        <span className="text-slate-400 font-normal text-[10px] sm:text-xs px-0.5">to</span>
-                        <span className="tabular-nums">${kl.entryMax.toFixed(2)}</span>
+                      <span className="flex flex-wrap items-baseline gap-1">
+                        <span className="tabular-nums whitespace-nowrap">${kl.entryMin.toFixed(2)}</span>
+                        <span className="text-slate-400 font-normal text-[10px] sm:text-xs">to</span>
+                        <span className="tabular-nums whitespace-nowrap">${kl.entryMax.toFixed(2)}</span>
                       </span>
                     ) : (
-                      kl.watchZone || "Awaiting Setup"
+                      <span className="whitespace-nowrap">{kl.watchZone || "Awaiting Setup"}</span>
                     )}
                   </span>
                 </div>
@@ -324,12 +324,12 @@ export default function StandardTerminalView({
                   <span className="cell-lbl text-[10px] text-slate-400 block uppercase font-bold">
                     {isStaleTape ? "Historical Stop" : "Stop Loss"}
                   </span>
-                  <span id="cell-stop" className="cell-val negative mono text-rose-400 font-bold block mt-0.5 whitespace-normal break-words text-xs leading-tight">
+                  <span id="cell-stop" className="cell-val negative mono text-rose-400 font-bold block mt-0.5 text-xs leading-tight">
                     {kl.stopLoss ? (
-                      <span className="flex flex-col sm:inline">
-                        <span className="tabular-nums">${kl.stopLoss.toFixed(2)}</span>
+                      <span className="flex flex-wrap items-baseline gap-1">
+                        <span className="tabular-nums whitespace-nowrap">${kl.stopLoss.toFixed(2)}</span>
                         {pivotPrice != null && pivotPrice > 0 ? (
-                          <span className="text-rose-400/80 font-normal text-[10px] px-0.5">
+                          <span className="text-rose-400/80 font-normal text-[10px] whitespace-nowrap">
                             (-{Math.abs(((pivotPrice - kl.stopLoss) / pivotPrice) * 100).toFixed(1)}% base)
                           </span>
                         ) : null}
@@ -341,12 +341,12 @@ export default function StandardTerminalView({
                   <span className="cell-lbl text-[10px] text-slate-400 block uppercase font-bold">
                     {isStaleTape ? "Historical Target" : "Target 1"}
                   </span>
-                  <span id="cell-target" className="cell-val positive mono text-emerald-400 font-bold block mt-0.5 whitespace-normal break-words text-xs leading-tight">
+                  <span id="cell-target" className="cell-val positive mono text-emerald-400 font-bold block mt-0.5 text-xs leading-tight">
                     {kl.target1 ? (
-                      <span className="flex flex-col sm:inline">
-                        <span className="tabular-nums">${kl.target1.toFixed(2)}</span>
+                      <span className="flex flex-wrap items-baseline gap-1">
+                        <span className="tabular-nums whitespace-nowrap">${kl.target1.toFixed(2)}</span>
                         {pivotPrice != null && pivotPrice > 0 ? (
-                          <span className="text-emerald-400/80 font-normal text-[10px] px-0.5">
+                          <span className="text-emerald-400/80 font-normal text-[10px] whitespace-nowrap">
                             (+{Math.abs(((kl.target1 - pivotPrice) / pivotPrice) * 100).toFixed(1)}%)
                           </span>
                         ) : null}
@@ -421,17 +421,17 @@ export default function StandardTerminalView({
                 </div>
                 <div className="sizing-cell p-2.5 rounded-lg bg-[#070b13] border border-[#1b2639] space-y-1">
                   <div className="flex items-center justify-between text-[10px] text-slate-400 uppercase font-bold">
-                    <span className="sizing-lbl">Budget Utilization</span>
+                    <span className="sizing-lbl">Position Sizing Basis</span>
                     <span className="text-[9px] font-mono text-cyan-400">
-                      {isActionable ? "Authorized" : "Suppressed"}
+                      {isStaleTape ? "Prohibited" : isActionable ? "Model Active" : "Suppressed"}
                     </span>
                   </div>
                   <span id="sizing-utilization" className="sizing-val mono font-bold text-slate-300 block text-xs">
                     {isStaleTape
                       ? "Execution Prohibited (Stale Tape)"
                       : !isActionable
-                      ? "0% (Awaiting Execution Clearance)"
-                      : "100% of Risk Allowance"}
+                      ? "0% (Awaiting Setup Trigger)"
+                      : "Informational Sizing (1% Risk Model)"}
                   </span>
                 </div>
               </div>
@@ -721,7 +721,7 @@ export default function StandardTerminalView({
                   onClick={onOpenSizer}
                   className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold font-mono rounded-xl text-xs transition-all active:scale-95 cursor-pointer shadow-md min-h-[44px]"
                 >
-                  ⚖️ Size & Execute Position (Buy Zone)
+                  ⚖️ Size Position (Buy Zone)
                 </button>
               ) : insight.terminalState.posture === "EXIT_REVIEW" ? (
                 <button

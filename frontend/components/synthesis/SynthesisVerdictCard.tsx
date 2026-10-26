@@ -193,26 +193,26 @@ export default function SynthesisVerdictCard({
           )}
         </div>
 
-        <div id="middle-panel-content" className="grid grid-cols-2 gap-2 text-xs font-mono">
+        <div id="middle-panel-content" className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
           <div className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] min-w-0">
             <span className="text-[10px] text-[var(--text-muted)] block uppercase font-bold">Buy Zone</span>
-            <span className="text-amber-300 font-bold block mt-0.5 whitespace-normal break-words text-xs leading-tight">{buyZone || "Awaiting Setup"}</span>
+            <span className="text-amber-300 font-bold block mt-0.5 whitespace-nowrap tabular-nums text-xs leading-tight">{buyZone || "Awaiting Setup"}</span>
           </div>
           <div className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] min-w-0">
             <span className="text-[10px] text-[var(--text-muted)] block uppercase font-bold">Reward : Risk</span>
-            <span className="text-emerald-400 font-bold block mt-0.5 whitespace-normal break-words">
+            <span className="text-emerald-400 font-bold block mt-0.5 whitespace-nowrap">
               {profitRiskRatio ? `${profitRiskRatio.toFixed(2)} : 1.0` : "N/A"}
             </span>
           </div>
           <div className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] min-w-0">
             <span className="text-[10px] text-[var(--text-muted)] block uppercase font-bold">Profit Target</span>
-            <span className="text-emerald-400 font-bold block mt-0.5 whitespace-normal break-words tabular-nums">
+            <span className="text-emerald-400 font-bold block mt-0.5 whitespace-nowrap tabular-nums">
               {profitTarget ? `$${profitTarget.toFixed(2)}` : "N/A"}
             </span>
           </div>
           <div className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] min-w-0">
             <span className="text-[10px] text-[var(--text-muted)] block uppercase font-bold">Max Stop Loss</span>
-            <span className="text-rose-400 font-bold block mt-0.5 whitespace-normal break-words tabular-nums">
+            <span className="text-rose-400 font-bold block mt-0.5 whitespace-nowrap tabular-nums">
               {maxStop ? `$${maxStop.toFixed(2)}` : "N/A"}
             </span>
           </div>

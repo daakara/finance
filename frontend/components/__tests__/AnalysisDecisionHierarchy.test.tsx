@@ -519,7 +519,7 @@ describe("ARX Terminal Analysis Decision Hierarchy Acceptance Suite", () => {
       render(<StandardTerminalView insight={insight} onOpenSizer={vi.fn()} onOpenWhy={vi.fn()} />);
       expect(screen.getByText(/CONFIRMED ACCUMULATION BREAKOUT/i)).toBeDefined();
       expect(screen.getByTestId("actionability-badge").textContent).toContain("ACTIONABLE");
-      expect(screen.getByText(/Size & Execute Position/i)).toBeDefined();
+      expect(screen.getByText(/Size.*Position/i)).toBeDefined();
     });
   });
 
@@ -642,7 +642,7 @@ describe("ARX Terminal Analysis Decision Hierarchy Acceptance Suite", () => {
       const { rerender } = render(
         <StandardTerminalView insight={nonActionableInsight} onOpenSizer={vi.fn()} onOpenWhy={vi.fn()} />
       );
-      expect(screen.queryByText(/Size & Execute Position/i)).toBeNull();
+      expect(screen.queryByText(/Size.*Position/i)).toBeNull();
 
       // Actionable setup
       const actionableInsight = createFixtureInsight({
@@ -656,7 +656,7 @@ describe("ARX Terminal Analysis Decision Hierarchy Acceptance Suite", () => {
         },
       });
       rerender(<StandardTerminalView insight={actionableInsight} onOpenSizer={vi.fn()} onOpenWhy={vi.fn()} />);
-      expect(screen.getByText(/Size & Execute Position/i)).toBeDefined();
+      expect(screen.getByText(/Size.*Position/i)).toBeDefined();
     });
 
     it("INV-ANALYSIS-07: SHORT control cannot activate unsupported calculations in DayTraderPositionSizer", () => {
