@@ -373,6 +373,8 @@ function TerminalContent() {
               key={`${selectedSymbol}_${userRole}`}
               symbol={selectedSymbol}
               companyName={aliasRecommendation?.companyName || selectedSymbol}
+              exchange={data?.exchange || (data?.canonicalInstrument as any)?.exchange || (aliasRecommendation as any)?.exchange || "NASDAQ"}
+              marketSession={data?.marketSession || data?.marketPriceState?.marketSession || (data?._dataSource === "live" ? "Market Open / Live Intraday" : "Regular Trading Hours")}
               currentPrice={data?.currentPrice ?? (SpotPriceRegistry.get(selectedSymbol)?.price || 0)}
               changePct={data?.priceChangePct24h || 0}
               setupScore={data?.confluence?.confluenceScore !== undefined ? Math.round(data.confluence.confluenceScore) : undefined}

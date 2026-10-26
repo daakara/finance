@@ -734,6 +734,7 @@ export interface AnalyticsResponse {
   liveObservedAt?: number | null;
   liveSource?: string;
   liveFreshness?: string;
+  exchange?: string;
   marketSession?: string;
   marketPriceState?: MarketPriceState;
   priceState?: "AVAILABLE" | "DATA_UNAVAILABLE";

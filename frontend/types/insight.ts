@@ -133,6 +133,8 @@ export interface QuantitativeInsight {
   id: string;
   symbol: string;
   companyName: string;
+  exchange?: string;
+  marketSession?: string;
   price: number;
   changePct: number;
   setupScore: number;
@@ -201,6 +203,8 @@ export interface QuantitativeInsight {
 
   // Tier 3: Quantitative Data (Advanced)
   advanced: {
+    exchange?: string;
+    marketSession?: string;
     rsi?: number;
     ema20?: number;
     sma50?: number;

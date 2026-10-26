@@ -18,6 +18,8 @@ import { resolveOverallEvidenceBadge } from "../lib/dataProvenance";
 interface AdaptiveTerminalProps {
   symbol: string;
   companyName?: string;
+  exchange?: string;
+  marketSession?: string;
   currentPrice: number;
   changePct: number;
   setupScore?: number;
@@ -42,6 +44,8 @@ interface AdaptiveTerminalProps {
 export default function AdaptiveTerminal({
   symbol,
   companyName = "Asset Intelligence",
+  exchange,
+  marketSession,
   currentPrice,
   changePct,
   setupScore,
@@ -129,6 +133,16 @@ export default function AdaptiveTerminal({
       ...freshness,
       status: (freshness.stalenessDays && freshness.stalenessDays > 4) ? "STALE_HISTORICAL" : freshness.status,
     };
+  }
+
+  if (exchange) {
+    (insight as any).exchange = exchange;
+    (insight.advanced as any).exchange = exchange;
+  }
+
+  if (marketSession) {
+    (insight as any).marketSession = marketSession;
+    (insight.advanced as any).marketSession = marketSession;
   }
 
   const evidenceBadge = resolveOverallEvidenceBadge({

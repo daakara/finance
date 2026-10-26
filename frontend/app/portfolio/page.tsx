@@ -837,65 +837,70 @@ export default function PortfolioPage() {
           </div>
         </div>
 
-        {/* Positions Table */}
+        {/* Positions Table / Empty State */}
         <div className="bg-[#111722] border border-[#243044] rounded-xl shadow-xl overflow-hidden">
-          <div className="p-4 border-b border-[#1b2434] flex items-center justify-between">
+          <div className="p-4 border-b border-[#1b2434] flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm sm:text-base font-bold text-white tracking-tight flex items-center gap-2">
               <span>📊</span>
               <span>Open Quant Holdings</span>
             </h2>
-            <span className="text-xs text-slate-400">Click any symbol to open in Terminal</span>
+            <div className="flex items-center gap-2">
+              {positions.length > 0 && (
+                <span className="sm:hidden text-[10px] text-cyan-400 font-mono bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/60">
+                  Swipe ⟷
+                </span>
+              )}
+              <span className="text-xs text-slate-400">Click any symbol to open in Terminal</span>
+            </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#090d14] text-slate-400 border-b border-[#1b2434] uppercase text-[10px]">
-                <tr>
-                  <th className="py-3 px-4">Asset</th>
-                  <th className="py-3 px-4">Execution Status</th>
-                  <th className="py-3 px-4">Shares</th>
-                  <th className="py-3 px-4">Entry Price</th>
-                  <th className="py-3 px-4">Current Price</th>
-                  <th className="py-3 px-4">Market Value</th>
-                  <th className="py-3 px-4">Unrealized P&L</th>
-                  <th className="py-3 px-4">Risk Ladder</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1b2434] font-medium tabular-nums">
-                {positions.length === 0 ? (
+          {positions.length === 0 ? (
+            <div className="py-12 px-4 text-center">
+              <div className="max-w-md mx-auto space-y-3 font-mono">
+                <div className="w-12 h-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-2xl">
+                  💼
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-slate-200 font-mono">No Active Portfolio Holdings Recorded</h3>
+                  <p className="text-xs text-slate-400 font-sans leading-relaxed break-words">
+                    No open positions are currently recorded. Holdings appear here automatically when you record an execution fill in Setups, or you can add an existing position manually.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+                  <Link
+                    href="/setups"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold font-sans transition-transform active:scale-95 shadow-lg shadow-cyan-950/50 cursor-pointer"
+                  >
+                    <span>Explore Setups →</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenAddModal()}
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold font-sans transition-colors border border-slate-700 cursor-pointer"
+                  >
+                    <span>➕ Add Manual Holding</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs min-w-[720px]">
+                <thead className="bg-[#090d14] text-slate-400 border-b border-[#1b2434] uppercase text-[10px]">
                   <tr>
-                    <td colSpan={9} className="py-12 px-4 text-center">
-                      <div className="max-w-md mx-auto space-y-3 font-mono">
-                        <div className="w-12 h-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-2xl">
-                          💼
-                        </div>
-                        <div className="space-y-1">
-                          <h3 className="text-sm font-bold text-slate-200 font-mono">No Active Portfolio Holdings Recorded</h3>
-                          <p className="text-xs text-slate-400 font-sans leading-relaxed">
-                            No open positions are currently recorded. Holdings appear here automatically when you record an execution fill in Setups, or you can add an existing position manually.
-                          </p>
-                        </div>
-                        <div className="flex items-center justify-center gap-2.5 pt-2">
-                          <Link
-                            href="/setups"
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold font-sans transition-transform active:scale-95 shadow-lg shadow-cyan-950/50 cursor-pointer"
-                          >
-                            <span>Explore Setups →</span>
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenAddModal()}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold font-sans transition-colors border border-slate-700 cursor-pointer"
-                          >
-                            <span>➕ Add Manual Holding</span>
-                          </button>
-                        </div>
-                      </div>
-                    </td>
+                    <th className="py-3 px-4">Asset</th>
+                    <th className="py-3 px-4">Execution Status</th>
+                    <th className="py-3 px-4">Shares</th>
+                    <th className="py-3 px-4">Entry Price</th>
+                    <th className="py-3 px-4">Current Price</th>
+                    <th className="py-3 px-4">Market Value</th>
+                    <th className="py-3 px-4">Unrealized P&L</th>
+                    <th className="py-3 px-4">Risk Ladder</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
-                ) : (
-                  positions.map((pos) => {
+                </thead>
+                <tbody className="divide-y divide-[#1b2434] font-medium tabular-nums">
+                  {positions.map((pos) => {
                   const isPriced = pos.currentPrice !== null && !isNaN(pos.currentPrice) && pos.currentPrice > 0;
                   const mktVal = isPriced ? pos.shares * pos.currentPrice! : null;
                   const cost = pos.shares * pos.entryPrice;
@@ -1013,10 +1018,11 @@ export default function PortfolioPage() {
                       </td>
                     </tr>
                   );
-                }))}
+                })}
               </tbody>
             </table>
           </div>
+          )}
         </div>
 
         {/* 🌪️ MACRO STRESS-TEST & SCENARIO SIMULATOR */}
