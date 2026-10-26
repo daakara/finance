@@ -84,6 +84,7 @@ class DecisionHierarchyEngine:
         security_type: Optional[Any] = None,
         asset_class: Optional[Any] = None,
         has_fund_profile: bool = True,
+        execution_status: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Resolve the active decision state and execution eligibility following strict precedence."""
         clean_sym = symbol.upper().strip()
@@ -227,6 +228,7 @@ class DecisionHierarchyEngine:
         else:
             is_stage_eligible = (norm_stage == 2)
 
+        clean_exec = execution_status.upper().strip() if isinstance(execution_status, str) else None
         rr = risk_reward_ratio if risk_reward_ratio is not None else 0.0
         if (
             confluence_score >= 75.0
@@ -234,6 +236,7 @@ class DecisionHierarchyEngine:
             and is_confirmed
             and is_stage_eligible
             and rr >= 2.0
+            and clean_exec != "STOPPED_OUT"
         ):
             return {
                 "symbol": clean_sym,
@@ -246,9 +249,11 @@ class DecisionHierarchyEngine:
             }
 
         # ── Precedence 5: VALID_SETUP (Default when verified data is sound) ───
-        # Sound verified data, but currently awaiting breakout, in Stage 4, or outside buy zone
+        # Sound verified data, but currently awaiting breakout, in Stage 4, outside buy zone, or stopped out
         reason = "Awaiting volume breakout confirmation."
-        if norm_stage == 4:
+        if clean_exec == "STOPPED_OUT":
+            reason = "Setup invalidated: Price breached stop-loss threshold."
+        elif norm_stage == 4:
             reason = "Stage 4 distribution: price below 50-day SMA; wait for floor formation."
         elif norm_stage == 1:
             reason = "Stage 1 structural basing phase: price establishing floor; awaiting Stage 2 breakout."
@@ -267,12 +272,16 @@ class DecisionHierarchyEngine:
         elif confluence_score < 75.0:
             reason = f"Confluence conviction ({confluence_score:.1f}/100) is below the actionable 75.0 floor."
 
+        label = "Valid Setup — Awaiting Trigger"
+        if clean_exec == "STOPPED_OUT":
+            label = "Setup Invalidated — Stopped Out"
+
         return {
             "symbol": clean_sym,
             "state": DecisionState.VALID_SETUP.value,
-            "label": "Valid Setup — Awaiting Trigger",
+            "label": label,
             "isActionable": False,
             "canSizeTrade": False,
-            "allowedActions": ["SET_ALERT", "ADD_WATCHLIST", "RESEARCH_PROFILE"],
+            "allowedActions": ["ADD_WATCHLIST", "RESEARCH_PROFILE"] if clean_exec == "STOPPED_OUT" else ["SET_ALERT", "ADD_WATCHLIST", "RESEARCH_PROFILE"],
             "disqualificationReason": reason,
         }

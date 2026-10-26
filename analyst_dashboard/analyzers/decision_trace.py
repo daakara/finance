@@ -72,6 +72,7 @@ class DecisionTraceEngine:
             security_type=security_type,
             asset_class=asset_class,
             has_fund_profile=has_fund_profile,
+            execution_status=exec_status,
         )
 
         # 2. Extract Pillar Statuses

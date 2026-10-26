@@ -787,6 +787,7 @@ def run_screener_get(
                 is_cataloged=True,
                 is_confirmed=False,  # Invariant: Screener represents structural discovery only; cannot confirm execution triggers
                 user_role=user_role,
+                execution_status=execution_status,
             )
 
         mapped_candidates.append({
