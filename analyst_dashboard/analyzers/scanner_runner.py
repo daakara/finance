@@ -13,8 +13,11 @@ import time
 import uuid
 import logging
 import threading
+import socket
 from typing import Dict, Any, List, Optional
 import pandas as pd
+
+from analyst_dashboard.data.market_evidence import AdjustmentState
 
 from analyst_dashboard.vcp.sprint_3_shadow_governance import (
     Sprint3ShadowGovernanceSuite,
@@ -129,6 +132,19 @@ class VCPScannerRunner:
         self._cached_active_snapshot: Optional[Dict[str, Any]] = None
         self._scan_lock = threading.Lock()
 
+    @staticmethod
+    def _classify_fetch_error(exc: Exception) -> str:
+        """Classify per-symbol fetch and evaluation exceptions into authoritative reason categories."""
+        exc_str = str(exc).lower()
+        exc_type = type(exc).__name__.lower()
+        if isinstance(exc, (TimeoutError, socket.timeout)) or "timeout" in exc_str or "timed out" in exc_str:
+            return "TIMEOUT"
+        if "lock" in exc_str or "operationalerror" in exc_type:
+            return "DATABASE_LOCK"
+        if "rate limit" in exc_str or "429" in exc_str:
+            return "RATE_LIMIT"
+        return "DATA_SOURCE_FETCH_ERROR"
+
     def get_version_tuple(self) -> ScannerVersionTuple:
         return ScannerVersionTuple(
             scanner_id="MINERVINI_VCP",
@@ -165,6 +181,7 @@ class VCPScannerRunner:
         delivery_attempt_id: Optional[str] = None,
         execution_attempt_id: Optional[str] = None,
         candidate_generation_id: str = "CANDIDATE_GENERATION_004",
+        min_coverage_pct: Optional[float] = None,
     ) -> Dict[str, Any]:
         """
         Execute deterministic market-wide scan across eligible universe:
@@ -250,7 +267,7 @@ class VCPScannerRunner:
                 eligible_count = len(universe)
                 scannable_count = len(universe)
                 unavailable_count = 0
-            elif scannable_symbols:
+            elif target_build_id is not None or scannable_symbols:
                 # For natural scheduled scan, enforce published build validity (INV-U02, INV-U08, INV-U09)
                 if is_natural_scheduled and build_attestation:
                     if build_attestation.get("publication_decision") != "PUBLISH" or build_attestation.get("construction_status") != "COMPLETE":
@@ -258,9 +275,9 @@ class VCPScannerRunner:
                             f"UNPUBLISHED_UNIVERSE_BUILD: Build '{target_build_id}' has publication_decision='{build_attestation.get('publication_decision')}', construction_status='{build_attestation.get('construction_status')}'. Natural execution prohibited."
                         )
                 universe = scannable_symbols
-                eligible_count = build_attestation["eligible_count"] if build_attestation else len(universe)
+                eligible_count = build_attestation.get("eligible_count", len(universe)) if build_attestation else len(universe)
                 scannable_count = len(scannable_symbols)
-                unavailable_count = build_attestation["data_unavailable_count"] if build_attestation else 0
+                unavailable_count = build_attestation.get("data_unavailable_count", 0) if build_attestation else 0
             else:
                 # Historical regression fixture fallback ONLY for non-natural / bootstrap / test invocations (INV-U04)
                 if is_natural_scheduled:
@@ -277,95 +294,152 @@ class VCPScannerRunner:
             computed_evaluations_count = 0
             uncomputed_evaluations_count = 0
             unavailable_reasons: Dict[str, int] = {}
+            adjustment_state_counts: Dict[str, int] = {}
             qualified_candidates: List[Dict[str, Any]] = []
 
             for sym in universe:
                 clean_sym = sym.strip().upper()
-                latest = self.market_db.get_latest_price(clean_sym)
-                if not latest or not latest.get("currentPrice") or latest["currentPrice"] <= 0:
+                try:
+                    latest = self.market_db.get_latest_price(clean_sym)
+                except Exception as exc:
+                    err_reason = self._classify_fetch_error(exc)
+                    unavailable_reasons[err_reason] = unavailable_reasons.get(err_reason, 0) + 1
+                    continue
+
+                if not latest or not isinstance(latest, dict) or not isinstance(latest.get("currentPrice"), (int, float)) or latest["currentPrice"] <= 0:
                     unavailable_reasons["MISSING_PRICE_DATA"] = unavailable_reasons.get("MISSING_PRICE_DATA", 0) + 1
                     continue
 
                 current_price = latest["currentPrice"]
-                db_candles = self.market_db.get_daily_candles(clean_sym, limit=60)
+
+                # R3 Provenance Integration: Retrieve stored daily candles along with factual evidence provenance
+                try:
+                    if hasattr(self.market_db, "get_daily_candles_with_evidence"):
+                        db_candles, evidence = self.market_db.get_daily_candles_with_evidence(clean_sym, limit=60)
+                        adj_state = (
+                            getattr(evidence.provenance, "adjustment_state", AdjustmentState.UNKNOWN)
+                            if (evidence and hasattr(evidence, "provenance"))
+                            else AdjustmentState.UNKNOWN
+                        )
+                        adj_prov = {
+                            "adjustment_state": adj_state,
+                            "provider": getattr(evidence.provenance, "provider", "UNKNOWN") if (evidence and hasattr(evidence, "provenance")) else "UNKNOWN",
+                            "structural_quality": getattr(evidence.provenance, "structural_quality", "UNKNOWN") if (evidence and hasattr(evidence, "provenance")) else "UNKNOWN",
+                            "splits_locally_applied": False,
+                            "continuous_series_attested": adj_state in (
+                                AdjustmentState.SPLIT_AND_DIVIDEND_ADJUSTED,
+                                AdjustmentState.SPLIT_ADJUSTED_ONLY,
+                            ),
+                        }
+                    else:
+                        db_candles = self.market_db.get_daily_candles(clean_sym, limit=60)
+                        adj_state = AdjustmentState.UNKNOWN
+                        adj_prov = {
+                            "adjustment_state": adj_state,
+                            "provider": "UNKNOWN",
+                            "structural_quality": "UNKNOWN",
+                            "splits_locally_applied": False,
+                            "continuous_series_attested": False,
+                        }
+                except Exception as exc:
+                    err_reason = self._classify_fetch_error(exc)
+                    unavailable_reasons[err_reason] = unavailable_reasons.get(err_reason, 0) + 1
+                    continue
+
+                adjustment_state_counts[adj_state] = adjustment_state_counts.get(adj_state, 0) + 1
+
+                # NEG-R3-03: Raw unadjusted price series guard against false contraction qualification
+                if adj_state == AdjustmentState.UNADJUSTED:
+                    unavailable_reasons["UNADJUSTED_PRICE_FEED_RISK"] = (
+                        unavailable_reasons.get("UNADJUSTED_PRICE_FEED_RISK", 0) + 1
+                    )
+                    continue
+
                 if not db_candles or len(db_candles) < 50:
                     unavailable_reasons["INSUFFICIENT_HISTORY"] = unavailable_reasons.get("INSUFFICIENT_HISTORY", 0) + 1
                     continue
 
-                scanned_successfully_count += 1
-                df = pd.DataFrame([{
-                    "Open": c["open"], "High": c["high"], "Low": c["low"], "Close": c["close"], "Volume": c["volume"]
-                } for c in db_candles], index=pd.to_datetime([c["time"] for c in db_candles]))
+                try:
+                    scanned_successfully_count += 1
+                    df = pd.DataFrame([{
+                        "Open": c["open"], "High": c["high"], "Low": c["low"], "Close": c["close"], "Volume": c["volume"]
+                    } for c in db_candles], index=pd.to_datetime([c["time"] for c in db_candles]))
 
-                exec_res = OptimalExecutionEngine.calculate_trade_levels(df, current_price, user_role="LONG_TERM")
+                    exec_res = OptimalExecutionEngine.calculate_trade_levels(df, current_price, user_role="LONG_TERM")
 
-                # Compute actual moving averages directly from daily candles
-                close_s = df["Close"]
-                actual_sma_50 = round(float(close_s.rolling(50).mean().iloc[-1]), 4) if len(close_s) >= 50 else None
-                actual_ema_20 = round(float(close_s.ewm(span=20, adjust=False).mean().iloc[-1]), 4) if len(close_s) >= 20 else None
+                    # Compute actual moving averages directly from daily candles
+                    close_s = df["Close"]
+                    actual_sma_50 = round(float(close_s.rolling(50).mean().iloc[-1]), 4) if len(close_s) >= 50 else None
+                    actual_ema_20 = round(float(close_s.ewm(span=20, adjust=False).mean().iloc[-1]), 4) if len(close_s) >= 20 else None
 
-                # Truthfulness Invariant: OptimalExecutionEngine evaluates tactical execution corridors (entry/stop/target/ATR).
-                # Its legacy strategy 2.0.0 heuristic strings ("Minervini VCP", "Stage 2") on 60-bar windows
-                # do not constitute authoritative VCP domain classification or 200-session trend template qualification.
-                # A 60-bar query window is epistemically incapable of evaluating a 200-session trend template.
-                # Operational runner rejects the legacy false-certification fallback and enforces uncomputed status:
-                vcp_authoritative_computed = bool(exec_res.get("vcp_authoritative_evaluated", False))
+                    # Truthfulness Invariant: OptimalExecutionEngine evaluates tactical execution corridors (entry/stop/target/ATR).
+                    # Its legacy strategy 2.0.0 heuristic strings ("Minervini VCP", "Stage 2") on 60-bar windows
+                    # do not constitute authoritative VCP domain classification or 200-session trend template qualification.
+                    # A 60-bar query window is epistemically incapable of evaluating a 200-session trend template.
+                    # Operational runner rejects the legacy false-certification fallback and enforces uncomputed status:
+                    vcp_authoritative_computed = bool(exec_res.get("vcp_authoritative_evaluated", False))
 
-                if vcp_authoritative_computed:
-                    vcp_status = exec_res.get("vcp_contraction_status")
-                    stage_status = exec_res.get("stage_phase")
-                    setup_pattern = exec_res.get("setup_pattern")
-                    computed_evaluations_count += 1
-                else:
-                    vcp_status = "Consolidation Unverified"
-                    stage_status = "Stage Unverified (Trend Template Uncomputed)"
-                    setup_pattern = "Consolidation Setup (Pattern Unverified)"
-                    uncomputed_evaluations_count += 1
+                    if vcp_authoritative_computed:
+                        vcp_status = exec_res.get("vcp_contraction_status")
+                        stage_status = exec_res.get("stage_phase")
+                        setup_pattern = exec_res.get("setup_pattern")
+                        computed_evaluations_count += 1
+                    else:
+                        vcp_status = "Consolidation Unverified"
+                        stage_status = "Stage Unverified (Trend Template Uncomputed)"
+                        setup_pattern = "Consolidation Setup (Pattern Unverified)"
+                        uncomputed_evaluations_count += 1
 
-                # Qualification ruleset: Must be authoritatively confirmed VCP in Stage 2 Advancing Growth Phase
-                is_vcp = vcp_authoritative_computed and (vcp_status == "VCP 3-Stage Compression Confirmed")
-                is_stage_2 = vcp_authoritative_computed and (stage_status == "Stage 2 Advancing Growth Phase")
+                    # Qualification ruleset: Must be authoritatively confirmed VCP in Stage 2 Advancing Growth Phase
+                    is_vcp = vcp_authoritative_computed and (vcp_status == "VCP 3-Stage Compression Confirmed")
+                    is_stage_2 = vcp_authoritative_computed and (stage_status == "Stage 2 Advancing Growth Phase")
 
-                if is_vcp and is_stage_2:
-                    # Calculate multi-factor confluence conviction score
-                    conf_res = self.confluence_engine.calculate_confluence(
-                        symbol=clean_sym,
-                        technical_data={
-                            "executionStatus": exec_res["execution_status"],
-                            "riskRewardRatio": exec_res["risk_reward_ratio"],
+                    if is_vcp and is_stage_2:
+                        # Calculate multi-factor confluence conviction score
+                        conf_res = self.confluence_engine.calculate_confluence(
+                            symbol=clean_sym,
+                            technical_data={
+                                "executionStatus": exec_res["execution_status"],
+                                "riskRewardRatio": exec_res["risk_reward_ratio"],
+                                "setup_pattern": setup_pattern,
+                                "stage_phase": stage_status,
+                                "rsi_14": exec_res.get("rsi_14"),
+                                "stop_loss": exec_res["stop_loss"],
+                                "current_price": current_price,
+                            },
+                        )
+                        score = round(float(conf_res.get("confluenceScore", 75.0)), 1)
+
+                        scanner_evidence = {
+                            "vcp_stage": vcp_status,
                             "setup_pattern": setup_pattern,
                             "stage_phase": stage_status,
-                            "rsi_14": exec_res.get("rsi_14"),
-                            "stop_loss": exec_res["stop_loss"],
+                            "sma_50": actual_sma_50,
+                            "ema_20": actual_ema_20,
+                            "atr_14": exec_res.get("atr_14"),
+                            "breakout_pivot": exec_res.get("breakout_pivot"),
+                            "optimal_entry_min": exec_res.get("optimal_entry_min"),
+                            "optimal_entry_max": exec_res.get("optimal_entry_max"),
+                            "stop_loss": exec_res.get("stop_loss"),
+                            "take_profit_1": exec_res.get("take_profit_1"),
+                            "take_profit_2": exec_res.get("take_profit_2"),
+                            "risk_reward_ratio": exec_res.get("risk_reward_ratio"),
+                            "execution_status": exec_res.get("execution_status"),
+                            "confluence_score": score,
+                            "adjustment_provenance": adj_prov,
+                        }
+
+                        qualified_candidates.append({
+                            "symbol": clean_sym,
+                            "score": score,
                             "current_price": current_price,
-                        },
-                    )
-                    score = round(float(conf_res.get("confluenceScore", 75.0)), 1)
-
-                    scanner_evidence = {
-                        "vcp_stage": vcp_status,
-                        "setup_pattern": setup_pattern,
-                        "stage_phase": stage_status,
-                        "sma_50": actual_sma_50,
-                        "ema_20": actual_ema_20,
-                        "atr_14": exec_res.get("atr_14"),
-                        "breakout_pivot": exec_res.get("breakout_pivot"),
-                        "optimal_entry_min": exec_res.get("optimal_entry_min"),
-                        "optimal_entry_max": exec_res.get("optimal_entry_max"),
-                        "stop_loss": exec_res.get("stop_loss"),
-                        "take_profit_1": exec_res.get("take_profit_1"),
-                        "take_profit_2": exec_res.get("take_profit_2"),
-                        "risk_reward_ratio": exec_res.get("risk_reward_ratio"),
-                        "execution_status": exec_res.get("execution_status"),
-                        "confluence_score": score,
-                    }
-
-                    qualified_candidates.append({
-                        "symbol": clean_sym,
-                        "score": score,
-                        "current_price": current_price,
-                        "scanner_evidence": scanner_evidence,
-                    })
+                            "scanner_evidence": scanner_evidence,
+                        })
+                except Exception as eval_exc:
+                    err_reason = self._classify_fetch_error(eval_exc)
+                    unavailable_reasons[err_reason] = unavailable_reasons.get(err_reason, 0) + 1
+                    uncomputed_evaluations_count += 1
+                    continue
 
             # Deterministic ranking: score descending, symbol ascending
             qualified_candidates.sort(key=lambda c: (-c["score"], c["symbol"]))
@@ -420,19 +494,24 @@ class VCPScannerRunner:
                 )
 
             # Coverage statistics
-            data_completeness_pct = round((scannable_count / max(1, eligible_count)) * 100, 1)
-            scan_coverage_pct = round((scanned_successfully_count / max(1, eligible_count)) * 100, 1)
-            coverage_status = "COMPLETE" if scan_coverage_pct >= 99.9 else "PARTIAL"
+            data_completeness_pct = round((scannable_count / max(1, eligible_count)) * 100, 1) if eligible_count > 0 else 0.0
+            scan_coverage_pct = round((scanned_successfully_count / max(1, eligible_count)) * 100, 1) if eligible_count > 0 else 0.0
+            if universe_size == 0:
+                coverage_status = "EMPTY_UNIVERSE"
+            elif scan_coverage_pct >= 99.9:
+                coverage_status = "COMPLETE"
+            else:
+                coverage_status = "PARTIAL"
 
             universe_metadata = {
                 "scope_class": "US_EQUITIES",
                 "display_name": RADAR_SCOPE_LABEL,
-                "source_population_count": build_attestation["source_population_count"] if build_attestation else eligible_count,
+                "source_population_count": build_attestation.get("source_population_count", eligible_count) if build_attestation else eligible_count,
                 "eligible_universe_count": eligible_count,
                 "universe_version": version_tuple.universe_version,
                 "universe_build_id": target_build_id,
-                "membership_hash": build_attestation["eligible_membership_hash"] if build_attestation else None,
-                "construction_status": build_attestation["construction_status"] if build_attestation else "COMPLETE",
+                "membership_hash": build_attestation.get("eligible_membership_hash") if build_attestation else None,
+                "construction_status": build_attestation.get("construction_status", "COMPLETE") if build_attestation else "COMPLETE",
             }
             coverage_metadata = {
                 "coverage_status": coverage_status,
@@ -444,7 +523,11 @@ class VCPScannerRunner:
                 "data_completeness_pct": data_completeness_pct,
                 "scan_coverage_pct": scan_coverage_pct,
                 "unavailable_reasons": unavailable_reasons,
+                "adjustment_state_distribution": adjustment_state_counts,
             }
+
+            # Optional quorum enforcement check (owner configurable via min_coverage_pct)
+            is_sub_quorum = (min_coverage_pct is not None and scan_coverage_pct < min_coverage_pct)
 
             # Publication Integrity Gate
             eval_report = ScannerPublicationIntegrityEngine.evaluate_candidate_publication(
@@ -466,12 +549,18 @@ class VCPScannerRunner:
             if eval_report.decision != PublicationDecision.PUBLISH:
                 status_at_pub = ScannerStatus.ERROR
                 effective_matched_count = None
+            elif universe_size == 0:
+                status_at_pub = ScannerStatus.ERROR
+                effective_matched_count = None
+                failure_reason = "BUILD_MEMBERSHIP_EMPTY" if target_build_id and universe_override is None else "EMPTY_UNIVERSE"
+                coverage_metadata["failure_reason"] = failure_reason
+            elif is_sub_quorum:
+                status_at_pub = ScannerStatus.ERROR
+                effective_matched_count = None
+                coverage_metadata["failure_reason"] = "SUB_QUORUM_COVERAGE"
             elif len(qualified_candidates) > 0:
                 status_at_pub = ScannerStatus.AVAILABLE
                 effective_matched_count = len(qualified_candidates)
-            elif universe_size == 0:
-                status_at_pub = ScannerStatus.AVAILABLE
-                effective_matched_count = 0
             elif scanned_successfully_count == 0:
                 status_at_pub = ScannerStatus.ERROR
                 effective_matched_count = None
@@ -903,6 +992,8 @@ class VCPScannerRunner:
                 "data_completeness_pct": c_meta.get("data_completeness_pct", 100.0),
                 "scan_coverage_pct": c_meta.get("scan_coverage_pct", 100.0),
                 "unavailable_reasons": c_meta.get("unavailable_reasons", {}),
+                "failure_reason": c_meta.get("failure_reason"),
+                "adjustment_state_distribution": c_meta.get("adjustment_state_distribution", {}),
             },
             "results": rec.get("results", []),
         }

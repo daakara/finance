@@ -226,6 +226,9 @@ def get_radar_capabilities(
             "universeScreening": "PIPELINE_PENDING",
             "singleAssetAnalysis": "AVAILABLE",
             "matchedCount": None,
+            "coverageStatus": "ROLLED_BACK",
+            "scannedSuccessfullyCount": 0,
+            "unavailableSymbolCount": pop_denom or 0,
             "populationDenominator": pop_denom,
             "universeBuildId": build_id,
             "universeId": univ_id,
@@ -241,6 +244,7 @@ def get_radar_capabilities(
         snap_status = vcp_snapshot.get("status")
         freshness_info = vcp_snapshot.get("freshness", {})
         u_meta = vcp_snapshot.get("universe", {})
+        cov_info = vcp_snapshot.get("coverage", {})
         if u_meta:
             pop_denom = pop_denom or u_meta.get("eligible_universe_count") or vcp_snapshot.get("snapshot", {}).get("universe_size")
             build_id = build_id or u_meta.get("universe_build_id")
@@ -257,6 +261,9 @@ def get_radar_capabilities(
                 "universeScreening": "AVAILABLE" if is_valid_op else "PIPELINE_PENDING",
                 "singleAssetAnalysis": "AVAILABLE",
                 "matchedCount": matched_count,
+                "coverageStatus": cov_info.get("coverage_status", "COMPLETE" if pop_denom else "UNKNOWN"),
+                "scannedSuccessfullyCount": cov_info.get("scanned_successfully_count", pop_denom),
+                "unavailableSymbolCount": cov_info.get("unavailable_symbol_count", 0),
                 "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
                 "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
                 "snapshotId": vcp_snapshot.get("snapshot_id"),
@@ -278,6 +285,9 @@ def get_radar_capabilities(
                 "universeScreening": "PIPELINE_PENDING",
                 "singleAssetAnalysis": "AVAILABLE",
                 "matchedCount": None,
+                "coverageStatus": cov_info.get("coverage_status", "PENDING"),
+                "scannedSuccessfullyCount": cov_info.get("scanned_successfully_count", 0),
+                "unavailableSymbolCount": cov_info.get("unavailable_symbol_count", 0),
                 "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
                 "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
                 "snapshotId": vcp_snapshot.get("snapshot_id"),
@@ -294,16 +304,20 @@ def get_radar_capabilities(
                 "rationale": vcp_snapshot.get("detail") or "Automated market-wide volatility contraction screening is pending authoritative classifier integration.",
             }
         elif snap_status == "ERROR":
+            fail_reason = cov_info.get("failure_reason") or vcp_snapshot.get("reason", "STORAGE_ERROR")
             caps["VCP"] = {
                 "status": "ERROR",
                 "universeScreening": "ERROR",
                 "singleAssetAnalysis": "AVAILABLE",
                 "matchedCount": None,
+                "coverageStatus": cov_info.get("coverage_status", "ERROR"),
+                "scannedSuccessfullyCount": cov_info.get("scanned_successfully_count", 0),
+                "unavailableSymbolCount": cov_info.get("unavailable_symbol_count", pop_denom or 0),
                 "dataAsOf": None,
                 "generatedAt": None,
                 "snapshotId": None,
                 "freshnessStatus": "UNKNOWN",
-                "reason": vcp_snapshot.get("reason", "STORAGE_ERROR"),
+                "reason": fail_reason,
                 "populationDenominator": pop_denom,
                 "universeBuildId": build_id,
                 "universeId": univ_id,
@@ -312,7 +326,11 @@ def get_radar_capabilities(
                 "rollbackReason": rollback_reason,
                 "membershipStatus": membership_status,
                 "lifecycleState": "ERROR",
-                "rationale": vcp_snapshot.get("detail", "VCP scanner snapshot store error."),
+                "rationale": vcp_snapshot.get("detail") or (
+                    f"VCP scanner execution failed: {fail_reason}."
+                    if fail_reason != "STORAGE_ERROR"
+                    else "VCP scanner snapshot store error."
+                ),
             }
         elif snap_status == "STALE":
             raw_matched = vcp_snapshot.get("matched_count")
@@ -323,6 +341,9 @@ def get_radar_capabilities(
                 "universeScreening": "AVAILABLE" if is_valid_count else "PIPELINE_PENDING",
                 "singleAssetAnalysis": "AVAILABLE",
                 "matchedCount": matched_count,
+                "coverageStatus": cov_info.get("coverage_status", "STALE"),
+                "scannedSuccessfullyCount": cov_info.get("scanned_successfully_count", pop_denom),
+                "unavailableSymbolCount": cov_info.get("unavailable_symbol_count", 0),
                 "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
                 "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
                 "snapshotId": vcp_snapshot.get("snapshot_id"),
@@ -344,6 +365,9 @@ def get_radar_capabilities(
             "universeScreening": "PIPELINE_PENDING",
             "singleAssetAnalysis": "AVAILABLE",
             "matchedCount": None,
+            "coverageStatus": "PENDING",
+            "scannedSuccessfullyCount": 0,
+            "unavailableSymbolCount": 0,
             "populationDenominator": pop_denom,
             "universeBuildId": build_id,
             "universeId": univ_id,
