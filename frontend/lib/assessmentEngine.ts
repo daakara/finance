@@ -19,6 +19,7 @@ import {
   ModelProvenance,
   ARXAction,
   DecisionTrace,
+  FreshnessInfo,
 } from "../types/insight";
 import { evaluateLevelRelation } from "./reclaimSemantics";
 
@@ -35,6 +36,7 @@ export interface AssessmentEngineInput {
   invalidationPrice?: number;
   reclaimMilestonePrice?: number;
   freshnessStatus?: string;
+  freshness?: FreshnessInfo;
   modelProvenance?: ModelProvenance;
   decisionTrace?: DecisionTrace;
   canonicalDecision?: any;
@@ -101,6 +103,7 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     invalidationPrice,
     reclaimMilestonePrice,
     freshnessStatus,
+    freshness,
     modelProvenance = {
       modelId: "arx-confluence-engine",
       modelVersion: "2.4.0",
@@ -154,7 +157,12 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
   let uiStateLabel = "Evidence Incomplete — In-Depth Research Required";
   let headlineExplanation = "Incomplete evidence available to assess setup.";
 
-  const isStale = freshnessStatus === "STALE_HISTORICAL" || freshnessStatus === "STALE";
+  const effectiveFreshnessStatus = freshness?.status || freshnessStatus;
+  const stalenessDays = freshness?.stalenessDays;
+  const isStale =
+    effectiveFreshnessStatus === "STALE_HISTORICAL" ||
+    effectiveFreshnessStatus === "STALE" ||
+    (stalenessDays !== undefined && stalenessDays > 4);
 
   if (isActuallyBreached) {
     if (ownershipState === "OWNED") {
@@ -166,6 +174,10 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
       uiStateLabel = "Setup Invalidated";
       headlineExplanation = `Price has fallen below the setup invalidation floor at $${stopLevel.toFixed(2)}. Risk parameters breached.`;
     }
+  } else if (!isPriceValid || agreement.evaluated === 0 || effectiveFreshnessStatus === "UNAVAILABLE") {
+    posture = "RESEARCH";
+    uiStateLabel = "Unverified Asset — Direct Feed Only";
+    headlineExplanation = "Asset evidence unverified or market data feed unavailable.";
   } else if (isStale) {
     posture = "RESEARCH";
     uiStateLabel = "Stale Historical Tape (> 4 Days)";
@@ -264,8 +276,14 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
   ];
 
   // 4a. Resolve Precedence-Enforced DecisionState (Phase 20A / Phase 21 / Phase 2)
+  // Preserving authoritative model decision state
+  const authoritativeDecisionState: DecisionState =
+    decisionTrace?.decisionState || (posture === "ACQUIRE" ? "ACTIONABLE_SETUP" : "VALID_SETUP");
+
   let decisionState: DecisionState = "VALID_SETUP";
-  if (isStale) {
+  if (!isPriceValid || agreement.evaluated === 0 || effectiveFreshnessStatus === "UNAVAILABLE") {
+    decisionState = "UNVERIFIED";
+  } else if (isStale) {
     decisionState = "STALE_DATA";
   } else if (decisionTrace) {
     decisionState = decisionTrace.decisionState;
@@ -276,12 +294,8 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     if (decisionTrace.disqualificationReason && posture !== "ACQUIRE") {
       headlineExplanation = decisionTrace.disqualificationReason;
     }
-  } else if (!isPriceValid || agreement.evaluated === 0 || freshnessStatus === "UNAVAILABLE") {
-    decisionState = "UNVERIFIED";
   } else if (!isTrendAvailable) {
     decisionState = "INSUFFICIENT_DATA";
-  } else if (isStale) {
-    decisionState = "STALE_DATA";
   } else if (!isHealthAvailable) {
     decisionState = "EVIDENCE_INCOMPLETE";
   } else if (posture === "ACQUIRE") {
@@ -289,6 +303,10 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
   } else {
     decisionState = "VALID_SETUP";
   }
+
+  const isExecutionBlocked = !isPriceValid || effectiveFreshnessStatus === "UNAVAILABLE" || isStale || isActuallyBreached;
+  const canSizeTrade = isExecutionBlocked ? false : (decisionTrace ? decisionTrace.canSizeTrade : (posture === "ACQUIRE"));
+  const isActionable = isExecutionBlocked ? false : (decisionTrace ? decisionTrace.isActionable : (posture === "ACQUIRE"));
 
   return {
     symbol: symbol.toUpperCase(),
@@ -303,8 +321,12 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     modelProvenance,
     overallEligibility,
     decisionState,
-    canSizeTrade: isStale ? false : (decisionTrace ? decisionTrace.canSizeTrade : (posture === "ACQUIRE")),
-    isActionable: isStale ? false : (decisionTrace ? decisionTrace.isActionable : (posture === "ACQUIRE")),
+    authoritativeDecisionState,
+    freshness: freshness || (effectiveFreshnessStatus ? { status: effectiveFreshnessStatus, stalenessDays } : undefined),
+    freshnessStatus: effectiveFreshnessStatus,
+    stalenessDays,
+    canSizeTrade,
+    isActionable,
     assessment,
     factorAgreement: agreement,
     domains,

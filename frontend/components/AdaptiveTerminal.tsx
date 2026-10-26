@@ -116,11 +116,19 @@ export default function AdaptiveTerminal({
     confluence,
     decisionTrace,
     optimalExecution,
-    (freshness?.stalenessDays && freshness.stalenessDays > 4) ? "STALE_HISTORICAL" : freshness?.status
+    freshness
+      ? {
+          ...freshness,
+          status: (freshness.stalenessDays && freshness.stalenessDays > 4) ? "STALE_HISTORICAL" : freshness.status,
+        }
+      : undefined
   );
 
   if (freshness) {
-    (insight as any).freshness = freshness;
+    insight.freshness = {
+      ...freshness,
+      status: (freshness.stalenessDays && freshness.stalenessDays > 4) ? "STALE_HISTORICAL" : freshness.status,
+    };
   }
 
   const evidenceBadge = resolveOverallEvidenceBadge({

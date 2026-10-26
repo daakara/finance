@@ -33,13 +33,15 @@ export default function StandardTerminalView({
 
   const isStaleTape = Boolean(
     insight.terminalState?.decisionState === "STALE_DATA" ||
-    (insight.terminalState as any)?.freshness === "STALE" ||
-    (insight.terminalState as any)?.freshnessStatus === "STALE_HISTORICAL" ||
-    (insight.terminalState as any)?.freshnessStatus === "STALE" ||
-    (insight as any)?.freshness?.status === "STALE" ||
-    (insight as any)?.freshness?.status === "STALE_HISTORICAL" ||
-    (insight.terminalState as any)?.stalenessDays > 4 ||
-    (insight as any)?.freshness?.stalenessDays > 4
+    insight.freshness?.status === "STALE" ||
+    insight.freshness?.status === "STALE_HISTORICAL" ||
+    (insight.freshness?.stalenessDays !== undefined && insight.freshness.stalenessDays > 4) ||
+    insight.terminalState?.freshness?.status === "STALE" ||
+    insight.terminalState?.freshness?.status === "STALE_HISTORICAL" ||
+    (insight.terminalState?.freshness?.stalenessDays !== undefined && insight.terminalState.freshness.stalenessDays > 4) ||
+    insight.terminalState?.freshnessStatus === "STALE_HISTORICAL" ||
+    insight.terminalState?.freshnessStatus === "STALE" ||
+    (insight.terminalState?.stalenessDays !== undefined && insight.terminalState.stalenessDays > 4)
   );
 
   const isActionable = isStaleTape ? false : Boolean(insight.terminalState.isActionable);

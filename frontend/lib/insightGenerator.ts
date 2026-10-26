@@ -6,6 +6,7 @@ import {
   DomainAssessment,
   FactorAttributionItem,
   DecisionTrace,
+  FreshnessInfo,
 } from "../types/insight";
 import { deriveAssessmentState } from "./assessmentEngine";
 import { CandleData, ConfluenceData, OptimalExecutionPlan } from "./api";
@@ -27,8 +28,18 @@ export function generateQuantitativeInsight(
   confluence?: ConfluenceData,
   decisionTrace?: DecisionTrace,
   optimalExecution?: OptimalExecutionPlan,
-  freshnessStatus?: string
+  freshnessStatusOrInfo?: string | FreshnessInfo
 ): QuantitativeInsight {
+  const effectiveFreshness: FreshnessInfo | undefined =
+    typeof freshnessStatusOrInfo === "object" && freshnessStatusOrInfo !== null
+      ? freshnessStatusOrInfo
+      : (typeof freshnessStatusOrInfo === "string" ? { status: freshnessStatusOrInfo } : undefined);
+  const effectiveFreshnessStatus = effectiveFreshness?.status;
+  const isStale =
+    effectiveFreshnessStatus === "STALE_HISTORICAL" ||
+    effectiveFreshnessStatus === "STALE" ||
+    (effectiveFreshness?.stalenessDays !== undefined && effectiveFreshness.stalenessDays > 4);
+
   const isPriceValid = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0;
   const safePrice = isPriceValid ? currentPrice : 0;
   const isFallbackFeed = dataSource === "fallback" || dataSource === "unavailable";
@@ -327,7 +338,8 @@ export function generateQuantitativeInsight(
     domains,
     invalidationPrice: stopLoss,
     reclaimMilestonePrice: sma50,
-    freshnessStatus,
+    freshnessStatus: effectiveFreshnessStatus,
+    freshness: effectiveFreshness,
     decisionTrace,
   });
 
@@ -378,12 +390,15 @@ export function generateQuantitativeInsight(
     }
   }
 
-  if (freshnessStatus === "STALE_HISTORICAL" || freshnessStatus === "STALE") {
+  if (isStale) {
     terminalState.decisionState = "STALE_DATA";
     terminalState.isActionable = false;
     terminalState.canSizeTrade = false;
-    terminalState.uiStateLabel = "Stale Historical Tape (> 4 Days)";
-    terminalState.headlineExplanation = "Market data is historical/stale (>4 days lag); live trade triggers are suspended.";
+    if (terminalState.posture !== "AVOID" && terminalState.posture !== "EXIT_REVIEW") {
+      terminalState.posture = "RESEARCH";
+      terminalState.uiStateLabel = "Stale Historical Tape (> 4 Days)";
+      terminalState.headlineExplanation = "Market data is historical/stale (>4 days lag); live trade triggers are suspended.";
+    }
   }
 
   const factors: FactorAttributionItem[] = domains.map((d) => ({
@@ -595,5 +610,6 @@ export function generateQuantitativeInsight(
     whatWouldChangeAssessment: terminalState.whatWouldChangeAssessment,
     availableActions: terminalState.availableActions,
     decisionTrace: decisionTrace,
+    freshness: effectiveFreshness,
   };
 }
