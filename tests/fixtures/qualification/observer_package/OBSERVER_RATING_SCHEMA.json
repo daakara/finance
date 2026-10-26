@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARX Observer Rating Submission Schema (v2.0.0)",
+  "type": "object",
+  "required": [
+    "observer_id",
+    "transcript_id",
+    "submission_timestamp",
+    "ratings"
+  ],
+  "properties": {
+    "observer_id": {
+      "type": "string",
+      "pattern": "^OBS-[A-Z0-9_-]+$"
+    },
+    "transcript_id": {
+      "type": "string"
+    },
+    "submission_timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ratings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "trial_id",
+          "assigned_cm_codes",
+          "assigned_sm_codes",
+          "interpretation_state",
+          "action_state",
+          "critical_decision_error"
+        ],
+        "properties": {
+          "trial_id": {
+            "type": "string"
+          },
+          "assigned_cm_codes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "CM-01",
+                "CM-02",
+                "CM-03",
+                "CM-04",
+                "CM-05",
+                "CM-06",
+                "CM-07",
+                "CM-08",
+                "CM-09"
+              ]
+            }
+          },
+          "assigned_sm_codes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "SM-01",
+                "SM-02",
+                "SM-03",
+                "SM-04",
+                "SM-05",
+                "SM-06"
+              ]
+            }
+          },
+          "interpretation_state": {
+            "type": "string",
+            "enum": [
+              "INTERPRETATION_CORRECT",
+              "INTERPRETATION_INCORRECT",
+              "EVIDENCE_INSUFFICIENT"
+            ]
+          },
+          "action_state": {
+            "type": "string",
+            "enum": [
+              "ACTION_APPROPRIATE",
+              "ACTION_INAPPROPRIATE",
+              "EVIDENCE_INSUFFICIENT"
+            ]
+          },
+          "critical_decision_error": {
+            "type": "boolean"
+          },
+          "observer_notes": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

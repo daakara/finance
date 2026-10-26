@@ -1,0 +1,60 @@
+{
+  "manifest_version": "2.1.0",
+  "generated_at": "2026-10-23T15:40:00Z",
+  "governance_standard": "ARX Closure Model v2 \u2014 Strict Observer Blinding Boundary",
+  "observer_package": {
+    "ARX_UX_OBSERVER_SCORING_HANDBOOK_V2.md": {
+      "bytes": 13242,
+      "sha256": "6e62ef9b8f0f40d0849e95d71bf6e7c97d1692e8881847e1b0d62939e2d6cd11"
+    },
+    "OBSERVER_RATING_SCHEMA.json": {
+      "bytes": 2349,
+      "sha256": "6661744b2a698c336cdd0e13ee6a21416351b28243413ef4dd8d5a28a2a2e5a0"
+    },
+    "SUBMISSION_INSTRUCTIONS.md": {
+      "bytes": 2355,
+      "sha256": "6deddba2458f8f5dff8204bfba4a1215d1dd24fd578e9ae261d73fcf32fc33e8"
+    },
+    "TRANS_ALPHA_BLINDED.json": {
+      "bytes": 15867,
+      "sha256": "2bf7405847a92d9c4996f1e843a3083df5a3363fae6981da3ebddd646b36d746"
+    },
+    "TRANS_BETA_BLINDED.json": {
+      "bytes": 15927,
+      "sha256": "7a45a3a98d3b88ae818fc9952273ef7bd59f199e58f1392136452b252367fdde"
+    },
+    "TRANS_GAMMA_BLINDED.json": {
+      "bytes": 16722,
+      "sha256": "859ffba58a0a35eb3119e95cb2e4038a8f93ef377f0ff630b4ec27086c9348b4"
+    }
+  },
+  "custodian_package": {
+    "ARX_UX_CALIBRATION_GOLD_KEY_CORRECTION_LEDGER.md": {
+      "bytes": 13937,
+      "sha256": "bf40a79df07356fa526106fb3b5d589300e544904fc9014ff35556a579ddc03e"
+    },
+    "gold_key_alpha_v2.json": {
+      "bytes": 8004,
+      "sha256": "a06d9aa3da6d86e6999e26d999507b3e02b1b44ac48a8510d671661919ab41a1"
+    },
+    "gold_key_beta_v2.json": {
+      "bytes": 8065,
+      "sha256": "3013d9a0ff92454377c6088867c55f60db93ae28a6198c17ae12abdd1c17b249"
+    },
+    "gold_key_consolidated_30.json": {
+      "bytes": 24083,
+      "sha256": "9a79d4417d407e85738e947240080fbf0ea91650d19f66e07b00b41f6bde6070"
+    },
+    "gold_key_gamma_v1.json": {
+      "bytes": 7905,
+      "sha256": "6542d279ec6f50126695a217ee595e62791958077159cd4a601b056b00834037"
+    },
+    "scoring_utility.py": {
+      "bytes": 32402,
+      "sha256": "dcd5afadd66773bd418d071e30a4e4b362ddebbfd147113fa6ac19120efd2f17"
+    }
+  },
+  "superseded_bundle_sha256": "0a6f0d91cdd5258645ce09077405ca3a017e848e6824062ea0656b312e7cee43",
+  "current_bundle_sha256": "9a4a53e642d7a8ea55a1dbceab9024408d3d58913f8a019dac52609044a8d6c5",
+  "current_bundle_bytes": 17810
+}

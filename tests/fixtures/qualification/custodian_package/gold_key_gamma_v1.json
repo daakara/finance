@@ -1,0 +1,158 @@
+{
+  "gold_key_id": "GOLD-KEY-GAMMA-V1",
+  "transcript_id": "TRANS-GAMMA-CALIBRATION-V1",
+  "governance_standard": "ARX Closure Model v2 — Reconciled Interpretation/Action Separation",
+  "reconciliation_authority": "ARX_UX_OBSERVER_CALIBRATION_COVERAGE_COMPLETION_AUTHORIZED",
+  "items": {
+    "GAMMA-01": {
+      "trial_id": "GAMMA-01",
+      "authoritative_cm_codes": ["CM-01"],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": 4,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "FAIL_CLOSED_RESTRICTED"
+      },
+      "rationale": "Participant attempted trade staging on an ADR restricted by fail-closed platform policy, stating all tickers in terminal can be traded directly on the US book. Violates CM-01 (FAIL_CLOSED asset interpreted as tradeable; INTERPRETATION_INCORRECT, ACTION_INAPPROPRIATE)."
+    },
+    "GAMMA-02": {
+      "trial_id": "GAMMA-02",
+      "authoritative_cm_codes": ["CM-02"],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": 3,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "NOT_ACTIONABLE_EXTENDED"
+      },
+      "rationale": "Participant misinterpreted NOT_ACTIONABLE: EXTENDED badge as platform pre-screening clearance/approval for entry. Violates CM-02 (NOT_ACTIONABLE interpreted as actionable; INTERPRETATION_INCORRECT, ACTION_INAPPROPRIATE)."
+    },
+    "GAMMA-03": {
+      "trial_id": "GAMMA-03",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": 4,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "NOT_ACTIONABLE_EXTENDED"
+      },
+      "rationale": "Participant explicitly acknowledged NOT_ACTIONABLE: EXTENDED badge and explained the 5% rule restriction (INTERPRETATION_CORRECT). CM-02 does NOT apply because participant never believed setup was cleared. The violation was a deliberate unauthorized policy override (ACTION_INAPPROPRIATE)."
+    },
+    "GAMMA-04": {
+      "trial_id": "GAMMA-04",
+      "authoritative_cm_codes": ["CM-04"],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": 5,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_SIZING"
+      },
+      "rationale": "Participant treated the structural invalidation floor ($140.00) as an upside profit target, staging limit sell at $140.00 to lock in profit. Violates CM-04 (Stop floor interpreted as profit target; INTERPRETATION_INCORRECT, ACTION_INAPPROPRIATE)."
+    },
+    "GAMMA-05": {
+      "trial_id": "GAMMA-05",
+      "authoritative_cm_codes": ["CM-05"],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true,
+      "market_data_freshness_status": {
+        "is_stale": true,
+        "latency_seconds": 2700,
+        "source_declared_policy": "Market data stale (>15 minutes latency); execution triggers suspended.",
+        "task_suitability": "UNSUITABLE_FOR_EXECUTION"
+      },
+      "rationale": "Participant stated that delayed/stale market data was a live real-time active market tape, oblivious to quote staleness. Violates CM-05 (Stale data interpreted as fresh; INTERPRETATION_INCORRECT, ACTION_INAPPROPRIATE)."
+    },
+    "GAMMA-06": {
+      "trial_id": "GAMMA-06",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": ["SM-06"],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true,
+      "market_data_freshness_status": {
+        "is_stale": true,
+        "latency_seconds": 1800,
+        "source_declared_policy": "Market data stale (>15 minutes latency); execution triggers suspended.",
+        "task_suitability": "UNSUITABLE_FOR_EXECUTION"
+      },
+      "rationale": "Participant explicitly acknowledged quote delay ('STALE / DELAYED DATA 1800s'), demonstrating INTERPRETATION_CORRECT regarding quote status. CM-05 does NOT apply. However, participant broke platform policy by executing on suspended tape (ACTION_INAPPROPRIATE, SM-06 Pipeline degradation neglect)."
+    },
+    "GAMMA-07": {
+      "trial_id": "GAMMA-07",
+      "authoritative_cm_codes": ["CM-06"],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": null,
+        "source_declared_policy": "UNKNOWN_SECURITY: CUSIP_UNRESOLVED",
+        "task_suitability": "UNRESOLVED_SECURITY_MASTER"
+      },
+      "rationale": "Participant bypassed the security master resolution alert and assumed unverified asset was a standard NASDAQ common stock. Violates CM-06 (UNKNOWN asset interpreted as COMMON_STOCK; INTERPRETATION_INCORRECT, ACTION_INAPPROPRIATE)."
+    },
+    "GAMMA-08": {
+      "trial_id": "GAMMA-08",
+      "authoritative_cm_codes": ["CM-07"],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": 4,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_SIZING"
+      },
+      "rationale": "Participant stated that clicking 'Copy Order' submitted an order to the live broker and holding a live position in market. Violates CM-07 (Staging action interpreted as live execution; INTERPRETATION_INCORRECT, ACTION_INAPPROPRIATE)."
+    },
+    "GAMMA-09": {
+      "trial_id": "GAMMA-09",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_APPROPRIATE",
+      "critical_decision_error": false,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": null,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "FAIL_CLOSED_RESTRICTED"
+      },
+      "rationale": "Adversarial ADR probe handled correctly (True Negative). Participant identified ADR status and correctly halted trade formulation in compliance with fail-closed platform policy."
+    },
+    "GAMMA-10": {
+      "trial_id": "GAMMA-10",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_APPROPRIATE",
+      "critical_decision_error": false,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": 4,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_SIZING"
+      },
+      "rationale": "Normative swing trade baseline (True Negative). Participant calculated canonical 1,492 shares without error."
+    }
+  }
+}

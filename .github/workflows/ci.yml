@@ -145,6 +145,55 @@ jobs:
         python -m py_compile scripts/ingest_alpaca_historical.py
         python -m py_compile scripts/apply_registration_plan_wrapper.py
 
+  phase2_custody_and_observer_suite:
+    name: Phase 2 Research Custody & Observer Suite
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Set up Node.js 18
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt pytest pytest-cov httpx starlette playwright
+        playwright install --with-deps chromium
+
+    - name: Build Prototype Harness
+      run: |
+        cd prototype-harness
+        npm ci || npm install
+        npm run build
+
+    - name: Run Stage 1 Custody Security Gate (24 tests)
+      env:
+        PYTHONPATH: "."
+      run: |
+        pytest tests/test_evidence_custody_security.py -v
+
+    - name: Run Stage 2 Participant Session Durability Gate (25 tests)
+      env:
+        PYTHONPATH: "."
+      run: |
+        pytest tests/test_participant_session_durability.py -v
+
+    - name: Run Observer Distribution Integrity Gate (10 tests)
+      env:
+        PYTHONPATH: "."
+      run: |
+        pytest tests/test_observer_distribution_integrity.py -v
+
   build_and_export:
     name: Static SSG Export & Integrity Gate
     runs-on: ubuntu-latest

@@ -1,0 +1,159 @@
+{
+  "gold_key_id": "GOLD-KEY-ALPHA-V2",
+  "supersedes": "GOLD-KEY-ALPHA-V1",
+  "transcript_id": "TRANS-ALPHA-CALIBRATION-V2",
+  "governance_standard": "ARX Closure Model v2 — Reconciled Interpretation/Action Separation",
+  "reconciliation_authority": "ARX_UX_OBSERVER_SCORING_INTEGRITY_REMEDIATION_AUTHORIZED",
+  "items": {
+    "ALPHA-01": {
+      "trial_id": "ALPHA-01",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_APPROPRIATE",
+      "critical_decision_error": false,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": 4,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_SIZING"
+      },
+      "rationale": "Normative baseline trade. Participant verified spot ($7.50), structural stop ($6.83), and correctly sized 1,492 shares without misinterpretation or unauthorized action."
+    },
+    "ALPHA-02": {
+      "trial_id": "ALPHA-02",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": ["SM-06"],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true,
+      "market_data_freshness_status": {
+        "is_stale": true,
+        "latency_seconds": 1113,
+        "source_declared_policy": "Market data stale (>15 minutes latency); execution triggers suspended.",
+        "task_suitability": "UNSUITABLE_FOR_EXECUTION"
+      },
+      "rationale": "Participant explicitly acknowledged quote delay ('DELAYED DATA 1800s'), demonstrating INTERPRETATION_CORRECT regarding data freshness. CM-05 (Stale interpreted as fresh) does NOT apply because participant never believed tape was fresh. However, participant proposed immediate execution on suspended tape, exhibiting ACTION_INAPPROPRIATE and SM-06 (Pipeline degradation neglect)."
+    },
+    "ALPHA-03": {
+      "trial_id": "ALPHA-03",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": ["SM-01", "SM-02"],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": 6,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_SWING"
+      },
+      "rationale": "Participant misinterpreted the applicability of the quarantined intraday mVaR volatility bracket to a multi-day swing holding period (SM-01, INTERPRETATION_INCORRECT), and actively overrode canonical sizing to execute 80 shares, over-allocating risk budget by 185% (SM-02, ACTION_INAPPROPRIATE)."
+    },
+    "ALPHA-04": {
+      "trial_id": "ALPHA-04",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": ["SM-03"],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": 5,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_UNDERWRITING"
+      },
+      "rationale": "Participant identified opposing bear case ('AI commoditization') but dismissed it without explanation ('it's just noise'), failing to explain why it matters or how it weakens thesis, and underwrote an unhedged full position without risk caveats. Violates SM-03 (Bear-case neglect under 4-step comprehension evaluation; INTERPRETATION_INCORRECT, ACTION_INAPPROPRIATE)."
+    },
+    "ALPHA-05": {
+      "trial_id": "ALPHA-05",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_APPROPRIATE",
+      "critical_decision_error": false,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": 3,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_EXECUTION"
+      },
+      "rationale": "Normative momentum setup. Participant accurately calculated 101 shares at $98.40 with $88.50 stop floor without error."
+    },
+    "ALPHA-06": {
+      "trial_id": "ALPHA-06",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_APPROPRIATE",
+      "critical_decision_error": false,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": null,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_TECHNICAL_AUDIT"
+      },
+      "rationale": "Adversarial probe handled correctly (True Negative). Participant identified unanchored pivot and volume expansion on pullback, accurately diagnosing phantom base (INTERPRETATION_CORRECT) and rejecting trade (ACTION_APPROPRIATE)."
+    },
+    "ALPHA-07": {
+      "trial_id": "ALPHA-07",
+      "authoritative_cm_codes": ["CM-07"],
+      "authoritative_sm_codes": ["SM-06"],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": null,
+        "source_declared_policy": "PIPELINE_FAILURE: CRITICAL_BATCH_RUN_INTERRUPTED",
+        "task_suitability": "COMPROMISED_TELEMETRY"
+      },
+      "rationale": "Participant recognized pipeline failure ('Header provenance says PIPELINE_FAILURE'), so CM-05 does NOT apply. However, participant stated that copying the offline string constituted an executed order submitted to the exchange (CM-07, INTERPRETATION_INCORRECT) and attempted execution during pipeline compromise (SM-06, ACTION_INAPPROPRIATE)."
+    },
+    "ALPHA-08": {
+      "trial_id": "ALPHA-08",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_APPROPRIATE",
+      "critical_decision_error": false,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": 6,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_EXECUTION"
+      },
+      "rationale": "Normative Concept C review (True Negative). Participant inspected bear dissent, verified structural stop at $395.00, and staged canonical 28 shares without error."
+    },
+    "ALPHA-09": {
+      "trial_id": "ALPHA-09",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_APPROPRIATE",
+      "critical_decision_error": false,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": null,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_DISCLOSURE_AUDIT"
+      },
+      "rationale": "Adversarial contradiction probe handled correctly (True Negative). Participant discovered fundamental buyout cap at $840 below $860 breakout pivot (INTERPRETATION_CORRECT) and halted trade (ACTION_APPROPRIATE)."
+    },
+    "ALPHA-10": {
+      "trial_id": "ALPHA-10",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_APPROPRIATE",
+      "critical_decision_error": false,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": 4,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_SIZING"
+      },
+      "rationale": "Normative swing trade in Concept B. Participant calculated exact canonical shares (1,492) and exposure without error."
+    }
+  }
+}

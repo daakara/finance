@@ -1,0 +1,159 @@
+{
+  "gold_key_id": "GOLD-KEY-BETA-V2",
+  "supersedes": "GOLD-KEY-BETA-V1",
+  "transcript_id": "TRANS-BETA-CALIBRATION-V2",
+  "governance_standard": "ARX Closure Model v2 — Reconciled Interpretation/Action Separation",
+  "reconciliation_authority": "ARX_UX_OBSERVER_SCORING_INTEGRITY_REMEDIATION_AUTHORIZED",
+  "items": {
+    "BETA-01": {
+      "trial_id": "BETA-01",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_APPROPRIATE",
+      "critical_decision_error": false,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": 6,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_SWING"
+      },
+      "rationale": "Normative swing trade in Concept B (True Negative). Participant inspected quarantined proof drawer, recognized intraday limitation, adhered to $395 structural stop, and approved canonical 28 shares without error."
+    },
+    "BETA-02": {
+      "trial_id": "BETA-02",
+      "authoritative_cm_codes": ["CM-09"],
+      "authoritative_sm_codes": ["SM-05"],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": null,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_RADAR_SCREENING"
+      },
+      "rationale": "Participant treated discovery radar watchlist eligibility ('SCREEN_ONLY: DISCOVERY_RADAR') as an immediate execution buy signal ('eligible on radar means system found a trade! Buying 100 shares right now'). Violates CM-09 (WATCH state interpreted as immediate BUY; INTERPRETATION_INCORRECT) and SM-05 (Screening conflated with execution trigger; ACTION_INAPPROPRIATE)."
+    },
+    "BETA-03": {
+      "trial_id": "BETA-03",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": ["SM-02", "SM-04"],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": null,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_DISCLOSURE_AUDIT"
+      },
+      "rationale": "Participant treated an uncalibrated 88/100 heuristic ranking score as an empirical 88% win probability ('An 88% win probability is practically guaranteed'; SM-04, INTERPRETATION_INCORRECT) and doubled the risk budget to $2,000 (SM-02, ACTION_INAPPROPRIATE)."
+    },
+    "BETA-04": {
+      "trial_id": "BETA-04",
+      "authoritative_cm_codes": ["CM-03"],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": 3,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_MOMENTUM_EXECUTION"
+      },
+      "rationale": "Participant set order limit buy price to Take Profit 1 ($118.00) instead of current market/pivot level ($98.40) stating '$118 is where I enter to capture momentum'. Violates CM-03 (Target interpreted as entry price; INTERPRETATION_INCORRECT, ACTION_INAPPROPRIATE)."
+    },
+    "BETA-05": {
+      "trial_id": "BETA-05",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_APPROPRIATE",
+      "critical_decision_error": false,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": 5,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_UNDERWRITING"
+      },
+      "rationale": "Normative fundamental review under Concept C (True Negative). Participant engaged with bear dissent, noted UNAVAILABLE entry pivot in timing console, and correctly deferred execution pending pivot confirmation (INTERPRETATION_CORRECT, ACTION_APPROPRIATE)."
+    },
+    "BETA-06": {
+      "trial_id": "BETA-06",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_APPROPRIATE",
+      "critical_decision_error": false,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": null,
+        "source_declared_policy": "PIPELINE_DEGRADED: BATCH_INTERRUPTED",
+        "task_suitability": "COMPROMISED_TELEMETRY"
+      },
+      "rationale": "Adversarial pipeline test handled correctly (True Negative). Participant spotted degraded pipeline telemetry banner and refused to stage trade, flagging setup for pipeline recovery (INTERPRETATION_CORRECT, ACTION_APPROPRIATE)."
+    },
+    "BETA-07": {
+      "trial_id": "BETA-07",
+      "authoritative_cm_codes": ["CM-08"],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_INCORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": null,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_TECHNICAL_AUDIT"
+      },
+      "rationale": "Participant placed a stop-loss at $435.00 on a $420.00 long entry ('above current spot where resistance was'). Violates CM-08 (Stop loss and entry direction inverted; INTERPRETATION_INCORRECT, ACTION_INAPPROPRIATE)."
+    },
+    "BETA-08": {
+      "trial_id": "BETA-08",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_INAPPROPRIATE",
+      "critical_decision_error": true,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": null,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "NOT_ACTIONABLE_EXTENDED"
+      },
+      "rationale": "Participant explicitly read and acknowledged the NOT_ACTIONABLE: EXTENDED badge ('The verdict badge says NOT_ACTIONABLE: EXTENDED... I am going to buy anyway despite the NOT_ACTIONABLE status'). The participant accurately understood platform semantics (INTERPRETATION_CORRECT); CM-02 (NOT_ACTIONABLE interpreted as actionable) does NOT apply because participant never believed setup was approved. However, participant committed an unauthorized policy override (ACTION_INAPPROPRIATE)."
+    },
+    "BETA-09": {
+      "trial_id": "BETA-09",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_APPROPRIATE",
+      "critical_decision_error": false,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": 4,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_SIZING"
+      },
+      "rationale": "Normative swing trade in Concept A (True Negative). Participant sized 1,492 shares without error."
+    },
+    "BETA-10": {
+      "trial_id": "BETA-10",
+      "authoritative_cm_codes": [],
+      "authoritative_sm_codes": [],
+      "interpretation_state": "INTERPRETATION_CORRECT",
+      "action_state": "ACTION_APPROPRIATE",
+      "critical_decision_error": false,
+      "market_data_freshness_status": {
+        "is_stale": false,
+        "latency_seconds": 3,
+        "source_declared_policy": "SIMULATED_RESEARCH_FEED: Fresh",
+        "task_suitability": "SUITABLE_FOR_MOMENTUM_EXECUTION"
+      },
+      "rationale": "Normative momentum setup in Concept B (True Negative). Participant sized 101 shares at breakout without error."
+    }
+  }
+}
