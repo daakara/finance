@@ -154,7 +154,7 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
   let uiStateLabel = "Evidence Incomplete — In-Depth Research Required";
   let headlineExplanation = "Incomplete evidence available to assess setup.";
 
-  const isStale = freshnessStatus === "STALE_HISTORICAL";
+  const isStale = freshnessStatus === "STALE_HISTORICAL" || freshnessStatus === "STALE";
 
   if (isActuallyBreached) {
     if (ownershipState === "OWNED") {
@@ -265,7 +265,9 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
 
   // 4a. Resolve Precedence-Enforced DecisionState (Phase 20A / Phase 21 / Phase 2)
   let decisionState: DecisionState = "VALID_SETUP";
-  if (decisionTrace) {
+  if (isStale) {
+    decisionState = "STALE_DATA";
+  } else if (decisionTrace) {
     decisionState = decisionTrace.decisionState;
     const canonicalStateLabel = decisionTrace.decisionStateLabel || decisionTrace.stateLabel;
     if (canonicalStateLabel && posture !== "AVOID" && ownershipState !== "OWNED") {
@@ -301,8 +303,8 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     modelProvenance,
     overallEligibility,
     decisionState,
-    canSizeTrade: decisionTrace ? decisionTrace.canSizeTrade : (posture === "ACQUIRE"),
-    isActionable: decisionTrace ? decisionTrace.isActionable : (posture === "ACQUIRE"),
+    canSizeTrade: isStale ? false : (decisionTrace ? decisionTrace.canSizeTrade : (posture === "ACQUIRE")),
+    isActionable: isStale ? false : (decisionTrace ? decisionTrace.isActionable : (posture === "ACQUIRE")),
     assessment,
     factorAgreement: agreement,
     domains,

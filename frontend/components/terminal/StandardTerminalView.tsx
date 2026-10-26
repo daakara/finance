@@ -34,11 +34,12 @@ export default function StandardTerminalView({
   const isStaleTape = Boolean(
     insight.terminalState?.decisionState === "STALE_DATA" ||
     (insight.terminalState as any)?.freshness === "STALE" ||
+    (insight.terminalState as any)?.freshnessStatus === "STALE_HISTORICAL" ||
+    (insight.terminalState as any)?.freshnessStatus === "STALE" ||
     (insight as any)?.freshness?.status === "STALE" ||
     (insight as any)?.freshness?.status === "STALE_HISTORICAL" ||
     (insight.terminalState as any)?.stalenessDays > 4 ||
-    (insight as any)?.freshness?.stalenessDays > 4 ||
-    insight.verdictLabel?.toLowerCase().includes("stale")
+    (insight as any)?.freshness?.stalenessDays > 4
   );
 
   const isActionable = isStaleTape ? false : Boolean(insight.terminalState.isActionable);
@@ -177,35 +178,12 @@ export default function StandardTerminalView({
             </div>
 
             {/* Verdict & Score Banner */}
-            <div className="verdict-banner p-3 sm:p-4 rounded-xl bg-[#080e18] border border-[#182335] space-y-2.5">
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2.5 sm:gap-3">
+            <div className="verdict-banner !flex !flex-col p-3 sm:p-4 rounded-xl bg-[#080e18] border border-[#182335] space-y-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2.5 sm:gap-3 w-full">
                 <div className="verdict-info space-y-1 min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span id="card-verdict-label" className="verdict-label text-[10px] font-mono font-black text-cyan-400 uppercase tracking-widest block">
-                      ARX BOTTOM LINE VERDICT
-                    </span>
-                    {/* Mobile Score Pill */}
-                    <div className="sm:hidden flex items-center gap-1.5 shrink-0">
-                      <div
-                        onClick={onOpenWhy}
-                        className="px-2 py-0.5 rounded-lg bg-[#141c2e] border border-cyan-500/40 text-center cursor-pointer flex items-baseline gap-0.5"
-                      >
-                        <span className="score-num mono font-mono font-black text-sm text-cyan-400 leading-none">
-                          {insight.setupScore}
-                        </span>
-                        <span className="score-den font-mono text-[10px] text-slate-400">
-                          /100
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={onOpenWhy}
-                        className="text-[10px] font-mono text-cyan-400 hover:underline min-h-[32px] flex items-center"
-                      >
-                        {isStaleTape ? "Historical" : "Why?"}
-                      </button>
-                    </div>
-                  </div>
+                  <span id="card-verdict-label" className="verdict-label text-[10px] font-mono font-black text-cyan-400 uppercase tracking-widest block">
+                    ARX BOTTOM LINE VERDICT
+                  </span>
                   <h2 id="card-verdict-title" className="verdict-title text-base sm:text-lg font-black text-white tracking-tight leading-snug break-words">
                     {insight.verdictLabel}
                   </h2>
@@ -251,7 +229,7 @@ export default function StandardTerminalView({
               {/* 2. CANONICAL REASON (Directly Below Verdict) */}
               <div
                 data-testid="decision-reason"
-                className="text-xs text-slate-300 font-sans leading-relaxed border-t border-[#182335]/60 pt-2"
+                className="text-xs text-slate-300 font-sans leading-relaxed border-t border-[#182335]/60 pt-2 w-full"
               >
                 <span className="text-[10px] text-slate-400 font-mono font-bold block uppercase mb-0.5 tracking-wider">
                   Reason / Bottom Line:
@@ -259,6 +237,49 @@ export default function StandardTerminalView({
                 <p id="card-verdict-summary" className="verdict-summary leading-relaxed">
                   {insight.standard.bottomLine}
                 </p>
+              </div>
+
+              {/* 3. MOBILE SCORE DECK (Positioned strictly AFTER Rationale on mobile) */}
+              <div
+                id="card-mobile-score-deck"
+                data-testid="mobile-confluence-score"
+                className="sm:hidden flex items-center justify-between pt-2 border-t border-[#182335]/60 w-full"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                    Confluence Score:
+                  </span>
+                  <div
+                    id="card-score-pill-mobile"
+                    onClick={onOpenWhy}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onOpenWhy();
+                      }
+                    }}
+                    title="Setup Score: click to inspect confluence attribution"
+                    className="px-2.5 py-0.5 rounded-lg bg-[#141c2e] border border-cyan-500/40 text-center cursor-pointer flex items-baseline gap-0.5"
+                  >
+                    <span className="score-num mono font-mono font-black text-sm text-cyan-400 leading-none">
+                      {insight.setupScore}
+                    </span>
+                    <span className="score-den font-mono text-[10px] text-slate-400">
+                      /100
+                    </span>
+                  </div>
+                </div>
+                <button
+                  id="card-why-score-btn-mobile"
+                  type="button"
+                  onClick={onOpenWhy}
+                  aria-label="Inspect Score Confluence"
+                  className="text-[10px] font-mono text-cyan-400 hover:underline min-h-[32px] flex items-center"
+                >
+                  {isStaleTape ? "Historical Tape Score" : "Why Score?"}
+                </button>
               </div>
             </div>
 

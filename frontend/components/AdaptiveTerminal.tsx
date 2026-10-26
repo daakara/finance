@@ -116,8 +116,12 @@ export default function AdaptiveTerminal({
     confluence,
     decisionTrace,
     optimalExecution,
-    freshness?.status
+    (freshness?.stalenessDays && freshness.stalenessDays > 4) ? "STALE_HISTORICAL" : freshness?.status
   );
+
+  if (freshness) {
+    (insight as any).freshness = freshness;
+  }
 
   const evidenceBadge = resolveOverallEvidenceBadge({
     hasLiveFeed: dataSource === "live",
