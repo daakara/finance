@@ -383,24 +383,25 @@ export function evaluatePreFlightChecks(
     safeStop! < safePrice &&
     safeTarget! > safePrice;
 
-  // Independent Prospective Risk/Reward Verification
-  let computedRRAtSpot = 0;
+  // Independent Prospective Risk/Reward Verification (Full Precision)
+  let rawComputedRRAtSpot = 0;
   if (isLevelDirectionValid) {
     const risk = safePrice - safeStop!;
     const reward = safeTarget! - safePrice;
     if (risk > 0 && reward > 0) {
-      computedRRAtSpot = Number((reward / risk).toFixed(2));
+      rawComputedRRAtSpot = reward / risk;
     }
   }
 
   // Canonical Effective RR Resolution:
   // Must be verified by BOTH the execution levels at current market spot AND any model ratio.
-  // If either is below 2.0:1, the trade fails to provide institutional payoff asymmetry.
-  const effectiveRR = isLevelDirectionValid
-    ? (isRRValid ? Math.min(safeRR, computedRRAtSpot) : computedRRAtSpot)
+  // Full numeric precision is preserved for threshold comparison.
+  // A raw ratio below the required 2.0:1 threshold (e.g. 1.995) must NEVER pass solely because it rounds to 2.00 for display.
+  const rawEffectiveRR = isLevelDirectionValid
+    ? (isRRValid ? Math.min(safeRR, rawComputedRRAtSpot) : rawComputedRRAtSpot)
     : 0;
 
-  const isRRPassed = isPriceValid && hasExecutionLevels && isLevelDirectionValid && effectiveRR >= 2.0;
+  const isRRPassed = isPriceValid && hasExecutionLevels && isLevelDirectionValid && rawEffectiveRR >= 2.0;
   const chk1Status: CheckStatus = !hasExecutionLevels
     ? "MISSING LEVELS"
     : !isLevelDirectionValid
@@ -409,11 +410,12 @@ export function evaluatePreFlightChecks(
     ? "PASS"
     : "FAIL";
 
+  const displayRR = rawEffectiveRR.toFixed(2);
   const chk1Summary = !hasExecutionLevels
     ? "N/A"
     : !isLevelDirectionValid
     ? "Invalid Levels"
-    : `${effectiveRR.toFixed(2)}:1.0`;
+    : `${displayRR}:1.0`;
 
   const chk1Detail = !hasExecutionLevels
     ? "Execution levels missing: Stop loss and target required."
@@ -423,7 +425,7 @@ export function evaluatePreFlightChecks(
         : `Inverted reward boundary: Profit target ($${safeTarget!.toFixed(2)}) is below current price ($${safePrice.toFixed(2)}). Target boundary inverted.`)
     : isRRPassed
     ? "Adequate upside cushion (R:R >= 2.0:1)."
-    : `Hazard: Prospective reward relative to downside risk (${effectiveRR.toFixed(2)}:1) is below 2.0:1 institutional floor.`;
+    : `Hazard: Prospective reward relative to downside risk (${displayRR}:1) is below 2.0:1 institutional floor.`;
 
   const chk1Item: PreFlightCheckItem = {
     id: "CHK-1",
@@ -787,7 +789,7 @@ export function evaluatePreFlightChecks(
     safePrice,
     safeStop,
     safeTarget,
-    safeRR: effectiveRR,
+    safeRR: rawEffectiveRR,
     safeEntryMin,
     safeEntryMax,
     safePivot,
