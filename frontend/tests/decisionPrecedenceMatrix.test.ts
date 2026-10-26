@@ -16,7 +16,7 @@
  */
 
 import assert from "node:assert";
-import { deriveAssessmentState } from "../lib/assessmentEngine";
+import { deriveAssessmentState, assertDecisionAuthorityConsistency } from "../lib/assessmentEngine";
 import { generateQuantitativeInsight } from "../lib/insightGenerator";
 import {
   DecisionTrace,
@@ -804,6 +804,443 @@ console.log("Scenario DP23: Downstream consumer generateQuantitativeInsight does
   console.log("  ✓ DP23 PASS: Downstream insightGenerator strictly blocks sizing and actionability on insufficient evidence.\n");
 }
 
+// ── DP24: Contradiction: LIMITED Eligibility + Rogue Upstream Actionable Trace ──
+console.log("Scenario DP24: LIMITED eligibility strictly blocks sizing and actionability despite rogue upstream claim...");
+{
+  const rogueTrace: DecisionTrace = {
+    symbol: "NVDA",
+    decisionState: "ACTIONABLE_SETUP",
+    decisionStateLabel: "Actionable Setup — Buy Zone Confirmed",
+    canSizeTrade: true,
+    isActionable: true,
+    disqualificationReason: null,
+    allowedActions: ["SIZE_TRADE", "SET_ALERT"],
+  };
+
+  const limitedDomains: DomainAssessment[] = baseDomainAssessments.map(d =>
+    d.domainId === "smart_money" ? { ...d, status: "UNAVAILABLE", availability: "UNAVAILABLE" } : d
+  );
+
+  const state = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 184.2,
+    changePct: 1.5,
+    horizon: "SWING",
+    ownershipState: "NOT_OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: limitedDomains,
+    decisionTrace: rogueTrace,
+    freshness: { status: "LIVE", stalenessDays: 0 },
+  });
+
+  assert.strictEqual(state.overallEligibility, "LIMITED", "Overall eligibility must be LIMITED");
+  assert.strictEqual(state.posture, "RESEARCH", "LIMITED eligibility must demote posture to RESEARCH");
+  assert.strictEqual(state.decisionState, "EVIDENCE_INCOMPLETE", "LIMITED eligibility decisionState must be EVIDENCE_INCOMPLETE");
+  assert.strictEqual(state.authoritativeDecisionState, "ACTIONABLE_SETUP", "Upstream model proposal preserved in authoritativeDecisionState");
+  assert.strictEqual(state.canSizeTrade, false, "canSizeTrade must be strictly false on LIMITED eligibility");
+  assert.strictEqual(state.isActionable, false, "isActionable must be strictly false on LIMITED eligibility");
+  assert.strictEqual(state.uiStateLabel.toLowerCase().includes("actionable"), false, "uiStateLabel must not claim actionable on LIMITED eligibility");
+  const sizeAction = state.availableActions.find(a => a.id === "size_trade");
+  assert.strictEqual(sizeAction?.enabled, false, "size_trade action must be disabled");
+  console.log("  ✓ DP24 PASS: LIMITED eligibility strictly blocks sizing and actionability despite rogue upstream claim.\n");
+}
+
+// ── DP25: Contradiction: Missing Core Evidence + Rogue Upstream Actionable Trace ──
+console.log("Scenario DP25: Missing core evidence strictly blocks sizing and actionability despite rogue upstream claim...");
+{
+  const rogueTrace: DecisionTrace = {
+    symbol: "NVDA",
+    decisionState: "ACTIONABLE_SETUP",
+    decisionStateLabel: "Actionable Setup — Buy Zone Confirmed",
+    canSizeTrade: true,
+    isActionable: true,
+    disqualificationReason: null,
+    allowedActions: ["SIZE_TRADE", "SET_ALERT"],
+  };
+
+  // Missing core trend domain
+  const partialDomains: DomainAssessment[] = baseDomainAssessments.filter(d => d.domainId !== "trend");
+
+  const state = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 184.2,
+    changePct: 1.5,
+    horizon: "SWING",
+    ownershipState: "NOT_OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: partialDomains,
+    decisionTrace: rogueTrace,
+    freshness: { status: "LIVE", stalenessDays: 0 },
+  });
+
+  assert.strictEqual(state.posture, "RESEARCH", "Missing core evidence must demote posture to RESEARCH");
+  assert.strictEqual(state.decisionState, "INSUFFICIENT_DATA", "Missing trend decisionState must be INSUFFICIENT_DATA");
+  assert.strictEqual(state.canSizeTrade, false, "canSizeTrade must be strictly false on missing core evidence");
+  assert.strictEqual(state.isActionable, false, "isActionable must be strictly false on missing core evidence");
+  console.log("  ✓ DP25 PASS: Missing core evidence strictly blocks sizing and actionability despite rogue upstream claim.\n");
+}
+
+// ── DP26: Contradiction: Missing Health Domain + Rogue Upstream Actionable Trace ──
+console.log("Scenario DP26: Missing fundamental health strictly blocks sizing despite rogue upstream claim...");
+{
+  const rogueTrace: DecisionTrace = {
+    symbol: "NVDA",
+    decisionState: "ACTIONABLE_SETUP",
+    decisionStateLabel: "Actionable Setup — Buy Zone Confirmed",
+    canSizeTrade: true,
+    isActionable: true,
+    disqualificationReason: null,
+    allowedActions: ["SIZE_TRADE", "SET_ALERT"],
+  };
+
+  // Missing financial health domain
+  const noHealthDomains: DomainAssessment[] = baseDomainAssessments.filter(d => d.domainId !== "health");
+
+  const state = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 184.2,
+    changePct: 1.5,
+    horizon: "SWING",
+    ownershipState: "NOT_OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: noHealthDomains,
+    decisionTrace: rogueTrace,
+    freshness: { status: "LIVE", stalenessDays: 0 },
+  });
+
+  assert.strictEqual(state.posture, "RESEARCH", "Missing health must demote posture to RESEARCH");
+  assert.strictEqual(state.decisionState, "EVIDENCE_INCOMPLETE", "Missing health decisionState must be EVIDENCE_INCOMPLETE");
+  assert.strictEqual(state.canSizeTrade, false, "canSizeTrade must be strictly false on missing health");
+  assert.strictEqual(state.isActionable, false, "isActionable must be strictly false on missing health");
+  console.log("  ✓ DP26 PASS: Missing fundamental health strictly blocks sizing despite rogue upstream claim.\n");
+}
+
+// ── DP27: Contradiction: Owned Position (HOLD) + Upstream Buy Permission ──
+console.log("Scenario DP27: Owned holding (HOLD) preserves portfolio actions and blocks new trade sizing...");
+{
+  const rogueBuyTrace: DecisionTrace = {
+    symbol: "NVDA",
+    decisionState: "ACTIONABLE_SETUP",
+    decisionStateLabel: "Actionable Setup — Buy Zone Confirmed",
+    canSizeTrade: true,
+    isActionable: true,
+    disqualificationReason: null,
+    allowedActions: ["SIZE_TRADE", "SET_ALERT"],
+  };
+
+  const state = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 184.2,
+    changePct: 1.5,
+    horizon: "SWING",
+    ownershipState: "OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: baseDomainAssessments,
+    decisionTrace: rogueBuyTrace,
+    freshness: { status: "LIVE", stalenessDays: 0 },
+  });
+
+  assert.strictEqual(state.posture, "HOLD", "Owned holding with favorable factors must be HOLD");
+  assert.strictEqual(state.canSizeTrade, false, "canSizeTrade for new trade must be strictly false for OWNED holding");
+  assert.strictEqual(state.isActionable, false, "isActionable must be strictly false for new trade on OWNED holding");
+  assert.strictEqual(state.decisionState, "VALID_SETUP", "decisionState cannot be ACTIONABLE_SETUP on OWNED holding");
+  assert.strictEqual(state.authoritativeDecisionState, "ACTIONABLE_SETUP", "authoritativeDecisionState preserves upstream trace");
+  const sizeAction = state.availableActions.find(a => a.id === "size_trade");
+  assert.strictEqual(sizeAction?.enabled, false, "size_trade action must be disabled on OWNED holding");
+  const reviewAction = state.availableActions.find(a => a.id === "review_invalidation");
+  assert.strictEqual(reviewAction?.enabled, true, "review_invalidation portfolio action must remain enabled on OWNED holding");
+  console.log("  ✓ DP27 PASS: Owned holding (HOLD) preserves portfolio actions and blocks new trade sizing.\n");
+}
+
+// ── DP28: Contradiction: Owned Position Deteriorating (TRIM) + Upstream Buy Permission ──
+console.log("Scenario DP28: Deteriorating holding (TRIM) blocks new trade sizing and enables thesis review...");
+{
+  const rogueBuyTrace: DecisionTrace = {
+    symbol: "NVDA",
+    decisionState: "ACTIONABLE_SETUP",
+    decisionStateLabel: "Actionable Setup — Buy Zone Confirmed",
+    canSizeTrade: true,
+    isActionable: true,
+    disqualificationReason: null,
+    allowedActions: ["SIZE_TRADE", "SET_ALERT"],
+  };
+
+  const unfavorableDomains: DomainAssessment[] = baseDomainAssessments.map(d =>
+    d.domainId === "trend" || d.domainId === "health" ? { ...d, status: "UNFAVORABLE" as const } : d
+  );
+
+  const state = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 184.2,
+    changePct: -3.5,
+    horizon: "SWING",
+    ownershipState: "OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: unfavorableDomains,
+    decisionTrace: rogueBuyTrace,
+    freshness: { status: "LIVE", stalenessDays: 0 },
+  });
+
+  assert.strictEqual(state.posture, "TRIM", "Deteriorating owned holding must be TRIM");
+  assert.strictEqual(state.canSizeTrade, false, "canSizeTrade must be strictly false for TRIM");
+  assert.strictEqual(state.isActionable, false, "isActionable must be strictly false for TRIM");
+  const sizeAction = state.availableActions.find(a => a.id === "size_trade");
+  assert.strictEqual(sizeAction?.enabled, false, "size_trade action must be disabled for TRIM");
+  const reviewAction = state.availableActions.find(a => a.id === "review_invalidation");
+  assert.strictEqual(reviewAction?.enabled, true, "review_invalidation portfolio action must remain enabled for TRIM");
+  console.log("  ✓ DP28 PASS: Deteriorating holding (TRIM) blocks new trade sizing and enables thesis review.\n");
+}
+
+// ── DP29: Contradiction: Invalidation Breached + Upstream ACTIONABLE_SETUP in insightGenerator ──
+console.log("Scenario DP29: Breached floor + upstream ACTIONABLE_SETUP emits AVOID_STAGE_4 without actionable override...");
+{
+  const rogueTrace: DecisionTrace = {
+    symbol: "NVDA",
+    decisionState: "ACTIONABLE_SETUP",
+    decisionStateLabel: "Actionable Setup — Buy Zone Confirmed",
+    canSizeTrade: true,
+    isActionable: true,
+    disqualificationReason: null,
+    allowedActions: ["SIZE_TRADE", "SET_ALERT"],
+  };
+
+  const insight = generateQuantitativeInsight(
+    "NVDA",
+    "NVIDIA Corp",
+    160.0, // breached below stopLoss 170.0
+    -7.0,
+    88,
+    2,
+    "SWING",
+    "NOT_OWNED",
+    "USER_DECLARED",
+    undefined,
+    "live",
+    undefined,
+    rogueTrace,
+    {
+      current_price: 160.0,
+      setup_pattern: "PULLBACK",
+      optimal_entry_min: 182.0,
+      optimal_entry_max: 184.0,
+      breakout_pivot: 182.0,
+      stop_loss: 170.0,
+      take_profit_1: 210.0,
+      take_profit_2: 230.0,
+      risk_reward_ratio: 3.2,
+      entry_thesis: "Pullback to 50 SMA",
+      invalidation_condition: "Stop loss breached",
+      stage_phase: "Stage 2",
+      vcp_contraction_status: "Forming base",
+    },
+    "LIVE"
+  );
+
+  assert.strictEqual(insight.terminalState.posture, "AVOID", "Breached setup must force AVOID posture");
+  assert.strictEqual(insight.terminalState.decisionState, "EVIDENCE_INCOMPLETE", "Breached setup decisionState must be EVIDENCE_INCOMPLETE");
+  assert.strictEqual(insight.terminalState.authoritativeDecisionState, "ACTIONABLE_SETUP", "Upstream trace preserved in authoritativeDecisionState");
+  assert.strictEqual(insight.terminalState.canSizeTrade, false, "canSizeTrade must be false on breached setup");
+  assert.strictEqual(insight.terminalState.isActionable, false, "isActionable must be false on breached setup");
+  assert.strictEqual(insight.verdict, "AVOID_STAGE_4", "finalVerdict must be AVOID_STAGE_4");
+  assert.strictEqual(insight.verdictLabel, "Setup Invalidated", "verdictLabel must reflect Setup Invalidated (never Actionable)");
+  console.log("  ✓ DP29 PASS: Breached floor + upstream ACTIONABLE_SETUP emits AVOID_STAGE_4 without actionable override.\n");
+}
+
+// ── DP30: Contradiction: Stale Tape + Upstream ACTIONABLE_SETUP in insightGenerator ──
+console.log("Scenario DP30: Stale tape + upstream ACTIONABLE_SETUP strictly preserves STALE_DATA and blocks sizing...");
+{
+  const rogueTrace: DecisionTrace = {
+    symbol: "NVDA",
+    decisionState: "ACTIONABLE_SETUP",
+    decisionStateLabel: "Actionable Setup — Buy Zone Confirmed",
+    canSizeTrade: true,
+    isActionable: true,
+    disqualificationReason: null,
+    allowedActions: ["SIZE_TRADE", "SET_ALERT"],
+  };
+
+  const insight = generateQuantitativeInsight(
+    "NVDA",
+    "NVIDIA Corp",
+    184.0,
+    1.5,
+    88,
+    2,
+    "SWING",
+    "NOT_OWNED",
+    "USER_DECLARED",
+    undefined,
+    "historical",
+    undefined,
+    rogueTrace,
+    undefined,
+    { status: "STALE_HISTORICAL", stalenessDays: 7 }
+  );
+
+  assert.strictEqual(insight.terminalState.posture, "RESEARCH", "Stale tape must demote posture to RESEARCH");
+  assert.strictEqual(insight.terminalState.decisionState, "STALE_DATA", "decisionState must be STALE_DATA");
+  assert.strictEqual(insight.terminalState.authoritativeDecisionState, "ACTIONABLE_SETUP", "authoritativeDecisionState preserves upstream model state");
+  assert.strictEqual(insight.terminalState.canSizeTrade, false, "canSizeTrade must be false on stale tape");
+  assert.strictEqual(insight.terminalState.isActionable, false, "isActionable must be false on stale tape");
+  assert.strictEqual(insight.verdict, "WAIT_FOR_TRIGGER", "finalVerdict must be WAIT_FOR_TRIGGER (never ACTIONABLE_BUY_ZONE)");
+  assert.strictEqual(insight.verdictLabel, "Stale Historical Tape (> 4 Days)", "verdictLabel must report Stale Tape");
+  console.log("  ✓ DP30 PASS: Stale tape + upstream ACTIONABLE_SETUP strictly preserves STALE_DATA and blocks sizing.\n");
+}
+
+// ── DP31: Contradiction: Conflicting Actionability and Sizing Flags ──
+console.log("Scenario DP31: Conflicting actionability and sizing flags strictly fail closed...");
+{
+  const conflictingTrace: DecisionTrace = {
+    symbol: "NVDA",
+    decisionState: "ACTIONABLE_SETUP",
+    decisionStateLabel: "Actionable Setup",
+    canSizeTrade: false, // contradiction: actionable but sizing forbidden!
+    isActionable: true,
+    disqualificationReason: "Volatility threshold exceeded",
+    allowedActions: ["SET_ALERT"],
+  };
+
+  const state = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 184.2,
+    changePct: 1.5,
+    horizon: "SWING",
+    ownershipState: "NOT_OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: baseDomainAssessments,
+    decisionTrace: conflictingTrace,
+    freshness: { status: "LIVE", stalenessDays: 0 },
+  });
+
+  assert.strictEqual(state.canSizeTrade, false, "canSizeTrade must be false when trace forbids sizing");
+  assert.strictEqual(state.isActionable, false, "isActionable must fail closed when sizing is blocked");
+  assert.strictEqual(state.posture, "WATCH", "Posture must resolve to WATCH (not ACQUIRE)");
+  assert.strictEqual(state.decisionState, "VALID_SETUP", "decisionState must resolve to VALID_SETUP (not ACTIONABLE_SETUP)");
+  console.log("  ✓ DP31 PASS: Conflicting actionability and sizing flags strictly fail closed.\n");
+}
+
+// ── DP32: Consistency Invariant Rigorous Unit Verification ──
+console.log("Scenario DP32: assertDecisionAuthorityConsistency rejects every contradiction vector...");
+{
+  // Vector A: canSizeTrade true on non-ACQUIRE posture
+  assert.throws(
+    () => {
+      assertDecisionAuthorityConsistency({
+        posture: "RESEARCH",
+        decisionState: "VALID_SETUP",
+        canSizeTrade: true,
+        isActionable: false,
+        uiStateLabel: "Research State",
+      });
+    },
+    /canSizeTrade is true while posture is RESEARCH/,
+    "Invariant must throw on canSizeTrade true with RESEARCH posture"
+  );
+
+  // Vector B: canSizeTrade true on OWNED position
+  assert.throws(
+    () => {
+      assertDecisionAuthorityConsistency({
+        posture: "ACQUIRE",
+        decisionState: "ACTIONABLE_SETUP",
+        canSizeTrade: true,
+        isActionable: true,
+        uiStateLabel: "Actionable Setup",
+        ownershipState: "OWNED",
+      });
+    },
+    /canSizeTrade is true on an OWNED position/,
+    "Invariant must throw on canSizeTrade true with OWNED position"
+  );
+
+  // Vector C: isActionable true while canSizeTrade false
+  assert.throws(
+    () => {
+      assertDecisionAuthorityConsistency({
+        posture: "WATCH",
+        decisionState: "VALID_SETUP",
+        canSizeTrade: false,
+        isActionable: true,
+        uiStateLabel: "Valid Setup",
+      });
+    },
+    /isActionable is true while canSizeTrade is false/,
+    "Invariant must throw on isActionable true with canSizeTrade false"
+  );
+
+  // Vector D: decisionState ACTIONABLE_SETUP while canSizeTrade false
+  assert.throws(
+    () => {
+      assertDecisionAuthorityConsistency({
+        posture: "WATCH",
+        decisionState: "ACTIONABLE_SETUP",
+        canSizeTrade: false,
+        isActionable: false,
+        uiStateLabel: "Valid Setup",
+      });
+    },
+    /decisionState is ACTIONABLE_SETUP while canSizeTrade is false/,
+    "Invariant must throw on decisionState ACTIONABLE_SETUP with canSizeTrade false"
+  );
+
+  // Vector E: finalVerdict ACTIONABLE_BUY_ZONE while canSizeTrade false
+  assert.throws(
+    () => {
+      assertDecisionAuthorityConsistency({
+        posture: "WATCH",
+        decisionState: "VALID_SETUP",
+        canSizeTrade: false,
+        isActionable: false,
+        uiStateLabel: "Valid Setup",
+        finalVerdict: "ACTIONABLE_BUY_ZONE",
+      });
+    },
+    /finalVerdict is ACTIONABLE_BUY_ZONE while canSizeTrade is false/,
+    "Invariant must throw on finalVerdict ACTIONABLE_BUY_ZONE with canSizeTrade false"
+  );
+
+  // Vector F: uiStateLabel claims actionable while canSizeTrade false
+  assert.throws(
+    () => {
+      assertDecisionAuthorityConsistency({
+        posture: "WATCH",
+        decisionState: "VALID_SETUP",
+        canSizeTrade: false,
+        isActionable: false,
+        uiStateLabel: "Actionable Setup — Buy Zone Confirmed",
+      });
+    },
+    /uiStateLabel claims actionable/,
+    "Invariant must throw on uiStateLabel claiming actionable with canSizeTrade false"
+  );
+
+  // Vector G: size_trade action enabled while canSizeTrade false
+  assert.throws(
+    () => {
+      assertDecisionAuthorityConsistency({
+        posture: "WATCH",
+        decisionState: "VALID_SETUP",
+        canSizeTrade: false,
+        isActionable: false,
+        uiStateLabel: "Valid Setup",
+        availableActions: [
+          { id: "size_trade", type: "SIZE_POSITION", label: "Size Trade", enabled: true },
+        ],
+      });
+    },
+    /size_trade action is enabled while canSizeTrade is false/,
+    "Invariant must throw on size_trade action enabled with canSizeTrade false"
+  );
+
+  console.log("  ✓ DP32 PASS: assertDecisionAuthorityConsistency strictly rejects every contradiction vector.\n");
+}
+
 console.log("=====================================================================");
-console.log("ALL 23 DECISION PRECEDENCE MATRIX SCENARIOS (DP01 - DP23) PASSED");
+console.log("ALL 32 DECISION PRECEDENCE MATRIX SCENARIOS (DP01 - DP32) PASSED");
 console.log("=====================================================================\n");

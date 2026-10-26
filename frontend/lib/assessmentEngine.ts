@@ -211,11 +211,12 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     // Zero client-side re-derivation of actionable posture from factor counts alone.
     const isCanonicalActionable = Boolean(
       decisionTrace
-        ? (decisionTrace.isActionable && decisionTrace.decisionState === "ACTIONABLE_SETUP")
+        ? (decisionTrace.isActionable && decisionTrace.canSizeTrade && decisionTrace.decisionState === "ACTIONABLE_SETUP")
         : false
     );
 
     const canonicalStateLabel = decisionTrace?.decisionStateLabel || decisionTrace?.stateLabel;
+    const isLabelSafeForWatch = canonicalStateLabel && !canonicalStateLabel.toLowerCase().includes("actionable");
 
     if (isCanonicalActionable) {
       posture = "ACQUIRE";
@@ -227,7 +228,9 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
       headlineExplanation = "Negative trend or poor fundamentals present unfavorable risk/reward.";
     } else {
       posture = "WATCH";
-      uiStateLabel = canonicalStateLabel || "Setup Evaluation Pending";
+      uiStateLabel = isLabelSafeForWatch
+        ? canonicalStateLabel
+        : (canonicalStateLabel?.toLowerCase().includes("actionable") ? "Valid Setup — Awaiting Trigger" : (canonicalStateLabel || "Setup Evaluation Pending"));
       const levelRel = evaluateLevelRelation(safePrice, reclaimMilestonePrice, "50-day SMA", symbol);
       headlineExplanation = (decisionTrace && decisionTrace.disqualificationReason)
         ? decisionTrace.disqualificationReason
@@ -237,19 +240,51 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     }
   }
 
+  // 5. Fail-Closed Execution & Sizing Gating
+  // Sizing of a new trade is authorized ONLY for unowned assets in an ACQUIRE posture with full evidence clearance.
+  const isEvidenceInsufficient =
+    agreement.evaluated === 0 ||
+    overallEligibility !== "ELIGIBLE" ||
+    !isCoreEvidenceAvailable ||
+    !isHealthAvailable ||
+    !isTrendAvailable;
+
+  const isExecutionBlocked =
+    !isPriceValid ||
+    effectiveFreshnessStatus === "UNAVAILABLE" ||
+    isStale ||
+    isActuallyBreached ||
+    isEvidenceInsufficient ||
+    posture !== "ACQUIRE" ||
+    ownershipState === "OWNED";
+
+  const canSizeTrade = isExecutionBlocked
+    ? false
+    : Boolean(decisionTrace ? decisionTrace.canSizeTrade : (posture === "ACQUIRE"));
+
+  const isActionable = isExecutionBlocked
+    ? false
+    : Boolean(decisionTrace ? decisionTrace.isActionable : (posture === "ACQUIRE"));
+
   // 4a. Resolve Precedence-Enforced DecisionState (Phase 20A / Phase 21 / Phase 2)
   // Preserving genuine upstream model decision state separately from runtime safety restrictions
   const deriveFallbackDecisionState = (): DecisionState => {
-    if (!isPriceValid || agreement.evaluated === 0 || effectiveFreshnessStatus === "UNAVAILABLE") {
+    if (!isPriceValid) {
       return "UNVERIFIED";
     }
     if (isStale) {
       return "STALE_DATA";
     }
+    if (isActuallyBreached || posture === "AVOID" || posture === "EXIT_REVIEW") {
+      return "EVIDENCE_INCOMPLETE";
+    }
+    if (agreement.evaluated === 0 || effectiveFreshnessStatus === "UNAVAILABLE") {
+      return "UNVERIFIED";
+    }
     if (!isTrendAvailable) {
       return "INSUFFICIENT_DATA";
     }
-    if (!isHealthAvailable || overallEligibility !== "ELIGIBLE" || !isCoreEvidenceAvailable || isActuallyBreached || posture === "AVOID" || posture === "EXIT_REVIEW") {
+    if (!isHealthAvailable || overallEligibility !== "ELIGIBLE" || !isCoreEvidenceAvailable) {
       return "EVIDENCE_INCOMPLETE";
     }
     if (posture === "ACQUIRE") {
@@ -262,51 +297,52 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     decisionTrace?.decisionState || deriveFallbackDecisionState();
 
   let decisionState: DecisionState = "VALID_SETUP";
-  if (!isPriceValid || agreement.evaluated === 0 || effectiveFreshnessStatus === "UNAVAILABLE") {
+  if (!isPriceValid) {
     decisionState = "UNVERIFIED";
   } else if (isStale) {
     decisionState = "STALE_DATA";
   } else if (isActuallyBreached || posture === "AVOID" || posture === "EXIT_REVIEW") {
     decisionState = "EVIDENCE_INCOMPLETE";
+  } else if (agreement.evaluated === 0 || effectiveFreshnessStatus === "UNAVAILABLE") {
+    decisionState = "UNVERIFIED";
   } else if (!isTrendAvailable) {
     decisionState = "INSUFFICIENT_DATA";
   } else if (!isHealthAvailable || overallEligibility !== "ELIGIBLE" || !isCoreEvidenceAvailable) {
     decisionState = "EVIDENCE_INCOMPLETE";
-  } else if (decisionTrace) {
+  } else if (posture === "ACQUIRE" && canSizeTrade && isActionable) {
+    decisionState = "ACTIONABLE_SETUP";
+  } else if (decisionTrace && decisionTrace.decisionState !== "ACTIONABLE_SETUP") {
     decisionState = decisionTrace.decisionState;
     const canonicalStateLabel = decisionTrace.decisionStateLabel || decisionTrace.stateLabel;
-    if (canonicalStateLabel && ownershipState !== "OWNED") {
+    if (canonicalStateLabel && ownershipState !== "OWNED" && !canonicalStateLabel.toLowerCase().includes("actionable")) {
       uiStateLabel = canonicalStateLabel;
     }
     if (decisionTrace.disqualificationReason && posture !== "ACQUIRE") {
       headlineExplanation = decisionTrace.disqualificationReason;
     }
-  } else if (posture === "ACQUIRE") {
-    decisionState = "ACTIONABLE_SETUP";
   } else {
     decisionState = "VALID_SETUP";
   }
 
-  // 5. Fail-Closed Execution & Sizing Gating
-  // Sizing and actionability strictly require ALL preconditions:
-  // valid price, connected feed, fresh tape, unbreached risk floor, evaluated evidence,
-  // eligible overall status, and mandatory trend evidence.
-  const isEvidenceInsufficient =
-    agreement.evaluated === 0 ||
-    overallEligibility === "INELIGIBLE" ||
-    !isTrendAvailable;
-
-  const isExecutionBlocked =
-    !isPriceValid ||
-    effectiveFreshnessStatus === "UNAVAILABLE" ||
-    isStale ||
-    isActuallyBreached ||
-    isEvidenceInsufficient ||
-    posture === "AVOID" ||
-    posture === "EXIT_REVIEW";
-
-  const canSizeTrade = isExecutionBlocked ? false : Boolean(decisionTrace ? decisionTrace.canSizeTrade : (posture === "ACQUIRE"));
-  const isActionable = isExecutionBlocked ? false : Boolean(decisionTrace ? decisionTrace.isActionable : (posture === "ACQUIRE"));
+  // Sanitize uiStateLabel: Never allow an "Actionable" claim if execution is blocked
+  const canonicalTraceLabel = decisionTrace?.decisionStateLabel || decisionTrace?.stateLabel;
+  if (!canSizeTrade && uiStateLabel.toLowerCase().includes("actionable")) {
+    if (posture === "WATCH") {
+      uiStateLabel = (canonicalTraceLabel && !canonicalTraceLabel.toLowerCase().includes("actionable"))
+        ? canonicalTraceLabel
+        : "Valid Setup — Awaiting Trigger";
+    } else if (posture === "RESEARCH") {
+      uiStateLabel = "Evidence Incomplete — In-Depth Research Required";
+    } else if (posture === "HOLD") {
+      uiStateLabel = "Thesis Intact";
+    } else if (posture === "TRIM") {
+      uiStateLabel = "Consider Trimming";
+    } else if (posture === "EXIT_REVIEW") {
+      uiStateLabel = "Thesis Needs Review";
+    } else if (posture === "AVOID") {
+      uiStateLabel = "Setup Invalidated";
+    }
+  }
 
   // 6. Derive Contextual Actions
   const levelRel = evaluateLevelRelation(safePrice, reclaimMilestonePrice, "50-day SMA", symbol);
@@ -348,7 +384,7 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     },
   ];
 
-  return {
+  const terminalResult = {
     symbol: symbol.toUpperCase(),
     companyName,
     currentPrice: safePrice,
@@ -391,15 +427,97 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
         : posture === "RESEARCH"
         ? "Conduct Fundamental Research"
         : alertActionLabel,
-      actionType: posture === "ACQUIRE"
+      actionType: (posture === "ACQUIRE"
         ? "SIZE_TRADE"
         : posture === "EXIT_REVIEW"
         ? "REVIEW_THESIS"
         : posture === "RESEARCH"
         ? "RESEARCH_PROFILE"
-        : "SET_ALERT",
+        : "SET_ALERT") as "SIZE_TRADE" | "REVIEW_THESIS" | "RESEARCH_PROFILE" | "SET_ALERT",
       enabled: overallEligibility !== "INELIGIBLE",
     },
     availableActions,
   };
+
+  assertDecisionAuthorityConsistency({
+    posture: terminalResult.posture,
+    decisionState: terminalResult.decisionState,
+    authoritativeDecisionState: terminalResult.authoritativeDecisionState,
+    canSizeTrade: terminalResult.canSizeTrade,
+    isActionable: terminalResult.isActionable,
+    uiStateLabel: terminalResult.uiStateLabel,
+    availableActions: terminalResult.availableActions,
+    ownershipState,
+  });
+
+  return terminalResult;
+}
+
+export interface DecisionAuthorityCheck {
+  isValid: boolean;
+  violations: string[];
+}
+
+export function validateDecisionAuthorityConsistency(state: {
+  posture: DecisionPosture;
+  decisionState?: DecisionState;
+  authoritativeDecisionState?: DecisionState;
+  canSizeTrade?: boolean;
+  isActionable?: boolean;
+  uiStateLabel: string;
+  finalVerdict?: string;
+  availableActions?: ARXAction[];
+  ownershipState?: OwnershipState;
+}): DecisionAuthorityCheck {
+  const violations: string[] = [];
+
+  // Invariant 1: canSizeTrade can ONLY be true when posture is ACQUIRE
+  if (state.canSizeTrade && state.posture !== "ACQUIRE") {
+    violations.push(`canSizeTrade is true while posture is ${state.posture} (must be ACQUIRE)`);
+  }
+
+  // Invariant 2: canSizeTrade can NEVER be true on an owned asset
+  if (state.canSizeTrade && state.ownershipState === "OWNED") {
+    violations.push(`canSizeTrade is true on an OWNED position`);
+  }
+
+  // Invariant 3: isActionable can ONLY be true when canSizeTrade is true
+  if (state.isActionable && !state.canSizeTrade) {
+    violations.push(`isActionable is true while canSizeTrade is false`);
+  }
+
+  // Invariant 4: decisionState cannot be ACTIONABLE_SETUP unless canSizeTrade is true
+  if (state.decisionState === "ACTIONABLE_SETUP" && !state.canSizeTrade) {
+    violations.push(`decisionState is ACTIONABLE_SETUP while canSizeTrade is false`);
+  }
+
+  // Invariant 5: finalVerdict cannot be ACTIONABLE_BUY_ZONE unless canSizeTrade is true
+  if (state.finalVerdict === "ACTIONABLE_BUY_ZONE" && !state.canSizeTrade) {
+    violations.push(`finalVerdict is ACTIONABLE_BUY_ZONE while canSizeTrade is false`);
+  }
+
+  // Invariant 6: uiStateLabel cannot claim actionable unless canSizeTrade is true
+  if (state.uiStateLabel.toLowerCase().includes("actionable") && !state.canSizeTrade) {
+    violations.push(`uiStateLabel claims actionable ('${state.uiStateLabel}') while canSizeTrade is false`);
+  }
+
+  // Invariant 7: size_trade action cannot be enabled unless canSizeTrade is true
+  if (state.availableActions) {
+    const sizeAction = state.availableActions.find((a) => a.id === "size_trade");
+    if (sizeAction?.enabled && !state.canSizeTrade) {
+      violations.push(`size_trade action is enabled while canSizeTrade is false`);
+    }
+  }
+
+  return {
+    isValid: violations.length === 0,
+    violations,
+  };
+}
+
+export function assertDecisionAuthorityConsistency(state: Parameters<typeof validateDecisionAuthorityConsistency>[0]): void {
+  const check = validateDecisionAuthorityConsistency(state);
+  if (!check.isValid) {
+    throw new Error(`Decision Authority Invariant Violation:\n  - ${check.violations.join("\n  - ")}`);
+  }
 }
