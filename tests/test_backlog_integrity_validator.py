@@ -7,8 +7,10 @@ sprint closure integrity, and adversarial edge cases.
 import copy
 import json
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 import pytest
 
 from tools.governance.validate_backlog_integrity import (
@@ -475,22 +477,127 @@ class TestBacklogIntegrityValidator:
         assert verdict == "PASS"
         assert len([f for f in findings if f.severity == "ERROR"]) == 0
 
-    # 21. Directive Scenario 1: Modified backlog on a clean GitHub Actions checkout
+    # 21. Directive Scenario 1: Modified backlog on clean checkout vs Mainline
     def test_21_regression_modified_backlog_on_clean_checkout(self):
         """
-        Verifies that when a PR branch touches governance/backlog files on a clean
-        checkout against origin/main, detect_scoped_governance_changes accurately
-        triggers scoped enforcement and passes cleanly on valid data.
+        Verifies that detect_scoped_governance_changes operates with full determinism in an
+        isolated Git repository, satisfying all Gate B requirements:
+        1. Clean checkout (HEAD == base): returns scoped=False, matched=[], and valid method string.
+        2. Non-governance changes (negative case): frontend code PR returns scoped=False, matched=[].
+        3. Modified governance files: returns scoped=True, identifies modified file, reports merge-base method.
+        4. Added governance files: returns scoped=True, identifies added governance file.
+        5. Return value contract: (bool, list, str).
+        6. Working tree detection: staged and unstaged governance changes are accurately detected.
+        7. Clean tear-down of temporary resources.
         """
-        scoped, matched, method = detect_scoped_governance_changes(base_ref="origin/main")
-        assert scoped is True
-        assert any("arx_canonical_backlog" in f or "ARX_SPRINT" in f or "validate_backlog" in f for f in matched)
-        
-        # Running validator CLI with --stage scoped against this branch succeeds with exit code 0
-        cmd = [sys.executable, "tools/governance/validate_backlog_integrity.py", "--stage", "scoped", "--base-ref", "origin/main"]
-        res = subprocess.run(cmd, capture_output=True, text=True)
-        assert res.returncode == 0
-        assert "Verdict: PASS" in res.stdout
+        tmp_dir = tempfile.mkdtemp(prefix="arx_test21_")
+        curr_dir = os.getcwd()
+        try:
+            # 1. Initialize deterministic base repository on main
+            subprocess.run(["git", "init", "-b", "main"], cwd=tmp_dir, check=True, capture_output=True)
+            subprocess.run(["git", "config", "user.name", "ARX Test Runner"], cwd=tmp_dir, check=True)
+            subprocess.run(["git", "config", "user.email", "test@arxterminal.local"], cwd=tmp_dir, check=True)
+
+            # 2. Create baseline governance file on main
+            gov_dir = os.path.join(tmp_dir, "docs", "planning")
+            os.makedirs(gov_dir, exist_ok=True)
+            gov_file = os.path.join(gov_dir, "arx_canonical_backlog.json")
+            with open(gov_file, "w", encoding="utf-8") as f:
+                json.dump(MINIMAL_VALID_BACKLOG, f)
+            subprocess.run(["git", "add", "."], cwd=tmp_dir, check=True)
+            subprocess.run(["git", "commit", "-m", "init: add baseline canonical backlog"], cwd=tmp_dir, check=True)
+
+            # 3. Clean checkout verification (HEAD == base): scoped=False
+            try:
+                os.chdir(tmp_dir)
+                scoped_main, matched_main, method_main = detect_scoped_governance_changes(base_ref="main")
+                assert scoped_main is False
+                assert isinstance(scoped_main, bool)
+                assert isinstance(matched_main, list)
+                assert len(matched_main) == 0
+                assert isinstance(method_main, str)
+            finally:
+                os.chdir(curr_dir)
+
+            # 4. Negative case: non-governance / frontend-only changes return scoped=False
+            subprocess.run(["git", "checkout", "-b", "feature/frontend-only"], cwd=tmp_dir, check=True, capture_output=True)
+            fe_dir = os.path.join(tmp_dir, "frontend", "components")
+            os.makedirs(fe_dir, exist_ok=True)
+            fe_file = os.path.join(fe_dir, "Navbar.tsx")
+            with open(fe_file, "w", encoding="utf-8") as f:
+                f.write("// Unrelated frontend component\nexport const Navbar = () => null;\n")
+            subprocess.run(["git", "add", "."], cwd=tmp_dir, check=True)
+            subprocess.run(["git", "commit", "-m", "feat(frontend): add Navbar component"], cwd=tmp_dir, check=True)
+
+            try:
+                os.chdir(tmp_dir)
+                scoped_fe, matched_fe, method_fe = detect_scoped_governance_changes(base_ref="main")
+                assert scoped_fe is False
+                assert len(matched_fe) == 0
+                assert isinstance(method_fe, str)
+            finally:
+                os.chdir(curr_dir)
+
+            # 5. Positive case 1: Modified governance file returns scoped=True
+            subprocess.run(["git", "checkout", "-b", "feature/gov-modify", "main"], cwd=tmp_dir, check=True, capture_output=True)
+            mod_data = copy.deepcopy(MINIMAL_VALID_BACKLOG)
+            mod_data["tasks"][0]["title"] = "Updated Minimal Task"
+            with open(gov_file, "w", encoding="utf-8") as f:
+                json.dump(mod_data, f)
+            subprocess.run(["git", "add", "."], cwd=tmp_dir, check=True)
+            subprocess.run(["git", "commit", "-m", "feat: update task title in canonical backlog"], cwd=tmp_dir, check=True)
+
+            try:
+                os.chdir(tmp_dir)
+                scoped_mod, matched_mod, method_mod = detect_scoped_governance_changes(base_ref="main")
+                assert scoped_mod is True
+                assert any("arx_canonical_backlog.json" in f for f in matched_mod)
+                assert "main" in method_mod
+
+                # Verify CLI invocation with --stage scoped against base_ref
+                validator_script = os.path.abspath(
+                    os.path.join(os.path.dirname(__file__), "..", "tools", "governance", "validate_backlog_integrity.py")
+                )
+                cmd = [sys.executable, validator_script, "--stage", "scoped", "--base-ref", "main", "--backlog", gov_file]
+                res = subprocess.run(cmd, capture_output=True, text=True, cwd=tmp_dir)
+                assert res.returncode == 0
+                assert "Verdict: PASS" in res.stdout
+                assert "Scope Detected: True" in res.stdout
+            finally:
+                os.chdir(curr_dir)
+
+            # 6. Positive case 2: Added governance file returns scoped=True
+            subprocess.run(["git", "checkout", "-b", "feature/gov-add", "main"], cwd=tmp_dir, check=True, capture_output=True)
+            new_gov_file = os.path.join(tmp_dir, "docs", "planning", "ARX_SPRINT_4_REGISTRATION.md")
+            with open(new_gov_file, "w", encoding="utf-8") as f:
+                f.write("# Sprint 4 Registration Record\n")
+            subprocess.run(["git", "add", "."], cwd=tmp_dir, check=True)
+            subprocess.run(["git", "commit", "-m", "docs: register sprint 4 planning record"], cwd=tmp_dir, check=True)
+
+            try:
+                os.chdir(tmp_dir)
+                scoped_add, matched_add, method_add = detect_scoped_governance_changes(base_ref="main")
+                assert scoped_add is True
+                assert any("ARX_SPRINT_4_REGISTRATION.md" in f for f in matched_add)
+                assert "main" in method_add
+            finally:
+                os.chdir(curr_dir)
+
+            # 7. Positive case 3: Unstaged / working tree governance changes
+            subprocess.run(["git", "checkout", "main"], cwd=tmp_dir, check=True, capture_output=True)
+            with open(gov_file, "a", encoding="utf-8") as f:
+                f.write("\n")  # Unstaged modification
+            try:
+                os.chdir(tmp_dir)
+                scoped_wt, matched_wt, method_wt = detect_scoped_governance_changes(base_ref="main")
+                assert scoped_wt is True
+                assert any("arx_canonical_backlog.json" in f for f in matched_wt)
+            finally:
+                os.chdir(curr_dir)
+
+        finally:
+            # 8. Clean up all temporary resources
+            shutil.rmtree(tmp_dir, ignore_errors=True)
 
     # 22. Directive Scenario 2: Deleted historical task
     def test_22_regression_deleted_historical_task(self):
