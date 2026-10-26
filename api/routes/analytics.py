@@ -296,6 +296,10 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
     is_confirmed = exec_status in ACTIONABLE_EXECUTION_STATUSES
     freshness_status = "STALE_HISTORICAL" if is_stale else ("LIVE" if len(db_candles) >= 50 else "INSUFFICIENT_HISTORY")
 
+    exec_hazard = plan.get("execution_hazard")
+    liq_defense = plan.get("liquidity_defense")
+    adv_20d = plan.get("adv_20d_usd") or (liq_defense.get("adv_20d_usd") if liq_defense else None)
+
     # Authoritative DecisionHierarchyEngine resolution: guarantees Trade Plan and Analysis agree on eligibility
     dec_state = DecisionHierarchyEngine.resolve_decision_state(
         symbol=sym,
@@ -310,6 +314,11 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
         is_cataloged=True,
         is_confirmed=is_confirmed,
         user_role=clean_role,
+        asset_class="ETF" if sym in KNOWN_ETFS else "EQUITY",
+        execution_status=exec_status,
+        execution_hazard=exec_hazard,
+        adv_20d=adv_20d,
+        liquidity_defense=liq_defense,
     )
 
     decision_state = dec_state.get("state", DecisionState.VALID_SETUP.value)
@@ -322,7 +331,9 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
 
     disqualification_reason = dec_state.get("disqualificationReason")
     if not disqualification_reason and not is_actionable:
-        if exec_status == "WAITING_PULLBACK":
+        if exec_status == "STOPPED_OUT":
+            disqualification_reason = "Setup invalidated: Price breached stop-loss threshold."
+        elif exec_status == "WAITING_PULLBACK":
             disqualification_reason = "Awaiting technical pullback to optimal entry corridor."
         elif exec_status == "IN_BUY_ZONE_AWAITING_TRIGGER":
             disqualification_reason = "In buy corridor; awaiting stabilization or confirmation trigger."
@@ -1063,7 +1074,7 @@ def get_asset_analytics(
             tail_risk_score = min(99, max(40, int(100 - abs(mvar) * 7))) if mvar is not None and not math.isnan(mvar) else None
             valid_scores = [s for s in [growth_score, quality_score, valuation_score, momentum_score, tail_risk_score] if s is not None]
             composite_score = int(np.mean(valid_scores)) if valid_scores else None
-            verdict = "Strong Buy / Core Accumulation" if composite_score and composite_score >= 80 else ("Moderate Growth Hold" if composite_score and composite_score >= 60 else "High Volatility Speculative")
+            verdict = "High Quality Profile" if composite_score and composite_score >= 80 else ("Moderate Quality Profile" if composite_score and composite_score >= 60 else "Speculative Profile")
 
         factor_scores = {
             "growthScore": growth_score,

@@ -392,27 +392,44 @@ class ConfluenceEngine:
         stop_loss: float,
         take_profit_1: float,
         win_rate_est: float = 0.55,
+        is_actionable: bool = True,
+        can_size_trade: bool = True,
+        disqualification_reason: Optional[str] = None,
+        execution_hazard: Optional[Any] = None,
+        adv_20d: Optional[float] = None,
     ) -> Dict[str, Any]:
-        """Calculate exact share allocation based on dollar risk constraint & Fractional Kelly."""
-        if entry_price <= 0 or stop_loss <= 0 or entry_price <= stop_loss:
+        """Calculate exact share allocation based on dollar risk constraint, actionability gate, & Fractional Kelly."""
+        if (
+            entry_price <= 0
+            or stop_loss <= 0
+            or entry_price <= stop_loss
+            or math.isnan(entry_price)
+            or math.isnan(stop_loss)
+            or (take_profit_1 is not None and math.isnan(take_profit_1))
+        ):
             return {
                 "error": "Invalid price levels: Entry must be greater than Stop Loss.",
                 "shares": 0,
-                "position_value": 0,
+                "executableShares": 0,
+                "hypotheticalShares": 0,
+                "isExecutable": False,
+                "positionValue": 0.0,
+                "actualDollarRisk": 0.0,
+                "portfolioAllocationPct": 0.0,
             }
 
         risk_per_share = entry_price - stop_loss
         max_dollar_risk = (account_equity * (risk_pct / 100.0))
-        shares = math.floor(max_dollar_risk / risk_per_share)
-        shares = max(1, shares) if account_equity >= entry_price else 0
+        hypothetical_shares = math.floor(max_dollar_risk / risk_per_share)
+        hypothetical_shares = max(1, hypothetical_shares) if account_equity >= entry_price else 0
 
-        position_value = round(shares * entry_price, 2)
-        portfolio_allocation_pct = round((position_value / max(1.0, account_equity)) * 100, 2)
-        actual_dollar_risk = round(shares * risk_per_share, 2)
+        hypothetical_position_value = round(hypothetical_shares * entry_price, 2)
+        portfolio_allocation_pct = round((hypothetical_position_value / max(1.0, account_equity)) * 100, 2)
+        actual_dollar_risk = round(hypothetical_shares * risk_per_share, 2)
 
         # Reward projections
-        reward_per_share_tp1 = max(0.01, take_profit_1 - entry_price)
-        projected_profit_tp1 = round(shares * reward_per_share_tp1, 2)
+        reward_per_share_tp1 = max(0.01, take_profit_1 - entry_price) if take_profit_1 > entry_price else 0.01
+        projected_profit_tp1 = round(hypothetical_shares * reward_per_share_tp1, 2)
         rr_actual = round(reward_per_share_tp1 / risk_per_share, 2)
 
         # Fractional Kelly (Half-Kelly for drawdown protection)
@@ -423,16 +440,46 @@ class ConfluenceEngine:
         half_kelly_pct = round((full_kelly / 2.0) * 100, 2)
         recommended_kelly_allocation = min(25.0, half_kelly_pct)  # Institutional 25% max cap per position
 
+        # Canonical Actionability Gate & Execution Hazard Enforcement (INV-LIQ-004)
+        is_hazard = (execution_hazard is True) or (isinstance(execution_hazard, str) and execution_hazard.upper() == "TRUE")
+        is_blocked = (is_actionable is False) or (can_size_trade is False) or is_hazard
+
+        executable_shares = 0 if is_blocked else hypothetical_shares
+        final_position_value = round(executable_shares * entry_price, 2) if not is_blocked else 0.0
+        final_actual_dollar_risk = round(executable_shares * risk_per_share, 2) if not is_blocked else 0.0
+        final_portfolio_allocation_pct = round((final_position_value / max(1.0, account_equity)) * 100, 2) if not is_blocked else 0.0
+        final_projected_profit_tp1 = round(executable_shares * reward_per_share_tp1, 2) if not is_blocked else 0.0
+
+        # Advisory Participation Rate Heuristic (INV-LIQ-005: Informational only, non-clamping)
+        estimated_participation_rate = None
+        if adv_20d and adv_20d > 0 and final_position_value > 0:
+            estimated_participation_rate = round(final_position_value / adv_20d, 6)
+
+        guidance = (
+            f"Execution restricted ({disqualification_reason or 'Severe liquidity hazard / decision block'}). Allocation suppressed."
+            if is_blocked
+            else f"Buy {executable_shares} shares at ${entry_price:.2f}. Total Risk: ${final_actual_dollar_risk:.2f} ({risk_pct}% of portfolio) with hard stop at ${stop_loss:.2f}."
+        )
+
         return {
             "accountEquity": account_equity,
             "riskPct": risk_pct,
-            "shares": shares,
-            "positionValue": position_value,
-            "portfolioAllocationPct": portfolio_allocation_pct,
-            "actualDollarRisk": actual_dollar_risk,
+            "shares": executable_shares,
+            "executableShares": executable_shares,
+            "hypotheticalShares": hypothetical_shares,
+            "isExecutable": not is_blocked,
+            "isHypotheticalOnly": is_blocked,
+            "positionValue": final_position_value,
+            "hypotheticalPositionValue": hypothetical_position_value,
+            "portfolioAllocationPct": final_portfolio_allocation_pct,
+            "actualDollarRisk": final_actual_dollar_risk,
+            "hypotheticalActualDollarRisk": actual_dollar_risk,
             "riskPerShare": round(risk_per_share, 2),
-            "projectedProfitTp1": projected_profit_tp1,
+            "projectedProfitTp1": final_projected_profit_tp1,
             "riskRewardRatio": rr_actual,
-            "halfKellyOptimalPct": recommended_kelly_allocation,
-            "guidance": f"Buy {shares} shares at ${entry_price:.2f}. Total Risk: ${actual_dollar_risk:.2f} ({risk_pct}% of portfolio) with hard stop at ${stop_loss:.2f}.",
+            "recommendedKellyAllocation": recommended_kelly_allocation if not is_blocked else 0.0,
+            "halfKellyOptimalPct": recommended_kelly_allocation if not is_blocked else 0.0,
+            "estimatedParticipationRate": estimated_participation_rate,
+            "executionBlockedReason": disqualification_reason or ("Liquidity hazard or actionability restriction active; positive order sizing prohibited." if is_blocked else None),
+            "guidance": guidance,
         }

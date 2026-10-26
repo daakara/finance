@@ -178,6 +178,10 @@ class ImmutableScannerSnapshot:
             "scanner_id": self.scanner_id,
             "api_contract_version": self.version_tuple.api_contract_version,
             "status": self.status_at_publication.value,
+            "snapshot_id": self.snapshot_id,
+            "matched_count": self.matched_count,
+            "data_as_of": self.data_as_of,
+            "generated_at": self.generated_at,
             "methodology": {
                 "ruleset_version": self.version_tuple.ruleset_version,
                 "evidence_schema_version": self.version_tuple.evidence_schema_version,
@@ -224,6 +228,8 @@ class ImmutableScannerSnapshot:
                 "data_completeness_pct": self.coverage_metadata.get("data_completeness_pct", 100.0),
                 "scan_coverage_pct": self.coverage_metadata.get("scan_coverage_pct", 100.0),
                 "unavailable_reasons": self.coverage_metadata.get("unavailable_reasons", {}),
+                "failure_reason": self.coverage_metadata.get("failure_reason"),
+                "adjustment_state_distribution": self.coverage_metadata.get("adjustment_state_distribution", {}),
             },
             "results": self.results,
         }

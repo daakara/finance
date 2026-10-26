@@ -79,6 +79,39 @@ class OptimalExecutionEngine:
                 "liquidity_warning": "No historical price series provided.",
             }
 
+        # Boundary Input Normalization: Standardize OHLCV columns to Title Case
+        col_rename = {c: c.capitalize() for c in price_df.columns if isinstance(c, str) and c.lower() in ("open", "high", "low", "close", "volume")}
+        if col_rename:
+            price_df = price_df.rename(columns=col_rename)
+
+        if not all(col in price_df.columns for col in ["Close", "High", "Low"]):
+            return {
+                "current_price": current_price,
+                "analysis_reference_price": current_price,
+                "live_spot_price": live_spot_price,
+                "eval_price": eval_price,
+                "optimal_entry_min": None,
+                "optimal_entry_max": None,
+                "stop_loss": None,
+                "stop_loss_pct": None,
+                "take_profit_1": None,
+                "take_profit_1_pct": None,
+                "take_profit_2": None,
+                "take_profit_2_pct": None,
+                "risk_reward_ratio": None,
+                "execution_status": "INSUFFICIENT_HISTORY",
+                "setup_pattern": "Trend Evidence Incomplete (Missing OHLC Columns)",
+                "entry_thesis": "Trade setup suppressed: Execution analysis requires authentic OHLC price history.",
+                "invalidation_condition": "Awaiting valid OHLC data columns.",
+                "stage_phase": "Awaiting Historical Base",
+                "vcp_contraction_status": "Consolidation Unverified",
+                "breakout_pivot": None,
+                "atr_14": None,
+                "liquidity_defense": liquidity_report,
+                "execution_hazard": True,
+                "liquidity_warning": "Missing required OHLC columns.",
+            }
+
         close = price_df["Close"]
         high = price_df["High"]
         low = price_df["Low"]
