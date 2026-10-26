@@ -63,7 +63,7 @@ All 10 scenarios were tested against isolated PostgreSQL 16 instances and mocked
 - **Residual Risk:** None. Atomic consistency guaranteed by PostgreSQL ACID semantics.
 
 ### SC-06: Duplicate Worker Concurrency Collision
-- **Mechanism:** Only one worker may hold `LOCK_SEC_EGRESS_OWNER: 7283401`.
+- **Mechanism:** Only one worker may hold the PostgreSQL session advisory lock `ARX_LOCK_SEC_EGRESS_OWNER`. The runtime deterministically derives the effective numeric key `401007311509093371` using SHA-256; `7283401` was an obsolete documentation placeholder and is not runtime authority. PostgreSQL mutual-exclusion and fencing semantics remain unchanged.
 - **Result:** Second worker receives `False` from `acquire_sec_owner_lock`, emits `ADVISORY_LOCK_CONTENTION`, and terminates.
 - **Residual Risk:** Misconfigured duplicate Railway worker deployments consume idle compute. *Mitigation:* Worker specification defines replica count = 1.
 

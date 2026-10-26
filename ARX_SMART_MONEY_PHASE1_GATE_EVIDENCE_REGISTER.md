@@ -37,7 +37,7 @@ Every operational guarantee is backed by automated tests, cryptographic digests,
 ### 3.1 SM_GATE_01: Worker Infrastructure Readiness
 - **Specification:** `config/railway-worker.json` defines service name `arx-smart-money-worker`, restart policy `ON_FAILURE`, max retries 3, 512MB memory limit, 0.5 vCPU, and network egress rules.
 - **Preflight Enforcement:** `analyst_dashboard/smart_money/infra/worker_specification.py` validates `ARX_SEC_EGRESS_ROLE=DISABLED`, `SMART_MONEY_SCHEDULE_ENABLED=FALSE`, and detects placeholder User-Agents.
-- **Session Locking:** `LOCK_SEC_EGRESS_OWNER: 7283401` prevents concurrent instances.
+- **Session Locking:** `ARX_LOCK_SEC_EGRESS_OWNER` prevents concurrent instances via PostgreSQL session-level advisory locking. The runtime deterministically derives the 63-bit integer lock key via SHA-256 (`401007311509093371`); `7283401` was an obsolete documentation placeholder and is not runtime authority. PostgreSQL mutual-exclusion and fencing semantics remain unchanged.
 - **Socket Drop Release:** Kernel-level TCP disconnect frees PostgreSQL session advisory lock immediately.
 - **Memory Footprint:** Peak RSS under batch Form 4 XML parsing measured at **215 MB**, well within the 512 MB allocation (2.38x headroom).
 - **Test Evidence:** `tests/test_smart_money_worker_lifecycle_and_fencing.py` (9 tests passed in 10.13s).

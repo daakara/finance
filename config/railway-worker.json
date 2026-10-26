@@ -48,7 +48,7 @@
   },
   "fencingAndLifecycle": {
     "concurrencyModel": "Single-active strictly exclusive",
-    "lockingMechanism": "PostgreSQL session-level exclusive advisory lock (LOCK_SEC_EGRESS_OWNER: 7283401)",
+    "lockingMechanism": "PostgreSQL session-level exclusive advisory lock (LOCK_SEC_EGRESS_OWNER: derived via SHA-256 BigInt 401007311509093371 from namespace ARX_LOCK_SEC_EGRESS_OWNER via _derive_lock_key in postgres_coordination.py; canonical runtime authority)",
     "socketDropBehavior": "PostgreSQL automatically releases session advisory locks immediately upon TCP socket teardown",
     "leaseFencing": "Worker claims run requests via sm_run_requests lease token; stale workers cannot complete or publish snapshots",
     "gracefulShutdown": "SIGTERM intercepted; active transaction completes or rolls back cleanly within 15 seconds"

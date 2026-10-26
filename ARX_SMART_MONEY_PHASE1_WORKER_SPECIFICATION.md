@@ -123,7 +123,7 @@ Upon process invocation (`analyst_dashboard.smart_money.worker`):
 ## 5. Fencing & Concurrency Control Contracts
 
 ### 5.1 Single-Active Advisory Locking
-- **Lock Identifier:** `LOCK_SEC_EGRESS_OWNER: 7283401`
+- **Lock Identifier:** `ARX_LOCK_SEC_EGRESS_OWNER`. The runtime deterministically derives the 63-bit numeric advisory-lock key using SHA-256 (`401007311509093371`). The numeric value `7283401` was an obsolete documentation placeholder and is not runtime authority. PostgreSQL mutual-exclusion and fencing semantics remain unchanged.
 - **Scope:** PostgreSQL session-level exclusive advisory lock.
 - **Mutual Exclusion:** When Worker 1 holds the lock, any second worker instance attempting `acquire_sec_owner_lock` receives `False` immediately. The duplicate instance emits an `ADVISORY_LOCK_CONTENTION` alert and shuts down fail-closed.
 

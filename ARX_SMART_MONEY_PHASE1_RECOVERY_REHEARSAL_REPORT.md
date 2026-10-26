@@ -47,14 +47,20 @@ During positive rehearsal execution (`TestRestoreRehearsalPositiveAndMetrics.tes
 
 | Metric | Target | Measured Value | Status |
 |:---|:---:|:---:|:---:|
-| **Restore Duration** | < 15 min (RTO) | **1.842 s** | PASS |
+| **Synthetic Restore Duration** | Engine benchmark | **1.842 s (local `pg_restore`)** | PASS (Local) |
 | **SHA-256 Verification Overhead** | < 1.0 s | **0.0034 s** | PASS |
 | **Post-Restore Table Count** | 12 / 12 | **12 tables present** | PASS |
 | **Immutable Trigger Count** | 4 / 4 | **4 triggers verified** | PASS |
 | **Active Snapshot Integrity** | Identical pointer | **`SNAP-REHEARSAL-20261026-001`** | PASS |
 | **App Read Contract** | 100% valid JSON | **Ticker: `NVDA`, Score: `98.5`** | PASS |
-| **Recovery Point Objective (RPO)** | < 6 hours | **< 6 hours (scheduler interval + pre-cycle)** | PASS |
-| **Recovery Time Objective (RTO)** | < 15 minutes | **< 2 seconds (synthetic benchmark)** | PASS |
+| **Production Recovery Point Objective (RPO)** | Planning target: < 6 hours | **UNVERIFIED** (Pending live infrastructure rehearsal) | HOLD |
+| **Production Recovery Time Objective (RTO)** | Planning target: 15–30 min | **UNVERIFIED** (1.842 s applies strictly to synthetic local execution) | HOLD |
+
+> [!NOTE] Recovery Authority Boundary
+> - **Synthetic Local Execution:** Approximately 1.842 seconds measured for local `pg_restore` in disposable sandbox.
+> - **Production RTO:** **UNVERIFIED**. The 15–30 minute recovery window is an operational planning estimate, not observed production performance.
+> - **Production RPO:** **UNVERIFIED**.
+> - **SEC Filing Replay:** Partial disaster recovery capability only, not a replacement for database recovery of lease chronology, snapshot history, idempotency state, or audit evidence.
 
 ### Post-Restore Table Parity Register
 
