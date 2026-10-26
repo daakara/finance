@@ -142,7 +142,7 @@ export default function SynthesisVerdictCard({
           {asOfTimestamp && (
             <>
               <span>·</span>
-              <span id="price-asof" className="text-[var(--text-muted)]">
+              <span id="price-asof" className="text-[var(--text-muted)]" suppressHydrationWarning>
                 {asOfTimestamp}
               </span>
             </>

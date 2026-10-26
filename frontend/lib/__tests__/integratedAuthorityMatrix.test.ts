@@ -74,7 +74,7 @@ describe("Gate 3: Integrated Authority & Preflight Cross-Component Regression Ma
 
     expect(pfRes.checks[0].status).toBe("FAIL");
     expect(pfRes.checks[0].passed).toBe(false);
-    expect(pfRes.checks[0].summary).toBe("2.00:1.0"); // Rounded display
+    expect(pfRes.checks[0].summary).toBe("Below 2.00:1"); // Unambiguous display for sub-threshold ratio
     expect(pfRes.isCleared).toBe(false);
     expect(pfRes.activeBlocker).toBe("REWARD/RISK ASYMMETRY (< 2.0:1)");
     expect(pfRes.whatNeedsToChange).toContain("reward/risk ratio (>= 2.0:1)");

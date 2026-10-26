@@ -411,10 +411,13 @@ export function evaluatePreFlightChecks(
     : "FAIL";
 
   const displayRR = rawEffectiveRR.toFixed(2);
+  const isSubThresholdRounding = !isRRPassed && Number(displayRR) >= 2.0;
   const chk1Summary = !hasExecutionLevels
     ? "N/A"
     : !isLevelDirectionValid
     ? "Invalid Levels"
+    : isSubThresholdRounding
+    ? "Below 2.00:1"
     : `${displayRR}:1.0`;
 
   const chk1Detail = !hasExecutionLevels
@@ -425,6 +428,8 @@ export function evaluatePreFlightChecks(
         : `Inverted reward boundary: Profit target ($${safeTarget!.toFixed(2)}) is below current price ($${safePrice.toFixed(2)}). Target boundary inverted.`)
     : isRRPassed
     ? "Adequate upside cushion (R:R >= 2.0:1)."
+    : isSubThresholdRounding
+    ? `Hazard: Prospective reward relative to downside risk (${rawEffectiveRR.toFixed(3)}:1) is sub-threshold (< 2.0:1 institutional floor).`
     : `Hazard: Prospective reward relative to downside risk (${displayRR}:1) is below 2.0:1 institutional floor.`;
 
   const chk1Item: PreFlightCheckItem = {

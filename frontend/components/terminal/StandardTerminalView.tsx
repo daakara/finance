@@ -170,7 +170,7 @@ export default function StandardTerminalView({
                     {isStaleTape ? "Tape Inactive" : ((insight.advanced as any)?.marketSession || "Market Closed")}
                   </span>
                   <span>·</span>
-                  <span id="price-asof" className="price-tag mono">
+                  <span id="price-asof" className="price-tag mono" suppressHydrationWarning>
                     {insight.terminalState.modelProvenance?.calculatedAt
                       ? `As of ${new Date(insight.terminalState.modelProvenance.calculatedAt).toISOString().replace("T", " ").slice(0, 16)} UTC`
                       : "Timestamp provenance unavailable"}

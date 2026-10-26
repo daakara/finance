@@ -41,7 +41,7 @@ describe("Gate 1: CHK-1 Reward/Risk Threshold Full Numeric Precision", () => {
     expect(res.activeBlocker).toBe("REWARD/RISK ASYMMETRY (< 2.0:1)");
   });
 
-  it("2. Raw ratio 1.995: Rounds to 2.00 for display but strictly FAILS threshold check (Invariant: never pass on display rounding)", () => {
+  it("2. Raw ratio 1.995: Strictly FAILS threshold and displays 'Below 2.00:1' to prevent presentation ambiguity", () => {
     const res = evaluatePreFlightChecks({
       ...baseInputs,
       takeProfit1: 119.95,
@@ -49,13 +49,14 @@ describe("Gate 1: CHK-1 Reward/Risk Threshold Full Numeric Precision", () => {
     const chk1 = res.checks[0];
     expect(chk1.status).toBe("FAIL");
     expect(chk1.passed).toBe(false);
-    expect(chk1.summary).toBe("2.00:1.0"); // Rounded for display
-    expect(chk1.detail).toContain("below 2.0:1 institutional floor");
+    expect(chk1.summary).toBe("Below 2.00:1"); // Unambiguous display for sub-threshold rounding
+    expect(chk1.detail).toContain("1.995:1");
+    expect(chk1.detail).toContain("sub-threshold (< 2.0:1 institutional floor)");
     expect(res.isCleared).toBe(false);
     expect(res.activeBlocker).toBe("REWARD/RISK ASYMMETRY (< 2.0:1)");
   });
 
-  it("3. Raw ratio 1.999: Rounds to 2.00 for display but strictly FAILS threshold check", () => {
+  it("3. Raw ratio 1.999: Strictly FAILS threshold and displays 'Below 2.00:1'", () => {
     const res = evaluatePreFlightChecks({
       ...baseInputs,
       takeProfit1: 119.99,
@@ -63,7 +64,9 @@ describe("Gate 1: CHK-1 Reward/Risk Threshold Full Numeric Precision", () => {
     const chk1 = res.checks[0];
     expect(chk1.status).toBe("FAIL");
     expect(chk1.passed).toBe(false);
-    expect(chk1.summary).toBe("2.00:1.0");
+    expect(chk1.summary).toBe("Below 2.00:1");
+    expect(chk1.detail).toContain("1.999:1");
+    expect(chk1.detail).toContain("sub-threshold (< 2.0:1 institutional floor)");
     expect(res.isCleared).toBe(false);
     expect(res.activeBlocker).toBe("REWARD/RISK ASYMMETRY (< 2.0:1)");
   });
