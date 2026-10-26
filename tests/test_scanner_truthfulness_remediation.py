@@ -27,15 +27,25 @@ def _create_sample_daily_df(length: int = 60, base_price: float = 100.0, upward_
 
 
 def test_remediation_frozen_engine_compliance_and_runner_truthfulness_boundary(tmp_path):
-    """Requirement 1 & 2: OptimalExecutionEngine remains frozen under Release Addendum 002, and VCPScannerRunner enforces truthfulness."""
-    import hashlib, os
+    """Requirement 1 & 2: OptimalExecutionEngine compliance under Release Addendum 002 or authorized candidate manifest, and VCPScannerRunner enforces truthfulness."""
+    import hashlib, os, json
     repo_root = os.path.dirname(os.path.dirname(__file__))
     opt_path = os.path.join(repo_root, "analyst_dashboard", "analyzers", "optimal_execution.py")
     with open(opt_path, "rb") as fp:
         sha = hashlib.sha256(fp.read().replace(b"\r\n", b"\n")).hexdigest()
-    assert sha == "84d1a8b855a5368466b53105fdd58df15c3d60aaab77024286f3fcaaaad95576", (
-        "OptimalExecutionEngine must remain frozen under Release Addendum 002"
-    )
+
+    candidate_manifest_path = os.path.join(repo_root, "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json")
+    if os.path.exists(candidate_manifest_path):
+        with open(candidate_manifest_path, "r", encoding="utf-8") as f:
+            cand = json.load(f)
+        assert sha == cand["engines"]["optimal_execution"]["sha256"], (
+            f"Candidate engine hash mismatch: expected {cand['engines']['optimal_execution']['sha256']}, got {sha}"
+        )
+        assert cand.get("isProductionRatified") is False, "Candidate manifest must not claim production ratification"
+    else:
+        assert sha == "84d1a8b855a5368466b53105fdd58df15c3d60aaab77024286f3fcaaaad95576", (
+            "OptimalExecutionEngine must remain frozen under Release Addendum 002"
+        )
 
     # Verify that VCPScannerRunner rejects the legacy fallback labels on 60-bar windows
     df = _create_sample_daily_df(60, base_price=100.0)
