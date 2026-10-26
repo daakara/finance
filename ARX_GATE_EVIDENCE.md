@@ -166,19 +166,32 @@ RAILWAY_BACKEND_DEPLOYMENT = 059f9d79-6848-4095-aa61-5936ac3ee650 (PRESERVED)
    - If metadata or streaming digest mismatches, adapter raises `IOError(R2_UPLOAD_CONTENT_CORRUPTION)` or `IOError(R2_UPLOAD_METADATA_CORRUPTION)`.
    - Pre-backup aborts at Step 4; Step 6 (SEC Form 4 ingestion) is never reached.
 
-### Gate 3 — Non-Destructive Emergency Stop Hierarchy
+### Gate 3 — Non-Destructive Emergency Stop Hierarchy & Operational Control Architecture
 1. **Disproof of Destructive Runbook Documentation**:
    - Schema audit of `scanner_active_snapshots` proves columns are `(scan_type, active_snapshot_id, published_at, published_by)`.
    - There is NO `is_active` or `scanner_id` column. Executing `UPDATE scanner_active_snapshots SET is_active = FALSE` throws `psycopg2.errors.UndefinedColumn`.
    - Executing `DELETE FROM scanner_active_snapshots` causes an immediate public outage on `/radar/` and `/api/radar/smart-money`.
-2. **Authoritative Non-Destructive Stop Hierarchy**:
-   - **Level 1 (Worker Kill Switch)**: Set `ARX_SEC_EGRESS_ROLE=DISABLED`. Halts any cycle in $\le 1.0\text{ s}$ at Step 1 (`_step1_preflight`) with `UNAUTHORIZED_WORKER_ROLE`.
-   - **Level 2 (Process Scaling)**: Scale Railway worker replica count to 0 or pause worker service.
-   - **Level 3 (Database Containment)**: `REVOKE INSERT, UPDATE ON form4_raw_filings, form4_parsed_transactions, scanner_snapshots, scanner_active_snapshots FROM smart_money_ingestion;`.
+2. **Authoritative 4-Layer Operational Stop Hierarchy**:
+   - **Layer 1 (Process Startup & Configuration Prevention)**: Set `ARX_SEC_EGRESS_ROLE != OWNER` (or `DISABLED`). Prevents any worker from initiating new cycles. Halts immediately at Step 1 (`_step1_preflight`) with `UNAUTHORIZED_WORKER_ROLE` before claiming any advisory lock, touching PostgreSQL, or creating backups.
+   - **Layer 2 (Cooperative In-Process Cancellation)**: Within an already-running process, cooperative cancellation occurs via `pipeline.cancel()` or `cancellation_token` evaluated at discrete stage boundaries (`_check_in_flight_authorization()` before Step 6 SEC egress and Step 8 publication), aborting fail-closed with `IN_FLIGHT_CANCELLATION`. Note that in containerized runtimes (e.g. Railway), modifying environment variables externally does not alter the private memory space of an existing live process without container reload/restart.
+   - **Layer 3 (Active Platform Worker Termination)**: Immediate termination of an active worker hung on blocking I/O requires container lifecycle controls (scaling Railway worker replicas to 0, pausing, or restarting the service), delivering OS signals `SIGTERM` followed by `SIGKILL`.
+   - **Layer 4 (Database Advisory Lock Cleanup)**: `LOCK_SEC_EGRESS_OWNER` is a PostgreSQL session-level advisory lock (`pg_advisory_lock`). Session locks are strictly bound to the client connection. When the worker process terminates or is killed by OS signal, the operating system closes the TCP connection socket, causing the PostgreSQL server backend to automatically release the advisory lock. Zero orphaned locks can remain.
 3. **Availability Invariant**:
-   - Across all 3 levels, the active pointer in `scanner_active_snapshots` remains unchanged, preserving serving snapshot `SNAP_SM_1792939989_48f30db6` with 100% read-only Radar uptime via `smart_money_web`.
+   - Across all stop or abort scenarios prior to Step 8, the active snapshot pointer in `scanner_active_snapshots` remains unchanged, preserving serving snapshot `SNAP_SM_1792939989_48f30db6` with 100% read-only Radar uptime via `smart_money_web`.
+
+### Gate 4 — Production Force-Override Authority & Recovery Authorization Contract
+1. **Production Boundary Fail-Closed Enforcement**:
+   - Normal production workers (`allow_test_mode=False`) must NEVER bypass durable execution-date checks through a Boolean flag (`force=True`) or test trigger (`trigger_type="TEST"`).
+   - Passing `force=True` without verified recovery authorization raises `RuntimeError(PRODUCTION_FORCE_OVERRIDE_UNAUTHORIZED)`.
+   - Passing `trigger_type="TEST"` in production raises `RuntimeError(TEST_TRIGGER_PROHIBITED_IN_PRODUCTION)`.
+   - Passing explicit `as_of` without authorization raises `RuntimeError(PRODUCTION_AS_OF_OVERRIDE_UNAUTHORIZED)`. If `as_of` is malformed, it raises `RuntimeError(INVALID_AS_OF_DATE)`.
+   - Even under authorized recovery, duplicate same-day executions evaluate under advisory lock, returning `SKIPPED_ALREADY_EXECUTED_TODAY` unless explicit same-day resumption is authorized.
+2. **Recovery Override Authorization Contract Specification**:
+   - Out-of-schedule execution or historical data repair requires a dedicated, cryptographically validated recovery token (`ARX_PRODUCTION_FORCE_RECOVERY_TOKEN`).
+   - Requires explicit justification reason (minimum 10 characters) and approved scope (`SINGLE_CYCLE_RECOVERY`, `SAME_DAY_RESUMPTION`, or `MANUAL_RECOVERY`).
+   - **Status in PR #99**: **NOT ACTIVATED**. The contract is formally documented as an operational interface specification, but is disabled and unactivated without explicit Research Owner issuance and cryptographic configuration.
 
 ### Test Suite Evidence
-- **Dedicated Provisioning Test Suite**: `tests/test_smart_money_provisioning_safety_gates.py` (12/12 passed in 2.57s).
-- **Consolidated Smart Money Test Suite**: 55/55 passed in 13.31s (`test_smart_money_provisioning_safety_gates.py`, `test_smart_money_continuous_ingestion.py`, `test_smart_money_radar_contract.py`, `test_radar_scanner_pipeline.py`).
+- **Dedicated Provisioning Test Suite**: `tests/test_smart_money_provisioning_safety_gates.py` (40/40 passed in 2.63s).
+- **Consolidated Smart Money Test Suite**: 83/83 passed (`test_smart_money_provisioning_safety_gates.py`, `test_smart_money_continuous_ingestion.py`, `test_smart_money_radar_contract.py`, `test_radar_scanner_pipeline.py`).
 - **Linter & Syntax Verification**: flake8 passed (0 errors with `--count --select=E9,F63,F7,F82`).

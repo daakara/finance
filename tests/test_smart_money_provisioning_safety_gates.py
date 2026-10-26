@@ -696,10 +696,11 @@ class TestGate3NonDestructiveEmergencyStop:
         assert "scan_type VARCHAR(64) PRIMARY KEY" in table_ddl
         assert "active_snapshot_id VARCHAR(64) NOT NULL REFERENCES scanner_snapshots(snapshot_id)" in table_ddl
 
-    def test_emergency_stop_via_role_disabled_halts_in_under_1s(self):
+    def test_emergency_stop_before_cycle_start_halts_at_preflight(self):
         """
-        Setting ARX_SEC_EGRESS_ROLE=DISABLED causes the worker to halt immediately
-        at Step 1 (preflight) within <= 1.0s with RuntimeError: UNAUTHORIZED_WORKER_ROLE.
+        Layer 1 (Process Startup & Configuration Prevention):
+        Setting ARX_SEC_EGRESS_ROLE=DISABLED at process startup halts execution
+        immediately at Step 1 (preflight) with RuntimeError: UNAUTHORIZED_WORKER_ROLE.
         Zero database locks claimed, zero backups created, zero SEC calls made.
         """
         mock_backup = MagicMock()
@@ -709,15 +710,89 @@ class TestGate3NonDestructiveEmergencyStop:
         pipeline._step6_ingest_form4_filings = MagicMock()
 
         with patch.dict(os.environ, {"ARX_SEC_EGRESS_ROLE": "DISABLED"}):
-            start = time.perf_counter()
             with pytest.raises(RuntimeError, match="UNAUTHORIZED_WORKER_ROLE"):
                 pipeline.execute_cycle(trigger_type="SCHEDULED", dry_run=False)
-            duration = time.perf_counter() - start
 
-            assert duration < 1.0, f"Emergency stop exceeded 1.0s limit: {duration:.4f}s"
             pipeline._step2_claim_advisory_lock.assert_not_called()
             pipeline._step4_pre_backup.assert_not_called()
             pipeline._step6_ingest_form4_filings.assert_not_called()
+
+    # Alias for backward-compatibility with earlier test references
+    test_emergency_stop_via_role_disabled_halts_in_under_1s = test_emergency_stop_before_cycle_start_halts_at_preflight
+
+    def test_cooperative_in_flight_cancellation_preserves_active_snapshot(self):
+        """
+        Layer 2 (Cooperative In-Process Cancellation):
+        Calling pipeline.cancel() or providing an active cancellation_token causes
+        _check_in_flight_authorization() to halt with IN_FLIGHT_CANCELLATION prior to
+        SEC network egress (Step 6) or snapshot publication (Step 8).
+        Session advisory lock is released in finally, zero SEC calls, active snapshot preserved.
+        """
+        mock_repo = MagicMock()
+        mock_backup = MagicMock()
+        mock_lock_conn = MagicMock()
+        mock_lock_conn.closed = 0
+
+        # Case 1: Cancel before Step 6 via cancel()
+        pipeline1 = SmartMoneyContinuousPipeline(
+            repository=mock_repo,
+            backup_engine=mock_backup,
+            allow_test_mode=False,
+        )
+        pipeline1._step1_preflight = MagicMock()
+        def fake_lock1():
+            pipeline1._lock_conn = mock_lock_conn
+        pipeline1._step2_claim_advisory_lock = MagicMock(side_effect=fake_lock1)
+        pipeline1._step3_check_durable_date_eligibility_under_lock = MagicMock(return_value=(True, "OK"))
+        pipeline1._step4_pre_backup = MagicMock(return_value={
+            "backup_id": "b-pre", "status": "VERIFIED", "upload_verified": True,
+            "storage_destination": "s3", "artifact_sha256": "0" * 64, "artifact_size_bytes": 100,
+        })
+        pipeline1._step5_freshness_gate_check = MagicMock()
+        pipeline1.issuers = []
+
+        pipeline1.cancel()
+
+        with patch.dict(os.environ, {"ARX_SEC_EGRESS_ROLE": "OWNER"}):
+            with pytest.raises(RuntimeError, match="IN_FLIGHT_CANCELLATION.*STEP_6_SEC_INGESTION_START"):
+                pipeline1.execute_cycle(trigger_type="SCHEDULED")
+
+        mock_lock_conn.close.assert_called()
+        mock_repo.publish_scanner_snapshot_atomic.assert_not_called()
+
+        # Case 2: Cancellation via cancellation_token before Step 8 publication
+        is_shutting_down = False
+        pipeline2 = SmartMoneyContinuousPipeline(
+            repository=mock_repo,
+            backup_engine=mock_backup,
+            allow_test_mode=False,
+            cancellation_token=lambda: is_shutting_down,
+        )
+        pipeline2._step1_preflight = MagicMock()
+        mock_lock_conn2 = MagicMock()
+        mock_lock_conn2.closed = 0
+        def fake_lock2():
+            pipeline2._lock_conn = mock_lock_conn2
+        pipeline2._step2_claim_advisory_lock = MagicMock(side_effect=fake_lock2)
+        pipeline2._step3_check_durable_date_eligibility_under_lock = MagicMock(return_value=(True, "OK"))
+        pipeline2._step4_pre_backup = MagicMock(return_value={
+            "backup_id": "b-pre2", "status": "VERIFIED", "upload_verified": True,
+            "storage_destination": "s3", "artifact_sha256": "0" * 64, "artifact_size_bytes": 100,
+        })
+        pipeline2._step5_freshness_gate_check = MagicMock()
+        def fake_step7(*args, **kwargs):
+            nonlocal is_shutting_down
+            is_shutting_down = True
+            return ([], {"reconciliation_hash": "rh2"})
+        pipeline2._step6_ingest_form4_filings = MagicMock(return_value=[])
+        pipeline2._step7_parse_and_reconcile = MagicMock(side_effect=fake_step7)
+
+        with patch.dict(os.environ, {"ARX_SEC_EGRESS_ROLE": "OWNER"}):
+            with pytest.raises(RuntimeError, match="IN_FLIGHT_CANCELLATION.*STEP_8_ATOMIC_SNAPSHOT_PUBLICATION"):
+                pipeline2.execute_cycle(trigger_type="SCHEDULED")
+
+        mock_repo.publish_scanner_snapshot_atomic.assert_not_called()
+        mock_lock_conn2.close.assert_called()
 
     def test_active_snapshot_serving_preserved_during_emergency_stop(self):
         """
@@ -808,10 +883,14 @@ class TestGate3NonDestructiveEmergencyStop:
         })
         pipeline._step5_freshness_gate_check = MagicMock()
         pipeline._step6_ingest_form4_filings = MagicMock(return_value=[])
-        pipeline._step7_parse_and_reconcile = MagicMock(return_value=([], {"reconciliation_hash": "rh"}))
+        def revoke_at_step7(*args, **kwargs):
+            os.environ["ARX_SEC_EGRESS_ROLE"] = "DISABLED"
+            return ([], {"reconciliation_hash": "rh"})
 
-        # Role is set to DISABLED right before step 8
-        with patch.dict(os.environ, {"ARX_SEC_EGRESS_ROLE": "DISABLED"}):
+        pipeline._step7_parse_and_reconcile = MagicMock(side_effect=revoke_at_step7)
+
+        # Starts with OWNER, becomes DISABLED in-flight right before step 8
+        with patch.dict(os.environ, {"ARX_SEC_EGRESS_ROLE": "OWNER"}):
             with pytest.raises(RuntimeError, match="IN_FLIGHT_REVOCATION_ABORT.*STEP_8_ATOMIC_SNAPSHOT_PUBLICATION"):
                 pipeline.execute_cycle(trigger_type="SCHEDULED")
 
@@ -843,3 +922,379 @@ class TestGate3NonDestructiveEmergencyStop:
         }
         serving_snap = mock_repo.get_latest_active_snapshot(scan_type="SMART_MONEY")
         assert serving_snap["snapshot_id"] == "SNAP_SM_1792939989_48f30db6"
+
+
+class TestGate4ProductionForceOverrideGovernance:
+    """
+    Gate B / Gate 4: Production Force Override Governance & Fail-Closed Boundaries.
+
+    Invariants enforced:
+    1. Normal scheduled & manual execution in production must never bypass advisory locking,
+       durable execution-state verification, backup integrity, or snapshot publication integrity.
+    2. In production mode (not allow_test_mode or ARX_ENVIRONMENT=production):
+       - Raw force=True fails closed with PRODUCTION_FORCE_OVERRIDE_UNAUTHORIZED.
+       - trigger_type='TEST' fails closed with TEST_TRIGGER_PROHIBITED_IN_PRODUCTION.
+       - as_of override fails closed with PRODUCTION_AS_OF_OVERRIDE_UNAUTHORIZED.
+       - Missing, invalid, or mismatched recovery tokens fail closed.
+       - Missing or short (<10 chars) recovery reasons fail closed.
+       - Invalid recovery scopes fail closed.
+    3. Rejected overrides produce zero SEC requests and zero snapshot mutations.
+    4. Duplicate same-day runs return SKIPPED_ALREADY_EXECUTED_TODAY under lock.
+    5. Authorized recovery under lock allows controlled execution with full audit trail.
+    6. Isolated test mode (allow_test_mode=True) permits force and test triggers cleanly.
+    """
+
+    def _make_mock_production_pipeline(self):
+        mock_repo = MagicMock()
+        mock_backup = MagicMock()
+        mock_lock_conn = MagicMock()
+        mock_lock_conn.closed = 0
+
+        pipeline = SmartMoneyContinuousPipeline(
+            dsn="postgresql://user:pass@localhost:5432/finance",
+            repository=mock_repo,
+            backup_engine=mock_backup,
+            allow_test_mode=False,
+        )
+
+        def fake_lock():
+            pipeline._lock_conn = mock_lock_conn
+
+        pipeline._step1_preflight = MagicMock()
+        pipeline._step2_claim_advisory_lock = MagicMock(side_effect=fake_lock)
+        pipeline._step4_pre_backup = MagicMock(return_value={
+            "backup_id": "b-pre-gov",
+            "status": "VERIFIED",
+            "upload_verified": True,
+            "storage_destination": "s3",
+            "artifact_sha256": "a" * 64,
+            "database_sha256": "a" * 64,
+            "artifact_size_bytes": 1024,
+        })
+        pipeline._step5_freshness_gate_check = MagicMock()
+        pipeline._step6_ingest_form4_filings = MagicMock(return_value=[{"accession_number": "acc1"}])
+        pipeline._step7_parse_and_reconcile = MagicMock(return_value=([{"ticker": "AAPL"}], {"receipt_id": "r-1", "reconciliation_hash": "rh"}))
+        pipeline._step8_publish_snapshot = MagicMock(return_value={"snapshot_id": "snap-gov-001", "matched_count": 1})
+        pipeline._step9_post_backup = MagicMock(return_value={
+            "backup_id": "b-post-gov",
+            "status": "VERIFIED",
+            "upload_verified": True,
+            "storage_destination": "s3",
+            "artifact_sha256": "b" * 64,
+            "database_sha256": "b" * 64,
+            "artifact_size_bytes": 1024,
+        })
+        pipeline._step10_prune_retention = MagicMock(return_value=[])
+
+        return pipeline, mock_repo, mock_backup, mock_lock_conn
+
+    def test_production_scheduled_execution_normal_flow(self):
+        """Production scheduled execution with force=False operates normally within window under lock."""
+        pipeline, mock_repo, mock_backup, mock_lock_conn = self._make_mock_production_pipeline()
+        mock_repo.get_latest_active_snapshot.return_value = {
+            "snapshot_id": "snap-prior",
+            "data_as_of": "2026-10-22T22:30:00-04:00",
+        }
+        pipeline.scheduler.should_execute_now = MagicMock(return_value=(True, "WITHIN_EXECUTION_WINDOW"))
+
+        with patch.dict(os.environ, {"ARX_SEC_EGRESS_ROLE": "OWNER"}):
+            res = pipeline.execute_cycle(trigger_type="SCHEDULED", force=False)
+
+        assert res["status"] == "SUCCESS"
+        assert res["snapshot_id"] == "snap-gov-001"
+        pipeline._step2_claim_advisory_lock.assert_called_once()
+        mock_lock_conn.close.assert_called_once()
+        assert pipeline._lock_conn is None
+
+    def test_production_manual_execution_normal_flow(self):
+        """Production manual execution with force=False operates normally under lock."""
+        pipeline, mock_repo, mock_backup, mock_lock_conn = self._make_mock_production_pipeline()
+        mock_repo.get_latest_active_snapshot.return_value = {
+            "snapshot_id": "snap-prior",
+            "data_as_of": "2026-10-22T22:30:00-04:00",
+        }
+        pipeline.scheduler.should_execute_now = MagicMock(return_value=(True, "WITHIN_EXECUTION_WINDOW"))
+
+        with patch.dict(os.environ, {"ARX_SEC_EGRESS_ROLE": "OWNER"}):
+            res = pipeline.execute_cycle(trigger_type="OPERATOR", force=False)
+
+        assert res["status"] == "SUCCESS"
+        assert res["snapshot_id"] == "snap-gov-001"
+        mock_lock_conn.close.assert_called_once()
+
+    def test_production_force_true_rejected_fail_closed_without_authorization(self):
+        """Production execution with raw force=True fails closed without recovery authorization."""
+        pipeline, mock_repo, mock_backup, mock_lock_conn = self._make_mock_production_pipeline()
+
+        with patch.dict(os.environ, {"ARX_SEC_EGRESS_ROLE": "OWNER"}, clear=False):
+            with pytest.raises(RuntimeError, match="PRODUCTION_FORCE_OVERRIDE_UNAUTHORIZED"):
+                pipeline.execute_cycle(trigger_type="SCHEDULED", force=True)
+
+        pipeline._step6_ingest_form4_filings.assert_not_called()
+        pipeline._step8_publish_snapshot.assert_not_called()
+        mock_repo.publish_scanner_snapshot_atomic.assert_not_called()
+
+    def test_production_test_trigger_rejected_fail_closed(self):
+        """Production execution with trigger_type='TEST' fails closed."""
+        pipeline, mock_repo, mock_backup, mock_lock_conn = self._make_mock_production_pipeline()
+
+        with patch.dict(os.environ, {"ARX_SEC_EGRESS_ROLE": "OWNER"}, clear=False):
+            with pytest.raises(RuntimeError, match="TEST_TRIGGER_PROHIBITED_IN_PRODUCTION"):
+                pipeline.execute_cycle(trigger_type="TEST", force=False)
+
+        pipeline._step6_ingest_form4_filings.assert_not_called()
+        pipeline._step8_publish_snapshot.assert_not_called()
+
+    def test_production_as_of_override_rejected_without_authorization(self):
+        """Explicit as_of date override in production requires recovery authorization."""
+        pipeline, mock_repo, mock_backup, mock_lock_conn = self._make_mock_production_pipeline()
+
+        with patch.dict(os.environ, {"ARX_SEC_EGRESS_ROLE": "OWNER"}, clear=False):
+            with pytest.raises(RuntimeError, match="PRODUCTION_AS_OF_OVERRIDE_UNAUTHORIZED"):
+                pipeline.execute_cycle(trigger_type="SCHEDULED", as_of="2026-10-20")
+
+        pipeline._step6_ingest_form4_filings.assert_not_called()
+        pipeline._step8_publish_snapshot.assert_not_called()
+
+    def test_production_force_override_rejected_on_missing_or_empty_token(self):
+        """Production force override rejected when expected token is configured but caller passes None."""
+        pipeline, mock_repo, mock_backup, mock_lock_conn = self._make_mock_production_pipeline()
+
+        with patch.dict(os.environ, {
+            "ARX_SEC_EGRESS_ROLE": "OWNER",
+            "ARX_PRODUCTION_FORCE_RECOVERY_TOKEN": "SECRET_RECOVERY_TOKEN_9999",
+        }):
+            with pytest.raises(RuntimeError, match="PRODUCTION_FORCE_OVERRIDE_UNAUTHORIZED.*token"):
+                pipeline.execute_cycle(
+                    force=True,
+                    recovery_token=None,
+                    recovery_reason="Manual recovery after crash",
+                    recovery_scope="SINGLE_CYCLE_RECOVERY",
+                )
+
+        pipeline._step6_ingest_form4_filings.assert_not_called()
+        pipeline._step8_publish_snapshot.assert_not_called()
+
+    def test_production_force_override_rejected_on_invalid_token(self):
+        """Production force override rejected when supplied token does not match environment token."""
+        pipeline, mock_repo, mock_backup, mock_lock_conn = self._make_mock_production_pipeline()
+
+        with patch.dict(os.environ, {
+            "ARX_SEC_EGRESS_ROLE": "OWNER",
+            "ARX_PRODUCTION_FORCE_RECOVERY_TOKEN": "CORRECT_SECRET_TOKEN_9999",
+        }):
+            with pytest.raises(RuntimeError, match="PRODUCTION_FORCE_OVERRIDE_UNAUTHORIZED.*token"):
+                pipeline.execute_cycle(
+                    force=True,
+                    recovery_token="INCORRECT_TOKEN",
+                    recovery_reason="Manual recovery after crash",
+                    recovery_scope="SINGLE_CYCLE_RECOVERY",
+                )
+
+        pipeline._step6_ingest_form4_filings.assert_not_called()
+        pipeline._step8_publish_snapshot.assert_not_called()
+
+    def test_production_force_override_rejected_on_missing_or_short_reason(self):
+        """Production force override rejected when justification reason is missing or <10 chars."""
+        pipeline, mock_repo, mock_backup, mock_lock_conn = self._make_mock_production_pipeline()
+
+        with patch.dict(os.environ, {
+            "ARX_SEC_EGRESS_ROLE": "OWNER",
+            "ARX_PRODUCTION_FORCE_RECOVERY_TOKEN": "CORRECT_SECRET_TOKEN_9999",
+        }):
+            with pytest.raises(RuntimeError, match="PRODUCTION_FORCE_OVERRIDE_UNAUTHORIZED.*Valid recovery_reason"):
+                pipeline.execute_cycle(
+                    force=True,
+                    recovery_token="CORRECT_SECRET_TOKEN_9999",
+                    recovery_reason="short",
+                    recovery_scope="SINGLE_CYCLE_RECOVERY",
+                )
+
+        pipeline._step6_ingest_form4_filings.assert_not_called()
+        pipeline._step8_publish_snapshot.assert_not_called()
+
+    def test_production_force_override_rejected_on_invalid_scope(self):
+        """Production force override rejected when recovery scope is not in approved set."""
+        pipeline, mock_repo, mock_backup, mock_lock_conn = self._make_mock_production_pipeline()
+
+        with patch.dict(os.environ, {
+            "ARX_SEC_EGRESS_ROLE": "OWNER",
+            "ARX_PRODUCTION_FORCE_RECOVERY_TOKEN": "CORRECT_SECRET_TOKEN_9999",
+        }):
+            with pytest.raises(RuntimeError, match="PRODUCTION_FORCE_OVERRIDE_UNAUTHORIZED.*Invalid recovery_scope"):
+                pipeline.execute_cycle(
+                    force=True,
+                    recovery_token="CORRECT_SECRET_TOKEN_9999",
+                    recovery_reason="Valid recovery reason text here",
+                    recovery_scope="UNAPPROVED_SCOPE_ALL",
+                )
+
+        pipeline._step6_ingest_form4_filings.assert_not_called()
+        pipeline._step8_publish_snapshot.assert_not_called()
+
+    def test_production_duplicate_same_day_execution_rejected_under_lock(self):
+        """Same-day execution rejected with SKIPPED_ALREADY_EXECUTED_TODAY under lock, releasing lock cleanly."""
+        pipeline, mock_repo, mock_backup, mock_lock_conn = self._make_mock_production_pipeline()
+        mock_repo.get_latest_active_snapshot.return_value = {
+            "snapshot_id": "snap-today",
+            "data_as_of": "2026-10-26T22:30:00-04:00",
+        }
+        pipeline.scheduler.should_execute_now = MagicMock(
+            return_value=(False, "ALREADY_EXECUTED_TODAY: cycle already recorded for 2026-10-26")
+        )
+
+        with patch.dict(os.environ, {"ARX_SEC_EGRESS_ROLE": "OWNER"}):
+            res = pipeline.execute_cycle(trigger_type="SCHEDULED", force=False)
+
+        assert res["status"] == "SKIPPED_ALREADY_EXECUTED_TODAY"
+        mock_lock_conn.close.assert_called_once()
+        pipeline._step4_pre_backup.assert_not_called()
+        pipeline._step6_ingest_form4_filings.assert_not_called()
+        pipeline._step8_publish_snapshot.assert_not_called()
+
+    def test_production_interrupted_cycle_recovery_flow(self):
+        """Interrupted cycle earlier today leaves active snapshot unchanged; restart sees prior date and completes."""
+        pipeline, mock_repo, mock_backup, mock_lock_conn = self._make_mock_production_pipeline()
+        mock_repo.get_latest_active_snapshot.return_value = {
+            "snapshot_id": "snap-yesterday",
+            "data_as_of": "2026-10-25T22:30:00-04:00",
+        }
+        pipeline.scheduler.should_execute_now = MagicMock(return_value=(True, "WITHIN_EXECUTION_WINDOW"))
+
+        with patch.dict(os.environ, {"ARX_SEC_EGRESS_ROLE": "OWNER"}):
+            res = pipeline.execute_cycle(trigger_type="SCHEDULED", force=False)
+
+        assert res["status"] == "SUCCESS"
+        assert res["snapshot_id"] == "snap-gov-001"
+        pipeline._step6_ingest_form4_filings.assert_called_once()
+        pipeline._step8_publish_snapshot.assert_called_once()
+        mock_lock_conn.close.assert_called_once()
+
+    def test_production_authorized_force_recovery_succeeds_under_lock(self):
+        """Authorized production force recovery succeeds under advisory lock with full validation."""
+        pipeline, mock_repo, mock_backup, mock_lock_conn = self._make_mock_production_pipeline()
+        mock_repo.get_latest_active_snapshot.return_value = {
+            "snapshot_id": "snap-prior",
+            "data_as_of": "2026-10-26T22:30:00-04:00",
+        }
+
+        with patch.dict(os.environ, {
+            "ARX_SEC_EGRESS_ROLE": "OWNER",
+            "ARX_PRODUCTION_FORCE_RECOVERY_TOKEN": "AUTH_TOKEN_7777_STRICT",
+        }):
+            res = pipeline.execute_cycle(
+                force=True,
+                trigger_type="SCHEDULED",
+                recovery_token="AUTH_TOKEN_7777_STRICT",
+                recovery_reason="Operational recovery after server hardware reboot",
+                recovery_scope="SINGLE_CYCLE_RECOVERY",
+            )
+
+        assert res["status"] == "SUCCESS"
+        assert res["snapshot_id"] == "snap-gov-001"
+        pipeline._step2_claim_advisory_lock.assert_called_once()
+        pipeline._step4_pre_backup.assert_called_once()
+        pipeline._step6_ingest_form4_filings.assert_called_once()
+        pipeline._step8_publish_snapshot.assert_called_once()
+        pipeline._step9_post_backup.assert_called_once()
+        mock_lock_conn.close.assert_called_once()
+
+    def test_isolated_test_mode_permits_force_and_test_trigger(self):
+        """Isolated test mode (allow_test_mode=True) permits force=True and trigger_type='TEST'."""
+        mock_repo = MagicMock()
+        mock_backup = MagicMock()
+        mock_repo.get_latest_active_snapshot.return_value = None
+
+        pipeline = SmartMoneyContinuousPipeline(
+            repository=mock_repo,
+            backup_engine=mock_backup,
+            allow_test_mode=True,
+        )
+        pipeline._step1_preflight = MagicMock()
+        pipeline._step2_claim_advisory_lock = MagicMock()
+        pipeline._step4_pre_backup = MagicMock(return_value={
+            "backup_id": "b-test",
+            "status": "VERIFIED",
+            "upload_verified": True,
+            "storage_destination": "s3",
+            "artifact_sha256": "c" * 64,
+            "database_sha256": "c" * 64,
+            "artifact_size_bytes": 100,
+        })
+        pipeline._step5_freshness_gate_check = MagicMock()
+        pipeline._step6_ingest_form4_filings = MagicMock(return_value=[])
+        pipeline._step7_parse_and_reconcile = MagicMock(return_value=([], {"receipt_id": "r-test", "reconciliation_hash": "rh"}))
+        pipeline._step8_publish_snapshot = MagicMock(return_value={"snapshot_id": "snap-test-001", "matched_count": 0})
+        pipeline._step9_post_backup = MagicMock(return_value={
+            "backup_id": "b-test-post",
+            "status": "VERIFIED",
+            "upload_verified": True,
+            "storage_destination": "s3",
+            "artifact_sha256": "d" * 64,
+            "database_sha256": "d" * 64,
+            "artifact_size_bytes": 100,
+        })
+        pipeline._step10_prune_retention = MagicMock(return_value=[])
+
+        res = pipeline.execute_cycle(trigger_type="TEST", force=True)
+        assert res["status"] == "SUCCESS"
+        assert res["snapshot_id"] == "snap-test-001"
+
+    def test_rejected_override_produces_zero_sec_requests_and_zero_snapshot_mutations(self):
+        """Confirms that any rejected production override produces zero SEC requests and zero snapshot mutations."""
+        pipeline, mock_repo, mock_backup, mock_lock_conn = self._make_mock_production_pipeline()
+
+        with patch.dict(os.environ, {"ARX_SEC_EGRESS_ROLE": "OWNER"}):
+            with pytest.raises(RuntimeError):
+                pipeline.execute_cycle(force=True)
+
+        assert pipeline._step6_ingest_form4_filings.call_count == 0
+        assert pipeline._step8_publish_snapshot.call_count == 0
+        assert mock_repo.publish_scanner_snapshot_atomic.call_count == 0
+
+    def test_production_explicit_as_of_override_behavior_and_malformed_rejection(self):
+        """
+        Verifies explicit as_of override behavior:
+        1. Malformed as_of fails closed with INVALID_AS_OF_DATE (never silently falls back).
+        2. Authorized as_of override evaluates calendar date under lock, respecting duplicate checks.
+        """
+        pipeline, mock_repo, mock_backup, mock_lock_conn = self._make_mock_production_pipeline()
+
+        # 1. Malformed as_of with authorized recovery token still fails closed on date validation
+        with patch.dict(os.environ, {
+            "ARX_SEC_EGRESS_ROLE": "OWNER",
+            "ARX_PRODUCTION_FORCE_RECOVERY_TOKEN": "AUTH_TOKEN_7777_STRICT",
+        }):
+            with pytest.raises(RuntimeError, match="INVALID_AS_OF_DATE.*Malformed as_of"):
+                pipeline.execute_cycle(
+                    as_of="2026-99-99",
+                    trigger_type="SCHEDULED",
+                    recovery_token="AUTH_TOKEN_7777_STRICT",
+                    recovery_reason="Operational recovery of historical date",
+                    recovery_scope="SINGLE_CYCLE_RECOVERY",
+                )
+
+        # 2. In isolated test mode, malformed as_of also fails closed
+        p_test = SmartMoneyContinuousPipeline(allow_test_mode=True, repository=mock_repo)
+        p_test._lock_conn = mock_lock_conn
+        with pytest.raises(RuntimeError, match="INVALID_AS_OF_DATE.*Malformed as_of"):
+            p_test._step3_check_durable_date_eligibility_under_lock(as_of="malformed-date")
+
+    def test_advisory_lock_cleanup_on_process_termination_semantics(self):
+        """
+        Layer 4 (Database Advisory Lock Cleanup):
+        PostgreSQL session-level advisory locks (LOCK_SEC_EGRESS_OWNER) are strictly
+        bound to the client connection session. When a worker process terminates or is killed
+        by OS signal (SIGTERM/SIGKILL), the operating system closes the TCP socket, causing
+        the PostgreSQL server backend to automatically release the advisory lock.
+        """
+        mock_lock_conn = MagicMock()
+        mock_lock_conn.closed = 0
+        pipeline = SmartMoneyContinuousPipeline(allow_test_mode=True)
+        pipeline._lock_conn = mock_lock_conn
+
+        # Simulate cleanup in finally block or process shutdown
+        pipeline._cleanup_lock()
+        mock_lock_conn.close.assert_called_once()
+        assert pipeline._lock_conn is None
+

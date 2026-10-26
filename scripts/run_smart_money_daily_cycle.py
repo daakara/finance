@@ -44,7 +44,26 @@ def parse_args():
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Bypass America/New_York 22:30 schedule window and calendar checks.",
+        help="Bypass America/New_York 22:30 schedule window and calendar checks (in live mode requires --recovery-token and --recovery-reason).",
+    )
+    parser.add_argument(
+        "--recovery-token",
+        type=str,
+        default=None,
+        help="Explicit production recovery token (required if --force or --as-of is used in live production).",
+    )
+    parser.add_argument(
+        "--recovery-reason",
+        type=str,
+        default=None,
+        help="Auditable justification for production recovery force override (minimum 10 characters).",
+    )
+    parser.add_argument(
+        "--recovery-scope",
+        type=str,
+        default="SINGLE_CYCLE_RECOVERY",
+        choices=["SINGLE_CYCLE_RECOVERY", "SAME_DAY_RESUMPTION", "MANUAL_RECOVERY"],
+        help="Approved recovery scope for production override.",
     )
     parser.add_argument(
         "--as-of",
@@ -116,7 +135,7 @@ def main():
     if not should_run and not args.dry_run:
         logger.warning(f"SCHEDULE_CHECK_DECLINED: {reason}")
         print(f"[SCHEDULE] Cycle declined: {reason}")
-        print("[SCHEDULE] To execute outside scheduled window, supply --force or --dry-run.")
+        print("[SCHEDULE] To test preflight outside scheduled window, supply --dry-run. Note: production force overrides require verified recovery authorization.")
         sys.exit(0)
 
     print(f"[SCHEDULE] Schedule check verified: {reason}")
@@ -130,6 +149,9 @@ def main():
             dry_run=args.dry_run,
             as_of=args.as_of,
             trigger_type="OPERATOR_CLI" if args.force else "SCHEDULED_CLI",
+            recovery_token=args.recovery_token,
+            recovery_reason=args.recovery_reason,
+            recovery_scope=args.recovery_scope,
         )
 
         print("\n================================================================================")

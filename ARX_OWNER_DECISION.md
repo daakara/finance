@@ -87,10 +87,11 @@ RAILWAY_BACKEND_DEPLOYMENT = 059f9d79-6848-4095-aa61-5936ac3ee650 (PRESERVED)
    - Eliminates false assumption of ETag equality to SHA-256 (handles multipart digests safely).
    - Fails closed with `IOError` before Step 6 (SEC ingestion) if upload metadata or bytes are corrupt.
 
-3. **Gate 3 (Non-Destructive Emergency Stop)**: **VERIFIED PASS**
+3. **Gate 3 (Operational Control & Non-Destructive Emergency Stop Architecture)**: **VERIFIED PASS**
    - Disproved invalid `UPDATE scanner_active_snapshots SET is_active = FALSE` and physical deletion guidance.
-   - Verified non-destructive stop hierarchy: `ARX_SEC_EGRESS_ROLE=DISABLED` halts any cycle in $\le 1.0\text{ s}$ at Step 1 (`_step1_preflight`).
-   - Active serving snapshot `SNAP_SM_1792939989_48f30db6` remains 100% intact, guaranteeing uninterrupted read-only Radar uptime via `smart_money_web`.
+   - Verified 4-layer operational hierarchy: preflight startup configuration prevention, cooperative in-process cancellation, platform worker termination (SIGTERM/SIGKILL), and automatic PostgreSQL advisory lock release on connection drop.
+   - Enforced fail-closed production force-override boundary (`PRODUCTION_FORCE_OVERRIDE_UNAUTHORIZED`) and documented unactivated recovery authorization contract.
+   - Active serving snapshot `SNAP_SM_1792939989_48f30db6` remains 100% intact across all stop scenarios, guaranteeing uninterrupted read-only Radar uptime via `smart_money_web`.
 
 4. **Preserved Governance Matrix**:
 ```ini

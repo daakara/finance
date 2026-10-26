@@ -359,9 +359,18 @@ class SmartMoneyIngestionWorker:
 
     def _handle_shutdown_signal(self, signum: int, frame: Any) -> None:
         """
-        Control B: Catches SIGTERM / SIGINT and drops session advisory lock (<= 1.0s).
-        If a work cycle is currently in-flight, defers lock release until cycle completion
-        to prevent dropping the session advisory lock underneath active state modification.
+        Catches SIGTERM / SIGINT for worker shutdown (Control B).
+
+        Signal handling semantics:
+        - If the worker is idle, immediately releases the session advisory lock
+          and terminates the process cleanly.
+        - If a work cycle is currently in-flight, defers graceful lock release until
+          the active cycle concludes, preventing dropping advisory locks underneath
+          active state modification.
+        - For forced emergency termination, container runtimes (e.g. Railway) issue
+          SIGKILL or terminate the container, dropping the TCP connection to PostgreSQL.
+          The PostgreSQL server kernel automatically detects TCP socket EOF and releases
+          session advisory lock LOCK_SEC_EGRESS_OWNER immediately upon connection teardown.
         """
         logger.info(
             f"Worker {self.worker_id} received shutdown signal {signum}."
@@ -369,12 +378,12 @@ class SmartMoneyIngestionWorker:
         self._running = False
         if getattr(self, "_is_executing_cycle", False):
             logger.warning(
-                f"Worker {self.worker_id} is currently executing cycle; deferring lock release until cycle completion."
+                f"Worker {self.worker_id} is currently executing cycle; deferring graceful lock release until cycle completion."
             )
             self._shutdown_requested = True
             return
 
-        logger.info("Executing immediate Control B teardown (dropping advisory lock <= 1.0s)...")
+        logger.info("Executing immediate Control B teardown and releasing advisory lock...")
         self.release_egress_authority()
         if getattr(self, "backup_scheduler", None):
             self.backup_scheduler.stop()
@@ -435,6 +444,7 @@ class SmartMoneyIngestionWorker:
                 containment_gate=self.containment_gate,
                 repository=self.repository,
                 allow_test_mode=False,
+                cancellation_token=lambda: getattr(self, "_shutdown_requested", False),
             )
             res = pipeline.execute_cycle(
                 run_request_id=req_id,

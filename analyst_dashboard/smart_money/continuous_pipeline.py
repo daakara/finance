@@ -24,7 +24,7 @@ import json
 import hashlib
 import logging
 from datetime import datetime, timezone, timedelta
-from typing import Dict, Any, List, Optional, Tuple, Set
+from typing import Dict, Any, List, Optional, Tuple, Set, Callable
 
 from analyst_dashboard.smart_money.storage.config import (
     get_database_url,
@@ -154,6 +154,7 @@ class SmartMoneyContinuousPipeline:
         scanner: Optional[SmartMoneyForm4Scanner] = None,
         scheduler: Optional[SmartMoneyTimezoneScheduler] = None,
         allow_test_mode: bool = False,
+        cancellation_token: Optional[Callable[[], bool]] = None,
     ):
         arx_env = os.environ.get("ARX_ENVIRONMENT", "").strip().lower()
         if arx_env == "production" and allow_test_mode:
@@ -162,6 +163,8 @@ class SmartMoneyContinuousPipeline:
             )
 
         self.allow_test_mode = allow_test_mode
+        self.cancellation_token = cancellation_token
+        self._cancelled: bool = False
         self.dsn = dsn or get_database_url()
         self.storage_adapter = storage_adapter or get_backup_storage_adapter()
         self.backup_engine = backup_engine or (
@@ -205,6 +208,10 @@ class SmartMoneyContinuousPipeline:
         self.scheduler = scheduler or SmartMoneyTimezoneScheduler()
         self._lock_conn = None
 
+    def cancel(self) -> None:
+        """Sets internal cooperative cancellation flag for in-flight checks."""
+        self._cancelled = True
+
     def execute_cycle(
         self,
         run_request_id: Optional[str] = None,
@@ -213,10 +220,20 @@ class SmartMoneyContinuousPipeline:
         dry_run: bool = False,
         as_of: Optional[str] = None,
         trigger_type: str = "SCHEDULED",
+        recovery_token: Optional[str] = None,
+        recovery_reason: Optional[str] = None,
+        recovery_scope: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Executes the authoritative 10-step ingestion cycle.
         Returns execution result summary with cryptographic receipt.
+
+        Production override governance:
+        - In production (not allow_test_mode or ARX_ENVIRONMENT=production):
+          * trigger_type='TEST' is strictly rejected fail-closed.
+          * raw force=True or as_of overrides require explicit, verified recovery authorization
+            (matching ARX_PRODUCTION_FORCE_RECOVERY_TOKEN, recovery_reason >= 10 chars, and approved scope).
+          * force overrides NEVER bypass advisory locking, pre/post backup integrity, or snapshot atomicity.
         """
         start_time = datetime.now(timezone.utc)
         cycle_id = f"sm-cycle-{start_time.strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:8]}"
@@ -234,6 +251,59 @@ class SmartMoneyContinuousPipeline:
             f"Starting Smart Money 10-step continuous cycle {cycle_id} "
             f"(trigger={trigger_type}, dry_run={dry_run}, req_id={run_request_id})"
         )
+
+        is_production = not self.allow_test_mode or os.environ.get("ARX_ENVIRONMENT", "").strip().lower() == "production"
+
+        # Production boundary checks: fail-closed rejection of test triggers outside test mode
+        if is_production and str(trigger_type).upper() == "TEST":
+            raise RuntimeError(
+                "TEST_TRIGGER_PROHIBITED_IN_PRODUCTION: trigger_type='TEST' is strictly prohibited outside authorized test mode."
+            )
+
+        # Production recovery authorization evaluation
+        recovery_authorized = False
+        if is_production and (force or as_of is not None):
+            expected_token = os.environ.get("ARX_PRODUCTION_FORCE_RECOVERY_TOKEN")
+            effective_token = recovery_token or os.environ.get("ARX_RECOVERY_TOKEN")
+
+            if not effective_token or not expected_token or effective_token != expected_token:
+                if force:
+                    raise RuntimeError(
+                        "PRODUCTION_FORCE_OVERRIDE_UNAUTHORIZED: force=True is prohibited in production without verified recovery authorization token."
+                    )
+                else:
+                    raise RuntimeError(
+                        "PRODUCTION_AS_OF_OVERRIDE_UNAUTHORIZED: as_of date override in production requires verified recovery authorization token."
+                    )
+
+            effective_reason = recovery_reason or os.environ.get("ARX_RECOVERY_REASON")
+            if not effective_reason or len(effective_reason.strip()) < 10:
+                if force:
+                    raise RuntimeError(
+                        "PRODUCTION_FORCE_OVERRIDE_UNAUTHORIZED: Valid recovery_reason (minimum 10 characters) is required for production force override."
+                    )
+                else:
+                    raise RuntimeError(
+                        "PRODUCTION_AS_OF_OVERRIDE_UNAUTHORIZED: Valid recovery_reason (minimum 10 characters) is required for production as_of override."
+                    )
+
+            effective_scope = recovery_scope or os.environ.get("ARX_RECOVERY_SCOPE", "SINGLE_CYCLE_RECOVERY")
+            if effective_scope not in ("SINGLE_CYCLE_RECOVERY", "SAME_DAY_RESUMPTION", "MANUAL_RECOVERY"):
+                valid_scopes = "('SINGLE_CYCLE_RECOVERY', 'SAME_DAY_RESUMPTION', 'MANUAL_RECOVERY')"
+                if force:
+                    raise RuntimeError(
+                        f"PRODUCTION_FORCE_OVERRIDE_UNAUTHORIZED: Invalid recovery_scope '{effective_scope}'. Must be one of {valid_scopes}."
+                    )
+                else:
+                    raise RuntimeError(
+                        f"PRODUCTION_AS_OF_OVERRIDE_UNAUTHORIZED: Invalid recovery_scope '{effective_scope}'. Must be one of {valid_scopes}."
+                    )
+
+            recovery_authorized = True
+            logger.warning(
+                f"PRODUCTION_RECOVERY_OVERRIDE_AUTHORIZED: Cycle {cycle_id} operating under approved recovery scope '{effective_scope}' "
+                f"(reason: '{effective_reason}')."
+            )
 
         try:
             # ── Step 1: Preflight check ───────────────────────────────────────
@@ -258,7 +328,11 @@ class SmartMoneyContinuousPipeline:
             # ── Step 3: Atomic durable eligibility check under lock ───────────
             effective_force = bool(force or (self.allow_test_mode and trigger_type == "TEST"))
             should_run, sched_reason = self._step3_check_durable_date_eligibility_under_lock(
-                force=effective_force, as_of=as_of
+                force=effective_force,
+                as_of=as_of,
+                recovery_authorized=recovery_authorized,
+                recovery_reason=recovery_reason or os.environ.get("ARX_RECOVERY_REASON"),
+                recovery_scope=recovery_scope or os.environ.get("ARX_RECOVERY_SCOPE", "SINGLE_CYCLE_RECOVERY"),
             )
             if not should_run:
                 logger.info(
@@ -291,6 +365,7 @@ class SmartMoneyContinuousPipeline:
             steps_completed.append("STEP_5_FRESHNESS_GATE_VERIFIED")
 
             # ── Step 6: Genuine SEC Form 4 ingestion ──────────────────────────
+            self._check_in_flight_authorization(step_name="STEP_6_SEC_INGESTION_START")
             raw_filings = self._step6_ingest_form4_filings()
             steps_completed.append("STEP_6_SEC_FORM4_INGESTED")
 
@@ -303,6 +378,7 @@ class SmartMoneyContinuousPipeline:
             steps_completed.append("STEP_7_TRANSACTIONS_NORMALIZED_AND_RECONCILED")
 
             # ── Step 8: Atomic snapshot publication ───────────────────────────
+            self._check_in_flight_authorization(step_name="STEP_8_ATOMIC_SNAPSHOT_PUBLICATION")
             snapshot_meta = self._step8_publish_snapshot(
                 parsed_txs,
                 receipt_meta,
@@ -392,11 +468,40 @@ class SmartMoneyContinuousPipeline:
 
     def _check_in_flight_authorization(self, step_name: str = "EXECUTION") -> None:
         """
-        In-flight authorization and cancellation check between pipeline stages.
-        Guarantees that if ARX_SEC_EGRESS_ROLE is revoked in-flight,
-        subsequent steps (especially Step 6 SEC egress and Step 8 snapshot publication)
-        are aborted fail-closed without publishing unverified or partial snapshots.
+        Static stage-boundary authorization and cooperative cancellation check within the worker process.
+
+        Guarantees that within the process lifecycle (or in local supervisor testing),
+        if ARX_SEC_EGRESS_ROLE is set to DISABLED/REVOKED or fails to be OWNER in live mode,
+        or if cooperative cancellation has been requested, subsequent steps (specifically
+        Step 6 SEC egress and Step 8 snapshot publication) are aborted fail-closed without
+        mutating public state or publishing unverified snapshots.
+
+        OPERATIONAL BOUNDARY NOTE (Railway / Containerized Runtime):
+        1. Preventing new cycles through configuration:
+           Setting ARX_SEC_EGRESS_ROLE != OWNER at process startup prevents any worker from
+           running cycles, aborting at Step 1 (_step1_preflight) before advisory locks or DB writes.
+        2. Cooperative cancellation within an active process:
+           In-process cancellation tokens (cancellation_token) or self.cancel() are evaluated
+           at discrete stage boundaries. In containerized runtimes (e.g. Railway), updating
+           platform environment variables does NOT dynamically rewrite the private memory space
+           (/proc/self/environ) of an already-running container process without container reload/restart.
+        3. Active worker termination via platform controls:
+           Immediate cessation of an active worker hung on blocking I/O requires container lifecycle
+           controls (SIGTERM/SIGKILL, 'railway down', or scaling replicas to 0).
+        4. Database advisory lock cleanup:
+           PostgreSQL automatically releases session-level advisory locks (LOCK_SEC_EGRESS_OWNER)
+           upon TCP client disconnection/process termination, guaranteeing zero orphaned locks.
+        5. Active snapshot preservation:
+           The active snapshot pointer in scanner_active_snapshots is only advanced at Step 8.
+           Across all stop or abort scenarios prior to Step 8, the pointer remains intact,
+           ensuring 100% continuous read-only Radar uptime.
         """
+        # 1. Cooperative in-process cancellation
+        if self._cancelled or (self.cancellation_token and self.cancellation_token()):
+            raise RuntimeError(
+                f"IN_FLIGHT_CANCELLATION: Execution cancelled cooperatively at {step_name}."
+            )
+
         raw_role = os.environ.get("ARX_SEC_EGRESS_ROLE")
         role = raw_role.strip().upper() if raw_role and isinstance(raw_role, str) else None
 
@@ -434,23 +539,23 @@ class SmartMoneyContinuousPipeline:
         logger.info("Acquired session advisory lock LOCK_SEC_EGRESS_OWNER.")
 
     def _step3_check_durable_date_eligibility_under_lock(
-        self, force: bool = False, as_of: Optional[str] = None
+        self,
+        force: bool = False,
+        as_of: Optional[str] = None,
+        recovery_authorized: bool = False,
+        recovery_reason: Optional[str] = None,
+        recovery_scope: Optional[str] = None,
     ) -> Tuple[bool, str]:
         """
         Durable date and schedule eligibility evaluation under exclusive advisory lock.
         Enforces strict fail-closed acceptance invariant: UNKNOWN_EXECUTION_STATE != ELIGIBLE_TO_RUN.
 
         Checks:
-        1. Force override flag
-        2. Production lock connection & repository presence
-        3. Lock ownership durability check
-        4. Authoritative latest active snapshot query
-        5. Exact data_as_of parsing & date extraction
-        6. America/New_York dissemination calendar & 22:30 execution window
+        1. Production lock connection & repository presence (unconditionally under lock)
+        2. Authoritative latest active snapshot query & data_as_of parsing
+        3. Force / Recovery authorization boundary
+        4. America/New_York dissemination calendar & 22:30 execution window
         """
-        if force:
-            return True, "FORCE_OVERRIDE"
-
         # 1. Lock and Repository Validation (Fail-closed)
         if not self.allow_test_mode:
             if not self.repository:
@@ -504,16 +609,36 @@ class SmartMoneyContinuousPipeline:
                 "DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Missing repository outside authorized test mode."
             )
 
+        # 3. Force override evaluation under lock
+        if force:
+            if not self.allow_test_mode:
+                if not recovery_authorized:
+                    raise RuntimeError(
+                        "PRODUCTION_FORCE_OVERRIDE_UNAUTHORIZED: force=True is prohibited in production without verified recovery authorization."
+                    )
+                scope = recovery_scope or "SINGLE_CYCLE_RECOVERY"
+                logger.warning(
+                    f"Executing authorized production force recovery under lock: scope={scope}, reason={recovery_reason}"
+                )
+                return True, f"PRODUCTION_RECOVERY_OVERRIDE:{scope}"
+            return True, "FORCE_OVERRIDE"
+
         eval_dt = None
         if as_of:
             try:
-                eval_dt = datetime.strptime(as_of, "%Y-%m-%d").replace(
-                    hour=self.scheduler.target_hour,
-                    minute=self.scheduler.target_minute,
-                    tzinfo=NY_TZ,
-                )
-            except Exception:
-                eval_dt = None
+                as_of_date = datetime.strptime(as_of, "%Y-%m-%d").date()
+            except Exception as e:
+                raise RuntimeError(
+                    f"INVALID_AS_OF_DATE: Malformed as_of format '{as_of}', expected YYYY-MM-DD: {e}"
+                ) from e
+            eval_dt = datetime(
+                as_of_date.year,
+                as_of_date.month,
+                as_of_date.day,
+                self.scheduler.target_hour,
+                self.scheduler.target_minute,
+                tzinfo=NY_TZ,
+            )
 
         return self.scheduler.should_execute_now(
             now=eval_dt,
