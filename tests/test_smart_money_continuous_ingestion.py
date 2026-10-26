@@ -250,11 +250,20 @@ class TestSmartMoneyContinuousIngestion:
     # ── Test 10: Post-backup failure degrades gracefully ─────────────────────
     def test_post_backup_failure_degrades_gracefully(self):
         mock_backup = MagicMock()
-        # Pre-backup succeeds
-        mock_backup.create_backup.side_effect = [
-            {"backup_id": "b-pre", "status": "VERIFIED"},
-            RuntimeError("R2 connection timeout on post backup"),
-        ]
+        # Pre-backup succeeds with verified manifest; post-backup raises R2 timeout
+        def fake_create_backup(custom_backup_id=None, include_globals=False):
+            if "pre" in (custom_backup_id or ""):
+                return {
+                    "backup_id": custom_backup_id or "b-pre",
+                    "status": "VERIFIED",
+                    "upload_verified": True,
+                    "storage_destination": "s3://arx-backups/test.dump",
+                    "artifact_sha256": "0" * 64,
+                    "artifact_size_bytes": 1024,
+                }
+            raise RuntimeError("R2 connection timeout on post backup")
+
+        mock_backup.create_backup.side_effect = fake_create_backup
 
         mock_gate = MagicMock()
         mock_gate.check_ingestion_eligibility.return_value = True

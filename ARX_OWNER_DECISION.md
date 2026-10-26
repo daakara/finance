@@ -70,3 +70,39 @@ CLOUDFLARE_PAGES_AUTO_DEPLOY = DISABLED
 PRODUCTION_DEPLOYMENT_METHOD = WRANGLER_STATIC_OUTPUT_EXACT_SHA
 RAILWAY_BACKEND_DEPLOYMENT = 059f9d79-6848-4095-aa61-5936ac3ee650 (PRESERVED)
 ```
+
+---
+
+## 3. Smart Money Final Provisioning Safety Determination (2026-10-25)
+
+**Determination:** **`SMART_MONEY_FINAL_PROVISIONING_SAFETY_PASS`**
+
+1. **Gate 1 (Atomic Duplicate Prevention)**: **VERIFIED PASS**
+   - Ingestion cycle execution boundary updated so exclusive session advisory lock (`LOCK_SEC_EGRESS_OWNER`) is acquired at Step 2.
+   - Durable New York calendar-date eligibility is evaluated at Step 3 *under that lock* before any pre-backup capture, R2 upload, or SEC EDGAR egress.
+   - Concurrent runs fail closed with `CONCURRENT_INGESTION_BLOCKED`; process restarts on same date cleanly exit `SKIPPED_ALREADY_EXECUTED_TODAY`. Lock released cleanly in `finally:`.
+
+2. **Gate 2 (R2 Backup Digest Integrity)**: **VERIFIED PASS**
+   - Strict streaming content readback SHA-256 byte verification and metadata header check implemented in `S3CompatibleStorageAdapter`.
+   - Eliminates false assumption of ETag equality to SHA-256 (handles multipart digests safely).
+   - Fails closed with `IOError` before Step 6 (SEC ingestion) if upload metadata or bytes are corrupt.
+
+3. **Gate 3 (Operational Control & Non-Destructive Emergency Stop Architecture)**: **VERIFIED PASS**
+   - Disproved invalid `UPDATE scanner_active_snapshots SET is_active = FALSE` and physical deletion guidance.
+   - Verified 4-layer operational hierarchy: preflight startup configuration prevention, cooperative in-process cancellation, platform worker termination (SIGTERM/SIGKILL), and automatic PostgreSQL advisory lock release on connection drop.
+   - Enforced fail-closed production force-override boundary (`PRODUCTION_FORCE_OVERRIDE_UNAUTHORIZED`) and documented unactivated recovery authorization contract.
+   - Active serving snapshot `SNAP_SM_1792939989_48f30db6` remains 100% intact across all stop scenarios, guaranteeing uninterrupted read-only Radar uptime via `smart_money_web`.
+
+4. **Preserved Governance Matrix**:
+```ini
+SMART_MONEY_PROVISIONING_SAFETY_GATE        = PASS (VERIFIED)
+SMART_MONEY_WORKER_CREATION                 = NOT_AUTHORIZED (FAIL-CLOSED)
+SMART_MONEY_PRODUCTION_DEPLOYMENT           = NOT_AUTHORIZED (FAIL-CLOSED)
+SMART_MONEY_INITIAL_LIVE_CYCLE              = NOT_AUTHORIZED (FAIL-CLOSED)
+SMART_MONEY_RECURRING_SCHEDULE              = NOT_AUTHORIZED (FAIL-CLOSED)
+CORPORATE_EVENTS_TELEMETRY_ACTIVATION       = NOT_AUTHORIZED (FLAG=FALSE)
+HVA01_EXTERNAL_CUSTODY_ACTIVATION           = NOT_AUTHORIZED (BLOCKED_GAP07_08)
+HVA01_HUMAN_EVALUATION                      = NOT_AUTHORIZED (FROZEN)
+MODEL_TUNING                                = FROZEN
+DESTRUCTIVE_DATABASE_RECOVERY               = NOT_AUTHORIZED
+```
