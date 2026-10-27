@@ -37,7 +37,8 @@ const isWithinTimeframe = (dateStr?: string, tf: TimeframeOption = "30D"): boole
 function SmartMoneyContent() {
   const [data, setData] = useState<SmartMoneyOverview | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [dataSource, setDataSource] = useState<"live" | "fallback" | "curated" | "delayed">("curated");
+  const [dataSource, setDataSource] = useState<"live" | "fallback" | "curated" | "delayed" | "unavailable">("curated");
+  const [feedError, setFeedError] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
   const [activeTab, setActiveTab] = useState<"CONGRESS" | "SEC_FORM_4" | "OPTIONS_FLOW">("CONGRESS");
   const [timeframe, setTimeframe] = useState<TimeframeOption>("30D");
@@ -72,11 +73,15 @@ function SmartMoneyContent() {
         const res = await fetchSmartMoneyOverview();
         if (isMounted) {
           setData(res);
+          setFeedError(false);
           setDataSource(res._dataSource === "live" ? "delayed" : res._dataSource === "curated" ? "curated" : res._dataSource === "fallback" ? "fallback" : "curated");
         }
       } catch (err) {
         console.error("Failed to load smart money overview:", err);
-        if (isMounted) setDataSource("curated");
+        if (isMounted) {
+          setFeedError(true);
+          setDataSource("unavailable");
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -200,7 +205,7 @@ function SmartMoneyContent() {
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-slate-400 max-w-3xl">
-              See what politicians on Capitol Hill, corporate CEOs, and big-money options whales are buying with their own capital — before it hits the headlines.
+              Review public regulatory filings and curated options reference data. Distinguishes corporate insider disclosures (SEC Form 4), congressional reporting (STOCK Act PTRs), and historical options flow samples—each with distinct statutory reporting latencies. Historical disclosures reflect past recorded transactions, not live institutional accumulation or forward-looking predictions.
             </p>
           </div>
 
@@ -210,19 +215,51 @@ function SmartMoneyContent() {
               source={dataSource}
               labelCurated="📚 Curated Research (Aug 2026)"
               labelDelayed="⏱️ Regulatory Filings (Delayed)"
+              labelUnavailable="⚠️ Feed Offline"
             />
             <div className="bg-[#090d14] px-3 py-1.5 rounded-lg border border-[#243044] text-right">
               <span className="text-[10px] text-slate-500 block uppercase">{timeframe === "ALL" ? "All-Time" : timeframe} Disclosures</span>
-              <span className="text-base font-bold text-slate-200 tabular-nums">{congressTrades.length}</span>
+              <span className="text-base font-bold text-slate-200 tabular-nums">
+                {feedError ? <span className="text-xs text-rose-400 font-mono">Unavailable</span> : congressTrades.length}
+              </span>
             </div>
             <div className="bg-[#090d14] px-3 py-1.5 rounded-lg border border-[#243044] text-right">
               <span className="text-[10px] text-slate-500 block uppercase">{timeframe === "ALL" ? "All-Time" : timeframe} SEC Insiders</span>
-              <span className="text-base font-bold text-cyan-400 tabular-nums">{secInsiders.length}</span>
+              <span className="text-base font-bold text-cyan-400 tabular-nums">
+                {feedError ? <span className="text-xs text-rose-400 font-mono">Unavailable</span> : secInsiders.length}
+              </span>
             </div>
             <div className="bg-[#090d14] px-3 py-1.5 rounded-lg border border-[#243044] text-right">
-              <span className="text-[10px] text-slate-500 block uppercase">Options Volume (Archive)</span>
-              <span className="text-base font-bold text-amber-400 tabular-nums">$112.8M</span>
+              <span className="text-[10px] text-slate-500 block uppercase">Options Benchmark</span>
+              <div className="flex items-center justify-end gap-1.5">
+                <span className="text-xs sm:text-sm font-semibold text-slate-400 tabular-nums">Unavailable</span>
+                <span className="text-[9px] font-mono px-1 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">Historical Reference</span>
+              </div>
             </div>
+          </div>
+        </div>
+
+        {/* Statutory Reporting Lag & Regulatory Disclosures */}
+        <div className="bg-[#0b101b] border border-cyan-900/50 rounded-xl p-3.5 text-xs text-slate-300 flex flex-wrap items-center justify-between gap-3 shadow-md">
+          <div className="space-y-1.5 max-w-4xl">
+            <div className="flex items-center gap-2">
+              <span className="text-cyan-400 font-bold flex items-center gap-1.5 font-mono uppercase tracking-wider text-[11px]">
+                <span>⚖️</span>
+                <span>Statutory Reporting Windows & Feed Disclosures</span>
+              </span>
+            </div>
+            <p className="text-slate-400 text-[11px] leading-relaxed">
+              Regulatory disclosures are legally lagged public filings, not low-latency market feeds. 
+              <strong> SEC Form 4</strong> corporate insider disclosures generally must be filed within <strong>2 business days</strong> following the transaction date, subject to specific statutory exceptions. 
+              <strong> Congressional Periodic Transaction Reports (PTRs)</strong> for covered transactions generally must be filed within <strong>30 days after notification</strong>, and no later than <strong>45 days after the transaction</strong> (STOCK Act, 5 U.S.C. § 13105(l)). 
+              Options volume metrics reflect curated historical reference samples; dollar benchmarks are unverified and displayed as unavailable.
+              Continuous automated scanner pipelines remain in a held <strong>PIPELINE_PENDING</strong> state. Feeds distinguish historical disclosures, curated static examples, verified observations, and offline states.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono">
+            <span className="px-2 py-1 rounded bg-slate-800/80 text-cyan-300 border border-slate-700">SEC Form 4: Generally 2 business days</span>
+            <span className="px-2 py-1 rounded bg-slate-800/80 text-cyan-300 border border-slate-700">Congressional PTR: 30d from notice / 45d maximum</span>
+            <span className="px-2 py-1 rounded bg-amber-950/80 text-amber-300 border border-amber-700/60">Scanner: PIPELINE_PENDING</span>
           </div>
         </div>
 
@@ -238,7 +275,7 @@ function SmartMoneyContent() {
                 ARCHIVED DISCLOSURES (AUG 2026)
               </span>
             </div>
-            <span className="text-[10px] text-slate-500 uppercase tracking-wider">Instant Terminal Jump</span>
+            <span className="text-[10px] text-slate-500 uppercase tracking-wider">Historical Reference — Not Investment Advice</span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
@@ -430,6 +467,17 @@ function SmartMoneyContent() {
                         Loading curated institutional options flow and off-exchange prints...
                       </td>
                     </tr>
+                  ) : feedError ? (
+                    <tr>
+                      <td colSpan={10} className="py-8 text-center">
+                        <div className="max-w-md mx-auto space-y-2 p-3 rounded-lg bg-[#090d14] border border-rose-900/40 font-mono">
+                          <span className="text-xs text-rose-400 font-bold">⚠️ Options Reference Stream Offline</span>
+                          <p className="text-[11px] text-slate-400 font-sans">
+                            Options reference feed is currently unavailable. Failed feeds are not represented as zero transactions.
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
                   ) : optionsFlow.length === 0 ? (
                     <tr>
                       <td colSpan={10} className="py-8 text-center text-slate-500">
@@ -524,7 +572,20 @@ function SmartMoneyContent() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#1e293b]">
-                  {secInsiders.length === 0 ? (
+                  {feedError ? (
+                    <tr>
+                      <td colSpan={10} className="py-10 text-center">
+                        <div className="max-w-md mx-auto space-y-3 p-4 rounded-xl bg-[#090d14] border border-rose-900/40 font-mono">
+                          <span className="inline-block px-2.5 py-1 rounded text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800">
+                            ⚠️ Feed Offline / Connection Failure
+                          </span>
+                          <p className="text-xs text-slate-300 font-sans leading-relaxed">
+                            Unable to retrieve live SEC Form 4 regulatory feed. Failed or unavailable data feeds are not represented as zero verified transactions.
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : secInsiders.length === 0 ? (
                     <tr>
                       <td colSpan={10} className="py-10 text-center">
                         <div className="max-w-md mx-auto space-y-3 p-4 rounded-xl bg-[#090d14] border border-cyan-900/40 font-mono">
@@ -618,6 +679,19 @@ function SmartMoneyContent() {
                     <tr>
                       <td colSpan={11} className="py-8 text-center text-slate-500">
                         Loading curated STOCK Act disclosure archive...
+                      </td>
+                    </tr>
+                  ) : feedError ? (
+                    <tr>
+                      <td colSpan={11} className="py-10 text-center">
+                        <div className="max-w-md mx-auto space-y-3 p-4 rounded-xl bg-[#090d14] border border-rose-900/40 font-mono">
+                          <span className="inline-block px-2.5 py-1 rounded text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800">
+                            ⚠️ Feed Offline / Connection Failure
+                          </span>
+                          <p className="text-xs text-slate-300 font-sans leading-relaxed">
+                            Unable to retrieve live Congressional PTR regulatory feed. Failed or unavailable data feeds are not represented as zero verified transactions.
+                          </p>
+                        </div>
                       </td>
                     </tr>
                   ) : congressTrades.length === 0 ? (
