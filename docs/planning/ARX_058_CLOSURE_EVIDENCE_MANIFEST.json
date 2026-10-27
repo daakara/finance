@@ -1,0 +1,194 @@
+{
+  "manifest_version": "1.0.0",
+  "directive_id": "ARX_PRE_SPRINT5_OBLIGATION_RECOVERY_058",
+  "repository": "daakara/finance",
+  "mainline_base_sha": "6d4020ca3fef3ae07ac01204b03e0629b6a7cc79",
+  "date": "2026-10-27T19:40:00Z",
+  "final_verdict": "PRE_SPRINT5_CLOSURE_BLOCKED",
+  "blocking_reasons": [
+    "Mandatory pre-Sprint 5 obligations (DEF-056-001, DEF-056-002, DEF-056-003) implemented in PR #118 await formal Product Owner merge and production release",
+    "Obligation OBL-ARX-S3-006 carried forward to Sprint 5 requires explicit Product Owner authorization release from HOLD",
+    "Sprint 5 execution kickoff is unratified and requires explicit affirmative Product Owner approval (sprint5_execution_authorized)"
+  ],
+  "census_scorecard": {
+    "canonical_task_population": 43,
+    "audit_deliverable_population": 52,
+    "unique_post_audit_findings": 3,
+    "github_open_prs_reconciled": 12,
+    "github_merged_post_sprint4_prs_reconciled": 9,
+    "total_obligations_registered": 71,
+    "untracked_findings": 0,
+    "unassigned_owners": 0,
+    "unscoped_obligations": 0,
+    "unsupported_closures": 0,
+    "unapproved_deferrals": 0,
+    "unresolved_mandatory_pre_sprint5_work": 3,
+    "governance_violations": 0,
+    "production_releases_without_authorization": 0,
+    "validator_negative_control_escapes": 0,
+    "validator_tests_total": 78,
+    "validator_tests_passing": 78,
+    "evidence_accessibility_gaps": 0
+  },
+  "evidence_sources": [
+    {
+      "id": "EVID-001",
+      "title": "Canonical Backlog JSON",
+      "storage_class": "COMMITTED_IN_REPOSITORY",
+      "path": "docs/planning/arx_canonical_backlog.json",
+      "uri": "file:///c:/Users/akara/Documents/Projects/finance/docs/planning/arx_canonical_backlog.json",
+      "status": "VERIFIED_ACTIVE",
+      "tasks_count": 43,
+      "obligations_count": 71
+    },
+    {
+      "id": "EVID-002",
+      "title": "Canonical Backlog Schema JSON",
+      "storage_class": "COMMITTED_IN_REPOSITORY",
+      "path": "docs/planning/arx_canonical_backlog.schema.json",
+      "uri": "file:///c:/Users/akara/Documents/Projects/finance/docs/planning/arx_canonical_backlog.schema.json",
+      "status": "VERIFIED_ACTIVE"
+    },
+    {
+      "id": "EVID-003",
+      "title": "Directive 058 Baseline & Source Inventory Report",
+      "storage_class": "COMMITTED_IN_REPOSITORY",
+      "path": "docs/planning/ARX_058_BASELINE_AND_SOURCE_INVENTORY.md",
+      "uri": "file:///c:/Users/akara/Documents/Projects/finance/docs/planning/ARX_058_BASELINE_AND_SOURCE_INVENTORY.md",
+      "status": "VERIFIED_ACTIVE"
+    },
+    {
+      "id": "EVID-004",
+      "title": "Directive 058 Cross-Audit Obligation Register CSV",
+      "storage_class": "COMMITTED_IN_REPOSITORY",
+      "path": "docs/planning/ARX_058_CROSS_AUDIT_OBLIGATION_REGISTER.csv",
+      "uri": "file:///c:/Users/akara/Documents/Projects/finance/docs/planning/ARX_058_CROSS_AUDIT_OBLIGATION_REGISTER.csv",
+      "status": "VERIFIED_ACTIVE",
+      "records_count": 71
+    },
+    {
+      "id": "EVID-005",
+      "title": "Directive 058 Unscoped & Pre-Sprint 5 Closure Plan",
+      "storage_class": "COMMITTED_IN_REPOSITORY",
+      "path": "docs/planning/ARX_058_UNSCOPED_AND_PRE_SPRINT5_CLOSURE_PLAN.md",
+      "uri": "file:///c:/Users/akara/Documents/Projects/finance/docs/planning/ARX_058_UNSCOPED_AND_PRE_SPRINT5_CLOSURE_PLAN.md",
+      "status": "VERIFIED_ACTIVE"
+    },
+    {
+      "id": "EVID-006",
+      "title": "Directive 058 Operational & Product Consequence Mapping",
+      "storage_class": "COMMITTED_IN_REPOSITORY",
+      "path": "docs/planning/ARX_058_DEPENDENCY_AND_PRODUCT_IMPACT.md",
+      "uri": "file:///c:/Users/akara/Documents/Projects/finance/docs/planning/ARX_058_DEPENDENCY_AND_PRODUCT_IMPACT.md",
+      "status": "VERIFIED_ACTIVE"
+    },
+    {
+      "id": "EVID-007",
+      "title": "Directive 058 Validator & CI Evidence Report",
+      "storage_class": "COMMITTED_IN_REPOSITORY",
+      "path": "docs/planning/ARX_058_VALIDATOR_AND_CI_EVIDENCE.md",
+      "uri": "file:///c:/Users/akara/Documents/Projects/finance/docs/planning/ARX_058_VALIDATOR_AND_CI_EVIDENCE.md",
+      "status": "VERIFIED_ACTIVE"
+    },
+    {
+      "id": "EVID-008",
+      "title": "Backlog Integrity Validator Tool",
+      "storage_class": "COMMITTED_IN_REPOSITORY",
+      "path": "tools/governance/validate_backlog_integrity.py",
+      "uri": "file:///c:/Users/akara/Documents/Projects/finance/tools/governance/validate_backlog_integrity.py",
+      "status": "VERIFIED_ACTIVE",
+      "rules_enforced": [
+        "BI-000 to BI-012",
+        "P5-001 to P5-012"
+      ]
+    },
+    {
+      "id": "EVID-009",
+      "title": "Validator Test Suite (78 Tests)",
+      "storage_class": "COMMITTED_IN_REPOSITORY",
+      "path": "tests/test_backlog_integrity_validator.py",
+      "uri": "file:///c:/Users/akara/Documents/Projects/finance/tests/test_backlog_integrity_validator.py",
+      "status": "VERIFIED_ACTIVE",
+      "test_count": 78,
+      "pass_count": 78
+    },
+    {
+      "id": "EVID-010",
+      "title": "Directive 057 Targeted Remediation Test Suite (20 Tests)",
+      "storage_class": "COMMITTED_IN_REPOSITORY",
+      "path": "tests/test_directive_057_remediation.py",
+      "uri": "file:///c:/Users/akara/Documents/Projects/finance/tests/test_directive_057_remediation.py",
+      "status": "VERIFIED_IN_BRANCH_1B3BADA"
+    },
+    {
+      "id": "EVID-011",
+      "title": "GitHub Pull Request #118 (DEF-056-001/002/003)",
+      "storage_class": "EXTERNALLY_HOSTED_GITHUB",
+      "uri": "https://github.com/daakara/finance/pull/118",
+      "status": "OPEN_AWAITING_OWNER_MERGE",
+      "head_sha": "1b3badac140821eced37dceed3963033fe7b7bbf",
+      "base_sha": "6d4020ca3fef3ae07ac01204b03e0629b6a7cc79"
+    },
+    {
+      "id": "EVID-012",
+      "title": "Edge Frontend Production Deployment",
+      "storage_class": "DEPLOYED_RUNTIME_PRODUCTION",
+      "uri": "https://www.arxterminal.com",
+      "deployment_id": "655b4653-d3e3-4205-84a0-f069d91e8fc7",
+      "status": "VERIFIED_ONLINE_200"
+    },
+    {
+      "id": "EVID-013",
+      "title": "API Backend Production Deployment",
+      "storage_class": "DEPLOYED_RUNTIME_PRODUCTION",
+      "uri": "https://web-production-e370b.up.railway.app",
+      "deployment_id": "d1f8cf37-7592-4ad5-b986-4bbc9b4ed042",
+      "build_commit": "856170c",
+      "status": "VERIFIED_ONLINE_200"
+    },
+    {
+      "id": "EVID-014",
+      "title": "Directive 054 V3 Canonical Sprints 1-4 Inventory Dossier",
+      "storage_class": "LOCALLY_PERSISTED_IN_BRAIN",
+      "uri": "file:///C:/Users/akara/.gemini/antigravity/brain/5bcd9ef1-035c-4ab1-9453-2cb5f9e74b20/ARX_054_V3_CANONICAL_SPRINT1_4_INVENTORY.md",
+      "status": "VERIFIED_HISTORICAL_AUDIT"
+    },
+    {
+      "id": "EVID-015",
+      "title": "Directive 055 Final Certification & Owner Decision",
+      "storage_class": "LOCALLY_PERSISTED_IN_BRAIN",
+      "uri": "file:///C:/Users/akara/.gemini/antigravity/brain/5bcd9ef1-035c-4ab1-9453-2cb5f9e74b20/ARX_055_FINAL_CERTIFICATION_AND_OWNER_DECISION.md",
+      "status": "VERIFIED_HISTORICAL_AUDIT"
+    },
+    {
+      "id": "EVID-016",
+      "title": "Directive 056 Final Owner Decision Package",
+      "storage_class": "LOCALLY_PERSISTED_IN_BRAIN",
+      "uri": "file:///C:/Users/akara/.gemini/antigravity/brain/5bcd9ef1-035c-4ab1-9453-2cb5f9e74b20/ARX_056_FINAL_OWNER_DECISION_PACKAGE.md",
+      "status": "VERIFIED_HISTORICAL_AUDIT"
+    },
+    {
+      "id": "EVID-017",
+      "title": "Directive 057 Final PR Readiness & Owner Decision",
+      "storage_class": "LOCALLY_PERSISTED_IN_BRAIN",
+      "uri": "file:///C:/Users/akara/.gemini/antigravity/brain/5bcd9ef1-035c-4ab1-9453-2cb5f9e74b20/ARX_057_FINAL_PR_READINESS_AND_OWNER_DECISION.md",
+      "status": "VERIFIED_HISTORICAL_AUDIT"
+    },
+    {
+      "id": "EVID-018",
+      "title": "HVA00 v2.1 Method Protocol Ratification Dossiers",
+      "storage_class": "ACCESS_RESTRICTED",
+      "uri": "quarantine://hva/protocol-ratification",
+      "status": "LOCKED_PENDING_OWNER_RATIFICATION",
+      "retrieval_limitation": "Quarantined under HOLDING_QUEUE_OWNER_GATED authority"
+    },
+    {
+      "id": "EVID-019",
+      "title": "Sigstore External Key Ceremony Tools & Evidence",
+      "storage_class": "ACCESS_RESTRICTED",
+      "uri": "quarantine://sigstore/custody-verification",
+      "status": "LOCKED_PENDING_OWNER_AUTHORIZATION",
+      "retrieval_limitation": "Quarantined under HOLDING_QUEUE_OWNER_GATED authority"
+    }
+  ]
+}

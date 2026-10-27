@@ -168,6 +168,7 @@ class BacklogValidator:
         require_baseline: bool = False,
         require_external_inventory: bool = False,
         require_closure: bool = False,
+        pre_sprint5_closure: bool = False,
     ):
         self.data = backlog_data
         self.prs_inventory = prs_inventory
@@ -177,6 +178,7 @@ class BacklogValidator:
         self.require_baseline = require_baseline
         self.require_external_inventory = require_external_inventory
         self.require_closure = require_closure
+        self.pre_sprint5_closure = pre_sprint5_closure
         self.findings: List[Finding] = []
 
         # Audit statuses
@@ -209,6 +211,10 @@ class BacklogValidator:
         self._check_bi_010_closure_consistency(tasks)
         self._check_bi_011_operational_truth(tasks)
         self._check_bi_012_historical_continuity(tasks)
+
+        # Pre-Sprint 5 Closure Invariants (P5-001 to P5-012)
+        if self.pre_sprint5_closure:
+            self._check_p5_invariants(tasks)
 
         errors = [f for f in self.findings if f.severity == "ERROR"]
         warnings = [f for f in self.findings if f.severity == "WARNING"]
@@ -518,6 +524,136 @@ class BacklogValidator:
             self.continuity_status = "VERIFIED"
 
 
+
+    def _check_p5_invariants(self, tasks: List[Dict[str, Any]]):
+        """Mandatory Pre-Sprint 5 Closure Invariants (P5-001 to P5-012) under Directive 058."""
+        obligations = self.data.get("obligations", [])
+        tasks_by_id = {t.get("task_id"): t for t in tasks if t.get("task_id")}
+
+        # P5-001: Zero unscoped obligations
+        if not obligations:
+            self.findings.append(Finding("P5-001", None, "ERROR", "Mandatory obligation register is empty or missing in canonical backlog"))
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            scope = obl.get("release_scope")
+            if not scope or scope in ("UNSCOPED_BLOCKER", "UNASSIGNED"):
+                self.findings.append(Finding("P5-001", oid, "ERROR", f"Obligation '{oid}' lacks an approved release/sprint scope (found: '{scope}')"))
+
+        # P5-002: Zero orphan findings
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            parent_id = obl.get("canonical_task_id")
+            if not parent_id or parent_id not in tasks_by_id:
+                self.findings.append(Finding("P5-002", oid, "ERROR", f"Obligation '{oid}' has no valid canonical task parent in backlog (parent: '{parent_id}')"))
+
+        # P5-003: No incomplete mandatory pre-Sprint 5 work
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            scope = obl.get("release_scope")
+            status = obl.get("status")
+            disp = obl.get("disposition")
+            if scope == "PRE_SPRINT5_MANDATORY_CLOSURE":
+                if status != "COMPLETED" or disp != "CLOSED_VERIFIED":
+                    blocker = obl.get("blocking_decision", "UNRESOLVED_BLOCKER")
+                    self.findings.append(Finding("P5-003", oid, "ERROR", f"Mandatory pre-Sprint 5 obligation '{oid}' is incomplete (status='{status}', disp='{disp}'). Blocker: {blocker}"))
+
+        # P5-004: No silent carryforwards
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            origin = obl.get("origin_sprint")
+            scope = obl.get("release_scope")
+            auth = obl.get("scope_authorization")
+            criteria = obl.get("acceptance_criteria", [])
+            owner = obl.get("owner")
+            if origin in ("SPRINT_1", "SPRINT_2", "SPRINT_3", "SPRINT_4") and scope in ("ALREADY_APPROVED_SPRINT5_DELIVERY", "SPRINT_5"):
+                if not auth or auth not in ("OWNER_AUTHORIZED", "CONDITIONALLY_PREAPPROVED"):
+                    self.findings.append(Finding("P5-004", oid, "ERROR", f"Obligation '{oid}' carried forward to Sprint 5 lacks independent owner authorization (auth='{auth}')"))
+                if not criteria or all(not str(c).strip() for c in criteria):
+                    self.findings.append(Finding("P5-004", oid, "ERROR", f"Obligation '{oid}' carried forward to Sprint 5 lacks concrete acceptance criteria"))
+                if not owner or len(owner.strip()) < 2:
+                    self.findings.append(Finding("P5-004", oid, "ERROR", f"Obligation '{oid}' carried forward to Sprint 5 lacks an accountable owner"))
+
+        # P5-005: No unauthorized HOLD release
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            scope = obl.get("release_scope")
+            auth = obl.get("scope_authorization")
+            gov_state = obl.get("governance_state")
+            status = obl.get("status")
+            deploy = obl.get("deployment_state")
+            op = obl.get("operational_state")
+            is_hold = (scope == "HOLDING_QUEUE_OWNER_GATED" or auth in ("HOLD", "OWNER_HOLD") or gov_state in ("HOLD", "OWNER_HOLD"))
+            if is_hold:
+                if status == "COMPLETED" or deploy == "DEPLOYED_ACTIVE" or op == "EXECUTED":
+                    self.findings.append(Finding("P5-005", oid, "ERROR", f"Governance-held obligation '{oid}' was falsely marked active or completed without owner release (status='{status}', deploy='{deploy}')"))
+
+        # P5-006: Evidence-backed closure
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            status = obl.get("status")
+            disp = obl.get("disposition")
+            evidence = obl.get("evidence_refs", [])
+            if status == "COMPLETED" or disp == "CLOSED_VERIFIED":
+                if not evidence or all(not str(e).strip() for e in evidence):
+                    self.findings.append(Finding("P5-006", oid, "ERROR", f"Obligation '{oid}' claims completed/closed but lacks verification evidence references"))
+
+        # P5-007: Release truth
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            deploy = obl.get("deployment_state")
+            deploys = obl.get("deployment_refs", [])
+            disp = obl.get("disposition")
+            if deploy == "DEPLOYED_ACTIVE":
+                if not deploys or all(not str(d).strip() for d in deploys):
+                    self.findings.append(Finding("P5-007", oid, "ERROR", f"Obligation '{oid}' claims active deployment but lacks verified deployment references"))
+            if deploy == "NOT_DEPLOYED" and disp == "CLOSED_VERIFIED" and obl.get("capability_id") in ("MAINLINE_DELIVERY", "CORE_FEATURE"):
+                self.findings.append(Finding("P5-007", oid, "ERROR", f"Deliverable obligation '{oid}' is NOT_DEPLOYED but claims CLOSED_VERIFIED"))
+
+        # P5-008: Historical continuity & acyclic lineage
+        seen_oids = set()
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            if oid in seen_oids:
+                self.findings.append(Finding("P5-008", oid, "ERROR", f"Duplicate obligation ID '{oid}' found in register"))
+            seen_oids.add(oid)
+
+            # Check cyclic supersession
+            cur = obl
+            chain = [oid]
+            while cur and cur.get("superseded_by"):
+                nxt_id = cur.get("superseded_by")
+                if nxt_id in chain:
+                    self.findings.append(Finding("P5-008", oid, "ERROR", f"Cyclic supersession detected in obligation lineage: {' -> '.join(chain + [nxt_id])}"))
+                    break
+                chain.append(nxt_id)
+                cur = next((o for o in obligations if o.get("obligation_id") == nxt_id), None)
+
+        # P5-009: Cross-audit completeness
+        required_findings = ["DEF-056-001", "DEF-056-002", "DEF-056-003", "PR-107", "PR-110", "PR-111", "PR-112", "PR-113", "PR-115", "PR-116", "PR-117"]
+        found_source_ids = {obl.get("source_finding_id") for obl in obligations}
+        for rf in required_findings:
+            if rf not in found_source_ids:
+                self.findings.append(Finding("P5-009", None, "ERROR", f"Required cross-audit source finding '{rf}' is missing from obligation register"))
+
+        # P5-010: Owner authority for transition
+        active_sprint = self.data.get("active_sprint")
+        s5_exec_authorized = self.data.get("sprint5_execution_authorized", False)
+        if active_sprint == "SPRINT_5" and not s5_exec_authorized:
+            self.findings.append(Finding("P5-010", None, "ERROR", "Sprint 5 execution kickoff is NOT authorized by Product Owner. Execution remains blocked pending affirmative owner gate"))
+
+        # P5-011: No stale baseline substitution
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            deploys = obl.get("deployment_refs", [])
+            for dep in deploys:
+                if "5efc2179" in dep:
+                    self.findings.append(Finding("P5-011", oid, "ERROR", f"Obligation '{oid}' substitutes stale unverified deployment SHA '5efc2179' instead of reconciled baseline '856170c'"))
+
+        # P5-012: External-source verification integrity
+        if self.reconciliation_status == "NOT_PERFORMED" and self.require_external_inventory:
+            self.findings.append(Finding("P5-012", None, "ERROR", "External reconciliation was required but execution status is NOT_PERFORMED; cannot verify external PR/issue truthfulness"))
+
+
 def detect_scoped_governance_changes(
     base_ref: Optional[str] = None
 ) -> Tuple[bool, List[str], str]:
@@ -632,6 +768,7 @@ def main():
     parser.add_argument("--stage", choices=["report-only", "scoped", "strict"], default="scoped", help="Progressive enforcement stage")
     parser.add_argument("--strict", action="store_true", help="Fail closed on warnings as well as errors")
     parser.add_argument("--closure-certification", action="store_true", help="Enforce full closure certification requirements (cannot be masked by report-only)")
+    parser.add_argument("--pre-sprint5-closure", action="store_true", help="Enforce mandatory Pre-Sprint 5 closure invariants P5-001 to P5-012")
     parser.add_argument("--require-baseline", action="store_true", help="Fail closed if historical baseline is unavailable")
     parser.add_argument("--require-external-inventory", action="store_true", help="Fail closed if external GitHub inventory is missing")
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON output")
@@ -721,9 +858,10 @@ def main():
         issues_inventory=issues_inventory,
         baseline_data=baseline_data,
         schema_data=schema_data,
-        require_baseline=(args.require_baseline or args.closure_certification),
+        require_baseline=(args.require_baseline or args.closure_certification or args.pre_sprint5_closure),
         require_external_inventory=(args.require_external_inventory or args.closure_certification),
         require_closure=args.closure_certification,
+        pre_sprint5_closure=args.pre_sprint5_closure,
     )
     verdict, findings = validator.validate_all()
 
@@ -731,7 +869,9 @@ def main():
     has_errors = any(f.severity == "ERROR" for f in findings)
     effective_stage = "strict" if (args.strict or args.closure_certification) else args.stage
 
-    if args.closure_certification:
+    if args.pre_sprint5_closure:
+        exit_code = 0 if verdict == "PASS" else 1
+    elif args.closure_certification:
         exit_code = 0 if verdict == "PASS" else 1
     elif effective_stage == "report-only":
         exit_code = 0

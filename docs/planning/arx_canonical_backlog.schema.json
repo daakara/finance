@@ -15,7 +15,9 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "enum": ["1.0.0"]
+      "enum": [
+        "1.0.0"
+      ]
     },
     "backlog_name": {
       "type": "string"
@@ -25,7 +27,13 @@
     },
     "active_sprint": {
       "type": "string",
-      "enum": ["SPRINT_1", "SPRINT_2", "SPRINT_3", "SPRINT_4", "SPRINT_5"]
+      "enum": [
+        "SPRINT_1",
+        "SPRINT_2",
+        "SPRINT_3",
+        "SPRINT_4",
+        "SPRINT_5"
+      ]
     },
     "governance_framework": {
       "type": "string"
@@ -40,6 +48,13 @@
       "type": "array",
       "items": {
         "$ref": "#/definitions/CanonicalTask"
+      }
+    },
+    "obligations": {
+      "type": "array",
+      "description": "Pre-Sprint 5 cross-audit obligation register capturing all discovered requirements, defects, and governance items.",
+      "items": {
+        "$ref": "#/definitions/ObligationRecord"
       }
     }
   },
@@ -79,7 +94,14 @@
         },
         "origin_sprint": {
           "type": "string",
-          "enum": ["SPRINT_1", "SPRINT_2", "SPRINT_3", "SPRINT_4", "SPRINT_5", "UNASSIGNED"]
+          "enum": [
+            "SPRINT_1",
+            "SPRINT_2",
+            "SPRINT_3",
+            "SPRINT_4",
+            "SPRINT_5",
+            "UNASSIGNED"
+          ]
         },
         "assigned_sprint": {
           "type": "string",
@@ -96,7 +118,12 @@
         },
         "priority": {
           "type": "string",
-          "enum": ["P0", "P1", "P2", "P3"]
+          "enum": [
+            "P0",
+            "P1",
+            "P2",
+            "P3"
+          ]
         },
         "workstream": {
           "type": "string",
@@ -161,39 +188,85 @@
           "properties": {
             "requirements": {
               "type": "string",
-              "enum": ["DONE", "IN_PROGRESS", "PENDING", "NOT_APPLICABLE"]
+              "enum": [
+                "DONE",
+                "IN_PROGRESS",
+                "PENDING",
+                "NOT_APPLICABLE"
+              ]
             },
             "implementation": {
               "type": "string",
-              "enum": ["DONE", "PARTIAL", "IN_PROGRESS", "NOT_STARTED", "NOT_APPLICABLE"]
+              "enum": [
+                "DONE",
+                "PARTIAL",
+                "IN_PROGRESS",
+                "NOT_STARTED",
+                "NOT_APPLICABLE"
+              ]
             },
             "integration": {
               "type": "string",
-              "enum": ["DONE", "PARTIAL", "NOT_STARTED", "NOT_APPLICABLE"]
+              "enum": [
+                "DONE",
+                "PARTIAL",
+                "NOT_STARTED",
+                "NOT_APPLICABLE"
+              ]
             },
             "verification": {
               "type": "string",
-              "enum": ["PASS", "PARTIAL", "PENDING", "NOT_APPLICABLE"]
+              "enum": [
+                "PASS",
+                "PARTIAL",
+                "PENDING",
+                "NOT_APPLICABLE"
+              ]
             },
             "repository_publication": {
               "type": "string",
-              "enum": ["PUBLISHED_MERGED", "DRAFT_PR", "LOCAL_ONLY", "NOT_APPLICABLE"]
+              "enum": [
+                "PUBLISHED_MERGED",
+                "DRAFT_PR",
+                "LOCAL_ONLY",
+                "NOT_APPLICABLE"
+              ]
             },
             "deployment": {
               "type": "string",
-              "enum": ["DEPLOYED_DORMANT", "DEPLOYED_ACTIVE", "NOT_DEPLOYED", "NOT_APPLICABLE"]
+              "enum": [
+                "DEPLOYED_DORMANT",
+                "DEPLOYED_ACTIVE",
+                "NOT_DEPLOYED",
+                "NOT_APPLICABLE"
+              ]
             },
             "operational_execution": {
               "type": "string",
-              "enum": ["EXECUTED", "PARTIAL", "NOT_PERFORMED", "NOT_APPLICABLE"]
+              "enum": [
+                "EXECUTED",
+                "PARTIAL",
+                "NOT_PERFORMED",
+                "NOT_APPLICABLE"
+              ]
             },
             "production_evidence": {
               "type": "string",
-              "enum": ["VERIFIED", "INSUFFICIENT", "NOT_APPLICABLE"]
+              "enum": [
+                "VERIFIED",
+                "INSUFFICIENT",
+                "NOT_APPLICABLE"
+              ]
             },
             "owner_authorization": {
               "type": "string",
-              "enum": ["AUTHORIZED", "CONDITIONALLY_PREAPPROVED", "HOLD", "NOT_GRANTED", "NOT_APPLICABLE"]
+              "enum": [
+                "AUTHORIZED",
+                "CONDITIONALLY_PREAPPROVED",
+                "HOLD",
+                "NOT_GRANTED",
+                "NOT_APPLICABLE"
+              ]
             }
           }
         },
@@ -207,19 +280,27 @@
         },
         "dependencies": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "evidence_refs": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "github_issues": {
           "type": "array",
-          "items": { "type": "integer" }
+          "items": {
+            "type": "integer"
+          }
         },
         "github_prs": {
           "type": "array",
-          "items": { "type": "integer" }
+          "items": {
+            "type": "integer"
+          }
         },
         "authorization_boundary": {
           "type": "string"
@@ -228,17 +309,325 @@
           "type": "string"
         },
         "carryforward_reason": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "reopening_trigger": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "historical_aliases": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "superseded_by": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "obligation_id": {
+          "type": "string"
+        },
+        "release_scope": {
+          "type": "string"
+        },
+        "scope_authorization": {
+          "type": "string"
+        },
+        "blocking_decision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "closure_decision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "closure_timestamp": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "closure_authority": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "commit_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "deployment_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence_hashes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ObligationRecord": {
+      "type": "object",
+      "required": [
+        "obligation_id",
+        "canonical_task_id",
+        "origin_sprint",
+        "source_directive",
+        "source_finding_id",
+        "capability_id",
+        "release_scope",
+        "scope_authorization",
+        "owner",
+        "priority",
+        "status",
+        "disposition",
+        "implementation_state",
+        "verification_state",
+        "repository_publication_state",
+        "deployment_state",
+        "operational_state",
+        "governance_state",
+        "acceptance_criteria",
+        "dependencies",
+        "blocking_decision"
+      ],
+      "properties": {
+        "obligation_id": {
+          "type": "string",
+          "pattern": "^OBL-[A-Z0-9\\-_]+$"
+        },
+        "canonical_task_id": {
+          "type": "string",
+          "pattern": "^ARX-S[1-5]-[A-Z0-9\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 5
+        },
+        "origin_sprint": {
+          "type": "string",
+          "enum": [
+            "SPRINT_1",
+            "SPRINT_2",
+            "SPRINT_3",
+            "SPRINT_4",
+            "SPRINT_5",
+            "UNASSIGNED"
+          ]
+        },
+        "source_directive": {
+          "type": "string"
+        },
+        "source_finding_id": {
+          "type": "string"
+        },
+        "capability_id": {
+          "type": "string"
+        },
+        "release_scope": {
+          "type": "string",
+          "enum": [
+            "PRE_SPRINT5_MANDATORY_CLOSURE",
+            "ALREADY_APPROVED_SPRINT5_DELIVERY",
+            "FORMALLY_APPROVED_LATER_RELEASE",
+            "PERMANENTLY_TERMINATED_BY_OWNER",
+            "COMPLETED_AND_VERIFIED",
+            "UNSCOPED_BLOCKER",
+            "SPRINT_1",
+            "SPRINT_2",
+            "SPRINT_3",
+            "SPRINT_4",
+            "SPRINT_5",
+            "HOLDING_QUEUE_OWNER_GATED",
+            "DEFERRED_BACKLOG"
+          ]
+        },
+        "scope_authorization": {
+          "type": "string",
+          "enum": [
+            "OWNER_AUTHORIZED",
+            "CONDITIONALLY_PREAPPROVED",
+            "HOLD",
+            "OWNER_HOLD",
+            "PENDING_RATIFICATION",
+            "NOT_GRANTED",
+            "AUTHORIZED_ENGINEERING_HOLD_MERGE"
+          ]
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 2
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "P0",
+            "P1",
+            "P2",
+            "P3"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "IN_PROGRESS",
+            "READY",
+            "BLOCKED",
+            "DEFERRED",
+            "COMPLETED",
+            "SUPERSEDED"
+          ]
+        },
+        "disposition": {
+          "type": "string"
+        },
+        "implementation_state": {
+          "type": "string",
+          "enum": [
+            "DONE",
+            "PARTIAL",
+            "IN_PROGRESS",
+            "NOT_STARTED",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "verification_state": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "PARTIAL",
+            "PENDING",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "repository_publication_state": {
+          "type": "string",
+          "enum": [
+            "PUBLISHED_MERGED",
+            "DRAFT_PR",
+            "LOCAL_ONLY",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "deployment_state": {
+          "type": "string",
+          "enum": [
+            "DEPLOYED_DORMANT",
+            "DEPLOYED_ACTIVE",
+            "NOT_DEPLOYED",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "operational_state": {
+          "type": "string",
+          "enum": [
+            "EXECUTED",
+            "PARTIAL",
+            "NOT_PERFORMED",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "governance_state": {
+          "type": "string"
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blocking_decision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "github_issue_refs": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "github_pr_refs": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "commit_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "deployment_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence_hashes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "superseded_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "closure_decision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "closure_timestamp": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "closure_authority": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     }

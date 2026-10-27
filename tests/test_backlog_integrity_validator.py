@@ -1124,3 +1124,227 @@ class TestSprint4ToSprint5Transition:
 
 
 
+
+
+
+# ==============================================================================
+# DIRECTIVE 058: PRE-SPRINT 5 CLOSURE INVARIANTS (P5-001 to P5-012)
+# ==============================================================================
+
+class TestPreSprint5ClosureInvariants:
+    """
+    Dedicated adversarial test suite for Directive 058.
+    Validates invariants P5-001 through P5-012 under --pre-sprint5-closure mode.
+    Proves that every failure mode, fake closure, unauthorized HOLD release,
+    orphan finding, and premature transition is deterministically caught.
+    """
+
+    @pytest.fixture
+    def canonical_backlog_data(self):
+        with open("docs/planning/arx_canonical_backlog.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    @pytest.fixture
+    def canonical_schema_data(self):
+        with open("docs/planning/arx_canonical_backlog.schema.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    # 1. P5-001: Missing obligation register
+    def test_p5_001_empty_obligation_register(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        data["obligations"] = []
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-001" and "empty or missing" in f.message for f in findings)
+
+    # 2. P5-001: Unscoped obligation
+    def test_p5_001_unscoped_obligation(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        data["obligations"][0]["release_scope"] = "UNSCOPED_BLOCKER"
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-001" and "lacks an approved release/sprint scope" in f.message for f in findings)
+
+    # 3. P5-002: Orphan finding (no canonical parent)
+    def test_p5_002_orphan_finding(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        data["obligations"][0]["canonical_task_id"] = "ARX-S9-NONEXISTENT"
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-002" and "no valid canonical task parent" in f.message for f in findings)
+
+    # 4. P5-003: Incomplete mandatory pre-Sprint 5 work
+    def test_p5_003_incomplete_mandatory_closure(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        # DEF-056-001 is in READY/ENGINEERING_ACCEPTED_AWAITING_RELEASE
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        p5_003_findings = [f for f in findings if f.rule_id == "P5-003"]
+        assert len(p5_003_findings) >= 3
+        assert any("OBL-DEF-056-001" in f.message for f in p5_003_findings)
+
+    # 5. P5-004: Silent carryforward without owner authorization
+    def test_p5_004_silent_carryforward_unauthorized(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        obl = next(o for o in data["obligations"] if o.get("origin_sprint") == "SPRINT_2" and o.get("release_scope") == "SPRINT_5")
+        obl["scope_authorization"] = "NOT_GRANTED"
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-004" and "lacks independent owner authorization" in f.message for f in findings)
+
+    # 6. P5-004: Carryforward missing acceptance criteria
+    def test_p5_004_carryforward_missing_criteria(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        obl = next(o for o in data["obligations"] if o.get("origin_sprint") == "SPRINT_2" and o.get("release_scope") == "SPRINT_5")
+        obl["acceptance_criteria"] = []
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-004" and "lacks concrete acceptance criteria" in f.message for f in findings)
+
+    # 7. P5-004: Carryforward missing accountable owner
+    def test_p5_004_carryforward_missing_owner(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        obl = next(o for o in data["obligations"] if o.get("origin_sprint") == "SPRINT_2" and o.get("release_scope") == "SPRINT_5")
+        obl["owner"] = " "
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-004" and "lacks an accountable owner" in f.message for f in findings)
+
+    # 8. P5-005: Unauthorized HOLD release
+    def test_p5_005_unauthorized_hold_release(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        held_obl = next(o for o in data["obligations"] if o.get("release_scope") == "HOLDING_QUEUE_OWNER_GATED")
+        held_obl["status"] = "COMPLETED"
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-005" and "falsely marked active or completed" in f.message for f in findings)
+
+    # 9. P5-006: Fake closed state without evidence
+    def test_p5_006_fake_closed_state_no_evidence(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        completed_obl = next(o for o in data["obligations"] if o.get("status") == "COMPLETED")
+        completed_obl["evidence_refs"] = []
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-006" and "lacks verification evidence references" in f.message for f in findings)
+
+    # 10. P5-007: Missing deployment proof
+    def test_p5_007_missing_deployment_proof(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        active_obl = next(o for o in data["obligations"] if o.get("deployment_state") == "DEPLOYED_ACTIVE")
+        active_obl["deployment_refs"] = []
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-007" and "lacks verified deployment references" in f.message for f in findings)
+
+    # 11. P5-007: Non-deployed deliverable claims closed verified
+    def test_p5_007_non_deployed_claims_closed(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        deliv = next(o for o in data["obligations"] if o.get("capability_id") == "MAINLINE_DELIVERY")
+        deliv["deployment_state"] = "NOT_DEPLOYED"
+        deliv["disposition"] = "CLOSED_VERIFIED"
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-007" and "is NOT_DEPLOYED but claims CLOSED_VERIFIED" in f.message for f in findings)
+
+    # 12. P5-008: Duplicate obligation identity
+    def test_p5_008_duplicate_obligation_id(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        dup = copy.deepcopy(data["obligations"][0])
+        data["obligations"].append(dup)
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-008" and "Duplicate obligation ID" in f.message for f in findings)
+
+    # 13. P5-008: Cyclic supersession
+    def test_p5_008_cyclic_supersession(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        obl_a = data["obligations"][0]
+        obl_b = data["obligations"][1]
+        obl_a["superseded_by"] = obl_b["obligation_id"]
+        obl_b["superseded_by"] = obl_a["obligation_id"]
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-008" and "Cyclic supersession detected" in f.message for f in findings)
+
+    # 14. P5-009: Missing Directive 057 defect
+    def test_p5_009_missing_directive_057_defect(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        data["obligations"] = [o for o in data["obligations"] if o.get("source_finding_id") != "DEF-056-001"]
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-009" and "DEF-056-001" in f.message for f in findings)
+
+    # 15. P5-010: Unauthorized Sprint 5 execution kickoff
+    def test_p5_010_unauthorized_sprint5_execution_transition(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        data["active_sprint"] = "SPRINT_5"
+        data["sprint5_execution_authorized"] = False
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-010" and "Sprint 5 execution kickoff is NOT authorized" in f.message for f in findings)
+
+    # 16. P5-011: Stale baseline substitution
+    def test_p5_011_stale_baseline_substitution(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        data["obligations"][0]["deployment_refs"] = ["Railway:5efc2179"]
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-011" and "substitutes stale unverified deployment SHA" in f.message for f in findings)
+
+    # 17. P5-012: External reconciliation required but not performed
+    def test_p5_012_external_verification_not_performed(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, require_external_inventory=True, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-012" and "execution status is NOT_PERFORMED" in f.message for f in findings)
+
+    # 18. Actual Canonical Backlog Status: Faithfully blocks on real pending owner gates
+    def test_canonical_backlog_pre_sprint5_closure_blocks_on_real_blockers(self, canonical_backlog_data, canonical_schema_data):
+        validator = BacklogValidator(canonical_backlog_data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        # Must catch P5-003 (DEF-056-001/002/003 awaiting merge gate) and P5-010 (owner execution gate required)
+        assert any(f.rule_id == "P5-003" for f in findings)
+        assert any(f.rule_id == "P5-010" for f in findings)
+
+    # 19. Synthetic Full Pass: When PR #118 is merged and owner authorizes execution
+    def test_canonical_backlog_pre_sprint5_closure_passes_when_fully_resolved(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        # Simulate PR #118 merge & release
+        for o in data["obligations"]:
+            if o.get("source_finding_id") in ("DEF-056-001", "DEF-056-002", "DEF-056-003"):
+                o["status"] = "COMPLETED"
+                o["disposition"] = "CLOSED_VERIFIED"
+                o["deployment_state"] = "DEPLOYED_ACTIVE"
+                o["operational_state"] = "EXECUTED"
+                o["governance_state"] = "RELEASED"
+                o["scope_authorization"] = "OWNER_AUTHORIZED"
+                o["deployment_refs"] = ["Railway:d1f8cf37", "Cloudflare:655b4653"]
+            if o.get("obligation_id") == "OBL-ARX-S3-006":
+                o["scope_authorization"] = "OWNER_AUTHORIZED"
+        # Simulate owner authorization for Sprint 5 kickoff
+        data["sprint5_execution_authorized"] = True
+
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        errors = [f for f in findings if f.severity == "ERROR"]
+        assert errors == [], f"Unexpected errors: {[str(e) for e in errors]}"
+        assert verdict == "PASS"
