@@ -1,6 +1,11 @@
 import assert from "node:assert";
 import fs from "node:fs";
 import path from "node:path";
+import {
+  isCanonicalSecurityIdentifier,
+  resolveCanonicalSecurity,
+  RADAR_NON_TICKER_KEYWORDS,
+} from "../lib/assetRegistry";
 
 console.log("===============================================================================");
 console.log("ARX PR #98 — Mobile Navigation Remediation & Contract Verification Suite");
@@ -61,14 +66,14 @@ console.log("   [PASS] 1.3: Neutral navigation destinations verified for both An
 
 // Invariant 1.4: Radar passes clean canonical asset context into SynthesisMobileDock
 assert.ok(
-  radarSrc.includes("<SynthesisMobileDock activeSymbol={cleanQ || null} />"),
-  "Radar must pass activeSymbol={cleanQ || null} into SynthesisMobileDock"
+  radarSrc.includes("<SynthesisMobileDock activeSymbol={activeCanonicalAsset} />"),
+  "Radar must pass activeSymbol={activeCanonicalAsset} into SynthesisMobileDock"
 );
 assert.ok(
   !radarSrc.includes("<SynthesisMobileDock />"),
   "Radar must never mount SynthesisMobileDock without passing asset context"
 );
-console.log("   [PASS] 1.4: Radar accurately binds canonical query asset context into mobile dock.");
+console.log("   [PASS] 1.4: Radar accurately binds canonical security asset context into mobile dock.");
 
 // Invariant 1.5: Query parameter normalization in Radar (accepts q, symbol, and ticker)
 assert.ok(
@@ -189,6 +194,89 @@ assert.strictEqual(caseBrk.analysisHref, "/?symbol=BRK.B");
 assert.strictEqual(caseBrk.planHref, "/setups?ticker=BRK.B");
 console.log("   [PASS] Case E ('BRK.B'): Analysis -> '/?symbol=BRK.B', Plan -> '/setups?ticker=BRK.B'");
 
+// ============================================================================
+// TEST GROUP 4: Defect MOB-03 Remediation & Non-Ticker Keyword Guard Invariants
+// ============================================================================
+console.log("\n4. Verifying Defect MOB-03: Search Keyword vs. Asset Identifier Disambiguation...");
+
+// Invariant 4.1: Source code structural invariants
+assert.ok(
+  radarSrc.includes("isCanonicalSecurityIdentifier") && radarSrc.includes("resolveCanonicalSecurity"),
+  "Radar must import and use isCanonicalSecurityIdentifier and resolveCanonicalSecurity"
+);
+assert.ok(
+  radarSrc.includes("const [selectedAssetTicker, setSelectedAssetTicker] = useState"),
+  "Radar must track selectedAssetTicker state explicitly"
+);
+assert.ok(
+  radarSrc.includes("const activeCanonicalAsset = useMemo"),
+  "Radar must compute activeCanonicalAsset with useMemo resolver"
+);
+assert.ok(
+  radarSrc.includes("<TerminalShell\n      activeHub=\"radar\"\n      activeSymbol={activeCanonicalAsset}"),
+  "TerminalShell must receive activeCanonicalAsset"
+);
+assert.ok(
+  radarSrc.includes("<SynthesisMobileDock activeSymbol={activeCanonicalAsset} />"),
+  "SynthesisMobileDock must receive activeCanonicalAsset"
+);
+console.log("   [PASS] 4.1: Radar source invariants verify strict canonical asset isolation.");
+
+// Invariant 4.2: Keyword protection against sector and category terms
+const mockCatalog = [{ ticker: "NVDA" }, { ticker: "TSLA" }, { ticker: "CPRX" }, { ticker: "BRK.B" }];
+
+const sectorKeywords = ["ENERGY", "TECH", "TECHNOLOGY", "GROWTH", "VALUE", "VCP", "SMART_MONEY", "FINANCIALS"];
+for (const kw of sectorKeywords) {
+  const isSecurity = isCanonicalSecurityIdentifier(kw, mockCatalog);
+  assert.strictEqual(isSecurity, false, `Keyword '${kw}' must NOT be treated as a valid security identifier`);
+  const resolved = resolveCanonicalSecurity(kw, mockCatalog);
+  assert.strictEqual(resolved, null, `Keyword '${kw}' must resolve to null canonical security`);
+  const urls = resolveUrls(resolved);
+  assert.strictEqual(urls.analysisHref, "/", `Keyword '${kw}' must route Analysis to neutral '/'`);
+  assert.strictEqual(urls.planHref, "/setups", `Keyword '${kw}' must route Plan to neutral '/setups'`);
+}
+console.log("   [PASS] 4.2: Sector, category, and macro keywords cleanly rejected; produce neutral navigation.");
+
+// Invariant 4.3: Company names without explicit ticker mapping
+const companyNames = ["Apple Inc.", "Tesla, Inc.", "NVIDIA Corporation", "Microsoft Corporation"];
+for (const comp of companyNames) {
+  const isSecurity = isCanonicalSecurityIdentifier(comp, mockCatalog);
+  assert.strictEqual(isSecurity, false, `Company name '${comp}' must not be treated as a ticker directly`);
+  const resolved = resolveCanonicalSecurity(comp, mockCatalog);
+  assert.strictEqual(resolved, null, `Company name '${comp}' must resolve to null canonical security`);
+}
+console.log("   [PASS] 4.3: Company names without ticker resolution reject inferred asset binding.");
+
+// Invariant 4.4: Canonical tickers correctly resolve and generate contextual URLs
+const validTickers = ["NVDA", "TSLA", "BRK.B"];
+for (const ticker of validTickers) {
+  const isSecurity = isCanonicalSecurityIdentifier(ticker, mockCatalog);
+  assert.strictEqual(isSecurity, true, `Ticker '${ticker}' must be recognized as canonical security`);
+  const resolved = resolveCanonicalSecurity(ticker, mockCatalog);
+  assert.strictEqual(resolved, ticker, `Ticker '${ticker}' must resolve to '${ticker}'`);
+  const urls = resolveUrls(resolved);
+  assert.strictEqual(urls.analysisHref, `/?symbol=${encodeURIComponent(ticker)}`);
+  assert.strictEqual(urls.planHref, `/setups?ticker=${encodeURIComponent(ticker)}`);
+}
+console.log("   [PASS] 4.4: Canonical tickers resolve to contextual navigation paths.");
+
+// Invariant 4.5: Selection transition (stale asset prevention)
+let currentSelection: string | null = "NVDA";
+let urls1 = resolveUrls(resolveCanonicalSecurity(currentSelection, mockCatalog));
+assert.strictEqual(urls1.analysisHref, "/?symbol=NVDA");
+
+// User switches to TSLA
+currentSelection = "TSLA";
+let urls2 = resolveUrls(resolveCanonicalSecurity(currentSelection, mockCatalog));
+assert.strictEqual(urls2.analysisHref, "/?symbol=TSLA");
+
+// User clears filter
+currentSelection = null;
+let urls3 = resolveUrls(resolveCanonicalSecurity(currentSelection, mockCatalog));
+assert.strictEqual(urls3.analysisHref, "/");
+assert.strictEqual(urls3.planHref, "/setups");
+console.log("   [PASS] 4.5: Selection transition cleanly updates context and clears on filter reset.");
+
 console.log("\n===============================================================================");
-console.log("ALL INVARIANTS PASS: MOB-01 & MOB-02 REMEDIATION TECHNICALLY QUALIFIED");
+console.log("ALL INVARIANTS PASS: MOB-01, MOB-02 & MOB-03 REMEDIATION TECHNICALLY QUALIFIED");
 console.log("===============================================================================");

@@ -128,5 +128,15 @@
     "filename": "26_desktop_control_radar_1440.png",
     "sizeKb": "90.5",
     "description": "Radar Desktop Control (1440px) verifying desktop layout, search trigger, and table remain 100% regression-free."
+  },
+  {
+    "filename": "27_mob_06_radar_keyword_energy_neutral_375.png",
+    "sizeKb": "43.3",
+    "description": "Radar Mobile (375px) with non-ticker search keyword 'ENERGY': SynthesisMobileDock strictly maintains neutral links ('/' and '/setups/') without misidentifying keyword as asset ticker (MOB-03 resolved)."
+  },
+  {
+    "filename": "28_mob_07_radar_candidate_row_selected_375.png",
+    "sizeKb": "43.3",
+    "description": "Radar Mobile (375px) with candidate table row selected: SynthesisMobileDock dynamically updates active security context and establishes contextual links without stale asset retention."
   }
 ]

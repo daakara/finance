@@ -24,6 +24,7 @@ import { RadarPortfolioBadge } from '../../components/radar/RadarPortfolioBadge'
 import { ExecutionStatus } from '../../types/decisionContract';
 import SynthesisGuideBanner from '../../components/synthesis/SynthesisGuideBanner';
 import SynthesisMobileDock from '../../components/synthesis/SynthesisMobileDock';
+import { isCanonicalSecurityIdentifier, resolveCanonicalSecurity } from '../../lib/assetRegistry';
 
 interface RadarAsset {
   ticker: string;
@@ -108,6 +109,10 @@ function RadarContent() {
   const [searchQuery, setSearchQuery] = useState(initialQ);
   const [sortBy, setSortBy] = useState<'SCORE' | 'RVOL' | 'PRICE'>('SCORE');
   const [allAssets, setAllAssets] = useState<RadarAsset[]>([]);
+  const [selectedAssetTicker, setSelectedAssetTicker] = useState<string | null>(() => {
+    const sym = searchParams?.get('symbol') || searchParams?.get('ticker');
+    return resolveCanonicalSecurity(sym);
+  });
   const [capabilities, setCapabilities] = useState<RadarCapabilities>(DEFAULT_RADAR_CAPABILITIES);
   const [population, setPopulation] = useState<CandidatePopulationModel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -159,7 +164,13 @@ function RadarContent() {
   useEffect(() => {
     const q = (searchParams?.get('q') || searchParams?.get('symbol') || searchParams?.get('ticker') || '').trim().toUpperCase();
     setSearchQuery((prev) => (prev.trim().toUpperCase() !== q ? q : prev));
-  }, [searchParams]);
+    const sym = searchParams?.get('symbol') || searchParams?.get('ticker');
+    if (sym) {
+      setSelectedAssetTicker(resolveCanonicalSecurity(sym, allAssets));
+    } else if (!searchParams?.get('q')) {
+      setSelectedAssetTicker(null);
+    }
+  }, [searchParams, allAssets]);
 
   useEffect(() => {
     let isMounted = true;
@@ -379,6 +390,20 @@ function RadarContent() {
   const isSearching = searchQuery.trim().length > 0;
   const isTickerQuery = /^[A-Z0-9\.\-]{1,6}$/i.test(searchQuery.trim());
 
+  const activeCanonicalAsset = useMemo(() => {
+    if (selectedAssetTicker && isCanonicalSecurityIdentifier(selectedAssetTicker, allAssets)) {
+      return resolveCanonicalSecurity(selectedAssetTicker, allAssets);
+    }
+    const symParam = searchParams?.get('symbol') || searchParams?.get('ticker');
+    if (symParam && isCanonicalSecurityIdentifier(symParam, allAssets)) {
+      return resolveCanonicalSecurity(symParam, allAssets);
+    }
+    if (cleanQ && isCanonicalSecurityIdentifier(cleanQ, allAssets)) {
+      return resolveCanonicalSecurity(cleanQ, allAssets);
+    }
+    return null;
+  }, [selectedAssetTicker, searchParams, cleanQ, allAssets]);
+
   const handleOnDemandScan = async (tickerOverride?: string) => {
     const raw = tickerOverride || searchQuery;
     const clean = raw.trim().toUpperCase();
@@ -497,7 +522,7 @@ function RadarContent() {
   return (
     <TerminalShell
       activeHub="radar"
-      activeSymbol={searchQuery.trim() ? searchQuery.trim().toUpperCase() : null}
+      activeSymbol={activeCanonicalAsset}
     >
       <div className="space-y-6">
         {/* Hub Guidance & Orientation (A3-AC1, A3-AC2, A3-AC3) */}
@@ -506,7 +531,7 @@ function RadarContent() {
           title="Radar"
           purpose="Scan and filter the market universe for momentum and breakout candidates that warrant further analysis."
           badge="Market Discovery"
-          symbol={cleanQ || null}
+          symbol={activeCanonicalAsset}
           primaryAction={{
             label: heroAsset ? `Analyze ${heroAsset.ticker} →` : "Analyze Candidate →",
             href: heroAsset ? `/?symbol=${heroAsset.ticker}` : "/",
@@ -605,6 +630,7 @@ function RadarContent() {
                 <button
                   onClick={() => {
                     setSearchQuery('');
+                    setSelectedAssetTicker(null);
                     setOnDemandError(null);
                   }}
                   className="px-3 py-2 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-2)] font-bold text-xs transition-all border border-[var(--border-subtle)] cursor-pointer"
@@ -1376,6 +1402,7 @@ function RadarContent() {
                             type="button"
                             onClick={() => {
                               setSearchQuery('');
+                              setSelectedAssetTicker(null);
                               setOnDemandError(null);
                             }}
                             className="px-3.5 py-2.5 min-h-[44px] rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-2)] hover:text-[var(--text-1)] text-xs font-bold font-mono border border-[var(--border-strong)] inline-flex items-center justify-center cursor-pointer"
@@ -1393,7 +1420,14 @@ function RadarContent() {
                     const screeningLabel = formatRadarExecutionStatus(asset.executionStatus);
 
                     return (
-                      <tr key={asset.ticker} className="hover:bg-[var(--surface-hover)] transition-colors group">
+                      <tr
+                        key={asset.ticker}
+                        onClick={() => setSelectedAssetTicker(asset.ticker)}
+                        aria-selected={activeCanonicalAsset === asset.ticker}
+                        className={`hover:bg-[var(--surface-hover)] transition-colors group cursor-pointer ${
+                          activeCanonicalAsset === asset.ticker ? 'bg-[var(--surface-2)]' : ''
+                        }`}
+                      >
                         <td className="p-3 sticky left-0 bg-[var(--surface-1)] z-10">
                           <div className="flex items-center gap-1.5">
                             <Link
@@ -1561,7 +1595,7 @@ function RadarContent() {
         </div>
         )}
       </div>
-      <SynthesisMobileDock activeSymbol={cleanQ || null} />
+      <SynthesisMobileDock activeSymbol={activeCanonicalAsset} />
     </TerminalShell>
   );
 }
