@@ -194,8 +194,12 @@ def normalize_corporate_event(
         risk_tier = "NORMAL_RUNWAY"
         preflight_state = "PASS"
         has_imminent = False
-        plain_msg = f"Sufficient time window to manage trade without overnight earnings gap risk ({days_to_earnings:.1f} days to event)."
-        pro_msg = f"Catalyst Buffer: Clean window verified ({days_to_earnings:.1f} days to binary catalyst)."
+        if confirmation_status == "CONFIRMED":
+            plain_msg = f"Sufficient time window to manage trade without overnight earnings gap risk ({days_to_earnings:.1f} days to event)."
+            pro_msg = f"Catalyst Buffer: Clean window verified ({days_to_earnings:.1f} days to binary catalyst)."
+        else:
+            plain_msg = f"Indicative time window (>7 days) without imminent earnings gap risk ({days_to_earnings:.1f} days to estimated event, unconfirmed by primary source)."
+            pro_msg = f"Catalyst Buffer: Clean window indicated ({days_to_earnings:.1f} days to unconfirmed binary catalyst)."
 
     return {
         "symbol": clean_sym,

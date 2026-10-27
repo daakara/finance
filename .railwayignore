@@ -4,7 +4,7 @@
 .env.*
 .env.local
 .env.*.local
-frontend/.env*
+frontend/
 *.db
 *.sqlite
 *.sqlite3
@@ -15,3 +15,10 @@ backups/
 data/canonical/
 data/operational/
 data/staging/
+tests/
+scratch/
+artifacts/
+*.md
+__pycache__/
+.pytest_cache/
+
