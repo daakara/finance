@@ -138,5 +138,10 @@
     "filename": "28_mob_07_radar_candidate_row_selected_375.png",
     "sizeKb": "43.3",
     "description": "Radar Mobile (375px) with candidate table row selected: SynthesisMobileDock dynamically updates active security context and establishes contextual links without stale asset retention."
+  },
+  {
+    "filename": "29_mob_08_radar_stale_invalidation_375.png",
+    "sizeKb": "36.0",
+    "description": "Radar Mobile (375px) demonstrating stale asset invalidation: selecting NVDA then entering keyword 'ENERGY' invalidates prior selection and restores neutral dock links ('/' and '/setups') deterministically."
   }
 ]
