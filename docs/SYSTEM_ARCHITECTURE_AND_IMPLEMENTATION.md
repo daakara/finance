@@ -14,10 +14,10 @@
 │    • Framework: Next.js 14.2 (App Router) + React 18 + TypeScript                                │
 │    • Styling & Motion: TailwindCSS + Lucide Icons + Custom Glow / Pulse Animations               │
 │    • Charts & Canvas: TradingView Lightweight Charts (Sub-millisecond Canvas Rendering)          │
-│    • Deployment: Cloudflare Pages (77 SSG Static Pages, Global Edge CDN, Zero Cold Starts)       │
+│    • Deployment: Cloudflare Pages (149 SSG Static Pages, Global Edge CDN, Zero Cold Starts)      │
 │                                                                                                  │
 │ ⚡ BACKEND & API SERVICES TIER                                                                    │
-│    • Framework: Python 3.11 + FastAPI + Uvicorn Async Workers                                    │
+│    • Framework: Python 3.11 / 3.12 + FastAPI + Uvicorn Async Workers                             │
 │    • Rate Limiting: Redis Middleware (RedisRateLimitMiddleware) with Memory Fallback             │
 │    • Ingestion Bridges: Yahoo Finance (yfinance), EODHD API, FRED Federal Reserve Macro API      │
 │    • Deployment: Railway Container (DOCKERFILE, Auto-Restart, 2 Worker Threads)                 │
@@ -25,8 +25,9 @@
 │ 🧮 QUANTITATIVE & CONTROL THEORY TIER                                                             │
 │    • Volatility Models: Cornish-Fisher Modified VaR (95%/99%), GARCH(1,1), Realized 14-ATR       │
 │    • Execution Engines: Mark Minervini VCP Pattern Detector, Linda Raschke 20 EMA Pullback       │
-│    • Safety Systems: Self-Healing Runtime Invariant Circuit Breaker (_enforce_execution_invariants)│
+│    • Safety Systems: Self-Healing Runtime Invariant Circuit Breakers & Liquidity Hazard Gate     │
 │    • Political Flow: Congressional STOCK Act (PL 112-105) + SEC Form 4 Insider Alignment Index   │
+│    • Governance & Control: GOV-001 Cross-Sprint Integrity Validator & SCS-v1 Action Engine       │
 │                                                                                                  │
 │ 💽 STORAGE & PERSISTENCE TIER                                                                    │
 │    • Backend Persistent Store: Railway Persistent Volume (web-volume mounted at /root)           │

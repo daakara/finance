@@ -3,8 +3,8 @@
 **Directive:** `ARX_S4_FORMAL_CLOSURE_AND_S5_TRANSITION_032`  
 **Active Sprint:** `SPRINT_5`  
 **Total Canonical Tasks:** 43  
-**Baseline Git Commit:** `4e0979e9520b4cd8b58fd56ceecd47e842fb8028`  
-**Timestamp:** `2026-10-27T05:40:00Z`  
+**Baseline Git Commit:** `7f27ae14d2ea15d2e7c9f8225c5302f17fe3cb86` (PR #112 / PR #98 merged)  
+**Timestamp:** `2026-10-27T07:45:00Z`  
 
 ---
 
@@ -37,10 +37,10 @@
 | **ARX-S3-010** | SMART_MONEY | READY | CLOSED_SPRINT_CONDITIONAL_OPEN_TASK | SPRINT_4 | PR #72 | Statutory reporting lag disclosure held on PR #72 |
 | **ARX-S3-013** | RADAR_VCP | READY | CLOSED_SPRINT_CONDITIONAL_OPEN_TASK | SPRINT_4 | PR #73 | Continuous live scanner daemon held dormant in PR #73 |
 
-### Category D: Sprint 4 Engineering Accepted, Release Held (1 Task)
+### Category D: Sprint 4 Engineering Accepted, Mainline Merged (1 Task)
 | Task ID | Workstream | Status | Disposition | Assigned Sprint | Governance | Reason & Open Action |
 | :--- | :--- | :--- | :--- | :---: | :--- | :--- |
-| **ARX-S3-016** | UX_WORKSTATION | READY | ENGINEERING_ACCEPTED_AWAITING_RELEASE | SPRINT_4 | Directive 031 | Synthesis E V3 UX Parity candidate verified across 38 suites; held on PR #98 for dedicated owner review |
+| **ARX-S3-016** | UX_WORKSTATION | READY | ENGINEERING_ACCEPTED_AWAITING_RELEASE | SPRINT_4 | Directive 031 / PR #98 | Synthesis E V3 UX Parity merged into mainline in commit `8b8eb58`; live production release decoupled |
 
 ### Preserved Owner-Gated Holding Queue (10 Tasks)
 | Task ID | Workstream | Status | Disposition | Assigned Sprint | Owner Auth |

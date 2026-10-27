@@ -90,34 +90,43 @@ This platform enforces mathematical and empirical data integrity:
    cd finance
    ```
 
-2. **Create virtual environment**
+2. **Backend Setup (FastAPI)**
    ```bash
    python -m venv venv
    
    # Windows
    venv\Scripts\activate
-   
    # macOS/Linux
    source venv/bin/activate
-   ```
 
-3. **Install dependencies**
-   ```bash
+   # Install dependencies
    pip install -r requirements.txt
+
+   # Start FastAPI backend engine (port 8000)
+   uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
    ```
 
-4. **Set up environment variables (optional)**
+3. **Frontend Setup (Next.js 14 App Router)**
    ```bash
-   cp .env.example .env
-   # Edit .env with your API keys
+   cd frontend
+   npm install
+
+   # Start Next.js development server (port 3000)
+   npm run dev
    ```
 
-5. **Run the application**
+   The application will open in your browser at `http://localhost:3000`, connecting to the backend at `http://localhost:8000`.
+
+4. **Run Verification & Test Suites**
    ```bash
-   streamlit run app.py
-   ```
+   # Python Backend & Governance Test Suites (37+ tests)
+   python -m pytest tests/test_backlog_integrity_validator.py
+   python tools/governance/validate_backlog_integrity.py
 
-The application will open in your browser at `http://localhost:8501`
+   # Frontend Architectural & Invariant Tests
+   cd frontend
+   npm test
+   ```
 
 ## 🔑 API Keys (Optional)
 
@@ -242,7 +251,7 @@ python -m pytest tests/
 - **Live URL**: [https://www.arxterminal.com/](https://www.arxterminal.com/)
 - **Build Command**: `cd frontend && npm install && npm run build`
 - **Output Directory**: `frontend/out`
-- **SSG Target**: 77 Pre-rendered static pages with zero client-side latency.
+- **SSG Target**: 149 Pre-rendered static pages with zero client-side latency.
 - **Environment Variables**:
   - `NEXT_PUBLIC_API_URL`: `https://web-production-e370b.up.railway.app`
 

@@ -70,11 +70,11 @@ Retained in Sprint 4 historical assignment with explicit open dependency trackin
 1. **`ARX-S3-010`** (Smart Money Evidence Integrity): `CLOSED_SPRINT_CONDITIONAL_OPEN_TASK`. Pre-flight fail-closed clearance merged (PR #87/#89); final reporting lag disclosure held on unmerged PR #72.
 2. **`ARX-S3-013`** (VCP Scanner Conformance): `CLOSED_SPRINT_CONDITIONAL_OPEN_TASK`. 4-stage Minervini trend template merged (PR #76); live scanner daemon in PR #73 remains held and dormant.
 
-### Category D — Engineering Accepted, Release Held (1 Task)
+### Category D — Engineering Accepted, Mainline Merged (1 Task)
 1. **`ARX-S3-016`** (Synthesis E V3 Application-Wide UX Parity):
    - **Disposition:** `ENGINEERING_ACCEPTED_AWAITING_RELEASE`
-   - **Status:** `READY` (not completed, not deployed)
-   - **Governance:** Governed by conditional owner preapproval `ARX_PR98_FINAL_UX_CONDITIONAL_APPROVAL_031`. PR #98 candidate verified across 38 suites; production deployment held awaiting dedicated UX design review.
+   - **Status:** `READY` (mainline merged, production deployment decoupled)
+   - **Governance:** Governed by conditional owner preapproval `ARX_PR98_FINAL_UX_CONDITIONAL_APPROVAL_031`. PR #98 candidate was ratified and merged into mainline on commit `8b8eb58`, followed by radar asset selection refinement in PR #112 (`7f27ae1`). Live Cloudflare/Railway production deployment remains decoupled.
 
 ---
 
@@ -84,9 +84,10 @@ Retained in Sprint 4 historical assignment with explicit open dependency trackin
 | :--- | :--- | :--- |
 | **PR #72** (Smart Money Disclosures) | Held unmerged | Requires independent disclosure qualification and owner merge decision |
 | **PR #73** (VCP Scanner Daemon) | Held dormant | Natural scheduler activation hold (`VCP_NATURAL_SCHEDULER_ENABLED=0`) |
-| **PR #98** (Synthesis E V3 Frontend) | Conditional Preapproval | Held awaiting final visual UX review under Directive 031 |
-| **PR #109** (Sprint Control System) | Stale tracker / Reconcile | To be reconciled after Sprint 4/5 canonical transition |
-| **PR #110** (Scanner Coverage Remediation) | Merged mainline | Not deployed to Railway production |
+| **PR #98** (Synthesis E V3 Frontend) | **Merged Mainline** (`8b8eb58`) | Merged with 38 suites passing; live production release decoupled |
+| **PR #109** (Sprint Control System) | **Draft Published / CI Green** | Hosted CI verified (Run `40417319375`, 4/4 jobs PASS); awaiting owner merge |
+| **PR #110** (Scanner Coverage Remediation) | **Merged Mainline** (`4e0979e`) | Merged; live production release decoupled |
+| **PR #112** (Radar Intent Invalidation) | **Merged Mainline** (`7f27ae1`) | Merged; live production release decoupled |
 | **SEC Egress** | Operational hold | `ARX_SEC_EGRESS_ROLE=DISABLED` |
 | **Smart Money Worker** | Operational hold | `ARX_SM_BACKUP_BUCKET=DISABLED` |
 | **10 Owner-Gated Tasks** | Holding queue | All 10 carry explicit `owner_authorization = HOLD` |

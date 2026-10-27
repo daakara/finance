@@ -68,11 +68,12 @@ Focuses on bounded architectural discovery, benchmark verification, and state sy
 
 | Reference | Scope & Purpose | Current Status | Sprint 5 Action |
 | :--- | :--- | :--- | :--- |
-| **PR #98** | Synthesis E V3 Frontend UX Parity | Engineering Accepted / Release Held | Await Owner UX review per Directive 031; do not deploy |
-| **PR #72** | Smart Money statutory disclosure remediation | Held unmerged | Complete independent disclosure qualification and merge |
+| **PR #98** | Synthesis E V3 Frontend UX Parity | **Merged Mainline** (`8b8eb58`) | Merged with 38 test suites; live production release decoupled |
+| **PR #110** | Scanner status & coverage metadata integrity | **Merged Mainline** (`4e0979e`) | Merged; live production release decoupled |
+| **PR #112** | Radar search intent stale asset invalidation | **Merged Mainline** (`7f27ae1`) | Merged; live production release decoupled |
+| **PR #109** | Sprint Control System (SCS-v1) action engine | **Draft Published / CI Green** | Hosted CI verified (Run `40417319375`, 4/4 jobs PASS); awaiting owner merge |
+| **PR #72** | Smart Money statutory disclosure remediation | Held unmerged | Complete independent disclosure qualification and owner merge decision |
 | **PR #73** | Minervini VCP continuous scanner daemon | Held dormant | Maintain `VCP_NATURAL_SCHEDULER_ENABLED=0`; no activation |
-| **PR #109** | Sprint Control System tracking daemon | Stale tracker / Reconcile | Rebase against Sprint 5 baseline and regenerate tracker |
-| **PR #110** | Scanner status & coverage metadata integrity | Merged mainline | Await separate owner production deployment decision |
 | **OD-01** | Owner-pending corporate events catalyst policy | Architectural HOLD | Maintain current fail-closed mock/dormant boundaries |
 
 ---

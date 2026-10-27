@@ -1,7 +1,12 @@
 # ARX Terminal — Engineering Backlog & Follow-Up Activities
 
+> [!IMPORTANT]
+> **GOVERNANCE ARCHIVAL NOTICE**: This document represents the historical Sprint 1 engineering activity register.
+> In accordance with the ARX Closure Model v2 and Governance Directive GOV-001, the sole, machine-readable single source of truth for all enterprise initiatives, sprint assignments, and operational dimensions across Sprint 1 through Sprint 5 is [`docs/planning/arx_canonical_backlog.json`](file:///c:/Users/akara/Documents/Projects/finance/docs/planning/arx_canonical_backlog.json).
+> Do not use this historical markdown document for active task tracking, prioritization, or closure claims.
+
 **Document ID**: `BACKLOG-ARX-SPRINT-1-CLOSEOUT-RECONCILIATION`  
-**Classification**: Authoritative Engineering Backlog & Follow-Up Register  
+**Classification**: Historical Sprint 1 Follow-Up Activity Register  
 **Governing Authorization**: ARX Terminal — Sprint 1 Final Consolidation & Closeout (Product Owner Directive)  
 **Baseline Commit**: `31af2393d81504d24fffff4b10bcc9e0539e5a6d` (PR #8 Merged Production Baseline)  
 **Baseline Tree**: `dd4b1dfe4c0644cdc3c7aa0edfa87621b01b88e9`  
