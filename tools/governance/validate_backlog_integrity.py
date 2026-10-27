@@ -45,6 +45,11 @@ VALID_DISPOSITIONS = {
     "SPRINT4_EXECUTION",
     "SPRINT4_DISCOVERY",
     "SPRINT4_OWNER_GATED",
+    "SPRINT5_EXECUTION",
+    "SPRINT5_DISCOVERY",
+    "SPRINT5_OWNER_GATED",
+    "CLOSED_SPRINT_CONDITIONAL_OPEN_TASK",
+    "ENGINEERING_ACCEPTED_AWAITING_RELEASE",
     "EXISTING_SPRINT_ASSIGNED",
     "SUPERSEDED",
     "TEST_OR_ADMINISTRATIVE",
@@ -65,12 +70,13 @@ VALID_SPRINTS = {
     "SPRINT_2",
     "SPRINT_3",
     "SPRINT_4",
+    "SPRINT_5",
     "HOLDING_QUEUE_OWNER_GATED",
     "DEFERRED_BACKLOG",
     "SPRINT_UNASSIGNED",
 }
 
-TASK_ID_REGEX = re.compile(r"^ARX-S[1-4]-[A-Z0-9\-]+$")
+TASK_ID_REGEX = re.compile(r"^ARX-S[1-5]-[A-Z0-9\-]+$")
 
 GOVERNANCE_PATH_PATTERNS = [
     "docs/planning/",
@@ -259,7 +265,7 @@ class BacklogValidator:
             tid = t.get("task_id")
             disp = t.get("disposition")
             owner = t.get("owner")
-            if disp in ("SPRINT4_EXECUTION", "SPRINT4_DISCOVERY"):
+            if disp in ("SPRINT4_EXECUTION", "SPRINT4_DISCOVERY", "SPRINT5_EXECUTION", "SPRINT5_DISCOVERY"):
                 if not owner or owner in ("OWNER_UNASSIGNED", "UNASSIGNED", "None", ""):
                     self.findings.append(Finding("BI-002", tid, "ERROR", f"Active task '{tid}' has no accountable owner assigned (found: '{owner}')"))
 
@@ -276,8 +282,11 @@ class BacklogValidator:
             if disp in ("SPRINT4_EXECUTION", "SPRINT4_DISCOVERY") and sprint != "SPRINT_4":
                 self.findings.append(Finding("BI-003", tid, "ERROR", f"Executable Sprint 4 task '{tid}' assigned to '{sprint}' instead of 'SPRINT_4'"))
 
-            if disp == "SPRINT4_OWNER_GATED" and sprint not in ("HOLDING_QUEUE_OWNER_GATED", "DEFERRED_BACKLOG", "SPRINT_4"):
-                self.findings.append(Finding("BI-003", tid, "WARNING", f"Owner-gated task '{tid}' should be in HOLDING_QUEUE_OWNER_GATED or SPRINT_4 (assigned: '{sprint}')"))
+            if disp in ("SPRINT5_EXECUTION", "SPRINT5_DISCOVERY") and sprint != "SPRINT_5":
+                self.findings.append(Finding("BI-003", tid, "ERROR", f"Executable Sprint 5 task '{tid}' assigned to '{sprint}' instead of 'SPRINT_5'"))
+
+            if disp in ("SPRINT4_OWNER_GATED", "SPRINT5_OWNER_GATED") and sprint not in ("HOLDING_QUEUE_OWNER_GATED", "DEFERRED_BACKLOG", "SPRINT_4", "SPRINT_5"):
+                self.findings.append(Finding("BI-003", tid, "WARNING", f"Owner-gated task '{tid}' should be in HOLDING_QUEUE_OWNER_GATED or assigned sprint (assigned: '{sprint}')"))
 
     def _check_bi_004_disposition_completeness(self, tasks: List[Dict[str, Any]]):
         for t in tasks:
@@ -292,6 +301,10 @@ class BacklogValidator:
 
     def _check_bi_005_carryforward_continuity(self, tasks: List[Dict[str, Any]]):
         active_sprint = self.data.get("active_sprint", "SPRINT_4")
+        closed_sprints = {"SPRINT_1", "SPRINT_2", "SPRINT_3"}
+        if active_sprint == "SPRINT_5":
+            closed_sprints.add("SPRINT_4")
+
         for t in tasks:
             tid = t.get("task_id")
             origin = t.get("origin_sprint")
@@ -299,12 +312,25 @@ class BacklogValidator:
             reason = t.get("carryforward_reason")
             assigned = t.get("assigned_sprint")
 
-            if origin and origin != active_sprint and origin in ("SPRINT_1", "SPRINT_2", "SPRINT_3"):
-                if disp in ("SPRINT4_EXECUTION", "SPRINT4_DISCOVERY", "SPRINT4_OWNER_GATED"):
+            if origin and origin != active_sprint and origin in closed_sprints:
+                if disp in ("SPRINT4_EXECUTION", "SPRINT4_DISCOVERY", "SPRINT4_OWNER_GATED", "SPRINT5_EXECUTION", "SPRINT5_DISCOVERY", "SPRINT5_OWNER_GATED"):
                     if not assigned or assigned == "SPRINT_UNASSIGNED":
                         self.findings.append(Finding("BI-005", tid, "ERROR", f"Carried-forward task '{tid}' from {origin} lacks valid receiving sprint or queue"))
                     if not reason or not str(reason).strip():
                         self.findings.append(Finding("BI-005", tid, "ERROR", f"Carried-forward task '{tid}' from {origin} must specify non-empty 'carryforward_reason'"))
+                    
+                    # BI-005 Hardening (Directive 042): Carryforward tasks must contain valid, non-empty acceptance criteria
+                    criteria = t.get("acceptance_criteria")
+                    if criteria is None:
+                        self.findings.append(Finding("BI-005", tid, "ERROR", f"Carried-forward task '{tid}' must specify 'acceptance_criteria'"))
+                    elif not isinstance(criteria, list) or len(criteria) == 0:
+                        self.findings.append(Finding("BI-005", tid, "ERROR", f"Carried-forward task '{tid}' must specify non-empty 'acceptance_criteria' list"))
+                    else:
+                        for idx, c in enumerate(criteria):
+                            if not isinstance(c, str):
+                                self.findings.append(Finding("BI-005", tid, "ERROR", f"Carried-forward task '{tid}' criterion #{idx+1} must be a string, got {type(c).__name__}"))
+                            elif not c.strip():
+                                self.findings.append(Finding("BI-005", tid, "ERROR", f"Carried-forward task '{tid}' criterion #{idx+1} cannot be empty or whitespace-only"))
 
     def _check_bi_006_evidence_for_completion(self, tasks: List[Dict[str, Any]]):
         for t in tasks:
@@ -399,6 +425,8 @@ class BacklogValidator:
             owner_auth = dims.get("owner_authorization")
             op_state = t.get("operational_state", "")
             auth_boundary = t.get("authorization_boundary", "")
+            disp = t.get("disposition")
+            status = t.get("status")
 
             if op_state == "ACTIVE_SERVING" and owner_auth not in ("AUTHORIZED", "NOT_APPLICABLE"):
                 self.findings.append(Finding("BI-009", tid, "ERROR", f"Task '{tid}' claims operational_state '{op_state}' while owner_authorization is '{owner_auth}'"))
@@ -406,7 +434,31 @@ class BacklogValidator:
             if auth_boundary in ("OWNER_GATE_REQUIRED", "ACTIVATION_HOLD") and owner_auth == "AUTHORIZED":
                 self.findings.append(Finding("BI-009", tid, "ERROR", f"Task '{tid}' has boundary '{auth_boundary}' but owner_authorization claims 'AUTHORIZED' without grant evidence"))
 
+            # Directive 043: Strict separation of administrative recommendation from operational state
+            if "RECOMMENDED" in op_state:
+                self.findings.append(Finding("BI-009", tid, "ERROR", f"Task '{tid}' operational_state '{op_state}' contains administrative recommendation; recommendations must not pollute operational_state"))
+
+            if "CLOSED_VERIFIED" in op_state and disp != "CLOSED_VERIFIED":
+                self.findings.append(Finding("BI-009", tid, "ERROR", f"Task '{tid}' claims operational_state '{op_state}' while disposition is '{disp}'"))
+
+            # Directive 043: Tasks cannot be closed without explicit owner authorization
+            if (disp == "CLOSED_VERIFIED" or status == "COMPLETED") and owner_auth not in ("AUTHORIZED", "NOT_APPLICABLE"):
+                self.findings.append(Finding("BI-009", tid, "ERROR", f"Task '{tid}' marked {disp}/{status} but owner_authorization is '{owner_auth}' (must be AUTHORIZED)"))
+
     def _check_bi_010_closure_consistency(self, tasks: List[Dict[str, Any]]):
+        active_sprint = self.data.get("active_sprint", "SPRINT_4")
+        closed_sprints = {"SPRINT_1", "SPRINT_2", "SPRINT_3"}
+        if active_sprint == "SPRINT_5":
+            closed_sprints.add("SPRINT_4")
+
+        valid_terminal_dispositions = {
+            "CLOSED_VERIFIED",
+            "TEST_OR_ADMINISTRATIVE",
+            "SUPERSEDED",
+            "CLOSED_SPRINT_CONDITIONAL_OPEN_TASK",
+            "ENGINEERING_ACCEPTED_AWAITING_RELEASE",
+        }
+
         for t in tasks:
             tid = t.get("task_id")
             origin = t.get("origin_sprint")
@@ -414,11 +466,17 @@ class BacklogValidator:
             status = t.get("status")
             disp = t.get("disposition")
 
-            if origin in ("SPRINT_1", "SPRINT_2", "SPRINT_3") and assigned == origin:
+            if origin in closed_sprints and assigned == origin:
                 if status == "IN_PROGRESS":
                     self.findings.append(Finding("BI-010", tid, "ERROR", f"Closed sprint {origin} contains task '{tid}' with unresolved status 'IN_PROGRESS'"))
-                if disp not in ("CLOSED_VERIFIED", "TEST_OR_ADMINISTRATIVE", "SUPERSEDED"):
+                if disp not in valid_terminal_dispositions:
                     self.findings.append(Finding("BI-010", tid, "ERROR", f"Closed sprint {origin} task '{tid}' has non-terminal disposition '{disp}' without carry-forward"))
+
+            if assigned in closed_sprints and assigned != active_sprint:
+                if status == "IN_PROGRESS":
+                    self.findings.append(Finding("BI-010", tid, "ERROR", f"Closed sprint {assigned} contains task '{tid}' with unresolved status 'IN_PROGRESS'"))
+                if disp not in valid_terminal_dispositions:
+                    self.findings.append(Finding("BI-010", tid, "ERROR", f"Closed sprint {assigned} task '{tid}' has non-terminal disposition '{disp}' without carry-forward"))
 
     def _check_bi_011_operational_truth(self, tasks: List[Dict[str, Any]]):
         for t in tasks:
