@@ -162,6 +162,7 @@ export default function PreFlightChecklistModal({
 
   const isActionableGranted = isActionable === true;
   const isCleared = isActionableGranted && evalResult.isCleared;
+  const isCatalystConfirmed = catalystEvidence?.confirmationStatus === "CONFIRMED";
 
   const cleanSym = (symbol || "ASSET").toUpperCase().replace("-USD", "");
   const catalogItem = MASTER_ASSET_CATALOG[cleanSym];

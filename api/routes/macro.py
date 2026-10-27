@@ -231,19 +231,18 @@ def _fetch_isolated_bar(symbol: str, is_yield: bool = False) -> Dict[str, Any]:
         }
 
 
-@router.get("/ribbon", tags=["Macro Telemetry"])
-def get_macro_ribbon(response: Response = None):
-    """Fetch authentic macro ribbon telemetry.
-    
-    Guarantees:
-    1. Zero fabricated fallback numbers.
-    2. Per-field availability and failure isolation.
-    3. Separation of generatedAt response time and observationTime.
-    4. Authoritative NYSE market session derivation via exchange_calendars.
-    5. Correct VIX tier threshold ordering (CRITICAL >= 30, ELEVATED >= 20).
-    """
-    if response is not None and hasattr(response, "headers"):
-        response.headers["Cache-Control"] = "public, max-age=30, s-maxage=60, stale-while-revalidate=120"
+_MACRO_RIBBON_CACHE: Optional[tuple[float, Dict[str, Any]]] = None
+_MACRO_CACHE_TTL: float = 30.0  # 30-second TTL to avoid redundant upstream calls
+
+
+def build_macro_ribbon_payload(force_fresh: bool = False) -> Dict[str, Any]:
+    """Build authentic macro ribbon telemetry with in-memory caching."""
+    global _MACRO_RIBBON_CACHE
+    now_ts = datetime.now(timezone.utc).timestamp()
+    if not force_fresh and _MACRO_RIBBON_CACHE is not None:
+        cached_ts, cached_payload = _MACRO_RIBBON_CACHE
+        if now_ts - cached_ts < _MACRO_CACHE_TTL:
+            return cached_payload
 
     generated_at = datetime.now(timezone.utc).isoformat()
     session_info = get_nyse_session_status()
@@ -310,7 +309,7 @@ def get_macro_ribbon(response: Response = None):
         candle_count=available_count,
     )
 
-    return {
+    payload = {
         "generatedAt": generated_at,
         "observationTime": spy_data.get("observationTime"),
         "marketSession": session_info.get("status", "UNAVAILABLE"),
@@ -331,3 +330,23 @@ def get_macro_ribbon(response: Response = None):
         "updatedAt": generated_at,
         "evidence": macro_evidence.to_dict(),
     }
+    _MACRO_RIBBON_CACHE = (now_ts, payload)
+    return payload
+
+
+@router.get("/ribbon", tags=["Macro Telemetry"])
+def get_macro_ribbon(response: Response = None):
+    """Fetch authentic macro ribbon telemetry.
+    
+    Guarantees:
+    1. Zero fabricated fallback numbers.
+    2. Per-field availability and failure isolation.
+    3. Separation of generatedAt response time and observationTime.
+    4. Authoritative NYSE market session derivation via exchange_calendars.
+    5. Correct VIX tier threshold ordering (CRITICAL >= 30, ELEVATED >= 20).
+    """
+    if response is not None and hasattr(response, "headers"):
+        response.headers["Cache-Control"] = "public, max-age=30, s-maxage=60, stale-while-revalidate=120"
+
+    return build_macro_ribbon_payload()
+

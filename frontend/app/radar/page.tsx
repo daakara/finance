@@ -961,7 +961,9 @@ function RadarContent() {
                 >
                   <span>⚡ Minervini VCP</span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-                    categoryMeta.VCP.status === 'PIPELINE_PENDING'
+                    categoryMeta.VCP.status === 'ERROR'
+                      ? 'bg-amber-950/80 text-amber-300 border border-amber-800/80'
+                      : categoryMeta.VCP.status === 'PIPELINE_PENDING'
                       ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
                       : 'bg-[var(--surface-2)] text-[var(--text-2)]'
                   }`}>
@@ -1366,6 +1368,10 @@ function RadarContent() {
                                   : "No active Radar candidates currently held in portfolio")
                               : ownershipFilter === 'NEW_OPPORTUNITIES' && !isPortfolioVerified
                               ? "Portfolio sync unavailable (Ownership UNKNOWN)"
+                              : activeFilter === 'VCP' && categoryMeta.VCP.status === 'ERROR'
+                              ? (capabilities.VCP?.reason === 'BUILD_MEMBERSHIP_EMPTY'
+                                  ? "Minervini VCP — Universe Membership Empty"
+                                  : "Minervini VCP — Scanner Snapshot Error")
                               : activeFilter === 'VCP' && categoryMeta.VCP.status === 'PIPELINE_PENDING'
                               ? "Minervini VCP — Universe Scanner Pending"
                               : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
@@ -1383,10 +1389,16 @@ function RadarContent() {
                                   : "None of your current portfolio positions meet the active Radar screening confluence criteria. Switch to 'All Candidates' or 'Unheld Candidates' to view market setups.")
                               : ownershipFilter === 'NEW_OPPORTUNITIES' && !isPortfolioVerified
                               ? "Filtering for unheld candidates requires verified portfolio state. Currently running in degraded UNKNOWN mode."
+                              : activeFilter === 'VCP' && categoryMeta.VCP.status === 'ERROR'
+                              ? (capabilities.VCP?.reason === 'BUILD_MEMBERSHIP_EMPTY'
+                                  ? "The scannable universe membership is currently empty (BUILD_MEMBERSHIP_EMPTY). Automated screening is withheld pending authorized universe publication. Single-asset VCP geometry is available in Analysis (/) and Setups (/setups)."
+                                  : `Scanner snapshot returned an error (${capabilities.VCP?.reason || 'SNAPSHOT_ERROR'}). Single-asset VCP geometry remains available in Analysis (/) and Setups (/setups).`)
                               : activeFilter === 'VCP' && categoryMeta.VCP.status === 'PIPELINE_PENDING'
                               ? (capabilities.VCP?.populationDenominator && capabilities.VCP?.universeBuildId && capabilities.VCP?.publicationDigest
                                   ? `${capabilities.VCP.populationDenominator} securities registered in universe build ${capabilities.VCP.universeBuildId}. Automated market-wide volatility contraction screening is pending operational activation.`
-                                  : "Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs.")
+                                  : (capabilities.VCP?.lifecycleState === 'COMMITTED_PUBLICATION_SCANNER_NOT_ENROLLED'
+                                      ? "Automated market-wide volatility contraction screening is not scheduled. Single-asset VCP geometry is available in Analysis (/) and Setups (/setups)."
+                                      : "Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs."))
                               : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
                               ? (capabilities.SMART_MONEY?.populationDenominator && capabilities.SMART_MONEY?.universeBuildId && capabilities.SMART_MONEY?.publicationDigest
                                   ? `${capabilities.SMART_MONEY.populationDenominator} securities registered in universe build ${capabilities.SMART_MONEY.universeBuildId}. Automated market-wide institutional-flow screening is pending operational activation.`

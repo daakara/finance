@@ -1361,6 +1361,26 @@ def get_asset_analytics(
         except Exception as e:
             logger.warning(f"Passive recommendation capture bypassed on error: {e}")
 
+        # Authoritative Macro Ribbon Resolution for Asset Context
+        try:
+            from api.routes.macro import build_macro_ribbon_payload
+            macro_ribbon_data = build_macro_ribbon_payload()
+            vix_item = macro_ribbon_data.get("vix") or {}
+            vix_val = vix_item.get("price") if vix_item.get("price") is not None else vix_item.get("value")
+            macro_evidence_payload = {
+                "vix": vix_val,
+                "observationTime": vix_item.get("observationTime") or macro_ribbon_data.get("observationTime"),
+                "marketSession": macro_ribbon_data.get("marketSession", "UNAVAILABLE"),
+                "settlementPinned": macro_ribbon_data.get("settlementPinned", False),
+                "sourceName": vix_item.get("provider") or "CBOE_VIX_INDEX",
+                "freshnessStatus": "CACHED_FRESH" if macro_ribbon_data.get("settlementPinned") else "LIVE",
+            }
+        except Exception as e:
+            logger.warning(f"Macro ribbon integration error in asset analytics: {e}")
+            vix_val = None
+            macro_evidence_payload = None
+            macro_ribbon_data = None
+
         effective_display_price = (
             live_spot_price
             if (live_spot_price is not None and market_price_state.live_freshness == "REALTIME")
@@ -1396,6 +1416,9 @@ def get_asset_analytics(
             "factorScores": factor_scores,
             "dnaScores": factor_scores,
             "macroDifficulty": macro_difficulty,
+            "vix": vix_val,
+            "macroEvidence": macro_evidence_payload,
+            "macroRibbon": macro_ribbon_data,
             "expectedReturn": expected_return,
             "traderArchetypes": trader_archetypes,
             "selfHealingAudit": self_healing_audit,

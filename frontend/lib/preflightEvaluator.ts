@@ -88,7 +88,8 @@ export type CheckStatus =
   | "CAPITAL RISK"
   | "HIGH VIX"
   | "UNAVAILABLE"
-  | "ERROR";
+  | "ERROR"
+  | "PROVISIONAL";
 
 export interface PreFlightCheckItem {
   id: "CHK-1" | "CHK-2" | "CHK-3" | "CHK-4" | "CHK-5";
@@ -201,9 +202,11 @@ export function resolveFreshMacroEvidence(): MacroEvidence | null {
     }
 
     // 2. Closed-Session and Pinned Settlement Qualification (M07 & M08)
-    // In accordance with EC-01, only authenticated closed-session pinned settlements qualify for 72h SLA.
+    // In accordance with EC-01, authenticated non-open pinned settlements (CLOSED, PRE_MARKET, POST_MARKET) qualify for 72h SLA.
     // An unauthenticated CLOSED flag without settlementPinned is capped at the 240m active threshold.
-    const isClosedSession = parsed.marketSession === "CLOSED" || parsed.market_session === "CLOSED";
+    const isClosedSession = parsed.marketSession === "CLOSED" || parsed.market_session === "CLOSED"
+      || parsed.marketSession === "PRE_MARKET" || parsed.market_session === "PRE_MARKET"
+      || parsed.marketSession === "POST_MARKET" || parsed.market_session === "POST_MARKET";
     const isPinnedSettlement = parsed.settlementPinned === true || parsed.isSettlementPinned === true;
     const hasQualifiedClosedSettlement = isClosedSession && isPinnedSettlement;
 
@@ -212,8 +215,10 @@ export function resolveFreshMacroEvidence(): MacroEvidence | null {
     // 3. Stale Observation Rejection (M04 & M05)
     // If the observation itself is older than the max age, reject even if API response was generated recently.
     if (!isNaN(obsTimestamp)) {
+      const isDateOnlyOrMidnight = typeof effectiveTimeStr === "string" && (!effectiveTimeStr.includes("T") || effectiveTimeStr.includes("00:00:00"));
+      const allowedObsAge = (isDateOnlyOrMidnight && !hasQualifiedClosedSettlement) ? 1440 : maxAgeMinutes;
       const obsAgeMinutes = (now - obsTimestamp) / 60000;
-      if (obsAgeMinutes > maxAgeMinutes || obsAgeMinutes < -5) {
+      if (obsAgeMinutes > allowedObsAge || obsAgeMinutes < -5) {
         return null;
       }
     }
@@ -320,10 +325,14 @@ export function evaluatePreFlightChecks(
         const ageMinutes = (now - obsTime) / 60000;
         if (ageMinutes < -5) return null; // Future clock skew (M11)
 
-        const isClosed = (ev.marketSession === "CLOSED") && (ev.settlementPinned === true);
-        const maxAge = isClosed ? 4320 : 240;
+        const isNonOpen = (ev.marketSession === "CLOSED" || ev.marketSession === "PRE_MARKET" || ev.marketSession === "POST_MARKET");
+        const hasQualifiedClosed = isNonOpen && (ev.settlementPinned === true);
+        const maxAge = hasQualifiedClosed ? 4320 : 240;
 
-        if (ageMinutes > maxAge) return null; // Stale observation (M04)
+        const isDateOnlyOrMidnight = typeof ev.observationTime === "string" && (!ev.observationTime.includes("T") || ev.observationTime.includes("00:00:00"));
+        const allowedAge = (isDateOnlyOrMidnight && !hasQualifiedClosed) ? 1440 : maxAge;
+
+        if (ageMinutes > allowedAge) return null; // Stale observation (M04)
 
         return {
           vix: evVix,
@@ -331,7 +340,7 @@ export function evaluatePreFlightChecks(
           marketSession: ev.marketSession || "REGULAR",
           settlementPinned: ev.settlementPinned ?? false,
           sourceName: ev.sourceName || "DIRECT_MACRO_EVIDENCE",
-          freshnessStatus: ev.freshnessStatus || (isClosed ? "CACHED_FRESH" : "LIVE")
+          freshnessStatus: ev.freshnessStatus || (hasQualifiedClosed ? "CACHED_FRESH" : "LIVE")
         };
       }
     }
@@ -647,7 +656,9 @@ export function evaluatePreFlightChecks(
     name: isPlain ? "4. News Event Safety" : "4. Catalyst Hazard Buffer",
     status: chk4Status,
     badgeClass: resolvedCatalystState === "PASS"
-      ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
+      ? (isCatalystConfirmed
+          ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
+          : "bg-emerald-950/80 text-emerald-300 border-emerald-700/80")
       : resolvedCatalystState === "WARN"
       ? "bg-rose-950/80 text-rose-300 border-rose-700/80"
       : resolvedCatalystState === "ERROR"
@@ -656,7 +667,7 @@ export function evaluatePreFlightChecks(
     passed: isCatalystPassed,
     summary: chk4Summary,
     detail: chk4Detail,
-    icon: resolvedCatalystState === "PASS" ? "✓" : resolvedCatalystState === "WARN" ? "⚠️" : "⚪",
+    icon: resolvedCatalystState === "PASS" ? (isCatalystConfirmed ? "✓" : "✓") : resolvedCatalystState === "WARN" ? "⚠️" : "⚪",
   };
 
   // ── Check 5: Macro Regime Guard ──────────────────────────────────────────

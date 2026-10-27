@@ -269,9 +269,11 @@ function TerminalContent() {
       isEstimate: rawCorporate.is_estimate,
     } : null;
 
+    const fromAnalyticsVix = typeof (data as any)?.vix === "number" && !isNaN((data as any).vix) && (data as any).vix > 0 ? (data as any).vix : undefined;
     const fromMacro = (macroData as any)?.vix?.value ?? (macroData as any)?.vix?.level ?? (typeof (macroData as any)?.vix === "number" ? (macroData as any).vix : undefined);
-    const freshMacroEvidence = resolveFreshMacroEvidence();
+    const freshMacroEvidence = (data as any)?.macroEvidence || resolveFreshMacroEvidence();
     const resolvedVix = (() => {
+      if (fromAnalyticsVix != null) return fromAnalyticsVix;
       if (typeof fromMacro === "number" && !isNaN(fromMacro) && fromMacro > 0) return fromMacro;
       return freshMacroEvidence?.vix ?? undefined;
     })();

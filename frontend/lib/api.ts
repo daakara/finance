@@ -803,6 +803,8 @@ export interface RadarCapabilityDetail {
   universeScreening: RadarCapabilityStatus;
   singleAssetAnalysis: RadarCapabilityStatus;
   rationale?: string;
+  reason?: string | null;
+  coverageStatus?: string | null;
   catalogType?: "CURATED_REFERENCE_CATALOG" | string | null;
   countAuthority?: "DYNAMIC_CATALOG" | "PUBLICATION_SNAPSHOT" | string | null;
   sortingSemantics?: string | null;
