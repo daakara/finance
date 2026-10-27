@@ -276,3 +276,108 @@ def test_immutable_scanner_snapshot_to_envelope_resolves_coverage():
     assert env["coverage"]["coverage_status"] == "UNAVAILABLE"
     assert env["coverage"]["matched_count"] is None
     assert env["coverage"]["scan_coverage_pct"] == 0.0
+
+
+# ==============================================================================
+# FOCUSED ADVERSARIAL TESTS (DIRECTIVE 028/029 FINAL HARDENING)
+# ==============================================================================
+
+def test_adversarial_incomplete_metadata_does_not_infer_universe_size():
+    """Directive 029: Eliminate unsupported fallbacks inferring scanned counts from universe size."""
+    c_meta = {
+        "coverage_status": "AVAILABLE",
+        # scanned_successfully_count omitted
+        # data_complete_count omitted
+        # scan_coverage_pct omitted
+    }
+    env_cov = resolve_coverage_envelope(
+        status=ScannerStatus.AVAILABLE,
+        universe_size=40,
+        matched_count=1,
+        c_meta=c_meta,
+    )
+    # Must NOT infer 40 or 100.0% from universe_size
+    assert env_cov["scanned_successfully_count"] is None
+    assert env_cov["data_complete_count"] is None
+    assert env_cov["scan_coverage_pct"] is None
+    assert env_cov["data_completeness_pct"] is None
+    assert env_cov["matched_count"] == 1
+
+
+def test_adversarial_contradictory_counts_rectified_from_measurements():
+    """Directive 029: Contradictory COMPLETE claim with partial measured counts is corrected."""
+    c_meta = {
+        "coverage_status": "COMPLETE",  # Contradictory claim
+        "scanned_successfully_count": 15,  # 15 / 40 = 37.5%
+        "data_complete_count": 15,
+        "scan_coverage_pct": None,  # Must be derived from authoritative measurements
+    }
+    env_cov = resolve_coverage_envelope(
+        status=ScannerStatus.AVAILABLE,
+        universe_size=40,
+        matched_count=0,
+        c_meta=c_meta,
+    )
+    assert env_cov["coverage_status"] == "PARTIAL"
+    assert env_cov["scanned_successfully_count"] == 15
+    assert env_cov["scan_coverage_pct"] == 37.5
+    assert env_cov["matched_count"] == 0
+
+
+def test_adversarial_failed_publication_preserves_valid_partial_coverage_with_disclosure():
+    """Directive 029: Preserve genuinely measured partial coverage on ERROR with publication-state disclosure."""
+    c_meta = {
+        "coverage_status": "PARTIAL",
+        "scanned_successfully_count": 20,
+        "data_complete_count": 20,
+        "scan_coverage_pct": 50.0,
+        "failure_reason": "PUBLICATION_INTEGRITY_REJECTED",
+    }
+    env_cov = resolve_coverage_envelope(
+        status=ScannerStatus.ERROR,
+        universe_size=40,
+        matched_count=2,  # Must be nulled out on ERROR
+        c_meta=c_meta,
+    )
+    assert env_cov["coverage_status"] == "PARTIAL"
+    assert env_cov["scanned_successfully_count"] == 20
+    assert env_cov["scan_coverage_pct"] == 50.0
+    assert env_cov["matched_count"] is None  # Candidate eligibility nulled out
+    assert env_cov["failure_reason"] == "PUBLICATION_INTEGRITY_REJECTED"
+
+
+def test_adversarial_error_with_full_scanned_count_fails_closed():
+    """Directive 029: ERROR snapshot can NEVER advertise false COMPLETE coverage even if scanned_count == universe_size."""
+    c_meta = {
+        "coverage_status": "COMPLETE",
+        "scanned_successfully_count": 40,
+        "data_complete_count": 40,
+        "scan_coverage_pct": 100.0,
+        "failure_reason": "DOWNSTREAM_STORAGE_ABORT",
+    }
+    env_cov = resolve_coverage_envelope(
+        status=ScannerStatus.ERROR,
+        universe_size=40,
+        matched_count=5,
+        c_meta=c_meta,
+    )
+    assert env_cov["coverage_status"] == "UNAVAILABLE"
+    assert env_cov["matched_count"] is None
+    assert env_cov["failure_reason"] == "DOWNSTREAM_STORAGE_ABORT"
+
+
+def test_adversarial_unknown_historical_coverage_preserves_null_metrics():
+    """Directive 029: Unmeasured historical snapshots preserve UNKNOWN semantics and null metrics."""
+    env_cov = resolve_coverage_envelope(
+        status=ScannerStatus.AVAILABLE,
+        universe_size=40,
+        matched_count=3,
+        c_meta=None,
+    )
+    assert env_cov["coverage_status"] == "UNKNOWN"
+    assert env_cov["scanned_successfully_count"] is None
+    assert env_cov["data_complete_count"] is None
+    assert env_cov["scan_coverage_pct"] is None
+    assert env_cov["data_completeness_pct"] is None
+    assert env_cov["matched_count"] == 3
+

@@ -159,57 +159,110 @@ def resolve_coverage_envelope(
     failure_reason_fallback: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Constructs a contract-valid coverage dictionary for scanner API envelopes.
+    Constructs an authoritative, contract-valid coverage dictionary for scanner API envelopes.
 
-    Explicit State Semantics:
+    Explicit State Semantics & Invariants:
     1. ERROR:
-       - Never claims COMPLETE coverage. If c_meta claims COMPLETE or has no valid scan evidence,
-         it is clamped to UNAVAILABLE (or failure_reason like EMPTY_UNIVERSE).
+       - Strictly prohibited from advertising false COMPLETE coverage.
+       - If zero symbols were scanned or snapshot claimed COMPLETE on ERROR, coverage_status
+         is clamped to UNAVAILABLE (or EMPTY_UNIVERSE when universe_size == 0).
+       - Genuinely measured partial coverage (0 < scanned < universe_size) is preserved as PARTIAL,
+         with explicit publication failure reason disclosure.
        - matched_count is strictly None.
     2. AVAILABLE:
-       - If c_meta is explicitly provided:
-         - COMPLETE if scan_coverage_pct >= 99.9, else PARTIAL.
-       - If historical snapshot with missing c_meta:
-         - UNKNOWN status; data_completeness_pct and scan_coverage_pct are None (never invented 100%).
-         - Distinguishes unmeasured historical records from measured zero coverage.
+       - COMPLETE if authoritative scan_coverage_pct >= 99.9% (or measured scanned == universe_size).
+       - PARTIAL if 0 < scan_coverage_pct < 99.9%.
+       - If historical / absent measurements: UNKNOWN status with null counts and null percentages.
+         Eliminates unsupported fallback inference from universe_size.
     3. PIPELINE_PENDING:
-       - coverage_status is PENDING.
-       - Percentages are None if unmeasured.
+       - coverage_status is PENDING (or PARTIAL if partial ingestion occurred before evaluation).
+       - matched_count is strictly None.
     4. STALE:
        - Preserves known publication coverage status, or UNKNOWN if unmeasured.
     5. EMPTY_UNIVERSE:
        - When universe_size == 0, coverage_status is EMPTY_UNIVERSE, counts and pcts are 0.0.
     6. UNKNOWN:
-       - Used when coverage metadata is unmeasured or absent.
+       - Preserved whenever authoritative measurements are absent. Never invents 100% or universe_size.
     """
     c_meta = c_meta or {}
     has_explicit = bool(c_meta and "coverage_status" in c_meta)
     status_str = status.value if hasattr(status, "value") else str(status)
 
+    if universe_size == 0:
+        return {
+            "coverage_status": "EMPTY_UNIVERSE",
+            "data_complete_count": 0,
+            "scanned_successfully_count": 0,
+            "matched_count": None if status_str == "ERROR" else 0,
+            "unavailable_symbol_count": 0,
+            "unresolved_symbol_count": 0,
+            "data_completeness_pct": 0.0,
+            "scan_coverage_pct": 0.0,
+            "unavailable_reasons": c_meta.get("unavailable_reasons", {}),
+            "failure_reason": c_meta.get("failure_reason") or failure_reason_fallback or "EMPTY_UNIVERSE",
+            "adjustment_state_distribution": c_meta.get("adjustment_state_distribution", {}),
+        }
+
     if has_explicit:
-        cov_status = c_meta["coverage_status"]
+        raw_status = str(c_meta["coverage_status"]).strip().upper()
         data_complete_count = c_meta.get("data_complete_count")
         scanned_count = c_meta.get("scanned_successfully_count")
         data_completeness_pct = c_meta.get("data_completeness_pct")
         scan_coverage_pct = c_meta.get("scan_coverage_pct")
         failure_reason = c_meta.get("failure_reason") or failure_reason_fallback
 
-        # Gate 1: No ERROR snapshot can claim COMPLETE coverage
+        # Validate & derive authoritative percentage from measured counts if missing or contradictory
+        if scanned_count is not None and universe_size > 0:
+            calc_pct = round((scanned_count / universe_size) * 100, 1)
+            if scan_coverage_pct is None:
+                scan_coverage_pct = calc_pct
+
+        if data_complete_count is not None and universe_size > 0:
+            calc_d_pct = round((data_complete_count / universe_size) * 100, 1)
+            if data_completeness_pct is None:
+                data_completeness_pct = calc_d_pct
+
+        # Resolve status on ERROR
         if status_str in (ScannerStatus.ERROR.value, "ERROR"):
-            if cov_status == "COMPLETE" or (scanned_count is not None and scanned_count == 0) or scan_coverage_pct == 0.0:
-                cov_status = "EMPTY_UNIVERSE" if universe_size == 0 else "UNAVAILABLE"
-            if scanned_count == 0:
-                scan_coverage_pct = 0.0
             eff_matched = None
+            if not failure_reason:
+                failure_reason = "SCANNER_EXECUTION_ERROR"
+
+            if scanned_count == 0 or scan_coverage_pct == 0.0:
+                cov_status = "UNAVAILABLE"
+            elif scanned_count is not None and 0 < scanned_count < universe_size:
+                # Genuinely measured partial scan preserved with publication-state disclosure
+                cov_status = "PARTIAL"
+            elif raw_status == "COMPLETE":
+                # False complete on ERROR is strictly prohibited
+                cov_status = "UNAVAILABLE"
+                if failure_reason == "SCANNER_EXECUTION_ERROR":
+                    failure_reason = "PUBLICATION_FAILED_UNAVAILABLE"
+            elif raw_status in ("UNAVAILABLE", "PARTIAL", "EMPTY_UNIVERSE"):
+                cov_status = raw_status
+            else:
+                cov_status = "UNAVAILABLE"
         else:
             eff_matched = matched_count
+            # Handle contradictory counts for non-ERROR
+            if scanned_count is not None and universe_size > 0:
+                if scanned_count == 0:
+                    cov_status = "UNAVAILABLE"
+                elif scanned_count < universe_size and raw_status == "COMPLETE":
+                    cov_status = "PARTIAL"
+                elif scanned_count >= universe_size and raw_status == "PARTIAL":
+                    cov_status = "COMPLETE"
+                else:
+                    cov_status = raw_status
+            else:
+                cov_status = raw_status
 
         return {
             "coverage_status": cov_status,
-            "data_complete_count": data_complete_count if data_complete_count is not None else (0 if status_str == "ERROR" else universe_size),
-            "scanned_successfully_count": scanned_count if scanned_count is not None else (0 if status_str == "ERROR" else universe_size),
+            "data_complete_count": data_complete_count,
+            "scanned_successfully_count": scanned_count,
             "matched_count": eff_matched,
-            "unavailable_symbol_count": c_meta.get("unavailable_symbol_count", 0),
+            "unavailable_symbol_count": c_meta.get("unavailable_symbol_count", (universe_size - scanned_count) if scanned_count is not None else 0),
             "unresolved_symbol_count": c_meta.get("unresolved_symbol_count", 0),
             "data_completeness_pct": data_completeness_pct,
             "scan_coverage_pct": scan_coverage_pct,
@@ -218,27 +271,19 @@ def resolve_coverage_envelope(
             "adjustment_state_distribution": c_meta.get("adjustment_state_distribution", {}),
         }
 
-    # Historical or missing metadata path: strictly reject fabricated COMPLETE / 100% claims
+    # Historical or missing metadata path: strictly reject fabricated claims or inferences
     if status_str in (ScannerStatus.ERROR.value, "ERROR"):
-        if universe_size == 0:
-            cov_status = "EMPTY_UNIVERSE"
-            d_pct = 0.0
-            s_pct = 0.0
-        else:
-            cov_status = "UNAVAILABLE"
-            d_pct = None
-            s_pct = None
         return {
-            "coverage_status": cov_status,
-            "data_complete_count": 0,
-            "scanned_successfully_count": 0,
+            "coverage_status": "UNAVAILABLE",
+            "data_complete_count": None,
+            "scanned_successfully_count": None,
             "matched_count": None,
             "unavailable_symbol_count": universe_size,
             "unresolved_symbol_count": 0,
-            "data_completeness_pct": d_pct,
-            "scan_coverage_pct": s_pct,
+            "data_completeness_pct": None,
+            "scan_coverage_pct": None,
             "unavailable_reasons": {},
-            "failure_reason": failure_reason_fallback or ("BUILD_MEMBERSHIP_EMPTY" if universe_size == 0 else "SCANNER_EXECUTION_ERROR"),
+            "failure_reason": failure_reason_fallback or "SCANNER_EXECUTION_ERROR",
             "adjustment_state_distribution": {},
         }
 
@@ -257,23 +302,8 @@ def resolve_coverage_envelope(
             "adjustment_state_distribution": {},
         }
 
-    if universe_size == 0:
-        return {
-            "coverage_status": "EMPTY_UNIVERSE",
-            "data_complete_count": 0,
-            "scanned_successfully_count": 0,
-            "matched_count": None if status_str == "ERROR" else 0,
-            "unavailable_symbol_count": 0,
-            "unresolved_symbol_count": 0,
-            "data_completeness_pct": 0.0,
-            "scan_coverage_pct": 0.0,
-            "unavailable_reasons": {},
-            "failure_reason": "EMPTY_UNIVERSE",
-            "adjustment_state_distribution": {},
-        }
-
     # Historical AVAILABLE or STALE snapshot without coverage metadata:
-    # Must report UNKNOWN and preserve null percentages to avoid fabricating coverage evidence
+    # Must report UNKNOWN and preserve null percentages and null counts
     return {
         "coverage_status": "UNKNOWN",
         "data_complete_count": None,
