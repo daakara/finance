@@ -439,17 +439,23 @@ export interface SecInsiderTradeItem {
 }
 
 export interface SmartMoneyOverview {
-  total_congress_filings_30d: number;
-  total_sec_insiders_30d?: number;
-  net_political_sentiment: string;
-  top_congress_bought_sector: string;
+  total_congress_filings_30d?: number | null;
+  total_sec_insiders_30d?: number | null;
+  net_political_sentiment?: string | null;
+  top_congress_bought_sector?: string | null;
   unusual_flow_volume_today?: string | null;
   call_to_put_dollar_ratio?: number | null;
   late_filers_count?: number;
   fresh_trades_count?: number;
-  congress_trades: CongressTradeItem[];
+  congress_trades?: CongressTradeItem[];
   sec_insider_trades?: SecInsiderTradeItem[];
-  options_flow: OptionsFlowItem[];
+  options_flow?: OptionsFlowItem[];
+  regulatory_sources?: Record<string, string>;
+  status?: string;
+  disclosure?: string;
+  is_live?: boolean;
+  available?: boolean;
+  dataset_date?: string | null;
   _dataSource?: "live" | "curated" | "mixed" | "fallback" | "unavailable";
 }
 
@@ -1954,7 +1960,151 @@ export async function fetchUnifiedCockpitStateFromApi(): Promise<any> {
   return null;
 }
 
-export async function fetchSmartMoneyOverview(): Promise<SmartMoneyOverview> {
+export interface SmartMoneyFetchOptions {
+  /** If true, network errors, timeouts, HTTP non-2xx, and malformed JSON throw instead of returning fallback. */
+  throwOnError?: boolean;
+  /** If false, fallback fixtures will not be returned on error. Defaults to true for backwards compatibility. */
+  allowFallback?: boolean;
+}
+
+/**
+ * Validates that an API response adheres to the runtime shape of SmartMoneyOverview.
+ * Enforces that feed sections (congress_trades, sec_insider_trades, options_flow), if present,
+ * must be valid arrays and not corrupt types.
+ * Requires at least one recognized feed array or overview property.
+ */
+export function isValidSmartMoneyPayload(data: unknown): data is SmartMoneyOverview {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return false;
+  }
+
+  const record = data as Record<string, unknown>;
+
+  // If congress_trades is defined and non-null, it MUST be an Array
+  if ("congress_trades" in record && record.congress_trades !== null && record.congress_trades !== undefined) {
+    if (!Array.isArray(record.congress_trades)) {
+      return false;
+    }
+  }
+
+  // If sec_insider_trades is defined and non-null, it MUST be an Array
+  if ("sec_insider_trades" in record && record.sec_insider_trades !== null && record.sec_insider_trades !== undefined) {
+    if (!Array.isArray(record.sec_insider_trades)) {
+      return false;
+    }
+  }
+
+  // If options_flow is defined and non-null, it MUST be an Array
+  if ("options_flow" in record && record.options_flow !== null && record.options_flow !== undefined) {
+    if (!Array.isArray(record.options_flow)) {
+      return false;
+    }
+  }
+
+  // A valid payload must contain at least one recognized feed array or recognized overview field
+  const hasRecognizedFeed =
+    Array.isArray(record.congress_trades) ||
+    Array.isArray(record.sec_insider_trades) ||
+    Array.isArray(record.options_flow);
+
+  const hasOverviewField =
+    "total_congress_filings_30d" in record ||
+    "net_political_sentiment" in record ||
+    "status" in record ||
+    "regulatory_sources" in record;
+
+  return hasRecognizedFeed || hasOverviewField;
+}
+
+/**
+ * Classifies the source provenance of a Smart Money API response or raw payload.
+ *
+ * Epistemic Rules:
+ * 1. An explicit unavailable status ("UNAVAILABLE", "OFFLINE", "DISCONNECTED", "PIPELINE_PENDING")
+ *    or available === false fails closed to "unavailable".
+ * 2. Mixed feeds ("MIXED") return "mixed".
+ * 3. Verified curated datasets ("CURATED", is_live === false, or disclosure citing Curated)
+ *    return "curated".
+ * 4. Verified live feeds MUST be accompanied by usable observation arrays (congress_trades,
+ *    sec_insider_trades, or options_flow). A status-only or metadata-only payload
+ *    (e.g., status: "LIVE" with only regulatory_sources) NEVER proves live connectivity
+ *    and fails closed to "unavailable".
+ * 5. If observation arrays are present but the payload lacks verified live markers (unannotated
+ *    legacy archive), it is treated as "curated" and NEVER promoted to live.
+ * 6. Default fails closed to "unavailable".
+ */
+export function classifySmartMoneyProvenance(
+  data: unknown
+): "live" | "curated" | "mixed" | "fallback" | "unavailable" {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return "unavailable";
+  }
+
+  const record = data as Record<string, unknown>;
+
+  if (record._dataSource === "fallback") {
+    return "fallback";
+  }
+  if (record._dataSource === "unavailable") {
+    return "unavailable";
+  }
+
+  // Unavailable markers fail closed
+  if (record.available === false) {
+    return "unavailable";
+  }
+
+  const rawStatus = typeof record.status === "string" ? record.status.trim().toUpperCase() : "";
+  if (
+    rawStatus === "UNAVAILABLE" ||
+    rawStatus === "OFFLINE" ||
+    rawStatus === "DISCONNECTED" ||
+    rawStatus === "PIPELINE_PENDING"
+  ) {
+    return "unavailable";
+  }
+
+  if (rawStatus === "MIXED") {
+    return "mixed";
+  }
+
+  // Explicit curated status
+  if (rawStatus === "CURATED") {
+    return "curated";
+  }
+
+  // Explicit non-live flag
+  if (record.is_live === false) {
+    return "curated";
+  }
+
+  // Curated disclosure text
+  if (typeof record.disclosure === "string" && record.disclosure.toLowerCase().includes("curated")) {
+    return "curated";
+  }
+
+  // Check for presence of observation arrays
+  const hasObservationArrays =
+    Array.isArray(record.congress_trades) ||
+    Array.isArray(record.sec_insider_trades) ||
+    Array.isArray(record.options_flow);
+
+  // Status-only / metadata-only responses without observations fail closed
+  if (!hasObservationArrays) {
+    return "unavailable";
+  }
+
+  // Explicit verified live source with observations
+  if (rawStatus === "LIVE" || record.is_live === true) {
+    return "live";
+  }
+
+  // Unannotated observation payload (legacy archive without status) defaults to curated, never live
+  return "curated";
+}
+
+export async function fetchSmartMoneyOverview(options?: SmartMoneyFetchOptions): Promise<SmartMoneyOverview> {
+  const shouldThrow = Boolean(options?.throwOnError || options?.allowFallback === false);
   try {
     const baseUrl = getApiBaseUrl();
     const res = await fetch(`${baseUrl}/smart-money/overview?include_curated=true`, {
@@ -1963,15 +2113,25 @@ export async function fetchSmartMoneyOverview(): Promise<SmartMoneyOverview> {
     });
     if (res.ok) {
       const data = await res.json();
-      if (data && data.congress_trades) {
-        const isCurated = data.status === "CURATED" || Boolean(data.disclosure && data.disclosure.includes("Curated"));
+      if (isValidSmartMoneyPayload(data)) {
+        const provenance = classifySmartMoneyProvenance(data);
         return {
           ...data,
-          _dataSource: isCurated ? ("curated" as const) : ("live" as const),
+          _dataSource: provenance,
         };
+      }
+      if (shouldThrow) {
+        throw new Error("Smart money overview response failed runtime shape validation");
+      }
+    } else {
+      if (shouldThrow) {
+        throw new Error(`Smart money overview fetch failed with HTTP status ${res.status}`);
       }
     }
   } catch (err) {
+    if (shouldThrow) {
+      throw err;
+    }
     console.warn("Smart money overview API fallback:", err);
   }
 
@@ -4217,6 +4377,14 @@ export async function fetchSmartMoneyOverview(): Promise<SmartMoneyOverview> {
     }
   ]
 } as unknown as SmartMoneyOverview;
+}
+
+/**
+ * Strict Smart Money Overview fetcher that throws on network failure, timeout,
+ * HTTP 5xx, or malformed payloads, preventing silent fallback promotion.
+ */
+export async function fetchSmartMoneyOverviewStrict(): Promise<SmartMoneyOverview> {
+  return fetchSmartMoneyOverview({ throwOnError: true, allowFallback: false });
 }
 
 const PREFETCH_CACHE = new Set<string>();

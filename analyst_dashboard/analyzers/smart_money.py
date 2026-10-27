@@ -2073,6 +2073,11 @@ class SmartMoneyEngine:
     def get_smart_money_overview(include_curated: bool = False) -> Dict[str, Any]:
         if not include_curated:
             return {
+                'status': 'UNAVAILABLE',
+                'is_live': False,
+                'available': False,
+                'dataset_date': None,
+                'disclosure': 'Live Smart Money regulatory ingestion feed disconnected. Pass include_curated=true to query archived research disclosures.',
                 'total_congress_filings_30d': None,
                 'total_sec_insiders_30d': None,
                 'net_political_sentiment': None,
@@ -2110,6 +2115,11 @@ class SmartMoneyEngine:
         top_sector = max(sector_counts.items(), key=lambda x: x[1])[0] if sector_counts else "Unclassified"
 
         return {
+            'status': 'CURATED',
+            'is_live': False,
+            'available': True,
+            'dataset_date': '2026-08-28',
+            'disclosure': 'Curated historical regulatory research dataset (August 2026). Not a real-time live trading feed.',
             'total_congress_filings_30d': total_congress,
             'total_sec_insiders_30d': total_sec,
             'net_political_sentiment': sentiment_str,
