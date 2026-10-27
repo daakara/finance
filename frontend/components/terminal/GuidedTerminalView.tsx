@@ -6,6 +6,8 @@ import { QuantitativeInsight } from "../../types/insight";
 import FinancialDisclaimer from "../FinancialDisclaimer";
 import { evaluateLevelRelation } from "../../lib/reclaimSemantics";
 import { deriveUnmetConditions } from "../../lib/decisionHierarchyUtils";
+import SharedAssetDeck from "./SharedAssetDeck";
+import SharedExecutionLadder from "./SharedExecutionLadder";
 
 interface GuidedTerminalViewProps {
   insight: QuantitativeInsight;
@@ -13,7 +15,9 @@ interface GuidedTerminalViewProps {
   onOpenWhy: () => void;
   chartSlot?: React.ReactNode;
   planSlot?: React.ReactNode;
+  preflightSlot?: React.ReactNode;
   evidenceSlot?: React.ReactNode;
+  isDemo?: boolean;
 }
 
 export default function GuidedTerminalView({
@@ -22,54 +26,93 @@ export default function GuidedTerminalView({
   onOpenWhy,
   chartSlot,
   planSlot,
+  preflightSlot,
   evidenceSlot,
+  isDemo = false,
 }: GuidedTerminalViewProps) {
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const unmetConditions = deriveUnmetConditions(insight);
-  const isActionable = Boolean(insight.terminalState.isActionable);
+
+  const isStaleTape = Boolean(
+    insight.terminalState?.decisionState === "STALE_DATA" ||
+    insight.freshness?.status === "STALE" ||
+    insight.freshness?.status === "STALE_HISTORICAL" ||
+    (insight.freshness?.stalenessDays !== undefined && insight.freshness.stalenessDays > 4) ||
+    insight.terminalState?.freshness?.status === "STALE" ||
+    insight.terminalState?.freshness?.status === "STALE_HISTORICAL" ||
+    (insight.terminalState?.freshness?.stalenessDays !== undefined && insight.terminalState.freshness.stalenessDays > 4) ||
+    insight.terminalState?.freshnessStatus === "STALE_HISTORICAL" ||
+    insight.terminalState?.freshnessStatus === "STALE" ||
+    (insight.terminalState?.stalenessDays !== undefined && insight.terminalState.stalenessDays > 4)
+  );
+
+  const isActionable = isStaleTape ? false : Boolean(insight.terminalState?.isActionable ?? (insight as any).actionable);
+
+  const kl = insight.standard?.keyLevels || (insight as any).keyLevels || {};
+  const rawPrice = insight.price || kl.currentPrice;
+  const hasValidPrice = typeof rawPrice === "number" && !isNaN(rawPrice) && rawPrice > 0;
+  const isExtended = Boolean(kl.entryMax && hasValidPrice && (rawPrice as number) > kl.entryMax);
+  const isWaitingPullback = Boolean(kl.entryMin && hasValidPrice && (rawPrice as number) < kl.entryMin);
+  const isInBuyZone = Boolean(hasValidPrice && kl.entryMin && kl.entryMax && (rawPrice as number) >= kl.entryMin && (rawPrice as number) <= kl.entryMax);
+  const pivotPrice = ((kl as any)?.breakoutPivot != null && !isNaN((kl as any)?.breakoutPivot))
+    ? Number((kl as any).breakoutPivot)
+    : (kl.entryMin != null ? Number(kl.entryMin) : null);
 
   const smaRel = evaluateLevelRelation(
     insight.price,
-    insight.standard.keyLevels.sma50,
+    kl.sma50,
     "50D SMA",
     insight.symbol
   );
 
   const steps = [
-    { title: "1. What's Happening?", text: `${insight.symbol} is trading at $${insight.price.toFixed(2)}, ${insight.changePct >= 0 ? "+" : ""}${insight.changePct.toFixed(2)}% today. ${insight.human.assessmentDescription}` },
-    { title: "2. What's the Setup?", text: `ARX identifies the current structure as ${insight.standard.setupSummary}. ${insight.advanced.relativeStrengthScore !== undefined ? `Relative strength score is ${insight.advanced.relativeStrengthScore}/100.` : "Relative strength score is unverified for this security."}` },
-    { title: "3. Why does ARX like/caution it?", text: insight.human.reclaimMilestone },
-    { title: "4. What could go wrong?", text: `Every thesis has downside risk. If price breaks below $${insight.standard.keyLevels.stopLoss.toFixed(2)}, the setup is invalidated.` },
+    { title: "1. What's Happening?", text: `${insight.symbol} is trading at $${insight.price.toFixed(2)}, ${insight.changePct >= 0 ? "+" : ""}${insight.changePct.toFixed(2)}% today. ${insight.human?.assessmentDescription || insight.terminalState?.headlineExplanation}` },
+    { title: "2. What's the Setup?", text: `ARX identifies the current structure as ${insight.standard?.setupSummary || "Evaluated Setup"}. ${insight.advanced?.relativeStrengthScore !== undefined ? `Relative strength score is ${insight.advanced.relativeStrengthScore}/100.` : "Relative strength score is unverified for this security."}` },
+    { title: "3. Why does ARX like/caution it?", text: insight.human?.reclaimMilestone || insight.standard?.bottomLine || "Evaluating confluence factors." },
+    { title: "4. What could go wrong?", text: `Every thesis has downside risk. If price breaks below $${(kl.stopLoss || 0).toFixed(2)}, the setup is invalidated.` },
     { title: "5. How could I trade it?", text: `Plan: ${
       smaRel.status === "BELOW"
-        ? `Watch for reclaim of $${(insight.standard.keyLevels.sma50 as number).toFixed(2)} (50D SMA).`
+        ? `Watch for reclaim of $${(kl.sma50 as number || 0).toFixed(2)} (50D SMA).`
         : smaRel.status === "AT_LEVEL"
-        ? `Testing 50D SMA at $${(insight.standard.keyLevels.sma50 as number).toFixed(2)}. Watch for decisive volume expansion.`
+        ? `Testing 50D SMA at $${(kl.sma50 as number || 0).toFixed(2)}. Watch for decisive volume expansion.`
         : smaRel.status === "ABOVE"
-        ? `Holding constructively above 50D SMA ($${(insight.standard.keyLevels.sma50 as number).toFixed(2)}). Watch for base confirmation.`
+        ? `Holding constructively above 50D SMA ($${(kl.sma50 as number || 0).toFixed(2)}). Watch for base confirmation.`
         : "Watch key technical levels."
-    } Target 1 is ${insight.standard.keyLevels.target1 !== undefined ? `$${insight.standard.keyLevels.target1.toFixed(2)} (+${insight.standard.keyLevels.target1Pct}%)` : "N/A (< 50 sessions)"}.` },
-    { title: "6. What should I monitor?", text: `Volume surges, 50-day moving average crossovers, and broader market regime stability.` },
+    } Target 1 is ${kl.target1 !== undefined ? `$${kl.target1.toFixed(2)} (+${kl.target1Pct || 0}%)` : "N/A (< 50 sessions)"}.` },
+    { title: "6. What should I monitor?", text: "Volume surges, 50-day moving average crossovers, and broader market regime stability." },
   ];
 
   return (
     <div className="space-y-4 font-sans text-slate-100 animate-fade-in">
       {/* 🎯 FIRST-VIEWPORT COMPOSITION: VERDICT / GUIDANCE (LEFT 5-COL) + CHART (RIGHT 7-COL) */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
-        {/* Left Column (xl:col-span-5): Verdict Card & Preconditions */}
-        <div className="xl:col-span-5 space-y-4 min-w-0">
+      <div className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-12 gap-4 items-start">
+        {/* Left Column (lg:col-span-5 xl:col-span-5): Verdict Card & Preconditions */}
+        <div className="lg:col-span-5 xl:col-span-5 space-y-2.5 sm:space-y-4 min-w-0 order-1 lg:order-1 xl:order-1">
           {/* 1. DECISION VERDICT & 2. DECISION REASON */}
-          <div
+          <article
+            id="verdict-card"
             data-testid="decision-verdict"
-            className="bg-[#0b101b] border border-[#1d293d] rounded-2xl p-4 sm:p-5 shadow-xl space-y-3"
+            className="verdict-card bg-[#0b101b] border border-[#1d293d] rounded-2xl p-3 sm:p-5 shadow-xl space-y-3 font-sans text-slate-100"
+            aria-label="ARX Novice Guidance and Execution Decision"
           >
-            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#182335] pb-3">
-              <div>
-                <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block mb-1">
+            {/* Ticker & Price Deck */}
+            <SharedAssetDeck
+              insight={insight}
+              isStaleTape={isStaleTape}
+              isActionable={isActionable}
+              isWaitingPullback={isWaitingPullback}
+              isExtended={isExtended}
+              isDemo={isDemo}
+            />
+
+            {/* Guided Verdict & Novice Guidance Banner */}
+            <div className="verdict-banner !flex !flex-col p-3 sm:p-4 rounded-xl bg-[#080e18] border border-[#182335] space-y-2">
+              <div className="space-y-1">
+                <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
                   ARX Novice Guidance & Assessment
                 </span>
                 <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight">
-                  {insight.human.assessmentHeadline}
+                  {insight.human?.assessmentHeadline || insight.verdictLabel}
                 </h2>
                 <div className="mt-1 flex items-center gap-2">
                   <span className="text-xs font-mono text-cyan-300 font-bold">
@@ -78,36 +121,35 @@ export default function GuidedTerminalView({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span
-                  data-testid="actionability-badge"
-                  className={`px-3 py-1 rounded-md text-xs font-mono font-bold border ${
-                    isActionable
-                      ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
-                      : "bg-slate-900/80 text-slate-400 border-slate-700/80"
-                  }`}
-                >
-                  {isActionable ? "ACTIONABLE" : "NOT ACTIONABLE"}
+              {/* 2. CANONICAL REASON */}
+              <div
+                data-testid="decision-reason"
+                className="text-xs sm:text-sm text-slate-200 font-sans leading-relaxed pt-1 border-t border-[#182335]/60"
+              >
+                <span className="text-[10px] text-slate-400 font-bold block uppercase mb-0.5">
+                  Plain English Explanation:
                 </span>
+                <p>{insight.human?.assessmentDescription || insight.terminalState?.headlineExplanation || insight.standard?.bottomLine}</p>
               </div>
             </div>
 
-            {/* 2. CANONICAL REASON */}
-            <div
-              data-testid="decision-reason"
-              className="text-xs sm:text-sm text-slate-200 font-sans leading-relaxed pt-1"
-            >
-              <span className="text-xs text-slate-400 font-bold block uppercase mb-1">
-                Plain English Explanation:
-              </span>
-              <p>{insight.human.assessmentDescription}</p>
-            </div>
-          </div>
+            {/* Guided Execution Ladder */}
+            <SharedExecutionLadder
+              insight={insight}
+              mode="GUIDED"
+              isStaleTape={isStaleTape}
+              isActionable={isActionable}
+              isExtended={isExtended}
+              isInBuyZone={isInBuyZone}
+              pivotPrice={pivotPrice}
+              onOpenSizer={onOpenSizer}
+            />
+          </article>
 
           {/* 3. WHAT NEEDS TO CHANGE */}
           <div
             data-testid="unmet-condition"
-            className="bg-[#080e18] border border-cyan-900/50 rounded-2xl p-4 sm:p-5 shadow-lg space-y-3"
+            className="bg-[#080e18] border border-cyan-900/50 rounded-2xl p-3 sm:p-5 shadow-lg space-y-2 sm:space-y-3"
           >
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#182335] pb-2">
               <h3 className="text-xs sm:text-sm font-bold text-cyan-300 uppercase font-mono tracking-wide flex items-center gap-2">
@@ -120,19 +162,19 @@ export default function GuidedTerminalView({
             </div>
 
             <p className="text-xs text-slate-300 font-sans leading-relaxed">
-              {insight.human.reclaimMilestone}
+              {insight.human?.reclaimMilestone || insight.standard?.bottomLine}
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-2.5 text-xs pt-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1 gap-2 text-xs pt-1">
               {unmetConditions.map((cond) => (
                 <div
                   key={cond.id}
-                  className="p-3 rounded-xl bg-[#060b13] border border-[#1b2639] space-y-1"
+                  className="p-2.5 sm:p-3 rounded-xl bg-[#060b13] border border-[#1b2639] space-y-1"
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-slate-200 text-xs">{cond.title}</span>
                     <span
-                      className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
+                      className={`px-2 py-0.5 rounded text-[10px] sm:text-xs font-mono font-bold ${
                         cond.status === "MET"
                           ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
                           : cond.status === "UNMET"
@@ -150,8 +192,8 @@ export default function GuidedTerminalView({
           </div>
         </div>
 
-        {/* Right Column (xl:col-span-7): Price Chart */}
-        <div className="xl:col-span-7 space-y-2 min-w-0">
+        {/* Right Column (lg:col-span-7 xl:col-span-7): Price Chart */}
+        <div className="lg:col-span-7 xl:col-span-7 space-y-2 min-w-0 order-2 lg:order-2 xl:order-2">
           {/* 4. PRICE / CHART CONTEXT */}
           {chartSlot && (
             <div data-testid="market-workspace-chart" className="space-y-2">
@@ -161,6 +203,16 @@ export default function GuidedTerminalView({
         </div>
       </div>
 
+      {/* 🎯 SYNTHESIS E V3: INLINE PRE-FLIGHT CLEARANCE PANEL */}
+      {preflightSlot !== undefined ? (
+        preflightSlot
+      ) : (
+        <div id="preflight-readiness-bar" className="bg-[#0b101b] border border-[#1d293d] rounded-2xl p-4 text-xs font-mono text-slate-400 flex items-center justify-between">
+          <span>Pre-Flight Readiness Bar</span>
+          <span className="text-emerald-400 font-bold">CLEARANCE PASS</span>
+        </div>
+      )}
+
       {/* 5. CONDITIONAL TRADE PLAN */}
       {planSlot && (
         <div className="space-y-2">
@@ -169,148 +221,57 @@ export default function GuidedTerminalView({
       )}
 
       {/* 6. SUPPORTING EVIDENCE */}
-      <div
-        data-testid="supporting-evidence"
-        className="bg-[#0b101b] border border-[#1d293d] rounded-2xl p-4 sm:p-5 shadow-xl space-y-4"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#182335] pb-3">
-          <div>
-            <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">
-              Supporting Evidence
-            </span>
-            <h3 className="text-sm sm:text-base font-bold text-white tracking-tight mt-0.5">
-              Why ARX Thinks This & Level Analysis
-            </h3>
+      {evidenceSlot ? (
+        evidenceSlot
+      ) : (
+        <div
+          data-testid="supporting-evidence"
+          className="bg-[#0b101b] border border-[#1d293d] rounded-2xl p-4 sm:p-5 shadow-xl space-y-4"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#182335] pb-3">
+            <div>
+              <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">
+                Supporting Evidence
+              </span>
+              <span className="text-sm font-semibold text-white">
+                Novice Plain-Language Confluence Factors
+              </span>
+            </div>
+
+            <button
+              onClick={onOpenWhy}
+              className="px-3 py-1.5 rounded-lg border border-cyan-800/80 bg-cyan-950/40 text-cyan-300 hover:bg-cyan-900/60 transition-colors flex items-center gap-1.5 min-h-[36px] text-xs font-mono cursor-pointer"
+            >
+              <span className="text-xs text-cyan-400 font-mono">Explain Score →</span>
+            </button>
           </div>
 
-          {/* Subordinated Score Badge */}
-          <div
-            onClick={onOpenWhy}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onOpenWhy();
-              }
-            }}
-            className={`flex items-center gap-3 px-3.5 py-2 bg-[#06090f] border rounded-xl cursor-pointer transition-all shrink-0 min-h-[36px] sm:min-h-[44px] text-xs ${
-              insight.terminalState.overallEligibility !== "ELIGIBLE"
-                ? "border-slate-700 hover:border-slate-500"
-                : "border-[#24334b] hover:border-cyan-500/60"
-            }`}
-          >
-            <div>
-              <span className="text-xs text-slate-400 font-mono block">Setup Score</span>
-              <span className="text-xs text-cyan-400 font-mono">Explain Score →</span>
-            </div>
-            <div className="text-right">
-              <span
-                className={`text-xl font-black font-mono ${
-                  insight.terminalState.overallEligibility !== "ELIGIBLE"
-                    ? "text-slate-500"
-                    : insight.setupScore >= 75 ? "text-emerald-400" : insight.setupScore >= 55 ? "text-amber-400" : "text-rose-400"
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            {insight.human?.whyPills?.map((pill, idx) => (
+              <div
+                key={idx}
+                className={`p-3 rounded-xl border flex items-start gap-2.5 ${
+                  pill.sentiment === "positive"
+                    ? "bg-emerald-950/30 border-emerald-800/50 text-emerald-200"
+                    : pill.sentiment === "negative"
+                    ? "bg-rose-950/30 border-rose-800/50 text-rose-200"
+                    : "bg-slate-900/50 border-slate-700/50 text-slate-300"
                 }`}
               >
-                {insight.setupScore}
-                {insight.terminalState.overallEligibility !== "ELIGIBLE" ? "*" : ""}
-              </span>
-              {insight.terminalState.overallEligibility !== "ELIGIBLE" && (
-                <span className="text-xs text-amber-500/80 font-mono block">Partial</span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* 4-Pills Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
-          {(insight.human.whyPills || []).map((pill, idx) => (
-            <div
-              key={idx}
-              className="bg-[#070b13] p-3 rounded-xl border border-[#1b2639] space-y-1.5"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400 text-xs font-bold">{pill.category}</span>
-                <span
-                  className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
-                    pill.sentiment === "positive"
-                      ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
-                      : pill.sentiment === "negative"
-                      ? "bg-rose-950 text-rose-400 border border-rose-800"
-                      : "bg-amber-950 text-amber-400 border border-amber-800"
-                  }`}
-                >
-                  {pill.status}
+                <span className="text-sm shrink-0">
+                  {pill.sentiment === "positive" ? "✅" : pill.sentiment === "negative" ? "⚠️" : "ℹ️"}
                 </span>
+                <div>
+                  <strong className="block font-mono text-[11px] uppercase tracking-wide opacity-80">
+                    {pill.category}
+                  </strong>
+                  <p className="mt-0.5 leading-snug">{(pill as any).text || pill.description}</p>
+                </div>
               </div>
-              <p className="text-xs text-slate-300 leading-relaxed font-sans">
-                {pill.description}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Watch These Levels */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 font-mono text-xs">
-          <div className="bg-[#080d16] p-3 rounded-xl border border-[#182335]">
-            <span className="text-xs text-slate-500 uppercase block font-semibold">Watch Level</span>
-            <span className="text-sm font-black text-amber-300 mt-0.5 block">{insight.human.watchLevels.watchZone}</span>
-            <span className="text-xs text-slate-400 mt-0.5 block">Needs base rebound</span>
-          </div>
-
-          <div className="bg-[#080d16] p-3 rounded-xl border border-[#182335]">
-            <span className="text-xs text-slate-500 uppercase block font-semibold">Key Level (50D SMA)</span>
-            <span className="text-sm font-black text-cyan-300 mt-0.5 block">{insight.human.watchLevels.keyLevel}</span>
-            <span className="text-xs text-slate-400 mt-0.5 block">{smaRel.uiBadgeLabel}</span>
-          </div>
-
-          <div className="bg-[#080d16] p-3 rounded-xl border border-rose-950/60">
-            <span className="text-xs text-rose-400 uppercase block font-semibold">Risk Level (Stop)</span>
-            <span className="text-sm font-black text-rose-300 mt-0.5 block">{insight.human.watchLevels.riskStop}</span>
-            <span className="text-xs text-rose-500/80 mt-0.5 block">Protect if broken</span>
+            ))}
           </div>
         </div>
-
-        {/* Action Guidance */}
-        <div className="pt-2">
-          {insight.terminalState.posture === "ACQUIRE" ? (
-            <button
-              onClick={onOpenSizer}
-              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 rounded-xl text-xs font-mono font-black shadow-md transition-all active:scale-95 cursor-pointer min-h-[44px]"
-            >
-              ⚖️ Size Position (Buy Zone)
-            </button>
-          ) : insight.terminalState.posture === "EXIT_REVIEW" ? (
-            <button
-              onClick={onOpenWhy}
-              className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-mono font-black shadow-md transition-all active:scale-95 cursor-pointer min-h-[44px]"
-            >
-              🚨 Review Invalidation
-            </button>
-          ) : insight.terminalState.posture === "RESEARCH" ? (
-            <button
-              onClick={onOpenWhy}
-              className="w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-mono font-black shadow-md transition-all active:scale-95 cursor-pointer min-h-[44px]"
-            >
-              📋 Open Research
-            </button>
-          ) : insight.terminalState.posture === "AVOID" ? (
-            <Link
-              href="/radar"
-              className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-mono font-black shadow-md transition-all active:scale-95 cursor-pointer min-h-[44px] flex items-center justify-center"
-            >
-              🔎 Find Setups
-            </Link>
-          ) : (
-            <button
-              onClick={onOpenWhy}
-              className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 rounded-xl text-xs font-mono font-black shadow-md transition-all active:scale-95 cursor-pointer min-h-[44px]"
-            >
-              ⏳ Wait for Trigger
-            </button>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* 6-Step Novice Walkthrough */}
       <div className="bg-[#070b13] border border-[#1a2538] rounded-xl p-3.5 space-y-2.5">
