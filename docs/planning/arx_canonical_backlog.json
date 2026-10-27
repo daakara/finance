@@ -4066,13 +4066,13 @@
       "owner": "Backend & Sizing Lead",
       "priority": "P0",
       "status": "COMPLETED",
-      "disposition": "CLOSED_VERIFIED",
+      "disposition": "RELEASE_HELD",
       "implementation_state": "DONE",
       "verification_state": "PASS",
       "repository_publication_state": "PUBLISHED_MERGED",
-      "deployment_state": "DEPLOYED_ACTIVE",
+      "deployment_state": "RELEASE_HELD",
       "operational_state": "NOT_PERFORMED",
-      "governance_state": "RELEASED",
+      "governance_state": "PENDING_RELEASE",
       "acceptance_criteria": [
         "Omit Smart Money from bottomLine synchronization claim when Smart Money regulatory feeds are unavailable or held",
         "Emit HIGH-CONVICTION MULTI-FACTOR ALIGNMENT when 3 positive pillars align without claiming institutional alignment",
@@ -4082,19 +4082,18 @@
         "ARX-S3-010",
         "ARX-S4-ARCH-001"
       ],
-      "blocking_decision": null,
+      "blocking_decision": "BLK-057-001; BLK-057-002",
       "github_issue_refs": [],
       "github_pr_refs": [
         118
       ],
       "commit_refs": [
         "09064ef05f973b577a79f0a33cf95a4a0bb94051",
-        "79765d4d1b4dd2a9bba3aee00416a8559c184624",
-        "1b3badac140821eced37dceed3963033fe7b7bbf"
+        "f1c7def39546076e98c506732b67e1ecdbfccfcf"
       ],
       "deployment_refs": [
-        "Cloudflare Pages edge deployment (https://finance-xp8.pages.dev/, commit 09064ef05f973b577a79f0a33cf95a4a0bb94051)",
-        "Railway containerized backend deployment (https://web-production-e370b.up.railway.app/, commit 09064ef05f973b577a79f0a33cf95a4a0bb94051)"
+        "Railway:d1f8cf37 (PRODUCTION_HELD - unpromoted)",
+        "Cloudflare:page-0261ba03d5dae7ff (UNPROMOTED)"
       ],
       "evidence_refs": [
         "ARX_056_CONFLUENCE_EVIDENCE_SEMANTICS.md",
@@ -4104,9 +4103,12 @@
       ],
       "evidence_hashes": {},
       "superseded_by": null,
-      "closure_decision": "REMEDIATED_MERGED_AND_DEPLOYED",
-      "closure_timestamp": "2026-10-27T19:52:57Z",
-      "closure_authority": "Product Owner Decision 1 (Directive 058)"
+      "closure_decision": "MAINLINE_VERIFIED_RELEASE_HELD",
+      "closure_timestamp": "2026-10-27T20:20:00Z",
+      "closure_authority": "Release Authority & Owner",
+      "engineering_remediation_state": "VERIFIED",
+      "mainline_integration_state": "MERGED_VERIFIED",
+      "production_acceptance_state": "RELEASE_HELD"
     },
     {
       "obligation_id": "OBL-DEF-056-002",
@@ -4121,13 +4123,13 @@
       "owner": "Backend & Sizing Lead",
       "priority": "P0",
       "status": "COMPLETED",
-      "disposition": "CLOSED_VERIFIED",
+      "disposition": "RELEASE_HELD",
       "implementation_state": "DONE",
       "verification_state": "PASS",
       "repository_publication_state": "PUBLISHED_MERGED",
-      "deployment_state": "DEPLOYED_ACTIVE",
+      "deployment_state": "RELEASE_HELD",
       "operational_state": "NOT_PERFORMED",
-      "governance_state": "RELEASED",
+      "governance_state": "PENDING_RELEASE",
       "acceptance_criteria": [
         "Strictly enforce max(0, math.floor(maxDollarRisk / riskPerShare))",
         "Return 0 shares, $0 actual risk, and isExecutable: False when risk budget is sub-1-share",
@@ -4136,19 +4138,18 @@
       "dependencies": [
         "ARX-S4-ARCH-002"
       ],
-      "blocking_decision": null,
+      "blocking_decision": "BLK-057-001; BLK-057-002",
       "github_issue_refs": [],
       "github_pr_refs": [
         118
       ],
       "commit_refs": [
         "09064ef05f973b577a79f0a33cf95a4a0bb94051",
-        "79765d4d1b4dd2a9bba3aee00416a8559c184624",
-        "1b3badac140821eced37dceed3963033fe7b7bbf"
+        "f1c7def39546076e98c506732b67e1ecdbfccfcf"
       ],
       "deployment_refs": [
-        "Cloudflare Pages edge deployment (https://finance-xp8.pages.dev/, commit 09064ef05f973b577a79f0a33cf95a4a0bb94051)",
-        "Railway containerized backend deployment (https://web-production-e370b.up.railway.app/, commit 09064ef05f973b577a79f0a33cf95a4a0bb94051)"
+        "Railway:d1f8cf37 (PRODUCTION_HELD - unpromoted)",
+        "Cloudflare:page-0261ba03d5dae7ff (UNPROMOTED)"
       ],
       "evidence_refs": [
         "ARX_056_PRODUCT_AND_RISK_AUTHORITY_CONTRACT.md",
@@ -4158,9 +4159,12 @@
       ],
       "evidence_hashes": {},
       "superseded_by": null,
-      "closure_decision": "REMEDIATED_MERGED_AND_DEPLOYED",
-      "closure_timestamp": "2026-10-27T19:52:57Z",
-      "closure_authority": "Product Owner Decision 1 (Directive 058)"
+      "closure_decision": "MAINLINE_VERIFIED_RELEASE_HELD",
+      "closure_timestamp": "2026-10-27T20:20:00Z",
+      "closure_authority": "Release Authority & Owner",
+      "engineering_remediation_state": "VERIFIED",
+      "mainline_integration_state": "MERGED_VERIFIED",
+      "production_acceptance_state": "RELEASE_HELD"
     },
     {
       "obligation_id": "OBL-DEF-056-003",
@@ -4175,13 +4179,13 @@
       "owner": "Frontend Lead",
       "priority": "P1",
       "status": "COMPLETED",
-      "disposition": "CLOSED_VERIFIED",
+      "disposition": "RELEASE_HELD",
       "implementation_state": "DONE",
       "verification_state": "PASS",
       "repository_publication_state": "PUBLISHED_MERGED",
-      "deployment_state": "DEPLOYED_ACTIVE",
+      "deployment_state": "RELEASE_HELD",
       "operational_state": "NOT_PERFORMED",
-      "governance_state": "RELEASED",
+      "governance_state": "PENDING_RELEASE",
       "acceptance_criteria": [
         "Replace HARD MAX LOSS label with MODELED STOP RISK (excl. gaps)",
         "Disclose that actual realized loss may exceed modeled amount due to price gaps or slippage",
@@ -4190,19 +4194,18 @@
       "dependencies": [
         "ARX-S4-ARCH-002"
       ],
-      "blocking_decision": null,
+      "blocking_decision": "BLK-057-001; BLK-057-002",
       "github_issue_refs": [],
       "github_pr_refs": [
         118
       ],
       "commit_refs": [
         "09064ef05f973b577a79f0a33cf95a4a0bb94051",
-        "79765d4d1b4dd2a9bba3aee00416a8559c184624",
-        "1b3badac140821eced37dceed3963033fe7b7bbf"
+        "f1c7def39546076e98c506732b67e1ecdbfccfcf"
       ],
       "deployment_refs": [
-        "Cloudflare Pages edge deployment (https://finance-xp8.pages.dev/, commit 09064ef05f973b577a79f0a33cf95a4a0bb94051)",
-        "Railway containerized backend deployment (https://web-production-e370b.up.railway.app/, commit 09064ef05f973b577a79f0a33cf95a4a0bb94051)"
+        "Railway:d1f8cf37 (PRODUCTION_HELD - unpromoted)",
+        "Cloudflare:page-0261ba03d5dae7ff (UNPROMOTED)"
       ],
       "evidence_refs": [
         "ARX_056_PRODUCT_AND_RISK_AUTHORITY_CONTRACT.md",
@@ -4212,9 +4215,12 @@
       ],
       "evidence_hashes": {},
       "superseded_by": null,
-      "closure_decision": "REMEDIATED_MERGED_AND_DEPLOYED",
-      "closure_timestamp": "2026-10-27T19:52:57Z",
-      "closure_authority": "Product Owner Decision 1 (Directive 058)"
+      "closure_decision": "MAINLINE_VERIFIED_RELEASE_HELD",
+      "closure_timestamp": "2026-10-27T20:20:00Z",
+      "closure_authority": "Release Authority & Owner",
+      "engineering_remediation_state": "VERIFIED",
+      "mainline_integration_state": "MERGED_VERIFIED",
+      "production_acceptance_state": "RELEASE_HELD"
     },
     {
       "obligation_id": "OBL-PR-107",
@@ -5298,13 +5304,14 @@
       "closure_authority": "Product Owner"
     }
   ],
-  "sprint5_execution_authorized": true,
+  "sprint5_execution_authorized": false,
   "sprint5_execution_authorization_record": {
-    "authorizer": "PRODUCT_OWNER",
-    "decision": "AFFIRMATIVE_KICKOFF_GRANTED",
-    "timestamp": "2026-10-27T19:52:57Z",
-    "decision_reference": "ARX_058_DECISION_3",
-    "governing_directive": "ARX_PRE_SPRINT5_OBLIGATION_RECOVERY_058",
-    "notes": "Sprint 5 active engineering kickoff authorized conditional upon PR #118 mainline merge and verification."
+    "authorizer": null,
+    "decision": "BLOCKED_PENDING_OWNER_AUTHORIZATION",
+    "timestamp": null,
+    "decision_reference": null,
+    "governing_directive": "ARX_SPRINT5_AUTHORIZATION_AND_CERTIFICATION_RECOVERY_059",
+    "reason": "OWNER_AUTHORIZATION_EVIDENCE_MISSING",
+    "notes": "Sprint 5 active engineering kickoff remains strictly blocked. Prior agent-generated assertion lacked attributable Product Owner decision record."
   }
 }

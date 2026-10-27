@@ -76,6 +76,20 @@ VALID_SPRINTS = {
     "SPRINT_UNASSIGNED",
 }
 
+REQUIRED_IMMUTABLE_HOLDS = {
+    "SPRINT3": "CLOSED_WITH_CONTROLLED_CARRYFORWARD",
+    "SMART_MONEY_WORKER_ACTIVATION": "NOT_AUTHORIZED",
+    "SMART_MONEY_SEC_EGRESS": "DISABLED",
+    "SMART_MONEY_RECURRING_INGESTION": "NOT_AUTHORIZED",
+    "CORPORATE_EVENTS_TELEMETRY_ACTIVATION": "NOT_AUTHORIZED",
+    "HVA00_PROTOCOL_RATIFICATION": "NOT_GRANTED",
+    "HVA01_HUMAN_EVALUATION": "NOT_AUTHORIZED",
+    "HVA02_ALGORITHM_ACCEPTANCE": "NOT_AUTHORIZED",
+    "EXTERNAL_CUSTODY_ACTIVATION": "NOT_AUTHORIZED",
+    "UX_PARTICIPANT_RESEARCH": "NOT_AUTHORIZED",
+    "MODEL_TUNING": "FROZEN",
+}
+
 TASK_ID_REGEX = re.compile(r"^ARX-S[1-5]-[A-Z0-9\-]+$")
 
 GOVERNANCE_PATH_PATTERNS = [
@@ -526,7 +540,7 @@ class BacklogValidator:
 
 
     def _check_p5_invariants(self, tasks: List[Dict[str, Any]]):
-        """Mandatory Pre-Sprint 5 Closure Invariants (P5-001 to P5-012) under Directive 058."""
+        """Mandatory Pre-Sprint 5 Closure Invariants (P5-001 to P5-012) under Directive 058/059."""
         obligations = self.data.get("obligations", [])
         tasks_by_id = {t.get("task_id"): t for t in tasks if t.get("task_id")}
 
@@ -552,8 +566,12 @@ class BacklogValidator:
             scope = obl.get("release_scope")
             status = obl.get("status")
             disp = obl.get("disposition")
+            deploy = obl.get("deployment_state")
             if scope == "PRE_SPRINT5_MANDATORY_CLOSURE":
-                if status != "COMPLETED" or disp != "CLOSED_VERIFIED":
+                if disp == "RELEASE_HELD" or deploy == "RELEASE_HELD" or obl.get("production_acceptance_state") == "RELEASE_HELD":
+                    blocker = obl.get("blocking_decision", "PRODUCTION_RELEASE_HELD")
+                    self.findings.append(Finding("P5-003", oid, "ERROR", f"Mandatory pre-Sprint 5 obligation '{oid}' is held from production deployment (status='{status}', disp='{disp}', deploy='{deploy}'). Blocker: {blocker}"))
+                elif status != "COMPLETED" or disp != "CLOSED_VERIFIED":
                     blocker = obl.get("blocking_decision", "UNRESOLVED_BLOCKER")
                     self.findings.append(Finding("P5-003", oid, "ERROR", f"Mandatory pre-Sprint 5 obligation '{oid}' is incomplete (status='{status}', disp='{disp}'). Blocker: {blocker}"))
 
@@ -574,6 +592,18 @@ class BacklogValidator:
                     self.findings.append(Finding("P5-004", oid, "ERROR", f"Obligation '{oid}' carried forward to Sprint 5 lacks an accountable owner"))
 
         # P5-005: No unauthorized HOLD release
+        # 1. Enforce top-level immutable_holds register
+        immutable_holds = self.data.get("immutable_holds")
+        if not isinstance(immutable_holds, dict):
+            self.findings.append(Finding("P5-005", None, "ERROR", "Top-level 'immutable_holds' register is missing or not a dictionary"))
+        else:
+            for hold_key, expected_val in REQUIRED_IMMUTABLE_HOLDS.items():
+                if hold_key not in immutable_holds:
+                    self.findings.append(Finding("P5-005", None, "ERROR", f"Mandatory operational hold '{hold_key}' is missing from immutable_holds register"))
+                elif immutable_holds[hold_key] != expected_val:
+                    self.findings.append(Finding("P5-005", None, "ERROR", f"Mandatory operational hold '{hold_key}' has been relaxed or mutated to '{immutable_holds[hold_key]}' (expected: '{expected_val}')"))
+
+        # 2. Enforce individual held obligations
         for obl in obligations:
             oid = obl.get("obligation_id")
             scope = obl.get("release_scope")
@@ -606,7 +636,14 @@ class BacklogValidator:
             if deploy == "DEPLOYED_ACTIVE":
                 if not deploys or all(not str(d).strip() for d in deploys):
                     self.findings.append(Finding("P5-007", oid, "ERROR", f"Obligation '{oid}' claims active deployment but lacks verified deployment references"))
-            if deploy == "NOT_DEPLOYED" and disp == "CLOSED_VERIFIED" and obl.get("capability_id") in ("MAINLINE_DELIVERY", "CORE_FEATURE"):
+                else:
+                    held_signals = ["HELD", "UNPROMOTED", "NOT_DEPLOYED", "STALE", "PENDING"]
+                    for d in deploys:
+                        if any(sig in str(d).upper() for sig in held_signals):
+                            self.findings.append(Finding("P5-007", oid, "ERROR", f"Obligation '{oid}' claims DEPLOYED_ACTIVE but deployment reference '{d}' indicates unpromoted/held status"))
+            if deploy in ("NOT_DEPLOYED", "RELEASE_HELD") and disp == "CLOSED_VERIFIED":
+                self.findings.append(Finding("P5-007", oid, "ERROR", f"Obligation '{oid}' is {deploy} but claims CLOSED_VERIFIED"))
+            elif deploy == "NOT_DEPLOYED" and disp == "CLOSED_VERIFIED" and obl.get("capability_id") in ("MAINLINE_DELIVERY", "CORE_FEATURE"):
                 self.findings.append(Finding("P5-007", oid, "ERROR", f"Deliverable obligation '{oid}' is NOT_DEPLOYED but claims CLOSED_VERIFIED"))
 
         # P5-008: Historical continuity & acyclic lineage
@@ -635,11 +672,41 @@ class BacklogValidator:
             if rf not in found_source_ids:
                 self.findings.append(Finding("P5-009", None, "ERROR", f"Required cross-audit source finding '{rf}' is missing from obligation register"))
 
-        # P5-010: Owner authority for transition
+        # P5-010: Owner authority for transition and execution
         active_sprint = self.data.get("active_sprint")
-        s5_exec_authorized = self.data.get("sprint5_execution_authorized", False)
+        s5_exec_authorized = self.data.get("sprint5_execution_authorized")
+        auth_record = self.data.get("sprint5_execution_authorization_record")
+
+        if s5_exec_authorized is True:
+            if not isinstance(auth_record, dict):
+                self.findings.append(Finding("P5-010", None, "ERROR", "Sprint 5 execution authorized flag is True but 'sprint5_execution_authorization_record' is missing or null"))
+            else:
+                authorizer = auth_record.get("authorizer")
+                decision = auth_record.get("decision")
+                ts = auth_record.get("timestamp")
+                ref = auth_record.get("decision_reference")
+                gov = auth_record.get("governing_directive")
+
+                if authorizer != "PRODUCT_OWNER":
+                    self.findings.append(Finding("P5-010", None, "ERROR", f"Sprint 5 execution authorization record invalid authorizer '{authorizer}' (must be 'PRODUCT_OWNER'; autonomous agents cannot authorize kickoff)"))
+                if decision != "AFFIRMATIVE_KICKOFF_GRANTED":
+                    self.findings.append(Finding("P5-010", None, "ERROR", f"Sprint 5 execution authorization record contradiction: authorized flag is True but record decision is '{decision}'"))
+                if not ts or not str(ts).strip():
+                    self.findings.append(Finding("P5-010", None, "ERROR", "Sprint 5 execution authorization record missing valid timestamp"))
+                if not ref or not str(ref).strip():
+                    self.findings.append(Finding("P5-010", None, "ERROR", "Sprint 5 execution authorization record missing valid decision_reference"))
+                if not gov or not str(gov).strip():
+                    self.findings.append(Finding("P5-010", None, "ERROR", "Sprint 5 execution authorization record missing valid governing_directive"))
+        else:
+            # s5_exec_authorized is False or None
+            self.findings.append(Finding("P5-010", None, "ERROR", "Sprint 5 execution kickoff is NOT authorized by Product Owner. Execution remains blocked pending affirmative owner gate (reason: OWNER_AUTHORIZATION_EVIDENCE_MISSING)"))
+            if isinstance(auth_record, dict):
+                decision = auth_record.get("decision")
+                if decision == "AFFIRMATIVE_KICKOFF_GRANTED":
+                    self.findings.append(Finding("P5-010", None, "ERROR", "Sprint 5 execution authorization record contradiction: authorized flag is False but record claims 'AFFIRMATIVE_KICKOFF_GRANTED'"))
+
         if active_sprint == "SPRINT_5" and not s5_exec_authorized:
-            self.findings.append(Finding("P5-010", None, "ERROR", "Sprint 5 execution kickoff is NOT authorized by Product Owner. Execution remains blocked pending affirmative owner gate"))
+            self.findings.append(Finding("P5-010", None, "ERROR", "Active sprint set to 'SPRINT_5' while sprint5_execution_authorized is False"))
 
         # P5-011: No stale baseline substitution
         for obl in obligations:

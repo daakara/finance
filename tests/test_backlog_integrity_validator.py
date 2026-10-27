@@ -1320,18 +1320,41 @@ class TestPreSprint5ClosureInvariants:
         assert verdict == "FAIL"
         assert any(f.rule_id == "P5-012" and "execution status is NOT_PERFORMED" in f.message for f in findings)
 
-    # 18. Actual Canonical Backlog Status: Verifies all mandatory pre-Sprint 5 obligations resolved
-    def test_canonical_backlog_pre_sprint5_closure_verified_pass(self, canonical_backlog_data, canonical_schema_data):
+    # 18. Actual Canonical Backlog Status: Fails closed when mandatory defects held from release and execution unauthorized
+    def test_canonical_backlog_pre_sprint5_closure_fails_closed_when_release_held_and_unauthorized(self, canonical_backlog_data, canonical_schema_data):
+        """
+        Directive 059 Invariant: The canonical backlog in its current unpromoted, unauthorized state
+        MUST fail closed under --pre-sprint5-closure with P5-003 (release held) and P5-010 (owner authorization missing).
+        """
         validator = BacklogValidator(canonical_backlog_data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
         verdict, findings = validator.validate_all()
         errors = [f for f in findings if f.severity == "ERROR"]
-        assert errors == [], f"Unexpected errors: {[str(e) for e in errors]}"
-        assert verdict == "PASS" 
+        assert verdict == "FAIL"
+        
+        # Verify P5-003 errors for DEF-056-001/002/003
+        p5_003_errors = [f for f in errors if f.rule_id == "P5-003"]
+        assert len(p5_003_errors) == 3
+        for oid in ("OBL-DEF-056-001", "OBL-DEF-056-002", "OBL-DEF-056-003"):
+            assert any(oid in f.message and "held from production deployment" in f.message for f in p5_003_errors)
+            assert any("BLK-057-001; BLK-057-002" in f.message for f in p5_003_errors)
 
-    # 19. Synthetic Full Pass: When PR #118 is merged and owner authorizes execution
+        # Verify P5-010 errors for missing owner authorization
+        p5_010_errors = [f for f in errors if f.rule_id == "P5-010"]
+        assert len(p5_010_errors) >= 1
+        assert any("Sprint 5 execution kickoff is NOT authorized by Product Owner" in f.message for f in p5_010_errors)
+
+        # Verify zero unexpected errors on other rules
+        other_errors = [f for f in errors if f.rule_id not in ("P5-003", "P5-010")]
+        assert other_errors == [], f"Unexpected errors on other rules: {[str(e) for e in other_errors]}"
+
+    # 19. Synthetic Full Pass: When PR #118 is deployed and owner affirmatively authorizes kickoff
     def test_canonical_backlog_pre_sprint5_closure_passes_when_fully_resolved(self, canonical_backlog_data, canonical_schema_data):
+        """
+        Simulates affirmative Product Owner authorization and production deployment release.
+        Proves that when all prerequisites are truthfully satisfied, the validator passes cleanly.
+        """
         data = copy.deepcopy(canonical_backlog_data)
-        # Simulate PR #118 merge & release
+        # Simulate PR #118 production deployment promotion & verification
         for o in data["obligations"]:
             if o.get("source_finding_id") in ("DEF-056-001", "DEF-056-002", "DEF-056-003"):
                 o["status"] = "COMPLETED"
@@ -1340,14 +1363,141 @@ class TestPreSprint5ClosureInvariants:
                 o["operational_state"] = "EXECUTED"
                 o["governance_state"] = "RELEASED"
                 o["scope_authorization"] = "OWNER_AUTHORIZED"
-                o["deployment_refs"] = ["Railway:d1f8cf37", "Cloudflare:655b4653"]
+                o["production_acceptance_state"] = "ACCEPTED_ACTIVE"
+                o["blocking_decision"] = None
+                o["deployment_refs"] = ["Railway:d1f8cf37 (PRODUCTION_ACTIVE)", "Cloudflare:655b4653 (ACTIVE)"]
             if o.get("obligation_id") == "OBL-ARX-S3-006":
                 o["scope_authorization"] = "OWNER_AUTHORIZED"
-        # Simulate owner authorization for Sprint 5 kickoff
+
+        # Simulate affirmative Product Owner kickoff authorization record
         data["sprint5_execution_authorized"] = True
+        data["sprint5_execution_authorization_record"] = {
+            "authorizer": "PRODUCT_OWNER",
+            "decision": "AFFIRMATIVE_KICKOFF_GRANTED",
+            "timestamp": "2026-10-27T22:00:00Z",
+            "decision_reference": "PO-DIR-059-KICKOFF",
+            "governing_directive": "Directive 059",
+            "reason": "Production rollout verified and pre-Sprint 5 certification complete.",
+            "notes": "Affirmative owner kickoff granted."
+        }
 
         validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
         verdict, findings = validator.validate_all()
         errors = [f for f in findings if f.severity == "ERROR"]
         assert errors == [], f"Unexpected errors: {[str(e) for e in errors]}"
         assert verdict == "PASS"
+
+    # === Directive 059 Hardening & Provenance Adversarial Controls ===
+
+    # 20. P5-010 Adversarial: Missing authorization record when flag is True
+    def test_p5_010_missing_record_when_authorized_true(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        data["sprint5_execution_authorized"] = True
+        data["sprint5_execution_authorization_record"] = None
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-010" and "missing or null" in f.message for f in findings)
+
+    # 21. P5-010 Adversarial: Fabricated non-human authorizer rejected
+    def test_p5_010_fabricated_agent_authorizer_rejected(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        data["sprint5_execution_authorized"] = True
+        data["sprint5_execution_authorization_record"] = {
+            "authorizer": "AUTONOMOUS_AGENT",
+            "decision": "AFFIRMATIVE_KICKOFF_GRANTED",
+            "timestamp": "2026-10-27T22:00:00Z",
+            "decision_reference": "AGENT-059-FABRICATED",
+            "governing_directive": "Directive 059",
+            "reason": "Autonomous agent self-authorized.",
+            "notes": "Invalid authorizer test"
+        }
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-010" and "invalid authorizer 'AUTONOMOUS_AGENT'" in f.message for f in findings)
+
+    # 22. P5-010 Adversarial: Mismatched decision contradiction
+    def test_p5_010_mismatched_decision_contradiction_rejected(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        # Case A: authorized is False, but record claims AFFIRMATIVE_KICKOFF_GRANTED
+        data["sprint5_execution_authorized"] = False
+        data["sprint5_execution_authorization_record"] = {
+            "authorizer": "PRODUCT_OWNER",
+            "decision": "AFFIRMATIVE_KICKOFF_GRANTED",
+            "timestamp": "2026-10-27T22:00:00Z",
+            "decision_reference": "PO-DIR-059",
+            "governing_directive": "Directive 059",
+            "reason": "Test contradiction",
+            "notes": ""
+        }
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-010" and "contradiction: authorized flag is False but record claims 'AFFIRMATIVE_KICKOFF_GRANTED'" in f.message for f in findings)
+
+        # Case B: authorized is True, but record claims BLOCKED
+        data["sprint5_execution_authorized"] = True
+        data["sprint5_execution_authorization_record"]["decision"] = "BLOCKED_PENDING_OWNER_AUTHORIZATION"
+        validator2 = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict2, findings2 = validator2.validate_all()
+        assert verdict2 == "FAIL"
+        assert any(f.rule_id == "P5-010" and "contradiction: authorized flag is True but record decision is" in f.message for f in findings2)
+
+    # 23. P5-010 Adversarial: Missing mandatory authorization record fields
+    def test_p5_010_missing_mandatory_record_fields(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        data["sprint5_execution_authorized"] = True
+        data["sprint5_execution_authorization_record"] = {
+            "authorizer": "PRODUCT_OWNER",
+            "decision": "AFFIRMATIVE_KICKOFF_GRANTED",
+            "timestamp": "",
+            "decision_reference": None,
+            "governing_directive": " "
+        }
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-010" and "missing valid timestamp" in f.message for f in findings)
+        assert any(f.rule_id == "P5-010" and "missing valid decision_reference" in f.message for f in findings)
+        assert any(f.rule_id == "P5-010" and "missing valid governing_directive" in f.message for f in findings)
+
+    # 24. P5-005 Adversarial: Operational hold relaxation rejected
+    def test_p5_005_top_level_hold_relaxation_rejected(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        data["immutable_holds"]["SMART_MONEY_WORKER_ACTIVATION"] = "AUTHORIZED"
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-005" and "SMART_MONEY_WORKER_ACTIVATION" in f.message and "relaxed or mutated" in f.message for f in findings)
+
+    # 25. P5-005 Adversarial: Missing operational hold rejected
+    def test_p5_005_top_level_hold_missing_rejected(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        del data["immutable_holds"]["MODEL_TUNING"]
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-005" and "MODEL_TUNING" in f.message and "is missing from immutable_holds" in f.message for f in findings)
+
+    # 26. P5-007 Adversarial: DEPLOYED_ACTIVE with unpromoted/held reference rejected
+    def test_p5_007_deployed_active_with_held_deployment_ref_rejected(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        obl = next(o for o in data["obligations"] if o.get("source_finding_id") == "DEF-056-001")
+        obl["deployment_state"] = "DEPLOYED_ACTIVE"
+        obl["deployment_refs"] = ["Railway:d1f8cf37 (PRODUCTION_HELD - unpromoted)"]
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-007" and "indicates unpromoted/held status" in f.message for f in findings)
+
+    # 27. P5-007 Adversarial: RELEASE_HELD claims CLOSED_VERIFIED rejected
+    def test_p5_007_release_held_claims_closed_verified_rejected(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        obl = next(o for o in data["obligations"] if o.get("source_finding_id") == "DEF-056-001")
+        obl["deployment_state"] = "RELEASE_HELD"
+        obl["disposition"] = "CLOSED_VERIFIED"
+        validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "P5-007" and "is RELEASE_HELD but claims CLOSED_VERIFIED" in f.message for f in findings)

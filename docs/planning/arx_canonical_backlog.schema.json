@@ -62,8 +62,55 @@
       "description": "Explicit Product Owner affirmative authorization permitting Sprint 5 active execution kickoff."
     },
     "sprint5_execution_authorization_record": {
-      "type": "object",
-      "description": "Formal provenance record for Product Owner Sprint 5 execution kickoff decision."
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Formal provenance record for Product Owner Sprint 5 execution kickoff decision.",
+      "properties": {
+        "authorizer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "decision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "timestamp": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "decision_reference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "governing_directive": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
     }
   },
   "definitions": {
@@ -541,6 +588,7 @@
           "enum": [
             "DEPLOYED_DORMANT",
             "DEPLOYED_ACTIVE",
+            "RELEASE_HELD",
             "NOT_DEPLOYED",
             "NOT_APPLICABLE"
           ]
@@ -636,6 +684,15 @@
             "string",
             "null"
           ]
+        },
+        "engineering_remediation_state": {
+          "type": "string"
+        },
+        "mainline_integration_state": {
+          "type": "string"
+        },
+        "production_acceptance_state": {
+          "type": "string"
         }
       }
     }
