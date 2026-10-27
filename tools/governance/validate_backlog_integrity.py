@@ -1000,6 +1000,30 @@ def main():
         if not findings:
             print("All rules (BI-000 to BI-012) verified with zero errors or warnings.")
 
+        # Dual-Gate Enforcement Readout
+        if not args.pre_sprint5_closure:
+            p5_val = BacklogValidator(
+                backlog_data,
+                prs_inventory=prs_inventory,
+                issues_inventory=issues_inventory,
+                baseline_data=baseline_data,
+                schema_data=schema_data,
+                require_baseline=True,
+                pre_sprint5_closure=True,
+            )
+            _, p5_findings = p5_val.validate_all()
+            p5_errors = [f for f in p5_findings if f.severity == "ERROR"]
+            print("-----------------------------------------------------------")
+            print("DUAL-GATE ENFORCEMENT SUMMARY:")
+            print(f"  Gate 1 (Governance Integration Gate): {verdict} (Exit Code: {exit_code}) [PR MERGE ELIGIBLE]")
+            if p5_errors:
+                print(f"  Gate 2 (Pre-Sprint 5 Certification Gate): BLOCKED (EXPECTED, {len(p5_errors)} active blockers)")
+                for pe in p5_errors:
+                    print(f"    * {str(pe)}")
+            else:
+                print("  Gate 2 (Pre-Sprint 5 Certification Gate): CERTIFIED_READY")
+            print("===========================================================")
+
     sys.exit(exit_code)
 
 
