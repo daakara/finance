@@ -1,0 +1,132 @@
+[
+  {
+    "filename": "01_radar_desktop_1440.png",
+    "sizeKb": "220.0",
+    "description": "Radar Desktop (1440px) showing loaded candidates, discovery badge, observation timestamp"
+  },
+  {
+    "filename": "02_radar_mobile_375.png",
+    "sizeKb": "42.5",
+    "description": "Radar Mobile (375px) responsive attention card & candidate list"
+  },
+  {
+    "filename": "03_radar_search_empty_zero_semantics.png",
+    "sizeKb": "129.6",
+    "description": "Radar Zero Semantics showing truthful 0 matching candidates banner on search miss"
+  },
+  {
+    "filename": "04_radar_connection_error_state.png",
+    "sizeKb": "106.5",
+    "description": "Radar Connection Error State showing explicit tape connection error banner & retry CTA"
+  },
+  {
+    "filename": "05_research_deck_desktop_1440.png",
+    "sizeKb": "249.7",
+    "description": "Research Workstation DECK Desktop (1440px) decision verdict preceding metrics"
+  },
+  {
+    "filename": "06_research_deck_tablet_768.png",
+    "sizeKb": "105.3",
+    "description": "Research Workstation DECK Tablet (768px) responsive multi-column layout"
+  },
+  {
+    "filename": "07_research_deck_mobile_375.png",
+    "sizeKb": "47.9",
+    "description": "Research Workstation DECK Mobile (375px) responsive tab navigation & verdict priority"
+  },
+  {
+    "filename": "08_research_ulta_desktop_1440.png",
+    "sizeKb": "239.3",
+    "description": "Research Workstation ULTA Desktop (1440px) decision assessment card"
+  },
+  {
+    "filename": "09_research_fix_desktop_1440.png",
+    "sizeKb": "239.6",
+    "description": "Research Workstation FIX Desktop (1440px) decision assessment card"
+  },
+  {
+    "filename": "10_workstation_nvda_desktop_1440.png",
+    "sizeKb": "156.6",
+    "description": "Main Analysis Workstation NVDA Desktop (1440px) showing 4 pillars & execution ladder"
+  },
+  {
+    "filename": "11_workstation_nvda_mobile_375.png",
+    "sizeKb": "55.7",
+    "description": "Main Analysis Workstation NVDA Mobile (375px) responsive layout"
+  },
+  {
+    "filename": "12_workstation_aapl_desktop_1440.png",
+    "sizeKb": "155.6",
+    "description": "Main Analysis Workstation AAPL Desktop (1440px)"
+  },
+  {
+    "filename": "13_setups_nvda_desktop_1440.png",
+    "sizeKb": "93.8",
+    "description": "Trade Plan & Tactical Setups NVDA Desktop (1440px)"
+  },
+  {
+    "filename": "14_setups_nvda_mobile_375.png",
+    "sizeKb": "45.8",
+    "description": "Trade Plan & Tactical Setups NVDA Mobile (375px)"
+  },
+  {
+    "filename": "15_portfolio_desktop_1440.png",
+    "sizeKb": "134.1",
+    "description": "Portfolio & Risk Management Desktop (1440px)"
+  },
+  {
+    "filename": "16_portfolio_mobile_375.png",
+    "sizeKb": "46.8",
+    "description": "Portfolio & Risk Management Mobile (375px)"
+  },
+  {
+    "filename": "17_modal_preflight_checklist.png",
+    "sizeKb": "147.3",
+    "description": "Pre-Flight Checklist Modal opened, showing 5 mandatory clearance checks, fail-closed handling, and vernacular mode toggle"
+  },
+  {
+    "filename": "18_modal_position_sizer.png",
+    "sizeKb": "119.1",
+    "description": "Position Sizer Modal opened, showing governor sizing constraints, capital risk, and zero-share protection"
+  },
+  {
+    "filename": "19_design_system_preview_1440.png",
+    "sizeKb": "54.2",
+    "description": "Design System Preview Desktop (1440px) showing Synthesis E V3 typography & tokens"
+  },
+  {
+    "filename": "20_release_dashboard_1440.png",
+    "sizeKb": "54.2",
+    "description": "Release Dashboard Desktop (1440px) showing system telemetry"
+  },
+  {
+    "filename": "21_mob_01_radar_neutral_375.png",
+    "sizeKb": "43.3",
+    "description": "Radar Mobile (375px) neutral state without ticker contamination: Analysis navigates to '/', Plan navigates to '/setups/', strictly no 'AAPL' substitution."
+  },
+  {
+    "filename": "22_mob_02_radar_nvda_context_375.png",
+    "sizeKb": "42.4",
+    "description": "Radar Mobile (375px) with NVDA asset context: Analysis navigates to '/?symbol=NVDA', Plan navigates to '/setups/?ticker=NVDA'."
+  },
+  {
+    "filename": "23_mob_03_search_dialog_open_375.png",
+    "sizeKb": "43.7",
+    "description": "Mobile (375px) Universal Omni Search modal triggered via SynthesisMobileDock Search button, auto-focusing #omni-search-input."
+  },
+  {
+    "filename": "24_mob_04_search_dialog_query_375.png",
+    "sizeKb": "41.2",
+    "description": "Mobile (375px) Universal Omni Search with 'TSLA' active query, real-time matching suggestions, and Go action."
+  },
+  {
+    "filename": "25_mob_05_search_dialog_dismissed_375.png",
+    "sizeKb": "44.6",
+    "description": "Mobile (375px) search modal dismissed via Escape key, cleanly restoring view and focus to hub."
+  },
+  {
+    "filename": "26_desktop_control_radar_1440.png",
+    "sizeKb": "90.5",
+    "description": "Radar Desktop Control (1440px) verifying desktop layout, search trigger, and table remain 100% regression-free."
+  }
+]

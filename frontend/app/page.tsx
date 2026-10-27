@@ -753,6 +753,7 @@ function TerminalContent() {
           />
         </aside>
       </main>
+      <SynthesisMobileDock activeSymbol={selectedSymbol} />
     </div>
   );
 }

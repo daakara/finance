@@ -1536,6 +1536,7 @@ export default function PortfolioPage() {
           </div>
         )}
       </div>
+      <SynthesisMobileDock activeSymbol={activeSymbol} />
     </TerminalShell>
   );
 }

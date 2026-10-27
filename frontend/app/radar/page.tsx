@@ -102,7 +102,7 @@ function formatRadarExecutionStatus(status: ExecutionStatus): string {
 
 function RadarContent() {
   const searchParams = useSearchParams();
-  const initialQ = searchParams?.get('q') || searchParams?.get('symbol') || '';
+  const initialQ = searchParams?.get('q') || searchParams?.get('symbol') || searchParams?.get('ticker') || '';
   const [activeFilter, setActiveFilter] = useState<CategoryFilter>('ALL');
   const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState(initialQ);
@@ -157,7 +157,7 @@ function RadarContent() {
   };
 
   useEffect(() => {
-    const q = (searchParams?.get('q') || searchParams?.get('symbol') || '').trim().toUpperCase();
+    const q = (searchParams?.get('q') || searchParams?.get('symbol') || searchParams?.get('ticker') || '').trim().toUpperCase();
     setSearchQuery((prev) => (prev.trim().toUpperCase() !== q ? q : prev));
   }, [searchParams]);
 
@@ -1561,7 +1561,7 @@ function RadarContent() {
         </div>
         )}
       </div>
-      <SynthesisMobileDock />
+      <SynthesisMobileDock activeSymbol={cleanQ || null} />
     </TerminalShell>
   );
 }

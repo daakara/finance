@@ -9,15 +9,17 @@ interface SynthesisMobileDockProps {
   activeSymbol?: string | null;
 }
 
-export default function SynthesisMobileDock({ activeSymbol = "AAPL" }: SynthesisMobileDockProps) {
+export default function SynthesisMobileDock({ activeSymbol }: SynthesisMobileDockProps) {
   const pathname = usePathname();
-  const symbolParam = activeSymbol ? `?symbol=${activeSymbol}` : "";
+  const cleanSymbol =
+    activeSymbol && typeof activeSymbol === "string" && activeSymbol.trim()
+      ? activeSymbol.trim().toUpperCase()
+      : null;
+  const symbolParam = cleanSymbol ? `?symbol=${encodeURIComponent(cleanSymbol)}` : "";
 
   const handleOpenSearch = () => {
-    const input = document.getElementById("omni-search-input");
-    if (input) {
-      input.focus();
-      input.scrollIntoView({ behavior: "smooth" });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("arx:open-omni-search"));
     }
   };
 
@@ -40,7 +42,7 @@ export default function SynthesisMobileDock({ activeSymbol = "AAPL" }: Synthesis
         </Link>
 
         <Link
-          href={`/${symbolParam}`}
+          href={symbolParam ? `/${symbolParam}` : "/"}
           className={`flex flex-col items-center justify-center p-1.5 rounded-xl font-mono text-[10px] min-h-[48px] transition-colors ${
             pathname === "/" || pathname === ""
               ? "text-cyan-400 font-bold bg-[var(--surface-active)]"
@@ -66,7 +68,7 @@ export default function SynthesisMobileDock({ activeSymbol = "AAPL" }: Synthesis
           </button>
         ) : (
           <Link
-            href={activeSymbol ? `/setups?ticker=${activeSymbol}` : "/setups"}
+            href={cleanSymbol ? `/setups?ticker=${encodeURIComponent(cleanSymbol)}` : "/setups"}
             className={`flex flex-col items-center justify-center p-1.5 rounded-xl font-mono text-[10px] min-h-[48px] transition-colors ${
               pathname === "/setups"
                 ? "text-cyan-400 font-bold bg-[var(--surface-active)]"
