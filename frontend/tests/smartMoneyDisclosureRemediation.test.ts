@@ -177,6 +177,324 @@ assert.ok(
 );
 console.log("   [OK] 'Historical Reference — Not Investment Advice' disclaimer verified");
 
-console.log("\n===============================================================================");
-console.log("   ALL SMART MONEY DISCLOSURE REMEDIATION TESTS PASSED (7/7 GATES VERIFIED)   ");
-console.log("===============================================================================\n");
+// ---------------------------------------------------------------------------
+// 7. DEF-72-05 Runtime Network & Feed-Integrity Regression Tests (8 Mocked Scenarios)
+// ---------------------------------------------------------------------------
+console.log("\n7. Executing deterministic runtime network and feed-integrity regression tests...");
+
+import { fetchSmartMoneyOverview, fetchSmartMoneyOverviewStrict } from "../lib/api";
+
+interface SimulatedPageState {
+  data: any;
+  feedError: boolean;
+  dataSource: "live" | "curated" | "delayed" | "fallback" | "unavailable";
+  displayedDisclosuresCount: string | number;
+  displayedSecCount: string | number;
+  sourceBadgeLabel: string;
+  errorBannerVisible: boolean;
+  emptyStateVisible: boolean;
+  fallbackWarningBannerVisible: boolean;
+}
+
+async function simulatePageLoadData(fetcher: () => Promise<any>): Promise<SimulatedPageState> {
+  let data: any = null;
+  let feedError = false;
+  let dataSource: "live" | "curated" | "delayed" | "fallback" | "unavailable" = "curated";
+
+  try {
+    const res = await fetcher();
+    if (res._dataSource === "fallback") {
+      data = res;
+      feedError = true;
+      dataSource = "fallback";
+    } else {
+      data = res;
+      feedError = false;
+      dataSource = res._dataSource === "live" ? "delayed" : res._dataSource === "curated" ? "curated" : "curated";
+    }
+  } catch (err) {
+    data = null;
+    feedError = true;
+    dataSource = "unavailable";
+  }
+
+  const congressTrades = data?.congress_trades || [];
+  const secInsiders = data?.sec_insider_trades || [];
+
+  const displayedDisclosuresCount =
+    feedError || dataSource === "fallback" || dataSource === "unavailable"
+      ? "Unavailable"
+      : congressTrades.length;
+
+  const displayedSecCount =
+    feedError || dataSource === "fallback" || dataSource === "unavailable"
+      ? "Unavailable"
+      : secInsiders.length;
+
+  const sourceBadgeLabel =
+    dataSource === "curated"
+      ? "📚 Curated Research (Aug 2026)"
+      : dataSource === "delayed"
+      ? "⏱️ Regulatory Filings (Delayed)"
+      : dataSource === "unavailable"
+      ? "⚠️ Feed Offline"
+      : "⚠️ Unverified Demo Fixtures";
+
+  const errorBannerVisible = feedError && dataSource === "unavailable";
+  const emptyStateVisible = !feedError && congressTrades.length === 0;
+  const fallbackWarningBannerVisible = dataSource === "fallback";
+
+  return {
+    data,
+    feedError,
+    dataSource,
+    displayedDisclosuresCount,
+    displayedSecCount,
+    sourceBadgeLabel,
+    errorBannerVisible,
+    emptyStateVisible,
+    fallbackWarningBannerVisible,
+  };
+}
+
+async function runRuntimeNetworkTests() {
+  const originalFetch = global.fetch;
+
+  try {
+    // 7.1 Successful Verified Response
+    console.log("   7.1 Testing Successful Verified Response (status=LIVE, 2 records)...");
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        status: "LIVE",
+        congress_trades: [{ id: "t1", ticker: "AAPL" }, { id: "t2", ticker: "MSFT" }],
+        sec_insider_trades: [{ id: "s1", ticker: "NVDA" }],
+      }),
+    } as any);
+
+    const s1 = await simulatePageLoadData(() => fetchSmartMoneyOverview({ throwOnError: true }));
+    assert.strictEqual(s1.feedError, false, "7.1: feedError must be false on verified success");
+    assert.strictEqual(s1.dataSource, "delayed", "7.1: dataSource must be 'delayed' on live regulatory filings");
+    assert.strictEqual(s1.displayedDisclosuresCount, 2, "7.1: disclosures count must equal verified records (2)");
+    assert.strictEqual(s1.displayedSecCount, 1, "7.1: SEC count must equal verified records (1)");
+    assert.strictEqual(s1.sourceBadgeLabel, "⏱️ Regulatory Filings (Delayed)");
+    assert.strictEqual(s1.errorBannerVisible, false);
+    assert.strictEqual(s1.emptyStateVisible, false);
+    console.log("       [OK] Verified live response correctly propagates with authentic counts and delayed badge");
+
+    // 7.2 Explicit Curated Response
+    console.log("   7.2 Testing Explicit Curated Response (status=CURATED, 3 records)...");
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        status: "CURATED",
+        disclosure: "Curated August 2026 Research",
+        congress_trades: [{ id: "c1", ticker: "PLTR" }, { id: "c2", ticker: "GOOG" }, { id: "c3", ticker: "AMZN" }],
+        sec_insider_trades: [],
+      }),
+    } as any);
+
+    const s2 = await simulatePageLoadData(() => fetchSmartMoneyOverview({ throwOnError: true }));
+    assert.strictEqual(s2.feedError, false);
+    assert.strictEqual(s2.dataSource, "curated", "7.2: dataSource must be 'curated'");
+    assert.strictEqual(s2.displayedDisclosuresCount, 3);
+    assert.strictEqual(s2.sourceBadgeLabel, "📚 Curated Research (Aug 2026)");
+    assert.strictEqual(s2.errorBannerVisible, false);
+    console.log("       [OK] Curated response preserved with curated badge and authentic counts");
+
+    // 7.3 HTTP 500 Internal Server Error
+    console.log("   7.3 Testing HTTP 500 Outage...");
+    global.fetch = async () => ({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      json: async () => ({ error: "Internal Server Error" }),
+    } as any);
+
+    let threw500 = false;
+    try {
+      await fetchSmartMoneyOverviewStrict();
+    } catch {
+      threw500 = true;
+    }
+    assert.strictEqual(threw500, true, "7.3: fetchSmartMoneyOverviewStrict must throw on HTTP 500");
+
+    const s3 = await simulatePageLoadData(() => fetchSmartMoneyOverview({ throwOnError: true }));
+    assert.strictEqual(s3.feedError, true, "7.3: feedError must be true on HTTP 500");
+    assert.strictEqual(s3.dataSource, "unavailable", "7.3: dataSource must be 'unavailable'");
+    assert.strictEqual(s3.displayedDisclosuresCount, "Unavailable", "7.3: count must be 'Unavailable' (not 0, not fabricated)");
+    assert.strictEqual(s3.displayedSecCount, "Unavailable");
+    assert.strictEqual(s3.sourceBadgeLabel, "⚠️ Feed Offline");
+    assert.strictEqual(s3.errorBannerVisible, true, "7.3: error banner must be visible");
+    console.log("       [OK] HTTP 500 propagates feedError=true, displays Unavailable count and Offline banner");
+
+    // 7.4 Network Rejection (ECONNREFUSED)
+    console.log("   7.4 Testing Network Rejection (ECONNREFUSED)...");
+    global.fetch = async () => {
+      throw new Error("Network request failed: ECONNREFUSED");
+    };
+
+    let threwNet = false;
+    try {
+      await fetchSmartMoneyOverview({ throwOnError: true });
+    } catch {
+      threwNet = true;
+    }
+    assert.strictEqual(threwNet, true, "7.4: Must throw on network rejection with throwOnError: true");
+
+    const s4 = await simulatePageLoadData(() => fetchSmartMoneyOverview({ throwOnError: true }));
+    assert.strictEqual(s4.feedError, true);
+    assert.strictEqual(s4.dataSource, "unavailable");
+    assert.strictEqual(s4.displayedDisclosuresCount, "Unavailable");
+    assert.strictEqual(s4.sourceBadgeLabel, "⚠️ Feed Offline");
+    assert.strictEqual(s4.errorBannerVisible, true);
+    console.log("       [OK] Network rejection triggers catch block, feedError=true, and Unavailable stats");
+
+    // 7.5 Timeout (AbortError)
+    console.log("   7.5 Testing Timeout (AbortError)...");
+    global.fetch = async () => {
+      const err = new Error("The operation was aborted due to timeout");
+      err.name = "AbortError";
+      throw err;
+    };
+
+    let threwTimeout = false;
+    try {
+      await fetchSmartMoneyOverview({ throwOnError: true });
+    } catch {
+      threwTimeout = true;
+    }
+    assert.strictEqual(threwTimeout, true, "7.5: Must throw on timeout");
+
+    const s5 = await simulatePageLoadData(() => fetchSmartMoneyOverview({ throwOnError: true }));
+    assert.strictEqual(s5.feedError, true);
+    assert.strictEqual(s5.dataSource, "unavailable");
+    assert.strictEqual(s5.displayedDisclosuresCount, "Unavailable");
+    assert.strictEqual(s5.sourceBadgeLabel, "⚠️ Feed Offline");
+    assert.strictEqual(s5.errorBannerVisible, true);
+    console.log("       [OK] Timeout correctly triggers feedError=true and Unavailable stats");
+
+    // 7.6 Invalid JSON / Malformed Response
+    console.log("   7.6 Testing Invalid JSON / Malformed Response...");
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => {
+        throw new SyntaxError("Unexpected token < in JSON at position 0");
+      },
+    } as any);
+
+    let threwJson = false;
+    try {
+      await fetchSmartMoneyOverview({ throwOnError: true });
+    } catch {
+      threwJson = true;
+    }
+    assert.strictEqual(threwJson, true, "7.6: Must throw on malformed JSON");
+
+    const s6 = await simulatePageLoadData(() => fetchSmartMoneyOverview({ throwOnError: true }));
+    assert.strictEqual(s6.feedError, true);
+    assert.strictEqual(s6.dataSource, "unavailable");
+    assert.strictEqual(s6.displayedDisclosuresCount, "Unavailable");
+    assert.strictEqual(s6.sourceBadgeLabel, "⚠️ Feed Offline");
+    assert.strictEqual(s6.errorBannerVisible, true);
+    console.log("       [OK] Malformed response triggers catch block and Unavailable stats");
+
+    // 7.7 Hardcoded Fallback Dataset
+    console.log("   7.7 Testing Fallback Dataset Handling & Segregation...");
+    global.fetch = async () => {
+      throw new Error("Network unavailable");
+    };
+
+    // Default call without throwOnError returns fallback object for backwards compatibility
+    const fallbackData = await fetchSmartMoneyOverview();
+    assert.strictEqual(fallbackData._dataSource, "fallback", "7.7: Default fallback call returns _dataSource='fallback'");
+
+    const s7 = await simulatePageLoadData(async () => fallbackData);
+    assert.strictEqual(s7.feedError, true, "7.7: feedError must be true for fallback dataset (missing live source evidence)");
+    assert.strictEqual(s7.dataSource, "fallback", "7.7: dataSource must be 'fallback'");
+    assert.strictEqual(s7.displayedDisclosuresCount, "Unavailable", "7.7: Fallback must NEVER fabricate 14 as verified disclosures count");
+    assert.strictEqual(s7.displayedSecCount, "Unavailable", "7.7: Fallback must NEVER fabricate 5 as verified SEC count");
+    assert.strictEqual(s7.sourceBadgeLabel, "⚠️ Unverified Demo Fixtures");
+    assert.strictEqual(s7.fallbackWarningBannerVisible, true, "7.7: Fallback warning banner must be active");
+    console.log("       [OK] Fallback dataset is segregated, displays Unavailable verified counts, and bears unverified demo badge");
+
+    // 7.8 Empty but Authoritative Successful Response
+    console.log("   7.8 Testing Empty Authoritative Response (status=LIVE, 0 records)...");
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        status: "LIVE",
+        congress_trades: [],
+        sec_insider_trades: [],
+      }),
+    } as any);
+
+    const s8 = await simulatePageLoadData(() => fetchSmartMoneyOverview({ throwOnError: true }));
+    assert.strictEqual(s8.feedError, false, "7.8: feedError must be false on authoritative empty response");
+    assert.strictEqual(s8.dataSource, "delayed", "7.8: dataSource must be 'delayed'");
+    assert.strictEqual(s8.displayedDisclosuresCount, 0, "7.8: Genuine empty count must be 0 (NOT Unavailable)");
+    assert.strictEqual(s8.displayedSecCount, 0, "7.8: Genuine empty count must be 0");
+    assert.strictEqual(s8.sourceBadgeLabel, "⏱️ Regulatory Filings (Delayed)");
+    assert.strictEqual(s8.errorBannerVisible, false, "7.8: Feed error banner must NOT be visible on genuine zero");
+    assert.strictEqual(s8.emptyStateVisible, true, "7.8: Empty state banner must be visible on genuine zero");
+
+    // CRITICAL EPISTEMIC INVARIANT: Outage vs Genuine Zero Distinguishability
+    assert.notStrictEqual(
+      s8.displayedDisclosuresCount,
+      s3.displayedDisclosuresCount,
+      "EPISTEMIC INVARIANT: Genuine zero disclosures (0) must be strictly distinguishable from feed outage (Unavailable)"
+    );
+    assert.notStrictEqual(
+      s8.errorBannerVisible,
+      s3.errorBannerVisible,
+      "EPISTEMIC INVARIANT: Outage banner must only render during feed outage, never during genuine zero response"
+    );
+    console.log("       [OK] Authoritative zero response (0) is strictly distinguishable from API outage (Unavailable)");
+
+  } finally {
+    global.fetch = originalFetch;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 8. Static Source Code Assertions for Page-Level Feed-Integrity Wiring
+// ---------------------------------------------------------------------------
+console.log("\n8. Verifying static source wiring in frontend/app/smart-money/page.tsx...");
+
+assert.ok(
+  pageSource.includes("fetchSmartMoneyOverview({ throwOnError: true })"),
+  "Wiring Violation: page.tsx must opt into throwOnError: true"
+);
+console.log("   [OK] page.tsx invokes fetchSmartMoneyOverview with { throwOnError: true }");
+
+assert.ok(
+  pageSource.includes('labelFallback="⚠️ Unverified Demo Fixtures"'),
+  "Wiring Violation: DataSourceBadge in page.tsx must supply explicit fallback label"
+);
+console.log("   [OK] DataSourceBadge explicitly labels fallback as '⚠️ Unverified Demo Fixtures'");
+
+assert.ok(
+  pageSource.includes('feedError || dataSource === "fallback" || dataSource === "unavailable"'),
+  "Wiring Violation: Verified counts must display 'Unavailable' when source evidence is missing (feedError, fallback, or unavailable)"
+);
+console.log("   [OK] Verified stats evaluate missing source evidence and display Unavailable");
+
+assert.ok(
+  pageSource.includes("Static Fallback Demonstration Fixtures"),
+  "Wiring Violation: Static fallback demonstration banner must be defined"
+);
+console.log("   [OK] Static fallback demonstration fixture warning banner verified");
+
+// Run runtime async suite
+runRuntimeNetworkTests().then(() => {
+  console.log("\n===============================================================================");
+  console.log("   ALL SMART MONEY DISCLOSURE & FEED-INTEGRITY TESTS PASSED (15/15 GATES)    ");
+  console.log("===============================================================================\n");
+}).catch((err) => {
+  console.error("FATAL RUNTIME TEST ERROR:", err);
+  process.exit(1);
+});

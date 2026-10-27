@@ -70,15 +70,22 @@ function SmartMoneyContent() {
     async function loadData() {
       setLoading(true);
       try {
-        const res = await fetchSmartMoneyOverview();
+        const res = await fetchSmartMoneyOverview({ throwOnError: true });
         if (isMounted) {
-          setData(res);
-          setFeedError(false);
-          setDataSource(res._dataSource === "live" ? "delayed" : res._dataSource === "curated" ? "curated" : res._dataSource === "fallback" ? "fallback" : "curated");
+          if (res._dataSource === "fallback") {
+            setData(res);
+            setFeedError(true);
+            setDataSource("fallback");
+          } else {
+            setData(res);
+            setFeedError(false);
+            setDataSource(res._dataSource === "live" ? "delayed" : res._dataSource === "curated" ? "curated" : "curated");
+          }
         }
       } catch (err) {
         console.error("Failed to load smart money overview:", err);
         if (isMounted) {
+          setData(null);
           setFeedError(true);
           setDataSource("unavailable");
         }
@@ -216,17 +223,26 @@ function SmartMoneyContent() {
               labelCurated="📚 Curated Research (Aug 2026)"
               labelDelayed="⏱️ Regulatory Filings (Delayed)"
               labelUnavailable="⚠️ Feed Offline"
+              labelFallback="⚠️ Unverified Demo Fixtures"
             />
             <div className="bg-[#090d14] px-3 py-1.5 rounded-lg border border-[#243044] text-right">
               <span className="text-[10px] text-slate-500 block uppercase">{timeframe === "ALL" ? "All-Time" : timeframe} Disclosures</span>
               <span className="text-base font-bold text-slate-200 tabular-nums">
-                {feedError ? <span className="text-xs text-rose-400 font-mono">Unavailable</span> : congressTrades.length}
+                {feedError || dataSource === "fallback" || dataSource === "unavailable" ? (
+                  <span className="text-xs text-rose-400 font-mono">Unavailable</span>
+                ) : (
+                  congressTrades.length
+                )}
               </span>
             </div>
             <div className="bg-[#090d14] px-3 py-1.5 rounded-lg border border-[#243044] text-right">
               <span className="text-[10px] text-slate-500 block uppercase">{timeframe === "ALL" ? "All-Time" : timeframe} SEC Insiders</span>
               <span className="text-base font-bold text-cyan-400 tabular-nums">
-                {feedError ? <span className="text-xs text-rose-400 font-mono">Unavailable</span> : secInsiders.length}
+                {feedError || dataSource === "fallback" || dataSource === "unavailable" ? (
+                  <span className="text-xs text-rose-400 font-mono">Unavailable</span>
+                ) : (
+                  secInsiders.length
+                )}
               </span>
             </div>
             <div className="bg-[#090d14] px-3 py-1.5 rounded-lg border border-[#243044] text-right">
@@ -317,6 +333,29 @@ function SmartMoneyContent() {
         <section aria-label="Smart Money vs Retail Divergence Radar">
           <SmartMoneyDivergenceRadar />
         </section>
+
+        {/* Unverified Fallback Demo Fixtures Warning Banner */}
+        {dataSource === "fallback" && (
+          <div className="bg-amber-950/40 border border-amber-600/50 rounded-xl p-3.5 text-xs text-amber-200 flex flex-wrap items-center justify-between gap-3 shadow-md font-sans">
+            <div className="space-y-1 max-w-3xl">
+              <div className="flex items-center gap-2">
+                <span className="text-amber-400 font-bold font-mono uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <span>⚠️</span>
+                  <span>Static Fallback Demonstration Fixtures</span>
+                </span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-900/80 text-amber-200 border border-amber-700">
+                  UNVERIFIED SAMPLE
+                </span>
+              </div>
+              <p className="text-amber-300/80 text-[11px] leading-relaxed">
+                Live regulatory feeds are currently offline. Showing local static demonstration fixtures for UI evaluation only. These sample records are not verified public filings and must not be used for investment decisions.
+              </p>
+            </div>
+            <div className="text-[10px] font-mono text-amber-400 bg-amber-900/60 px-2.5 py-1 rounded border border-amber-800">
+              PROVENANCE: STATIC_FALLBACK_FIXTURE
+            </div>
+          </div>
+        )}
 
         {/* 🎛️ 3-WAY REGULATORY FEED SUB-VIEW SELECTOR */}
         <div className="flex flex-wrap items-center justify-between gap-3 bg-[#0d121c] p-2.5 rounded-xl border border-[#1e293b]">
@@ -752,9 +791,16 @@ function SmartMoneyContent() {
                           </span>
                         </td>
                         <td className="py-3 px-4 font-bold text-white">
-                          <span className="bg-[#070a10] px-2 py-0.5 rounded border border-[#243044]">
-                            {t.ticker}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="bg-[#070a10] px-2 py-0.5 rounded border border-[#243044]">
+                              {t.ticker}
+                            </span>
+                            {dataSource === "fallback" && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-950 text-amber-300 border border-amber-800">
+                                Demo Fixture
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-3 px-4 text-slate-300 max-w-[180px]">
                           <div className="font-semibold truncate">{t.asset_name}</div>

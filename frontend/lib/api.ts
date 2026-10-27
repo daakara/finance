@@ -1949,7 +1949,15 @@ export async function fetchUnifiedCockpitStateFromApi(): Promise<any> {
   return null;
 }
 
-export async function fetchSmartMoneyOverview(): Promise<SmartMoneyOverview> {
+export interface SmartMoneyFetchOptions {
+  /** If true, network errors, timeouts, HTTP non-2xx, and malformed JSON throw instead of returning fallback. */
+  throwOnError?: boolean;
+  /** If false, fallback fixtures will not be returned on error. Defaults to true for backwards compatibility. */
+  allowFallback?: boolean;
+}
+
+export async function fetchSmartMoneyOverview(options?: SmartMoneyFetchOptions): Promise<SmartMoneyOverview> {
+  const shouldThrow = Boolean(options?.throwOnError || options?.allowFallback === false);
   try {
     const baseUrl = getApiBaseUrl();
     const res = await fetch(`${baseUrl}/smart-money/overview?include_curated=true`, {
@@ -1965,8 +1973,18 @@ export async function fetchSmartMoneyOverview(): Promise<SmartMoneyOverview> {
           _dataSource: isCurated ? ("curated" as const) : ("live" as const),
         };
       }
+      if (shouldThrow) {
+        throw new Error("Smart money overview response missing required congress_trades payload");
+      }
+    } else {
+      if (shouldThrow) {
+        throw new Error(`Smart money overview fetch failed with HTTP status ${res.status}`);
+      }
     }
   } catch (err) {
+    if (shouldThrow) {
+      throw err;
+    }
     console.warn("Smart money overview API fallback:", err);
   }
 
@@ -4212,6 +4230,14 @@ export async function fetchSmartMoneyOverview(): Promise<SmartMoneyOverview> {
     }
   ]
 } as unknown as SmartMoneyOverview;
+}
+
+/**
+ * Strict Smart Money Overview fetcher that throws on network failure, timeout,
+ * HTTP 5xx, or malformed payloads, preventing silent fallback promotion.
+ */
+export async function fetchSmartMoneyOverviewStrict(): Promise<SmartMoneyOverview> {
+  return fetchSmartMoneyOverview({ throwOnError: true, allowFallback: false });
 }
 
 const PREFETCH_CACHE = new Set<string>();
