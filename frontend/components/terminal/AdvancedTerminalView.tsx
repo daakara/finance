@@ -242,7 +242,7 @@ export default function AdvancedTerminalView({
           <div className="bg-[#0b101b] p-2.5 rounded-lg border border-[#162132]">
             <span className="text-xs text-slate-500 block">BETA (SPY)</span>
             <span className="text-sm font-black text-purple-300">
-              {adv.beta !== undefined ? adv.beta.toFixed(2) : "1.00"}
+              {adv.beta !== undefined ? adv.beta.toFixed(2) : "N/A"}
             </span>
           </div>
         </div>
@@ -266,6 +266,48 @@ export default function AdvancedTerminalView({
             >
               <span className="text-xs text-purple-400 font-mono">Decompose Score Model →</span>
             </button>
+          </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 font-mono">
+            <div className="bg-[#070b13] p-3 rounded-lg border border-[#182436]">
+              <span className="text-xs text-slate-500 block">MARKET CAP</span>
+              <span className="text-xs font-bold text-white mt-0.5 block">{adv.marketCap || "N/A"}</span>
+            </div>
+
+            <div className="bg-[#070b13] p-3 rounded-lg border border-[#182436]">
+              <span className="text-xs text-slate-500 block">PE RATIO (TTM)</span>
+              <span className="text-xs font-bold text-white mt-0.5 block">
+                {adv.peRatio !== undefined ? `${adv.peRatio.toFixed(1)}×` : "N/A"}
+              </span>
+            </div>
+
+            <div className="bg-[#070b13] p-3 rounded-lg border border-[#182436]">
+              <span className="text-xs text-slate-500 block">ROIC (GREENBLATT)</span>
+              <span className="text-xs font-bold text-emerald-400 mt-0.5 block">
+                {adv.roic !== undefined ? `${adv.roic.toFixed(1)}%` : "N/A"}
+              </span>
+            </div>
+
+            <div className="bg-[#070b13] p-3 rounded-lg border border-[#182436]">
+              <span className="text-xs text-slate-500 block">DEBT / EQUITY</span>
+              <span className="text-xs font-bold text-white mt-0.5 block">
+                {adv.debtToEquity !== undefined ? adv.debtToEquity.toFixed(2) : "N/A"}
+              </span>
+            </div>
+
+            <div className="bg-[#070b13] p-3 rounded-lg border border-[#182436]">
+              <span className="text-xs text-slate-500 block">RELATIVE STRENGTH</span>
+              <span className="text-xs font-bold text-cyan-400 mt-0.5 block">
+                {adv.relativeStrengthScore !== undefined ? `${adv.relativeStrengthScore}/100` : "N/A"}
+              </span>
+            </div>
+
+            <div className="bg-[#070b13] p-3 rounded-lg border border-[#182436]">
+              <span className="text-xs text-slate-500 block">PARAMETRIC VAR</span>
+              <span className="text-xs font-bold text-rose-400 mt-0.5 block">
+                {adv.var95Pct !== undefined ? `-${adv.var95Pct}% (95% 1D)` : "N/A (< 20 sessions)"}
+              </span>
+            </div>
           </div>
 
           {evidenceSlot ? (
