@@ -138,7 +138,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
             </h3>
           </div>
           <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
-            Tells you exactly how many shares to buy so a single bad trade never blows up your account.
+            Calculates position sizing based on modeled stop distance to protect capital against outsized individual trade losses.
           </p>
         </div>
 
@@ -344,7 +344,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
 
       {/* 💡 Plain-English Sizing Takeaway */}
       <div className="bg-[#090d14] border border-amber-500/30 p-3 rounded-xl text-xs font-sans text-slate-200 leading-relaxed shadow-sm">
-        🛡️ <strong>The Math Made Simple:</strong> If you buy <strong>{positionUnits} shares</strong> at <strong>${currentPrice.toFixed(2)}</strong> and the trade goes wrong, hitting your stop at <strong>${stopPrice.toFixed(2)}</strong>, you lose exactly <strong>${dollarRisk.toFixed(0)} ({riskPct}% of account)</strong>. Your profit targets are <strong>+${(dollarRisk * 1.5).toFixed(0)}</strong> / <strong>+${(dollarRisk * 2.0).toFixed(0)}</strong>. You survive to fight another day.
+        🛡️ <strong>The Math Made Simple:</strong> If you buy <strong>{positionUnits} shares</strong> at <strong>${currentPrice.toFixed(2)}</strong> and the trade goes wrong, hitting your stop at <strong>${stopPrice.toFixed(2)}</strong>, your modeled risk to stop is <strong>${dollarRisk.toFixed(0)} ({riskPct}% of account)</strong>. Actual losses may exceed this amount if prices gap through the stop. Your profit targets are <strong>+${(dollarRisk * 1.5).toFixed(0)}</strong> / <strong>+${(dollarRisk * 2.0).toFixed(0)}</strong>. You survive to fight another day.
       </div>
 
       {/* Execution Targets */}
@@ -353,7 +353,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
         <div className="bg-rose-950/40 border border-rose-800/80 p-3 rounded-lg">
           <span className="text-[10px] text-rose-300 uppercase font-bold block">1.0R Stop-Loss</span>
           <span className="text-sm sm:text-base font-bold text-rose-400 block tabular-nums">${stopPrice.toFixed(2)}</span>
-          <span className="text-[9px] text-rose-300/90 block mt-0.5 tabular-nums">-${dollarRisk.toFixed(0)} Max Risk</span>
+          <span className="text-[9px] text-rose-300/90 block mt-0.5 tabular-nums">-${dollarRisk.toFixed(0)} Modeled Risk</span>
         </div>
 
         {/* 1.5R Scalp Target */}
