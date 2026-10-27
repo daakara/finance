@@ -64,6 +64,28 @@ function TerminalContent() {
   const [macroData, setMacroData] = useState<FredMacroData | null>(null);
   const [insiderTrades, setInsiderTrades] = useState<SecForm4Trade[]>([]);
   const capabilities = useMemo(() => resolveCapabilities(data, data?.optimalExecution), [data]);
+  const tradeMarkers = useMemo(() => {
+    return [
+      ...(data?.smartMoney?.congressTrades?.map((ct) => ({
+        date: ct.transaction_date || (ct as any).date || ct.filing_date,
+        label: `🏛️ ${ct.politician?.split(" ")?.slice(-1)[0] || "Congress"} ${ct.transaction_type || (ct as any).type || "Buy"}`,
+        type: "CONGRESS" as const,
+        amount: ct.amount_range,
+      })) || []),
+      ...(((data?.smartMoney as any)?.secForm4Trades || (data?.smartMoney as any)?.secInsiderTrades || [])?.map((st: any) => ({
+        date: st.filingDate || st.date || st.filing_date,
+        label: `💼 ${st.insiderRole || "Insider"} Buy`,
+        type: "INSIDER" as const,
+        amount: st.transactionValue || st.shares,
+      })) || []),
+      ...(data?.smartMoney?.optionsFlow?.map((op) => ({
+        date: (op as any).date || (op as any).timestamp || "2026-04-01",
+        label: `⚡ ${op.type || "Call Sweep"}`,
+        type: "OPTIONS" as const,
+        amount: op.premium,
+      })) || []),
+    ].filter((m) => m.date);
+  }, [data?.smartMoney]);
   const [lastUpdatedTime, setLastUpdatedTime] = useState<string>("");
   const [isPreflightModalOpen, setIsPreflightModalOpen] = useState<boolean>(false);
   const [isPreflightDrawerExpanded, setIsPreflightDrawerExpanded] = useState<boolean>(false);
@@ -171,6 +193,7 @@ function TerminalContent() {
 
   useEffect(() => {
     let isMounted = true;
+    const abortController = new AbortController();
     async function loadData() {
       const cacheKey = `${selectedSymbol}_${interval}_${userRole}`;
       const cached = cacheRef.current.get(cacheKey);
@@ -220,19 +243,20 @@ function TerminalContent() {
         const knownPrice = (data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() && data.currentPrice !== null) ? data.currentPrice : undefined;
         const knownChange = data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data.priceChangePct24h : undefined;
 
-        const res = await fetchAssetAnalytics(selectedSymbol, period, apiInterval, userRole, knownPrice, knownChange);
-        if (isMounted) {
+        const res = await fetchAssetAnalytics(selectedSymbol, period, apiInterval, userRole, knownPrice, knownChange, abortController.signal);
+        if (isMounted && !abortController.signal.aborted) {
           setData(res);
           setError(null);
           cacheRef.current.set(cacheKey, res);
         }
       } catch (err) {
+        if (abortController.signal.aborted) return;
         console.error("Failed to load asset analytics:", err);
         if (isMounted) {
           setError(err instanceof Error ? err.message : `Failed to load asset analytics for ${selectedSymbol}`);
         }
       } finally {
-        if (isMounted) {
+        if (isMounted && !abortController.signal.aborted) {
           setLoading(false);
         }
       }
@@ -249,6 +273,7 @@ function TerminalContent() {
 
     return () => {
       isMounted = false;
+      abortController.abort();
       window.removeEventListener("finance:cache-purge", handlePurge);
     };
   }, [selectedSymbol, interval, userRole]);
@@ -445,28 +470,7 @@ function TerminalContent() {
                     userRole={userRole}
                     onRoleChange={handleRoleChange}
                     onIntervalChange={setInterval}
-                    tradeMarkers={
-                      [
-                        ...(data?.smartMoney?.congressTrades?.map((ct) => ({
-                          date: ct.transaction_date || (ct as any).date || ct.filing_date,
-                          label: `🏛️ ${ct.politician?.split(" ")?.slice(-1)[0] || "Congress"} ${ct.transaction_type || (ct as any).type || "Buy"}`,
-                          type: "CONGRESS" as const,
-                          amount: ct.amount_range,
-                        })) || []),
-                        ...(((data?.smartMoney as any)?.secForm4Trades || (data?.smartMoney as any)?.secInsiderTrades || [])?.map((st: any) => ({
-                          date: st.filingDate || st.date || st.filing_date,
-                          label: `💼 ${st.insiderRole || "Insider"} Buy`,
-                          type: "INSIDER" as const,
-                          amount: st.transactionValue || st.shares,
-                        })) || []),
-                        ...(data?.smartMoney?.optionsFlow?.map((op) => ({
-                          date: (op as any).date || (op as any).timestamp || "2026-04-01",
-                          label: `⚡ ${op.type || "Call Sweep"}`,
-                          type: "OPTIONS" as const,
-                          amount: op.premium,
-                        })) || []),
-                      ].filter((m) => m.date)
-                    }
+                    tradeMarkers={tradeMarkers}
                     smartMoneyHeadline={
                       data?.smartMoney?.congressTrades?.[0]
                         ? `${data.smartMoney.congressTrades[0].politician.split(" ")[0]} ${data.smartMoney.congressTrades[0].amount_range}`

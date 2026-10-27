@@ -1610,7 +1610,8 @@ export async function fetchAssetAnalytics(
   interval: string = "1d",
   userRole: string = "LONG_TERM",
   overridePrice?: number,
-  overrideChangePct?: number
+  overrideChangePct?: number,
+  signal?: AbortSignal
 ): Promise<AnalyticsResponse> {
   const upper = symbol.toUpperCase().replace("-USD", "");
 
@@ -1618,9 +1619,12 @@ export async function fetchAssetAnalytics(
   try {
     const baseUrl = getApiBaseUrl();
     const cleanRole = userRole === "DAY_TRADER" ? "DAY_TRADER" : "LONG_TERM";
+    const fetchSignal = signal
+      ? (typeof AbortSignal.any === "function" ? AbortSignal.any([signal, AbortSignal.timeout(6000)]) : signal)
+      : AbortSignal.timeout(6000);
     const res = await fetch(`${baseUrl}/analytics/${encodeURIComponent(symbol)}?period=${period}&interval=${interval}&user_role=${cleanRole}`, {
       headers: ARX_API_HEADERS,
-      signal: AbortSignal.timeout(6000),
+      signal: fetchSignal,
     });
     if (res.ok) {
       const data = await res.json();

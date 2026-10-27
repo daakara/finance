@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { createChart, IChartApi, ISeriesApi, IPriceLine, LineStyle, Time } from "lightweight-charts";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { createChart, IChartApi, ISeriesApi, IPriceLine, LineStyle, Time, LogicalRange } from "lightweight-charts";
 import { CandleData, OptimalExecutionPlan } from "../lib/api";
 
 export interface SanitizedCandle {
@@ -13,6 +13,11 @@ export interface SanitizedCandle {
   volume: number;
 }
 
+/**
+ * Normalizes candle timestamps to strictly conform to Lightweight Charts API expectations:
+ * - Intraday: Positive integer Unix timestamp in seconds (UTC).
+ * - Daily / Multi-Day: Strictly YYYY-MM-DD string anchored in UTC calendar date.
+ */
 export function normalizeCandleTimestamp(timeVal: unknown, isIntraday: boolean): string | number | null {
   if (timeVal === null || timeVal === undefined) return null;
 
@@ -38,13 +43,18 @@ export function normalizeCandleTimestamp(timeVal: unknown, isIntraday: boolean):
     return null;
   }
 
-  // Daily / Multi-day: strictly YYYY-MM-DD string
+  // Daily / Multi-day: strictly YYYY-MM-DD string using UTC calendar methods to avoid local timezone drift
   if (typeof timeVal === "number") {
     if (!Number.isFinite(timeVal) || timeVal <= 0) return null;
     const ms = timeVal > 20000000000 ? timeVal : timeVal * 1000;
     const d = new Date(ms);
-    return !isNaN(d.getTime()) ? d.toISOString().split("T")[0] : null;
+    if (isNaN(d.getTime())) return null;
+    const yyyy = d.getUTCFullYear();
+    const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(d.getUTCDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
   }
+
   if (typeof timeVal === "string") {
     const trimmed = timeVal.trim();
     if (!trimmed) return null;
@@ -68,16 +78,27 @@ export function normalizeCandleTimestamp(timeVal: unknown, isIntraday: boolean):
     if (Number.isFinite(num) && num > 0) {
       const ms = num > 20000000000 ? num : num * 1000;
       const d = new Date(ms);
-      return !isNaN(d.getTime()) ? d.toISOString().split("T")[0] : null;
+      if (isNaN(d.getTime())) return null;
+      const yyyy = d.getUTCFullYear();
+      const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(d.getUTCDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
     }
     const parsed = new Date(trimmed);
     if (!isNaN(parsed.getTime())) {
-      return parsed.toISOString().split("T")[0];
+      const yyyy = parsed.getUTCFullYear();
+      const mm = String(parsed.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(parsed.getUTCDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
     }
   }
   return null;
 }
 
+/**
+ * Validates OHLC geometric integrity and enforces strict ascending chronological ordering.
+ * Invariant: HIGH >= max(OPEN, CLOSE), LOW <= min(OPEN, CLOSE), HIGH >= LOW > 0, VOLUME >= 0.
+ */
 export function sanitizeCandles(rawCandles: CandleData[], isIntraday: boolean): SanitizedCandle[] {
   if (!rawCandles || rawCandles.length === 0) return [];
 
@@ -110,13 +131,10 @@ export function sanitizeCandles(rawCandles: CandleData[], isIntraday: boolean): 
       continue;
     }
 
-    // Rule 3: Structural candle invariants
-    // High cannot be below Low
-    if (high < low) continue;
-    // High cannot be below Open or Close
-    if (high < open || high < close) continue;
-    // Low cannot be above Open or Close
-    if (low > open || low > close) continue;
+    // Rule 3: Structural candle geometry invariants
+    if (high < low || high < open || high < close || low > open || low > close) {
+      continue;
+    }
 
     validBars.push({
       time,
@@ -135,7 +153,7 @@ export function sanitizeCandles(rawCandles: CandleData[], isIntraday: boolean): 
     return tA - tB;
   });
 
-  // Rule 5: Deterministic duplicate handling (preserve latest occurrence)
+  // Rule 5: Deterministic duplicate handling (preserve latest valid occurrence)
   const candleMap = new Map<string | number, SanitizedCandle>();
   for (const bar of validBars) {
     candleMap.set(bar.time, bar);
@@ -144,7 +162,7 @@ export function sanitizeCandles(rawCandles: CandleData[], isIntraday: boolean): 
   return Array.from(candleMap.values());
 }
 
-interface PriceChartProps {
+export interface PriceChartProps {
   symbol: string;
   candles: CandleData[];
   currentPrice?: number | null;
@@ -182,22 +200,27 @@ interface PriceChartProps {
 }
 
 // ⚡ Dedicated Day Trader Timeframes (Intraday Momentum & Execution)
-const DAY_TRADER_INTERVALS = [
+export const DAY_TRADER_INTERVALS = [
   { label: "1m", value: "1m", desc: "1-Minute Scalp" },
   { label: "5m", value: "5m", desc: "5-Minute VWAP" },
   { label: "15m", value: "15m", desc: "15-Minute Flag" },
   { label: "1h", value: "1h", desc: "1-Hour Trend" },
 ];
 
-// 🏛️ Dedicated Long-Term Macro Horizons (Expanded from 1-Month to 5-Year Deep History)
-// 1D = explicit Daily Candle view (1Y window, 1d bars)
-// 1W = explicit Weekly Candle view (3Y window, 1wk bars)
-const LONG_TERM_INTERVALS = [
-  { label: "1M", value: "1m_hist", desc: "1-Month Swing (Daily)" },
-  { label: "6M", value: "6m_hist", desc: "6-Month Cyclical (Daily)" },
-  { label: "1D", value: "1y_hist", desc: "Daily Candles - 1 Year" },
-  { label: "1W", value: "3y_hist", desc: "Weekly Candles - 3 Years" },
-  { label: "5Y", value: "5y_hist", desc: "5-Year Secular (Monthly)" },
+// 🏛️ Dedicated Swing Trade / Long-Term Bar Resolution (Candle Interval)
+export const SWING_INTERVALS = [
+  { label: "1D", value: "1y_hist", desc: "Daily Candles (1 Day per bar)" },
+  { label: "1W", value: "3y_hist", desc: "Weekly Candles (1 Week per bar)" },
+  { label: "1M", value: "5y_hist", desc: "Monthly Candles (1 Month per bar)" },
+];
+
+// 🏛️ Dedicated Swing Trade Visible History Ranges (Viewport Controls)
+export const SWING_RANGES = [
+  { label: "1M", value: "1m_hist", desc: "1-Month History" },
+  { label: "6M", value: "6m_hist", desc: "6-Month History" },
+  { label: "1Y", value: "1y_hist", desc: "1-Year History" },
+  { label: "3Y", value: "3y_hist", desc: "3-Year History" },
+  { label: "5Y", value: "5y_hist", desc: "5-Year History" },
 ];
 
 export default function PriceChart({
@@ -224,6 +247,9 @@ export default function PriceChart({
   const candlestickSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const overlayLineSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const priceLinesRef = useRef<IPriceLine[]>([]);
+  const prevDatasetKeyRef = useRef<string>("");
+  const userHasInteractedRef = useRef<boolean>(false);
+
   const [initEpoch, setInitEpoch] = useState<number>(0);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [chartTelemetry, setChartTelemetry] = useState<{
@@ -240,23 +266,31 @@ export default function PriceChart({
     candleCount: 0,
   });
 
-  const activeIntervalList = userRole === "DAY_TRADER" ? DAY_TRADER_INTERVALS : LONG_TERM_INTERVALS;
   const isIntraday = userRole === "DAY_TRADER";
 
-  // Handle button clicks directly notifying parent to trigger API load
-  const handleIntervalClick = (val: string) => {
+  // Handle timeframe interval / range click
+  const handleIntervalClick = useCallback((val: string) => {
+    userHasInteractedRef.current = false;
     if (onIntervalChange) {
       onIntervalChange(val);
     }
-  };
+  }, [onIntervalChange]);
 
-  // 1. Initialize Chart Container and Series on Mount or Role Change
+  // Handle manual viewport fit/reset
+  const handleResetView = useCallback(() => {
+    if (chartRef.current) {
+      chartRef.current.timeScale().fitContent();
+      userHasInteractedRef.current = false;
+    }
+  }, []);
+
+  // 1. Initialize Chart Canvas & Series on Mount or Role Change
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
     let chart: IChartApi | null = null;
     let resizeObserver: ResizeObserver | null = null;
-    let observer: MutationObserver | null = null;
+    let themeObserver: MutationObserver | null = null;
     let tvObserver: MutationObserver | null = null;
 
     try {
@@ -292,6 +326,15 @@ export default function PriceChart({
         },
       });
 
+      // Track user pan/zoom interaction
+      if (typeof chart.timeScale?.().subscribeVisibleLogicalRangeChange === 'function') {
+        chart.timeScale().subscribeVisibleLogicalRangeChange((range: LogicalRange | null) => {
+          if (range !== null) {
+            userHasInteractedRef.current = true;
+          }
+        });
+      }
+
       // Candlestick Series
       const candleSeries = chart.addCandlestickSeries({
         upColor: "#10b981",
@@ -302,7 +345,7 @@ export default function PriceChart({
         wickDownColor: "#f43f5e",
       });
 
-      // Indicator Overlay Line (VWAP or 20 EMA)
+      // Indicator Overlay Line (VWAP for Intraday, 20 EMA for Long Term)
       const overlayLine = chart.addLineSeries({
         color: isIntraday ? "#f59e0b" : "#38bdf8",
         lineWidth: 2,
@@ -314,18 +357,11 @@ export default function PriceChart({
       candlestickSeriesRef.current = candleSeries;
       overlayLineSeriesRef.current = overlayLine;
       chartRef.current = chart;
+      prevDatasetKeyRef.current = "";
       setRenderError(null);
       setChartTelemetry((prev) => ({ ...prev, seriesInitialized: true }));
 
-      const handleResize = () => {
-        if (chartContainerRef.current && chartRef.current) {
-          chartRef.current.applyOptions({
-            width: chartContainerRef.current.clientWidth,
-            height: chartContainerRef.current.clientHeight,
-          });
-        }
-      };
-
+      // Responsive Resize: adjusts dimensions without uncommanded viewport resets
       if (typeof ResizeObserver !== "undefined" && chartContainerRef.current) {
         resizeObserver = new ResizeObserver((entries) => {
           for (const entry of entries) {
@@ -336,7 +372,10 @@ export default function PriceChart({
                 width: w,
                 height: h,
               });
-              chartRef.current.timeScale().fitContent();
+              // AC-CHART-REFIT-RUNTIME: Auto-fit on container refit if user has not manually panned/zoomed
+              if (!userHasInteractedRef.current && typeof chartRef.current.timeScale?.().fitContent === "function") {
+                chartRef.current.timeScale().fitContent();
+              }
             }
           }
         });
@@ -365,17 +404,16 @@ export default function PriceChart({
         }
       };
 
-      window.addEventListener("resize", handleResize);
       window.addEventListener("finance:theme-change", handleThemeChange);
 
-      observer = new MutationObserver((mutations) => {
+      themeObserver = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
           if (mutation.type === "attributes" && mutation.attributeName === "data-theme") {
             handleThemeChange();
           }
         }
       });
-      observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+      themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
       const ensureAccessibleAttribution = () => {
         if (chartContainerRef.current) {
@@ -393,9 +431,8 @@ export default function PriceChart({
 
       return () => {
         if (resizeObserver) resizeObserver.disconnect();
-        window.removeEventListener("resize", handleResize);
         window.removeEventListener("finance:theme-change", handleThemeChange);
-        if (observer) observer.disconnect();
+        if (themeObserver) themeObserver.disconnect();
         if (tvObserver) tvObserver.disconnect();
         if (chart) {
           try {
@@ -406,6 +443,7 @@ export default function PriceChart({
         candlestickSeriesRef.current = null;
         overlayLineSeriesRef.current = null;
         priceLinesRef.current = [];
+        prevDatasetKeyRef.current = "";
         setChartTelemetry((prev) => ({
           ...prev,
           seriesInitialized: false,
@@ -437,7 +475,7 @@ export default function PriceChart({
     }
   }, [isIntraday, initEpoch]);
 
-  // 2. Feed Data to Candlestick and Line Overlay Series whenever candles or interval changes
+  // 2. Feed Sanitized Candles, VWAP/EMA & Trade Markers to Series
   useEffect(() => {
     if (!candlestickSeriesRef.current || !overlayLineSeriesRef.current) {
       setChartTelemetry((prev) => ({
@@ -455,9 +493,7 @@ export default function PriceChart({
         candlestickSeriesRef.current.setData([]);
         overlayLineSeriesRef.current.setData([]);
         candlestickSeriesRef.current.setMarkers([]);
-      } catch {
-        // Safe clear
-      }
+      } catch {}
       setChartTelemetry((prev) => ({
         ...prev,
         candlesAvailable: false,
@@ -483,11 +519,21 @@ export default function PriceChart({
           }))
         );
 
-        // Generate Overlay Line Data (VWAP for Intraday, 20 EMA for Long Term)
+        // Generate Overlay Line Data: Session-Anchored VWAP for Intraday, 20 EMA for Swing
         if (isIntraday) {
           let cumVol = 0;
           let cumVP = 0;
+          let currentDayStr = "";
           const vwapPoints = uniqueCandles.map((c) => {
+            const candleDate = typeof c.time === "number"
+              ? new Date(c.time * 1000).toISOString().split("T")[0]
+              : String(c.time).split("T")[0];
+            // Anchor VWAP to each distinct trading session
+            if (candleDate !== currentDayStr) {
+              currentDayStr = candleDate;
+              cumVol = 0;
+              cumVP = 0;
+            }
             const typical = (c.high + c.low + c.close) / 3;
             cumVol += c.volume;
             cumVP += typical * c.volume;
@@ -499,18 +545,24 @@ export default function PriceChart({
           });
           overlayLineSeriesRef.current.setData(vwapPoints);
         } else {
-          const maPoints = uniqueCandles.map((c, idx, arr) => {
-            const slice = arr.slice(Math.max(0, idx - 19), idx + 1);
-            const avg = slice.reduce((sum, item) => sum + item.close, 0) / slice.length;
+          // True 20 Exponential Moving Average (EMA)
+          const k = 2 / (20 + 1);
+          let prevEma: number | null = null;
+          const emaPoints = uniqueCandles.map((c, idx) => {
+            if (idx === 0) {
+              prevEma = c.close;
+            } else {
+              prevEma = c.close * k + (prevEma as number) * (1 - k);
+            }
             return {
               time: c.time as Time,
-              value: Number(avg.toFixed(2)),
+              value: Number((prevEma as number).toFixed(2)),
             };
           });
-          overlayLineSeriesRef.current.setData(maPoints);
+          overlayLineSeriesRef.current.setData(emaPoints);
         }
 
-        // Attach Deep Trade Timestamp Markers (Guarded)
+        // Attach Deep Trade Timestamp Markers (Guarded & Chronologically Sorted)
         if (candlestickSeriesRef.current) {
           if (tradeMarkers && tradeMarkers.length > 0) {
             const markers: any[] = [];
@@ -556,8 +608,8 @@ export default function PriceChart({
             });
 
             markers.sort((a, b) => {
-              const tA = typeof a.time === "number" ? a.time : new Date(a.time).getTime();
-              const tB = typeof b.time === "number" ? b.time : new Date(b.time).getTime();
+              const tA = typeof a.time === "number" ? a.time : new Date(a.time + "T00:00:00Z").getTime();
+              const tB = typeof b.time === "number" ? b.time : new Date(b.time + "T00:00:00Z").getTime();
               return tA - tB;
             });
 
@@ -576,17 +628,14 @@ export default function PriceChart({
           }
         }
 
-        // Refresh chart view and auto-fit timeScale immediately
-        if (chartRef.current) {
+        // Viewport Policy: Only auto-fit when dataset or interval actually changes.
+        // Preserves user zoom and pan during component re-renders!
+        const datasetKey = `${symbol}_${interval}_${isIntraday}_${uniqueCandles.length}_${uniqueCandles[0]?.time}_${uniqueCandles[uniqueCandles.length - 1]?.time}`;
+        if (chartRef.current && datasetKey !== prevDatasetKeyRef.current) {
+          prevDatasetKeyRef.current = datasetKey;
           chartRef.current.timeScale().fitContent();
-          if (typeof window !== "undefined" && window.requestAnimationFrame) {
-            window.requestAnimationFrame(() => {
-              if (chartRef.current) {
-                chartRef.current.timeScale().fitContent();
-              }
-            });
-          }
         }
+
         setRenderError(null);
         setChartTelemetry({
           candlesAvailable: true,
@@ -615,19 +664,17 @@ export default function PriceChart({
         overlayAssigned: false,
       }));
     }
-  }, [candles, isIntraday, interval, tradeMarkers, initEpoch]);
+  }, [candles, isIntraday, interval, symbol, tradeMarkers, initEpoch]);
 
-  // 3. Execution Level Overlays (CHART-001 through CHART-010: Parity with OptimalExecutionPlan)
+  // 3. Execution Level Overlays & Label Collision Prevention
   useEffect(() => {
     if (!candlestickSeriesRef.current) return;
 
-    // Clear existing price lines before attaching fresh overlays
+    // Clear existing price lines
     priceLinesRef.current.forEach((line) => {
       try {
         candlestickSeriesRef.current?.removePriceLine(line);
-      } catch {
-        // Safe cleanup
-      }
+      } catch {}
     });
     priceLinesRef.current = [];
 
@@ -635,26 +682,63 @@ export default function PriceChart({
 
     const lines: IPriceLine[] = [];
 
-    // CHART-002: Entry minimum parity (optimal_entry_min)
-    if (typeof optimalExecution.optimal_entry_min === "number" && optimalExecution.optimal_entry_min > 0) {
+    // Collision detection: Check if Entry Min and Entry Max are tight (<0.75% apart)
+    const entryMin = optimalExecution.optimal_entry_min;
+    const entryMax = optimalExecution.optimal_entry_max;
+    const hasEntryMin = typeof entryMin === "number" && entryMin > 0;
+    const hasEntryMax = typeof entryMax === "number" && entryMax > 0;
+
+    if (hasEntryMin && hasEntryMax) {
+      const diffPct = Math.abs(entryMax - entryMin) / entryMin;
+      if (diffPct < 0.0075) {
+        // Levels are tight: render unified entry zone line to prevent axis label collision
+        const avgPrice = (entryMin + entryMax) / 2;
+        lines.push(
+          candlestickSeriesRef.current.createPriceLine({
+            price: avgPrice,
+            color: "#06b6d4",
+            lineWidth: 2,
+            lineStyle: LineStyle.Dashed,
+            axisLabelVisible: true,
+            title: entryMin === entryMax ? `Entry: $${entryMin.toFixed(2)}` : `Entry: $${entryMin.toFixed(2)}-$${entryMax.toFixed(2)}`,
+          })
+        );
+      } else {
+        lines.push(
+          candlestickSeriesRef.current.createPriceLine({
+            price: entryMin,
+            color: "#06b6d4",
+            lineWidth: 2,
+            lineStyle: LineStyle.Dashed,
+            axisLabelVisible: true,
+            title: "Entry Min",
+          }),
+          candlestickSeriesRef.current.createPriceLine({
+            price: entryMax,
+            color: "#06b6d4",
+            lineWidth: 2,
+            lineStyle: LineStyle.Dashed,
+            axisLabelVisible: true,
+            title: "Entry Max",
+          })
+        );
+      }
+    } else if (hasEntryMin) {
       lines.push(
         candlestickSeriesRef.current.createPriceLine({
-          price: optimalExecution.optimal_entry_min,
-          color: "#06b6d4", // Cyan
+          price: entryMin,
+          color: "#06b6d4",
           lineWidth: 2,
           lineStyle: LineStyle.Dashed,
           axisLabelVisible: true,
           title: "Entry Min",
         })
       );
-    }
-
-    // CHART-003: Entry maximum parity (optimal_entry_max)
-    if (typeof optimalExecution.optimal_entry_max === "number" && optimalExecution.optimal_entry_max > 0) {
+    } else if (hasEntryMax) {
       lines.push(
         candlestickSeriesRef.current.createPriceLine({
-          price: optimalExecution.optimal_entry_max,
-          color: "#06b6d4", // Cyan
+          price: entryMax,
+          color: "#06b6d4",
           lineWidth: 2,
           lineStyle: LineStyle.Dashed,
           axisLabelVisible: true,
@@ -663,7 +747,7 @@ export default function PriceChart({
       );
     }
 
-    // CHART-004: Stop loss parity (stop_loss)
+    // Stop Loss / Invalidation Floor Parity
     if (typeof optimalExecution.stop_loss === "number" && optimalExecution.stop_loss > 0) {
       const isStopActive = optimalExecution.execution_stop_visible !== false;
       lines.push(
@@ -678,12 +762,12 @@ export default function PriceChart({
       );
     }
 
-    // CHART-005: Target 1 parity (take_profit_1)
+    // Target 1
     if (typeof optimalExecution.take_profit_1 === "number" && optimalExecution.take_profit_1 > 0) {
       lines.push(
         candlestickSeriesRef.current.createPriceLine({
           price: optimalExecution.take_profit_1,
-          color: "#10b981", // Emerald
+          color: "#10b981",
           lineWidth: 2,
           lineStyle: LineStyle.Dashed,
           axisLabelVisible: true,
@@ -692,15 +776,18 @@ export default function PriceChart({
       );
     }
 
-    // CHART-006: Target 2 parity (take_profit_2 when supplied)
+    // Target 2 (Stagger axis label if within collision threshold of Target 1)
     if (typeof optimalExecution.take_profit_2 === "number" && optimalExecution.take_profit_2 > 0) {
+      const t1 = optimalExecution.take_profit_1;
+      const t2 = optimalExecution.take_profit_2;
+      const tDiffPct = typeof t1 === "number" && t1 > 0 ? Math.abs(t2 - t1) / t1 : 1;
       lines.push(
         candlestickSeriesRef.current.createPriceLine({
-          price: optimalExecution.take_profit_2,
-          color: "#059669", // Dark Emerald
+          price: t2,
+          color: "#059669",
           lineWidth: 2,
           lineStyle: LineStyle.Dashed,
-          axisLabelVisible: true,
+          axisLabelVisible: tDiffPct >= 0.0075,
           title: "Target 2",
         })
       );
@@ -712,15 +799,13 @@ export default function PriceChart({
       lines.forEach((line) => {
         try {
           candlestickSeriesRef.current?.removePriceLine(line);
-        } catch {
-          // Safe cleanup
-        }
+        } catch {}
       });
       priceLinesRef.current = [];
     };
-  }, [optimalExecution, isIntraday]);
+  }, [optimalExecution]);
 
-  // Calculate dynamic period return based on the active candle dataset
+  // Calculate dynamic period return based on active candle dataset
   let dynamicPeriodReturn = priceChangePct;
   let dynamicTimeframeLabel = interval.replace("_hist", "").toUpperCase();
 
@@ -739,94 +824,98 @@ export default function PriceChart({
       {/* Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#1b2434]">
         <div className="space-y-1.5 w-full sm:w-auto">
-                {/* Left: Symbol & Live Tabular Price */}
+          {/* Left: Symbol & Live Tabular Price */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <h2 id="chart-header-symbol" className="text-lg sm:text-2xl font-bold text-white tracking-tight">{symbol}</h2>
-          {(() => {
-            const clean = symbol.toUpperCase().replace("-USD", "");
-            const isAdr = (clean.length === 5 && (clean.endsWith("Y") || clean.endsWith("F"))) || ["DHLGY", "NVO", "ASML", "TSM", "BABA", "AZN", "BP", "SHEL", "SAP", "SNY", "TM", "HMC", "VALE", "BTI", "RIO", "UL", "LVMUY", "TCEHY"].includes(clean);
-            if (!isAdr) return null;
-            return (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/80 font-mono" title="American Depositary Receipt (Foreign Private Issuer)">
-                ADR (Foreign Issuer)
-              </span>
-            );
-          })()}
-          {typeof liveSpotPrice === "number" && Number.isFinite(liveSpotPrice) && liveSpotPrice > 0 ? (
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span aria-label={`Live spot price: $${liveSpotPrice.toFixed(2)}`} className="text-base sm:text-xl font-bold text-emerald-400 tabular-nums">
-                ${liveSpotPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-              <span
-                className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
-                  marketPriceState?.liveFreshness === "REALTIME"
-                    ? "bg-emerald-950/80 text-emerald-300 border-emerald-800"
-                    : "bg-amber-950/80 text-amber-300 border-amber-800"
-                }`}
-                title={`Live source: ${marketPriceState?.liveSource || "IEX"} | Freshness: ${marketPriceState?.liveFreshness || "REALTIME"}`}
-              >
-                {marketPriceState?.liveFreshness === "REALTIME" ? "● LIVE SPOT" : "DELAYED SPOT"}
-              </span>
-              {typeof (analysisReferencePrice ?? currentPrice) === "number" && (
-                <span className="text-[11px] font-mono text-slate-400 border-l border-slate-700 pl-1.5 ml-0.5" title="Completed session baseline for technical indicators">
-                  Analysis Ref: ${(analysisReferencePrice ?? currentPrice)!.toFixed(2)} (Prior Close)
-                </span>
-              )}
-            </div>
-          ) : typeof currentPrice === "number" && Number.isFinite(currentPrice) && currentPrice > 0 ? (
-            <div className="flex items-center gap-1.5">
-              <span aria-label={`Reference price: $${currentPrice.toFixed(2)}`} className="text-base sm:text-xl font-bold text-slate-100 tabular-nums">
-                ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-              {!isIntraday && (
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#162030] text-slate-400 border border-[#243044]" title="Evaluated against last completed session close">
-                  Prior Close
-                </span>
-              )}
-            </div>
-          ) : (
-            <span aria-label="Current price unavailable" className="text-sm sm:text-base font-medium text-slate-400">
-              — Data Unavailable
-            </span>
-          )}
-          <span
-            title={`Active ${dynamicTimeframeLabel} Horizon Return calculated from ${candles && candles.length > 0 ? (typeof candles[0].time === "number" ? new Date(candles[0].time * 1000).toLocaleDateString() : candles[0].time) : "period start"} to current price`}
-            aria-label={`Timeframe ${dynamicTimeframeLabel} change: ${isPositive ? "+" : ""}${dynamicPeriodReturn.toFixed(2)} percent`}
-            className={`px-2 py-0.5 rounded text-xs font-bold tabular-nums flex items-center gap-1 cursor-help ${
-              isPositive
-                ? "bg-emerald-950/80 text-emerald-400 border border-emerald-800/80"
-                : "bg-rose-950/80 text-rose-400 border border-rose-800/80"
-            }`}
-          >
-            <span>{isPositive ? `+${dynamicPeriodReturn.toFixed(2)}%` : `${dynamicPeriodReturn.toFixed(2)}%`}</span>
-            <span className="text-[9px] opacity-90 font-semibold px-1 py-0.2 rounded bg-black/40 border border-white/10 uppercase tracking-wider">
-              {dynamicTimeframeLabel}
-            </span>
-          </span>
-          {(() => {
-            if (renderError !== null) {
+            <h2 id="chart-header-symbol" className="text-lg sm:text-2xl font-bold text-white tracking-tight">{symbol}</h2>
+            {(() => {
+              const clean = symbol.toUpperCase().replace("-USD", "");
+              const isAdr = (clean.length === 5 && (clean.endsWith("Y") || clean.endsWith("F"))) || ["DHLGY", "NVO", "ASML", "TSM", "BABA", "AZN", "BP", "SHEL", "SAP", "SNY", "TM", "HMC", "VALE", "BTI", "RIO", "UL", "LVMUY", "TCEHY"].includes(clean);
+              if (!isAdr) return null;
               return (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-rose-800 bg-rose-950/80 text-rose-300 hidden sm:inline">
-                  Chart Telemetry Unavailable
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/80 font-mono" title="American Depositary Receipt (Foreign Private Issuer)">
+                  ADR (Foreign Issuer)
                 </span>
               );
-            }
-            if (loading || !chartTelemetry.seriesInitialized || !chartTelemetry.candlesAssigned || !chartTelemetry.overlayAssigned || chartTelemetry.candleCount === 0) {
+            })()}
+
+            {typeof liveSpotPrice === "number" && Number.isFinite(liveSpotPrice) && liveSpotPrice > 0 ? (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span aria-label={`Live spot price: $${liveSpotPrice.toFixed(2)}`} className="text-base sm:text-xl font-bold text-emerald-400 tabular-nums">
+                  ${liveSpotPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+                <span
+                  className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                    marketPriceState?.liveFreshness === "REALTIME"
+                      ? "bg-emerald-950/80 text-emerald-300 border-emerald-800"
+                      : "bg-amber-950/80 text-amber-300 border-amber-800"
+                  }`}
+                  title={`Live source: ${marketPriceState?.liveSource || "IEX"} | Freshness: ${marketPriceState?.liveFreshness || "REALTIME"}`}
+                >
+                  {marketPriceState?.liveFreshness === "REALTIME" ? "● LIVE SPOT" : "DELAYED SPOT"}
+                </span>
+                {typeof (analysisReferencePrice ?? currentPrice) === "number" && (
+                  <span className="text-[11px] font-mono text-slate-400 border-l border-slate-700 pl-1.5 ml-0.5" title="Completed session baseline for technical indicators">
+                    Analysis Ref: ${(analysisReferencePrice ?? currentPrice)!.toFixed(2)} (Prior Close)
+                  </span>
+                )}
+              </div>
+            ) : typeof currentPrice === "number" && Number.isFinite(currentPrice) && currentPrice > 0 ? (
+              <div className="flex items-center gap-1.5">
+                <span aria-label={`Reference price: $${currentPrice.toFixed(2)}`} className="text-base sm:text-xl font-bold text-slate-100 tabular-nums">
+                  ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+                {!isIntraday && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#162030] text-slate-400 border border-[#243044]" title="Evaluated against last completed session close">
+                    Prior Close
+                  </span>
+                )}
+              </div>
+            ) : (
+              <span aria-label="Current price unavailable" className="text-sm sm:text-base font-medium text-slate-400">
+                — Data Unavailable
+              </span>
+            )}
+
+            <span
+              title={`Active ${dynamicTimeframeLabel} Horizon Return calculated from ${candles && candles.length > 0 ? (typeof candles[0].time === "number" ? new Date(candles[0].time * 1000).toLocaleDateString() : candles[0].time) : "period start"} to current price`}
+              aria-label={`Timeframe ${dynamicTimeframeLabel} change: ${isPositive ? "+" : ""}${dynamicPeriodReturn.toFixed(2)} percent`}
+              className={`px-2 py-0.5 rounded text-xs font-bold tabular-nums flex items-center gap-1 cursor-help ${
+                isPositive
+                  ? "bg-emerald-950/80 text-emerald-400 border border-emerald-800/80"
+                  : "bg-rose-950/80 text-rose-400 border border-rose-800/80"
+              }`}
+            >
+              <span>{isPositive ? `+${dynamicPeriodReturn.toFixed(2)}%` : `${dynamicPeriodReturn.toFixed(2)}%`}</span>
+              <span className="text-[9px] opacity-90 font-semibold px-1 py-0.2 rounded bg-black/40 border border-white/10 uppercase tracking-wider">
+                {dynamicTimeframeLabel}
+              </span>
+            </span>
+
+            {(() => {
+              if (renderError !== null) {
+                return (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-rose-800 bg-rose-950/80 text-rose-300 hidden sm:inline">
+                    Chart Telemetry Unavailable
+                  </span>
+                );
+              }
+              if (loading || !chartTelemetry.seriesInitialized || !chartTelemetry.candlesAssigned || !chartTelemetry.overlayAssigned || chartTelemetry.candleCount === 0) {
+                return (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700 bg-slate-900/80 text-slate-400 hidden sm:inline">
+                    Chart Telemetry Pending
+                  </span>
+                );
+              }
               return (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700 bg-slate-900/80 text-slate-400 hidden sm:inline">
-                  Chart Telemetry Pending
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border hidden sm:inline ${
+                  isIntraday ? "bg-amber-950/80 text-amber-300 border-amber-800" : "bg-cyan-950/80 text-cyan-300 border-cyan-800"
+                }`}>
+                  {isIntraday ? "⚡ VWAP Active" : (chartTelemetry.candleCount >= 20 ? "🏛️ 20 EMA Active" : "🏛️ Moving Avg Active")}
                 </span>
               );
-            }
-            return (
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border hidden sm:inline ${
-                isIntraday ? "bg-amber-950/80 text-amber-300 border-amber-800" : "bg-cyan-950/80 text-cyan-300 border-cyan-800"
-              }`}>
-                {isIntraday ? "⚡ VWAP Active" : (chartTelemetry.candleCount >= 20 ? "🏛️ 20 EMA Active" : "🏛️ Moving Avg Active")}
-              </span>
-            );
-          })()}
-          {smartMoneyHeadline && (
+            })()}
+
+            {smartMoneyHeadline && (
               <span className="hidden xl:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/80 animate-pulse">
                 <span>🏛️ Smart Money:</span>
                 <span className="text-white">{smartMoneyHeadline}</span>
@@ -834,7 +923,7 @@ export default function PriceChart({
             )}
           </div>
 
-          {/* 🎯 STAGE 1 DISCOVERY: Streamlined Catalyst Headline Chip */}
+          {/* Streamlined Catalyst Headline Chip */}
           {catalystHeadline && (
             <div className="flex items-center space-x-1.5 text-[11px] sm:text-xs text-amber-300 bg-amber-950/40 border border-amber-800/60 px-2.5 py-1 rounded-lg w-full">
               <span className="text-xs shrink-0">🔥</span>
@@ -845,7 +934,7 @@ export default function PriceChart({
           )}
         </div>
 
-        {/* Right: Technicals Badges & Role-Adaptive Interval Group */}
+        {/* Right: Technicals Badges, Role-Adaptive Timeframes & Viewport Fit Controls */}
         <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full sm:w-auto mt-1 sm:mt-0">
           {technicals?.rsi_14 !== undefined && (
             <div aria-label={`Relative Strength Index 14: ${technicals.rsi_14.toFixed(1)}`} className="hidden sm:flex items-center space-x-1.5 bg-[#090d14] px-2.5 py-1 rounded-md border border-[#243044] text-[11px]">
@@ -864,30 +953,92 @@ export default function PriceChart({
             </div>
           )}
 
-          {/* Role-Adaptive Timeframe Interval Buttons */}
+          {/* Timeframe Interval Controls: Intraday Scalp vs Swing Bar Resolution */}
           <div role="group" aria-label="Candlestick chart interval" className="flex items-center space-x-1 bg-[#090d14] p-1 rounded-lg border border-[#243044]">
             <span className="text-[10px] text-slate-500 font-bold px-1 hidden md:inline">
-              {userRole === "DAY_TRADER" ? "⚡ Scalp:" : "🏛️ Horizon:"}
+              {userRole === "DAY_TRADER" ? "⚡ Scalp:" : "🏛️ Resolution:"}
             </span>
-            {activeIntervalList.map((item) => (
-              <button
-                type="button"
-                key={item.value}
-                onClick={() => handleIntervalClick(item.value)}
-                aria-pressed={interval === item.value}
-                aria-label={`Set timeframe interval to ${item.label} (${item.desc})`}
-                title={item.desc}
-                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[36px] sm:min-h-[30px] rounded text-xs font-bold transition-colors active:scale-[0.96] transition-transform duration-100 cursor-pointer touch-manipulation focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                  interval === item.value
-                    ? userRole === "DAY_TRADER"
+
+            {userRole === "DAY_TRADER" ? (
+              DAY_TRADER_INTERVALS.map((item) => (
+                <button
+                  type="button"
+                  key={item.value}
+                  onClick={() => handleIntervalClick(item.value)}
+                  aria-pressed={interval === item.value}
+                  aria-label={`Set intraday interval to ${item.label} (${item.desc})`}
+                  title={item.desc}
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[36px] sm:min-h-[30px] rounded text-xs font-bold transition-colors active:scale-[0.96] transition-transform duration-100 cursor-pointer touch-manipulation focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${
+                    interval === item.value
                       ? "bg-amber-500 text-slate-950 shadow-sm font-extrabold"
-                      : "bg-cyan-500 text-slate-950 shadow-sm font-extrabold"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
+                      : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))
+            ) : (
+              SWING_INTERVALS.map((item) => {
+                const isSelected = interval === item.value ||
+                  (item.label === "1D" && (interval === "1y_hist" || interval === "1d")) ||
+                  (item.label === "1W" && (interval === "3y_hist" || interval === "1wk")) ||
+                  (item.label === "1M" && (interval === "5y_hist" || interval === "1mo"));
+                return (
+                  <button
+                    type="button"
+                    key={item.value}
+                    onClick={() => handleIntervalClick(item.value)}
+                    aria-pressed={isSelected}
+                    aria-label={`Set candle resolution to ${item.label} (${item.desc})`}
+                    title={item.desc}
+                    className={`px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[36px] sm:min-h-[30px] rounded text-xs font-bold transition-colors active:scale-[0.96] transition-transform duration-100 cursor-pointer touch-manipulation focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                      isSelected
+                        ? "bg-cyan-500 text-slate-950 shadow-sm font-extrabold"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })
+            )}
+
+            {/* In Swing Mode: Separated Visible History Range Presets */}
+            {userRole === "LONG_TERM" && (
+              <div className="flex items-center space-x-1 pl-1 border-l border-slate-700">
+                <span className="text-[10px] text-slate-500 font-bold px-1 hidden lg:inline">
+                  Range:
+                </span>
+                {SWING_RANGES.map((rng) => (
+                  <button
+                    type="button"
+                    key={rng.value}
+                    onClick={() => handleIntervalClick(rng.value)}
+                    aria-pressed={interval === rng.value}
+                    aria-label={`Set visible history range to ${rng.label} (${rng.desc})`}
+                    title={rng.desc}
+                    className={`px-2 py-1 min-h-[30px] rounded text-[11px] font-bold transition-colors cursor-pointer ${
+                      interval === rng.value
+                        ? "bg-slate-700 text-cyan-300 font-extrabold"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+                    }`}
+                  >
+                    {rng.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Viewport Reset / Fit View Button */}
+            <button
+              type="button"
+              onClick={handleResetView}
+              title="Reset View to Fit Content"
+              aria-label="Reset chart zoom to fit content"
+              className="px-2 py-1 min-h-[30px] rounded text-xs text-slate-400 hover:text-slate-200 hover:bg-[#162030] transition-colors ml-1 border-l border-slate-700/80 cursor-pointer"
+            >
+              ⛶ Fit
+            </button>
           </div>
         </div>
       </div>
@@ -899,6 +1050,7 @@ export default function PriceChart({
         className="flex-1 w-full min-h-[320px] h-[320px] sm:h-[380px] xl:h-[430px] mt-2 relative rounded-lg overflow-hidden border border-[#1b2434]"
       >
         <div ref={chartContainerRef} className="w-full h-full" />
+
         {/* State 1: Synchronizing / Loading Overlay */}
         {loading && (
           <div className="absolute inset-0 bg-[#0b0f19]/80 backdrop-blur-[2px] flex flex-col items-center justify-center space-y-3 z-10 transition-opacity">
@@ -977,4 +1129,3 @@ export default function PriceChart({
     </section>
   );
 }
-
