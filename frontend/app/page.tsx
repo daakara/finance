@@ -37,6 +37,7 @@ import { resolveAssetAlias } from "../lib/assetRegistry";
 import { isETF, resolveCapabilities } from "../lib/assetTypeUtils";
 import { emitEtfIntentAttempt } from "../lib/telemetry/etfIntentClient";
 import TerminalSsrShell from "../components/TerminalSsrShell";
+import SynthesisMobileDock from "../components/synthesis/SynthesisMobileDock";
 import { resolveFreshCachedVix, resolveFreshMacroEvidence } from "../lib/preflightEvaluator";
 import { Target, Landmark, BarChart3, Shield } from "lucide-react";
 
@@ -294,6 +295,14 @@ function TerminalContent() {
       catalystEvidence,
       isActionable: data?.decisionTrace?.isActionable ?? (data?.canonicalDecision as any)?.is_actionable,
       decisionState: data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state,
+      dataSource: data?._dataSource,
+      isSynthetic: Boolean((data?._dataSource as string) === 'synthetic' || (data as any)?.isSynthetic),
+      isHistorical: Boolean(data?._dataSource === 'historical' || data?.quoteStatus === 'HISTORICAL_EOD'),
+      marketSession: data?.marketSession || data?.marketPriceState?.marketSession,
+      quoteStatus: data?.quoteStatus,
+      liveSource: data?.liveSource,
+      liveFreshnessStatus: (data?.liveFreshness as any)?.status || ((data?.marketPriceState as any)?.liveFreshness as any)?.status,
+      observationTime: data?.liveObservedAt || (data?.marketPriceState as any)?.asOfTimestamp,
     };
   }, [selectedSymbol, data, macroData, userRole]);
 
@@ -372,6 +381,8 @@ function TerminalContent() {
               key={`${selectedSymbol}_${userRole}`}
               symbol={selectedSymbol}
               companyName={aliasRecommendation?.companyName || selectedSymbol}
+              exchange={data?.exchange || (data?.canonicalInstrument as any)?.exchange || (aliasRecommendation as any)?.exchange || "NASDAQ"}
+              marketSession={data?.marketSession || data?.marketPriceState?.marketSession || (data?._dataSource === "live" ? "Market Open / Live Intraday" : "Regular Trading Hours")}
               currentPrice={data?.currentPrice ?? (SpotPriceRegistry.get(selectedSymbol)?.price || 0)}
               changePct={data?.priceChangePct24h || 0}
               setupScore={data?.confluence?.confluenceScore !== undefined ? Math.round(data.confluence.confluenceScore) : undefined}
@@ -742,6 +753,7 @@ function TerminalContent() {
           />
         </aside>
       </main>
+      <SynthesisMobileDock activeSymbol={selectedSymbol} />
     </div>
   );
 }

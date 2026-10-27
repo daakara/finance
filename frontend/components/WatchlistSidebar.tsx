@@ -28,11 +28,12 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
       const symClean = item.symbol.toUpperCase().replace("-USD", "");
       const snap = snapshots[symClean];
       if (snap && snap.currentPrice !== null && snap.currentPrice > 0 && Math.abs(snap.currentPrice - 319.64) >= 0.01) {
-        const isUp = snap.priceChangePct24h >= 0;
+        const pct = typeof snap.priceChangePct24h === "number" ? snap.priceChangePct24h : (typeof (snap as any).changePct === "number" ? (snap as any).changePct : 0);
+        const isUp = pct >= 0;
         return {
           ...item,
           price: `$${snap.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-          change: `${isUp ? "+" : ""}${snap.priceChangePct24h.toFixed(2)}%`,
+          change: `${isUp ? "+" : ""}${pct.toFixed(2)}%`,
           isUp,
         };
       }
@@ -69,14 +70,15 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
           const symClean = item.symbol.toUpperCase().replace("-USD", "");
           const liveQuote = quotes[symClean];
           if (liveQuote && liveQuote.price > 0 && (symClean === "AAPL" || Math.abs(liveQuote.price - 319.64) >= 0.01)) {
-            const isUp = liveQuote.changePct >= 0;
+            const pct = typeof liveQuote.changePct === "number" ? liveQuote.changePct : 0;
+            const isUp = pct >= 0;
             return {
               ...item,
               price: `$${liveQuote.price.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}`,
-              change: `${isUp ? "+" : ""}${liveQuote.changePct.toFixed(2)}%`,
+              change: `${isUp ? "+" : ""}${pct.toFixed(2)}%`,
               isUp,
             };
           }

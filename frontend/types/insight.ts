@@ -103,6 +103,10 @@ export interface TerminalViewState {
   modelProvenance: ModelProvenance;
   overallEligibility: "ELIGIBLE" | "LIMITED" | "INELIGIBLE";
   decisionState?: DecisionState;
+  authoritativeDecisionState?: DecisionState;
+  freshness?: FreshnessInfo;
+  freshnessStatus?: string;
+  stalenessDays?: number;
   canSizeTrade?: boolean;
   isActionable?: boolean;
   assessment: Assessment;
@@ -129,6 +133,8 @@ export interface QuantitativeInsight {
   id: string;
   symbol: string;
   companyName: string;
+  exchange?: string;
+  marketSession?: string;
   price: number;
   changePct: number;
   setupScore: number;
@@ -197,6 +203,8 @@ export interface QuantitativeInsight {
 
   // Tier 3: Quantitative Data (Advanced)
   advanced: {
+    exchange?: string;
+    marketSession?: string;
     rsi?: number;
     ema20?: number;
     sma50?: number;
@@ -224,6 +232,7 @@ export interface QuantitativeInsight {
   whatWouldChangeAssessment: string;
   availableActions: ARXAction[];
   decisionTrace?: DecisionTrace;
+  freshness?: FreshnessInfo;
 }
 
 export interface FreshnessInfo {
@@ -234,6 +243,8 @@ export interface FreshnessInfo {
   candleCount?: number;
   observedAt?: number;
   fetchedAt?: number;
+  isRealtime?: boolean;
+  priceSemantic?: string;
 }
 
 export interface DecisionTrace {

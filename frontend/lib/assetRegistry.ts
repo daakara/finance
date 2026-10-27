@@ -656,3 +656,96 @@ export function normalizeAssetSymbol(symbol: string | null | undefined): string 
 
   return trimmed;
 }
+
+/**
+ * Non-ticker sector, macro, category, or general search keywords.
+ * Used by isCanonicalSecurityIdentifier to prevent non-ticker search keywords from being
+ * misidentified as asset tickers (MOB-03).
+ */
+export const RADAR_NON_TICKER_KEYWORDS = new Set([
+  "ENERGY",
+  "TECH",
+  "TECHNOLOGY",
+  "FINANCIALS",
+  "FINANCE",
+  "HEALTHCARE",
+  "HEALTH",
+  "CONSUMER",
+  "INDUSTRIALS",
+  "MATERIALS",
+  "UTILITIES",
+  "REALESTATE",
+  "COMMUNICATION",
+  "GROWTH",
+  "VALUE",
+  "GARP",
+  "VCP",
+  "SMART_MONEY",
+  "MACRO",
+  "ALL",
+  "BONDS",
+  "STOCKS",
+  "OPTIONS",
+  "HOLDINGS",
+  "OPPORTUNITIES",
+  "PORTFOLIO",
+  "DIVIDEND",
+  "EARNINGS",
+  "BREAKOUT",
+]);
+
+/**
+ * Validates whether an input string is an explicitly resolved, authoritative security identifier (MOB-03).
+ * Rejects non-ticker search terms, category keywords, company names, and unverified inputs.
+ */
+export function isCanonicalSecurityIdentifier(
+  query: string | null | undefined,
+  knownAssets?: { ticker: string }[]
+): boolean {
+  if (!query || typeof query !== "string") return false;
+  const trimmed = query.trim().toUpperCase();
+  if (!trimmed || /\s/.test(trimmed)) return false;
+
+  // Immediately reject known sector, category, or macro keywords
+  if (RADAR_NON_TICKER_KEYWORDS.has(trimmed)) return false;
+
+  // Must conform to valid ticker syntax
+  if (!/^[A-Z0-9.\-:_/]{1,16}$/.test(trimmed)) return false;
+
+  // Check 1: Known in active screener asset universe
+  if (knownAssets && knownAssets.some((a) => a.ticker.toUpperCase() === trimmed)) {
+    return true;
+  }
+
+  // Check 2: Known in canonical asset names registry
+  if (CANONICAL_ASSET_NAMES[trimmed] !== undefined) {
+    return true;
+  }
+
+  // Check 3: Standard US dual-class shares (e.g. BRK.B, BF.B)
+  if (/^(?:BRK|BF|HEI|BIO|LEN|CWEN)[./\-][A-Z]$/.test(trimmed)) {
+    return true;
+  }
+
+  // Check 4: Valid international exchange suffixes (e.g. SHEL.L, SAP.DE)
+  if (/^[A-Z]{1,5}\.(?:L|DE|PA|AS|TO|V|AX|HK|T)$/.test(trimmed)) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Resolves a security identifier to its canonical string representation, or null if unverified.
+ */
+export function resolveCanonicalSecurity(
+  query: string | null | undefined,
+  knownAssets?: { ticker: string }[]
+): string | null {
+  if (!query) return null;
+  const trimmed = query.trim().toUpperCase();
+  if (!isCanonicalSecurityIdentifier(trimmed, knownAssets)) {
+    return null;
+  }
+  return trimmed;
+}

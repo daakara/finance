@@ -197,16 +197,16 @@ export default function OptimalEntryExitCard({
     return (
       <div
         data-testid="conditional-trade-plan"
-        className="bg-[#111722] border border-slate-800 rounded-xl p-5 shadow-xl space-y-4 font-sans text-slate-300"
+        className="bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-xl p-5 shadow-xl space-y-4 font-sans text-[var(--text-1)]"
       >
-        <div className="flex items-center space-x-2 text-slate-400">
-          <span className="w-2 h-2 rounded-full bg-slate-500"></span>
-          <h3 className="text-sm font-bold text-slate-200">🎯 {symbol} Execution Setup Unavailable</h3>
+        <div className="flex items-center space-x-2 text-[var(--text-muted)]">
+          <span className="w-2 h-2 rounded-full bg-[var(--text-muted)]"></span>
+          <h3 className="text-sm font-bold text-[var(--text-1)]">🎯 {symbol} Execution Setup Unavailable</h3>
         </div>
-        <p className="text-xs text-slate-400 leading-relaxed">
+        <p className="text-xs text-[var(--text-2)] leading-relaxed">
           {entry_thesis || "Historical candlestick depth is insufficient (< 50 trading sessions) or asset identity is unverified. Under Phase 18 quantitative integrity invariants, the platform strictly refuses to synthesize hypothetical entry ranges, stop-loss levels, or asymmetric profit targets."}
         </p>
-        <div className="text-[11px] text-slate-400 font-mono bg-[#0b0f17] p-2.5 rounded border border-slate-800/80">
+        <div className="text-[11px] text-[var(--text-2)] font-mono bg-[var(--surface-2)] p-2.5 rounded border border-[var(--border-subtle)]">
           Status: {executionPlan.execution_status || "INSUFFICIENT_HISTORY"} • Invalidation: {invalidation_condition || "Awaiting verified historical exchange candles"}
         </div>
       </div>
@@ -405,12 +405,12 @@ export default function OptimalEntryExitCard({
   return (
     <div
       data-testid="conditional-trade-plan"
-      className={`bg-[#111722] border rounded-xl p-2.5 sm:p-5 shadow-xl space-y-2.5 sm:space-y-4 font-sans transition-colors ${
-        isDayTrader ? "border-amber-900/40" : "border-[#243044]"
+      className={`bg-[var(--surface-1)] border rounded-xl p-2.5 sm:p-5 shadow-xl space-y-2.5 sm:space-y-4 font-sans text-[var(--text-1)] transition-colors ${
+        isDayTrader ? "border-[var(--signal-warn)]/40" : "border-[var(--border-subtle)]"
       }`}
     >
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-[#1b2434] pb-1.5 sm:pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-[var(--border-subtle)] pb-1.5 sm:pb-3">
         <div>
           <div className="flex items-center space-x-2">
             <span
@@ -420,11 +420,11 @@ export default function OptimalEntryExitCard({
                   : "bg-amber-400"
               }`}
             ></span>
-            <h3 className="text-sm sm:text-base font-bold text-slate-100 tracking-tight flex items-center gap-2">
+            <h3 className="text-sm sm:text-base font-bold text-[var(--text-1)] tracking-tight flex items-center gap-2">
               <span>{isPlain ? `🎯 ${symbol} Conditional Trade Plan` : `🎯 ${symbol} Conditional Execution Ladder`}</span>
             </h3>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5 font-normal hidden sm:block">
+          <p className="text-xs text-[var(--text-2)] mt-0.5 font-normal hidden sm:block">
             {isPlain
               ? "Calculated price ranges for conditional accumulation, profit milestones, and loss protection."
               : isDayTrader
@@ -446,7 +446,7 @@ export default function OptimalEntryExitCard({
             </span>
             <span
               data-testid="plan-status"
-              className="px-2 py-0.5 rounded text-xs font-mono bg-[#162030] text-slate-300 border border-[#243044]"
+              className="px-2.5 py-1 rounded-md text-xs font-mono bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-subtle)]"
             >
               Status: {decisionStateLabel || decisionState || (canonicalActionable ? "CONFIRMED_TRIGGER" : "WAIT_FOR_TRIGGER")}
             </span>
@@ -520,8 +520,8 @@ export default function OptimalEntryExitCard({
 
         {/* Reward-to-Risk Pill */}
         <div className="flex items-center space-x-2">
-          <div className="bg-[#090d14] px-3 py-1 rounded-lg border border-[#243044] text-right" title={isStage4 ? "Post-Breakout Pivot Expected Reward-to-Risk Ratio" : "Reward-to-Risk ratio: Potential gain to TP1 relative to maximum risk at Stop Loss"}>
-            <span className="text-[9px] text-slate-500 block uppercase font-bold font-mono">
+          <div className="bg-[var(--surface-2)] px-3 py-1 rounded-lg border border-[var(--border-subtle)] text-right" title={isStage4 ? "Post-Breakout Pivot Expected Reward-to-Risk Ratio" : "Reward-to-Risk ratio: Potential gain to TP1 relative to maximum risk at Stop Loss"}>
+            <span className="text-[9px] text-[var(--text-muted)] block uppercase font-bold font-mono">
               {isPlain ? "Profit : Risk" : isStage4 ? "Post-Pivot R:R" : "Reward : Risk"}
             </span>
             <span className={`text-sm font-extrabold font-mono tabular-nums ${isStage4 ? "text-amber-400" : "text-emerald-400"}`}>
@@ -600,23 +600,23 @@ export default function OptimalEntryExitCard({
 
       {/* ⚡ Conditional Trigger & Corridor Distinction (UX-015, UX-021 through UX-025) */}
       {!isActionable && (
-        <div data-testid="conditional-confirmation-block" className="bg-[#09111e] border border-cyan-800/60 rounded-xl p-3.5 text-xs space-y-2 font-sans">
+        <div data-testid="conditional-confirmation-block" className="bg-[var(--surface-2)] border border-[var(--border-subtle)] rounded-xl p-3.5 text-xs space-y-2 font-sans">
           <div className="flex items-center gap-2 text-cyan-300 font-bold text-xs uppercase tracking-wide">
             <span>⚡</span>
             <span>IF CONFIRMATION OCCURS:</span>
           </div>
-          <p className="text-slate-300 text-xs leading-relaxed">
+          <p className="text-[var(--text-2)] text-xs leading-relaxed">
             This trade plan remains <strong>conditional</strong>. Current posture is to <strong>Wait</strong>. The entry corridor defines the spatial accumulation zone — price being inside the corridor alone does not constitute an actionable setup until confirmed by an active volume breakout or stabilization candle.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-mono text-xs">
-            <div className="p-2 rounded bg-[#060b13] border border-[#1b2639]">
-              <span className="text-slate-400 block text-xs font-bold">1. Spatial Location (Price Corridor):</span>
+            <div className="p-2 rounded bg-[var(--surface-1)] border border-[var(--border-subtle)]">
+              <span className="text-[var(--text-muted)] block text-xs font-bold">1. Spatial Location (Price Corridor):</span>
               <span className="text-cyan-300 font-bold text-xs">
                 ${Math.min(optimal_entry_min, optimal_entry_max).toFixed(2)} – ${Math.max(optimal_entry_min, optimal_entry_max).toFixed(2)}
               </span>
             </div>
-            <div className="p-2 rounded bg-[#060b13] border border-[#1b2639]">
-              <span className="text-slate-400 block text-xs font-bold">2. Market Event Trigger:</span>
+            <div className="p-2 rounded bg-[var(--surface-1)] border border-[var(--border-subtle)]">
+              <span className="text-[var(--text-muted)] block text-xs font-bold">2. Market Event Trigger:</span>
               <span className="text-amber-300 font-bold text-xs">
                 Awaiting volume breakout / confirmation candle
               </span>
@@ -626,10 +626,10 @@ export default function OptimalEntryExitCard({
       )}
 
       {/* Interactive Execution Price Ladder */}
-      <div className="space-y-2 bg-[#090d14] p-3.5 rounded-xl border border-[#1e293b]">
-        <div className="text-[10px] text-slate-500 uppercase font-bold tracking-wider flex items-center justify-between">
+      <div className="space-y-2 bg-[var(--surface-2)] p-3.5 rounded-xl border border-[var(--border-subtle)]">
+        <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-wider flex items-center justify-between">
           <span>{isPlain ? "Recommended Price Ladder" : "Mathematical Execution Ladder"}</span>
-          <span className="text-slate-400">
+          <span className="text-[var(--text-2)]">
             {hasLiveSpot ? `Live Spot: $${displayMarketPrice.toFixed(2)}` : `Reference Close: $${displayMarketPrice.toFixed(2)}`}
           </span>
         </div>
@@ -681,7 +681,7 @@ export default function OptimalEntryExitCard({
         </div>
 
         {/* CURRENT MARKET PRICE BENCHMARK */}
-        <div className="flex items-center justify-between p-2.5 rounded-lg bg-[#162030] border border-cyan-500/50 text-xs shadow-inner">
+        <div className="flex items-center justify-between p-2.5 rounded-lg bg-[var(--surface-3)] border border-[var(--brand-accent)]/50 text-xs shadow-inner">
           <div className="flex items-center space-x-2">
             <span className="text-cyan-300 font-extrabold flex items-center gap-1">
               <span>{hasLiveSpot ? "⚡ CURRENT MARKET PRICE" : "🏛️ ANALYSIS REFERENCE PRICE"}</span>
@@ -692,7 +692,7 @@ export default function OptimalEntryExitCard({
                   ? (resolvedLiveFreshness === "REALTIME"
                       ? "bg-emerald-950/80 text-emerald-300 border-emerald-800"
                       : "bg-amber-950/80 text-amber-300 border-amber-800")
-                  : "bg-slate-800 text-slate-300 border-slate-700"
+                  : "bg-[var(--surface-1)] text-[var(--text-2)] border-[var(--border-subtle)]"
               }`}
             >
               {hasLiveSpot
@@ -700,23 +700,23 @@ export default function OptimalEntryExitCard({
                 : "PRIOR CLOSE (REF)"}
             </span>
           </div>
-          <strong className="text-white text-base font-bold tabular-nums">
+          <strong className="text-[var(--text-1)] text-base font-bold tabular-nums">
             ${displayMarketPrice.toFixed(2)}
           </strong>
         </div>
 
         {/* SETUP REFERENCE BASELINE (Preserves visibility of frozen setup anchor when live spot is shown) */}
         {hasLiveSpot && canonicalAnalysisRef !== null && (
-          <div className="flex items-center justify-between p-2 rounded-lg bg-[#0e1626]/60 border border-slate-800 text-xs">
+          <div className="flex items-center justify-between p-2 rounded-lg bg-[var(--surface-1)] border border-[var(--border-subtle)] text-xs">
             <div className="flex items-center space-x-2">
-              <span className="text-slate-400 font-semibold">🏛️ Setup Reference</span>
-              <span className="text-[10px] text-slate-500 hidden sm:inline">• Prior Close (Model Baseline)</span>
+              <span className="text-[var(--text-2)] font-semibold">🏛️ Setup Reference</span>
+              <span className="text-[10px] text-[var(--text-muted)] hidden sm:inline">• Prior Close (Model Baseline)</span>
             </div>
             <div className="text-right">
-              <span className="text-slate-300 font-mono text-xs font-bold tabular-nums">
+              <span className="text-[var(--text-1)] font-mono text-xs font-bold tabular-nums">
                 ${canonicalAnalysisRef.toFixed(2)}
               </span>
-              <span className="text-[10px] text-slate-500 ml-1.5 font-mono">
+              <span className="text-[10px] text-[var(--text-muted)] ml-1.5 font-mono">
                 (Prior Close)
               </span>
             </div>
@@ -726,7 +726,7 @@ export default function OptimalEntryExitCard({
         {/* Optimal Entry / Prospective Base Range */}
         <div className={`flex items-center justify-between p-2 rounded-lg text-xs transition-colors ${
           isStage4
-            ? "bg-[#151922] border border-amber-800/60"
+            ? "bg-[var(--surface-1)] border border-amber-800/60"
             : "bg-cyan-950/30 border border-cyan-800/40"
         }`}>
           <div className="flex items-center space-x-2">
@@ -753,7 +753,7 @@ export default function OptimalEntryExitCard({
         )}
 
         {/* Tactical Trade Management & Protected Ratchet Rule */}
-        <div className="p-2.5 rounded-lg bg-[#0e1626] border border-cyan-900/50 text-xs space-y-1">
+        <div className="p-2.5 rounded-lg bg-[var(--surface-1)] border border-cyan-900/50 text-xs space-y-1">
           <div className="flex items-center justify-between text-xs font-bold text-cyan-300">
             <span className="flex items-center gap-1.5">
               <span>🎯</span>
@@ -761,7 +761,7 @@ export default function OptimalEntryExitCard({
             </span>
             <span className="text-xs text-emerald-400 font-mono">Protected Trailing Runner</span>
           </div>
-          <p className="text-xs text-slate-300 leading-relaxed font-sans">
+          <p className="text-xs text-[var(--text-2)] leading-relaxed font-sans">
             {isPlain
               ? `When Profit Goal 1 ($${take_profit_1.toFixed(2)}) is reached, sell 50% to lock gains and move your Stop Loss to ${costBasisDescriptionPlain} for a protected trailing hold to Goal 2 ($${take_profit_2.toFixed(2)}).`
               : `Scale 0.50x tranche at TP1 ($${take_profit_1.toFixed(2)}). Immediately ratchet hard stop to ${costBasisDescriptionQuant} to lock in net positive expectancy and allow remaining runner to compound to TP2 ($${take_profit_2.toFixed(2)}).`}
@@ -772,25 +772,25 @@ export default function OptimalEntryExitCard({
         <div className={`flex items-center justify-between p-2 rounded-lg text-xs ${
           isStopVisible
             ? "bg-rose-950/30 border border-rose-800/40"
-            : "bg-slate-900/60 border border-slate-700/60"
+            : "bg-[var(--surface-1)] border border-[var(--border-subtle)]"
         }`}>
           <div className="flex items-center space-x-2">
-            <span className={isStopVisible ? "text-rose-400 font-bold" : "text-slate-300 font-bold"}>
+            <span className={isStopVisible ? "text-rose-400 font-bold" : "text-[var(--text-1)] font-bold"}>
               {isStopVisible
                 ? (isPlain ? "🛑 SAFETY EXIT (Cut Loss Price)" : "🛑 HARD STOP-LOSS / INVALIDATION")
                 : (isPlain ? "🛑 STRUCTURAL INVALIDATION FLOOR" : "🛑 STRUCTURAL INVALIDATION REFERENCE")}
             </span>
-            <span className="text-xs text-slate-400 hidden sm:inline">
+            <span className="text-xs text-[var(--text-muted)] hidden sm:inline">
               {isStopVisible
                 ? (isPlain ? "• Exit here to protect account" : "• -1.5x ATR Volatility Cut Floor")
                 : (isPlain ? "• Base Invalidation Floor (Wait for Pullback)" : "• Base Invalidation Reference (Non-Active)")}
             </span>
           </div>
           <div className="text-right">
-            <strong className={`text-sm font-bold font-mono tabular-nums ${isStopVisible ? "text-rose-400" : "text-slate-200"}`}>
+            <strong className={`text-sm font-bold font-mono tabular-nums ${isStopVisible ? "text-rose-400" : "text-[var(--text-1)]"}`}>
               ${stop_loss.toFixed(2)}
             </strong>
-            <span className={`text-xs ml-1.5 font-mono tabular-nums ${isStopVisible ? "text-rose-500" : "text-slate-400"}`}>
+            <span className={`text-xs ml-1.5 font-mono tabular-nums ${isStopVisible ? "text-rose-500" : "text-[var(--text-muted)]"}`}>
               ({stop_loss_pct}%{isStopVisible ? "" : " from base"})
             </span>
           </div>
@@ -799,31 +799,31 @@ export default function OptimalEntryExitCard({
 
       {/* Quantitative Context Details */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-sans">
-        <div className="bg-[#090d14] p-3 rounded-lg border border-[#1e293b] space-y-1">
+        <div className="bg-[var(--surface-2)] p-3 rounded-lg border border-[var(--border-subtle)] space-y-1">
           <span className="text-[10px] text-cyan-400 block uppercase font-bold font-mono">
             {isPlain ? "Chart Pattern & Setup Analysis" : "Setup Pattern & Stage Analysis"}
           </span>
-          <div className="font-bold text-slate-200">{setup_pattern}</div>
-          <div className="text-[11px] text-slate-400">{entry_thesis}</div>
+          <div className="font-bold text-[var(--text-1)]">{setup_pattern}</div>
+          <div className="text-[11px] text-[var(--text-2)]">{entry_thesis}</div>
           {isStage4 && (
-            <div className="mt-2 pt-1.5 border-t border-[#1e293b] flex items-center justify-between text-[11px] text-amber-300">
+            <div className="mt-2 pt-1.5 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] text-amber-300">
               <span>🎯 Key Breakout Pivot (50-Day SMA):</span>
               <strong className="font-mono text-amber-400 font-bold">${(executionPlan.breakout_pivot || current_price * 1.072).toFixed(2)}</strong>
             </div>
           )}
         </div>
 
-        <div className="bg-[#090d14] p-3 rounded-lg border border-[#1e293b] space-y-1">
+        <div className="bg-[var(--surface-2)] p-3 rounded-lg border border-[var(--border-subtle)] space-y-1">
           <span className="text-[10px] text-rose-400 block uppercase font-bold font-mono">
             {isPlain ? "Why & When To Exit (Rule)" : "Strict Invalidation & Exit Condition"}
           </span>
-          <div className="font-bold text-slate-200">{stage_phase}</div>
-          <div className="text-[11px] text-slate-400">{invalidation_condition}</div>
+          <div className="font-bold text-[var(--text-1)]">{stage_phase}</div>
+          <div className="text-[11px] text-[var(--text-2)]">{invalidation_condition}</div>
         </div>
       </div>
 
       {/* 📜 Deep Dive Provenance, Position Sizer, Pre-Flight, Alerts & Portfolio Triggers */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#1b2434]">
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--border-subtle)]">
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"

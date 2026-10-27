@@ -159,7 +159,12 @@ const confluenceData = {
   confluenceBadge: "4-Pillar Confluence (Pristine)",
   badgeColor: "emerald",
   bottomLine: "Disciplined accumulation.",
-  pillars: [],
+  pillars: [
+    { pillar: "Fundamental Solvency", score: 85, status: "positive", plainDetail: "Healthy balance sheet" },
+    { pillar: "Technical Trend", score: 80, status: "positive", plainDetail: "Strong trend above 50 SMA" },
+    { pillar: "Smart Money Flow", score: 82, status: "positive", plainDetail: "Institutional accumulation" },
+    { pillar: "Macro Regime", score: 75, status: "positive", plainDetail: "Supportive environment" },
+  ],
 } as any;
 
 const insightNonActionable = generateQuantitativeInsight(

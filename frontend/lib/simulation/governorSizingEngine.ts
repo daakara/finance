@@ -174,6 +174,7 @@ export interface TradeSetupSpec {
   ticker: string;
   setupName: string;
   entryPivot: number;
+  entryMin?: number;    // Lower bound of buy zone (optimal_entry_min); optional, non-breaking
   stopLoss: number;
   target1?: number;
   target2?: number;
@@ -195,6 +196,7 @@ export interface TradeSetupSpec {
 export interface GovernorSizingOutput {
   ticker: string;
   entryPivot: number;
+  entryMin?: number;    // Lower bound of buy zone (optimal_entry_min); optional, non-breaking
   stopLoss: number;
   stopDistanceDollar: number;
   stopDistancePct: number;

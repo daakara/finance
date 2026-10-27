@@ -304,7 +304,7 @@ describe("Wave 1 Declutter and Preservation Acceptance Suite", () => {
         />
       );
 
-      const actionBtn = screen.getByText(/Size & Execute Position/i);
+      const actionBtn = screen.getByText(/Size.*Position/i);
       fireEvent.click(actionBtn);
       expect(onOpenSizer).toHaveBeenCalledTimes(1);
     });

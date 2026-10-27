@@ -56,6 +56,7 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
     activeBlocker,
     whatNeedsToChange,
     evidenceMeta,
+    isSimulatedClearance,
   } = evalResult;
 
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
@@ -105,6 +106,14 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
         >
           <span aria-hidden="true">{isCleared ? "🟢" : "⚠️"}</span>
           <span>{clearanceStatusLabel}</span>
+          {isSimulatedClearance && (
+            <span
+              data-testid="inline-simulated-tag"
+              className="ml-1 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-cyan-950/90 text-cyan-300 border border-cyan-700/60 font-semibold"
+            >
+              SIMULATED
+            </span>
+          )}
         </div>
       </div>
 
