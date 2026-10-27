@@ -318,6 +318,19 @@ class BacklogValidator:
                         self.findings.append(Finding("BI-005", tid, "ERROR", f"Carried-forward task '{tid}' from {origin} lacks valid receiving sprint or queue"))
                     if not reason or not str(reason).strip():
                         self.findings.append(Finding("BI-005", tid, "ERROR", f"Carried-forward task '{tid}' from {origin} must specify non-empty 'carryforward_reason'"))
+                    
+                    # BI-005 Hardening (Directive 042): Carryforward tasks must contain valid, non-empty acceptance criteria
+                    criteria = t.get("acceptance_criteria")
+                    if criteria is None:
+                        self.findings.append(Finding("BI-005", tid, "ERROR", f"Carried-forward task '{tid}' must specify 'acceptance_criteria'"))
+                    elif not isinstance(criteria, list) or len(criteria) == 0:
+                        self.findings.append(Finding("BI-005", tid, "ERROR", f"Carried-forward task '{tid}' must specify non-empty 'acceptance_criteria' list"))
+                    else:
+                        for idx, c in enumerate(criteria):
+                            if not isinstance(c, str):
+                                self.findings.append(Finding("BI-005", tid, "ERROR", f"Carried-forward task '{tid}' criterion #{idx+1} must be a string, got {type(c).__name__}"))
+                            elif not c.strip():
+                                self.findings.append(Finding("BI-005", tid, "ERROR", f"Carried-forward task '{tid}' criterion #{idx+1} cannot be empty or whitespace-only"))
 
     def _check_bi_006_evidence_for_completion(self, tasks: List[Dict[str, Any]]):
         for t in tasks:

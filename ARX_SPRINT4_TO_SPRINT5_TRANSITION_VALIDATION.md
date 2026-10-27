@@ -19,7 +19,7 @@
 | **BI-002** | Accountable Ownership | Active executable tasks have valid owner assigned | Owner assignment audit | **PASS** |
 | **BI-003** | Sprint Assignment | Executable tasks assigned to valid sprint; holding queues for gated | Enum validation | **PASS** |
 | **BI-004** | Disposition Completeness | Every task has an authoritative valid disposition and status | Disposition enum check | **PASS** |
-| **BI-005** | Carry-Forward Continuity | Carried-forward tasks have valid destination & non-empty reason | Cross-sprint audit (8 tasks) | **PASS** |
+| **BI-005** | Carry-Forward Continuity | Carried-forward tasks have valid destination, non-empty reason, and non-empty valid acceptance criteria list | Cross-sprint audit (8 tasks) | **PASS** |
 | **BI-006** | Evidence for Completion | Completed tasks have non-empty evidence references | Evidence list check | **PASS** |
 | **BI-007** | PR Traceability | Active PRs trace to canonical tasks | External reconciliation check | **PASS** |
 | **BI-008** | Duplicate & Alias Detection | No duplicate identities, cyclic supersessions, alias collisions | Graph traversal | **PASS** |
@@ -38,16 +38,16 @@ python -m pytest tests/test_backlog_integrity_validator.py -v
 ```
 
 ### Summary:
-- **Total Tests:** 37
-- **Passed:** 37 (100%)
+- **Total Tests:** 46
+- **Passed:** 46 (100%)
 - **Failed:** 0
-- **Duration:** 6.69s
+- **Duration:** 8.2s
 
 ### Coverage Breakdown:
 1. **Existing GOV-001 Regression Suite (27 Tests):**
    - Tests 1–18: Acceptance tests for unique identity, ownership, sprint assignment, disposition, carryforward continuity, evidence completeness, PR tracing, GitHub issue classification, pagination, supersession cycles, deleted tasks, operational complete states, owner gating, and controlled carryforwards.
    - Tests 19–27: Edge-case regressions (zero issues misclassification, clean checkout diff detection, missing baseline fail-closed, missing GitHub inventory fail-closed, unrelated code PR isolation, nonzero exit on failed closure).
-2. **Dedicated Sprint 4 to Sprint 5 Transition Suite (10 Tests):**
+2. **Dedicated Sprint 4 to Sprint 5 Transition & Carryforward Suite (19 Tests):**
    - `test_canonical_backlog_sprint5_transition_valid`: Full canonical backlog validation against evolved schema. Confirms 43 tasks, 8 carryforwards, 5 closures, 2 conditional holds, 1 release held, 10 holding queue tasks.
    - `test_adversarial_missing_carryforward_task`: Validates fail-closed behavior on task deletion.
    - `test_adversarial_duplicate_task_identity`: Validates fail-closed duplicate ID detection.
@@ -58,6 +58,15 @@ python -m pytest tests/test_backlog_integrity_validator.py -v
    - `test_adversarial_invalid_sprint_transition_state`: Validates fail-closed detection if an undispositioned or `IN_PROGRESS` task remains in closed `SPRINT_4`.
    - `test_adversarial_reopening_previously_verified_task`: Validates fail-closed detection when a completed historical task is mutated back to `IN_PROGRESS`.
    - `test_adversarial_loss_of_historical_evidence_reference`: Validates fail-closed detection if evidence refs are stripped from completed tasks.
+   - `test_adversarial_carryforward_missing_acceptance_criteria`: (Directive 042 Track B) Rejects carryforward missing `acceptance_criteria`.
+   - `test_adversarial_carryforward_empty_acceptance_criteria`: (Directive 042 Track B) Rejects carryforward with empty `acceptance_criteria: []`.
+   - `test_adversarial_carryforward_whitespace_only_criterion`: (Directive 042 Track B) Rejects whitespace-only string in `acceptance_criteria`.
+   - `test_adversarial_carryforward_malformed_criterion_object`: (Directive 042 Track B) Rejects non-string object in `acceptance_criteria`.
+   - `test_adversarial_carryforward_invalid_criterion_type`: (Directive 042 Track B) Rejects integer/boolean in `acceptance_criteria`.
+   - `test_adversarial_carryforward_no_accountable_owner`: (Directive 042 Track B) Rejects carryforward without accountable owner.
+   - `test_adversarial_carryforward_invalid_status`: (Directive 042 Track B) Rejects carryforward with invalid status enum.
+   - `test_adversarial_carryforward_unauthorized_hold_release`: (Directive 042 Track B) Rejects unauthorized HOLD release under `OWNER_GATE_REQUIRED`.
+   - `test_carryforward_valid_acceptance_criteria_accepted`: (Directive 042 Track B) Positively verifies all 8 valid existing carryforwards.
 
 ---
 

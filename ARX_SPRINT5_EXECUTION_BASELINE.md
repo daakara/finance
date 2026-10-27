@@ -3,7 +3,7 @@
 **Directive:** `ARX_S4_FORMAL_CLOSURE_AND_S5_TRANSITION_032`  
 **Active Sprint:** `SPRINT_5`  
 **Total Canonical Tasks:** 43  
-**Baseline Git Commit:** `7f27ae14d2ea15d2e7c9f8225c5302f17fe3cb86` (PR #112 / PR #98 merged)  
+**Baseline Git Commit:** `eeeb545fa3257dd01b8ac058ae586432613ec37d` (PR #72 / PR #112 / PR #98 merged, Directive 040 certified)  
 **Timestamp:** `2026-10-27T07:45:00Z`  
 
 ---
@@ -34,7 +34,7 @@
 ### Category C: Sprint 4 Conditional Closure Holds (2 Tasks)
 | Task ID | Workstream | Status | Disposition | Assigned Sprint | Dependency | Reason & Open Action |
 | :--- | :--- | :--- | :--- | :---: | :--- | :--- |
-| **ARX-S3-010** | SMART_MONEY | READY | CLOSED_SPRINT_CONDITIONAL_OPEN_TASK | SPRINT_4 | PR #72 | Statutory reporting lag disclosure held on PR #72 |
+| **ARX-S3-010** | SMART_MONEY | READY | CLOSED_SPRINT_CONDITIONAL_OPEN_TASK | SPRINT_4 | PR #72 (Merged `eeeb545`) | All 3 criteria satisfied with PR #72 mainline merge; recommended for owner ratification as `CLOSED_VERIFIED` |
 | **ARX-S3-013** | RADAR_VCP | READY | CLOSED_SPRINT_CONDITIONAL_OPEN_TASK | SPRINT_4 | PR #73 | Continuous live scanner daemon held dormant in PR #73 |
 
 ### Category D: Sprint 4 Engineering Accepted, Mainline Merged (1 Task)

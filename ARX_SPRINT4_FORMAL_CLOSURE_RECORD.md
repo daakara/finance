@@ -4,7 +4,7 @@
 **Governance Framework:** ARX Closure Model v2 + Governance Efficiency v1.1  
 **Authority:** Product/Research Owner (`daakara`) — Bounded Administrative Transition Authorization  
 **Closure Timestamp:** `2026-10-27T05:30:00Z`  
-**Authoritative Baseline Git SHA:** `4e0979e9520b4cd8b58fd56ceecd47e842fb8028`  
+**Authoritative Baseline Git SHA:** `eeeb545fa3257dd01b8ac058ae586432613ec37d` (PR #72 merged, Directive 040 certified)  
 **Starting Backlog SHA-256:** `32b0ad96c77e1c9afba10548224d39a0c5f42a6bf940ecea6a0f39544474e4cb`  
 **Resulting Backlog SHA-256:** `81ad37be25a0d4d8ae8a733686658e54e9f0b6987499ee7d2fe55a34f686f1f8`  
 **Closure State:** `SPRINT4_ADMINISTRATIVELY_CLOSED` (VERIFIED)  
@@ -67,7 +67,7 @@ Reassigned to `assigned_sprint = SPRINT_5` with preserved origin sprints, histor
 
 ### Category C — Conditional Closure Holds (2 Tasks)
 Retained in Sprint 4 historical assignment with explicit open dependency tracking:
-1. **`ARX-S3-010`** (Smart Money Evidence Integrity): `CLOSED_SPRINT_CONDITIONAL_OPEN_TASK`. Pre-flight fail-closed clearance merged (PR #87/#89); final reporting lag disclosure held on unmerged PR #72.
+1. **`ARX-S3-010`** (Smart Money Evidence Integrity): `CLOSED_SPRINT_CONDITIONAL_OPEN_TASK` (Recommended for owner ratification as `CLOSED_VERIFIED`). Pre-flight fail-closed clearance merged (PR #87/#89); Smart Money Phase 1 dormant readiness merged (PR #100); statutory reporting lag disclosures and backend provenance merged in PR #72 (`eeeb545`) and certified in Directive 040.
 2. **`ARX-S3-013`** (VCP Scanner Conformance): `CLOSED_SPRINT_CONDITIONAL_OPEN_TASK`. 4-stage Minervini trend template merged (PR #76); live scanner daemon in PR #73 remains held and dormant.
 
 ### Category D — Engineering Accepted, Mainline Merged (1 Task)
@@ -82,7 +82,7 @@ Retained in Sprint 4 historical assignment with explicit open dependency trackin
 
 | Artifact / Workstream | Governance Status | Hold Condition |
 | :--- | :--- | :--- |
-| **PR #72** (Smart Money Disclosures) | Held unmerged | Requires independent disclosure qualification and owner merge decision |
+| **PR #72** (Smart Money Disclosures) | **Merged Mainline** (`eeeb545`) | Certified in Directive 040; statutory disclosures and backend provenance active |
 | **PR #73** (VCP Scanner Daemon) | Held dormant | Natural scheduler activation hold (`VCP_NATURAL_SCHEDULER_ENABLED=0`) |
 | **PR #98** (Synthesis E V3 Frontend) | **Merged Mainline** (`8b8eb58`) | Merged with 38 suites passing; live production release decoupled |
 | **PR #109** (Sprint Control System) | **Draft Published / CI Green** | Hosted CI verified (Run `40417319375`, 4/4 jobs PASS); awaiting owner merge |

@@ -916,4 +916,94 @@ class TestSprint4ToSprint5Transition:
         assert verdict == "FAIL"
         assert any(f.rule_id == "BI-006" for f in findings)
 
+    # 11. Adversarial (Directive 042 Track B): Carryforward missing acceptance criteria
+    def test_adversarial_carryforward_missing_acceptance_criteria(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        cf = next(t for t in data["tasks"] if t["task_id"] == "ARX-S3-004")
+        del cf["acceptance_criteria"]
+        validator = BacklogValidator(data, schema_data=canonical_schema_data)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any("acceptance_criteria" in f.message for f in findings)
+
+    # 12. Adversarial (Directive 042 Track B): Carryforward empty acceptance criteria array
+    def test_adversarial_carryforward_empty_acceptance_criteria(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        cf = next(t for t in data["tasks"] if t["task_id"] == "ARX-S3-004")
+        cf["acceptance_criteria"] = []
+        validator = BacklogValidator(data, schema_data=canonical_schema_data)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id in ("BI-000", "BI-005") and "acceptance_criteria" in f.message for f in findings)
+
+    # 13. Adversarial (Directive 042 Track B): Carryforward whitespace-only criterion
+    def test_adversarial_carryforward_whitespace_only_criterion(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        cf = next(t for t in data["tasks"] if t["task_id"] == "ARX-S3-004")
+        cf["acceptance_criteria"] = ["   ", "\t\n"]
+        validator = BacklogValidator(data, schema_data=canonical_schema_data)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id in ("BI-000", "BI-005") and "whitespace-only" in f.message for f in findings)
+
+    # 14. Adversarial (Directive 042 Track B): Carryforward malformed criterion object
+    def test_adversarial_carryforward_malformed_criterion_object(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        cf = next(t for t in data["tasks"] if t["task_id"] == "ARX-S3-004")
+        cf["acceptance_criteria"] = [{"malformed": "criterion"}]
+        validator = BacklogValidator(data, schema_data=canonical_schema_data)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id in ("BI-000", "BI-005") for f in findings)
+
+    # 15. Adversarial (Directive 042 Track B): Carryforward invalid criterion type (integer)
+    def test_adversarial_carryforward_invalid_criterion_type(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        cf = next(t for t in data["tasks"] if t["task_id"] == "ARX-S3-004")
+        cf["acceptance_criteria"] = [12345]
+        validator = BacklogValidator(data, schema_data=canonical_schema_data)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id in ("BI-000", "BI-005") for f in findings)
+
+    # 16. Adversarial (Directive 042 Track B): Carryforward without accountable owner
+    def test_adversarial_carryforward_no_accountable_owner(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        cf = next(t for t in data["tasks"] if t["task_id"] == "ARX-S3-004")
+        cf["owner"] = ""
+        validator = BacklogValidator(data, schema_data=canonical_schema_data)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "BI-002" for f in findings)
+
+    # 17. Adversarial (Directive 042 Track B): Carryforward with invalid status
+    def test_adversarial_carryforward_invalid_status(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        cf = next(t for t in data["tasks"] if t["task_id"] == "ARX-S3-004")
+        cf["status"] = "INVALID_STATUS_XYZ"
+        validator = BacklogValidator(data, schema_data=canonical_schema_data)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id in ("BI-000", "BI-004") for f in findings)
+
+    # 18. Adversarial (Directive 042 Track B): Unauthorized HOLD release
+    def test_adversarial_carryforward_unauthorized_hold_release(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        holding = next(t for t in data["tasks"] if t["task_id"] == "ARX-S1-003")
+        holding["dimensions"]["owner_authorization"] = "AUTHORIZED"
+        holding["authorization_boundary"] = "OWNER_GATE_REQUIRED"
+        validator = BacklogValidator(data, schema_data=canonical_schema_data)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "BI-009" for f in findings)
+
+    # 19. Positive acceptance: Valid existing carryforwards pass validation
+    def test_carryforward_valid_acceptance_criteria_accepted(self, canonical_backlog_data, canonical_schema_data):
+        validator = BacklogValidator(canonical_backlog_data, schema_data=canonical_schema_data)
+        verdict, findings = validator.validate_all()
+        # Canonical backlog with valid carryforwards must have zero BI-005 errors
+        bi005_errors = [f for f in findings if f.rule_id == "BI-005" and f.severity == "ERROR"]
+        assert len(bi005_errors) == 0
+
+
 
