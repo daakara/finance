@@ -182,7 +182,7 @@ console.log("   [OK] 'Historical Reference — Not Investment Advice' disclaimer
 // ---------------------------------------------------------------------------
 console.log("\n7. Executing deterministic runtime network and feed-integrity regression tests...");
 
-import { fetchSmartMoneyOverview, fetchSmartMoneyOverviewStrict } from "../lib/api";
+import { fetchSmartMoneyOverview, fetchSmartMoneyOverviewStrict, isValidSmartMoneyPayload } from "../lib/api";
 
 interface SimulatedPageState {
   data: any;
@@ -218,16 +218,20 @@ async function simulatePageLoadData(fetcher: () => Promise<any>): Promise<Simula
     dataSource = "unavailable";
   }
 
-  const congressTrades = data?.congress_trades || [];
-  const secInsiders = data?.sec_insider_trades || [];
+  const isCongressAvailable = !feedError && Boolean(data && Array.isArray(data.congress_trades)) && dataSource !== "fallback" && dataSource !== "unavailable";
+  const isSecAvailable = !feedError && Boolean(data && Array.isArray(data.sec_insider_trades)) && dataSource !== "fallback" && dataSource !== "unavailable";
+  const isOptionsAvailable = !feedError && Boolean(data && Array.isArray(data.options_flow)) && dataSource !== "fallback" && dataSource !== "unavailable";
+
+  const congressTrades = isCongressAvailable ? (data?.congress_trades || []) : [];
+  const secInsiders = isSecAvailable ? (data?.sec_insider_trades || []) : [];
 
   const displayedDisclosuresCount =
-    feedError || dataSource === "fallback" || dataSource === "unavailable"
+    feedError || dataSource === "fallback" || dataSource === "unavailable" || !isCongressAvailable
       ? "Unavailable"
       : congressTrades.length;
 
   const displayedSecCount =
-    feedError || dataSource === "fallback" || dataSource === "unavailable"
+    feedError || dataSource === "fallback" || dataSource === "unavailable" || !isSecAvailable
       ? "Unavailable"
       : secInsiders.length;
 
@@ -241,7 +245,7 @@ async function simulatePageLoadData(fetcher: () => Promise<any>): Promise<Simula
       : "⚠️ Unverified Demo Fixtures";
 
   const errorBannerVisible = feedError && dataSource === "unavailable";
-  const emptyStateVisible = !feedError && congressTrades.length === 0;
+  const emptyStateVisible = !feedError && isCongressAvailable && congressTrades.length === 0;
   const fallbackWarningBannerVisible = dataSource === "fallback";
 
   return {
@@ -454,6 +458,104 @@ async function runRuntimeNetworkTests() {
       "EPISTEMIC INVARIANT: Outage banner must only render during feed outage, never during genuine zero response"
     );
     console.log("       [OK] Authoritative zero response (0) is strictly distinguishable from API outage (Unavailable)");
+
+    // 7.9 Missing options_flow in Successful Response
+    console.log("   7.9 Testing Missing options_flow in Successful Response...");
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        status: "LIVE",
+        congress_trades: [{ id: "t1", ticker: "AAPL" }],
+        sec_insider_trades: [{ id: "s1", ticker: "NVDA" }],
+      }),
+    } as any);
+
+    const s9 = await simulatePageLoadData(() => fetchSmartMoneyOverview({ throwOnError: true }));
+    assert.strictEqual(s9.feedError, false, "7.9: Missing options_flow should not fail entire overview fetch");
+    assert.strictEqual(s9.displayedDisclosuresCount, 1, "7.9: Congress disclosures should remain available (1)");
+    assert.strictEqual(s9.displayedSecCount, 1, "7.9: SEC insiders should remain available (1)");
+    console.log("       [OK] Response missing options_flow preserves other feeds without error");
+
+    // 7.10 Missing optional sec_insider_trades
+    console.log("   7.10 Testing Missing Optional sec_insider_trades...");
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        status: "LIVE",
+        congress_trades: [{ id: "t1", ticker: "AAPL" }],
+        options_flow: [{ ticker: "AAPL", type: "CALL", strike: "230", expiration: "2026-09", spot_price: 220, premium: "$100K", volume_oi_ratio: 2.5, sentiment: "Bullish" }],
+      }),
+    } as any);
+
+    const s10 = await simulatePageLoadData(() => fetchSmartMoneyOverview({ throwOnError: true }));
+    assert.strictEqual(s10.feedError, false, "7.10: Missing sec_insider_trades should not fail overview");
+    assert.strictEqual(s10.displayedDisclosuresCount, 1, "7.10: Congress count is 1");
+    assert.strictEqual(s10.displayedSecCount, "Unavailable", "7.10: SEC count must be 'Unavailable' (NOT 0)");
+    console.log("       [OK] Response missing sec_insider_trades marks SEC as Unavailable while Congress remains 1");
+
+    // 7.11 Non-array congress_trades
+    console.log("   7.11 Testing Structurally Invalid congress_trades (Non-array string)...");
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        status: "LIVE",
+        congress_trades: "invalid_string_not_array",
+        sec_insider_trades: [],
+      }),
+    } as any);
+
+    let threwNonArray = false;
+    try {
+      await fetchSmartMoneyOverview({ throwOnError: true });
+    } catch (err: any) {
+      threwNonArray = true;
+      assert.ok(err.message.includes("failed runtime shape validation"));
+    }
+    assert.strictEqual(threwNonArray, true, "7.11: Non-array congress_trades must fail runtime shape validation");
+
+    const s11 = await simulatePageLoadData(() => fetchSmartMoneyOverview({ throwOnError: true }));
+    assert.strictEqual(s11.feedError, true, "7.11: feedError must be true on shape validation error");
+    assert.strictEqual(s11.displayedDisclosuresCount, "Unavailable");
+    console.log("       [OK] Non-array congress_trades fails shape validation and sets feedError=true");
+
+    // 7.12 Explicit Partial Availability (Congress valid, other feeds null)
+    console.log("   7.12 Testing Explicit Partial Availability (Congress valid, others null)...");
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        status: "LIVE",
+        congress_trades: [{ id: "t1", ticker: "PLTR" }, { id: "t2", ticker: "NVDA" }],
+        sec_insider_trades: null,
+        options_flow: null,
+      }),
+    } as any);
+
+    const s12 = await simulatePageLoadData(() => fetchSmartMoneyOverview({ throwOnError: true }));
+    assert.strictEqual(s12.feedError, false, "7.12: Partial availability is a valid overview payload");
+    assert.strictEqual(s12.displayedDisclosuresCount, 2, "7.12: Congress count displays 2");
+    assert.strictEqual(s12.displayedSecCount, "Unavailable", "7.12: SEC count displays Unavailable (not 0)");
+    console.log("       [OK] Partial response correctly isolates valid Congress feed (2) and unavailable SEC (Unavailable)");
+
+    // 7.13 isValidSmartMoneyPayload direct validation
+    console.log("   7.13 Testing isValidSmartMoneyPayload Shape Validation Contract directly...");
+    assert.strictEqual(isValidSmartMoneyPayload(null), false, "Rejects null");
+    assert.strictEqual(isValidSmartMoneyPayload(undefined), false, "Rejects undefined");
+    assert.strictEqual(isValidSmartMoneyPayload("string"), false, "Rejects string");
+    assert.strictEqual(isValidSmartMoneyPayload(123), false, "Rejects number");
+    assert.strictEqual(isValidSmartMoneyPayload([]), false, "Rejects array root");
+    assert.strictEqual(isValidSmartMoneyPayload({}), false, "Rejects empty object with no recognized feeds or fields");
+    assert.strictEqual(isValidSmartMoneyPayload({ congress_trades: "not-an-array" }), false, "Rejects non-array congress_trades");
+    assert.strictEqual(isValidSmartMoneyPayload({ sec_insider_trades: 42 }), false, "Rejects non-array sec_insider_trades");
+    assert.strictEqual(isValidSmartMoneyPayload({ options_flow: {} }), false, "Rejects non-array options_flow");
+    assert.strictEqual(isValidSmartMoneyPayload({ congress_trades: [] }), true, "Accepts authoritative empty congress_trades");
+    assert.strictEqual(isValidSmartMoneyPayload({ total_congress_filings_30d: 0 }), true, "Accepts overview property");
+    assert.strictEqual(isValidSmartMoneyPayload({ status: "CURATED" }), true, "Accepts status property");
+    assert.strictEqual(isValidSmartMoneyPayload({ congress_trades: [], sec_insider_trades: null }), true, "Accepts partial null feeds");
+    console.log("       [OK] isValidSmartMoneyPayload adheres to runtime validation requirements");
 
   } finally {
     global.fetch = originalFetch;

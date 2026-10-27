@@ -99,8 +99,13 @@ function SmartMoneyContent() {
     };
   }, []);
 
+  // Individual section availability guards
+  const isCongressAvailable = !feedError && Boolean(data && Array.isArray(data.congress_trades)) && dataSource !== "fallback" && dataSource !== "unavailable";
+  const isSecAvailable = !feedError && Boolean(data && Array.isArray(data.sec_insider_trades)) && dataSource !== "fallback" && dataSource !== "unavailable";
+  const isOptionsAvailable = !feedError && Boolean(data && Array.isArray(data.options_flow)) && dataSource !== "fallback" && dataSource !== "unavailable";
+
   // Filter options flow
-  const optionsFlow = (data?.options_flow || []).filter((item) => {
+  const optionsFlow = (isOptionsAvailable ? (data?.options_flow || []) : []).filter((item) => {
     if (filterQuery) {
       const q = filterQuery.toUpperCase();
       const match =
@@ -114,7 +119,7 @@ function SmartMoneyContent() {
   });
 
   // Filter congressional trades by search, sector, compliance, and horizon timeframe
-  const congressTrades = (data?.congress_trades || []).filter((item) => {
+  const congressTrades = (isCongressAvailable ? (data?.congress_trades || []) : []).filter((item) => {
     if (timeframe !== "ALL") {
       if (!isWithinTimeframe(item.filing_date || item.transaction_date, timeframe)) {
         return false;
@@ -145,7 +150,7 @@ function SmartMoneyContent() {
   });
 
   // Filter SEC Form 4 insider trades by search and horizon timeframe
-  const secInsiders: SecInsiderTradeItem[] = (data?.sec_insider_trades || []).filter((item) => {
+  const secInsiders: SecInsiderTradeItem[] = (isSecAvailable ? (data?.sec_insider_trades || []) : []).filter((item) => {
     if (timeframe !== "ALL") {
       if (!isWithinTimeframe(item.filing_date, timeframe)) {
         return false;
@@ -164,7 +169,7 @@ function SmartMoneyContent() {
   });
 
   // Top Actionable Radar Assets (Curated Archive)
-  const actionableAssets = (data?.congress_trades || []).slice(0, 6).map((item, idx) => {
+  const actionableAssets = (isCongressAvailable ? (data?.congress_trades || []) : []).slice(0, 6).map((item, idx) => {
     const bgMap = [
       { bg: "bg-[#111722]", border: "border-emerald-700/60", badge: "Whale Alert" },
       { bg: "bg-[#111722]", border: "border-cyan-700/60", badge: "Gamma Squeeze" },
@@ -228,7 +233,7 @@ function SmartMoneyContent() {
             <div className="bg-[#090d14] px-3 py-1.5 rounded-lg border border-[#243044] text-right">
               <span className="text-[10px] text-slate-500 block uppercase">{timeframe === "ALL" ? "All-Time" : timeframe} Disclosures</span>
               <span className="text-base font-bold text-slate-200 tabular-nums">
-                {feedError || dataSource === "fallback" || dataSource === "unavailable" ? (
+                {feedError || dataSource === "fallback" || dataSource === "unavailable" || !isCongressAvailable ? (
                   <span className="text-xs text-rose-400 font-mono">Unavailable</span>
                 ) : (
                   congressTrades.length
@@ -238,7 +243,7 @@ function SmartMoneyContent() {
             <div className="bg-[#090d14] px-3 py-1.5 rounded-lg border border-[#243044] text-right">
               <span className="text-[10px] text-slate-500 block uppercase">{timeframe === "ALL" ? "All-Time" : timeframe} SEC Insiders</span>
               <span className="text-base font-bold text-cyan-400 tabular-nums">
-                {feedError || dataSource === "fallback" || dataSource === "unavailable" ? (
+                {feedError || dataSource === "fallback" || dataSource === "unavailable" || !isSecAvailable ? (
                   <span className="text-xs text-rose-400 font-mono">Unavailable</span>
                 ) : (
                   secInsiders.length
@@ -369,7 +374,7 @@ function SmartMoneyContent() {
               }`}
             >
               <span>🏛️</span>
-              <span>Capitol Hill STOCK Act ({congressTrades.length})</span>
+              <span>Capitol Hill STOCK Act ({isCongressAvailable ? congressTrades.length : "Unavailable"})</span>
             </button>
 
             <button
@@ -381,7 +386,7 @@ function SmartMoneyContent() {
               }`}
             >
               <span>🏢</span>
-              <span>Corporate Insiders SEC Form 4 ({secInsiders.length})</span>
+              <span>Corporate Insiders SEC Form 4 ({isSecAvailable ? secInsiders.length : "Unavailable"})</span>
             </button>
 
             <button
@@ -393,7 +398,7 @@ function SmartMoneyContent() {
               }`}
             >
               <span>⚡</span>
-              <span>Options Sweeps & Off-Exchange Intelligence ({optionsFlow.length})</span>
+              <span>Options Sweeps & Off-Exchange Intelligence ({isOptionsAvailable ? optionsFlow.length : "Unavailable"})</span>
             </button>
           </div>
 
@@ -506,7 +511,7 @@ function SmartMoneyContent() {
                         Loading curated institutional options flow and off-exchange prints...
                       </td>
                     </tr>
-                  ) : feedError ? (
+                  ) : (!isOptionsAvailable || feedError) ? (
                     <tr>
                       <td colSpan={10} className="py-8 text-center">
                         <div className="max-w-md mx-auto space-y-2 p-3 rounded-lg bg-[#090d14] border border-rose-900/40 font-mono">
@@ -611,7 +616,13 @@ function SmartMoneyContent() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#1e293b]">
-                  {feedError ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={10} className="py-10 text-center text-slate-500">
+                        Loading corporate insider filings...
+                      </td>
+                    </tr>
+                  ) : (!isSecAvailable || feedError) ? (
                     <tr>
                       <td colSpan={10} className="py-10 text-center">
                         <div className="max-w-md mx-auto space-y-3 p-4 rounded-xl bg-[#090d14] border border-rose-900/40 font-mono">
@@ -720,7 +731,7 @@ function SmartMoneyContent() {
                         Loading curated STOCK Act disclosure archive...
                       </td>
                     </tr>
-                  ) : feedError ? (
+                  ) : (!isCongressAvailable || feedError) ? (
                     <tr>
                       <td colSpan={11} className="py-10 text-center">
                         <div className="max-w-md mx-auto space-y-3 p-4 rounded-xl bg-[#090d14] border border-rose-900/40 font-mono">
@@ -795,7 +806,7 @@ function SmartMoneyContent() {
                             <span className="bg-[#070a10] px-2 py-0.5 rounded border border-[#243044]">
                               {t.ticker}
                             </span>
-                            {dataSource === "fallback" && (
+                            {(dataSource as string) === "fallback" && (
                               <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-950 text-amber-300 border border-amber-800">
                                 Demo Fixture
                               </span>

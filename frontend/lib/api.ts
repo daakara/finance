@@ -439,17 +439,20 @@ export interface SecInsiderTradeItem {
 }
 
 export interface SmartMoneyOverview {
-  total_congress_filings_30d: number;
-  total_sec_insiders_30d?: number;
-  net_political_sentiment: string;
-  top_congress_bought_sector: string;
+  total_congress_filings_30d?: number | null;
+  total_sec_insiders_30d?: number | null;
+  net_political_sentiment?: string | null;
+  top_congress_bought_sector?: string | null;
   unusual_flow_volume_today?: string | null;
   call_to_put_dollar_ratio?: number | null;
   late_filers_count?: number;
   fresh_trades_count?: number;
-  congress_trades: CongressTradeItem[];
+  congress_trades?: CongressTradeItem[];
   sec_insider_trades?: SecInsiderTradeItem[];
-  options_flow: OptionsFlowItem[];
+  options_flow?: OptionsFlowItem[];
+  regulatory_sources?: Record<string, string>;
+  status?: string;
+  disclosure?: string;
   _dataSource?: "live" | "curated" | "mixed" | "fallback" | "unavailable";
 }
 
@@ -1956,6 +1959,55 @@ export interface SmartMoneyFetchOptions {
   allowFallback?: boolean;
 }
 
+/**
+ * Validates that an API response adheres to the runtime shape of SmartMoneyOverview.
+ * Enforces that feed sections (congress_trades, sec_insider_trades, options_flow), if present,
+ * must be valid arrays and not corrupt types.
+ * Requires at least one recognized feed array or overview property.
+ */
+export function isValidSmartMoneyPayload(data: unknown): data is SmartMoneyOverview {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return false;
+  }
+
+  const record = data as Record<string, unknown>;
+
+  // If congress_trades is defined and non-null, it MUST be an Array
+  if ("congress_trades" in record && record.congress_trades !== null && record.congress_trades !== undefined) {
+    if (!Array.isArray(record.congress_trades)) {
+      return false;
+    }
+  }
+
+  // If sec_insider_trades is defined and non-null, it MUST be an Array
+  if ("sec_insider_trades" in record && record.sec_insider_trades !== null && record.sec_insider_trades !== undefined) {
+    if (!Array.isArray(record.sec_insider_trades)) {
+      return false;
+    }
+  }
+
+  // If options_flow is defined and non-null, it MUST be an Array
+  if ("options_flow" in record && record.options_flow !== null && record.options_flow !== undefined) {
+    if (!Array.isArray(record.options_flow)) {
+      return false;
+    }
+  }
+
+  // A valid payload must contain at least one recognized feed array or recognized overview field
+  const hasRecognizedFeed =
+    Array.isArray(record.congress_trades) ||
+    Array.isArray(record.sec_insider_trades) ||
+    Array.isArray(record.options_flow);
+
+  const hasOverviewField =
+    "total_congress_filings_30d" in record ||
+    "net_political_sentiment" in record ||
+    "status" in record ||
+    "regulatory_sources" in record;
+
+  return hasRecognizedFeed || hasOverviewField;
+}
+
 export async function fetchSmartMoneyOverview(options?: SmartMoneyFetchOptions): Promise<SmartMoneyOverview> {
   const shouldThrow = Boolean(options?.throwOnError || options?.allowFallback === false);
   try {
@@ -1966,7 +2018,7 @@ export async function fetchSmartMoneyOverview(options?: SmartMoneyFetchOptions):
     });
     if (res.ok) {
       const data = await res.json();
-      if (data && data.congress_trades) {
+      if (isValidSmartMoneyPayload(data)) {
         const isCurated = data.status === "CURATED" || Boolean(data.disclosure && data.disclosure.includes("Curated"));
         return {
           ...data,
@@ -1974,7 +2026,7 @@ export async function fetchSmartMoneyOverview(options?: SmartMoneyFetchOptions):
         };
       }
       if (shouldThrow) {
-        throw new Error("Smart money overview response missing required congress_trades payload");
+        throw new Error("Smart money overview response failed runtime shape validation");
       }
     } else {
       if (shouldThrow) {
