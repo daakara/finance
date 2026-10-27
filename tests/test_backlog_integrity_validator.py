@@ -1179,7 +1179,11 @@ class TestPreSprint5ClosureInvariants:
     # 4. P5-003: Incomplete mandatory pre-Sprint 5 work
     def test_p5_003_incomplete_mandatory_closure(self, canonical_backlog_data, canonical_schema_data):
         data = copy.deepcopy(canonical_backlog_data)
-        # DEF-056-001 is in READY/ENGINEERING_ACCEPTED_AWAITING_RELEASE
+        for o in data["obligations"]:
+            if o.get("source_finding_id") in ("DEF-056-001", "DEF-056-002", "DEF-056-003"):
+                o["status"] = "READY"
+                o["disposition"] = "ENGINEERING_ACCEPTED_AWAITING_RELEASE"
+                o["blocking_decision"] = "PR_118_MERGE_AUTHORIZATION_REQUIRED"
         validator = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
         verdict, findings = validator.validate_all()
         assert verdict == "FAIL"
@@ -1316,14 +1320,13 @@ class TestPreSprint5ClosureInvariants:
         assert verdict == "FAIL"
         assert any(f.rule_id == "P5-012" and "execution status is NOT_PERFORMED" in f.message for f in findings)
 
-    # 18. Actual Canonical Backlog Status: Faithfully blocks on real pending owner gates
-    def test_canonical_backlog_pre_sprint5_closure_blocks_on_real_blockers(self, canonical_backlog_data, canonical_schema_data):
+    # 18. Actual Canonical Backlog Status: Verifies all mandatory pre-Sprint 5 obligations resolved
+    def test_canonical_backlog_pre_sprint5_closure_verified_pass(self, canonical_backlog_data, canonical_schema_data):
         validator = BacklogValidator(canonical_backlog_data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
         verdict, findings = validator.validate_all()
-        assert verdict == "FAIL"
-        # Must catch P5-003 (DEF-056-001/002/003 awaiting merge gate) and P5-010 (owner execution gate required)
-        assert any(f.rule_id == "P5-003" for f in findings)
-        assert any(f.rule_id == "P5-010" for f in findings)
+        errors = [f for f in findings if f.severity == "ERROR"]
+        assert errors == [], f"Unexpected errors: {[str(e) for e in errors]}"
+        assert verdict == "PASS" 
 
     # 19. Synthetic Full Pass: When PR #118 is merged and owner authorizes execution
     def test_canonical_backlog_pre_sprint5_closure_passes_when_fully_resolved(self, canonical_backlog_data, canonical_schema_data):

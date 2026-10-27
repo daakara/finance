@@ -56,6 +56,14 @@
       "items": {
         "$ref": "#/definitions/ObligationRecord"
       }
+    },
+    "sprint5_execution_authorized": {
+      "type": "boolean",
+      "description": "Explicit Product Owner affirmative authorization permitting Sprint 5 active execution kickoff."
+    },
+    "sprint5_execution_authorization_record": {
+      "type": "object",
+      "description": "Formal provenance record for Product Owner Sprint 5 execution kickoff decision."
     }
   },
   "definitions": {

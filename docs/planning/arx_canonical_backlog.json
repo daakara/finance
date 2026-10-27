@@ -3442,7 +3442,7 @@
       "source_finding_id": "CANONICAL-ARX-S3-006",
       "capability_id": "UX_WORKSTATION",
       "release_scope": "SPRINT_5",
-      "scope_authorization": "OWNER_HOLD",
+      "scope_authorization": "OWNER_AUTHORIZED",
       "owner": "daakara",
       "priority": "P1",
       "status": "READY",
@@ -3452,7 +3452,7 @@
       "repository_publication_state": "DRAFT_PR",
       "deployment_state": "NOT_DEPLOYED",
       "operational_state": "NOT_APPLICABLE",
-      "governance_state": "HOLD",
+      "governance_state": "OWNER_AUTHORIZED_SPRINT5_RESEARCH",
       "acceptance_criteria": [
         "Decision-first layout rollout across FIX, DUOL, ULTA, MEDP, ISRG, DECK",
         "Four-pillar confluence and inline preflight readiness bar unified in UX"
@@ -3473,7 +3473,8 @@
       "evidence_refs": [
         "https://github.com/daakara/finance/issues/63",
         "https://github.com/daakara/finance/pull/86",
-        "https://github.com/daakara/finance/pull/98"
+        "https://github.com/daakara/finance/pull/98",
+        "Product Owner Decision 2 (Directive 058) affirmed owner authorization for exploratory research in Sprint 5"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
@@ -4064,14 +4065,14 @@
       "scope_authorization": "CONDITIONALLY_PREAPPROVED",
       "owner": "Backend & Sizing Lead",
       "priority": "P0",
-      "status": "READY",
-      "disposition": "ENGINEERING_ACCEPTED_AWAITING_RELEASE",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
       "implementation_state": "DONE",
       "verification_state": "PASS",
-      "repository_publication_state": "DRAFT_PR",
-      "deployment_state": "NOT_DEPLOYED",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_ACTIVE",
       "operational_state": "NOT_PERFORMED",
-      "governance_state": "AUTHORIZED_ENGINEERING_HOLD_MERGE",
+      "governance_state": "RELEASED",
       "acceptance_criteria": [
         "Omit Smart Money from bottomLine synchronization claim when Smart Money regulatory feeds are unavailable or held",
         "Emit HIGH-CONVICTION MULTI-FACTOR ALIGNMENT when 3 positive pillars align without claiming institutional alignment",
@@ -4081,24 +4082,31 @@
         "ARX-S3-010",
         "ARX-S4-ARCH-001"
       ],
-      "blocking_decision": "PR_118_MERGE_AUTHORIZATION_REQUIRED",
+      "blocking_decision": null,
       "github_issue_refs": [],
       "github_pr_refs": [
         118
       ],
       "commit_refs": [
+        "09064ef05f973b577a79f0a33cf95a4a0bb94051",
+        "79765d4d1b4dd2a9bba3aee00416a8559c184624",
         "1b3badac140821eced37dceed3963033fe7b7bbf"
       ],
-      "deployment_refs": [],
+      "deployment_refs": [
+        "Cloudflare Pages edge deployment (https://finance-xp8.pages.dev/, commit 09064ef05f973b577a79f0a33cf95a4a0bb94051)",
+        "Railway containerized backend deployment (https://web-production-e370b.up.railway.app/, commit 09064ef05f973b577a79f0a33cf95a4a0bb94051)"
+      ],
       "evidence_refs": [
         "ARX_056_CONFLUENCE_EVIDENCE_SEMANTICS.md",
-        "ARX_057_CONFLUENCE_TRUTHFULNESS_VERIFICATION.md"
+        "ARX_057_CONFLUENCE_TRUTHFULNESS_VERIFICATION.md",
+        "PR #118 squash merged to mainline: 09064ef05f973b577a79f0a33cf95a4a0bb94051",
+        "Mainline Hosted CI passed: all 4 checks completed/success"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
-      "closure_decision": "REMEDIATED_AWAITING_MERGE",
-      "closure_timestamp": null,
-      "closure_authority": "Product Owner Merge Gate Required"
+      "closure_decision": "REMEDIATED_MERGED_AND_DEPLOYED",
+      "closure_timestamp": "2026-10-27T19:52:57Z",
+      "closure_authority": "Product Owner Decision 1 (Directive 058)"
     },
     {
       "obligation_id": "OBL-DEF-056-002",
@@ -4112,14 +4120,14 @@
       "scope_authorization": "CONDITIONALLY_PREAPPROVED",
       "owner": "Backend & Sizing Lead",
       "priority": "P0",
-      "status": "READY",
-      "disposition": "ENGINEERING_ACCEPTED_AWAITING_RELEASE",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
       "implementation_state": "DONE",
       "verification_state": "PASS",
-      "repository_publication_state": "DRAFT_PR",
-      "deployment_state": "NOT_DEPLOYED",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_ACTIVE",
       "operational_state": "NOT_PERFORMED",
-      "governance_state": "AUTHORIZED_ENGINEERING_HOLD_MERGE",
+      "governance_state": "RELEASED",
       "acceptance_criteria": [
         "Strictly enforce max(0, math.floor(maxDollarRisk / riskPerShare))",
         "Return 0 shares, $0 actual risk, and isExecutable: False when risk budget is sub-1-share",
@@ -4128,24 +4136,31 @@
       "dependencies": [
         "ARX-S4-ARCH-002"
       ],
-      "blocking_decision": "PR_118_MERGE_AUTHORIZATION_REQUIRED",
+      "blocking_decision": null,
       "github_issue_refs": [],
       "github_pr_refs": [
         118
       ],
       "commit_refs": [
+        "09064ef05f973b577a79f0a33cf95a4a0bb94051",
+        "79765d4d1b4dd2a9bba3aee00416a8559c184624",
         "1b3badac140821eced37dceed3963033fe7b7bbf"
       ],
-      "deployment_refs": [],
+      "deployment_refs": [
+        "Cloudflare Pages edge deployment (https://finance-xp8.pages.dev/, commit 09064ef05f973b577a79f0a33cf95a4a0bb94051)",
+        "Railway containerized backend deployment (https://web-production-e370b.up.railway.app/, commit 09064ef05f973b577a79f0a33cf95a4a0bb94051)"
+      ],
       "evidence_refs": [
         "ARX_056_PRODUCT_AND_RISK_AUTHORITY_CONTRACT.md",
-        "ARX_057_POSITION_SIZING_INTEGRITY.md"
+        "ARX_057_POSITION_SIZING_INTEGRITY.md",
+        "PR #118 squash merged to mainline: 09064ef05f973b577a79f0a33cf95a4a0bb94051",
+        "Mainline Hosted CI passed: all 4 checks completed/success"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
-      "closure_decision": "REMEDIATED_AWAITING_MERGE",
-      "closure_timestamp": null,
-      "closure_authority": "Product Owner Merge Gate Required"
+      "closure_decision": "REMEDIATED_MERGED_AND_DEPLOYED",
+      "closure_timestamp": "2026-10-27T19:52:57Z",
+      "closure_authority": "Product Owner Decision 1 (Directive 058)"
     },
     {
       "obligation_id": "OBL-DEF-056-003",
@@ -4159,14 +4174,14 @@
       "scope_authorization": "CONDITIONALLY_PREAPPROVED",
       "owner": "Frontend Lead",
       "priority": "P1",
-      "status": "READY",
-      "disposition": "ENGINEERING_ACCEPTED_AWAITING_RELEASE",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
       "implementation_state": "DONE",
       "verification_state": "PASS",
-      "repository_publication_state": "DRAFT_PR",
-      "deployment_state": "NOT_DEPLOYED",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_ACTIVE",
       "operational_state": "NOT_PERFORMED",
-      "governance_state": "AUTHORIZED_ENGINEERING_HOLD_MERGE",
+      "governance_state": "RELEASED",
       "acceptance_criteria": [
         "Replace HARD MAX LOSS label with MODELED STOP RISK (excl. gaps)",
         "Disclose that actual realized loss may exceed modeled amount due to price gaps or slippage",
@@ -4175,24 +4190,31 @@
       "dependencies": [
         "ARX-S4-ARCH-002"
       ],
-      "blocking_decision": "PR_118_MERGE_AUTHORIZATION_REQUIRED",
+      "blocking_decision": null,
       "github_issue_refs": [],
       "github_pr_refs": [
         118
       ],
       "commit_refs": [
+        "09064ef05f973b577a79f0a33cf95a4a0bb94051",
+        "79765d4d1b4dd2a9bba3aee00416a8559c184624",
         "1b3badac140821eced37dceed3963033fe7b7bbf"
       ],
-      "deployment_refs": [],
+      "deployment_refs": [
+        "Cloudflare Pages edge deployment (https://finance-xp8.pages.dev/, commit 09064ef05f973b577a79f0a33cf95a4a0bb94051)",
+        "Railway containerized backend deployment (https://web-production-e370b.up.railway.app/, commit 09064ef05f973b577a79f0a33cf95a4a0bb94051)"
+      ],
       "evidence_refs": [
         "ARX_056_PRODUCT_AND_RISK_AUTHORITY_CONTRACT.md",
-        "ARX_057_RISK_DISCLOSURE_ACCEPTANCE.md"
+        "ARX_057_RISK_DISCLOSURE_ACCEPTANCE.md",
+        "PR #118 squash merged to mainline: 09064ef05f973b577a79f0a33cf95a4a0bb94051",
+        "Mainline Hosted CI passed: all 4 checks completed/success"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
-      "closure_decision": "REMEDIATED_AWAITING_MERGE",
-      "closure_timestamp": null,
-      "closure_authority": "Product Owner Merge Gate Required"
+      "closure_decision": "REMEDIATED_MERGED_AND_DEPLOYED",
+      "closure_timestamp": "2026-10-27T19:52:57Z",
+      "closure_authority": "Product Owner Decision 1 (Directive 058)"
     },
     {
       "obligation_id": "OBL-PR-107",
@@ -5275,5 +5297,14 @@
       "closure_timestamp": "2026-10-27T19:30:00Z",
       "closure_authority": "Product Owner"
     }
-  ]
+  ],
+  "sprint5_execution_authorized": true,
+  "sprint5_execution_authorization_record": {
+    "authorizer": "PRODUCT_OWNER",
+    "decision": "AFFIRMATIVE_KICKOFF_GRANTED",
+    "timestamp": "2026-10-27T19:52:57Z",
+    "decision_reference": "ARX_058_DECISION_3",
+    "governing_directive": "ARX_PRE_SPRINT5_OBLIGATION_RECOVERY_058",
+    "notes": "Sprint 5 active engineering kickoff authorized conditional upon PR #118 mainline merge and verification."
+  }
 }
