@@ -6,6 +6,8 @@ import { QuantitativeInsight } from "../../types/insight";
 import FinancialDisclaimer from "../FinancialDisclaimer";
 import { deriveUnmetConditions } from "../../lib/decisionHierarchyUtils";
 import PreFlightReadinessBar from "../PreFlightReadinessBar";
+import SharedAssetDeck from "./SharedAssetDeck";
+import SharedExecutionLadder from "./SharedExecutionLadder";
 
 interface StandardTerminalViewProps {
   insight: QuantitativeInsight;
@@ -76,108 +78,14 @@ export default function StandardTerminalView({
             aria-label="ARX Bottom Line and Execution Decision"
           >
             {/* Ticker & Price Deck */}
-            <div className="deck-top border-b border-[#182335] pb-3 space-y-2">
-              <div className="symbol-title-group flex flex-wrap items-start justify-between gap-2">
-                <div className="space-y-0.5">
-                  <div className="symbol-row flex items-center gap-2 flex-wrap">
-                    <span id="card-symbol" className="symbol-text mono font-mono font-black text-2xl sm:text-3xl text-white tracking-tight">
-                      {insight.symbol || "UNAVAILABLE"}
-                    </span>
-                    <span id="card-exchange" className="macro-item px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#141c2e] text-slate-400 border border-[#2b3a52]">
-                      {(insight.advanced as any)?.exchange || (insight as any)?.exchange || "EXCHANGE UNAVAILABLE"}
-                    </span>
-                    <span
-                      id="card-status-badge"
-                      className={`status-badge px-2.5 py-0.5 rounded text-xs font-mono font-bold border ${
-                        isStaleTape
-                          ? "badge-neutral bg-slate-900/90 text-slate-300 border-slate-600"
-                          : isActionable
-                          ? "badge-positive bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
-                          : "badge-caution bg-amber-950/80 text-amber-300 border-amber-700/80"
-                      }`}
-                    >
-                      {isStaleTape
-                        ? "HISTORICAL DATA ONLY"
-                        : isActionable
-                        ? "IN BUY ZONE"
-                        : isWaitingPullback
-                        ? "WAITING PULLBACK"
-                        : isExtended
-                        ? "EXTENDED"
-                        : "AWAITING SETUP"}
-                    </span>
-                    {isDemo && (
-                      <span
-                        id="demo-asset-tag"
-                        className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-800/80"
-                      >
-                        Demo Asset
-                      </span>
-                    )}
-                  </div>
-                  <span id="card-name" className="asset-name text-xs text-slate-400 font-sans block">
-                    {insight.companyName || "Asset Overview"}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span
-                    data-testid="actionability-badge"
-                    className={`px-3 py-1 rounded-md text-xs font-mono font-bold border ${
-                      isStaleTape
-                        ? "bg-slate-900/90 text-slate-400 border-slate-700"
-                        : isActionable
-                        ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
-                        : "bg-slate-900/80 text-slate-400 border-slate-700/80"
-                    }`}
-                  >
-                    {isStaleTape
-                      ? "NOT ACTIONABLE (STALE TAPE)"
-                      : isActionable
-                      ? "ACTIONABLE"
-                      : "NOT ACTIONABLE"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Price Line & Subdeck */}
-              <div className="price-group space-y-1">
-                <div className="price-line flex items-baseline gap-3 flex-wrap">
-                  <span id="card-price" className="price-text mono font-mono font-black text-2xl sm:text-3xl text-white tabular-nums">
-                    {hasValidPrice ? `$${(rawPrice as number).toFixed(2)}` : "UNAVAILABLE"}
-                  </span>
-                  {hasValidPrice && (
-                    <span
-                      id="card-delta"
-                      className={`delta-text mono font-mono font-bold text-sm tabular-nums flex items-center gap-0.5 ${
-                        (insight.changePct || 0) >= 0 ? "delta-up text-emerald-400" : "delta-down text-rose-400"
-                      }`}
-                    >
-                      {(insight.changePct || 0) >= 0 ? "+" : ""}${Math.abs(((rawPrice as number) * (insight.changePct || 0)) / 100).toFixed(2)} ({(insight.changePct || 0) >= 0 ? "+" : ""}{(insight.changePct || 0).toFixed(2)}%)
-                    </span>
-                  )}
-                </div>
-                <div id="price-subdeck" className="price-subdeck flex items-center gap-2 text-[11px] font-mono text-slate-400 flex-wrap" aria-label="Price Authority and Session Metadata">
-                  <span id="price-role" className={`price-tag px-1.5 py-0.5 rounded font-semibold border ${
-                    isStaleTape
-                      ? "bg-slate-800 text-slate-300 border-slate-600"
-                      : "bg-[#141c2e] text-cyan-300 border border-[#2b3a52]"
-                  }`}>
-                    {isStaleTape ? "Historical EOD Reference (>4D Lag)" : "Setup Spot Reference"}
-                  </span>
-                  <span>·</span>
-                  <span id="price-session" className="price-tag">
-                    {isStaleTape ? "Tape Inactive" : ((insight.advanced as any)?.marketSession || "Market Closed")}
-                  </span>
-                  <span>·</span>
-                  <span id="price-asof" className="price-tag mono" suppressHydrationWarning>
-                    {insight.terminalState.modelProvenance?.calculatedAt
-                      ? `As of ${new Date(insight.terminalState.modelProvenance.calculatedAt).toISOString().replace("T", " ").slice(0, 16)} UTC`
-                      : "Timestamp provenance unavailable"}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <SharedAssetDeck
+              insight={insight}
+              isStaleTape={isStaleTape}
+              isActionable={isActionable}
+              isWaitingPullback={isWaitingPullback}
+              isExtended={isExtended}
+              isDemo={isDemo}
+            />
 
             {/* Verdict & Score Banner */}
             <div className="verdict-banner !flex !flex-col p-3 sm:p-4 rounded-xl bg-[#080e18] border border-[#182335] space-y-2.5">
@@ -286,156 +194,16 @@ export default function StandardTerminalView({
             </div>
 
             {/* Middle Panel: Risk & Execution Ladder */}
-            <div id="card-middle-panel" className="middle-panel space-y-2 pt-1">
-              <div className="panel-head flex items-center justify-between text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
-                <span id="middle-panel-title">
-                  {isStaleTape ? "Execution Ladder (Historical Tape)" : "Execution Ladder"}
-                </span>
-                <span id="middle-panel-sub" className="mono text-cyan-300">
-                  R:R {kl.profitRiskRatio ? `${kl.profitRiskRatio.toFixed(2)} : 1.0` : "N/A"}
-                </span>
-              </div>
-              <div id="middle-panel-content" data-testid="cockpit-execution-ladder" className="ladder-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs font-mono">
-                <div className="ladder-cell min-w-0 p-2.5 rounded-xl bg-[#070b13] border border-[#1b2639]">
-                  <span className="cell-lbl text-[10px] text-slate-400 block uppercase font-bold">
-                    {isStaleTape ? "Historical Pivot" : "Pivot"}
-                  </span>
-                  <span id="cell-pivot" className="cell-val mono text-white font-bold block mt-0.5 whitespace-nowrap text-xs leading-tight tabular-nums">
-                    {pivotPrice != null ? `$${pivotPrice.toFixed(2)}` : "N/A"}
-                  </span>
-                </div>
-                <div className="ladder-cell min-w-0 p-2.5 rounded-xl bg-[#070b13] border border-[#1b2639]">
-                  <span className="cell-lbl text-[10px] text-slate-400 block uppercase font-bold">
-                    {isStaleTape ? "Historical Zone" : "Buy Zone"}
-                  </span>
-                  <span id="cell-entry" className="cell-val mono text-amber-300 font-bold block mt-0.5 text-xs leading-tight">
-                    {kl.entryMin != null && kl.entryMax != null ? (
-                      <span className="flex flex-wrap items-baseline gap-1">
-                        <span className="tabular-nums whitespace-nowrap">${kl.entryMin.toFixed(2)}</span>
-                        <span className="text-slate-400 font-normal text-[10px] sm:text-xs">to</span>
-                        <span className="tabular-nums whitespace-nowrap">${kl.entryMax.toFixed(2)}</span>
-                      </span>
-                    ) : (
-                      <span className="whitespace-nowrap">{kl.watchZone || "Awaiting Setup"}</span>
-                    )}
-                  </span>
-                </div>
-                <div className="ladder-cell min-w-0 p-2.5 rounded-xl bg-[#070b13] border border-[#1b2639]">
-                  <span className="cell-lbl text-[10px] text-slate-400 block uppercase font-bold">
-                    {isStaleTape ? "Historical Stop" : "Stop Loss"}
-                  </span>
-                  <span id="cell-stop" className="cell-val negative mono text-rose-400 font-bold block mt-0.5 text-xs leading-tight">
-                    {kl.stopLoss ? (
-                      <span className="flex flex-wrap items-baseline gap-1">
-                        <span className="tabular-nums whitespace-nowrap">${kl.stopLoss.toFixed(2)}</span>
-                        {pivotPrice != null && pivotPrice > 0 ? (
-                          <span className="text-rose-400/80 font-normal text-[10px] whitespace-nowrap">
-                            (-{Math.abs(((pivotPrice - kl.stopLoss) / pivotPrice) * 100).toFixed(1)}% base)
-                          </span>
-                        ) : null}
-                      </span>
-                    ) : "N/A"}
-                  </span>
-                </div>
-                <div className="ladder-cell min-w-0 p-2.5 rounded-xl bg-[#070b13] border border-[#1b2639]">
-                  <span className="cell-lbl text-[10px] text-slate-400 block uppercase font-bold">
-                    {isStaleTape ? "Historical Target" : "Target 1"}
-                  </span>
-                  <span id="cell-target" className="cell-val positive mono text-emerald-400 font-bold block mt-0.5 text-xs leading-tight">
-                    {kl.target1 ? (
-                      <span className="flex flex-wrap items-baseline gap-1">
-                        <span className="tabular-nums whitespace-nowrap">${kl.target1.toFixed(2)}</span>
-                        {pivotPrice != null && pivotPrice > 0 ? (
-                          <span className="text-emerald-400/80 font-normal text-[10px] whitespace-nowrap">
-                            (+{Math.abs(((kl.target1 - pivotPrice) / pivotPrice) * 100).toFixed(1)}%)
-                          </span>
-                        ) : null}
-                      </span>
-                    ) : "N/A"}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Position Sizing & Risk Presentation */}
-            <div id="card-sizing-bar" className="sizing-bar border-t border-[#182335] pt-2 space-y-1.5 text-xs font-mono">
-              <div className="sizing-meta flex items-center justify-between text-slate-300">
-                <span id="sizing-line-1">
-                  Position Size:{" "}
-                  {isStaleTape ? (
-                    <span id="sizing-shares" className="text-slate-500 font-bold">
-                      Execution Prohibited (Stale Tape)
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={onOpenSizer}
-                      id="sizing-shares"
-                      className="sizing-bold mono font-bold text-cyan-400 hover:underline cursor-pointer inline-flex items-center gap-1"
-                      title="Open Position Sizer to configure shares"
-                    >
-                      {isActionable ? "Configure Shares" : "0 Shares (Entry Unconfirmed)"}
-                    </button>
-                  )}
-                </span>
-                <span id="sizing-max-allowance" className="sizing-val text-slate-400 text-[11px]">
-                  Risk Budget: User Configured
-                </span>
-              </div>
-              <div className="sizing-matrix-grid grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                <div className="sizing-cell p-2.5 rounded-lg bg-[#070b13] border border-[#1b2639] space-y-1">
-                  <div className="flex items-center justify-between text-[10px] text-slate-400 uppercase font-bold">
-                    <span className="sizing-lbl">Stop Distance & Risk Basis</span>
-                    <span className={`px-1 rounded text-[9px] font-mono ${
-                      isStaleTape
-                        ? "bg-slate-800 text-slate-400 border border-slate-700"
-                        : isExtended
-                        ? "bg-amber-950/80 text-amber-300 border border-amber-800/80"
-                        : isInBuyZone
-                        ? "bg-emerald-950/80 text-emerald-300 border border-emerald-800/80"
-                        : "bg-[#141c2e] text-slate-400"
-                    }`}>
-                      {isStaleTape ? "Historical Tape" : isExtended ? "Extended (High Risk)" : isInBuyZone ? "In Buy Zone" : "Awaiting Setup"}
-                    </span>
-                  </div>
-                  <div id="sizing-stop-loss" className="sizing-val negative mono font-bold text-rose-400 block text-[11px] leading-tight space-y-0.5">
-                    {kl.stopLoss && hasValidPrice ? (
-                      <>
-                        <div className="flex items-baseline justify-between gap-1">
-                          <span className="text-[10px] text-slate-400 font-normal">From Current Spot (${(rawPrice as number).toFixed(2)}):</span>
-                          <span className="tabular-nums">
-                            -${Math.abs((rawPrice as number) - kl.stopLoss).toFixed(2)} (-{Math.abs((((rawPrice as number) - kl.stopLoss) / (rawPrice as number)) * 100).toFixed(2)}%)
-                          </span>
-                        </div>
-                        {pivotPrice != null && pivotPrice > 0 && Math.abs((rawPrice as number) - pivotPrice) > 0.05 && (
-                          <div className="flex items-baseline justify-between gap-1 text-[10px] text-slate-400 font-normal border-t border-[#182335] pt-0.5">
-                            <span>Planned from Pivot (${pivotPrice.toFixed(2)}):</span>
-                            <span className="text-slate-300 font-mono tabular-nums">
-                              -${Math.abs(pivotPrice - kl.stopLoss).toFixed(2)} (-{Math.abs(((pivotPrice - kl.stopLoss) / pivotPrice) * 100).toFixed(2)}%)
-                            </span>
-                          </div>
-                        )}
-                      </>
-                    ) : "N/A"}
-                  </div>
-                </div>
-                <div className="sizing-cell p-2.5 rounded-lg bg-[#070b13] border border-[#1b2639] space-y-1">
-                  <div className="flex items-center justify-between text-[10px] text-slate-400 uppercase font-bold">
-                    <span className="sizing-lbl">Position Sizing Basis</span>
-                    <span className="text-[9px] font-mono text-cyan-400">
-                      {isStaleTape ? "Prohibited" : isActionable ? "Model Active" : "Suppressed"}
-                    </span>
-                  </div>
-                  <span id="sizing-utilization" className="sizing-val mono font-bold text-slate-300 block text-xs">
-                    {isStaleTape
-                      ? "Execution Prohibited (Stale Tape)"
-                      : !isActionable
-                      ? "0% (Awaiting Setup Trigger)"
-                      : "Informational Sizing (1% Risk Model)"}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <SharedExecutionLadder
+              insight={insight}
+              mode="STANDARD"
+              isStaleTape={isStaleTape}
+              isActionable={isActionable}
+              isExtended={isExtended}
+              isInBuyZone={isInBuyZone}
+              pivotPrice={pivotPrice}
+              onOpenSizer={onOpenSizer}
+            />
           </article>
 
           {/* 3. WHAT NEEDS TO CHANGE (Unmet Conditions & Preconditions) */}

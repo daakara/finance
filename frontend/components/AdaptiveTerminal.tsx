@@ -206,7 +206,9 @@ export default function AdaptiveTerminal({
           onOpenWhy={() => setIsWhyOpen(true)}
           chartSlot={chartSlot}
           planSlot={planSlot}
+          preflightSlot={preflightSlot}
           evidenceSlot={evidenceSlot}
+          isDemo={isDemo}
         />
       )}
 
@@ -230,7 +232,9 @@ export default function AdaptiveTerminal({
           onOpenWhy={() => setIsWhyOpen(true)}
           chartSlot={chartSlot}
           planSlot={planSlot}
+          preflightSlot={preflightSlot}
           evidenceSlot={evidenceSlot}
+          isDemo={isDemo}
         />
       )}
 
