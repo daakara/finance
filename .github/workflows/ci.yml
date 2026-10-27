@@ -107,11 +107,35 @@ jobs:
       run: |
         pytest tests/test_backlog_integrity_validator.py -v
 
-    - name: Enforce Backlog Integrity & Closure Gate (GOV-001)
+    - name: Governance Integration Gate (GOV-001)
       env:
         PYTHONPATH: "."
       run: |
+        echo "============================================================"
+        echo "GATE 1: GOVERNANCE INTEGRATION GATE"
+        echo "Scope: Enforces Rules BI-000 to BI-012 on scoped changes against mainline"
+        echo "Requirement: Mandatory PASS for PR merge eligibility"
+        echo "============================================================"
         python tools/governance/validate_backlog_integrity.py --stage scoped --base-ref origin/main
+
+    - name: Pre-Sprint 5 Certification Gate (GOV-001 Audit)
+      id: pre_sprint5_closure_gate
+      continue-on-error: true
+      env:
+        PYTHONPATH: "."
+      run: |
+        echo "============================================================"
+        echo "GATE 2: PRE-SPRINT 5 CERTIFICATION GATE"
+        echo "Scope: Enforces Invariants P5-001 to P5-012 for Sprint 5 execution kickoff"
+        echo "Requirement: Expected to FAIL CLOSED until Product Owner kickoff authorization"
+        echo "             and production deployment promotion are completed."
+        echo "Note: Non-blocking for governance remediation PR merge."
+        echo "============================================================"
+        python tools/governance/validate_backlog_integrity.py --pre-sprint5-closure || {
+          EXIT_CODE=$?
+          echo "::notice title=Pre-Sprint 5 Gate Status::Pre-Sprint 5 Certification Gate correctly FAIL-CLOSED (exit code $EXIT_CODE). Sprint 5 kickoff remains blocked pending Product Owner authorization and production acceptance."
+          exit $EXIT_CODE
+        }
 
     - name: Run Tier 3 Pre-Flight Release Gate
       if: github.base_ref == 'main' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
@@ -211,3 +235,40 @@ jobs:
         else
           echo "✅ Data integrity verified: Zero synthetic generation in production paths"
         fi
+
+  pre_sprint5_certification:
+    name: Pre-Sprint 5 Closure Certification Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install jsonschema pytest
+
+      - name: Execute Strict Pre-Sprint 5 Closure Certification
+        id: p5_cert
+        continue-on-error: true
+        env:
+          PYTHONPATH: "."
+        run: |
+          echo "============================================================"
+          echo "ARX TERMINAL — PRE-SPRINT 5 CLOSURE CERTIFICATION GATE"
+          echo "Scope: Enforces Invariants P5-001 to P5-012."
+          echo "Current Expected State: FAIL CLOSED (exit code 1) until Product Owner"
+          echo "                        authorizes kickoff and promotes production deployment."
+          echo "============================================================"
+          python tools/governance/validate_backlog_integrity.py --pre-sprint5-closure || {
+            EXIT_CODE=$?
+            echo "::notice title=Pre-Sprint 5 Certification Status::FAIL CLOSED (exit code $EXIT_CODE). Pre-Sprint 5 closure is NOT certified; Sprint 5 kickoff remains blocked."
+            exit $EXIT_CODE
+          }
