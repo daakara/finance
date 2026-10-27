@@ -6,8 +6,9 @@ import {
   DomainAssessment,
   FactorAttributionItem,
   DecisionTrace,
+  FreshnessInfo,
 } from "../types/insight";
-import { deriveAssessmentState } from "./assessmentEngine";
+import { deriveAssessmentState, assertDecisionAuthorityConsistency } from "./assessmentEngine";
 import { CandleData, ConfluenceData, OptimalExecutionPlan } from "./api";
 import { evaluateLevelRelation } from "./reclaimSemantics";
 import { MASTER_ASSET_CATALOG } from "./masterCatalog";
@@ -27,8 +28,18 @@ export function generateQuantitativeInsight(
   confluence?: ConfluenceData,
   decisionTrace?: DecisionTrace,
   optimalExecution?: OptimalExecutionPlan,
-  freshnessStatus?: string
+  freshnessStatusOrInfo?: string | FreshnessInfo
 ): QuantitativeInsight {
+  const effectiveFreshness: FreshnessInfo | undefined =
+    typeof freshnessStatusOrInfo === "object" && freshnessStatusOrInfo !== null
+      ? freshnessStatusOrInfo
+      : (typeof freshnessStatusOrInfo === "string" ? { status: freshnessStatusOrInfo } : undefined);
+  const effectiveFreshnessStatus = effectiveFreshness?.status;
+  const isStale =
+    effectiveFreshnessStatus === "STALE_HISTORICAL" ||
+    effectiveFreshnessStatus === "STALE" ||
+    (effectiveFreshness?.stalenessDays !== undefined && effectiveFreshness.stalenessDays > 4);
+
   const isPriceValid = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0;
   const safePrice = isPriceValid ? currentPrice : 0;
   const isFallbackFeed = dataSource === "fallback" || dataSource === "unavailable";
@@ -111,23 +122,29 @@ export function generateQuantitativeInsight(
   const isStage4 = derivedStage === 4;
 
   // 2b. Authentic Trade Levels (Phase 21: Use backend optimalExecution directly if provided)
-  const isExecutionSuppressed = optimalExecution?.execution_status === "INSUFFICIENT_HISTORY"
-    || optimalExecution?.execution_status === "UNVERIFIED_ASSET"
-    || optimalExecution?.execution_status === "UNAVAILABLE"
-    || isDegradedDecision
-    || !isTrendAvailable;
-
   let stopLoss: number = 0;
   let target1: number | undefined = undefined;
   let target2: number | undefined = undefined;
   let profitRisk: number | undefined = undefined;
 
-  if (optimalExecution && optimalExecution.stop_loss && optimalExecution.stop_loss > 0 && !isExecutionSuppressed) {
+  if (
+    optimalExecution &&
+    optimalExecution.stop_loss &&
+    optimalExecution.stop_loss > 0 &&
+    optimalExecution.execution_status !== "UNAVAILABLE" &&
+    optimalExecution.execution_status !== "UNVERIFIED_ASSET"
+  ) {
     stopLoss = optimalExecution.stop_loss;
     target1 = optimalExecution.take_profit_1 ?? undefined;
     target2 = optimalExecution.take_profit_2 ?? undefined;
     profitRisk = optimalExecution.risk_reward_ratio ?? undefined;
   }
+
+  const isExecutionSuppressed = optimalExecution?.execution_status === "INSUFFICIENT_HISTORY"
+    || optimalExecution?.execution_status === "UNVERIFIED_ASSET"
+    || optimalExecution?.execution_status === "UNAVAILABLE"
+    || isDegradedDecision
+    || (!isTrendAvailable && !optimalExecution);
 
   // 3. Bind authentic asset-specific fundamentals strictly from backend disclosures (DISC-03, DISC-04)
   // Zero synthetic math (no score/11 for Piotroski) and zero false labeling (never label score/100 as ROIC)
@@ -327,18 +344,26 @@ export function generateQuantitativeInsight(
     domains,
     invalidationPrice: stopLoss,
     reclaimMilestonePrice: sma50,
-    freshnessStatus,
+    freshnessStatus: effectiveFreshnessStatus,
+    freshness: effectiveFreshness,
     decisionTrace,
   });
 
-  // Phase 21 Epistemic Alignment: Honor authoritative backend decisionTrace if provided
+  // Phase 21 / Epistemic Alignment:
+  // terminalState derived by deriveAssessmentState() is the authoritative source of runtime safety.
+  // Upstream decisionTrace provides model context and disqualification reasons without overriding safety gates.
   if (decisionTrace) {
-    terminalState.decisionState = decisionTrace.decisionState;
     const canonicalStateLabel = decisionTrace.decisionStateLabel || decisionTrace.stateLabel;
 
-    if (decisionTrace.decisionState === "UNVERIFIED" || isDegradedDecision) {
+    if ((decisionTrace.decisionState === "UNVERIFIED" || isDegradedDecision || terminalState.decisionState === "UNVERIFIED") &&
+        terminalState.posture !== "AVOID" && terminalState.posture !== "EXIT_REVIEW") {
       terminalState.posture = "RESEARCH";
-      terminalState.uiStateLabel = canonicalStateLabel || "Unverified Asset — Live Tape Required";
+      terminalState.decisionState = "UNVERIFIED";
+      terminalState.canSizeTrade = false;
+      terminalState.isActionable = false;
+      terminalState.uiStateLabel = (canonicalStateLabel && !canonicalStateLabel.toLowerCase().includes("actionable"))
+        ? canonicalStateLabel
+        : "Unverified Asset — Live Tape Required";
       terminalState.headlineExplanation = decisionTrace.disqualificationReason || (
         "Direct market data tape only. Analytical decision authority is unavailable."
       );
@@ -349,7 +374,12 @@ export function generateQuantitativeInsight(
       };
     } else if (!decisionTrace.isActionable && terminalState.posture === "ACQUIRE") {
       terminalState.posture = "WATCH";
-      terminalState.uiStateLabel = canonicalStateLabel || "Valid Setup — Awaiting Trigger";
+      terminalState.decisionState = "VALID_SETUP";
+      terminalState.canSizeTrade = false;
+      terminalState.isActionable = false;
+      terminalState.uiStateLabel = (canonicalStateLabel && !canonicalStateLabel.toLowerCase().includes("actionable"))
+        ? canonicalStateLabel
+        : "Valid Setup — Awaiting Trigger";
       terminalState.headlineExplanation = decisionTrace.disqualificationReason || (
         canonicalStateLabel
           ? `Setup state: ${canonicalStateLabel}; awaiting confirmed entry trigger.`
@@ -360,21 +390,53 @@ export function generateQuantitativeInsight(
         actionType: "SET_ALERT",
         enabled: true,
       };
-    } else if (canonicalStateLabel && terminalState.posture !== "AVOID" && ownership !== "OWNED") {
-      terminalState.uiStateLabel = canonicalStateLabel;
-      if (decisionTrace.disqualificationReason) {
+    } else if (canonicalStateLabel && terminalState.posture !== "AVOID" && terminalState.posture !== "EXIT_REVIEW" && ownership !== "OWNED") {
+      if (terminalState.canSizeTrade || !canonicalStateLabel.toLowerCase().includes("actionable")) {
+        terminalState.uiStateLabel = canonicalStateLabel;
+      }
+      if (decisionTrace.disqualificationReason && terminalState.posture !== "ACQUIRE") {
         terminalState.headlineExplanation = decisionTrace.disqualificationReason;
       }
     }
 
-    // Bind canSizeTrade and allowed actions directly from decisionTrace
+    // Bind size_trade action strictly bounded by terminalState fail-closed gating
     for (const action of terminalState.availableActions) {
       if (action.id === "size_trade") {
-        action.enabled = decisionTrace.canSizeTrade;
-        if (!decisionTrace.canSizeTrade) {
-          action.reason = decisionTrace.disqualificationReason || "Trade sizing disabled until trigger confirmed";
+        action.enabled = Boolean(terminalState.canSizeTrade);
+        if (!action.enabled) {
+          action.reason = decisionTrace?.disqualificationReason || action.reason || "Trade sizing disabled until trigger confirmed";
         }
       }
+    }
+  }
+
+  // Final fail-closed sanitization: uiStateLabel can NEVER claim actionable when canSizeTrade is false
+  if (!terminalState.canSizeTrade && terminalState.uiStateLabel.toLowerCase().includes("actionable")) {
+    if (terminalState.posture === "WATCH") {
+      terminalState.uiStateLabel = "Valid Setup — Awaiting Trigger";
+    } else if (terminalState.posture === "RESEARCH") {
+      terminalState.uiStateLabel = terminalState.decisionState === "UNVERIFIED"
+        ? "Unverified Asset — Live Tape Required"
+        : "Evidence Incomplete — In-Depth Research Required";
+    } else if (terminalState.posture === "HOLD") {
+      terminalState.uiStateLabel = "Thesis Intact";
+    } else if (terminalState.posture === "TRIM") {
+      terminalState.uiStateLabel = "Consider Trimming";
+    } else if (terminalState.posture === "EXIT_REVIEW") {
+      terminalState.uiStateLabel = "Thesis Needs Review";
+    } else if (terminalState.posture === "AVOID") {
+      terminalState.uiStateLabel = "Setup Invalidated";
+    }
+  }
+
+  if (isStale) {
+    terminalState.decisionState = "STALE_DATA";
+    terminalState.isActionable = false;
+    terminalState.canSizeTrade = false;
+    if (terminalState.posture !== "AVOID" && terminalState.posture !== "EXIT_REVIEW") {
+      terminalState.posture = "RESEARCH";
+      terminalState.uiStateLabel = "Stale Historical Tape (> 4 Days)";
+      terminalState.headlineExplanation = "Market data is historical/stale (>4 days lag); live trade triggers are suspended.";
     }
   }
 
@@ -391,11 +453,26 @@ export function generateQuantitativeInsight(
     whatWouldChangeAssessment: d.whatWouldChangeAssessment,
   }));
 
-  const finalVerdict = (decisionTrace?.decisionState === "UNVERIFIED" || isDegradedDecision)
-    ? "UNVERIFIED"
-    : (terminalState.posture === "AVOID"
-        ? "AVOID_STAGE_4"
-        : (decisionTrace?.isActionable ? "ACTIONABLE_BUY_ZONE" : "WAIT_FOR_TRIGGER"));
+  const finalVerdict = (terminalState.posture === "AVOID" || terminalState.posture === "EXIT_REVIEW")
+    ? "AVOID_STAGE_4"
+    : (decisionTrace?.decisionState === "UNVERIFIED" || isDegradedDecision || terminalState.decisionState === "UNVERIFIED")
+      ? "UNVERIFIED"
+      : (terminalState.canSizeTrade && terminalState.isActionable && terminalState.posture === "ACQUIRE"
+          ? "ACTIONABLE_BUY_ZONE"
+          : "WAIT_FOR_TRIGGER");
+
+  // Enforce decision authority consistency on assembled insight
+  assertDecisionAuthorityConsistency({
+    posture: terminalState.posture,
+    decisionState: terminalState.decisionState,
+    authoritativeDecisionState: terminalState.authoritativeDecisionState,
+    canSizeTrade: terminalState.canSizeTrade,
+    isActionable: terminalState.isActionable,
+    uiStateLabel: terminalState.uiStateLabel,
+    finalVerdict,
+    availableActions: terminalState.availableActions,
+    ownershipState: ownership,
+  });
 
   const smaLevelRelation = evaluateLevelRelation(safePrice, sma50, "50-day moving average", symbol);
 
@@ -587,5 +664,6 @@ export function generateQuantitativeInsight(
     whatWouldChangeAssessment: terminalState.whatWouldChangeAssessment,
     availableActions: terminalState.availableActions,
     decisionTrace: decisionTrace,
+    freshness: effectiveFreshness,
   };
 }

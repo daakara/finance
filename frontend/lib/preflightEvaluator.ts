@@ -61,7 +61,22 @@ export interface PreFlightChecklistInputs {
   isActionable?: boolean | null;
   decisionState?: string;
   evidenceStatus?: string;
+  // Provenance & Authority Inputs (Gate 2 Invariants)
+  dataSource?: "live" | "historical" | "synthetic" | "curated" | "fallback" | "unavailable" | string | null;
+  isSynthetic?: boolean | null;
+  isHistorical?: boolean | null;
+  quoteStatus?: string | null;
+  liveSource?: string | null;
+  liveFreshnessStatus?: string | null;
+  marketSession?: string | null;
+  observationTime?: string | number | null;
 }
+
+export type ProvenanceCategory =
+  | "LIVE_OBSERVATION"
+  | "HISTORICAL_EOD"
+  | "SYNTHETIC_FIXTURE"
+  | "UNVERIFIED";
 
 export type CheckStatus =
   | "PASS"
@@ -106,6 +121,8 @@ export interface PreFlightEvaluationResult {
   activeBlocker: string;
   whatNeedsToChange: string;
   evidenceMeta: string;
+  provenanceCategory: ProvenanceCategory;
+  isSimulatedClearance: boolean;
   safePrice: number;
   safeStop: number | null;
   safeTarget: number | null;
@@ -377,8 +394,61 @@ export function evaluatePreFlightChecks(
 
   // ── Check 1: Asymmetric Risk-Reward ──────────────────────────────────────
   const hasExecutionLevels = hasStopLoss && hasTarget;
-  const isRRPassed = isPriceValid && isRRValid && safeRR >= 2.0 && hasExecutionLevels;
-  const chk1Status: CheckStatus = isRRPassed ? "PASS" : (!hasExecutionLevels ? "MISSING LEVELS" : "FAIL");
+  const isLevelDirectionValid =
+    isPriceValid &&
+    hasExecutionLevels &&
+    safeStop! < safePrice &&
+    safeTarget! > safePrice;
+
+  // Independent Prospective Risk/Reward Verification (Full Precision)
+  let rawComputedRRAtSpot = 0;
+  if (isLevelDirectionValid) {
+    const risk = safePrice - safeStop!;
+    const reward = safeTarget! - safePrice;
+    if (risk > 0 && reward > 0) {
+      rawComputedRRAtSpot = reward / risk;
+    }
+  }
+
+  // Canonical Effective RR Resolution:
+  // Must be verified by BOTH the execution levels at current market spot AND any model ratio.
+  // Full numeric precision is preserved for threshold comparison.
+  // A raw ratio below the required 2.0:1 threshold (e.g. 1.995) must NEVER pass solely because it rounds to 2.00 for display.
+  const rawEffectiveRR = isLevelDirectionValid
+    ? (isRRValid ? Math.min(safeRR, rawComputedRRAtSpot) : rawComputedRRAtSpot)
+    : 0;
+
+  const isRRPassed = isPriceValid && hasExecutionLevels && isLevelDirectionValid && rawEffectiveRR >= 2.0;
+  const chk1Status: CheckStatus = !hasExecutionLevels
+    ? "MISSING LEVELS"
+    : !isLevelDirectionValid
+    ? "FAIL"
+    : isRRPassed
+    ? "PASS"
+    : "FAIL";
+
+  const displayRR = rawEffectiveRR.toFixed(2);
+  const isSubThresholdRounding = !isRRPassed && Number(displayRR) >= 2.0;
+  const chk1Summary = !hasExecutionLevels
+    ? "N/A"
+    : !isLevelDirectionValid
+    ? "Invalid Levels"
+    : isSubThresholdRounding
+    ? "Below 2.00:1"
+    : `${displayRR}:1.0`;
+
+  const chk1Detail = !hasExecutionLevels
+    ? "Execution levels missing: Stop loss and target required."
+    : !isLevelDirectionValid
+    ? (safeStop! >= safePrice
+        ? `Inverted risk boundary: Stop loss ($${safeStop!.toFixed(2)}) is above current price ($${safePrice.toFixed(2)}). Execution risk floor breached.`
+        : `Inverted reward boundary: Profit target ($${safeTarget!.toFixed(2)}) is below current price ($${safePrice.toFixed(2)}). Target boundary inverted.`)
+    : isRRPassed
+    ? "Adequate upside cushion (R:R >= 2.0:1)."
+    : isSubThresholdRounding
+    ? `Hazard: Prospective reward relative to downside risk (${rawEffectiveRR.toFixed(3)}:1) is sub-threshold (< 2.0:1 institutional floor).`
+    : `Hazard: Prospective reward relative to downside risk (${displayRR}:1) is below 2.0:1 institutional floor.`;
+
   const chk1Item: PreFlightCheckItem = {
     id: "CHK-1",
     tag: "CHK-1 R:R",
@@ -388,14 +458,8 @@ export function evaluatePreFlightChecks(
       ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
       : "bg-rose-950/80 text-rose-300 border-rose-700/80",
     passed: isRRPassed,
-    summary: isRRValid && hasExecutionLevels ? `${safeRR.toFixed(2)}:1.0` : "N/A",
-    detail: isRRPassed
-      ? "Adequate upside cushion (R:R >= 2.0:1)."
-      : !hasExecutionLevels
-      ? "Execution levels missing: Stop loss and target required."
-      : isRRValid
-      ? "Hazard: Upside potential too small relative to downside risk (< 2.0:1)."
-      : "Evidence incomplete: Risk-reward ratio unverified.",
+    summary: chk1Summary,
+    detail: chk1Detail,
     icon: isRRPassed ? "✓" : "✕",
   };
 
@@ -642,14 +706,15 @@ export function evaluatePreFlightChecks(
   const isCleared =
     isActionableGranted &&
     isPriceValid &&
-    isRRValid &&
+    isLevelDirectionValid &&
     !isStage4 &&
     mandatoryChecksVerified;
 
   // Active Blocker Resolution
   const activeBlocker = (() => {
     if (!isActionableGranted) return "CANONICAL SETUP NON-ACTIONABLE";
-    if (!isPriceValid || !isRRValid) return "UNVERIFIED EXECUTION LEVELS";
+    if (!isPriceValid || !hasExecutionLevels) return "UNVERIFIED EXECUTION LEVELS";
+    if (!isLevelDirectionValid) return "INVERTED EXECUTION BOUNDARIES";
     if (isStage4) return "STAGE 4 DISTRIBUTION STRUCTURE";
     if (!isRRPassed) return "REWARD/RISK ASYMMETRY (< 2.0:1)";
     if (!isTrendPassed) return "TECHNICAL STRUCTURE NOT CONFIRMED";
@@ -664,13 +729,72 @@ export function evaluatePreFlightChecks(
     return "NONE";
   })();
 
+  // ── Provenance & Epistemic Authority Classification (Gate 2 Invariants) ──
+  const rawDataSource = (inputs.dataSource || "").toLowerCase();
+  const rawQuoteStatus = (inputs.quoteStatus || "").toUpperCase();
+  const rawEvidenceStatus = (inputs.evidenceStatus || "").trim();
+
+  const isSyntheticFixture = Boolean(
+    inputs.isSynthetic ||
+    rawDataSource === "synthetic" ||
+    rawDataSource === "fixture" ||
+    rawDataSource === "static_fixture" ||
+    rawQuoteStatus === "SYNTHETIC" ||
+    rawEvidenceStatus.toUpperCase().includes("SYNTHETIC") ||
+    rawEvidenceStatus.toUpperCase().includes("FIXTURE") ||
+    rawEvidenceStatus.toUpperCase().includes("SIMULATED")
+  );
+
+  const isHistoricalEOD = Boolean(
+    !isSyntheticFixture && (
+      inputs.isHistorical ||
+      rawDataSource === "historical" ||
+      rawQuoteStatus === "HISTORICAL_EOD" ||
+      rawQuoteStatus === "HISTORICAL" ||
+      rawEvidenceStatus.toUpperCase().includes("HISTORICAL") ||
+      rawEvidenceStatus.toUpperCase().includes("EOD")
+    )
+  );
+
+  const isExplicitLiveSource = Boolean(
+    rawDataSource === "live" ||
+    inputs.liveSource === "ALPACA_IEX" ||
+    inputs.liveSource === "EXCHANGE_FEED" ||
+    inputs.liveSource === "exchange_feed"
+  );
+
+  const isLiveObservation = Boolean(
+    !isSyntheticFixture &&
+    !isHistoricalEOD &&
+    isExplicitLiveSource &&
+    isPriceValid &&
+    (inputs.liveFreshnessStatus === "LIVE" ||
+     inputs.liveFreshnessStatus === "REALTIME" ||
+     inputs.macroEvidence?.freshnessStatus === "LIVE")
+  );
+
+  const provenanceCategory: ProvenanceCategory = isSyntheticFixture
+    ? "SYNTHETIC_FIXTURE"
+    : isHistoricalEOD
+    ? "HISTORICAL_EOD"
+    : isLiveObservation
+    ? "LIVE_OBSERVATION"
+    : "UNVERIFIED";
+
+  const isSimulatedClearance = Boolean(isCleared && isSyntheticFixture);
+
   // What Needs to Change Callout
   const whatNeedsToChange = (() => {
     if (!isActionableGranted) {
       return "Wait for price action to confirm the canonical setup trigger within the accumulation corridor before sizing.";
     }
-    if (!isPriceValid || !isRRValid) {
+    if (!isPriceValid || !hasExecutionLevels) {
       return "Establish verified spot price and quantitative execution boundaries (stop loss and target levels).";
+    }
+    if (!isLevelDirectionValid) {
+      return safeStop! >= safePrice
+        ? "Establish valid stop loss below current market price to define defensive risk floor."
+        : "Establish valid profit target above current market price to define prospective reward objective.";
     }
     if (isStage4) {
       return "Wait for post-breakout base consolidation above the 50-day moving average before accumulation.";
@@ -696,6 +820,17 @@ export function evaluatePreFlightChecks(
       }
       return "Wait for systemic market volatility (VIX) to settle below defensive threshold (< 26.0).";
     }
+
+    // Invariant 5: Simulated preflight clearance must not imply live order-execution authorization.
+    if (isSyntheticFixture) {
+      return "All pre-flight clearance conditions satisfied in simulation. Notice: Synthetic fixture — not authorized for live order execution.";
+    }
+    if (isHistoricalEOD) {
+      return "All pre-flight clearance conditions satisfied on historical close. Notice: Historical EOD data — requires live market confirmation before execution.";
+    }
+    if (provenanceCategory === "UNVERIFIED") {
+      return "All pre-flight clearance conditions satisfied. Notice: Unverified market feed — requires verified real-time data before execution.";
+    }
     return "All pre-flight clearance conditions satisfied. Setup cleared for controlled execution.";
   })();
 
@@ -719,11 +854,35 @@ export function evaluatePreFlightChecks(
   const target2Pct = (safePrice > 0 && safeTarget2 !== null) ? (((safeTarget2 - safePrice) / safePrice) * 100).toFixed(2) : "N/A";
   const target2Str = safeTarget2 !== null ? `$${safeTarget2.toFixed(2)} (+${target2Pct}%)` : "Unavailable";
 
-  const evidenceMeta = evidenceStatus || (
-    isPriceValid && mandatoryChecksVerified
-      ? "Evidence: LIVE MARKET OBSERVATION · 5/5 Mandatory Checks"
-      : "Evidence: SYNTHETIC FIXTURE / RECONCILED LEDGER"
-  );
+  // Invariants 1-4: Canonical evidenceMeta evaluation
+  const evidenceMeta = (() => {
+    // If an explicit evidenceStatus was supplied, sanitize against false LIVE claims on synthetic/historical
+    if (rawEvidenceStatus) {
+      if (isSyntheticFixture && rawEvidenceStatus.toUpperCase().includes("LIVE")) {
+        return "Evidence: SYNTHETIC FIXTURE · Simulated Pre-Flight Verification";
+      }
+      if (isHistoricalEOD && rawEvidenceStatus.toUpperCase().includes("LIVE")) {
+        return "Evidence: HISTORICAL EOD · Reconciled Close Observation";
+      }
+      return rawEvidenceStatus;
+    }
+
+    switch (provenanceCategory) {
+      case "SYNTHETIC_FIXTURE":
+        return mandatoryChecksVerified
+          ? "Evidence: SYNTHETIC FIXTURE · Simulated Pre-Flight Verification"
+          : "Evidence: SYNTHETIC FIXTURE · Reconciled Ledger";
+      case "HISTORICAL_EOD":
+        return "Evidence: HISTORICAL EOD · Reconciled Close Observation";
+      case "LIVE_OBSERVATION":
+        return mandatoryChecksVerified
+          ? "Evidence: LIVE MARKET OBSERVATION · 5/5 Mandatory Checks"
+          : "Evidence: LIVE MARKET OBSERVATION · Preflight Verification Pending";
+      case "UNVERIFIED":
+      default:
+        return "Evidence: UNVERIFIED PROVENANCE · Feed Verification Required";
+    }
+  })();
 
   return {
     symbol,
@@ -738,10 +897,12 @@ export function evaluatePreFlightChecks(
     activeBlocker,
     whatNeedsToChange,
     evidenceMeta,
+    provenanceCategory,
+    isSimulatedClearance,
     safePrice,
     safeStop,
     safeTarget,
-    safeRR,
+    safeRR: rawEffectiveRR,
     safeEntryMin,
     safeEntryMax,
     safePivot,

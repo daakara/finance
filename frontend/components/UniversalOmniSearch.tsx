@@ -21,6 +21,16 @@ export default function UniversalOmniSearch() {
     setIsOpen(true);
   };
 
+  // Programmatic trigger listener (e.g. from SynthesisMobileDock or external commands)
+  useEffect(() => {
+    const handleCustomOpen = () => {
+      triggerRef.current = (document.activeElement as HTMLElement) || null;
+      setIsOpen(true);
+    };
+    window.addEventListener("arx:open-omni-search", handleCustomOpen);
+    return () => window.removeEventListener("arx:open-omni-search", handleCustomOpen);
+  }, []);
+
   // Global hotkey: Press "/" anywhere to open omni-search (Cmd+K owned by CommandPalette)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

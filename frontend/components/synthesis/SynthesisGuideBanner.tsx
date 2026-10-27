@@ -4,13 +4,18 @@ import React, { useState, useEffect } from "react";
 import { Compass, Target, Layers, ShieldCheck, Zap, ChevronUp, ChevronDown } from "lucide-react";
 
 export default function SynthesisGuideBanner() {
-  const [isExpanded, setIsExpanded] = useState<boolean>(true);
+  // Default collapsed — prevents layout shift on SSR (window undefined → false).
+  // On first client mount: restore stored preference; if none, expand on desktop only.
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
   useEffect(() => {
     if (typeof localStorage !== "undefined") {
       const stored = localStorage.getItem("ARX_GUIDE_EXPANDED");
       if (stored !== null) {
         setIsExpanded(stored === "true");
+      } else {
+        // First visit: expanded on desktop (≥768px), collapsed on mobile
+        setIsExpanded(window.innerWidth >= 768);
       }
     }
   }, []);
@@ -34,6 +39,7 @@ export default function SynthesisGuideBanner() {
   return (
     <section
       id="guide-banner"
+      data-testid="synthesis-guide-banner"
       role="region"
       aria-label="Workflow Guide Navigation"
       className="w-full bg-[var(--surface-1)] border-b border-[var(--border-subtle)] text-xs font-mono transition-all duration-200"

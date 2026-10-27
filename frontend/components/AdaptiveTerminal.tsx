@@ -18,6 +18,8 @@ import { resolveOverallEvidenceBadge } from "../lib/dataProvenance";
 interface AdaptiveTerminalProps {
   symbol: string;
   companyName?: string;
+  exchange?: string;
+  marketSession?: string;
   currentPrice: number;
   changePct: number;
   setupScore?: number;
@@ -42,6 +44,8 @@ interface AdaptiveTerminalProps {
 export default function AdaptiveTerminal({
   symbol,
   companyName = "Asset Intelligence",
+  exchange,
+  marketSession,
   currentPrice,
   changePct,
   setupScore,
@@ -116,8 +120,30 @@ export default function AdaptiveTerminal({
     confluence,
     decisionTrace,
     optimalExecution,
-    freshness?.status
+    freshness
+      ? {
+          ...freshness,
+          status: (freshness.stalenessDays && freshness.stalenessDays > 4) ? "STALE_HISTORICAL" : freshness.status,
+        }
+      : undefined
   );
+
+  if (freshness) {
+    insight.freshness = {
+      ...freshness,
+      status: (freshness.stalenessDays && freshness.stalenessDays > 4) ? "STALE_HISTORICAL" : freshness.status,
+    };
+  }
+
+  if (exchange) {
+    (insight as any).exchange = exchange;
+    (insight.advanced as any).exchange = exchange;
+  }
+
+  if (marketSession) {
+    (insight as any).marketSession = marketSession;
+    (insight.advanced as any).marketSession = marketSession;
+  }
 
   const evidenceBadge = resolveOverallEvidenceBadge({
     hasLiveFeed: dataSource === "live",
@@ -279,9 +305,9 @@ export default function AdaptiveTerminal({
         takeProfit1={insight.standard.keyLevels.target1}
         riskRewardRatio={insight.standard.keyLevels.profitRiskRatio}
         isStage4={isStage4 || (insight.advanced.vcpStage === undefined && insight.verdict !== "ACTIONABLE_BUY_ZONE")}
-        canSizeTrade={insight.decisionTrace?.canSizeTrade}
-        isActionable={insight.decisionTrace?.isActionable}
-        decisionStateLabel={insight.decisionTrace?.stateLabel}
+        canSizeTrade={insight.terminalState?.canSizeTrade ?? false}
+        isActionable={insight.terminalState?.isActionable ?? false}
+        decisionStateLabel={insight.terminalState?.uiStateLabel ?? insight.decisionTrace?.stateLabel}
       />
     </div>
   );

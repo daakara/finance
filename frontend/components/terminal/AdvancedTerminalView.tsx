@@ -82,10 +82,10 @@ export default function AdvancedTerminalView({
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#182335] pb-2 font-mono">
               <h3 className="text-xs sm:text-sm font-bold text-cyan-300 uppercase tracking-wide flex items-center gap-2">
                 <span>🎯</span>
-                <span>What Needs to Change (Model Preconditions)</span>
+                <span>What Needs to Change (Model Criteria)</span>
               </h3>
               <span className="text-xs text-slate-400 font-mono">
-                {isActionable ? "All Preconditions Cleared" : "Awaiting Trigger Confluence"}
+                {isActionable ? "Setup Criteria Met" : "Awaiting Trigger Confluence"}
               </span>
             </div>
 

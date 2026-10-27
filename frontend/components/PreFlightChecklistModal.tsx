@@ -33,6 +33,14 @@ export default function PreFlightChecklistModal({
   macroEvidence,
   isActionable = false,
   decisionState,
+  dataSource,
+  isSynthetic,
+  isHistorical,
+  quoteStatus,
+  liveSource,
+  liveFreshnessStatus,
+  marketSession,
+  observationTime,
 }: PreFlightChecklistModalProps) {
   const [copied, setCopied] = useState<boolean>(false);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
@@ -115,6 +123,14 @@ export default function PreFlightChecklistModal({
       macroEvidence,
       isActionable,
       decisionState,
+      dataSource,
+      isSynthetic,
+      isHistorical,
+      quoteStatus,
+      liveSource,
+      liveFreshnessStatus,
+      marketSession,
+      observationTime,
     },
     vernacularMode
   );

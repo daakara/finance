@@ -207,6 +207,38 @@ describe("ARX Terminal Analysis Decision Hierarchy Acceptance Suite", () => {
       expect(verdictEl.compareDocumentPosition(evidenceEl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(screen.getByText(/WAIT — CONFIRMATION PENDING/i)).toBeDefined();
     });
+
+    it("strictly enforces 5-tier mobile decision hierarchy sequence (VAG-01-F06)", () => {
+      const insight = createFixtureInsight();
+      const { container } = render(
+        <StandardTerminalView
+          insight={insight}
+          onOpenSizer={vi.fn()}
+          onOpenWhy={vi.fn()}
+        />
+      );
+
+      const titleEl = container.querySelector("#card-verdict-title")!;
+      const reasonEl = screen.getByTestId("decision-reason");
+      const mobileScoreEl = container.querySelector("#card-mobile-score-deck")!;
+      const ladderEl = container.querySelector("#card-middle-panel")!;
+      const sizingEl = container.querySelector("#card-sizing-bar")!;
+
+      expect(titleEl).toBeDefined();
+      expect(reasonEl).toBeDefined();
+      expect(mobileScoreEl).toBeDefined();
+      expect(ladderEl).toBeDefined();
+      expect(sizingEl).toBeDefined();
+
+      // Tier 1 (Decision Title) preceding Tier 2 (Rationale)
+      expect(titleEl.compareDocumentPosition(reasonEl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      // Tier 2 (Rationale) preceding Tier 3 (Confluence Score on mobile)
+      expect(reasonEl.compareDocumentPosition(mobileScoreEl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      // Tier 3 (Confluence Score) preceding Tier 4 (Execution Ladder)
+      expect(mobileScoreEl.compareDocumentPosition(ladderEl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      // Tier 4 (Execution Ladder) preceding Tier 5 (Sizing Bar)
+      expect(ladderEl.compareDocumentPosition(sizingEl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
   });
 
   // ── TEST-003: Score Subordination (Score Cannot Override Verdict) ───────────
@@ -487,7 +519,7 @@ describe("ARX Terminal Analysis Decision Hierarchy Acceptance Suite", () => {
       render(<StandardTerminalView insight={insight} onOpenSizer={vi.fn()} onOpenWhy={vi.fn()} />);
       expect(screen.getByText(/CONFIRMED ACCUMULATION BREAKOUT/i)).toBeDefined();
       expect(screen.getByTestId("actionability-badge").textContent).toContain("ACTIONABLE");
-      expect(screen.getByText(/Size & Execute Position/i)).toBeDefined();
+      expect(screen.getByText(/Size.*Position/i)).toBeDefined();
     });
   });
 
@@ -610,7 +642,7 @@ describe("ARX Terminal Analysis Decision Hierarchy Acceptance Suite", () => {
       const { rerender } = render(
         <StandardTerminalView insight={nonActionableInsight} onOpenSizer={vi.fn()} onOpenWhy={vi.fn()} />
       );
-      expect(screen.queryByText(/Size & Execute Position/i)).toBeNull();
+      expect(screen.queryByText(/Size.*Position/i)).toBeNull();
 
       // Actionable setup
       const actionableInsight = createFixtureInsight({
@@ -624,7 +656,7 @@ describe("ARX Terminal Analysis Decision Hierarchy Acceptance Suite", () => {
         },
       });
       rerender(<StandardTerminalView insight={actionableInsight} onOpenSizer={vi.fn()} onOpenWhy={vi.fn()} />);
-      expect(screen.getByText(/Size & Execute Position/i)).toBeDefined();
+      expect(screen.getByText(/Size.*Position/i)).toBeDefined();
     });
 
     it("INV-ANALYSIS-07: SHORT control cannot activate unsupported calculations in DayTraderPositionSizer", () => {

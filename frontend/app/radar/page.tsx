@@ -22,6 +22,9 @@ import { MASTER_ASSET_CATALOG } from '../../lib/masterCatalog';
 import { usePortfolioContext, OwnershipFilter } from '../../hooks/usePortfolioContext';
 import { RadarPortfolioBadge } from '../../components/radar/RadarPortfolioBadge';
 import { ExecutionStatus } from '../../types/decisionContract';
+import SynthesisGuideBanner from '../../components/synthesis/SynthesisGuideBanner';
+import SynthesisMobileDock from '../../components/synthesis/SynthesisMobileDock';
+import { isCanonicalSecurityIdentifier, resolveCanonicalSecurity } from '../../lib/assetRegistry';
 
 interface RadarAsset {
   ticker: string;
@@ -100,12 +103,16 @@ function formatRadarExecutionStatus(status: ExecutionStatus): string {
 
 function RadarContent() {
   const searchParams = useSearchParams();
-  const initialQ = searchParams?.get('q') || searchParams?.get('symbol') || '';
+  const initialQ = searchParams?.get('q') || searchParams?.get('symbol') || searchParams?.get('ticker') || '';
   const [activeFilter, setActiveFilter] = useState<CategoryFilter>('ALL');
   const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState(initialQ);
   const [sortBy, setSortBy] = useState<'SCORE' | 'RVOL' | 'PRICE'>('SCORE');
   const [allAssets, setAllAssets] = useState<RadarAsset[]>([]);
+  const [selectedAssetTicker, setSelectedAssetTicker] = useState<string | null>(() => {
+    const sym = searchParams?.get('symbol') || searchParams?.get('ticker');
+    return resolveCanonicalSecurity(sym);
+  });
   const [capabilities, setCapabilities] = useState<RadarCapabilities>(DEFAULT_RADAR_CAPABILITIES);
   const [population, setPopulation] = useState<CandidatePopulationModel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -155,9 +162,15 @@ function RadarContent() {
   };
 
   useEffect(() => {
-    const q = (searchParams?.get('q') || searchParams?.get('symbol') || '').trim().toUpperCase();
+    const q = (searchParams?.get('q') || searchParams?.get('symbol') || searchParams?.get('ticker') || '').trim().toUpperCase();
     setSearchQuery((prev) => (prev.trim().toUpperCase() !== q ? q : prev));
-  }, [searchParams]);
+    const sym = searchParams?.get('symbol') || searchParams?.get('ticker');
+    if (sym) {
+      setSelectedAssetTicker(resolveCanonicalSecurity(sym, allAssets));
+    } else if (!searchParams?.get('q')) {
+      setSelectedAssetTicker(null);
+    }
+  }, [searchParams, allAssets]);
 
   useEffect(() => {
     let isMounted = true;
@@ -377,6 +390,20 @@ function RadarContent() {
   const isSearching = searchQuery.trim().length > 0;
   const isTickerQuery = /^[A-Z0-9\.\-]{1,6}$/i.test(searchQuery.trim());
 
+  const activeCanonicalAsset = useMemo(() => {
+    if (selectedAssetTicker && isCanonicalSecurityIdentifier(selectedAssetTicker, allAssets)) {
+      return resolveCanonicalSecurity(selectedAssetTicker, allAssets);
+    }
+    const symParam = searchParams?.get('symbol') || searchParams?.get('ticker');
+    if (symParam && isCanonicalSecurityIdentifier(symParam, allAssets)) {
+      return resolveCanonicalSecurity(symParam, allAssets);
+    }
+    if (cleanQ && isCanonicalSecurityIdentifier(cleanQ, allAssets)) {
+      return resolveCanonicalSecurity(cleanQ, allAssets);
+    }
+    return null;
+  }, [selectedAssetTicker, searchParams, cleanQ, allAssets]);
+
   const handleOnDemandScan = async (tickerOverride?: string) => {
     const raw = tickerOverride || searchQuery;
     const clean = raw.trim().toUpperCase();
@@ -495,7 +522,7 @@ function RadarContent() {
   return (
     <TerminalShell
       activeHub="radar"
-      activeSymbol={searchQuery.trim() ? searchQuery.trim().toUpperCase() : null}
+      activeSymbol={activeCanonicalAsset}
     >
       <div className="space-y-6">
         {/* Hub Guidance & Orientation (A3-AC1, A3-AC2, A3-AC3) */}
@@ -504,7 +531,7 @@ function RadarContent() {
           title="Radar"
           purpose="Scan and filter the market universe for momentum and breakout candidates that warrant further analysis."
           badge="Market Discovery"
-          symbol={cleanQ || null}
+          symbol={activeCanonicalAsset}
           primaryAction={{
             label: heroAsset ? `Analyze ${heroAsset.ticker} →` : "Analyze Candidate →",
             href: heroAsset ? `/?symbol=${heroAsset.ticker}` : "/",
@@ -515,20 +542,22 @@ function RadarContent() {
           }}
         />
 
+        <SynthesisGuideBanner />
+
         {/* Loading Indicator */}
         {isLoading && (
-          <div className="p-12 text-center text-slate-400 font-mono text-xs animate-pulse">
+          <div className="p-12 text-center text-[var(--text-2)] font-mono text-xs animate-pulse">
             ⏳ Scanning multi-factor equity tape and quantitative confluence filters...
           </div>
         )}
 
         {/* Explicit Connection Error State */}
         {!isLoading && fetchError && (
-          <div className="p-12 rounded-2xl border border-rose-900/60 bg-rose-950/20 text-center space-y-4 font-mono text-xs text-slate-300">
+          <div className="p-12 rounded-2xl border border-rose-900/60 bg-rose-950/20 text-center space-y-4 font-mono text-xs text-[var(--text-2)]">
             <span className="text-3xl">⚠️</span>
             <div className="space-y-1">
               <div className="text-rose-400 font-bold text-sm">Radar Tape Connection Error</div>
-              <p className="text-slate-400 max-w-lg mx-auto font-sans">
+              <p className="text-[var(--text-2)] max-w-lg mx-auto font-sans">
                 Unable to load live screening data: {fetchError}. Missing API connectivity is not represented as zero qualifying candidates.
               </p>
             </div>
@@ -546,11 +575,11 @@ function RadarContent() {
 
         {/* Actionable Empty State */}
         {!isLoading && !fetchError && allAssets.length === 0 && (
-          <div className="p-12 rounded-2xl border border-slate-800 bg-slate-900/30 text-center space-y-4 font-mono text-xs text-slate-400">
+          <div className="p-12 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] text-center space-y-4 font-mono text-xs text-[var(--text-2)]">
             <span className="text-3xl">📡</span>
             <div className="space-y-1">
-              <div className="text-white font-bold text-sm">No Active Confluence Candidates</div>
-              <p className="text-slate-400 max-w-lg mx-auto font-sans">
+              <div className="text-[var(--text-1)] font-bold text-sm">No Active Confluence Candidates</div>
+              <p className="text-[var(--text-2)] max-w-lg mx-auto font-sans">
                 No market assets currently meet the active multi-factor confluence, valuation, or execution trigger thresholds. This is normal during market pullbacks or broad consolidation regimes.
               </p>
             </div>
@@ -563,7 +592,7 @@ function RadarContent() {
               </Link>
               <Link
                 href="/setups"
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs font-sans transition-colors"
+                className="px-4 py-2 bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-2)] font-bold rounded-xl text-xs font-sans transition-colors"
               >
                 Review Active Setups →
               </Link>
@@ -573,15 +602,15 @@ function RadarContent() {
 
         {/* Search Discovery / Empty Status Banner when filteredAssets is 0 */}
         {!isLoading && isSearching && !heroAsset && (
-          <div className="p-5 md:p-6 rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-md space-y-3 font-mono text-xs">
+          <div className="p-5 md:p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-2)] backdrop-blur-md space-y-3 font-mono text-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">🔍</span>
                 <div>
-                  <div className="text-white font-bold text-sm">
+                  <div className="text-[var(--text-1)] font-bold text-sm">
                     Searching for &quot;{cleanQ}&quot; · 0 matching candidates in current pre-scanned batch
                   </div>
-                  <div className="text-slate-400 text-[11px] mt-0.5 font-sans">
+                  <div className="text-[var(--text-2)] text-[11px] mt-0.5 font-sans">
                     {isTickerQuery
                       ? `Asset "${cleanQ}" is not in today's top 24 pre-screened confluence batch. You can evaluate it live across the exchange tape.`
                       : `No radar candidates matched your keyword or catalyst filter.`}
@@ -601,9 +630,10 @@ function RadarContent() {
                 <button
                   onClick={() => {
                     setSearchQuery('');
+                    setSelectedAssetTicker(null);
                     setOnDemandError(null);
                   }}
-                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-all border border-slate-700 cursor-pointer"
+                  className="px-3 py-2 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-2)] font-bold text-xs transition-all border border-[var(--border-subtle)] cursor-pointer"
                 >
                   Clear Filter
                 </button>
@@ -629,12 +659,12 @@ function RadarContent() {
                 Attention Candidate · Top Pre-Screened Confluence
               </div>
               <div
-                className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800"
+                className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono text-[var(--text-2)] bg-[var(--surface-1)] px-2 py-0.5 rounded border border-[var(--border-subtle)]"
                 title="Radar displays pre-calculated batch screening snapshot. Individual asset live indicators are calculated in Analysis hub."
               >
                 <span>📡</span>
                 <span>Screening Snapshot</span>
-                <span className="text-slate-600">|</span>
+                <span className="text-[var(--text-muted)]">|</span>
                 <span className="text-cyan-400">Batch Universe</span>
               </div>
             </div>
@@ -642,11 +672,11 @@ function RadarContent() {
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <div className="space-y-3 max-w-3xl">
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <span className="text-2xl md:text-3xl font-black font-mono tracking-tight text-white">
+                  <span className="text-2xl md:text-3xl font-black font-mono tracking-tight text-[var(--text-1)]">
                     {heroAsset.ticker}
                   </span>
                   {heroAsset.name && heroAsset.name !== heroAsset.ticker && (
-                    <span className="text-sm md:text-base text-slate-300 font-medium">
+                    <span className="text-sm md:text-base text-[var(--text-2)] font-medium">
                       {heroAsset.name}
                     </span>
                   )}
@@ -662,21 +692,21 @@ function RadarContent() {
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
                       : heroAsset.executionStatus === 'IN_BUY_ZONE_AWAITING_TRIGGER'
                       ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                      : 'bg-slate-800/80 text-slate-300 border-slate-700'
+                      : 'bg-[var(--surface-2)] text-[var(--text-2)] border-[var(--border-strong)]'
                   }`}>
                     {formatRadarExecutionStatus(heroAsset.executionStatus)}
                   </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900/90 border border-slate-700 text-slate-400">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[var(--surface-1)] border border-[var(--border-strong)] text-[var(--text-2)]">
                     Posture: Analyze for Trigger
                   </span>
                   {heroAsset.vcpStage && (
-                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-[var(--surface-2)] text-[var(--text-2)]">
                       {heroAsset.vcpStage}
                     </span>
                   )}
                 </div>
 
-                <p className="text-xs md:text-sm text-slate-200 font-sans leading-relaxed">
+                <p className="text-xs md:text-sm text-[var(--text-1)] font-sans leading-relaxed">
                   <strong className="text-amber-400 font-semibold">Primary Catalyst: </strong>
                   {heroAsset.catalyst}
                 </p>
@@ -701,11 +731,11 @@ function RadarContent() {
                         : "Observation date and/or price basis unverified. Live spot quotes active in Analysis hub."
                     }
                   >
-                    <span className="text-slate-400">Screen Price:</span>
-                    <span className="text-white font-bold">
+                    <span className="text-[var(--text-2)]">Screen Price:</span>
+                    <span className="text-[var(--text-1)] font-bold">
                       {heroAsset.price && heroAsset.price > 0 ? `$${heroAsset.price.toFixed(2)}` : <span className="text-amber-400">Price Unavailable</span>}
                     </span>
-                    <span className={`text-[10px] font-sans ${!heroAsset.priceDate || heroAsset.priceBasis !== 'DAILY_CLOSE' ? 'text-amber-400 font-medium' : 'text-slate-400'}`}>
+                    <span className={`text-[10px] font-sans ${!heroAsset.priceDate || heroAsset.priceBasis !== 'DAILY_CLOSE' ? 'text-amber-400 font-medium' : 'text-[var(--text-2)]'}`}>
                       · {heroAsset.executionStatus === 'DELISTED_SECURITY'
                         ? "Historical Final Price (Ceased Trading)"
                         : formatPriceObservationDate(heroAsset.priceDate, heroAsset.priceBasis)}
@@ -713,14 +743,14 @@ function RadarContent() {
                   </div>
                   <span className="text-slate-700">•</span>
                   <div className="flex items-center gap-1.5" title="Pre-screened multi-factor confluence conviction score (0-100) from batch screener pipeline">
-                    <span className="text-slate-400">Screen Confluence:</span>
+                    <span className="text-[var(--text-2)]">Screen Confluence:</span>
                     <span className="text-emerald-400 font-bold">{heroAsset.confluenceScore}/100</span>
                   </div>
                   {heroAsset.rvol && (
                     <>
                       <span className="text-slate-700">•</span>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-slate-400">RVOL:</span>
+                        <span className="text-[var(--text-2)]">RVOL:</span>
                         <span className="text-cyan-300 font-bold">{heroAsset.rvol}</span>
                       </div>
                     </>
@@ -729,7 +759,7 @@ function RadarContent() {
                     <>
                       <span className="text-slate-700">•</span>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-slate-400">Risk:Reward:</span>
+                        <span className="text-[var(--text-2)]">Risk:Reward:</span>
                         <span className="text-emerald-400 font-bold">{heroAsset.riskRewardRatio.toFixed(1)}:1</span>
                       </div>
                     </>
@@ -738,7 +768,7 @@ function RadarContent() {
                     <>
                       <span className="text-slate-700">•</span>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-slate-400">Vol Dry-Up:</span>
+                        <span className="text-[var(--text-2)]">Vol Dry-Up:</span>
                         <span className="text-emerald-400 font-bold">{heroAsset.volumeDryUpPct}%</span>
                       </div>
                     </>
@@ -811,7 +841,7 @@ function RadarContent() {
                       <Link
                         href={`/setups?symbol=${heroAsset.ticker}`}
                         onClick={() => trackRadarAssetClick(heroAsset.ticker, 1)}
-                        className="px-4 py-2.5 min-h-[44px] min-w-[44px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-all border border-slate-700 flex items-center justify-center gap-1.5 hover:border-slate-600 active:scale-95"
+                        className="px-4 py-2.5 min-h-[44px] min-w-[44px] rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-1)] text-xs font-mono font-bold transition-all border border-[var(--border-strong)] flex items-center justify-center gap-1.5 hover:border-[var(--border-strong)] active:scale-95"
                       >
                         <span>Inspect Setup in /setups</span>
                         <span>→</span>
@@ -819,7 +849,7 @@ function RadarContent() {
                     </>
                   );
                 })()}
-                <div className="text-[10px] font-mono text-slate-400 text-center">
+                <div className="text-[10px] font-mono text-[var(--text-2)] text-center">
                   Discovery Candidate · Not an Execution Recommendation
                 </div>
               </div>
@@ -828,11 +858,11 @@ function RadarContent() {
         )}
 
         {/* Search & Filter Toolbar */}
-        <div className="space-y-3 border-b border-slate-800 pb-4">
+        <div className="space-y-3 border-b border-[var(--border-subtle)] pb-4">
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
             {/* Category Filter Tabs (WAI-ARIA Tablist) */}
             <div
-              className="w-full md:w-auto overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x pb-1 md:pb-0"
+              className="w-full min-w-0 max-w-full md:w-auto overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x pb-1 md:pb-0"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
               <div
@@ -852,11 +882,11 @@ function RadarContent() {
                   className={`focus-ring px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeFilter === 'ALL'
                       ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                      : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-hover)] border border-transparent'
                   }`}
                 >
                   <span>All Confluences</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--surface-2)] text-[var(--text-2)] font-mono">
                     {categoryMeta.ALL.badge}
                   </span>
                 </button>
@@ -874,11 +904,11 @@ function RadarContent() {
                   className={`focus-ring px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeFilter === 'VALUE_GARP'
                       ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                      : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-hover)] border border-transparent'
                   }`}
                 >
                   <span>💎 Value / GARP</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--surface-2)] text-[var(--text-2)] font-mono">
                     {categoryMeta.VALUE_GARP.badge}
                   </span>
                 </button>
@@ -896,14 +926,14 @@ function RadarContent() {
                   className={`focus-ring px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeFilter === 'VCP'
                       ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                      : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-hover)] border border-transparent'
                   }`}
                 >
                   <span>⚡ Minervini VCP</span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
                     categoryMeta.VCP.status === 'PIPELINE_PENDING'
                       ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
-                      : 'bg-slate-800 text-slate-300'
+                      : 'bg-[var(--surface-2)] text-[var(--text-2)]'
                   }`}>
                     {categoryMeta.VCP.badge}
                   </span>
@@ -922,14 +952,14 @@ function RadarContent() {
                   className={`focus-ring px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeFilter === 'SMART_MONEY'
                       ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                      : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-hover)] border border-transparent'
                   }`}
                 >
                   <span>🐋 Smart Money</span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
                     categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
                       ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
-                      : 'bg-slate-800 text-slate-300'
+                      : 'bg-[var(--surface-2)] text-[var(--text-2)]'
                   }`}>
                     {categoryMeta.SMART_MONEY.badge}
                   </span>
@@ -946,7 +976,7 @@ function RadarContent() {
                     handleOnDemandScan(cleanQ);
                   }
                 }}
-                className="relative flex-1 sm:w-72 min-w-[220px]"
+                className="relative flex-1 w-full sm:w-72 min-w-0"
               >
                 <input
                   type="text"
@@ -957,7 +987,7 @@ function RadarContent() {
                     setSearchQuery(e.target.value);
                     setOnDemandError(null);
                   }}
-                  className="focus-ring w-full bg-[#0b1019] border border-slate-800 rounded-lg pl-3 pr-20 py-2.5 min-h-[44px] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
+                  className="focus-ring w-full bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-lg pl-3 pr-20 py-2.5 min-h-[44px] text-xs text-[var(--text-1)] placeholder-[var(--text-muted)] focus:outline-none focus:border-cyan-500 font-mono"
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                   {searchQuery && (
@@ -967,7 +997,7 @@ function RadarContent() {
                         setSearchQuery('');
                         setOnDemandError(null);
                       }}
-                      className="focus-ring text-xs text-slate-500 hover:text-slate-300 font-mono px-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded cursor-pointer"
+                      className="focus-ring text-xs text-[var(--text-muted)] hover:text-[var(--text-1)] font-mono px-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded cursor-pointer"
                       title="Clear filter"
                       aria-label="Clear search"
                     >
@@ -988,32 +1018,32 @@ function RadarContent() {
               </form>
 
               {searchQuery && (
-                <span className="text-[11px] font-mono text-slate-400 shrink-0">
+                <span className="text-[11px] font-mono text-[var(--text-2)] shrink-0">
                   {filteredAssets.length} of {allAssets.length}
                 </span>
               )}
 
-              <div className="flex flex-wrap items-center gap-1 bg-[#0b1019] border border-slate-800 rounded-lg p-1 text-xs font-mono shrink-0">
-                <span className="text-[10px] text-slate-500 px-2 uppercase">Sort:</span>
+              <div className="flex flex-wrap items-center gap-1 bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-lg p-1 text-xs font-mono max-w-full">
+                <span className="text-[10px] text-[var(--text-muted)] px-1.5 uppercase">Sort:</span>
                 <button
                   type="button"
                   onClick={() => setSortBy('SCORE')}
                   title="Sort by Confluence Score (Technical execution setup, RSI momentum, and smart money flow — not intrinsic valuation discount)"
-                  className={`focus-ring px-3 py-2 min-h-[44px] inline-flex items-center justify-center rounded ${sortBy === 'SCORE' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+                  className={`focus-ring px-2.5 py-2 min-h-[44px] inline-flex items-center justify-center rounded ${sortBy === 'SCORE' ? 'bg-[var(--surface-2)] text-[var(--text-1)] font-bold' : 'text-[var(--text-2)] hover:text-[var(--text-1)]'}`}
                 >
-                  Score (Confluence)
+                  Score<span className="hidden sm:inline"> (Confluence)</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setSortBy('RVOL')}
-                  className={`focus-ring px-3 py-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded ${sortBy === 'RVOL' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+                  className={`focus-ring px-2.5 py-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded ${sortBy === 'RVOL' ? 'bg-[var(--surface-2)] text-[var(--text-1)] font-bold' : 'text-[var(--text-2)] hover:text-[var(--text-1)]'}`}
                 >
                   RVOL
                 </button>
                 <button
                   type="button"
                   onClick={() => setSortBy('PRICE')}
-                  className={`focus-ring px-3 py-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded ${sortBy === 'PRICE' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+                  className={`focus-ring px-2.5 py-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded ${sortBy === 'PRICE' ? 'bg-[var(--surface-2)] text-[var(--text-1)] font-bold' : 'text-[var(--text-2)] hover:text-[var(--text-1)]'}`}
                 >
                   Price
                 </button>
@@ -1022,13 +1052,13 @@ function RadarContent() {
           </div>
 
           {/* Secondary Row: Portfolio Ownership Filter Chips & Degraded Status */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/40">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[var(--border-subtle)]">
             <div
-              className="w-full sm:w-auto overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x pb-1 sm:pb-0"
+              className="w-full min-w-0 max-w-full sm:w-auto overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x pb-1 sm:pb-0"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
               <div className="flex items-center gap-1.5 min-w-max" role="group" aria-label="Portfolio Ownership Filter">
-                <span className="text-[10px] uppercase font-mono text-slate-500 mr-1 shrink-0">Portfolio:</span>
+                <span className="text-[10px] uppercase font-mono text-[var(--text-muted)] mr-1 shrink-0">Portfolio:</span>
                 <button
                   type="button"
                   id="btn-ownership-filter-all"
@@ -1036,12 +1066,12 @@ function RadarContent() {
                   onClick={() => handleOwnershipFilterSelect('ALL', 'btn-ownership-filter-all')}
                   className={`focus-ring px-2.5 py-1 min-h-[44px] shrink-0 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
                     ownershipFilter === 'ALL'
-                      ? 'bg-slate-800 text-white font-bold border border-slate-600'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                      ? 'bg-[var(--surface-2)] text-[var(--text-1)] font-bold border border-[var(--border-strong)]'
+                      : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-hover)] border border-transparent'
                   }`}
                 >
                   <span>All Candidates</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--surface-2)] text-[var(--text-2)] font-mono">
                     {ownershipCounts.total}
                   </span>
                 </button>
@@ -1054,11 +1084,11 @@ function RadarContent() {
                   className={`focus-ring px-2.5 py-1 min-h-[44px] shrink-0 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
                     ownershipFilter === 'NEW_OPPORTUNITIES'
                       ? 'bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-700/70 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                      : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-hover)] border border-transparent'
                   }`}
                 >
                   <span>Unheld Candidates</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--surface-2)] text-[var(--text-2)] font-mono">
                     {isPortfolioVerified ? ownershipCounts.notHeld : '—'}
                   </span>
                 </button>
@@ -1071,12 +1101,12 @@ function RadarContent() {
                   className={`focus-ring px-2.5 py-1 min-h-[44px] shrink-0 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
                     ownershipFilter === 'MY_HOLDINGS'
                       ? 'bg-indigo-950/80 text-indigo-300 font-bold border border-indigo-700/70 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                      : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-hover)] border border-transparent'
                   }`}
                 >
                   <span>My Holdings</span>
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                    ownershipCounts.held > 0 ? 'bg-indigo-900/60 text-indigo-200 font-bold' : 'bg-slate-800 text-slate-400'
+                    ownershipCounts.held > 0 ? 'bg-indigo-900/60 text-indigo-200 font-bold' : 'bg-[var(--surface-2)] text-[var(--text-muted)]'
                   }`}>
                     {isPortfolioVerified ? ownershipCounts.held : '—'}
                   </span>
@@ -1087,7 +1117,7 @@ function RadarContent() {
                     className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-800/50 px-2.5 py-1 min-h-[44px] rounded-lg shrink-0 ml-1"
                     title="Authoritative count of candidates currently meeting active buy zone screening criteria (IN_BUY_ZONE)"
                   >
-                    <span className="text-slate-400">Current Opportunities:</span>
+                    <span className="text-[var(--text-2)]">Current Opportunities:</span>
                     <span className="font-bold text-emerald-300">{population.currentOpportunityCount}</span>
                   </div>
                 )}
@@ -1106,15 +1136,15 @@ function RadarContent() {
 
         {/* Scope and Coverage Disclosure Banner */}
         {activeFilter === 'VALUE_GARP' && (
-          <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs font-mono">
+          <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] text-xs font-mono">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-bold text-cyan-400">💎 Value / GARP</span>
               <span className="text-slate-600">•</span>
-              <span className="text-slate-300">
+              <span className="text-[var(--text-2)]">
                 Baseline: <strong className="text-white">Curated Fundamental Reference Catalog</strong>
               </span>
               <span className="text-slate-600">•</span>
-              <span className="text-slate-400">
+              <span className="text-[var(--text-2)]">
                 Sorted by: {sortBy === 'SCORE' ? (
                   <>
                     <strong className="text-cyan-300">Technical Confluence</strong> (Confluence Score descending), <span className="text-amber-300/90 font-medium">not an intrinsic valuation discount ranking</span>
@@ -1130,12 +1160,12 @@ function RadarContent() {
                 )}
               </span>
               <span className="text-slate-600">•</span>
-              <span className="text-slate-400">
+              <span className="text-[var(--text-2)]">
                 {filteredAssets.length} of 16 Value / GARP Matches · 100% of Defined Reference Catalog Evaluated ({allAssets.length} Assets)
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 border border-slate-700" title="100% of 35-asset curated reference catalog evaluated. Whole-market automated screening is pending VCP and Smart Money pipeline activation.">
+              <span className="px-2 py-0.5 rounded text-[10px] bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-strong)]" title="100% of 35-asset curated reference catalog evaluated. Whole-market automated screening is pending VCP and Smart Money pipeline activation.">
                 REFERENCE CATALOG (16 MATCHES / 35 EVALUATED)
               </span>
             </div>
@@ -1143,15 +1173,15 @@ function RadarContent() {
         )}
 
         {activeFilter === 'VCP' && (
-          <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs font-mono">
+          <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] text-xs font-mono">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-bold text-cyan-400">⚡ Minervini VCP</span>
               <span className="text-slate-600">•</span>
-              <span className="text-slate-300">
+              <span className="text-[var(--text-2)]">
                 Scope: <strong className="text-white">{capabilities.VCP?.universeId || 'ARX-eligible US equities'}</strong>
               </span>
               <span className="text-slate-600">•</span>
-              <span className="text-slate-400">
+              <span className="text-[var(--text-2)]">
                 {(() => {
                   const hasValidProvenance = Boolean(
                     typeof capabilities.VCP?.populationDenominator === 'number' &&
@@ -1192,8 +1222,8 @@ function RadarContent() {
               {capabilities.VCP?.universeBuildId && (
                 <>
                   <span className="text-slate-600">•</span>
-                  <span className="text-slate-400" title={capabilities.VCP?.publicationDigest ? `Digest: ${capabilities.VCP.publicationDigest}` : undefined}>
-                    Build: <strong className="text-slate-200">{capabilities.VCP.universeBuildId}</strong>
+                  <span className="text-[var(--text-2)]" title={capabilities.VCP?.publicationDigest ? `Digest: ${capabilities.VCP.publicationDigest}` : undefined}>
+                    Build: <strong className="text-[var(--text-1)]">{capabilities.VCP.universeBuildId}</strong>
                     {capabilities.VCP?.isRollback && <span className="ml-1 text-amber-400 font-bold">(Rollback)</span>}
                   </span>
                 </>
@@ -1201,8 +1231,8 @@ function RadarContent() {
               {capabilities.VCP?.dataAsOf && (
                 <>
                   <span className="text-slate-600">•</span>
-                  <span className="text-slate-400">
-                    Data As Of: <strong className="text-slate-200">{capabilities.VCP.dataAsOf}</strong>
+                  <span className="text-[var(--text-2)]">
+                    Data As Of: <strong className="text-[var(--text-1)]">{capabilities.VCP.dataAsOf}</strong>
                   </span>
                 </>
               )}
@@ -1246,8 +1276,8 @@ function RadarContent() {
                   );
                 }
                 return (
-                  <div className="text-[11px] text-slate-500 font-mono flex items-center gap-1.5" data-testid="publication-integrity-badge">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                  <div className="text-[11px] text-[var(--text-muted)] font-mono flex items-center gap-1.5" data-testid="publication-integrity-badge">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)]"></span>
                     {label}
                   </div>
                 );
@@ -1263,19 +1293,19 @@ function RadarContent() {
             id="panel-radar-candidates"
             aria-label="Radar Confluence Candidates"
             tabIndex={0}
-            className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden shadow-xl focus-ring"
+            className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] overflow-hidden shadow-xl focus-ring"
           >
             <div className="overflow-x-auto">
               <table className="w-full text-left font-mono text-xs">
-                <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 text-[10px] uppercase tracking-wider">
+                <thead className="bg-[var(--bg-app)] border-b border-[var(--border-subtle)] text-[var(--text-2)] text-[10px] uppercase tracking-wider">
                 <tr>
-                  <th className="p-3 sticky left-0 bg-slate-950 z-10 min-w-[130px]">Asset</th>
+                  <th className="p-3 sticky left-0 bg-[var(--bg-app)] z-10 min-w-[130px]">Asset</th>
                   <th className="p-3 min-w-[140px]">Screening Status</th>
                   <th
                     className="p-3 min-w-[100px]"
                     title="Batch screening reference price from daily session close. Live spot quotes active in Analysis hub."
                   >
-                    Screen Price <span className="text-[9px] font-normal text-slate-500 normal-case">· Daily Close</span>
+                    Screen Price <span className="text-[9px] font-normal text-[var(--text-muted)] normal-case">· Daily Close</span>
                   </th>
                   <th className="p-3 text-center min-w-[70px]" title="Screening Snapshot Confluence Conviction Score">Screen Score</th>
                   <th className="p-3 text-center min-w-[70px]">RVOL</th>
@@ -1285,14 +1315,14 @@ function RadarContent() {
                   <th className="p-3 text-right min-w-[90px]">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-[var(--border-subtle)]">
                 {filteredAssets.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="p-8 text-center text-slate-400 space-y-4 font-mono">
+                    <td colSpan={9} className="p-8 text-center text-[var(--text-2)] space-y-4 font-mono">
                       <div className="max-w-md mx-auto space-y-3">
                         <span className="text-3xl block">🔍</span>
                         <div className="space-y-1">
-                          <p className="text-sm font-bold text-white">
+                          <p className="text-sm font-bold text-[var(--text-1)]">
                             {searchQuery
                               ? `No assets match "${searchQuery}" in current confluence scan`
                               : ownershipFilter === 'MY_HOLDINGS'
@@ -1307,7 +1337,7 @@ function RadarContent() {
                               ? "Smart Money — Universe Scanner Pending"
                               : `No qualifying candidates currently in "${activeFilter === 'VALUE_GARP' ? 'Value / GARP' : activeFilter}"`}
                           </p>
-                          <p className="text-xs text-slate-400 font-sans leading-relaxed">
+                          <p className="text-xs text-[var(--text-2)] font-sans leading-relaxed">
                             {searchQuery
                               ? (isTickerQuery
                                   ? `Asset "${cleanQ}" is not in today's top 24 pre-scanned confluence batch. You can scan it live across the exchange tape or review its tactical setup.`
@@ -1353,7 +1383,7 @@ function RadarContent() {
                           {isTickerQuery && (
                             <Link
                               href={`/setups?ticker=${cleanQ}`}
-                              className="px-3.5 py-2.5 min-h-[44px] rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-bold font-mono border border-slate-700 inline-flex items-center justify-center"
+                              className="px-3.5 py-2.5 min-h-[44px] rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-cyan-300 text-xs font-bold font-mono border border-[var(--border-strong)] inline-flex items-center justify-center"
                             >
                               Inspect in /setups →
                             </Link>
@@ -1362,7 +1392,7 @@ function RadarContent() {
                           {isTickerQuery && (
                             <Link
                               href={`/?symbol=${cleanQ}`}
-                              className="px-3.5 py-2.5 min-h-[44px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold font-mono border border-slate-700 inline-flex items-center justify-center"
+                              className="px-3.5 py-2.5 min-h-[44px] rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-2)] text-xs font-bold font-mono border border-[var(--border-strong)] inline-flex items-center justify-center"
                             >
                               Open in Terminal →
                             </Link>
@@ -1372,9 +1402,10 @@ function RadarContent() {
                             type="button"
                             onClick={() => {
                               setSearchQuery('');
+                              setSelectedAssetTicker(null);
                               setOnDemandError(null);
                             }}
-                            className="px-3.5 py-2.5 min-h-[44px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-bold font-mono border border-slate-700 inline-flex items-center justify-center cursor-pointer"
+                            className="px-3.5 py-2.5 min-h-[44px] rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-2)] hover:text-[var(--text-1)] text-xs font-bold font-mono border border-[var(--border-strong)] inline-flex items-center justify-center cursor-pointer"
                           >
                             ✕ Clear Filter (Show All {allAssets.length})
                           </button>
@@ -1389,13 +1420,20 @@ function RadarContent() {
                     const screeningLabel = formatRadarExecutionStatus(asset.executionStatus);
 
                     return (
-                      <tr key={asset.ticker} className="hover:bg-slate-900/70 transition-colors group">
-                        <td className="p-3 sticky left-0 bg-[#0a0f18] z-10">
+                      <tr
+                        key={asset.ticker}
+                        onClick={() => setSelectedAssetTicker(asset.ticker)}
+                        aria-selected={activeCanonicalAsset === asset.ticker}
+                        className={`hover:bg-[var(--surface-hover)] transition-colors group cursor-pointer ${
+                          activeCanonicalAsset === asset.ticker ? 'bg-[var(--surface-2)]' : ''
+                        }`}
+                      >
+                        <td className="p-3 sticky left-0 bg-[var(--surface-1)] z-10">
                           <div className="flex items-center gap-1.5">
                             <Link
                               href={`/?symbol=${asset.ticker}`}
                               onClick={() => trackRadarAssetClick(asset.ticker)}
-                              className="font-black text-white text-sm tracking-tight hover:text-cyan-400 transition-colors inline-flex items-center min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded"
+                              className="font-black text-[var(--text-1)] text-sm tracking-tight hover:text-cyan-400 transition-colors inline-flex items-center min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded"
                             >
                               {asset.ticker}
                             </Link>
@@ -1405,7 +1443,7 @@ function RadarContent() {
                             />
                           </div>
                           {asset.name && asset.name !== asset.ticker && (
-                            <div className="text-[10px] text-slate-400 font-sans truncate max-w-[130px]" title={asset.name}>{asset.name}</div>
+                            <div className="text-[10px] text-[var(--text-2)] font-sans truncate max-w-[130px]" title={asset.name}>{asset.name}</div>
                           )}
                         </td>
                         <td className="p-3 whitespace-nowrap">
@@ -1418,13 +1456,13 @@ function RadarContent() {
                               ? 'bg-amber-950 text-amber-300 border border-amber-800'
                               : isTarget
                               ? 'bg-blue-950 text-blue-300 border border-blue-800'
-                              : 'bg-slate-800/60 text-slate-400 border border-slate-700/60'
+                              : 'bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-subtle)]'
                           }`}>
                             {screeningLabel}
                           </span>
                         </td>
                         <td
-                          className="p-3 font-mono text-xs font-bold text-slate-200 whitespace-nowrap"
+                          className="p-3 font-mono text-xs font-bold text-[var(--text-1)] whitespace-nowrap"
                           title={
                             asset.executionStatus === 'DELISTED_SECURITY'
                               ? "Historical final price. Ceased public trading."
@@ -1435,7 +1473,7 @@ function RadarContent() {
                         >
                           <div>
                             {asset.executionStatus === 'DELISTED_SECURITY' ? (
-                              <span className="text-slate-400 font-mono text-xs">
+                              <span className="text-[var(--text-2)] font-mono text-xs">
                                 {asset.price > 0 ? `$${asset.price.toFixed(2)}` : 'Price Unavailable'}
                               </span>
                             ) : asset.price > 0 ? (
@@ -1449,11 +1487,11 @@ function RadarContent() {
                               Historical Close
                             </div>
                           ) : asset.priceBasis === 'DAILY_CLOSE' && asset.priceDate ? (
-                            <div className="text-[9px] font-normal text-slate-500 font-mono">
+                            <div className="text-[9px] font-normal text-[var(--text-muted)] font-mono">
                               {asset.priceDate}
                             </div>
                           ) : asset.priceDate ? (
-                            <div className="text-[9px] font-normal text-slate-500 font-mono" title="Price basis unverified">
+                            <div className="text-[9px] font-normal text-[var(--text-muted)] font-mono" title="Price basis unverified">
                               {asset.priceDate} (Unverified Basis)
                             </div>
                           ) : (
@@ -1472,13 +1510,13 @@ function RadarContent() {
                           </span>
                         </td>
                         <td className="p-3 text-center font-bold text-cyan-300 whitespace-nowrap">
-                          {asset.rvol ? asset.rvol : <span className="text-slate-500 font-normal">—</span>}
+                          {asset.rvol ? asset.rvol : <span className="text-[var(--text-muted)] font-normal">—</span>}
                         </td>
-                        <td className="p-3 text-slate-300 text-[11px] whitespace-nowrap">{asset.vcpStage}</td>
+                        <td className="p-3 text-[var(--text-2)] text-[11px] whitespace-nowrap">{asset.vcpStage}</td>
                         <td className="p-3 text-center font-bold text-emerald-400 whitespace-nowrap">
-                          {asset.riskRewardRatio !== null && asset.riskRewardRatio !== undefined ? `${asset.riskRewardRatio.toFixed(1)}:1` : <span className="text-slate-500 font-normal">—</span>}
+                          {asset.riskRewardRatio !== null && asset.riskRewardRatio !== undefined ? `${asset.riskRewardRatio.toFixed(1)}:1` : <span className="text-[var(--text-muted)] font-normal">—</span>}
                         </td>
-                        <td className="p-3 text-slate-300 text-[11px] font-sans max-w-xs truncate" title={asset.catalyst}>
+                        <td className="p-3 text-[var(--text-2)] text-[11px] font-sans max-w-xs truncate" title={asset.catalyst}>
                           {asset.catalyst}
                         </td>
                         <td className="p-3 text-right whitespace-nowrap">
@@ -1534,7 +1572,7 @@ function RadarContent() {
                                 className={`px-3 py-2 min-h-[44px] min-w-[44px] rounded text-[11px] font-bold font-mono transition-colors inline-flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none border ${
                                   isAssetHeld
                                     ? 'bg-indigo-950/80 hover:bg-indigo-600 text-indigo-200 hover:text-white border-indigo-700/80 hover:border-indigo-500'
-                                    : 'bg-slate-800 hover:bg-cyan-600 hover:text-white text-cyan-300 border-slate-700 hover:border-cyan-500'
+                                    : 'bg-[var(--surface-2)] hover:bg-cyan-600 hover:text-white text-cyan-300 border-[var(--border-strong)] hover:border-cyan-500'
                                 }`}
                                 title={
                                   isAssetHeld
@@ -1557,13 +1595,14 @@ function RadarContent() {
         </div>
         )}
       </div>
+      <SynthesisMobileDock activeSymbol={activeCanonicalAsset} />
     </TerminalShell>
   );
 }
 
 export default function RadarPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#070a10] text-slate-400 font-mono text-xs p-6">Loading Radar Stream...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-2)] font-mono text-xs p-6">Loading Radar Stream...</div>}>
       <RadarContent />
     </Suspense>
   );
