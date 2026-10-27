@@ -29,9 +29,9 @@ Administrative closure establishes a truthful, auditable disposition and account
 
 | Category | Description | Task Count | Disposition |
 | :--- | :--- | :---: | :--- |
-| **Category A** | Formally Closed (Historical completions) | **5** | `CLOSED_VERIFIED` (`status = COMPLETED`) |
+| **Category A** | Formally Closed (Historical completions) | **6** | `CLOSED_VERIFIED` (`status = COMPLETED`) |
 | **Category B** | Approved Sprint 5 Carryforwards | **8** | `SPRINT5_EXECUTION` / `SPRINT5_DISCOVERY` (`assigned_sprint = SPRINT_5`) |
-| **Category C** | Conditional Closure Holds | **2** | `CLOSED_SPRINT_CONDITIONAL_OPEN_TASK` (`assigned_sprint = SPRINT_4`, `status = READY`) |
+| **Category C** | Conditional Closure Holds | **1** | `CLOSED_SPRINT_CONDITIONAL_OPEN_TASK` (`assigned_sprint = SPRINT_4`, `status = READY`) |
 | **Category D** | Engineering Accepted, Release Held | **1** | `ENGINEERING_ACCEPTED_AWAITING_RELEASE` (`assigned_sprint = SPRINT_4`, `status = READY`) |
 | **Subtotal** | **Sprint 4 Task Scope** | **16** | Reconciled 100% |
 | **Preserved** | Holding Queue (Owner-Gated) | **10** | `HOLDING_QUEUE_OWNER_GATED` (`owner_authorization = HOLD`) |
@@ -44,13 +44,14 @@ Administrative closure establishes a truthful, auditable disposition and account
 
 ## 3. Sprint 4 Reconciliation Detail by Category
 
-### Category A — Formally Closed (5 Tasks)
+### Category A — Formally Closed (6 Tasks)
 These tasks represent fully verified engineering deliverables merged into mainline with complete evidence records:
 1. **`ARX-S4-GOV-001`** (Cross-Sprint Backlog Integrity): `dimensions.owner_authorization` aligned to `AUTHORIZED` grounded in PR #108 owner ratification (`ARX_S4_PR108_OWNER_RATIFIED_MERGE_024`).
 2. **`ARX-S4-ARCH-001`** (Phase 1G Historical Evidence Governance): `CLOSED_VERIFIED`, evidence in `docs/architecture/`.
 3. **`ARX-S4-ARCH-002`** (OpenFIGI Durable Persistence Foundation): `CLOSED_VERIFIED`, evidence in `docs/governance/`.
 4. **`ARX-S1-006`** (Portfolio Value Floor Protection): `CLOSED_VERIFIED`, merged in Sprint 4.
 5. **`ARX-S2-001`** (Security Master Core Foundation): `CLOSED_VERIFIED`, merged in Sprint 4.
+6. **`ARX-S3-010`** (Smart Money Evidence Integrity): `CLOSED_VERIFIED` (`status = COMPLETED`, `operational_state = DORMANT_MERGED`). Ratified by Owner Decision 1 under Directive 045. Pre-flight fail-closed clearance merged (PR #87/#89); Smart Money Phase 1 dormant readiness merged (PR #100); statutory reporting lag disclosures and backend provenance merged in PR #72 (`eeeb545`) and certified in Directive 040. Code deployed dormant, operational execution not performed.
 
 ### Category B — Approved Sprint 5 Carryforwards (8 Tasks)
 Reassigned to `assigned_sprint = SPRINT_5` with preserved origin sprints, history, and evidence:
@@ -65,10 +66,9 @@ Reassigned to `assigned_sprint = SPRINT_5` with preserved origin sprints, histor
   7. **`ARX-S2-008`** (Arithmetic Denominator Closure): `SPRINT5_DISCOVERY`, `AUTHORIZED`. 6-outcome model verified in PR #44; telemetry wiring carried forward.
   8. **`ARX-S2-009`** (Navigation Journey State Preservation): `SPRINT5_DISCOVERY`, `AUTHORIZED`. Tab state preservation carried forward.
 
-### Category C — Conditional Closure Holds (2 Tasks)
+### Category C — Conditional Closure Holds (1 Task)
 Retained in Sprint 4 historical assignment with explicit open dependency tracking:
-1. **`ARX-S3-010`** (Smart Money Evidence Integrity): `CLOSED_SPRINT_CONDITIONAL_OPEN_TASK` (Authoritative disposition preserved pending explicit Owner Decision 1 in `ARX_S3_010_OWNER_DISPOSITION_DECISION_PACKAGE.md`). Pre-flight fail-closed clearance merged (PR #87/#89); Smart Money Phase 1 dormant readiness merged (PR #100); statutory reporting lag disclosures and backend provenance merged in PR #72 (`eeeb545`) and certified in Directive 040. Recommended for owner ratification as `CLOSED_VERIFIED`.
-2. **`ARX-S3-013`** (VCP Scanner Conformance): `CLOSED_SPRINT_CONDITIONAL_OPEN_TASK`. 4-stage Minervini trend template merged (PR #76); live scanner daemon in PR #73 remains held and dormant.
+1. **`ARX-S3-013`** (VCP Scanner Conformance): `CLOSED_SPRINT_CONDITIONAL_OPEN_TASK`. 4-stage Minervini trend template merged (PR #76); live scanner daemon in PR #73 remains held and dormant.
 
 ### Category D — Engineering Accepted, Mainline Merged (1 Task)
 1. **`ARX-S3-016`** (Synthesis E V3 Application-Wide UX Parity):

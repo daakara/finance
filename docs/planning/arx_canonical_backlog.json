@@ -1624,14 +1624,14 @@
       "priority": "P0",
       "workstream": "SMART_MONEY",
       "owner": "daakara",
-      "status": "READY",
-      "disposition": "CLOSED_SPRINT_CONDITIONAL_OPEN_TASK",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
       "dimensions": {
         "requirements": "DONE",
-        "implementation": "PARTIAL",
-        "integration": "PARTIAL",
+        "implementation": "DONE",
+        "integration": "DONE",
         "verification": "PASS",
-        "repository_publication": "DRAFT_PR",
+        "repository_publication": "PUBLISHED_MERGED",
         "deployment": "DEPLOYED_DORMANT",
         "operational_execution": "NOT_PERFORMED",
         "production_evidence": "VERIFIED",
@@ -1661,8 +1661,8 @@
         100
       ],
       "authorization_boundary": "BOUNDED_ENGINEERING",
-      "operational_state": "CLOSE_CONDITIONAL_PENDING_PR72",
-      "carryforward_reason": "CLOSE_CONDITIONAL: Pre-flight fail-closed execution clearance merged in PR #87/#89; Smart Money Phase 1 dormant readiness merged in PR #100; statutory reporting lag disclosures merged in PR #72 (eeeb545). Administrative closure disposition pending explicit owner decision under Directive 043.",
+      "operational_state": "DORMANT_MERGED",
+      "carryforward_reason": null,
       "reopening_trigger": null,
       "historical_aliases": [
         "INITIATIVE-S3-AUDIT-PREFLIGHT-SMART-MONEY",
@@ -2070,4 +2070,4 @@
       "description": "Enforce liquidity defense and execution hazard friction in canonical decision hierarchy. Prevents severely illiquid stocks from transitioning to ACTIONABLE_SETUP regardless of technical pattern quality. Verified in WS4.2 frontend presentation."
     }
   ]
-}
+}

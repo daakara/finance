@@ -10,7 +10,7 @@
 
 ## 1. Full 43-Task Inventory by Category
 
-### Category A: Sprint 4 Formally Closed Tasks (5 Tasks)
+### Category A: Sprint 4 Formally Closed Tasks (6 Tasks)
 | Task ID | Workstream | Status | Disposition | Owner Auth | Evidence Refs |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **ARX-S4-GOV-001** | GOVERNANCE | COMPLETED | CLOSED_VERIFIED | AUTHORIZED | `docs/planning/arx_canonical_backlog.json`, `tools/governance/validate_backlog_integrity.py` |
@@ -18,6 +18,7 @@
 | **ARX-S4-ARCH-002** | INFRASTRUCTURE | COMPLETED | CLOSED_VERIFIED | AUTHORIZED | `docs/governance/OPENFIGI_DURABLE_PERSISTENCE_REPOSITORY_ISOLATION_DEVIATION_001.md` |
 | **ARX-S1-006** | RESEARCH_VALUATION | COMPLETED | CLOSED_VERIFIED | AUTHORIZED | `analyst_dashboard/governance/liquidity_validation.py` |
 | **ARX-S2-001** | RADAR_VCP | COMPLETED | CLOSED_VERIFIED | AUTHORIZED | `analyst_dashboard/security_master/` |
+| **ARX-S3-010** | SMART_MONEY | COMPLETED | CLOSED_VERIFIED | AUTHORIZED | `https://github.com/daakara/finance/commit/eeeb545fa3257dd01b8ac058ae586432613ec37d` (PR #72), PR #87, PR #100 |
 
 ### Category B: Sprint 5 Approved Carryforward Tasks (8 Tasks)
 | Task ID | Track | Workstream | Status | Disposition | Assigned Sprint | Owner Auth | Focus & Next Action |
@@ -31,10 +32,9 @@
 | **ARX-S2-008** | 5B | RESEARCH_CUSTODY | READY | SPRINT5_DISCOVERY | SPRINT_5 | AUTHORIZED | 6-outcome arithmetic denominator telemetry wiring |
 | **ARX-S2-009** | 5B | UX_WORKSTATION | READY | SPRINT5_DISCOVERY | SPRINT_5 | AUTHORIZED | Coverage disclosure & multi-tab state preservation |
 
-### Category C: Sprint 4 Conditional Closure Holds (2 Tasks)
+### Category C: Sprint 4 Conditional Closure Holds (1 Task)
 | Task ID | Workstream | Status | Disposition | Assigned Sprint | Dependency | Reason & Open Action |
 | :--- | :--- | :--- | :--- | :---: | :--- | :--- |
-| **ARX-S3-010** | SMART_MONEY | READY | CLOSED_SPRINT_CONDITIONAL_OPEN_TASK | SPRINT_4 | PR #72 (Merged `eeeb545`) | All 3 criteria satisfied with PR #72 mainline merge; recommended for owner ratification as `CLOSED_VERIFIED`; disposition preserved pending Owner Decision 1 |
 | **ARX-S3-013** | RADAR_VCP | READY | CLOSED_SPRINT_CONDITIONAL_OPEN_TASK | SPRINT_4 | PR #73 | Continuous live scanner daemon held dormant in PR #73 |
 
 ### Category D: Sprint 4 Engineering Accepted, Mainline Merged (1 Task)

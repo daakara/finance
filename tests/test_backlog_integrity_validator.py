@@ -777,8 +777,8 @@ class TestSprint4ToSprint5Transition:
         }
         assert {t["task_id"] for t in s5_assigned} == expected_s5_tids
 
-        # 5 Formally closed Sprint 4 tasks
-        closed_s4 = ["ARX-S4-GOV-001", "ARX-S4-ARCH-001", "ARX-S4-ARCH-002", "ARX-S1-006", "ARX-S2-001"]
+        # 6 Formally closed Sprint 4 tasks (Directive 045: ARX-S3-010 ratified)
+        closed_s4 = ["ARX-S4-GOV-001", "ARX-S4-ARCH-001", "ARX-S4-ARCH-002", "ARX-S1-006", "ARX-S2-001", "ARX-S3-010"]
         for tid in closed_s4:
             t = next(x for x in tasks if x["task_id"] == tid)
             assert t["disposition"] == "CLOSED_VERIFIED"
@@ -789,12 +789,18 @@ class TestSprint4ToSprint5Transition:
         gov001 = next(t for t in tasks if t["task_id"] == "ARX-S4-GOV-001")
         assert gov001["dimensions"]["owner_authorization"] == "AUTHORIZED"
 
+        # ARX-S3-010 verified closed with DORMANT_MERGED operational state
+        s3_010 = next(t for t in tasks if t["task_id"] == "ARX-S3-010")
+        assert s3_010["operational_state"] == "DORMANT_MERGED"
+        assert s3_010["dimensions"]["operational_execution"] == "NOT_PERFORMED"
+        assert s3_010["dimensions"]["deployment"] == "DEPLOYED_DORMANT"
+
         # ARX-S3-006 owner authorization HOLD preserved
         s3_006 = next(t for t in tasks if t["task_id"] == "ARX-S3-006")
         assert s3_006["dimensions"]["owner_authorization"] == "HOLD"
 
-        # 2 Conditional closure holds
-        for tid in ["ARX-S3-010", "ARX-S3-013"]:
+        # 1 Conditional closure hold
+        for tid in ["ARX-S3-013"]:
             t = next(x for x in tasks if x["task_id"] == tid)
             assert t["disposition"] == "CLOSED_SPRINT_CONDITIONAL_OPEN_TASK"
             assert t["status"] == "READY"
@@ -1030,13 +1036,90 @@ class TestSprint4ToSprint5Transition:
     # 22. Adversarial (Directive 043 Gate E): Unauthorized operational closure state on non-closed task
     def test_adversarial_unauthorized_operational_closure_state(self, canonical_backlog_data, canonical_schema_data):
         data = copy.deepcopy(canonical_backlog_data)
-        t = next(x for x in data["tasks"] if x["task_id"] == "ARX-S3-010")
+        t = next(x for x in data["tasks"] if x["task_id"] == "ARX-S3-013")
         t["operational_state"] = "CLOSED_VERIFIED"
         # disposition remains CLOSED_SPRINT_CONDITIONAL_OPEN_TASK
         validator = BacklogValidator(data, schema_data=canonical_schema_data)
         verdict, findings = validator.validate_all()
         assert verdict == "FAIL"
         assert any(f.rule_id == "BI-009" and "claims operational_state 'CLOSED_VERIFIED' while disposition is" in f.message for f in findings)
+
+    # === Directive 045 Adversarial Negative Controls (Gate D) ===
+
+    # NC-01: Closing ARX-S3-010 does not release unrelated HOLDs
+    def test_nc01_closing_s3_010_preserves_unrelated_holds(self, canonical_backlog_data, canonical_schema_data):
+        tasks = canonical_backlog_data["tasks"]
+        holding = [t for t in tasks if t.get("assigned_sprint") == "HOLDING_QUEUE_OWNER_GATED"]
+        assert len(holding) == 10
+        for ht in holding:
+            assert ht["dimensions"]["owner_authorization"] == "HOLD"
+        s3_006 = next(t for t in tasks if t["task_id"] == "ARX-S3-006")
+        assert s3_006["dimensions"]["owner_authorization"] == "HOLD"
+
+    # NC-02: Closing ARX-S3-010 does not activate Smart Money ingestion
+    def test_nc02_closing_s3_010_does_not_activate_smart_money_ingestion(self, canonical_backlog_data, canonical_schema_data):
+        s3_010 = next(t for t in canonical_backlog_data["tasks"] if t["task_id"] == "ARX-S3-010")
+        assert s3_010["dimensions"]["operational_execution"] == "NOT_PERFORMED"
+        assert s3_010["dimensions"]["deployment"] == "DEPLOYED_DORMANT"
+        assert s3_010["operational_state"] == "DORMANT_MERGED"
+
+    # NC-03: Closing ARX-S3-010 does not enable SEC egress
+    def test_nc03_closing_s3_010_does_not_enable_sec_egress(self, canonical_backlog_data, canonical_schema_data):
+        s3_010 = next(t for t in canonical_backlog_data["tasks"] if t["task_id"] == "ARX-S3-010")
+        assert s3_010["authorization_boundary"] == "BOUNDED_ENGINEERING"
+        assert s3_010["dimensions"]["operational_execution"] == "NOT_PERFORMED"
+
+    # NC-04: Closing ARX-S3-010 does not authorize model learning or tuning
+    def test_nc04_closing_s3_010_does_not_authorize_model_tuning(self, canonical_backlog_data, canonical_schema_data):
+        for t in canonical_backlog_data["tasks"]:
+            assert "MODEL_TUNING" not in t.get("operational_state", "")
+
+    # NC-05: Closing ARX-S3-010 does not activate scanner scheduling
+    def test_nc05_closing_s3_010_does_not_activate_scanner_scheduling(self, canonical_backlog_data, canonical_schema_data):
+        s3_013 = next(t for t in canonical_backlog_data["tasks"] if t["task_id"] == "ARX-S3-013")
+        assert s3_013["disposition"] == "CLOSED_SPRINT_CONDITIONAL_OPEN_TASK"
+        assert s3_013["status"] == "READY"
+        assert s3_013["operational_state"] == "CLOSE_CONDITIONAL_PENDING_PR73"
+
+    # NC-06: Closing ARX-S3-010 does not mutate prospective evidence denominator
+    def test_nc06_closing_s3_010_does_not_mutate_task_census_denominator(self, canonical_backlog_data, canonical_schema_data):
+        tasks = canonical_backlog_data["tasks"]
+        assert len(tasks) == 43
+        assert len(set(t["task_id"] for t in tasks)) == 43
+
+    # NC-07: Closing ARX-S3-010 does not imply production deployment
+    def test_nc07_closing_s3_010_does_not_imply_production_deployment(self, canonical_backlog_data, canonical_schema_data):
+        s3_010 = next(t for t in canonical_backlog_data["tasks"] if t["task_id"] == "ARX-S3-010")
+        assert s3_010["dimensions"]["deployment"] == "DEPLOYED_DORMANT"
+        assert s3_010["dimensions"]["deployment"] != "DEPLOYED_ACTIVE"
+
+    # NC-08: Closing ARX-S3-010 does not independently activate Sprint 5
+    def test_nc08_closing_s3_010_does_not_independently_activate_sprint5(self, canonical_backlog_data, canonical_schema_data):
+        s5_tasks = [t for t in canonical_backlog_data["tasks"] if t.get("assigned_sprint") == "SPRINT_5"]
+        assert len(s5_tasks) == 8
+        for t in s5_tasks:
+            assert t["status"] == "READY"
+
+    # NC-09: Fabricated owner authorization is rejected in negative-control fixture
+    def test_nc09_fabricated_owner_authorization_rejected(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        held_task = next(t for t in data["tasks"] if t.get("assigned_sprint") == "HOLDING_QUEUE_OWNER_GATED")
+        held_task["dimensions"]["owner_authorization"] = "AUTHORIZED"
+        validator = BacklogValidator(data, schema_data=canonical_schema_data)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "BI-009" and "without grant evidence" in f.message for f in findings)
+
+    # NC-10: Unsatisfied acceptance criterion prevents administrative closure
+    def test_nc10_unsatisfied_acceptance_criterion_prevents_closure(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        s3_010 = next(t for t in data["tasks"] if t["task_id"] == "ARX-S3-010")
+        s3_010["evidence_refs"] = []  # Strip evidence refs
+        validator = BacklogValidator(data, schema_data=canonical_schema_data)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "BI-006" for f in findings)
+
 
 
 
