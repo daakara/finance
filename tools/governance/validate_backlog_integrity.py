@@ -425,12 +425,25 @@ class BacklogValidator:
             owner_auth = dims.get("owner_authorization")
             op_state = t.get("operational_state", "")
             auth_boundary = t.get("authorization_boundary", "")
+            disp = t.get("disposition")
+            status = t.get("status")
 
             if op_state == "ACTIVE_SERVING" and owner_auth not in ("AUTHORIZED", "NOT_APPLICABLE"):
                 self.findings.append(Finding("BI-009", tid, "ERROR", f"Task '{tid}' claims operational_state '{op_state}' while owner_authorization is '{owner_auth}'"))
 
             if auth_boundary in ("OWNER_GATE_REQUIRED", "ACTIVATION_HOLD") and owner_auth == "AUTHORIZED":
                 self.findings.append(Finding("BI-009", tid, "ERROR", f"Task '{tid}' has boundary '{auth_boundary}' but owner_authorization claims 'AUTHORIZED' without grant evidence"))
+
+            # Directive 043: Strict separation of administrative recommendation from operational state
+            if "RECOMMENDED" in op_state:
+                self.findings.append(Finding("BI-009", tid, "ERROR", f"Task '{tid}' operational_state '{op_state}' contains administrative recommendation; recommendations must not pollute operational_state"))
+
+            if "CLOSED_VERIFIED" in op_state and disp != "CLOSED_VERIFIED":
+                self.findings.append(Finding("BI-009", tid, "ERROR", f"Task '{tid}' claims operational_state '{op_state}' while disposition is '{disp}'"))
+
+            # Directive 043: Tasks cannot be closed without explicit owner authorization
+            if (disp == "CLOSED_VERIFIED" or status == "COMPLETED") and owner_auth not in ("AUTHORIZED", "NOT_APPLICABLE"):
+                self.findings.append(Finding("BI-009", tid, "ERROR", f"Task '{tid}' marked {disp}/{status} but owner_authorization is '{owner_auth}' (must be AUTHORIZED)"))
 
     def _check_bi_010_closure_consistency(self, tasks: List[Dict[str, Any]]):
         active_sprint = self.data.get("active_sprint", "SPRINT_4")

@@ -34,7 +34,7 @@
 ### Category C: Sprint 4 Conditional Closure Holds (2 Tasks)
 | Task ID | Workstream | Status | Disposition | Assigned Sprint | Dependency | Reason & Open Action |
 | :--- | :--- | :--- | :--- | :---: | :--- | :--- |
-| **ARX-S3-010** | SMART_MONEY | READY | CLOSED_SPRINT_CONDITIONAL_OPEN_TASK | SPRINT_4 | PR #72 (Merged `eeeb545`) | All 3 criteria satisfied with PR #72 mainline merge; recommended for owner ratification as `CLOSED_VERIFIED` |
+| **ARX-S3-010** | SMART_MONEY | READY | CLOSED_SPRINT_CONDITIONAL_OPEN_TASK | SPRINT_4 | PR #72 (Merged `eeeb545`) | All 3 criteria satisfied with PR #72 mainline merge; recommended for owner ratification as `CLOSED_VERIFIED`; disposition preserved pending Owner Decision 1 |
 | **ARX-S3-013** | RADAR_VCP | READY | CLOSED_SPRINT_CONDITIONAL_OPEN_TASK | SPRINT_4 | PR #73 | Continuous live scanner daemon held dormant in PR #73 |
 
 ### Category D: Sprint 4 Engineering Accepted, Mainline Merged (1 Task)

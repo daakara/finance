@@ -1005,5 +1005,39 @@ class TestSprint4ToSprint5Transition:
         bi005_errors = [f for f in findings if f.rule_id == "BI-005" and f.severity == "ERROR"]
         assert len(bi005_errors) == 0
 
+    # 20. Adversarial (Directive 043 Gate E): Unauthorized task closure without owner authorization
+    def test_adversarial_unauthorized_closure_without_owner_authorization(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        t = next(x for x in data["tasks"] if x["task_id"] == "ARX-S3-010")
+        t["disposition"] = "CLOSED_VERIFIED"
+        t["status"] = "COMPLETED"
+        t["dimensions"]["owner_authorization"] = "NOT_GRANTED"
+        validator = BacklogValidator(data, schema_data=canonical_schema_data)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "BI-009" and "must be AUTHORIZED" in f.message for f in findings)
+
+    # 21. Adversarial (Directive 043 Gate E): Administrative recommendation polluting operational_state
+    def test_adversarial_recommendation_polluting_operational_state(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        t = next(x for x in data["tasks"] if x["task_id"] == "ARX-S3-010")
+        t["operational_state"] = "CLOSE_CONDITIONAL_RECOMMENDED_CLOSED_VERIFIED"
+        validator = BacklogValidator(data, schema_data=canonical_schema_data)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "BI-009" and "recommendations must not pollute operational_state" in f.message for f in findings)
+
+    # 22. Adversarial (Directive 043 Gate E): Unauthorized operational closure state on non-closed task
+    def test_adversarial_unauthorized_operational_closure_state(self, canonical_backlog_data, canonical_schema_data):
+        data = copy.deepcopy(canonical_backlog_data)
+        t = next(x for x in data["tasks"] if x["task_id"] == "ARX-S3-010")
+        t["operational_state"] = "CLOSED_VERIFIED"
+        # disposition remains CLOSED_SPRINT_CONDITIONAL_OPEN_TASK
+        validator = BacklogValidator(data, schema_data=canonical_schema_data)
+        verdict, findings = validator.validate_all()
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "BI-009" and "claims operational_state 'CLOSED_VERIFIED' while disposition is" in f.message for f in findings)
+
+
 
 

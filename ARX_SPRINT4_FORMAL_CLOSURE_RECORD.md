@@ -67,7 +67,7 @@ Reassigned to `assigned_sprint = SPRINT_5` with preserved origin sprints, histor
 
 ### Category C — Conditional Closure Holds (2 Tasks)
 Retained in Sprint 4 historical assignment with explicit open dependency tracking:
-1. **`ARX-S3-010`** (Smart Money Evidence Integrity): `CLOSED_SPRINT_CONDITIONAL_OPEN_TASK` (Recommended for owner ratification as `CLOSED_VERIFIED`). Pre-flight fail-closed clearance merged (PR #87/#89); Smart Money Phase 1 dormant readiness merged (PR #100); statutory reporting lag disclosures and backend provenance merged in PR #72 (`eeeb545`) and certified in Directive 040.
+1. **`ARX-S3-010`** (Smart Money Evidence Integrity): `CLOSED_SPRINT_CONDITIONAL_OPEN_TASK` (Authoritative disposition preserved pending explicit Owner Decision 1 in `ARX_S3_010_OWNER_DISPOSITION_DECISION_PACKAGE.md`). Pre-flight fail-closed clearance merged (PR #87/#89); Smart Money Phase 1 dormant readiness merged (PR #100); statutory reporting lag disclosures and backend provenance merged in PR #72 (`eeeb545`) and certified in Directive 040. Recommended for owner ratification as `CLOSED_VERIFIED`.
 2. **`ARX-S3-013`** (VCP Scanner Conformance): `CLOSED_SPRINT_CONDITIONAL_OPEN_TASK`. 4-stage Minervini trend template merged (PR #76); live scanner daemon in PR #73 remains held and dormant.
 
 ### Category D — Engineering Accepted, Mainline Merged (1 Task)

@@ -38,16 +38,16 @@ python -m pytest tests/test_backlog_integrity_validator.py -v
 ```
 
 ### Summary:
-- **Total Tests:** 46
-- **Passed:** 46 (100%)
+- **Total Tests:** 49
+- **Passed:** 49 (100%)
 - **Failed:** 0
-- **Duration:** 8.2s
+- **Duration:** 5.12s
 
 ### Coverage Breakdown:
 1. **Existing GOV-001 Regression Suite (27 Tests):**
    - Tests 1–18: Acceptance tests for unique identity, ownership, sprint assignment, disposition, carryforward continuity, evidence completeness, PR tracing, GitHub issue classification, pagination, supersession cycles, deleted tasks, operational complete states, owner gating, and controlled carryforwards.
    - Tests 19–27: Edge-case regressions (zero issues misclassification, clean checkout diff detection, missing baseline fail-closed, missing GitHub inventory fail-closed, unrelated code PR isolation, nonzero exit on failed closure).
-2. **Dedicated Sprint 4 to Sprint 5 Transition & Carryforward Suite (19 Tests):**
+2. **Dedicated Sprint 4 to Sprint 5 Transition & Governance Suite (22 Tests):**
    - `test_canonical_backlog_sprint5_transition_valid`: Full canonical backlog validation against evolved schema. Confirms 43 tasks, 8 carryforwards, 5 closures, 2 conditional holds, 1 release held, 10 holding queue tasks.
    - `test_adversarial_missing_carryforward_task`: Validates fail-closed behavior on task deletion.
    - `test_adversarial_duplicate_task_identity`: Validates fail-closed duplicate ID detection.
@@ -67,6 +67,9 @@ python -m pytest tests/test_backlog_integrity_validator.py -v
    - `test_adversarial_carryforward_invalid_status`: (Directive 042 Track B) Rejects carryforward with invalid status enum.
    - `test_adversarial_carryforward_unauthorized_hold_release`: (Directive 042 Track B) Rejects unauthorized HOLD release under `OWNER_GATE_REQUIRED`.
    - `test_carryforward_valid_acceptance_criteria_accepted`: (Directive 042 Track B) Positively verifies all 8 valid existing carryforwards.
+   - `test_adversarial_unauthorized_closure_without_owner_authorization`: (Directive 043 Gate E) Rejects task closure when `owner_authorization != AUTHORIZED`.
+   - `test_adversarial_recommendation_polluting_operational_state`: (Directive 043 Gate E) Rejects administrative recommendation embedded in `operational_state`.
+   - `test_adversarial_unauthorized_operational_closure_state`: (Directive 043 Gate E) Rejects closed operational state on non-closed tasks.
 
 ---
 

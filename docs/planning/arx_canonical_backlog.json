@@ -1628,10 +1628,10 @@
       "disposition": "CLOSED_SPRINT_CONDITIONAL_OPEN_TASK",
       "dimensions": {
         "requirements": "DONE",
-        "implementation": "DONE",
-        "integration": "DONE",
+        "implementation": "PARTIAL",
+        "integration": "PARTIAL",
         "verification": "PASS",
-        "repository_publication": "PUBLISHED_MERGED",
+        "repository_publication": "DRAFT_PR",
         "deployment": "DEPLOYED_DORMANT",
         "operational_execution": "NOT_PERFORMED",
         "production_evidence": "VERIFIED",
@@ -1661,8 +1661,8 @@
         100
       ],
       "authorization_boundary": "BOUNDED_ENGINEERING",
-      "operational_state": "CLOSE_CONDITIONAL_RECOMMENDED_CLOSED_VERIFIED",
-      "carryforward_reason": "CLOSE_CONDITIONAL: Pre-flight fail-closed execution clearance merged in PR #87/#89; Smart Money Phase 1 dormant readiness merged in PR #100; statutory reporting lag disclosures merged in PR #72 (eeeb545). All 3 criteria satisfied; recommended for owner ratification as CLOSED_VERIFIED.",
+      "operational_state": "CLOSE_CONDITIONAL_PENDING_PR72",
+      "carryforward_reason": "CLOSE_CONDITIONAL: Pre-flight fail-closed execution clearance merged in PR #87/#89; Smart Money Phase 1 dormant readiness merged in PR #100; statutory reporting lag disclosures merged in PR #72 (eeeb545). Administrative closure disposition pending explicit owner decision under Directive 043.",
       "reopening_trigger": null,
       "historical_aliases": [
         "INITIATIVE-S3-AUDIT-PREFLIGHT-SMART-MONEY",
