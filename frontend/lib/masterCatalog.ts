@@ -39,12 +39,14 @@ export interface MasterAssetEntry {
   upcomingCatalyst: string;
   thesis: string;
   secFilingDate?: string;
+  exchange?: string;
 }
 
 export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   // Mega-Cap Tech & AI Infrastructure
   NVDA: {
     symbol: "NVDA",
+    exchange: "NASDAQ",
     name: "NVIDIA Corporation",
     type: "Stock",
     sector: "Technology",
@@ -74,6 +76,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   AAPL: {
     symbol: "AAPL",
+    exchange: "NASDAQ",
     name: "Apple Inc.",
     type: "Stock",
     sector: "Technology",
@@ -103,6 +106,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   MSFT: {
     symbol: "MSFT",
+    exchange: "NASDAQ",
     name: "Microsoft Corporation",
     type: "Stock",
     sector: "Technology",
@@ -131,6 +135,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   GOOGL: {
     symbol: "GOOGL",
+    exchange: "NASDAQ",
     name: "Alphabet Inc.",
     type: "Stock",
     sector: "Communication Services",
@@ -159,6 +164,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   TSLA: {
     symbol: "TSLA",
+    exchange: "NASDAQ",
     name: "Tesla Inc.",
     type: "Stock",
     sector: "Consumer Cyclical",
@@ -187,6 +193,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   PLTR: {
     symbol: "PLTR",
+    exchange: "NYSE",
     name: "Palantir Technologies",
     type: "Stock",
     sector: "Technology",
@@ -215,6 +222,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   NVO: {
     symbol: "NVO",
+    exchange: "NYSE",
     name: "Novo Nordisk A/S",
     type: "Stock",
     sector: "Healthcare",
@@ -243,6 +251,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   LLY: {
     symbol: "LLY",
+    exchange: "NYSE",
     name: "Eli Lilly and Company",
     type: "Stock",
     sector: "Healthcare",
@@ -271,6 +280,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   LNTH: {
     symbol: "LNTH",
+    exchange: "NASDAQ",
     name: "Lantheus Holdings",
     type: "Stock",
     sector: "Healthcare",
@@ -299,6 +309,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   CPRX: {
     symbol: "CPRX",
+    exchange: "NASDAQ",
     name: "Catalyst Pharmaceuticals",
     type: "Stock",
     sector: "Healthcare",
@@ -328,6 +339,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   MEDP: {
     symbol: "MEDP",
+    exchange: "NASDAQ",
     name: "Medpace Holdings",
     type: "Stock",
     sector: "Healthcare",
@@ -356,6 +368,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   TMDX: {
     symbol: "TMDX",
+    exchange: "NASDAQ",
     name: "TransMedics Group",
     type: "Stock",
     sector: "Healthcare",
@@ -384,6 +397,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   VRT: {
     symbol: "VRT",
+    exchange: "NYSE",
     name: "Vertiv Holdings",
     type: "Stock",
     sector: "Industrials",
@@ -412,6 +426,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   DUOL: {
     symbol: "DUOL",
+    exchange: "NASDAQ",
     name: "Duolingo Inc.",
     type: "Stock",
     sector: "Technology",
@@ -440,6 +455,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   SMCI: {
     symbol: "SMCI",
+    exchange: "NASDAQ",
     name: "Super Micro Computer",
     type: "Stock",
     sector: "Technology",
@@ -468,6 +484,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   ULTA: {
     symbol: "ULTA",
+    exchange: "NASDAQ",
     name: "Ulta Beauty Inc.",
     type: "Stock",
     sector: "Consumer Cyclical",
@@ -496,6 +513,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   LULU: {
     symbol: "LULU",
+    exchange: "NASDAQ",
     name: "Lululemon Athletica",
     type: "Stock",
     sector: "Consumer Cyclical",
@@ -524,6 +542,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   FIX: {
     symbol: "FIX",
+    exchange: "NYSE",
     name: "Comfort Systems USA, Inc.",
     type: "Stock",
     sector: "Industrials",
@@ -553,6 +572,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   CELH: {
     symbol: "CELH",
+    exchange: "NASDAQ",
     name: "Celsius Holdings",
     type: "Stock",
     sector: "Consumer Defensive",
@@ -582,6 +602,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   // Core Benchmarks & ETFs
   SPY: {
     symbol: "SPY",
+    exchange: "NYSE Arca",
     name: "SPDR S&P 500 ETF Trust",
     type: "ETF",
     sector: "Index",
@@ -610,6 +631,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   QQQ: {
     symbol: "QQQ",
+    exchange: "NASDAQ",
     name: "Invesco QQQ Trust",
     type: "ETF",
     sector: "Index",
@@ -638,6 +660,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   SMH: {
     symbol: "SMH",
+    exchange: "NASDAQ",
     name: "VanEck Semiconductor ETF",
     type: "ETF",
     sector: "Semiconductors",
@@ -667,6 +690,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   // High-Moat Semiconductors & Specialized Equipment
   POWI: {
     symbol: "POWI",
+    exchange: "NASDAQ",
     name: "Power Integrations Inc.",
     type: "Stock",
     sector: "Semiconductors",
@@ -695,6 +719,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   ACLS: {
     symbol: "ACLS",
+    exchange: "NASDAQ",
     name: "Axcelis Technologies",
     type: "Stock",
     sector: "Semiconductors",
@@ -723,6 +748,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   ELF: {
     symbol: "ELF",
+    exchange: "NYSE",
     name: "e.l.f. Beauty Inc.",
     type: "Stock",
     sector: "Consumer Cyclical",
@@ -751,6 +777,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   ISRG: {
     symbol: "ISRG",
+    exchange: "NASDAQ",
     name: "Intuitive Surgical",
     type: "Stock",
     sector: "Healthcare",
@@ -779,6 +806,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   VRTX: {
     symbol: "VRTX",
+    exchange: "NASDAQ",
     name: "Vertex Pharmaceuticals",
     type: "Stock",
     sector: "Healthcare",
@@ -807,6 +835,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   COIN: {
     symbol: "COIN",
+    exchange: "NASDAQ",
     name: "Coinbase Global Inc.",
     type: "Stock",
     sector: "Financial Services",
@@ -835,6 +864,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   MSTR: {
     symbol: "MSTR",
+    exchange: "NASDAQ",
     name: "MicroStrategy Inc.",
     type: "Stock",
     sector: "Technology",
@@ -863,6 +893,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   CRWD: {
     symbol: "CRWD",
+    exchange: "NASDAQ",
     name: "CrowdStrike Holdings",
     type: "Stock",
     sector: "Technology",
@@ -891,6 +922,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   ANET: {
     symbol: "ANET",
+    exchange: "NYSE",
     name: "Arista Networks",
     type: "Stock",
     sector: "Technology",
@@ -919,6 +951,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   ARM: {
     symbol: "ARM",
+    exchange: "NASDAQ",
     name: "Arm Holdings plc",
     type: "Stock",
     sector: "Technology",
@@ -947,6 +980,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   AMD: {
     symbol: "AMD",
+    exchange: "NASDAQ",
     name: "Advanced Micro Devices",
     type: "Stock",
     sector: "Technology",
@@ -975,6 +1009,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   DECK: {
     symbol: "DECK",
+    exchange: "NYSE",
     name: "Deckers Outdoor Corp.",
     type: "Stock",
     sector: "Consumer Cyclical",
@@ -1003,6 +1038,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   ALC: {
     symbol: "ALC",
+    exchange: "NYSE",
     name: "Alcon Inc.",
     type: "Stock",
     sector: "Healthcare",
@@ -1032,6 +1068,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   ON: {
     symbol: "ON",
+    exchange: "NASDAQ",
     name: "ON Semiconductor Corp.",
     type: "Stock",
     sector: "Semiconductors",
@@ -1060,6 +1097,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   MPWR: {
     symbol: "MPWR",
+    exchange: "NASDAQ",
     name: "Monolithic Power Systems",
     type: "Stock",
     sector: "Semiconductors",
@@ -1088,6 +1126,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   KLAC: {
     symbol: "KLAC",
+    exchange: "NASDAQ",
     name: "KLA Corporation",
     type: "Stock",
     sector: "Semiconductors",
@@ -1116,6 +1155,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   LRCX: {
     symbol: "LRCX",
+    exchange: "NASDAQ",
     name: "Lam Research Corporation",
     type: "Stock",
     sector: "Semiconductors",
@@ -1145,6 +1185,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   // Digital Assets / Cryptocurrencies
   "BTC-USD": {
     symbol: "BTC-USD",
+    exchange: "Crypto",
     name: "Bitcoin",
     type: "Crypto",
     sector: "Digital Assets",
@@ -1173,6 +1214,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   "ETH-USD": {
     symbol: "ETH-USD",
+    exchange: "Crypto",
     name: "Ethereum",
     type: "Crypto",
     sector: "Digital Assets",
@@ -1201,6 +1243,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   "SOL-USD": {
     symbol: "SOL-USD",
+    exchange: "Crypto",
     name: "Solana",
     type: "Crypto",
     sector: "Digital Assets",
@@ -1229,6 +1272,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   IREN: {
     symbol: "IREN",
+    exchange: "NASDAQ",
     name: "IREN (Iris Energy Limited)",
     type: "Stock",
     sector: "Technology",
@@ -1257,6 +1301,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   },
   DHLGY: {
     symbol: "DHLGY",
+    exchange: "OTC",
     name: "Deutsche Post DHL Group ADR",
     type: "Stock",
     sector: "Industrials",
@@ -1282,6 +1327,64 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
     moatSummary: "Preeminent 220+ country express delivery fleet with automated sorting hubs and pricing power.",
     upcomingCatalyst: "Global e-commerce volume recovery and ocean/air freight yield expansion.",
     thesis: "High free cash flow dividend compounder with market-leading cross-border logistics network."
+  },
+  AXP: {
+    symbol: "AXP",
+    exchange: "NYSE",
+    name: "American Express Company",
+    type: "Stock",
+    sector: "Financial Services",
+    category: "Payment Networks & Premium Consumer Credit",
+    roic: 14.8,
+    grossMargin: 56.4,
+    fwdPe: 18.2,
+    peg: 1.25,
+    fcfYield: 5.4,
+    piotroski: 7,
+    atr14: 4.80,
+    rvol: 1.1,
+    shortFloat: 1.4,
+    beta: 1.12,
+    marketCap: "$210B",
+    growthScore: 82,
+    qualityScore: 88,
+    valuationScore: 75,
+    momentumScore: 84,
+    tailRiskScore: 80,
+    compositeFactorScore: 82,
+    verdict: "High-Margin Closed-Loop Spend Network",
+    moatSummary: "Premium cardholder demographic and integrated closed-loop spend network create exceptional pricing power.",
+    upcomingCatalyst: "Millennial and Gen-Z card acquisition momentum and international corporate travel volume expansion.",
+    thesis: "Durable compounder with strong return on equity and expanding international merchant acceptance."
+  },
+  IBM: {
+    symbol: "IBM",
+    exchange: "NYSE",
+    name: "International Business Machines Corp.",
+    type: "Stock",
+    sector: "Technology",
+    category: "Enterprise AI & Hybrid Cloud Software",
+    roic: 13.5,
+    grossMargin: 55.8,
+    fwdPe: 20.4,
+    peg: 1.85,
+    fcfYield: 6.8,
+    piotroski: 7,
+    atr14: 3.90,
+    rvol: 1.2,
+    shortFloat: 2.4,
+    beta: 0.72,
+    marketCap: "$215B",
+    growthScore: 74,
+    qualityScore: 86,
+    valuationScore: 72,
+    momentumScore: 80,
+    tailRiskScore: 85,
+    compositeFactorScore: 79,
+    verdict: "Enterprise Hybrid Cloud & Open-Source AI",
+    moatSummary: "Red Hat enterprise Linux ecosystem and mission-critical mainframe transaction infrastructure.",
+    upcomingCatalyst: "watsonx enterprise AI bookings acceleration and Red Hat hybrid cloud consulting expansion.",
+    thesis: "Cash flow generator with growing recurring software revenue and stable dividend yield."
   }
 };
 
@@ -1342,6 +1445,8 @@ export const CATALOG_BASELINE_PRICES: Record<string, number> = {
   SBUX: 92.00,
   ARWR: 82.39,
   CIEN: 64.50,
+  AXP: 295.00,
+  IBM: 232.00,
 };
 
 /**
@@ -1460,6 +1565,8 @@ export const CATALOG_BASELINE_CHANGES: Record<string, number> = {
   SBUX: -0.40,
   ARWR: 3.15,
   CIEN: 1.35,
+  AXP: 0.65,
+  IBM: 0.40,
 };
 
 export interface MasterBaselineQuote {

@@ -10,6 +10,8 @@ interface CongressionalTradesCardProps {
   optionsFlow?: OptionsFlowItem[];
   userRole?: "DAY_TRADER" | "LONG_TERM";
   onSelectSymbol?: (symbol: string) => void;
+  status?: "AVAILABLE" | "VALID_EMPTY" | "PIPELINE_PENDING" | "SOURCE_UNAVAILABLE" | string;
+  notice?: string;
 }
 
 export default function CongressionalTradesCard({
@@ -18,6 +20,8 @@ export default function CongressionalTradesCard({
   optionsFlow = [],
   userRole = "LONG_TERM",
   onSelectSymbol,
+  status,
+  notice,
 }: CongressionalTradesCardProps) {
   const isDayTrader = userRole === "DAY_TRADER";
   const [timeframe, setTimeframe] = useState<"7D" | "30D" | "90D" | "1Y" | "ALL">("30D");
@@ -311,7 +315,13 @@ export default function CongressionalTradesCard({
                 ? "text-amber-400 bg-amber-950/60 border-amber-800/80"
                 : "text-purple-400 bg-purple-950/60 border-purple-800/80"
             }`}>
-              {isDayTrader ? `${optionsFlow.length} Sweeps` : `${filteredCongressTrades.length} Trades`}
+              {isDayTrader
+                ? `${optionsFlow.length} Sweeps`
+                : status === "PIPELINE_PENDING"
+                ? "Pipeline Pending"
+                : status === "SOURCE_UNAVAILABLE"
+                ? "Unavailable"
+                : `${filteredCongressTrades.length} Trades`}
             </span>
           </div>
         </div>
@@ -485,9 +495,45 @@ export default function CongressionalTradesCard({
                   </div>
                 </div>
               ))
-            ) : (
+            ) : status === "PIPELINE_PENDING" ? (
+              <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
+                <div className="font-semibold text-amber-400/90 flex items-center justify-center gap-1.5">
+                  <span>⚠️</span>
+                  <span>Congressional transaction data is currently unavailable.</span>
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  Data collection is not currently active. No conclusion about recent transactions can be drawn.
+                </div>
+              </div>
+            ) : status === "SOURCE_UNAVAILABLE" ? (
+              <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
+                <div className="font-semibold text-rose-400/90 flex items-center justify-center gap-1.5">
+                  <span>⚠️</span>
+                  <span>Congressional transaction data could not be verified.</span>
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  {notice || "Source feed could not be verified."}
+                </div>
+              </div>
+            ) : status === "PARTIAL" ? (
+              <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
+                <div className="font-semibold text-amber-400/90 flex items-center justify-center gap-1.5">
+                  <span>⚠️</span>
+                  <span>Partial congressional transaction coverage — results may be incomplete.</span>
+                </div>
+              </div>
+            ) : status === "VALID_EMPTY" || (status === "AVAILABLE" && filteredCongressTrades.length === 0) ? (
               <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400">
-                No recent Capitol Hill transactions reported for {symbol} within statutory filing windows.
+                No qualifying congressional transactions found in the verified coverage period.
+              </div>
+            ) : (
+              <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
+                <div className="font-semibold text-slate-300">
+                  Congressional transaction data is currently unavailable.
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  Data collection is not currently active. No conclusion about recent transactions can be drawn.
+                </div>
               </div>
             )}
           </div>
