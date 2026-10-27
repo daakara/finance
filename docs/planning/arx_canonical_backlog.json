@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "backlog_name": "ARX Terminal Canonical Enterprise Backlog",
-  "last_reconciled": "2026-10-26T13:45:00+01:00",
+  "last_reconciled": "2026-10-27T00:05:00+01:00",
   "active_sprint": "SPRINT_4",
   "governance_framework": "ARX Closure Model v2 + Governance Efficiency v1.1",
   "immutable_holds": {
@@ -26,8 +26,8 @@
       "priority": "P1",
       "workstream": "GOVERNANCE",
       "owner": "daakara",
-      "status": "READY",
-      "disposition": "SPRINT4_EXECUTION",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
       "dimensions": {
         "requirements": "DONE",
         "implementation": "DONE",
@@ -53,15 +53,19 @@
         "tools/governance/validate_backlog_integrity.py",
         "tests/test_backlog_integrity_validator.py",
         "https://github.com/daakara/finance/pull/101",
-        "https://github.com/daakara/finance/pull/102"
+        "https://github.com/daakara/finance/pull/102",
+        "https://github.com/daakara/finance/pull/106",
+        "https://github.com/daakara/finance/pull/107"
       ],
       "github_issues": [],
       "github_prs": [
         101,
-        102
+        102,
+        106,
+        107
       ],
       "authorization_boundary": "BOUNDED_ENGINEERING",
-      "operational_state": "ACTIVE_DEVELOPMENT",
+      "operational_state": "MERGED_MAINLINE",
       "carryforward_reason": null,
       "reopening_trigger": null,
       "historical_aliases": [
@@ -79,14 +83,14 @@
       "priority": "P1",
       "workstream": "ARCHITECTURE",
       "owner": "daakara",
-      "status": "READY",
-      "disposition": "SPRINT4_EXECUTION",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
       "dimensions": {
         "requirements": "DONE",
-        "implementation": "NOT_STARTED",
-        "integration": "NOT_STARTED",
-        "verification": "PENDING",
-        "repository_publication": "NOT_APPLICABLE",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
+        "repository_publication": "PUBLISHED_MERGED",
         "deployment": "NOT_APPLICABLE",
         "operational_execution": "NOT_APPLICABLE",
         "production_evidence": "NOT_APPLICABLE",
@@ -103,12 +107,18 @@
       ],
       "evidence_refs": [
         "docs/architecture/ARX_CANONICAL_SECURITY_MASTER_DESIGN.md",
-        "FROZEN_ENGINE_MANIFEST_V2_5_1.json"
+        "FROZEN_ENGINE_MANIFEST_V2_5_1.json",
+        "tests/test_cross_engine_coherence.py",
+        "https://github.com/daakara/finance/pull/104",
+        "https://github.com/daakara/finance/pull/107"
       ],
       "github_issues": [],
-      "github_prs": [],
-      "authorization_boundary": "READ_ONLY_AUDIT",
-      "operational_state": "PLANNED",
+      "github_prs": [
+        104,
+        107
+      ],
+      "authorization_boundary": "MERGED_MAINLINE",
+      "operational_state": "AUDIT_VERIFIED_MAINLINE",
       "carryforward_reason": null,
       "reopening_trigger": null,
       "historical_aliases": [
@@ -130,9 +140,9 @@
       "disposition": "SPRINT4_DISCOVERY",
       "dimensions": {
         "requirements": "DONE",
-        "implementation": "NOT_STARTED",
-        "integration": "NOT_STARTED",
-        "verification": "PENDING",
+        "implementation": "PARTIAL",
+        "integration": "PARTIAL",
+        "verification": "PASS",
         "repository_publication": "NOT_APPLICABLE",
         "deployment": "NOT_APPLICABLE",
         "operational_execution": "NOT_PERFORMED",
@@ -163,8 +173,8 @@
         73
       ],
       "authorization_boundary": "DISCOVERY_ONLY",
-      "operational_state": "PENDING_ACTIVATION",
-      "carryforward_reason": "Carried forward from Sprint 3 (Issues #61, #62, #64, #70) for root-cause resolution",
+      "operational_state": "CARRYFORWARD_SPRINT5_TRACK_5B_OPS",
+      "carryforward_reason": "CARRYFORWARD_SPRINT5: On-demand scan and UI banner verified; continuous background scheduler daemon design carried forward to Sprint 5 decoupled from HVA01",
       "reopening_trigger": null,
       "historical_aliases": [
         "RADAR-001",
@@ -410,17 +420,17 @@
       "priority": "P1",
       "workstream": "RADAR_VCP",
       "owner": "daakara",
-      "status": "READY",
-      "disposition": "SPRINT4_DISCOVERY",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
       "dimensions": {
         "requirements": "DONE",
-        "implementation": "PARTIAL",
-        "integration": "NOT_STARTED",
-        "verification": "PARTIAL",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
         "repository_publication": "LOCAL_ONLY",
         "deployment": "NOT_APPLICABLE",
-        "operational_execution": "NOT_PERFORMED",
-        "production_evidence": "INSUFFICIENT",
+        "operational_execution": "NOT_APPLICABLE",
+        "production_evidence": "NOT_APPLICABLE",
         "owner_authorization": "AUTHORIZED"
       },
       "acceptance_criteria": [
@@ -433,12 +443,13 @@
       ],
       "evidence_refs": [
         "docs/research/radar-us-listed-coverage/COVERAGE_ACCEPTANCE_CONTRACT.md",
-        "docs/research/radar-us-listed-coverage/DELIVERY_CHECKLIST.md"
+        "docs/research/radar-us-listed-coverage/DELIVERY_CHECKLIST.md",
+        "ARX_S4_FINAL_CLOSURE_CRITERIA_TRACEABILITY.md"
       ],
       "github_issues": [],
       "github_prs": [],
-      "authorization_boundary": "DISCOVERY_RECONCILIATION",
-      "operational_state": "RECONCILED_SPECIFICATION",
+      "authorization_boundary": "SPECIFICATION_ONLY",
+      "operational_state": "COMPLETED_SPECIFICATION",
       "carryforward_reason": "Strategic product requirement carried forward from Sprint 1 Track E into Sprint 4",
       "reopening_trigger": null,
       "historical_aliases": [
@@ -455,16 +466,16 @@
       "priority": "P1",
       "workstream": "RADAR_VCP",
       "owner": "daakara",
-      "status": "READY",
-      "disposition": "SPRINT4_DISCOVERY",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
       "dimensions": {
         "requirements": "DONE",
-        "implementation": "PARTIAL",
-        "integration": "NOT_STARTED",
-        "verification": "PARTIAL",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
         "repository_publication": "LOCAL_ONLY",
         "deployment": "NOT_APPLICABLE",
-        "operational_execution": "NOT_PERFORMED",
+        "operational_execution": "NOT_APPLICABLE",
         "production_evidence": "NOT_APPLICABLE",
         "owner_authorization": "AUTHORIZED"
       },
@@ -477,12 +488,13 @@
       ],
       "evidence_refs": [
         "docs/sprints/SPRINT_2_KICKOFF.md",
-        "docs/research/sprint-2-identity-adoption/"
+        "docs/research/sprint-2-identity-adoption/",
+        "ARX_S4_FINAL_CLOSURE_CRITERIA_TRACEABILITY.md"
       ],
       "github_issues": [],
       "github_prs": [],
-      "authorization_boundary": "BOUNDED_DISCOVERY",
-      "operational_state": "PLANNED",
+      "authorization_boundary": "SPECIFICATION_ONLY",
+      "operational_state": "COMPLETED_SPECIFICATION",
       "carryforward_reason": "Carried forward from Sprint 2 Package 1 foundation",
       "reopening_trigger": null,
       "historical_aliases": [
@@ -666,8 +678,8 @@
       "github_issues": [],
       "github_prs": [],
       "authorization_boundary": "BENCHMARK_DISCOVERY",
-      "operational_state": "PLANNED",
-      "carryforward_reason": "Carried forward from Sprint 2 capacity planning into Sprint 4",
+      "operational_state": "CARRYFORWARD_SPRINT5_TRACK_5B_OPS",
+      "carryforward_reason": "CARRYFORWARD_SPRINT5: Offline 512MB RAM benchmarks completed; live multi-asset stress testing under streaming quotes carried forward to Sprint 5",
       "reopening_trigger": null,
       "historical_aliases": [
         "S2-05"
@@ -760,8 +772,8 @@
         42
       ],
       "authorization_boundary": "BOUNDED_DISCOVERY",
-      "operational_state": "PLANNED",
-      "carryforward_reason": "Carried forward from Sprint 2 Package C into Sprint 4 Radar truthfulness workstream",
+      "operational_state": "CARRYFORWARD_SPRINT5_TRACK_5B_OPS",
+      "carryforward_reason": "CARRYFORWARD_SPRINT5: Candidate membership data models verified in PR #42; dynamic Security Master to Radar scanner synchronization carried forward to Sprint 5",
       "reopening_trigger": null,
       "historical_aliases": [
         "S2-07"
@@ -806,8 +818,8 @@
         44
       ],
       "authorization_boundary": "BOUNDED_DISCOVERY",
-      "operational_state": "VERIFIED_BRANCH",
-      "carryforward_reason": "PR #44 unmerged draft; accounting engine to be cleanly integrated in Sprint 4",
+      "operational_state": "CARRYFORWARD_SPRINT5_TRACK_5B_OPS",
+      "carryforward_reason": "CARRYFORWARD_SPRINT5: 6-outcome arithmetic denominator closure verified in PR #44 branch; rebasing onto main and wiring to telemetry sink carried forward to Sprint 5",
       "reopening_trigger": null,
       "historical_aliases": [
         "S2-08"
@@ -855,8 +867,8 @@
         42
       ],
       "authorization_boundary": "BOUNDED_DISCOVERY",
-      "operational_state": "PLANNED",
-      "carryforward_reason": "Carried forward into Sprint 4 Radar truthfulness workstream",
+      "operational_state": "CARRYFORWARD_SPRINT5_TRACK_5B_OPS",
+      "carryforward_reason": "CARRYFORWARD_SPRINT5: Plain-English coverage disclosure copy aligned; navigation journey state preservation across tabs carried forward to Sprint 5",
       "reopening_trigger": null,
       "historical_aliases": [
         "S2-09"
@@ -1322,7 +1334,7 @@
       "disposition": "SPRINT4_EXECUTION",
       "dimensions": {
         "requirements": "DONE",
-        "implementation": "DONE",
+        "implementation": "PARTIAL",
         "integration": "PARTIAL",
         "verification": "PASS",
         "repository_publication": "DRAFT_PR",
@@ -1350,8 +1362,8 @@
         98
       ],
       "authorization_boundary": "BOUNDED_ENGINEERING",
-      "operational_state": "DRAFT_PR_AWAITING_MERGE",
-      "carryforward_reason": "Addressed in PR #98; pending PR #98 review and merge",
+      "operational_state": "CARRYFORWARD_SPRINT5_TRACK_5A_UX",
+      "carryforward_reason": "CARRYFORWARD_SPRINT5: Backend error-vs-zero semantics merged in RC-A (#107); frontend UI retry affordance and error banner held on candidate/sprint4-rc-b (PR #98) awaiting Owner UX Design Acceptance",
       "reopening_trigger": null,
       "historical_aliases": [
         "INITIATIVE-S3-RADAR-RELIABILITY-G6",
@@ -1372,7 +1384,7 @@
       "disposition": "SPRINT4_EXECUTION",
       "dimensions": {
         "requirements": "DONE",
-        "implementation": "DONE",
+        "implementation": "PARTIAL",
         "integration": "PARTIAL",
         "verification": "PASS",
         "repository_publication": "DRAFT_PR",
@@ -1400,8 +1412,8 @@
         98
       ],
       "authorization_boundary": "BOUNDED_ENGINEERING",
-      "operational_state": "DRAFT_PR_AWAITING_MERGE",
-      "carryforward_reason": "Addressed in PR #98; pending PR #98 review and merge",
+      "operational_state": "CARRYFORWARD_SPRINT5_TRACK_5A_UX",
+      "carryforward_reason": "CARRYFORWARD_SPRINT5: Backend date provenance and historical invariants merged in RC-A (#107); frontend candidate truth badge and visual affordance suppression held in PR #98 awaiting Owner UX Design Acceptance",
       "reopening_trigger": null,
       "historical_aliases": [
         "INITIATIVE-S3-RADAR-CANDIDATE-TRUTH",
@@ -1429,7 +1441,7 @@
         "deployment": "NOT_DEPLOYED",
         "operational_execution": "NOT_APPLICABLE",
         "production_evidence": "NOT_APPLICABLE",
-        "owner_authorization": "AUTHORIZED"
+        "owner_authorization": "HOLD"
       },
       "acceptance_criteria": [
         "Decision-first layout rollout across FIX, DUOL, ULTA, MEDP, ISRG, DECK",
@@ -1451,8 +1463,8 @@
         98
       ],
       "authorization_boundary": "BOUNDED_ENGINEERING",
-      "operational_state": "DRAFT_PR_AWAITING_MERGE",
-      "carryforward_reason": "Components unified in PR #98; pending final PR #98 review",
+      "operational_state": "CARRYFORWARD_SPRINT5_TRACK_5A_UX",
+      "carryforward_reason": "CARRYFORWARD_SPRINT5: Research workstation preflight readiness layout polish implemented on candidate/sprint4-rc-b (PR #98); held for dedicated Owner UX design review",
       "reopening_trigger": null,
       "historical_aliases": [
         "INITIATIVE-S3-RESEARCH-DECISION-FIRST",
@@ -1648,8 +1660,8 @@
         100
       ],
       "authorization_boundary": "BOUNDED_ENGINEERING",
-      "operational_state": "PARTIALLY_MERGED",
-      "carryforward_reason": "PR #72 statutory lag copy remediation pending final integration with merged PR #100",
+      "operational_state": "CLOSE_CONDITIONAL_PENDING_PR72",
+      "carryforward_reason": "CLOSE_CONDITIONAL: Pre-flight fail-closed execution clearance merged in PR #87/#89 and RC-A (#107); final statutory reporting lag disclosures held in unmerged PR #72 pending worker daemon unblocking",
       "reopening_trigger": null,
       "historical_aliases": [
         "INITIATIVE-S3-AUDIT-PREFLIGHT-SMART-MONEY",
@@ -1791,8 +1803,8 @@
         76
       ],
       "authorization_boundary": "BOUNDED_DISCOVERY",
-      "operational_state": "ALGORITHM_VERIFIED_SCANNER_PENDING",
-      "carryforward_reason": "Algorithm verified on main; operational universe activation carried forward to Sprint 4",
+      "operational_state": "CLOSE_CONDITIONAL_PENDING_PR73",
+      "carryforward_reason": "CLOSE_CONDITIONAL: 4-stage Minervini trend template and historical replay fixtures verified and merged in PR #76; continuous live scanner daemon in PR #73 remains held and dormant awaiting human pilot protocol",
       "reopening_trigger": null,
       "historical_aliases": [
         "INITIATIVE-S3-VCP-IMPLEMENTATION-ACCEPTANCE",
@@ -1905,7 +1917,7 @@
         "integration": "PARTIAL",
         "verification": "PASS",
         "repository_publication": "DRAFT_PR",
-        "deployment": "DEPLOYED_DORMANT",
+        "deployment": "NOT_DEPLOYED",
         "operational_execution": "NOT_APPLICABLE",
         "production_evidence": "VERIFIED",
         "owner_authorization": "AUTHORIZED"
@@ -1931,8 +1943,8 @@
         98
       ],
       "authorization_boundary": "BOUNDED_ENGINEERING",
-      "operational_state": "DRAFT_PR_AWAITING_MERGE",
-      "carryforward_reason": "PR #98 clean candidate branch prepared; pending owner review and merge",
+      "operational_state": "ENGINEERING_ACCEPTED_AWAITING_RELEASE",
+      "carryforward_reason": "Sprint 4 engineering acceptance complete (PR #98 candidate verified across 38 suites); release held awaiting Owner UX design acceptance and merge (not an engineering carryforward)",
       "reopening_trigger": null,
       "historical_aliases": [
         "SYNTHESIS_E_V3",
@@ -1999,14 +2011,14 @@
       "priority": "P0",
       "workstream": "ARCHITECTURE",
       "owner": "daakara",
-      "status": "READY",
-      "disposition": "SPRINT4_EXECUTION",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
       "dimensions": {
         "requirements": "DONE",
-        "implementation": "IN_PROGRESS",
-        "integration": "PARTIAL",
+        "implementation": "DONE",
+        "integration": "DONE",
         "verification": "PASS",
-        "repository_publication": "DRAFT_PR",
+        "repository_publication": "PUBLISHED_MERGED",
         "deployment": "NOT_APPLICABLE",
         "operational_execution": "NOT_APPLICABLE",
         "production_evidence": "NOT_APPLICABLE",
@@ -2014,7 +2026,7 @@
       },
       "acceptance_criteria": [
         "AC-LIQ-01: Extend DecisionHierarchyEngine.resolve_decision_state() with an optional execution_hazard: bool parameter (defaulting to False when evidence is unavailable, while enforcing fail-closed actionability).",
-        "AC-LIQ-02: Enforce Precedence in DecisionHierarchyEngine: If execution_hazard is True, the setup MUST be disqualified from ACTIONABLE_SETUP, setting state=VALID_SETUP, isActionable=False, canSizeTrade=False, label='Valid Setup — Liquidity Hazard', and allowedActions=['ADD_WATCHLIST', 'RESEARCH_PROFILE'].",
+        "AC-LIQ-02: Enforce Precedence in DecisionHierarchyEngine: If execution_hazard is True, the setup MUST be disqualified from ACTIONABLE_SETUP, setting state=VALID_SETUP, isActionable=False, canSizeTrade=False, label='Valid Setup \u2014 Liquidity Hazard', and allowedActions=['ADD_WATCHLIST', 'RESEARCH_PROFILE'].",
         "AC-LIQ-03: Set disqualificationReason to explicit liquidity warning: 'Trade execution suppressed: Severe liquidity hazard detected (ADV / slippage friction exceeds safety threshold).'",
         "AC-LIQ-04: Wire execution_hazard from OptimalExecutionEngine raw_plan['liquidity_defense']['execution_hazard'] into api/routes/analytics.py, api/routes/screener.py, and DecisionTraceEngine.",
         "AC-LIQ-05: Preserve F_10 governance invariant: Missing liquidity evidence (UNAVAILABLE/UNKNOWN) must fail closed without synthesizing fictitious zero-hazard fallbacks.",
@@ -2024,7 +2036,7 @@
         "NEG-LIQ-01: Micro-cap illiquid fixture (ADV $85k, Amihud 4.2) with confluence 88.0 inside buy zone strictly produces isActionable=False and canSizeTrade=False.",
         "NEG-LIQ-02: Illiquid setup suppresses position sizing in GovernorSizingEngine with 0 shares.",
         "NEG-LIQ-03: Missing volume profile (None) produces execution_hazard=True (fail-closed) and blocks ACTIONABLE_SETUP.",
-        "NEG-LIQ-04: Setup with execution_hazard=True and execution_status=STOPPED_OUT produces label 'Setup Invalidated — Stopped Out' (STOPPED_OUT takes precedence over liquidity friction)."
+        "NEG-LIQ-04: Setup with execution_hazard=True and execution_status=STOPPED_OUT produces label 'Setup Invalidated \u2014 Stopped Out' (STOPPED_OUT takes precedence over liquidity friction)."
       ],
       "dependencies": [
         "ARX-S4-ARCH-001",
@@ -2035,14 +2047,18 @@
         "analyst_dashboard/analyzers/optimal_execution.py",
         "analyst_dashboard/analyzers/decision_hierarchy.py",
         "tests/test_optimal_execution.py",
-        "tests/test_cross_engine_coherence.py"
+        "tests/test_cross_engine_coherence.py",
+        "tests/test_liquidity_actionability_coherence.py",
+        "https://github.com/daakara/finance/pull/105",
+        "https://github.com/daakara/finance/pull/107"
       ],
       "github_issues": [],
       "github_prs": [
-        105
+        105,
+        107
       ],
-      "authorization_boundary": "LOCAL_CODE_ONLY",
-      "operational_state": "ACTIVE_DEVELOPMENT",
+      "authorization_boundary": "MERGED_MAINLINE",
+      "operational_state": "MERGED_MAINLINE",
       "carryforward_reason": null,
       "reopening_trigger": null,
       "historical_aliases": [

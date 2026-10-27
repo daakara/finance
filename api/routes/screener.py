@@ -305,12 +305,17 @@ def get_radar_capabilities(
             }
         elif snap_status == "ERROR":
             fail_reason = cov_info.get("failure_reason") or vcp_snapshot.get("reason", "STORAGE_ERROR")
+            raw_cov = cov_info.get("coverage_status")
+            if not raw_cov or raw_cov in ("COMPLETE", "ERROR"):
+                cov_status = "EMPTY_UNIVERSE" if (pop_denom == 0 or fail_reason in ("BUILD_MEMBERSHIP_EMPTY", "EMPTY_UNIVERSE")) else "UNAVAILABLE"
+            else:
+                cov_status = raw_cov
             caps["VCP"] = {
                 "status": "ERROR",
                 "universeScreening": "ERROR",
                 "singleAssetAnalysis": "AVAILABLE",
                 "matchedCount": None,
-                "coverageStatus": cov_info.get("coverage_status", "ERROR"),
+                "coverageStatus": cov_status,
                 "scannedSuccessfullyCount": cov_info.get("scanned_successfully_count", 0),
                 "unavailableSymbolCount": cov_info.get("unavailable_symbol_count", pop_denom or 0),
                 "dataAsOf": None,

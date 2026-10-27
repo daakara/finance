@@ -126,6 +126,10 @@ class FencedPublisher:
             # 2. Inject Lease Provenance into Snapshot
             provenance_dict = dict(snapshot_data.get("provenance", {}))
             provenance_dict["coordination"] = lease.to_provenance()
+            if "coverage_metadata" in snapshot_data and "coverage_metadata" not in provenance_dict:
+                provenance_dict["coverage_metadata"] = snapshot_data["coverage_metadata"]
+            if "universe_metadata" in snapshot_data and "universe_metadata" not in provenance_dict:
+                provenance_dict["universe_metadata"] = snapshot_data["universe_metadata"]
 
             # Ensure scanner_snapshots table exists (with nullable matched_count)
             ensure_scanner_snapshots_table(conn)

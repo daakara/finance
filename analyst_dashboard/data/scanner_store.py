@@ -210,6 +210,12 @@ class ScannerSnapshotStore:
     @retry_sqlite()
     def save_snapshot(self, snapshot_data: Dict[str, Any]) -> str:
         """Persist a completed snapshot immutably."""
+        prov = dict(snapshot_data.get("provenance", {}))
+        if "coverage_metadata" in snapshot_data and "coverage_metadata" not in prov:
+            prov["coverage_metadata"] = snapshot_data["coverage_metadata"]
+        if "universe_metadata" in snapshot_data and "universe_metadata" not in prov:
+            prov["universe_metadata"] = snapshot_data["universe_metadata"]
+
         conn = self._get_connection()
         try:
             with conn:
@@ -259,7 +265,7 @@ class ScannerSnapshotStore:
                     snapshot_data["universe_size"],
                     snapshot_data["matched_count"],
                     json.dumps(snapshot_data["results"], separators=(",", ":")),
-                    json.dumps(snapshot_data.get("provenance", {}), separators=(",", ":")),
+                    json.dumps(prov, separators=(",", ":")),
                     json.dumps(snapshot_data.get("freshness", {}), separators=(",", ":")),
                     snapshot_data.get("publication_decision", "PUBLISH"),
                 ))
@@ -321,6 +327,7 @@ class ScannerSnapshotStore:
 
     def _row_to_dict(self, row: sqlite3.Row) -> Dict[str, Any]:
         """Convert a database row into a structured snapshot dictionary."""
+        prov = json.loads(row["provenance_json"]) if row["provenance_json"] else {}
         return {
             "snapshot_id": row["snapshot_id"],
             "scanner_id": row["scanner_id"],
@@ -341,8 +348,10 @@ class ScannerSnapshotStore:
             "universe_size": row["universe_size"],
             "matched_count": row["matched_count"],
             "results": json.loads(row["results_json"]),
-            "provenance": json.loads(row["provenance_json"]),
+            "provenance": prov,
             "freshness": json.loads(row["freshness_json"]),
             "publication_decision": row["publication_decision"],
             "created_at": row["created_at"],
+            "universe_metadata": prov.get("universe_metadata", {}),
+            "coverage_metadata": prov.get("coverage_metadata", {}),
         }
