@@ -167,7 +167,9 @@ function RadarContent() {
     const sym = searchParams?.get('symbol') || searchParams?.get('ticker');
     if (sym) {
       setSelectedAssetTicker(resolveCanonicalSecurity(sym, allAssets));
-    } else if (!searchParams?.get('q')) {
+    } else if (q && isCanonicalSecurityIdentifier(q, allAssets)) {
+      setSelectedAssetTicker(resolveCanonicalSecurity(q, allAssets));
+    } else {
       setSelectedAssetTicker(null);
     }
   }, [searchParams, allAssets]);
@@ -240,6 +242,10 @@ function RadarContent() {
           };
         });
         setAllAssets(mapped);
+        setSelectedAssetTicker((prev) => {
+          if (!prev) return null;
+          return mapped.some((a) => a.ticker === prev) ? prev : null;
+        });
         setIsLoading(false);
       })
       .catch((err) => {
@@ -248,6 +254,7 @@ function RadarContent() {
         setCapabilities(DEFAULT_RADAR_CAPABILITIES);
         setPopulation(null);
         setAllAssets([]);
+        setSelectedAssetTicker(null);
         setIsLoading(false);
       });
     return () => {
@@ -391,18 +398,39 @@ function RadarContent() {
   const isTickerQuery = /^[A-Z0-9\.\-]{1,6}$/i.test(searchQuery.trim());
 
   const activeCanonicalAsset = useMemo(() => {
-    if (selectedAssetTicker && isCanonicalSecurityIdentifier(selectedAssetTicker, allAssets)) {
-      return resolveCanonicalSecurity(selectedAssetTicker, allAssets);
-    }
-    const symParam = searchParams?.get('symbol') || searchParams?.get('ticker');
-    if (symParam && isCanonicalSecurityIdentifier(symParam, allAssets)) {
-      return resolveCanonicalSecurity(symParam, allAssets);
-    }
+    // 1. If an active ticker query is being typed (e.g. 'TSLA'), that query supersedes prior selection
     if (cleanQ && isCanonicalSecurityIdentifier(cleanQ, allAssets)) {
       return resolveCanonicalSecurity(cleanQ, allAssets);
     }
+
+    // 2. If a search query is active (e.g. keyword 'ENERGY' or company name),
+    // a prior selection cannot remain active unless it matches the query
+    // or was explicitly clicked within the active filtered results
+    if (cleanQ && selectedAssetTicker) {
+      if (cleanQ === selectedAssetTicker || (filteredAssets.length > 0 && filteredAssets.some((a) => a.ticker === selectedAssetTicker))) {
+        return resolveCanonicalSecurity(selectedAssetTicker, allAssets);
+      }
+      return null;
+    }
+
+    // 3. When no search query is active, explicit candidate row selection is authoritative
+    if (!cleanQ && selectedAssetTicker && isCanonicalSecurityIdentifier(selectedAssetTicker, allAssets)) {
+      const isVisibleInFilter = allAssets.length === 0 || filteredAssets.some((a) => a.ticker === selectedAssetTicker);
+      if (isVisibleInFilter) {
+        return resolveCanonicalSecurity(selectedAssetTicker, allAssets);
+      }
+    }
+
+    // 4. Fallback to URL query parameter if no search query is active
+    if (!cleanQ) {
+      const symParam = searchParams?.get('symbol') || searchParams?.get('ticker');
+      if (symParam && isCanonicalSecurityIdentifier(symParam, allAssets)) {
+        return resolveCanonicalSecurity(symParam, allAssets);
+      }
+    }
+
     return null;
-  }, [selectedAssetTicker, searchParams, cleanQ, allAssets]);
+  }, [selectedAssetTicker, cleanQ, filteredAssets, searchParams, allAssets]);
 
   const handleOnDemandScan = async (tickerOverride?: string) => {
     const raw = tickerOverride || searchQuery;
@@ -413,6 +441,7 @@ function RadarContent() {
     const existing = allAssets.find((a) => a.ticker === clean);
     if (existing) {
       setSearchQuery(clean);
+      setSelectedAssetTicker(clean);
       setOnDemandError(null);
       return;
     }
@@ -479,6 +508,7 @@ function RadarContent() {
 
       setAllAssets((prev) => [newAsset, ...prev.filter((a) => a.ticker !== clean)]);
       setSearchQuery(clean);
+      setSelectedAssetTicker(clean);
       setOnDemandError(null);
     } catch (err: any) {
       setOnDemandError(`Asset "${clean}" is not recognized on the exchange tape: ${err.message || 'Data unavailable'}.`);
@@ -984,8 +1014,12 @@ function RadarContent() {
                   placeholder="Search candidate, ticker (e.g. NVDA, TSLA)..."
                   value={searchQuery}
                   onChange={(e) => {
-                    setSearchQuery(e.target.value);
+                    const nextQ = e.target.value;
+                    setSearchQuery(nextQ);
                     setOnDemandError(null);
+                    if (selectedAssetTicker && nextQ.trim().toUpperCase() !== selectedAssetTicker) {
+                      setSelectedAssetTicker(null);
+                    }
                   }}
                   className="focus-ring w-full bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-lg pl-3 pr-20 py-2.5 min-h-[44px] text-xs text-[var(--text-1)] placeholder-[var(--text-muted)] focus:outline-none focus:border-cyan-500 font-mono"
                 />
@@ -995,6 +1029,7 @@ function RadarContent() {
                       type="button"
                       onClick={() => {
                         setSearchQuery('');
+                        setSelectedAssetTicker(null);
                         setOnDemandError(null);
                       }}
                       className="focus-ring text-xs text-[var(--text-muted)] hover:text-[var(--text-1)] font-mono px-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded cursor-pointer"
