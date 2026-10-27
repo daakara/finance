@@ -31,6 +31,7 @@ from analyst_dashboard.analyzers.scanner_contract import (
     ScannerVersionTuple,
     ScannerCandidateResult,
     ImmutableScannerSnapshot,
+    resolve_coverage_envelope,
     RADAR_SCOPE_LABEL,
     VCP_API_CONTRACT_VERSION,
     VCP_RULESET_VERSION,
@@ -509,6 +510,8 @@ class VCPScannerRunner:
             scan_coverage_pct = round((scanned_successfully_count / max(1, eligible_count)) * 100, 1) if eligible_count > 0 else 0.0
             if universe_size == 0:
                 coverage_status = "EMPTY_UNIVERSE"
+            elif scanned_successfully_count == 0 and eligible_count > 0:
+                coverage_status = "UNAVAILABLE"
             elif scan_coverage_pct >= 99.9:
                 coverage_status = "COMPLETE"
             else:
@@ -560,14 +563,18 @@ class VCPScannerRunner:
             if eval_report.decision != PublicationDecision.PUBLISH:
                 status_at_pub = ScannerStatus.ERROR
                 effective_matched_count = None
+                coverage_metadata["coverage_status"] = "UNAVAILABLE"
+                coverage_metadata["failure_reason"] = "INTEGRITY_PUBLICATION_REJECTED"
             elif universe_size == 0:
                 status_at_pub = ScannerStatus.ERROR
                 effective_matched_count = None
                 failure_reason = "BUILD_MEMBERSHIP_EMPTY" if target_build_id and universe_override is None else "EMPTY_UNIVERSE"
+                coverage_metadata["coverage_status"] = "EMPTY_UNIVERSE"
                 coverage_metadata["failure_reason"] = failure_reason
             elif is_sub_quorum:
                 status_at_pub = ScannerStatus.ERROR
                 effective_matched_count = None
+                coverage_metadata["coverage_status"] = "UNAVAILABLE"
                 coverage_metadata["failure_reason"] = "SUB_QUORUM_COVERAGE"
             elif len(qualified_candidates) > 0:
                 status_at_pub = ScannerStatus.AVAILABLE
@@ -575,6 +582,8 @@ class VCPScannerRunner:
             elif scanned_successfully_count == 0:
                 status_at_pub = ScannerStatus.ERROR
                 effective_matched_count = None
+                coverage_metadata["coverage_status"] = "UNAVAILABLE"
+                coverage_metadata["failure_reason"] = "ZERO_SYMBOLS_SCANNED"
             elif computed_evaluations_count == 0 and uncomputed_evaluations_count > 0:
                 status_at_pub = ScannerStatus.PIPELINE_PENDING
                 effective_matched_count = None
@@ -591,6 +600,8 @@ class VCPScannerRunner:
                 "source": "LOCAL_MARKET_DB_SQLITE",
                 "source_contract_version": "1.0.0",
                 "data_as_of": data_as_of,
+                "universe_metadata": universe_metadata,
+                "coverage_metadata": coverage_metadata,
             }
             if lease:
                 provenance_dict["coordination"] = lease.to_provenance()
@@ -943,8 +954,9 @@ class VCPScannerRunner:
         }
 
     def _to_envelope(self, rec: Dict[str, Any]) -> Dict[str, Any]:
-        u_meta = rec.get("universe_metadata", {})
-        c_meta = rec.get("coverage_metadata", {})
+        prov = rec.get("provenance", {}) if isinstance(rec.get("provenance"), dict) else {}
+        u_meta = rec.get("universe_metadata") or prov.get("universe_metadata", {})
+        c_meta = rec.get("coverage_metadata") or prov.get("coverage_metadata", {})
         u_size = rec.get("universe_size", 0)
         freshness_status = self._evaluate_freshness_status(rec)
         status = rec["status_at_publication"]
@@ -967,7 +979,7 @@ class VCPScannerRunner:
                 "data_provenance_version": rec["data_provenance_version"],
                 "universe_version": rec["universe_version"],
                 "implementation_release_sha": rec["implementation_release_sha"],
-                **rec.get("provenance", {}),
+                **prov,
             },
             "freshness": {
                 "policy_version": rec["freshness_policy_version"],
@@ -993,19 +1005,13 @@ class VCPScannerRunner:
                 "membership_hash": u_meta.get("membership_hash"),
                 "construction_status": u_meta.get("construction_status", "COMPLETE"),
             },
-            "coverage": {
-                "coverage_status": c_meta.get("coverage_status", "COMPLETE"),
-                "data_complete_count": c_meta.get("data_complete_count", u_size),
-                "scanned_successfully_count": c_meta.get("scanned_successfully_count", u_size),
-                "matched_count": rec["matched_count"],
-                "unavailable_symbol_count": c_meta.get("unavailable_symbol_count", 0),
-                "unresolved_symbol_count": c_meta.get("unresolved_symbol_count", 0),
-                "data_completeness_pct": c_meta.get("data_completeness_pct", 100.0),
-                "scan_coverage_pct": c_meta.get("scan_coverage_pct", 100.0),
-                "unavailable_reasons": c_meta.get("unavailable_reasons", {}),
-                "failure_reason": c_meta.get("failure_reason"),
-                "adjustment_state_distribution": c_meta.get("adjustment_state_distribution", {}),
-            },
+            "coverage": resolve_coverage_envelope(
+                status=status,
+                universe_size=u_size,
+                matched_count=rec.get("matched_count"),
+                c_meta=c_meta,
+                failure_reason_fallback=c_meta.get("failure_reason"),
+            ),
             "results": rec.get("results", []),
         }
 
@@ -1120,13 +1126,15 @@ class SmartMoneyScannerRunner:
         }
 
     def _to_envelope(self, rec: Dict[str, Any]) -> Dict[str, Any]:
-        u_meta = rec.get("universe_metadata", {})
-        c_meta = rec.get("coverage_metadata", {})
+        prov = rec.get("provenance", {}) if isinstance(rec.get("provenance"), dict) else {}
+        u_meta = rec.get("universe_metadata") or prov.get("universe_metadata", {})
+        c_meta = rec.get("coverage_metadata") or prov.get("coverage_metadata", {})
         u_size = rec.get("universe_size", 0)
+        status = rec.get("status_at_publication", ScannerStatus.AVAILABLE.value)
         return {
             "scanner_id": "SMART_MONEY",
             "api_contract_version": rec.get("api_contract_version", SMART_MONEY_API_CONTRACT_VERSION),
-            "status": rec.get("status_at_publication", ScannerStatus.AVAILABLE.value),
+            "status": status,
             "methodology": {
                 "ruleset_version": rec.get("ruleset_version", SMART_MONEY_RULESET_VERSION),
                 "evidence_schema_version": rec.get("evidence_schema_version", SMART_MONEY_EVIDENCE_SCHEMA_VERSION),
@@ -1137,7 +1145,7 @@ class SmartMoneyScannerRunner:
                 "universe_version": rec.get("universe_version", SMART_MONEY_UNIVERSE_VERSION),
                 "implementation_release_sha": rec.get("implementation_release_sha", CURRENT_IMPLEMENTATION_RELEASE_SHA),
                 "subsignal": "INSIDER_FORM4",
-                **(rec.get("provenance") or {}),
+                **prov,
             },
             "freshness": rec.get("freshness", {}),
             "snapshot": {
@@ -1158,17 +1166,13 @@ class SmartMoneyScannerRunner:
                 "membership_hash": u_meta.get("membership_hash"),
                 "construction_status": "COMPLETE",
             },
-            "coverage": {
-                "coverage_status": c_meta.get("coverage_status", "COMPLETE"),
-                "data_complete_count": c_meta.get("data_complete_count", u_size),
-                "scanned_successfully_count": c_meta.get("scanned_successfully_count", u_size),
-                "matched_count": rec.get("matched_count"),
-                "unavailable_symbol_count": c_meta.get("unavailable_symbol_count", 0),
-                "unresolved_symbol_count": c_meta.get("unresolved_symbol_count", 0),
-                "data_completeness_pct": c_meta.get("data_completeness_pct", 100.0),
-                "scan_coverage_pct": c_meta.get("scan_coverage_pct", 100.0),
-                "unavailable_reasons": c_meta.get("unavailable_reasons", {}),
-            },
+            "coverage": resolve_coverage_envelope(
+                status=status,
+                universe_size=u_size,
+                matched_count=rec.get("matched_count"),
+                c_meta=c_meta,
+                failure_reason_fallback=c_meta.get("failure_reason"),
+            ),
             "results": rec.get("results", []),
         }
 
@@ -1290,6 +1294,27 @@ class SmartMoneyScannerRunner:
             status_at_pub = ScannerStatus.AVAILABLE.value if is_complete else ScannerStatus.PIPELINE_PENDING.value
             pub_decision = PublicationDecision.PUBLISH.value if is_complete else PublicationDecision.QUARANTINE.value
 
+            universe_metadata = {
+                "scope_class": "US_EQUITIES",
+                "display_name": RADAR_SCOPE_LABEL,
+                "source_population_count": scan_snapshot.scannable_count,
+                "eligible_universe_count": scan_snapshot.scannable_count,
+                "universe_build_id": scan_snapshot.universe_build_id,
+                "membership_hash": scan_snapshot.universe_content_hash,
+                "construction_status": "COMPLETE",
+            }
+            coverage_metadata = {
+                "coverage_status": scan_snapshot.coverage_status or "PARTIAL",
+                "data_complete_count": scan_snapshot.scannable_count,
+                "scanned_successfully_count": scan_snapshot.scannable_count,
+                "matched_count": len(results) if is_complete else 0,
+                "unavailable_symbol_count": 0,
+                "unresolved_symbol_count": 0,
+                "data_completeness_pct": 100.0 if is_complete else 0.0,
+                "scan_coverage_pct": 100.0,
+                "unavailable_reasons": {},
+            }
+
             snapshot_record = {
                 "snapshot_id": snapshot_id,
                 "scanner_id": "SMART_MONEY",
@@ -1314,32 +1339,16 @@ class SmartMoneyScannerRunner:
                     **scan_snapshot.provenance,
                     "subsignal": "INSIDER_FORM4",
                     "role": "INSIDER_FORM4_POINT_IN_TIME_FLOW",
+                    "universe_metadata": universe_metadata,
+                    "coverage_metadata": coverage_metadata,
                 },
                 "freshness": {
                     **scan_snapshot.freshness,
                     "status": FreshnessStatus.LIVE.value,
                 },
                 "publication_decision": pub_decision,
-                "universe_metadata": {
-                    "scope_class": "US_EQUITIES",
-                    "display_name": RADAR_SCOPE_LABEL,
-                    "source_population_count": scan_snapshot.scannable_count,
-                    "eligible_universe_count": scan_snapshot.scannable_count,
-                    "universe_build_id": scan_snapshot.universe_build_id,
-                    "membership_hash": scan_snapshot.universe_content_hash,
-                    "construction_status": "COMPLETE",
-                },
-                "coverage_metadata": {
-                    "coverage_status": scan_snapshot.coverage_status or "PARTIAL",
-                    "data_complete_count": scan_snapshot.scannable_count,
-                    "scanned_successfully_count": scan_snapshot.scannable_count,
-                    "matched_count": len(results) if is_complete else 0,
-                    "unavailable_symbol_count": 0,
-                    "unresolved_symbol_count": 0,
-                    "data_completeness_pct": 100.0 if is_complete else 0.0,
-                    "scan_coverage_pct": 100.0,
-                    "unavailable_reasons": {},
-                },
+                "universe_metadata": universe_metadata,
+                "coverage_metadata": coverage_metadata,
             }
 
             self.snapshot_store.save_snapshot(snapshot_record)

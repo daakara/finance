@@ -151,6 +151,174 @@ class ScannerCandidateResult:
         return asdict(self)
 
 
+def resolve_coverage_envelope(
+    status: Any,
+    universe_size: int,
+    matched_count: Optional[int],
+    c_meta: Optional[Dict[str, Any]] = None,
+    failure_reason_fallback: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Constructs an authoritative, contract-valid coverage dictionary for scanner API envelopes.
+
+    Explicit State Semantics & Invariants:
+    1. ERROR:
+       - Strictly prohibited from advertising false COMPLETE coverage.
+       - If zero symbols were scanned or snapshot claimed COMPLETE on ERROR, coverage_status
+         is clamped to UNAVAILABLE (or EMPTY_UNIVERSE when universe_size == 0).
+       - Genuinely measured partial coverage (0 < scanned < universe_size) is preserved as PARTIAL,
+         with explicit publication failure reason disclosure.
+       - matched_count is strictly None.
+    2. AVAILABLE:
+       - COMPLETE if authoritative scan_coverage_pct >= 99.9% (or measured scanned == universe_size).
+       - PARTIAL if 0 < scan_coverage_pct < 99.9%.
+       - If historical / absent measurements: UNKNOWN status with null counts and null percentages.
+         Eliminates unsupported fallback inference from universe_size.
+    3. PIPELINE_PENDING:
+       - coverage_status is PENDING (or PARTIAL if partial ingestion occurred before evaluation).
+       - matched_count is strictly None.
+    4. STALE:
+       - Preserves known publication coverage status, or UNKNOWN if unmeasured.
+    5. EMPTY_UNIVERSE:
+       - When universe_size == 0, coverage_status is EMPTY_UNIVERSE, counts and pcts are 0.0.
+    6. UNKNOWN:
+       - Preserved whenever authoritative measurements are absent. Never invents 100% or universe_size.
+    """
+    c_meta = c_meta or {}
+    has_explicit = bool(c_meta and "coverage_status" in c_meta)
+    status_str = status.value if hasattr(status, "value") else str(status)
+
+    if universe_size == 0:
+        return {
+            "coverage_status": "EMPTY_UNIVERSE",
+            "data_complete_count": 0,
+            "scanned_successfully_count": 0,
+            "matched_count": None if status_str == "ERROR" else 0,
+            "unavailable_symbol_count": 0,
+            "unresolved_symbol_count": 0,
+            "data_completeness_pct": 0.0,
+            "scan_coverage_pct": 0.0,
+            "unavailable_reasons": c_meta.get("unavailable_reasons", {}),
+            "failure_reason": c_meta.get("failure_reason") or failure_reason_fallback or "EMPTY_UNIVERSE",
+            "adjustment_state_distribution": c_meta.get("adjustment_state_distribution", {}),
+        }
+
+    if has_explicit:
+        raw_status = str(c_meta["coverage_status"]).strip().upper()
+        data_complete_count = c_meta.get("data_complete_count")
+        scanned_count = c_meta.get("scanned_successfully_count")
+        data_completeness_pct = c_meta.get("data_completeness_pct")
+        scan_coverage_pct = c_meta.get("scan_coverage_pct")
+        failure_reason = c_meta.get("failure_reason") or failure_reason_fallback
+
+        # Validate & derive authoritative percentage from measured counts if missing or contradictory
+        if scanned_count is not None and universe_size > 0:
+            calc_pct = round((scanned_count / universe_size) * 100, 1)
+            if scan_coverage_pct is None:
+                scan_coverage_pct = calc_pct
+
+        if data_complete_count is not None and universe_size > 0:
+            calc_d_pct = round((data_complete_count / universe_size) * 100, 1)
+            if data_completeness_pct is None:
+                data_completeness_pct = calc_d_pct
+
+        # Resolve status on ERROR
+        if status_str in (ScannerStatus.ERROR.value, "ERROR"):
+            eff_matched = None
+            if not failure_reason:
+                failure_reason = "SCANNER_EXECUTION_ERROR"
+
+            if scanned_count == 0 or scan_coverage_pct == 0.0:
+                cov_status = "UNAVAILABLE"
+            elif scanned_count is not None and 0 < scanned_count < universe_size:
+                # Genuinely measured partial scan preserved with publication-state disclosure
+                cov_status = "PARTIAL"
+            elif raw_status == "COMPLETE":
+                # False complete on ERROR is strictly prohibited
+                cov_status = "UNAVAILABLE"
+                if failure_reason == "SCANNER_EXECUTION_ERROR":
+                    failure_reason = "PUBLICATION_FAILED_UNAVAILABLE"
+            elif raw_status in ("UNAVAILABLE", "PARTIAL", "EMPTY_UNIVERSE"):
+                cov_status = raw_status
+            else:
+                cov_status = "UNAVAILABLE"
+        else:
+            eff_matched = matched_count
+            # Handle contradictory counts for non-ERROR
+            if scanned_count is not None and universe_size > 0:
+                if scanned_count == 0:
+                    cov_status = "UNAVAILABLE"
+                elif scanned_count < universe_size and raw_status == "COMPLETE":
+                    cov_status = "PARTIAL"
+                elif scanned_count >= universe_size and raw_status == "PARTIAL":
+                    cov_status = "COMPLETE"
+                else:
+                    cov_status = raw_status
+            else:
+                cov_status = raw_status
+
+        return {
+            "coverage_status": cov_status,
+            "data_complete_count": data_complete_count,
+            "scanned_successfully_count": scanned_count,
+            "matched_count": eff_matched,
+            "unavailable_symbol_count": c_meta.get("unavailable_symbol_count", (universe_size - scanned_count) if scanned_count is not None else 0),
+            "unresolved_symbol_count": c_meta.get("unresolved_symbol_count", 0),
+            "data_completeness_pct": data_completeness_pct,
+            "scan_coverage_pct": scan_coverage_pct,
+            "unavailable_reasons": c_meta.get("unavailable_reasons", {}),
+            "failure_reason": failure_reason,
+            "adjustment_state_distribution": c_meta.get("adjustment_state_distribution", {}),
+        }
+
+    # Historical or missing metadata path: strictly reject fabricated claims or inferences
+    if status_str in (ScannerStatus.ERROR.value, "ERROR"):
+        return {
+            "coverage_status": "UNAVAILABLE",
+            "data_complete_count": None,
+            "scanned_successfully_count": None,
+            "matched_count": None,
+            "unavailable_symbol_count": universe_size,
+            "unresolved_symbol_count": 0,
+            "data_completeness_pct": None,
+            "scan_coverage_pct": None,
+            "unavailable_reasons": {},
+            "failure_reason": failure_reason_fallback or "SCANNER_EXECUTION_ERROR",
+            "adjustment_state_distribution": {},
+        }
+
+    if status_str in (ScannerStatus.PIPELINE_PENDING.value, "PIPELINE_PENDING"):
+        return {
+            "coverage_status": "PENDING",
+            "data_complete_count": None,
+            "scanned_successfully_count": None,
+            "matched_count": None,
+            "unavailable_symbol_count": 0,
+            "unresolved_symbol_count": 0,
+            "data_completeness_pct": None,
+            "scan_coverage_pct": None,
+            "unavailable_reasons": {},
+            "failure_reason": failure_reason_fallback or "PIPELINE_PENDING",
+            "adjustment_state_distribution": {},
+        }
+
+    # Historical AVAILABLE or STALE snapshot without coverage metadata:
+    # Must report UNKNOWN and preserve null percentages and null counts
+    return {
+        "coverage_status": "UNKNOWN",
+        "data_complete_count": None,
+        "scanned_successfully_count": None,
+        "matched_count": matched_count,
+        "unavailable_symbol_count": 0,
+        "unresolved_symbol_count": 0,
+        "data_completeness_pct": None,
+        "scan_coverage_pct": None,
+        "unavailable_reasons": {},
+        "failure_reason": None,
+        "adjustment_state_distribution": {},
+    }
+
+
 @dataclass
 class ImmutableScannerSnapshot:
     """Immutable completed snapshot record."""
@@ -174,6 +342,8 @@ class ImmutableScannerSnapshot:
 
     def to_envelope(self) -> Dict[str, Any]:
         """Convert into Shared Radar API Envelope (Section 9, 18, 19)."""
+        u_meta = self.universe_metadata or self.provenance.get("universe_metadata", {})
+        c_meta = self.coverage_metadata or self.provenance.get("coverage_metadata", {})
         env = {
             "scanner_id": self.scanner_id,
             "api_contract_version": self.version_tuple.api_contract_version,
@@ -209,28 +379,22 @@ class ImmutableScannerSnapshot:
                 "publication_decision": self.publication_decision.value if hasattr(self.publication_decision, "value") else str(self.publication_decision),
             },
             "universe": {
-                "scope_class": self.universe_metadata.get("scope_class", "US_EQUITIES"),
-                "display_name": self.universe_metadata.get("display_name", RADAR_SCOPE_LABEL),
-                "source_population_count": self.universe_metadata.get("source_population_count", self.universe_size),
-                "eligible_universe_count": self.universe_metadata.get("eligible_universe_count", self.universe_size),
+                "scope_class": u_meta.get("scope_class", "US_EQUITIES"),
+                "display_name": u_meta.get("display_name", RADAR_SCOPE_LABEL),
+                "source_population_count": u_meta.get("source_population_count", self.universe_size),
+                "eligible_universe_count": u_meta.get("eligible_universe_count", self.universe_size),
                 "universe_version": self.version_tuple.universe_version,
-                "universe_build_id": self.universe_metadata.get("universe_build_id"),
-                "membership_hash": self.universe_metadata.get("membership_hash"),
-                "construction_status": self.universe_metadata.get("construction_status", "COMPLETE"),
+                "universe_build_id": u_meta.get("universe_build_id"),
+                "membership_hash": u_meta.get("membership_hash"),
+                "construction_status": u_meta.get("construction_status", "COMPLETE"),
             },
-            "coverage": {
-                "coverage_status": self.coverage_metadata.get("coverage_status", "COMPLETE"),
-                "data_complete_count": self.coverage_metadata.get("data_complete_count", self.universe_size),
-                "scanned_successfully_count": self.coverage_metadata.get("scanned_successfully_count", self.universe_size),
-                "matched_count": self.matched_count,
-                "unavailable_symbol_count": self.coverage_metadata.get("unavailable_symbol_count", 0),
-                "unresolved_symbol_count": self.coverage_metadata.get("unresolved_symbol_count", 0),
-                "data_completeness_pct": self.coverage_metadata.get("data_completeness_pct", 100.0),
-                "scan_coverage_pct": self.coverage_metadata.get("scan_coverage_pct", 100.0),
-                "unavailable_reasons": self.coverage_metadata.get("unavailable_reasons", {}),
-                "failure_reason": self.coverage_metadata.get("failure_reason"),
-                "adjustment_state_distribution": self.coverage_metadata.get("adjustment_state_distribution", {}),
-            },
+            "coverage": resolve_coverage_envelope(
+                status=self.status_at_publication,
+                universe_size=self.universe_size,
+                matched_count=self.matched_count,
+                c_meta=c_meta,
+                failure_reason_fallback=c_meta.get("failure_reason"),
+            ),
             "results": self.results,
         }
         return env
