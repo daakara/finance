@@ -89,6 +89,11 @@ async function run() {
 
   try {
     const page = await browser.newPage();
+    await page.evaluateOnNewDocument(() => {
+      try {
+        localStorage.setItem("FINANCE_ONBOARDING_COMPLETED", "true");
+      } catch {}
+    });
 
     // ------------------------------------------------------------------------
     // SCENARIO 1: Mobile 375px — Neutral Radar (No Asset Selected)
@@ -301,6 +306,50 @@ async function run() {
     saveScreenshot(temp8, "28_mob_07_radar_candidate_row_selected_375.png");
     console.log("Saved: 28_mob_07_radar_candidate_row_selected_375.png");
 
+    // ------------------------------------------------------------------------
+    // SCENARIO 9: Mobile 375px — Stale Selection Invalidation on Keyword Search
+    // ------------------------------------------------------------------------
+    console.log("\n--- Scenario 9: Mobile 375px — Stale Selection Invalidation on Keyword Search ---");
+    // With row selected from Scenario 8 (or navigating to ?symbol=NVDA):
+    await page.goto(`http://127.0.0.1:${PORT}/radar?symbol=NVDA`, { waitUntil: "domcontentloaded" });
+    await delay(2500);
+
+    const preSearchDock = await page.evaluate(() => {
+      const allDocks = Array.from(document.querySelectorAll('nav[aria-label="Mobile Navigation Dock"]'));
+      const dock = allDocks.find((n) => n.className.includes("md:hidden"));
+      return {
+        links: Array.from(dock?.querySelectorAll('a') || []).map((a) => ({ text: a.textContent?.trim(), href: a.getAttribute("href") })),
+      };
+    });
+    console.log("Pre-Search Dock (NVDA selected):", JSON.stringify(preSearchDock));
+    assert.ok(preSearchDock.links.some((l) => l.href?.includes("NVDA")), "Dock must reflect NVDA before search input");
+
+    // Now focus and type 'ENERGY' into the search input
+    const searchSelector = 'input[aria-label="Search candidate, ticker, or catalyst"]';
+    await page.waitForSelector(searchSelector, { timeout: 5000 });
+    await page.click(searchSelector, { clickCount: 3 });
+    await page.keyboard.press("Backspace");
+    await page.type(searchSelector, "ENERGY", { delay: 50 });
+    await delay(1500);
+
+    const postSearchDock = await page.evaluate(() => {
+      const allDocks = Array.from(document.querySelectorAll('nav[aria-label="Mobile Navigation Dock"]'));
+      const dock = allDocks.find((n) => n.className.includes("md:hidden"));
+      return {
+        links: Array.from(dock?.querySelectorAll('a') || []).map((a) => ({ text: a.textContent?.trim(), href: a.getAttribute("href") })),
+      };
+    });
+    console.log("Post-Search Dock (ENERGY typed):", JSON.stringify(postSearchDock));
+    const analysisPost = postSearchDock.links.find((l) => l.text?.includes("Analysis"));
+    const planPost = postSearchDock.links.find((l) => l.text?.includes("Plan"));
+    assert.ok(analysisPost?.href === "/" || analysisPost?.href === "", "Analysis link must revert to neutral '/' when keyword 'ENERGY' is typed");
+    assert.ok(planPost?.href === "/setups" || planPost?.href === "/setups/", "Plan link must revert to neutral '/setups' when keyword 'ENERGY' is typed");
+
+    const temp9 = path.join(OUT_DIR, "temp_mob_08.png");
+    await page.screenshot({ path: temp9, fullPage: false });
+    saveScreenshot(temp9, "29_mob_08_radar_stale_invalidation_375.png");
+    console.log("Saved: 29_mob_08_radar_stale_invalidation_375.png");
+
     // Update visual_manifest.json with new entries
     const manifestPath = path.resolve(__dirname, "../../audit-output/sprint4/ws42/screenshots/visual_manifest.json");
     if (fs.existsSync(manifestPath)) {
@@ -315,11 +364,20 @@ async function run() {
           filename: "28_mob_07_radar_candidate_row_selected_375.png",
           sizeKb: (fs.statSync(path.join(DEST_DIRS[0], "28_mob_07_radar_candidate_row_selected_375.png")).size / 1024).toFixed(1),
           description: "Radar Mobile (375px) with candidate table row selected: SynthesisMobileDock dynamically updates active security context and establishes contextual links without stale asset retention."
+        },
+        {
+          filename: "29_mob_08_radar_stale_invalidation_375.png",
+          sizeKb: (fs.statSync(path.join(DEST_DIRS[0], "29_mob_08_radar_stale_invalidation_375.png")).size / 1024).toFixed(1),
+          description: "Radar Mobile (375px) demonstrating stale asset invalidation: selecting NVDA then entering keyword 'ENERGY' invalidates prior selection and restores neutral dock links ('/' and '/setups') deterministically."
         }
       ];
 
-      // Remove any existing entries for 27 and 28 before appending
-      const filtered = rawManifest.filter((item: any) => item.filename !== "27_mob_06_radar_keyword_energy_neutral_375.png" && item.filename !== "28_mob_07_radar_candidate_row_selected_375.png");
+      // Remove any existing entries for 27, 28, 29 before appending
+      const filtered = rawManifest.filter((item: any) =>
+        item.filename !== "27_mob_06_radar_keyword_energy_neutral_375.png" &&
+        item.filename !== "28_mob_07_radar_candidate_row_selected_375.png" &&
+        item.filename !== "29_mob_08_radar_stale_invalidation_375.png"
+      );
       filtered.push(...newItems);
 
       for (const d of DEST_DIRS) {
