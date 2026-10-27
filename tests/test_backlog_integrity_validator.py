@@ -764,7 +764,7 @@ class TestSprint4ToSprint5Transition:
         assert errors == []
         assert verdict == "PASS"
 
-        assert canonical_backlog_data["active_sprint"] == "SPRINT_5"
+        assert canonical_backlog_data["active_sprint"] == "SPRINT_4"
         tasks = canonical_backlog_data["tasks"]
         assert len(tasks) == 43
 
@@ -892,6 +892,7 @@ class TestSprint4ToSprint5Transition:
     # 8. Adversarial: Invalid sprint-transition state (active task left in closed sprint)
     def test_adversarial_invalid_sprint_transition_state(self, canonical_backlog_data, canonical_schema_data):
         data = copy.deepcopy(canonical_backlog_data)
+        data["active_sprint"] = "SPRINT_5"
         # Leave a task with SPRINT4_EXECUTION and IN_PROGRESS assigned to SPRINT_4
         s3_004 = next(t for t in data["tasks"] if t["task_id"] == "ARX-S3-004")
         s3_004["assigned_sprint"] = "SPRINT_4"
@@ -905,6 +906,7 @@ class TestSprint4ToSprint5Transition:
     # 9. Adversarial: Reopening a previously verified task
     def test_adversarial_reopening_previously_verified_task(self, canonical_backlog_data, canonical_schema_data):
         data = copy.deepcopy(canonical_backlog_data)
+        data["active_sprint"] = "SPRINT_5"
         gov001 = next(t for t in data["tasks"] if t["task_id"] == "ARX-S4-GOV-001")
         gov001["status"] = "IN_PROGRESS"
         validator = BacklogValidator(data, schema_data=canonical_schema_data)
@@ -1501,3 +1503,147 @@ class TestPreSprint5ClosureInvariants:
         verdict, findings = validator.validate_all()
         assert verdict == "FAIL"
         assert any(f.rule_id == "P5-007" and "is RELEASE_HELD but claims CLOSED_VERIFIED" in f.message for f in findings)
+
+    # === Directive 060 Section 5: Decoupled Technical Readiness & Execution Permission ===
+
+    # Scenario 1: Unresolved release obligations -> readiness blocked, execution blocked
+    def test_section5_scenario1_unresolved_release_obligations_blocks_readiness_and_execution(self, canonical_backlog_data, canonical_schema_data):
+        """
+        Directive 060 Section 5 Scenario 1:
+        Unresolved release obligations MUST block both Technical Readiness (Outcome A)
+        and Execution Permission (Outcome B).
+        """
+        # Baseline canonical data has DEF-056-001/002/003 as RELEASE_HELD
+        val_readiness = BacklogValidator(canonical_backlog_data, schema_data=canonical_schema_data, pre_sprint5_readiness=True)
+        verdict_r, findings_r = val_readiness.validate_all()
+        errors_r = [f for f in findings_r if f.severity == "ERROR"]
+        assert verdict_r == "FAIL"
+        assert len(errors_r) == 3
+        for oid in ("OBL-DEF-056-001", "OBL-DEF-056-002", "OBL-DEF-056-003"):
+            assert any(oid in f.message and "held from production deployment" in f.message for f in errors_r)
+        # Note: missing PO kickoff does NOT appear in readiness
+        assert not any("Sprint 5 execution kickoff is NOT authorized" in f.message for f in errors_r)
+
+        val_exec = BacklogValidator(canonical_backlog_data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict_e, findings_e = val_exec.validate_all()
+        errors_e = [f for f in findings_e if f.severity == "ERROR"]
+        assert verdict_e == "FAIL"
+        assert len(errors_e) == 4  # 3 release-held + 1 kickoff unauthorized
+        assert any("Sprint 5 execution kickoff is NOT authorized" in f.message for f in errors_e)
+
+    # Scenario 2: Technical obligations complete but kickoff unauthorized -> readiness passes, execution blocked
+    def test_section5_scenario2_technical_complete_kickoff_unauthorized_readiness_passes_execution_blocked(self, canonical_backlog_data, canonical_schema_data):
+        """
+        Directive 060 Section 5 Scenario 2:
+        When all technical/release obligations are deployed and verified, Technical Readiness (Outcome A)
+        MUST PASS, while Execution Permission (Outcome B) remains BLOCKED pending explicit PO kickoff.
+        """
+        import copy
+        data = copy.deepcopy(canonical_backlog_data)
+        # Simulate PR #118 production deployment promotion & verification
+        for o in data["obligations"]:
+            if o.get("source_finding_id") in ("DEF-056-001", "DEF-056-002", "DEF-056-003"):
+                o["status"] = "COMPLETED"
+                o["disposition"] = "CLOSED_VERIFIED"
+                o["deployment_state"] = "DEPLOYED_ACTIVE"
+                o["operational_state"] = "EXECUTED"
+                o["governance_state"] = "RELEASED"
+                o["scope_authorization"] = "OWNER_AUTHORIZED"
+                o["production_acceptance_state"] = "ACCEPTED_ACTIVE"
+                o["blocking_decision"] = None
+                o["deployment_refs"] = ["Railway:d1f8cf37 (PRODUCTION_ACTIVE)", "Cloudflare:655b4653 (ACTIVE)"]
+            if o.get("obligation_id") == "OBL-ARX-S3-006":
+                o["scope_authorization"] = "OWNER_AUTHORIZED"
+
+        # Explicitly ensure kickoff is NOT authorized
+        data["sprint5_execution_authorized"] = False
+        data["sprint5_execution_authorization_record"] = None
+
+        # Outcome A: Technical Readiness MUST PASS
+        val_readiness = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_readiness=True)
+        verdict_r, findings_r = val_readiness.validate_all()
+        errors_r = [f for f in findings_r if f.severity == "ERROR"]
+        assert errors_r == [], f"Unexpected readiness errors: {[str(e) for e in errors_r]}"
+        assert verdict_r == "PASS"
+
+        # Outcome B: Execution Permission MUST FAIL CLOSED
+        val_exec = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict_e, findings_e = val_exec.validate_all()
+        errors_e = [f for f in findings_e if f.severity == "ERROR"]
+        assert verdict_e == "FAIL"
+        assert len(errors_e) == 1
+        assert "Sprint 5 execution kickoff is NOT authorized by Product Owner" in errors_e[0].message
+
+    # Scenario 3: Technical obligations complete AND valid kickoff authorization -> execution eligible
+    def test_section5_scenario3_technical_complete_and_kickoff_authorized_execution_eligible(self, canonical_backlog_data, canonical_schema_data):
+        """
+        Directive 060 Section 5 Scenario 3:
+        When all technical obligations are satisfied AND an authentic Product Owner kickoff record exists,
+        both Technical Readiness (Outcome A) and Execution Permission (Outcome B) MUST PASS cleanly.
+        """
+        import copy
+        data = copy.deepcopy(canonical_backlog_data)
+        # Simulate PR #118 production deployment promotion & verification
+        for o in data["obligations"]:
+            if o.get("source_finding_id") in ("DEF-056-001", "DEF-056-002", "DEF-056-003"):
+                o["status"] = "COMPLETED"
+                o["disposition"] = "CLOSED_VERIFIED"
+                o["deployment_state"] = "DEPLOYED_ACTIVE"
+                o["operational_state"] = "EXECUTED"
+                o["governance_state"] = "RELEASED"
+                o["scope_authorization"] = "OWNER_AUTHORIZED"
+                o["production_acceptance_state"] = "ACCEPTED_ACTIVE"
+                o["blocking_decision"] = None
+                o["deployment_refs"] = ["Railway:d1f8cf37 (PRODUCTION_ACTIVE)", "Cloudflare:655b4653 (ACTIVE)"]
+            if o.get("obligation_id") == "OBL-ARX-S3-006":
+                o["scope_authorization"] = "OWNER_AUTHORIZED"
+
+        # Affirmative Product Owner kickoff authorization record
+        data["sprint5_execution_authorized"] = True
+        data["sprint5_execution_authorization_record"] = {
+            "authorizer": "PRODUCT_OWNER",
+            "decision": "AFFIRMATIVE_KICKOFF_GRANTED",
+            "timestamp": "2026-10-27T23:00:00Z",
+            "decision_reference": "PO-DIR-060-KICKOFF",
+            "governing_directive": "Directive 060",
+            "reason": "Production rollout verified and pre-Sprint 5 certification complete.",
+            "notes": "Affirmative owner kickoff granted."
+        }
+
+        # Outcome A: Technical Readiness MUST PASS
+        val_readiness = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_readiness=True)
+        verdict_r, findings_r = val_readiness.validate_all()
+        errors_r = [f for f in findings_r if f.severity == "ERROR"]
+        assert errors_r == []
+        assert verdict_r == "PASS"
+
+        # Outcome B: Execution Permission MUST PASS
+        val_exec = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict_e, findings_e = val_exec.validate_all()
+        errors_e = [f for f in findings_e if f.severity == "ERROR"]
+        assert errors_e == []
+        assert verdict_e == "PASS"
+
+    # Scenario 4: Sprint 5 marked active without authorization -> invalid state
+    def test_section5_scenario4_sprint5_marked_active_without_authorization_rejected(self, canonical_backlog_data, canonical_schema_data):
+        """
+        Directive 060 Section 5 Scenario 4:
+        Marking active_sprint as 'SPRINT_5' while sprint5_execution_authorized is False
+        MUST be detected as an invalid state and rejected by both readiness and closure validators.
+        """
+        import copy
+        data = copy.deepcopy(canonical_backlog_data)
+        data["active_sprint"] = "SPRINT_5"
+        data["sprint5_execution_authorized"] = False
+
+        val_readiness = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_readiness=True)
+        verdict_r, findings_r = val_readiness.validate_all()
+        errors_r = [f for f in findings_r if f.severity == "ERROR"]
+        assert verdict_r == "FAIL"
+        assert any("Active sprint set to 'SPRINT_5' while sprint5_execution_authorized is False" in f.message for f in errors_r)
+
+        val_exec = BacklogValidator(data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        verdict_e, findings_e = val_exec.validate_all()
+        errors_e = [f for f in findings_e if f.severity == "ERROR"]
+        assert verdict_e == "FAIL"
+        assert any("Active sprint set to 'SPRINT_5' while sprint5_execution_authorized is False" in f.message for f in errors_e)

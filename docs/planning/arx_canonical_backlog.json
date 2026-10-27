@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
   "backlog_name": "ARX Terminal Canonical Enterprise Backlog",
-  "last_reconciled": "2026-10-27T19:30:00Z",
-  "active_sprint": "SPRINT_5",
+  "last_reconciled": "2026-10-27T22:30:00Z",
+  "active_sprint": "SPRINT_4",
   "governance_framework": "ARX Closure Model v2 + Governance Efficiency v1.1",
   "immutable_holds": {
     "SPRINT3": "CLOSED_WITH_CONTROLLED_CARRYFORWARD",

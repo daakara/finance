@@ -183,6 +183,7 @@ class BacklogValidator:
         require_external_inventory: bool = False,
         require_closure: bool = False,
         pre_sprint5_closure: bool = False,
+        pre_sprint5_readiness: bool = False,
     ):
         self.data = backlog_data
         self.prs_inventory = prs_inventory
@@ -193,6 +194,7 @@ class BacklogValidator:
         self.require_external_inventory = require_external_inventory
         self.require_closure = require_closure
         self.pre_sprint5_closure = pre_sprint5_closure
+        self.pre_sprint5_readiness = pre_sprint5_readiness
         self.findings: List[Finding] = []
 
         # Audit statuses
@@ -226,7 +228,11 @@ class BacklogValidator:
         self._check_bi_011_operational_truth(tasks)
         self._check_bi_012_historical_continuity(tasks)
 
-        # Pre-Sprint 5 Closure Invariants (P5-001 to P5-012)
+        # Pre-Sprint 5 Technical Readiness Invariants (Outcome A)
+        if self.pre_sprint5_readiness:
+            self._check_p5_readiness_invariants(tasks)
+
+        # Pre-Sprint 5 Closure & Execution Gate (Outcome B)
         if self.pre_sprint5_closure:
             self._check_p5_invariants(tasks)
 
@@ -539,8 +545,8 @@ class BacklogValidator:
 
 
 
-    def _check_p5_invariants(self, tasks: List[Dict[str, Any]]):
-        """Mandatory Pre-Sprint 5 Closure Invariants (P5-001 to P5-012) under Directive 058/059."""
+    def _check_p5_readiness_invariants(self, tasks: List[Dict[str, Any]]):
+        """Technical Closure Readiness Invariants (Outcome A: P5-001 to P5-009, P5-011 to P5-012)."""
         obligations = self.data.get("obligations", [])
         tasks_by_id = {t.get("task_id"): t for t in tasks if t.get("task_id")}
 
@@ -672,8 +678,26 @@ class BacklogValidator:
             if rf not in found_source_ids:
                 self.findings.append(Finding("P5-009", None, "ERROR", f"Required cross-audit source finding '{rf}' is missing from obligation register"))
 
-        # P5-010: Owner authority for transition and execution
+        # P5-010 Integrity: Active sprint cannot be SPRINT_5 without affirmative kickoff authorization
         active_sprint = self.data.get("active_sprint")
+        s5_exec_authorized = self.data.get("sprint5_execution_authorized")
+        if active_sprint == "SPRINT_5" and not s5_exec_authorized:
+            self.findings.append(Finding("P5-010", None, "ERROR", "Active sprint set to 'SPRINT_5' while sprint5_execution_authorized is False"))
+
+        # P5-011: No stale baseline substitution
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            deploys = obl.get("deployment_refs", [])
+            for dep in deploys:
+                if "5efc2179" in dep:
+                    self.findings.append(Finding("P5-011", oid, "ERROR", f"Obligation '{oid}' substitutes stale unverified deployment SHA '5efc2179' instead of reconciled baseline '856170c'"))
+
+        # P5-012: External-source verification integrity
+        if self.reconciliation_status == "NOT_PERFORMED" and self.require_external_inventory:
+            self.findings.append(Finding("P5-012", None, "ERROR", "External reconciliation was required but execution status is NOT_PERFORMED; cannot verify external PR/issue truthfulness"))
+
+    def _check_p5_execution_authority(self):
+        """Enforces affirmative Product Owner kickoff authorization (Outcome B: P5-010)."""
         s5_exec_authorized = self.data.get("sprint5_execution_authorized")
         auth_record = self.data.get("sprint5_execution_authorization_record")
 
@@ -698,27 +722,16 @@ class BacklogValidator:
                 if not gov or not str(gov).strip():
                     self.findings.append(Finding("P5-010", None, "ERROR", "Sprint 5 execution authorization record missing valid governing_directive"))
         else:
-            # s5_exec_authorized is False or None
             self.findings.append(Finding("P5-010", None, "ERROR", "Sprint 5 execution kickoff is NOT authorized by Product Owner. Execution remains blocked pending affirmative owner gate (reason: OWNER_AUTHORIZATION_EVIDENCE_MISSING)"))
             if isinstance(auth_record, dict):
                 decision = auth_record.get("decision")
                 if decision == "AFFIRMATIVE_KICKOFF_GRANTED":
                     self.findings.append(Finding("P5-010", None, "ERROR", "Sprint 5 execution authorization record contradiction: authorized flag is False but record claims 'AFFIRMATIVE_KICKOFF_GRANTED'"))
 
-        if active_sprint == "SPRINT_5" and not s5_exec_authorized:
-            self.findings.append(Finding("P5-010", None, "ERROR", "Active sprint set to 'SPRINT_5' while sprint5_execution_authorized is False"))
-
-        # P5-011: No stale baseline substitution
-        for obl in obligations:
-            oid = obl.get("obligation_id")
-            deploys = obl.get("deployment_refs", [])
-            for dep in deploys:
-                if "5efc2179" in dep:
-                    self.findings.append(Finding("P5-011", oid, "ERROR", f"Obligation '{oid}' substitutes stale unverified deployment SHA '5efc2179' instead of reconciled baseline '856170c'"))
-
-        # P5-012: External-source verification integrity
-        if self.reconciliation_status == "NOT_PERFORMED" and self.require_external_inventory:
-            self.findings.append(Finding("P5-012", None, "ERROR", "External reconciliation was required but execution status is NOT_PERFORMED; cannot verify external PR/issue truthfulness"))
+    def _check_p5_invariants(self, tasks: List[Dict[str, Any]]):
+        """Complete Pre-Sprint 5 Closure Invariants (Outcome A + Outcome B) under Directives 058/059/060."""
+        self._check_p5_readiness_invariants(tasks)
+        self._check_p5_execution_authority()
 
 
 def detect_scoped_governance_changes(
@@ -835,7 +848,8 @@ def main():
     parser.add_argument("--stage", choices=["report-only", "scoped", "strict"], default="scoped", help="Progressive enforcement stage")
     parser.add_argument("--strict", action="store_true", help="Fail closed on warnings as well as errors")
     parser.add_argument("--closure-certification", action="store_true", help="Enforce full closure certification requirements (cannot be masked by report-only)")
-    parser.add_argument("--pre-sprint5-closure", action="store_true", help="Enforce mandatory Pre-Sprint 5 closure invariants P5-001 to P5-012")
+    parser.add_argument("--pre-sprint5-readiness", action="store_true", help="Enforce Technical Closure Readiness (Outcome A: P5-001 to P5-009, P5-011, P5-012; does not require affirmative PO kickoff authorization)")
+    parser.add_argument("--pre-sprint5-closure", action="store_true", help="Enforce Complete Pre-Sprint 5 Closure & Execution Permission (Outcome B: Technical Readiness + Affirmative PO Kickoff Authorization)")
     parser.add_argument("--require-baseline", action="store_true", help="Fail closed if historical baseline is unavailable")
     parser.add_argument("--require-external-inventory", action="store_true", help="Fail closed if external GitHub inventory is missing")
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON output")
@@ -925,10 +939,11 @@ def main():
         issues_inventory=issues_inventory,
         baseline_data=baseline_data,
         schema_data=schema_data,
-        require_baseline=(args.require_baseline or args.closure_certification or args.pre_sprint5_closure),
+        require_baseline=(args.require_baseline or args.closure_certification or args.pre_sprint5_closure or args.pre_sprint5_readiness),
         require_external_inventory=(args.require_external_inventory or args.closure_certification),
         require_closure=args.closure_certification,
         pre_sprint5_closure=args.pre_sprint5_closure,
+        pre_sprint5_readiness=args.pre_sprint5_readiness,
     )
     verdict, findings = validator.validate_all()
 
@@ -936,7 +951,7 @@ def main():
     has_errors = any(f.severity == "ERROR" for f in findings)
     effective_stage = "strict" if (args.strict or args.closure_certification) else args.stage
 
-    if args.pre_sprint5_closure:
+    if args.pre_sprint5_closure or args.pre_sprint5_readiness:
         exit_code = 0 if verdict == "PASS" else 1
     elif args.closure_certification:
         exit_code = 0 if verdict == "PASS" else 1
@@ -1000,9 +1015,21 @@ def main():
         if not findings:
             print("All rules (BI-000 to BI-012) verified with zero errors or warnings.")
 
-        # Dual-Gate Enforcement Readout
-        if not args.pre_sprint5_closure:
-            p5_val = BacklogValidator(
+        # Multi-Gate Enforcement Readout
+        if not args.pre_sprint5_closure and not args.pre_sprint5_readiness:
+            val_a = BacklogValidator(
+                backlog_data,
+                prs_inventory=prs_inventory,
+                issues_inventory=issues_inventory,
+                baseline_data=baseline_data,
+                schema_data=schema_data,
+                require_baseline=True,
+                pre_sprint5_readiness=True,
+            )
+            _, ready_findings = val_a.validate_all()
+            ready_errors = [f for f in ready_findings if f.severity == "ERROR"]
+
+            val_b = BacklogValidator(
                 backlog_data,
                 prs_inventory=prs_inventory,
                 issues_inventory=issues_inventory,
@@ -1011,17 +1038,25 @@ def main():
                 require_baseline=True,
                 pre_sprint5_closure=True,
             )
-            _, p5_findings = p5_val.validate_all()
-            p5_errors = [f for f in p5_findings if f.severity == "ERROR"]
+            _, exec_findings = val_b.validate_all()
+            exec_errors = [f for f in exec_findings if f.severity == "ERROR"]
+
             print("-----------------------------------------------------------")
-            print("DUAL-GATE ENFORCEMENT SUMMARY:")
+            print("MULTI-GATE ENFORCEMENT SUMMARY:")
             print(f"  Gate 1 (Governance Integration Gate): {verdict} (Exit Code: {exit_code}) [PR MERGE ELIGIBLE]")
-            if p5_errors:
-                print(f"  Gate 2 (Pre-Sprint 5 Certification Gate): BLOCKED (EXPECTED, {len(p5_errors)} active blockers)")
-                for pe in p5_errors:
-                    print(f"    * {str(pe)}")
+            if ready_errors:
+                print(f"  Gate 2A (Technical Closure Readiness): BLOCKED ({len(ready_errors)} active blockers)")
+                for re in ready_errors:
+                    print(f"    * {str(re)}")
             else:
-                print("  Gate 2 (Pre-Sprint 5 Certification Gate): CERTIFIED_READY")
+                print("  Gate 2A (Technical Closure Readiness): PASS [TECHNICAL CRITERIA SATISFIED]")
+
+            if exec_errors:
+                print(f"  Gate 2B (Sprint 5 Execution Permission): BLOCKED ({len(exec_errors)} active blockers)")
+                for ee in exec_errors:
+                    print(f"    * {str(ee)}")
+            else:
+                print("  Gate 2B (Sprint 5 Execution Permission): ELIGIBLE [AFFIRMATIVE KICKOFF GRANTED]")
             print("===========================================================")
 
     sys.exit(exit_code)
