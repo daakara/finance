@@ -125,7 +125,9 @@ export default function AdaptiveTerminal({
           ...freshness,
           status: (freshness.stalenessDays && freshness.stalenessDays > 4) ? "STALE_HISTORICAL" : freshness.status,
         }
-      : undefined
+      : undefined,
+    exchange,
+    marketSession
   );
 
   if (freshness) {

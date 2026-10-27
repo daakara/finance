@@ -41,7 +41,10 @@ export function SharedAssetDeck({
               data-testid="card-exchange"
               className="macro-item px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#141c2e] text-slate-400 border border-[#2b3a52]"
             >
-              {(insight.advanced as any)?.exchange || (insight as any)?.exchange || "NASDAQ"}
+              {(() => {
+                const ex = insight.advanced?.exchange || (insight as any)?.exchange;
+                return ex && ex !== "UNKNOWN" ? ex : "UNAVAILABLE";
+              })()}
             </span>
             <span
               id="card-status-badge"

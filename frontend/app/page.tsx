@@ -36,6 +36,7 @@ import { trackWorkspaceSwitch, trackRoleSwitch, trackSymbolSearch } from "../lib
 import { resolveAssetAlias } from "../lib/assetRegistry";
 import { isETF, resolveCapabilities } from "../lib/assetTypeUtils";
 import { emitEtfIntentAttempt } from "../lib/telemetry/etfIntentClient";
+import { MASTER_ASSET_CATALOG } from "../lib/masterCatalog";
 import TerminalSsrShell from "../components/TerminalSsrShell";
 import SynthesisMobileDock from "../components/synthesis/SynthesisMobileDock";
 import { resolveFreshCachedVix, resolveFreshMacroEvidence } from "../lib/preflightEvaluator";
@@ -408,7 +409,7 @@ function TerminalContent() {
               key={`${selectedSymbol}_${userRole}`}
               symbol={selectedSymbol}
               companyName={aliasRecommendation?.companyName || selectedSymbol}
-              exchange={data?.exchange || (data?.canonicalInstrument as any)?.exchange || (aliasRecommendation as any)?.exchange || "NASDAQ"}
+              exchange={data?.exchange || data?.instrument?.primary_exchange || (data?.canonicalInstrument as any)?.primary_exchange || (aliasRecommendation as any)?.exchange || MASTER_ASSET_CATALOG[selectedSymbol.toUpperCase().replace("-USD", "")]?.exchange}
               marketSession={data?.marketSession || data?.marketPriceState?.marketSession || (data?._dataSource === "live" ? "Market Open / Live Intraday" : "Regular Trading Hours")}
               currentPrice={data?.currentPrice ?? (SpotPriceRegistry.get(selectedSymbol)?.price || 0)}
               changePct={data?.priceChangePct24h || 0}
@@ -675,6 +676,8 @@ function TerminalContent() {
                   optionsFlow={data?.smartMoney?.optionsFlow}
                   userRole={userRole}
                   onSelectSymbol={setSelectedSymbol}
+                  status={data?.smartMoney?.status}
+                  notice={data?.smartMoney?.notice}
                 />
                 {!capabilities.canUseETFWorkflow && (
                   <TraderArchetypesCard

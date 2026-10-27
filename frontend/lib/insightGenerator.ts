@@ -11,7 +11,7 @@ import {
 import { deriveAssessmentState, assertDecisionAuthorityConsistency } from "./assessmentEngine";
 import { CandleData, ConfluenceData, OptimalExecutionPlan } from "./api";
 import { evaluateLevelRelation } from "./reclaimSemantics";
-import { MASTER_ASSET_CATALOG } from "./masterCatalog";
+import { MASTER_ASSET_CATALOG, getMasterAsset } from "./masterCatalog";
 
 export function generateQuantitativeInsight(
   symbol: string,
@@ -28,8 +28,16 @@ export function generateQuantitativeInsight(
   confluence?: ConfluenceData,
   decisionTrace?: DecisionTrace,
   optimalExecution?: OptimalExecutionPlan,
-  freshnessStatusOrInfo?: string | FreshnessInfo
+  freshnessStatusOrInfo?: string | FreshnessInfo,
+  exchange?: string,
+  marketSession?: string
 ): QuantitativeInsight {
+  const catalogEntry = getMasterAsset(symbol);
+  const resolvedExchange =
+    exchange && exchange !== "UNKNOWN"
+      ? exchange
+      : (catalogEntry?.exchange || (symbol.toUpperCase().includes("-USD") ? "Crypto" : undefined));
+
   const effectiveFreshness: FreshnessInfo | undefined =
     typeof freshnessStatusOrInfo === "object" && freshnessStatusOrInfo !== null
       ? freshnessStatusOrInfo
@@ -157,8 +165,6 @@ export function generateQuantitativeInsight(
     : (fundPillar?.status === "positive" ? "FAVORABLE" : (fundPillar?.status === "warning" ? "UNFAVORABLE" : "MIXED"));
   const healthPointImpact = isHealthAvailable ? Math.round((fundPillar?.score || 0) * 0.20) : 0;
 
-  const cleanSym = (symbol || "").toUpperCase().replace("-USD", "");
-  const catalogEntry = MASTER_ASSET_CATALOG[cleanSym];
   const isEtf =
     catalogEntry?.type === "ETF" ||
     (decisionTrace as any)?.instrumentProfile?.securityType === "ETF" ||
@@ -480,6 +486,8 @@ export function generateQuantitativeInsight(
     id: `insight_${symbol.toLowerCase()}`,
     symbol: symbol.toUpperCase(),
     companyName,
+    exchange: resolvedExchange,
+    marketSession,
     price: safePrice,
     changePct,
     setupScore: finalSetupScore,
@@ -636,6 +644,8 @@ export function generateQuantitativeInsight(
 
     // Tier 3: Quantitative Data (Advanced)
     advanced: {
+      exchange: resolvedExchange,
+      marketSession,
       rsi: calculatedRsi14,
       ema20,
       sma50,

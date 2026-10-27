@@ -78,11 +78,11 @@ export default function TraderArchetypesCard({ symbol, traderArchetypes }: Trade
             </h3>
           </div>
           <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
-            5 iconic investor archetypes evaluating moat, policy subsidies, macro trends, quantitative risk, and disruptive growth
+            Model-derived similarity to selected investment strategies. These scores do not indicate current trades, positions, endorsements, or intentions of the named investors.
           </p>
           <div className="flex flex-wrap items-center gap-2 mt-1">
             <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/80 inline-flex items-center gap-1">
-              <span>🎭</span> 5-Persona Quantitative Consensus Framework
+              <span>🎭</span> Strategy Alignment Model (Not Actual Holdings)
             </span>
             {data.availableCount !== undefined && (
               <span className="text-[9px] font-semibold px-2 py-0.5 rounded bg-[#1b2434] text-slate-300 border border-slate-700/60">
@@ -116,7 +116,7 @@ export default function TraderArchetypesCard({ symbol, traderArchetypes }: Trade
         {data.archetypes.map((item, idx) => {
           const isUnavailable = item.alignmentScore == null || item.evidenceStatus === "UNAVAILABLE";
           const isProvisional = item.evidenceStatus === "PROVISIONAL" || item.evidenceStatus === "PROVISIONAL_DYNAMIC";
-          const isObserved = item.evidenceStatus === "AUTHORITATIVE_DYNAMIC" || item.evidenceStatus === "AVAILABLE";
+          const isFactorModeled = item.evidenceStatus === "AUTHORITATIVE_DYNAMIC" || item.evidenceStatus === "AVAILABLE";
           const hasPrior = !!item.thematicPrior;
 
           const isHigh = item.alignmentScore != null && item.alignmentScore >= 80;
@@ -152,11 +152,11 @@ export default function TraderArchetypesCard({ symbol, traderArchetypes }: Trade
                     </span>
                   ) : isProvisional ? (
                     <span className="inline-block text-[9px] px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800/80 font-semibold">
-                      Provisional
+                      Provisional Model
                     </span>
-                  ) : isObserved ? (
+                  ) : isFactorModeled ? (
                     <span className="inline-block text-[9px] px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/80 font-semibold">
-                      Observed
+                      Factor Modeled
                     </span>
                   ) : null}
 

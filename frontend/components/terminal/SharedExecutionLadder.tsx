@@ -139,14 +139,14 @@ export function SharedExecutionLadder({
             data-testid="cell-entry"
             className="cell-val mono text-amber-300 font-bold block mt-0.5 text-xs leading-tight"
           >
-            {kl.entryMin != null && kl.entryMax != null ? (
+            {kl.entryMin != null && kl.entryMax != null && kl.entryMin > 0 && kl.entryMax >= kl.entryMin ? (
               <span className="flex flex-wrap items-baseline gap-1">
                 <span className="tabular-nums whitespace-nowrap">${kl.entryMin.toFixed(2)}</span>
                 <span className="text-slate-400 font-normal text-[10px] sm:text-xs">to</span>
                 <span className="tabular-nums whitespace-nowrap">${kl.entryMax.toFixed(2)}</span>
               </span>
             ) : (
-              <span className="whitespace-nowrap">{kl.watchZone || "Awaiting Setup"}</span>
+              <span className="whitespace-nowrap">{kl.watchZone || (kl.entryMin != null && kl.entryMin <= 0 ? "Suppressed" : "Awaiting Setup")}</span>
             )}
           </span>
         </div>
@@ -159,15 +159,23 @@ export function SharedExecutionLadder({
             data-testid="cell-stop"
             className="cell-val negative mono text-rose-400 font-bold block mt-0.5 text-xs leading-tight"
           >
-            {kl.stopLoss ? (
+            {typeof kl.stopLoss === "number" && !isNaN(kl.stopLoss) && kl.stopLoss > 0 ? (
               <span className="flex flex-wrap items-baseline gap-1">
                 <span className="tabular-nums whitespace-nowrap">${kl.stopLoss.toFixed(2)}</span>
                 {pivotPrice != null && pivotPrice > 0 ? (
-                  <span className="text-rose-400/80 font-normal text-[10px] whitespace-nowrap">
-                    (-{Math.abs(((pivotPrice - kl.stopLoss) / pivotPrice) * 100).toFixed(1)}% base)
-                  </span>
+                  kl.stopLoss >= pivotPrice ? (
+                    <span className="text-amber-400 font-normal text-[10px] whitespace-nowrap">
+                      (Inverted Stop ≥ Pivot)
+                    </span>
+                  ) : (
+                    <span className="text-rose-400/80 font-normal text-[10px] whitespace-nowrap">
+                      (-{(((pivotPrice - kl.stopLoss) / pivotPrice) * 100).toFixed(1)}% base)
+                    </span>
+                  )
                 ) : null}
               </span>
+            ) : kl.stopLoss === 0 ? (
+              "Suppressed"
             ) : (
               "N/A"
             )}
@@ -182,15 +190,23 @@ export function SharedExecutionLadder({
             data-testid="cell-target"
             className="cell-val positive mono text-emerald-400 font-bold block mt-0.5 text-xs leading-tight"
           >
-            {kl.target1 ? (
+            {typeof kl.target1 === "number" && !isNaN(kl.target1) && kl.target1 > 0 ? (
               <span className="flex flex-wrap items-baseline gap-1">
                 <span className="tabular-nums whitespace-nowrap">${kl.target1.toFixed(2)}</span>
                 {pivotPrice != null && pivotPrice > 0 ? (
-                  <span className="text-emerald-400/80 font-normal text-[10px] whitespace-nowrap">
-                    (+{Math.abs(((kl.target1 - pivotPrice) / pivotPrice) * 100).toFixed(1)}%)
-                  </span>
+                  kl.target1 <= pivotPrice ? (
+                    <span className="text-amber-400 font-normal text-[10px] whitespace-nowrap">
+                      (Inverted Target ≤ Pivot)
+                    </span>
+                  ) : (
+                    <span className="text-emerald-400/80 font-normal text-[10px] whitespace-nowrap">
+                      (+{(((kl.target1 - pivotPrice) / pivotPrice) * 100).toFixed(1)}%)
+                    </span>
+                  )
                 ) : null}
               </span>
+            ) : kl.target1 === 0 ? (
+              "Suppressed"
             ) : (
               "N/A"
             )}
