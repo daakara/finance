@@ -453,6 +453,9 @@ export interface SmartMoneyOverview {
   regulatory_sources?: Record<string, string>;
   status?: string;
   disclosure?: string;
+  is_live?: boolean;
+  available?: boolean;
+  dataset_date?: string | null;
   _dataSource?: "live" | "curated" | "mixed" | "fallback" | "unavailable";
 }
 
@@ -2013,6 +2016,93 @@ export function isValidSmartMoneyPayload(data: unknown): data is SmartMoneyOverv
   return hasRecognizedFeed || hasOverviewField;
 }
 
+/**
+ * Classifies the source provenance of a Smart Money API response or raw payload.
+ *
+ * Epistemic Rules:
+ * 1. An explicit unavailable status ("UNAVAILABLE", "OFFLINE", "DISCONNECTED", "PIPELINE_PENDING")
+ *    or available === false fails closed to "unavailable".
+ * 2. Mixed feeds ("MIXED") return "mixed".
+ * 3. Verified curated datasets ("CURATED", is_live === false, or disclosure citing Curated)
+ *    return "curated".
+ * 4. Verified live feeds MUST be accompanied by usable observation arrays (congress_trades,
+ *    sec_insider_trades, or options_flow). A status-only or metadata-only payload
+ *    (e.g., status: "LIVE" with only regulatory_sources) NEVER proves live connectivity
+ *    and fails closed to "unavailable".
+ * 5. If observation arrays are present but the payload lacks verified live markers (unannotated
+ *    legacy archive), it is treated as "curated" and NEVER promoted to live.
+ * 6. Default fails closed to "unavailable".
+ */
+export function classifySmartMoneyProvenance(
+  data: unknown
+): "live" | "curated" | "mixed" | "fallback" | "unavailable" {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return "unavailable";
+  }
+
+  const record = data as Record<string, unknown>;
+
+  if (record._dataSource === "fallback") {
+    return "fallback";
+  }
+  if (record._dataSource === "unavailable") {
+    return "unavailable";
+  }
+
+  // Unavailable markers fail closed
+  if (record.available === false) {
+    return "unavailable";
+  }
+
+  const rawStatus = typeof record.status === "string" ? record.status.trim().toUpperCase() : "";
+  if (
+    rawStatus === "UNAVAILABLE" ||
+    rawStatus === "OFFLINE" ||
+    rawStatus === "DISCONNECTED" ||
+    rawStatus === "PIPELINE_PENDING"
+  ) {
+    return "unavailable";
+  }
+
+  if (rawStatus === "MIXED") {
+    return "mixed";
+  }
+
+  // Explicit curated status
+  if (rawStatus === "CURATED") {
+    return "curated";
+  }
+
+  // Explicit non-live flag
+  if (record.is_live === false) {
+    return "curated";
+  }
+
+  // Curated disclosure text
+  if (typeof record.disclosure === "string" && record.disclosure.toLowerCase().includes("curated")) {
+    return "curated";
+  }
+
+  // Check for presence of observation arrays
+  const hasObservationArrays =
+    Array.isArray(record.congress_trades) ||
+    Array.isArray(record.sec_insider_trades) ||
+    Array.isArray(record.options_flow);
+
+  // Status-only / metadata-only responses without observations fail closed
+  if (!hasObservationArrays) {
+    return "unavailable";
+  }
+
+  // Explicit verified live source with observations
+  if (rawStatus === "LIVE" || record.is_live === true) {
+    return "live";
+  }
+
+  // Unannotated observation payload (legacy archive without status) defaults to curated, never live
+  return "curated";
+}
+
 export async function fetchSmartMoneyOverview(options?: SmartMoneyFetchOptions): Promise<SmartMoneyOverview> {
   const shouldThrow = Boolean(options?.throwOnError || options?.allowFallback === false);
   try {
@@ -2024,10 +2114,10 @@ export async function fetchSmartMoneyOverview(options?: SmartMoneyFetchOptions):
     if (res.ok) {
       const data = await res.json();
       if (isValidSmartMoneyPayload(data)) {
-        const isCurated = data.status === "CURATED" || Boolean(data.disclosure && data.disclosure.includes("Curated"));
+        const provenance = classifySmartMoneyProvenance(data);
         return {
           ...data,
-          _dataSource: isCurated ? ("curated" as const) : ("live" as const),
+          _dataSource: provenance,
         };
       }
       if (shouldThrow) {

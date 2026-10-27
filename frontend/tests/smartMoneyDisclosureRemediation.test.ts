@@ -182,7 +182,7 @@ console.log("   [OK] 'Historical Reference — Not Investment Advice' disclaimer
 // ---------------------------------------------------------------------------
 console.log("\n7. Executing deterministic runtime network and feed-integrity regression tests...");
 
-import { fetchSmartMoneyOverview, fetchSmartMoneyOverviewStrict, isValidSmartMoneyPayload } from "../lib/api";
+import { fetchSmartMoneyOverview, fetchSmartMoneyOverviewStrict, isValidSmartMoneyPayload, classifySmartMoneyProvenance } from "../lib/api";
 
 interface SimulatedPageState {
   data: any;
@@ -207,10 +207,18 @@ async function simulatePageLoadData(fetcher: () => Promise<any>): Promise<Simula
       data = res;
       feedError = true;
       dataSource = "fallback";
+    } else if (res._dataSource === "unavailable") {
+      data = res;
+      feedError = true;
+      dataSource = "unavailable";
+    } else if (res._dataSource === "live") {
+      data = res;
+      feedError = false;
+      dataSource = "delayed";
     } else {
       data = res;
       feedError = false;
-      dataSource = res._dataSource === "live" ? "delayed" : res._dataSource === "curated" ? "curated" : "curated";
+      dataSource = "curated";
     }
   } catch (err) {
     data = null;
@@ -557,6 +565,184 @@ async function runRuntimeNetworkTests() {
     assert.strictEqual(isValidSmartMoneyPayload({ congress_trades: [], sec_insider_trades: null }), true, "Accepts partial null feeds");
     console.log("       [OK] isValidSmartMoneyPayload adheres to runtime validation requirements");
 
+    // 7.14 Authentic Backend Curated Contract Fixture Consumption (ARX_PR72_BACKEND_PROVENANCE_CONTRACT_037)
+    console.log("   7.14 Testing Authentic Backend Curated Contract Fixture (backendSmartMoneyOverviewCurated.json)...");
+    const curatedFixturePath = path.join(__dirname, "fixtures/backendSmartMoneyOverviewCurated.json");
+    const curatedFixture = JSON.parse(fs.readFileSync(curatedFixturePath, "utf8"));
+
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => curatedFixture,
+    } as any);
+
+    const curatedOverview = await fetchSmartMoneyOverview({ throwOnError: true });
+    assert.strictEqual(curatedOverview._dataSource, "curated", "7.14: Actual backend curated response must be classified as 'curated'");
+    assert.strictEqual(curatedOverview.status, "CURATED", "7.14: Backend contract status must be 'CURATED'");
+    assert.strictEqual(curatedOverview.is_live, false, "7.14: is_live must be explicitly false");
+    assert.strictEqual(curatedOverview.available, true, "7.14: available must be true");
+    assert.strictEqual(curatedOverview.dataset_date, "2026-08-28", "7.14: dataset_date must match August 2026 release");
+    assert.strictEqual(classifySmartMoneyProvenance(curatedFixture), "curated", "7.14: classifySmartMoneyProvenance must return 'curated'");
+
+    const s14 = await simulatePageLoadData(() => fetchSmartMoneyOverview({ throwOnError: true }));
+    assert.strictEqual(s14.feedError, false, "7.14: feedError must be false on valid curated archive");
+    assert.strictEqual(s14.dataSource, "curated", "7.14: Page dataSource must be 'curated'");
+    assert.strictEqual(s14.displayedDisclosuresCount, 40, "7.14: Curated disclosures count must match fixture (40)");
+    assert.strictEqual(s14.displayedSecCount, 20, "7.14: Curated SEC count must match fixture (20)");
+    assert.strictEqual(s14.sourceBadgeLabel, "📚 Curated Research (Aug 2026)", "7.14: Must display Curated Research badge");
+    assert.notStrictEqual(s14.sourceBadgeLabel, "⏱️ Regulatory Filings (Delayed)", "7.14: Must NEVER assign Delayed/Live badge to curated archive");
+    assert.strictEqual(s14.errorBannerVisible, false, "7.14: Error banner must not show");
+    console.log("       [OK] Authentic backend curated fixture correctly classified as curated (40 disclosures, Curated badge, NEVER delayed)");
+
+    // 7.15 Authentic Backend Unavailable Contract Fixture Consumption (include_curated=false)
+    console.log("   7.15 Testing Authentic Backend Unavailable Contract Fixture (backendSmartMoneyOverviewUnavailable.json)...");
+    const unavFixturePath = path.join(__dirname, "fixtures/backendSmartMoneyOverviewUnavailable.json");
+    const unavFixture = JSON.parse(fs.readFileSync(unavFixturePath, "utf8"));
+
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => unavFixture,
+    } as any);
+
+    const unavOverview = await fetchSmartMoneyOverview({ throwOnError: true });
+    assert.strictEqual(unavOverview._dataSource, "unavailable", "7.15: Backend disconnected response must be classified as 'unavailable'");
+    assert.strictEqual(unavOverview.status, "UNAVAILABLE", "7.15: Backend contract status must be 'UNAVAILABLE'");
+    assert.strictEqual(unavOverview.is_live, false, "7.15: is_live must be explicitly false");
+    assert.strictEqual(unavOverview.available, false, "7.15: available must be explicitly false");
+    assert.strictEqual(classifySmartMoneyProvenance(unavFixture), "unavailable", "7.15: classifySmartMoneyProvenance must fail closed to 'unavailable'");
+
+    const s15 = await simulatePageLoadData(() => fetchSmartMoneyOverview({ throwOnError: true }));
+    assert.strictEqual(s15.feedError, true, "7.15: feedError must be true on disconnected live feed");
+    assert.strictEqual(s15.dataSource, "unavailable", "7.15: Page dataSource must be 'unavailable'");
+    assert.strictEqual(s15.displayedDisclosuresCount, "Unavailable", "7.15: Disclosures count must display Unavailable (not 0)");
+    assert.strictEqual(s15.displayedSecCount, "Unavailable", "7.15: SEC count must display Unavailable (not 0)");
+    assert.strictEqual(s15.sourceBadgeLabel, "⚠️ Feed Offline", "7.15: Must display Feed Offline badge");
+    assert.strictEqual(s15.errorBannerVisible, true, "7.15: Feed error banner must be visible");
+    console.log("       [OK] Authentic backend unavailable fixture fails closed to unavailable (Unavailable stats, Feed Offline badge)");
+
+    // 7.16 Curated archive without legacy status fields (unannotated archive never promotes to live)
+    console.log("   7.16 Testing Unannotated Legacy Archive (Never Promotes to Live)...");
+    const legacyArchive = {
+      congress_trades: [{ id: "leg-1", ticker: "AAPL" }, { id: "leg-2", ticker: "MSFT" }],
+      sec_insider_trades: [{ id: "leg-sec", ticker: "NVDA" }],
+    };
+    assert.strictEqual(
+      classifySmartMoneyProvenance(legacyArchive),
+      "curated",
+      "7.16: Unannotated observations must default to 'curated', NEVER 'live'"
+    );
+
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => legacyArchive,
+    } as any);
+
+    const s16 = await simulatePageLoadData(() => fetchSmartMoneyOverview({ throwOnError: true }));
+    assert.strictEqual(s16.feedError, false);
+    assert.strictEqual(s16.dataSource, "curated", "7.16: Must categorize as 'curated'");
+    assert.strictEqual(s16.sourceBadgeLabel, "📚 Curated Research (Aug 2026)");
+    assert.notStrictEqual(s16.sourceBadgeLabel, "⏱️ Regulatory Filings (Delayed)", "7.16: Unannotated archive must never bear live/delayed badge");
+    console.log("       [OK] Unannotated legacy archive safely defaults to curated (never promoted to live)");
+
+    // 7.17 Explicit verified-source response (status: LIVE, is_live: true)
+    console.log("   7.17 Testing Explicit Verified Live Response (status=LIVE, is_live=true)...");
+    const verifiedLiveResponse = {
+      status: "LIVE",
+      is_live: true,
+      available: true,
+      congress_trades: [{ id: "live-1", ticker: "GOOGL" }],
+      sec_insider_trades: [{ id: "live-sec-1", ticker: "AMZN" }],
+    };
+    assert.strictEqual(classifySmartMoneyProvenance(verifiedLiveResponse), "live");
+
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => verifiedLiveResponse,
+    } as any);
+
+    const s17 = await simulatePageLoadData(() => fetchSmartMoneyOverview({ throwOnError: true }));
+    assert.strictEqual(s17.feedError, false);
+    assert.strictEqual(s17.dataSource, "delayed");
+    assert.strictEqual(s17.displayedDisclosuresCount, 1);
+    assert.strictEqual(s17.displayedSecCount, 1);
+    assert.strictEqual(s17.sourceBadgeLabel, "⏱️ Regulatory Filings (Delayed)");
+    console.log("       [OK] Verified live response correctly receives delayed regulatory badge and authentic counts");
+
+    // 7.18 Status-only response without usable observations (fails closed to unavailable)
+    console.log("   7.18 Testing Status-Only / Metadata-Only Response (Fails Closed)...");
+    const statusOnlyResponse = {
+      status: "LIVE",
+      is_live: true,
+      regulatory_sources: {
+        sec_edgar: "Official SEC Form 4 & 10-K Public API",
+        finra_ats: "FINRA ATS Dark Pool Transparency Aggregation",
+      },
+      // Note: congress_trades, sec_insider_trades, options_flow are completely absent
+    };
+    assert.strictEqual(
+      classifySmartMoneyProvenance(statusOnlyResponse),
+      "unavailable",
+      "7.18: Status-only response without observation arrays must fail closed to 'unavailable'"
+    );
+
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => statusOnlyResponse,
+    } as any);
+
+    const s18 = await simulatePageLoadData(() => fetchSmartMoneyOverview({ throwOnError: true }));
+    assert.strictEqual(s18.feedError, true, "7.18: Missing observations must cause feedError=true");
+    assert.strictEqual(s18.dataSource, "unavailable");
+    assert.strictEqual(s18.displayedDisclosuresCount, "Unavailable");
+    assert.strictEqual(s18.sourceBadgeLabel, "⚠️ Feed Offline");
+    console.log("       [OK] Status-only response without observations fails closed to unavailable");
+
+    // 7.19 Mixed feeds response (status: MIXED)
+    console.log("   7.19 Testing Mixed Feeds Response (status=MIXED)...");
+    const mixedResponse = {
+      status: "MIXED",
+      congress_trades: [{ id: "mix-1", ticker: "MSFT" }],
+      sec_insider_trades: null,
+      options_flow: null,
+    };
+    assert.strictEqual(classifySmartMoneyProvenance(mixedResponse), "mixed");
+
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => mixedResponse,
+    } as any);
+
+    const s19 = await simulatePageLoadData(() => fetchSmartMoneyOverview({ throwOnError: true }));
+    assert.strictEqual(s19.feedError, false);
+    assert.strictEqual(s19.displayedDisclosuresCount, 1, "7.19: Available Congress feed displays count 1");
+    assert.strictEqual(s19.displayedSecCount, "Unavailable", "7.19: Unavailable SEC feed displays Unavailable");
+    console.log("       [OK] Mixed feed response correctly isolates available Congress feed (1) and unavailable SEC");
+
+    // 7.20 Direct classifySmartMoneyProvenance Matrix Validation
+    console.log("   7.20 Testing classifySmartMoneyProvenance Invariant Matrix...");
+    assert.strictEqual(classifySmartMoneyProvenance(null), "unavailable", "Matrix: null -> unavailable");
+    assert.strictEqual(classifySmartMoneyProvenance(undefined), "unavailable", "Matrix: undefined -> unavailable");
+    assert.strictEqual(classifySmartMoneyProvenance("foo"), "unavailable", "Matrix: string -> unavailable");
+    assert.strictEqual(classifySmartMoneyProvenance(42), "unavailable", "Matrix: number -> unavailable");
+    assert.strictEqual(classifySmartMoneyProvenance([]), "unavailable", "Matrix: array -> unavailable");
+    assert.strictEqual(classifySmartMoneyProvenance({}), "unavailable", "Matrix: empty object -> unavailable");
+    assert.strictEqual(classifySmartMoneyProvenance({ available: false }), "unavailable", "Matrix: available:false -> unavailable");
+    assert.strictEqual(classifySmartMoneyProvenance({ status: "DISCONNECTED" }), "unavailable", "Matrix: DISCONNECTED -> unavailable");
+    assert.strictEqual(classifySmartMoneyProvenance({ status: "OFFLINE" }), "unavailable", "Matrix: OFFLINE -> unavailable");
+    assert.strictEqual(classifySmartMoneyProvenance({ status: "PIPELINE_PENDING" }), "unavailable", "Matrix: PIPELINE_PENDING -> unavailable");
+    assert.strictEqual(classifySmartMoneyProvenance({ status: "CURATED" }), "curated", "Matrix: CURATED -> curated");
+    assert.strictEqual(classifySmartMoneyProvenance({ disclosure: "Curated August 2026" }), "curated", "Matrix: Curated disclosure -> curated");
+    assert.strictEqual(classifySmartMoneyProvenance({ is_live: false, congress_trades: [] }), "curated", "Matrix: is_live:false -> curated");
+    assert.strictEqual(classifySmartMoneyProvenance({ _dataSource: "fallback" }), "fallback", "Matrix: _dataSource:fallback -> fallback");
+    assert.strictEqual(classifySmartMoneyProvenance({ _dataSource: "unavailable" }), "unavailable", "Matrix: _dataSource:unavailable -> unavailable");
+    assert.strictEqual(classifySmartMoneyProvenance({ status: "LIVE", is_live: true, congress_trades: [] }), "live", "Matrix: live with empty array -> live");
+    console.log("       [OK] classifySmartMoneyProvenance invariant matrix passes all 16 epistemic checks");
+
   } finally {
     global.fetch = originalFetch;
   }
@@ -594,7 +780,7 @@ console.log("   [OK] Static fallback demonstration fixture warning banner verifi
 // Run runtime async suite
 runRuntimeNetworkTests().then(() => {
   console.log("\n===============================================================================");
-  console.log("   ALL SMART MONEY DISCLOSURE & FEED-INTEGRITY TESTS PASSED (15/15 GATES)    ");
+  console.log("   ALL SMART MONEY DISCLOSURE & FEED-INTEGRITY TESTS PASSED (22/22 GATES)    ");
   console.log("===============================================================================\n");
 }).catch((err) => {
   console.error("FATAL RUNTIME TEST ERROR:", err);

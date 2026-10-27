@@ -1,7 +1,9 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import SmartMoneyPage from "../../app/smart-money/page";
+import backendCuratedFixture from "../../tests/fixtures/backendSmartMoneyOverviewCurated.json";
+import backendUnavailableFixture from "../../tests/fixtures/backendSmartMoneyOverviewUnavailable.json";
 
 describe("SmartMoneyPage React Render Integration", () => {
   const originalFetch = global.fetch;
@@ -121,5 +123,58 @@ describe("SmartMoneyPage React Render Integration", () => {
 
     const unavailables = screen.getAllByText("Unavailable");
     expect(unavailables.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("consumes authentic backend curated contract fixture: renders Curated badge, authentic counts, and NEVER delayed badge", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => backendCuratedFixture,
+    } as any);
+
+    render(<SmartMoneyPage />);
+
+    await waitFor(() => {
+      // Must display Curated Research badge
+      expect(screen.getByText("📚 Curated Research (Aug 2026)")).toBeDefined();
+    });
+
+    // Must NEVER display Delayed badge for curated archive
+    expect(screen.queryByText(/Regulatory Filings \(Delayed\)/i)).toBeNull();
+
+    // Must render curated archive section
+    expect(screen.getByText(/CURATED HISTORICAL SMART MONEY ARCHIVE/i)).toBeDefined();
+
+    // Switch to All-Time window to display complete curated population regardless of calendar drift
+    const allRadio = screen.getByRole("radio", { name: /All/i });
+    fireEvent.click(allRadio);
+
+    await waitFor(() => {
+      // Must display authentic count of 40 for disclosures
+      expect(screen.getByText("40")).toBeDefined();
+      // Must display authentic count of 20 for SEC insiders
+      expect(screen.getByText("20")).toBeDefined();
+    });
+  });
+
+  it("consumes authentic backend unavailable contract fixture: renders Feed Offline badge and Unavailable counts", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => backendUnavailableFixture,
+    } as any);
+
+    render(<SmartMoneyPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("⚠️ Feed Offline")).toBeDefined();
+    });
+
+    // Disclosures and SEC counts must display 'Unavailable'
+    const unavailables = screen.getAllByText("Unavailable");
+    expect(unavailables.length).toBeGreaterThanOrEqual(2);
+
+    // Failure banner must be visible
+    expect(screen.getByText(/⚠️ Feed Offline \/ Connection Failure/i)).toBeDefined();
   });
 });

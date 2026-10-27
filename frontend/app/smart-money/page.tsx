@@ -76,10 +76,18 @@ function SmartMoneyContent() {
             setData(res);
             setFeedError(true);
             setDataSource("fallback");
+          } else if (res._dataSource === "unavailable") {
+            setData(res);
+            setFeedError(true);
+            setDataSource("unavailable");
+          } else if (res._dataSource === "live") {
+            setData(res);
+            setFeedError(false);
+            setDataSource("delayed");
           } else {
             setData(res);
             setFeedError(false);
-            setDataSource(res._dataSource === "live" ? "delayed" : res._dataSource === "curated" ? "curated" : "curated");
+            setDataSource("curated");
           }
         }
       } catch (err) {
