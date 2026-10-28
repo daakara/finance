@@ -1,0 +1,44 @@
+[
+  {
+    "case": "NEG-01: Unauthorized Target Branch (feature-branch)",
+    "expected": "FAIL_CLOSED",
+    "actual": "EXIT_1",
+    "verdict": "PASS"
+  },
+  {
+    "case": "NEG-02: Substituted / Fabricated Commit SHA",
+    "expected": "FAIL_CLOSED",
+    "actual": "EXIT_1",
+    "verdict": "PASS"
+  },
+  {
+    "case": "NEG-03: Tampered File Hash in Manifest",
+    "expected": "FAIL_CLOSED",
+    "actual": "EXIT_1",
+    "verdict": "PASS"
+  },
+  {
+    "case": "NEG-04: Completely Missing Manifest File",
+    "expected": "FAIL_CLOSED",
+    "actual": "EXIT_1",
+    "verdict": "PASS"
+  },
+  {
+    "case": "NEG-05: Non-existent Base Commit in Ancestry",
+    "expected": "FAIL_CLOSED",
+    "actual": "EXIT_1",
+    "verdict": "PASS"
+  },
+  {
+    "case": "NEG-06: Direct Pytest Non-Existent Target Test",
+    "expected": "FAIL_CLOSED",
+    "actual": "EXIT_4",
+    "verdict": "PASS"
+  },
+  {
+    "case": "NEG-07: Corrupted Backlog Syntax",
+    "expected": "FAIL_CLOSED",
+    "actual": "EXIT_2",
+    "verdict": "PASS"
+  }
+]

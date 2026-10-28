@@ -1,0 +1,18 @@
+{
+  "cloudflare": {
+    "platform": "Cloudflare Pages",
+    "project": "finance",
+    "deployment_id": "32f8daa9-bb1f-4454-9aaa-2000bfd49038",
+    "source_commit": "6d4020ca3fef3ae07ac01204b03e0629b6a7cc79",
+    "state": "IMMUTABLE_SERVING_BASELINE",
+    "rehearsal_type": "PLATFORM_DEPLOYMENT_RETAINED"
+  },
+  "railway": {
+    "platform": "Railway",
+    "service": "web",
+    "deployment_id": "d1f8cf37-7592-4ad5-b986-4bbc9b4ed042",
+    "source_commit": "d1f8cf37b8d4e7bf53fc57d9f78330ee0f4c94ea",
+    "state": "IMMUTABLE_CONTAINER_RETAINED",
+    "rehearsal_type": "ISOLATED_RUNTIME_VERIFIED"
+  }
+}

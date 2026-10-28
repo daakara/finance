@@ -1,0 +1,42 @@
+[
+  {
+    "combination": "C1",
+    "frontend": "Baseline (6d4020c)",
+    "backend": "Baseline (d1f8cf37 / 6d4020c)",
+    "api_schema_valid": true,
+    "sizing_sub_share": 0,
+    "narrative_status": "Baseline static text",
+    "risk_copy": "HARD MAX LOSS (Unqualified)",
+    "verdict": "PASS (Baseline Reference)"
+  },
+  {
+    "combination": "C2",
+    "frontend": "Candidate (ea3cc13)",
+    "backend": "Baseline (d1f8cf37 / 6d4020c)",
+    "api_schema_valid": true,
+    "sizing_sub_share": 0,
+    "narrative_status": "Compatible (renders baseline API response)",
+    "risk_copy": "MODELED STOP RISK (Qualified)",
+    "verdict": "PASS (Safe Decoupled Promotion)"
+  },
+  {
+    "combination": "C3",
+    "frontend": "Baseline (6d4020c)",
+    "backend": "Candidate (ea3cc13)",
+    "api_schema_valid": true,
+    "sizing_sub_share": 0,
+    "narrative_status": "Compatible (dynamic reasons returned in JSON)",
+    "risk_copy": "HARD MAX LOSS (Baseline copy remains until frontend promo)",
+    "verdict": "PASS (Additive Backend Compatibility)"
+  },
+  {
+    "combination": "C4",
+    "frontend": "Candidate (ea3cc13)",
+    "backend": "Candidate (ea3cc13)",
+    "api_schema_valid": true,
+    "sizing_sub_share": 0,
+    "narrative_status": "Full Dynamic Narrative + Missing Smart Money Suppressed",
+    "risk_copy": "MODELED STOP RISK (Qualified)",
+    "verdict": "PASS (Target Production State)"
+  }
+]

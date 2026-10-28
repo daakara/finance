@@ -1,0 +1,139 @@
+{
+  "release_candidate_commit": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+  "base_anchor_commit": "6d4020ca3fef3ae07ac01204b03e0629b6a7cc79",
+  "total_files": 33,
+  "files": {
+    "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json": {
+      "sha256": "e357861680af1f8f5d81d0e60fe3a92489f36d62c60f642a656c8a8922dc58ec",
+      "size_bytes": 1517
+    },
+    "analyst_dashboard/analyzers/confluence_engine.py": {
+      "sha256": "9df887574c4efc128fceb7b1ff4191bff701bfb323e0b9453240646f1a29e9ec",
+      "size_bytes": 29080
+    },
+    "docs/planning/ARX_058_BASELINE_AND_SOURCE_INVENTORY.md": {
+      "sha256": "9891a57bfbc65c9c0bfb2a9fe331e1ca37559f413886c46b5ee2d105439ac788",
+      "size_bytes": 10061
+    },
+    "docs/planning/ARX_058_CLOSURE_EVIDENCE_MANIFEST.json": {
+      "sha256": "a4a9063fa399b67460c1ffb113f43c16c0259e7594f2e3b55ed19895674acc75",
+      "size_bytes": 8630
+    },
+    "docs/planning/ARX_058_CROSS_AUDIT_OBLIGATION_REGISTER.csv": {
+      "sha256": "ad065120b450e04037e028266f99b2c7268fdf5c5ecc1fd46077553704f2b2a6",
+      "size_bytes": 32297
+    },
+    "docs/planning/ARX_058_DEPENDENCY_AND_PRODUCT_IMPACT.md": {
+      "sha256": "7ccc7c6bd4f003c1c82a0ec1a780d538aab8a3cecb710dd7fbf4051490c956df",
+      "size_bytes": 8459
+    },
+    "docs/planning/ARX_058_FINAL_PRE_SPRINT5_OWNER_GATE.md": {
+      "sha256": "ae81d23a294ab774b7db2f5960c1b9396f0025f5dccacc6604f80c6b650b6546",
+      "size_bytes": 9643
+    },
+    "docs/planning/ARX_058_UNSCOPED_AND_PRE_SPRINT5_CLOSURE_PLAN.md": {
+      "sha256": "60280544610f1345cd11569b361fce95df5cbd904fd5dceead1db04626189951",
+      "size_bytes": 11413
+    },
+    "docs/planning/ARX_058_VALIDATOR_AND_CI_EVIDENCE.md": {
+      "sha256": "20563dce04ce1c19502218e6c12079863e4da93b2a91dd8dc3d3da6c94986eaa",
+      "size_bytes": 12039
+    },
+    "docs/planning/ARX_059_AUTHORIZATION_PROVENANCE_AUDIT.md": {
+      "sha256": "06912062edb72e03426518c67b4f6e7a5e4bdfaf6d1eb1b7c631d9485498084b",
+      "size_bytes": 8218
+    },
+    "docs/planning/ARX_059_CI_ENFORCEMENT_PLAN.md": {
+      "sha256": "34d165ac9df42ddd68b0dfa7bb7c2a79c1373a7e7fb154ff9b0079998805818a",
+      "size_bytes": 6278
+    },
+    "docs/planning/ARX_059_DIRECTIVE058_RECONCILIATION.md": {
+      "sha256": "24704721dffa7fd6d376401c19bd92e0a344b675c2194604c9a05555dc3ca296",
+      "size_bytes": 7749
+    },
+    "docs/planning/ARX_059_FINAL_VERIFICATION_MANIFEST.json": {
+      "sha256": "b5c3ca677b3b2afb0d14dbe2bcf9ea6cef210a7811ae91366d21341b89fa2476",
+      "size_bytes": 5146
+    },
+    "docs/planning/ARX_059_OWNER_DECISION_PACKAGE.md": {
+      "sha256": "e1734c6938d4f354122d54015b7d96045c33b365591aaa1a89f573d29fbcf303",
+      "size_bytes": 6297
+    },
+    "docs/planning/ARX_059_VALIDATOR_HARDENING_REPORT.md": {
+      "sha256": "2536a573b79221b940ba615a7ff24e2b80ae228f82d95d9c18fa5ecde9f3ea69",
+      "size_bytes": 11631
+    },
+    "docs/planning/ARX_060_FINAL_VERIFICATION_MANIFEST.json": {
+      "sha256": "a22a8e46a117d7c1804a5a67e1f92212ea57945f05c2ca3999c04e8c65259612",
+      "size_bytes": 5744
+    },
+    "docs/planning/ARX_060_GOVERNANCE_PR_PUBLICATION_RECORD.md": {
+      "sha256": "bee4150aa145cbd61f2b395d8fdf66227505aef77874079b9b635dc526e69216",
+      "size_bytes": 6568
+    },
+    "docs/planning/ARX_060_HOSTED_CI_AND_VALIDATOR_EVIDENCE.md": {
+      "sha256": "3e7c39c83327918ba8e393f756b0725b3851fcfe64be4d99318b6a031c11d9f5",
+      "size_bytes": 6805
+    },
+    "docs/planning/ARX_060_INDEPENDENT_CLEANUP_RECONCILIATION.md": {
+      "sha256": "4d985bee078970a60b3fadd707ac937d31a0d4f6dde9e209fe356b9b3fcd83b5",
+      "size_bytes": 11132
+    },
+    "docs/planning/ARX_060_OWNER_MERGE_DECISION_PACKAGE.md": {
+      "sha256": "de14fb0f8478becdd56151349f8ecb5456518886da1b8f10a5f17fc2d5b34d65",
+      "size_bytes": 9512
+    },
+    "docs/planning/ARX_060_REMAINING_OBLIGATION_REGISTER.csv": {
+      "sha256": "bac1e5ae4cf5d97339f14f637482e4847c67bf52217ffd99d6f3c1c922748bb1",
+      "size_bytes": 33782
+    },
+    "docs/planning/arx_canonical_backlog.json": {
+      "sha256": "8a8dc01cfd0f589bde969eeef2b9c3c154a78dcc2dc5ad57628e60feac82844c",
+      "size_bytes": 200699
+    },
+    "docs/planning/arx_canonical_backlog.schema.json": {
+      "sha256": "b416db0914a2c1ff5ed3b7250d1cfc71216129481f69e1f20d3d04139391a90e",
+      "size_bytes": 16271
+    },
+    "frontend/components/DayTraderPositionSizer.tsx": {
+      "sha256": "4046752dd9da07dc7d42e3a2a2f90a77cd645a9885a9ca7244374f81947befc9",
+      "size_bytes": 21827
+    },
+    "frontend/components/PositionSizerModal.tsx": {
+      "sha256": "8d8dc6948a36e4aef624c08ed2c44a98d139b7372088a09886329efee64b99d6",
+      "size_bytes": 25456
+    },
+    "frontend/lib/simulation/governorSizingEngine.ts": {
+      "sha256": "df43a56181b3d6b4ee1eabd7a787a84c0eb48d1f4e30c33e79d8ae73eaa452b1",
+      "size_bytes": 17845
+    },
+    "tests/test_backlog_integrity_validator.py": {
+      "sha256": "a9b58790956148f21c46dd4da666612de659a574c60a0be5231c55e9ba5966c7",
+      "size_bytes": 92433
+    },
+    "tests/test_d061_adversarial_controls.py": {
+      "sha256": "ce02cb0b7b102f5c42857030702107dd4dde2694cf3da02bb00645d96ebc20b4",
+      "size_bytes": 9080
+    },
+    "tests/test_d062_adversarial_controls.py": {
+      "sha256": "2a597f62160c2669aa6e735e4d404c0e9677b78a5e97c5aba4d954a00da0ed98",
+      "size_bytes": 7828
+    },
+    "tests/test_directive_057_remediation.py": {
+      "sha256": "d14e7cd251752115c73dbc0282528e8a7de1ffe56d0555ce7ebf8fa71ed99298",
+      "size_bytes": 15439
+    },
+    "tests/test_f13a_epoch_compatibility.py": {
+      "sha256": "593e777b8acdd90cd901cd9928e09b3c889b936c96647ca45082ebb3a2f8683f",
+      "size_bytes": 16996
+    },
+    "tests/test_phase22_calibration.py": {
+      "sha256": "deffba52e22a23217c395306b61a44385e9dd484cf6e511a3647954a6e7aa178",
+      "size_bytes": 9258
+    },
+    "tools/governance/validate_backlog_integrity.py": {
+      "sha256": "0101c3e460edf46ba186ed8997f63cde34672823995b697c016de1af6ddca826",
+      "size_bytes": 55187
+    }
+  }
+}
