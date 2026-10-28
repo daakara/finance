@@ -405,9 +405,9 @@ export default function PositionSizerModal({
               </div>
 
               <div className="bg-[#140e11] p-2.5 rounded-lg border border-rose-950/60">
-                <span className="text-[10px] text-rose-400 block font-semibold">HARD MAX LOSS</span>
+                <span className="text-[10px] text-rose-400 block font-semibold">MODELED STOP RISK</span>
                 <span className="font-bold text-rose-300 tabular-nums">-${actualDollarRisk.toFixed(2)}</span>
-                <span className="text-[10px] text-rose-500/80 block mt-0.5">at ${safeStop.toFixed(2)} stop</span>
+                <span className="text-[10px] text-rose-500/80 block mt-0.5">at ${safeStop.toFixed(2)} stop (excl. gaps)</span>
               </div>
 
               <div className="bg-[#0a1414] p-2.5 rounded-lg border border-emerald-950/60">
@@ -479,7 +479,7 @@ export default function PositionSizerModal({
               </span>
             ) : shares > 0 ? (
               <>
-                Buy <span className="text-white font-bold">{shares} {shares === 1 ? "share" : "shares"}</span> of {symbol || "asset"} at ${safeEntry.toFixed(2)}. Place GTC Stop-Loss at ${safeStop.toFixed(2)}. Risk is locked at exactly ${actualDollarRisk.toFixed(2)} ({riskPct}% equity constraint).
+                Buy <span className="text-white font-bold">{shares} {shares === 1 ? "share" : "shares"}</span> of {symbol || "asset"} at ${safeEntry.toFixed(2)}. Place GTC Stop-Loss at ${safeStop.toFixed(2)}. Modeled risk to stop: ${actualDollarRisk.toFixed(2)} ({riskPct}% equity constraint). Actual losses may exceed this amount due to price gaps or slippage.
               </>
             ) : (
               <>
@@ -487,6 +487,11 @@ export default function PositionSizerModal({
               </>
             )}
           </div>
+
+          {/* Modeled Risk Disclosure */}
+          <p className="text-[10px] text-slate-500 px-1 leading-normal">
+            * Modeled risk is calculated to the stop level. Realized losses may exceed this amount during overnight price gaps or illiquid market slippage.
+          </p>
 
           {/* Success Toast */}
           {savedToast && (

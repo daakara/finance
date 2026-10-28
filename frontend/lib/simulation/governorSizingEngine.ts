@@ -380,7 +380,7 @@ export function calculateGovernedPositionSize(
     const formattedScore = isValidScore
       ? `${setup.confluenceScore!.toFixed(1)}/100`
       : 'Unavailable';
-    cleanRoomRationale = `Standard position risk authorized ($${standardDollarRisk}). No Governor risk reduction applied under the evaluated rules. Confluence score: ${formattedScore}.`;
+    cleanRoomRationale = `Standard position risk authorized ($${standardDollarRisk}). No Governor risk reduction applied under the evaluated rules. Confluence score: ${formattedScore}. Modeled risk to stop; actual losses may exceed this amount due to price gaps or slippage.`;
   }
 
   const rMultipleTarget1 = isActionable && target1Num > entryPivotNum && stopDistanceDollar > 0 ? Number(((target1Num - entryPivotNum) / stopDistanceDollar).toFixed(2)) : 0;

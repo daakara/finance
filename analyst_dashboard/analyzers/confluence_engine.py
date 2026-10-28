@@ -345,10 +345,33 @@ class ConfluenceEngine:
             plain_badge = f"{positives}/4 Positive Signals"
 
         if final_score >= 80.0:
-            rating = "HIGH-CONVICTION INSTITUTIONAL ALIGNMENT"
+            if smart_status == "positive":
+                rating = "HIGH-CONVICTION INSTITUTIONAL ALIGNMENT"
+            else:
+                rating = "HIGH-CONVICTION MULTI-FACTOR ALIGNMENT"
             plain_rating = "🟢 GREEN LIGHT: HIGH CONVICTION"
             badge_color = "emerald"
-            bottom_line = f"Strong multi-factor alignment ({positives}/4 pillars positive): Technicals, balance sheet quality, and smart money flow are synchronised."
+
+            positive_names = []
+            for p in pillars:
+                if p["status"] == "positive":
+                    if p["pillar"] == "TECHNICAL_STRUCTURE":
+                        positive_names.append("technicals")
+                    elif p["pillar"] == "FUNDAMENTAL_SOLVENCY":
+                        positive_names.append("balance sheet quality")
+                    elif p["pillar"] == "SMART_MONEY_FLOW":
+                        positive_names.append("smart money flow")
+                    elif p["pillar"] == "MACRO_SAFETY_FLOOR":
+                        positive_names.append("macro tailwinds")
+
+            if len(positive_names) > 1:
+                aligned_str = ", ".join(positive_names[:-1]) + " and " + positive_names[-1]
+            elif len(positive_names) == 1:
+                aligned_str = positive_names[0]
+            else:
+                aligned_str = "available modeled factors"
+
+            bottom_line = f"Strong multi-factor alignment ({positives}/4 pillars positive): {aligned_str.capitalize()} are synchronised."
         elif final_score <= 48.0 or warns >= 2:
             rating = "DEFENSIVE / CAPITAL PRESERVATION MODE"
             plain_rating = "🔴 RED LIGHT: WAIT FOR DUST TO SETTLE"
@@ -406,6 +429,10 @@ class ConfluenceEngine:
             or math.isnan(entry_price)
             or math.isnan(stop_loss)
             or (take_profit_1 is not None and math.isnan(take_profit_1))
+            or account_equity <= 0
+            or math.isnan(account_equity)
+            or risk_pct <= 0
+            or math.isnan(risk_pct)
         ):
             return {
                 "error": "Invalid price levels: Entry must be greater than Stop Loss.",
@@ -420,8 +447,7 @@ class ConfluenceEngine:
 
         risk_per_share = entry_price - stop_loss
         max_dollar_risk = (account_equity * (risk_pct / 100.0))
-        hypothetical_shares = math.floor(max_dollar_risk / risk_per_share)
-        hypothetical_shares = max(1, hypothetical_shares) if account_equity >= entry_price else 0
+        hypothetical_shares = max(0, math.floor(max_dollar_risk / risk_per_share))
 
         hypothetical_position_value = round(hypothetical_shares * entry_price, 2)
         portfolio_allocation_pct = round((hypothetical_position_value / max(1.0, account_equity)) * 100, 2)
@@ -445,21 +471,24 @@ class ConfluenceEngine:
         is_blocked = (is_actionable is False) or (can_size_trade is False) or is_hazard
 
         executable_shares = 0 if is_blocked else hypothetical_shares
-        final_position_value = round(executable_shares * entry_price, 2) if not is_blocked else 0.0
-        final_actual_dollar_risk = round(executable_shares * risk_per_share, 2) if not is_blocked else 0.0
-        final_portfolio_allocation_pct = round((final_position_value / max(1.0, account_equity)) * 100, 2) if not is_blocked else 0.0
-        final_projected_profit_tp1 = round(executable_shares * reward_per_share_tp1, 2) if not is_blocked else 0.0
+        is_executable = (not is_blocked) and (executable_shares > 0)
+        final_position_value = round(executable_shares * entry_price, 2) if is_executable else 0.0
+        final_actual_dollar_risk = round(executable_shares * risk_per_share, 2) if is_executable else 0.0
+        final_portfolio_allocation_pct = round((final_position_value / max(1.0, account_equity)) * 100, 2) if is_executable else 0.0
+        final_projected_profit_tp1 = round(executable_shares * reward_per_share_tp1, 2) if is_executable else 0.0
 
         # Advisory Participation Rate Heuristic (INV-LIQ-005: Informational only, non-clamping)
         estimated_participation_rate = None
         if adv_20d and adv_20d > 0 and final_position_value > 0:
             estimated_participation_rate = round(final_position_value / adv_20d, 6)
 
-        guidance = (
-            f"Execution restricted ({disqualification_reason or 'Severe liquidity hazard / decision block'}). Allocation suppressed."
-            if is_blocked
-            else f"Buy {executable_shares} shares at ${entry_price:.2f}. Total Risk: ${final_actual_dollar_risk:.2f} ({risk_pct}% of portfolio) with hard stop at ${stop_loss:.2f}."
-        )
+        actual_risk_pct = round((final_actual_dollar_risk / max(1.0, account_equity)) * 100, 2)
+        if is_blocked:
+            guidance = f"Execution restricted ({disqualification_reason or 'Severe liquidity hazard / decision block'}). Allocation suppressed."
+        elif executable_shares == 0:
+            guidance = f"Position sizing suppressed (0 shares): Allowed risk budget (${max_dollar_risk:.2f}) is smaller than modeled risk for 1 share (${risk_per_share:.2f}). Risk per share exceeds approved {risk_pct}% risk allowance."
+        else:
+            guidance = f"Buy {executable_shares} shares at ${entry_price:.2f}. Modeled Risk to Stop: ${final_actual_dollar_risk:.2f} ({actual_risk_pct}% of portfolio) with hard stop at ${stop_loss:.2f}. Actual losses may exceed this amount due to price gaps or slippage."
 
         return {
             "accountEquity": account_equity,
@@ -467,8 +496,8 @@ class ConfluenceEngine:
             "shares": executable_shares,
             "executableShares": executable_shares,
             "hypotheticalShares": hypothetical_shares,
-            "isExecutable": not is_blocked,
-            "isHypotheticalOnly": is_blocked,
+            "isExecutable": is_executable,
+            "isHypotheticalOnly": is_blocked or (executable_shares == 0),
             "positionValue": final_position_value,
             "hypotheticalPositionValue": hypothetical_position_value,
             "portfolioAllocationPct": final_portfolio_allocation_pct,
@@ -477,9 +506,13 @@ class ConfluenceEngine:
             "riskPerShare": round(risk_per_share, 2),
             "projectedProfitTp1": final_projected_profit_tp1,
             "riskRewardRatio": rr_actual,
-            "recommendedKellyAllocation": recommended_kelly_allocation if not is_blocked else 0.0,
-            "halfKellyOptimalPct": recommended_kelly_allocation if not is_blocked else 0.0,
+            "recommendedKellyAllocation": recommended_kelly_allocation if is_executable else 0.0,
+            "halfKellyOptimalPct": recommended_kelly_allocation if is_executable else 0.0,
             "estimatedParticipationRate": estimated_participation_rate,
-            "executionBlockedReason": disqualification_reason or ("Liquidity hazard or actionability restriction active; positive order sizing prohibited." if is_blocked else None),
+            "executionBlockedReason": disqualification_reason or (
+                "Liquidity hazard or actionability restriction active; positive order sizing prohibited."
+                if is_blocked
+                else ("Risk budget is smaller than risk per share for 1 whole share." if executable_shares == 0 else None)
+            ),
             "guidance": guidance,
         }

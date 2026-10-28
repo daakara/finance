@@ -138,7 +138,7 @@ def test_current_production_engine_compliance():
         # Verify candidate engine hashes match candidate manifest
         assert opt_sha == "26247e91e97b564601bd72bc759a40f831646b0232c9b8a9f6e289fd92dba209"
         assert dec_sha == "177840eec7dae88f6ae5957159cc4cdb3856933619b268859793d07622c6cc87"
-        assert conf_sha == "75ea2687886b0624f7961848c8ec127fa176b80531e52b4a9e274fe83bd5a4e4"
+        assert conf_sha == "9df887574c4efc128fceb7b1ff4191bff701bfb323e0b9453240646f1a29e9ec"
     else:
         # Canonical production checkout: strict single-hash enforcement
         assert opt_sha == "84d1a8b855a5368466b53105fdd58df15c3d60aaab77024286f3fcaaaad95576", (

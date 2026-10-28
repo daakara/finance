@@ -41,7 +41,7 @@ def test_smart_money_dynamic_reweighting_allows_actionable_confluence():
     assert smart_pillar["status"] == "unavailable"
     assert smart_pillar["score"] == 0.0
     assert res["confluenceScore"] >= 80.0
-    assert res["confluenceRating"] == "HIGH-CONVICTION INSTITUTIONAL ALIGNMENT"
+    assert res["confluenceRating"] == "HIGH-CONVICTION MULTI-FACTOR ALIGNMENT"
 
 
 def test_etf_broad_market_reachability():
