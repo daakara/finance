@@ -1,6 +1,6 @@
 name: Release Qualification Suite
 
-on:
+'on':
   pull_request:
     branches: [ release/production, main ]
   workflow_dispatch:
