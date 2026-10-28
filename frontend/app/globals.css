@@ -564,8 +564,8 @@ textarea:focus-visible {
  nav[aria-label="Mobile Navigation Dock"] { gap:2px; }
 }
 
-/* The synthesis dock owns phone navigation where mounted; Navbar owns tablet navigation. */
+/* Navbar owns mobile navigation, including Research and trading horizon controls. */
 @media (max-width: 767px) {
- body:has([data-synthesis-mobile-dock="true"]) [data-testid="mobile-nav-dock"] { display:none; }
+ [data-synthesis-mobile-dock="true"] { display:none; }
  [data-synthesis-mobile-dock="true"] { padding-bottom:max(0.25rem, env(safe-area-inset-bottom)); }
 }
