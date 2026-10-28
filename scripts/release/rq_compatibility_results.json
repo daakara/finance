@@ -1,42 +1,45 @@
 [
   {
     "combination": "C1",
+    "scenario": "Baseline Frontend + Baseline Backend (Current Production)",
     "frontend": "Baseline (6d4020c)",
-    "backend": "Baseline (d1f8cf37 / 6d4020c)",
-    "api_schema_valid": true,
-    "sizing_sub_share": 0,
-    "narrative_status": "Baseline static text",
+    "backend": "Baseline (6d4020c)",
+    "observed_shares": 1,
+    "guidance_sample": "Buy 1 shares at $250.00. Total Risk: $20.00 (1.0% of portfolio) with hard stop at $230.00.",
     "risk_copy": "HARD MAX LOSS (Unqualified)",
+    "compatibility_type": "BASELINE_REFERENCE",
     "verdict": "PASS (Baseline Reference)"
   },
   {
     "combination": "C2",
-    "frontend": "Candidate (ea3cc13)",
-    "backend": "Baseline (d1f8cf37 / 6d4020c)",
-    "api_schema_valid": true,
-    "sizing_sub_share": 0,
-    "narrative_status": "Compatible (renders baseline API response)",
+    "scenario": "Candidate Frontend + Baseline Backend (Safe Decoupled Promotion)",
+    "frontend": "Candidate (ea3cc13 / Working Tree)",
+    "backend": "Baseline (6d4020c)",
+    "raw_backend_shares": 1,
+    "governed_frontend_shares": 0,
     "risk_copy": "MODELED STOP RISK (Qualified)",
-    "verdict": "PASS (Safe Decoupled Promotion)"
+    "compatibility_type": "SAFE_DECOUPLED_PROMOTION",
+    "verdict": "PASS (Candidate Governor Protects Against Baseline Defect)"
   },
   {
     "combination": "C3",
+    "scenario": "Baseline Frontend + Candidate Backend (Additive Contract Compatibility)",
     "frontend": "Baseline (6d4020c)",
-    "backend": "Candidate (ea3cc13)",
-    "api_schema_valid": true,
-    "sizing_sub_share": 0,
-    "narrative_status": "Compatible (dynamic reasons returned in JSON)",
-    "risk_copy": "HARD MAX LOSS (Baseline copy remains until frontend promo)",
-    "verdict": "PASS (Additive Backend Compatibility)"
+    "backend": "Candidate (ea3cc13 / Working Tree)",
+    "expected_keys_present": true,
+    "additive_keys_count": 0,
+    "compatibility_type": "ADDITIVE_BACKWARD_COMPATIBLE",
+    "verdict": "PASS (Strict Additive Schema Compatibility)"
   },
   {
     "combination": "C4",
-    "frontend": "Candidate (ea3cc13)",
-    "backend": "Candidate (ea3cc13)",
-    "api_schema_valid": true,
-    "sizing_sub_share": 0,
-    "narrative_status": "Full Dynamic Narrative + Missing Smart Money Suppressed",
+    "scenario": "Candidate Frontend + Candidate Backend (Full Target State)",
+    "frontend": "Candidate (ea3cc13 / Working Tree)",
+    "backend": "Candidate (ea3cc13 / Working Tree)",
+    "shares": 0,
+    "smart_money_suppression_verified": true,
     "risk_copy": "MODELED STOP RISK (Qualified)",
-    "verdict": "PASS (Target Production State)"
+    "compatibility_type": "TARGET_PRODUCTION_STATE",
+    "verdict": "PASS (Full Invariant & Contract Alignment)"
   }
 ]

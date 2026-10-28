@@ -17,6 +17,7 @@ jobs:
   release_qualification:
     name: ARX Release Qualification (RQ-01..12)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout Code with Full History
@@ -52,54 +53,64 @@ jobs:
 
       # RQ-02: Release Diff Integrity
       - name: "[RQ-02] Verify Release Diff Integrity"
-        run: python scripts/release/rq02_diff_integrity.py --allow-ci-workflow
+        if: success() || failure()
+        run: python scripts/release/rq02_diff_integrity.py
 
       # RQ-03: Backend Regression Suite
       - name: "[RQ-03] Run Backend Regression Suite"
-        run: python -m pytest tests/test_directive_057_remediation.py tests/test_confluence_engine.py -v
+        if: success() || failure()
+        run: python scripts/release/rq03_backend_regression.py
 
       # RQ-04: Frontend Regression & Typecheck
       - name: "[RQ-04] Run Frontend Regression & Typecheck"
-        working-directory: ./frontend
-        run: |
-          npm run type-check
-          npm run test:sizing
+        if: success() || failure()
+        run: python scripts/release/rq04_frontend_regression.py
 
       # RQ-05: Cross-Engine Invariants
       - name: "[RQ-05] Verify Cross-Engine Invariants"
+        if: success() || failure()
         run: python scripts/release/rq05_cross_engine_invariants.py
 
       # RQ-06: Governance Invariants
       - name: "[RQ-06] Verify Canonical Backlog Integrity"
-        run: python tools/governance/validate_backlog_integrity.py
+        if: success() || failure()
+        run: python scripts/release/rq06_governance_invariants.py
 
       # RQ-07: Deployment Safety & Secret Isolation
       - name: "[RQ-07] Verify Deployment Safety & Secret Isolation"
+        if: success() || failure()
         run: python scripts/release/rq07_deployment_safety.py
 
       # RQ-08: Artifact Provenance & Digest Binding
       - name: "[RQ-08] Generate Cryptographic Artifact Provenance"
+        if: success() || failure()
         run: python scripts/release/rq08_artifact_provenance.py
 
       # RQ-09: Four-Way Compatibility Suite
       - name: "[RQ-09] Execute Four-Way Cross-Platform Compatibility Suite"
+        if: success() || failure()
         run: python scripts/release/rq09_compatibility_suite.py
 
       # RQ-10: Configuration & Environment Contract Integrity
       - name: "[RQ-10] Verify Release Configuration Integrity"
+        if: success() || failure()
         run: python scripts/release/rq10_config_integrity.py
 
       # RQ-11: Rollback Readiness & Target Verification
       - name: "[RQ-11] Verify Rollback Readiness & Snapshot Anchors"
+        if: success() || failure()
         run: python scripts/release/rq11_rollback_readiness.py
 
-      # RQ-12: Final Qualification Summary Aggregation
+      # RQ-12: Final Qualification Summary Aggregation (Aggregates Receipts, Fails Closed)
       - name: "[RQ-12] Compile Release Qualification Summary"
+        if: success() || failure()
         run: python scripts/release/rq12_qualification_summary.py
 
-      - name: Upload Qualification Receipts
+      - name: Upload Qualification Receipts & Summaries
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: release-qualification-receipts
-          path: scripts/release/*.json
+          path: |
+            scripts/release/*.json
+            scripts/release/receipts/*.json

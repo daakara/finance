@@ -1,75 +1,104 @@
 {
-  "directive_id": "ARX_RELEASE_CONTROL_HARDENING_074A1",
-  "timestamp": "2026-10-28T10:51:11.762886+00:00",
-  "candidate_commit": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
-  "release_base_anchor": "6d4020ca3fef3ae07ac01204b03e0629b6a7cc79",
-  "target_branch": "refs/heads/release/production",
-  "checks_total": 12,
-  "checks_passed": 12,
-  "checks_failed": 0,
-  "checks_skipped": 0,
+  "directive_id": "ARX_RELEASE_QUALIFICATION_REMEDIATION_074A3",
+  "timestamp": "2026-10-28T11:52:55.898791+00:00",
+  "candidate_commit": "773dda4967f8b919f4611f8bf7cca46e48aece2c",
+  "execution_context": {
+    "is_github_actions": false,
+    "run_id": null,
+    "run_attempt": null,
+    "event_name": "local_execution",
+    "pr_number": null,
+    "pr_head_sha": null,
+    "pr_base_sha": null,
+    "base_ref": null,
+    "head_ref": null,
+    "github_sha": null
+  },
+  "controls_total": 11,
+  "controls_passed": 11,
+  "controls_failed": 0,
+  "controls_blocked": 0,
+  "controls_missing": 0,
   "overall_verdict": "RELEASE_QUALIFIED",
-  "posture": "FAIL_CLOSED_VERIFIED",
-  "details": {
+  "qualification_posture": "AUTHENTIC_RECEIPTS_VERIFIED",
+  "blocking_reasons": [],
+  "stage_details": {
     "RQ-01": {
       "name": "Candidate Identity & Lineage",
       "status": "PASS",
-      "evidence": "EXECUTED_AND_VERIFIED"
+      "valid": true,
+      "duration_sec": 0.369,
+      "digest": "d3a678ea7f64614395f5b48eff6c2731ada416f90933fd05c97bd6eee4b02c4d"
     },
     "RQ-02": {
       "name": "Release Diff Integrity",
       "status": "PASS",
-      "evidence": "EXECUTED_AND_VERIFIED"
+      "valid": true,
+      "duration_sec": 0.211,
+      "digest": "b896826eabf4da7ba01abcf7de180a9fb523d179eff84980d185754dd54a73b9"
     },
     "RQ-03": {
       "name": "Backend Regression Suite",
       "status": "PASS",
-      "evidence": "EXECUTED_AND_VERIFIED"
+      "valid": true,
+      "duration_sec": 4.28,
+      "digest": "717794e79bb65d78ab62b020495e7e56e63b5ec3f37b99dc982194a9bb9e7814"
     },
     "RQ-04": {
-      "name": "Frontend Regression & Type-Check",
+      "name": "Frontend Regression & Typecheck",
       "status": "PASS",
-      "evidence": "EXECUTED_AND_VERIFIED"
+      "valid": true,
+      "duration_sec": 13.856,
+      "digest": "f0cd2e382a2bc7d93009cb7e3380d26aa85c79f06ed71727baf0e96cdd8e131e"
     },
     "RQ-05": {
       "name": "Cross-Engine Invariants",
       "status": "PASS",
-      "evidence": "EXECUTED_AND_VERIFIED"
+      "valid": true,
+      "duration_sec": 0.013,
+      "digest": "c392e6ec4713662f52e7254ed20c95f2ec8b3d3f9319528bc9cca6641a9be7a1"
     },
     "RQ-06": {
       "name": "Governance & Backlog Invariants",
       "status": "PASS",
-      "evidence": "EXECUTED_AND_VERIFIED"
+      "valid": true,
+      "duration_sec": 1.359,
+      "digest": "fc040bed6db6831dc7277e0889e63bbbcb5ae99cf4449cc7d2e3f372a7cd6509"
     },
     "RQ-07": {
       "name": "Deployment Safety & Secret Isolation",
       "status": "PASS",
-      "evidence": "EXECUTED_AND_VERIFIED"
+      "valid": true,
+      "duration_sec": 0.315,
+      "digest": "c10f70dd141bc84e094e3aff50eff12d83a6cbfc7aadff4e4d793c404b392abd"
     },
     "RQ-08": {
       "name": "Artifact Provenance & Digest Binding",
       "status": "PASS",
-      "evidence": "EXECUTED_AND_VERIFIED"
+      "valid": true,
+      "duration_sec": 0.223,
+      "digest": "982db90f2e641ebd8f7e0e72ebc31fc9bdc0e4cc45d82872007fd6c97193bc81"
     },
     "RQ-09": {
       "name": "Four-Way Cross-Platform Compatibility",
       "status": "PASS",
-      "evidence": "EXECUTED_AND_VERIFIED"
+      "valid": true,
+      "duration_sec": 0.097,
+      "digest": "9ea4cb8de899f6488256e9129e7ca9a38590e2815ea4060d885173cb15be5c62"
     },
     "RQ-10": {
       "name": "Release Configuration Integrity",
       "status": "PASS",
-      "evidence": "EXECUTED_AND_VERIFIED"
+      "valid": true,
+      "duration_sec": 0.039,
+      "digest": "94fb3589103e9656c78cbae7304bf6265b3948a4e3ea3ef750da726ae510a950"
     },
     "RQ-11": {
       "name": "Rollback Readiness & Target Verification",
       "status": "PASS",
-      "evidence": "EXECUTED_AND_VERIFIED"
-    },
-    "RQ-12": {
-      "name": "Final Qualification Summary Aggregation",
-      "status": "PASS",
-      "evidence": "EXECUTED_AND_VERIFIED"
+      "valid": true,
+      "duration_sec": 0.158,
+      "digest": "abf0f4d8aeb88fd84bf725bfe3284f9397299dd8fdaa1b988778cd6954b036d4"
     }
   }
 }

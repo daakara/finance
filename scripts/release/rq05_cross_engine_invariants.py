@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
 ARX Release Qualification - Check RQ-05: Cross-Engine Invariants
-Verifies decision authority, risk sizing, confluence truthfulness, Smart Money disclosure,
+Verifies decision authority, risk sizing floor, confluence truthfulness, Smart Money disclosure,
 and recommendation consistency across frontend and backend boundaries.
+Emits a verified machine-readable stage receipt.
 """
 
-import sys, os, math
+import sys, os, math, time, datetime
 
 try:
     sys.stdout.reconfigure(encoding='utf-8')
@@ -14,6 +15,8 @@ except Exception:
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, PROJECT_ROOT)
+sys.path.insert(0, os.path.dirname(__file__))
+from rq_receipt_utils import create_stage_receipt, save_stage_receipt, get_git_commit
 
 def test_risk_sizing_floor():
     print("Testing Invariant 1: Sizing Floor (Sub-1-Share Allocation)...")
@@ -63,7 +66,7 @@ def test_confluence_narrative_truthfulness():
     assert "institutional accumulation confirmed" not in reasons
     print("  [PASS] Missing Smart Money correctly suppressed from claiming positive institutional alignment.")
 
-    # Case B: Low confluence score (<30)
+    # Case B: Low confluence score (<50)
     low_res = engine.calculate_confluence(
         symbol="BEAR",
         technical_data={"executionStatus": "EXTENDED", "riskRewardRatio": 0.8},
@@ -90,17 +93,64 @@ def test_frontend_risk_copy_cleanliness():
     print("  [PASS] Frontend risk copy is fully compliant ('HARD MAX LOSS' absent, 'MODELED STOP RISK' present).")
 
 def main():
+    start_time = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    t0 = time.time()
+    errors = []
+    assertions = []
+
     print("=== [RQ-05] CROSS-ENGINE INVARIANTS CHECK ===")
     try:
         test_risk_sizing_floor()
+        assertions.append({"assertion": "Invariant 1: Sub-1-share capital yields 0 integer shares", "passed": True})
+    except Exception as e:
+        assertions.append({"assertion": "Invariant 1: Sub-1-share capital yields 0 integer shares", "passed": False})
+        errors.append(f"Invariant 1 failure: {e}")
+
+    try:
         test_confluence_narrative_truthfulness()
+        assertions.append({"assertion": "Invariant 2: Missing smart money suppressed from positive narrative", "passed": True})
+    except Exception as e:
+        assertions.append({"assertion": "Invariant 2: Missing smart money suppressed from positive narrative", "passed": False})
+        errors.append(f"Invariant 2 failure: {e}")
+
+    try:
         test_frontend_risk_copy_cleanliness()
+        assertions.append({"assertion": "Invariant 3: Zero occurrences of 'HARD MAX LOSS', presence of 'MODELED STOP RISK'", "passed": True})
+    except Exception as e:
+        assertions.append({"assertion": "Invariant 3: Zero occurrences of 'HARD MAX LOSS', presence of 'MODELED STOP RISK'", "passed": False})
+        errors.append(f"Invariant 3 failure: {e}")
+
+    duration = time.time() - t0
+    status = "PASS" if len(errors) == 0 else "FAIL"
+    candidate_sha = get_git_commit("HEAD")
+
+    evidence = [
+        "analyst_dashboard/analyzers/confluence_engine.py",
+        "frontend/components/PositionSizerModal.tsx",
+        "frontend/components/DayTraderPositionSizer.tsx"
+    ]
+
+    receipt = create_stage_receipt(
+        control_id="RQ-05",
+        name="Cross-Engine Invariants",
+        status=status,
+        start_time=start_time,
+        end_time=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        duration_sec=duration,
+        candidate_sha=candidate_sha,
+        target_branch="release/production",
+        assertions=assertions,
+        evidence_paths=evidence,
+        errors=errors
+    )
+    receipt_path = save_stage_receipt(receipt)
+    print(f"Receipt written to: {receipt_path}")
+
+    if status == "PASS":
         print("=== [RQ-05] RESULT: PASS ===")
         sys.exit(0)
-    except Exception as e:
-        print(f"FAIL: Cross-engine invariant breach: {e}")
-        import traceback
-        traceback.print_exc()
+    else:
+        print(f"=== [RQ-05] RESULT: FAIL (Errors: {errors}) ===")
         sys.exit(1)
 
 if __name__ == "__main__":

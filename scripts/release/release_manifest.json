@@ -135,5 +135,73 @@
       "sha256": "0101c3e460edf46ba186ed8997f63cde34672823995b697c016de1af6ddca826",
       "size_bytes": 55187
     }
+  },
+  "manifest_version": "2.1.0-D074A3",
+  "directive_id": "ARX_RELEASE_QUALIFICATION_REMEDIATION_074A3",
+  "qualification_framework_files": {
+    ".github/workflows/release-qualification.yml": {
+      "sha256": "bfa53eb9a43ebf045d80e2edd22272097df00c7d086d2fb4d5ef8d02df9a2b9c",
+      "description": "GitHub Actions 12-Stage Release Qualification Workflow"
+    },
+    "scripts/release/rq01_candidate_identity.py": {
+      "sha256": "53d69174eacb69893abe16cdaee4ae5ddea9fe3d3dc30dc00183957b4a2a5f67",
+      "description": "Release qualification module: rq01_candidate_identity.py"
+    },
+    "scripts/release/rq02_diff_integrity.py": {
+      "sha256": "a35a087f6a8086dd4a9bfbcd38b1160b1bddfd800de745613a2ddb2c58a28bd8",
+      "description": "Release qualification module: rq02_diff_integrity.py"
+    },
+    "scripts/release/rq03_backend_regression.py": {
+      "sha256": "18ef80c4baafe7fcb9b102546939894b3d80f5682e638efa4b23764ce9330756",
+      "description": "Release qualification module: rq03_backend_regression.py"
+    },
+    "scripts/release/rq04_frontend_regression.py": {
+      "sha256": "6f932321bb802b61f7a8f10d7a4ab5015cdb9f5224e481387867c59e3508b27f",
+      "description": "Release qualification module: rq04_frontend_regression.py"
+    },
+    "scripts/release/rq05_cross_engine_invariants.py": {
+      "sha256": "5a895655a8406e8b514eb6d6bcd4f4b79426a7c990ecc7f81c134bd42fa7a39a",
+      "description": "Release qualification module: rq05_cross_engine_invariants.py"
+    },
+    "scripts/release/rq06_governance_invariants.py": {
+      "sha256": "d6428aea0f6cfbbaf89d0916294da9c8868f081a48bc5cb007b1579b46b7a9b4",
+      "description": "Release qualification module: rq06_governance_invariants.py"
+    },
+    "scripts/release/rq07_deployment_safety.py": {
+      "sha256": "e4f38d2f454659b9e5922d3ed4b5841efa4192253510f21b7185efa55617ee54",
+      "description": "Release qualification module: rq07_deployment_safety.py"
+    },
+    "scripts/release/rq08_artifact_provenance.py": {
+      "sha256": "4cd1e6bca3cdf937d1d0fea88d321c658dbec8bd71eaa95be14f6b832b7b58c5",
+      "description": "Release qualification module: rq08_artifact_provenance.py"
+    },
+    "scripts/release/rq09_compatibility_suite.py": {
+      "sha256": "baa7965e876cdd32badd90e38fe8d46425c6a25e11b4c48976d60ce276d3b58c",
+      "description": "Release qualification module: rq09_compatibility_suite.py"
+    },
+    "scripts/release/rq10_config_integrity.py": {
+      "sha256": "570d741355b20ed7c64eec1d137e09bae077af895b395d69fd6e1d7cbe41e67d",
+      "description": "Release qualification module: rq10_config_integrity.py"
+    },
+    "scripts/release/rq11_rollback_readiness.py": {
+      "sha256": "bfcbf1e06c417e3a631f8e4a1117f3741e45d92a56d6d1eb82fc57ee38410b15",
+      "description": "Release qualification module: rq11_rollback_readiness.py"
+    },
+    "scripts/release/rq12_qualification_summary.py": {
+      "sha256": "99379827279c0c90dc4aaa5e6834eb58a787a684ded9e7bfccf79e254bf59628",
+      "description": "Release qualification module: rq12_qualification_summary.py"
+    },
+    "scripts/release/rq_receipt_utils.py": {
+      "sha256": "2db373fef43198c3b07ab8e1537df967b7a05f8d0c22834539662fe53fab2867",
+      "description": "Release qualification module: rq_receipt_utils.py"
+    },
+    "scripts/release/run_release_ci_suite.py": {
+      "sha256": "b0324bc393a130a737bffb521ba2941fe1b0dc3c8fb2f13da6c01c7f9bd70831",
+      "description": "Release qualification module: run_release_ci_suite.py"
+    },
+    "scripts/release/test_release_ci_negative_cases.py": {
+      "sha256": "aca624e231e974891a5773d897c31167c01ab2d3ae9437d04ecb9d58f911617f",
+      "description": "Release qualification module: test_release_ci_negative_cases.py"
+    }
   }
 }

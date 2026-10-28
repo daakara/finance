@@ -1,9 +1,31 @@
 {
   "record_id": "ARX_RQ08_PROVENANCE_RECORD",
-  "head_commit_sha": "103e44e3379c6322f86938cbdf58694657aab582",
-  "tree_sha": "593378229c8782c29414fa677cb59ac61df02f27",
-  "manifest_sha256": "bc9f4d875bb1b6718c9a9b34b8854cbe58428ca16be616603200f4e5bdbe66a0",
-  "verification_timestamp": "2026-10-28T10:51:11.327723+00:00",
-  "authoritative_target": "refs/heads/release/production",
-  "provenance_status": "BINDING_VERIFIED"
+  "policy_version": "2.1.0-D074A3",
+  "head_commit_sha": "773dda4967f8b919f4611f8bf7cca46e48aece2c",
+  "tree_sha": "0ca4df9a2eff06fae2304471507f716e0237e3a3",
+  "manifest_path": "scripts/release/release_manifest.json",
+  "manifest_sha256": "28e44b32a60bd16c88ddaf3a632ecf962943fa740fc27ce954aea2cd3c07c6ad",
+  "execution_context": {
+    "is_github_actions": false,
+    "run_id": null,
+    "run_attempt": null,
+    "event_name": "local_execution",
+    "pr_number": null,
+    "pr_head_sha": null,
+    "pr_base_sha": null,
+    "base_ref": null,
+    "head_ref": null,
+    "github_sha": null
+  },
+  "stage_receipt_digests": {
+    "rq01_receipt.json": "2137d9506467e5db33831ea0ff86af0ca51c0194a9d2f5766483241d489ed4e6",
+    "rq02_receipt.json": "2e09e6882b62e7bf7907958107b6fd369fa3234a42b0c5fc643bb50c818944dd",
+    "rq03_receipt.json": "1d8cf73b12bff014f2f20fdda908b6130f76340e3c41c539aa43a29fba63bf06",
+    "rq04_receipt.json": "a2bf88539e2c404210f0abe55e9f72dd7ec513b3d32175787ea9f93ccd19493d",
+    "rq05_receipt.json": "6ab916725c9e0c7501b4538ce79e55d463e77bc17f81dc406ec068875f61e6be",
+    "rq06_receipt.json": "bf6d85f5e40062cb0f0ffbaf3a550f6cc5bfd7cce725ea560c3e5a842d1c05a4",
+    "rq07_receipt.json": "0d090b21810ea6a30f2db8c789462fefaa3290ca37ca41a2a8aa18dfbe6b8f8c"
+  },
+  "verification_timestamp": "2026-10-28T11:52:54.568178+00:00",
+  "authoritative_target": "release/production"
 }

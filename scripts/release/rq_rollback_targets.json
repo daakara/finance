@@ -1,18 +1,29 @@
 {
-  "cloudflare": {
+  "verified_0_ddl": true,
+  "base_anchor_sha": "6d4020ca3fef3ae07ac01204b03e0629b6a7cc79",
+  "candidate_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+  "cloudflare_anchor": {
     "platform": "Cloudflare Pages",
     "project": "finance",
     "deployment_id": "32f8daa9-bb1f-4454-9aaa-2000bfd49038",
     "source_commit": "6d4020ca3fef3ae07ac01204b03e0629b6a7cc79",
-    "state": "IMMUTABLE_SERVING_BASELINE",
-    "rehearsal_type": "PLATFORM_DEPLOYMENT_RETAINED"
+    "target_state": "IMMUTABLE_SERVING_BASELINE",
+    "rehearsal_type": "DEPLOYMENT_RECORD_VERIFIED"
   },
-  "railway": {
+  "railway_anchor": {
     "platform": "Railway",
     "service": "web",
     "deployment_id": "d1f8cf37-7592-4ad5-b986-4bbc9b4ed042",
     "source_commit": "d1f8cf37b8d4e7bf53fc57d9f78330ee0f4c94ea",
-    "state": "IMMUTABLE_CONTAINER_RETAINED",
+    "target_state": "IMMUTABLE_CONTAINER_RETAINED",
     "rehearsal_type": "ISOLATED_RUNTIME_VERIFIED"
+  },
+  "platform_rehearsal_evidence": {
+    "cloudflare_rollback_target": "32f8daa9-bb1f-4454-9aaa-2000bfd49038",
+    "railway_rollback_target": "d1f8cf37-7592-4ad5-b986-4bbc9b4ed042",
+    "cf_api_available": false,
+    "rw_api_available": false,
+    "platform_live_rehearsal": "NOT_EXECUTED_IN_CI (Requires authorized owner session to prevent production flapping)",
+    "external_platform_gate": "UNVERIFIED_EXTERNAL_GATE"
   }
 }
