@@ -204,10 +204,10 @@ export default function PositionSizerModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="position-sizer-modal-title"
-        className="bg-[#0b101b] border border-[#223147] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden text-slate-100 font-sans max-h-[92vh] flex flex-col my-auto focus:outline-none"
+        className="bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden text-[var(--text-1)] font-sans max-h-[92vh] flex flex-col my-auto focus:outline-none"
       >
         {/* Fixed Header */}
-        <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-[#1b2537] bg-[#0e1422] shrink-0">
+        <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-[var(--border-subtle)] bg-[var(--surface-2)] shrink-0">
           <div className="flex items-center space-x-2">
             <span className="text-xl">⚖️</span>
             <div>
@@ -215,7 +215,7 @@ export default function PositionSizerModal({
                 Institutional Position Sizer & Kelly Risk
               </h2>
               <div className="flex items-center gap-1.5 flex-wrap">
-                <p className="text-[10px] sm:text-[11px] text-slate-400">
+                <p className="text-[10px] sm:text-[11px] text-[var(--text-2)]">
                   Calibrated for <span className="text-cyan-400 font-bold font-mono">{symbol}</span> @ ${safeEntry.toFixed(2)}
                 </p>
                 {isUsingLiveSpot ? (
@@ -223,7 +223,7 @@ export default function PositionSizerModal({
                     ● LIVE SPOT
                   </span>
                 ) : (
-                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#162030] text-slate-400 border border-[#243044]" title="Anchor is completed session prior close">
+                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-subtle)]" title="Anchor is completed session prior close">
                     PRIOR CLOSE
                   </span>
                 )}
@@ -233,7 +233,7 @@ export default function PositionSizerModal({
           <button
             onClick={onClose}
             aria-label="Close Position Sizer"
-            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-all text-sm cursor-pointer"
+            className="text-[var(--text-2)] hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-all text-sm cursor-pointer"
           >
             ✕
           </button>
@@ -249,7 +249,7 @@ export default function PositionSizerModal({
                 <strong className="font-bold text-rose-300 block text-sm">
                   {!hasValidPricing ? "Unverified Asset — Sizing Blocked:" : "Setup Invalidated — Sizing Disabled:"}
                 </strong>
-                <p className="leading-relaxed text-slate-200">
+                <p className="leading-relaxed text-[var(--text-1)]">
                   {!hasValidPricing
                     ? `Live market data and verified stop-loss levels are unavailable for ${symbol}. Under Phase 18 quantitative integrity invariants, the platform refuses to size capital for unverified assets.`
                     : `Current entry price ($${safeEntry.toFixed(2)}) is at or below the stop loss floor ($${safeStop.toFixed(2)}). Risk geometry is invalid and capital deployment is blocked. Zero shares recommended.`}
@@ -276,7 +276,7 @@ export default function PositionSizerModal({
                 <span className="text-base">🎯</span>
                 <div>
                   <strong className="font-bold text-cyan-300">Fractional Precision Active:</strong>
-                  <span className="text-[11px] text-slate-300 block">Sized for ${accountSize.toLocaleString()} wallet. You are never priced out of high-conviction assets.</span>
+                  <span className="text-[11px] text-[var(--text-2)] block">Sized for ${accountSize.toLocaleString()} wallet. You are never priced out of high-conviction assets.</span>
                 </div>
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-900/60 border border-cyan-600/60 text-cyan-200 font-mono font-bold shrink-0">
@@ -287,11 +287,11 @@ export default function PositionSizerModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] text-slate-400 font-bold block mb-1">
+              <label className="text-[11px] text-[var(--text-2)] font-bold block mb-1">
                 Account Equity ($)
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-2 text-xs text-slate-500 font-bold">$</span>
+                <span className="absolute left-3 top-2 text-xs text-[var(--text-muted)] font-bold">$</span>
                 <input
                   type="number"
                   min="1"
@@ -304,7 +304,7 @@ export default function PositionSizerModal({
                       localStorage.setItem("FINANCE_USER_ACCOUNT_SIZE", String(val));
                     }
                   }}
-                  className="w-full bg-[#070b13] border border-[#24334b] rounded-lg pl-7 pr-3 py-1.5 text-xs text-white font-bold focus:border-cyan-500 focus:outline-none"
+                  className="w-full bg-[var(--surface-2)] border border-[var(--border-subtle)] rounded-lg pl-7 pr-3 py-1.5 text-xs text-white font-bold focus:border-cyan-500 focus:outline-none"
                 />
               </div>
 
@@ -323,7 +323,7 @@ export default function PositionSizerModal({
                     className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border transition-all cursor-pointer ${
                       accountSize === preset
                         ? "bg-cyan-600 border-cyan-400 text-white"
-                        : "bg-[#0c121e] border-[#1f2c42] text-slate-400 hover:text-slate-200"
+                        : "bg-[var(--surface-2)] border-[var(--border-subtle)] text-[var(--text-2)] hover:text-slate-200"
                     }`}
                   >
                     ${preset >= 1000 ? `${preset / 1000}k` : preset}
@@ -333,7 +333,7 @@ export default function PositionSizerModal({
             </div>
 
             <div>
-              <label className="text-[11px] text-slate-400 font-bold block mb-1">
+              <label className="text-[11px] text-[var(--text-2)] font-bold block mb-1">
                 Max Risk Per Trade (%)
               </label>
               <div className="relative">
@@ -344,9 +344,9 @@ export default function PositionSizerModal({
                   max="10"
                   value={riskPct}
                   onChange={(e) => setRiskPct(Math.max(0.1, Math.min(10, Number(e.target.value))))}
-                  className="w-full bg-[#070b13] border border-[#24334b] rounded-lg px-3 py-1.5 text-xs text-white font-bold focus:border-cyan-500 focus:outline-none"
+                  className="w-full bg-[var(--surface-2)] border border-[var(--border-subtle)] rounded-lg px-3 py-1.5 text-xs text-white font-bold focus:border-cyan-500 focus:outline-none"
                 />
-                <span className="absolute right-3 top-2 text-xs text-slate-500 font-bold">%</span>
+                <span className="absolute right-3 top-2 text-xs text-[var(--text-muted)] font-bold">%</span>
               </div>
 
               {/* Risk Presets */}
@@ -359,7 +359,7 @@ export default function PositionSizerModal({
                     className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border transition-all cursor-pointer ${
                       riskPct === preset
                         ? "bg-cyan-600 border-cyan-400 text-white"
-                        : "bg-[#0c121e] border-[#1f2c42] text-slate-400 hover:text-slate-200"
+                        : "bg-[var(--surface-2)] border-[var(--border-subtle)] text-[var(--text-2)] hover:text-slate-200"
                     }`}
                   >
                     {preset}%
@@ -370,8 +370,8 @@ export default function PositionSizerModal({
           </div>
 
           {/* Mode Selector */}
-          <div className="flex items-center justify-between pt-1 border-t border-[#172235]">
-            <span className="text-[10px] text-slate-400 font-mono">
+          <div className="flex items-center justify-between pt-1 border-t border-[var(--border-subtle)]">
+            <span className="text-[10px] text-[var(--text-2)] font-mono">
               Risk Budget: <strong className="text-cyan-300 font-bold">${maxDollarRisk.toFixed(2)}</strong>
             </span>
 
@@ -381,7 +381,7 @@ export default function PositionSizerModal({
               className={`px-2 py-1 rounded text-[10px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
                 isFractionalActive
                   ? "bg-cyan-950 border-cyan-600 text-cyan-300"
-                  : "bg-[#0c121e] border-[#1f2c42] text-slate-400 hover:text-slate-200"
+                  : "bg-[var(--surface-2)] border-[var(--border-subtle)] text-[var(--text-2)] hover:text-slate-200"
               }`}
             >
               <span>{isFractionalActive ? "🔢 Fractional Units" : "📦 Whole Shares"}</span>
@@ -389,28 +389,28 @@ export default function PositionSizerModal({
           </div>
 
           {/* Sizing Results Card */}
-          <div className="bg-[#070c16] border border-[#1b273b] rounded-xl p-3.5 sm:p-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-[#141e30] pb-2">
-              <span className="text-xs text-slate-400 font-bold">Recommended Position</span>
+          <div className="bg-[var(--surface-2)] border border-[var(--border-subtle)] rounded-xl p-3.5 sm:p-4 space-y-3">
+            <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-2">
+              <span className="text-xs text-[var(--text-2)] font-bold">Recommended Position</span>
               <span className="text-lg sm:text-xl font-black text-cyan-400 tabular-nums">
-                {shares} <span className="text-xs text-slate-400 font-semibold">{shares === 1 ? "Share" : "Shares"}</span>
+                {shares} <span className="text-xs text-[var(--text-2)] font-semibold">{shares === 1 ? "Share" : "Shares"}</span>
               </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2.5 sm:gap-3 text-xs">
-              <div className="bg-[#0b101b] p-2.5 rounded-lg border border-[#172235]">
-                <span className="text-[10px] text-slate-500 block">CAPITAL ALLOCATED</span>
+              <div className="bg-[var(--surface-1)] p-2.5 rounded-lg border border-[var(--border-subtle)]">
+                <span className="text-[10px] text-[var(--text-muted)] block">CAPITAL ALLOCATED</span>
                 <span className="font-bold text-white tabular-nums">${totalAllocation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">({portfolioAllocPct}% of portfolio)</span>
+                <span className="text-[10px] text-[var(--text-2)] block mt-0.5">({portfolioAllocPct}% of portfolio)</span>
               </div>
 
-              <div className="bg-[#140e11] p-2.5 rounded-lg border border-rose-950/60">
+              <div className="bg-[var(--status-negative-bg)] p-2.5 rounded-lg border border-rose-950/60">
                 <span className="text-[10px] text-rose-400 block font-semibold">MODELED STOP RISK</span>
                 <span className="font-bold text-rose-300 tabular-nums">-${actualDollarRisk.toFixed(2)}</span>
                 <span className="text-[10px] text-rose-500/80 block mt-0.5">at ${safeStop.toFixed(2)} stop (excl. gaps)</span>
               </div>
 
-              <div className="bg-[#0a1414] p-2.5 rounded-lg border border-emerald-950/60">
+              <div className="bg-[var(--status-positive-bg)] p-2.5 rounded-lg border border-emerald-950/60">
                 <span className="text-[10px] text-emerald-400 block font-semibold">TARGET PROFIT (TP1)</span>
                 <span className="font-bold text-emerald-300 tabular-nums">
                   {hasTarget ? `+$${projectedProfit.toFixed(2)}` : "N/A"}
@@ -422,7 +422,7 @@ export default function PositionSizerModal({
                 </span>
               </div>
 
-              <div className="bg-[#12110c] p-2.5 rounded-lg border border-amber-950/60">
+              <div className="bg-[var(--status-caution-bg)] p-2.5 rounded-lg border border-amber-950/60">
                 <span className="text-[10px] text-amber-400 block font-semibold">FRACTIONAL KELLY</span>
                 <span className="font-bold text-amber-300 tabular-nums">
                   {hasTarget ? `${halfKellyPct}% Optimal` : "N/A"}
@@ -442,7 +442,7 @@ export default function PositionSizerModal({
                   ? "bg-rose-950/40 border-rose-800/80 text-rose-200"
                   : participationRatePct > 0.25
                   ? "bg-amber-950/40 border-amber-800/80 text-amber-200"
-                  : "bg-[#0b101b] border-[#172235] text-slate-300"
+                  : "bg-[var(--surface-1)] border-[var(--border-subtle)] text-[var(--text-2)]"
               }`}
             >
               <span className="text-base shrink-0">{participationRatePct > 1.0 ? "⚠️" : participationRatePct > 0.25 ? "⚡" : "💧"}</span>
@@ -452,12 +452,12 @@ export default function PositionSizerModal({
                     Estimated Order Participation: {participationRatePct.toFixed(3)}% of 20D ADV
                   </strong>
                   {adv20d != null && (
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="text-[10px] text-[var(--text-2)] font-mono">
                       ADV: ${adv20d.toLocaleString()}
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
+                <p className="text-[11px] text-[var(--text-2)] leading-relaxed">
                   {participationRatePct > 1.0
                     ? `Your planned order of $${totalAllocation.toLocaleString()} represents ${participationRatePct.toFixed(2)}% of historical average daily volume. Sizing > 1% typically incurs measurable market impact; use limit orders or break execution into algorithmic tranches.`
                     : `Order allocation represents a manageable fraction of historical dollar volume (< 1% ADV). Estimated execution risk based on historical trading liquidity is minimal.`}
@@ -467,7 +467,7 @@ export default function PositionSizerModal({
           )}
 
           {/* Action Guidance */}
-          <div className="text-[11px] text-slate-400 bg-[#0c121d] p-3 rounded-lg border border-[#1b2639] leading-relaxed">
+          <div className="text-[11px] text-[var(--text-2)] bg-[var(--surface-2)] p-3 rounded-lg border border-[var(--border-subtle)] leading-relaxed">
             <span className="text-cyan-400 font-bold">Execution Plan: </span>
             {isSizingBlocked ? (
               <span className="text-rose-400 font-bold">
@@ -489,7 +489,7 @@ export default function PositionSizerModal({
           </div>
 
           {/* Modeled Risk Disclosure */}
-          <p className="text-[10px] text-slate-500 px-1 leading-normal">
+          <p className="text-[10px] text-[var(--text-muted)] px-1 leading-normal">
             * Modeled risk is calculated to the stop level. Realized losses may exceed this amount during overnight price gaps or illiquid market slippage.
           </p>
 
@@ -503,15 +503,15 @@ export default function PositionSizerModal({
         </div>
 
         {/* Fixed Footer with 1-Click Save to Portfolio */}
-        <div className="p-3.5 sm:p-4 border-t border-[#1b2537] bg-[#0e1422] flex items-center justify-between gap-3 shrink-0">
+        <div className="p-3.5 sm:p-4 border-t border-[var(--border-subtle)] bg-[var(--surface-2)] flex items-center justify-between gap-3 shrink-0">
           <button
             type="button"
             disabled={isSetupInvalid || shares <= 0 || isSizingBlocked}
             onClick={handleSaveToPortfolio}
             className={`px-3.5 sm:px-4 py-2 border rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow ${
               isSetupInvalid || shares <= 0 || isSizingBlocked
-                ? "bg-[#0e1420] border-[#182334] text-slate-600 cursor-not-allowed"
-                : "bg-[#172338] hover:bg-[#20314f] border border-[#2b3f63] text-cyan-300 hover:text-white active:scale-95 cursor-pointer"
+                ? "bg-[var(--surface-2)] border-[var(--border-subtle)] text-slate-600 cursor-not-allowed"
+                : "bg-[var(--surface-2)] hover:bg-[var(--surface-2)] border border-[var(--border-subtle)] text-cyan-300 hover:text-white active:scale-95 cursor-pointer"
             }`}
           >
             <span>💼</span>

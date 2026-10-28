@@ -1,0 +1,27 @@
+{
+  "implementation_commit": "2a3a4f866da8b93dfc51690b72f05669cc3dfa22",
+  "comparison": "origin/main...candidate (merge base ea3cc13)",
+  "files": [
+    "frontend/components/AdaptiveTerminal.tsx",
+    "frontend/components/AlertTriggerModal.tsx",
+    "frontend/components/CommandPaletteModal.tsx",
+    "frontend/components/PositionSizerModal.tsx",
+    "frontend/components/PreFlightChecklistModal.tsx",
+    "frontend/components/PreFlightReadinessBar.tsx",
+    "frontend/components/ThemeToggle.tsx",
+    "frontend/components/WhyInspectModal.tsx",
+    "frontend/components/__tests__/PositionSizerAuthority.test.tsx",
+    "frontend/components/synthesis/SynthesisHeader.tsx",
+    "frontend/components/terminal/AdvancedTerminalView.tsx",
+    "frontend/components/terminal/GuidedTerminalView.tsx",
+    "frontend/components/terminal/SharedAssetDeck.tsx",
+    "frontend/components/terminal/SharedExecutionLadder.tsx",
+    "frontend/components/terminal/StandardTerminalView.tsx",
+    "frontend/hooks/__tests__/useTerminalTheme.test.tsx",
+    "frontend/hooks/useTerminalTheme.ts",
+    "frontend/lib/__tests__/workstationThemeTokens.test.ts",
+    "frontend/lib/terminalTheme.ts",
+    "frontend/scripts/build-post-audit-ux-fixture.mjs",
+    "frontend/scripts/post-audit-ux-fixture.tsx"
+  ]
+}

@@ -83,7 +83,7 @@ export default function GuidedTerminalView({
   ];
 
   return (
-    <div className="space-y-4 font-sans text-slate-100 animate-fade-in">
+    <div className="space-y-4 font-sans text-[var(--text-1)] animate-fade-in">
       {/* 🎯 FIRST-VIEWPORT COMPOSITION: VERDICT / GUIDANCE (LEFT 5-COL) + CHART (RIGHT 7-COL) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-12 gap-4 items-start">
         {/* Left Column (lg:col-span-5 xl:col-span-5): Verdict Card & Preconditions */}
@@ -92,7 +92,7 @@ export default function GuidedTerminalView({
           <article
             id="verdict-card"
             data-testid="decision-verdict"
-            className="verdict-card bg-[#0b101b] border border-[#1d293d] rounded-2xl p-3 sm:p-5 shadow-xl space-y-3 font-sans text-slate-100"
+            className="verdict-card bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-2xl p-3 sm:p-5 shadow-xl space-y-3 font-sans text-[var(--text-1)]"
             aria-label="ARX Novice Guidance and Execution Decision"
           >
             {/* Ticker & Price Deck */}
@@ -106,9 +106,9 @@ export default function GuidedTerminalView({
             />
 
             {/* Guided Verdict & Novice Guidance Banner */}
-            <div className="verdict-banner !flex !flex-col p-3 sm:p-4 rounded-xl bg-[#080e18] border border-[#182335] space-y-2">
+            <div className="verdict-banner !flex !flex-col p-3 sm:p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-2">
               <div className="space-y-1">
-                <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
+                <span className="text-[10px] text-[var(--text-2)] font-mono font-bold uppercase tracking-wider block">
                   ARX Novice Guidance & Assessment
                 </span>
                 <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight">
@@ -124,9 +124,9 @@ export default function GuidedTerminalView({
               {/* 2. CANONICAL REASON */}
               <div
                 data-testid="decision-reason"
-                className="text-xs sm:text-sm text-slate-200 font-sans leading-relaxed pt-1 border-t border-[#182335]/60"
+                className="text-xs sm:text-sm text-[var(--text-1)] font-sans leading-relaxed pt-1 border-t border-[var(--border-subtle)]"
               >
-                <span className="text-[10px] text-slate-400 font-bold block uppercase mb-0.5">
+                <span className="text-[10px] text-[var(--text-2)] font-bold block uppercase mb-0.5">
                   Plain English Explanation:
                 </span>
                 <p>{insight.human?.assessmentDescription || insight.terminalState?.headlineExplanation || insight.standard?.bottomLine}</p>
@@ -149,19 +149,19 @@ export default function GuidedTerminalView({
           {/* 3. WHAT NEEDS TO CHANGE */}
           <div
             data-testid="unmet-condition"
-            className="bg-[#080e18] border border-cyan-900/50 rounded-2xl p-3 sm:p-5 shadow-lg space-y-2 sm:space-y-3"
+            className="bg-[var(--surface-2)] border border-cyan-900/50 rounded-2xl p-3 sm:p-5 shadow-lg space-y-2 sm:space-y-3"
           >
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#182335] pb-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-subtle)] pb-2">
               <h3 className="text-xs sm:text-sm font-bold text-cyan-300 uppercase font-mono tracking-wide flex items-center gap-2">
                 <span>🎯</span>
                 <span>What Needs to Change Before Buying</span>
               </h3>
-              <span className="text-xs text-slate-400 font-mono">
+              <span className="text-xs text-[var(--text-2)] font-mono">
                 {isActionable ? "Requirements Satisfied" : "Awaiting Improvements"}
               </span>
             </div>
 
-            <p className="text-xs text-slate-300 font-sans leading-relaxed">
+            <p className="text-xs text-[var(--text-2)] font-sans leading-relaxed">
               {insight.human?.reclaimMilestone || insight.standard?.bottomLine}
             </p>
 
@@ -169,10 +169,10 @@ export default function GuidedTerminalView({
               {unmetConditions.map((cond) => (
                 <div
                   key={cond.id}
-                  className="p-2.5 sm:p-3 rounded-xl bg-[#060b13] border border-[#1b2639] space-y-1"
+                  className="p-2.5 sm:p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-1"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-200 text-xs">{cond.title}</span>
+                    <span className="font-bold text-[var(--text-1)] text-xs">{cond.title}</span>
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] sm:text-xs font-mono font-bold ${
                         cond.status === "MET"
@@ -185,7 +185,7 @@ export default function GuidedTerminalView({
                       {cond.status}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed font-sans">{cond.description}</p>
+                  <p className="text-xs text-[var(--text-2)] leading-relaxed font-sans">{cond.description}</p>
                 </div>
               ))}
             </div>
@@ -207,7 +207,7 @@ export default function GuidedTerminalView({
       {preflightSlot !== undefined ? (
         preflightSlot
       ) : (
-        <div id="preflight-readiness-bar" className="bg-[#0b101b] border border-[#1d293d] rounded-2xl p-4 text-xs font-mono text-slate-400 flex items-center justify-between">
+        <div id="preflight-readiness-bar" className="bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-2xl p-4 text-xs font-mono text-[var(--text-2)] flex items-center justify-between">
           <span>Pre-Flight Readiness Bar</span>
           <span className="text-emerald-400 font-bold">CLEARANCE PASS</span>
         </div>
@@ -226,11 +226,11 @@ export default function GuidedTerminalView({
       ) : (
         <div
           data-testid="supporting-evidence"
-          className="bg-[#0b101b] border border-[#1d293d] rounded-2xl p-4 sm:p-5 shadow-xl space-y-4"
+          className="bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-2xl p-4 sm:p-5 shadow-xl space-y-4"
         >
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#182335] pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-3">
             <div>
-              <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">
+              <span className="text-xs text-[var(--text-2)] font-mono font-bold uppercase tracking-wider block">
                 Supporting Evidence
               </span>
               <span className="text-sm font-semibold text-white">
@@ -255,7 +255,7 @@ export default function GuidedTerminalView({
                     ? "bg-emerald-950/30 border-emerald-800/50 text-emerald-200"
                     : pill.sentiment === "negative"
                     ? "bg-rose-950/30 border-rose-800/50 text-rose-200"
-                    : "bg-slate-900/50 border-slate-700/50 text-slate-300"
+                    : "bg-slate-900/50 border-slate-700/50 text-[var(--text-2)]"
                 }`}
               >
                 <span className="text-sm shrink-0">
@@ -297,7 +297,7 @@ export default function GuidedTerminalView({
             ) : insight.terminalState.posture === "AVOID" ? (
               <Link
                 href="/radar"
-                className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-mono font-black shadow-md transition-all active:scale-95 cursor-pointer min-h-[44px] flex items-center justify-center"
+                className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-[var(--text-1)] rounded-xl text-xs font-mono font-black shadow-md transition-all active:scale-95 cursor-pointer min-h-[44px] flex items-center justify-center"
               >
                 🎯 Find Setups
               </Link>
@@ -315,12 +315,12 @@ export default function GuidedTerminalView({
       )}
 
       {/* 6-Step Novice Walkthrough */}
-      <div className="bg-[#070b13] border border-[#1a2538] rounded-xl p-3.5 space-y-2.5">
+      <div className="bg-[var(--surface-2)] border border-[var(--border-subtle)] rounded-xl p-3.5 space-y-2.5">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-mono font-bold text-slate-300 flex items-center gap-1.5">
+          <span className="text-xs font-mono font-bold text-[var(--text-2)] flex items-center gap-1.5">
             <span>🧭</span> Step-by-Step Stock Analysis Walkthrough
           </span>
-          <span className="text-xs text-slate-500 font-mono">Click any step to inspect</span>
+          <span className="text-xs text-[var(--text-muted)] font-mono">Click any step to inspect</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
@@ -334,7 +334,7 @@ export default function GuidedTerminalView({
               className={`p-2.5 rounded-lg text-left text-xs font-mono border transition-all cursor-pointer min-h-[36px] ${
                 activeStep === idx
                   ? "bg-cyan-950/80 border-cyan-500 text-cyan-200"
-                  : "bg-[#0b101b] border-[#182335] text-slate-400 hover:text-slate-200"
+                  : "bg-[var(--surface-1)] border-[var(--border-subtle)] text-[var(--text-2)] hover:text-slate-200"
               }`}
             >
               <span className="font-bold block truncate">{step.title}</span>
@@ -347,7 +347,7 @@ export default function GuidedTerminalView({
             id={`walkthrough-step-panel-${activeStep}`}
             role="region"
             aria-labelledby={`walkthrough-step-btn-${activeStep}`}
-            className="p-3.5 bg-[#0d1422] border border-cyan-800/40 rounded-lg text-xs font-sans text-slate-200 animate-fade-in leading-relaxed"
+            className="p-3.5 bg-[var(--surface-2)] border border-cyan-800/40 rounded-lg text-xs font-sans text-[var(--text-1)] animate-fade-in leading-relaxed"
           >
             <strong className="text-cyan-400 font-mono block mb-1 text-xs">{steps[activeStep].title}</strong>
             <span className="text-xs">{steps[activeStep].text}</span>
