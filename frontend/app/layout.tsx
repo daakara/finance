@@ -129,13 +129,34 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   ];
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="theme-color" content="#06b6d4" />
         <meta name="arx-release-sha" content={process.env.NEXT_PUBLIC_ARX_RELEASE || ""} />
+        {/* Early Synchronous Theme Initializer for Zero-Flash Static Export First Paint */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var keys = ['FINANCE_THEME', 'ARX_THEME', 'theme'];
+                  for (var i = 0; i < keys.length; i++) {
+                    var val = localStorage.getItem(keys[i]);
+                    if (val === 'paper' || val === 'dark') {
+                      if (val === 'paper') {
+                        document.documentElement.setAttribute('data-theme', 'paper');
+                      }
+                      break;
+                    }
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
         {/* Canonical Apex & pages.dev to WWW & HTTPS Domain Enforcement */}
         <script
           dangerouslySetInnerHTML={{

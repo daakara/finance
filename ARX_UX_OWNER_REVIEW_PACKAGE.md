@@ -1,6 +1,6 @@
 # Owner review package
 
-Owner authorized bounded remote preview publication on 2026-10-28. Status: PREPARED; authentication prerequisite remains. No push, PR, or new deployment has occurred.
+Owner authorized bounded remote preview publication on 2026-10-28. Status: PUBLISHED FOR PREVIEW REVIEW; see the final verification update below. No merge or production promotion is authorized.
 
 The theme source is `2a3a4f866da8b93dfc51690b72f05669cc3dfa22`, tree `a71a49a9fad690d20d9cb1df2636ad227478f0c1`, frontend tree `55166be100868ee2e8b8e2aafbc1889d9cc8c0a8`. Preview branch: `codex/paper-light-theme-preview-20261028`. An evidence-only follow-up commit packages this report and its allowlisted attachments. Its exact SHA is recorded in the local publication receipt and eventual PR description, avoiding a self-referential commit identifier.
 
@@ -37,3 +37,23 @@ Required hosted checks for main: Python 3.11 and 3.12 backend suites, Code Quali
 - Verify the actual remote artifact SHA, required hosted checks, and unchanged production routing before declaring remote preview verified.
 
 Broad IA closure remains BLOCKED_PENDING_APPROVAL_EVIDENCE. Existing financial safeguards, paper-recording behavior, research HOLD and backend restrictions remain. No universal visual parity, WCAG certification, live actionable-backend acceptance, merge, production promotion, backend deployment, or operational activation is claimed. The available full-app data was stale/unavailable and failed closed.
+
+## Published preview verification — 2026-10-28
+
+Preview: https://02754265.finance-xp8.pages.dev/?mode=standard&symbol=AAPL
+Draft PR: https://github.com/daakara/finance/pull/123
+Exact preview SHA: `8589b925ebe961ba640f4e2aedbf220d0dfffda1`.
+
+Cloudflare deployment `02754265-9af7-493b-adc0-7035fd02b52d` succeeded in the preview environment from a clean GitHub push. Both provider trigger metadata and served arx-release-sha match the exact SHA. All four main-required hosted checks passed: Backend Test Suite Python 3.11, Backend Test Suite Python 3.12, Code Quality & Security Linter, and Static SSG Export & Integrity Gate (Actions run 40726703760). Fresh local verification passed 45 focused tests / 4 suites, parity, TypeScript, and verified build.
+
+Actual remote Chrome checks passed 12 combinations: guided/standard/quant, Paper Light/dark, widths 1440/390. Sampled verdict backgrounds are white in Paper Light and rgb(15,21,35) in dark. No page-width overflow was measured. Header theme switching, command-palette switching, Paper/dark reload persistence, Portfolio navigation persistence, canonical/legacy storage restoration, invalid preference fallback, and system-light/default-dark behavior passed. PageIntro, IntentHero, and Weekly Spotlight controls remain present on the existing default Analysis route. Onboarding was marked completed only in the isolated palette test context; no backend responses were substituted.
+
+Inspect `/?mode=guided&symbol=AAPL`, `/?mode=standard&symbol=AAPL`, `/?mode=quant&symbol=NVDA`, `/portfolio`, and `/?mode=standard` (legacy sections). Review readable surfaces, both themes, navigation/reload persistence, unchanged legacy sections, and prohibited/uncleared decision states. No paper-save, trading action, backend operation, merge or production promotion was performed.
+
+Release Qualification Suite run 40726702649 failed RQ-02 (26 files outside the frozen production allowlist and PositionSizerModal hash mismatch), with RQ-12 reporting blocked qualification. This is separate from the four required CI checks. The production manifest, guards and holds were not changed or bypassed. This preview is not production qualified.
+
+Main remains `2c900cd783af3ca135f1b9cfae30697253db078c`. Final release/production readback is `cdc47a2eee8a427aaa6cf3ab5d01cad7f35d71e1`, changed concurrently from the earlier `6d4020ca3fef3ae07ac01204b03e0629b6a7cc79`. Public commit metadata dates it 2026-10-28T16:35:03Z and identifies separate production-promotion PR #122; its authority claims were not independently audited here. Our 16:30 preview push specified only the exact preview ref and its immediate before/after production references matched. No release ref write or PR #122 action was performed by this task. The theme candidate remains separate. Canonical deployment remains `32f8daa9-bb1f-4454-9aaa-2000bfd49038`; automatic production deployment remains disabled.
+
+Railway management API HTTP 403 remains an unresolved access limitation. No backend access-control change, reauthentication or deployment occurred. The remote app displayed unavailable/historical EOD and not-actionable/uncleared states; live labels were not independently validated. No live actionable-backend acceptance is claimed. Initial markup remains dark and persisted choice applies after mount; a dark first paint remains possible. SynthesisHeader is not mounted on sampled remote routes; its shared-helper regression coverage remains applicable. No universal visual parity, WCAG certification, physical-device acceptance, financial acceptance or broad IA closure is claimed.
+
+The exact pushed SHA is retained. The six committed review files are a preparation-time snapshot, bound by their committed upload manifest. This local publication update and the PR description record later results without another source push. The original qualification seal remains historical and unchanged. Local remote-browser verification receipt and screenshot fingerprints: `scratch/theme-preview-publication/remote-browser/verification-receipt.json`.
