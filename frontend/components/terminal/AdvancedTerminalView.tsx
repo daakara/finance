@@ -60,8 +60,9 @@ export default function AdvancedTerminalView({
 
   return (
     <div className="space-y-4 font-sans text-[var(--text-1)] animate-fade-in">
+
       {/* 🎯 FIRST-VIEWPORT COMPOSITION: QUANT VERDICT (LEFT 5-COL) + CHART (RIGHT 7-COL) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-12 gap-4 items-start">
+      <div data-testid="primary-workspace-grid" className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-12 gap-4 items-start">
         {/* Left Column (lg:col-span-5 xl:col-span-5): Verdict Card & Preconditions */}
         <div className="lg:col-span-5 xl:col-span-5 space-y-2.5 sm:space-y-4 min-w-0 order-1 lg:order-1 xl:order-1">
           {/* 1. DECISION VERDICT & 2. DECISION REASON */}
@@ -178,17 +179,18 @@ export default function AdvancedTerminalView({
             </div>
           )}
         </div>
-      </div>
-
-      {/* 🎯 SYNTHESIS E V3: INLINE PRE-FLIGHT CLEARANCE PANEL */}
-      {preflightSlot !== undefined ? (
+            <section className="order-first lg:order-4 lg:col-span-12" aria-label="Canonical preflight readiness">{preflightSlot !== undefined ? (
         preflightSlot
       ) : (
         <div id="preflight-readiness-bar" className="bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-2xl p-4 text-xs font-mono text-[var(--text-2)] flex items-center justify-between">
           <span>Pre-Flight Readiness Bar</span>
           <span className="text-emerald-400 font-bold">CLEARANCE PASS</span>
         </div>
-      )}
+      )}</section>
+</div>
+
+      {/* 🎯 SYNTHESIS E V3: INLINE PRE-FLIGHT CLEARANCE PANEL */}
+
 
       {/* 5. CONDITIONAL TRADE PLAN */}
       {planSlot && (

@@ -66,8 +66,9 @@ export default function StandardTerminalView({
 
   return (
     <div className="space-y-4 font-sans text-[var(--text-1)] animate-fade-in">
+
       {/* 🎯 FIRST-VIEWPORT COMPOSITION: VERDICT (LEFT 5-COL) + CHART (RIGHT 7-COL) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-12 gap-4 items-start">
+      <div data-testid="primary-workspace-grid" className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-12 gap-4 items-start">
         {/* Left Column (lg:col-span-5 xl:col-span-5): Verdict Card & Preconditions */}
         <div className="lg:col-span-5 xl:col-span-5 space-y-2.5 sm:space-y-4 min-w-0 order-1 lg:order-1 xl:order-1">
           {/* 1. DECISION VERDICT (Dominant Visual Weight) & 2. DECISION REASON */}
@@ -338,7 +339,16 @@ export default function StandardTerminalView({
           )}
 
           {/* 🎯 SYNTHESIS E V3: INLINE PRE-FLIGHT CLEARANCE PANEL */}
-          {preflightSlot !== undefined ? (
+
+        </div>
+
+        {/* 5. CONDITIONAL TRADE PLAN */}
+        {planSlot && (
+          <div className="order-3 lg:order-3 xl:order-3 lg:col-span-12 xl:col-span-12 space-y-2 w-full">
+            {planSlot}
+          </div>
+        )}
+            <section className="order-first lg:order-4 lg:col-span-12" aria-label="Canonical preflight readiness">{preflightSlot !== undefined ? (
             preflightSlot
           ) : (
             <PreFlightReadinessBar
@@ -357,16 +367,8 @@ export default function StandardTerminalView({
               isHistorical={(insight as any).dataSource === 'historical' || (insight as any)._dataSource === 'historical'}
               isSynthetic={Boolean(isDemo || (insight as any).isSynthetic)}
             />
-          )}
-        </div>
-
-        {/* 5. CONDITIONAL TRADE PLAN */}
-        {planSlot && (
-          <div className="order-3 lg:order-3 xl:order-3 lg:col-span-12 xl:col-span-12 space-y-2 w-full">
-            {planSlot}
-          </div>
-        )}
-      </div>
+          )}</section>
+</div>
 
       {/* 6. SUPPORTING EVIDENCE (Score Subordinated & Confluence Breakdown) */}
       <div
