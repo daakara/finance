@@ -15,7 +15,7 @@ except Exception:
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.dirname(__file__))
-from rq_receipt_utils import create_stage_receipt, save_stage_receipt, get_git_commit
+from rq_receipt_utils import create_stage_receipt, save_stage_receipt, get_git_commit, resolve_identity_contract
 
 CLOUDFLARE_ROLLBACK_ANCHOR = {
     "platform": "Cloudflare Pages",
@@ -65,13 +65,17 @@ def main():
 
     parser = argparse.ArgumentParser(description="RQ-11: Rollback Readiness Verification")
     parser.add_argument("--base", default="6d4020ca3fef3ae07ac01204b03e0629b6a7cc79", help="Baseline rollback anchor")
-    parser.add_argument("--head", default="ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c", help="Candidate commit to evaluate")
+    parser.add_argument("--head", default=None, help="Candidate commit to evaluate")
     args = parser.parse_args()
+
+    ok, identity, err = resolve_identity_contract()
+    source_sha = identity["source_sha"] if ok else get_git_commit("HEAD")
+    head_sha = args.head or source_sha
 
     print("=== [RQ-11] ROLLBACK READINESS & ANCHOR VERIFICATION ===")
 
     # 1. Mathematical 0-DDL verification via git diff
-    zero_ddl_ok, migration_diffs = verify_zero_ddl_migrations(args.base, args.head)
+    zero_ddl_ok, migration_diffs = verify_zero_ddl_migrations(args.base, head_sha)
     assertions.append({
         "assertion": "Zero database schema migrations between baseline and candidate (0 DDL)",
         "observed": {"changed_migration_files": migration_diffs, "count": len(migration_diffs)},
@@ -110,7 +114,7 @@ def main():
     }
 
     assertions.append({
-        "assertion": "Repository-level rollback reversibility proven (0-DDL + immutable anchor)",
+        "assertion": "Repository-Level Rollback Compatibility Verified (0-DDL & Baseline Anchor Retained; External Gate: UNVERIFIED_EXTERNAL_GATE)",
         "observed": platform_rehearsal_state,
         "passed": True
     })
@@ -122,7 +126,7 @@ def main():
     targets_summary = {
         "verified_0_ddl": zero_ddl_ok,
         "base_anchor_sha": args.base,
-        "candidate_sha": args.head,
+        "candidate_sha": head_sha,
         "cloudflare_anchor": CLOUDFLARE_ROLLBACK_ANCHOR,
         "railway_anchor": RAILWAY_ROLLBACK_ANCHOR,
         "platform_rehearsal_evidence": platform_rehearsal_state
@@ -134,7 +138,7 @@ def main():
 
     duration = time.time() - t0
     status = "PASS" if len(errors) == 0 else "FAIL"
-    candidate_sha = get_git_commit("HEAD")
+    candidate_sha = head_sha
 
     receipt = create_stage_receipt(
         control_id="RQ-11",
@@ -154,7 +158,7 @@ def main():
     print(f"Receipt written to: {receipt_path}")
 
     if status == "PASS":
-        print("=== [RQ-11] RESULT: PASS (0-DDL & Reversibility Proven) ===")
+        print("=== [RQ-11] RESULT: PASS (Repository-Level Rollback Compatibility Verified (0-DDL & Baseline Anchor Retained; External Gate: UNVERIFIED_EXTERNAL_GATE)) ===")
         sys.exit(0)
     else:
         print(f"=== [RQ-11] RESULT: FAIL (Errors: {errors}) ===")

@@ -356,6 +356,8 @@ def main():
         setup_valid_mock_receipts(temp_r)
         with open(os.path.join(temp_r, "rq01_receipt.json"), "r") as f:
             rec = json.load(f)
+        rec["execution_sha"] = "0" * 40
+        rec["execution_context"]["execution_sha"] = "0" * 40
         rec["execution_context"]["checked_out_sha"] = "0" * 40 # Corrupted execution SHA!
         recompute_and_save_receipt(rec, os.path.join(temp_r, "rq01_receipt.json"))
         res = run_cmd([py_exec, "scripts/release/rq12_qualification_summary.py"], env={"ARX_RECEIPTS_DIR_OVERRIDE": temp_r})
@@ -491,6 +493,324 @@ def main():
         recompute_and_save_receipt(rec, os.path.join(temp_r, "rq01_receipt.json"))
         res = run_cmd([py_exec, "scripts/release/rq12_qualification_summary.py"], env={"ARX_RECEIPTS_DIR_OVERRIDE": temp_r})
         evaluate_case(38, "Valid Receipt with Broken Evidence Linkage", "Evidence path in receipt points to non-existent file on disk", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # ===============================================================
+    # PART 2: DIRECTIVE 074-A4.1 EXPANDED ADVERSARIAL MATRIX (20 SCENARIOS)
+    # ===============================================================
+    SRC_074 = "4c9e8e2ecd27d765424bac35e384b8f7c6c9861f"
+    EXEC_074 = "65cc4686afec8a71dbcac7c768fe0ca519dda943"
+    BASE_074 = "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c"
+
+    def setup_pr_env_fixture(temp_d, src=SRC_074, base=BASE_074, pr_num=121, target_ref="main",
+                             exec_sha=EXEC_074, run_id="40696182896", attempt="1", repo="daakara/finance",
+                             parents=None):
+        event_path = os.path.join(temp_d, "event.json")
+        with open(event_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "pull_request": {
+                    "number": pr_num,
+                    "head": {"sha": src, "ref": "feat/release-qualification-ci-074a1"},
+                    "base": {"sha": base, "ref": target_ref}
+                }
+            }, f, indent=2)
+        env = dict(os.environ)
+        env["ARX_RECEIPTS_DIR_OVERRIDE"] = temp_d
+        env["GITHUB_ACTIONS"] = "true"
+        env["GITHUB_RUN_ID"] = run_id
+        env["GITHUB_RUN_ATTEMPT"] = attempt
+        env["GITHUB_REPOSITORY"] = repo
+        env["GITHUB_EVENT_NAME"] = "pull_request"
+        env["GITHUB_EVENT_PATH"] = event_path
+        env["GITHUB_SHA"] = exec_sha
+        env["GITHUB_BASE_REF"] = target_ref
+        env["GITHUB_HEAD_REF"] = "feat/release-qualification-ci-074a1"
+        env["ARX_MOCK_MERGE_PARENTS"] = parents if parents is not None else f"{BASE_074},{src}"
+        env["ARX_MOCK_EXECUTION_SHA"] = exec_sha
+        return env
+
+    def setup_pr_synthetic_receipts(target_dir, src=SRC_074, exec_sha=EXEC_074, base=BASE_074, target="main",
+                                   run_id="40696182896", attempt="1", repo="daakara/finance", pr_num=121, policy="2.2.0-D074A4"):
+        os.makedirs(target_dir, exist_ok=True)
+        t = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        manifest_p = os.path.join(PROJECT_ROOT, "scripts", "release", "release_manifest.json")
+        manifest_d = compute_file_sha256(manifest_p)
+        controls = [
+            ("RQ-01", "Candidate Identity & Lineage"),
+            ("RQ-02", "Release Diff Integrity"),
+            ("RQ-03", "Backend Regression Suite"),
+            ("RQ-04", "Frontend Regression & Typecheck"),
+            ("RQ-05", "Cross-Engine Invariants"),
+            ("RQ-06", "Governance & Backlog Invariants"),
+            ("RQ-07", "Deployment Safety & Secret Isolation"),
+            ("RQ-08", "Artifact Provenance & Digest Binding"),
+            ("RQ-09", "Four-Way Cross-Platform Compatibility"),
+            ("RQ-10", "Release Configuration Integrity"),
+            ("RQ-11", "Rollback Readiness & Target Verification")
+        ]
+        ctx = {
+            "repository": repo,
+            "event_name": "pull_request",
+            "pr_number": pr_num,
+            "source_sha": src,
+            "execution_sha": exec_sha,
+            "base_sha": base,
+            "target_branch": target,
+            "workflow_run_id": run_id,
+            "workflow_run_attempt": attempt,
+            "qualification_policy_version": policy
+        }
+        for cid, name in controls:
+            core = {
+                "control_id": cid,
+                "name": name,
+                "status": "PASS",
+                "start_time": t,
+                "end_time": t,
+                "duration_sec": 0.1,
+                "candidate_sha": src,
+                "source_sha": src,
+                "execution_sha": exec_sha,
+                "target_branch": target,
+                "execution_context": ctx,
+                "assertions": [{"assertion": "test", "passed": True}],
+                "evidence_paths": ["scripts/release/release_manifest.json"],
+                "evidence_digests": {"scripts/release/release_manifest.json": manifest_d},
+                "errors": [],
+                "metadata": {"policy_version": policy}
+            }
+            recompute_and_save_receipt(core, os.path.join(target_dir, f"{cid.lower().replace('-', '')}_receipt.json"))
+
+    # --- SCENARIO 01 (CASE 39): Valid PR head + valid synthetic merge commit -> PASS ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        env = setup_pr_env_fixture(temp_r)
+        setup_pr_synthetic_receipts(temp_r)
+        res = run_cmd([py_exec, "scripts/release/rq12_qualification_summary.py", "--candidate-sha", SRC_074, "--execution-sha", EXEC_074, "--target-branch", "main"], env=env)
+        evaluate_case(39, "Scenario 01: Valid PR head + valid synthetic merge commit", "All 11 stages pass under authentic PR merge contract", res, expect_fail=False)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 02 (CASE 40): Valid source SHA with incorrect execution SHA -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        env = setup_pr_env_fixture(temp_r)
+        setup_pr_synthetic_receipts(temp_r)
+        with open(os.path.join(temp_r, "rq01_receipt.json"), "r") as f:
+            rec = json.load(f)
+        rec["execution_sha"] = "0" * 40
+        rec["execution_context"]["execution_sha"] = "0" * 40
+        recompute_and_save_receipt(rec, os.path.join(temp_r, "rq01_receipt.json"))
+        res = run_cmd([py_exec, "scripts/release/rq12_qualification_summary.py", "--candidate-sha", SRC_074, "--execution-sha", EXEC_074, "--target-branch", "main"], env=env)
+        evaluate_case(40, "Scenario 02: Valid source SHA with incorrect execution SHA", "Receipt execution_sha corrupted to null SHA", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 03 (CASE 41): Valid execution SHA with incorrect source SHA -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        env = setup_pr_env_fixture(temp_r)
+        setup_pr_synthetic_receipts(temp_r)
+        with open(os.path.join(temp_r, "rq01_receipt.json"), "r") as f:
+            rec = json.load(f)
+        rec["source_sha"] = "f" * 40
+        rec["candidate_sha"] = "f" * 40
+        rec["execution_context"]["source_sha"] = "f" * 40
+        recompute_and_save_receipt(rec, os.path.join(temp_r, "rq01_receipt.json"))
+        res = run_cmd([py_exec, "scripts/release/rq12_qualification_summary.py", "--candidate-sha", SRC_074, "--execution-sha", EXEC_074, "--target-branch", "main"], env=env)
+        evaluate_case(41, "Scenario 03: Valid execution SHA with incorrect source SHA", "Receipt source_sha corrupted to foreign SHA", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 04 (CASE 42): Correct source SHA but unrelated merge commit -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        unrelated_parent1 = "1" * 40
+        env = setup_pr_env_fixture(temp_r, parents=f"{unrelated_parent1},{SRC_074}")
+        res = run_cmd([py_exec, "scripts/release/rq01_candidate_identity.py"], env=env)
+        evaluate_case(42, "Scenario 04: Correct source SHA but unrelated merge commit", "Synthetic merge base parent set to unrelated commit", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 05 (CASE 43): Correct second parent but unauthorized first parent -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        unauthorized_parent1 = "2" * 40
+        env = setup_pr_env_fixture(temp_r, parents=f"{unauthorized_parent1},{SRC_074}")
+        res = run_cmd([py_exec, "scripts/release/rq01_candidate_identity.py"], env=env)
+        evaluate_case(43, "Scenario 05: Unauthorized first parent in merge commit", "Parent 1 is not base branch tip or ancestor", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 06 (CASE 44): Invalid merge topology (single-parent commit on PR event) -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        single_parent = "3" * 40
+        env = setup_pr_env_fixture(temp_r, parents=single_parent)
+        res = run_cmd([py_exec, "scripts/release/rq01_candidate_identity.py"], env=env)
+        evaluate_case(44, "Scenario 06: Invalid merge topology on PR event", "Single parent commit on PR event diverges from PR head", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 07 (CASE 45): Missing PR event metadata on PR execution -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        env = setup_pr_env_fixture(temp_r)
+        env["GITHUB_EVENT_PATH"] = os.path.join(temp_r, "missing_event.json")
+        res = run_cmd([py_exec, "scripts/release/rq01_candidate_identity.py"], env=env)
+        evaluate_case(45, "Scenario 07: Missing PR event metadata on PR execution", "GITHUB_EVENT_PATH points to non-existent file", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 08 (CASE 46): Missing workflow attempt -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        env = setup_pr_env_fixture(temp_r)
+        env["GITHUB_RUN_ATTEMPT"] = ""
+        res = run_cmd([py_exec, "scripts/release/rq01_candidate_identity.py"], env=env)
+        evaluate_case(46, "Scenario 08: Missing workflow attempt on hosted execution", "GITHUB_RUN_ATTEMPT is empty string", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 09 (CASE 47): Cross-run receipt replay (run ID mismatch) -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        env = setup_pr_env_fixture(temp_r, run_id="40696182896")
+        setup_pr_synthetic_receipts(temp_r, run_id="11111111111") # Prior run
+        res = run_cmd([py_exec, "scripts/release/rq12_qualification_summary.py", "--candidate-sha", SRC_074, "--execution-sha", EXEC_074, "--target-branch", "main"], env=env)
+        evaluate_case(47, "Scenario 09: Cross-run receipt replay", "Receipt from run 11111111111 submitted to run 40696182896", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 10 (CASE 48): Cross-attempt receipt replay (attempt mismatch) -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        env = setup_pr_env_fixture(temp_r, attempt="2")
+        setup_pr_synthetic_receipts(temp_r, attempt="1") # Attempt 1 submitted to attempt 2
+        res = run_cmd([py_exec, "scripts/release/rq12_qualification_summary.py", "--candidate-sha", SRC_074, "--execution-sha", EXEC_074, "--target-branch", "main"], env=env)
+        evaluate_case(48, "Scenario 10: Cross-attempt receipt replay", "Receipt from attempt 1 replayed into attempt 2 runner", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 11 (CASE 49): Cross-PR receipt substitution -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        env = setup_pr_env_fixture(temp_r, pr_num=121)
+        setup_pr_synthetic_receipts(temp_r, pr_num=999) # PR 999 submitted to PR 121
+        res = run_cmd([py_exec, "scripts/release/rq12_qualification_summary.py", "--candidate-sha", SRC_074, "--execution-sha", EXEC_074, "--target-branch", "main"], env=env)
+        evaluate_case(49, "Scenario 11: Cross-PR receipt substitution", "Receipt from PR #999 submitted to PR #121 gate", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 12 (CASE 50): Cross-repository receipt substitution -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        env = setup_pr_env_fixture(temp_r, repo="daakara/finance")
+        setup_pr_synthetic_receipts(temp_r, repo="untrusted_org/finance")
+        res = run_cmd([py_exec, "scripts/release/rq12_qualification_summary.py", "--candidate-sha", SRC_074, "--execution-sha", EXEC_074, "--target-branch", "main"], env=env)
+        evaluate_case(50, "Scenario 12: Cross-repository receipt substitution", "Receipt from foreign repo submitted to daakara/finance", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 13 (CASE 51): Incorrect base SHA -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        env = setup_pr_env_fixture(temp_r, base="0" * 40)
+        res = run_cmd([py_exec, "scripts/release/rq01_candidate_identity.py"], env=env)
+        evaluate_case(51, "Scenario 13: Incorrect base SHA in PR event", "PR base SHA set to null SHA", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 14 (CASE 52): Incorrect target branch -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        env = setup_pr_env_fixture(temp_r)
+        setup_pr_synthetic_receipts(temp_r, target="unauthorized_feature_branch")
+        res = run_cmd([py_exec, "scripts/release/rq12_qualification_summary.py", "--candidate-sha", SRC_074, "--execution-sha", EXEC_074, "--target-branch", "main"], env=env)
+        evaluate_case(52, "Scenario 14: Incorrect target branch", "Receipt target_branch set to unauthorized feature branch", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 15 (CASE 53): Invalid policy version -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        env = setup_pr_env_fixture(temp_r)
+        setup_pr_synthetic_receipts(temp_r, policy="1.0.0-UNAUTHORIZED")
+        res = run_cmd([py_exec, "scripts/release/rq12_qualification_summary.py", "--candidate-sha", SRC_074, "--execution-sha", EXEC_074, "--target-branch", "main"], env=env)
+        evaluate_case(53, "Scenario 15: Invalid policy version", "Receipt policy_version set to unauthorized version", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 16 (CASE 54): Receipt whose candidate_sha contains execution SHA -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        env = setup_pr_env_fixture(temp_r)
+        setup_pr_synthetic_receipts(temp_r)
+        with open(os.path.join(temp_r, "rq01_receipt.json"), "r") as f:
+            rec = json.load(f)
+        rec["candidate_sha"] = EXEC_074 # Execution SHA substituted as candidate_sha
+        recompute_and_save_receipt(rec, os.path.join(temp_r, "rq01_receipt.json"))
+        res = run_cmd([py_exec, "scripts/release/rq12_qualification_summary.py", "--candidate-sha", SRC_074, "--execution-sha", EXEC_074, "--target-branch", "main"], env=env)
+        evaluate_case(54, "Scenario 16: Receipt candidate_sha contains execution SHA", "candidate_sha matches execution commit instead of PR source head", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 17 (CASE 55): Receipt whose execution_sha contains source SHA -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        env = setup_pr_env_fixture(temp_r)
+        setup_pr_synthetic_receipts(temp_r)
+        with open(os.path.join(temp_r, "rq01_receipt.json"), "r") as f:
+            rec = json.load(f)
+        rec["execution_sha"] = SRC_074 # Source SHA substituted as execution_sha
+        recompute_and_save_receipt(rec, os.path.join(temp_r, "rq01_receipt.json"))
+        res = run_cmd([py_exec, "scripts/release/rq12_qualification_summary.py", "--candidate-sha", SRC_074, "--execution-sha", EXEC_074, "--target-branch", "main"], env=env)
+        evaluate_case(55, "Scenario 17: Receipt execution_sha contains source SHA", "execution_sha matches source commit instead of merge execution", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 18 (CASE 56): Correct identity but altered evidence digest -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        env = setup_pr_env_fixture(temp_r)
+        setup_pr_synthetic_receipts(temp_r)
+        with open(os.path.join(temp_r, "rq01_receipt.json"), "r") as f:
+            rec = json.load(f)
+        rec["evidence_digests"]["scripts/release/release_manifest.json"] = "a" * 64
+        recompute_and_save_receipt(rec, os.path.join(temp_r, "rq01_receipt.json"))
+        res = run_cmd([py_exec, "scripts/release/rq12_qualification_summary.py", "--candidate-sha", SRC_074, "--execution-sha", EXEC_074, "--target-branch", "main"], env=env)
+        evaluate_case(56, "Scenario 18: Correct identity but altered evidence digest", "Evidence file digest tampered in receipt payload", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 19 (CASE 57): Missing evidence file -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        env = setup_pr_env_fixture(temp_r)
+        setup_pr_synthetic_receipts(temp_r)
+        with open(os.path.join(temp_r, "rq01_receipt.json"), "r") as f:
+            rec = json.load(f)
+        rec["evidence_paths"] = ["scripts/release/nonexistent_evidence_074a41.json"]
+        rec["evidence_digests"] = {"scripts/release/nonexistent_evidence_074a41.json": "0" * 64}
+        recompute_and_save_receipt(rec, os.path.join(temp_r, "rq01_receipt.json"))
+        res = run_cmd([py_exec, "scripts/release/rq12_qualification_summary.py", "--candidate-sha", SRC_074, "--execution-sha", EXEC_074, "--target-branch", "main"], env=env)
+        evaluate_case(57, "Scenario 19: Missing evidence file on disk", "Receipt evidence_paths references non-existent disk path", res, expect_fail=True)
+    finally:
+        shutil.rmtree(temp_r, ignore_errors=True)
+
+    # --- SCENARIO 20 (CASE 58): Valid identity with failed upstream stage -> BLOCKED ---
+    temp_r = tempfile.mkdtemp()
+    try:
+        env = setup_pr_env_fixture(temp_r)
+        setup_pr_synthetic_receipts(temp_r)
+        with open(os.path.join(temp_r, "rq03_receipt.json"), "r") as f:
+            rec = json.load(f)
+        rec["status"] = "FAIL"
+        rec["errors"] = ["Synthetic regression test failure injected"]
+        recompute_and_save_receipt(rec, os.path.join(temp_r, "rq03_receipt.json"))
+        res = run_cmd([py_exec, "scripts/release/rq12_qualification_summary.py", "--candidate-sha", SRC_074, "--execution-sha", EXEC_074, "--target-branch", "main"], env=env)
+        evaluate_case(58, "Scenario 20: Valid identity with failed upstream stage", "Stage RQ-03 emitted valid FAIL receipt", res, expect_fail=True)
     finally:
         shutil.rmtree(temp_r, ignore_errors=True)
 

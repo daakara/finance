@@ -15,7 +15,7 @@ except Exception:
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.dirname(__file__))
-from rq_receipt_utils import create_stage_receipt, save_stage_receipt, compute_file_sha256, get_execution_context, get_git_commit, get_git_tree
+from rq_receipt_utils import create_stage_receipt, save_stage_receipt, compute_file_sha256, resolve_identity_contract, get_git_tree
 
 QUALIFICATION_POLICY_VERSION = "2.2.0-D074A4"
 
@@ -26,9 +26,12 @@ def main():
     assertions = []
 
     print("=== [RQ-08] ARTIFACT PROVENANCE & CRYPTOGRAPHIC BINDING ===")
-    ctx = get_execution_context()
+    ok, ctx, err = resolve_identity_contract()
+    if not ok:
+        raise RuntimeError(f"Identity resolution failed closed: {err}")
 
-    head_sha = get_git_commit("HEAD")
+    source_sha = ctx["source_sha"]
+    execution_sha = ctx["execution_sha"]
     tree_sha = get_git_tree("HEAD:")
     manifest_override = os.environ.get("ARX_MANIFEST_PATH_OVERRIDE")
     manifest_path = manifest_override or os.path.join(PROJECT_ROOT, "scripts", "release", "release_manifest.json")
@@ -61,14 +64,16 @@ def main():
     provenance_record = {
         "record_id": "ARX_RQ08_PROVENANCE_RECORD",
         "policy_version": QUALIFICATION_POLICY_VERSION,
-        "head_commit_sha": head_sha,
+        "source_sha": source_sha,
+        "execution_sha": execution_sha,
+        "head_commit_sha": source_sha,
         "tree_sha": tree_sha,
         "manifest_path": "scripts/release/release_manifest.json",
         "manifest_sha256": manifest_hash,
         "execution_context": ctx,
         "stage_receipt_digests": receipt_digests,
         "verification_timestamp": start_time,
-        "authoritative_target": ctx["base_ref"] or "release/production"
+        "authoritative_target": ctx.get("target_branch") or "release/production"
     }
 
     out_record_path = os.path.join(PROJECT_ROOT, "scripts", "release", "rq_provenance_receipt.json")
@@ -85,15 +90,16 @@ def main():
         start_time=start_time,
         end_time=datetime.datetime.now(datetime.timezone.utc).isoformat(),
         duration_sec=duration,
-        candidate_sha=head_sha,
-        target_branch=ctx["base_ref"] or "release/production",
+        candidate_sha=source_sha,
+        target_branch=ctx.get("target_branch") or "release/production",
         assertions=assertions,
         evidence_paths=["scripts/release/release_manifest.json", "scripts/release/rq_provenance_receipt.json"],
         errors=errors,
         metadata={"policy_version": QUALIFICATION_POLICY_VERSION, "bound_tree": tree_sha}
     )
     receipt_path = save_stage_receipt(receipt)
-    print(f"Bound Head SHA: {head_sha}")
+    print(f"Bound Source SHA: {source_sha}")
+    print(f"Bound Execution SHA: {execution_sha}")
     print(f"Bound Tree SHA: {tree_sha}")
     print(f"Manifest SHA-256: {manifest_hash}")
     print(f"Provenance Record: {out_record_path}")

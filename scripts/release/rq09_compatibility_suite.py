@@ -24,7 +24,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..
 FRONTEND_DIR = os.path.join(PROJECT_ROOT, "frontend")
 sys.path.insert(0, PROJECT_ROOT)
 sys.path.insert(0, os.path.dirname(__file__))
-from rq_receipt_utils import create_stage_receipt, save_stage_receipt, compute_file_sha256, get_git_commit
+from rq_receipt_utils import create_stage_receipt, save_stage_receipt, compute_file_sha256, get_git_commit, resolve_identity_contract
 
 BASELINE_ANCHOR_SHA = "6d4020ca3fef3ae07ac01204b03e0629b6a7cc79"
 
@@ -242,6 +242,9 @@ def main():
     status = "PASS" if is_overall_qualified else "FAIL"
     duration = time.time() - t0
 
+    ok, identity, err = resolve_identity_contract()
+    candidate_sha = identity["source_sha"] if ok else None
+
     # Write output artifact
     out_record_path = os.path.join(os.path.dirname(__file__), "rq_compatibility_results.json")
     with open(out_record_path, "w", encoding="utf-8") as f:
@@ -254,7 +257,7 @@ def main():
         start_time=start_time,
         end_time=datetime.datetime.now(datetime.timezone.utc).isoformat(),
         duration_sec=duration,
-        candidate_sha=get_git_commit("HEAD"),
+        candidate_sha=candidate_sha,
         target_branch="release/production",
         assertions=assertions,
         evidence_paths=[

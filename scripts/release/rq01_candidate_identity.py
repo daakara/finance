@@ -14,7 +14,7 @@ except Exception:
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.dirname(__file__))
-from rq_receipt_utils import create_stage_receipt, save_stage_receipt, get_execution_context
+from rq_receipt_utils import create_stage_receipt, save_stage_receipt, get_execution_context, resolve_identity_contract
 
 def run_git(cmd_args):
     try:
@@ -36,7 +36,17 @@ def main():
     args = parser.parse_args()
 
     print("=== [RQ-01] CANDIDATE IDENTITY & ANCESTRY CHECK ===")
-    ctx = get_execution_context()
+    ok, ctx, err_msg = resolve_identity_contract()
+    if not ok:
+        errors.append(f"Identity resolution failed closed: {err_msg}")
+        status = "FAIL"
+        duration = time.time() - t0
+        receipt = create_stage_receipt("RQ-01", "Candidate Identity & Lineage", status, start_time,
+                                       datetime.datetime.now(datetime.timezone.utc).isoformat(), duration,
+                                       "UNKNOWN", "UNKNOWN", assertions, errors=errors)
+        save_stage_receipt(receipt)
+        print(f"FAIL: {err_msg}")
+        sys.exit(1)
 
     current_head = run_git(["git", "rev-parse", "HEAD"])
     if not current_head:
@@ -56,14 +66,9 @@ def main():
     if not is_hex_sha:
         errors.append(f"HEAD {current_head} is not a valid 40-character hex SHA.")
 
-    # 2. Derive Target Branch and Head from GitHub Context or CLI
-    target_branch = args.target_branch
-    if not target_branch and ctx["base_ref"]:
-        target_branch = ctx["base_ref"]
-    if not target_branch:
-        target_branch = "release/production" # Standard release default
-
-    candidate_sha = ctx["pr_head_sha"] or current_head
+    # 2. Derive Target Branch and Head from Identity Contract
+    target_branch = args.target_branch or ctx["target_branch"]
+    candidate_sha = ctx["source_sha"]
 
     # Handle GitHub Actions merge-ref checkout behavior
     is_merge_commit = False
@@ -79,10 +84,8 @@ def main():
                 "observed": {"merge_sha": current_head, "base_parent": merge_base_parent, "head_parent": merge_pr_parent},
                 "passed": True
             })
-            # In a merge ref, candidate_sha should match parent 2
-            if ctx["pr_head_sha"] and merge_pr_parent.lower() != ctx["pr_head_sha"].lower():
-                errors.append(f"Merge commit head parent {merge_pr_parent} does not match PR head {ctx['pr_head_sha']}")
-            candidate_sha = merge_pr_parent
+            if merge_pr_parent.lower() != candidate_sha.lower():
+                errors.append(f"Merge commit head parent {merge_pr_parent} does not match PR source SHA {candidate_sha}")
 
     print(f"Current Checked-Out HEAD: {current_head} (Merge Commit: {is_merge_commit})")
     print(f"Resolved Candidate SHA: {candidate_sha}")

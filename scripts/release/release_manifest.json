@@ -148,55 +148,55 @@
       "description": "TypeScript genuine four-way compatibility and adversarial test harness"
     },
     "scripts/release/rq01_candidate_identity.py": {
-      "sha256": "92db053a7b236e823ead0b6d10ea3ed0f2f6bcdccde8f4e5e0e4c236c4958918",
+      "sha256": "356f99aef7745641a03708b87ef4aacb761be2b56ec5a37356be0e527c865a8f",
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "8567085a47274932bd0d3fe35a8b920f2b96ceb55ac6c1ca98a01b2d2f197fd1",
+      "sha256": "bb7b81f3d7c1a9f0e40fb20de785d95c66b2b376b31ee005c50cf57c12053d90",
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
-      "sha256": "a643c84467082cda5762d1ba87ad5e2768e1b396b0e67dc2c6778276265108b8",
+      "sha256": "9778026dff4dd5967cfc180b28b4291649ad6bc4abf7862271158914f7b446d9",
       "description": "Release qualification module: rq03_backend_regression.py"
     },
     "scripts/release/rq04_frontend_regression.py": {
-      "sha256": "8bfc09e5b4719a4581523f2ddf81c69c9978a9f43966d223f7756165e81a65e9",
+      "sha256": "0e46eff7498448b20491bb0b65cb5f3e85403cc5575642c6bd251b9a2e806a1e",
       "description": "Release qualification module: rq04_frontend_regression.py"
     },
     "scripts/release/rq05_cross_engine_invariants.py": {
-      "sha256": "b6c886ca47cd5bd066ff087db7e405ee2f23e6bc8e2a219cd5333c743e5fe37a",
+      "sha256": "f3f1039896aa258834f24144d69c5b42552df7b5173a09f09833ff46b6e3be0a",
       "description": "Release qualification module: rq05_cross_engine_invariants.py"
     },
     "scripts/release/rq06_governance_invariants.py": {
-      "sha256": "9564527e7e3f34f3bf6cf3bfc8d4a4f536508b3910f37e5a7ace16c3286faa79",
+      "sha256": "4ef2f0c3c77df2fcf4b3036e3f8b55c97691675c14bced1b6c5313300a6cf496",
       "description": "Release qualification module: rq06_governance_invariants.py"
     },
     "scripts/release/rq07_deployment_safety.py": {
-      "sha256": "e05dab9d53b2f9984b623f1f66da338f68332da71296d317c4029b5fb694dbe0",
+      "sha256": "2f1f3a7ed08901e6c4f4fba111a441c297e9697220a62fd0556be587790974e0",
       "description": "Release qualification module: rq07_deployment_safety.py"
     },
     "scripts/release/rq08_artifact_provenance.py": {
-      "sha256": "fc8700f1cafd1751d423efdbcaeacfdedd07e4f71777cf4bffe6b947f5f29a30",
+      "sha256": "afbb648917e49ea9f7e474f563548aea6bce2ae57d7e96a56f93b15b9578f9b8",
       "description": "Release qualification module: rq08_artifact_provenance.py"
     },
     "scripts/release/rq09_compatibility_suite.py": {
-      "sha256": "1d5b92c1b62e504312403bfac2780fc7e5de68861998314f7c8c573fa6aeb311",
+      "sha256": "ffaca6ea222948ee9e4c83e57162d280e79c8cc3277d9706438544cfc6d1cedb",
       "description": "Release qualification module: rq09_compatibility_suite.py"
     },
     "scripts/release/rq10_config_integrity.py": {
-      "sha256": "0b8393f69198ece6e2b5001091d15f0ff6d224048e7b729be6e3dff37849cec3",
+      "sha256": "6ef2de812ab6e61fc66c8d225a8ae255735a850a72dbbfc08b9426293dee017a",
       "description": "Release qualification module: rq10_config_integrity.py"
     },
     "scripts/release/rq11_rollback_readiness.py": {
-      "sha256": "8b46d47524ee717c662af51ae2b1b6636961abe77e2f9ad485ae5f45d4f32893",
+      "sha256": "ac80de61200a73104d810faada234de9e58bfcf5bf581910c0bb7c8e4e9e74c8",
       "description": "Release qualification module: rq11_rollback_readiness.py"
     },
     "scripts/release/rq12_qualification_summary.py": {
-      "sha256": "6a049d7dc469a45c4f14e50cab4b6aba26c1cca56999a7599722b532d0c7b35e",
+      "sha256": "eb6fa07022544ad745584c94dfb21623a89abca8935fd8bb355d155e0c88082f",
       "description": "Release qualification module: rq12_qualification_summary.py"
     },
     "scripts/release/rq_receipt_utils.py": {
-      "sha256": "3ffc25df54c63e73aa3d9051964fa52590d3a95139b2d178e9f3bad4fcc25927",
+      "sha256": "2d2f15f7ba506fba4e914e412ec7a1142761d1716ee145e6b5c5f37860634c70",
       "description": "Release qualification module: rq_receipt_utils.py"
     },
     "scripts/release/run_release_ci_suite.py": {
@@ -204,8 +204,12 @@
       "description": "Release qualification module: run_release_ci_suite.py"
     },
     "scripts/release/test_release_ci_negative_cases.py": {
-      "sha256": "073f93690b568ae28d92baed8d4de274bee8209302ba99ef51415dbd632bf66d",
+      "sha256": "d4f35186a78ea0610326cc6609cd54a721983a9443c077e62b0232693dc2f792",
       "description": "Release qualification module: test_release_ci_negative_cases.py"
+    },
+    "scripts/release/test_synthetic_merge_reproduction.py": {
+      "description": "Deterministic PR synthetic merge regression and verification harness",
+      "sha256": "f3adc96bc7cb72d7822d6eb78248db828790c4153d70c6e74b7204281b877246"
     }
   }
 }

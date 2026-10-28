@@ -16,7 +16,7 @@ except Exception:
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, PROJECT_ROOT)
 sys.path.insert(0, os.path.dirname(__file__))
-from rq_receipt_utils import create_stage_receipt, save_stage_receipt, get_git_commit
+from rq_receipt_utils import create_stage_receipt, save_stage_receipt, get_git_commit, resolve_identity_contract
 
 def test_risk_sizing_floor():
     print("Testing Invariant 1: Sizing Floor (Sub-1-Share Allocation)...")
@@ -122,7 +122,8 @@ def main():
 
     duration = time.time() - t0
     status = "PASS" if len(errors) == 0 else "FAIL"
-    candidate_sha = get_git_commit("HEAD")
+    ok, identity, err = resolve_identity_contract()
+    candidate_sha = identity["source_sha"] if ok else None
 
     evidence = [
         "analyst_dashboard/analyzers/confluence_engine.py",

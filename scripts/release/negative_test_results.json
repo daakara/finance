@@ -6,7 +6,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-02",
@@ -15,7 +15,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-03",
@@ -24,7 +24,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-04",
@@ -33,7 +33,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-05",
@@ -42,7 +42,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-06",
@@ -51,7 +51,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-07",
@@ -60,7 +60,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-08",
@@ -69,7 +69,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-09",
@@ -78,7 +78,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-10",
@@ -87,7 +87,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-11",
@@ -96,7 +96,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "=== [RQ-01] CANDIDATE IDENTITY & ANCESTRY CHECK ===\nCurrent Checked-Out HEAD: 3820e07c86578429090161f9189b4824deefe5a2 (Merge Commit: False)\nResolved Candidate SHA: 3820e07c86578429090161f9189b4824dee"
+    "output_snippet": "=== [RQ-01] CANDIDATE IDENTITY & ANCESTRY CHECK ===\nCurrent Checked-Out HEAD: 4c9e8e2ecd27d765424bac35e384b8f7c6c9861f (Merge Commit: False)\nResolved Candidate SHA: 4c9e8e2ecd27d765424bac35e384b8f7c6c"
   },
   {
     "case_id": "NEG-12",
@@ -105,7 +105,7 @@
     "expected_outcome": "PASS (Exit 0)",
     "observed_exit_code": 0,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "=== [RQ-02] RELEASE DIFF INTEGRITY CHECK ===\nDiff range: 6d4020c..HEAD\nManifest: scripts/release/release_manifest.json\nTotal diff entries detected: 56\nApproved candidate files in manifest: 33\nApproved"
+    "output_snippet": "=== [RQ-02] RELEASE DIFF INTEGRITY CHECK ===\nDiff range: 6d4020c..4c9e8e2\nManifest: scripts/release/release_manifest.json\nTotal diff entries detected: 57\nApproved candidate files in manifest: 33\nAppro"
   },
   {
     "case_id": "NEG-13",
@@ -114,7 +114,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "=== [RQ-02] RELEASE DIFF INTEGRITY CHECK ===\nDiff range: 6d4020c..3820e07\nManifest: C:\\Users\\akara\\AppData\\Local\\Temp\\tmphgdttkx3\\tampered.json\nTotal diff entries detected: 56\nApproved candidate files"
+    "output_snippet": "=== [RQ-02] RELEASE DIFF INTEGRITY CHECK ===\nDiff range: 6d4020c..4c9e8e2\nManifest: C:\\Users\\akara\\AppData\\Local\\Temp\\tmphyh6sifu\\tampered.json\nTotal diff entries detected: 57\nApproved candidate files"
   },
   {
     "case_id": "NEG-14",
@@ -123,7 +123,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "Traceback (most recent call last):\n  File \"C:\\Users\\akara\\Documents\\Projects\\finance-d074a4-worktree\\scripts/release\\rq09_compatibility_suite.py\", line 34, in load_baseline_engine\n    code_bytes = sub"
+    "output_snippet": "Traceback (most recent call last):\n  File \"C:\\Users\\akara\\Documents\\Projects\\finance-d074a41-worktree\\scripts/release\\rq09_compatibility_suite.py\", line 34, in load_baseline_engine\n    code_bytes = su"
   },
   {
     "case_id": "NEG-15",
@@ -132,7 +132,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "Traceback (most recent call last):\n  File \"C:\\Users\\akara\\Documents\\Projects\\finance-d074a4-worktree\\scripts/release\\rq09_compatibility_suite.py\", line 52, in load_candidate_engine\n    from analyst_da"
+    "output_snippet": "Traceback (most recent call last):\n  File \"C:\\Users\\akara\\Documents\\Projects\\finance-d074a41-worktree\\scripts/release\\rq09_compatibility_suite.py\", line 52, in load_candidate_engine\n    from analyst_d"
   },
   {
     "case_id": "NEG-16",
@@ -222,7 +222,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "=== [RQ-08] ARTIFACT PROVENANCE & CRYPTOGRAPHIC BINDING ===\nBound Head SHA: 3820e07c86578429090161f9189b4824deefe5a2\nBound Tree SHA: 6346847ab5f8e4c0d13940c110e9d60313f87ab3\nManifest SHA-256: MISSING\n"
+    "output_snippet": "=== [RQ-08] ARTIFACT PROVENANCE & CRYPTOGRAPHIC BINDING ===\n\nTraceback (most recent call last):\n  File \"C:\\Users\\akara\\Documents\\Projects\\finance-d074a41-worktree\\scripts\\release\\rq08_artifact_provena"
   },
   {
     "case_id": "NEG-26",
@@ -231,7 +231,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-27",
@@ -240,7 +240,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-28",
@@ -249,7 +249,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-29",
@@ -258,7 +258,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-30",
@@ -267,7 +267,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-31",
@@ -276,7 +276,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-32",
@@ -285,7 +285,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-33",
@@ -294,7 +294,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-34",
@@ -303,7 +303,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-35",
@@ -312,7 +312,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-36",
@@ -321,7 +321,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-37",
@@ -330,7 +330,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   },
   {
     "case_id": "NEG-38",
@@ -339,6 +339,186 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
+  },
+  {
+    "case_id": "NEG-39",
+    "name": "Scenario 01: Valid PR head + valid synthetic merge commit",
+    "injected_fault": "All 11 stages pass under authentic PR merge contract",
+    "expected_outcome": "PASS (Exit 0)",
+    "observed_exit_code": 0,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
+  },
+  {
+    "case_id": "NEG-40",
+    "name": "Scenario 02: Valid source SHA with incorrect execution SHA",
+    "injected_fault": "Receipt execution_sha corrupted to null SHA",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
+  },
+  {
+    "case_id": "NEG-41",
+    "name": "Scenario 03: Valid execution SHA with incorrect source SHA",
+    "injected_fault": "Receipt source_sha corrupted to foreign SHA",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
+  },
+  {
+    "case_id": "NEG-42",
+    "name": "Scenario 04: Correct source SHA but unrelated merge commit",
+    "injected_fault": "Synthetic merge base parent set to unrelated commit",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "=== [RQ-01] CANDIDATE IDENTITY & ANCESTRY CHECK ===\nFAIL: Synthetic merge commit base parent (1111111111111111111111111111111111111111) does not match PR base SHA (ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec4"
+  },
+  {
+    "case_id": "NEG-43",
+    "name": "Scenario 05: Unauthorized first parent in merge commit",
+    "injected_fault": "Parent 1 is not base branch tip or ancestor",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "=== [RQ-01] CANDIDATE IDENTITY & ANCESTRY CHECK ===\nFAIL: Synthetic merge commit base parent (2222222222222222222222222222222222222222) does not match PR base SHA (ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec4"
+  },
+  {
+    "case_id": "NEG-44",
+    "name": "Scenario 06: Invalid merge topology on PR event",
+    "injected_fault": "Single parent commit on PR event diverges from PR head",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "=== [RQ-01] CANDIDATE IDENTITY & ANCESTRY CHECK ===\nFAIL: Direct checkout SHA (65cc4686afec8a71dbcac7c768fe0ca519dda943) diverges from authorized PR head SHA (4c9e8e2ecd27d765424bac35e384b8f7c6c9861f)"
+  },
+  {
+    "case_id": "NEG-45",
+    "name": "Scenario 07: Missing PR event metadata on PR execution",
+    "injected_fault": "GITHUB_EVENT_PATH points to non-existent file",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "=== [RQ-01] CANDIDATE IDENTITY & ANCESTRY CHECK ===\nFAIL: pull_request event requires valid GITHUB_EVENT_PATH, but file was not found: 'C:\\Users\\akara\\AppData\\Local\\Temp\\tmpag_n2zkq\\missing_event.json"
+  },
+  {
+    "case_id": "NEG-46",
+    "name": "Scenario 08: Missing workflow attempt on hosted execution",
+    "injected_fault": "GITHUB_RUN_ATTEMPT is empty string",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "=== [RQ-01] CANDIDATE IDENTITY & ANCESTRY CHECK ===\nFAIL: Missing required hosted execution metadata: GITHUB_RUN_ATTEMPT (Fail-Closed)"
+  },
+  {
+    "case_id": "NEG-47",
+    "name": "Scenario 09: Cross-run receipt replay",
+    "injected_fault": "Receipt from run 11111111111 submitted to run 40696182896",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
+  },
+  {
+    "case_id": "NEG-48",
+    "name": "Scenario 10: Cross-attempt receipt replay",
+    "injected_fault": "Receipt from attempt 1 replayed into attempt 2 runner",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
+  },
+  {
+    "case_id": "NEG-49",
+    "name": "Scenario 11: Cross-PR receipt substitution",
+    "injected_fault": "Receipt from PR #999 submitted to PR #121 gate",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
+  },
+  {
+    "case_id": "NEG-50",
+    "name": "Scenario 12: Cross-repository receipt substitution",
+    "injected_fault": "Receipt from foreign repo submitted to daakara/finance",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
+  },
+  {
+    "case_id": "NEG-51",
+    "name": "Scenario 13: Incorrect base SHA in PR event",
+    "injected_fault": "PR base SHA set to null SHA",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "=== [RQ-01] CANDIDATE IDENTITY & ANCESTRY CHECK ===\nFAIL: PR base SHA '0000000000000000000000000000000000000000' is not a valid 40-character hex SHA (cannot be null SHA)"
+  },
+  {
+    "case_id": "NEG-52",
+    "name": "Scenario 14: Incorrect target branch",
+    "injected_fault": "Receipt target_branch set to unauthorized feature branch",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
+  },
+  {
+    "case_id": "NEG-53",
+    "name": "Scenario 15: Invalid policy version",
+    "injected_fault": "Receipt policy_version set to unauthorized version",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
+  },
+  {
+    "case_id": "NEG-54",
+    "name": "Scenario 16: Receipt candidate_sha contains execution SHA",
+    "injected_fault": "candidate_sha matches execution commit instead of PR source head",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
+  },
+  {
+    "case_id": "NEG-55",
+    "name": "Scenario 17: Receipt execution_sha contains source SHA",
+    "injected_fault": "execution_sha matches source commit instead of merge execution",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
+  },
+  {
+    "case_id": "NEG-56",
+    "name": "Scenario 18: Correct identity but altered evidence digest",
+    "injected_fault": "Evidence file digest tampered in receipt payload",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
+  },
+  {
+    "case_id": "NEG-57",
+    "name": "Scenario 19: Missing evidence file on disk",
+    "injected_fault": "Receipt evidence_paths references non-existent disk path",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
+  },
+  {
+    "case_id": "NEG-58",
+    "name": "Scenario 20: Valid identity with failed upstream stage",
+    "injected_fault": "Stage RQ-03 emitted valid FAIL receipt",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Source Ca"
   }
 ]

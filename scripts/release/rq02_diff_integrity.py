@@ -15,7 +15,7 @@ except Exception:
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.dirname(__file__))
-from rq_receipt_utils import create_stage_receipt, save_stage_receipt, compute_file_sha256, get_execution_context, get_git_commit
+from rq_receipt_utils import create_stage_receipt, save_stage_receipt, compute_file_sha256, get_execution_context, get_git_commit, resolve_identity_contract
 
 def run_git_diff_status(base_sha: str, head_sha: str):
     """Safely runs git diff without shell=True, returning list of (status, filepath)."""
@@ -52,7 +52,12 @@ def main():
     parser.add_argument("--manifest", default=os.path.join(os.path.dirname(__file__), "release_manifest.json"), help="Approved release manifest")
     args = parser.parse_args()
 
-    head_sha = args.head or get_git_commit("HEAD")
+    ok, identity, err = resolve_identity_contract()
+    source_sha = identity["source_sha"] if ok else get_git_commit("HEAD")
+    if args.head:
+        head_sha = get_git_commit(args.head) or args.head
+    else:
+        head_sha = source_sha
 
     print("=== [RQ-02] RELEASE DIFF INTEGRITY CHECK ===")
     print(f"Diff range: {args.base[:7]}..{head_sha[:7]}")

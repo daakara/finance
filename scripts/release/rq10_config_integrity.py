@@ -15,7 +15,7 @@ except Exception:
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.dirname(__file__))
-from rq_receipt_utils import create_stage_receipt, save_stage_receipt, compute_file_sha256, get_git_commit
+from rq_receipt_utils import create_stage_receipt, save_stage_receipt, compute_file_sha256, get_git_commit, resolve_identity_contract
 
 REQUIRED_ENV_VARS = ["NEXT_PUBLIC_API_URL"]
 
@@ -149,7 +149,8 @@ def main():
 
     duration = time.time() - t0
     status = "PASS" if len(errors) == 0 else "FAIL"
-    candidate_sha = get_git_commit("HEAD")
+    ok, identity, err = resolve_identity_contract()
+    candidate_sha = identity["source_sha"] if ok else None
 
     evidence = [
         "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json",
