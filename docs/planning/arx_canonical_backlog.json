@@ -61,8 +61,10 @@
       "github_prs": [
         101,
         102,
+        103,
         106,
-        107
+        107,
+        109
       ],
       "authorization_boundary": "BOUNDED_ENGINEERING",
       "operational_state": "MERGED_MAINLINE",
@@ -4066,11 +4068,11 @@
       "owner": "Backend & Sizing Lead",
       "priority": "P0",
       "status": "COMPLETED",
-      "disposition": "RELEASE_HELD",
+      "disposition": "CLOSED_VERIFIED",
       "implementation_state": "DONE",
       "verification_state": "PASS",
       "repository_publication_state": "PUBLISHED_MERGED",
-      "deployment_state": "RELEASE_HELD",
+      "deployment_state": "DEPLOYED_ACTIVE",
       "operational_state": "NOT_PERFORMED",
       "governance_state": "PENDING_RELEASE",
       "acceptance_criteria": [
@@ -4082,7 +4084,7 @@
         "ARX-S3-010",
         "ARX-S4-ARCH-001"
       ],
-      "blocking_decision": "BLK-057-001; BLK-057-002",
+      "blocking_decision": "RESOLVED_IN_DIRECTIVE_074B",
       "github_issue_refs": [],
       "github_pr_refs": [
         118
@@ -4092,14 +4094,16 @@
         "f1c7def39546076e98c506732b67e1ecdbfccfcf"
       ],
       "deployment_refs": [
-        "Railway:d1f8cf37 (PRODUCTION_HELD - unpromoted)",
-        "Cloudflare:page-0261ba03d5dae7ff (UNPROMOTED)"
+        "Railway:6bba63de-3ba0-4c96-bb1a-e67d3cc47d08 (web-production-e370b.up.railway.app)",
+        "Cloudflare:32f8daa9-bb1f-4454-9aaa-2000bfd49038 (www.arxterminal.com)"
       ],
       "evidence_refs": [
         "ARX_056_CONFLUENCE_EVIDENCE_SEMANTICS.md",
         "ARX_057_CONFLUENCE_TRUTHFULNESS_VERIFICATION.md",
         "PR #118 squash merged to mainline: 09064ef05f973b577a79f0a33cf95a4a0bb94051",
-        "Mainline Hosted CI passed: all 4 checks completed/success"
+        "Mainline Hosted CI passed: all 4 checks completed/success",
+        "PR #121 Release Qualification passed: 12/12 stages green (run 40726537773)",
+        "PR #122 Production Promotion merged to release/production: cdc47a2eee8a427aaa6cf3ab5d01cad7f35d71e1"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
@@ -4108,7 +4112,7 @@
       "closure_authority": "Release Authority & Owner",
       "engineering_remediation_state": "VERIFIED",
       "mainline_integration_state": "MERGED_VERIFIED",
-      "production_acceptance_state": "RELEASE_HELD"
+      "production_acceptance_state": "PRODUCTION_VERIFIED"
     },
     {
       "obligation_id": "OBL-DEF-056-002",
@@ -4123,11 +4127,11 @@
       "owner": "Backend & Sizing Lead",
       "priority": "P0",
       "status": "COMPLETED",
-      "disposition": "RELEASE_HELD",
+      "disposition": "CLOSED_VERIFIED",
       "implementation_state": "DONE",
       "verification_state": "PASS",
       "repository_publication_state": "PUBLISHED_MERGED",
-      "deployment_state": "RELEASE_HELD",
+      "deployment_state": "DEPLOYED_ACTIVE",
       "operational_state": "NOT_PERFORMED",
       "governance_state": "PENDING_RELEASE",
       "acceptance_criteria": [
@@ -4138,7 +4142,7 @@
       "dependencies": [
         "ARX-S4-ARCH-002"
       ],
-      "blocking_decision": "BLK-057-001; BLK-057-002",
+      "blocking_decision": "RESOLVED_IN_DIRECTIVE_074B",
       "github_issue_refs": [],
       "github_pr_refs": [
         118
@@ -4148,14 +4152,16 @@
         "f1c7def39546076e98c506732b67e1ecdbfccfcf"
       ],
       "deployment_refs": [
-        "Railway:d1f8cf37 (PRODUCTION_HELD - unpromoted)",
-        "Cloudflare:page-0261ba03d5dae7ff (UNPROMOTED)"
+        "Railway:6bba63de-3ba0-4c96-bb1a-e67d3cc47d08 (web-production-e370b.up.railway.app)",
+        "Cloudflare:32f8daa9-bb1f-4454-9aaa-2000bfd49038 (www.arxterminal.com)"
       ],
       "evidence_refs": [
         "ARX_056_PRODUCT_AND_RISK_AUTHORITY_CONTRACT.md",
         "ARX_057_POSITION_SIZING_INTEGRITY.md",
         "PR #118 squash merged to mainline: 09064ef05f973b577a79f0a33cf95a4a0bb94051",
-        "Mainline Hosted CI passed: all 4 checks completed/success"
+        "Mainline Hosted CI passed: all 4 checks completed/success",
+        "PR #121 Release Qualification passed: 12/12 stages green (run 40726537773)",
+        "PR #122 Production Promotion merged to release/production: cdc47a2eee8a427aaa6cf3ab5d01cad7f35d71e1"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
@@ -4164,7 +4170,7 @@
       "closure_authority": "Release Authority & Owner",
       "engineering_remediation_state": "VERIFIED",
       "mainline_integration_state": "MERGED_VERIFIED",
-      "production_acceptance_state": "RELEASE_HELD"
+      "production_acceptance_state": "PRODUCTION_VERIFIED"
     },
     {
       "obligation_id": "OBL-DEF-056-003",
@@ -4179,11 +4185,11 @@
       "owner": "Frontend Lead",
       "priority": "P1",
       "status": "COMPLETED",
-      "disposition": "RELEASE_HELD",
+      "disposition": "CLOSED_VERIFIED",
       "implementation_state": "DONE",
       "verification_state": "PASS",
       "repository_publication_state": "PUBLISHED_MERGED",
-      "deployment_state": "RELEASE_HELD",
+      "deployment_state": "DEPLOYED_ACTIVE",
       "operational_state": "NOT_PERFORMED",
       "governance_state": "PENDING_RELEASE",
       "acceptance_criteria": [
@@ -4194,7 +4200,7 @@
       "dependencies": [
         "ARX-S4-ARCH-002"
       ],
-      "blocking_decision": "BLK-057-001; BLK-057-002",
+      "blocking_decision": "RESOLVED_IN_DIRECTIVE_074B",
       "github_issue_refs": [],
       "github_pr_refs": [
         118
@@ -4204,14 +4210,16 @@
         "f1c7def39546076e98c506732b67e1ecdbfccfcf"
       ],
       "deployment_refs": [
-        "Railway:d1f8cf37 (PRODUCTION_HELD - unpromoted)",
-        "Cloudflare:page-0261ba03d5dae7ff (UNPROMOTED)"
+        "Railway:6bba63de-3ba0-4c96-bb1a-e67d3cc47d08 (web-production-e370b.up.railway.app)",
+        "Cloudflare:32f8daa9-bb1f-4454-9aaa-2000bfd49038 (www.arxterminal.com)"
       ],
       "evidence_refs": [
         "ARX_056_PRODUCT_AND_RISK_AUTHORITY_CONTRACT.md",
         "ARX_057_RISK_DISCLOSURE_ACCEPTANCE.md",
         "PR #118 squash merged to mainline: 09064ef05f973b577a79f0a33cf95a4a0bb94051",
-        "Mainline Hosted CI passed: all 4 checks completed/success"
+        "Mainline Hosted CI passed: all 4 checks completed/success",
+        "PR #121 Release Qualification passed: 12/12 stages green (run 40726537773)",
+        "PR #122 Production Promotion merged to release/production: cdc47a2eee8a427aaa6cf3ab5d01cad7f35d71e1"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
@@ -4220,7 +4228,7 @@
       "closure_authority": "Release Authority & Owner",
       "engineering_remediation_state": "VERIFIED",
       "mainline_integration_state": "MERGED_VERIFIED",
-      "production_acceptance_state": "RELEASE_HELD"
+      "production_acceptance_state": "PRODUCTION_VERIFIED"
     },
     {
       "obligation_id": "OBL-PR-107",
