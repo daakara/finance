@@ -76,6 +76,20 @@ VALID_SPRINTS = {
     "SPRINT_UNASSIGNED",
 }
 
+REQUIRED_IMMUTABLE_HOLDS = {
+    "SPRINT3": "CLOSED_WITH_CONTROLLED_CARRYFORWARD",
+    "SMART_MONEY_WORKER_ACTIVATION": "NOT_AUTHORIZED",
+    "SMART_MONEY_SEC_EGRESS": "DISABLED",
+    "SMART_MONEY_RECURRING_INGESTION": "NOT_AUTHORIZED",
+    "CORPORATE_EVENTS_TELEMETRY_ACTIVATION": "NOT_AUTHORIZED",
+    "HVA00_PROTOCOL_RATIFICATION": "NOT_GRANTED",
+    "HVA01_HUMAN_EVALUATION": "NOT_AUTHORIZED",
+    "HVA02_ALGORITHM_ACCEPTANCE": "NOT_AUTHORIZED",
+    "EXTERNAL_CUSTODY_ACTIVATION": "NOT_AUTHORIZED",
+    "UX_PARTICIPANT_RESEARCH": "NOT_AUTHORIZED",
+    "MODEL_TUNING": "FROZEN",
+}
+
 TASK_ID_REGEX = re.compile(r"^ARX-S[1-5]-[A-Z0-9\-]+$")
 
 GOVERNANCE_PATH_PATTERNS = [
@@ -168,6 +182,8 @@ class BacklogValidator:
         require_baseline: bool = False,
         require_external_inventory: bool = False,
         require_closure: bool = False,
+        pre_sprint5_closure: bool = False,
+        pre_sprint5_readiness: bool = False,
     ):
         self.data = backlog_data
         self.prs_inventory = prs_inventory
@@ -177,6 +193,8 @@ class BacklogValidator:
         self.require_baseline = require_baseline
         self.require_external_inventory = require_external_inventory
         self.require_closure = require_closure
+        self.pre_sprint5_closure = pre_sprint5_closure
+        self.pre_sprint5_readiness = pre_sprint5_readiness
         self.findings: List[Finding] = []
 
         # Audit statuses
@@ -209,6 +227,14 @@ class BacklogValidator:
         self._check_bi_010_closure_consistency(tasks)
         self._check_bi_011_operational_truth(tasks)
         self._check_bi_012_historical_continuity(tasks)
+
+        # Pre-Sprint 5 Technical Readiness Invariants (Outcome A)
+        if self.pre_sprint5_readiness:
+            self._check_p5_readiness_invariants(tasks)
+
+        # Pre-Sprint 5 Closure & Execution Gate (Outcome B)
+        if self.pre_sprint5_closure:
+            self._check_p5_invariants(tasks)
 
         errors = [f for f in self.findings if f.severity == "ERROR"]
         warnings = [f for f in self.findings if f.severity == "WARNING"]
@@ -518,6 +544,196 @@ class BacklogValidator:
             self.continuity_status = "VERIFIED"
 
 
+
+    def _check_p5_readiness_invariants(self, tasks: List[Dict[str, Any]]):
+        """Technical Closure Readiness Invariants (Outcome A: P5-001 to P5-009, P5-011 to P5-012)."""
+        obligations = self.data.get("obligations", [])
+        tasks_by_id = {t.get("task_id"): t for t in tasks if t.get("task_id")}
+
+        # P5-001: Zero unscoped obligations
+        if not obligations:
+            self.findings.append(Finding("P5-001", None, "ERROR", "Mandatory obligation register is empty or missing in canonical backlog"))
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            scope = obl.get("release_scope")
+            if not scope or scope in ("UNSCOPED_BLOCKER", "UNASSIGNED"):
+                self.findings.append(Finding("P5-001", oid, "ERROR", f"Obligation '{oid}' lacks an approved release/sprint scope (found: '{scope}')"))
+
+        # P5-002: Zero orphan findings
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            parent_id = obl.get("canonical_task_id")
+            if not parent_id or parent_id not in tasks_by_id:
+                self.findings.append(Finding("P5-002", oid, "ERROR", f"Obligation '{oid}' has no valid canonical task parent in backlog (parent: '{parent_id}')"))
+
+        # P5-003: No incomplete mandatory pre-Sprint 5 work
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            scope = obl.get("release_scope")
+            status = obl.get("status")
+            disp = obl.get("disposition")
+            deploy = obl.get("deployment_state")
+            if scope == "PRE_SPRINT5_MANDATORY_CLOSURE":
+                if disp == "RELEASE_HELD" or deploy == "RELEASE_HELD" or obl.get("production_acceptance_state") == "RELEASE_HELD":
+                    blocker = obl.get("blocking_decision", "PRODUCTION_RELEASE_HELD")
+                    self.findings.append(Finding("P5-003", oid, "ERROR", f"Mandatory pre-Sprint 5 obligation '{oid}' is held from production deployment (status='{status}', disp='{disp}', deploy='{deploy}'). Blocker: {blocker}"))
+                elif status != "COMPLETED" or disp != "CLOSED_VERIFIED":
+                    blocker = obl.get("blocking_decision", "UNRESOLVED_BLOCKER")
+                    self.findings.append(Finding("P5-003", oid, "ERROR", f"Mandatory pre-Sprint 5 obligation '{oid}' is incomplete (status='{status}', disp='{disp}'). Blocker: {blocker}"))
+
+        # P5-004: No silent carryforwards
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            origin = obl.get("origin_sprint")
+            scope = obl.get("release_scope")
+            auth = obl.get("scope_authorization")
+            criteria = obl.get("acceptance_criteria", [])
+            owner = obl.get("owner")
+            if origin in ("SPRINT_1", "SPRINT_2", "SPRINT_3", "SPRINT_4") and scope in ("ALREADY_APPROVED_SPRINT5_DELIVERY", "SPRINT_5"):
+                if not auth or auth not in ("OWNER_AUTHORIZED", "CONDITIONALLY_PREAPPROVED"):
+                    self.findings.append(Finding("P5-004", oid, "ERROR", f"Obligation '{oid}' carried forward to Sprint 5 lacks independent owner authorization (auth='{auth}')"))
+                if not criteria or all(not str(c).strip() for c in criteria):
+                    self.findings.append(Finding("P5-004", oid, "ERROR", f"Obligation '{oid}' carried forward to Sprint 5 lacks concrete acceptance criteria"))
+                if not owner or len(owner.strip()) < 2:
+                    self.findings.append(Finding("P5-004", oid, "ERROR", f"Obligation '{oid}' carried forward to Sprint 5 lacks an accountable owner"))
+
+        # P5-005: No unauthorized HOLD release
+        # 1. Enforce top-level immutable_holds register
+        immutable_holds = self.data.get("immutable_holds")
+        if not isinstance(immutable_holds, dict):
+            self.findings.append(Finding("P5-005", None, "ERROR", "Top-level 'immutable_holds' register is missing or not a dictionary"))
+        else:
+            for hold_key, expected_val in REQUIRED_IMMUTABLE_HOLDS.items():
+                if hold_key not in immutable_holds:
+                    self.findings.append(Finding("P5-005", None, "ERROR", f"Mandatory operational hold '{hold_key}' is missing from immutable_holds register"))
+                elif immutable_holds[hold_key] != expected_val:
+                    self.findings.append(Finding("P5-005", None, "ERROR", f"Mandatory operational hold '{hold_key}' has been relaxed or mutated to '{immutable_holds[hold_key]}' (expected: '{expected_val}')"))
+
+        # 2. Enforce individual held obligations
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            scope = obl.get("release_scope")
+            auth = obl.get("scope_authorization")
+            gov_state = obl.get("governance_state")
+            status = obl.get("status")
+            deploy = obl.get("deployment_state")
+            op = obl.get("operational_state")
+            is_hold = (scope == "HOLDING_QUEUE_OWNER_GATED" or auth in ("HOLD", "OWNER_HOLD") or gov_state in ("HOLD", "OWNER_HOLD"))
+            if is_hold:
+                if status == "COMPLETED" or deploy == "DEPLOYED_ACTIVE" or op == "EXECUTED":
+                    self.findings.append(Finding("P5-005", oid, "ERROR", f"Governance-held obligation '{oid}' was falsely marked active or completed without owner release (status='{status}', deploy='{deploy}')"))
+
+        # P5-006: Evidence-backed closure
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            status = obl.get("status")
+            disp = obl.get("disposition")
+            evidence = obl.get("evidence_refs", [])
+            if status == "COMPLETED" or disp == "CLOSED_VERIFIED":
+                if not evidence or all(not str(e).strip() for e in evidence):
+                    self.findings.append(Finding("P5-006", oid, "ERROR", f"Obligation '{oid}' claims completed/closed but lacks verification evidence references"))
+
+        # P5-007: Release truth
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            deploy = obl.get("deployment_state")
+            deploys = obl.get("deployment_refs", [])
+            disp = obl.get("disposition")
+            if deploy == "DEPLOYED_ACTIVE":
+                if not deploys or all(not str(d).strip() for d in deploys):
+                    self.findings.append(Finding("P5-007", oid, "ERROR", f"Obligation '{oid}' claims active deployment but lacks verified deployment references"))
+                else:
+                    held_signals = ["HELD", "UNPROMOTED", "NOT_DEPLOYED", "STALE", "PENDING"]
+                    for d in deploys:
+                        if any(sig in str(d).upper() for sig in held_signals):
+                            self.findings.append(Finding("P5-007", oid, "ERROR", f"Obligation '{oid}' claims DEPLOYED_ACTIVE but deployment reference '{d}' indicates unpromoted/held status"))
+            if deploy in ("NOT_DEPLOYED", "RELEASE_HELD") and disp == "CLOSED_VERIFIED":
+                self.findings.append(Finding("P5-007", oid, "ERROR", f"Obligation '{oid}' is {deploy} but claims CLOSED_VERIFIED"))
+            elif deploy == "NOT_DEPLOYED" and disp == "CLOSED_VERIFIED" and obl.get("capability_id") in ("MAINLINE_DELIVERY", "CORE_FEATURE"):
+                self.findings.append(Finding("P5-007", oid, "ERROR", f"Deliverable obligation '{oid}' is NOT_DEPLOYED but claims CLOSED_VERIFIED"))
+
+        # P5-008: Historical continuity & acyclic lineage
+        seen_oids = set()
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            if oid in seen_oids:
+                self.findings.append(Finding("P5-008", oid, "ERROR", f"Duplicate obligation ID '{oid}' found in register"))
+            seen_oids.add(oid)
+
+            # Check cyclic supersession
+            cur = obl
+            chain = [oid]
+            while cur and cur.get("superseded_by"):
+                nxt_id = cur.get("superseded_by")
+                if nxt_id in chain:
+                    self.findings.append(Finding("P5-008", oid, "ERROR", f"Cyclic supersession detected in obligation lineage: {' -> '.join(chain + [nxt_id])}"))
+                    break
+                chain.append(nxt_id)
+                cur = next((o for o in obligations if o.get("obligation_id") == nxt_id), None)
+
+        # P5-009: Cross-audit completeness
+        required_findings = ["DEF-056-001", "DEF-056-002", "DEF-056-003", "PR-107", "PR-110", "PR-111", "PR-112", "PR-113", "PR-115", "PR-116", "PR-117"]
+        found_source_ids = {obl.get("source_finding_id") for obl in obligations}
+        for rf in required_findings:
+            if rf not in found_source_ids:
+                self.findings.append(Finding("P5-009", None, "ERROR", f"Required cross-audit source finding '{rf}' is missing from obligation register"))
+
+        # P5-010 Integrity: Active sprint cannot be SPRINT_5 without affirmative kickoff authorization
+        active_sprint = self.data.get("active_sprint")
+        s5_exec_authorized = self.data.get("sprint5_execution_authorized")
+        if active_sprint == "SPRINT_5" and not s5_exec_authorized:
+            self.findings.append(Finding("P5-010", None, "ERROR", "Active sprint set to 'SPRINT_5' while sprint5_execution_authorized is False"))
+
+        # P5-011: No stale baseline substitution
+        for obl in obligations:
+            oid = obl.get("obligation_id")
+            deploys = obl.get("deployment_refs", [])
+            for dep in deploys:
+                if "5efc2179" in dep:
+                    self.findings.append(Finding("P5-011", oid, "ERROR", f"Obligation '{oid}' substitutes stale unverified deployment SHA '5efc2179' instead of reconciled baseline '856170c'"))
+
+        # P5-012: External-source verification integrity
+        if self.reconciliation_status == "NOT_PERFORMED" and self.require_external_inventory:
+            self.findings.append(Finding("P5-012", None, "ERROR", "External reconciliation was required but execution status is NOT_PERFORMED; cannot verify external PR/issue truthfulness"))
+
+    def _check_p5_execution_authority(self):
+        """Enforces affirmative Product Owner kickoff authorization (Outcome B: P5-010)."""
+        s5_exec_authorized = self.data.get("sprint5_execution_authorized")
+        auth_record = self.data.get("sprint5_execution_authorization_record")
+
+        if s5_exec_authorized is True:
+            if not isinstance(auth_record, dict):
+                self.findings.append(Finding("P5-010", None, "ERROR", "Sprint 5 execution authorized flag is True but 'sprint5_execution_authorization_record' is missing or null"))
+            else:
+                authorizer = auth_record.get("authorizer")
+                decision = auth_record.get("decision")
+                ts = auth_record.get("timestamp")
+                ref = auth_record.get("decision_reference")
+                gov = auth_record.get("governing_directive")
+
+                if authorizer != "PRODUCT_OWNER":
+                    self.findings.append(Finding("P5-010", None, "ERROR", f"Sprint 5 execution authorization record invalid authorizer '{authorizer}' (must be 'PRODUCT_OWNER'; autonomous agents cannot authorize kickoff)"))
+                if decision != "AFFIRMATIVE_KICKOFF_GRANTED":
+                    self.findings.append(Finding("P5-010", None, "ERROR", f"Sprint 5 execution authorization record contradiction: authorized flag is True but record decision is '{decision}'"))
+                if not ts or not str(ts).strip():
+                    self.findings.append(Finding("P5-010", None, "ERROR", "Sprint 5 execution authorization record missing valid timestamp"))
+                if not ref or not str(ref).strip():
+                    self.findings.append(Finding("P5-010", None, "ERROR", "Sprint 5 execution authorization record missing valid decision_reference"))
+                if not gov or not str(gov).strip():
+                    self.findings.append(Finding("P5-010", None, "ERROR", "Sprint 5 execution authorization record missing valid governing_directive"))
+        else:
+            self.findings.append(Finding("P5-010", None, "ERROR", "Sprint 5 execution kickoff is NOT authorized by Product Owner. Execution remains blocked pending affirmative owner gate (reason: OWNER_AUTHORIZATION_EVIDENCE_MISSING)"))
+            if isinstance(auth_record, dict):
+                decision = auth_record.get("decision")
+                if decision == "AFFIRMATIVE_KICKOFF_GRANTED":
+                    self.findings.append(Finding("P5-010", None, "ERROR", "Sprint 5 execution authorization record contradiction: authorized flag is False but record claims 'AFFIRMATIVE_KICKOFF_GRANTED'"))
+
+    def _check_p5_invariants(self, tasks: List[Dict[str, Any]]):
+        """Complete Pre-Sprint 5 Closure Invariants (Outcome A + Outcome B) under Directives 058/059/060."""
+        self._check_p5_readiness_invariants(tasks)
+        self._check_p5_execution_authority()
+
+
 def detect_scoped_governance_changes(
     base_ref: Optional[str] = None
 ) -> Tuple[bool, List[str], str]:
@@ -632,6 +848,8 @@ def main():
     parser.add_argument("--stage", choices=["report-only", "scoped", "strict"], default="scoped", help="Progressive enforcement stage")
     parser.add_argument("--strict", action="store_true", help="Fail closed on warnings as well as errors")
     parser.add_argument("--closure-certification", action="store_true", help="Enforce full closure certification requirements (cannot be masked by report-only)")
+    parser.add_argument("--pre-sprint5-readiness", action="store_true", help="Enforce Technical Closure Readiness (Outcome A: P5-001 to P5-009, P5-011, P5-012; does not require affirmative PO kickoff authorization)")
+    parser.add_argument("--pre-sprint5-closure", action="store_true", help="Enforce Complete Pre-Sprint 5 Closure & Execution Permission (Outcome B: Technical Readiness + Affirmative PO Kickoff Authorization)")
     parser.add_argument("--require-baseline", action="store_true", help="Fail closed if historical baseline is unavailable")
     parser.add_argument("--require-external-inventory", action="store_true", help="Fail closed if external GitHub inventory is missing")
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON output")
@@ -721,9 +939,11 @@ def main():
         issues_inventory=issues_inventory,
         baseline_data=baseline_data,
         schema_data=schema_data,
-        require_baseline=(args.require_baseline or args.closure_certification),
+        require_baseline=(args.require_baseline or args.closure_certification or args.pre_sprint5_closure or args.pre_sprint5_readiness),
         require_external_inventory=(args.require_external_inventory or args.closure_certification),
         require_closure=args.closure_certification,
+        pre_sprint5_closure=args.pre_sprint5_closure,
+        pre_sprint5_readiness=args.pre_sprint5_readiness,
     )
     verdict, findings = validator.validate_all()
 
@@ -731,7 +951,9 @@ def main():
     has_errors = any(f.severity == "ERROR" for f in findings)
     effective_stage = "strict" if (args.strict or args.closure_certification) else args.stage
 
-    if args.closure_certification:
+    if args.pre_sprint5_closure or args.pre_sprint5_readiness:
+        exit_code = 0 if verdict == "PASS" else 1
+    elif args.closure_certification:
         exit_code = 0 if verdict == "PASS" else 1
     elif effective_stage == "report-only":
         exit_code = 0
@@ -792,6 +1014,50 @@ def main():
             print(str(f))
         if not findings:
             print("All rules (BI-000 to BI-012) verified with zero errors or warnings.")
+
+        # Multi-Gate Enforcement Readout
+        if not args.pre_sprint5_closure and not args.pre_sprint5_readiness:
+            val_a = BacklogValidator(
+                backlog_data,
+                prs_inventory=prs_inventory,
+                issues_inventory=issues_inventory,
+                baseline_data=baseline_data,
+                schema_data=schema_data,
+                require_baseline=True,
+                pre_sprint5_readiness=True,
+            )
+            _, ready_findings = val_a.validate_all()
+            ready_errors = [f for f in ready_findings if f.severity == "ERROR"]
+
+            val_b = BacklogValidator(
+                backlog_data,
+                prs_inventory=prs_inventory,
+                issues_inventory=issues_inventory,
+                baseline_data=baseline_data,
+                schema_data=schema_data,
+                require_baseline=True,
+                pre_sprint5_closure=True,
+            )
+            _, exec_findings = val_b.validate_all()
+            exec_errors = [f for f in exec_findings if f.severity == "ERROR"]
+
+            print("-----------------------------------------------------------")
+            print("MULTI-GATE ENFORCEMENT SUMMARY:")
+            print(f"  Gate 1 (Governance Integration Gate): {verdict} (Exit Code: {exit_code}) [PR MERGE ELIGIBLE]")
+            if ready_errors:
+                print(f"  Gate 2A (Technical Closure Readiness): BLOCKED ({len(ready_errors)} active blockers)")
+                for re in ready_errors:
+                    print(f"    * {str(re)}")
+            else:
+                print("  Gate 2A (Technical Closure Readiness): PASS [TECHNICAL CRITERIA SATISFIED]")
+
+            if exec_errors:
+                print(f"  Gate 2B (Sprint 5 Execution Permission): BLOCKED ({len(exec_errors)} active blockers)")
+                for ee in exec_errors:
+                    print(f"    * {str(ee)}")
+            else:
+                print("  Gate 2B (Sprint 5 Execution Permission): ELIGIBLE [AFFIRMATIVE KICKOFF GRANTED]")
+            print("===========================================================")
 
     sys.exit(exit_code)
 

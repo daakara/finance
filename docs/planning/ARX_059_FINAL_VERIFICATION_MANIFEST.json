@@ -1,0 +1,110 @@
+{
+  "directive": "ARX_SPRINT5_AUTHORIZATION_AND_CERTIFICATION_RECOVERY_059",
+  "timestamp": "2026-10-27T21:55:00Z",
+  "posture": "FAIL-CLOSED / GOVERNANCE REMEDIATION ONLY",
+  "gate_verdict": "READY_FOR_OWNER_REVIEW",
+  "repository": "daakara/finance",
+  "authoritative_mainline": {
+    "commit": "f1c7def39546076e98c506732b67e1ecdbfccfcf",
+    "tree": "6d480c66b2b479fb8b65b590145453965e0d2f4e",
+    "status": "MERGED_VERIFIED",
+    "checks": [
+      {"name": "Fast Code Quality & Unit Tests", "status": "completed", "conclusion": "success"},
+      {"name": "Code Quality & Security Linter", "status": "completed", "conclusion": "success"},
+      {"name": "Fast Integration Tests (Docker & DB Required)", "status": "completed", "conclusion": "success"},
+      {"name": "Build and Deploy", "status": "completed", "conclusion": "success"}
+    ]
+  },
+  "governance_worktree": {
+    "path": "C:\\Users\\akara\\Documents\\Projects\\finance-d058-obligation-recovery",
+    "branch": "gov/d058-pre-sprint5-obligation-recovery",
+    "rebased_base": "f1c7def39546076e98c506732b67e1ecdbfccfcf",
+    "uncommitted_changes": true
+  },
+  "platform_census": {
+    "canonical_tasks_count": 43,
+    "cross_audit_obligations_count": 71,
+    "immutable_holds_count": 11,
+    "pre_sprint5_mandatory_obligations_count": 3,
+    "owner_gated_holding_queue_count": 21,
+    "sprint5_delivery_obligations_count": 26,
+    "closed_verified_obligations_count": 21
+  },
+  "tripartite_defect_reconciliation": {
+    "OBL-DEF-056-001": {
+      "engineering_remediation_state": "VERIFIED",
+      "mainline_integration_state": "MERGED_VERIFIED",
+      "production_acceptance_state": "RELEASE_HELD",
+      "disposition": "RELEASE_HELD",
+      "deployment_state": "RELEASE_HELD",
+      "governance_state": "PENDING_RELEASE",
+      "blocking_decision": "BLK-057-001; BLK-057-002"
+    },
+    "OBL-DEF-056-002": {
+      "engineering_remediation_state": "VERIFIED",
+      "mainline_integration_state": "MERGED_VERIFIED",
+      "production_acceptance_state": "RELEASE_HELD",
+      "disposition": "RELEASE_HELD",
+      "deployment_state": "RELEASE_HELD",
+      "governance_state": "PENDING_RELEASE",
+      "blocking_decision": "BLK-057-001; BLK-057-002"
+    },
+    "OBL-DEF-056-003": {
+      "engineering_remediation_state": "VERIFIED",
+      "mainline_integration_state": "MERGED_VERIFIED",
+      "production_acceptance_state": "RELEASE_HELD",
+      "disposition": "RELEASE_HELD",
+      "deployment_state": "RELEASE_HELD",
+      "governance_state": "PENDING_RELEASE",
+      "blocking_decision": "BLK-057-001; BLK-057-002"
+    }
+  },
+  "immutable_holds": {
+    "SPRINT3": "CLOSED_WITH_CONTROLLED_CARRYFORWARD",
+    "SMART_MONEY_WORKER_ACTIVATION": "NOT_AUTHORIZED",
+    "SMART_MONEY_SEC_EGRESS": "DISABLED",
+    "SMART_MONEY_RECURRING_INGESTION": "NOT_AUTHORIZED",
+    "CORPORATE_EVENTS_TELEMETRY_ACTIVATION": "NOT_AUTHORIZED",
+    "HVA00_PROTOCOL_RATIFICATION": "NOT_GRANTED",
+    "HVA01_HUMAN_EVALUATION": "NOT_AUTHORIZED",
+    "HVA02_ALGORITHM_ACCEPTANCE": "NOT_AUTHORIZED",
+    "EXTERNAL_CUSTODY_ACTIVATION": "NOT_AUTHORIZED",
+    "UX_PARTICIPANT_RESEARCH": "NOT_AUTHORIZED",
+    "MODEL_TUNING": "FROZEN"
+  },
+  "verification_runs": {
+    "stage_scoped": {
+      "command": "python tools/governance/validate_backlog_integrity.py --stage scoped",
+      "exit_code": 0,
+      "verdict": "PASS",
+      "findings": 0
+    },
+    "pre_sprint5_closure": {
+      "command": "python tools/governance/validate_backlog_integrity.py --pre-sprint5-closure",
+      "exit_code": 1,
+      "verdict": "FAIL_CLOSED",
+      "blocking_errors": [
+        "P5-003 [OBL-DEF-056-001]: Mandatory pre-Sprint 5 obligation 'OBL-DEF-056-001' is held from production deployment (status='COMPLETED', disp='RELEASE_HELD', deploy='RELEASE_HELD'). Blocker: BLK-057-001; BLK-057-002",
+        "P5-003 [OBL-DEF-056-002]: Mandatory pre-Sprint 5 obligation 'OBL-DEF-056-002' is held from production deployment (status='COMPLETED', disp='RELEASE_HELD', deploy='RELEASE_HELD'). Blocker: BLK-057-001; BLK-057-002",
+        "P5-003 [OBL-DEF-056-003]: Mandatory pre-Sprint 5 obligation 'OBL-DEF-056-003' is held from production deployment (status='COMPLETED', disp='RELEASE_HELD', deploy='RELEASE_HELD'). Blocker: BLK-057-001; BLK-057-002",
+        "P5-010: Sprint 5 execution kickoff is NOT authorized by Product Owner. Execution remains blocked pending affirmative owner gate (reason: OWNER_AUTHORIZATION_EVIDENCE_MISSING)",
+        "P5-010: Active sprint set to 'SPRINT_5' while sprint5_execution_authorized is False"
+      ]
+    },
+    "automated_tests": {
+      "command": "python -m pytest tests/test_backlog_integrity_validator.py",
+      "total_tests": 86,
+      "passed": 86,
+      "failed": 0,
+      "execution_time_seconds": 7.76
+    }
+  },
+  "deliverables": [
+    "docs/planning/ARX_059_AUTHORIZATION_PROVENANCE_AUDIT.md",
+    "docs/planning/ARX_059_VALIDATOR_HARDENING_REPORT.md",
+    "docs/planning/ARX_059_DIRECTIVE058_RECONCILIATION.md",
+    "docs/planning/ARX_059_CI_ENFORCEMENT_PLAN.md",
+    "docs/planning/ARX_059_OWNER_DECISION_PACKAGE.md",
+    "docs/planning/ARX_059_FINAL_VERIFICATION_MANIFEST.json"
+  ]
+}

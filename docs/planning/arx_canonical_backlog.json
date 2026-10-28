@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
   "backlog_name": "ARX Terminal Canonical Enterprise Backlog",
-  "last_reconciled": "2026-10-27T05:30:00Z",
-  "active_sprint": "SPRINT_5",
+  "last_reconciled": "2026-10-27T22:30:00Z",
+  "active_sprint": "SPRINT_4",
   "governance_framework": "ARX Closure Model v2 + Governance Efficiency v1.1",
   "immutable_holds": {
     "SPRINT3": "CLOSED_WITH_CONTROLLED_CARRYFORWARD",
@@ -2027,7 +2027,7 @@
       },
       "acceptance_criteria": [
         "AC-LIQ-01: Extend DecisionHierarchyEngine.resolve_decision_state() with an optional execution_hazard: bool parameter (defaulting to False when evidence is unavailable, while enforcing fail-closed actionability).",
-        "AC-LIQ-02: Enforce Precedence in DecisionHierarchyEngine: If execution_hazard is True, the setup MUST be disqualified from ACTIONABLE_SETUP, setting state=VALID_SETUP, isActionable=False, canSizeTrade=False, label='Valid Setup — Liquidity Hazard', and allowedActions=['ADD_WATCHLIST', 'RESEARCH_PROFILE'].",
+        "AC-LIQ-02: Enforce Precedence in DecisionHierarchyEngine: If execution_hazard is True, the setup MUST be disqualified from ACTIONABLE_SETUP, setting state=VALID_SETUP, isActionable=False, canSizeTrade=False, label='Valid Setup \u2014 Liquidity Hazard', and allowedActions=['ADD_WATCHLIST', 'RESEARCH_PROFILE'].",
         "AC-LIQ-03: Set disqualificationReason to explicit liquidity warning: 'Trade execution suppressed: Severe liquidity hazard detected (ADV / slippage friction exceeds safety threshold).'",
         "AC-LIQ-04: Wire execution_hazard from OptimalExecutionEngine raw_plan['liquidity_defense']['execution_hazard'] into api/routes/analytics.py, api/routes/screener.py, and DecisionTraceEngine.",
         "AC-LIQ-05: Preserve F_10 governance invariant: Missing liquidity evidence (UNAVAILABLE/UNKNOWN) must fail closed without synthesizing fictitious zero-hazard fallbacks.",
@@ -2037,7 +2037,7 @@
         "NEG-LIQ-01: Micro-cap illiquid fixture (ADV $85k, Amihud 4.2) with confluence 88.0 inside buy zone strictly produces isActionable=False and canSizeTrade=False.",
         "NEG-LIQ-02: Illiquid setup suppresses position sizing in GovernorSizingEngine with 0 shares.",
         "NEG-LIQ-03: Missing volume profile (None) produces execution_hazard=True (fail-closed) and blocks ACTIONABLE_SETUP.",
-        "NEG-LIQ-04: Setup with execution_hazard=True and execution_status=STOPPED_OUT produces label 'Setup Invalidated — Stopped Out' (STOPPED_OUT takes precedence over liquidity friction)."
+        "NEG-LIQ-04: Setup with execution_hazard=True and execution_status=STOPPED_OUT produces label 'Setup Invalidated \u2014 Stopped Out' (STOPPED_OUT takes precedence over liquidity friction)."
       ],
       "dependencies": [
         "ARX-S4-ARCH-001",
@@ -2069,5 +2069,3249 @@
       "superseded_by": null,
       "description": "Enforce liquidity defense and execution hazard friction in canonical decision hierarchy. Prevents severely illiquid stocks from transitioning to ACTIONABLE_SETUP regardless of technical pattern quality. Verified in WS4.2 frontend presentation."
     }
-  ]
+  ],
+  "obligations": [
+    {
+      "obligation_id": "OBL-ARX-S4-GOV-001",
+      "canonical_task_id": "ARX-S4-GOV-001",
+      "title": "Cross-Sprint Backlog Integrity, Historical Recovery and Automated Closure Enforcement",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S4-GOV-001",
+      "capability_id": "GOVERNANCE",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P1",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "NOT_APPLICABLE",
+      "operational_state": "NOT_APPLICABLE",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Machine-readable canonical backlog schema and JSON register established",
+        "Automated backlog integrity validator enforcing rules BI-001 through BI-012 implemented",
+        "Adversarial and functional test suite with 15+ scenarios passing",
+        "Historical reconciliation across Sprints 1, 2, 3 and open GitHub issues/PRs complete",
+        "Feature branch created, single non-activating PR published, CI verified"
+      ],
+      "dependencies": [],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        101,
+        102,
+        106,
+        107
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "docs/planning/arx_canonical_backlog.json",
+        "docs/planning/arx_canonical_backlog.schema.json",
+        "tools/governance/validate_backlog_integrity.py",
+        "tests/test_backlog_integrity_validator.py",
+        "https://github.com/daakara/finance/pull/101",
+        "https://github.com/daakara/finance/pull/102",
+        "https://github.com/daakara/finance/pull/106",
+        "https://github.com/daakara/finance/pull/107"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S4-ARCH-001",
+      "canonical_task_id": "ARX-S4-ARCH-001",
+      "title": "Holistic Cross-Engine Architecture and Decision-Coherence Audit",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S4-ARCH-001",
+      "capability_id": "ARCHITECTURE",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P1",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "NOT_APPLICABLE",
+      "operational_state": "NOT_APPLICABLE",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Audit cross-engine state transitions and canonical context identity across all 5 engines",
+        "Verify market-session and price authority propagation across Radar, Analysis, and Trade Plan",
+        "Detect and eliminate contradictory decision recommendations across engines",
+        "Produce cross-engine dependency map and audit report"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        104,
+        107
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "docs/architecture/ARX_CANONICAL_SECURITY_MASTER_DESIGN.md",
+        "FROZEN_ENGINE_MANIFEST_V2_5_1.json",
+        "tests/test_cross_engine_coherence.py",
+        "https://github.com/daakara/finance/pull/104",
+        "https://github.com/daakara/finance/pull/107"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S4-RADAR-001",
+      "canonical_task_id": "ARX-S4-RADAR-001",
+      "title": "Minervini VCP / Radar Operational Truth & Scanner Pending Remediation",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S4-RADAR-001",
+      "capability_id": "RADAR_VCP",
+      "release_scope": "SPRINT_5",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P1",
+      "status": "READY",
+      "disposition": "SPRINT5_DISCOVERY",
+      "implementation_state": "PARTIAL",
+      "verification_state": "PASS",
+      "repository_publication_state": "NOT_APPLICABLE",
+      "deployment_state": "NOT_APPLICABLE",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Complete root-cause tracing of 'Universe Scanner Pending' status across all 12 authority chain points",
+        "Formulate passive observation scanner execution design decoupled from HVA01 research",
+        "Reconcile Radar category metadata to distinguish PIPELINE_PENDING from authentic zero matches",
+        "Prepare controlled activation specification for Research/Product Owner review"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [
+        61,
+        62,
+        64,
+        70
+      ],
+      "github_pr_refs": [
+        73
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "frontend/app/radar/page.tsx",
+        "api/routes/screener.py",
+        "analyst_dashboard/analyzers/scanner_runner.py"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S1-001",
+      "canonical_task_id": "ARX-S1-001",
+      "title": "VCP Inactive Read-Safety Contract Enforcement",
+      "origin_sprint": "SPRINT_1",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S1-001",
+      "capability_id": "RADAR_VCP",
+      "release_scope": "SPRINT_1",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "ARX_CORE_TEAM",
+      "priority": "P0",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_ACTIVE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Eliminate scan-on-read execution, lease races, and side-effects on GET requests",
+        "Fails closed to PIPELINE_PENDING on missing snapshots without triggering scan"
+      ],
+      "dependencies": [],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        4
+      ],
+      "commit_refs": [],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/4",
+        "tests/test_vcp_inactive_read_safety.py",
+        "docs/sprints/SPRINT_1_CLOSEOUT.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S1-002",
+      "canonical_task_id": "ARX-S1-002",
+      "title": "Candidate 004 Universe-Wiring Reintroduction",
+      "origin_sprint": "SPRINT_1",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S1-002",
+      "capability_id": "RADAR_VCP",
+      "release_scope": "SPRINT_1",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "ARX_CORE_TEAM",
+      "priority": "P1",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_ACTIVE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Reintroduced Candidate 004 universe wiring cleanly separated from public read paths",
+        "Preserved relational denominator and epoch membership verification"
+      ],
+      "dependencies": [
+        "ARX-S1-001"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        5
+      ],
+      "commit_refs": [],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/5",
+        "tests/test_vcp_c004_universe_wiring.py",
+        "docs/sprints/SPRINT_1_CLOSEOUT.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S1-003",
+      "canonical_task_id": "ARX-S1-003",
+      "title": "Production Universe Preparation & Publication Tooling",
+      "origin_sprint": "SPRINT_1",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S1-003",
+      "capability_id": "RADAR_VCP",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "OWNER_HOLD",
+      "owner": "daakara",
+      "priority": "P1",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "PARTIAL",
+      "verification_state": "PARTIAL",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_DORMANT",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "Implement validation core (PR #6) and offline adapters (PR #8)",
+        "Live network acquisition and production universe publication require separate Owner grant"
+      ],
+      "dependencies": [
+        "ARX-S1-002"
+      ],
+      "blocking_decision": "HOLDING_QUEUE_GATE",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        6,
+        8
+      ],
+      "commit_refs": [],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/6",
+        "https://github.com/daakara/finance/pull/8",
+        "docs/research/vcp-production-universe-inputs/PLANNING_HANDOFF.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S1-004",
+      "canonical_task_id": "ARX-S1-004",
+      "title": "Data.gov Discovery and Primary-Source Qualification",
+      "origin_sprint": "SPRINT_1",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S1-004",
+      "capability_id": "RESEARCH_CUSTODY",
+      "release_scope": "SPRINT_1",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "ARX_CORE_TEAM",
+      "priority": "P2",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "NOT_APPLICABLE",
+      "operational_state": "NOT_APPLICABLE",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Qualify Data.gov as search catalog rather than runtime authority",
+        "Establish direct primary agency qualification matrix (SEC, CFTC, Treasury, BLS)"
+      ],
+      "dependencies": [],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "docs/research/data-gov-discovery/DISCOVERY_REPORT.md",
+        "docs/sprints/SPRINT_1_CLOSEOUT.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S1-005",
+      "canonical_task_id": "ARX-S1-005",
+      "title": "Canonical Decision-State Consistency & Truthful Corridor Location",
+      "origin_sprint": "SPRINT_1",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S1-005",
+      "capability_id": "UX_WORKSTATION",
+      "release_scope": "SPRINT_1",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "ARX_CORE_TEAM",
+      "priority": "P1",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_ACTIVE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Eliminate spatial copy contradictions where price extended above ceiling was claimed inside corridor",
+        "Suppress scale-in hints on blocked technical gates",
+        "3-tier readiness presentation verified"
+      ],
+      "dependencies": [],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        7
+      ],
+      "commit_refs": [],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/7",
+        "tests/corridorDecisionConsistency.test.ts",
+        "docs/sprints/SPRINT_1_CLOSEOUT.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S1-006",
+      "canonical_task_id": "ARX-S1-006",
+      "title": "Radar US-Listed Coverage & Requirements Reconciliation",
+      "origin_sprint": "SPRINT_1",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S1-006",
+      "capability_id": "RADAR_VCP",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P1",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "LOCAL_ONLY",
+      "deployment_state": "NOT_APPLICABLE",
+      "operational_state": "NOT_APPLICABLE",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Define mathematical accounting closure across 6 disjoint outcomes",
+        "Structure 10-package phased implementation sequence (S2-01 to S2-10)",
+        "Reconcile against active market-wide radar scanner requirements"
+      ],
+      "dependencies": [
+        "ARX-S1-001"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "docs/research/radar-us-listed-coverage/COVERAGE_ACCEPTANCE_CONTRACT.md",
+        "docs/research/radar-us-listed-coverage/DELIVERY_CHECKLIST.md",
+        "ARX_S4_FINAL_CLOSURE_CRITERIA_TRACEABILITY.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S2-001",
+      "canonical_task_id": "ARX-S2-001",
+      "title": "US-Listed Population and Strategy Boundaries Specification",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S2-001",
+      "capability_id": "RADAR_VCP",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P1",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "LOCAL_ONLY",
+      "deployment_state": "NOT_APPLICABLE",
+      "operational_state": "NOT_APPLICABLE",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Define explicit population scope separating US-listed equities from ADRs/REITs",
+        "Preserve non-inference boundaries for missing or ambiguous security classifications"
+      ],
+      "dependencies": [
+        "ARX-S1-006"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "docs/sprints/SPRINT_2_KICKOFF.md",
+        "docs/research/sprint-2-identity-adoption/",
+        "ARX_S4_FINAL_CLOSURE_CRITERIA_TRACEABILITY.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S2-002",
+      "canonical_task_id": "ARX-S2-002",
+      "title": "Comprehensive Listing Acquisition & Preserved Source Evidence",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S2-002",
+      "capability_id": "INFRASTRUCTURE",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "OWNER_HOLD",
+      "owner": "daakara",
+      "priority": "P2",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "SEC EDGAR and Nasdaq Trader directory fetchers implemented with archival storage",
+        "Live network acquisition held closed until owner authorizes production egress"
+      ],
+      "dependencies": [
+        "ARX-S2-001"
+      ],
+      "blocking_decision": "HOLDING_QUEUE_GATE",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        35
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "docs/reviews/sprint2-package-b/B_DATA_QUALITY_CONTRACT.md",
+        "docs/reviews/sprint2-convergence/SPRINT2_PACKAGE_B_DATA_READINESS_AND_PROVENANCE_PLAN.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S2-003",
+      "canonical_task_id": "ARX-S2-003",
+      "title": "Security Identity & SqliteIdentityRepository Implementation",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S2-003",
+      "capability_id": "RADAR_VCP",
+      "release_scope": "SPRINT_2",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "ARX_CORE_TEAM",
+      "priority": "P1",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_DORMANT",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Unique listing identity resolution without conflating CIK and Symbol",
+        "SqliteIdentityRepository implemented and verified"
+      ],
+      "dependencies": [
+        "ARX-S2-001"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        37
+      ],
+      "commit_refs": [],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/37",
+        "analyst_dashboard/universe/identity_repository.py",
+        "docs/reviews/sprint2-convergence/SPRINT2_PR37_AUTHORIZED_MERGE_EXECUTION_RECORD.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S2-004",
+      "canonical_task_id": "ARX-S2-004",
+      "title": "Connected Adapter -> Validator -> Builder Integration Core",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S2-004",
+      "capability_id": "RADAR_VCP",
+      "release_scope": "SPRINT_2",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "ARX_CORE_TEAM",
+      "priority": "P1",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_DORMANT",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "End-to-end integration core connecting raw listing feeds through validator to builder",
+        "Verified in isolated tests without live network calls"
+      ],
+      "dependencies": [
+        "ARX-S2-003"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        37
+      ],
+      "commit_refs": [],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/37",
+        "docs/reviews/sprint2-convergence/SPRINT2_PACKAGE_BC_INTEGRATION_CHECKPOINT.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S2-005",
+      "canonical_task_id": "ARX-S2-005",
+      "title": "Market-Data Coverage and Processing Capacity Verification",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S2-005",
+      "capability_id": "INFRASTRUCTURE",
+      "release_scope": "SPRINT_5",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P2",
+      "status": "READY",
+      "disposition": "SPRINT5_DISCOVERY",
+      "implementation_state": "PARTIAL",
+      "verification_state": "PENDING",
+      "repository_publication_state": "LOCAL_ONLY",
+      "deployment_state": "NOT_APPLICABLE",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Measure quote coverage and execution capacity across full US-listed equity population",
+        "Verify memory and compute bounds under Railway 512MB container limits"
+      ],
+      "dependencies": [
+        "ARX-S2-004"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "docs/planning/ENGINEERING_BACKLOG.md",
+        "docs/sprints/SPRINT_2_KICKOFF.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S2-006",
+      "canonical_task_id": "ARX-S2-006",
+      "title": "Governed Build / Publication Tooling & Isolated State Machine",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S2-006",
+      "capability_id": "RADAR_VCP",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "OWNER_HOLD",
+      "owner": "daakara",
+      "priority": "P1",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "IsolatedPublicationStateMachine implemented with immutable digests",
+        "Publication execution strictly gated by Owner authorization"
+      ],
+      "dependencies": [
+        "ARX-S2-004"
+      ],
+      "blocking_decision": "HOLDING_QUEUE_GATE",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        42
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/42",
+        "analyst_dashboard/universe/isolated_publication.py",
+        "docs/reviews/sprint2-convergence/SPRINT2_FINAL_ACCEPTANCE_SAFETY_DELTA.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S2-007",
+      "canonical_task_id": "ARX-S2-007",
+      "title": "Scanner and Radar Membership Integration",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S2-007",
+      "capability_id": "RADAR_VCP",
+      "release_scope": "SPRINT_5",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P1",
+      "status": "READY",
+      "disposition": "SPRINT5_DISCOVERY",
+      "implementation_state": "PARTIAL",
+      "verification_state": "PENDING",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Ensure published membership drives scanner assessment",
+        "Fixed candidate lists do not discard valid out-of-list results"
+      ],
+      "dependencies": [
+        "ARX-S2-006"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        42
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/42",
+        "docs/planning/ENGINEERING_BACKLOG.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S2-008",
+      "canonical_task_id": "ARX-S2-008",
+      "title": "S2-08 Full-Population Assessment Accounting and Telemetry Envelope",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S2-008",
+      "capability_id": "RADAR_VCP",
+      "release_scope": "SPRINT_5",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P1",
+      "status": "READY",
+      "disposition": "SPRINT5_DISCOVERY",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Enforce 6-outcome arithmetic denominator closure across all assessed securities",
+        "Zero synthetic data fabricated",
+        "honest operational telemetry default to NOT_MEASURED"
+      ],
+      "dependencies": [
+        "ARX-S2-007"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        44
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/44",
+        "tests/test_full_population_assessment_accounting.py"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S2-009",
+      "canonical_task_id": "ARX-S2-009",
+      "title": "Radar Coverage Disclosure & Analysis Handoff Alignment",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S2-009",
+      "capability_id": "RADAR_VCP",
+      "release_scope": "SPRINT_5",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P1",
+      "status": "READY",
+      "disposition": "SPRINT5_DISCOVERY",
+      "implementation_state": "PARTIAL",
+      "verification_state": "PENDING",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Disclose coverage, timestamps, and limitations clearly on Radar UI",
+        "Analysis view seamlessly preserves selected evaluation context"
+      ],
+      "dependencies": [
+        "ARX-S2-008"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [
+        61,
+        62
+      ],
+      "github_pr_refs": [
+        42
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/42",
+        "frontend/app/radar/page.tsx"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S2-010",
+      "canonical_task_id": "ARX-S2-010",
+      "title": "Operational Acceptance & Controlled Activation Framework",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S2-010",
+      "capability_id": "GOVERNANCE",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "OWNER_HOLD",
+      "owner": "daakara",
+      "priority": "P1",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "NOT_STARTED",
+      "verification_state": "PENDING",
+      "repository_publication_state": "NOT_APPLICABLE",
+      "deployment_state": "NOT_APPLICABLE",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "Exchange calendar and timezone-aware operational cadence verified",
+        "Controlled activation framework ready for separate owner sign-off"
+      ],
+      "dependencies": [
+        "ARX-S2-009"
+      ],
+      "blocking_decision": "HOLDING_QUEUE_GATE",
+      "github_issue_refs": [],
+      "github_pr_refs": [],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "docs/planning/ENGINEERING_BACKLOG.md",
+        "docs/reviews/sprint2-convergence/SPRINT2_POST_DEPLOYMENT_ACCEPTANCE_PLAN.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S2-011",
+      "canonical_task_id": "ARX-S2-011",
+      "title": "Mobile Research Navigation Dock Accessibility",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S2-011",
+      "capability_id": "UX_WORKSTATION",
+      "release_scope": "SPRINT_3",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P2",
+      "status": "SUPERSEDED",
+      "disposition": "SUPERSEDED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_ACTIVE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Direct mobile navigation dock link to Research with 44px touch target"
+      ],
+      "dependencies": [],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        38
+      ],
+      "commit_refs": [],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/38",
+        "https://github.com/daakara/finance/pull/96",
+        "frontend/components/Navbar.tsx"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S2-012",
+      "canonical_task_id": "ARX-S2-012",
+      "title": "Candlestick Chart Visibility & Container Synchronization",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S2-012",
+      "capability_id": "UX_WORKSTATION",
+      "release_scope": "SPRINT_3",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P0",
+      "status": "SUPERSEDED",
+      "disposition": "SUPERSEDED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_ACTIVE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Eliminate blank candlestick rendering in production and ensure preview proxy parity"
+      ],
+      "dependencies": [],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        40
+      ],
+      "commit_refs": [],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/40",
+        "https://github.com/daakara/finance/pull/86",
+        "https://github.com/daakara/finance/pull/87"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S2-013",
+      "canonical_task_id": "ARX-S2-013",
+      "title": "ARX Sprint 2 Release Candidate 1 Consolidated Integration",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S2-013",
+      "capability_id": "GOVERNANCE",
+      "release_scope": "SPRINT_3",
+      "scope_authorization": "PENDING_RATIFICATION",
+      "owner": "daakara",
+      "priority": "P1",
+      "status": "SUPERSEDED",
+      "disposition": "SUPERSEDED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_APPLICABLE",
+      "governance_state": "NOT_GRANTED",
+      "acceptance_criteria": [
+        "Consolidated integration of PRs #40, #42, #44 for nonproduction CI testing"
+      ],
+      "dependencies": [],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        47
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/47"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S2-014",
+      "canonical_task_id": "ARX-S2-014",
+      "title": "Evidence-Led Opportunity Discovery Pilot Cycle 1 (Issue #43)",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S2-014",
+      "capability_id": "RESEARCH_VALUATION",
+      "release_scope": "SPRINT_2",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "ARX_CORE_TEAM",
+      "priority": "P2",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "NOT_APPLICABLE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Codify ARX-DECISION-RESEARCH-PROCESS-V1",
+        "Evaluate discovery pilot across 6 Quality Watch symbols"
+      ],
+      "dependencies": [],
+      "blocking_decision": null,
+      "github_issue_refs": [
+        43
+      ],
+      "github_pr_refs": [
+        45
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/45",
+        "https://github.com/daakara/finance/issues/43",
+        "docs/research/DECISION_FOCUSED_RESEARCH_PROCESS.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S2-015",
+      "canonical_task_id": "ARX-S2-015",
+      "title": "Evidence-Led Opportunity Discovery Cycle 2 (14 Candidates)",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S2-015",
+      "capability_id": "RESEARCH_VALUATION",
+      "release_scope": "SPRINT_2",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "ARX_CORE_TEAM",
+      "priority": "P2",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "NOT_APPLICABLE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Execute 2 discovery routes (operating change vs structural change) across 14 operating companies",
+        "Adopt research dossiers into mainline via PR #46"
+      ],
+      "dependencies": [
+        "ARX-S2-014"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        46
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/46"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S2-016",
+      "canonical_task_id": "ARX-S2-016",
+      "title": "Candidate Priority Reassessment After Discovery Cycle 2",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S2-016",
+      "capability_id": "RESEARCH_VALUATION",
+      "release_scope": "SPRINT_2",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "ARX_CORE_TEAM",
+      "priority": "P2",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "NOT_APPLICABLE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Reconcile TMDX and ETN research queues against Form 10-K and 10-Q filings",
+        "Codify 4-dimensional priority framework across 14 candidates"
+      ],
+      "dependencies": [
+        "ARX-S2-015"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        48
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/48"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S3-001",
+      "canonical_task_id": "ARX-S3-001",
+      "title": "Test Issue Permission Check (Issue #58)",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S3-001",
+      "capability_id": "GOVERNANCE",
+      "release_scope": "SPRINT_3",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P3",
+      "status": "COMPLETED",
+      "disposition": "TEST_OR_ADMINISTRATIVE",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "NOT_APPLICABLE",
+      "deployment_state": "NOT_APPLICABLE",
+      "operational_state": "NOT_APPLICABLE",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Administrative token permission verification probe"
+      ],
+      "dependencies": [],
+      "blocking_decision": null,
+      "github_issue_refs": [
+        58
+      ],
+      "github_pr_refs": [],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/58"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "TEST_OR_ADMINISTRATIVE",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S3-002",
+      "canonical_task_id": "ARX-S3-002",
+      "title": "Sprint 3 Initiative Test (Issue #59)",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S3-002",
+      "capability_id": "GOVERNANCE",
+      "release_scope": "SPRINT_3",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P3",
+      "status": "COMPLETED",
+      "disposition": "TEST_OR_ADMINISTRATIVE",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "NOT_APPLICABLE",
+      "deployment_state": "NOT_APPLICABLE",
+      "operational_state": "NOT_APPLICABLE",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Administrative test issue tracking format verification"
+      ],
+      "dependencies": [],
+      "blocking_decision": null,
+      "github_issue_refs": [
+        59
+      ],
+      "github_pr_refs": [],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/59"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "TEST_OR_ADMINISTRATIVE",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S3-003",
+      "canonical_task_id": "ARX-S3-003",
+      "title": "Corporate Events RC5: Quarterly Earnings Risk Integration & Telemetry",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S3-003",
+      "capability_id": "CORPORATE_EVENTS",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "OWNER_HOLD",
+      "owner": "daakara",
+      "priority": "P1",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_DORMANT",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "RC5 earnings risk calculation and temporal guards merged in PR #53",
+        "Telemetry persistence implemented in PR #79",
+        "Operational live telemetry activation strictly held pending owner authorization"
+      ],
+      "dependencies": [],
+      "blocking_decision": "HOLDING_QUEUE_GATE",
+      "github_issue_refs": [
+        60
+      ],
+      "github_pr_refs": [
+        53,
+        79
+      ],
+      "commit_refs": [],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/60",
+        "https://github.com/daakara/finance/pull/53",
+        "https://github.com/daakara/finance/pull/79"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S3-004",
+      "canonical_task_id": "ARX-S3-004",
+      "title": "Radar Reliability: Fail-Closed Error-versus-Zero Semantics & UI Retry",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S3-004",
+      "capability_id": "RADAR_VCP",
+      "release_scope": "SPRINT_5",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P0",
+      "status": "READY",
+      "disposition": "SPRINT5_EXECUTION",
+      "implementation_state": "PARTIAL",
+      "verification_state": "PASS",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_APPLICABLE",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Missing API connectivity not represented as 0 qualifying candidates",
+        "Explicit UI error states, retry affordances, and zero-count distinction"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [
+        61
+      ],
+      "github_pr_refs": [
+        98
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/61",
+        "https://github.com/daakara/finance/pull/98",
+        "frontend/app/radar/page.tsx"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S3-005",
+      "canonical_task_id": "ARX-S3-005",
+      "title": "Radar Candidate Truth: Eligibility Contracts, False Affordances & Date Provenance",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S3-005",
+      "capability_id": "RADAR_VCP",
+      "release_scope": "SPRINT_5",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P1",
+      "status": "READY",
+      "disposition": "SPRINT5_EXECUTION",
+      "implementation_state": "PARTIAL",
+      "verification_state": "PASS",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_APPLICABLE",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Eliminate false execution affordances on discovery scanner candidates (isActionable=false)",
+        "Transparent price observation dates and candidate eligibility contracts"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [
+        62
+      ],
+      "github_pr_refs": [
+        98
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/62",
+        "https://github.com/daakara/finance/pull/98",
+        "frontend/app/radar/page.tsx"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S3-006",
+      "canonical_task_id": "ARX-S3-006",
+      "title": "Research Workstation: Decision-First Layout Rollout (Quality Watch Collection)",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S3-006",
+      "capability_id": "UX_WORKSTATION",
+      "release_scope": "SPRINT_5",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P1",
+      "status": "READY",
+      "disposition": "SPRINT5_EXECUTION",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_APPLICABLE",
+      "governance_state": "OWNER_AUTHORIZED_SPRINT5_RESEARCH",
+      "acceptance_criteria": [
+        "Decision-first layout rollout across FIX, DUOL, ULTA, MEDP, ISRG, DECK",
+        "Four-pillar confluence and inline preflight readiness bar unified in UX"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [
+        63
+      ],
+      "github_pr_refs": [
+        86,
+        98
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/63",
+        "https://github.com/daakara/finance/pull/86",
+        "https://github.com/daakara/finance/pull/98",
+        "Product Owner Decision 2 (Directive 058) affirmed owner authorization for exploratory research in Sprint 5"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S3-007",
+      "canonical_task_id": "ARX-S3-007",
+      "title": "Scanner Safety: VCP History-Boundary Containment & Operational Repair",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S3-007",
+      "capability_id": "RADAR_VCP",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "OWNER_HOLD",
+      "owner": "daakara",
+      "priority": "P0",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_DORMANT",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "Causal segmentation and frozen replay fixtures merged in PR #76",
+        "Scanner activation and live enrollment remain strictly held (G-VCP-012)"
+      ],
+      "dependencies": [],
+      "blocking_decision": "HOLDING_QUEUE_GATE",
+      "github_issue_refs": [
+        64
+      ],
+      "github_pr_refs": [
+        73,
+        76
+      ],
+      "commit_refs": [],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/64",
+        "https://github.com/daakara/finance/pull/76",
+        "https://github.com/daakara/finance/pull/73"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S3-008",
+      "canonical_task_id": "ARX-S3-008",
+      "title": "Research Supply-Chain: External Research Evidence Custody & Sigstore Verification",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S3-008",
+      "capability_id": "RESEARCH_CUSTODY",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "OWNER_HOLD",
+      "owner": "daakara",
+      "priority": "P2",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "INSTR-001 evidence custody and synthetic observer validation drafted in PR #75",
+        "External custody activation held until owner ratification"
+      ],
+      "dependencies": [],
+      "blocking_decision": "HOLDING_QUEUE_GATE",
+      "github_issue_refs": [
+        65
+      ],
+      "github_pr_refs": [
+        75
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/65",
+        "https://github.com/daakara/finance/pull/75"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S3-009",
+      "canonical_task_id": "ARX-S3-009",
+      "title": "UX Governance: Human Pilot P00 & Frozen Prototype Local Access",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S3-009",
+      "capability_id": "UX_WORKSTATION",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "OWNER_HOLD",
+      "owner": "daakara",
+      "priority": "P2",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "Local-only prototype harness for participant research P00",
+        "Live human participant evaluation held until owner authorizes"
+      ],
+      "dependencies": [],
+      "blocking_decision": "HOLDING_QUEUE_GATE",
+      "github_issue_refs": [
+        66
+      ],
+      "github_pr_refs": [
+        75
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/66",
+        "https://github.com/daakara/finance/pull/75"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S3-010",
+      "canonical_task_id": "ARX-S3-010",
+      "title": "Evidence Quality Audit: Pre-Flight Disclosures & Smart Money Truthfulness",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S3-010",
+      "capability_id": "SMART_MONEY",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P0",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_DORMANT",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Preflight fail-closed execution clearance merged in PR #87 and PR #89",
+        "Smart Money Phase 1 dormant readiness merged in PR #100",
+        "Statutory reporting lag disclosures from PR #72 integrated"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [
+        67
+      ],
+      "github_pr_refs": [
+        72,
+        87,
+        100
+      ],
+      "commit_refs": [],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/67",
+        "https://github.com/daakara/finance/pull/72",
+        "https://github.com/daakara/finance/commit/eeeb545fa3257dd01b8ac058ae586432613ec37d",
+        "https://github.com/daakara/finance/pull/87",
+        "https://github.com/daakara/finance/pull/100"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S3-011",
+      "canonical_task_id": "ARX-S3-011",
+      "title": "Research Closure: Air Lease Corporation (ALC) Analysis & Valuation Reproduction",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S3-011",
+      "capability_id": "RESEARCH_VALUATION",
+      "release_scope": "SPRINT_3",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P2",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "LOCAL_ONLY",
+      "deployment_state": "NOT_APPLICABLE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Reproduce ALC valuation and XIRR under conservative economic assumptions",
+        "Certify research record and update institutional dossier"
+      ],
+      "dependencies": [],
+      "blocking_decision": null,
+      "github_issue_refs": [
+        68
+      ],
+      "github_pr_refs": [],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/68",
+        "ARX_ALC_FINAL_CERTIFICATION_DECISION_V3.md",
+        "ARX_ALC_VALUATION_REPRODUCTION_AUDIT.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S3-012",
+      "canonical_task_id": "ARX-S3-012",
+      "title": "Research Acceptance: DECK Undervaluation Post-Release & Valuation Parity",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S3-012",
+      "capability_id": "RESEARCH_VALUATION",
+      "release_scope": "SPRINT_3",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P3",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_ACTIVE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Verify post-release valuation parity for Deckers Outdoor (DECK)",
+        "Preserve conservative expectation-gap model and quality watch criteria"
+      ],
+      "dependencies": [],
+      "blocking_decision": null,
+      "github_issue_refs": [
+        69
+      ],
+      "github_pr_refs": [],
+      "commit_refs": [],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/69",
+        "docs/research/evidence_led_discovery/PILOT_EVALUATION_REPORT.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S3-013",
+      "canonical_task_id": "ARX-S3-013",
+      "title": "Implementation Acceptance: Minervini VCP Pattern & Stage Analysis Verification",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S3-013",
+      "capability_id": "RADAR_VCP",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P1",
+      "status": "READY",
+      "disposition": "CLOSED_SPRINT_CONDITIONAL_OPEN_TASK",
+      "implementation_state": "PARTIAL",
+      "verification_state": "PASS",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "DEPLOYED_DORMANT",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Algorithmic verification of 4-stage Minervini trend template and contraction sequence",
+        "Historical replay test fixtures merged in PR #76",
+        "Passive observation universe screening specification ready for Sprint 4"
+      ],
+      "dependencies": [
+        "ARX-S4-RADAR-001"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [
+        70
+      ],
+      "github_pr_refs": [
+        73,
+        76
+      ],
+      "commit_refs": [],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/issues/70",
+        "https://github.com/daakara/finance/pull/73",
+        "https://github.com/daakara/finance/pull/76"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S3-014",
+      "canonical_task_id": "ARX-S3-014",
+      "title": "HVA01 Wave 4B-S Restricted Canonicalization and Schema Remediation",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S3-014",
+      "capability_id": "RESEARCH_CUSTODY",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "OWNER_HOLD",
+      "owner": "daakara",
+      "priority": "P2",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "Wave 4B-S synthetic witness and schema canonicalization drafted in PR #78",
+        "Protocol ratification remains ungranted (HVA00_PROTOCOL_RATIFICATION = NOT_GRANTED)"
+      ],
+      "dependencies": [],
+      "blocking_decision": "HOLDING_QUEUE_GATE",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        78
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/78"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S3-015",
+      "canonical_task_id": "ARX-S3-015",
+      "title": "HVA01 Wave 4C-1 Dual-TSA Timestamp Verification",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S3-015",
+      "capability_id": "RESEARCH_CUSTODY",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "OWNER_HOLD",
+      "owner": "daakara",
+      "priority": "P2",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "Dual-TSA timestamp verification engine drafted in PR #83 (stacked on PR #78)",
+        "Operational timestamp authority held until ratification"
+      ],
+      "dependencies": [
+        "ARX-S3-014"
+      ],
+      "blocking_decision": "HOLDING_QUEUE_GATE",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        83
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/83"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S3-016",
+      "canonical_task_id": "ARX-S3-016",
+      "title": "Synthesis E V3 Application-Wide UX Parity & Decision Hierarchy",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S3-016",
+      "capability_id": "UX_WORKSTATION",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P1",
+      "status": "READY",
+      "disposition": "ENGINEERING_ACCEPTED_AWAITING_RELEASE",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_APPLICABLE",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Comprehensive application-wide UX parity across Radar, Analysis, Trade Plan, Portfolio, Research",
+        "PR #98 clean candidate verified against mainline and ready for final review"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "blocking_decision": "RELEASE_HOLD",
+      "github_issue_refs": [
+        61,
+        62,
+        63
+      ],
+      "github_pr_refs": [
+        98
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/98",
+        "https://github.com/daakara/finance/pull/94",
+        "https://github.com/daakara/finance/pull/96"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-ARX-S3-017",
+      "canonical_task_id": "ARX-S3-017",
+      "title": "Smart Money Phase 1: Operational Readiness, Worker Fencing & Observability",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S3-017",
+      "capability_id": "SMART_MONEY",
+      "release_scope": "SPRINT_3",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "ARX_CORE_TEAM",
+      "priority": "P0",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_DORMANT",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Dormant worker lifecycle and session advisory fencing (pg_try_advisory_lock)",
+        "Disaster recovery runbook with verified rehearsal restore procedures",
+        "Observability metrics and alerts with dormant suppression",
+        "Merged to main via PR #100 commit 4bf9f3b"
+      ],
+      "dependencies": [],
+      "blocking_decision": null,
+      "github_issue_refs": [
+        67
+      ],
+      "github_pr_refs": [
+        100
+      ],
+      "commit_refs": [],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/100",
+        "tests/test_smart_money_worker_lifecycle_and_fencing.py",
+        "docs/governance/sprint3/SMART_MONEY_PHASE1_PRODUCTION_SAFETY_CASE.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-ARX-S4-ARCH-002",
+      "canonical_task_id": "ARX-S4-ARCH-002",
+      "title": "Liquidity Hazard & Canonical Actionability Enforcement (GAP-WS41-003)",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "CANONICAL-ARX-S4-ARCH-002",
+      "capability_id": "ARCHITECTURE",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "daakara",
+      "priority": "P0",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "NOT_APPLICABLE",
+      "operational_state": "NOT_APPLICABLE",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "AC-LIQ-01: Extend DecisionHierarchyEngine.resolve_decision_state() with an optional execution_hazard: bool parameter (defaulting to False when evidence is unavailable, while enforcing fail-closed actionability).",
+        "AC-LIQ-02: Enforce Precedence in DecisionHierarchyEngine: If execution_hazard is True, the setup MUST be disqualified from ACTIONABLE_SETUP, setting state=VALID_SETUP, isActionable=False, canSizeTrade=False, label='Valid Setup \u2014 Liquidity Hazard', and allowedActions=['ADD_WATCHLIST', 'RESEARCH_PROFILE'].",
+        "AC-LIQ-03: Set disqualificationReason to explicit liquidity warning: 'Trade execution suppressed: Severe liquidity hazard detected (ADV / slippage friction exceeds safety threshold).'",
+        "AC-LIQ-04: Wire execution_hazard from OptimalExecutionEngine raw_plan['liquidity_defense']['execution_hazard'] into api/routes/analytics.py, api/routes/screener.py, and DecisionTraceEngine.",
+        "AC-LIQ-05: Preserve F_10 governance invariant: Missing liquidity evidence (UNAVAILABLE/UNKNOWN) must fail closed without synthesizing fictitious zero-hazard fallbacks.",
+        "AC-LIQ-06: Strict separation invariant: STOPPED_OUT price-floor invalidation and execution_hazard liquidity friction must remain distinct, non-conflated precedence branches."
+      ],
+      "dependencies": [
+        "ARX-S4-ARCH-001",
+        "ARX-S4-GOV-001"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        105,
+        107
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "analyst_dashboard/analyzers/liquidity_guard.py",
+        "analyst_dashboard/analyzers/optimal_execution.py",
+        "analyst_dashboard/analyzers/decision_hierarchy.py",
+        "tests/test_optimal_execution.py",
+        "tests/test_cross_engine_coherence.py",
+        "tests/test_liquidity_actionability_coherence.py",
+        "https://github.com/daakara/finance/pull/105",
+        "https://github.com/daakara/finance/pull/107"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "CLOSED_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-DEF-056-001",
+      "canonical_task_id": "ARX-S3-010",
+      "title": "Confluence narrative truthfulness when Smart Money is unavailable",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Directive 056 / 057",
+      "source_finding_id": "DEF-056-001",
+      "capability_id": "CONFLUENCE_DISCLOSURE",
+      "release_scope": "PRE_SPRINT5_MANDATORY_CLOSURE",
+      "scope_authorization": "CONDITIONALLY_PREAPPROVED",
+      "owner": "Backend & Sizing Lead",
+      "priority": "P0",
+      "status": "COMPLETED",
+      "disposition": "RELEASE_HELD",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "RELEASE_HELD",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "PENDING_RELEASE",
+      "acceptance_criteria": [
+        "Omit Smart Money from bottomLine synchronization claim when Smart Money regulatory feeds are unavailable or held",
+        "Emit HIGH-CONVICTION MULTI-FACTOR ALIGNMENT when 3 positive pillars align without claiming institutional alignment",
+        "Pass all 10 Confluence edge cases in test_directive_057_remediation.py"
+      ],
+      "dependencies": [
+        "ARX-S3-010",
+        "ARX-S4-ARCH-001"
+      ],
+      "blocking_decision": "BLK-057-001; BLK-057-002",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        118
+      ],
+      "commit_refs": [
+        "09064ef05f973b577a79f0a33cf95a4a0bb94051",
+        "f1c7def39546076e98c506732b67e1ecdbfccfcf"
+      ],
+      "deployment_refs": [
+        "Railway:d1f8cf37 (PRODUCTION_HELD - unpromoted)",
+        "Cloudflare:page-0261ba03d5dae7ff (UNPROMOTED)"
+      ],
+      "evidence_refs": [
+        "ARX_056_CONFLUENCE_EVIDENCE_SEMANTICS.md",
+        "ARX_057_CONFLUENCE_TRUTHFULNESS_VERIFICATION.md",
+        "PR #118 squash merged to mainline: 09064ef05f973b577a79f0a33cf95a4a0bb94051",
+        "Mainline Hosted CI passed: all 4 checks completed/success"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "MAINLINE_VERIFIED_RELEASE_HELD",
+      "closure_timestamp": "2026-10-27T20:20:00Z",
+      "closure_authority": "Release Authority & Owner",
+      "engineering_remediation_state": "VERIFIED",
+      "mainline_integration_state": "MERGED_VERIFIED",
+      "production_acceptance_state": "RELEASE_HELD"
+    },
+    {
+      "obligation_id": "OBL-DEF-056-002",
+      "canonical_task_id": "ARX-S4-ARCH-002",
+      "title": "Backend position sizing risk-budget floor math max(0, floor(...))",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Directive 056 / 057",
+      "source_finding_id": "DEF-056-002",
+      "capability_id": "POSITION_SIZING",
+      "release_scope": "PRE_SPRINT5_MANDATORY_CLOSURE",
+      "scope_authorization": "CONDITIONALLY_PREAPPROVED",
+      "owner": "Backend & Sizing Lead",
+      "priority": "P0",
+      "status": "COMPLETED",
+      "disposition": "RELEASE_HELD",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "RELEASE_HELD",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "PENDING_RELEASE",
+      "acceptance_criteria": [
+        "Strictly enforce max(0, math.floor(maxDollarRisk / riskPerShare))",
+        "Return 0 shares, $0 actual risk, and isExecutable: False when risk budget is sub-1-share",
+        "Pass boundary fixtures R2-A through R2-I in test_directive_057_remediation.py"
+      ],
+      "dependencies": [
+        "ARX-S4-ARCH-002"
+      ],
+      "blocking_decision": "BLK-057-001; BLK-057-002",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        118
+      ],
+      "commit_refs": [
+        "09064ef05f973b577a79f0a33cf95a4a0bb94051",
+        "f1c7def39546076e98c506732b67e1ecdbfccfcf"
+      ],
+      "deployment_refs": [
+        "Railway:d1f8cf37 (PRODUCTION_HELD - unpromoted)",
+        "Cloudflare:page-0261ba03d5dae7ff (UNPROMOTED)"
+      ],
+      "evidence_refs": [
+        "ARX_056_PRODUCT_AND_RISK_AUTHORITY_CONTRACT.md",
+        "ARX_057_POSITION_SIZING_INTEGRITY.md",
+        "PR #118 squash merged to mainline: 09064ef05f973b577a79f0a33cf95a4a0bb94051",
+        "Mainline Hosted CI passed: all 4 checks completed/success"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "MAINLINE_VERIFIED_RELEASE_HELD",
+      "closure_timestamp": "2026-10-27T20:20:00Z",
+      "closure_authority": "Release Authority & Owner",
+      "engineering_remediation_state": "VERIFIED",
+      "mainline_integration_state": "MERGED_VERIFIED",
+      "production_acceptance_state": "RELEASE_HELD"
+    },
+    {
+      "obligation_id": "OBL-DEF-056-003",
+      "canonical_task_id": "ARX-S4-ARCH-002",
+      "title": "Modeled stop-distance risk disclosure qualification across sizing surfaces",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Directive 056 / 057",
+      "source_finding_id": "DEF-056-003",
+      "capability_id": "POSITION_SIZING_UI",
+      "release_scope": "PRE_SPRINT5_MANDATORY_CLOSURE",
+      "scope_authorization": "CONDITIONALLY_PREAPPROVED",
+      "owner": "Frontend Lead",
+      "priority": "P1",
+      "status": "COMPLETED",
+      "disposition": "RELEASE_HELD",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "RELEASE_HELD",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "PENDING_RELEASE",
+      "acceptance_criteria": [
+        "Replace HARD MAX LOSS label with MODELED STOP RISK (excl. gaps)",
+        "Disclose that actual realized loss may exceed modeled amount due to price gaps or slippage",
+        "Pass DayTraderPositionSizer, PositionSizerModal, and governorSizingEngine tests"
+      ],
+      "dependencies": [
+        "ARX-S4-ARCH-002"
+      ],
+      "blocking_decision": "BLK-057-001; BLK-057-002",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        118
+      ],
+      "commit_refs": [
+        "09064ef05f973b577a79f0a33cf95a4a0bb94051",
+        "f1c7def39546076e98c506732b67e1ecdbfccfcf"
+      ],
+      "deployment_refs": [
+        "Railway:d1f8cf37 (PRODUCTION_HELD - unpromoted)",
+        "Cloudflare:page-0261ba03d5dae7ff (UNPROMOTED)"
+      ],
+      "evidence_refs": [
+        "ARX_056_PRODUCT_AND_RISK_AUTHORITY_CONTRACT.md",
+        "ARX_057_RISK_DISCLOSURE_ACCEPTANCE.md",
+        "PR #118 squash merged to mainline: 09064ef05f973b577a79f0a33cf95a4a0bb94051",
+        "Mainline Hosted CI passed: all 4 checks completed/success"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "MAINLINE_VERIFIED_RELEASE_HELD",
+      "closure_timestamp": "2026-10-27T20:20:00Z",
+      "closure_authority": "Release Authority & Owner",
+      "engineering_remediation_state": "VERIFIED",
+      "mainline_integration_state": "MERGED_VERIFIED",
+      "production_acceptance_state": "RELEASE_HELD"
+    },
+    {
+      "obligation_id": "OBL-PR-107",
+      "canonical_task_id": "ARX-S4-GOV-001",
+      "title": "ARX Sprint 4 RC-A Core Foundation & Governance",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-107",
+      "capability_id": "MAINLINE_DELIVERY",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "Engineering Lead",
+      "priority": "P1",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_ACTIVE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Implement and merge ARX Sprint 4 RC-A Core Foundation & Governance into mainline with passing CI"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        107
+      ],
+      "commit_refs": [
+        "de5d246"
+      ],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "PR #107 Merge Receipt"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "MERGED_AND_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-PR-110",
+      "canonical_task_id": "ARX-S4-RADAR-001",
+      "title": "Scanner Status & Coverage Metadata Contract",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-110",
+      "capability_id": "MAINLINE_DELIVERY",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "Engineering Lead",
+      "priority": "P1",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_ACTIVE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Implement and merge Scanner Status & Coverage Metadata Contract into mainline with passing CI"
+      ],
+      "dependencies": [
+        "ARX-S4-RADAR-001"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        110
+      ],
+      "commit_refs": [
+        "4e0979e"
+      ],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "PR #110 Merge Receipt"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "MERGED_AND_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-PR-111",
+      "canonical_task_id": "ARX-S4-GOV-001",
+      "title": "Formal Sprint 4 Administrative Closure",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-111",
+      "capability_id": "MAINLINE_DELIVERY",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "Engineering Lead",
+      "priority": "P1",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "NOT_APPLICABLE",
+      "operational_state": "NOT_APPLICABLE",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Implement and merge Formal Sprint 4 Administrative Closure into mainline with passing CI"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        111
+      ],
+      "commit_refs": [
+        "4a44325"
+      ],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "PR #111 Merge Receipt"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "MERGED_AND_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-PR-112",
+      "canonical_task_id": "ARX-S3-004",
+      "title": "Invalidate Stale Radar Asset Selection on Search Intent Change",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-112",
+      "capability_id": "MAINLINE_DELIVERY",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "Engineering Lead",
+      "priority": "P1",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_ACTIVE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Implement and merge Invalidate Stale Radar Asset Selection on Search Intent Change into mainline with passing CI"
+      ],
+      "dependencies": [
+        "ARX-S3-004"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        112
+      ],
+      "commit_refs": [
+        "7f27ae1"
+      ],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "PR #112 Merge Receipt"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "MERGED_AND_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-PR-113",
+      "canonical_task_id": "ARX-S3-010",
+      "title": "Pre-Flight Macro VIX Authority & Catalyst Parity (Directive 048)",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-113",
+      "capability_id": "MAINLINE_DELIVERY",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "Engineering Lead",
+      "priority": "P0",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_ACTIVE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Implement and merge Pre-Flight Macro VIX Authority & Catalyst Parity (Directive 048) into mainline with passing CI"
+      ],
+      "dependencies": [
+        "ARX-S3-010"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        113
+      ],
+      "commit_refs": [
+        "2e3fa18"
+      ],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "PR #113 Merge Receipt"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "MERGED_AND_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-PR-114",
+      "canonical_task_id": "ARX-S2-012",
+      "title": "Cross-Mode Candlestick Integrity Initial (Directive 049 Initial)",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-114",
+      "capability_id": "MAINLINE_DELIVERY",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "Engineering Lead",
+      "priority": "P0",
+      "status": "SUPERSEDED",
+      "disposition": "SUPERSEDED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "NOT_APPLICABLE",
+      "operational_state": "NOT_APPLICABLE",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Implement and merge Cross-Mode Candlestick Integrity Initial (Directive 049 Initial) into mainline with passing CI"
+      ],
+      "dependencies": [
+        "ARX-S2-012"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        114
+      ],
+      "commit_refs": [
+        "856170c"
+      ],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "PR #114 Merge Receipt"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "MERGED_AND_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-PR-115",
+      "canonical_task_id": "ARX-S2-012",
+      "title": "Lightweight Charts Multi-Timeframe Candlestick Engine (Directive 049B)",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-115",
+      "capability_id": "MAINLINE_DELIVERY",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "Engineering Lead",
+      "priority": "P0",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_ACTIVE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Implement and merge Lightweight Charts Multi-Timeframe Candlestick Engine (Directive 049B) into mainline with passing CI"
+      ],
+      "dependencies": [
+        "ARX-S2-012"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        115
+      ],
+      "commit_refs": [
+        "92b2fb0"
+      ],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "PR #115 Merge Receipt"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "MERGED_AND_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-PR-116",
+      "canonical_task_id": "ARX-S3-016",
+      "title": "Cross-Mode Decision Parity & Layout Harmonization (Directive 051)",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-116",
+      "capability_id": "MAINLINE_DELIVERY",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "Engineering Lead",
+      "priority": "P1",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_ACTIVE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Implement and merge Cross-Mode Decision Parity & Layout Harmonization (Directive 051) into mainline with passing CI"
+      ],
+      "dependencies": [
+        "ARX-S3-016"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        116
+      ],
+      "commit_refs": [
+        "f62668c"
+      ],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "PR #116 Merge Receipt"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "MERGED_AND_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-PR-117",
+      "canonical_task_id": "ARX-S3-010",
+      "title": "Smart Money Truthfulness, Disclosures & Exchange Metadata (Directive 053)",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-117",
+      "capability_id": "MAINLINE_DELIVERY",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "Engineering Lead",
+      "priority": "P0",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_ACTIVE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Implement and merge Smart Money Truthfulness, Disclosures & Exchange Metadata (Directive 053) into mainline with passing CI"
+      ],
+      "dependencies": [
+        "ARX-S3-010"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        117
+      ],
+      "commit_refs": [
+        "6d4020c"
+      ],
+      "deployment_refs": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "PR #117 Merge Receipt"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "MERGED_AND_VERIFIED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-PR-109",
+      "canonical_task_id": "ARX-S4-GOV-001",
+      "title": "Sprint Control System (SCS-v1) and action tracker implementation",
+      "origin_sprint": "SPRINT_5",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-109",
+      "capability_id": "OPEN_PR_DISCOVERY",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "HOLD",
+      "owner": "Assigned PR Author",
+      "priority": "P0",
+      "status": "READY",
+      "disposition": "SPRINT5_DISCOVERY",
+      "implementation_state": "PARTIAL",
+      "verification_state": "PENDING",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "Review PR #109 against canonical parent ARX-S4-GOV-001"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "blocking_decision": "OWNER_REVIEW_PR_109",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        109
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "GitHub PR #109"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-PR-103",
+      "canonical_task_id": "ARX-S4-GOV-001",
+      "title": "Backlog integrity test 21 git ambient isolation",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-103",
+      "capability_id": "OPEN_PR_DISCOVERY",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "NOT_GRANTED",
+      "owner": "Assigned PR Author",
+      "priority": "P2",
+      "status": "COMPLETED",
+      "disposition": "TEST_OR_ADMINISTRATIVE",
+      "implementation_state": "PARTIAL",
+      "verification_state": "PENDING",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "PENDING_REVIEW",
+      "acceptance_criteria": [
+        "Review PR #103 against canonical parent ARX-S4-GOV-001"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "blocking_decision": "OWNER_REVIEW_PR_103",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        103
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "GitHub PR #103"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-PR-083",
+      "canonical_task_id": "ARX-S3-015",
+      "title": "HVA Wave 4C-1 dual-TSA timestamp verification draft",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-83",
+      "capability_id": "OPEN_PR_DISCOVERY",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "HOLD",
+      "owner": "Assigned PR Author",
+      "priority": "P2",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "PARTIAL",
+      "verification_state": "PENDING",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "Review PR #83 against canonical parent ARX-S3-015"
+      ],
+      "dependencies": [
+        "ARX-S3-015"
+      ],
+      "blocking_decision": "OWNER_REVIEW_PR_83",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        83
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "GitHub PR #83"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-PR-078",
+      "canonical_task_id": "ARX-S3-014",
+      "title": "HVA Wave 4B-S restricted canonicalization draft",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-78",
+      "capability_id": "OPEN_PR_DISCOVERY",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "HOLD",
+      "owner": "Assigned PR Author",
+      "priority": "P2",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "PARTIAL",
+      "verification_state": "PENDING",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "Review PR #78 against canonical parent ARX-S3-014"
+      ],
+      "dependencies": [
+        "ARX-S3-014"
+      ],
+      "blocking_decision": "OWNER_REVIEW_PR_78",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        78
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "GitHub PR #78"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-PR-075",
+      "canonical_task_id": "ARX-S3-008",
+      "title": "INSTR-001 research evidence custody and synthetic observer draft",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-75",
+      "capability_id": "OPEN_PR_DISCOVERY",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "HOLD",
+      "owner": "Assigned PR Author",
+      "priority": "P2",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "PARTIAL",
+      "verification_state": "PENDING",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "Review PR #75 against canonical parent ARX-S3-008"
+      ],
+      "dependencies": [
+        "ARX-S3-008"
+      ],
+      "blocking_decision": "OWNER_REVIEW_PR_75",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        75
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "GitHub PR #75"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-PR-073",
+      "canonical_task_id": "ARX-S3-007",
+      "title": "Canonical Minervini VCP universe screening activation draft",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-73",
+      "capability_id": "OPEN_PR_DISCOVERY",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "HOLD",
+      "owner": "Assigned PR Author",
+      "priority": "P1",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "PARTIAL",
+      "verification_state": "PENDING",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "Review PR #73 against canonical parent ARX-S3-007"
+      ],
+      "dependencies": [
+        "ARX-S3-007"
+      ],
+      "blocking_decision": "OWNER_REVIEW_PR_73",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        73
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "GitHub PR #73"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-PR-044",
+      "canonical_task_id": "ARX-S2-008",
+      "title": "S2-08 full-population assessment telemetry envelope draft",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-44",
+      "capability_id": "OPEN_PR_DISCOVERY",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "HOLD",
+      "owner": "Assigned PR Author",
+      "priority": "P2",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "PARTIAL",
+      "verification_state": "PENDING",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "Review PR #44 against canonical parent ARX-S2-008"
+      ],
+      "dependencies": [
+        "ARX-S2-008"
+      ],
+      "blocking_decision": "OWNER_REVIEW_PR_44",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        44
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "GitHub PR #44"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-PR-042",
+      "canonical_task_id": "ARX-S2-006",
+      "title": "Governed publication, scanner membership, and truthful Radar disclosure draft",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-42",
+      "capability_id": "OPEN_PR_DISCOVERY",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "HOLD",
+      "owner": "Assigned PR Author",
+      "priority": "P1",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "PARTIAL",
+      "verification_state": "PENDING",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "Review PR #42 against canonical parent ARX-S2-006"
+      ],
+      "dependencies": [
+        "ARX-S2-006"
+      ],
+      "blocking_decision": "OWNER_REVIEW_PR_42",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        42
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "GitHub PR #42"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": null
+    },
+    {
+      "obligation_id": "OBL-PR-047",
+      "canonical_task_id": "ARX-S2-013",
+      "title": "Sprint 2 RC1 preparation draft",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-47",
+      "capability_id": "OPEN_PR_DISCOVERY",
+      "release_scope": "SPRINT_3",
+      "scope_authorization": "NOT_GRANTED",
+      "owner": "Assigned PR Author",
+      "priority": "P2",
+      "status": "SUPERSEDED",
+      "disposition": "SUPERSEDED",
+      "implementation_state": "NOT_APPLICABLE",
+      "verification_state": "NOT_APPLICABLE",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "PENDING_REVIEW",
+      "acceptance_criteria": [
+        "Review PR #47 against canonical parent ARX-S2-013"
+      ],
+      "dependencies": [
+        "ARX-S2-013"
+      ],
+      "blocking_decision": "OWNER_REVIEW_PR_47",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        47
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "GitHub PR #47"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "SUPERSEDED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-PR-040",
+      "canonical_task_id": "ARX-S2-012",
+      "title": "Production candlestick visibility and Render warmup draft",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-40",
+      "capability_id": "OPEN_PR_DISCOVERY",
+      "release_scope": "SPRINT_3",
+      "scope_authorization": "NOT_GRANTED",
+      "owner": "Assigned PR Author",
+      "priority": "P2",
+      "status": "SUPERSEDED",
+      "disposition": "SUPERSEDED",
+      "implementation_state": "NOT_APPLICABLE",
+      "verification_state": "NOT_APPLICABLE",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "PENDING_REVIEW",
+      "acceptance_criteria": [
+        "Review PR #40 against canonical parent ARX-S2-012"
+      ],
+      "dependencies": [
+        "ARX-S2-012"
+      ],
+      "blocking_decision": "OWNER_REVIEW_PR_40",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        40
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "GitHub PR #40"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "SUPERSEDED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-PR-038",
+      "canonical_task_id": "ARX-S2-011",
+      "title": "Mobile research discoverability navigation dock draft",
+      "origin_sprint": "SPRINT_2",
+      "source_directive": "Source Control Inventory",
+      "source_finding_id": "PR-38",
+      "capability_id": "OPEN_PR_DISCOVERY",
+      "release_scope": "SPRINT_3",
+      "scope_authorization": "NOT_GRANTED",
+      "owner": "Assigned PR Author",
+      "priority": "P2",
+      "status": "SUPERSEDED",
+      "disposition": "SUPERSEDED",
+      "implementation_state": "NOT_APPLICABLE",
+      "verification_state": "NOT_APPLICABLE",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "PENDING_REVIEW",
+      "acceptance_criteria": [
+        "Review PR #38 against canonical parent ARX-S2-011"
+      ],
+      "dependencies": [
+        "ARX-S2-011"
+      ],
+      "blocking_decision": "OWNER_REVIEW_PR_38",
+      "github_issue_refs": [],
+      "github_pr_refs": [
+        38
+      ],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "GitHub PR #38"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "SUPERSEDED",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-DEC-SMART-MONEY-001",
+      "canonical_task_id": "ARX-S3-017",
+      "title": "Smart Money daily live worker ingestion and SEC Form 4 egress restriction",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Governance Invariant Fences",
+      "source_finding_id": "SMART_MONEY_INGESTION_FENCE",
+      "capability_id": "GOVERNANCE_INVARIANT",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "HOLD",
+      "owner": "Product Owner",
+      "priority": "P0",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "NOT_APPLICABLE",
+      "verification_state": "PENDING",
+      "repository_publication_state": "NOT_APPLICABLE",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "Enforce governance invariant SMART_MONEY_INGESTION_FENCE"
+      ],
+      "dependencies": [
+        "ARX-S3-017"
+      ],
+      "blocking_decision": "SMART_MONEY_INGESTION_FENCE",
+      "github_issue_refs": [],
+      "github_pr_refs": [],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "Directive 058 Section 16"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-DEC-HVA-RATIFICATION-001",
+      "canonical_task_id": "ARX-S3-014",
+      "title": "HVA00 v2.1 method protocol ratification and human evaluator access",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Governance Invariant Fences",
+      "source_finding_id": "HVA_PROTOCOL_RATIFICATION",
+      "capability_id": "GOVERNANCE_INVARIANT",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "HOLD",
+      "owner": "Product Owner",
+      "priority": "P1",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "NOT_APPLICABLE",
+      "verification_state": "PENDING",
+      "repository_publication_state": "NOT_APPLICABLE",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "Enforce governance invariant HVA_PROTOCOL_RATIFICATION"
+      ],
+      "dependencies": [
+        "ARX-S3-014"
+      ],
+      "blocking_decision": "HVA_PROTOCOL_RATIFICATION",
+      "github_issue_refs": [],
+      "github_pr_refs": [],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "Directive 058 Section 16"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-DEC-CUSTODY-001",
+      "canonical_task_id": "ARX-S3-008",
+      "title": "External research custody, Sigstore verification and key ceremony authority",
+      "origin_sprint": "SPRINT_3",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "EXTERNAL_CUSTODY_AUTHORITY",
+      "capability_id": "GOVERNANCE_INVARIANT",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "HOLD",
+      "owner": "Product Owner",
+      "priority": "P1",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "NOT_APPLICABLE",
+      "verification_state": "PENDING",
+      "repository_publication_state": "NOT_APPLICABLE",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "Enforce governance invariant EXTERNAL_CUSTODY_AUTHORITY"
+      ],
+      "dependencies": [
+        "ARX-S3-008"
+      ],
+      "blocking_decision": "EXTERNAL_CUSTODY_AUTHORITY",
+      "github_issue_refs": [],
+      "github_pr_refs": [],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "Directive 058 Section 16"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-DEC-RESEARCH-LEARNING-001",
+      "canonical_task_id": "ARX-S4-GOV-001",
+      "title": "Model tuning, prospective denominator mutation and online learning freeze",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Governance Invariant Fences",
+      "source_finding_id": "MODEL_TUNING_FREEZE",
+      "capability_id": "GOVERNANCE_INVARIANT",
+      "release_scope": "HOLDING_QUEUE_OWNER_GATED",
+      "scope_authorization": "HOLD",
+      "owner": "Product Owner",
+      "priority": "P0",
+      "status": "BLOCKED",
+      "disposition": "SPRINT4_OWNER_GATED",
+      "implementation_state": "NOT_APPLICABLE",
+      "verification_state": "PENDING",
+      "repository_publication_state": "NOT_APPLICABLE",
+      "deployment_state": "NOT_DEPLOYED",
+      "operational_state": "NOT_PERFORMED",
+      "governance_state": "HOLD",
+      "acceptance_criteria": [
+        "Enforce governance invariant MODEL_TUNING_FREEZE"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "blocking_decision": "MODEL_TUNING_FREEZE",
+      "github_issue_refs": [],
+      "github_pr_refs": [],
+      "commit_refs": [],
+      "deployment_refs": [],
+      "evidence_refs": [
+        "Directive 058 Section 16"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": null,
+      "closure_timestamp": null,
+      "closure_authority": "Product Owner"
+    },
+    {
+      "obligation_id": "OBL-DEC-RAILWAY-PROVENANCE-001",
+      "canonical_task_id": "ARX-S4-GOV-001",
+      "title": "Railway source build commit reconciliation (Option R0: 856170c zero backend lag)",
+      "origin_sprint": "SPRINT_4",
+      "source_directive": "Directive 054 V3",
+      "source_finding_id": "RAILWAY_PROVENANCE_RECONCILIATION",
+      "capability_id": "GOVERNANCE_INVARIANT",
+      "release_scope": "SPRINT_4",
+      "scope_authorization": "OWNER_AUTHORIZED",
+      "owner": "Product Owner",
+      "priority": "P1",
+      "status": "COMPLETED",
+      "disposition": "CLOSED_VERIFIED",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
+      "repository_publication_state": "PUBLISHED_MERGED",
+      "deployment_state": "DEPLOYED_ACTIVE",
+      "operational_state": "EXECUTED",
+      "governance_state": "AUTHORIZED",
+      "acceptance_criteria": [
+        "Enforce governance invariant RAILWAY_PROVENANCE_RECONCILIATION"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "blocking_decision": null,
+      "github_issue_refs": [],
+      "github_pr_refs": [],
+      "commit_refs": [],
+      "deployment_refs": [
+        "Railway:d1f8cf37"
+      ],
+      "evidence_refs": [
+        "ARX_055_FINAL_CERTIFICATION_AND_OWNER_DECISION.md"
+      ],
+      "evidence_hashes": {},
+      "superseded_by": null,
+      "closure_decision": "RECONCILED_OPTION_R0",
+      "closure_timestamp": "2026-10-27T19:30:00Z",
+      "closure_authority": "Product Owner"
+    }
+  ],
+  "sprint5_execution_authorized": false,
+  "sprint5_execution_authorization_record": {
+    "authorizer": null,
+    "decision": "BLOCKED_PENDING_OWNER_AUTHORIZATION",
+    "timestamp": null,
+    "decision_reference": null,
+    "governing_directive": "ARX_SPRINT5_AUTHORIZATION_AND_CERTIFICATION_RECOVERY_059",
+    "reason": "OWNER_AUTHORIZATION_EVIDENCE_MISSING",
+    "notes": "Sprint 5 active engineering kickoff remains strictly blocked. Prior agent-generated assertion lacked attributable Product Owner decision record."
+  }
 }

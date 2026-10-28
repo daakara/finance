@@ -1,0 +1,140 @@
+{
+  "manifest_version": "1.1.0",
+  "directive": "ARX_PR120_FINAL_CANDIDATE_AND_TRANSITION_INTEGRITY",
+  "timestamp": "2026-10-27T23:30:00Z",
+  "repository": {
+    "owner": "daakara",
+    "name": "finance",
+    "full_name": "daakara/finance"
+  },
+  "baselines": {
+    "authoritative_mainline_sha": "f1c7def39546076e98c506732b67e1ecdbfccfcf",
+    "authoritative_mainline_tree": "6d480c66b2b479fb8b65b590145453965e0d2f4e",
+    "source_baseline_ci_sha": "66aede852f79f7affbebb58cd641251e7de1aaad",
+    "hosted_ci_run_id": 40586955172,
+    "production_frontend_url": "https://www.arxterminal.com",
+    "production_backend_active_deployment": "d1f8cf37",
+    "railway_gate_c_status": "RELEASE_HELD"
+  },
+  "pull_request": {
+    "number": 120,
+    "url": "https://github.com/daakara/finance/pull/120",
+    "title": "gov(d060): governance recovery candidate, backlog integrity hardening, and cross-audit certification",
+    "state": "open",
+    "draft": true,
+    "mergeable": true,
+    "mergeable_state": "clean",
+    "head_branch": "gov/d058-pre-sprint5-obligation-recovery",
+    "base_branch": "main",
+    "base_sha": "f1c7def39546076e98c506732b67e1ecdbfccfcf"
+  },
+  "lifecycle_and_transition_state": {
+    "active_sprint": "SPRINT_4",
+    "lifecycle_phase": "POST_SPRINT1_4_CLEANUP_AND_TRANSITION",
+    "sprint5_execution_authorized": false,
+    "sprint5_execution_authorization_record": null
+  },
+  "hosted_ci_baseline_evidence": {
+    "run_id": 40586955172,
+    "run_url": "https://github.com/daakara/finance/actions/runs/40586955172",
+    "total_checks": 5,
+    "passed_checks": 5,
+    "failed_checks": 0,
+    "overall_conclusion": "success",
+    "check_runs": [
+      {
+        "id": 122480854626,
+        "name": "Code Quality & Security Linter",
+        "conclusion": "success",
+        "duration_seconds": 38
+      },
+      {
+        "id": 122480854832,
+        "name": "Backend Test Suite (Python 3.11)",
+        "conclusion": "success",
+        "duration_seconds": 238
+      },
+      {
+        "id": 122480855157,
+        "name": "Backend Test Suite (Python 3.12)",
+        "conclusion": "success",
+        "duration_seconds": 270
+      },
+      {
+        "id": 122482067172,
+        "name": "Cloudflare Pages",
+        "conclusion": "success",
+        "duration_seconds": 0
+      },
+      {
+        "id": 122483070511,
+        "name": "Static SSG Export & Integrity Gate",
+        "conclusion": "success",
+        "duration_seconds": 205
+      }
+    ]
+  },
+  "multi_gate_enforcement": {
+    "gate_1_governance_integration": {
+      "command": "python tools/governance/validate_backlog_integrity.py --stage scoped --base-ref origin/main",
+      "verdict": "PASS",
+      "exit_code": 0,
+      "pr_merge_eligible": true
+    },
+    "gate_2a_technical_closure_readiness": {
+      "command": "python tools/governance/validate_backlog_integrity.py --pre-sprint5-readiness",
+      "verdict": "BLOCKED",
+      "exit_code": 1,
+      "blockers_count": 3,
+      "blockers": [
+        "P5-003 [OBL-DEF-056-001]: Mandatory pre-Sprint 5 obligation 'OBL-DEF-056-001' is held from production deployment (status='COMPLETED', disp='RELEASE_HELD', deploy='RELEASE_HELD'). Blocker: BLK-057-001; BLK-057-002",
+        "P5-003 [OBL-DEF-056-002]: Mandatory pre-Sprint 5 obligation 'OBL-DEF-056-002' is held from production deployment (status='COMPLETED', disp='RELEASE_HELD', deploy='RELEASE_HELD'). Blocker: BLK-057-001; BLK-057-002",
+        "P5-003 [OBL-DEF-056-003]: Mandatory pre-Sprint 5 obligation 'OBL-DEF-056-003' is held from production deployment (status='COMPLETED', disp='RELEASE_HELD', deploy='RELEASE_HELD'). Blocker: BLK-057-001; BLK-057-002"
+      ]
+    },
+    "gate_2b_sprint5_execution_permission": {
+      "command": "python tools/governance/validate_backlog_integrity.py --pre-sprint5-closure",
+      "verdict": "BLOCKED",
+      "exit_code": 1,
+      "blockers_count": 4,
+      "blockers": [
+        "P5-003 [OBL-DEF-056-001]: Mandatory pre-Sprint 5 obligation 'OBL-DEF-056-001' is held from production deployment (status='COMPLETED', disp='RELEASE_HELD', deploy='RELEASE_HELD'). Blocker: BLK-057-001; BLK-057-002",
+        "P5-003 [OBL-DEF-056-002]: Mandatory pre-Sprint 5 obligation 'OBL-DEF-056-002' is held from production deployment (status='COMPLETED', disp='RELEASE_HELD', deploy='RELEASE_HELD'). Blocker: BLK-057-001; BLK-057-002",
+        "P5-003 [OBL-DEF-056-003]: Mandatory pre-Sprint 5 obligation 'OBL-DEF-056-003' is held from production deployment (status='COMPLETED', disp='RELEASE_HELD', deploy='RELEASE_HELD'). Blocker: BLK-057-001; BLK-057-002",
+        "P5-010: Sprint 5 execution kickoff is NOT authorized by Product Owner. Execution remains blocked pending affirmative owner gate (reason: OWNER_AUTHORIZATION_EVIDENCE_MISSING)"
+      ]
+    }
+  },
+  "backlog_and_obligations": {
+    "canonical_tasks_count": 43,
+    "registered_obligations_count": 71,
+    "completed_obligations_count": 68,
+    "held_obligations_count": 3,
+    "tripartite_defect_separation": {
+      "DEF-056-001": {
+        "code_status": "VERIFIED",
+        "mainline_status": "MERGED_VERIFIED",
+        "production_status": "RELEASE_HELD"
+      },
+      "DEF-056-002": {
+        "code_status": "VERIFIED",
+        "mainline_status": "MERGED_VERIFIED",
+        "production_status": "RELEASE_HELD"
+      },
+      "DEF-056-003": {
+        "code_status": "VERIFIED",
+        "mainline_status": "MERGED_VERIFIED",
+        "production_status": "RELEASE_HELD"
+      }
+    },
+    "immutable_operational_holds": 11,
+    "automated_unit_tests": {
+      "suite": "tests/test_backlog_integrity_validator.py",
+      "total": 90,
+      "passed": 90,
+      "failed": 0,
+      "duration_seconds": 7.91
+    }
+  },
+  "final_verdict": "READY_FOR_OWNER_MERGE_REVIEW"
+}
