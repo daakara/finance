@@ -25,7 +25,7 @@ export function SharedAssetDeck({
   const hasValidPrice = typeof rawPrice === "number" && !isNaN(rawPrice) && rawPrice > 0;
 
   return (
-    <div className="deck-top border-b border-[#182335] pb-3 space-y-2 font-sans">
+    <div className="deck-top border-b border-[var(--border-subtle)] pb-3 space-y-2 font-sans">
       <div className="symbol-title-group flex flex-wrap items-start justify-between gap-2">
         <div className="space-y-0.5">
           <div className="symbol-row flex items-center gap-2 flex-wrap">
@@ -39,7 +39,7 @@ export function SharedAssetDeck({
             <span
               id="card-exchange"
               data-testid="card-exchange"
-              className="macro-item px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#141c2e] text-slate-400 border border-[#2b3a52]"
+              className="macro-item px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-subtle)]"
             >
               {(() => {
                 const ex = insight.advanced?.exchange || (insight as any)?.exchange;
@@ -51,7 +51,7 @@ export function SharedAssetDeck({
               data-testid="card-status-badge"
               className={`status-badge px-2.5 py-0.5 rounded text-xs font-mono font-bold border ${
                 isStaleTape
-                  ? "badge-neutral bg-slate-900/90 text-slate-300 border-slate-600"
+                  ? "badge-neutral bg-slate-900/90 text-[var(--text-2)] border-slate-600"
                   : isActionable
                   ? "badge-positive bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
                   : "badge-caution bg-amber-950/80 text-amber-300 border-amber-700/80"
@@ -77,7 +77,7 @@ export function SharedAssetDeck({
               </span>
             )}
           </div>
-          <span id="card-name" data-testid="card-name" className="asset-name text-xs text-slate-400 font-sans block">
+          <span id="card-name" data-testid="card-name" className="asset-name text-xs text-[var(--text-2)] font-sans block">
             {insight.companyName || "Asset Overview"}
           </span>
         </div>
@@ -87,10 +87,10 @@ export function SharedAssetDeck({
             data-testid="actionability-badge"
             className={`px-3 py-1 rounded-md text-xs font-mono font-bold border ${
               isStaleTape
-                ? "bg-slate-900/90 text-slate-400 border-slate-700"
+                ? "bg-slate-900/90 text-[var(--text-2)] border-slate-700"
                 : isActionable
                 ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
-                : "bg-slate-900/80 text-slate-400 border-slate-700/80"
+                : "bg-slate-900/80 text-[var(--text-2)] border-slate-700/80"
             }`}
           >
             {isStaleTape
@@ -130,7 +130,7 @@ export function SharedAssetDeck({
         <div
           id="price-subdeck"
           data-testid="price-subdeck"
-          className="price-subdeck flex items-center gap-2 text-[11px] font-mono text-slate-400 flex-wrap"
+          className="price-subdeck flex items-center gap-2 text-[11px] font-mono text-[var(--text-2)] flex-wrap"
           aria-label="Price Authority and Session Metadata"
         >
           <span
@@ -138,8 +138,8 @@ export function SharedAssetDeck({
             data-testid="price-role"
             className={`price-tag px-1.5 py-0.5 rounded font-semibold border ${
               isStaleTape
-                ? "bg-slate-800 text-slate-300 border-slate-600"
-                : "bg-[#141c2e] text-cyan-300 border border-[#2b3a52]"
+                ? "bg-slate-800 text-[var(--text-2)] border-slate-600"
+                : "bg-[var(--surface-2)] text-cyan-300 border border-[var(--border-subtle)]"
             }`}
           >
             {isStaleTape ? "Historical EOD Reference (>4D Lag)" : "Setup Spot Reference"}

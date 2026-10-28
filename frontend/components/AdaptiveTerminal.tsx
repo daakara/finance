@@ -159,7 +159,7 @@ export default function AdaptiveTerminal({
     <div className="w-full space-y-3 font-sans">
       {/* 🧭 Dead-End Recovery Breadcrumb (if navigated from Screener) */}
       {fromGoal && (
-        <div className="flex items-center justify-between bg-[#081322] border border-cyan-800/50 px-3.5 py-2 rounded-xl text-xs font-mono">
+        <div className="flex items-center justify-between bg-[var(--surface-2)] border border-cyan-800/50 px-3.5 py-2 rounded-xl text-xs font-mono">
           <Link
             href={`/screener?goal=${fromGoal}`}
             className="text-cyan-300 hover:text-white font-bold flex items-center gap-1.5 transition-colors"
@@ -167,12 +167,12 @@ export default function AdaptiveTerminal({
             <span>←</span>
             <span>Back to &ldquo;{fromGoal.replace(/_/g, " ").toUpperCase()}&rdquo; Candidates {fromCount ? `(${fromCount} saved)` : ""}</span>
           </Link>
-          <span className="text-xs text-slate-400 hidden sm:inline">Context & Filters Preserved</span>
+          <span className="text-xs text-[var(--text-2)] hidden sm:inline">Context & Filters Preserved</span>
         </div>
       )}
 
       {/* 🛡️ Evidence State Provenance Bar */}
-      <div className="flex items-center justify-end bg-[#080d16] px-3 py-1.5 rounded-xl border border-[#1b2537] text-xs font-mono">
+      <div className="flex items-center justify-end bg-[var(--surface-2)] px-3 py-1.5 rounded-xl border border-[var(--border-subtle)] text-xs font-mono">
         {/* 🛡️ Evidence State Provenance Badge */}
         <div
           title={evidenceBadge.tooltip}
@@ -185,7 +185,7 @@ export default function AdaptiveTerminal({
 
       {/* ⚠️ Ineligible / Limited Evidence Notice */}
       {insight.terminalState.overallEligibility !== "ELIGIBLE" && (
-        <div className="bg-[#181106] border border-amber-800/60 p-2.5 sm:p-3 rounded-xl flex items-start gap-2 sm:gap-2.5 text-xs text-amber-200" role="alert">
+        <div className="bg-[var(--status-caution-bg)] border border-[var(--status-caution-border)] p-2.5 sm:p-3 rounded-xl flex items-start gap-2 sm:gap-2.5 text-xs text-[var(--status-caution)]" role="alert">
           <span className="text-base shrink-0">⚠️</span>
           <div className="space-y-0.5 sm:space-y-1">
             <strong className="font-mono font-bold block text-amber-300">
@@ -193,7 +193,7 @@ export default function AdaptiveTerminal({
                 ? "Insufficient Evidence to Derive Confident Posture"
                 : "Partial Evidence: Reduced Domain Confidence"}
             </strong>
-            <p className="text-slate-300 text-xs font-sans leading-snug sm:leading-relaxed">
+            <p className="text-[var(--text-2)] text-xs font-sans leading-snug sm:leading-relaxed">
               {insight.terminalState.headlineExplanation} Some model inputs (e.g. quarterly SEC filings or options flow) are unavailable. Missing data is treated as unassessed, not negative.
             </p>
           </div>
@@ -241,10 +241,10 @@ export default function AdaptiveTerminal({
       )}
 
       {/* 💼 Contextual Portfolio Refinement (Non-blocking Progressive Disclosure) */}
-      <div className="bg-[#090e17] border border-[#1b2537] rounded-xl p-2.5 text-xs text-slate-400">
+      <div className="bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-xl p-2.5 text-xs text-[var(--text-2)]">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-slate-300 font-medium">Portfolio Relationship:</span>
+            <span className="text-[var(--text-2)] font-medium">Portfolio Relationship:</span>
             <span className="font-mono font-semibold text-cyan-300">
               {ownership === "OWNED" ? "💼 Currently Owned" : ownership === "NOT_OWNED" ? "🔍 Researching / Considering" : "Unspecified"}
             </span>
@@ -256,7 +256,7 @@ export default function AdaptiveTerminal({
               className={`min-h-[44px] sm:min-h-[32px] px-2.5 py-1 rounded-lg font-mono text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center ${
                 ownership === "NOT_OWNED"
                   ? "bg-cyan-950 text-cyan-300 border border-cyan-700"
-                  : "bg-[#111722] hover:bg-[#182232] text-slate-400 border border-[#223147]"
+                  : "bg-[var(--surface-2)] hover:bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-subtle)]"
               }`}
             >
               Considering
@@ -267,7 +267,7 @@ export default function AdaptiveTerminal({
               className={`min-h-[44px] sm:min-h-[32px] px-2.5 py-1 rounded-lg font-mono text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center ${
                 ownership === "OWNED"
                   ? "bg-emerald-950 text-emerald-300 border border-emerald-700"
-                  : "bg-[#111722] hover:bg-[#182232] text-slate-400 border border-[#223147]"
+                  : "bg-[var(--surface-2)] hover:bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-subtle)]"
               }`}
             >
               I Own It
@@ -276,7 +276,7 @@ export default function AdaptiveTerminal({
               <button
                 type="button"
                 onClick={() => handleSetOwnership("UNKNOWN")}
-                className="min-h-[44px] sm:min-h-[32px] px-2 py-1 text-slate-500 hover:text-slate-300 text-xs cursor-pointer flex items-center justify-center"
+                className="min-h-[44px] sm:min-h-[32px] px-2 py-1 text-[var(--text-muted)] hover:text-slate-300 text-xs cursor-pointer flex items-center justify-center"
                 title="Reset relationship"
               >
                 Reset
