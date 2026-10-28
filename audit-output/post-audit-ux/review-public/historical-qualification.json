@@ -1,0 +1,82 @@
+{
+  "directive": "ARX_POST_AUDIT_UX_PARITY_REMEDIATION_001",
+  "sealed_at_utc": "2026-10-28T16:00:14.835998+00:00",
+  "branch": "fix/post-audit-ux-parity-20261028",
+  "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+  "base_tree": "5438079b00d8cb2ece2bee596f05866d5ca59014",
+  "candidate_sha": "2a3a4f866da8b93dfc51690b72f05669cc3dfa22",
+  "candidate_tree": "a71a49a9fad690d20d9cb1df2636ad227478f0c1",
+  "candidate_frontend_tree": "55166be100868ee2e8b8e2aafbc1889d9cc8c0a8",
+  "observed_origin_main": "2c900cd783af3ca135f1b9cfae30697253db078c",
+  "observed_main_tree": "9d47b955979aeb96edbf92f76348f247b354a2f3",
+  "integration_sha": "bdb3fc19d0f2591e6daa4360e64711b106649e0e",
+  "integration_tree": "003090d80d0477e720b3a4c0ba5b988450bf3785",
+  "integration_conflicts": [],
+  "runtime_subtree_equivalence": {
+    "app": {
+      "candidate": "008bc809267cba0742a5df3aeca310fb71832934",
+      "integration": "008bc809267cba0742a5df3aeca310fb71832934"
+    },
+    "components": {
+      "candidate": "72c39b49f7d7772144652de505488db1fef1c656",
+      "integration": "72c39b49f7d7772144652de505488db1fef1c656"
+    },
+    "lib": {
+      "candidate": "9b1ba9145180fec6bff2d9abebb71f8b25de3029",
+      "integration": "9b1ba9145180fec6bff2d9abebb71f8b25de3029"
+    },
+    "hooks": {
+      "candidate": "089dc2f046a6887e6cf15371987a2333cff46cd4",
+      "integration": "089dc2f046a6887e6cf15371987a2333cff46cd4"
+    },
+    "styles": {
+      "candidate": "c4177262e673a5c9ced58d8b8ca7a11927d5bce1",
+      "integration": "c4177262e673a5c9ced58d8b8ca7a11927d5bce1"
+    }
+  },
+  "checks": {
+    "unit": {
+      "exit_code": 0,
+      "tests": 504,
+      "suites": 46
+    },
+    "architecture": {
+      "exit_code": 0,
+      "scope": "complete package.json test:arch"
+    },
+    "typescript": {
+      "exit_code": 0
+    },
+    "lint": {
+      "exit_code": 0,
+      "preexisting_warnings": 8
+    },
+    "verified_build": {
+      "exit_code": 0,
+      "static_pages": 151
+    },
+    "restored_negative_targets": {
+      "exit_code": 0,
+      "tests": 51
+    }
+  },
+  "mutations_detected_and_restored": [
+    "neutral dark well",
+    "wrong theme key",
+    "canonical sizing bypass",
+    "deprecated horizon strip",
+    "stale actionability mislabeled live"
+  ],
+  "visual_cases": {
+    "synthetic_fixture": 72,
+    "full_application": 12,
+    "all_full_app_release_markers_match_candidate": true,
+    "measured_fixture_overflow_cases": 0
+  },
+  "evidence_manifest_sha256": "efdff0ea75ddb5d29c4f00eedfeb8ed674add15398aff784c7686342da13a65c",
+  "review_files_state": "Local reports/evidence outside source commit; application source exactly matches candidate",
+  "safeguards": "43-task register and all obligation/hold objects unchanged; no financial AST change outside className; no production/governance mutation",
+  "publication": "Historical source was not published at qualification time; preview authorization received later",
+  "disposition": "BLOCKED_PENDING_APPROVAL_EVIDENCE",
+  "receipt_kind": "Sanitized historical qualification extract; original local seal retained unchanged"
+}
