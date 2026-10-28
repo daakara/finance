@@ -26,9 +26,9 @@ Of the **71 registered obligations**:
 - **30** are `CLOSED_VERIFIED_HISTORICAL` (fully evidenced, verified, and complete).
 - **7** are `SUPERSEDED_HISTORICAL` (formally replaced with acyclic audit trail).
 - **3** are `MANDATORY_PRE_SPRINT5_BLOCKER` (`DEF-056-001`, `002`, `003` — code merged on mainline `f1c7def`, but deployment strictly held on Railway/Cloudflare).
-- **9** are `AUTHORIZED_SPRINT5_CARRYFORWARD` (explicitly owner-authorized for Sprint 5 delivery/discovery).
+- **8** are `AUTHORIZED_SPRINT5_CARRYFORWARD` (explicitly owner-authorized for Sprint 5 delivery/discovery; originating from Sprint 4 Category B).
 - **2** are `PRODUCTION_RELEASE_HOLD` (`ARX-S3-013` scanner scheduling pending PR #73, `ARX-S3-016` macro qualification awaiting release).
-- **20** are `OPERATIONAL_HOLD_RESEARCH` (strictly frozen under the 11 immutable operational holds).
+- **21** are `OPERATIONAL_HOLD_RESEARCH` (strictly frozen under the 11 immutable operational holds and owner-held queue items).
 
 ---
 
@@ -41,9 +41,9 @@ Of the **71 registered obligations**:
 | Category                          | Count | Operational Status & Release Invariant            |
 +-----------------------------------+-------+---------------------------------------------------+
 | 1. Mandatory Pre-Sprint 5 Blockers| 3     | Merged Mainline (f1c7def) / Production HELD       |
-| 2. Authorized Sprint 5 Carryforw. | 9     | Owner-Authorized for Sprint 5 Delivery/Discovery  |
+| 2. Authorized Sprint 5 Carryforw. | 8     | Owner-Authorized for Sprint 5 Delivery/Discovery  |
 | 3. Production Release Holds       | 2     | Engineering Accepted / Release Gate C Held        |
-| 4. Operational Holds (Research)   | 20    | Strictly Frozen Under 11 Immutable Holds          |
+| 4. Operational Holds (Research)   | 21    | Strictly Frozen Under 11 Immutable Holds & Gated  |
 | 5. Closed Verified Historical     | 30    | Sprints 1–4 Verified Deliveries (Fully Evidenced) |
 | 6. Superseded Historical          | 7     | Acyclically Replaced by Downstream Architecture   |
 +-----------------------------------+-------+---------------------------------------------------+
@@ -75,17 +75,19 @@ Under Directive 057, surgical code changes were implemented and squash-merged to
 ---
 
 ### 3.2 The Eight Controlled Carryforward Obligations (Sprint 5 Scope)
-Derived from Sprint 3 and Sprint 4 architecture reviews, these 8 capabilities have explicit Product Owner authorization for Sprint 5:
-1. **`OBL-ARX-S3-004` (Radar Minervini Stage 2 Engine):** Carried forward from Sprint 3 with concrete acceptance criteria (SMA 50/150/200 alignment, 52-week high thresholds). Status: `READY`, Assigned: `SPRINT_5`.
-2. **`OBL-ARX-S3-005` (Radar Liquidity & Spread Guard):** Volume floor ($2.5M ADV) and maximum allowable bid-ask spread (0.75%). Status: `READY`, Assigned: `SPRINT_5`.
-3. **`OBL-ARX-S3-011` (Dark Pool Proxy Calibration):** Research spike on off-exchange volume heuristics. Status: `READY`, Assigned: `SPRINT_5` (Discovery).
-4. **`OBL-ARX-S3-012` (Form 4 Filing Parser Hardening):** Handling amendments and multi-owner filings. Status: `READY`, Assigned: `SPRINT_5` (Discovery).
-5. **`OBL-ARX-S4-ARCH-002` (Next.js Server Components Migration):** Decoupling RSC data fetching from client interaction. Status: `READY`, Assigned: `SPRINT_5` (Discovery).
-6. **`OBL-ARX-S4-DATA-002` (TimescaleDB Continuous Aggregates):** Pre-computing intraday volume profiles. Status: `READY`, Assigned: `SPRINT_5` (Discovery).
-7. **`OBL-ARX-S4-DATA-003` (Polygon WebSocket Stream Resiliency):** Auto-reconnect and message deduplication. Status: `READY`, Assigned: `SPRINT_5` (Execution).
-8. **`OBL-ARX-S4-RADAR-003` (VCP Multi-Timeframe Pattern Recognition):** Daily and weekly contraction clustering. Status: `READY`, Assigned: `SPRINT_5` (Discovery).
+Derived from Sprint 4 formal closure (`ARX_SPRINT4_FORMAL_CLOSURE_RECORD.md`, commit `4a44325`, Category B), these 8 tasks represent the authoritative carryforward baseline for Sprint 5:
+- **Track 5A — UX Carryforwards (3 Tasks):**
+  1. **`OBL-ARX-S3-004` / `ARX-S3-004` (Synthesis E Error-vs-Zero Banner / Radar Reliability):** Fail-closed error-vs-zero semantics and UI retry. Carried forward to Sprint 5 Track 5A. Status: `READY`, Assigned: `SPRINT_5`, Owner Auth: `AUTHORIZED`. Merged baseline in PR #98 (`8b8eb58`).
+  2. **`OBL-ARX-S3-005` / `ARX-S3-005` (Synthesis E Candidate Truth Badge / Radar Candidate Truth):** Eligibility contracts, false execution affordance elimination, and price date provenance. Carried forward to Sprint 5 Track 5A. Status: `READY`, Assigned: `SPRINT_5`, Owner Auth: `AUTHORIZED`. Merged baseline in PR #98 (`8b8eb58`).
+  3. **`OBL-ARX-S3-006` / `ARX-S3-006` (Research Workstation Layout Polish / Decision-First Layout Rollout):** Four-pillar confluence and inline preflight readiness layout rollout across core tickers. Status: `READY`, Assigned: `SPRINT_5`, Owner Auth: **`HOLD`** (**Owner HOLD strictly preserved** for dedicated UX design review; inclusion in scope does NOT authorize execution). Merged baseline in PR #98 (`8b8eb58`).
+- **Track 5B & 5C — Operations & Scanner Carryforwards (5 Tasks):**
+  4. **`OBL-ARX-S4-RADAR-001` / `ARX-S4-RADAR-001` (Radar Scanner Scheduler Architecture / Minervini VCP Operational Truth):** Investigation of scanner pending status across authority chain points; passive observation architecture decoupled from HVA01. Status: `READY`, Assigned: `SPRINT_5` (Track 5C), Owner Auth: `AUTHORIZED`.
+  5. **`OBL-ARX-S2-005` / `ARX-S2-005` (Memory Footprint Benchmark / Market-Data Coverage Verification):** Processing capacity verification across US-listed equity population under Railway 512MB limits. Status: `READY`, Assigned: `SPRINT_5` (Track 5B), Owner Auth: `AUTHORIZED`.
+  6. **`OBL-ARX-S2-007` / `ARX-S2-007` (Security Master Radar Sync / Scanner and Radar Membership Integration):** Published membership driving scanner assessment without discarding out-of-list candidates. Status: `READY`, Assigned: `SPRINT_5` (Track 5B), Owner Auth: `AUTHORIZED`.
+  7. **`OBL-ARX-S2-008` / `ARX-S2-008` (Arithmetic Denominator Closure / S2-08 Accounting Envelope):** 6-outcome denominator closure across assessed population with honest telemetry defaults. Status: `READY`, Assigned: `SPRINT_5` (Track 5B), Owner Auth: `AUTHORIZED`.
+  8. **`OBL-ARX-S2-009` / `ARX-S2-009` (Navigation Journey State Preservation / Radar Coverage Disclosure Alignment):** Radar coverage disclosures, timestamps, and seamless analysis handoff context preservation. Status: `READY`, Assigned: `SPRINT_5` (Track 5B), Owner Auth: `AUTHORIZED`.
 
-*Reconciliation Ruling:* All 8 carryforwards strictly satisfy Rule `BI-005` (non-empty reason, validated criteria array, named owner). They are ready for execution once Sprint 5 kickoff is granted.
+*Reconciliation Ruling:* All 8 genuine carryforwards strictly satisfy Rule `BI-005` (non-empty reason, validated criteria array, named owner). `ARX-S3-006` remains on strict owner `HOLD`.
 
 ---
 
@@ -120,7 +122,7 @@ The 20 obligations governed by the 11 operational holds remain frozen:
    - Serving build asset `page-0261ba03d5dae7ff.js`.
    - Mainline commits `09064ef` and `f1c7def` have not been triggered through Cloudflare build pipeline.
 3. **PR #98 & UX Parity Reconciliation:**
-   - PR #98 was squash-merged to mainline at `e9fa186`.
+   - PR #98 was squash-merged to mainline at commit `8b8eb58296adbb6374be254cd9a00c36c59786c6` (`8b8eb58`).
    - The UX parity suite (`npm run test:parity`) and structural invariant tests run in CI and verify zero regression.
 
 ---
