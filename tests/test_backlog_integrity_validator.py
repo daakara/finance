@@ -1647,3 +1647,66 @@ class TestPreSprint5ClosureInvariants:
         errors_e = [f for f in findings_e if f.severity == "ERROR"]
         assert verdict_e == "FAIL"
         assert any("Active sprint set to 'SPRINT_5' while sprint5_execution_authorized is False" in f.message for f in errors_e)
+
+    # -------------------------------------------------------------
+    # Directive 037-B: Hardened Authority Boundary & Task Continuity
+    # -------------------------------------------------------------
+    def test_adv04_coordinated_hold_and_boundary_mutation_rejected(self, canonical_backlog_data, canonical_schema_data):
+        """
+        Directive 037-B (ADV-04 Hardening):
+        A coordinated mutation changing status, disposition, authorization_boundary,
+        and owner_authorization on an owner-held task MUST be detected and rejected
+        against the authoritative baseline.
+        """
+        import copy
+        baseline = copy.deepcopy(canonical_backlog_data)
+        mutated = copy.deepcopy(canonical_backlog_data)
+        for t in mutated["tasks"]:
+            if t["task_id"] == "ARX-S2-002":
+                t["status"] = "COMPLETED"
+                t["disposition"] = "CLOSED_VERIFIED"
+                t["authorization_boundary"] = "BOUNDED_ENGINEERING"
+                t["operational_state"] = "ACTIVE_SERVING"
+                t["evidence_refs"] = ["commit:fake123"]
+                t["dimensions"]["owner_authorization"] = "AUTHORIZED"
+                t["dimensions"]["deployment"] = "DEPLOYED_ACTIVE"
+                t["dimensions"]["operational_execution"] = "EXECUTED"
+                t["dimensions"]["production_evidence"] = "VERIFIED"
+
+        val = BacklogValidator(mutated, baseline_data=baseline, schema_data=canonical_schema_data)
+        verdict, findings = val.validate_all()
+        errors = [f for f in findings if f.severity == "ERROR"]
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "BI-009" and "unauthorized mutation of authorization_boundary" in f.message for f in errors)
+        assert any(f.rule_id == "BI-009" and "has baseline owner_authorization 'HOLD'" in f.message for f in errors)
+
+    def test_adv05_ready_carryforward_deletion_rejected(self, canonical_backlog_data, canonical_schema_data):
+        """
+        Directive 037-B (ADV-05 Hardening):
+        Deleting a READY carryforward task MUST be rejected by BI-012.
+        """
+        import copy
+        baseline = copy.deepcopy(canonical_backlog_data)
+        mutated = copy.deepcopy(canonical_backlog_data)
+        mutated["tasks"] = [t for t in mutated["tasks"] if t["task_id"] != "ARX-S3-004"]
+
+        val = BacklogValidator(mutated, baseline_data=baseline, schema_data=canonical_schema_data)
+        verdict, findings = val.validate_all()
+        errors = [f for f in findings if f.severity == "ERROR"]
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "BI-012" and "ARX-S3-004" in f.message and "silently removed" in f.message for f in errors)
+
+    def test_adv05_hold_and_blocked_deletion_rejected(self, canonical_backlog_data, canonical_schema_data):
+        """
+        Directive 037-B: Deleting HOLD or BLOCKED tasks MUST be rejected by BI-012.
+        """
+        import copy
+        baseline = copy.deepcopy(canonical_backlog_data)
+        mutated = copy.deepcopy(canonical_backlog_data)
+        mutated["tasks"] = [t for t in mutated["tasks"] if t["task_id"] != "ARX-S1-003"]
+
+        val = BacklogValidator(mutated, baseline_data=baseline, schema_data=canonical_schema_data)
+        verdict, findings = val.validate_all()
+        errors = [f for f in findings if f.severity == "ERROR"]
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "BI-012" and "ARX-S1-003" in f.message and "silently removed" in f.message for f in errors)
