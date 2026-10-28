@@ -2,27 +2,27 @@
   "total": 12,
   "passed": 12,
   "failed": 0,
-  "duration_sec": 7.38,
+  "duration_sec": 9.93,
   "results": {
     "RQ-01": {
       "name": "Candidate Identity",
       "status": "PASS",
-      "elapsed_sec": 0.33
+      "elapsed_sec": 0.34
     },
     "RQ-02": {
       "name": "Release Diff Integrity",
       "status": "PASS",
-      "elapsed_sec": 0.21
+      "elapsed_sec": 0.6
     },
     "RQ-03": {
       "name": "Backend Regression",
       "status": "PASS",
-      "elapsed_sec": 2.23
+      "elapsed_sec": 2.89
     },
     "RQ-04": {
       "name": "Frontend Regression",
       "status": "PASS",
-      "elapsed_sec": 2.84
+      "elapsed_sec": 4.29
     },
     "RQ-05": {
       "name": "Cross-Engine Invariants",
@@ -32,12 +32,12 @@
     "RQ-06": {
       "name": "Governance Invariants",
       "status": "PASS",
-      "elapsed_sec": 0.75
+      "elapsed_sec": 0.72
     },
     "RQ-07": {
       "name": "Deployment Safety",
       "status": "PASS",
-      "elapsed_sec": 0.24
+      "elapsed_sec": 0.31
     },
     "RQ-08": {
       "name": "Artifact Provenance",

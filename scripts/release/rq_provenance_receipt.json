@@ -1,9 +1,9 @@
 {
   "record_id": "ARX_RQ08_PROVENANCE_RECORD",
-  "head_commit_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
-  "tree_sha": "5438079b00d8cb2ece2bee596f05866d5ca59014",
+  "head_commit_sha": "103e44e3379c6322f86938cbdf58694657aab582",
+  "tree_sha": "593378229c8782c29414fa677cb59ac61df02f27",
   "manifest_sha256": "bc9f4d875bb1b6718c9a9b34b8854cbe58428ca16be616603200f4e5bdbe66a0",
-  "verification_timestamp": "2026-10-28T10:27:12.126511+00:00",
+  "verification_timestamp": "2026-10-28T10:51:11.327723+00:00",
   "authoritative_target": "refs/heads/release/production",
   "provenance_status": "BINDING_VERIFIED"
 }
