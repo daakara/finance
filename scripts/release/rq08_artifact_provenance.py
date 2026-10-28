@@ -17,7 +17,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..
 sys.path.insert(0, os.path.dirname(__file__))
 from rq_receipt_utils import create_stage_receipt, save_stage_receipt, compute_file_sha256, get_execution_context, get_git_commit, get_git_tree
 
-QUALIFICATION_POLICY_VERSION = "2.1.0-D074A3"
+QUALIFICATION_POLICY_VERSION = "2.2.0-D074A4"
 
 def main():
     start_time = datetime.datetime.now(datetime.timezone.utc).isoformat()

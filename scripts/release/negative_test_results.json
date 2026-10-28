@@ -33,7 +33,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "=== [RQ-01] CANDIDATE IDENTITY & ANCESTRY CHECK ===\nCurrent Checked-Out HEAD: 773dda4967f8b919f4611f8bf7cca46e48aece2c (Merge Commit: False)\nResolved Candidate SHA: 773dda4967f8b919f4611f8bf7cca46e48a"
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
   },
   {
     "case_id": "NEG-05",
@@ -96,7 +96,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "=== [RQ-01] CANDIDATE IDENTITY & ANCESTRY CHECK ===\nCurrent Checked-Out HEAD: 773dda4967f8b919f4611f8bf7cca46e48aece2c (Merge Commit: False)\nResolved Candidate SHA: 773dda4967f8b919f4611f8bf7cca46e48a"
+    "output_snippet": "=== [RQ-01] CANDIDATE IDENTITY & ANCESTRY CHECK ===\nCurrent Checked-Out HEAD: 3820e07c86578429090161f9189b4824deefe5a2 (Merge Commit: False)\nResolved Candidate SHA: 3820e07c86578429090161f9189b4824dee"
   },
   {
     "case_id": "NEG-12",
@@ -105,7 +105,7 @@
     "expected_outcome": "PASS (Exit 0)",
     "observed_exit_code": 0,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "=== [RQ-02] RELEASE DIFF INTEGRITY CHECK ===\nDiff range: 6d4020c..HEAD\nManifest: scripts/release/release_manifest.json\nTotal diff entries detected: 52\nApproved candidate files in manifest: 33\nApproved"
+    "output_snippet": "=== [RQ-02] RELEASE DIFF INTEGRITY CHECK ===\nDiff range: 6d4020c..HEAD\nManifest: scripts/release/release_manifest.json\nTotal diff entries detected: 56\nApproved candidate files in manifest: 33\nApproved"
   },
   {
     "case_id": "NEG-13",
@@ -114,7 +114,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "=== [RQ-02] RELEASE DIFF INTEGRITY CHECK ===\nDiff range: 6d4020c..773dda4\nManifest: C:\\Users\\akara\\AppData\\Local\\Temp\\tmpt6ex5pyh\\tampered.json\nTotal diff entries detected: 52\nApproved candidate files"
+    "output_snippet": "=== [RQ-02] RELEASE DIFF INTEGRITY CHECK ===\nDiff range: 6d4020c..3820e07\nManifest: C:\\Users\\akara\\AppData\\Local\\Temp\\tmphgdttkx3\\tampered.json\nTotal diff entries detected: 56\nApproved candidate files"
   },
   {
     "case_id": "NEG-14",
@@ -123,7 +123,7 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "Traceback (most recent call last):\n  File \"C:\\Users\\akara\\Documents\\Projects\\finance-d074a3-worktree\\scripts/release\\rq09_compatibility_suite.py\", line 30, in load_baseline_engine\n    code_bytes = sub"
+    "output_snippet": "Traceback (most recent call last):\n  File \"C:\\Users\\akara\\Documents\\Projects\\finance-d074a4-worktree\\scripts/release\\rq09_compatibility_suite.py\", line 34, in load_baseline_engine\n    code_bytes = sub"
   },
   {
     "case_id": "NEG-15",
@@ -132,12 +132,12 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "Traceback (most recent call last):\n  File \"C:\\Users\\akara\\Documents\\Projects\\finance-d074a3-worktree\\scripts/release\\rq09_compatibility_suite.py\", line 48, in load_candidate_engine\n    from analyst_da"
+    "output_snippet": "Traceback (most recent call last):\n  File \"C:\\Users\\akara\\Documents\\Projects\\finance-d074a4-worktree\\scripts/release\\rq09_compatibility_suite.py\", line 52, in load_candidate_engine\n    from analyst_da"
   },
   {
     "case_id": "NEG-16",
-    "name": "Fabricated Compatibility Sizing",
-    "injected_fault": "Assert that sub-1-share trade cannot be forced to >0 shares",
+    "name": "Real TypeScript Sub-1-Share Sizing Guard",
+    "injected_fault": "Assert that sub-1-share trade cannot produce >0 shares",
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
@@ -145,12 +145,12 @@
   },
   {
     "case_id": "NEG-17",
-    "name": "Incompatible API Response",
-    "injected_fault": "None passed as backend response to governor",
+    "name": "Null Setup Response to Governor",
+    "injected_fault": "Assert that null setup cannot produce >0 shares",
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"C:\\Users\\akara\\Documents\\Projects\\finance-d074a3-worktree\\scripts\\release\\rq09_compatibility_suite.py\", line 64, in si"
+    "output_snippet": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nAssertionError"
   },
   {
     "case_id": "NEG-18",
@@ -222,6 +222,123 @@
     "expected_outcome": "FAIL_CLOSED (Exit != 0)",
     "observed_exit_code": 1,
     "verdict": "PASS (Failed Closed)",
-    "output_snippet": "=== [RQ-08] ARTIFACT PROVENANCE & CRYPTOGRAPHIC BINDING ===\nBound Head SHA: 773dda4967f8b919f4611f8bf7cca46e48aece2c\nBound Tree SHA: 0ca4df9a2eff06fae2304471507f716e0237e3a3\nManifest SHA-256: MISSING\n"
+    "output_snippet": "=== [RQ-08] ARTIFACT PROVENANCE & CRYPTOGRAPHIC BINDING ===\nBound Head SHA: 3820e07c86578429090161f9189b4824deefe5a2\nBound Tree SHA: 6346847ab5f8e4c0d13940c110e9d60313f87ab3\nManifest SHA-256: MISSING\n"
+  },
+  {
+    "case_id": "NEG-26",
+    "name": "Seven-Character SHA Rejection",
+    "injected_fault": "Receipt candidate_sha truncated to 7 characters",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+  },
+  {
+    "case_id": "NEG-27",
+    "name": "Wrong 40-Char SHA Sharing Initial Prefix",
+    "injected_fault": "Candidate SHA matches initial 7 chars but differs in remaining 33",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+  },
+  {
+    "case_id": "NEG-28",
+    "name": "Correct Source SHA with Incorrect Execution SHA",
+    "injected_fault": "Execution context checked_out_sha corrupted to null SHA",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+  },
+  {
+    "case_id": "NEG-29",
+    "name": "Correct Execution SHA with Incorrect Source SHA",
+    "injected_fault": "Candidate source SHA set to foreign commit SHA",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+  },
+  {
+    "case_id": "NEG-30",
+    "name": "Previous Workflow Attempt Rejection",
+    "injected_fault": "Receipt from attempt 1 submitted to attempt 2 runner",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+  },
+  {
+    "case_id": "NEG-31",
+    "name": "Previous Workflow Run ID Rejection",
+    "injected_fault": "Receipt from prior workflow run submitted to current run",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+  },
+  {
+    "case_id": "NEG-32",
+    "name": "Wrong PR Number Rejection",
+    "injected_fault": "Receipt from PR #999 submitted to PR #121 qualification gate",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+  },
+  {
+    "case_id": "NEG-33",
+    "name": "Wrong Target Branch Rejection",
+    "injected_fault": "Receipt target branch set to unauthorized feature branch",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+  },
+  {
+    "case_id": "NEG-34",
+    "name": "Wrong Repository Identity Rejection",
+    "injected_fault": "Receipt repository set to untrusted_user/finance",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+  },
+  {
+    "case_id": "NEG-35",
+    "name": "Missing Execution Identity Rejection",
+    "injected_fault": "Receipt missing execution_context dictionary",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+  },
+  {
+    "case_id": "NEG-36",
+    "name": "Altered Policy Version Rejection",
+    "injected_fault": "Receipt contains unauthorized policy version string",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+  },
+  {
+    "case_id": "NEG-37",
+    "name": "Valid Digest Attached to Unauthorized Candidate",
+    "injected_fault": "Valid cryptographic digest computed over unauthorized deadbeef SHA",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
+  },
+  {
+    "case_id": "NEG-38",
+    "name": "Valid Receipt with Broken Evidence Linkage",
+    "injected_fault": "Evidence path in receipt points to non-existent file on disk",
+    "expected_outcome": "FAIL_CLOSED (Exit != 0)",
+    "observed_exit_code": 1,
+    "verdict": "PASS (Failed Closed)",
+    "output_snippet": "===============================================================\n   ARX TERMINAL - RQ-12 FINAL QUALIFICATION AGGREGATION\n===============================================================\nTarget Candidate"
   }
 ]

@@ -37,13 +37,13 @@ def main():
 
     print("=== [RQ-01] CANDIDATE IDENTITY & ANCESTRY CHECK ===")
     ctx = get_execution_context()
-    
+
     current_head = run_git(["git", "rev-parse", "HEAD"])
     if not current_head:
         errors.append("Unable to determine current git HEAD commit.")
         status = "FAIL"
         duration = time.time() - t0
-        receipt = create_stage_receipt("RQ-01", "Candidate Identity & Lineage", status, start_time, 
+        receipt = create_stage_receipt("RQ-01", "Candidate Identity & Lineage", status, start_time,
                                        datetime.datetime.now(datetime.timezone.utc).isoformat(), duration,
                                        "UNKNOWN", "UNKNOWN", assertions, errors=errors)
         save_stage_receipt(receipt)
@@ -110,7 +110,7 @@ def main():
     valid_targets = ["release/production"]
     if args.allow_main_target or clean_target == "main":
         valid_targets.append("main")
-    
+
     is_target_valid = clean_target in valid_targets
     assertions.append({"assertion": "Target branch is authorized for qualification", "observed": clean_target, "passed": is_target_valid})
     if not is_target_valid:

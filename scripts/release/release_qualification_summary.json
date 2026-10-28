@@ -1,104 +1,100 @@
 {
-  "directive_id": "ARX_RELEASE_QUALIFICATION_REMEDIATION_074A3",
-  "timestamp": "2026-10-28T11:52:55.898791+00:00",
-  "candidate_commit": "773dda4967f8b919f4611f8bf7cca46e48aece2c",
-  "execution_context": {
-    "is_github_actions": false,
-    "run_id": null,
-    "run_attempt": null,
-    "event_name": "local_execution",
-    "pr_number": null,
-    "pr_head_sha": null,
-    "pr_base_sha": null,
-    "base_ref": null,
-    "head_ref": null,
-    "github_sha": null
+  "verdict": "RELEASE_QUALIFIED",
+  "is_qualified": true,
+  "qualification_policy_version": "2.2.0-D074A4",
+  "evaluation_timestamp": "2026-10-28T13:14:39.308786+00:00",
+  "candidate_identity": {
+    "source_sha": "3820e07c86578429090161f9189b4824deefe5a2",
+    "target_branch": "release/production",
+    "checked_out_sha": "3820e07c86578429090161f9189b4824deefe5a2",
+    "repository": "daakara/finance",
+    "pr_number": null
   },
-  "controls_total": 11,
-  "controls_passed": 11,
-  "controls_failed": 0,
-  "controls_blocked": 0,
-  "controls_missing": 0,
-  "overall_verdict": "RELEASE_QUALIFIED",
-  "qualification_posture": "AUTHENTIC_RECEIPTS_VERIFIED",
-  "blocking_reasons": [],
-  "stage_details": {
+  "statistics": {
+    "total_mandatory_controls": 11,
+    "passed": 11,
+    "failed": 0,
+    "blocked": 0,
+    "missing": 0
+  },
+  "controls": {
     "RQ-01": {
       "name": "Candidate Identity & Lineage",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.369,
-      "digest": "d3a678ea7f64614395f5b48eff6c2731ada416f90933fd05c97bd6eee4b02c4d"
+      "duration_sec": 1.101,
+      "receipt_digest": "78229ea59551ceda7a82ff9863bcfd998510a641d58da8f146474a1e76d75c4a"
     },
     "RQ-02": {
       "name": "Release Diff Integrity",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.211,
-      "digest": "b896826eabf4da7ba01abcf7de180a9fb523d179eff84980d185754dd54a73b9"
+      "duration_sec": 0.337,
+      "receipt_digest": "d681e988483e952f805506c22eb68f9467f9e0f5a2ac4d30f9062afbaeedbce4"
     },
     "RQ-03": {
       "name": "Backend Regression Suite",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 4.28,
-      "digest": "717794e79bb65d78ab62b020495e7e56e63b5ec3f37b99dc982194a9bb9e7814"
+      "duration_sec": 7.435,
+      "receipt_digest": "3e463e6c34b110ede695377dc182d6abf77cf7548030a5741d2be3dba4249207"
     },
     "RQ-04": {
       "name": "Frontend Regression & Typecheck",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 13.856,
-      "digest": "f0cd2e382a2bc7d93009cb7e3380d26aa85c79f06ed71727baf0e96cdd8e131e"
+      "duration_sec": 98.205,
+      "receipt_digest": "399b21bdcbc03b5fc96350c656a13251e70f60997b5aa95d6afbc55fbd05bc16"
     },
     "RQ-05": {
       "name": "Cross-Engine Invariants",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.013,
-      "digest": "c392e6ec4713662f52e7254ed20c95f2ec8b3d3f9319528bc9cca6641a9be7a1"
+      "duration_sec": 0.022,
+      "receipt_digest": "69bf268bdf008e1dca668225093a49dbd6339416e12c97cb48e12ac0f994018b"
     },
     "RQ-06": {
       "name": "Governance & Backlog Invariants",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 1.359,
-      "digest": "fc040bed6db6831dc7277e0889e63bbbcb5ae99cf4449cc7d2e3f372a7cd6509"
+      "duration_sec": 1.542,
+      "receipt_digest": "c9bcfda88bddbff30ab41b4d2380dfe4ef381eb29b75003675c61bdae12bac2a"
     },
     "RQ-07": {
       "name": "Deployment Safety & Secret Isolation",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.315,
-      "digest": "c10f70dd141bc84e094e3aff50eff12d83a6cbfc7aadff4e4d793c404b392abd"
+      "duration_sec": 0.457,
+      "receipt_digest": "db63c759f084c9f8805aaadd58b91b51b76eaab80f4931a6908f0dfad286a96f"
     },
     "RQ-08": {
       "name": "Artifact Provenance & Digest Binding",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.223,
-      "digest": "982db90f2e641ebd8f7e0e72ebc31fc9bdc0e4cc45d82872007fd6c97193bc81"
+      "duration_sec": 0.796,
+      "receipt_digest": "ac662bb1c36d5c4c9ac905a5745a3174ffdcb6889e3ecffd6f70e0f49c84b5a0"
     },
     "RQ-09": {
       "name": "Four-Way Cross-Platform Compatibility",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.097,
-      "digest": "9ea4cb8de899f6488256e9129e7ca9a38590e2815ea4060d885173cb15be5c62"
+      "duration_sec": 7.829,
+      "receipt_digest": "db6d7d2e53818e64602ce659ba74d5b64a4e9d5b97491d06b3cfbafb298120a7"
     },
     "RQ-10": {
       "name": "Release Configuration Integrity",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.039,
-      "digest": "94fb3589103e9656c78cbae7304bf6265b3948a4e3ea3ef750da726ae510a950"
+      "duration_sec": 0.06,
+      "receipt_digest": "876407b7445250c59e894cc813f010ec7d23b164a69170bda56bf2e86bdeddee"
     },
     "RQ-11": {
       "name": "Rollback Readiness & Target Verification",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.158,
-      "digest": "abf0f4d8aeb88fd84bf725bfe3284f9397299dd8fdaa1b988778cd6954b036d4"
+      "duration_sec": 0.268,
+      "receipt_digest": "86533148063355974629c378f3e1cd2fc06652109d75deb25ab69297e17ec186"
     }
-  }
+  },
+  "errors": []
 }

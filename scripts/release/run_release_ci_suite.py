@@ -38,7 +38,7 @@ def main():
             if os.path.isfile(fpath):
                 os.remove(fpath)
     os.makedirs(RECEIPTS_DIR, exist_ok=True)
-    
+
     start_time = time.time()
     results = {}
     passed = 0

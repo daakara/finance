@@ -40,7 +40,7 @@ def verify_zero_ddl_migrations(base_sha: str, head_sha: str) -> tuple[bool, list
     migration_patterns = [
         "migrations/*", "alembic/*", "sql/*", "*.sql", "prisma/*", "schema.prisma"
     ]
-    
+
     changed_migrations = []
     try:
         cmd = ["git", "diff", "--name-only", base_sha, head_sha, "--"] + migration_patterns

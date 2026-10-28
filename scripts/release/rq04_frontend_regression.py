@@ -24,7 +24,7 @@ def main():
     assertions = []
 
     print("=== [RQ-04] FRONTEND REGRESSION & TYPECHECK ===")
-    
+
     # 1. Typecheck
     print("Running npm run type-check...")
     npm_cmd = "npm.cmd" if os.name == 'nt' else "npm"
@@ -82,7 +82,7 @@ def main():
 
     evidence = [
         "frontend/tests/governorSizingEngine.test.ts",
-        "frontend/utils/governorSizingEngine.ts",
+        "frontend/lib/simulation/governorSizingEngine.ts",
         "frontend/components/PositionSizerModal.tsx"
     ]
 

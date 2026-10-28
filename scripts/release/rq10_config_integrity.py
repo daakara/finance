@@ -23,10 +23,10 @@ def verify_engine_manifest():
     manifest_path = os.path.join(PROJECT_ROOT, "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json")
     if not os.path.exists(manifest_path):
         raise AssertionError("CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json not found in repository root.")
-    
+
     with open(manifest_path, "r", encoding="utf-8-sig") as f:
         data = json.load(f)
-    
+
     confluence_meta = data.get("engines", {}).get("confluence_engine", {})
     expected_hash = confluence_meta.get("sha256")
     if not expected_hash:
@@ -78,7 +78,7 @@ def scan_config_files_for_secrets():
         r"CLOUDFLARE_API_TOKEN\s*[:=]\s*['\"][a-zA-Z0-9_-]{20,}['\"]",
         r"RAILWAY_TOKEN\s*[:=]\s*['\"][a-zA-Z0-9_-]{20,}['\"]"
     ]
-    
+
     suspicious_findings = []
     for root_dir in [PROJECT_ROOT, os.path.join(PROJECT_ROOT, "scripts", "release")]:
         for fname in os.listdir(root_dir):

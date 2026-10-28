@@ -6,7 +6,7 @@ and strictly enforces that Sprint 5 remains UNAUTHORIZED (Rule P5-010).
 Emits a verified machine-readable stage receipt.
 """
 
-import sys, os, subprocess, time, datetime
+import sys, os, subprocess, time, datetime, json
 
 try:
     sys.stdout.reconfigure(encoding='utf-8')
@@ -39,13 +39,18 @@ def main():
         errors.append(f"Backlog validator failed with exit code {res_val.returncode}")
 
     # 2. Assert Sprint 5 Lock (Rule P5-010)
-    sprint_check = os.path.join(PROJECT_ROOT, "tools", "governance", "check_active_sprint.py")
-    res_s5 = subprocess.run([sys.executable, sprint_check, "--assert-sprint", "5"], cwd=PROJECT_ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    # Rule P5-010: Asserting sprint 5 MUST fail (exit code != 0) because sprint 5 is not authorized
-    s5_locked = (res_s5.returncode != 0)
+    backlog_path = os.path.join(PROJECT_ROOT, "docs", "planning", "arx_canonical_backlog.json")
+    with open(backlog_path, "r", encoding="utf-8") as f:
+        backlog_data = json.load(f)
+    active_sprint = backlog_data.get("active_sprint")
+    s5_authorized = backlog_data.get("sprint5_execution_authorized", False)
+    s5_record = backlog_data.get("sprint5_execution_authorization_record", {})
+    s5_decision = s5_record.get("decision") if isinstance(s5_record, dict) else None
+
+    s5_locked = (active_sprint != "SPRINT_5" and s5_authorized is False and s5_decision == "BLOCKED_PENDING_OWNER_AUTHORIZATION")
     assertions.append({
         "assertion": "Sprint 5 remains UNAUTHORIZED (Rule P5-010 enforced)",
-        "observed": {"exit_code": res_s5.returncode, "sprint_5_blocked": s5_locked},
+        "observed": {"active_sprint": active_sprint, "sprint5_execution_authorized": s5_authorized, "decision": s5_decision},
         "passed": s5_locked
     })
     if not s5_locked:
@@ -57,8 +62,8 @@ def main():
 
     evidence = [
         "tools/governance/validate_backlog_integrity.py",
-        "tools/governance/check_active_sprint.py",
-        "docs/planning/canonical_backlog.json"
+        "docs/planning/arx_canonical_backlog.json",
+        "docs/planning/arx_canonical_backlog.schema.json"
     ]
 
     receipt = create_stage_receipt(

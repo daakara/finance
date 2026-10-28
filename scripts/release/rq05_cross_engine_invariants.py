@@ -22,7 +22,7 @@ def test_risk_sizing_floor():
     print("Testing Invariant 1: Sizing Floor (Sub-1-Share Allocation)...")
     from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
     engine = ConfluenceEngine()
-    
+
     # Capital = $100, Entry = $250, Stop = $230 (risk per share = $20).
     # Risk pct = 1.0% -> max dollar risk = $1.00.
     # $1.00 / $20.00 = 0.05 shares -> max(0, math.floor(0.05)) == 0 shares.
@@ -36,7 +36,7 @@ def test_risk_sizing_floor():
     shares = sizing.get("executableShares", sizing.get("shares", 0))
     assert shares == 0, f"Expected 0 shares on sub-1-share capital, got {shares}"
     assert "suppressed (0 shares)" in sizing.get("guidance", "").lower()
-    
+
     # Capital = $25,000, 1% risk = $250. Risk per share = $20 -> 12 shares.
     sizing_ok = engine.calculate_position_size(
         account_equity=25000.0,
