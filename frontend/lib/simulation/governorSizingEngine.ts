@@ -9,7 +9,7 @@
  */
 
 import { getUnifiedCockpitState } from './unifiedCockpitStore';
-import { loadPortfolioPositions, calculatePortfolioSummary } from '../portfolio';
+import { loadPortfolioPositions, calculatePortfolioSummary, isHoldingVerified } from '../portfolio';
 import { isStatusActionable, isDecisionActionable } from '../../types/decisionContract';
 
 export interface TraderContext {
@@ -88,17 +88,19 @@ export function getTraderContextFromUnifiedCockpit(
   } else if (serverTelemetry?.accountEquity && serverTelemetry.accountEquity > 0) {
     accountEquity = serverTelemetry.accountEquity;
   } else if (typeof window !== "undefined") {
-    // 2. Fallback to locally loaded portfolio from /portfolio API only when cockpit portfolio summary is unpopulated
+    // 2. Local browser storage provenance gate (WP-02 / RQ-05):
+    // INVARIANT: Unverified browser localStorage holdings (paper trades, manual entries, legacy untagged)
+    // MUST NEVER acquire account-specific sizing authority in the behavioral risk governor.
     const positions = loadPortfolioPositions();
-    if (positions.length > 0) {
-      const summary = calculatePortfolioSummary(positions);
-      // Only use live priced totalEquity when isComplete is true and totalEquity > 0.
-      // Never substitute cost basis (summary.totalCost) for unpriced equity.
-      if (summary.isComplete && summary.totalEquity !== null && summary.totalEquity > 0) {
-        accountEquity = summary.totalEquity;
+    const verifiedPositions = positions.filter(isHoldingVerified);
+    if (verifiedPositions.length > 0) {
+      const summary = calculatePortfolioSummary(verifiedPositions);
+      // Only use live priced verifiedEquity when isComplete is true and verifiedEquity > 0.
+      if (summary.isComplete && summary.verifiedEquity !== null && summary.verifiedEquity > 0) {
+        accountEquity = summary.verifiedEquity;
       }
     }
-    // Zero localStorage fallback: Editing browser storage cannot fabricate financial risk boundaries.
+    // Zero unverified localStorage fallback: Editing browser storage cannot fabricate financial risk boundaries.
   }
 
   // Never substitute household liquid reserves (cockpit.runway.liquidReserves) for trading account equity.

@@ -27,11 +27,13 @@ export interface PortfolioPosition {
   assetType: "Stock" | "ETF" | "Crypto";
   liveFreshness?: string;
   liveSource?: string;
-  holdingSource?: "MANUAL" | "JOURNAL" | "MIXED";
+  holdingSource?: "MANUAL" | "JOURNAL" | "MIXED" | "PAPER" | "VERIFIED_BROKER";
   hasOpenJournalTrade?: boolean;
   tradeId?: number | null;
   manualShares?: number;
   manualEntryPrice?: number;
+  isHypothetical?: boolean;
+  provenance?: string;
 }
 
 export interface ManualHoldingExitRequest {
@@ -77,6 +79,21 @@ export interface PortfolioSummary {
   positionsCount: number;
   isComplete: boolean;
   unpricedCount: number;
+  verifiedEquity: number | null;
+  paperEquity: number | null;
+  hasUnverifiedPositions: boolean;
+}
+
+/**
+ * Financial Governance Invariant (WP-02 / RQ-05):
+ * Only holdings explicitly attested by verified broker integration
+ * and non-hypothetical can ever acquire verified authority.
+ * Legacy untagged, manual, journal, or paper holdings are strictly UNVERIFIED.
+ */
+export function isHoldingVerified(p: PortfolioPosition): boolean {
+  if (!p) return false;
+  if (p.isHypothetical === true) return false;
+  return p.holdingSource === "VERIFIED_BROKER" && p.provenance === "VERIFIED_BROKER_INTEGRATION";
 }
 
 const STORAGE_KEY = "FINANCE_USER_PORTFOLIO";
@@ -584,17 +601,33 @@ export async function removePortfolioPosition(symbol: string): Promise<{ success
 export function calculatePortfolioSummary(positions: PortfolioPosition[]): PortfolioSummary {
   let totalCost = 0;
   let totalEquity: number | null = 0;
+  let verifiedEquity: number | null = 0;
+  let paperEquity: number | null = 0;
   let unpricedCount = 0;
+  let hasUnverified = false;
 
   positions.forEach((pos) => {
     const cost = pos.shares * pos.entryPrice;
     totalCost += cost;
 
+    const isVerified = isHoldingVerified(pos);
+    if (!isVerified) {
+      hasUnverified = true;
+    }
+
     if (pos.currentPrice === null || pos.currentPrice === undefined || isNaN(pos.currentPrice) || pos.currentPrice <= 0) {
       unpricedCount += 1;
       totalEquity = null;
-    } else if (totalEquity !== null) {
-      totalEquity += pos.shares * pos.currentPrice;
+      if (isVerified) verifiedEquity = null;
+      else paperEquity = null;
+    } else {
+      const mktVal = pos.shares * pos.currentPrice;
+      if (totalEquity !== null) totalEquity += mktVal;
+      if (isVerified) {
+        if (verifiedEquity !== null) verifiedEquity += mktVal;
+      } else {
+        if (paperEquity !== null) paperEquity += mktVal;
+      }
     }
   });
 
@@ -612,6 +645,9 @@ export function calculatePortfolioSummary(positions: PortfolioPosition[]): Portf
     positionsCount: positions.length,
     isComplete,
     unpricedCount,
+    verifiedEquity: verifiedEquity !== null && verifiedEquity > 0 ? verifiedEquity : null,
+    paperEquity: paperEquity !== null && paperEquity > 0 ? paperEquity : null,
+    hasUnverifiedPositions: hasUnverified,
   };
 }
 
