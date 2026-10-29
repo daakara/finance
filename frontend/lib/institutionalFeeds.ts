@@ -1,5 +1,7 @@
 "use client";
 
+import { getApiBaseUrl } from "./api";
+
 /**
  * Institutional Data Ingestion & Synthesis Engine:
  * 1. Federal Reserve Economic Data (FRED): Real-time macroeconomic regime, 10Y-2Y curve, high yield credit spread.
@@ -116,7 +118,7 @@ export const CURATED_HISTORICAL_SEC_TRADES: SecForm4Trade[] = [
 export const LIVE_SEC_EDGAR_FORM4_TRADES = CURATED_HISTORICAL_SEC_TRADES;
 
 export async function fetchFredMacroRegime(): Promise<FredMacroData> {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  const API_BASE = getApiBaseUrl();
   try {
     const res = await fetch(`${API_BASE}/regimes/current`);
     if (res.ok) {
@@ -168,7 +170,7 @@ export async function fetchSecForm4Insiders(symbol?: string): Promise<SecFilings
     };
   }
   const symClean = symbol.toUpperCase().replace("-USD", "");
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  const API_BASE = getApiBaseUrl();
   try {
     const res = await fetch(`${API_BASE}/smart-money/sec-filings/${symClean}`);
     if (res.ok) {

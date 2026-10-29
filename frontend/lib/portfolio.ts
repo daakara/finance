@@ -14,6 +14,7 @@ import { isUxReviewOnly, UX_REVIEW_LOCK_MESSAGE } from "./uxReviewBoundary";
  */
 
 import { trackPortfolioPositionAdded } from "./matomo";
+import { getApiBaseUrl } from "./api";
 
 export interface PortfolioPosition {
   id?: number;
@@ -28,11 +29,13 @@ export interface PortfolioPosition {
   assetType: "Stock" | "ETF" | "Crypto";
   liveFreshness?: string;
   liveSource?: string;
-  holdingSource?: "MANUAL" | "JOURNAL" | "MIXED";
+  holdingSource?: "MANUAL" | "JOURNAL" | "MIXED" | "PAPER" | "VERIFIED_BROKER";
   hasOpenJournalTrade?: boolean;
   tradeId?: number | null;
   manualShares?: number;
   manualEntryPrice?: number;
+  isHypothetical?: boolean;
+  provenance?: string;
 }
 
 export interface ManualHoldingExitRequest {
@@ -70,6 +73,13 @@ export interface ManualHoldingExitResponse {
   portfolioStatus: "OPEN" | "CLOSED";
 }
 
+export type PortfolioProvenanceStatus =
+  | "NOT_LOADED"
+  | "VERIFIED"
+  | "UNVERIFIED"
+  | "MIXED_PROVENANCE"
+  | "INCOMPLETE_DATA";
+
 export interface PortfolioSummary {
   totalEquity: number | null;
   totalCost: number;
@@ -78,6 +88,22 @@ export interface PortfolioSummary {
   positionsCount: number;
   isComplete: boolean;
   unpricedCount: number;
+  verifiedEquity: number | null;
+  paperEquity: number | null;
+  hasUnverifiedPositions: boolean;
+  provenanceStatus: PortfolioProvenanceStatus;
+}
+
+/**
+ * Financial Governance Invariant (WP-02 / RQ-05):
+ * Only holdings explicitly attested by verified broker integration
+ * and non-hypothetical can ever acquire verified authority.
+ * Legacy untagged, manual, journal, or paper holdings are strictly UNVERIFIED.
+ */
+export function isHoldingVerified(p: PortfolioPosition): boolean {
+  if (!p) return false;
+  if (p.isHypothetical === true) return false;
+  return p.holdingSource === "VERIFIED_BROKER" && p.provenance === "VERIFIED_BROKER_INTEGRATION";
 }
 
 const STORAGE_KEY = "FINANCE_USER_PORTFOLIO";
@@ -113,7 +139,7 @@ export function getAnonymousUserId(): string {
 export function loadPortfolioPositions(): PortfolioPosition[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage ? window.localStorage.getItem(STORAGE_KEY) : null;
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
@@ -124,6 +150,14 @@ export function loadPortfolioPositions(): PortfolioPosition[] {
             : null,
           shares: Number(p.shares),
           entryPrice: Number(p.entryPrice),
+          // INVARIANT (ARX-036-D3): Local browser storage is untrusted client state.
+          // Any record read from localStorage is quarantined as unverified/paper.
+          // It can NEVER confer verified broker authority.
+          holdingSource: "PAPER" as const,
+          isHypothetical: true,
+          provenance: typeof p.provenance === "string" && p.provenance.startsWith("SIMULATED")
+            ? p.provenance
+            : "UNTRUSTED_LOCAL_STORAGE",
         }));
       }
     }
@@ -165,7 +199,7 @@ export async function migrateLocalHoldingsToApi(holdings: PortfolioPosition[]): 
     return { success: true, migratedCount: 0, totalSubmitted: 0, failedCount: 0, status: "no_op" };
   }
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const baseUrl = getApiBaseUrl();
     const anonId = getAnonymousUserId();
     const res = await fetch(`${baseUrl}/portfolio/migrate`, {
       method: "POST",
@@ -237,7 +271,7 @@ export async function syncPortfolioFromApi(): Promise<PortfolioPosition[]> {
   const readStartTime = Date.now();
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const baseUrl = getApiBaseUrl();
     const anonId = getAnonymousUserId();
     const res = await fetch(`${baseUrl}/portfolio`, {
       headers: {
@@ -309,7 +343,7 @@ export async function persistHoldingToApi(holding: PortfolioPosition): Promise<{
   if (isUxReviewOnly()) return { success: false, error: UX_REVIEW_LOCK_MESSAGE };
   if (typeof window === "undefined") return { success: false, error: "Window undefined" };
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const baseUrl = getApiBaseUrl();
     const anonId = getAnonymousUserId();
     const res = await fetch(`${baseUrl}/portfolio`, {
       method: "POST",
@@ -343,7 +377,7 @@ export async function removeHoldingFromApi(symbol: string): Promise<{ success: b
   if (isUxReviewOnly()) return { success: false, error: UX_REVIEW_LOCK_MESSAGE };
   if (typeof window === "undefined") return { success: false, error: "Window undefined" };
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const baseUrl = getApiBaseUrl();
     const anonId = getAnonymousUserId();
     const res = await fetch(`${baseUrl}/portfolio/${encodeURIComponent(symbol)}`, {
       method: "DELETE",
@@ -369,7 +403,7 @@ export async function exitManualHoldingViaApi(
 ): Promise<{ success: boolean; data?: ManualHoldingExitResponse; error?: { code: string; message: string }; message?: string }> {
   if (isUxReviewOnly()) return { success: false, error: { code: "UX_REVIEW_LOCKED", message: UX_REVIEW_LOCK_MESSAGE }, message: UX_REVIEW_LOCK_MESSAGE };
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const baseUrl = getApiBaseUrl();
     const anonId = anonymousUserId || getAnonymousUserId();
     const res = await fetch(`${baseUrl}/portfolio/holdings/${encodeURIComponent(holdingId)}/exit`, {
       method: "POST",
@@ -593,17 +627,33 @@ export async function removePortfolioPosition(symbol: string): Promise<{ success
 export function calculatePortfolioSummary(positions: PortfolioPosition[]): PortfolioSummary {
   let totalCost = 0;
   let totalEquity: number | null = 0;
+  let verifiedEquity: number | null = 0;
+  let paperEquity: number | null = 0;
   let unpricedCount = 0;
+  let hasUnverified = false;
 
   positions.forEach((pos) => {
     const cost = pos.shares * pos.entryPrice;
     totalCost += cost;
 
+    const isVerified = isHoldingVerified(pos);
+    if (!isVerified) {
+      hasUnverified = true;
+    }
+
     if (pos.currentPrice === null || pos.currentPrice === undefined || isNaN(pos.currentPrice) || pos.currentPrice <= 0) {
       unpricedCount += 1;
       totalEquity = null;
-    } else if (totalEquity !== null) {
-      totalEquity += pos.shares * pos.currentPrice;
+      if (isVerified) verifiedEquity = null;
+      else paperEquity = null;
+    } else {
+      const mktVal = pos.shares * pos.currentPrice;
+      if (totalEquity !== null) totalEquity += mktVal;
+      if (isVerified) {
+        if (verifiedEquity !== null) verifiedEquity += mktVal;
+      } else {
+        if (paperEquity !== null) paperEquity += mktVal;
+      }
     }
   });
 
@@ -613,6 +663,27 @@ export function calculatePortfolioSummary(positions: PortfolioPosition[]): Portf
     ? (totalUnrealizedPnL / totalCost) * 100
     : null;
 
+  // Determine explicit provenance status contract (ARX-036-D3)
+  let provenanceStatus: PortfolioProvenanceStatus;
+  let verifiedCount = 0;
+  let unverifiedCount = 0;
+  positions.forEach((pos) => {
+    if (isHoldingVerified(pos)) verifiedCount++;
+    else unverifiedCount++;
+  });
+
+  if (!isComplete) {
+    provenanceStatus = "INCOMPLETE_DATA";
+  } else if (positions.length === 0) {
+    provenanceStatus = "VERIFIED";
+  } else if (verifiedCount > 0 && unverifiedCount === 0) {
+    provenanceStatus = "VERIFIED";
+  } else if (verifiedCount === 0 && unverifiedCount > 0) {
+    provenanceStatus = "UNVERIFIED";
+  } else {
+    provenanceStatus = "MIXED_PROVENANCE";
+  }
+
   return {
     totalEquity,
     totalCost,
@@ -621,6 +692,10 @@ export function calculatePortfolioSummary(positions: PortfolioPosition[]): Portf
     positionsCount: positions.length,
     isComplete,
     unpricedCount,
+    verifiedEquity: isComplete && verifiedCount > 0 && verifiedEquity !== null && verifiedEquity > 0 ? verifiedEquity : null,
+    paperEquity: isComplete && unverifiedCount > 0 && paperEquity !== null && paperEquity > 0 ? paperEquity : null,
+    hasUnverifiedPositions: hasUnverified,
+    provenanceStatus,
   };
 }
 
@@ -694,7 +769,7 @@ export async function fetchAuthoritativePortfolio(): Promise<AuthoritativePortfo
   }
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const baseUrl = getApiBaseUrl();
     const anonId = getAnonymousUserId();
     const res = await fetch(`${baseUrl}/portfolio`, {
       headers: {

@@ -114,6 +114,9 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
       targetPrice: target20,
       addedAt: new Date().toISOString().split("T")[0],
       assetType: "Stock",
+      holdingSource: "PAPER",
+      isHypothetical: true,
+      provenance: "LOCAL_DAYTRADER_SIMULATION",
     };
     // Replace if exists, or prepend
     const updated = [newPos, ...existing.filter((p) => p.symbol !== symKey)];
