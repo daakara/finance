@@ -41,6 +41,7 @@ export default function PositionSizerModal({
   isActionable = false,
   decisionStateLabel,
 }: PositionSizerProps) {
+  const reviewOnly = process.env.NEXT_PUBLIC_UX_REVIEW_CANDIDATE === "true";
   const [accountSize, setAccountSize] = useState<number>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("FINANCE_USER_ACCOUNT_SIZE");
@@ -159,6 +160,7 @@ export default function PositionSizerModal({
   const authenticName = getCanonicalAssetName(symbol, matchedItem?.name);
 
   const handleSaveToPortfolio = () => {
+    if (reviewOnly) return;
     if (isSetupInvalid || isSizingBlocked || shares <= 0 || safeEntry <= 0) return;
     try {
       const raw = localStorage.getItem("FINANCE_USER_PORTFOLIO");
@@ -488,6 +490,8 @@ export default function PositionSizerModal({
             )}
           </div>
 
+          <p role="note" className="text-xs text-[var(--text-2)]">Calculator account value is user-configurable and may be assumed; it is not verified broker equity. Financial authority review UXF6-S01 remains open. A paper record does not certify execution permission.</p>
+
           {/* Modeled Risk Disclosure */}
           <p className="text-[10px] text-[var(--text-muted)] px-1 leading-normal">
             * Modeled risk is calculated to the stop level. Realized losses may exceed this amount during overnight price gaps or illiquid market slippage.
@@ -506,7 +510,7 @@ export default function PositionSizerModal({
         <div className="p-3.5 sm:p-4 border-t border-[var(--border-subtle)] bg-[var(--surface-2)] flex items-center justify-between gap-3 shrink-0">
           <button
             type="button"
-            disabled={isSetupInvalid || shares <= 0 || isSizingBlocked}
+            disabled={reviewOnly || isSetupInvalid || shares <= 0 || isSizingBlocked}
             onClick={handleSaveToPortfolio}
             className={`px-3.5 sm:px-4 py-2 border rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow ${
               isSetupInvalid || shares <= 0 || isSizingBlocked
@@ -516,7 +520,9 @@ export default function PositionSizerModal({
           >
             <span>💼</span>
             <span>
-              {isSizingBlocked
+              {reviewOnly
+                ? "Owner review — paper recording locked"
+                : isSizingBlocked
                 ? "Sizing Disabled (Non-Actionable Asset)"
                 : isSetupInvalid
                 ? "Sizing Disabled (Invalid Setup)"

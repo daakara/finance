@@ -142,7 +142,7 @@ export function SharedAssetDeck({
                 : "bg-[var(--surface-2)] text-cyan-300 border border-[var(--border-subtle)]"
             }`}
           >
-            {isStaleTape ? "Historical EOD Reference (>4D Lag)" : "Setup Spot Reference"}
+            {isStaleTape ? "Historical EOD Reference (>4D Lag)" : "Analysis Input Reference"}
           </span>
           <span>·</span>
           <span id="price-session" data-testid="price-session" className="price-tag">
@@ -151,7 +151,7 @@ export function SharedAssetDeck({
           <span>·</span>
           <span id="price-asof" data-testid="price-asof" className="price-tag mono" suppressHydrationWarning>
             {insight.terminalState?.modelProvenance?.calculatedAt
-              ? `As of ${new Date(insight.terminalState.modelProvenance.calculatedAt)
+              ? `Context generated ${new Date(insight.terminalState.modelProvenance.calculatedAt)
                   .toISOString()
                   .replace("T", " ")
                   .slice(0, 16)} UTC`

@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import React, { useState } from "react";
 import {
   evaluatePreFlightChecks,
@@ -10,13 +11,15 @@ import {
 
 export interface PreFlightReadinessBarProps extends PreFlightChecklistInputs {
   onOpenModal?: () => void;
+  priceContext?: string;
+  summaryTarget?: HTMLElement | null;
   className?: string;
   isDrawerExpanded?: boolean;
   onToggleDrawer?: (expanded: boolean) => void;
 }
 
 export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps) {
-  const { onOpenModal, className = "", isDrawerExpanded: controlledDrawerExpanded, onToggleDrawer, ...evalInputs } = props;
+  const { summaryTarget = null, priceContext, onOpenModal, className = "", isDrawerExpanded: controlledDrawerExpanded, onToggleDrawer, ...evalInputs } = props;
   const [internalDrawerExpanded, setInternalDrawerExpanded] = useState<boolean>(false);
   const isDrawerExpanded = controlledDrawerExpanded !== undefined ? controlledDrawerExpanded : internalDrawerExpanded;
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
@@ -61,6 +64,54 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
 
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
 
+  const blockerSummary = (
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-2 text-xs">
+        {/* Active Blocker */}
+        <div
+          data-testid="inline-active-blocker-box"
+          className="md:col-span-5 p-2.5 rounded-lg bg-[var(--surface-2)] border border-[var(--border-subtle)] flex flex-col justify-center space-y-1"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] uppercase font-mono font-bold text-[var(--text-2)]">
+              Active Blocker:
+            </span>
+            {!isCleared && (
+              <span
+                data-testid="inline-blocker-tag"
+                className="text-[9px] font-mono font-bold text-rose-400 bg-rose-950/50 px-1 py-0.5 rounded border border-rose-800/40"
+              >
+                BLOCKING
+              </span>
+            )}
+          </div>
+          <span
+            data-testid="inline-active-blocker-text"
+            className={`font-mono font-bold text-[11px] leading-snug ${
+              isCleared ? "text-emerald-300" : "text-amber-300"
+            }`}
+          >
+            {activeBlocker}
+          </span>
+        </div>
+
+        {/* What Needs to Change */}
+        <div
+          data-testid="inline-change-callout-box"
+          className="md:col-span-7 p-2.5 rounded-lg bg-[var(--surface-2)] border border-cyan-900/40 flex flex-col justify-center space-y-1 text-[var(--text-2)]"
+        >
+          <span className="text-[10px] uppercase font-mono font-bold text-cyan-300">
+            What Needs to Change:
+          </span>
+          <p
+            data-testid="inline-what-needs-to-change"
+            className="text-[11px] font-sans leading-snug text-[var(--text-1)]"
+          >
+            {whatNeedsToChange}
+          </p>
+        </div>
+      </div>
+  );
+  const displayDetail = (text: string) => text.replace(/\bSpot price\b/g, "Readiness input price").replace(/\bSpot\b/g, "Readiness input");
   return (
     <div
       id="preflight-readiness-bar"
@@ -158,51 +209,7 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
       </div>
 
       {/* ── 3. Active Blocker & What Needs to Change Callout ─────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-2 text-xs">
-        {/* Active Blocker */}
-        <div
-          data-testid="inline-active-blocker-box"
-          className="md:col-span-5 p-2.5 rounded-lg bg-[var(--surface-2)] border border-[var(--border-subtle)] flex flex-col justify-center space-y-1"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase font-mono font-bold text-[var(--text-2)]">
-              Active Blocker:
-            </span>
-            {!isCleared && (
-              <span
-                data-testid="inline-blocker-tag"
-                className="text-[9px] font-mono font-bold text-rose-400 bg-rose-950/50 px-1 py-0.5 rounded border border-rose-800/40"
-              >
-                BLOCKING
-              </span>
-            )}
-          </div>
-          <span
-            data-testid="inline-active-blocker-text"
-            className={`font-mono font-bold text-[11px] leading-snug ${
-              isCleared ? "text-emerald-300" : "text-amber-300"
-            }`}
-          >
-            {activeBlocker}
-          </span>
-        </div>
-
-        {/* What Needs to Change */}
-        <div
-          data-testid="inline-change-callout-box"
-          className="md:col-span-7 p-2.5 rounded-lg bg-[var(--surface-2)] border border-cyan-900/40 flex flex-col justify-center space-y-1 text-[var(--text-2)]"
-        >
-          <span className="text-[10px] uppercase font-mono font-bold text-cyan-300">
-            What Needs to Change:
-          </span>
-          <p
-            data-testid="inline-what-needs-to-change"
-            className="text-[11px] font-sans leading-snug text-[var(--text-1)]"
-          >
-            {whatNeedsToChange}
-          </p>
-        </div>
-      </div>
+      {summaryTarget ? createPortal(blockerSummary, summaryTarget) : blockerSummary}
 
       {/* ── 4. Meta Footer: Evidence Provenance & Deep Inspection Controls ── */}
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--border-subtle)] text-xs">
@@ -224,7 +231,7 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
             onClick={handleToggleDrawer}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs font-semibold bg-[var(--surface-2)] hover:bg-[var(--surface-2)] text-[var(--text-1)] border border-[var(--border-subtle)] transition-colors cursor-pointer min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
           >
-            <span>{isDrawerExpanded ? "Collapse Telemetry ▲" : "Inspect Telemetry ▾"}</span>
+            <span>{isDrawerExpanded ? "What Needs to Change · Collapse ▲" : "What Needs to Change · Inspect Telemetry ▾"}</span>
           </button>
 
           {/* Optional Full Modal Inspection */}
@@ -247,8 +254,10 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
           id="preflight-details-drawer"
           data-testid="preflight-details-drawer"
           aria-label="Detailed Preflight Telemetry"
+          role="region"
           className="mt-2.5 pt-3 border-t border-dashed border-[var(--border-subtle)] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs font-sans animate-in fade-in duration-150"
         >
+          <p className="col-span-full text-xs text-[var(--text-2)]">What Needs to Change: {whatNeedsToChange}{priceContext ? ` ${priceContext}` : " Readiness uses the supplied analysis price; this is not a live quote certification."}</p>
           {checks.map((chk: PreFlightCheckItem) => (
             <div
               key={chk.id}
@@ -266,7 +275,7 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
                 </span>
               </div>
               <p className="text-[11px] text-[var(--text-2)] leading-snug font-sans">
-                {chk.detail}
+                {displayDetail(chk.detail)}
               </p>
             </div>
           ))}
