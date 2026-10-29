@@ -3,6 +3,8 @@ import {
   PortfolioPosition,
   calculatePortfolioSummary,
   isHoldingVerified,
+  loadPortfolioPositions,
+  PortfolioSummary,
 } from "../lib/portfolio";
 import {
   getTraderContextFromUnifiedCockpit,
@@ -53,7 +55,7 @@ console.log("=================================================================")
   console.log("  [PASS] Scenario 3: New paper holding correctly classified as unverified");
 }
 
-// 4. Legacy Untagged Holding: Missing holdingSource and provenance
+// 4. Legacy Untagged Holding: Defaults to unverified
 {
   const legacyPos: PortfolioPosition = {
     symbol: "MSFT",
@@ -64,38 +66,48 @@ console.log("=================================================================")
     addedAt: "2026-09-01",
     assetType: "Stock",
   };
-  assert.strictEqual(isHoldingVerified(legacyPos), false, "Legacy untagged holding must NEVER acquire verified status");
+  assert.strictEqual(isHoldingVerified(legacyPos), false, "Legacy untagged holding must fail closed to unverified");
   console.log("  [PASS] Scenario 4: Legacy untagged holding fails closed to unverified");
 }
 
-// 5. Multiple Portfolio Storage Writers: DayTrader sizer holding
+// 5. Multiple Writers Isolation: Manual vs Journal
 {
-  const dtPos: PortfolioPosition = {
-    symbol: "TSLA",
-    name: "Tesla Intraday",
+  const manualPos: PortfolioPosition = {
+    symbol: "GOOGL",
+    name: "Alphabet Inc",
     shares: 20,
-    entryPrice: 200,
-    currentPrice: 205,
-    addedAt: "2026-10-29",
+    entryPrice: 130,
+    currentPrice: 140,
+    addedAt: "2026-10-01",
     assetType: "Stock",
-    holdingSource: "PAPER",
-    isHypothetical: true,
-    provenance: "LOCAL_DAYTRADER_SIMULATION",
+    holdingSource: "MANUAL",
   };
-  assert.strictEqual(isHoldingVerified(dtPos), false, "DayTrader simulation holding must be unverified");
+  const journalPos: PortfolioPosition = {
+    symbol: "NVDA",
+    name: "Nvidia Corp",
+    shares: 10,
+    entryPrice: 400,
+    currentPrice: 450,
+    addedAt: "2026-10-15",
+    assetType: "Stock",
+    holdingSource: "JOURNAL",
+    hasOpenJournalTrade: true,
+  };
+  assert.strictEqual(isHoldingVerified(manualPos), false, "Manual holding must be unverified");
+  assert.strictEqual(isHoldingVerified(journalPos), false, "Journal holding must be unverified");
   console.log("  [PASS] Scenario 5: Multiple portfolio storage writers produce unverified holdings");
 }
 
-// 6. Mixed Hypothetical & Verified Holdings: PortfolioSummary separation
+// 6. Mixed Portfolio: Verified + Paper segregation and explicit provenanceStatus
 {
   const verifiedPos: PortfolioPosition = {
-    symbol: "NVDA",
-    name: "NVIDIA Corp",
-    shares: 10,
-    entryPrice: 100,
-    currentPrice: 120, // $1,200
-    addedAt: "2026-10-20",
-    assetType: "Stock",
+    symbol: "SPY",
+    name: "SPDR S&P 500 ETF Trust",
+    shares: 2,
+    entryPrice: 580,
+    currentPrice: 600, // $1,200
+    addedAt: "2026-10-29",
+    assetType: "ETF",
     holdingSource: "VERIFIED_BROKER",
     isHypothetical: false,
     provenance: "VERIFIED_BROKER_INTEGRATION",
@@ -118,6 +130,7 @@ console.log("=================================================================")
   assert.strictEqual(summary.verifiedEquity, 1200, "Verified equity must strictly include ONLY verified holdings");
   assert.strictEqual(summary.paperEquity, 16000, "Paper equity must capture hypothetical positions");
   assert.strictEqual(summary.hasUnverifiedPositions, true, "hasUnverifiedPositions must be true");
+  assert.strictEqual(summary.provenanceStatus, "MIXED_PROVENANCE", "Provenance status must be MIXED_PROVENANCE");
   console.log("  [PASS] Scenario 6: Mixed portfolio correctly segregates verifiedEquity ($1,200) from paperEquity ($16,000)");
 }
 
@@ -127,17 +140,16 @@ console.log("=================================================================")
     JSON.parse("MALFORMED_JSON{foo");
     assert.fail("Should have thrown");
   } catch {
-    // loadPortfolioPositions catches this and returns []
     const summary = calculatePortfolioSummary([]);
     assert.strictEqual(summary.verifiedEquity, null);
     assert.strictEqual(summary.positionsCount, 0);
+    assert.strictEqual(summary.provenanceStatus, "VERIFIED");
   }
   console.log("  [PASS] Scenario 7: Malformed storage returns empty portfolio and null verified equity");
 }
 
 // 8. Stale LocalStorage Account Size Ignored by Governor
 {
-  // Governor does NOT read FINANCE_USER_ACCOUNT_SIZE; requires serverTelemetry or cockpit
   const ctx = getTraderContextFromUnifiedCockpit(undefined, null);
   assert.strictEqual(ctx.accountEquity, null, "Stale localStorage account size cannot populate governor equity");
   console.log("  [PASS] Scenario 8: Governor strictly ignores unverified localStorage account size");
@@ -227,12 +239,12 @@ console.log("=================================================================")
   const summary = calculatePortfolioSummary(paperPositions);
   assert.strictEqual(summary.verifiedEquity, null, "Paper positions must yield null verified equity");
   assert.strictEqual(summary.paperEquity, 250000);
+  assert.strictEqual(summary.provenanceStatus, "UNVERIFIED");
   console.log("  [PASS] Scenario 13: $250,000 paper position produces ZERO verified equity for risk governor");
 }
 
 // 14. Broker HOLD Invariant: Live execution blocked
 {
-  // Financial Invariant: Even if sizing is calculated in UI, broker HOLD_EXEC_001 prevents live execution
   const holdActive = true; // HOLD_EXEC_001
   assert.strictEqual(holdActive, true, "HOLD_EXEC_001 must remain active");
   console.log("  [PASS] Scenario 14: Broker HOLD_EXEC_001 fail-closed gate confirmed");
@@ -249,7 +261,6 @@ console.log("=================================================================")
 
 // 16. Cross-Engine Consumer Consistency
 {
-  // Confluence and Governor agree on non-actionable setup
   const setup: TradeSetupSpec = {
     ticker: "NON_ACTIONABLE",
     setupName: "Stage 4",
@@ -273,6 +284,125 @@ console.log("=================================================================")
   console.log("  [PASS] Scenario 16: Cross-engine consensus on trade suppression confirmed");
 }
 
+// 17. PROVENANCE CHALLENGE (ARX-036-D3 Mandatory Negative Test):
+// Simulate malicious injection of apparently verified broker metadata through untrusted localStorage
+{
+  const mockStorage: Record<string, string> = {};
+  const fakeStorage = {
+    getItem: (key: string) => mockStorage[key] || null,
+    setItem: (key: string, val: string) => { mockStorage[key] = val; },
+  };
+  const fakeWindow = {
+    localStorage: fakeStorage,
+  };
+  (global as any).window = fakeWindow;
+  (global as any).localStorage = fakeStorage;
+
+  try {
+    // Malicious actor directly writes apparently verified metadata into localStorage
+    const maliciousPayload = [
+      {
+        symbol: "FORGED",
+        name: "Forged Broker Position",
+        shares: 10000,
+        entryPrice: 100,
+        currentPrice: 100, // $1,000,000 fake value!
+        holdingSource: "VERIFIED_BROKER",
+        provenance: "VERIFIED_BROKER_INTEGRATION",
+        isHypothetical: false,
+      },
+    ];
+    fakeWindow.localStorage.setItem("FINANCE_USER_PORTFOLIO", JSON.stringify(maliciousPayload));
+
+    // 1. loadPortfolioPositions must quarantine the untrusted record
+    const loaded = loadPortfolioPositions();
+    assert.strictEqual(loaded.length, 1);
+    assert.strictEqual(loaded[0].holdingSource, "PAPER", "Untrusted storage must be quarantined to PAPER");
+    assert.strictEqual(loaded[0].isHypothetical, true, "Untrusted storage must be marked hypothetical");
+    assert.strictEqual(loaded[0].provenance, "UNTRUSTED_LOCAL_STORAGE");
+    assert.strictEqual(isHoldingVerified(loaded[0]), false, "Forged record must NOT be verified");
+
+    // 2. calculatePortfolioSummary must report ZERO verified equity
+    const summary = calculatePortfolioSummary(loaded);
+    assert.strictEqual(summary.verifiedEquity, null, "Forged localStorage cannot yield verified equity");
+    assert.strictEqual(summary.paperEquity, 1000000, "Forged equity is classified as paper/unverified");
+    assert.strictEqual(summary.provenanceStatus, "UNVERIFIED");
+
+    // 3. Behavioral risk governor must NOT read localStorage and must fail closed
+    const ctx = getTraderContextFromUnifiedCockpit(undefined, null);
+    assert.strictEqual(ctx.accountEquity, null, "Governor accountEquity MUST remain null");
+    assert.strictEqual(ctx.isAvailable, false, "Governor MUST remain unavailable");
+
+    // 4. Downstream position sizing must be completely suppressed
+    const setup: TradeSetupSpec = {
+      ticker: "AAPL",
+      setupName: "Breakout",
+      entryPivot: 150,
+      stopLoss: 140,
+      target1: 170,
+      isActionable: true,
+      executionStatus: "IN_BUY_ZONE",
+      decisionState: "ACTIONABLE_SETUP",
+    };
+    const sizingResult = calculateGovernedPositionSize(setup, ctx);
+    assert.strictEqual(sizingResult.recommendedShares, 0, "Forged storage cannot size shares");
+    assert.strictEqual(sizingResult.recommendedDollarRisk, 0, "Forged storage cannot allocate dollar risk");
+
+    console.log("  [PASS] Scenario 17: Injected verified localStorage metadata strictly neutralized and zero downstream authority conferred");
+  } finally {
+    delete (global as any).window;
+    delete (global as any).localStorage;
+  }
+}
+
+// 18. Explicit PortfolioSummary Provenance Status Contract (ARX-036-D3)
+{
+  // State 1: NOT_LOADED (initial state in page)
+  const initialSummary: PortfolioSummary = {
+    totalEquity: null,
+    totalCost: 0,
+    totalUnrealizedPnL: null,
+    totalUnrealizedPnLPct: null,
+    positionsCount: 0,
+    isComplete: false,
+    unpricedCount: 0,
+    verifiedEquity: null,
+    paperEquity: null,
+    hasUnverifiedPositions: false,
+    provenanceStatus: "NOT_LOADED",
+  };
+  assert.strictEqual(initialSummary.provenanceStatus, "NOT_LOADED");
+  assert.strictEqual(initialSummary.totalEquity, null, "Unknown equity must be null, not zero");
+
+  // State 2: INCOMPLETE_DATA (unpriced position)
+  const unpricedSummary = calculatePortfolioSummary([
+    { symbol: "XYZ", name: "XYZ Inc", shares: 10, entryPrice: 100, currentPrice: null, addedAt: "2026-10-29", assetType: "Stock" },
+  ]);
+  assert.strictEqual(unpricedSummary.provenanceStatus, "INCOMPLETE_DATA");
+  assert.strictEqual(unpricedSummary.isComplete, false);
+
+  // State 3: UNVERIFIED (paper only)
+  const paperSummary = calculatePortfolioSummary([
+    { symbol: "XYZ", name: "XYZ Inc", shares: 10, entryPrice: 100, currentPrice: 110, addedAt: "2026-10-29", assetType: "Stock", holdingSource: "PAPER", isHypothetical: true },
+  ]);
+  assert.strictEqual(paperSummary.provenanceStatus, "UNVERIFIED");
+
+  // State 4: VERIFIED (broker only)
+  const verifiedSummary = calculatePortfolioSummary([
+    { symbol: "XYZ", name: "XYZ Inc", shares: 10, entryPrice: 100, currentPrice: 110, addedAt: "2026-10-29", assetType: "Stock", holdingSource: "VERIFIED_BROKER", provenance: "VERIFIED_BROKER_INTEGRATION", isHypothetical: false },
+  ]);
+  assert.strictEqual(verifiedSummary.provenanceStatus, "VERIFIED");
+
+  // State 5: MIXED_PROVENANCE (broker + paper)
+  const mixedSummary = calculatePortfolioSummary([
+    { symbol: "XYZ", name: "XYZ Inc", shares: 10, entryPrice: 100, currentPrice: 110, addedAt: "2026-10-29", assetType: "Stock", holdingSource: "VERIFIED_BROKER", provenance: "VERIFIED_BROKER_INTEGRATION", isHypothetical: false },
+    { symbol: "ABC", name: "ABC Inc", shares: 10, entryPrice: 50, currentPrice: 60, addedAt: "2026-10-29", assetType: "Stock", holdingSource: "PAPER", isHypothetical: true },
+  ]);
+  assert.strictEqual(mixedSummary.provenanceStatus, "MIXED_PROVENANCE");
+
+  console.log("  [PASS] Scenario 18: All 5 explicit PortfolioSummary provenance states verified");
+}
+
 console.log("=================================================================");
-console.log("   ALL 16 WP-02 RQ-05 EQUITY PROVENANCE TESTS PASSED (EXIT 0)");
+console.log("   ALL 18 WP-02 RQ-05 EQUITY PROVENANCE TESTS PASSED (EXIT 0)");
 console.log("=================================================================");

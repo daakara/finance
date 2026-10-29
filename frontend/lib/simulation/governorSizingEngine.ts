@@ -87,20 +87,10 @@ export function getTraderContextFromUnifiedCockpit(
     accountEquity = cockpit.portfolio.totalMarketValue;
   } else if (serverTelemetry?.accountEquity && serverTelemetry.accountEquity > 0) {
     accountEquity = serverTelemetry.accountEquity;
-  } else if (typeof window !== "undefined") {
-    // 2. Local browser storage provenance gate (WP-02 / RQ-05):
-    // INVARIANT: Unverified browser localStorage holdings (paper trades, manual entries, legacy untagged)
-    // MUST NEVER acquire account-specific sizing authority in the behavioral risk governor.
-    const positions = loadPortfolioPositions();
-    const verifiedPositions = positions.filter(isHoldingVerified);
-    if (verifiedPositions.length > 0) {
-      const summary = calculatePortfolioSummary(verifiedPositions);
-      // Only use live priced verifiedEquity when isComplete is true and verifiedEquity > 0.
-      if (summary.isComplete && summary.verifiedEquity !== null && summary.verifiedEquity > 0) {
-        accountEquity = summary.verifiedEquity;
-      }
-    }
-    // Zero unverified localStorage fallback: Editing browser storage cannot fabricate financial risk boundaries.
+  } else {
+    // INVARIANT (ARX-036-D3): Zero localStorage fallback. Account equity MUST come from verified institutional/broker state.
+    // Local browser storage is untrusted client state and cannot grant verified sizing authority.
+    accountEquity = null;
   }
 
   // Never substitute household liquid reserves (cockpit.runway.liquidReserves) for trading account equity.

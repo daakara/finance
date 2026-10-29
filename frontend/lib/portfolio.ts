@@ -71,6 +71,13 @@ export interface ManualHoldingExitResponse {
   portfolioStatus: "OPEN" | "CLOSED";
 }
 
+export type PortfolioProvenanceStatus =
+  | "NOT_LOADED"
+  | "VERIFIED"
+  | "UNVERIFIED"
+  | "MIXED_PROVENANCE"
+  | "INCOMPLETE_DATA";
+
 export interface PortfolioSummary {
   totalEquity: number | null;
   totalCost: number;
@@ -82,6 +89,7 @@ export interface PortfolioSummary {
   verifiedEquity: number | null;
   paperEquity: number | null;
   hasUnverifiedPositions: boolean;
+  provenanceStatus: PortfolioProvenanceStatus;
 }
 
 /**
@@ -129,7 +137,7 @@ export function getAnonymousUserId(): string {
 export function loadPortfolioPositions(): PortfolioPosition[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage ? window.localStorage.getItem(STORAGE_KEY) : null;
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
@@ -140,6 +148,14 @@ export function loadPortfolioPositions(): PortfolioPosition[] {
             : null,
           shares: Number(p.shares),
           entryPrice: Number(p.entryPrice),
+          // INVARIANT (ARX-036-D3): Local browser storage is untrusted client state.
+          // Any record read from localStorage is quarantined as unverified/paper.
+          // It can NEVER confer verified broker authority.
+          holdingSource: "PAPER" as const,
+          isHypothetical: true,
+          provenance: typeof p.provenance === "string" && p.provenance.startsWith("SIMULATED")
+            ? p.provenance
+            : "UNTRUSTED_LOCAL_STORAGE",
         }));
       }
     }
@@ -637,6 +653,27 @@ export function calculatePortfolioSummary(positions: PortfolioPosition[]): Portf
     ? (totalUnrealizedPnL / totalCost) * 100
     : null;
 
+  // Determine explicit provenance status contract (ARX-036-D3)
+  let provenanceStatus: PortfolioProvenanceStatus;
+  let verifiedCount = 0;
+  let unverifiedCount = 0;
+  positions.forEach((pos) => {
+    if (isHoldingVerified(pos)) verifiedCount++;
+    else unverifiedCount++;
+  });
+
+  if (!isComplete) {
+    provenanceStatus = "INCOMPLETE_DATA";
+  } else if (positions.length === 0) {
+    provenanceStatus = "VERIFIED";
+  } else if (verifiedCount > 0 && unverifiedCount === 0) {
+    provenanceStatus = "VERIFIED";
+  } else if (verifiedCount === 0 && unverifiedCount > 0) {
+    provenanceStatus = "UNVERIFIED";
+  } else {
+    provenanceStatus = "MIXED_PROVENANCE";
+  }
+
   return {
     totalEquity,
     totalCost,
@@ -645,9 +682,10 @@ export function calculatePortfolioSummary(positions: PortfolioPosition[]): Portf
     positionsCount: positions.length,
     isComplete,
     unpricedCount,
-    verifiedEquity: verifiedEquity !== null && verifiedEquity > 0 ? verifiedEquity : null,
-    paperEquity: paperEquity !== null && paperEquity > 0 ? paperEquity : null,
+    verifiedEquity: isComplete && verifiedCount > 0 && verifiedEquity !== null && verifiedEquity > 0 ? verifiedEquity : null,
+    paperEquity: isComplete && unverifiedCount > 0 && paperEquity !== null && paperEquity > 0 ? paperEquity : null,
     hasUnverifiedPositions: hasUnverified,
+    provenanceStatus,
   };
 }
 
