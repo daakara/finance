@@ -162,3 +162,60 @@ The platform operates under strict mathematical boundaries to guarantee zero cor
   * REDIS_URL: Optional (Falls back to in-memory rate limiting if omitted)
   * EODHD_API_KEY: Optional (High-throughput candle fallback)
   * FRED_API_KEY: Optional (Direct Federal Reserve macro yields)
+
+---
+
+## 5. Market-Wide Discovery Architecture & Research Ratification (ARX-DOC-2026-10-29)
+
+*Formal architectural baseline incorporation of Directive ARX-MW-004H Product Owner ratification and evidence reconciliation.*
+
+### 5.1 Architecture Direction Ratification
+- **Ratification Verdict:** `ARCHITECTURE_DIRECTION_RATIFIED`
+- **Canonical Architecture:** **Model E+ (Enhanced Security Registry Core) with Derived F1 Opportunity Projections**.
+- **Ratification Reference:** [`ARX_MW004H_FINAL_ARCHITECTURE_RATIFICATION_AND_CANDIDATE_FREEZE.md`](file:///c:/Users/akara/Documents/Projects/finance-arx-market-wide-top35/docs/research/market_wide_poc/ARX_MW004H_FINAL_ARCHITECTURE_RATIFICATION_AND_CANDIDATE_FREEZE.md)
+- **Investigation Closure:** The comparative architecture investigation between Model E+ and Model F1 is officially concluded. No further comparative architecture studies are authorized without a new, material, reproducible counterexample.
+
+### 5.2 Preserved Git & Research Identities
+- **Current Mainline Reference:** `e10de3b2714e7c7cba49c51e0e7a4eb13a7033f6` (`origin/main`, PR #129 sizing isolation merged).
+- **Historical Research Baseline Anchor:** `29ead6e4df6cbf4e1e611feb74d61f0370b80e53` (Anchor for PR #128 and MW-004A..H investigation).
+- **Research Implementation Candidate Commit:** `f154032152710a51b209d80a4a21dfb655d312e4` (Branch `research/arx-mw002-independent-discovery`).
+- **Research Ratification Record Commit:** `ac074ea487a55c276ee64db59f3aa8f278d2b992`.
+- **Draft PR #128 Remote Reference:** `3fff68108593f304275cdf18b696c8697f5b8257` (`origin/poc/arx-market-wide-top35`).  
+  *Preservation Policy:* PR #128 is strictly retained as an open, unmerged research reference. It is **not** merged, closed, or described as containing the final corrective implementation.
+
+### 5.3 Bounded Market Store Dataset Reconciliation
+- **MW-004G Baseline File Hash:** `ab31fdffa0b8b20af714bf12becf55f9ea81d17018fdda81c77e3c7bb1ade615` (4,714,496 bytes).
+- **MW-004H Frozen Candidate File Hash:** `00c0690efebfa5e419beb3890c3bd251b2182b0994f50a4c32359bb18834d273` (5,705,728 bytes).
+- **Logical Data Parity vs. File-Byte Identity:**
+  - `asset_ohlcv_daily` row count: **40,310 rows** in both baselines (delta = +0).
+  - Logical candle data content hash: `27934736360afd0fbd266c20c3663191a0a46426bd2ecc4494f96ae43805f41e` (100% bitwise identical).
+  - Added multi-pillar research tables verified empty (0 rows each):
+    - `asset_catalyst_registry`: 0 rows
+    - `asset_factor_snapshots`: 0 rows
+    - `asset_ohlcv_provenance`: 0 rows
+    - `insider_disclosures`: 0 rows
+    - `sqlite_sequence`: 0 rows
+  - The SQLite file-level size increase (+991,232 bytes) is verified to result solely from SQLite B-tree page pre-allocation for these 5 empty schema definitions. Zero price bars were modified.
+
+### 5.4 Seven Corrective Verifications & Test Reproducibility
+The 7 corrective findings are verified on the frozen candidate (`f154032`):
+1. `DEFECT-001` (Ranking Immutability): Deep-copy candidate isolation in `top35_selector.py`.
+2. `DEFECT-002` (Research Authority Containment): Dataclass barriers, serialization firewall (`to_dict()`), and `ConfluenceEngine` 0-share suppression.
+3. `FN-001` (Missing Evidence Integrity): Auto-enforcement and validation of required missing tokens after deserialization.
+4. `FN-002` (Cohort Qualification Revalidation): Predicate enforcement in selector ($R:R \ge 2.0$, candle count $\ge 50$, Stage $\ne 4$).
+5. `FN-003` (Score Provenance Transparency): `ScoreProvenance` enum distinguishing authentic 0.0 scores from missing-data 0.0 values.
+6. `FN-004` (Trust Boundary Firewall): Rejection of forged execution permissions in `verify_research_trust_boundary()`.
+7. `FN-005` (Replay Classification Binding): Rejection of `EXACT_ORIGINAL_REPLAY` without PIT SEC filings; `HISTORICAL_RECONSTRUCTION` enforced.
+
+*Reproducible Clean-Checkout Test Commands:*
+```bash
+python -m pytest tests/test_arx_mw002_adversarial_falsification.py  # 18 passed in 4.92s
+python tests/test_arx_mw002_adversarial_falsification.py            # 18 passed in 2.74s
+python scratch/test_independent_candidate_verification.py           # 7/7 checks passed
+python scratch/verify_mw004h_manifest_integrity.py                  # 100% bitwise pass
+```
+
+### 5.5 Production & Governance Boundary Safeguards
+- **Production Quarantine:** Market-wide discovery remains quarantined under `/poc-market-wide`.
+- **Explicit Restrictions:** No production Radar integration, no full-market scanner scheduling, no live financial execution, no commercial/SEC egress, no prospective learning updates, and no Sprint 5 execution (`SPRINT5_EXECUTION_AUTHORIZED = FALSE`).
+- **Separation of Concerns:** Locally verified research contracts are strictly decoupled from unverified production financial consumers. Release authorization requires separate gate clearance.
