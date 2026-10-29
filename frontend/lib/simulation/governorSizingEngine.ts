@@ -9,7 +9,7 @@
  */
 
 import { getUnifiedCockpitState } from './unifiedCockpitStore';
-import { loadPortfolioPositions, calculatePortfolioSummary } from '../portfolio';
+import { loadPortfolioPositions, calculatePortfolioSummary, isHoldingVerified } from '../portfolio';
 import { isStatusActionable, isDecisionActionable } from '../../types/decisionContract';
 
 export interface TraderContext {
@@ -87,18 +87,10 @@ export function getTraderContextFromUnifiedCockpit(
     accountEquity = cockpit.portfolio.totalMarketValue;
   } else if (serverTelemetry?.accountEquity && serverTelemetry.accountEquity > 0) {
     accountEquity = serverTelemetry.accountEquity;
-  } else if (typeof window !== "undefined") {
-    // 2. Fallback to locally loaded portfolio from /portfolio API only when cockpit portfolio summary is unpopulated
-    const positions = loadPortfolioPositions();
-    if (positions.length > 0) {
-      const summary = calculatePortfolioSummary(positions);
-      // Only use live priced totalEquity when isComplete is true and totalEquity > 0.
-      // Never substitute cost basis (summary.totalCost) for unpriced equity.
-      if (summary.isComplete && summary.totalEquity !== null && summary.totalEquity > 0) {
-        accountEquity = summary.totalEquity;
-      }
-    }
-    // Zero localStorage fallback: Editing browser storage cannot fabricate financial risk boundaries.
+  } else {
+    // INVARIANT (ARX-036-D3): Zero localStorage fallback. Account equity MUST come from verified institutional/broker state.
+    // Local browser storage is untrusted client state and cannot grant verified sizing authority.
+    accountEquity = null;
   }
 
   // Never substitute household liquid reserves (cockpit.runway.liquidReserves) for trading account equity.

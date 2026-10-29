@@ -175,6 +175,9 @@ export default function PositionSizerModal({
         stopLossPrice: safeStop,
         addedAt: new Date().toISOString().split("T")[0],
         assetType: "Stock",
+        holdingSource: "PAPER",
+        isHypothetical: true,
+        provenance: "LOCAL_SIZER_SIMULATION",
       };
 
       const existingIndex = currentPositions.findIndex((p: any) => p.symbol === symbol);
