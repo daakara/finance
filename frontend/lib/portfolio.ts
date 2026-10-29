@@ -13,6 +13,7 @@
  */
 
 import { trackPortfolioPositionAdded } from "./matomo";
+import { getApiBaseUrl } from "./api";
 
 export interface PortfolioPosition {
   id?: number;
@@ -195,7 +196,7 @@ export async function migrateLocalHoldingsToApi(holdings: PortfolioPosition[]): 
     return { success: true, migratedCount: 0, totalSubmitted: 0, failedCount: 0, status: "no_op" };
   }
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const baseUrl = getApiBaseUrl();
     const anonId = getAnonymousUserId();
     const res = await fetch(`${baseUrl}/portfolio/migrate`, {
       method: "POST",
@@ -267,7 +268,7 @@ export async function syncPortfolioFromApi(): Promise<PortfolioPosition[]> {
   const readStartTime = Date.now();
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const baseUrl = getApiBaseUrl();
     const anonId = getAnonymousUserId();
     const res = await fetch(`${baseUrl}/portfolio`, {
       headers: {
@@ -338,7 +339,7 @@ export async function syncPortfolioFromApi(): Promise<PortfolioPosition[]> {
 export async function persistHoldingToApi(holding: PortfolioPosition): Promise<{ success: boolean; error?: string }> {
   if (typeof window === "undefined") return { success: false, error: "Window undefined" };
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const baseUrl = getApiBaseUrl();
     const anonId = getAnonymousUserId();
     const res = await fetch(`${baseUrl}/portfolio`, {
       method: "POST",
@@ -371,7 +372,7 @@ export async function persistHoldingToApi(holding: PortfolioPosition): Promise<{
 export async function removeHoldingFromApi(symbol: string): Promise<{ success: boolean; error?: string }> {
   if (typeof window === "undefined") return { success: false, error: "Window undefined" };
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const baseUrl = getApiBaseUrl();
     const anonId = getAnonymousUserId();
     const res = await fetch(`${baseUrl}/portfolio/${encodeURIComponent(symbol)}`, {
       method: "DELETE",
@@ -396,7 +397,7 @@ export async function exitManualHoldingViaApi(
   anonymousUserId?: string
 ): Promise<{ success: boolean; data?: ManualHoldingExitResponse; error?: { code: string; message: string }; message?: string }> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const baseUrl = getApiBaseUrl();
     const anonId = anonymousUserId || getAnonymousUserId();
     const res = await fetch(`${baseUrl}/portfolio/holdings/${encodeURIComponent(holdingId)}/exit`, {
       method: "POST",
@@ -759,7 +760,7 @@ export async function fetchAuthoritativePortfolio(): Promise<AuthoritativePortfo
   }
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const baseUrl = getApiBaseUrl();
     const anonId = getAnonymousUserId();
     const res = await fetch(`${baseUrl}/portfolio`, {
       headers: {
