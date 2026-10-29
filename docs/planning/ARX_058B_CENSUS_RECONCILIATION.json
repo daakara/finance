@@ -1,0 +1,71 @@
+{
+  "directive": "ARX_TERMINAL_DIRECTIVE_058B_1",
+  "reconciliation_timestamp": "2026-10-29T04:47:58.952126+00:00",
+  "baseline_universe_count": 82,
+  "platform_register_count": 77,
+  "differing_count": 5,
+  "unaccounted_findings_count": 0,
+  "reconciliation_verdict": "ZERO_UNACCOUNTED_FINDINGS_CERTIFIED",
+  "differing_identities": [
+    {
+      "identity": "DIFF-01-ISSUE-58",
+      "title": "GitHub Issue #58: Test Issue Permission Check",
+      "original_source": "GitHub App Provisioning & Permission Probe (2026-10-23T15:58:29Z)",
+      "exclusion_or_alias_rationale": "Administrative permission check artifact created during initial GitHub App installation token verification. Contains no runtime code, product requirement, or trading defect.",
+      "canonical_parent": "ARX-S4-GOV-001",
+      "canonical_parent_title": "Governance and App Infrastructure",
+      "disposition": "EXCLUDED_ADMINISTRATIVE_TEST",
+      "machine_verifiable": true,
+      "evidence": "GitHub API issue #58 body length 16 bytes, empty assignees/labels, created during app token validation."
+    },
+    {
+      "identity": "DIFF-02-ISSUE-59",
+      "title": "GitHub Issue #59: Sprint 3 Initiative Test",
+      "original_source": "GitHub App Provisioning & Permission Probe (2026-10-23T15:59:45Z)",
+      "exclusion_or_alias_rationale": "Administrative initiative sync test artifact created during GitHub issue webhook verification. Contains no runtime defect or deliverable.",
+      "canonical_parent": "ARX-S4-GOV-001",
+      "canonical_parent_title": "Governance and App Infrastructure",
+      "disposition": "EXCLUDED_ADMINISTRATIVE_TEST",
+      "machine_verifiable": true,
+      "evidence": "GitHub API issue #59 body length 16 bytes, verified administrative placeholder."
+    },
+    {
+      "identity": "DIFF-03-PR-114",
+      "title": "Pull Request #114: fix(chart): unify cross-mode candlestick integrity, responsiveness, and timeframe controls",
+      "original_source": "Directive 049 Candlestick Chart Remediation Branch (2026-10-27T12:45:00Z)",
+      "exclusion_or_alias_rationale": "Duplicate pull request submission. PR #114 was superseded by identical clean cherry-pick PR #115 (commit 92b2fb0) to resolve branch head metadata collisions. PR #115 was subsequently integrated and qualified in PR #118 and PR #122.",
+      "canonical_parent": "OBL-DEF-056-001",
+      "canonical_parent_title": "Unified Cross-Mode Candlestick Chart Responsiveness & Interval Switching",
+      "disposition": "SUPERSEDED_DUPLICATE_PR",
+      "machine_verifiable": true,
+      "evidence": "Git commit 92b2fb0 (PR #115) identical tree to PR #114; verified deployed to production in cdc47a2eee8a427aaa6cf3ab5d01cad7f35d71e1."
+    },
+    {
+      "identity": "DIFF-04-VCP-004-DRAFT",
+      "title": "Unnumbered Draft: VCP Inactive-Read Safety & Universe Wiring Anomaly",
+      "original_source": "Directive 037-G / Sprint 3 Scanner Safety Discovery Notes (2026-10-24)",
+      "exclusion_or_alias_rationale": "Intermediate unnumbered draft finding from initial audit notes. Consolidated directly into canonical task ARX-S3-004 and tracked under formal obligation OBL-ARX-S3-004 before platform register compilation.",
+      "canonical_parent": "OBL-ARX-S3-004",
+      "canonical_parent_title": "VCP Inactive Read Safety & Universe Wiring",
+      "disposition": "CONSOLIDATED_INTO_CANONICAL_PARENT",
+      "machine_verifiable": true,
+      "evidence": "Formally registered as OBL-ARX-S3-004 in arx_canonical_backlog.json and ARX_058A_MASTER_FINDING_REGISTER.json."
+    },
+    {
+      "identity": "DIFF-05-SMART-MONEY-R2-DRAFT",
+      "title": "Unnumbered Draft: Smart Money Worker Memory Leak & R2 Age Diagnostics",
+      "original_source": "Directive 037-G / Sprint 3 Smart Money Ingestion Discovery Notes (2026-10-24)",
+      "exclusion_or_alias_rationale": "Intermediate unnumbered draft finding covering Form 4 worker memory containment and backup age thresholds. Consolidated directly into canonical task ARX-S3-005 and tracked under formal obligation OBL-ARX-S3-005 (remediated in PR #99 and PR #100).",
+      "canonical_parent": "OBL-ARX-S3-005",
+      "canonical_parent_title": "Smart Money Continuous Ingestion & Pipeline Reliability",
+      "disposition": "CONSOLIDATED_INTO_CANONICAL_PARENT",
+      "machine_verifiable": true,
+      "evidence": "Formally registered as OBL-ARX-S3-005 in arx_canonical_backlog.json and ARX_058A_MASTER_FINDING_REGISTER.json."
+    }
+  ],
+  "summary": {
+    "administrative_test_exclusions": 2,
+    "superseded_duplicate_prs": 1,
+    "consolidated_draft_findings": 2
+  }
+}
