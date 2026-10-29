@@ -637,3 +637,23 @@ AUTOMATIC_IMPLEMENTATION =
 ```
 
 *Architectural specification frozen in accordance with ARX Terminal Governance Protocols.*
+
+---
+
+## 18. Market-Wide Discovery Strategy-Adapter Ratification (ARX-DOC-2026-10-29)
+
+### 18.1 Canonical Security Master as Model E+ Foundation
+Under Directive ARX-MW-004H, the Product Owner formally ratified the **Model E+ (Enhanced Security Registry Core) with Derived F1-Style Opportunity Projections** as the canonical research architecture for ARX Market-Wide Discovery:
+- **Decision Verdict:** `ARCHITECTURE_DIRECTION_RATIFIED`
+- **Owner Ratification Record:** [`ARX_MW004H_FINAL_ARCHITECTURE_RATIFICATION_AND_CANDIDATE_FREEZE.md`](file:///c:/Users/akara/Documents/Projects/finance-arx-market-wide-top35/docs/research/market_wide_poc/ARX_MW004H_FINAL_ARCHITECTURE_RATIFICATION_AND_CANDIDATE_FREEZE.md)
+- **Architectural Coherence:** The Model E+ architecture establishes that the Canonical Server Security Master defined in this document is the sole source of security identity (`CanonicalInstrument`, `security_id`). Market-wide screening strategies do not instantiate independent parallel security entities; opportunities are derived projections over authentic security master identities.
+- **Investigation Closure:** Comparative evaluation against Option C (multi-lane registries) and Model F2 (stateless opportunity streams) is formally concluded.
+
+### 18.2 Master Provenance & Governance Binding
+- **Current Mainline Reference:** `e10de3b2714e7c7cba49c51e0e7a4eb13a7033f6` (PR #129 sizing isolation merged).
+- **Historical Research Baseline Anchor:** `29ead6e4df6cbf4e1e611feb74d61f0370b80e53`.
+- **Frozen Implementation Candidate:** Commit `f154032152710a51b209d80a4a21dfb655d312e4` (`finance-arx-market-wide-top35`).
+- **Ratification Addendum Commit:** Commit `ac074ea487a55c276ee64db59f3aa8f278d2b992`.
+- **Draft PR #128 Remote Ref:** `3fff68108593f304275cdf18b696c8697f5b8257` (Retained as open, unmerged research reference).
+- **Market Dataset Reconciliation:** Bounded market store DB expanded from `ab31fdffa...` (4,714,496 bytes) to `00c0690ef...` (5,705,728 bytes) due exclusively to the creation of 5 empty schema tables (`asset_catalyst_registry`, `asset_factor_snapshots`, `asset_ohlcv_provenance`, `insider_disclosures`, `sqlite_sequence`), while the primary `asset_ohlcv_daily` table maintains 100% bitwise row identity across all 40,310 daily candle rows (content hash: `27934736360afd0fbd266c20c3663191a0a46426bd2ecc4494f96ae43805f41e`).
+- **Research Governance Boundary:** Market-wide discovery contracts are non-executable and quarantined under `/poc-market-wide`. Production Radar integration, automated scanner scheduling, commercial/SEC egress, financial sizing/execution, and Sprint 5 remain strictly unauthorized.
