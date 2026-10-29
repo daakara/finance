@@ -25,6 +25,12 @@ export function resolveFrontendRelease(env = process.env) {
 
 const effectiveRelease = resolveFrontendRelease();
 
+// Independent of the optional review flag: unknown Pages branch is a preview.
+export function resolveUxPreviewDeployment(env = process.env) {
+  return (env.CF_PAGES === "1" || Boolean(env.CF_PAGES_BRANCH)) &&
+    env.CF_PAGES_BRANCH !== "release/production" ? "true" : "false";
+}
+
 /** @type {import("next").NextConfig} */
 const nextConfig = {
   output: "export",
@@ -33,6 +39,7 @@ const nextConfig = {
     unoptimized: true,
   },
   env: {
+    NEXT_PUBLIC_UX_PREVIEW_DEPLOYMENT: resolveUxPreviewDeployment(),
     ...(effectiveRelease ? { NEXT_PUBLIC_ARX_RELEASE: effectiveRelease } : {}),
   },
   webpack: (config) => {

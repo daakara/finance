@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { isUxReviewOnly } from "../lib/uxReviewBoundary";
+import { useUxReviewOnly } from "../hooks/useUxReviewOnly";
 
 import { SHARED_WATCHLIST_ITEMS } from "../lib/constants";
 import { getCanonicalAssetName } from "../lib/assetRegistry";
@@ -41,7 +43,7 @@ export default function PositionSizerModal({
   isActionable = false,
   decisionStateLabel,
 }: PositionSizerProps) {
-  const reviewOnly = process.env.NEXT_PUBLIC_UX_REVIEW_CANDIDATE === "true";
+  const reviewOnly = useUxReviewOnly();
   const [accountSize, setAccountSize] = useState<number>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("FINANCE_USER_ACCOUNT_SIZE");
@@ -160,7 +162,7 @@ export default function PositionSizerModal({
   const authenticName = getCanonicalAssetName(symbol, matchedItem?.name);
 
   const handleSaveToPortfolio = () => {
-    if (reviewOnly) return;
+    if (isUxReviewOnly()) return;
     if (isSetupInvalid || isSizingBlocked || shares <= 0 || safeEntry <= 0) return;
     try {
       const raw = localStorage.getItem("FINANCE_USER_PORTFOLIO");

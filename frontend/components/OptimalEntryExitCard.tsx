@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { isUxReviewOnly } from "../lib/uxReviewBoundary";
+import { useUxReviewOnly } from "../hooks/useUxReviewOnly";
 import { OptimalExecutionPlan } from "../lib/api";
 import InsightProvenanceModal from "./InsightProvenanceModal";
 import PositionSizerModal from "./PositionSizerModal";
@@ -58,6 +60,7 @@ export default function OptimalEntryExitCard({
   catalystForecast,
   corporateEvent,
 }: OptimalEntryExitCardProps) {
+  const reviewOnly = useUxReviewOnly();
   const [isSizerOpen, setIsSizerOpen] = useState<boolean>(false);
   const [isAlertOpen, setIsAlertOpen] = useState<boolean>(false);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
@@ -329,7 +332,7 @@ export default function OptimalEntryExitCard({
   const derivedIsDistributionTrap = undefined;
 
   const handleLogToPortfolio = async () => {
-    if (process.env.NEXT_PUBLIC_UX_REVIEW_CANDIDATE === "true") return;
+    if (isUxReviewOnly()) return;
     if (!displayMarketPrice || isNaN(displayMarketPrice) || displayMarketPrice <= 0 || risk_reward_ratio == null || risk_reward_ratio <= 0) {
       setLogStatus("❌ Cannot log position: trade plan or spot price is unverified.");
       setTimeout(() => setLogStatus(null), 3000);
@@ -844,8 +847,8 @@ export default function OptimalEntryExitCard({
           <button
             type="button"
             onClick={handleLogToPortfolio}
-            disabled={process.env.NEXT_PUBLIC_UX_REVIEW_CANDIDATE === "true"}
-            title={process.env.NEXT_PUBLIC_UX_REVIEW_CANDIDATE === "true" ? "Owner review preview: paper recording is locked while financial authority is unresolved" : undefined}
+            disabled={reviewOnly}
+            title={reviewOnly ? "Owner review preview: paper recording is locked while financial authority is unresolved" : undefined}
             className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-indigo-600/20 hover:bg-indigo-500 hover:text-slate-950 border-indigo-500/50 text-indigo-300 flex items-center gap-1.5 shadow"
           >
             <span>💼</span>

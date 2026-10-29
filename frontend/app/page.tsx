@@ -578,7 +578,6 @@ function TerminalContent() {
             />
           )}
 
-          {process.env.NEXT_PUBLIC_UX_REVIEW_CANDIDATE === "true" && <aside role="note" data-testid="review-authority-notice" className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-4 py-3 text-xs text-[var(--text-2)]">Owner review preview · research presentation only. Financial decision lineage, observation timestamps and account-sizing authority remain under review. This preview does not certify execution or production readiness.</aside>}
 
           {/* ✈️ Pre-Flight Mandatory Clearance Detailed Inspection Modal */}
           <PreFlightChecklistModal

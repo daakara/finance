@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { isUxReviewOnly } from "../lib/uxReviewBoundary";
+import { useUxReviewOnly } from "../hooks/useUxReviewOnly";
 import { AnalyticsResponse } from "../lib/api";
 import { loadPortfolioPositions, savePortfolioPositions, PortfolioPosition } from "../lib/portfolio";
 import { getCanonicalAssetName } from "../lib/assetRegistry";
@@ -11,6 +13,7 @@ interface DayTraderPositionSizerProps {
 }
 
 export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositionSizerProps) {
+  const reviewOnly = useUxReviewOnly();
   const [accountSize, setAccountSize] = useState<number>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("FINANCE_USER_ACCOUNT_SIZE");
@@ -98,7 +101,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
   const target30 = currentPrice + stopDistanceDollar * 3.0;
 
     const handleSaveToPortfolio = () => {
-    if (positionUnits <= 0) return;
+    if (isUxReviewOnly() || positionUnits <= 0) return;
     const symKey = symbol.toUpperCase().replace("-USD", "");
     const existing = loadPortfolioPositions();
     const newPos: PortfolioPosition = {
@@ -382,13 +385,14 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
         <button
           type="button"
           onClick={handleSaveToPortfolio}
+          disabled={reviewOnly}
           className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-lg active:scale-95 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none ${
             addedFeedback
               ? "bg-emerald-600 text-white font-extrabold shadow-emerald-950/60"
               : "bg-cyan-600 hover:bg-cyan-500 text-white"
           }`}
         >
-          <span>{addedFeedback ? "✓ SIZED TRADE SAVED TO MY PORTFOLIO!" : "💼 Send Sized Trade to My Portfolio (1-Click)"}</span>
+          <span>{reviewOnly ? "Owner review — paper recording locked" : addedFeedback ? "✓ SIZED TRADE SAVED TO MY PORTFOLIO!" : "💼 Send Sized Trade to My Portfolio (1-Click)"}</span>
         </button>
       </div>
     </section>
