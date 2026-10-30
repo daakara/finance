@@ -1087,7 +1087,7 @@ export interface GemCandidate {
   archetype_alignment?: string;
   rvol?: string | null;
   riskRewardRatio?: number | null;
-  current_price?: number;
+  current_price?: number | null;
   priceBasis?: "DAILY_CLOSE" | null;
   priceDate?: string | null;
   execution_status?: string;
@@ -1769,6 +1769,7 @@ export function resolveCandidateEligibility(r: any): {
   screeningEligible: boolean;
   screeningStatus: string;
   screeningGeometry: string;
+  diagnosticClass?: string;
 } {
   const isDelisted =
     r.executionStatus === "DELISTED_SECURITY" ||
@@ -1798,22 +1799,40 @@ export function resolveCandidateEligibility(r: any): {
     };
   }
 
-  // Invariant 2: Explicit authoritative boolean governs. Missing eligibility strictly evaluates to false.
-  // Never infer eligibility from executionStatus === "IN_BUY_ZONE".
-  const authoritativeEligible = typeof r.screeningEligible === "boolean" ? r.screeningEligible : false;
+  // Invariant 2 (ARX-036-D11R-CLOSE Gate B / F-01):
+  // screeningEligible === true strictly requires executionStatus === "IN_BUY_ZONE"
+  // AND explicit backend eligibility value of true. All other combinations are noneligible.
+  const rawStatus = typeof r.executionStatus === "string" && r.executionStatus.trim().length > 0
+    ? r.executionStatus.trim()
+    : (typeof r.execution_status === "string" ? r.execution_status.trim() : "UNKNOWN");
+
+  const isInBuyZone = rawStatus === "IN_BUY_ZONE";
+  const hasAuthoritativeTrue = r.screeningEligible === true;
+  const resolvedEligible = isInBuyZone && hasAuthoritativeTrue;
+
+  // Bounded diagnostic classification for contradictory or unverified states:
+  let diagnosticClass: string | undefined = undefined;
+  if (!isInBuyZone && r.screeningEligible === true) {
+    diagnosticClass = "CONTRADICTORY_ELIGIBILITY_STATUS_MISMATCH";
+  } else if (isInBuyZone && r.screeningEligible === false) {
+    diagnosticClass = "CONTRADICTORY_BUY_ZONE_INELIGIBLE";
+  } else if (isInBuyZone && typeof r.screeningEligible !== "boolean") {
+    diagnosticClass = "MISSING_ELIGIBILITY_AUTHORITY";
+  }
 
   const authoritativeStatus = typeof r.screeningStatus === "string" && r.screeningStatus.trim().length > 0
     ? r.screeningStatus.trim()
-    : (typeof r.executionStatus === "string" ? r.executionStatus : "UNKNOWN");
+    : rawStatus;
 
   const authoritativeGeometry = typeof r.screeningGeometry === "string" && r.screeningGeometry.trim().length > 0
     ? r.screeningGeometry.trim()
-    : "UNKNOWN";
+    : (isInBuyZone ? "WITHIN_TOLERANCE" : "UNKNOWN");
 
   return {
-    screeningEligible: authoritativeEligible,
+    screeningEligible: resolvedEligible,
     screeningStatus: authoritativeStatus,
     screeningGeometry: authoritativeGeometry,
+    ...(diagnosticClass ? { diagnosticClass } : {}),
   };
 }
 
@@ -1908,29 +1927,12 @@ export function normalizeRadarEnvelopeState(data: any): {
     };
   }
 
-  // 5. Verified Legacy Sprint 3 Envelope (Demonstrated source contract & safety properties)
-  // Only valid when status, scanState, and datasetState are all absent, results or candidates is an array,
-  // total_candidates or totalCandidates is a valid number, and NO error is present.
-  const isDemonstratedLegacySuccess =
-    !hasModernFields &&
-    !rawError &&
-    (Array.isArray(data?.results) || Array.isArray(data?.candidates)) &&
-    (typeof data?.total_candidates === "number" || typeof data?.totalCandidates === "number");
-
-  if (isDemonstratedLegacySuccess) {
-    const candidateCount = Array.isArray(data.results) ? data.results.length : data.candidates.length;
-    return {
-      normalizedStatus: "SUCCESS",
-      normalizedError: null,
-      scanState: "COMPLETED",
-      datasetState: candidateCount > 0 ? "CANDIDATES_AVAILABLE" : "GENUINELY_EMPTY",
-    };
-  }
-
-  // 6. Default Fallback: Unknown or empty payload lacking authoritative scan state contracts FAILS CLOSED to ERROR
+  // 5. Ambiguous Legacy Envelope lacking modern scan-state contracts (ARX-036-D11R-CLOSE Gate C / F-02: Option B)
+  // Fail closed for ambiguous legacy envelopes lacking status/scanState/datasetState.
+  // Legacy producer shapes cannot be discriminated reliably between completed and partial/timed-out scans.
   return {
     normalizedStatus: "ERROR",
-    normalizedError: rawError ?? "Malformed radar payload lacking authoritative scan state contracts",
+    normalizedError: rawError ?? "Legacy API response lacks modern scan-state fields (status, scanState, datasetState). Cannot safely verify scan completion. Deployment requires modern backend contracts.",
     scanState: "FAILED",
     datasetState: "SCAN_FAILED",
   };
@@ -1988,7 +1990,9 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
           primary_catalyst: r.catalyst || "",
           factor_verdict: r.executionStatus || "WAITING_PULLBACK",
           dna_verdict: r.confluenceRating || "",
-          current_price: r.currentPrice || r.current_price,
+          current_price: (typeof (r.currentPrice ?? r.current_price) === "number" && Number.isFinite(r.currentPrice ?? r.current_price) && (r.currentPrice ?? r.current_price) > 0)
+            ? Number((r.currentPrice ?? r.current_price).toFixed(2))
+            : null,
           priceBasis: r.priceBasis ?? null,
           priceDate: r.priceDate ?? null,
           execution_status: r.executionStatus || r.execution_status,

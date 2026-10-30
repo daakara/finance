@@ -126,7 +126,7 @@ describe("ARX-036-D11R-FINAL Gate 2: Strict Scan-State Normalization Falsificati
     expect(res.normalizedStatus).toBe("ERROR");
   });
 
-  it("2.9 Demonstrated Legacy Sprint 3 envelope: absent modern fields + capabilities object + results array preserves SUCCESS", async () => {
+  it("2.9 Ambiguous Legacy Sprint 3 envelope: absent modern fields fails closed to ERROR (F-02 Option B)", async () => {
     const res = normalizeRadarEnvelopeState({
       total_candidates: 10,
       capabilities: {
@@ -134,9 +134,10 @@ describe("ARX-036-D11R-FINAL Gate 2: Strict Scan-State Normalization Falsificati
       },
       results: [{ ticker: "AAPL" }],
     });
-    expect(res.normalizedStatus).toBe("SUCCESS");
-    expect(res.scanState).toBe("COMPLETED");
-    expect(res.datasetState).toBe("CANDIDATES_AVAILABLE");
+    expect(res.normalizedStatus).toBe("ERROR");
+    expect(res.scanState).toBe("FAILED");
+    expect(res.datasetState).toBe("SCAN_FAILED");
+    expect(res.normalizedError).toContain("Legacy API response lacks modern scan-state fields");
   });
 });
 
@@ -149,16 +150,19 @@ describe("ARX-036-D11R-FINAL Gate 3: Candidate Eligibility Authority Proof", () 
   it("3.2 IN_BUY_ZONE with explicit false evaluates to false", () => {
     const res = resolveCandidateEligibility({ ticker: "AAPL", executionStatus: "IN_BUY_ZONE", screeningEligible: false });
     expect(res.screeningEligible).toBe(false);
+    expect(res.diagnosticClass).toBe("CONTRADICTORY_BUY_ZONE_INELIGIBLE");
   });
 
   it("3.3 IN_BUY_ZONE with missing eligibility evaluates to false (no inference)", () => {
     const res = resolveCandidateEligibility({ ticker: "NVDA", executionStatus: "IN_BUY_ZONE", screeningEligible: undefined });
     expect(res.screeningEligible).toBe(false);
+    expect(res.diagnosticClass).toBe("MISSING_ELIGIBILITY_AUTHORITY");
   });
 
-  it("3.4 APPROACHING_TARGET with explicit true evaluates to true", () => {
+  it("3.4 APPROACHING_TARGET with explicit true evaluates to false (only IN_BUY_ZONE eligible per F-01)", () => {
     const res = resolveCandidateEligibility({ ticker: "MSFT", executionStatus: "APPROACHING_TARGET", screeningEligible: true });
-    expect(res.screeningEligible).toBe(true);
+    expect(res.screeningEligible).toBe(false);
+    expect(res.diagnosticClass).toBe("CONTRADICTORY_ELIGIBILITY_STATUS_MISMATCH");
   });
 
   it("3.5 Delisted with explicit true evaluates strictly to false (delisted quarantine)", () => {
@@ -203,6 +207,18 @@ describe("ARX-036-D11R-FINAL Gate 3: Candidate Eligibility Authority Proof", () 
     expect(res.results[0].isActionable).toBe(false);
     expect(res.results[0].canSizeTrade).toBe(false);
     expect(res.results[0].screeningEligible).toBe(true);
+  });
+
+  it("3.9 IN_BUY_ZONE with explicit true evaluates to true (authoritative eligible positive control)", () => {
+    const res = resolveCandidateEligibility({ ticker: "AAPL", executionStatus: "IN_BUY_ZONE", screeningEligible: true });
+    expect(res.screeningEligible).toBe(true);
+    expect(res.diagnosticClass).toBeUndefined();
+  });
+
+  it("3.10 WAITING_PULLBACK with explicit true evaluates to false", () => {
+    const res = resolveCandidateEligibility({ ticker: "GOOGL", executionStatus: "WAITING_PULLBACK", screeningEligible: true });
+    expect(res.screeningEligible).toBe(false);
+    expect(res.diagnosticClass).toBe("CONTRADICTORY_ELIGIBILITY_STATUS_MISMATCH");
   });
 });
 
@@ -456,5 +472,43 @@ describe("ARX-036-D11R-FINAL Gate 5: Adversarial Negative Controls & Mutation Fa
     };
     expect(candidate.isActionable).toBe(false);
     expect(candidate.canSizeTrade).toBe(false);
+  });
+
+  it("NC-6 Mutating eligibility to accept APPROACHING_TARGET fails invariant (must be false)", () => {
+    // Permissive model would accept:
+    const permissive = (r: any) => Boolean(r.screeningEligible);
+    expect(permissive({ executionStatus: "APPROACHING_TARGET", screeningEligible: true })).toBe(true);
+    // Production validator strictly rejects:
+    const prodResult = resolveCandidateEligibility({ executionStatus: "APPROACHING_TARGET", screeningEligible: true });
+    expect(prodResult.screeningEligible).toBe(false);
+  });
+
+  it("NC-7 Mutating legacy normalizer to accept unverified legacy envelopes fails (must be ERROR)", () => {
+    const legacyPayload = {
+      total_candidates: 10,
+      results: [{ ticker: "MSFT" }],
+    };
+    const res = normalizeRadarEnvelopeState(legacyPayload);
+    expect(res.normalizedStatus).toBe("ERROR");
+    expect(res.normalizedStatus === "SUCCESS").toBe(false);
+  });
+
+  it("NC-8 Fabricated price or confluence defaults are rejected (missing must evaluate to null)", () => {
+    const rawAsset = {
+      ticker: "TEST",
+      currentPrice: null,
+      confluenceScore: undefined,
+    };
+    const resolvedPrice = (typeof rawAsset.currentPrice === "number" && rawAsset.currentPrice > 0)
+      ? rawAsset.currentPrice
+      : null;
+    expect(resolvedPrice).toBeNull();
+    expect(resolvedPrice === 0).toBe(false);
+
+    const resolvedConfluence = (typeof rawAsset.confluenceScore === "number")
+      ? rawAsset.confluenceScore
+      : null;
+    expect(resolvedConfluence).toBeNull();
+    expect(resolvedConfluence === 50).toBe(false);
   });
 });

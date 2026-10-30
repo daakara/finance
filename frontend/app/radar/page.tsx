@@ -29,14 +29,14 @@ import { isCanonicalSecurityIdentifier, resolveCanonicalSecurity } from '../../l
 interface RadarAsset {
   ticker: string;
   name: string;
-  price: number;
+  price: number | null;
   priceBasis?: "DAILY_CLOSE" | null;
   priceDate?: string | null;
   rvol?: string | null;
   riskRewardRatio?: number | null;
   vcpStage: string;
   volumeDryUpPct?: number | null;
-  confluenceScore: number;
+  confluenceScore: number | null;
   catalyst: string;
   categories: CanonicalRadarCategory[];
   sector: string;
@@ -221,19 +221,29 @@ function RadarContent() {
           const catalogEntry = MASTER_ASSET_CATALOG[cleanTicker];
           const resolvedName = gem.companyName || catalogEntry?.name || '';
 
+          const rawPrice = gem.currentPrice ?? gem.current_price;
+          const resolvedPrice = typeof rawPrice === 'number' && Number.isFinite(rawPrice) && rawPrice > 0
+            ? Number(rawPrice.toFixed(2))
+            : null;
+
+          const rawConfluence = typeof gem.confluenceScore === 'number'
+            ? gem.confluenceScore
+            : (typeof gem.composite_score === 'number' ? gem.composite_score : null);
+          const resolvedConfluence = rawConfluence !== null && Number.isFinite(rawConfluence)
+            ? Math.round(rawConfluence)
+            : null;
+
           return {
             ticker: cleanTicker,
             name: resolvedName,
-            price: Number(((gem.currentPrice ?? gem.current_price) || 0).toFixed(2)),
+            price: resolvedPrice,
             priceBasis: gem.priceBasis ?? (gem.price_basis as any) ?? null,
             priceDate: gem.priceDate ?? gem.price_date ?? null,
             rvol: rvolVal,
             riskRewardRatio: rrVal,
             vcpStage: stageStr,
             volumeDryUpPct: dryUp,
-            confluenceScore: typeof gem.confluenceScore === 'number'
-              ? Math.round(gem.confluenceScore)
-              : (typeof gem.composite_score === 'number' ? Math.round(gem.composite_score) : 0),
+            confluenceScore: resolvedConfluence,
             catalyst: gem.primary_catalyst || gem.investment_thesis || (executionStatus === 'DELISTED_SECURITY' ? 'Trading suspended for delisted security.' : 'Catalyst disclosures unavailable.'),
             categories: cat,
             sector: catalogEntry?.sector || "Broad Market",
@@ -247,7 +257,7 @@ function RadarContent() {
             disqualificationReason: gem.disqualificationReason || null,
             decisionContextId: gem.decisionContextId,
             allowedActions: Array.isArray(gem.allowedActions) ? gem.allowedActions : [],
-            screeningEligible: executionStatus === 'DELISTED_SECURITY' || executionStatus === 'UNVERIFIED_ASSET' ? false : Boolean(gem.screeningEligible),
+            screeningEligible: executionStatus === 'IN_BUY_ZONE' && gem.screeningEligible === true,
           };
         });
         setAllAssets(mapped);
@@ -391,13 +401,13 @@ function RadarContent() {
         if (aDelisted !== bDelisted) {
           return aDelisted - bDelisted; // Delisted securities sink to bottom
         }
-        if (sortBy === 'SCORE') return b.confluenceScore - a.confluenceScore;
+        if (sortBy === 'SCORE') return (b.confluenceScore ?? -1) - (a.confluenceScore ?? -1);
         if (sortBy === 'RVOL') {
           const aRvol = a.rvol ? parseFloat(a.rvol.replace('x', '')) : 0;
           const bRvol = b.rvol ? parseFloat(b.rvol.replace('x', '')) : 0;
           return bRvol - aRvol;
         }
-        if (sortBy === 'PRICE') return b.price - a.price;
+        if (sortBy === 'PRICE') return (b.price ?? -1) - (a.price ?? -1);
         return 0;
       });
   }, [allAssets, activeFilter, searchQuery, sortBy, ownershipFilter, getOwnershipState]);
@@ -491,19 +501,23 @@ function RadarContent() {
       const newAsset: RadarAsset = {
         ticker: clean,
         name: clean,
-        price: Number(data.currentPrice.toFixed(2)),
+        price: typeof data.currentPrice === 'number' && Number.isFinite(data.currentPrice) && data.currentPrice > 0
+          ? Number(data.currentPrice.toFixed(2))
+          : null,
         rvol: null,
         riskRewardRatio: rrVal,
         vcpStage: stageStr,
         volumeDryUpPct: null,
-        confluenceScore: Math.round(data.confluence?.confluenceScore || 50),
-        catalyst: opt?.entry_thesis || "On-demand quantitative exchange tape discovery.",
+        confluenceScore: (data.confluence?.confluenceScore != null && Number.isFinite(data.confluence.confluenceScore))
+          ? Math.round(data.confluence.confluenceScore)
+          : null,
+        catalyst: opt?.entry_thesis || "Catalyst disclosures unavailable.",
         categories: cat,
         sector: "On-Demand Discovery",
         executionStatus,
         screeningStatus: executionStatus === 'DELISTED_SECURITY' ? 'DELISTED' : (executionStatus === 'UNVERIFIED_ASSET' ? 'UNVERIFIED' : (executionStatus || 'UNKNOWN')),
         screeningGeometry: executionStatus === 'DELISTED_SECURITY' ? 'INACTIVE' : 'UNKNOWN',
-        decisionState: dec?.decisionState || (data.degradedMode ? "UNVERIFIED" : "VALID_SETUP"),
+        decisionState: dec?.decisionState || "UNVERIFIED_SETUP",
         decisionStateLabel: dec?.stateLabel || "Discovery Candidate — Analyze for Trigger",
         isActionable: false, // Invariant: Radar is a discovery scanner; canonical actionability reserved for DecisionTrace
         canSizeTrade: false,
@@ -511,8 +525,8 @@ function RadarContent() {
         decisionContextId: data.decisionId,
         allowedActions: executionStatus === 'DELISTED_SECURITY' ? [] : ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"],
         screeningEligible: false, // On-demand lookup does not confer universe screening eligibility
-        priceBasis: "DAILY_CLOSE",
-        priceDate: (data as any)?.tradeDate ?? null,
+        priceBasis: data.marketPriceState?.analysisReferenceSource?.includes("DAILY") ? "DAILY_CLOSE" : null,
+        priceDate: data.marketPriceState?.analysisReferenceDate || (data as any)?.tradeDate || null,
       };
 
       setAllAssets((prev) => [newAsset, ...prev.filter((a) => a.ticker !== clean)]);
@@ -787,7 +801,7 @@ function RadarContent() {
                   <span className="text-slate-700">•</span>
                   <div className="flex items-center gap-1.5" title="Pre-screened multi-factor confluence conviction score (0-100) from batch screener pipeline">
                     <span className="text-[var(--text-2)]">Screen Confluence:</span>
-                    <span className="text-emerald-400 font-bold">{heroAsset.confluenceScore}/100</span>
+                    <span className="text-emerald-400 font-bold">{heroAsset.confluenceScore !== null ? `${heroAsset.confluenceScore}/100` : "Unavailable"}</span>
                   </div>
                   {heroAsset.rvol && (
                     <>
@@ -1534,9 +1548,9 @@ function RadarContent() {
                           <div>
                             {asset.executionStatus === 'DELISTED_SECURITY' ? (
                               <span className="text-[var(--text-2)] font-mono text-xs">
-                                {asset.price > 0 ? `$${asset.price.toFixed(2)}` : 'Price Unavailable'}
+                                {asset.price && asset.price > 0 ? `$${asset.price.toFixed(2)}` : 'Price Unavailable'}
                               </span>
-                            ) : asset.price > 0 ? (
+                            ) : asset.price && asset.price > 0 ? (
                               `$${asset.price.toFixed(2)}`
                             ) : (
                               <span className="text-amber-400 font-normal text-xs">Price Unavailable</span>
@@ -1566,7 +1580,7 @@ function RadarContent() {
                               ? 'text-rose-400 bg-rose-950/60 border border-rose-800/60'
                               : 'text-emerald-400 bg-emerald-950/60 border border-emerald-800/60'
                           }`} title="Screening Snapshot Score">
-                            {asset.confluenceScore}
+                            {asset.confluenceScore !== null ? asset.confluenceScore : <span className="text-[var(--text-muted)] font-normal font-mono">—</span>}
                           </span>
                         </td>
                         <td className="p-3 text-center font-bold text-cyan-300 whitespace-nowrap">
