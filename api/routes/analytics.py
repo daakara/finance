@@ -32,6 +32,7 @@ from analyst_dashboard.governance.passive_capture import PassiveCaptureHook, EXE
 from analyst_dashboard.data.alpaca_fetcher import AlpacaMarketFetcher
 from analyst_dashboard.data.market_price_state import resolve_dual_price_state, MarketPriceState
 from analyst_dashboard.security_master import get_security_master_service
+from api.routes.screener import CONFIRMED_CORPORATE_ACTIONS
 
 router = APIRouter()
 risk_analyzer = AdvancedRiskAnalyzer()
@@ -208,6 +209,29 @@ def _build_smart_money_confluence_inputs(sym: str) -> Dict[str, Any]:
 def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, Any]], is_stale: bool) -> Optional[Dict[str, Any]]:
     """Build tactical trade setup from db_candles and staleness status."""
     obs_date = str(db_candles[-1].get("time") or db_candles[-1].get("date") or "")[:10] if db_candles else ""
+    corp_action = CONFIRMED_CORPORATE_ACTIONS.get(sym.upper().strip())
+    if corp_action:
+        return {
+            "symbol": sym,
+            "ticker": sym,
+            "userRole": clean_role,
+            "setupName": "Delisted Security / Corporate Action Completed",
+            "entryPivot": None,
+            "stopLoss": None,
+            "target1": None,
+            "target2": None,
+            "confluenceScore": 0.0,
+            "executionStatus": "DELISTED_SECURITY",
+            "decisionState": "INELIGIBLE_INACTIVE",
+            "isActionable": False,
+            "isSuppressed": True,
+            "entryThesis": corp_action.get("notes", "Security has been delisted or acquired."),
+            "invalidationCondition": "Corporate action completed.",
+            "stagePhase": "Delisted / Inactive",
+            "reasonSuppressed": corp_action.get("notes", "Security has been delisted."),
+            "observationDate": obs_date,
+            "corporateAction": corp_action,
+        }
     if is_stale:
         return {
             "symbol": sym,
@@ -260,6 +284,11 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
     stop_loss = plan.get("stop_loss")
     target1 = plan.get("take_profit_1")
     target2 = plan.get("take_profit_2")
+
+    if stop_loss is not None and cur_price < stop_loss:
+        exec_status = "STOPPED_OUT"
+    elif clean_role == "DAY_TRADER" and target1 is not None and cur_price >= target1 * 0.96:
+        exec_status = "APPROACHING_TARGET"
 
     smart_data = _build_smart_money_confluence_inputs(sym)
 

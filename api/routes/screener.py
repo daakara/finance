@@ -685,7 +685,7 @@ def run_screener_get(
                 execution_status = "WAITING_PULLBACK"
                 status_label = "⏳ Awaiting Base Formation"
                 status_color = "cyan"
-            elif execution.get("execution_status") == "APPROACHING_TARGET" or (tp1 is not None and current_price is not None and current_price >= tp1 * 0.96):
+            elif execution.get("execution_status") == "APPROACHING_TARGET" or (tp1 is not None and current_price is not None and current_price >= tp1 * 0.96 and (is_day_trader or entry_max is None or current_price > entry_max)):
                 execution_status = "APPROACHING_TARGET"
                 status_label = "🚀 Session ORB Breakout" if is_day_trader else "🚀 Near TP Target"
                 status_color = "amber"
