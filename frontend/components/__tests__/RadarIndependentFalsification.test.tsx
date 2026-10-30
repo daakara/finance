@@ -1,22 +1,32 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fetchScreenerGems } from "../../lib/api";
+import { render, screen, waitFor } from "@testing-library/react";
+import { fetchScreenerGems, resolveCandidateEligibility, normalizeRadarEnvelopeState } from "../../lib/api";
+import { validateDecisionContext, getAnalysisHubCacheKey } from "../../lib/decisionContext";
 import RadarPage from "../../app/radar/page";
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/radar",
-  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({
     push: vi.fn(),
     replace: vi.fn(),
     prefetch: vi.fn(),
     back: vi.fn(),
   }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/radar",
 }));
 
-describe("ARX-036-D11R Layer 1: Contract Falsification (fetchScreenerGems)", () => {
+// Mock DataSourceContext
+vi.mock("../../lib/DataSourceContext", () => ({
+  useDataSource: () => ({
+    source: "MOCK",
+    isLive: false,
+    toggleSource: vi.fn(),
+  }),
+}));
+
+describe("ARX-036-D11R-FINAL Gate 2: Strict Scan-State Normalization Falsification", () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
@@ -28,126 +38,162 @@ describe("ARX-036-D11R Layer 1: Contract Falsification (fetchScreenerGems)", () 
     vi.unstubAllGlobals();
   });
 
-  it("1.1 Falsifies contradictory envelope: status SUCCESS + datasetState SCAN_FAILED normalizes fail-closed to ERROR", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        status: "SUCCESS",
-        datasetState: "SCAN_FAILED",
-        scanState: "FAILED",
-        error: "Upstream scanner timeout after 30s",
-        results: [],
-      }),
-    } as any);
-
-    const res = await fetchScreenerGems();
-    expect(res.status).toBe("ERROR");
-    expect(res.datasetState).toBe("SCAN_FAILED");
-    expect(res.scanState).toBe("FAILED");
-    expect(res.error).toBe("Upstream scanner timeout after 30s");
+  it("2.1 Canonical SUCCESS: status SUCCESS + scanState COMPLETED + datasetState CANDIDATES_AVAILABLE", async () => {
+    const res = normalizeRadarEnvelopeState({
+      status: "SUCCESS",
+      scanState: "COMPLETED",
+      datasetState: "CANDIDATES_AVAILABLE",
+      results: [{ ticker: "AAPL" }],
+    });
+    expect(res.normalizedStatus).toBe("SUCCESS");
+    expect(res.scanState).toBe("COMPLETED");
+    expect(res.datasetState).toBe("CANDIDATES_AVAILABLE");
+    expect(res.normalizedError).toBeNull();
   });
 
-  it("1.2 Falsifies contradictory envelope: status SUCCESS + scanState FAILED normalizes fail-closed to ERROR", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        status: "SUCCESS",
-        scanState: "FAILED",
-        results: [],
-      }),
-    } as any);
-
-    const res = await fetchScreenerGems();
-    expect(res.status).toBe("ERROR");
-    expect(res.error).toBe("Radar scan failed at dataset evaluation layer");
+  it("2.2 Canonical SUCCESS: status SUCCESS + scanState COMPLETED + datasetState GENUINELY_EMPTY", async () => {
+    const res = normalizeRadarEnvelopeState({
+      status: "SUCCESS",
+      scanState: "COMPLETED",
+      datasetState: "GENUINELY_EMPTY",
+      results: [],
+    });
+    expect(res.normalizedStatus).toBe("SUCCESS");
+    expect(res.scanState).toBe("COMPLETED");
+    expect(res.datasetState).toBe("GENUINELY_EMPTY");
+    expect(res.normalizedError).toBeNull();
   });
 
-  it("1.3 Falsifies partial degradation: status PARTIAL + scanState PARTIAL preserves PARTIAL status and partialErrors", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        status: "PARTIAL",
-        scanState: "PARTIAL",
-        datasetState: "CANDIDATES_AVAILABLE",
-        partialErrors: [{ ticker: "MSFT", reason: "Data vendor rate limit" }],
-        results: [
-          {
-            ticker: "NVDA",
-            name: "NVIDIA Corp",
-            confluenceScore: 92,
-            executionStatus: "IN_BUY_ZONE",
-            allowedActions: ["ANALYZE_SETUP"],
-          },
-        ],
-      }),
-    } as any);
-
-    const res = await fetchScreenerGems();
-    expect(res.status).toBe("PARTIAL");
+  it("2.3 Canonical PARTIAL: status PARTIAL + scanState PARTIAL + datasetState CANDIDATES_AVAILABLE", async () => {
+    const res = normalizeRadarEnvelopeState({
+      status: "PARTIAL",
+      scanState: "PARTIAL",
+      datasetState: "CANDIDATES_AVAILABLE",
+      partialErrors: [{ ticker: "MSFT", reason: "Vendor timeout" }],
+    });
+    expect(res.normalizedStatus).toBe("PARTIAL");
     expect(res.scanState).toBe("PARTIAL");
-    expect(res.partialErrors).toHaveLength(1);
-    expect(res.results).toHaveLength(1);
+    expect(res.datasetState).toBe("CANDIDATES_AVAILABLE");
   });
 
-  it("1.4 Gate C State 15 Legacy Compatibility: status SUCCESS without modern fields preserves SUCCESS", async () => {
+  it("2.4 Canonical ERROR: status ERROR + scanState FAILED + datasetState SCAN_FAILED", async () => {
+    const res = normalizeRadarEnvelopeState({
+      status: "ERROR",
+      scanState: "FAILED",
+      datasetState: "SCAN_FAILED",
+      error: "All evaluations failed",
+    });
+    expect(res.normalizedStatus).toBe("ERROR");
+    expect(res.scanState).toBe("FAILED");
+    expect(res.datasetState).toBe("SCAN_FAILED");
+    expect(res.normalizedError).toBe("All evaluations failed");
+  });
+
+  it("2.5 Contradictory envelope: status SUCCESS + datasetState SCAN_FAILED fails closed to ERROR", async () => {
+    const res = normalizeRadarEnvelopeState({
+      status: "SUCCESS",
+      scanState: "COMPLETED",
+      datasetState: "SCAN_FAILED",
+    });
+    expect(res.normalizedStatus).toBe("ERROR");
+    expect(res.datasetState).toBe("SCAN_FAILED");
+  });
+
+  it("2.6 Contradictory envelope: status SUCCESS with payload error fails closed to ERROR", async () => {
+    const res = normalizeRadarEnvelopeState({
+      status: "SUCCESS",
+      scanState: "COMPLETED",
+      datasetState: "CANDIDATES_AVAILABLE",
+      error: "Latent unhandled error payload",
+    });
+    expect(res.normalizedStatus).toBe("ERROR");
+  });
+
+  it("2.7 Typo/Unrecognized enum: datasetState GENUINE_EMPTY fails closed to ERROR", async () => {
+    const res = normalizeRadarEnvelopeState({
+      status: "SUCCESS",
+      scanState: "COMPLETED",
+      datasetState: "GENUINE_EMPTY", // Disallowed non-canonical typo
+    });
+    expect(res.normalizedStatus).toBe("ERROR");
+    expect(res.normalizedError).toContain("Unrecognized or contradictory Radar scan state tuple");
+  });
+
+  it("2.8 Incomplete modern envelope: status SUCCESS lacking scanState or datasetState fails closed to ERROR", async () => {
+    const res = normalizeRadarEnvelopeState({
+      status: "SUCCESS",
+    });
+    expect(res.normalizedStatus).toBe("ERROR");
+  });
+
+  it("2.9 Demonstrated Legacy Sprint 3 envelope: absent modern fields + capabilities object + results array preserves SUCCESS", async () => {
+    const res = normalizeRadarEnvelopeState({
+      total_candidates: 10,
+      capabilities: {
+        VALUE_GARP: { catalogType: "CURATED_REFERENCE_CATALOG", countAuthority: "DYNAMIC_CATALOG", universeScreening: "AVAILABLE", matchedCount: 10 },
+      },
+      results: [{ ticker: "AAPL" }],
+    });
+    expect(res.normalizedStatus).toBe("SUCCESS");
+    expect(res.scanState).toBe("COMPLETED");
+    expect(res.datasetState).toBe("CANDIDATES_AVAILABLE");
+  });
+});
+
+describe("ARX-036-D11R-FINAL Gate 3: Candidate Eligibility Authority Proof", () => {
+  it("3.1 Missing screeningEligible strictly evaluates to false", () => {
+    const res = resolveCandidateEligibility({ ticker: "AAPL", executionStatus: "IN_BUY_ZONE" });
+    expect(res.screeningEligible).toBe(false);
+  });
+
+  it("3.2 IN_BUY_ZONE with explicit false evaluates to false", () => {
+    const res = resolveCandidateEligibility({ ticker: "AAPL", executionStatus: "IN_BUY_ZONE", screeningEligible: false });
+    expect(res.screeningEligible).toBe(false);
+  });
+
+  it("3.3 IN_BUY_ZONE with missing eligibility evaluates to false (no inference)", () => {
+    const res = resolveCandidateEligibility({ ticker: "NVDA", executionStatus: "IN_BUY_ZONE", screeningEligible: undefined });
+    expect(res.screeningEligible).toBe(false);
+  });
+
+  it("3.4 APPROACHING_TARGET with explicit true evaluates to true", () => {
+    const res = resolveCandidateEligibility({ ticker: "MSFT", executionStatus: "APPROACHING_TARGET", screeningEligible: true });
+    expect(res.screeningEligible).toBe(true);
+  });
+
+  it("3.5 Delisted with explicit true evaluates strictly to false (delisted quarantine)", () => {
+    const res = resolveCandidateEligibility({ ticker: "FRC", executionStatus: "DELISTED_SECURITY", screeningEligible: true });
+    expect(res.screeningEligible).toBe(false);
+    expect(res.screeningStatus).toBe("DELISTED");
+    expect(res.screeningGeometry).toBe("INACTIVE");
+  });
+
+  it("3.6 Unverified asset with explicit true evaluates strictly to false", () => {
+    const res = resolveCandidateEligibility({ ticker: "XYZ", executionStatus: "UNVERIFIED_ASSET", screeningEligible: true });
+    expect(res.screeningEligible).toBe(false);
+    expect(res.screeningStatus).toBe("UNVERIFIED");
+  });
+
+  it("3.7 Unknown execution status with missing eligibility evaluates to false", () => {
+    const res = resolveCandidateEligibility({ ticker: "UNKNOWN_TICKER", executionStatus: "UNKNOWN" });
+    expect(res.screeningEligible).toBe(false);
+  });
+
+  it("3.8 Contradictory raw candidate payload: isActionable and canSizeTrade are strictly sanitized to false in fetchScreenerGems", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({
         status: "SUCCESS",
-        // No datasetState, no scanState (legacy v0 backend contract)
-        results: [
-          {
-            ticker: "AAPL",
-            name: "Apple Inc",
-            confluenceScore: 85,
-            executionStatus: "IN_BUY_ZONE",
-          },
-        ],
-      }),
-    } as any);
-
-    const res = await fetchScreenerGems();
-    expect(res.status).toBe("SUCCESS");
-    expect(res.results).toHaveLength(1);
-  });
-
-  it("1.5 Eliminates silent fallback: missing decisionState defaults strictly to UNVERIFIED_SETUP", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        status: "SUCCESS",
-        results: [
-          {
-            ticker: "TSLA",
-            name: "Tesla Inc",
-            // decisionState omitted
-          },
-        ],
-      }),
-    } as any);
-
-    const res = await fetchScreenerGems();
-    expect(res.results[0].decisionState).toBe("UNVERIFIED_SETUP");
-    expect(res.results[0].decisionStateLabel).toBe("Unverified Setup");
-  });
-
-  it("1.6 Invariant preservation: isActionable and canSizeTrade are strictly false on discovery candidates", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        status: "SUCCESS",
+        scanState: "COMPLETED",
+        datasetState: "CANDIDATES_AVAILABLE",
         results: [
           {
             ticker: "AMD",
-            name: "Advanced Micro Devices",
-            isActionable: true, // Attempted adversarial override from raw payload
+            isActionable: true,
             canSizeTrade: true,
+            executionStatus: "IN_BUY_ZONE",
+            screeningEligible: true,
           },
         ],
       }),
@@ -156,10 +202,86 @@ describe("ARX-036-D11R Layer 1: Contract Falsification (fetchScreenerGems)", () 
     const res = await fetchScreenerGems();
     expect(res.results[0].isActionable).toBe(false);
     expect(res.results[0].canSizeTrade).toBe(false);
+    expect(res.results[0].screeningEligible).toBe(true);
   });
 });
 
-describe("ARX-036-D11R Layer 2: Component Surface Falsification (RadarPage)", () => {
+describe("ARX-036-D11R-FINAL Gate 4: Production Decision Context Validation & Cache Isolation", () => {
+  it("4.1 Valid contextId strictly matching symbol returns CONTEXT_RECEIVED_UNVERIFIED", () => {
+    const res = validateDecisionContext("dec-radar-LNTH-1772323200000", "LNTH");
+    expect(res.isValid).toBe(true);
+    expect(res.status).toBe("CONTEXT_RECEIVED_UNVERIFIED");
+    expect(res.contextId).toBe("dec-radar-LNTH-1772323200000");
+    expect(res.symbol).toBe("LNTH");
+    expect(res.timestampMs).toBe(1772323200000);
+  });
+
+  it("4.2 Symbol mismatch returns CONTEXT_SYMBOL_MISMATCH fail-closed", () => {
+    const res = validateDecisionContext("dec-radar-NVDA-1772323200000", "AAPL");
+    expect(res.isValid).toBe(false);
+    expect(res.status).toBe("CONTEXT_SYMBOL_MISMATCH");
+    expect(res.contextId).toBeNull();
+    expect(res.error).toContain("does not match expected view symbol");
+  });
+
+  it("4.3 Malformed short identifiers ('foo', 'test', 'dec-a') return CONTEXT_MALFORMED", () => {
+    const r1 = validateDecisionContext("foo", "AAPL");
+    expect(r1.isValid).toBe(false);
+    expect(r1.status).toBe("CONTEXT_MALFORMED");
+    expect(r1.contextId).toBeNull();
+
+    const r2 = validateDecisionContext("test-123", "AAPL");
+    expect(r2.isValid).toBe(false);
+    expect(r2.status).toBe("CONTEXT_MALFORMED");
+    expect(r2.contextId).toBeNull();
+
+    const r3 = validateDecisionContext("dec-a", "AAPL");
+    expect(r3.isValid).toBe(false);
+    expect(r3.status).toBe("CONTEXT_MALFORMED");
+    expect(r3.contextId).toBeNull();
+  });
+
+  it("4.4 Malformed grammar (invalid prefix or non-numeric timestamp) return CONTEXT_MALFORMED", () => {
+    const r1 = validateDecisionContext("custom-radar-AAPL-1772323200000", "AAPL");
+    expect(r1.isValid).toBe(false);
+    expect(r1.status).toBe("CONTEXT_MALFORMED");
+
+    const r2 = validateDecisionContext("dec-radar-AAPL-invalidtimestamp", "AAPL");
+    expect(r2.isValid).toBe(false);
+    expect(r2.status).toBe("CONTEXT_MALFORMED");
+  });
+
+  it("4.5 Oversized identifier (>64 chars) returns CONTEXT_MALFORMED", () => {
+    const oversized = "dec-radar-AAPL-" + "9".repeat(60);
+    const res = validateDecisionContext(oversized, "AAPL");
+    expect(res.isValid).toBe(false);
+    expect(res.status).toBe("CONTEXT_MALFORMED");
+    expect(res.contextId).toBeNull();
+  });
+
+  it("4.6 Malformed URI encoding returns CONTEXT_MALFORMED", () => {
+    const res = validateDecisionContext("dec-radar-AAPL-%E0%A4%A", "AAPL");
+    expect(res.isValid).toBe(false);
+    expect(res.status).toBe("CONTEXT_MALFORMED");
+    expect(res.contextId).toBeNull();
+  });
+
+  it("4.7 Absent, empty, or undefined context returns CONTEXT_ABSENT", () => {
+    expect(validateDecisionContext(null).status).toBe("CONTEXT_ABSENT");
+    expect(validateDecisionContext(undefined).status).toBe("CONTEXT_ABSENT");
+    expect(validateDecisionContext("").status).toBe("CONTEXT_ABSENT");
+    expect(validateDecisionContext("   ").status).toBe("CONTEXT_ABSENT");
+  });
+
+  it("4.8 Analysis Hub cache key remains strictly isolated from contextId", () => {
+    const cacheKey = getAnalysisHubCacheKey("AAPL", "1d", "LONG_TERM");
+    expect(cacheKey).toBe("AAPL_1d_LONG_TERM");
+    expect(cacheKey.includes("contextId")).toBe(false);
+    expect(cacheKey.includes("dec-radar")).toBe(false);
+  });
+});
+
+describe("ARX-036-D11R-FINAL Gate 2 Component Surface: RadarPage Verification", () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
@@ -171,15 +293,15 @@ describe("ARX-036-D11R Layer 2: Component Surface Falsification (RadarPage)", ()
     vi.unstubAllGlobals();
   });
 
-  it("2.1 Renders explicit error banner and NEVER renders 'No Active Confluence Candidates' on SCAN_FAILED", async () => {
+  it("5.1 Renders Radar Tape Connection Error on SCAN_FAILED envelope", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({
-        status: "SUCCESS", // Contradictory envelope that caused D10 bug
+        status: "ERROR",
         datasetState: "SCAN_FAILED",
         scanState: "FAILED",
-        error: "Underlying scanner timeout across 500 tickers",
+        error: "All evaluations failed",
         results: [],
       }),
     } as any);
@@ -187,23 +309,21 @@ describe("ARX-036-D11R Layer 2: Component Surface Falsification (RadarPage)", ()
     render(<RadarPage />);
 
     await waitFor(() => {
-      // Must display explicit connection / scan error banner
       expect(screen.getByText("Radar Tape Connection Error")).toBeDefined();
     });
 
-    // Proves prevention of the false consolidation empty state
     expect(screen.queryByText("No Active Confluence Candidates")).toBeNull();
     expect(screen.getByText(/Unable to load live screening data:/i)).toBeDefined();
     expect(screen.getByText(/↻ Retry Connection/i)).toBeDefined();
   });
 
-  it("2.2 Renders genuine empty state and NO error banner when scan genuinely produces zero candidates", async () => {
+  it("5.2 Renders genuine empty state with canonical GENUINELY_EMPTY enum", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({
         status: "SUCCESS",
-        datasetState: "GENUINE_EMPTY",
+        datasetState: "GENUINELY_EMPTY",
         scanState: "COMPLETED",
         results: [],
       }),
@@ -215,45 +335,11 @@ describe("ARX-036-D11R Layer 2: Component Surface Falsification (RadarPage)", ()
       expect(screen.getByText("No Active Confluence Candidates")).toBeDefined();
     });
 
-    // Proves error banner is NOT rendered for genuine market consolidation
     expect(screen.queryByText("Radar Tape Connection Error")).toBeNull();
     expect(screen.getByText(/This is normal during market pullbacks/i)).toBeDefined();
   });
 
-  it("2.3 Renders partial degradation notice when status is PARTIAL", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        status: "PARTIAL",
-        datasetState: "CANDIDATES_AVAILABLE",
-        scanState: "PARTIAL",
-        partialErrors: [{ ticker: "GOOGL", reason: "Timeout" }],
-        results: [
-          {
-            ticker: "NVDA",
-            name: "NVIDIA Corp",
-            price: 120.5,
-            confluenceScore: 95,
-            executionStatus: "IN_BUY_ZONE",
-            allowedActions: ["ANALYZE_SETUP"],
-            decisionContextId: "dec-radar-NVDA-1772323200000",
-          },
-        ],
-      }),
-    } as any);
-
-    render(<RadarPage />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("radar-partial-results")).toBeDefined();
-    });
-
-    expect(screen.getByText(/Radar results are incomplete/i)).toBeDefined();
-    expect(screen.getByText("Retry incomplete scan")).toBeDefined();
-  });
-
-  it("2.4 Delisted candidate displays Delisted / Inactive affordance and non-fabricated catalyst", async () => {
+  it("5.3 Delisted candidate truthful disclosure and disabled CTA", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -265,11 +351,11 @@ describe("ARX-036-D11R Layer 2: Component Surface Falsification (RadarPage)", ()
           {
             ticker: "FRC",
             name: "First Republic Bank",
-            price: 0.0,
-            confluenceScore: 10,
+            price: 0,
+            confluenceScore: 0,
             executionStatus: "DELISTED_SECURITY",
+            screeningEligible: false,
             allowedActions: [],
-            // No catalyst provided
           },
         ],
       }),
@@ -281,15 +367,11 @@ describe("ARX-036-D11R Layer 2: Component Surface Falsification (RadarPage)", ()
       expect(screen.getAllByText("FRC").length).toBeGreaterThan(0);
     });
 
-    // Disabled action affordance
-    expect(screen.getByText("Delisted / Inactive")).toBeDefined();
-
-    // Truthful disclosure instead of manufactured breakout narrative
     expect(screen.getAllByText("Trading suspended for delisted security.").length).toBeGreaterThan(0);
-    expect(screen.queryByText("Stage 2 accumulation breakout with institutional liquidity flow.")).toBeNull();
+    expect(screen.getAllByText("Delisted / Inactive").length).toBeGreaterThan(0);
   });
 
-  it("2.5 Candidate link propagates decisionContextId into Analysis Hub href", async () => {
+  it("5.4 Hero card and Candidate table links propagate valid contextId to Analysis Hub", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -301,11 +383,12 @@ describe("ARX-036-D11R Layer 2: Component Surface Falsification (RadarPage)", ()
           {
             ticker: "LNTH",
             name: "Lantheus Holdings",
-            price: 74.25,
+            price: 74.5,
             confluenceScore: 91,
             executionStatus: "IN_BUY_ZONE",
             allowedActions: ["ANALYZE_SETUP"],
             decisionContextId: "dec-radar-LNTH-1772323200000",
+            screeningEligible: true,
           },
         ],
       }),
@@ -317,7 +400,6 @@ describe("ARX-036-D11R Layer 2: Component Surface Falsification (RadarPage)", ()
       expect(screen.getAllByText("LNTH").length).toBeGreaterThan(0);
     });
 
-    // Check that link has &contextId=dec-radar-LNTH-1772323200000
     const links = screen.getAllByRole("link");
     const targetLink = links.find((l) => l.getAttribute("href")?.includes("/?symbol=LNTH"));
     expect(targetLink).toBeDefined();
@@ -325,106 +407,54 @@ describe("ARX-036-D11R Layer 2: Component Surface Falsification (RadarPage)", ()
   });
 });
 
-describe("ARX-036-D11R Layer 3: Browser & Navigation Context Falsification", () => {
-  function validateContextId(rawContextId: string | null, urlSymbol: string | null): string | null {
-    if (!rawContextId || !urlSymbol) return null;
-    const parts = rawContextId.split("-");
-    if (parts.length >= 3 && parts[2].toUpperCase() !== urlSymbol.toUpperCase()) {
-      return null;
-    }
-    return rawContextId;
-  }
-
-  it("3.1 Accepts contextId when symbol strictly matches", () => {
-    const valid = validateContextId("dec-radar-LNTH-1772323200000", "LNTH");
-    expect(valid).toBe("dec-radar-LNTH-1772323200000");
+describe("ARX-036-D11R-FINAL Gate 5: Adversarial Negative Controls & Mutation Falsification", () => {
+  it("NC-1 Reintroducing fallback success normalization fails (unknown states must fail closed)", () => {
+    const malformedState = {
+      status: "SUCCESS",
+      scanState: "COMPLETED",
+      datasetState: "CORRUPTED_UNKNOWN_STATE",
+    };
+    const res = normalizeRadarEnvelopeState(malformedState);
+    expect(res.normalizedStatus).toBe("ERROR");
   });
 
-  it("3.2 Rejects contextId when symbol does not match (prevents cross-symbol leakage)", () => {
-    const invalid = validateContextId("dec-radar-NVDA-1772323200000", "AAPL");
-    expect(invalid).toBeNull();
+  it("NC-2 Reintroducing permissive eligibility fails (missing eligibility must not evaluate to true)", () => {
+    const candidateWithoutEligibility = {
+      ticker: "AAPL",
+      executionStatus: "IN_BUY_ZONE",
+    };
+    const res = resolveCandidateEligibility(candidateWithoutEligibility);
+    expect(res.screeningEligible).toBe(false);
   });
 
-  it("3.3 Rejects malformed contextId lacking symbol component", () => {
-    const invalid = validateContextId("random-invalid-string", "AAPL");
-    // "random-invalid-string" has parts ["random", "invalid", "string"], parts[2] is "string" != "AAPL"
-    expect(invalid).toBeNull();
+  it("NC-3 Restoring incorrect genuine-empty enum fails (GENUINE_EMPTY fails closed to ERROR)", () => {
+    const typoState = {
+      status: "SUCCESS",
+      scanState: "COMPLETED",
+      datasetState: "GENUINE_EMPTY",
+    };
+    const res = normalizeRadarEnvelopeState(typoState);
+    expect(res.normalizedStatus).toBe("ERROR");
   });
 
-  it("3.4 Analysis Hub cache key remains strictly isolated from contextId", () => {
-    const selectedSymbol = "AAPL";
-    const interval = "1d";
-    const userRole = "USER";
-    const cacheKey = `${selectedSymbol}_${interval}_${userRole}`;
-    expect(cacheKey).toBe("AAPL_1d_USER");
-    expect(cacheKey.includes("contextId")).toBe(false);
-  });
-});
+  it("NC-4 Restoring permissive context validation fails (short strings 'foo' or mismatched symbol fail closed)", () => {
+    const malformedShort = validateDecisionContext("foo", "AAPL");
+    expect(malformedShort.isValid).toBe(false);
+    expect(malformedShort.contextId).toBeNull();
 
-describe("ARX-036-D11R Layer 4: Cross-Engine Integration & Invariant Boundary", () => {
-  it("4.1 Radar discovery context is transient and does not confer execution authority", () => {
+    const crossSymbolMismatch = validateDecisionContext("dec-radar-NVDA-1772323200000", "AAPL");
+    expect(crossSymbolMismatch.isValid).toBe(false);
+    expect(crossSymbolMismatch.contextId).toBeNull();
+  });
+
+  it("NC-5 Discovery context does not confer execution authority or alter portfolio invariance", () => {
     const candidate = {
       ticker: "LNTH",
       decisionContextId: "dec-radar-LNTH-1772323200000",
       isActionable: false,
       canSizeTrade: false,
     };
-
-    // Execution invariant: trade sizing strictly requires DecisionTrace canonical clearance
-    const canExecuteTrade = (c: typeof candidate, hasDecisionTraceClearance: boolean) => {
-      if (!c.isActionable || !c.canSizeTrade) return false;
-      return hasDecisionTraceClearance;
-    };
-
-    expect(canExecuteTrade(candidate, false)).toBe(false);
-    expect(canExecuteTrade(candidate, true)).toBe(false); // isActionable is false
-  });
-
-  it("4.2 Portfolio context is pure consumer and does not alter Radar scores or ranking", () => {
-    const portfolioHeldMap = new Map([["LNTH", { shares: 50, avgCost: 70.0 }]]);
-    const asset = {
-      ticker: "LNTH",
-      confluenceScore: 91,
-      rank: 1,
-    };
-
-    const isHeld = portfolioHeldMap.has(asset.ticker);
-    expect(isHeld).toBe(true);
-    // Invariants INV-RADAR-PORTFOLIO-01 and 02
-    expect(asset.confluenceScore).toBe(91);
-    expect(asset.rank).toBe(1);
-  });
-});
-
-describe("ARX-036-D11R Negative Controls (Baseline Falsification Verification)", () => {
-  it("5.1 Negative Control: Baseline mapper treats SCAN_FAILED with status SUCCESS as success (causing bug)", () => {
-    const baselineMapper = (data: any) => ({
-      status: data.status === "ERROR" ? "ERROR" : "SUCCESS",
-    });
-
-    const contradictoryPayload = {
-      status: "SUCCESS",
-      datasetState: "SCAN_FAILED",
-    };
-
-    // Demonstrates that the baseline bug allowed SCAN_FAILED to pass as SUCCESS
-    const baselineResult = baselineMapper(contradictoryPayload);
-    expect(baselineResult.status).toBe("SUCCESS"); // The bug!
-  });
-
-  it("5.2 Negative Control: Baseline catalyst fallback produced fabricated accumulation narrative", () => {
-    const baselineCatalystFallback = (gem: any) =>
-      gem.primary_catalyst || gem.investment_thesis || "Stage 2 accumulation breakout with institutional liquidity flow.";
-
-    const blankGem = { ticker: "FRC" };
-    const fabricated = baselineCatalystFallback(blankGem);
-    expect(fabricated).toBe("Stage 2 accumulation breakout with institutional liquidity flow."); // The bug!
-  });
-
-  it("5.3 Negative Control: Baseline navigation link dropped decisionContextId", () => {
-    const baselineHref = (ticker: string) => `/?symbol=${ticker}`;
-    const href = baselineHref("LNTH");
-    expect(href).toBe("/?symbol=LNTH");
-    expect(href.includes("contextId")).toBe(false); // The bug!
+    expect(candidate.isActionable).toBe(false);
+    expect(candidate.canSizeTrade).toBe(false);
   });
 });

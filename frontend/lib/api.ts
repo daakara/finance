@@ -1759,6 +1759,183 @@ export async function fetchCanonicalInstrument(
   }
 }
 
+/**
+ * Authoritative Candidate Eligibility Resolution (ARX-036-D11R-FINAL Gate 3)
+ *
+ * Removes unjustified eligibility inference. Missing eligibility strictly evaluates to false.
+ * Delisted and unverified candidates are strictly ineligible (screeningEligible = false).
+ */
+export function resolveCandidateEligibility(r: any): {
+  screeningEligible: boolean;
+  screeningStatus: string;
+  screeningGeometry: string;
+} {
+  const isDelisted =
+    r.executionStatus === "DELISTED_SECURITY" ||
+    r.execution_status === "DELISTED_SECURITY" ||
+    r.isDelisted === true ||
+    r.status === "DELISTED";
+
+  const isUnverified =
+    r.executionStatus === "UNVERIFIED_ASSET" ||
+    r.execution_status === "UNVERIFIED_ASSET" ||
+    r.status === "UNVERIFIED_ASSET";
+
+  // Invariant 1: Delisted or Unverified securities can NEVER be screeningEligible
+  if (isDelisted) {
+    return {
+      screeningEligible: false,
+      screeningStatus: "DELISTED",
+      screeningGeometry: "INACTIVE",
+    };
+  }
+
+  if (isUnverified) {
+    return {
+      screeningEligible: false,
+      screeningStatus: "UNVERIFIED",
+      screeningGeometry: "OUTSIDE_TOLERANCE",
+    };
+  }
+
+  // Invariant 2: Explicit authoritative boolean governs. Missing eligibility strictly evaluates to false.
+  // Never infer eligibility from executionStatus === "IN_BUY_ZONE".
+  const authoritativeEligible = typeof r.screeningEligible === "boolean" ? r.screeningEligible : false;
+
+  const authoritativeStatus = typeof r.screeningStatus === "string" && r.screeningStatus.trim().length > 0
+    ? r.screeningStatus.trim()
+    : (typeof r.executionStatus === "string" ? r.executionStatus : "UNKNOWN");
+
+  const authoritativeGeometry = typeof r.screeningGeometry === "string" && r.screeningGeometry.trim().length > 0
+    ? r.screeningGeometry.trim()
+    : "UNKNOWN";
+
+  return {
+    screeningEligible: authoritativeEligible,
+    screeningStatus: authoritativeStatus,
+    screeningGeometry: authoritativeGeometry,
+  };
+}
+
+export type CanonicalRadarStatus = "SUCCESS" | "PARTIAL" | "ERROR" | "TIMEOUT";
+
+/**
+ * Strict Fail-Closed Radar Envelope Normalization (ARX-036-D11R-FINAL Gate 2)
+ *
+ * Canonical expected states:
+ * - SUCCESS / COMPLETED / CANDIDATES_AVAILABLE
+ * - SUCCESS / COMPLETED / GENUINELY_EMPTY
+ * - PARTIAL / PARTIAL / CANDIDATES_AVAILABLE
+ * - PARTIAL / PARTIAL / GENUINELY_EMPTY
+ * - ERROR / FAILED / SCAN_FAILED
+ *
+ * Unknown, contradictory, or malformed state combinations FAIL CLOSED to ERROR.
+ * Verified legacy Sprint 3 contracts are recognized only when demonstrated safety criteria are met.
+ */
+export function normalizeRadarEnvelopeState(data: any): {
+  normalizedStatus: CanonicalRadarStatus;
+  normalizedError: string | null;
+  scanState: string | undefined;
+  datasetState: string | undefined;
+} {
+  if (data?.status === "TIMEOUT") {
+    return {
+      normalizedStatus: "TIMEOUT",
+      normalizedError: typeof data.error === "string" ? data.error : "Radar request timed out",
+      scanState: typeof data?.scanState === "string" ? data.scanState : "FAILED",
+      datasetState: typeof data?.datasetState === "string" ? data.datasetState : "SCAN_FAILED",
+    };
+  }
+
+  const rawStatus = typeof data?.status === "string" ? data.status.trim() : undefined;
+  const rawScanState = typeof data?.scanState === "string" ? data.scanState.trim() : undefined;
+  const rawDatasetState = typeof data?.datasetState === "string" ? data.datasetState.trim() : undefined;
+  const rawError = typeof data?.error === "string" && data.error.trim().length > 0 ? data.error.trim() : null;
+
+  const hasModernFields = rawStatus !== undefined || rawScanState !== undefined || rawDatasetState !== undefined;
+
+  if (hasModernFields) {
+    // 1. Explicit Error / Failure states
+    if (
+      (rawStatus === "ERROR" && rawScanState === "FAILED" && rawDatasetState === "SCAN_FAILED") ||
+      rawDatasetState === "SCAN_FAILED" ||
+      rawScanState === "FAILED" ||
+      rawStatus === "ERROR"
+    ) {
+      return {
+        normalizedStatus: "ERROR",
+        normalizedError: rawError ?? "Radar scan failed at dataset evaluation layer",
+        scanState: rawScanState ?? "FAILED",
+        datasetState: rawDatasetState ?? "SCAN_FAILED",
+      };
+    }
+
+    // 2. Canonical PARTIAL tuples
+    if (
+      rawStatus === "PARTIAL" &&
+      rawScanState === "PARTIAL" &&
+      (rawDatasetState === "CANDIDATES_AVAILABLE" || rawDatasetState === "GENUINELY_EMPTY")
+    ) {
+      return {
+        normalizedStatus: "PARTIAL",
+        normalizedError: rawError,
+        scanState: "PARTIAL",
+        datasetState: rawDatasetState,
+      };
+    }
+
+    // 3. Canonical SUCCESS tuples (Must NOT have error payload)
+    if (
+      rawStatus === "SUCCESS" &&
+      rawScanState === "COMPLETED" &&
+      (rawDatasetState === "CANDIDATES_AVAILABLE" || rawDatasetState === "GENUINELY_EMPTY") &&
+      !rawError
+    ) {
+      return {
+        normalizedStatus: "SUCCESS",
+        normalizedError: null,
+        scanState: "COMPLETED",
+        datasetState: rawDatasetState,
+      };
+    }
+
+    // 4. Contradictory, unknown, or malformed modern envelope FAILS CLOSED to ERROR
+    return {
+      normalizedStatus: "ERROR",
+      normalizedError: rawError ?? `Unrecognized or contradictory Radar scan state tuple: [status=${rawStatus}, scanState=${rawScanState}, datasetState=${rawDatasetState}]`,
+      scanState: rawScanState ?? "FAILED",
+      datasetState: rawDatasetState ?? "SCAN_FAILED",
+    };
+  }
+
+  // 5. Verified Legacy Sprint 3 Envelope (Demonstrated source contract & safety properties)
+  // Only valid when status, scanState, and datasetState are all absent, results or candidates is an array,
+  // total_candidates or totalCandidates is a valid number, and NO error is present.
+  const isDemonstratedLegacySuccess =
+    !hasModernFields &&
+    !rawError &&
+    (Array.isArray(data?.results) || Array.isArray(data?.candidates)) &&
+    (typeof data?.total_candidates === "number" || typeof data?.totalCandidates === "number");
+
+  if (isDemonstratedLegacySuccess) {
+    const candidateCount = Array.isArray(data.results) ? data.results.length : data.candidates.length;
+    return {
+      normalizedStatus: "SUCCESS",
+      normalizedError: null,
+      scanState: "COMPLETED",
+      datasetState: candidateCount > 0 ? "CANDIDATES_AVAILABLE" : "GENUINELY_EMPTY",
+    };
+  }
+
+  // 6. Default Fallback: Unknown or empty payload lacking authoritative scan state contracts FAILS CLOSED to ERROR
+  return {
+    normalizedStatus: "ERROR",
+    normalizedError: rawError ?? "Malformed radar payload lacking authoritative scan state contracts",
+    scanState: "FAILED",
+    datasetState: "SCAN_FAILED",
+  };
+}
+
 export async function fetchScreenerGems(model: string = "all"): Promise<ScreenerResponse> {
   try {
     const baseUrl = getApiBaseUrl();
@@ -1790,6 +1967,7 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
         const gemVal = typeof r.gemScore === "number" && Number.isFinite(r.gemScore)
           ? Math.round(r.gemScore)
           : null;
+        const eligibility = resolveCandidateEligibility(r);
 
         return {
           ticker: r.ticker || r.symbol || r.companyName || "UNKNOWN",
@@ -1814,9 +1992,9 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
           priceBasis: r.priceBasis ?? null,
           priceDate: r.priceDate ?? null,
           execution_status: r.executionStatus || r.execution_status,
-          screeningStatus: r.screeningStatus || (r.executionStatus === "IN_BUY_ZONE" ? "SCREENING_ZONE" : (r.executionStatus || "PULLBACK_PENDING")),
-          screeningGeometry: r.screeningGeometry || (r.executionStatus === "IN_BUY_ZONE" ? "WITHIN_TOLERANCE" : "OUTSIDE_TOLERANCE"),
-          screeningEligible: typeof r.screeningEligible === "boolean" ? r.screeningEligible : Boolean(r.executionStatus === "IN_BUY_ZONE"),
+          screeningStatus: eligibility.screeningStatus,
+          screeningGeometry: eligibility.screeningGeometry,
+          screeningEligible: eligibility.screeningEligible,
           rvol: typeof r.rvol === "string" ? r.rvol : null,
           riskRewardRatio: typeof r.riskRewardRatio === "number" ? r.riskRewardRatio : null,
           decisionState: r.decisionState || "UNVERIFIED_SETUP",
@@ -1832,25 +2010,7 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
         };
       });
 
-      // Tri-state classification logic enforcing Fail-Closed and Gate C Legacy compatibility
-      const isScanFailure =
-        data.datasetState === "SCAN_FAILED" ||
-        data.scanState === "FAILED" ||
-        data.status === "ERROR" ||
-        data.status === "TIMEOUT" ||
-        (Boolean(data.error) && data.status !== "PARTIAL");
-
-      const normalizedStatus: "SUCCESS" | "PARTIAL" | "ERROR" | "TIMEOUT" = isScanFailure
-        ? (data.status === "TIMEOUT" ? "TIMEOUT" : "ERROR")
-        : (data.status === "PARTIAL" || data.scanState === "PARTIAL")
-        ? "PARTIAL"
-        : "SUCCESS";
-
-      const normalizedError = typeof data.error === "string"
-        ? data.error
-        : isScanFailure
-        ? "Radar scan failed at dataset evaluation layer"
-        : null;
+      const stateNorm = normalizeRadarEnvelopeState(data);
 
       return {
         total_candidates: candidates.length,
@@ -1858,11 +2018,11 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
         ...(capabilities ? { capabilities } : {}),
         population: (data as any)?.population || undefined,
         results: candidates,
-        status: normalizedStatus,
-        scanState: typeof data.scanState === "string" ? data.scanState : undefined,
-        datasetState: typeof data.datasetState === "string" ? data.datasetState : undefined,
+        status: stateNorm.normalizedStatus,
+        scanState: stateNorm.scanState,
+        datasetState: stateNorm.datasetState,
         partialErrors: Array.isArray(data.partialErrors) ? data.partialErrors : undefined,
-        error: normalizedError,
+        error: stateNorm.normalizedError,
       };
     } else {
       console.warn(`Screener API HTTP error: ${res.status} ${res.statusText}`);

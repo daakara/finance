@@ -238,8 +238,8 @@ function RadarContent() {
             categories: cat,
             sector: catalogEntry?.sector || "Broad Market",
             executionStatus,
-            screeningStatus: gem.screeningStatus || (executionStatus === 'IN_BUY_ZONE' ? 'SCREENING_ZONE' : (executionStatus !== 'UNKNOWN' ? executionStatus : 'UNKNOWN')),
-            screeningGeometry: gem.screeningGeometry || (executionStatus === 'IN_BUY_ZONE' ? 'WITHIN_TOLERANCE' : 'OUTSIDE_TOLERANCE'),
+            screeningStatus: gem.screeningStatus || (executionStatus === 'DELISTED_SECURITY' ? 'DELISTED' : (executionStatus === 'UNVERIFIED_ASSET' ? 'UNVERIFIED' : 'UNKNOWN')),
+            screeningGeometry: gem.screeningGeometry || (executionStatus === 'DELISTED_SECURITY' ? 'INACTIVE' : 'UNKNOWN'),
             decisionState: gem.decisionState || 'UNVERIFIED_SETUP',
             decisionStateLabel: gem.decisionStateLabel || (gem.decisionState === 'ACTIONABLE_SETUP' ? 'Discovery Candidate — Analyze for Trigger' : 'Discovery Candidate'),
             isActionable: false, // Invariant: Radar is a discovery scanner; canonical actionability reserved for DecisionTrace
@@ -247,7 +247,7 @@ function RadarContent() {
             disqualificationReason: gem.disqualificationReason || null,
             decisionContextId: gem.decisionContextId,
             allowedActions: Array.isArray(gem.allowedActions) ? gem.allowedActions : [],
-            screeningEligible: executionStatus === 'DELISTED_SECURITY' ? false : (typeof gem.screeningEligible === 'boolean' ? gem.screeningEligible : Boolean(executionStatus === 'IN_BUY_ZONE')),
+            screeningEligible: executionStatus === 'DELISTED_SECURITY' || executionStatus === 'UNVERIFIED_ASSET' ? false : Boolean(gem.screeningEligible),
           };
         });
         setAllAssets(mapped);
@@ -320,7 +320,7 @@ function RadarContent() {
     if (asset.executionStatus === 'DELISTED_SECURITY') return false;
     if (asset.executionStatus === 'UNVERIFIED_ASSET') return false;
     if (asset.executionStatus === 'UNKNOWN') return false;
-    return true;
+    return Boolean(asset.screeningEligible);
   };
 
   // Ownership & Opportunity Counts (Derived dynamically from candidate eligibility contract)
@@ -501,8 +501,8 @@ function RadarContent() {
         categories: cat,
         sector: "On-Demand Discovery",
         executionStatus,
-        screeningStatus: executionStatus === 'IN_BUY_ZONE' ? 'SCREENING_ZONE' : (executionStatus !== 'UNKNOWN' ? executionStatus : 'UNKNOWN'),
-        screeningGeometry: executionStatus === 'IN_BUY_ZONE' ? 'WITHIN_TOLERANCE' : 'OUTSIDE_TOLERANCE',
+        screeningStatus: executionStatus === 'DELISTED_SECURITY' ? 'DELISTED' : (executionStatus === 'UNVERIFIED_ASSET' ? 'UNVERIFIED' : (executionStatus || 'UNKNOWN')),
+        screeningGeometry: executionStatus === 'DELISTED_SECURITY' ? 'INACTIVE' : 'UNKNOWN',
         decisionState: dec?.decisionState || (data.degradedMode ? "UNVERIFIED" : "VALID_SETUP"),
         decisionStateLabel: dec?.stateLabel || "Discovery Candidate — Analyze for Trigger",
         isActionable: false, // Invariant: Radar is a discovery scanner; canonical actionability reserved for DecisionTrace
@@ -510,7 +510,7 @@ function RadarContent() {
         disqualificationReason: dec?.disqualificationReason || null,
         decisionContextId: data.decisionId,
         allowedActions: executionStatus === 'DELISTED_SECURITY' ? [] : ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"],
-        screeningEligible: Boolean(executionStatus === 'IN_BUY_ZONE'),
+        screeningEligible: false, // On-demand lookup does not confer universe screening eligibility
         priceBasis: "DAILY_CLOSE",
         priceDate: (data as any)?.tradeDate ?? null,
       };

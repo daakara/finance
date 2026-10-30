@@ -40,6 +40,7 @@ import { MASTER_ASSET_CATALOG } from "../lib/masterCatalog";
 import TerminalSsrShell from "../components/TerminalSsrShell";
 import SynthesisMobileDock from "../components/synthesis/SynthesisMobileDock";
 import { resolveFreshCachedVix, resolveFreshMacroEvidence } from "../lib/preflightEvaluator";
+import { validateDecisionContext, getAnalysisHubCacheKey } from "../lib/decisionContext";
 import { Target, Landmark, BarChart3, Shield } from "lucide-react";
 
 type WorkspaceTab = "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
@@ -51,14 +52,10 @@ function TerminalContent() {
   const urlTab = searchParams.get("tab")?.toUpperCase();
   const rawContextId = searchParams.get("contextId") || searchParams.get("decisionContextId");
 
-  // Gate G & H: Validate contextId against active symbol (prevents CONTEXT_INVALID cross-symbol leakage)
+  // Gate 4: Centralized production context validation (prevents malformed/short/mismatched leakage)
   const validatedContextId = useMemo(() => {
-    if (!rawContextId || !urlSymbol) return null;
-    const parts = rawContextId.split("-");
-    if (parts.length >= 3 && parts[2].toUpperCase() !== urlSymbol.toUpperCase()) {
-      return null;
-    }
-    return rawContextId;
+    const res = validateDecisionContext(rawContextId, urlSymbol);
+    return res.isValid ? res.contextId : null;
   }, [rawContextId, urlSymbol]);
 
   const [hasExplicitSymbol, setHasExplicitSymbol] = useState<boolean>(!!urlSymbol);
@@ -211,7 +208,7 @@ function TerminalContent() {
     const abortController = new AbortController();
     async function loadData() {
       const requestId = ++analysisRequestIdRef.current;
-      const cacheKey = `${selectedSymbol}_${interval}_${userRole}`;
+      const cacheKey = getAnalysisHubCacheKey(selectedSymbol, interval, userRole);
       const cached = cacheRef.current.get(cacheKey);
 
       // Instant optimistic display from memory cache (<10ms)
