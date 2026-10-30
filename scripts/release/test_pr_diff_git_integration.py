@@ -147,6 +147,38 @@ class RealGitQualificationTests(unittest.TestCase):
         with self.assertRaisesRegex(qualifier.QualificationFailure, "NO_TRUSTED_BASE_APPROVAL"):
             self.qualify()
 
+    def test_unapproved_deletion_fails(self):
+        self.prepare()
+        (self.root / self.path).unlink()
+        self.head = self.commit("remove previously approved modified file")
+        with self.assertRaisesRegex(qualifier.QualificationFailure, "OPERATION_MISMATCH"):
+            self.qualify()
+
+    def test_rename_cannot_reuse_old_path_approval(self):
+        self.prepare()
+        new_path = "frontend/app/renamed-compare.tsx"
+        (self.root / new_path).write_text(self.actual, encoding="utf-8")
+        (self.root / self.path).unlink()
+        self.head = self.commit("rename previously approved file")
+        with self.assertRaisesRegex(qualifier.QualificationFailure, "UNAPPROVED_OR_MISSING_FILES"):
+            self.qualify()
+
+    def test_candidate_changed_approval_is_rejected(self):
+        self.prepare()
+        self.write(APPROVAL, json.dumps({
+            "schema_version": 1,
+            "pr_number": PR,
+            "files": {
+                PATH: {
+                    "operation": "M",
+                    "sha256": "0" * 64,
+                }
+            },
+        }))
+        self.head = self.commit("candidate tampers approval registry")
+        with self.assertRaisesRegex(qualifier.QualificationFailure, "PROTECTED_QUALIFICATION_FILE_CHANGED"):
+            self.qualify()
+
     def test_protected_qualification_framework_edit_fails(self):
         protected = "scripts/release/rq02_diff_integrity.py"
         self.approval_paths[protected] = {
