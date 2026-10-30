@@ -59,6 +59,9 @@ async function runRegressionSuite() {
 
     const restore = mockFetch(async () => {
       return new Response(JSON.stringify({
+        status: "SUCCESS",
+        scanState: "COMPLETED",
+        datasetState: "CANDIDATES_AVAILABLE",
         total_candidates: 35,
         gems_found: 35,
         capabilities: {
@@ -88,6 +91,9 @@ async function runRegressionSuite() {
     console.log("Test 2: HTTP 200 with genuinely zero candidates");
     const restore = mockFetch(async () => {
       return new Response(JSON.stringify({
+        status: "SUCCESS",
+        scanState: "COMPLETED",
+        datasetState: "GENUINELY_EMPTY",
         total_candidates: 0,
         gems_found: 0,
         capabilities: {
@@ -248,6 +254,9 @@ async function runRegressionSuite() {
         throw new Error("Temporary network glitch");
       }
       return new Response(JSON.stringify({
+        status: "SUCCESS",
+        scanState: "COMPLETED",
+        datasetState: "CANDIDATES_AVAILABLE",
         total_candidates: 1,
         gems_found: 1,
         results: [{ ticker: "AAPL", currentPrice: 230.0, priceDate: "2026-10-22", priceBasis: "DAILY_CLOSE" }],

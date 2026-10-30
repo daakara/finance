@@ -40,6 +40,7 @@ import { MASTER_ASSET_CATALOG } from "../lib/masterCatalog";
 import TerminalSsrShell from "../components/TerminalSsrShell";
 import SynthesisMobileDock from "../components/synthesis/SynthesisMobileDock";
 import { resolveFreshCachedVix, resolveFreshMacroEvidence } from "../lib/preflightEvaluator";
+import { validateDecisionContext, getAnalysisHubCacheKey } from "../lib/decisionContext";
 import { Target, Landmark, BarChart3, Shield } from "lucide-react";
 
 type WorkspaceTab = "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
@@ -49,9 +50,17 @@ function TerminalContent() {
   const searchParams = useSearchParams();
   const urlSymbol = searchParams.get("symbol") || searchParams.get("ticker");
   const urlTab = searchParams.get("tab")?.toUpperCase();
+  const rawContextId = searchParams.get("contextId") || searchParams.get("decisionContextId");
+
+  // Gate 4: Centralized production context validation (prevents malformed/short/mismatched leakage)
+  const validatedContextId = useMemo(() => {
+    const res = validateDecisionContext(rawContextId, urlSymbol);
+    return res.isValid ? res.contextId : null;
+  }, [rawContextId, urlSymbol]);
 
   const [hasExplicitSymbol, setHasExplicitSymbol] = useState<boolean>(!!urlSymbol);
   const [selectedSymbol, setSelectedSymbol] = useState<string>(urlSymbol ? urlSymbol.toUpperCase() : "AAPL");
+  const [discoveryContextId, setDiscoveryContextId] = useState<string | null>(validatedContextId);
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const analysisRequestIdRef = useRef(0);
   const [loading, setLoading] = useState<boolean>(true);
@@ -117,8 +126,9 @@ function TerminalContent() {
       if (urlSymbol.toUpperCase() !== selectedSymbol) {
         setSelectedSymbol(urlSymbol.toUpperCase());
       }
+      setDiscoveryContextId(validatedContextId);
     }
-  }, [urlSymbol]);
+  }, [urlSymbol, validatedContextId]);
 
   useEffect(() => {
     if (urlTab) {
@@ -198,7 +208,7 @@ function TerminalContent() {
     const abortController = new AbortController();
     async function loadData() {
       const requestId = ++analysisRequestIdRef.current;
-      const cacheKey = `${selectedSymbol}_${interval}_${userRole}`;
+      const cacheKey = getAnalysisHubCacheKey(selectedSymbol, interval, userRole);
       const cached = cacheRef.current.get(cacheKey);
 
       // Instant optimistic display from memory cache (<10ms)
