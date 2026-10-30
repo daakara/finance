@@ -40,6 +40,7 @@ import { MASTER_ASSET_CATALOG } from "../lib/masterCatalog";
 import TerminalSsrShell from "../components/TerminalSsrShell";
 import SynthesisMobileDock from "../components/synthesis/SynthesisMobileDock";
 import { resolveFreshCachedVix, resolveFreshMacroEvidence } from "../lib/preflightEvaluator";
+import { validateDecisionContext, getAnalysisHubCacheKey } from "../lib/decisionContext";
 import { Target, Landmark, BarChart3, Shield } from "lucide-react";
 
 type WorkspaceTab = "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
@@ -49,10 +50,19 @@ function TerminalContent() {
   const searchParams = useSearchParams();
   const urlSymbol = searchParams.get("symbol") || searchParams.get("ticker");
   const urlTab = searchParams.get("tab")?.toUpperCase();
+  const rawContextId = searchParams.get("contextId") || searchParams.get("decisionContextId");
+
+  // Gate 4: Centralized production context validation (prevents malformed/short/mismatched leakage)
+  const validatedContextId = useMemo(() => {
+    const res = validateDecisionContext(rawContextId, urlSymbol);
+    return res.isValid ? res.contextId : null;
+  }, [rawContextId, urlSymbol]);
 
   const [hasExplicitSymbol, setHasExplicitSymbol] = useState<boolean>(!!urlSymbol);
   const [selectedSymbol, setSelectedSymbol] = useState<string>(urlSymbol ? urlSymbol.toUpperCase() : "AAPL");
+  const [discoveryContextId, setDiscoveryContextId] = useState<string | null>(validatedContextId);
   const [data, setData] = useState<AnalyticsResponse | null>(null);
+  const analysisRequestIdRef = useRef(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [interval, setInterval] = useState<string>("1y_hist");
@@ -116,8 +126,9 @@ function TerminalContent() {
       if (urlSymbol.toUpperCase() !== selectedSymbol) {
         setSelectedSymbol(urlSymbol.toUpperCase());
       }
+      setDiscoveryContextId(validatedContextId);
     }
-  }, [urlSymbol]);
+  }, [urlSymbol, validatedContextId]);
 
   useEffect(() => {
     if (urlTab) {
@@ -196,7 +207,8 @@ function TerminalContent() {
     let isMounted = true;
     const abortController = new AbortController();
     async function loadData() {
-      const cacheKey = `${selectedSymbol}_${interval}_${userRole}`;
+      const requestId = ++analysisRequestIdRef.current;
+      const cacheKey = getAnalysisHubCacheKey(selectedSymbol, interval, userRole);
       const cached = cacheRef.current.get(cacheKey);
 
       // Instant optimistic display from memory cache (<10ms)
@@ -245,7 +257,7 @@ function TerminalContent() {
         const knownChange = data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data.priceChangePct24h : undefined;
 
         const res = await fetchAssetAnalytics(selectedSymbol, period, apiInterval, userRole, knownPrice, knownChange, abortController.signal);
-        if (isMounted && !abortController.signal.aborted) {
+        if (isMounted && !abortController.signal.aborted && requestId === analysisRequestIdRef.current) {
           setData(res);
           setError(null);
           cacheRef.current.set(cacheKey, res);
@@ -253,11 +265,11 @@ function TerminalContent() {
       } catch (err) {
         if (abortController.signal.aborted) return;
         console.error("Failed to load asset analytics:", err);
-        if (isMounted) {
+        if (isMounted && requestId === analysisRequestIdRef.current) {
           setError(err instanceof Error ? err.message : `Failed to load asset analytics for ${selectedSymbol}`);
         }
       } finally {
-        if (isMounted && !abortController.signal.aborted) {
+        if (isMounted && !abortController.signal.aborted && requestId === analysisRequestIdRef.current) {
           setLoading(false);
         }
       }
@@ -274,6 +286,7 @@ function TerminalContent() {
 
     return () => {
       isMounted = false;
+      ++analysisRequestIdRef.current;
       abortController.abort();
       window.removeEventListener("finance:cache-purge", handlePurge);
     };
@@ -373,16 +386,22 @@ function TerminalContent() {
                 <button
                   type="button"
                   onClick={() => {
+                    const requestId = ++analysisRequestIdRef.current;
                     cacheRef.current.clear();
                     setError(null);
                     setLoading(true);
                     fetchAssetAnalytics(selectedSymbol, "1y", "1d", userRole)
                       .then((res) => {
+                        if (requestId !== analysisRequestIdRef.current) return;
                         setData(res);
                         setError(null);
                       })
-                      .catch((e) => setError(e instanceof Error ? e.message : "Retry failed"))
-                      .finally(() => setLoading(false));
+                      .catch((e) => {
+                        if (requestId === analysisRequestIdRef.current) setError(e instanceof Error ? e.message : "Retry failed");
+                      })
+                      .finally(() => {
+                        if (requestId === analysisRequestIdRef.current) setLoading(false);
+                      });
                   }}
                   className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer shadow"
                 >
@@ -500,6 +519,7 @@ function TerminalContent() {
                 ) : (
                   <PreFlightReadinessBar
                     {...canonicalPreflightInputs}
+                    priceContext={`Readiness input: $${canonicalPreflightInputs.currentPrice.toFixed(2)}. Setup reference: ${data?.analysisReferencePrice ?? "unavailable"} (${data?.analysisReferenceSource ?? "source unavailable"}; ${data?.analysisReferenceDate ?? "timestamp unavailable"}). Market observation: ${data?.liveSpotPrice ?? "unavailable"} (${data?.liveFreshness ?? "unavailable"}; observed ${data?.liveObservedAt ?? "timestamp unavailable"}). Plan evaluation: ${data?.optimalExecution?.eval_price ?? "unavailable"}. Prices can have different observation times; no shared snapshot is certified here.`}
                     isDrawerExpanded={isPreflightDrawerExpanded}
                     onToggleDrawer={setIsPreflightDrawerExpanded}
                     onOpenModal={() => setIsPreflightModalOpen(true)}
@@ -567,6 +587,7 @@ function TerminalContent() {
               }
             />
           )}
+
 
           {/* ✈️ Pre-Flight Mandatory Clearance Detailed Inspection Modal */}
           <PreFlightChecklistModal
@@ -680,10 +701,13 @@ function TerminalContent() {
                   notice={data?.smartMoney?.notice}
                 />
                 {!capabilities.canUseETFWorkflow && (
-                  <TraderArchetypesCard
-                    symbol={selectedSymbol}
-                    traderArchetypes={data?.traderArchetypes}
-                  />
+                  <details className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-3">
+                    <summary className="min-h-[44px] cursor-pointer text-sm font-semibold text-[var(--text-1)] focus-visible:outline focus-visible:outline-2">Strategy alignment · supporting model comparisons</summary>
+                    <TraderArchetypesCard
+                      symbol={selectedSymbol}
+                      traderArchetypes={data?.traderArchetypes}
+                    />
+                  </details>
                 )}
               </div>
             )}

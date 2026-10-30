@@ -471,6 +471,56 @@ class BacklogValidator:
             if (disp == "CLOSED_VERIFIED" or status == "COMPLETED") and owner_auth not in ("AUTHORIZED", "NOT_APPLICABLE"):
                 self.findings.append(Finding("BI-009", tid, "ERROR", f"Task '{tid}' marked {disp}/{status} but owner_authorization is '{owner_auth}' (must be AUTHORIZED)"))
 
+        # Baseline-Anchored Authority Boundary Enforcement (Directive 037-B / ADV-04 Hardening)
+        if self.baseline_data is not None:
+            baseline_tasks = {bt.get("task_id"): bt for bt in self.baseline_data.get("tasks", []) if bt.get("task_id")}
+            for t in tasks:
+                tid = t.get("task_id")
+                if tid not in baseline_tasks:
+                    continue
+                bt = baseline_tasks[tid]
+                bt_boundary = bt.get("authorization_boundary", "")
+                bt_dims = bt.get("dimensions", {})
+                bt_owner_auth = bt_dims.get("owner_authorization", "")
+                bt_status = bt.get("status", "")
+                bt_disp = bt.get("disposition", "")
+
+                cur_boundary = t.get("authorization_boundary", "")
+                cur_dims = t.get("dimensions", {})
+                cur_owner_auth = cur_dims.get("owner_authorization", "")
+                cur_status = t.get("status", "")
+                cur_disp = t.get("disposition", "")
+
+                # Detect if baseline task was an owner-held or owner-gated task
+                was_owner_held = (
+                    bt_boundary in ("OWNER_GATE_REQUIRED", "ACTIVATION_HOLD")
+                    or bt_owner_auth == "HOLD"
+                    or bt_status == "BLOCKED"
+                    or "OWNER_GATED" in str(bt_disp)
+                )
+
+                if was_owner_held:
+                    # 1. Authority boundary mutation check
+                    if cur_boundary != bt_boundary:
+                        self.findings.append(Finding(
+                            "BI-009", tid, "ERROR",
+                            f"Task '{tid}' was under '{bt_boundary}' in baseline; unauthorized mutation of authorization_boundary to '{cur_boundary}' without verified owner release"
+                        ))
+
+                    # 2. Owner authorization mutation check
+                    if bt_owner_auth == "HOLD" and cur_owner_auth != "HOLD":
+                        self.findings.append(Finding(
+                            "BI-009", tid, "ERROR",
+                            f"Task '{tid}' has baseline owner_authorization 'HOLD'; unauthorized mutation to '{cur_owner_auth}' without independent owner authorization record"
+                        ))
+
+                    # 3. Status/disposition mutation check on held task
+                    if (cur_disp == "CLOSED_VERIFIED" or cur_status == "COMPLETED") and bt_owner_auth == "HOLD":
+                        self.findings.append(Finding(
+                            "BI-009", tid, "ERROR",
+                            f"Task '{tid}' is owner-gated in baseline (owner_authorization: 'HOLD'); cannot be transitioned to {cur_disp}/{cur_status} without verified owner release"
+                        ))
+
     def _check_bi_010_closure_consistency(self, tasks: List[Dict[str, Any]]):
         active_sprint = self.data.get("active_sprint", "SPRINT_4")
         closed_sprints = {"SPRINT_1", "SPRINT_2", "SPRINT_3"}
@@ -529,16 +579,21 @@ class BacklogValidator:
         baseline_tasks = self.baseline_data.get("tasks", [])
         current_tids = {t.get("task_id") for t in tasks if t.get("task_id")}
 
-        deleted_completed = []
+        deleted_tasks = []
         for bt in baseline_tasks:
             btid = bt.get("task_id")
-            bstatus = bt.get("status")
-            if btid and bstatus == "COMPLETED":
-                if btid not in current_tids:
-                    deleted_completed.append(btid)
-                    self.findings.append(Finding("BI-012", btid, "ERROR", f"Previously completed historical task '{btid}' was silently removed from canonical backlog"))
+            if not btid:
+                continue
+            if btid not in current_tids:
+                bstatus = bt.get("status", "UNKNOWN")
+                bdisp = bt.get("disposition", "UNKNOWN")
+                deleted_tasks.append(btid)
+                self.findings.append(Finding(
+                    "BI-012", btid, "ERROR",
+                    f"Canonical task '{btid}' (baseline status: '{bstatus}', disposition: '{bdisp}') was silently removed from canonical backlog; all canonical task identities across all states must be preserved"
+                ))
 
-        if deleted_completed:
+        if deleted_tasks:
             self.continuity_status = "FAILED"
         else:
             self.continuity_status = "VERIFIED"
@@ -812,6 +867,7 @@ def detect_scoped_governance_changes(
 def extract_git_baseline(base_ref: Optional[str] = None, file_path: str = "docs/planning/arx_canonical_backlog.json") -> Tuple[Optional[Dict[str, Any]], str]:
     """
     Attempts to retrieve the authoritative historical baseline directly from Git.
+    Always anchors to canonical repository backlog path even if file_path is temporary.
     """
     candidate_refs = []
     if base_ref:
@@ -824,15 +880,20 @@ def extract_git_baseline(base_ref: Optional[str] = None, file_path: str = "docs/
 
     candidate_refs.extend(["origin/main", "main"])
 
+    canonical_paths = ["docs/planning/arx_canonical_backlog.json"]
+    if file_path not in canonical_paths and not os.path.isabs(file_path) and "temp" not in file_path and "scratch" not in file_path:
+        canonical_paths.append(file_path)
+
     for ref in candidate_refs:
-        try:
-            cmd = ["git", "show", f"{ref}:{file_path}"]
-            res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
-            if res.returncode == 0 and res.stdout.strip():
-                data = json.loads(res.stdout)
-                return data, f"git show {ref}:{file_path}"
-        except Exception:
-            continue
+        for cp in canonical_paths:
+            try:
+                cmd = ["git", "show", f"{ref}:{cp}"]
+                res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+                if res.returncode == 0 and res.stdout.strip():
+                    data = json.loads(res.stdout)
+                    return data, f"git show {ref}:{cp}"
+            except Exception:
+                continue
 
     return None, "NO_GIT_BASELINE_FOUND"
 

@@ -1,0 +1,2593 @@
+{
+  "program": "ARX Terminal \u2014 Directive 058A Sprint 1-4 Remediation Command & Production Exhaustion Program",
+  "timestamp": "2026-10-28T23:59:25.053329+00:00",
+  "census_statistics": {
+    "total_findings": 77,
+    "production_verified": 31,
+    "production_eligible_open": 16,
+    "authorization_restricted": 21,
+    "superseded_with_verified_lineage": 7,
+    "externally_blocked": 0,
+    "by_track": {
+      "Track A": 40,
+      "Track B": 31,
+      "Track C": 4,
+      "Unassigned": 2
+    }
+  },
+  "findings": [
+    {
+      "finding_id": "OBL-ARX-S4-GOV-001",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P1",
+      "title": "Cross-Sprint Backlog Integrity, Historical Recovery and Automated Closure Enforcement",
+      "description": "Cross-Sprint Backlog Integrity, Historical Recovery and Automated Closure Enforcement (Originating from parent task ARX-S4-GOV-001)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Machine-readable canonical backlog schema and JSON register established",
+        "Automated backlog integrity validator enforcing rules BI-001 through BI-012 implemented",
+        "Adversarial and functional test suite with 15+ scenarios passing",
+        "Historical reconciliation across Sprints 1, 2, 3 and open GitHub issues/PRs complete",
+        "Feature branch created, single non-activating PR published, CI verified"
+      ],
+      "canonical_task_ref": "ARX-S4-GOV-001",
+      "related_pr_refs": [
+        101,
+        102,
+        106,
+        107
+      ],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S4-ARCH-001",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P1",
+      "title": "Holistic Cross-Engine Architecture and Decision-Coherence Audit",
+      "description": "Holistic Cross-Engine Architecture and Decision-Coherence Audit (Originating from parent task ARX-S4-ARCH-001)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Audit cross-engine state transitions and canonical context identity across all 5 engines",
+        "Verify market-session and price authority propagation across Radar, Analysis, and Trade Plan",
+        "Detect and eliminate contradictory decision recommendations across engines",
+        "Produce cross-engine dependency map and audit report"
+      ],
+      "canonical_task_ref": "ARX-S4-ARCH-001",
+      "related_pr_refs": [
+        104,
+        107
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S4-RADAR-001",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P1",
+      "title": "Minervini VCP / Radar Operational Truth & Scanner Pending Remediation",
+      "description": "Minervini VCP / Radar Operational Truth & Scanner Pending Remediation (Originating from parent task ARX-S4-RADAR-001)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "READY",
+      "original_acceptance_criteria": [
+        "Complete root-cause tracing of 'Universe Scanner Pending' status across all 12 authority chain points",
+        "Formulate passive observation scanner execution design decoupled from HVA01 research",
+        "Reconcile Radar category metadata to distinguish PIPELINE_PENDING from authentic zero matches",
+        "Prepare controlled activation specification for Research/Product Owner review"
+      ],
+      "canonical_task_ref": "ARX-S4-RADAR-001",
+      "related_pr_refs": [
+        73
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_ELIGIBLE_OPEN",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S1-001",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_1",
+      "severity": "P0",
+      "title": "VCP Inactive Read-Safety Contract Enforcement",
+      "description": "VCP Inactive Read-Safety Contract Enforcement (Originating from parent task ARX-S1-001)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Eliminate scan-on-read execution, lease races, and side-effects on GET requests",
+        "Fails closed to PIPELINE_PENDING on missing snapshots without triggering scan"
+      ],
+      "canonical_task_ref": "ARX-S1-001",
+      "related_pr_refs": [
+        4
+      ],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S1-002",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_1",
+      "severity": "P1",
+      "title": "Candidate 004 Universe-Wiring Reintroduction",
+      "description": "Candidate 004 Universe-Wiring Reintroduction (Originating from parent task ARX-S1-002)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Reintroduced Candidate 004 universe wiring cleanly separated from public read paths",
+        "Preserved relational denominator and epoch membership verification"
+      ],
+      "canonical_task_ref": "ARX-S1-002",
+      "related_pr_refs": [
+        5
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S1-001"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S1-003",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_1",
+      "severity": "P1",
+      "title": "Production Universe Preparation & Publication Tooling",
+      "description": "Production Universe Preparation & Publication Tooling (Originating from parent task ARX-S1-003)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "Implement validation core (PR #6) and offline adapters (PR #8)",
+        "Live network acquisition and production universe publication require separate Owner grant"
+      ],
+      "canonical_task_ref": "ARX-S1-003",
+      "related_pr_refs": [
+        6,
+        8
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S1-002"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": "HOLDING_QUEUE_GATE",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S1-004",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_1",
+      "severity": "P2",
+      "title": "Data.gov Discovery and Primary-Source Qualification",
+      "description": "Data.gov Discovery and Primary-Source Qualification (Originating from parent task ARX-S1-004)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Qualify Data.gov as search catalog rather than runtime authority",
+        "Establish direct primary agency qualification matrix (SEC, CFTC, Treasury, BLS)"
+      ],
+      "canonical_task_ref": "ARX-S1-004",
+      "related_pr_refs": [],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S1-005",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_1",
+      "severity": "P1",
+      "title": "Canonical Decision-State Consistency & Truthful Corridor Location",
+      "description": "Canonical Decision-State Consistency & Truthful Corridor Location (Originating from parent task ARX-S1-005)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Eliminate spatial copy contradictions where price extended above ceiling was claimed inside corridor",
+        "Suppress scale-in hints on blocked technical gates",
+        "3-tier readiness presentation verified"
+      ],
+      "canonical_task_ref": "ARX-S1-005",
+      "related_pr_refs": [
+        7
+      ],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S1-006",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_1",
+      "severity": "P1",
+      "title": "Radar US-Listed Coverage & Requirements Reconciliation",
+      "description": "Radar US-Listed Coverage & Requirements Reconciliation (Originating from parent task ARX-S1-006)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Define mathematical accounting closure across 6 disjoint outcomes",
+        "Structure 10-package phased implementation sequence (S2-01 to S2-10)",
+        "Reconcile against active market-wide radar scanner requirements"
+      ],
+      "canonical_task_ref": "ARX-S1-006",
+      "related_pr_refs": [],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S1-001"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S2-001",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P1",
+      "title": "US-Listed Population and Strategy Boundaries Specification",
+      "description": "US-Listed Population and Strategy Boundaries Specification (Originating from parent task ARX-S2-001)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Define explicit population scope separating US-listed equities from ADRs/REITs",
+        "Preserve non-inference boundaries for missing or ambiguous security classifications"
+      ],
+      "canonical_task_ref": "ARX-S2-001",
+      "related_pr_refs": [],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S1-006"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S2-002",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P2",
+      "title": "Comprehensive Listing Acquisition & Preserved Source Evidence",
+      "description": "Comprehensive Listing Acquisition & Preserved Source Evidence (Originating from parent task ARX-S2-002)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "SEC EDGAR and Nasdaq Trader directory fetchers implemented with archival storage",
+        "Live network acquisition held closed until owner authorizes production egress"
+      ],
+      "canonical_task_ref": "ARX-S2-002",
+      "related_pr_refs": [
+        35
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S2-001"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "HOLDING_QUEUE_GATE",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S2-003",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P1",
+      "title": "Security Identity & SqliteIdentityRepository Implementation",
+      "description": "Security Identity & SqliteIdentityRepository Implementation (Originating from parent task ARX-S2-003)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Unique listing identity resolution without conflating CIK and Symbol",
+        "SqliteIdentityRepository implemented and verified"
+      ],
+      "canonical_task_ref": "ARX-S2-003",
+      "related_pr_refs": [
+        37
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S2-001"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S2-004",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P1",
+      "title": "Connected Adapter -> Validator -> Builder Integration Core",
+      "description": "Connected Adapter -> Validator -> Builder Integration Core (Originating from parent task ARX-S2-004)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "End-to-end integration core connecting raw listing feeds through validator to builder",
+        "Verified in isolated tests without live network calls"
+      ],
+      "canonical_task_ref": "ARX-S2-004",
+      "related_pr_refs": [
+        37
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S2-003"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S2-005",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P2",
+      "title": "Market-Data Coverage and Processing Capacity Verification",
+      "description": "Market-Data Coverage and Processing Capacity Verification (Originating from parent task ARX-S2-005)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "READY",
+      "original_acceptance_criteria": [
+        "Measure quote coverage and execution capacity across full US-listed equity population",
+        "Verify memory and compute bounds under Railway 512MB container limits"
+      ],
+      "canonical_task_ref": "ARX-S2-005",
+      "related_pr_refs": [],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S2-004"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_ELIGIBLE_OPEN",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S2-006",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P1",
+      "title": "Governed Build / Publication Tooling & Isolated State Machine",
+      "description": "Governed Build / Publication Tooling & Isolated State Machine (Originating from parent task ARX-S2-006)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "IsolatedPublicationStateMachine implemented with immutable digests",
+        "Publication execution strictly gated by Owner authorization"
+      ],
+      "canonical_task_ref": "ARX-S2-006",
+      "related_pr_refs": [
+        42
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S2-004"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "HOLDING_QUEUE_GATE",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S2-007",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P1",
+      "title": "Scanner and Radar Membership Integration",
+      "description": "Scanner and Radar Membership Integration (Originating from parent task ARX-S2-007)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "READY",
+      "original_acceptance_criteria": [
+        "Ensure published membership drives scanner assessment",
+        "Fixed candidate lists do not discard valid out-of-list results"
+      ],
+      "canonical_task_ref": "ARX-S2-007",
+      "related_pr_refs": [
+        42
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S2-006"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_ELIGIBLE_OPEN",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S2-008",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P1",
+      "title": "S2-08 Full-Population Assessment Accounting and Telemetry Envelope",
+      "description": "S2-08 Full-Population Assessment Accounting and Telemetry Envelope (Originating from parent task ARX-S2-008)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "READY",
+      "original_acceptance_criteria": [
+        "Enforce 6-outcome arithmetic denominator closure across all assessed securities",
+        "Zero synthetic data fabricated",
+        "honest operational telemetry default to NOT_MEASURED"
+      ],
+      "canonical_task_ref": "ARX-S2-008",
+      "related_pr_refs": [
+        44
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S2-007"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_ELIGIBLE_OPEN",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S2-009",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P1",
+      "title": "Radar Coverage Disclosure & Analysis Handoff Alignment",
+      "description": "Radar Coverage Disclosure & Analysis Handoff Alignment (Originating from parent task ARX-S2-009)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "READY",
+      "original_acceptance_criteria": [
+        "Disclose coverage, timestamps, and limitations clearly on Radar UI",
+        "Analysis view seamlessly preserves selected evaluation context"
+      ],
+      "canonical_task_ref": "ARX-S2-009",
+      "related_pr_refs": [
+        42
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S2-008"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_ELIGIBLE_OPEN",
+      "execution_ownership": "CROSS_WORKSTREAM_DEPENDENCY",
+      "sub_obligations": [
+        {
+          "sub_id": "OBL-ARX-S2-009-BE",
+          "title": "Radar Coverage Disclosure & Analysis Handoff Alignment (Backend & Data Contract)",
+          "execution_ownership": "ANTIGRAVITY_NON_UX",
+          "status": "IN_PROGRESS",
+          "scope": "Backend API contracts, error/zero semantics, data provenance, validation and regression suites."
+        },
+        {
+          "sub_id": "OBL-ARX-S2-009-FE",
+          "title": "Radar Coverage Disclosure & Analysis Handoff Alignment (Frontend & UI Presentation)",
+          "execution_ownership": "CHATGPT_UX",
+          "status": "PENDING_CHATGPT_UX",
+          "scope": "UI retry trigger, error state banner, affordance removal, badge presentation."
+        }
+      ]
+    },
+    {
+      "finding_id": "OBL-ARX-S2-010",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P1",
+      "title": "Operational Acceptance & Controlled Activation Framework",
+      "description": "Operational Acceptance & Controlled Activation Framework (Originating from parent task ARX-S2-010)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "Exchange calendar and timezone-aware operational cadence verified",
+        "Controlled activation framework ready for separate owner sign-off"
+      ],
+      "canonical_task_ref": "ARX-S2-010",
+      "related_pr_refs": [],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S2-009"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "HOLDING_QUEUE_GATE",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S2-011",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P2",
+      "title": "Mobile Research Navigation Dock Accessibility",
+      "description": "Mobile Research Navigation Dock Accessibility (Originating from parent task ARX-S2-011)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "SUPERSEDED",
+      "original_acceptance_criteria": [
+        "Direct mobile navigation dock link to Research with 44px touch target"
+      ],
+      "canonical_task_ref": "ARX-S2-011",
+      "related_pr_refs": [
+        38
+      ],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "SUPERSEDED_WITH_VERIFIED_LINEAGE",
+      "execution_ownership": "CHATGPT_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S2-012",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P0",
+      "title": "Candlestick Chart Visibility & Container Synchronization",
+      "description": "Candlestick Chart Visibility & Container Synchronization (Originating from parent task ARX-S2-012)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "SUPERSEDED",
+      "original_acceptance_criteria": [
+        "Eliminate blank candlestick rendering in production and ensure preview proxy parity"
+      ],
+      "canonical_task_ref": "ARX-S2-012",
+      "related_pr_refs": [
+        40
+      ],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "SUPERSEDED_WITH_VERIFIED_LINEAGE",
+      "execution_ownership": "CHATGPT_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S2-013",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P1",
+      "title": "ARX Sprint 2 Release Candidate 1 Consolidated Integration",
+      "description": "ARX Sprint 2 Release Candidate 1 Consolidated Integration (Originating from parent task ARX-S2-013)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "SUPERSEDED",
+      "original_acceptance_criteria": [
+        "Consolidated integration of PRs #40, #42, #44 for nonproduction CI testing"
+      ],
+      "canonical_task_ref": "ARX-S2-013",
+      "related_pr_refs": [
+        47
+      ],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "SUPERSEDED_WITH_VERIFIED_LINEAGE",
+      "execution_ownership": "CHATGPT_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S2-014",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P2",
+      "title": "Evidence-Led Opportunity Discovery Pilot Cycle 1 (Issue #43)",
+      "description": "Evidence-Led Opportunity Discovery Pilot Cycle 1 (Issue #43) (Originating from parent task ARX-S2-014)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Codify ARX-DECISION-RESEARCH-PROCESS-V1",
+        "Evaluate discovery pilot across 6 Quality Watch symbols"
+      ],
+      "canonical_task_ref": "ARX-S2-014",
+      "related_pr_refs": [
+        45
+      ],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S2-015",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P2",
+      "title": "Evidence-Led Opportunity Discovery Cycle 2 (14 Candidates)",
+      "description": "Evidence-Led Opportunity Discovery Cycle 2 (14 Candidates) (Originating from parent task ARX-S2-015)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Execute 2 discovery routes (operating change vs structural change) across 14 operating companies",
+        "Adopt research dossiers into mainline via PR #46"
+      ],
+      "canonical_task_ref": "ARX-S2-015",
+      "related_pr_refs": [
+        46
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S2-014"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S2-016",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P2",
+      "title": "Candidate Priority Reassessment After Discovery Cycle 2",
+      "description": "Candidate Priority Reassessment After Discovery Cycle 2 (Originating from parent task ARX-S2-016)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Reconcile TMDX and ETN research queues against Form 10-K and 10-Q filings",
+        "Codify 4-dimensional priority framework across 14 candidates"
+      ],
+      "canonical_task_ref": "ARX-S2-016",
+      "related_pr_refs": [
+        48
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S2-015"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S3-001",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P3",
+      "title": "Test Issue Permission Check (Issue #58)",
+      "description": "Test Issue Permission Check (Issue #58) (Originating from parent task ARX-S3-001)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Administrative token permission verification probe"
+      ],
+      "canonical_task_ref": "ARX-S3-001",
+      "related_pr_refs": [],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "UNASSIGNED",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "TEST_OR_ADMINISTRATIVE",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S3-002",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P3",
+      "title": "Sprint 3 Initiative Test (Issue #59)",
+      "description": "Sprint 3 Initiative Test (Issue #59) (Originating from parent task ARX-S3-002)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Administrative test issue tracking format verification"
+      ],
+      "canonical_task_ref": "ARX-S3-002",
+      "related_pr_refs": [],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "UNASSIGNED",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "TEST_OR_ADMINISTRATIVE",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S3-003",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P1",
+      "title": "Corporate Events RC5: Quarterly Earnings Risk Integration & Telemetry",
+      "description": "Corporate Events RC5: Quarterly Earnings Risk Integration & Telemetry (Originating from parent task ARX-S3-003)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "RC5 earnings risk calculation and temporal guards merged in PR #53",
+        "Telemetry persistence implemented in PR #79",
+        "Operational live telemetry activation strictly held pending owner authorization"
+      ],
+      "canonical_task_ref": "ARX-S3-003",
+      "related_pr_refs": [
+        53,
+        79
+      ],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": "HOLDING_QUEUE_GATE",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S3-004",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P0",
+      "title": "Radar Reliability: Fail-Closed Error-versus-Zero Semantics & UI Retry",
+      "description": "Radar Reliability: Fail-Closed Error-versus-Zero Semantics & UI Retry (Originating from parent task ARX-S3-004)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "READY",
+      "original_acceptance_criteria": [
+        "Missing API connectivity not represented as 0 qualifying candidates",
+        "Explicit UI error states, retry affordances, and zero-count distinction"
+      ],
+      "canonical_task_ref": "ARX-S3-004",
+      "related_pr_refs": [
+        98
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_ELIGIBLE_OPEN",
+      "execution_ownership": "CROSS_WORKSTREAM_DEPENDENCY",
+      "sub_obligations": [
+        {
+          "sub_id": "OBL-ARX-S3-004-BE",
+          "title": "Radar Reliability: Fail-Closed Error-versus-Zero Semantics & UI Retry (Backend & Data Contract)",
+          "execution_ownership": "ANTIGRAVITY_NON_UX",
+          "status": "IN_PROGRESS",
+          "scope": "Backend API contracts, error/zero semantics, data provenance, validation and regression suites."
+        },
+        {
+          "sub_id": "OBL-ARX-S3-004-FE",
+          "title": "Radar Reliability: Fail-Closed Error-versus-Zero Semantics & UI Retry (Frontend & UI Presentation)",
+          "execution_ownership": "CHATGPT_UX",
+          "status": "PENDING_CHATGPT_UX",
+          "scope": "UI retry trigger, error state banner, affordance removal, badge presentation."
+        }
+      ]
+    },
+    {
+      "finding_id": "OBL-ARX-S3-005",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P1",
+      "title": "Radar Candidate Truth: Eligibility Contracts, False Affordances & Date Provenance",
+      "description": "Radar Candidate Truth: Eligibility Contracts, False Affordances & Date Provenance (Originating from parent task ARX-S3-005)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "READY",
+      "original_acceptance_criteria": [
+        "Eliminate false execution affordances on discovery scanner candidates (isActionable=false)",
+        "Transparent price observation dates and candidate eligibility contracts"
+      ],
+      "canonical_task_ref": "ARX-S3-005",
+      "related_pr_refs": [
+        98
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_ELIGIBLE_OPEN",
+      "execution_ownership": "CROSS_WORKSTREAM_DEPENDENCY",
+      "sub_obligations": [
+        {
+          "sub_id": "OBL-ARX-S3-005-BE",
+          "title": "Radar Candidate Truth: Eligibility Contracts, False Affordances & Date Provenance (Backend & Data Contract)",
+          "execution_ownership": "ANTIGRAVITY_NON_UX",
+          "status": "IN_PROGRESS",
+          "scope": "Backend API contracts, error/zero semantics, data provenance, validation and regression suites."
+        },
+        {
+          "sub_id": "OBL-ARX-S3-005-FE",
+          "title": "Radar Candidate Truth: Eligibility Contracts, False Affordances & Date Provenance (Frontend & UI Presentation)",
+          "execution_ownership": "CHATGPT_UX",
+          "status": "PENDING_CHATGPT_UX",
+          "scope": "UI retry trigger, error state banner, affordance removal, badge presentation."
+        }
+      ]
+    },
+    {
+      "finding_id": "OBL-ARX-S3-006",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P1",
+      "title": "Research Workstation: Decision-First Layout Rollout (Quality Watch Collection)",
+      "description": "Research Workstation: Decision-First Layout Rollout (Quality Watch Collection) (Originating from parent task ARX-S3-006)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "READY",
+      "original_acceptance_criteria": [
+        "Decision-first layout rollout across FIX, DUOL, ULTA, MEDP, ISRG, DECK",
+        "Four-pillar confluence and inline preflight readiness bar unified in UX"
+      ],
+      "canonical_task_ref": "ARX-S3-006",
+      "related_pr_refs": [
+        86,
+        98
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "responsible_workstream": "Track C",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_ELIGIBLE_OPEN",
+      "execution_ownership": "CHATGPT_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S3-007",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P0",
+      "title": "Scanner Safety: VCP History-Boundary Containment & Operational Repair",
+      "description": "Scanner Safety: VCP History-Boundary Containment & Operational Repair (Originating from parent task ARX-S3-007)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "Causal segmentation and frozen replay fixtures merged in PR #76",
+        "Scanner activation and live enrollment remain strictly held (G-VCP-012)"
+      ],
+      "canonical_task_ref": "ARX-S3-007",
+      "related_pr_refs": [
+        73,
+        76
+      ],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": "HOLDING_QUEUE_GATE",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S3-008",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P2",
+      "title": "Research Supply-Chain: External Research Evidence Custody & Sigstore Verification",
+      "description": "Research Supply-Chain: External Research Evidence Custody & Sigstore Verification (Originating from parent task ARX-S3-008)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "INSTR-001 evidence custody and synthetic observer validation drafted in PR #75",
+        "External custody activation held until owner ratification"
+      ],
+      "canonical_task_ref": "ARX-S3-008",
+      "related_pr_refs": [
+        75
+      ],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "HOLDING_QUEUE_GATE",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S3-009",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P2",
+      "title": "UX Governance: Human Pilot P00 & Frozen Prototype Local Access",
+      "description": "UX Governance: Human Pilot P00 & Frozen Prototype Local Access (Originating from parent task ARX-S3-009)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "Local-only prototype harness for participant research P00",
+        "Live human participant evaluation held until owner authorizes"
+      ],
+      "canonical_task_ref": "ARX-S3-009",
+      "related_pr_refs": [
+        75
+      ],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "HOLDING_QUEUE_GATE",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "CHATGPT_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S3-010",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P0",
+      "title": "Evidence Quality Audit: Pre-Flight Disclosures & Smart Money Truthfulness",
+      "description": "Evidence Quality Audit: Pre-Flight Disclosures & Smart Money Truthfulness (Originating from parent task ARX-S3-010)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Preflight fail-closed execution clearance merged in PR #87 and PR #89",
+        "Smart Money Phase 1 dormant readiness merged in PR #100",
+        "Statutory reporting lag disclosures from PR #72 integrated"
+      ],
+      "canonical_task_ref": "ARX-S3-010",
+      "related_pr_refs": [
+        72,
+        87,
+        100
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S3-011",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P2",
+      "title": "Research Closure: Air Lease Corporation (ALC) Analysis & Valuation Reproduction",
+      "description": "Research Closure: Air Lease Corporation (ALC) Analysis & Valuation Reproduction (Originating from parent task ARX-S3-011)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Reproduce ALC valuation and XIRR under conservative economic assumptions",
+        "Certify research record and update institutional dossier"
+      ],
+      "canonical_task_ref": "ARX-S3-011",
+      "related_pr_refs": [],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S3-012",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P3",
+      "title": "Research Acceptance: DECK Undervaluation Post-Release & Valuation Parity",
+      "description": "Research Acceptance: DECK Undervaluation Post-Release & Valuation Parity (Originating from parent task ARX-S3-012)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Verify post-release valuation parity for Deckers Outdoor (DECK)",
+        "Preserve conservative expectation-gap model and quality watch criteria"
+      ],
+      "canonical_task_ref": "ARX-S3-012",
+      "related_pr_refs": [],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S3-013",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P1",
+      "title": "Implementation Acceptance: Minervini VCP Pattern & Stage Analysis Verification",
+      "description": "Implementation Acceptance: Minervini VCP Pattern & Stage Analysis Verification (Originating from parent task ARX-S3-013)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "READY",
+      "original_acceptance_criteria": [
+        "Algorithmic verification of 4-stage Minervini trend template and contraction sequence",
+        "Historical replay test fixtures merged in PR #76",
+        "Passive observation universe screening specification ready for Sprint 4"
+      ],
+      "canonical_task_ref": "ARX-S3-013",
+      "related_pr_refs": [
+        73,
+        76
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S4-RADAR-001"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_ELIGIBLE_OPEN",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S3-014",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P2",
+      "title": "HVA01 Wave 4B-S Restricted Canonicalization and Schema Remediation",
+      "description": "HVA01 Wave 4B-S Restricted Canonicalization and Schema Remediation (Originating from parent task ARX-S3-014)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "Wave 4B-S synthetic witness and schema canonicalization drafted in PR #78",
+        "Protocol ratification remains ungranted (HVA00_PROTOCOL_RATIFICATION = NOT_GRANTED)"
+      ],
+      "canonical_task_ref": "ARX-S3-014",
+      "related_pr_refs": [
+        78
+      ],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "HOLDING_QUEUE_GATE",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S3-015",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P2",
+      "title": "HVA01 Wave 4C-1 Dual-TSA Timestamp Verification",
+      "description": "HVA01 Wave 4C-1 Dual-TSA Timestamp Verification (Originating from parent task ARX-S3-015)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "Dual-TSA timestamp verification engine drafted in PR #83 (stacked on PR #78)",
+        "Operational timestamp authority held until ratification"
+      ],
+      "canonical_task_ref": "ARX-S3-015",
+      "related_pr_refs": [
+        83
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S3-014"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "HOLDING_QUEUE_GATE",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S3-016",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P1",
+      "title": "Synthesis E V3 Application-Wide UX Parity & Decision Hierarchy",
+      "description": "Synthesis E V3 Application-Wide UX Parity & Decision Hierarchy (Originating from parent task ARX-S3-016)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "READY",
+      "original_acceptance_criteria": [
+        "Comprehensive application-wide UX parity across Radar, Analysis, Trade Plan, Portfolio, Research",
+        "PR #98 clean candidate verified against mainline and ready for final review"
+      ],
+      "canonical_task_ref": "ARX-S3-016",
+      "related_pr_refs": [
+        98
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "responsible_workstream": "Track C",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "RELEASE_HOLD",
+      "final_disposition": "PRODUCTION_ELIGIBLE_OPEN",
+      "execution_ownership": "CHATGPT_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S3-017",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P0",
+      "title": "Smart Money Phase 1: Operational Readiness, Worker Fencing & Observability",
+      "description": "Smart Money Phase 1: Operational Readiness, Worker Fencing & Observability (Originating from parent task ARX-S3-017)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Dormant worker lifecycle and session advisory fencing (pg_try_advisory_lock)",
+        "Disaster recovery runbook with verified rehearsal restore procedures",
+        "Observability metrics and alerts with dormant suppression",
+        "Merged to main via PR #100 commit 4bf9f3b"
+      ],
+      "canonical_task_ref": "ARX-S3-017",
+      "related_pr_refs": [
+        100
+      ],
+      "related_commit_refs": [],
+      "dependencies": [],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-ARX-S4-ARCH-002",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P0",
+      "title": "Liquidity Hazard & Canonical Actionability Enforcement (GAP-WS41-003)",
+      "description": "Liquidity Hazard & Canonical Actionability Enforcement (GAP-WS41-003) (Originating from parent task ARX-S4-ARCH-002)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "AC-LIQ-01: Extend DecisionHierarchyEngine.resolve_decision_state() with an optional execution_hazard: bool parameter (defaulting to False when evidence is unavailable, while enforcing fail-closed actionability).",
+        "AC-LIQ-02: Enforce Precedence in DecisionHierarchyEngine: If execution_hazard is True, the setup MUST be disqualified from ACTIONABLE_SETUP, setting state=VALID_SETUP, isActionable=False, canSizeTrade=False, label='Valid Setup \u2014 Liquidity Hazard', and allowedActions=['ADD_WATCHLIST', 'RESEARCH_PROFILE'].",
+        "AC-LIQ-03: Set disqualificationReason to explicit liquidity warning: 'Trade execution suppressed: Severe liquidity hazard detected (ADV / slippage friction exceeds safety threshold).'",
+        "AC-LIQ-04: Wire execution_hazard from OptimalExecutionEngine raw_plan['liquidity_defense']['execution_hazard'] into api/routes/analytics.py, api/routes/screener.py, and DecisionTraceEngine.",
+        "AC-LIQ-05: Preserve F_10 governance invariant: Missing liquidity evidence (UNAVAILABLE/UNKNOWN) must fail closed without synthesizing fictitious zero-hazard fallbacks.",
+        "AC-LIQ-06: Strict separation invariant: STOPPED_OUT price-floor invalidation and execution_hazard liquidity friction must remain distinct, non-conflated precedence branches."
+      ],
+      "canonical_task_ref": "ARX-S4-ARCH-002",
+      "related_pr_refs": [
+        105,
+        107
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S4-ARCH-001",
+        "ARX-S4-GOV-001"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-DEF-056-001",
+      "original_source": "Directive 056 / 057",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P0",
+      "title": "Confluence narrative truthfulness when Smart Money is unavailable",
+      "description": "Confluence narrative truthfulness when Smart Money is unavailable (Originating from parent task ARX-S3-010)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Omit Smart Money from bottomLine synchronization claim when Smart Money regulatory feeds are unavailable or held",
+        "Emit HIGH-CONVICTION MULTI-FACTOR ALIGNMENT when 3 positive pillars align without claiming institutional alignment",
+        "Pass all 10 Confluence edge cases in test_directive_057_remediation.py"
+      ],
+      "canonical_task_ref": "ARX-S3-010",
+      "related_pr_refs": [
+        118
+      ],
+      "related_commit_refs": [
+        "09064ef05f973b577a79f0a33cf95a4a0bb94051",
+        "f1c7def39546076e98c506732b67e1ecdbfccfcf"
+      ],
+      "dependencies": [
+        "ARX-S3-010",
+        "ARX-S4-ARCH-001"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Railway:6bba63de-3ba0-4c96-bb1a-e67d3cc47d08 (web-production-e370b.up.railway.app)",
+        "Cloudflare:32f8daa9-bb1f-4454-9aaa-2000bfd49038 (www.arxterminal.com)"
+      ],
+      "explicit_blockers": "RESOLVED_IN_DIRECTIVE_074B",
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-DEF-056-002",
+      "original_source": "Directive 056 / 057",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P0",
+      "title": "Backend position sizing risk-budget floor math max(0, floor(...))",
+      "description": "Backend position sizing risk-budget floor math max(0, floor(...)) (Originating from parent task ARX-S4-ARCH-002)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Strictly enforce max(0, math.floor(maxDollarRisk / riskPerShare))",
+        "Return 0 shares, $0 actual risk, and isExecutable: False when risk budget is sub-1-share",
+        "Pass boundary fixtures R2-A through R2-I in test_directive_057_remediation.py"
+      ],
+      "canonical_task_ref": "ARX-S4-ARCH-002",
+      "related_pr_refs": [
+        118
+      ],
+      "related_commit_refs": [
+        "09064ef05f973b577a79f0a33cf95a4a0bb94051",
+        "f1c7def39546076e98c506732b67e1ecdbfccfcf"
+      ],
+      "dependencies": [
+        "ARX-S4-ARCH-002"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Railway:6bba63de-3ba0-4c96-bb1a-e67d3cc47d08 (web-production-e370b.up.railway.app)",
+        "Cloudflare:32f8daa9-bb1f-4454-9aaa-2000bfd49038 (www.arxterminal.com)"
+      ],
+      "explicit_blockers": "RESOLVED_IN_DIRECTIVE_074B",
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-DEF-056-003",
+      "original_source": "Directive 056 / 057",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P1",
+      "title": "Modeled stop-distance risk disclosure qualification across sizing surfaces",
+      "description": "Modeled stop-distance risk disclosure qualification across sizing surfaces (Originating from parent task ARX-S4-ARCH-002)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Replace HARD MAX LOSS label with MODELED STOP RISK (excl. gaps)",
+        "Disclose that actual realized loss may exceed modeled amount due to price gaps or slippage",
+        "Pass DayTraderPositionSizer, PositionSizerModal, and governorSizingEngine tests"
+      ],
+      "canonical_task_ref": "ARX-S4-ARCH-002",
+      "related_pr_refs": [
+        118
+      ],
+      "related_commit_refs": [
+        "09064ef05f973b577a79f0a33cf95a4a0bb94051",
+        "f1c7def39546076e98c506732b67e1ecdbfccfcf"
+      ],
+      "dependencies": [
+        "ARX-S4-ARCH-002"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Railway:6bba63de-3ba0-4c96-bb1a-e67d3cc47d08 (web-production-e370b.up.railway.app)",
+        "Cloudflare:32f8daa9-bb1f-4454-9aaa-2000bfd49038 (www.arxterminal.com)"
+      ],
+      "explicit_blockers": "RESOLVED_IN_DIRECTIVE_074B",
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-107",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P1",
+      "title": "ARX Sprint 4 RC-A Core Foundation & Governance",
+      "description": "ARX Sprint 4 RC-A Core Foundation & Governance (Originating from parent task ARX-S4-GOV-001)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Implement and merge ARX Sprint 4 RC-A Core Foundation & Governance into mainline with passing CI"
+      ],
+      "canonical_task_ref": "ARX-S4-GOV-001",
+      "related_pr_refs": [
+        107
+      ],
+      "related_commit_refs": [
+        "de5d246"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-110",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P1",
+      "title": "Scanner Status & Coverage Metadata Contract",
+      "description": "Scanner Status & Coverage Metadata Contract (Originating from parent task ARX-S4-RADAR-001)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Implement and merge Scanner Status & Coverage Metadata Contract into mainline with passing CI"
+      ],
+      "canonical_task_ref": "ARX-S4-RADAR-001",
+      "related_pr_refs": [
+        110
+      ],
+      "related_commit_refs": [
+        "4e0979e"
+      ],
+      "dependencies": [
+        "ARX-S4-RADAR-001"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-111",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P1",
+      "title": "Formal Sprint 4 Administrative Closure",
+      "description": "Formal Sprint 4 Administrative Closure (Originating from parent task ARX-S4-GOV-001)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Implement and merge Formal Sprint 4 Administrative Closure into mainline with passing CI"
+      ],
+      "canonical_task_ref": "ARX-S4-GOV-001",
+      "related_pr_refs": [
+        111
+      ],
+      "related_commit_refs": [
+        "4a44325"
+      ],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-112",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P1",
+      "title": "Invalidate Stale Radar Asset Selection on Search Intent Change",
+      "description": "Invalidate Stale Radar Asset Selection on Search Intent Change (Originating from parent task ARX-S3-004)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Implement and merge Invalidate Stale Radar Asset Selection on Search Intent Change into mainline with passing CI"
+      ],
+      "canonical_task_ref": "ARX-S3-004",
+      "related_pr_refs": [
+        112
+      ],
+      "related_commit_refs": [
+        "7f27ae1"
+      ],
+      "dependencies": [
+        "ARX-S3-004"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-113",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P0",
+      "title": "Pre-Flight Macro VIX Authority & Catalyst Parity (Directive 048)",
+      "description": "Pre-Flight Macro VIX Authority & Catalyst Parity (Directive 048) (Originating from parent task ARX-S3-010)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Implement and merge Pre-Flight Macro VIX Authority & Catalyst Parity (Directive 048) into mainline with passing CI"
+      ],
+      "canonical_task_ref": "ARX-S3-010",
+      "related_pr_refs": [
+        113
+      ],
+      "related_commit_refs": [
+        "2e3fa18"
+      ],
+      "dependencies": [
+        "ARX-S3-010"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-114",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P0",
+      "title": "Cross-Mode Candlestick Integrity Initial (Directive 049 Initial)",
+      "description": "Cross-Mode Candlestick Integrity Initial (Directive 049 Initial) (Originating from parent task ARX-S2-012)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "SUPERSEDED",
+      "original_acceptance_criteria": [
+        "Implement and merge Cross-Mode Candlestick Integrity Initial (Directive 049 Initial) into mainline with passing CI"
+      ],
+      "canonical_task_ref": "ARX-S2-012",
+      "related_pr_refs": [
+        114
+      ],
+      "related_commit_refs": [
+        "856170c"
+      ],
+      "dependencies": [
+        "ARX-S2-012"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "SUPERSEDED_WITH_VERIFIED_LINEAGE",
+      "execution_ownership": "CHATGPT_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-115",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P0",
+      "title": "Lightweight Charts Multi-Timeframe Candlestick Engine (Directive 049B)",
+      "description": "Lightweight Charts Multi-Timeframe Candlestick Engine (Directive 049B) (Originating from parent task ARX-S2-012)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Implement and merge Lightweight Charts Multi-Timeframe Candlestick Engine (Directive 049B) into mainline with passing CI"
+      ],
+      "canonical_task_ref": "ARX-S2-012",
+      "related_pr_refs": [
+        115
+      ],
+      "related_commit_refs": [
+        "92b2fb0"
+      ],
+      "dependencies": [
+        "ARX-S2-012"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-116",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P1",
+      "title": "Cross-Mode Decision Parity & Layout Harmonization (Directive 051)",
+      "description": "Cross-Mode Decision Parity & Layout Harmonization (Directive 051) (Originating from parent task ARX-S3-016)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Implement and merge Cross-Mode Decision Parity & Layout Harmonization (Directive 051) into mainline with passing CI"
+      ],
+      "canonical_task_ref": "ARX-S3-016",
+      "related_pr_refs": [
+        116
+      ],
+      "related_commit_refs": [
+        "f62668c"
+      ],
+      "dependencies": [
+        "ARX-S3-016"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-117",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P0",
+      "title": "Smart Money Truthfulness, Disclosures & Exchange Metadata (Directive 053)",
+      "description": "Smart Money Truthfulness, Disclosures & Exchange Metadata (Directive 053) (Originating from parent task ARX-S3-010)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Implement and merge Smart Money Truthfulness, Disclosures & Exchange Metadata (Directive 053) into mainline with passing CI"
+      ],
+      "canonical_task_ref": "ARX-S3-010",
+      "related_pr_refs": [
+        117
+      ],
+      "related_commit_refs": [
+        "6d4020c"
+      ],
+      "dependencies": [
+        "ARX-S3-010"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Cloudflare:655b4653",
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-109",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_5",
+      "severity": "P0",
+      "title": "Sprint Control System (SCS-v1) and action tracker implementation",
+      "description": "Sprint Control System (SCS-v1) and action tracker implementation (Originating from parent task ARX-S4-GOV-001)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "READY",
+      "original_acceptance_criteria": [
+        "Review PR #109 against canonical parent ARX-S4-GOV-001"
+      ],
+      "canonical_task_ref": "ARX-S4-GOV-001",
+      "related_pr_refs": [
+        109
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_AUTHORIZATION",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "OWNER_REVIEW_PR_109",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-103",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P2",
+      "title": "Backlog integrity test 21 git ambient isolation",
+      "description": "Backlog integrity test 21 git ambient isolation (Originating from parent task ARX-S4-GOV-001)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Review PR #103 against canonical parent ARX-S4-GOV-001"
+      ],
+      "canonical_task_ref": "ARX-S4-GOV-001",
+      "related_pr_refs": [
+        103
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [],
+      "explicit_blockers": "OWNER_REVIEW_PR_103",
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-083",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P2",
+      "title": "HVA Wave 4C-1 dual-TSA timestamp verification draft",
+      "description": "HVA Wave 4C-1 dual-TSA timestamp verification draft (Originating from parent task ARX-S3-015)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "Review PR #83 against canonical parent ARX-S3-015"
+      ],
+      "canonical_task_ref": "ARX-S3-015",
+      "related_pr_refs": [
+        83
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S3-015"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "OWNER_REVIEW_PR_83",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-078",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P2",
+      "title": "HVA Wave 4B-S restricted canonicalization draft",
+      "description": "HVA Wave 4B-S restricted canonicalization draft (Originating from parent task ARX-S3-014)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "Review PR #78 against canonical parent ARX-S3-014"
+      ],
+      "canonical_task_ref": "ARX-S3-014",
+      "related_pr_refs": [
+        78
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S3-014"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "OWNER_REVIEW_PR_78",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-075",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P2",
+      "title": "INSTR-001 research evidence custody and synthetic observer draft",
+      "description": "INSTR-001 research evidence custody and synthetic observer draft (Originating from parent task ARX-S3-008)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "Review PR #75 against canonical parent ARX-S3-008"
+      ],
+      "canonical_task_ref": "ARX-S3-008",
+      "related_pr_refs": [
+        75
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S3-008"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "OWNER_REVIEW_PR_75",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-073",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P1",
+      "title": "Canonical Minervini VCP universe screening activation draft",
+      "description": "Canonical Minervini VCP universe screening activation draft (Originating from parent task ARX-S3-007)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "Review PR #73 against canonical parent ARX-S3-007"
+      ],
+      "canonical_task_ref": "ARX-S3-007",
+      "related_pr_refs": [
+        73
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S3-007"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "OWNER_REVIEW_PR_73",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-044",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P2",
+      "title": "S2-08 full-population assessment telemetry envelope draft",
+      "description": "S2-08 full-population assessment telemetry envelope draft (Originating from parent task ARX-S2-008)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "Review PR #44 against canonical parent ARX-S2-008"
+      ],
+      "canonical_task_ref": "ARX-S2-008",
+      "related_pr_refs": [
+        44
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S2-008"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "OWNER_REVIEW_PR_44",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-042",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P1",
+      "title": "Governed publication, scanner membership, and truthful Radar disclosure draft",
+      "description": "Governed publication, scanner membership, and truthful Radar disclosure draft (Originating from parent task ARX-S2-006)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "Review PR #42 against canonical parent ARX-S2-006"
+      ],
+      "canonical_task_ref": "ARX-S2-006",
+      "related_pr_refs": [
+        42
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S2-006"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "OWNER_REVIEW_PR_42",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-047",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P2",
+      "title": "Sprint 2 RC1 preparation draft",
+      "description": "Sprint 2 RC1 preparation draft (Originating from parent task ARX-S2-013)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "SUPERSEDED",
+      "original_acceptance_criteria": [
+        "Review PR #47 against canonical parent ARX-S2-013"
+      ],
+      "canonical_task_ref": "ARX-S2-013",
+      "related_pr_refs": [
+        47
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S2-013"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "OWNER_REVIEW_PR_47",
+      "final_disposition": "SUPERSEDED_WITH_VERIFIED_LINEAGE",
+      "execution_ownership": "CHATGPT_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-040",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P2",
+      "title": "Production candlestick visibility and Render warmup draft",
+      "description": "Production candlestick visibility and Render warmup draft (Originating from parent task ARX-S2-012)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "SUPERSEDED",
+      "original_acceptance_criteria": [
+        "Review PR #40 against canonical parent ARX-S2-012"
+      ],
+      "canonical_task_ref": "ARX-S2-012",
+      "related_pr_refs": [
+        40
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S2-012"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "OWNER_REVIEW_PR_40",
+      "final_disposition": "SUPERSEDED_WITH_VERIFIED_LINEAGE",
+      "execution_ownership": "CHATGPT_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-PR-038",
+      "original_source": "Source Control Inventory",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_2",
+      "severity": "P2",
+      "title": "Mobile research discoverability navigation dock draft",
+      "description": "Mobile research discoverability navigation dock draft (Originating from parent task ARX-S2-011)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "SUPERSEDED",
+      "original_acceptance_criteria": [
+        "Review PR #38 against canonical parent ARX-S2-011"
+      ],
+      "canonical_task_ref": "ARX-S2-011",
+      "related_pr_refs": [
+        38
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S2-011"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "OWNER_REVIEW_PR_38",
+      "final_disposition": "SUPERSEDED_WITH_VERIFIED_LINEAGE",
+      "execution_ownership": "CHATGPT_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-DEC-SMART-MONEY-001",
+      "original_source": "Governance Invariant Fences",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P0",
+      "title": "Smart Money daily live worker ingestion and SEC Form 4 egress restriction",
+      "description": "Smart Money daily live worker ingestion and SEC Form 4 egress restriction (Originating from parent task ARX-S3-017)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "Enforce governance invariant SMART_MONEY_INGESTION_FENCE"
+      ],
+      "canonical_task_ref": "ARX-S3-017",
+      "related_pr_refs": [],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S3-017"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "SMART_MONEY_INGESTION_FENCE",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-DEC-HVA-RATIFICATION-001",
+      "original_source": "Governance Invariant Fences",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P1",
+      "title": "HVA00 v2.1 method protocol ratification and human evaluator access",
+      "description": "HVA00 v2.1 method protocol ratification and human evaluator access (Originating from parent task ARX-S3-014)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "Enforce governance invariant HVA_PROTOCOL_RATIFICATION"
+      ],
+      "canonical_task_ref": "ARX-S3-014",
+      "related_pr_refs": [],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S3-014"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "HVA_PROTOCOL_RATIFICATION",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-DEC-CUSTODY-001",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_3",
+      "severity": "P1",
+      "title": "External research custody, Sigstore verification and key ceremony authority",
+      "description": "External research custody, Sigstore verification and key ceremony authority (Originating from parent task ARX-S3-008)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "Enforce governance invariant EXTERNAL_CUSTODY_AUTHORITY"
+      ],
+      "canonical_task_ref": "ARX-S3-008",
+      "related_pr_refs": [],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S3-008"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "EXTERNAL_CUSTODY_AUTHORITY",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-DEC-RESEARCH-LEARNING-001",
+      "original_source": "Governance Invariant Fences",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P0",
+      "title": "Model tuning, prospective denominator mutation and online learning freeze",
+      "description": "Model tuning, prospective denominator mutation and online learning freeze (Originating from parent task ARX-S4-GOV-001)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "BLOCKED",
+      "original_acceptance_criteria": [
+        "Enforce governance invariant MODEL_TUNING_FREEZE"
+      ],
+      "canonical_task_ref": "ARX-S4-GOV-001",
+      "related_pr_refs": [],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "responsible_workstream": "Track B",
+      "production_eligibility": true,
+      "release_authorization_requirements": "EXPLICIT_OWNER_RELEASE",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": "MODEL_TUNING_FREEZE",
+      "final_disposition": "AUTHORIZATION_RESTRICTED",
+      "execution_ownership": "AUTHORIZATION_RESTRICTED",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "OBL-DEC-RAILWAY-PROVENANCE-001",
+      "original_source": "Directive 054 V3",
+      "source_date": "2026-10-27",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P1",
+      "title": "Railway source build commit reconciliation (Option R0: 856170c zero backend lag)",
+      "description": "Railway source build commit reconciliation (Option R0: 856170c zero backend lag) (Originating from parent task ARX-S4-GOV-001)",
+      "root_cause": "Sprint 1-4 technical, presentation, or governance backlog item.",
+      "technical_status": "COMPLETED",
+      "original_acceptance_criteria": [
+        "Enforce governance invariant RAILWAY_PROVENANCE_RECONCILIATION"
+      ],
+      "canonical_task_ref": "ARX-S4-GOV-001",
+      "related_pr_refs": [],
+      "related_commit_refs": [],
+      "dependencies": [
+        "ARX-S4-GOV-001"
+      ],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "DEPLOYED_VERIFIED",
+      "production_verification_evidence": [
+        "Railway:d1f8cf37"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_VERIFIED",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "FINDING-UX-002E-01",
+      "original_source": "UX-002E Mobile Audit & PR #124",
+      "source_date": "2026-10-28",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P1",
+      "title": "Mobile Navigation Dock Collision & Double Dock Rendering",
+      "description": "On mobile viewports (<768px), both Navbar dock and SynthesisMobileDock rendered simultaneously, creating visual overlap and blocked tap targets.",
+      "root_cause": "SynthesisMobileDock rendered unconditionally alongside Navbar's fixed bottom navigation.",
+      "technical_status": "IMPLEMENTED_IN_PR124",
+      "original_acceptance_criteria": [
+        "Hide SynthesisMobileDock in favor of canonical Navbar mobile dock",
+        "Preserve Research and Horizon controls in Navbar",
+        "Zero double-dock collision on mobile"
+      ],
+      "canonical_task_ref": "ARX-S3-016",
+      "related_pr_refs": [
+        124
+      ],
+      "related_commit_refs": [
+        "f7da12755a3fcc02b5af68898b4027398e93851c"
+      ],
+      "dependencies": [],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PREVIEW_VERIFIED_PENDING_PRODUCTION",
+      "production_verification_evidence": [
+        "Cloudflare Preview: https://877cfca0.finance-xp8.pages.dev"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_ELIGIBLE_OPEN",
+      "execution_ownership": "CHATGPT_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "FINDING-UX-002E-02",
+      "original_source": "UX-002E Mobile Audit & PR #124",
+      "source_date": "2026-10-28",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P1",
+      "title": "Mobile Interactive Target Size Sub-44px Violations",
+      "description": "Mobile mode buttons, ticker controls, and alert triggers measured 32-36px, failing WCAG 2.5.5 minimum 44x44px touch target guidelines.",
+      "root_cause": "Desktop compact button styling reused on touch viewports without responsive padding.",
+      "technical_status": "IMPLEMENTED_IN_PR124",
+      "original_acceptance_criteria": [
+        "All interactive mobile controls measure >= 44px hit region",
+        "Touch target padding utility .touch-target applied to mobile controls"
+      ],
+      "canonical_task_ref": "ARX-S3-016",
+      "related_pr_refs": [
+        124
+      ],
+      "related_commit_refs": [
+        "f7da12755a3fcc02b5af68898b4027398e93851c"
+      ],
+      "dependencies": [],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PREVIEW_VERIFIED_PENDING_PRODUCTION",
+      "production_verification_evidence": [
+        "Cloudflare Preview: https://877cfca0.finance-xp8.pages.dev"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_ELIGIBLE_OPEN",
+      "execution_ownership": "CHATGPT_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "FINDING-UX-002E-03",
+      "original_source": "UX-002E Mobile Audit & PR #124",
+      "source_date": "2026-10-28",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P1",
+      "title": "Mobile Responsive Grid Ordering Pushes Readiness Bar Below the Fold",
+      "description": "On mobile layout, mandatory trade blockers and readiness status were placed after heavy technical cards, forcing excessive scrolling before decision viability could be assessed.",
+      "root_cause": "Desktop DOM order placed readiness bar in right rail without mobile reordering.",
+      "technical_status": "IMPLEMENTED_IN_PR124",
+      "original_acceptance_criteria": [
+        "Reorder responsive grid on mobile so readiness bar appears immediately after primary thesis",
+        "Desktop order remains unchanged in right rail"
+      ],
+      "canonical_task_ref": "ARX-S3-016",
+      "related_pr_refs": [
+        124
+      ],
+      "related_commit_refs": [
+        "f7da12755a3fcc02b5af68898b4027398e93851c"
+      ],
+      "dependencies": [],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PREVIEW_VERIFIED_PENDING_PRODUCTION",
+      "production_verification_evidence": [
+        "Cloudflare Preview: https://877cfca0.finance-xp8.pages.dev"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_ELIGIBLE_OPEN",
+      "execution_ownership": "CHATGPT_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "FINDING-UX-002E-04",
+      "original_source": "UX-002E Mobile Audit & PR #124",
+      "source_date": "2026-10-28",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P1",
+      "title": "AlertTriggerModal Missing Dialog Accessibility & Focus Trap",
+      "description": "Trigger Alert modal lacked ARIA role='dialog', aria-labelledby, Tab key focus containment, Escape key dismissal, and trigger element focus restoration.",
+      "root_cause": "Modal implemented as plain div without keyboard or focus lifecycle management.",
+      "technical_status": "IMPLEMENTED_IN_PR124",
+      "original_acceptance_criteria": [
+        "Add role='dialog', aria-modal='true', and accessible labeling",
+        "Contain Tab navigation within modal while open",
+        "Dismiss on Escape key and restore focus to trigger button",
+        "Pass AlertTriggerAccessibility.test.tsx suite"
+      ],
+      "canonical_task_ref": "ARX-S3-016",
+      "related_pr_refs": [
+        124
+      ],
+      "related_commit_refs": [
+        "f7da12755a3fcc02b5af68898b4027398e93851c"
+      ],
+      "dependencies": [],
+      "responsible_workstream": "Track A",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PREVIEW_VERIFIED_PENDING_PRODUCTION",
+      "production_verification_evidence": [
+        "Cloudflare Preview: https://877cfca0.finance-xp8.pages.dev",
+        "AlertTriggerAccessibility.test.tsx passed"
+      ],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_ELIGIBLE_OPEN",
+      "execution_ownership": "CHATGPT_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "FINDING-UX-002F-01",
+      "original_source": "Synthesis E V3 Design Audit & Directive 058A \u00a72 Track C",
+      "source_date": "2026-10-28",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P2",
+      "title": "Synthesis E V3 Redesign: Full-Page Redundant Information Elimination",
+      "description": "Analysis page duplicates thesis sentences, factor breakdown labels, and technical parameters across 4 separate cards, creating unnecessary page length (>4000px vertical scroll).",
+      "root_cause": "Incremental feature additions layered new cards without deprecating legacy redundant containers.",
+      "technical_status": "READY_FOR_INTEGRATION",
+      "original_acceptance_criteria": [
+        "Reconcile full analysis view against approved Synthesis E V3 prototype",
+        "Consolidate duplicate explanations between summary card, confluence card, and bottom line",
+        "Reduce vertical scroll height by >= 30% while retaining all quantitative decision metrics"
+      ],
+      "canonical_task_ref": "ARX-S3-016",
+      "related_pr_refs": [
+        98
+      ],
+      "related_commit_refs": [],
+      "dependencies": [
+        "FINDING-UX-002E-01",
+        "FINDING-UX-002E-02"
+      ],
+      "responsible_workstream": "Track C",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_ELIGIBLE_OPEN",
+      "execution_ownership": "CHATGPT_UX",
+      "sub_obligations": []
+    },
+    {
+      "finding_id": "FINDING-UX-002F-02",
+      "original_source": "Directive 058A \u00a72 Track C",
+      "source_date": "2026-10-28",
+      "sprint_of_origin": "SPRINT_4",
+      "severity": "P2",
+      "title": "Multi-Persona Acceptance Verification (Guided, Standard, Quant)",
+      "description": "Each terminal mode (Guided, Standard, Quant) must be verified against its persona requirements to ensure layout coherence, font hierarchy, and theme persistence.",
+      "root_cause": "Persona-specific testing previously conducted in isolation without unified cross-mode acceptance.",
+      "technical_status": "READY_FOR_VERIFICATION",
+      "original_acceptance_criteria": [
+        "Guided mode presents decision-first plain English narrative with trade setup callout",
+        "Standard mode balances technical charts with multi-pillar confluence and sizing",
+        "Quant mode presents complete factor distributions, raw DNA scores, and model telemetry",
+        "Unified Paper Light / Dark theme persists across all 3 modes"
+      ],
+      "canonical_task_ref": "ARX-S3-016",
+      "related_pr_refs": [
+        123,
+        124
+      ],
+      "related_commit_refs": [
+        "3e0f8dc00fb816db858d36ff8be8f44084df0810"
+      ],
+      "dependencies": [
+        "FINDING-UX-002F-01"
+      ],
+      "responsible_workstream": "Track C",
+      "production_eligibility": true,
+      "release_authorization_requirements": "OWNER_PREAPPROVED",
+      "current_production_deployment_status": "PENDING_RELEASE",
+      "production_verification_evidence": [],
+      "explicit_blockers": null,
+      "final_disposition": "PRODUCTION_ELIGIBLE_OPEN",
+      "execution_ownership": "CHATGPT_UX",
+      "sub_obligations": []
+    }
+  ],
+  "directive": "ARX_058B_NON_UX_REMEDIATION_EXECUTION",
+  "version": "2.0.0"
+}

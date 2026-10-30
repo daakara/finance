@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { MASTER_ASSET_CATALOG, MasterAssetEntry } from "../lib/masterCatalog";
+import { isUxReviewOnly } from "../lib/uxReviewBoundary";
 import { addPortfolioPosition } from "../lib/portfolio";
 import { SpotPriceRegistry, fetchBatchQuotes, fetchTacticalSetups, isQuoteFresh } from "../lib/api";
 import type { TradeSetupSpec } from "../lib/simulation/governorSizingEngine";
@@ -659,6 +660,7 @@ export default function WeeklyConfluenceSpotlight({
 
   // Intent / Planning action: used outside live execution windows (Zero synthetic fill creation)
   const handlePlanSetup = (e: React.MouseEvent, cand: ConfluenceCandidate) => {
+    if (isUxReviewOnly()) { e.preventDefault(); e.stopPropagation(); return; }
     e.preventDefault();
     e.stopPropagation();
 

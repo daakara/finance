@@ -18,6 +18,7 @@
 
 import { useState, useEffect } from "react";
 import { getAnonymousUserId } from "../portfolio";
+import { getApiBaseUrl } from "../api";
 
 export interface TriadIndex {
   lhi: number;
@@ -326,7 +327,7 @@ export async function fetchUnifiedCockpitState(profileId?: string, force = false
   }
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const baseUrl = getApiBaseUrl();
     const res = await fetch(`${baseUrl}/cockpit/state`, {
       headers: {
         "Content-Type": "application/json",

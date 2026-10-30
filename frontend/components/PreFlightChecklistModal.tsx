@@ -193,8 +193,8 @@ export default function PreFlightChecklistModal({
   const renderCheck2Detail = () => {
     if (isStage4) {
       return isPlain
-        ? `⚠️ Watchlist Only: Spot price ($${safePrice.toFixed(2)}) is in Stage 4 correction below 50-day average. Await base formation.`
-        : `Stage 4 correction structure: Spot ($${safePrice.toFixed(2)}) requires 50-day breakout pivot ${safePivot !== null ? `above $${safePivot.toFixed(2)}` : "(pivot uncalculated)"}.`;
+        ? `⚠️ Watchlist Only: Readiness input price ($${safePrice.toFixed(2)}) is in Stage 4 correction below 50-day average. Await base formation.`
+        : `Stage 4 correction structure: Readiness input ($${safePrice.toFixed(2)}) requires 50-day breakout pivot ${safePivot !== null ? `above $${safePivot.toFixed(2)}` : "(pivot uncalculated)"}.`;
     }
     if (safeEntryMin === null || safeEntryMax === null) {
       return "Optimal buy zone levels uncalculated. Awaiting technical structure.";
@@ -202,20 +202,20 @@ export default function PreFlightChecklistModal({
     if (isExtendedAboveZone) {
       return isPlain
         ? `⚠️ Extended: Price is above ideal buy zone ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}). Wait for pullback.`
-        : "Extended structure: Spot is above value area. Chasing creates negative R:R risk.";
+        : "Extended structure: Readiness input is above value area. Chasing creates negative R:R risk.";
     }
     if (isWithinTolerance) {
       return isPlain
-        ? `Spot price ($${safePrice.toFixed(2)}) is slightly above preferred buying range ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}), within allowable extension tolerance (+2%). Defending key support.`
-        : `Spot price ($${safePrice.toFixed(2)}) is above corridor ceiling ($${safeEntryMax.toFixed(2)}) within +2% extension tolerance. Defending key moving average support (20 EMA / 50 SMA).`;
+        ? `Readiness input price ($${safePrice.toFixed(2)}) is slightly above preferred buying range ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}), within allowable extension tolerance (+2%). Defending key support.`
+        : `Readiness input price ($${safePrice.toFixed(2)}) is above corridor ceiling ($${safeEntryMax.toFixed(2)}) within +2% extension tolerance. Defending key moving average support (20 EMA / 50 SMA).`;
     }
     if (isBelowCorridor) {
       return isPlain
-        ? `Spot price ($${safePrice.toFixed(2)}) is below preferred buying range ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}).`
-        : `Spot price ($${safePrice.toFixed(2)}) is below preferred accumulation corridor ($${safeEntryMin.toFixed(2)}–$${safeEntryMax.toFixed(2)}).`;
+        ? `Readiness input price ($${safePrice.toFixed(2)}) is below preferred buying range ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}).`
+        : `Readiness input price ($${safePrice.toFixed(2)}) is below preferred accumulation corridor ($${safeEntryMin.toFixed(2)}–$${safeEntryMax.toFixed(2)}).`;
     }
     return isPlain
-      ? `Spot price ($${safePrice.toFixed(2)}) is inside the verified buying range defending key support.`
+      ? `Readiness input price ($${safePrice.toFixed(2)}) is inside the verified buying range defending key support.`
       : "Defending key moving average support (20 EMA / 50 SMA).";
   };
 
@@ -276,7 +276,7 @@ export default function PreFlightChecklistModal({
     : `### 📋 ARX Institutional Execution Brief: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
 - **Asset**: ${symbol} | **Mode**: ${isDayTrader ? "Intraday Momentum Pullback" : "Swing / Compounder Accumulation"}
-- **Spot**: $${safePrice.toFixed(2)} | **Optimal Entry**: ${entryZoneStr}
+- **Readiness input**: $${safePrice.toFixed(2)} | **Optimal Entry**: ${entryZoneStr}
 - **Hard Stop / Invalidation**: ${stopLossStr}
 - **Target 1 (TP1)**: ${target1Str}
 - **Target 2 (TP2 Runner)**: ${target2Str}
@@ -307,17 +307,17 @@ export default function PreFlightChecklistModal({
     >
       <div
         ref={modalRef}
-        className="bg-[#0b1019] border border-cyan-800/80 rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl font-sans text-slate-200 relative flex flex-col max-h-[90vh]"
+        className="bg-[var(--surface-1)] border border-cyan-800/80 rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl font-sans text-[var(--text-1)] relative flex flex-col max-h-[90vh]"
       >
         {/* Header — pinned */}
-        <div className="flex items-center justify-between border-b border-[#1e293b] pb-3.5 shrink-0">
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3.5 shrink-0">
           <div className="flex items-center gap-2.5">
             <span className="text-xl">✈️</span>
             <div>
               <h2 id="preflight-title" className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
                 <span>{isPlain ? `Pre-Flight Trade Checklist: ${symbol}` : `Institutional Pre-Flight Clearance: ${symbol}`}</span>
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[var(--text-2)]">
                 {isPlain
                   ? "5-point risk and confirmation checklist before entering this position."
                   : "Automated pre-trade validation gate enforcing risk-reward and flow confluence."}
@@ -328,7 +328,7 @@ export default function PreFlightChecklistModal({
             type="button"
             onClick={onClose}
             aria-label="Close Pre-Flight Checklist"
-            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition"
+            className="text-[var(--text-2)] hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition"
           >
             ✕
           </button>
@@ -346,16 +346,16 @@ export default function PreFlightChecklistModal({
                     ? "TRADE NOT CLEARED: AWAITING CONFIRMATION"
                     : "NON-ACTIONABLE STATE: AWAITING TRIGGER CONFIRMATION"}
                 </strong>
-                <p className="text-[11px] leading-relaxed text-slate-300 font-sans">
+                <p className="text-[11px] leading-relaxed text-[var(--text-2)] font-sans">
                   {isPlain
                     ? `A valid setup is forming for ${symbol}, but the entry trigger has not confirmed yet. This checklist reviews setup and risk conditions; it does not bypass the required confirmation trigger.`
                     : `Valid setup structure is present (${decisionState || "VALID_SETUP"}), but execution criteria remain incomplete. Current state: WAIT FOR TRIGGER. Sizing and execution remain locked until confirmation conditions are satisfied.`}
                 </p>
-                <details className="pt-1 text-[10px] text-slate-400 font-mono">
+                <details className="pt-1 text-[10px] text-[var(--text-2)] font-mono">
                   <summary className="cursor-pointer hover:text-slate-200 select-none">
                     Technical Provenance
                   </summary>
-                  <div className="mt-1 pl-2 border-l border-amber-800/40 text-[10px] space-y-0.5 text-slate-400">
+                  <div className="mt-1 pl-2 border-l border-amber-800/40 text-[10px] space-y-0.5 text-[var(--text-2)]">
                     <div>State: {decisionState || "VALID_SETUP"}</div>
                     <div>Actionable: false</div>
                     <div>Authority: Canonical Decision Engine</div>
@@ -369,7 +369,7 @@ export default function PreFlightChecklistModal({
           {!isPriceValid && (
             <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-800/60 text-xs font-mono text-rose-300 flex items-center gap-2">
               <span className="text-base">⚠️</span>
-              <span>Live spot price or execution levels are unverified for this asset. Trade execution is blocked until verified market data is received.</span>
+              <span>Readiness input price or execution levels are unverified for this asset. Trade execution is blocked until verified market data is received.</span>
             </div>
           )}
 
@@ -390,20 +390,20 @@ export default function PreFlightChecklistModal({
             </div>
             <div className="text-right font-mono">
               <span className="text-2xl sm:text-3xl font-black">{passedCount}/5</span>
-              <span className="text-[10px] text-slate-400 block">Checks Passed</span>
+              <span className="text-[10px] text-[var(--text-2)] block">Checks Passed</span>
             </div>
           </div>
 
           {/* 5-Point Validation Checklist */}
           <div className="space-y-2.5 text-xs">
             {/* Check 1 */}
-            <div className="p-3 rounded-lg bg-[#111722] border border-[#1e293b] flex items-start justify-between gap-3">
+            <div className="p-3 rounded-lg bg-[var(--surface-2)] border border-[var(--border-subtle)] flex items-start justify-between gap-3">
               <div className="space-y-0.5">
-                <div className="font-bold text-slate-100 flex items-center gap-1.5">
+                <div className="font-bold text-[var(--text-1)] flex items-center gap-1.5">
                   <span>{isRRPassed ? "✅" : "❌"}</span>
                   <span>{isPlain ? "1. Reward vs Risk Balance (At least 2 to 1)" : "1. Asymmetric Payoff (Reward:Risk >= 2.0:1)"}</span>
                 </div>
-                <p className="text-[11px] text-slate-400 pl-5">
+                <p className="text-[11px] text-[var(--text-2)] pl-5">
                   Current: <strong className="text-cyan-300 font-mono">{isRRValid && hasExecutionLevels ? `${safeRR.toFixed(2)} : 1.0` : "N/A (Missing Execution Levels)"}</strong>{" "}
                   {isRRPassed ? "(Adequate upside cushion)" : !hasExecutionLevels ? "(Execution levels missing: Stop and target required)" : isRRValid ? "(Hazard: upside too small for downside risk)" : "(Evidence incomplete: risk-reward unavailable)"}
                 </p>
@@ -414,13 +414,13 @@ export default function PreFlightChecklistModal({
             </div>
 
             {/* Check 2 */}
-            <div className="p-3 rounded-lg bg-[#111722] border border-[#1e293b] flex items-start justify-between gap-3">
+            <div className="p-3 rounded-lg bg-[var(--surface-2)] border border-[var(--border-subtle)] flex items-start justify-between gap-3">
               <div className="space-y-0.5">
-                <div className="font-bold text-slate-100 flex items-center gap-1.5">
+                <div className="font-bold text-[var(--text-1)] flex items-center gap-1.5">
                   <span>{isTrendPassed ? "✅" : (isStage4 ? "⏳" : "⚠️")}</span>
                   <span>{isPlain ? "2. Trend & Moving Averages (Price in upward corridor)" : "2. Technical Structure (Above 20 EMA / 50 SMA Pivot)"}</span>
                 </div>
-                <p className="text-[11px] text-slate-400 pl-5">
+                <p className="text-[11px] text-[var(--text-2)] pl-5">
                   {renderCheck2Detail()}
                 </p>
               </div>
@@ -432,13 +432,13 @@ export default function PreFlightChecklistModal({
             </div>
 
             {/* Check 3 */}
-            <div className="p-3 rounded-lg bg-[#111722] border border-[#1e293b] flex items-start justify-between gap-3">
+            <div className="p-3 rounded-lg bg-[var(--surface-2)] border border-[var(--border-subtle)] flex items-start justify-between gap-3">
               <div className="space-y-0.5">
-                <div className="font-bold text-slate-100 flex items-center gap-1.5">
+                <div className="font-bold text-[var(--text-1)] flex items-center gap-1.5">
                   <span>{isCapitalRiskPassed ? "✅" : (isCapitalRiskFailed ? "❌" : "⚠️")}</span>
                   <span>{isPlain ? "3. Capital Health & Squeeze Risk (Manageable short float & solvent balance sheet)" : "3. Structural Capital Risk (Short Interest Floor & Quality Rating)"}</span>
                 </div>
-                <p className="text-[11px] text-slate-400 pl-5">
+                <p className="text-[11px] text-[var(--text-2)] pl-5">
                   {isCapitalRiskPassed
                     ? (isPlain
                         ? "Short interest is moderate (<12%) and financial quality metrics indicate stable balance sheet health."
@@ -466,9 +466,9 @@ export default function PreFlightChecklistModal({
             </div>
 
             {/* Check 4 */}
-            <div className="p-3 rounded-lg bg-[#111722] border border-[#1e293b] flex items-start justify-between gap-3">
+            <div className="p-3 rounded-lg bg-[var(--surface-2)] border border-[var(--border-subtle)] flex items-start justify-between gap-3">
               <div className="space-y-0.5">
-                <div className="font-bold text-slate-100 flex items-center gap-1.5">
+                <div className="font-bold text-[var(--text-1)] flex items-center gap-1.5">
                   <span>
                     {resolvedCatalystState === "PASS"
                       ? "✅"
@@ -482,7 +482,7 @@ export default function PreFlightChecklistModal({
                       : "4. Catalyst Hazard Buffer (>7 Days to Binary Earnings)"}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 pl-5">
+                <p className="text-[11px] text-[var(--text-2)] pl-5">
                   {renderCheck4Detail()}
                 </p>
               </div>
@@ -493,7 +493,7 @@ export default function PreFlightChecklistModal({
                   ? "bg-rose-950 text-rose-300 border-rose-800"
                   : resolvedCatalystState === "ERROR"
                   ? "bg-rose-950/80 text-rose-300 border-rose-800"
-                  : "bg-slate-900 text-slate-400 border-slate-700"
+                  : "bg-slate-900 text-[var(--text-2)] border-slate-700"
               }`}>
                 {resolvedCatalystState === "PASS"
                   ? "PASS"
@@ -506,13 +506,13 @@ export default function PreFlightChecklistModal({
             </div>
 
             {/* Check 5 */}
-            <div className="p-3 rounded-lg bg-[#111722] border border-[#1e293b] flex items-start justify-between gap-3">
+            <div className="p-3 rounded-lg bg-[var(--surface-2)] border border-[var(--border-subtle)] flex items-start justify-between gap-3">
               <div className="space-y-0.5">
-                <div className="font-bold text-slate-100 flex items-center gap-1.5">
+                <div className="font-bold text-[var(--text-1)] flex items-center gap-1.5">
                   <span>{isMacroPassed ? "✅" : "⚠️"}</span>
                   <span>{isPlain ? "5. Overall Market Weather (VIX normal, market calm)" : "5. Macro Regime Guard (VIX Volatility Guardrails Safe)"}</span>
                 </div>
-                <p className="text-[11px] text-slate-400 pl-5">
+                <p className="text-[11px] text-[var(--text-2)] pl-5">
                   {isMacroPassed
                     ? (isPlain
                         ? `Market volatility is within standard parameters (VIX ${currentVix?.toFixed(1)}).`
@@ -534,7 +534,7 @@ export default function PreFlightChecklistModal({
         </div>
 
         {/* Action Buttons — pinned to bottom */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t border-[#1e293b] shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t border-[var(--border-subtle)] shrink-0">
           <button
             type="button"
             onClick={handleCopy}
@@ -546,7 +546,7 @@ export default function PreFlightChecklistModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-xs font-bold transition bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
+            className="px-4 py-2 rounded-lg text-xs font-bold transition bg-slate-800 hover:bg-slate-700 text-[var(--text-1)] border border-slate-700"
           >
             Done
           </button>

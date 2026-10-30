@@ -26,7 +26,7 @@ export interface ConfluencePillarDisplay {
 
 function getPillarScoreColor(scoreDisplay: string, score: number | null): string {
   if (score === null || scoreDisplay === "UNAVAILABLE" || scoreDisplay === "PENDING") {
-    return "text-slate-400 font-semibold text-sm";
+    return "text-[var(--text-2)] font-semibold text-sm";
   }
   if (score >= 75) return "text-emerald-400";
   if (score >= 50) return "text-cyan-400";
@@ -203,7 +203,7 @@ export default function CompositeConvictionCard({
 
       return {
         score: 0,
-        verdictColor: "text-slate-400",
+        verdictColor: "text-[var(--text-2)]",
         confluenceBadge: isPlain ? "Tape Only (Degraded)" : "Display Only (Unverified)",
         bottomLineText: "Analytical backend decision authority is unreachable. Displaying market data tape only.",
         pillars,
@@ -256,7 +256,7 @@ export default function CompositeConvictionCard({
 
     return {
       score: 0,
-      verdictColor: "text-slate-400",
+      verdictColor: "text-[var(--text-2)]",
       confluenceBadge: isPlain ? "Awaiting Backend Confluence" : "Evaluation Pending",
       bottomLineText: "CONFLUENCE EVALUATION PENDING: Quantitative confluence model results pending from analytical backend.",
       pillars: pendingPillars,
@@ -264,42 +264,42 @@ export default function CompositeConvictionCard({
   }, [data, isPlain]);
 
   return (
-    <div className="bg-[#0b101b] border border-[#1d293d] rounded-2xl p-4 sm:p-5 shadow-xl space-y-4 font-sans text-xs">
+    <div className="bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-2xl p-4 sm:p-5 shadow-xl space-y-4 font-sans text-xs">
       {/* Top Banner: Composite Confluence Title & Score Gauge */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#182335] pb-3 sm:pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-3 sm:pb-4">
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
             <span className={`w-2.5 h-2.5 rounded-full ${synthesis.score >= 75 ? "bg-emerald-400 animate-ping" : "bg-slate-500"}`}></span>
-            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 font-mono">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-[var(--text-2)] font-mono">
               {isPlain ? `Multi-Pillar Evidence • ${cleanSym}` : `Quantitative Confluence • ${cleanSym}`}
             </span>
           </div>
-          <h3 className="text-base sm:text-lg font-bold tracking-tight text-white font-mono">
+          <h3 className="text-base sm:text-lg font-bold tracking-tight text-[var(--text-1)] font-mono">
             Multi-Model Confluence Attribution
           </h3>
-          <p className="text-xs text-slate-400 font-sans">
-            Four distinct, equally weighted analytical dimensions evaluated for structural conviction.
+          <p className="text-xs text-[var(--text-2)] font-sans">
+            Four pillars at 25% base weight. The backend aggregate includes governed adjustments and missing-source normalization; it may differ from their simple average.
           </p>
         </div>
 
         {/* Big Pill Score Gauge & Inspect Why button */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center space-x-3 bg-[#06090f] px-3.5 py-2 rounded-xl border border-[#24334b]">
+          <div className="flex items-center space-x-3 bg-[var(--surface-2)] px-3.5 py-2 rounded-xl border border-[var(--border-subtle)]">
             <div className="text-right">
-              <span className="text-[11px] uppercase font-bold text-slate-400 block font-mono">
+              <span className="text-[11px] uppercase font-bold text-[var(--text-2)] block font-mono">
                 {isPlain ? "Confluence Evidence" : "Confluence Score"}
               </span>
-              <span className="text-xs text-slate-300 font-medium">
+              <span className="text-xs text-[var(--text-2)] font-medium">
                 {synthesis.confluenceBadge}
               </span>
             </div>
             <div className={`text-2xl sm:text-3xl font-black font-mono tabular-nums ${synthesis.verdictColor}`}>
               {synthesis.score > 0 ? (
                 <>
-                  {synthesis.score}<span className="text-xs text-slate-500 font-normal">/100</span>
+                  {synthesis.score}<span className="text-xs text-[var(--text-muted)] font-normal">/100</span>
                 </>
               ) : (
-                <span className="text-sm font-bold text-slate-400">PENDING</span>
+                <span className="text-sm font-bold text-[var(--text-2)]">PENDING</span>
               )}
             </div>
           </div>
@@ -310,7 +310,7 @@ export default function CompositeConvictionCard({
               type="button"
               onClick={onOpenWhy}
               aria-label={`Why Score ${synthesis.score}? Inspect Confluence Attribution`}
-              className="text-xs text-cyan-400 hover:text-cyan-300 font-mono font-bold cursor-pointer py-2 px-3 rounded-xl border border-cyan-800/60 bg-[#090d14] hover:bg-[#121b2a] transition-colors inline-flex items-center gap-1.5 min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400"
+              className="text-xs text-cyan-400 hover:text-cyan-300 font-mono font-bold cursor-pointer py-2 px-3 rounded-xl border border-cyan-800/60 bg-[var(--surface-2)] hover:bg-[#121b2a] transition-colors inline-flex items-center gap-1.5 min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400"
             >
               <span>Inspect Telemetry</span>
               <span>→</span>
@@ -319,21 +319,23 @@ export default function CompositeConvictionCard({
         </div>
       </div>
 
+      {data?.confluence && <p className="text-xs text-[var(--text-2)]">Backend aggregate: {data.confluence.confluenceScore}/100; displayed rounded to {synthesis.score}. Adjustment amounts are not supplied in this response; inspect attribution for available source evidence.</p>}
+      {data?.confluence?.warnings?.map((warning, index) => <p key={index} className="text-xs text-amber-400" role="note">{warning}</p>)}
       {/* 4 Distinct, Equally Weighted Evidence Pillars */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {synthesis.pillars.map((pillar) => (
           <div
             key={pillar.id}
-            className="bg-[#090d14] border border-[#1e293b] rounded-xl p-3.5 flex flex-col justify-between gap-2 shadow-sm"
+            className="bg-[var(--surface-2)] border border-[var(--border-subtle)] rounded-xl p-2.5 sm:p-3.5 flex flex-col justify-between gap-2 shadow-sm"
           >
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center space-x-1.5 min-w-0">
                 <span className="text-sm shrink-0">{pillar.icon}</span>
-                <span className="font-bold text-slate-200 uppercase tracking-wider font-mono text-[11px] truncate">
+                <span className="font-bold text-[var(--text-1)] uppercase tracking-wide font-mono text-[10px] sm:text-[11px]">
                   {pillar.label}
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-slate-500 font-semibold shrink-0">
+              <span className="text-[10px] font-mono text-[var(--text-muted)] font-semibold shrink-0">
                 {pillar.weightPct}% Weight
               </span>
             </div>
@@ -348,9 +350,7 @@ export default function CompositeConvictionCard({
               />
             </div>
 
-            <p className="text-xs text-slate-300 font-sans leading-relaxed">
-              {pillar.detail}
-            </p>
+            <details><summary className="min-h-[44px] cursor-pointer text-xs text-[var(--text-2)] focus-visible:outline focus-visible:outline-2">{pillar.label} attribution</summary><p className="text-xs text-[var(--text-2)] leading-relaxed">{pillar.detail}</p></details>
           </div>
         ))}
       </div>

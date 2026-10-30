@@ -41,13 +41,17 @@ import SynthesisMobileDock from "../../components/synthesis/SynthesisMobileDock"
 export default function PortfolioPage() {
   const [positions, setPositions] = useState<PortfolioPosition[]>([]);
   const [summary, setSummary] = useState<PortfolioSummary>({
-    totalEquity: 0,
+    totalEquity: null,
     totalCost: 0,
-    totalUnrealizedPnL: 0,
-    totalUnrealizedPnLPct: 0,
+    totalUnrealizedPnL: null,
+    totalUnrealizedPnLPct: null,
     positionsCount: 0,
-    isComplete: true,
+    isComplete: false,
     unpricedCount: 0,
+    verifiedEquity: null,
+    paperEquity: null,
+    hasUnverifiedPositions: false,
+    provenanceStatus: "NOT_LOADED",
   });
   const [showAddModal, setShowAddModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);

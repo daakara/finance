@@ -8,6 +8,7 @@ import { getPersistedMarketSnapshot } from "../lib/marketDatabase";
 import { TradeSetupSpec } from "../lib/simulation/governorSizingEngine";
 import { CANONICAL_HUBS } from "../lib/canonicalNav";
 import MiniSparkline from "./MiniSparkline";
+import { toggleTerminalTheme } from "../lib/terminalTheme";
 
 interface CommandItem {
   id: string;
@@ -173,16 +174,7 @@ export default function CommandPaletteModal({
       badge: "Theme",
       icon: "🌓",
       action: () => {
-        const currentTheme = document.documentElement.getAttribute("data-theme");
-        const nextTheme = currentTheme === "paper" ? "dark" : "paper";
-        if (nextTheme === "paper") {
-          document.documentElement.setAttribute("data-theme", "paper");
-          localStorage.setItem("theme", "paper");
-        } else {
-          document.documentElement.removeAttribute("data-theme");
-          localStorage.setItem("theme", "dark");
-        }
-        window.dispatchEvent(new CustomEvent("finance:theme-change", { detail: nextTheme }));
+        toggleTerminalTheme();
         onClose();
       },
     });

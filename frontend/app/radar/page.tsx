@@ -29,14 +29,14 @@ import { isCanonicalSecurityIdentifier, resolveCanonicalSecurity } from '../../l
 interface RadarAsset {
   ticker: string;
   name: string;
-  price: number;
+  price: number | null;
   priceBasis?: "DAILY_CLOSE" | null;
   priceDate?: string | null;
   rvol?: string | null;
   riskRewardRatio?: number | null;
   vcpStage: string;
   volumeDryUpPct?: number | null;
-  confluenceScore: number;
+  confluenceScore: number | null;
   catalyst: string;
   categories: CanonicalRadarCategory[];
   sector: string;
@@ -117,6 +117,7 @@ function RadarContent() {
   const [population, setPopulation] = useState<CandidatePopulationModel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [hasPartialResults, setHasPartialResults] = useState(false);
   const [isOnDemandLoading, setIsOnDemandLoading] = useState(false);
   const [onDemandError, setOnDemandError] = useState<string | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
@@ -182,7 +183,15 @@ function RadarContent() {
     fetchScreenerGems("all")
       .then((res) => {
         if (!isMounted || reqId !== latestRequestIdRef.current) return;
-        if (res.status === "ERROR" || res.status === "TIMEOUT" || res.error) {
+        setHasPartialResults(res.status === "PARTIAL");
+        const isScanFailure =
+          res.status === "ERROR" ||
+          res.status === "TIMEOUT" ||
+          res.datasetState === "SCAN_FAILED" ||
+          res.scanState === "FAILED" ||
+          (Boolean(res.error) && res.status !== "PARTIAL");
+
+        if (isScanFailure) {
           setFetchError(res.error || "Unable to reach the Radar screening service");
           setCapabilities(DEFAULT_RADAR_CAPABILITIES);
           setPopulation(null);
@@ -212,33 +221,43 @@ function RadarContent() {
           const catalogEntry = MASTER_ASSET_CATALOG[cleanTicker];
           const resolvedName = gem.companyName || catalogEntry?.name || '';
 
+          const rawPrice = gem.currentPrice ?? gem.current_price;
+          const resolvedPrice = typeof rawPrice === 'number' && Number.isFinite(rawPrice) && rawPrice > 0
+            ? Number(rawPrice.toFixed(2))
+            : null;
+
+          const rawConfluence = typeof gem.confluenceScore === 'number'
+            ? gem.confluenceScore
+            : (typeof gem.composite_score === 'number' ? gem.composite_score : null);
+          const resolvedConfluence = rawConfluence !== null && Number.isFinite(rawConfluence)
+            ? Math.round(rawConfluence)
+            : null;
+
           return {
             ticker: cleanTicker,
             name: resolvedName,
-            price: Number(((gem.currentPrice ?? gem.current_price) || 0).toFixed(2)),
+            price: resolvedPrice,
             priceBasis: gem.priceBasis ?? (gem.price_basis as any) ?? null,
             priceDate: gem.priceDate ?? gem.price_date ?? null,
             rvol: rvolVal,
             riskRewardRatio: rrVal,
             vcpStage: stageStr,
             volumeDryUpPct: dryUp,
-            confluenceScore: typeof gem.confluenceScore === 'number'
-              ? Math.round(gem.confluenceScore)
-              : (typeof gem.composite_score === 'number' ? Math.round(gem.composite_score) : 0),
-            catalyst: gem.primary_catalyst || gem.investment_thesis || "Stage 2 accumulation breakout with institutional liquidity flow.",
+            confluenceScore: resolvedConfluence,
+            catalyst: gem.primary_catalyst || gem.investment_thesis || (executionStatus === 'DELISTED_SECURITY' ? 'Trading suspended for delisted security.' : 'Catalyst disclosures unavailable.'),
             categories: cat,
             sector: catalogEntry?.sector || "Broad Market",
             executionStatus,
-            screeningStatus: gem.screeningStatus || (executionStatus === 'IN_BUY_ZONE' ? 'SCREENING_ZONE' : (executionStatus !== 'UNKNOWN' ? executionStatus : 'UNKNOWN')),
-            screeningGeometry: gem.screeningGeometry || (executionStatus === 'IN_BUY_ZONE' ? 'WITHIN_TOLERANCE' : 'OUTSIDE_TOLERANCE'),
-            decisionState: gem.decisionState || 'VALID_SETUP',
-            decisionStateLabel: gem.decisionStateLabel || 'Discovery Candidate — Analyze for Trigger',
+            screeningStatus: gem.screeningStatus || (executionStatus === 'DELISTED_SECURITY' ? 'DELISTED' : (executionStatus === 'UNVERIFIED_ASSET' ? 'UNVERIFIED' : 'UNKNOWN')),
+            screeningGeometry: gem.screeningGeometry || (executionStatus === 'DELISTED_SECURITY' ? 'INACTIVE' : 'UNKNOWN'),
+            decisionState: gem.decisionState || 'UNVERIFIED_SETUP',
+            decisionStateLabel: gem.decisionStateLabel || (gem.decisionState === 'ACTIONABLE_SETUP' ? 'Discovery Candidate — Analyze for Trigger' : 'Discovery Candidate'),
             isActionable: false, // Invariant: Radar is a discovery scanner; canonical actionability reserved for DecisionTrace
             canSizeTrade: false,
             disqualificationReason: gem.disqualificationReason || null,
             decisionContextId: gem.decisionContextId,
             allowedActions: Array.isArray(gem.allowedActions) ? gem.allowedActions : [],
-            screeningEligible: typeof gem.screeningEligible === 'boolean' ? gem.screeningEligible : Boolean(executionStatus === 'IN_BUY_ZONE'),
+            screeningEligible: executionStatus === 'IN_BUY_ZONE' && gem.screeningEligible === true,
           };
         });
         setAllAssets(mapped);
@@ -311,7 +330,7 @@ function RadarContent() {
     if (asset.executionStatus === 'DELISTED_SECURITY') return false;
     if (asset.executionStatus === 'UNVERIFIED_ASSET') return false;
     if (asset.executionStatus === 'UNKNOWN') return false;
-    return true;
+    return Boolean(asset.screeningEligible);
   };
 
   // Ownership & Opportunity Counts (Derived dynamically from candidate eligibility contract)
@@ -382,13 +401,13 @@ function RadarContent() {
         if (aDelisted !== bDelisted) {
           return aDelisted - bDelisted; // Delisted securities sink to bottom
         }
-        if (sortBy === 'SCORE') return b.confluenceScore - a.confluenceScore;
+        if (sortBy === 'SCORE') return (b.confluenceScore ?? -1) - (a.confluenceScore ?? -1);
         if (sortBy === 'RVOL') {
           const aRvol = a.rvol ? parseFloat(a.rvol.replace('x', '')) : 0;
           const bRvol = b.rvol ? parseFloat(b.rvol.replace('x', '')) : 0;
           return bRvol - aRvol;
         }
-        if (sortBy === 'PRICE') return b.price - a.price;
+        if (sortBy === 'PRICE') return (b.price ?? -1) - (a.price ?? -1);
         return 0;
       });
   }, [allAssets, activeFilter, searchQuery, sortBy, ownershipFilter, getOwnershipState]);
@@ -482,28 +501,32 @@ function RadarContent() {
       const newAsset: RadarAsset = {
         ticker: clean,
         name: clean,
-        price: Number(data.currentPrice.toFixed(2)),
+        price: typeof data.currentPrice === 'number' && Number.isFinite(data.currentPrice) && data.currentPrice > 0
+          ? Number(data.currentPrice.toFixed(2))
+          : null,
         rvol: null,
         riskRewardRatio: rrVal,
         vcpStage: stageStr,
         volumeDryUpPct: null,
-        confluenceScore: Math.round(data.confluence?.confluenceScore || 50),
-        catalyst: opt?.entry_thesis || "On-demand quantitative exchange tape discovery.",
+        confluenceScore: (data.confluence?.confluenceScore != null && Number.isFinite(data.confluence.confluenceScore))
+          ? Math.round(data.confluence.confluenceScore)
+          : null,
+        catalyst: opt?.entry_thesis || "Catalyst disclosures unavailable.",
         categories: cat,
         sector: "On-Demand Discovery",
         executionStatus,
-        screeningStatus: executionStatus === 'IN_BUY_ZONE' ? 'SCREENING_ZONE' : (executionStatus !== 'UNKNOWN' ? executionStatus : 'UNKNOWN'),
-        screeningGeometry: executionStatus === 'IN_BUY_ZONE' ? 'WITHIN_TOLERANCE' : 'OUTSIDE_TOLERANCE',
-        decisionState: dec?.decisionState || (data.degradedMode ? "UNVERIFIED" : "VALID_SETUP"),
+        screeningStatus: executionStatus === 'DELISTED_SECURITY' ? 'DELISTED' : (executionStatus === 'UNVERIFIED_ASSET' ? 'UNVERIFIED' : (executionStatus || 'UNKNOWN')),
+        screeningGeometry: executionStatus === 'DELISTED_SECURITY' ? 'INACTIVE' : 'UNKNOWN',
+        decisionState: dec?.decisionState || "UNVERIFIED_SETUP",
         decisionStateLabel: dec?.stateLabel || "Discovery Candidate — Analyze for Trigger",
         isActionable: false, // Invariant: Radar is a discovery scanner; canonical actionability reserved for DecisionTrace
         canSizeTrade: false,
         disqualificationReason: dec?.disqualificationReason || null,
         decisionContextId: data.decisionId,
         allowedActions: executionStatus === 'DELISTED_SECURITY' ? [] : ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"],
-        screeningEligible: Boolean(executionStatus === 'IN_BUY_ZONE'),
-        priceBasis: "DAILY_CLOSE",
-        priceDate: (data as any)?.tradeDate ?? null,
+        screeningEligible: false, // On-demand lookup does not confer universe screening eligibility
+        priceBasis: data.marketPriceState?.analysisReferenceSource?.includes("DAILY") ? "DAILY_CLOSE" : null,
+        priceDate: data.marketPriceState?.analysisReferenceDate || (data as any)?.tradeDate || null,
       };
 
       setAllAssets((prev) => [newAsset, ...prev.filter((a) => a.ticker !== clean)]);
@@ -564,7 +587,9 @@ function RadarContent() {
           symbol={activeCanonicalAsset}
           primaryAction={{
             label: heroAsset ? `Analyze ${heroAsset.ticker} →` : "Analyze Candidate →",
-            href: heroAsset ? `/?symbol=${heroAsset.ticker}` : "/",
+            href: heroAsset
+              ? `/?symbol=${heroAsset.ticker}${heroAsset.decisionContextId ? `&contextId=${encodeURIComponent(heroAsset.decisionContextId)}` : ""}`
+              : "/",
           }}
           secondaryAction={{
             label: "Review Setups →",
@@ -580,6 +605,8 @@ function RadarContent() {
             ⏳ Scanning multi-factor equity tape and quantitative confluence filters...
           </div>
         )}
+
+        {!isLoading && hasPartialResults && !fetchError && <aside role="status" data-testid="radar-partial-results" className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] p-4 text-sm text-[var(--text-2)]">Radar results are incomplete. Available candidates remain research-only; failed evaluations are not counted as successful or as zero candidates. <button type="button" onClick={() => setRefreshNonce(n => n + 1)} className="min-h-[44px] min-w-[44px] px-3 underline focus-visible:outline focus-visible:outline-2">Retry incomplete scan</button></aside>}
 
         {/* Explicit Connection Error State */}
         {!isLoading && fetchError && (
@@ -604,7 +631,7 @@ function RadarContent() {
         )}
 
         {/* Actionable Empty State */}
-        {!isLoading && !fetchError && allAssets.length === 0 && (
+        {!isLoading && !fetchError && !hasPartialResults && allAssets.length === 0 && (
           <div className="p-12 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] text-center space-y-4 font-mono text-xs text-[var(--text-2)]">
             <span className="text-3xl">📡</span>
             <div className="space-y-1">
@@ -774,7 +801,7 @@ function RadarContent() {
                   <span className="text-slate-700">•</span>
                   <div className="flex items-center gap-1.5" title="Pre-screened multi-factor confluence conviction score (0-100) from batch screener pipeline">
                     <span className="text-[var(--text-2)]">Screen Confluence:</span>
-                    <span className="text-emerald-400 font-bold">{heroAsset.confluenceScore}/100</span>
+                    <span className="text-emerald-400 font-bold">{heroAsset.confluenceScore !== null ? `${heroAsset.confluenceScore}/100` : "Unavailable"}</span>
                   </div>
                   {heroAsset.rvol && (
                     <>
@@ -833,7 +860,7 @@ function RadarContent() {
                     if (allowed.includes("RESEARCH_PROFILE")) {
                       return (
                         <Link
-                          href={`/?symbol=${heroAsset.ticker}`}
+                          href={`/?symbol=${heroAsset.ticker}${heroAsset.decisionContextId ? `&contextId=${encodeURIComponent(heroAsset.decisionContextId)}` : ""}`}
                           onClick={() => trackRadarAssetClick(heroAsset.ticker, 1)}
                           className="px-5 py-2.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-mono font-bold transition-all border bg-amber-950/60 hover:bg-amber-900/80 text-amber-200 border-amber-700 inline-flex items-center justify-center gap-2"
                           title="Open research profile in Analysis hub. Market data and execution clearance unverified."
@@ -856,7 +883,7 @@ function RadarContent() {
                   return (
                     <>
                       <Link
-                        href={`/?symbol=${heroAsset.ticker}`}
+                        href={`/?symbol=${heroAsset.ticker}${heroAsset.decisionContextId ? `&contextId=${encodeURIComponent(heroAsset.decisionContextId)}` : ""}`}
                         onClick={() => trackRadarAssetClick(heroAsset.ticker, 1)}
                         className={`px-5 py-2.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-mono font-black tracking-tight transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] ${
                           isHeroHeld
@@ -1478,7 +1505,7 @@ function RadarContent() {
                         <td className="p-3 sticky left-0 bg-[var(--surface-1)] z-10">
                           <div className="flex items-center gap-1.5">
                             <Link
-                              href={`/?symbol=${asset.ticker}`}
+                              href={`/?symbol=${asset.ticker}${asset.decisionContextId ? `&contextId=${encodeURIComponent(asset.decisionContextId)}` : ""}`}
                               onClick={() => trackRadarAssetClick(asset.ticker)}
                               className="font-black text-[var(--text-1)] text-sm tracking-tight hover:text-cyan-400 transition-colors inline-flex items-center min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded"
                             >
@@ -1521,9 +1548,9 @@ function RadarContent() {
                           <div>
                             {asset.executionStatus === 'DELISTED_SECURITY' ? (
                               <span className="text-[var(--text-2)] font-mono text-xs">
-                                {asset.price > 0 ? `$${asset.price.toFixed(2)}` : 'Price Unavailable'}
+                                {asset.price && asset.price > 0 ? `$${asset.price.toFixed(2)}` : 'Price Unavailable'}
                               </span>
-                            ) : asset.price > 0 ? (
+                            ) : asset.price && asset.price > 0 ? (
                               `$${asset.price.toFixed(2)}`
                             ) : (
                               <span className="text-amber-400 font-normal text-xs">Price Unavailable</span>
@@ -1553,7 +1580,7 @@ function RadarContent() {
                               ? 'text-rose-400 bg-rose-950/60 border border-rose-800/60'
                               : 'text-emerald-400 bg-emerald-950/60 border border-emerald-800/60'
                           }`} title="Screening Snapshot Score">
-                            {asset.confluenceScore}
+                            {asset.confluenceScore !== null ? asset.confluenceScore : <span className="text-[var(--text-muted)] font-normal font-mono">—</span>}
                           </span>
                         </td>
                         <td className="p-3 text-center font-bold text-cyan-300 whitespace-nowrap">
@@ -1593,7 +1620,7 @@ function RadarContent() {
                               if (allowed.includes("RESEARCH_PROFILE")) {
                                 return (
                                   <Link
-                                    href={`/?symbol=${asset.ticker}`}
+                                    href={`/?symbol=${asset.ticker}${asset.decisionContextId ? `&contextId=${encodeURIComponent(asset.decisionContextId)}` : ""}`}
                                     onClick={() => trackRadarAssetClick(asset.ticker)}
                                     className="px-3 py-2 min-h-[44px] min-w-[44px] rounded text-[11px] font-bold font-mono transition-colors inline-flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none border bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border-amber-800/60"
                                     title="Open research profile in Analysis hub. Market data and execution clearance unverified."
@@ -1614,7 +1641,7 @@ function RadarContent() {
 
                             return (
                               <Link
-                                href={`/?symbol=${asset.ticker}`}
+                                href={`/?symbol=${asset.ticker}${asset.decisionContextId ? `&contextId=${encodeURIComponent(asset.decisionContextId)}` : ""}`}
                                 onClick={() => trackRadarAssetClick(asset.ticker)}
                                 className={`px-3 py-2 min-h-[44px] min-w-[44px] rounded text-[11px] font-bold font-mono transition-colors inline-flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none border ${
                                   isAssetHeld
