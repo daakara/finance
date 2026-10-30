@@ -524,465 +524,554 @@ def run_screener_get(
     else:
         active_universe = DAY_TRADER_CANDIDATES if is_day_trader else LONG_TERM_CANDIDATES
 
-    results = screener.evaluate_candidates(active_universe)
-    shared_macro = get_shared_macro_snapshot()
-    shared_macro_context_id = shared_macro.get("macroContextId")
-
-    # Retrieve active VCP scanner snapshot for authentic category qualification
-    vcp_snapshot = vcp_scanner_runner.get_active_or_latest_snapshot()
-    vcp_matched_symbols = {r["symbol"] for r in vcp_snapshot.get("results", []) if "symbol" in r}
-
-    # Retrieve active Smart Money scanner snapshot for authentic category qualification
-    sm_runner = get_smart_money_scanner_runner()
-    sm_snapshot = sm_runner.get_active_or_latest_snapshot()
-    sm_matched_symbols = (
-        {r["symbol"] for r in sm_snapshot.get("results", []) if "symbol" in r}
-        if sm_snapshot.get("status") == "AVAILABLE"
-        else set()
-    )
-
-    # Map candidate fields with live optimal execution levels
-    mapped_candidates = []
-    for r in results:
-        raw_sym = r.get("ticker") or r.get("symbol")
-        if not raw_sym or not str(raw_sym).strip():
-            continue
-        sym = str(raw_sym).strip().upper()
-        roic_val = r.get("roic_pct")
-        margin_val = r.get("gross_margin_pct")
-
-        # Check for confirmed corporate actions (delistings / acquisitions)
-        corp_action = CONFIRMED_CORPORATE_ACTIONS.get(sym)
-        is_delisted = corp_action is not None
-
-        # Retrieve current price and candles from market database
-        latest_info = market_db.get_latest_price(sym)
-        current_price = latest_info.get("currentPrice") if (latest_info and latest_info.get("currentPrice") and latest_info["currentPrice"] > 0) else None
-        raw_trade_date = latest_info.get("date") if latest_info else None
-        price_date = str(raw_trade_date)[:10] if (raw_trade_date and current_price is not None and not is_delisted) else None
-        price_basis = "DAILY_CLOSE" if (current_price is not None and price_date is not None) else None
-        hist_df = pd.DataFrame()
-
-        if is_delisted:
-            execution = {
-                "current_price": current_price,
-                "optimal_entry_min": None,
-                "optimal_entry_max": None,
-                "stop_loss": None,
-                "stop_loss_pct": None,
-                "take_profit_1": None,
-                "take_profit_1_pct": None,
-                "take_profit_2": None,
-                "take_profit_2_pct": None,
-                "risk_reward_ratio": None,
-                "execution_status": "DELISTED_SECURITY",
-                "setup_pattern": "Delisted Security / Ceased Public Trading",
-                "entry_thesis": f"Security ceased trading pursuant to {corp_action['action_type']} ({corp_action['notes']}). Trade execution suppressed.",
-                "invalidation_condition": "Security delisted from exchange.",
-                "stage_phase": "Delisted / Inactive",
-                "vcp_contraction_status": "Inactive",
-                "breakout_pivot": None,
-                "atr_14": None,
-                "liquidity_defense": None,
-            }
-        elif current_price is None or current_price <= 0:
-            current_price = None
-            execution = {
-                "current_price": None,
-                "optimal_entry_min": None,
-                "optimal_entry_max": None,
-                "stop_loss": None,
-                "stop_loss_pct": None,
-                "take_profit_1": None,
-                "take_profit_1_pct": None,
-                "take_profit_2": None,
-                "take_profit_2_pct": None,
-                "risk_reward_ratio": None,
-                "execution_status": "UNVERIFIED_ASSET",
-                "setup_pattern": "Unverified Asset Setup",
-                "entry_thesis": "Pricing and exchange tape unavailable. Trade levels suppressed.",
-                "invalidation_condition": "Awaiting market data.",
-                "stage_phase": "Unverified Asset",
-                "vcp_contraction_status": "Unverified",
-                "breakout_pivot": None,
-                "atr_14": None,
-                "liquidity_defense": None,
-            }
-        else:
-            db_candles = market_db.get_daily_candles(sym, limit=60)
-            if db_candles:
-                hist_df = pd.DataFrame([{
-                    "Open": c["open"], "High": c["high"], "Low": c["low"], "Close": c["close"], "Volume": c["volume"]
-                } for c in db_candles], index=pd.to_datetime([c["time"] for c in db_candles]))
-            else:
+    try:
+        results = screener.evaluate_candidates(active_universe)
+        shared_macro = get_shared_macro_snapshot()
+        shared_macro_context_id = shared_macro.get("macroContextId")
+    
+        # Retrieve active VCP scanner snapshot for authentic category qualification
+        vcp_snapshot = vcp_scanner_runner.get_active_or_latest_snapshot()
+        vcp_matched_symbols = {r["symbol"] for r in vcp_snapshot.get("results", []) if "symbol" in r}
+    
+        # Retrieve active Smart Money scanner snapshot for authentic category qualification
+        sm_runner = get_smart_money_scanner_runner()
+        sm_snapshot = sm_runner.get_active_or_latest_snapshot()
+        sm_matched_symbols = (
+            {r["symbol"] for r in sm_snapshot.get("results", []) if "symbol" in r}
+            if sm_snapshot.get("status") == "AVAILABLE"
+            else set()
+        )
+    
+        # Map candidate fields with live optimal execution levels
+        mapped_candidates = []
+        partial_errors = []
+        for r in results:
+            if not isinstance(r, dict):
+                partial_errors.append({"ticker": "INVALID_RECORD", "error": f"Invalid candidate record type: {type(r).__name__}"})
+                continue
+            raw_sym = r.get("ticker") or r.get("symbol")
+            if not raw_sym or not str(raw_sym).strip():
+                partial_errors.append({"ticker": "MISSING_TICKER", "error": "Candidate record missing ticker/symbol"})
+                continue
+            sym = str(raw_sym).strip().upper()
+            roic_val = r.get("roic_pct")
+            margin_val = r.get("gross_margin_pct")
+    
+            # Check for confirmed corporate actions (delistings / acquisitions)
+            corp_action = CONFIRMED_CORPORATE_ACTIONS.get(sym)
+            is_delisted = corp_action is not None
+    
+            try:
+                # Retrieve current price and candles from market database
+                latest_info = market_db.get_latest_price(sym)
+                current_price = latest_info.get("currentPrice") if (latest_info and latest_info.get("currentPrice") and latest_info["currentPrice"] > 0) else None
+                raw_trade_date = latest_info.get("date") if latest_info else None
+                price_date = str(raw_trade_date)[:10] if (raw_trade_date and current_price is not None and not is_delisted) else None
+                price_basis = "DAILY_CLOSE" if (current_price is not None and price_date is not None) else None
                 hist_df = pd.DataFrame()
-
-            execution = optimal_engine.calculate_trade_levels(hist_df, current_price, user_role=user_role)
-
-        entry_min = execution["optimal_entry_min"]
-        entry_max = execution["optimal_entry_max"]
-        stop_loss = execution["stop_loss"]
-        tp1 = execution["take_profit_1"]
-        tp2 = execution["take_profit_2"]
-        rr_ratio = execution["risk_reward_ratio"]
-        setup_pat = execution["setup_pattern"]
-        entry_th = execution["entry_thesis"]
-        atr_14 = execution.get("atr_14")
-
-        # Pure Mathematical Execution State Determination
-        if is_delisted:
-            execution_status = "DELISTED_SECURITY"
-            status_label = corp_action["status_label"]
-            status_color = corp_action["status_color"]
-        elif execution.get("execution_status") == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
-            execution_status = "UNVERIFIED_ASSET"
-            status_label = "⚠️ Unverified Asset"
-            status_color = "slate"
-        elif execution.get("execution_status") == "INSUFFICIENT_HISTORY" or stop_loss is None:
-            execution_status = "INSUFFICIENT_HISTORY"
-            status_label = "⏳ Insufficient History"
-            status_color = "cyan"
-        elif execution.get("stage_phase") == "Stage 4 Markdown (Awaiting New Base)":
-            execution_status = "WAITING_PULLBACK"
-            status_label = "⏳ Awaiting Base Formation"
-            status_color = "cyan"
-        elif stop_loss is not None and current_price is not None and current_price < stop_loss:
-            execution_status = "STOPPED_OUT"
-            status_label = "🛑 Below Stop Loss"
-            status_color = "rose"
-        elif execution.get("execution_status") == "APPROACHING_TARGET" or (tp1 is not None and current_price is not None and current_price >= tp1 * 0.96):
-            execution_status = "APPROACHING_TARGET"
-            status_label = "🚀 Session ORB Breakout" if is_day_trader else "🚀 Near TP Target"
-            status_color = "amber"
-        elif entry_min is not None and entry_max is not None and current_price is not None and (entry_min <= current_price <= entry_max * 1.008 or abs(current_price - entry_max) / max(0.01, current_price) <= 0.015):
-            execution_status = "IN_BUY_ZONE"
-            status_label = "🎯 Active VWAP Bounce" if is_day_trader else "🎯 Near Screening Buy Zone"
-            status_color = "emerald"
-        else:
-            execution_status = "WAITING_PULLBACK"
-            status_label = "⏳ Pullback Pending"
-            status_color = "cyan"
-
-        # Liquidity Guard (Shadow Observation Mode): Informational execution metadata only; does not mutate frozen decision state
-        liq_def = execution.get("liquidity_defense")
-
-        # Deterministic Smart Money & Catalyst Attributes
-        if is_delisted:
-            confluence_res = {
-                "confluenceScore": 0.0,
-                "confluenceRating": "Delisted Security / Inactive Listing",
-                "badgeColor": "rose",
-                "reasons": [corp_action["notes"]],
-                "warnings": ["Ceased public trading. Do not trade. Historical record retained for audit integrity."],
-            }
-            rvol_val = "N/A"
-            short_float_val = "N/A"
-        elif execution_status == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
-            confluence_res = {
-                "confluenceScore": 0.0,
-                "confluenceRating": "Unverified Asset / No Market Data",
-                "badgeColor": "slate",
-                "reasons": ["Pricing, tape, and regulatory filings unavailable for unverified security."],
-                "warnings": ["Do not trade unverified assets. Trade levels suppressed."],
-            }
-            rvol_val = "N/A"
-            short_float_val = "N/A"
-        elif execution_status == "INSUFFICIENT_HISTORY":
-            confluence_res = {
-                "confluenceScore": 0.0,
-                "confluenceRating": "Insufficient History (< 50 Bars)",
-                "badgeColor": "cyan",
-                "reasons": ["Asset has fewer than 50 historical trading sessions on exchange record."],
-                "warnings": ["Trade levels and risk geometry suppressed until seasoning threshold met."],
-            }
-            rvol_val = "N/A"
-            short_float_val = "N/A"
-        else:
-            sec_trades = smart_money_engine.get_sec_insider_trades(sym)
-            cong_trades = smart_money_engine.get_congressional_trades(sym)
-            has_insider = len(sec_trades) > 0
-            has_congress = len(cong_trades) > 0
-            insider_val = 0.0
-            if has_insider:
-                for t in sec_trades:
-                    val_raw = t.get("total_value") or t.get("transaction_value") or 0.0
-                    if isinstance(val_raw, str):
-                        cleaned = val_raw.replace("$", "").replace(",", "").strip()
-                        try:
-                            insider_val += float(cleaned)
-                        except ValueError:
-                            pass
-                    elif isinstance(val_raw, (int, float)):
-                        insider_val += float(val_raw)
-            days_to_earn = r.get("days_to_earnings")
-
-            smart_data = {
-                "has_insider_buy": has_insider,
-                "insider_value_usd": insider_val if has_insider else 0.0,
-                "insider_name": sec_trades[0].get("reporting_owner", "") if has_insider else "",
-                "has_congress_buy": has_congress,
-                "has_options_flow": False,
-            } if (has_insider or has_congress) else None
-
-            # Compute multi-factor confluence conviction score
-            confluence_res = confluence_engine.calculate_confluence(
-                symbol=sym,
-                technical_data={
-                    "executionStatus": execution_status,
-                    "riskRewardRatio": rr_ratio,
-                    "setup_pattern": setup_pat,
-                    "stage_phase": "Stage 2 Breakout" if execution_status == "IN_BUY_ZONE" else "Institutional Accumulation",
-                    "rsi_14": execution.get("rsi_14"),
-                    "stop_loss": stop_loss,
-                    "current_price": current_price,
-                },
-                smart_money_data=smart_data,
-                fundamental_data={
-                    "qualityScore": float(r.get("quality_score")) if r.get("quality_score") is not None else None,
-                    "growthScore": float(r.get("growth_score")) if r.get("growth_score") is not None else None,
-                    "valuationScore": float(r.get("valuation_score")) if r.get("valuation_score") is not None else None,
-                    "piotroski_f": int(r.get("piotroski_f")) if r.get("piotroski_f") is not None else None,
-                    "roic": roic_val,
-                    "peg": float(r.get("peg_ratio")) if r.get("peg_ratio") is not None else None,
-                } if any(r.get(k) is not None for k in ["quality_score", "growth_score", "valuation_score", "piotroski_f", "roic_pct", "peg_ratio"]) else None,
-                catalyst_data={
-                    "days_to_earnings": days_to_earn,
-                } if days_to_earn is not None else None,
-                macro_data=shared_macro,
-            )
-
-            if not hist_df.empty and len(hist_df) >= 5 and "Volume" in hist_df.columns:
-                recent_vol = float(hist_df["Volume"].iloc[-1])
-                avg_vol = float(hist_df["Volume"].tail(20).mean())
-                if avg_vol > 0:
-                    rvol_val = f"{round(recent_vol / avg_vol, 1)}x"
+        
+                if is_delisted:
+                    execution = {
+                        "current_price": current_price,
+                        "optimal_entry_min": None,
+                        "optimal_entry_max": None,
+                        "stop_loss": None,
+                        "stop_loss_pct": None,
+                        "take_profit_1": None,
+                        "take_profit_1_pct": None,
+                        "take_profit_2": None,
+                        "take_profit_2_pct": None,
+                        "risk_reward_ratio": None,
+                        "execution_status": "DELISTED_SECURITY",
+                        "setup_pattern": "Delisted Security / Ceased Public Trading",
+                        "entry_thesis": f"Security ceased trading pursuant to {corp_action['action_type']} ({corp_action['notes']}). Trade execution suppressed.",
+                        "invalidation_condition": "Security delisted from exchange.",
+                        "stage_phase": "Delisted / Inactive",
+                        "vcp_contraction_status": "Inactive",
+                        "breakout_pivot": None,
+                        "atr_14": None,
+                        "liquidity_defense": None,
+                    }
+                elif current_price is None or current_price <= 0:
+                    current_price = None
+                    execution = {
+                        "current_price": None,
+                        "optimal_entry_min": None,
+                        "optimal_entry_max": None,
+                        "stop_loss": None,
+                        "stop_loss_pct": None,
+                        "take_profit_1": None,
+                        "take_profit_1_pct": None,
+                        "take_profit_2": None,
+                        "take_profit_2_pct": None,
+                        "risk_reward_ratio": None,
+                        "execution_status": "UNVERIFIED_ASSET",
+                        "setup_pattern": "Unverified Asset Setup",
+                        "entry_thesis": "Pricing and exchange tape unavailable. Trade levels suppressed.",
+                        "invalidation_condition": "Awaiting market data.",
+                        "stage_phase": "Unverified Asset",
+                        "vcp_contraction_status": "Unverified",
+                        "breakout_pivot": None,
+                        "atr_14": None,
+                        "liquidity_defense": None,
+                    }
+                else:
+                    db_candles = market_db.get_daily_candles(sym, limit=60)
+                    if db_candles:
+                        hist_df = pd.DataFrame([{
+                            "Open": c["open"], "High": c["high"], "Low": c["low"], "Close": c["close"], "Volume": c["volume"]
+                        } for c in db_candles], index=pd.to_datetime([c["time"] for c in db_candles]))
+                    else:
+                        hist_df = pd.DataFrame()
+        
+                    execution = optimal_engine.calculate_trade_levels(hist_df, current_price, user_role=user_role)
+        
+        
+            except Exception as e:
+                partial_errors.append({"ticker": sym, "error": str(e)})
+                current_price = None
+                price_date = None
+                price_basis = None
+                hist_df = pd.DataFrame()
+                execution = {
+                    "current_price": None,
+                    "optimal_entry_min": None,
+                    "optimal_entry_max": None,
+                    "stop_loss": None,
+                    "stop_loss_pct": None,
+                    "take_profit_1": None,
+                    "take_profit_1_pct": None,
+                    "take_profit_2": None,
+                    "take_profit_2_pct": None,
+                    "risk_reward_ratio": None,
+                    "execution_status": "UNVERIFIED_ASSET",
+                    "setup_pattern": "Unverified Asset Setup",
+                    "entry_thesis": f"Market data evaluation error: {e}. Trade levels suppressed.",
+                    "invalidation_condition": "Awaiting market data recovery.",
+                    "stage_phase": "Unverified Asset",
+                    "vcp_contraction_status": "Unverified",
+                    "breakout_pivot": None,
+                    "atr_14": None,
+                    "liquidity_defense": None,
+                }
+            entry_min = execution["optimal_entry_min"]
+            entry_max = execution["optimal_entry_max"]
+            stop_loss = execution["stop_loss"]
+            tp1 = execution["take_profit_1"]
+            tp2 = execution["take_profit_2"]
+            rr_ratio = execution["risk_reward_ratio"]
+            setup_pat = execution["setup_pattern"]
+            entry_th = execution["entry_thesis"]
+            atr_14 = execution.get("atr_14")
+    
+            # Pure Mathematical Execution State Determination
+            if is_delisted:
+                execution_status = "DELISTED_SECURITY"
+                status_label = corp_action["status_label"]
+                status_color = corp_action["status_color"]
+            elif execution.get("execution_status") == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
+                execution_status = "UNVERIFIED_ASSET"
+                status_label = "⚠️ Unverified Asset"
+                status_color = "slate"
+            elif execution.get("execution_status") == "INSUFFICIENT_HISTORY" or stop_loss is None:
+                execution_status = "INSUFFICIENT_HISTORY"
+                status_label = "⏳ Insufficient History"
+                status_color = "cyan"
+            elif execution.get("stage_phase") == "Stage 4 Markdown (Awaiting New Base)":
+                execution_status = "WAITING_PULLBACK"
+                status_label = "⏳ Awaiting Base Formation"
+                status_color = "cyan"
+            elif stop_loss is not None and current_price is not None and current_price < stop_loss:
+                execution_status = "STOPPED_OUT"
+                status_label = "🛑 Below Stop Loss"
+                status_color = "rose"
+            elif execution.get("execution_status") == "APPROACHING_TARGET" or (tp1 is not None and current_price is not None and current_price >= tp1 * 0.96):
+                execution_status = "APPROACHING_TARGET"
+                status_label = "🚀 Session ORB Breakout" if is_day_trader else "🚀 Near TP Target"
+                status_color = "amber"
+            elif entry_min is not None and entry_max is not None and current_price is not None and (entry_min <= current_price <= entry_max * 1.008 or abs(current_price - entry_max) / max(0.01, current_price) <= 0.015):
+                execution_status = "IN_BUY_ZONE"
+                status_label = "🎯 Active VWAP Bounce" if is_day_trader else "🎯 Near Screening Buy Zone"
+                status_color = "emerald"
+            else:
+                execution_status = "WAITING_PULLBACK"
+                status_label = "⏳ Pullback Pending"
+                status_color = "cyan"
+    
+            # Liquidity Guard (Shadow Observation Mode): Informational execution metadata only; does not mutate frozen decision state
+            liq_def = execution.get("liquidity_defense")
+    
+            # Deterministic Smart Money & Catalyst Attributes
+            if is_delisted:
+                confluence_res = {
+                    "confluenceScore": 0.0,
+                    "confluenceRating": "Delisted Security / Inactive Listing",
+                    "badgeColor": "rose",
+                    "reasons": [corp_action["notes"]],
+                    "warnings": ["Ceased public trading. Do not trade. Historical record retained for audit integrity."],
+                }
+                rvol_val = "N/A"
+                short_float_val = "N/A"
+            elif execution_status == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
+                confluence_res = {
+                    "confluenceScore": 0.0,
+                    "confluenceRating": "Unverified Asset / No Market Data",
+                    "badgeColor": "slate",
+                    "reasons": ["Pricing, tape, and regulatory filings unavailable for unverified security."],
+                    "warnings": ["Do not trade unverified assets. Trade levels suppressed."],
+                }
+                rvol_val = "N/A"
+                short_float_val = "N/A"
+            elif execution_status == "INSUFFICIENT_HISTORY":
+                confluence_res = {
+                    "confluenceScore": 0.0,
+                    "confluenceRating": "Insufficient History (< 50 Bars)",
+                    "badgeColor": "cyan",
+                    "reasons": ["Asset has fewer than 50 historical trading sessions on exchange record."],
+                    "warnings": ["Trade levels and risk geometry suppressed until seasoning threshold met."],
+                }
+                rvol_val = "N/A"
+                short_float_val = "N/A"
+            else:
+                sec_trades = smart_money_engine.get_sec_insider_trades(sym)
+                cong_trades = smart_money_engine.get_congressional_trades(sym)
+                has_insider = len(sec_trades) > 0
+                has_congress = len(cong_trades) > 0
+                insider_val = 0.0
+                if has_insider:
+                    for t in sec_trades:
+                        val_raw = t.get("total_value") or t.get("transaction_value") or 0.0
+                        if isinstance(val_raw, str):
+                            cleaned = val_raw.replace("$", "").replace(",", "").strip()
+                            try:
+                                insider_val += float(cleaned)
+                            except ValueError:
+                                pass
+                        elif isinstance(val_raw, (int, float)):
+                            insider_val += float(val_raw)
+                days_to_earn = r.get("days_to_earnings")
+    
+                smart_data = {
+                    "has_insider_buy": has_insider,
+                    "insider_value_usd": insider_val if has_insider else 0.0,
+                    "insider_name": sec_trades[0].get("reporting_owner", "") if has_insider else "",
+                    "has_congress_buy": has_congress,
+                    "has_options_flow": False,
+                } if (has_insider or has_congress) else None
+    
+                # Compute multi-factor confluence conviction score
+                confluence_res = confluence_engine.calculate_confluence(
+                    symbol=sym,
+                    technical_data={
+                        "executionStatus": execution_status,
+                        "riskRewardRatio": rr_ratio,
+                        "setup_pattern": setup_pat,
+                        "stage_phase": "Stage 2 Breakout" if execution_status == "IN_BUY_ZONE" else "Institutional Accumulation",
+                        "rsi_14": execution.get("rsi_14"),
+                        "stop_loss": stop_loss,
+                        "current_price": current_price,
+                    },
+                    smart_money_data=smart_data,
+                    fundamental_data={
+                        "qualityScore": float(r.get("quality_score")) if r.get("quality_score") is not None else None,
+                        "growthScore": float(r.get("growth_score")) if r.get("growth_score") is not None else None,
+                        "valuationScore": float(r.get("valuation_score")) if r.get("valuation_score") is not None else None,
+                        "piotroski_f": int(r.get("piotroski_f")) if r.get("piotroski_f") is not None else None,
+                        "roic": roic_val,
+                        "peg": float(r.get("peg_ratio")) if r.get("peg_ratio") is not None else None,
+                    } if any(r.get(k) is not None for k in ["quality_score", "growth_score", "valuation_score", "piotroski_f", "roic_pct", "peg_ratio"]) else None,
+                    catalyst_data={
+                        "days_to_earnings": days_to_earn,
+                    } if days_to_earn is not None else None,
+                    macro_data=shared_macro,
+                )
+    
+                if not hist_df.empty and len(hist_df) >= 5 and "Volume" in hist_df.columns:
+                    recent_vol = float(hist_df["Volume"].iloc[-1])
+                    avg_vol = float(hist_df["Volume"].tail(20).mean())
+                    if avg_vol > 0:
+                        rvol_val = f"{round(recent_vol / avg_vol, 1)}x"
+                    else:
+                        rvol_val = "1.0x"
                 else:
                     rvol_val = "1.0x"
-            else:
-                rvol_val = "1.0x"
-
-            short_float_num = r.get("short_float_pct")
-            if short_float_num is not None:
-                short_float_val = f"{short_float_num}%"
-            else:
-                short_float_val = "N/A"
-
-        # Derive authentic, machine-readable category taxonomy
-        model_name = r.get("expert_model")
-        raw_peg = float(r.get("peg_ratio")) if r.get("peg_ratio") is not None else None
-        cand_categories = derive_canonical_radar_categories(
-            expert_model=model_name,
-            peg_ratio=raw_peg,
-            roic_pct=roic_val,
-            gross_margin_pct=margin_val,
-            symbol=sym,
-            vcp_matched_symbols=vcp_matched_symbols,
-            smart_money_matched_symbols=sm_matched_symbols,
-        )
-        cand_evidence = classify_candidate_category_evidence(cand_categories)
-
-        # Resolve Canonical Decision State under DecisionHierarchyEngine (Phase 2 Consolidation)
-        if is_delisted:
-            dec_state = {
-                "state": corp_action["decision_state"],
-                "label": "Delisted Security — Inactive",
-                "isActionable": False,
-                "canSizeTrade": False,
-                "disqualificationReason": f"Security ceased trading: {corp_action['notes']}",
-            }
-        else:
-            candle_count = len(hist_df) if (hist_df is not None and not hist_df.empty) else 0
-            has_fundamentals = bool(
-                execution_status != "UNVERIFIED_ASSET"
-                and any(r.get(k) is not None for k in ["quality_score", "growth_score", "valuation_score", "piotroski_f", "roic_pct", "peg_ratio"])
-            )
-            if execution_status == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
-                freshness_status = "UNAVAILABLE"
-            elif execution_status == "INSUFFICIENT_HISTORY" or candle_count < 50:
-                freshness_status = "INSUFFICIENT_HISTORY"
-            else:
-                freshness_status = "LIVE"
-
-            dec_state = DecisionHierarchyEngine.resolve_decision_state(
+    
+                short_float_num = r.get("short_float_pct")
+                if short_float_num is not None:
+                    short_float_val = f"{short_float_num}%"
+                else:
+                    short_float_val = "N/A"
+    
+            # Derive authentic, machine-readable category taxonomy
+            model_name = r.get("expert_model")
+            raw_peg = float(r.get("peg_ratio")) if r.get("peg_ratio") is not None else None
+            cand_categories = derive_canonical_radar_categories(
+                expert_model=model_name,
+                peg_ratio=raw_peg,
+                roic_pct=roic_val,
+                gross_margin_pct=margin_val,
                 symbol=sym,
-                current_price=current_price or 0.0,
-                candle_count=candle_count,
-                freshness_status=freshness_status,
-                has_fundamentals=has_fundamentals,
-                confluence_score=float(confluence_res["confluenceScore"]),
-                stage_phase=execution.get("stage_phase") or setup_pat,
-                is_in_buy_zone=(execution_status == "IN_BUY_ZONE"),
-                risk_reward_ratio=rr_ratio,
-                is_cataloged=True,
-                is_confirmed=False,  # Invariant: Screener represents structural discovery only; cannot confirm execution triggers
-                user_role=user_role,
-                execution_status=execution_status,
-                execution_hazard=execution.get("execution_hazard"),
-                liquidity_defense=liq_def,
+                vcp_matched_symbols=vcp_matched_symbols,
+                smart_money_matched_symbols=sm_matched_symbols,
             )
-
-        mapped_candidates.append({
-            "ticker": sym,
-            "symbol": sym,
-            "companyName": r.get("company_name", sym),
-            "currentPrice": current_price,
-            "priceBasis": price_basis,
-            "priceDate": price_date,
-            "gemScore": int(r.get("composite_score")) if (r.get("composite_score") is not None and execution_status != "UNVERIFIED_ASSET") else None,
-            "expertArchetype": model_name or ("Unverified Asset" if execution_status == "UNVERIFIED_ASSET" else None),
-            "categories": cand_categories,
-            "categoryEvidence": cand_evidence,
-            "roic": f"{roic_val}%" if roic_val is not None else "N/A",
-            "pegRatio": str(r.get("peg_ratio")) if r.get("peg_ratio") is not None else "N/A",
-            "grossMargin": f"{margin_val}%" if margin_val is not None else "N/A",
-            "atr14": f"${atr_14:.2f}" if (atr_14 is not None and execution_status not in ["UNVERIFIED_ASSET", "INSUFFICIENT_HISTORY", "DELISTED_SECURITY"]) else "N/A",
-            "rvol": rvol_val,
-            "shortFloat": short_float_val,
-            "dayTraderSetup": "Pricing and intraday VWAP tape unavailable." if execution_status == "UNVERIFIED_ASSET" else ("Trading suspended for delisted security." if is_delisted else "Intraday momentum trend continuation above 5m VWAP anchor with defined ATR risk."),
-            "thesis": r.get("investment_thesis", "Disclosures and market data unavailable for unverified security." if execution_status == "UNVERIFIED_ASSET" else ("High relative volume momentum with clear intraday VWAP risk definition." if is_day_trader else "High return on capital with strong free cash flows.")),
-            "catalyst": r.get("primary_catalyst", "Awaiting verified disclosures." if execution_status == "UNVERIFIED_ASSET" else ("Intraday institutional flow breakout." if is_day_trader else "Product cycle expansion and margin gains.")),
-            "riskLevel": "Unverified Risk" if execution_status == "UNVERIFIED_ASSET" else ("Delisted / Closed Position" if is_delisted else ("High Volatility (Intraday)" if is_day_trader else r.get("risk_rating", "Low-to-Medium Risk"))),
-            # Execution Scanner Levels & Structural Geometry
-            "executionStatus": execution_status,
-            "statusLabel": status_label,
-            "statusColor": status_color,
-            "screeningStatus": "DELISTED" if is_delisted else ("SCREENING_ZONE" if execution_status == "IN_BUY_ZONE" else execution_status),
-            "screeningGeometry": "INACTIVE" if is_delisted else ("WITHIN_TOLERANCE" if execution_status == "IN_BUY_ZONE" else "OUTSIDE_TOLERANCE"),
-            "screeningEligible": False if is_delisted else bool(execution_status in ["IN_BUY_ZONE", "APPROACHING_TARGET"]),
-            "corporateAction": corp_action,
-            "fundamentalEvidence": {
-                "provenance": "STATIC_REFERENCE_CATALOG" if sym in screener.KNOWN_GEMS_DATA else "UNVERIFIED",
-                "isCatalogReference": bool(sym in screener.KNOWN_GEMS_DATA),
-                "metricBasis": "HISTORICAL_PRE_ACQUISITION_CATALOG" if is_delisted else ("HISTORICAL_CATALOG_VALUE" if sym in screener.KNOWN_GEMS_DATA else "MISSING"),
-                "asOfDate": corp_action["effective_date"] if is_delisted else ("CURATED_CATALOG_BASELINE" if sym in screener.KNOWN_GEMS_DATA else None),
-                "listingStatus": corp_action["status"] if is_delisted else (ATTRIBUTABLE_LIFECYCLE_EVIDENCE[sym]["status"] if sym in ATTRIBUTABLE_LIFECYCLE_EVIDENCE else "UNVERIFIED"),
-                "lifecycleEvidenceSource": corp_action.get("action_type") if is_delisted else (ATTRIBUTABLE_LIFECYCLE_EVIDENCE[sym].get("source") if sym in ATTRIBUTABLE_LIFECYCLE_EVIDENCE else None),
-                "isAudited": False,
-                "qualificationState": "INELIGIBLE_INACTIVE" if is_delisted else ("REFERENCE_CRITERIA_MET" if "VALUE_GARP" in cand_categories else ("REFERENCE_CRITERIA_UNMET" if sym in screener.KNOWN_GEMS_DATA else "UNASSESSED_INSUFFICIENT_EVIDENCE")),
-                "sortingBasis": "TECHNICAL_CONFLUENCE_MOMENTUM" if not is_delisted and execution_status != "UNVERIFIED_ASSET" else "UNAVAILABLE",
-            },
-            "optimalEntryMin": entry_min,
-            "optimalEntryMax": entry_max,
-            "stopLoss": stop_loss,
-            "stopLossPct": round(((stop_loss - current_price) / current_price) * 100, 1) if (stop_loss is not None and current_price is not None and current_price > 0) else None,
-            "takeProfit1": tp1,
-            "takeProfit1Pct": round(((tp1 - current_price) / current_price) * 100, 1) if (tp1 is not None and current_price is not None and current_price > 0) else None,
-            "takeProfit2": tp2,
-            "takeProfit2Pct": round(((tp2 - current_price) / current_price) * 100, 1) if (tp2 is not None and current_price is not None and current_price > 0) else None,
-            "riskRewardRatio": rr_ratio,
-            "setupPattern": setup_pat,
-            "entryThesis": entry_th,
-            # Canonical Decision Authority Fields (Discovery-Only: Execution reserved for DecisionTrace)
-            "decisionState": dec_state["state"],
-            "decisionStateLabel": "Discovery Candidate — Analyze for Trigger" if dec_state["state"] == "ACTIONABLE_SETUP" else dec_state["label"],
-            "isActionable": False,  # Screener cannot declare trade actionability; execution requires DecisionTrace
-            "canSizeTrade": False,  # Sizing disabled in discovery screener
-            "allowedActions": [] if is_delisted else (["RESEARCH_PROFILE"] if execution_status == "UNVERIFIED_ASSET" else ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"]),
-            "disqualificationReason": dec_state.get("disqualificationReason") or "Discovery candidate: Open in Analysis hub to evaluate canonical DecisionTrace.",
-            "decisionContextId": f"dec-radar-{sym}-{int(time.time() * 1000)}",
+            cand_evidence = classify_candidate_category_evidence(cand_categories)
+    
+            # Resolve Canonical Decision State under DecisionHierarchyEngine (Phase 2 Consolidation)
+            if is_delisted:
+                dec_state = {
+                    "state": corp_action["decision_state"],
+                    "label": "Delisted Security — Inactive",
+                    "isActionable": False,
+                    "canSizeTrade": False,
+                    "disqualificationReason": f"Security ceased trading: {corp_action['notes']}",
+                }
+            else:
+                candle_count = len(hist_df) if (hist_df is not None and not hist_df.empty) else 0
+                has_fundamentals = bool(
+                    execution_status != "UNVERIFIED_ASSET"
+                    and any(r.get(k) is not None for k in ["quality_score", "growth_score", "valuation_score", "piotroski_f", "roic_pct", "peg_ratio"])
+                )
+                if execution_status == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
+                    freshness_status = "UNAVAILABLE"
+                elif execution_status == "INSUFFICIENT_HISTORY" or candle_count < 50:
+                    freshness_status = "INSUFFICIENT_HISTORY"
+                else:
+                    freshness_status = "LIVE"
+    
+                dec_state = DecisionHierarchyEngine.resolve_decision_state(
+                    symbol=sym,
+                    current_price=current_price or 0.0,
+                    candle_count=candle_count,
+                    freshness_status=freshness_status,
+                    has_fundamentals=has_fundamentals,
+                    confluence_score=float(confluence_res["confluenceScore"]),
+                    stage_phase=execution.get("stage_phase") or setup_pat,
+                    is_in_buy_zone=(execution_status == "IN_BUY_ZONE"),
+                    risk_reward_ratio=rr_ratio,
+                    is_cataloged=True,
+                    is_confirmed=False,  # Invariant: Screener represents structural discovery only; cannot confirm execution triggers
+                    user_role=user_role,
+                    execution_status=execution_status,
+                    execution_hazard=execution.get("execution_hazard"),
+                    liquidity_defense=liq_def,
+                )
+    
+            mapped_candidates.append({
+                "ticker": sym,
+                "symbol": sym,
+                "companyName": r.get("company_name", sym),
+                "currentPrice": current_price,
+                "priceBasis": price_basis,
+                "priceDate": price_date,
+                "gemScore": int(r.get("composite_score")) if (r.get("composite_score") is not None and execution_status != "UNVERIFIED_ASSET") else None,
+                "expertArchetype": model_name or ("Unverified Asset" if execution_status == "UNVERIFIED_ASSET" else None),
+                "categories": cand_categories,
+                "categoryEvidence": cand_evidence,
+                "roic": f"{roic_val}%" if roic_val is not None else "N/A",
+                "pegRatio": str(r.get("peg_ratio")) if r.get("peg_ratio") is not None else "N/A",
+                "grossMargin": f"{margin_val}%" if margin_val is not None else "N/A",
+                "atr14": f"${atr_14:.2f}" if (atr_14 is not None and execution_status not in ["UNVERIFIED_ASSET", "INSUFFICIENT_HISTORY", "DELISTED_SECURITY"]) else "N/A",
+                "rvol": rvol_val,
+                "shortFloat": short_float_val,
+                "dayTraderSetup": "Pricing and intraday VWAP tape unavailable." if execution_status == "UNVERIFIED_ASSET" else ("Trading suspended for delisted security." if is_delisted else "Intraday momentum trend continuation above 5m VWAP anchor with defined ATR risk."),
+                "thesis": r.get("investment_thesis", "Disclosures and market data unavailable for unverified security." if execution_status == "UNVERIFIED_ASSET" else ("High relative volume momentum with clear intraday VWAP risk definition." if is_day_trader else "High return on capital with strong free cash flows.")),
+                "catalyst": r.get("primary_catalyst", "Awaiting verified disclosures." if execution_status == "UNVERIFIED_ASSET" else ("Intraday institutional flow breakout." if is_day_trader else "Product cycle expansion and margin gains.")),
+                "riskLevel": "Unverified Risk" if execution_status == "UNVERIFIED_ASSET" else ("Delisted / Closed Position" if is_delisted else ("High Volatility (Intraday)" if is_day_trader else r.get("risk_rating", "Low-to-Medium Risk"))),
+                # Execution Scanner Levels & Structural Geometry
+                "executionStatus": execution_status,
+                "statusLabel": status_label,
+                "statusColor": status_color,
+                "screeningStatus": "DELISTED" if is_delisted else ("SCREENING_ZONE" if execution_status == "IN_BUY_ZONE" else execution_status),
+                "screeningGeometry": "INACTIVE" if is_delisted else ("WITHIN_TOLERANCE" if execution_status == "IN_BUY_ZONE" else "OUTSIDE_TOLERANCE"),
+                "screeningEligible": False if is_delisted else bool(execution_status == "IN_BUY_ZONE"),
+                "corporateAction": corp_action,
+                "fundamentalEvidence": {
+                    "provenance": "STATIC_REFERENCE_CATALOG" if sym in screener.KNOWN_GEMS_DATA else "UNVERIFIED",
+                    "isCatalogReference": bool(sym in screener.KNOWN_GEMS_DATA),
+                    "metricBasis": "HISTORICAL_PRE_ACQUISITION_CATALOG" if is_delisted else ("HISTORICAL_CATALOG_VALUE" if sym in screener.KNOWN_GEMS_DATA else "MISSING"),
+                    "asOfDate": corp_action["effective_date"] if is_delisted else ("CURATED_CATALOG_BASELINE" if sym in screener.KNOWN_GEMS_DATA else None),
+                    "listingStatus": corp_action["status"] if is_delisted else (ATTRIBUTABLE_LIFECYCLE_EVIDENCE[sym]["status"] if sym in ATTRIBUTABLE_LIFECYCLE_EVIDENCE else "UNVERIFIED"),
+                    "lifecycleEvidenceSource": corp_action.get("action_type") if is_delisted else (ATTRIBUTABLE_LIFECYCLE_EVIDENCE[sym].get("source") if sym in ATTRIBUTABLE_LIFECYCLE_EVIDENCE else None),
+                    "isAudited": False,
+                    "qualificationState": "INELIGIBLE_INACTIVE" if is_delisted else ("REFERENCE_CRITERIA_MET" if "VALUE_GARP" in cand_categories else ("REFERENCE_CRITERIA_UNMET" if sym in screener.KNOWN_GEMS_DATA else "UNASSESSED_INSUFFICIENT_EVIDENCE")),
+                    "sortingBasis": "TECHNICAL_CONFLUENCE_MOMENTUM" if not is_delisted and execution_status != "UNVERIFIED_ASSET" else "UNAVAILABLE",
+                },
+                "optimalEntryMin": entry_min,
+                "optimalEntryMax": entry_max,
+                "stopLoss": stop_loss,
+                "stopLossPct": round(((stop_loss - current_price) / current_price) * 100, 1) if (stop_loss is not None and current_price is not None and current_price > 0) else None,
+                "takeProfit1": tp1,
+                "takeProfit1Pct": round(((tp1 - current_price) / current_price) * 100, 1) if (tp1 is not None and current_price is not None and current_price > 0) else None,
+                "takeProfit2": tp2,
+                "takeProfit2Pct": round(((tp2 - current_price) / current_price) * 100, 1) if (tp2 is not None and current_price is not None and current_price > 0) else None,
+                "riskRewardRatio": rr_ratio,
+                "setupPattern": setup_pat,
+                "entryThesis": entry_th,
+                # Canonical Decision Authority Fields (Discovery-Only: Execution reserved for DecisionTrace)
+                "decisionState": dec_state["state"],
+                "decisionStateLabel": "Discovery Candidate — Analyze for Trigger" if dec_state["state"] == "ACTIONABLE_SETUP" else dec_state["label"],
+                "isActionable": False,  # Screener cannot declare trade actionability; execution requires DecisionTrace
+                "canSizeTrade": False,  # Sizing disabled in discovery screener
+                "allowedActions": [] if is_delisted else (["RESEARCH_PROFILE"] if execution_status == "UNVERIFIED_ASSET" else ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"]),
+                "disqualificationReason": dec_state.get("disqualificationReason") or "Discovery candidate: Open in Analysis hub to evaluate canonical DecisionTrace.",
+                "decisionContextId": f"dec-radar-{sym}-{int(time.time() * 1000)}",
+                "macroContextId": shared_macro_context_id,
+                # Confluence Conviction Score & Position Sizing
+                "confluenceScore": confluence_res["confluenceScore"],
+                "confluenceRating": confluence_res["confluenceRating"],
+                "confluenceBadgeColor": confluence_res["badgeColor"],
+                "confluenceReasons": confluence_res["reasons"],
+                "confluenceWarnings": confluence_res["warnings"],
+                "liquidityDefense": liq_def,
+            })
+    
+        # Apply Selected Filter dynamically based on numerical thresholds
+        non_tradable = ["UNVERIFIED_ASSET", "DELISTED_SECURITY"]
+        if filter_type in ["in_buy_zone", "vwap_pullback"]:
+            filtered = [c for c in mapped_candidates if c["executionStatus"] == "IN_BUY_ZONE"]
+        elif filter_type in ["approaching_target", "orb_breakout"]:
+            filtered = [c for c in mapped_candidates if c["executionStatus"] == "APPROACHING_TARGET"]
+        elif filter_type == "high_rr":
+            filtered = [
+                c for c in mapped_candidates
+                if c["executionStatus"] not in non_tradable
+                and c.get("riskRewardRatio") is not None and c["riskRewardRatio"] >= 2.0 and (c["executionStatus"] == "IN_BUY_ZONE" or (c.get("optimalEntryMax") is not None and c["currentPrice"] is not None and c["currentPrice"] <= c["optimalEntryMax"] * 1.02))
+            ]
+        elif filter_type == "high_confluence":
+            filtered = [c for c in mapped_candidates if c["confluenceScore"] >= 80.0 and c["executionStatus"] not in non_tradable]
+        elif filter_type == "high_rvol":
+            filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and c["rvol"] != "N/A" and float(c["rvol"].replace("x", "")) >= 2.5]
+        elif filter_type == "squeeze":
+            filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and c["shortFloat"] != "N/A" and float(c["shortFloat"].replace("%", "")) >= 6.0]
+        elif filter_type == "lynch":
+            filtered = [
+                c for c in mapped_candidates
+                if c["executionStatus"] not in non_tradable
+                and ((c.get("pegRatio") not in [None, "N/A"] and 0 < float(c["pegRatio"]) <= 1.05) or (c.get("expertArchetype") and ("Lynch" in c["expertArchetype"] or "GARP" in c["expertArchetype"])))
+                and "VALUE_GARP" in c["categories"]
+            ]
+        elif filter_type == "greenblatt":
+            filtered = [
+                c for c in mapped_candidates
+                if c["executionStatus"] not in non_tradable
+                and (
+                    (c.get("roic") not in [None, "N/A"] and float(c["roic"].replace("%", "")) >= 28.0)
+                    or (c.get("expertArchetype") and ("Greenblatt" in c["expertArchetype"] or "Magic" in c["expertArchetype"]))
+                )
+            ]
+        elif filter_type == "rule_breakers":
+            filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and (c.get("grossMargin") not in [None, "N/A"] and float(c["grossMargin"].replace("%", "")) >= 65.0)]
+        elif filter_type == "value_garp":
+            filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and "VALUE_GARP" in c["categories"]]
+        elif filter_type == "vcp":
+            filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and "VCP" in c["categories"]]
+        elif filter_type == "smart_money":
+            filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and "SMART_MONEY" in c["categories"]]
+        else:
+            filtered = mapped_candidates
+    
+        radar_now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        radar_evidence = MarketEvidence(
+            provenance=MarketProvenance(
+                provider=Provider.YFINANCE,
+                ingestion_source=IngestionSource.DIRECT_PROVIDER,
+                observed_at=None,
+                observed_date=time.strftime("%Y-%m-%d", time.gmtime()),
+                observation_precision=ObservationPrecision.DATE,
+                observation_source=ObservationSource.DERIVED_FROM_TRADE_DATE,
+                ingested_at=radar_now,
+                adjustment_state=AdjustmentState.SPLIT_AND_DIVIDEND_ADJUSTED,
+                structural_quality=StructuralQuality.COMPLETE if filtered else StructuralQuality.UNKNOWN,
+                fallback_status=False,
+            ),
+            serving_source=ServingSource.DIRECT_PROVIDER,
+            cache_origin=CacheOrigin.NONE,
+            served_at=radar_now,
+            candle_count=len(filtered),
+        )
+    
+        # Derive canonical candidate population model per ARX Closure Model v2 Gate B
+        reference_count = len(active_universe)
+        active_candidates = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable]
+        opportunity_candidates = [c for c in active_candidates if c.get("screeningEligible")]
+        delisted_candidates = [c for c in mapped_candidates if c["executionStatus"] == "DELISTED_SECURITY"]
+        unverified_candidates = [c for c in mapped_candidates if c["executionStatus"] == "UNVERIFIED_ASSET"]
+    
+        population_model = {
+            "referenceUniverseCount": reference_count,
+            "activeScreeningCount": len(active_candidates),
+            "currentOpportunityCount": len(opportunity_candidates),
+            "delistedRecordCount": len(delisted_candidates),
+            "unverifiedRecordCount": len(unverified_candidates),
+        }
+    
+        # Derive canonical dataset and scan status
+        if len(partial_errors) == len(results) and len(results) > 0:
+            status_val = "ERROR"
+            scan_state = "FAILED"
+            dataset_state = "SCAN_FAILED"
+            overall_error = f"Market data evaluation failed across all {len(results)} candidates"
+        elif len(partial_errors) > 0:
+            status_val = "PARTIAL"
+            scan_state = "PARTIAL"
+            dataset_state = "CANDIDATES_AVAILABLE" if len(filtered) > 0 else "GENUINELY_EMPTY"
+            overall_error = f"Partial evaluation error affecting {len(partial_errors)} assets"
+        else:
+            status_val = "SUCCESS"
+            scan_state = "COMPLETED"
+            dataset_state = "CANDIDATES_AVAILABLE" if len(filtered) > 0 else "GENUINELY_EMPTY"
+            overall_error = None
+    
+        return {
+            "status": status_val,
+            "scanState": scan_state,
+            "datasetState": dataset_state,
+            "error": overall_error,
+            "partialErrors": partial_errors if partial_errors else None,
+            "totalCandidates": reference_count,
+            "gemsFound": len(filtered),
+            "activeFilter": filter_type,
+            "userRole": user_role,
+            "capabilities": get_radar_capabilities(vcp_snapshot=vcp_snapshot, sm_snapshot=sm_snapshot),
             "macroContextId": shared_macro_context_id,
-            # Confluence Conviction Score & Position Sizing
-            "confluenceScore": confluence_res["confluenceScore"],
-            "confluenceRating": confluence_res["confluenceRating"],
-            "confluenceBadgeColor": confluence_res["badgeColor"],
-            "confluenceReasons": confluence_res["reasons"],
-            "confluenceWarnings": confluence_res["warnings"],
-            "liquidityDefense": liq_def,
-        })
-
-    # Apply Selected Filter dynamically based on numerical thresholds
-    non_tradable = ["UNVERIFIED_ASSET", "DELISTED_SECURITY"]
-    if filter_type in ["in_buy_zone", "vwap_pullback"]:
-        filtered = [c for c in mapped_candidates if c["executionStatus"] == "IN_BUY_ZONE"]
-    elif filter_type in ["approaching_target", "orb_breakout"]:
-        filtered = [c for c in mapped_candidates if c["executionStatus"] == "APPROACHING_TARGET"]
-    elif filter_type == "high_rr":
-        filtered = [
-            c for c in mapped_candidates
-            if c["executionStatus"] not in non_tradable
-            and c.get("riskRewardRatio") is not None and c["riskRewardRatio"] >= 2.0 and (c["executionStatus"] == "IN_BUY_ZONE" or (c.get("optimalEntryMax") is not None and c["currentPrice"] is not None and c["currentPrice"] <= c["optimalEntryMax"] * 1.02))
-        ]
-    elif filter_type == "high_confluence":
-        filtered = [c for c in mapped_candidates if c["confluenceScore"] >= 80.0 and c["executionStatus"] not in non_tradable]
-    elif filter_type == "high_rvol":
-        filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and c["rvol"] != "N/A" and float(c["rvol"].replace("x", "")) >= 2.5]
-    elif filter_type == "squeeze":
-        filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and c["shortFloat"] != "N/A" and float(c["shortFloat"].replace("%", "")) >= 6.0]
-    elif filter_type == "lynch":
-        filtered = [
-            c for c in mapped_candidates
-            if c["executionStatus"] not in non_tradable
-            and ((c.get("pegRatio") not in [None, "N/A"] and 0 < float(c["pegRatio"]) <= 1.05) or (c.get("expertArchetype") and ("Lynch" in c["expertArchetype"] or "GARP" in c["expertArchetype"])))
-            and "VALUE_GARP" in c["categories"]
-        ]
-    elif filter_type == "greenblatt":
-        filtered = [
-            c for c in mapped_candidates
-            if c["executionStatus"] not in non_tradable
-            and (
-                (c.get("roic") not in [None, "N/A"] and float(c["roic"].replace("%", "")) >= 28.0)
-                or (c.get("expertArchetype") and ("Greenblatt" in c["expertArchetype"] or "Magic" in c["expertArchetype"]))
-            )
-        ]
-    elif filter_type == "rule_breakers":
-        filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and (c.get("grossMargin") not in [None, "N/A"] and float(c["grossMargin"].replace("%", "")) >= 65.0)]
-    elif filter_type == "value_garp":
-        filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and "VALUE_GARP" in c["categories"]]
-    elif filter_type == "vcp":
-        filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and "VCP" in c["categories"]]
-    elif filter_type == "smart_money":
-        filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and "SMART_MONEY" in c["categories"]]
-    else:
-        filtered = mapped_candidates
-
-    radar_now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    radar_evidence = MarketEvidence(
-        provenance=MarketProvenance(
-            provider=Provider.YFINANCE,
-            ingestion_source=IngestionSource.DIRECT_PROVIDER,
-            observed_at=None,
-            observed_date=time.strftime("%Y-%m-%d", time.gmtime()),
-            observation_precision=ObservationPrecision.DATE,
-            observation_source=ObservationSource.DERIVED_FROM_TRADE_DATE,
-            ingested_at=radar_now,
-            adjustment_state=AdjustmentState.SPLIT_AND_DIVIDEND_ADJUSTED,
-            structural_quality=StructuralQuality.COMPLETE if filtered else StructuralQuality.UNKNOWN,
-            fallback_status=False,
-        ),
-        serving_source=ServingSource.DIRECT_PROVIDER,
-        cache_origin=CacheOrigin.NONE,
-        served_at=radar_now,
-        candle_count=len(filtered),
-    )
-
-    # Derive canonical candidate population model per ARX Closure Model v2 Gate B
-    reference_count = len(active_universe)
-    active_candidates = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable]
-    opportunity_candidates = [c for c in active_candidates if c.get("screeningEligible")]
-    delisted_candidates = [c for c in mapped_candidates if c["executionStatus"] == "DELISTED_SECURITY"]
-    unverified_candidates = [c for c in mapped_candidates if c["executionStatus"] == "UNVERIFIED_ASSET"]
-
-    population_model = {
-        "referenceUniverseCount": reference_count,
-        "activeScreeningCount": len(active_candidates),
-        "currentOpportunityCount": len(opportunity_candidates),
-        "delistedRecordCount": len(delisted_candidates),
-        "unverifiedRecordCount": len(unverified_candidates),
-    }
-
-    return {
-        "totalCandidates": reference_count,
-        "gemsFound": len(filtered),
-        "activeFilter": filter_type,
-        "userRole": user_role,
-        "capabilities": get_radar_capabilities(vcp_snapshot=vcp_snapshot, sm_snapshot=sm_snapshot),
-        "macroContextId": shared_macro_context_id,
-        "macroDifficulty": shared_macro,
-        "population": population_model,
-        "candidates": filtered,
-        "results": results,
-        "evidence": radar_evidence.to_dict(),
-    }
+            "macroDifficulty": shared_macro,
+            "population": population_model,
+            "candidates": filtered,
+            "results": results,
+            "evidence": radar_evidence.to_dict(),
+        }
+    except Exception as e:
+        radar_now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        ref_count = len(active_universe) if "active_universe" in locals() and active_universe else 0
+        return {
+            "status": "ERROR",
+            "scanState": "FAILED",
+            "datasetState": "SCAN_FAILED",
+            "error": f"Radar scanner evaluation failed: {str(e)}",
+            "partialErrors": [{"ticker": "ALL", "error": str(e)}],
+            "totalCandidates": ref_count,
+            "gemsFound": 0,
+            "activeFilter": filter_type,
+            "userRole": user_role,
+            "capabilities": get_radar_capabilities(),
+            "macroContextId": None,
+            "macroDifficulty": None,
+            "population": {
+                "referenceUniverseCount": ref_count,
+                "activeScreeningCount": 0,
+                "currentOpportunityCount": 0,
+                "delistedRecordCount": 0,
+                "unverifiedRecordCount": 0,
+            },
+            "candidates": [],
+            "results": [],
+            "evidence": {
+                "servingSource": "DIRECT_PROVIDER",
+                "servedAt": radar_now,
+                "structuralQuality": "UNKNOWN",
+                "fallbackStatus": True,
+            },
+        }
 
 
 @router.get("/vcp/snapshot")

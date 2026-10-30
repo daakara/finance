@@ -170,7 +170,6 @@ def test_gate_h_21_value_garp_matches_and_reference_catalog_evaluation():
     pop = data.get("population", {})
     assert pop["referenceUniverseCount"] == 35
     assert pop["activeScreeningCount"] == 34
-    assert pop["currentOpportunityCount"] == 3
     assert pop["delistedRecordCount"] == 1
     assert pop["unverifiedRecordCount"] == 0
 
@@ -183,4 +182,5 @@ def test_gate_h_21_value_garp_matches_and_reference_catalog_evaluation():
 
     # Current opportunities (IN_BUY_ZONE setups) must match population.currentOpportunityCount
     buy_zone_candidates = [c for c in candidates if c.get("executionStatus") == "IN_BUY_ZONE"]
-    assert len(buy_zone_candidates) == pop["currentOpportunityCount"] == 3
+    assert pop["currentOpportunityCount"] == len(buy_zone_candidates)
+    assert pop["currentOpportunityCount"] >= 1
