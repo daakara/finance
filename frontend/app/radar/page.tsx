@@ -957,7 +957,7 @@ function RadarContent() {
                   tabIndex={activeFilter === 'VALUE_GARP' ? 0 : -1}
                   onKeyDown={(e) => handleFilterKeyDown(e, 'VALUE_GARP')}
                   onClick={() => handleCategoryFilterSelect('VALUE_GARP', 'tab-radar-filter-value_garp')}
-                  title="16 Value / GARP matches identified from 35 curated reference catalog candidates evaluated. Whole-market automated screening is pending deployment."
+                  title={`${categoryMeta.VALUE_GARP.count ?? 0} Value / GARP matches identified from ${allAssets.length} candidates evaluated. Whole-market automated screening is pending deployment.`}
                   className={`focus-ring px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeFilter === 'VALUE_GARP'
                       ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'

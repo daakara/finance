@@ -208,7 +208,7 @@ function CompareContent() {
 
     const roicRaw = typeof cat?.roic === "number"
       ? cat.roic
-      : (typeof scores?.qualityScore === "number" ? Math.round(scores.qualityScore * 0.4 * 10) / 10 : null);
+      : null;
 
     const grossMarginRaw = typeof cat?.grossMargin === "number"
       ? cat.grossMargin
@@ -273,7 +273,9 @@ function CompareContent() {
       rvolRaw: rvolRaw,
       intradayBeta: betaRaw != null ? betaRaw.toFixed(2) : "UNAVAILABLE",
       intradayBetaRaw: betaRaw,
-      liquidityTier: price > 200 ? "Ultra-High ($10B+ Daily)" : price > 0 ? "Exchange Verified" : "Awaiting Tape",
+      liquidityTier: liveData?.optimalExecution?.liquidity_defense?.pro_label ||
+        liveData?.optimalExecution?.liquidity_defense?.plain_label ||
+        (price > 0 ? "Exchange Verified" : "Awaiting Tape"),
       dayTraderSetup: cat?.thesis || liveData?.optimalExecution?.entry_thesis || "Intraday momentum tracking with clear risk-defined levels.",
       bestTradingWindow: "9:30 AM - 11:30 AM EST (Peak Volatility Window)",
       dayTradeVerdict: liveData?.optimalExecution?.execution_status || (hasVerifiedFundamentals ? "Evaluated for quantitative setups." : "Unverified setup — live feed required."),
@@ -307,15 +309,18 @@ function CompareContent() {
 
             {/* Dual-Horizon Lens Switcher & DataSource Badge */}
             <div className="flex items-center gap-2">
-              <DataSourceBadge source={
-                dataA?._dataSource === "fallback" || dataB?._dataSource === "fallback"
-                  ? "fallback"
-                  : dataA?._dataSource === "unavailable" || dataB?._dataSource === "unavailable"
-                  ? "unavailable"
-                  : dataA?._dataSource === "historical" || dataB?._dataSource === "historical"
-                  ? "historical"
-                  : "live"
-              } />
+              <DataSourceBadge
+                source={
+                  dataA?._dataSource === "fallback" || dataB?._dataSource === "fallback"
+                    ? "fallback"
+                    : dataA?._dataSource === "unavailable" || dataB?._dataSource === "unavailable"
+                    ? "unavailable"
+                    : dataA?._dataSource === "historical" || dataB?._dataSource === "historical"
+                    ? "historical"
+                    : "live"
+                }
+                labelLive="📡 Live Tape · Sourced Fundamentals"
+              />
               <div role="radiogroup" aria-label="Comparison Lens" className="flex items-center space-x-2 bg-[#0d131f] p-1.5 rounded-xl border border-[#243044]">
                 <span className="text-[11px] text-slate-400 font-bold px-2 hidden sm:inline">Comparison Lens:</span>
                 <button
@@ -659,7 +664,7 @@ function CompareContent() {
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetA.peRatio}</td>
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetB.peRatio}</td>
                     <td className="py-3 px-4 text-center">
-                      {assetA.peRaw != null && assetA.peRaw > 0 && assetB.peRaw != null && assetB.peRaw > 0 ? (
+                      {assetA.peRaw != null && assetB.peRaw != null && assetA.peRaw > 0 && assetB.peRaw > 0 ? (
                         assetA.peRaw < assetB.peRaw ? (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800">
                             🟢 {assetA.symbol} (Lower Multiple: {assetA.peRaw.toFixed(1)}x vs {assetB.peRaw.toFixed(1)}x)

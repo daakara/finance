@@ -105,18 +105,18 @@ export function SharedExecutionLadder({
     sizingButton:
       mode === "GUIDED"
         ? isActionable
-          ? isCleared === false
+          ? isCleared !== true
             ? "Position Sizing Calculator (Pre-Flight Blocked)"
             : "Position Sizing Calculator"
           : "0 Shares (Awaiting Trigger)"
         : mode === "QUANT"
         ? isActionable
-          ? isCleared === false
+          ? isCleared !== true
             ? "Model Sizing Authority (Clearance Blocked)"
             : "Model Sizing Authority"
           : "0 Shares (Condition Unmet)"
         : isActionable
-        ? isCleared === false
+        ? isCleared !== true
           ? "Configure Shares (Clearance Blocked)"
           : "Configure Shares"
         : "0 Shares (Entry Unconfirmed)",
@@ -338,7 +338,7 @@ export function SharedExecutionLadder({
                 ? "Execution Prohibited (Stale Tape)"
                 : !isActionable
                 ? "0% (Awaiting Setup Trigger)"
-                : isCleared === false
+                : isCleared !== true
                 ? "Informational Sizing (Pre-Flight Blocked)"
                 : "Informational Sizing (1% Risk Model)"}
             </span>
@@ -347,7 +347,7 @@ export function SharedExecutionLadder({
       </div>
 
       {/* Prominent Pre-Flight Execution Blocker Banner */}
-      {isActionable && isCleared === false && (
+      {isActionable && isCleared !== true && (
         <div
           id="execution-clearance-blocker-banner"
           data-testid="execution-clearance-blocker"
