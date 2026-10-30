@@ -1147,6 +1147,22 @@ class TestPreSprint5ClosureInvariants:
             return json.load(f)
 
     @pytest.fixture
+    def unpromoted_historical_backlog_data(self, canonical_backlog_data):
+        """
+        Immutable historical fixture representing the unpromoted, unauthorized backlog state
+        prior to Directive 074-B production release promotion, where DEF-056 obligations were RELEASE_HELD.
+        Preserves original invariant testing intent for P5-003 failure without coupling to live backlog status.
+        """
+        data = copy.deepcopy(canonical_backlog_data)
+        for o in data.get("obligations", []):
+            if o.get("source_finding_id") in ("DEF-056-001", "DEF-056-002", "DEF-056-003") or o.get("obligation_id") in ("OBL-DEF-056-001", "OBL-DEF-056-002", "OBL-DEF-056-003"):
+                o["disposition"] = "RELEASE_HELD"
+                o["deployment_state"] = "RELEASE_HELD"
+                o["production_acceptance_state"] = "RELEASE_HELD"
+                o["blocking_decision"] = "BLK-057-001; BLK-057-002"
+        return data
+
+    @pytest.fixture
     def canonical_schema_data(self):
         with open("docs/planning/arx_canonical_backlog.schema.json", "r", encoding="utf-8") as f:
             return json.load(f)
@@ -1323,12 +1339,12 @@ class TestPreSprint5ClosureInvariants:
         assert any(f.rule_id == "P5-012" and "execution status is NOT_PERFORMED" in f.message for f in findings)
 
     # 18. Actual Canonical Backlog Status: Fails closed when mandatory defects held from release and execution unauthorized
-    def test_canonical_backlog_pre_sprint5_closure_fails_closed_when_release_held_and_unauthorized(self, canonical_backlog_data, canonical_schema_data):
+    def test_canonical_backlog_pre_sprint5_closure_fails_closed_when_release_held_and_unauthorized(self, unpromoted_historical_backlog_data, canonical_schema_data):
         """
         Directive 059 Invariant: The canonical backlog in its current unpromoted, unauthorized state
         MUST fail closed under --pre-sprint5-closure with P5-003 (release held) and P5-010 (owner authorization missing).
         """
-        validator = BacklogValidator(canonical_backlog_data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        validator = BacklogValidator(unpromoted_historical_backlog_data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
         verdict, findings = validator.validate_all()
         errors = [f for f in findings if f.severity == "ERROR"]
         assert verdict == "FAIL"
@@ -1507,14 +1523,14 @@ class TestPreSprint5ClosureInvariants:
     # === Directive 060 Section 5: Decoupled Technical Readiness & Execution Permission ===
 
     # Scenario 1: Unresolved release obligations -> readiness blocked, execution blocked
-    def test_section5_scenario1_unresolved_release_obligations_blocks_readiness_and_execution(self, canonical_backlog_data, canonical_schema_data):
+    def test_section5_scenario1_unresolved_release_obligations_blocks_readiness_and_execution(self, unpromoted_historical_backlog_data, canonical_schema_data):
         """
         Directive 060 Section 5 Scenario 1:
         Unresolved release obligations MUST block both Technical Readiness (Outcome A)
         and Execution Permission (Outcome B).
         """
         # Baseline canonical data has DEF-056-001/002/003 as RELEASE_HELD
-        val_readiness = BacklogValidator(canonical_backlog_data, schema_data=canonical_schema_data, pre_sprint5_readiness=True)
+        val_readiness = BacklogValidator(unpromoted_historical_backlog_data, schema_data=canonical_schema_data, pre_sprint5_readiness=True)
         verdict_r, findings_r = val_readiness.validate_all()
         errors_r = [f for f in findings_r if f.severity == "ERROR"]
         assert verdict_r == "FAIL"
@@ -1524,7 +1540,7 @@ class TestPreSprint5ClosureInvariants:
         # Note: missing PO kickoff does NOT appear in readiness
         assert not any("Sprint 5 execution kickoff is NOT authorized" in f.message for f in errors_r)
 
-        val_exec = BacklogValidator(canonical_backlog_data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
+        val_exec = BacklogValidator(unpromoted_historical_backlog_data, schema_data=canonical_schema_data, pre_sprint5_closure=True)
         verdict_e, findings_e = val_exec.validate_all()
         errors_e = [f for f in findings_e if f.severity == "ERROR"]
         assert verdict_e == "FAIL"
@@ -1647,3 +1663,66 @@ class TestPreSprint5ClosureInvariants:
         errors_e = [f for f in findings_e if f.severity == "ERROR"]
         assert verdict_e == "FAIL"
         assert any("Active sprint set to 'SPRINT_5' while sprint5_execution_authorized is False" in f.message for f in errors_e)
+
+    # -------------------------------------------------------------
+    # Directive 037-B: Hardened Authority Boundary & Task Continuity
+    # -------------------------------------------------------------
+    def test_adv04_coordinated_hold_and_boundary_mutation_rejected(self, canonical_backlog_data, canonical_schema_data):
+        """
+        Directive 037-B (ADV-04 Hardening):
+        A coordinated mutation changing status, disposition, authorization_boundary,
+        and owner_authorization on an owner-held task MUST be detected and rejected
+        against the authoritative baseline.
+        """
+        import copy
+        baseline = copy.deepcopy(canonical_backlog_data)
+        mutated = copy.deepcopy(canonical_backlog_data)
+        for t in mutated["tasks"]:
+            if t["task_id"] == "ARX-S2-002":
+                t["status"] = "COMPLETED"
+                t["disposition"] = "CLOSED_VERIFIED"
+                t["authorization_boundary"] = "BOUNDED_ENGINEERING"
+                t["operational_state"] = "ACTIVE_SERVING"
+                t["evidence_refs"] = ["commit:fake123"]
+                t["dimensions"]["owner_authorization"] = "AUTHORIZED"
+                t["dimensions"]["deployment"] = "DEPLOYED_ACTIVE"
+                t["dimensions"]["operational_execution"] = "EXECUTED"
+                t["dimensions"]["production_evidence"] = "VERIFIED"
+
+        val = BacklogValidator(mutated, baseline_data=baseline, schema_data=canonical_schema_data)
+        verdict, findings = val.validate_all()
+        errors = [f for f in findings if f.severity == "ERROR"]
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "BI-009" and "unauthorized mutation of authorization_boundary" in f.message for f in errors)
+        assert any(f.rule_id == "BI-009" and "has baseline owner_authorization 'HOLD'" in f.message for f in errors)
+
+    def test_adv05_ready_carryforward_deletion_rejected(self, canonical_backlog_data, canonical_schema_data):
+        """
+        Directive 037-B (ADV-05 Hardening):
+        Deleting a READY carryforward task MUST be rejected by BI-012.
+        """
+        import copy
+        baseline = copy.deepcopy(canonical_backlog_data)
+        mutated = copy.deepcopy(canonical_backlog_data)
+        mutated["tasks"] = [t for t in mutated["tasks"] if t["task_id"] != "ARX-S3-004"]
+
+        val = BacklogValidator(mutated, baseline_data=baseline, schema_data=canonical_schema_data)
+        verdict, findings = val.validate_all()
+        errors = [f for f in findings if f.severity == "ERROR"]
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "BI-012" and "ARX-S3-004" in f.message and "silently removed" in f.message for f in errors)
+
+    def test_adv05_hold_and_blocked_deletion_rejected(self, canonical_backlog_data, canonical_schema_data):
+        """
+        Directive 037-B: Deleting HOLD or BLOCKED tasks MUST be rejected by BI-012.
+        """
+        import copy
+        baseline = copy.deepcopy(canonical_backlog_data)
+        mutated = copy.deepcopy(canonical_backlog_data)
+        mutated["tasks"] = [t for t in mutated["tasks"] if t["task_id"] != "ARX-S1-003"]
+
+        val = BacklogValidator(mutated, baseline_data=baseline, schema_data=canonical_schema_data)
+        verdict, findings = val.validate_all()
+        errors = [f for f in findings if f.severity == "ERROR"]
+        assert verdict == "FAIL"
+        assert any(f.rule_id == "BI-012" and "ARX-S1-003" in f.message and "silently removed" in f.message for f in errors)

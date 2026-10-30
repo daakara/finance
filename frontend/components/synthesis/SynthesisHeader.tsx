@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Search, Moon, Sun, MoreVertical, Compass, Activity, ShieldCheck, Briefcase } from "lucide-react";
+import { useTerminalTheme } from "../../hooks/useTerminalTheme";
 
 interface SynthesisHeaderProps {
   activeSymbol?: string | null;
@@ -35,25 +36,8 @@ export default function SynthesisHeader({
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [theme, setTheme] = useState<"dark" | "paper">("dark");
+  const { theme, toggleTheme } = useTerminalTheme();
   const searchRef = useRef<HTMLDivElement>(null);
-
-  // Initialize theme from document or localStorage
-  useEffect(() => {
-    if (typeof document !== "undefined") {
-      const current = document.documentElement.getAttribute("data-theme") || "dark";
-      setTheme(current === "paper" ? "paper" : "dark");
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const next = theme === "dark" ? "paper" : "dark";
-    setTheme(next);
-    if (typeof document !== "undefined") {
-      document.documentElement.setAttribute("data-theme", next);
-      localStorage.setItem("ARX_THEME", next);
-    }
-  };
 
   // Keyboard shortcut Cmd/Ctrl + K or / to focus search
   useEffect(() => {

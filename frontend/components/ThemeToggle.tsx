@@ -1,34 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { trackMatomoEvent } from "../lib/matomo";
+import { useTerminalTheme } from "../hooks/useTerminalTheme";
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<"dark" | "paper">("dark");
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("FINANCE_THEME") as "dark" | "paper" | null;
-      if (saved === "paper" || saved === "dark") {
-        setTheme(saved);
-        document.documentElement.setAttribute("data-theme", saved);
-        window.dispatchEvent(new CustomEvent("finance:theme-change", { detail: saved }));
-      } else {
-        document.documentElement.setAttribute("data-theme", "dark");
-      }
-    } catch {
-      document.documentElement.setAttribute("data-theme", "dark");
-    }
-  }, []);
+  const { theme, toggleTheme: toggleSharedTheme } = useTerminalTheme();
 
   const toggleTheme = () => {
-    const nextTheme = theme === "dark" ? "paper" : "dark";
-    setTheme(nextTheme);
-    try {
-      localStorage.setItem("FINANCE_THEME", nextTheme);
-    } catch {}
-    document.documentElement.setAttribute("data-theme", nextTheme);
-    window.dispatchEvent(new CustomEvent("finance:theme-change", { detail: nextTheme }));
+    const nextTheme = toggleSharedTheme();
     trackMatomoEvent("User Journey", "Toggle Theme", nextTheme);
   };
 

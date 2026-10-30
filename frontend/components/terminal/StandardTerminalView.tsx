@@ -4,8 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { QuantitativeInsight } from "../../types/insight";
 import FinancialDisclaimer from "../FinancialDisclaimer";
-import { deriveUnmetConditions } from "../../lib/decisionHierarchyUtils";
-import PreFlightReadinessBar from "../PreFlightReadinessBar";
+import PreFlightReadinessBar, { PreFlightReadinessBarProps } from "../PreFlightReadinessBar";
 import SharedAssetDeck from "./SharedAssetDeck";
 import SharedExecutionLadder from "./SharedExecutionLadder";
 
@@ -30,8 +29,8 @@ export default function StandardTerminalView({
   evidenceSlot,
   isDemo = false,
 }: StandardTerminalViewProps) {
+  const [blockerTarget, setBlockerTarget] = React.useState<HTMLDivElement | null>(null);
   const kl = insight.standard.keyLevels;
-  const unmetConditions = deriveUnmetConditions(insight);
 
   const isStaleTape = Boolean(
     insight.terminalState?.decisionState === "STALE_DATA" ||
@@ -65,16 +64,17 @@ export default function StandardTerminalView({
   );
 
   return (
-    <div className="space-y-4 font-sans text-slate-100 animate-fade-in">
+    <div className="space-y-4 font-sans text-[var(--text-1)] animate-fade-in">
+
       {/* 🎯 FIRST-VIEWPORT COMPOSITION: VERDICT (LEFT 5-COL) + CHART (RIGHT 7-COL) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-12 gap-4 items-start">
+      <div data-testid="primary-workspace-grid" className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-12 gap-4 items-start">
         {/* Left Column (lg:col-span-5 xl:col-span-5): Verdict Card & Preconditions */}
         <div className="lg:col-span-5 xl:col-span-5 space-y-2.5 sm:space-y-4 min-w-0 order-1 lg:order-1 xl:order-1">
           {/* 1. DECISION VERDICT (Dominant Visual Weight) & 2. DECISION REASON */}
           <article
             id="verdict-card"
             data-testid="decision-verdict"
-            className="verdict-card bg-[#0b101b] border border-[#1d293d] rounded-2xl p-3 sm:p-5 shadow-xl space-y-3 font-sans text-slate-100"
+            className="verdict-card bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-2xl p-3 sm:p-5 shadow-xl space-y-3 font-sans text-[var(--text-1)]"
             aria-label="ARX Bottom Line and Execution Decision"
           >
             {/* Ticker & Price Deck */}
@@ -88,7 +88,7 @@ export default function StandardTerminalView({
             />
 
             {/* Verdict & Score Banner */}
-            <div className="verdict-banner !flex !flex-col p-3 sm:p-4 rounded-xl bg-[#080e18] border border-[#182335] space-y-2.5">
+            <div className="verdict-banner !flex !flex-col p-3 sm:p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-2.5">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2.5 sm:gap-3 w-full">
                 <div className="verdict-info space-y-1 min-w-0 flex-1">
                   <span id="card-verdict-label" className="verdict-label text-[10px] font-mono font-black text-cyan-400 uppercase tracking-widest block">
@@ -113,12 +113,12 @@ export default function StandardTerminalView({
                       }
                     }}
                     title="Setup Score: click to inspect confluence attribution"
-                    className="score-pill px-3 py-1 rounded-xl bg-[#141c2e] border border-cyan-500/40 text-center shadow-md cursor-pointer hover:border-cyan-400 transition-all"
+                    className="score-pill px-3 py-1 rounded-xl bg-[var(--surface-2)] border border-cyan-500/40 text-center shadow-md cursor-pointer hover:border-cyan-400 transition-all"
                   >
                     <span id="card-score-num" className="score-num mono font-mono font-black text-base text-cyan-400 leading-none">
                       {insight.setupScore}
                     </span>
-                    <span id="card-score-den" className="score-den font-mono text-xs text-slate-400">
+                    <span id="card-score-den" className="score-den font-mono text-xs text-[var(--text-2)]">
                       /100
                     </span>
                   </div>
@@ -139,9 +139,9 @@ export default function StandardTerminalView({
               {/* 2. CANONICAL REASON (Directly Below Verdict) */}
               <div
                 data-testid="decision-reason"
-                className="text-xs text-slate-300 font-sans leading-relaxed border-t border-[#182335]/60 pt-2 w-full"
+                className="text-xs text-[var(--text-2)] font-sans leading-relaxed border-t border-[var(--border-subtle)] pt-2 w-full"
               >
-                <span className="text-[10px] text-slate-400 font-mono font-bold block uppercase mb-0.5 tracking-wider">
+                <span className="text-[10px] text-[var(--text-2)] font-mono font-bold block uppercase mb-0.5 tracking-wider">
                   Reason / Bottom Line:
                 </span>
                 <p id="card-verdict-summary" className="verdict-summary leading-relaxed">
@@ -153,10 +153,10 @@ export default function StandardTerminalView({
               <div
                 id="card-mobile-score-deck"
                 data-testid="mobile-confluence-score"
-                className="sm:hidden flex items-center justify-between pt-2 border-t border-[#182335]/60 w-full"
+                className="sm:hidden flex items-center justify-between pt-2 border-t border-[var(--border-subtle)] w-full"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                  <span className="text-[10px] font-mono text-[var(--text-2)] uppercase tracking-wider">
                     Confluence Score:
                   </span>
                   <div
@@ -171,12 +171,12 @@ export default function StandardTerminalView({
                       }
                     }}
                     title="Setup Score: click to inspect confluence attribution"
-                    className="px-2.5 py-0.5 rounded-lg bg-[#141c2e] border border-cyan-500/40 text-center cursor-pointer flex items-baseline gap-0.5"
+                    className="px-2.5 py-0.5 rounded-lg bg-[var(--surface-2)] border border-cyan-500/40 text-center cursor-pointer flex items-baseline gap-0.5"
                   >
                     <span className="score-num mono font-mono font-black text-sm text-cyan-400 leading-none">
                       {insight.setupScore}
                     </span>
-                    <span className="score-den font-mono text-[10px] text-slate-400">
+                    <span className="score-den font-mono text-[10px] text-[var(--text-2)]">
                       /100
                     </span>
                   </div>
@@ -194,6 +194,7 @@ export default function StandardTerminalView({
             </div>
 
             {/* Middle Panel: Risk & Execution Ladder */}
+            <div ref={setBlockerTarget} id="canonical-blocker-summary" data-testid="unmet-condition" aria-label="Canonical blocking reasons" />
             <SharedExecutionLadder
               insight={insight}
               mode="STANDARD"
@@ -207,64 +208,7 @@ export default function StandardTerminalView({
           </article>
 
           {/* 3. WHAT NEEDS TO CHANGE (Unmet Conditions & Preconditions) */}
-          <div
-            data-testid="unmet-condition"
-            className="bg-[#080e18] border border-cyan-900/50 rounded-2xl p-2.5 sm:p-5 shadow-lg space-y-2 sm:space-y-3"
-          >
-            <div
-              className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 border-b border-[#182335] pb-2 cursor-pointer sm:cursor-default"
-              onClick={() => setIsPreconditionsOpen((prev) => !prev)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setIsPreconditionsOpen((prev) => !prev);
-                }
-              }}
-              aria-expanded={isPreconditionsOpen}
-            >
-              <h3 className="text-xs sm:text-sm font-bold text-cyan-300 uppercase font-mono tracking-wide flex items-center gap-2">
-                <span>🎯</span>
-                <span>What Needs to Change (Setup Criteria)</span>
-              </h3>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] sm:text-xs text-slate-400 font-mono">
-                  {isActionable ? "Setup Criteria Met" : "Awaiting Setup Triggers"}
-                </span>
-                <span className="text-slate-400 text-xs" aria-hidden="true">
-                  {isPreconditionsOpen ? "▲" : "▼"}
-                </span>
-              </div>
-            </div>
 
-            <div className={`${isPreconditionsOpen ? "grid" : "hidden"} grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1 gap-1.5 sm:gap-2.5 text-xs`}>
-              {unmetConditions.map((cond) => (
-                <div
-                  key={cond.id}
-                  className="py-1.5 px-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-[#060b13] border border-[#1b2639] space-y-1"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-slate-200 text-xs truncate">{cond.title}</span>
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] sm:text-xs font-mono font-bold shrink-0 ${
-                        cond.status === "MET"
-                          ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
-                          : cond.status === "UNMET"
-                          ? "bg-rose-950 text-rose-400 border border-rose-800"
-                          : "bg-amber-950 text-amber-400 border border-amber-800"
-                      }`}
-                    >
-                      {cond.status}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 leading-relaxed font-sans hidden sm:block">
-                    {cond.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Right Column (lg:col-span-7 xl:col-span-7): Price Chart & Mobile Preview */}
@@ -272,7 +216,7 @@ export default function StandardTerminalView({
           {/* Mobile Chart Preview Affordance (< md only, ~56-64px height) */}
           <div
             data-testid="mobile-chart-preview"
-            className="md:hidden bg-[#0e1420] border border-[#1e2a3c] rounded-xl px-3 py-2 flex items-center justify-between gap-2 shadow-md min-h-[56px] mb-2"
+            className="md:hidden bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-xl px-3 py-2 flex items-center justify-between gap-2 shadow-md min-h-[56px] mb-2"
           >
             <div className="flex items-center gap-2 min-w-0">
               <div className="flex items-center gap-1.5 shrink-0">
@@ -289,7 +233,7 @@ export default function StandardTerminalView({
                 ) : (
                   <span
                     data-testid="preview-spot-price"
-                    className="text-slate-400 font-mono text-xs font-semibold"
+                    className="text-[var(--text-2)] font-mono text-xs font-semibold"
                   >
                     UNAVAILABLE
                   </span>
@@ -306,7 +250,7 @@ export default function StandardTerminalView({
               ) : (
                 <span
                   data-testid="preview-watch-zone"
-                  className="text-[10px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded"
+                  className="text-[10px] font-mono text-[var(--text-2)] bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded"
                 >
                   UNAVAILABLE
                 </span>
@@ -338,10 +282,15 @@ export default function StandardTerminalView({
           )}
 
           {/* 🎯 SYNTHESIS E V3: INLINE PRE-FLIGHT CLEARANCE PANEL */}
-          {preflightSlot !== undefined ? (
-            preflightSlot
+
+                    <section className="space-y-2" aria-label="Canonical preflight readiness">{preflightSlot !== undefined ? (
+            React.isValidElement(preflightSlot) && preflightSlot.type === PreFlightReadinessBar
+          ? React.cloneElement(preflightSlot as React.ReactElement<PreFlightReadinessBarProps>, { summaryTarget: blockerTarget })
+          : preflightSlot
           ) : (
-            <PreFlightReadinessBar
+            <PreFlightReadinessBar summaryTarget={blockerTarget}
+              isDrawerExpanded={isPreconditionsOpen}
+              onToggleDrawer={setIsPreconditionsOpen}
               symbol={insight.symbol}
               currentPrice={hasValidPrice ? (rawPrice as number) : 0}
               stopLoss={kl.stopLoss}
@@ -357,8 +306,10 @@ export default function StandardTerminalView({
               isHistorical={(insight as any).dataSource === 'historical' || (insight as any)._dataSource === 'historical'}
               isSynthetic={Boolean(isDemo || (insight as any).isSynthetic)}
             />
-          )}
+          )}</section>
         </div>
+
+
 
         {/* 5. CONDITIONAL TRADE PLAN */}
         {planSlot && (
@@ -366,7 +317,8 @@ export default function StandardTerminalView({
             {planSlot}
           </div>
         )}
-      </div>
+
+</div>
 
       {/* 6. SUPPORTING EVIDENCE (Score Subordinated & Confluence Breakdown) */}
       <div
@@ -376,10 +328,10 @@ export default function StandardTerminalView({
         {evidenceSlot ? (
           evidenceSlot
         ) : (
-          <div className="bg-[#0b101b] border border-[#1d293d] rounded-2xl p-4 sm:p-5 shadow-xl space-y-4 font-sans text-xs">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#182335] pb-3">
+          <div className="bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-2xl p-4 sm:p-5 shadow-xl space-y-4 font-sans text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-3">
               <div className="min-w-0 max-w-full">
-                <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">
+                <span className="text-xs text-[var(--text-2)] font-mono font-bold uppercase tracking-wider block">
                   Supporting Evidence
                 </span>
                 <h3 className="text-sm sm:text-base font-bold text-white tracking-tight mt-0.5">
@@ -398,21 +350,21 @@ export default function StandardTerminalView({
                     onOpenWhy();
                   }
                 }}
-                className={`flex items-center gap-3 px-3.5 py-2 bg-[#06090f] border rounded-xl cursor-pointer transition-all shrink-0 max-w-full min-h-[44px] ${
+                className={`flex items-center gap-3 px-3.5 py-2 bg-[var(--surface-2)] border rounded-xl cursor-pointer transition-all shrink-0 max-w-full min-h-[44px] ${
                   insight.terminalState.overallEligibility !== "ELIGIBLE"
                     ? "border-slate-700 hover:border-slate-500"
-                    : "border-[#24334b] hover:border-cyan-500"
+                    : "border-[var(--border-subtle)] hover:border-cyan-500"
                 }`}
               >
                 <div>
-                  <span className="text-xs text-slate-400 font-mono block">Setup Score</span>
-                  <span className="text-xs text-slate-500 font-mono">{insight.standard.signalsRatio}</span>
+                  <span className="text-xs text-[var(--text-2)] font-mono block">Setup Score</span>
+                  <span className="text-xs text-[var(--text-muted)] font-mono">{insight.standard.signalsRatio}</span>
                 </div>
                 <div className="text-right">
                   <span
                     className={`text-xl font-black font-mono ${
                       insight.terminalState.overallEligibility !== "ELIGIBLE"
-                        ? "text-slate-500"
+                        ? "text-[var(--text-muted)]"
                         : "text-cyan-400"
                     }`}
                   >
@@ -429,7 +381,7 @@ export default function StandardTerminalView({
             {/* Confluence Breakdown Bars */}
             <div className="space-y-2.5">
               <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-slate-300 font-bold">Confluence Breakdown</span>
+                <span className="text-[var(--text-2)] font-bold">Confluence Breakdown</span>
                 <button
                   id="why-score-btn"
                   onClick={onOpenWhy}
@@ -444,10 +396,10 @@ export default function StandardTerminalView({
                 {(insight.standard.confluenceBreakdown || []).map((bar, idx) => (
                   <div key={idx} className="space-y-1">
                     <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-slate-400">{bar.dimension}</span>
+                      <span className="text-[var(--text-2)]">{bar.dimension}</span>
                       <span className="text-white font-bold">{bar.score}/100</span>
                     </div>
-                    <div className="w-full h-2 bg-[#070b13] rounded-full overflow-hidden border border-[#1b2639]">
+                    <div className="w-full h-2 bg-[var(--surface-2)] rounded-full overflow-hidden border border-[var(--border-subtle)]">
                       <div
                         style={{ width: `${bar.score}%` }}
                         className={`h-full rounded-full transition-all duration-500 ${
@@ -466,19 +418,19 @@ export default function StandardTerminalView({
 
             {/* Setup Summary & Key Levels Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-              <div className="p-3 bg-[#070c14] border border-[#182436] rounded-xl text-xs font-mono space-y-1">
-                <span className="text-slate-500 uppercase font-bold text-xs block">Setup Structure</span>
+              <div className="p-3 bg-[var(--surface-2)] border border-[var(--border-subtle)] rounded-xl text-xs font-mono space-y-1">
+                <span className="text-[var(--text-muted)] uppercase font-bold text-xs block">Setup Structure</span>
                 <span className="text-amber-300 font-bold block">{insight.standard.setupSummary}</span>
               </div>
 
-              <div className="p-3 bg-[#070c14] border border-[#182436] rounded-xl text-xs font-mono space-y-1">
+              <div className="p-3 bg-[var(--surface-2)] border border-[var(--border-subtle)] rounded-xl text-xs font-mono space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400 font-bold">Profit / Risk Ratio:</span>
+                  <span className="text-[var(--text-2)] font-bold">Profit / Risk Ratio:</span>
                   <span className="text-emerald-400 font-bold text-sm">
                     {kl.profitRiskRatio !== undefined ? `${kl.profitRiskRatio.toFixed(2)} : 1.0` : "N/A"}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-slate-400">
+                <div className="flex items-center justify-between text-[var(--text-2)]">
                   <span>Watch Zone:</span>
                   <span className="text-amber-300 font-bold">{kl.watchZone}</span>
                 </div>
@@ -511,7 +463,7 @@ export default function StandardTerminalView({
               ) : insight.terminalState.posture === "AVOID" ? (
                 <Link
                   href="/radar"
-                  className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold font-mono rounded-xl text-xs transition-all active:scale-95 block text-center shadow-md cursor-pointer min-h-[44px] flex items-center justify-center"
+                  className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-[var(--text-1)] font-bold font-mono rounded-xl text-xs transition-all active:scale-95 block text-center shadow-md cursor-pointer min-h-[44px] flex items-center justify-center"
                 >
                   🔎 Explore Screened Alternatives
                 </Link>

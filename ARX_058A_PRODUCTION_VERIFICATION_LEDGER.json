@@ -1,0 +1,287 @@
+{
+  "program": "ARX Terminal \u2014 Directive 058A Production Verification Ledger",
+  "timestamp": "2026-10-29T00:00:29.848441+00:00",
+  "verified_production_releases": [
+    {
+      "release_id": "REL-PROD-074B",
+      "target_branch": "release/production",
+      "commit_sha": "cdc47a2eee8a427aaa6cf3ab5d01cad7f35d71e1",
+      "deployment_ids": {
+        "railway": "6bba63de-3ba0-4c96-bb1a-e67d3cc47d08",
+        "cloudflare": "877cfca0-262a-4786-8b01-7c3ea24b53eb"
+      },
+      "verified_findings": [
+        "OBL-DEF-056-001",
+        "OBL-DEF-056-002",
+        "OBL-DEF-056-003"
+      ],
+      "live_evidence_receipt": "ARX_074B_LIVE_ACCEPTANCE_RECEIPT.json",
+      "verification_status": "PASS",
+      "verified_scenarios": [
+        {
+          "scenario": "AC-01: Position Sizing Zero-Share Floor",
+          "expected": "shares: 0 when risk budget < modeled stop risk",
+          "observed": "calculated_shares: 0, risk_budget: 100.0, risk_per_share: 300.0",
+          "result": "PASS"
+        },
+        {
+          "scenario": "AC-02: Modeled Stop-Risk Terminology",
+          "expected": "0 occurrences of HARD MAX LOSS in sizing components",
+          "observed": "hard_max_loss_count: 0 across DayTraderPositionSizer, PositionSizerModal, governorSizingEngine",
+          "result": "PASS"
+        },
+        {
+          "scenario": "AC-03: Confluence Narrative Truthfulness",
+          "expected": "Omit Smart Money claims when regulatory feeds unavailable or held",
+          "observed": "HTTP 200 OK, bottomLine synchronized without unverified claims",
+          "result": "PASS"
+        },
+        {
+          "scenario": "AC-04: Smart Money Operational Hold Preservation",
+          "expected": "Regulatory sources remain held/mocked without unapproved worker execution",
+          "observed": "HTTP 200 OK, operational hold verified intact",
+          "result": "PASS"
+        },
+        {
+          "scenario": "AC-05: Backend Health & Runtime Identity",
+          "expected": "HTTP 200 OK status online",
+          "observed": "HTTP 200 OK, latency 415ms",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "release_id": "REL-MAIN-123",
+      "target_branch": "main",
+      "commit_sha": "3e0f8dc00fb816db858d36ff8be8f44084df0810",
+      "deployment_ids": {
+        "cloudflare": "live edge"
+      },
+      "verified_findings": [
+        "FINDING-UX-002B"
+      ],
+      "live_evidence_receipt": "Cloudflare deployment 3e0f8dc",
+      "verification_status": "PASS",
+      "verified_scenarios": [
+        {
+          "scenario": "Paper Light theme surfaces and persistence",
+          "expected": "Paper Light palette applies without blinding white and persists in localStorage",
+          "observed": "Unified theme persistence verified across navigation",
+          "result": "PASS"
+        }
+      ]
+    }
+  ],
+  "pending_production_verifications": [
+    {
+      "finding_id": "FINDING-UX-002E-01",
+      "workstream": "Track A",
+      "batch_id": "BATCH-01",
+      "target_environment": "Cloudflare Pages",
+      "required_scenario": "Mobile viewport (<768px) displays only canonical Navbar dock without double-dock overlap",
+      "status": "ASSIGNED_TO_CHATGPT_UX_WORKSTREAM",
+      "execution_ownership": "CHATGPT_UX",
+      "notes": "UX workstream responsibility per Directive 058B; excluded from Antigravity execution."
+    },
+    {
+      "finding_id": "FINDING-UX-002E-02",
+      "workstream": "Track A",
+      "batch_id": "BATCH-01",
+      "target_environment": "Cloudflare Pages",
+      "required_scenario": "All touch targets on mobile measure >= 44x44px",
+      "status": "ASSIGNED_TO_CHATGPT_UX_WORKSTREAM",
+      "execution_ownership": "CHATGPT_UX",
+      "notes": "UX workstream responsibility per Directive 058B; excluded from Antigravity execution."
+    },
+    {
+      "finding_id": "FINDING-UX-002E-03",
+      "workstream": "Track A",
+      "batch_id": "BATCH-01",
+      "target_environment": "Cloudflare Pages",
+      "required_scenario": "Responsive grid displays readiness bar immediately after primary thesis on mobile",
+      "status": "ASSIGNED_TO_CHATGPT_UX_WORKSTREAM",
+      "execution_ownership": "CHATGPT_UX",
+      "notes": "UX workstream responsibility per Directive 058B; excluded from Antigravity execution."
+    },
+    {
+      "finding_id": "FINDING-UX-002E-04",
+      "workstream": "Track A",
+      "batch_id": "BATCH-01",
+      "target_environment": "Cloudflare Pages",
+      "required_scenario": "AlertTriggerModal traps focus, dismisses on Escape, restores focus to trigger",
+      "status": "ASSIGNED_TO_CHATGPT_UX_WORKSTREAM",
+      "execution_ownership": "CHATGPT_UX",
+      "notes": "UX workstream responsibility per Directive 058B; excluded from Antigravity execution."
+    },
+    {
+      "finding_id": "OBL-ARX-S3-004",
+      "workstream": "Track B",
+      "batch_id": "BATCH-02",
+      "target_environment": "Railway Backend & Cloudflare Frontend",
+      "required_scenario": "Radar UI distinguishes network/data errors from genuine 0-candidate results with retry CTA",
+      "status": "ENGINEERING_VERIFIED_PENDING_DEPLOYMENT_BATCH",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "verification_evidence": {
+        "test_suite": "tests/test_radar_error_zero_semantics.py",
+        "tests_passed": 5,
+        "contract_file": "api/routes/screener.py",
+        "remediation_summary": "Added top-level status, scanState, datasetState, error, partialErrors and per-candidate fail-closed exception containment.",
+        "verified_at": "2026-10-29T01:02:44Z"
+      }
+    },
+    {
+      "finding_id": "OBL-ARX-S4-RADAR-001",
+      "workstream": "Track B",
+      "batch_id": "BATCH-02",
+      "target_environment": "Railway Backend & Cloudflare Frontend",
+      "required_scenario": "Minervini VCP screening operational truth verified against canonical criteria",
+      "status": "ENGINEERING_VERIFIED_PENDING_DEPLOYMENT_BATCH",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "verification_evidence": {
+        "test_suite": "tests/test_scanner_coverage_metadata_integrity.py; tests/test_scanner_truthfulness_remediation.py",
+        "tests_passed": 35,
+        "contract_file": "analyst_dashboard/analyzers/scanner_runner.py",
+        "remediation_summary": "Fail-closed PIPELINE_PENDING semantics and scanner truthfulness verified.",
+        "verified_at": "2026-10-29T01:02:44Z"
+      }
+    },
+    {
+      "finding_id": "OBL-ARX-S3-005",
+      "workstream": "Track B",
+      "batch_id": "BATCH-02",
+      "target_environment": "Railway Backend & Cloudflare Frontend",
+      "required_scenario": "Radar table removes false affordances and displays verified date provenance",
+      "status": "ENGINEERING_VERIFIED_PENDING_DEPLOYMENT_BATCH",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "verification_evidence": {
+        "test_suite": "tests/test_radar_candidate_truth_remediation.py",
+        "tests_passed": 9,
+        "contract_file": "api/routes/screener.py",
+        "remediation_summary": "Bound screeningEligible strictly to executionStatus == IN_BUY_ZONE, enforced CPRX delisting separation, priceBasis=DAILY_CLOSE.",
+        "verified_at": "2026-10-29T01:02:44Z"
+      }
+    },
+    {
+      "finding_id": "OBL-ARX-S3-013",
+      "workstream": "Track B",
+      "batch_id": "BATCH-02",
+      "target_environment": "Railway Backend",
+      "required_scenario": "Minervini VCP pattern & stage analysis verification verified in screener route",
+      "status": "ENGINEERING_VERIFIED_PENDING_DEPLOYMENT_BATCH",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "verification_evidence": {
+        "test_suite": "tests/test_scanner_resilience_and_provenance.py; tests/test_vcp_c004_universe_wiring.py",
+        "tests_passed": 26,
+        "contract_file": "analyst_dashboard/vcp/",
+        "remediation_summary": "History-boundary containment (200-bar rule), Stage 2 verification, and causal wave segmentation verified.",
+        "verified_at": "2026-10-29T01:02:44Z"
+      }
+    },
+    {
+      "finding_id": "OBL-ARX-S2-007",
+      "workstream": "Track B",
+      "batch_id": "BATCH-02",
+      "target_environment": "Railway Backend",
+      "required_scenario": "Scanner and Radar membership synchronization verified",
+      "status": "ENGINEERING_VERIFIED_PENDING_DEPLOYMENT_BATCH",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "verification_evidence": {
+        "test_suite": "tests/test_scanner_publication_membership_contracts.py",
+        "tests_passed": 9,
+        "contract_file": "analyst_dashboard/analyzers/scanner_publication_integrity.py",
+        "remediation_summary": "Offline scanner publication membership consumer contracts verified.",
+        "verified_at": "2026-10-29T01:02:44Z"
+      }
+    },
+    {
+      "finding_id": "OBL-ARX-S2-008",
+      "workstream": "Track B",
+      "batch_id": "BATCH-02",
+      "target_environment": "Railway Backend",
+      "required_scenario": "S2-08 full-population assessment accounting envelope verified",
+      "status": "ENGINEERING_VERIFIED_PENDING_DEPLOYMENT_BATCH",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "verification_evidence": {
+        "test_suite": "tests/test_full_population_assessment_accounting.py",
+        "tests_passed": 10,
+        "contract_file": "analyst_dashboard/analyzers/",
+        "remediation_summary": "Full-population assessment outcome accounting and telemetry envelope verified.",
+        "verified_at": "2026-10-29T01:02:44Z"
+      }
+    },
+    {
+      "finding_id": "OBL-ARX-S2-009",
+      "workstream": "Track B",
+      "batch_id": "BATCH-02",
+      "target_environment": "Cloudflare Frontend",
+      "required_scenario": "Radar coverage disclosure & analysis handoff alignment verified",
+      "status": "ENGINEERING_VERIFIED_PENDING_DEPLOYMENT_BATCH",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "verification_evidence": {
+        "test_suite": "tests/test_radar_coverage_disclosure_semantics.py",
+        "tests_passed": 12,
+        "contract_file": "api/routes/screener.py",
+        "remediation_summary": "5-tier lifecycle semantics and decisionContextId handoff verified.",
+        "verified_at": "2026-10-29T01:02:44Z"
+      }
+    },
+    {
+      "finding_id": "OBL-ARX-S2-005",
+      "workstream": "Track B",
+      "batch_id": "BATCH-02",
+      "target_environment": "Railway Backend",
+      "required_scenario": "Market data coverage and 150-symbol processing capacity verified",
+      "status": "ENGINEERING_VERIFIED_PENDING_DEPLOYMENT_BATCH",
+      "execution_ownership": "ANTIGRAVITY_NON_UX",
+      "verification_evidence": {
+        "test_suite": "tests/test_coverage_capacity_diagnostics.py; tests/test_universe_coverage_capacity.py",
+        "tests_passed": 33,
+        "contract_file": "analyst_dashboard/data_sources/",
+        "remediation_summary": "Verified provider reliability, processing capacity, and data freshness diagnostics.",
+        "verified_at": "2026-10-29T01:02:44Z"
+      }
+    },
+    {
+      "finding_id": "OBL-ARX-S3-016",
+      "workstream": "Track C",
+      "batch_id": "BATCH-03",
+      "target_environment": "Cloudflare Pages",
+      "required_scenario": "Synthesis E V3 application-wide UX parity and decision hierarchy verified across routes",
+      "status": "ASSIGNED_TO_CHATGPT_UX_WORKSTREAM",
+      "execution_ownership": "CHATGPT_UX",
+      "notes": "UX workstream responsibility per Directive 058B; excluded from Antigravity execution."
+    },
+    {
+      "finding_id": "OBL-ARX-S3-006",
+      "workstream": "Track C",
+      "batch_id": "BATCH-03",
+      "target_environment": "Cloudflare Pages",
+      "required_scenario": "Research workstation decision-first layout verified across FIX, DUOL, ULTA, MEDP, ISRG, DECK",
+      "status": "ASSIGNED_TO_CHATGPT_UX_WORKSTREAM",
+      "execution_ownership": "CHATGPT_UX",
+      "notes": "UX workstream responsibility per Directive 058B; excluded from Antigravity execution."
+    },
+    {
+      "finding_id": "FINDING-UX-002F-01",
+      "workstream": "Track C",
+      "batch_id": "BATCH-03",
+      "target_environment": "Cloudflare Pages",
+      "required_scenario": "Full-page analysis view reduces vertical scroll by >= 30% and consolidates redundant explanations",
+      "status": "ASSIGNED_TO_CHATGPT_UX_WORKSTREAM",
+      "execution_ownership": "CHATGPT_UX",
+      "notes": "UX workstream responsibility per Directive 058B; excluded from Antigravity execution."
+    },
+    {
+      "finding_id": "FINDING-UX-002F-02",
+      "workstream": "Track C",
+      "batch_id": "BATCH-03",
+      "target_environment": "Cloudflare Pages",
+      "required_scenario": "Guided, Standard, and Quant personas pass live browser acceptance testing",
+      "status": "ASSIGNED_TO_CHATGPT_UX_WORKSTREAM",
+      "execution_ownership": "CHATGPT_UX",
+      "notes": "UX workstream responsibility per Directive 058B; excluded from Antigravity execution."
+    }
+  ],
+  "directive": "ARX_058B_NON_UX_REMEDIATION_EXECUTION",
+  "last_updated": "2026-10-29T01:02:44Z"
+}

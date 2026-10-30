@@ -1087,7 +1087,7 @@ export interface GemCandidate {
   archetype_alignment?: string;
   rvol?: string | null;
   riskRewardRatio?: number | null;
-  current_price?: number;
+  current_price?: number | null;
   priceBasis?: "DAILY_CLOSE" | null;
   priceDate?: string | null;
   execution_status?: string;
@@ -1118,7 +1118,10 @@ export interface ScreenerResponse {
   population?: CandidatePopulationModel;
   results: GemCandidate[];
   error?: string | null;
-  status?: "SUCCESS" | "ERROR" | "TIMEOUT";
+  status?: "SUCCESS" | "PARTIAL" | "ERROR" | "TIMEOUT";
+  scanState?: string;
+  datasetState?: string;
+  partialErrors?: unknown[];
 }
 
 // 🧠 Global Spot Price & Metadata Registry (Enforces 100% price parity across all timeframes)
@@ -1756,6 +1759,185 @@ export async function fetchCanonicalInstrument(
   }
 }
 
+/**
+ * Authoritative Candidate Eligibility Resolution (ARX-036-D11R-FINAL Gate 3)
+ *
+ * Removes unjustified eligibility inference. Missing eligibility strictly evaluates to false.
+ * Delisted and unverified candidates are strictly ineligible (screeningEligible = false).
+ */
+export function resolveCandidateEligibility(r: any): {
+  screeningEligible: boolean;
+  screeningStatus: string;
+  screeningGeometry: string;
+  diagnosticClass?: string;
+} {
+  const isDelisted =
+    r.executionStatus === "DELISTED_SECURITY" ||
+    r.execution_status === "DELISTED_SECURITY" ||
+    r.isDelisted === true ||
+    r.status === "DELISTED";
+
+  const isUnverified =
+    r.executionStatus === "UNVERIFIED_ASSET" ||
+    r.execution_status === "UNVERIFIED_ASSET" ||
+    r.status === "UNVERIFIED_ASSET";
+
+  // Invariant 1: Delisted or Unverified securities can NEVER be screeningEligible
+  if (isDelisted) {
+    return {
+      screeningEligible: false,
+      screeningStatus: "DELISTED",
+      screeningGeometry: "INACTIVE",
+    };
+  }
+
+  if (isUnverified) {
+    return {
+      screeningEligible: false,
+      screeningStatus: "UNVERIFIED",
+      screeningGeometry: "OUTSIDE_TOLERANCE",
+    };
+  }
+
+  // Invariant 2 (ARX-036-D11R-CLOSE Gate B / F-01):
+  // screeningEligible === true strictly requires executionStatus === "IN_BUY_ZONE"
+  // AND explicit backend eligibility value of true. All other combinations are noneligible.
+  const rawStatus = typeof r.executionStatus === "string" && r.executionStatus.trim().length > 0
+    ? r.executionStatus.trim()
+    : (typeof r.execution_status === "string" ? r.execution_status.trim() : "UNKNOWN");
+
+  const isInBuyZone = rawStatus === "IN_BUY_ZONE";
+  const hasAuthoritativeTrue = r.screeningEligible === true;
+  const resolvedEligible = isInBuyZone && hasAuthoritativeTrue;
+
+  // Bounded diagnostic classification for contradictory or unverified states:
+  let diagnosticClass: string | undefined = undefined;
+  if (!isInBuyZone && r.screeningEligible === true) {
+    diagnosticClass = "CONTRADICTORY_ELIGIBILITY_STATUS_MISMATCH";
+  } else if (isInBuyZone && r.screeningEligible === false) {
+    diagnosticClass = "CONTRADICTORY_BUY_ZONE_INELIGIBLE";
+  } else if (isInBuyZone && typeof r.screeningEligible !== "boolean") {
+    diagnosticClass = "MISSING_ELIGIBILITY_AUTHORITY";
+  }
+
+  const authoritativeStatus = typeof r.screeningStatus === "string" && r.screeningStatus.trim().length > 0
+    ? r.screeningStatus.trim()
+    : rawStatus;
+
+  const authoritativeGeometry = typeof r.screeningGeometry === "string" && r.screeningGeometry.trim().length > 0
+    ? r.screeningGeometry.trim()
+    : (isInBuyZone ? "WITHIN_TOLERANCE" : "UNKNOWN");
+
+  return {
+    screeningEligible: resolvedEligible,
+    screeningStatus: authoritativeStatus,
+    screeningGeometry: authoritativeGeometry,
+    ...(diagnosticClass ? { diagnosticClass } : {}),
+  };
+}
+
+export type CanonicalRadarStatus = "SUCCESS" | "PARTIAL" | "ERROR" | "TIMEOUT";
+
+/**
+ * Strict Fail-Closed Radar Envelope Normalization (ARX-036-D11R-FINAL Gate 2)
+ *
+ * Canonical expected states:
+ * - SUCCESS / COMPLETED / CANDIDATES_AVAILABLE
+ * - SUCCESS / COMPLETED / GENUINELY_EMPTY
+ * - PARTIAL / PARTIAL / CANDIDATES_AVAILABLE
+ * - PARTIAL / PARTIAL / GENUINELY_EMPTY
+ * - ERROR / FAILED / SCAN_FAILED
+ *
+ * Unknown, contradictory, or malformed state combinations FAIL CLOSED to ERROR.
+ * Verified legacy Sprint 3 contracts are recognized only when demonstrated safety criteria are met.
+ */
+export function normalizeRadarEnvelopeState(data: any): {
+  normalizedStatus: CanonicalRadarStatus;
+  normalizedError: string | null;
+  scanState: string | undefined;
+  datasetState: string | undefined;
+} {
+  if (data?.status === "TIMEOUT") {
+    return {
+      normalizedStatus: "TIMEOUT",
+      normalizedError: typeof data.error === "string" ? data.error : "Radar request timed out",
+      scanState: typeof data?.scanState === "string" ? data.scanState : "FAILED",
+      datasetState: typeof data?.datasetState === "string" ? data.datasetState : "SCAN_FAILED",
+    };
+  }
+
+  const rawStatus = typeof data?.status === "string" ? data.status.trim() : undefined;
+  const rawScanState = typeof data?.scanState === "string" ? data.scanState.trim() : undefined;
+  const rawDatasetState = typeof data?.datasetState === "string" ? data.datasetState.trim() : undefined;
+  const rawError = typeof data?.error === "string" && data.error.trim().length > 0 ? data.error.trim() : null;
+
+  const hasModernFields = rawStatus !== undefined || rawScanState !== undefined || rawDatasetState !== undefined;
+
+  if (hasModernFields) {
+    // 1. Explicit Error / Failure states
+    if (
+      (rawStatus === "ERROR" && rawScanState === "FAILED" && rawDatasetState === "SCAN_FAILED") ||
+      rawDatasetState === "SCAN_FAILED" ||
+      rawScanState === "FAILED" ||
+      rawStatus === "ERROR"
+    ) {
+      return {
+        normalizedStatus: "ERROR",
+        normalizedError: rawError ?? "Radar scan failed at dataset evaluation layer",
+        scanState: rawScanState ?? "FAILED",
+        datasetState: rawDatasetState ?? "SCAN_FAILED",
+      };
+    }
+
+    // 2. Canonical PARTIAL tuples
+    if (
+      rawStatus === "PARTIAL" &&
+      rawScanState === "PARTIAL" &&
+      (rawDatasetState === "CANDIDATES_AVAILABLE" || rawDatasetState === "GENUINELY_EMPTY")
+    ) {
+      return {
+        normalizedStatus: "PARTIAL",
+        normalizedError: rawError,
+        scanState: "PARTIAL",
+        datasetState: rawDatasetState,
+      };
+    }
+
+    // 3. Canonical SUCCESS tuples (Must NOT have error payload)
+    if (
+      rawStatus === "SUCCESS" &&
+      rawScanState === "COMPLETED" &&
+      (rawDatasetState === "CANDIDATES_AVAILABLE" || rawDatasetState === "GENUINELY_EMPTY") &&
+      !rawError
+    ) {
+      return {
+        normalizedStatus: "SUCCESS",
+        normalizedError: null,
+        scanState: "COMPLETED",
+        datasetState: rawDatasetState,
+      };
+    }
+
+    // 4. Contradictory, unknown, or malformed modern envelope FAILS CLOSED to ERROR
+    return {
+      normalizedStatus: "ERROR",
+      normalizedError: rawError ?? `Unrecognized or contradictory Radar scan state tuple: [status=${rawStatus}, scanState=${rawScanState}, datasetState=${rawDatasetState}]`,
+      scanState: rawScanState ?? "FAILED",
+      datasetState: rawDatasetState ?? "SCAN_FAILED",
+    };
+  }
+
+  // 5. Ambiguous Legacy Envelope lacking modern scan-state contracts (ARX-036-D11R-CLOSE Gate C / F-02: Option B)
+  // Fail closed for ambiguous legacy envelopes lacking status/scanState/datasetState.
+  // Legacy producer shapes cannot be discriminated reliably between completed and partial/timed-out scans.
+  return {
+    normalizedStatus: "ERROR",
+    normalizedError: rawError ?? "Legacy API response lacks modern scan-state fields (status, scanState, datasetState). Cannot safely verify scan completion. Deployment requires modern backend contracts.",
+    scanState: "FAILED",
+    datasetState: "SCAN_FAILED",
+  };
+}
+
 export async function fetchScreenerGems(model: string = "all"): Promise<ScreenerResponse> {
   try {
     const baseUrl = getApiBaseUrl();
@@ -1787,6 +1969,7 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
         const gemVal = typeof r.gemScore === "number" && Number.isFinite(r.gemScore)
           ? Math.round(r.gemScore)
           : null;
+        const eligibility = resolveCandidateEligibility(r);
 
         return {
           ticker: r.ticker || r.symbol || r.companyName || "UNKNOWN",
@@ -1807,17 +1990,19 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
           primary_catalyst: r.catalyst || "",
           factor_verdict: r.executionStatus || "WAITING_PULLBACK",
           dna_verdict: r.confluenceRating || "",
-          current_price: r.currentPrice || r.current_price,
+          current_price: (typeof (r.currentPrice ?? r.current_price) === "number" && Number.isFinite(r.currentPrice ?? r.current_price) && (r.currentPrice ?? r.current_price) > 0)
+            ? Number((r.currentPrice ?? r.current_price).toFixed(2))
+            : null,
           priceBasis: r.priceBasis ?? null,
           priceDate: r.priceDate ?? null,
           execution_status: r.executionStatus || r.execution_status,
-          screeningStatus: r.screeningStatus || (r.executionStatus === "IN_BUY_ZONE" ? "SCREENING_ZONE" : (r.executionStatus || "PULLBACK_PENDING")),
-          screeningGeometry: r.screeningGeometry || (r.executionStatus === "IN_BUY_ZONE" ? "WITHIN_TOLERANCE" : "OUTSIDE_TOLERANCE"),
-          screeningEligible: typeof r.screeningEligible === "boolean" ? r.screeningEligible : Boolean(r.executionStatus === "IN_BUY_ZONE"),
+          screeningStatus: eligibility.screeningStatus,
+          screeningGeometry: eligibility.screeningGeometry,
+          screeningEligible: eligibility.screeningEligible,
           rvol: typeof r.rvol === "string" ? r.rvol : null,
           riskRewardRatio: typeof r.riskRewardRatio === "number" ? r.riskRewardRatio : null,
-          decisionState: r.decisionState || "VALID_SETUP",
-          decisionStateLabel: r.decisionStateLabel || "Discovery Candidate — Analyze for Trigger",
+          decisionState: r.decisionState || "UNVERIFIED_SETUP",
+          decisionStateLabel: r.decisionStateLabel || (r.decisionState === "ACTIONABLE_SETUP" ? "Discovery Candidate — Analyze for Trigger" : "Unverified Setup"),
           // Invariant: Screener output is discovery-only. Canonical actionability strictly requires Single-Asset DecisionTrace.
           isActionable: false,
           canSizeTrade: false,
@@ -1829,14 +2014,19 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
         };
       });
 
+      const stateNorm = normalizeRadarEnvelopeState(data);
+
       return {
         total_candidates: candidates.length,
         gems_found: candidates.length,
         ...(capabilities ? { capabilities } : {}),
         population: (data as any)?.population || undefined,
         results: candidates,
-        status: "SUCCESS",
-        error: null,
+        status: stateNorm.normalizedStatus,
+        scanState: stateNorm.scanState,
+        datasetState: stateNorm.datasetState,
+        partialErrors: Array.isArray(data.partialErrors) ? data.partialErrors : undefined,
+        error: stateNorm.normalizedError,
       };
     } else {
       console.warn(`Screener API HTTP error: ${res.status} ${res.statusText}`);

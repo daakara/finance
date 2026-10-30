@@ -107,7 +107,7 @@ export function SharedExecutionLadder({
 
   return (
     <div id="card-middle-panel" className="middle-panel space-y-2 pt-1 font-mono">
-      <div className="panel-head flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+      <div className="panel-head flex items-center justify-between text-[10px] font-bold text-[var(--text-2)] uppercase tracking-wider">
         <span id="middle-panel-title">{labels.title}</span>
         <span id="middle-panel-sub" className="mono text-cyan-300">
           {labels.rr} {kl.profitRiskRatio ? `${kl.profitRiskRatio.toFixed(2)} : 1.0` : "N/A"}
@@ -118,8 +118,8 @@ export function SharedExecutionLadder({
         data-testid="cockpit-execution-ladder"
         className="ladder-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs"
       >
-        <div className="ladder-cell min-w-0 p-2.5 rounded-xl bg-[#070b13] border border-[#1b2639]">
-          <span className="cell-lbl text-[10px] text-slate-400 block uppercase font-bold">
+        <div className="ladder-cell min-w-0 p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)]">
+          <span className="cell-lbl text-[10px] text-[var(--text-2)] block uppercase font-bold">
             {labels.pivot}
           </span>
           <span
@@ -130,8 +130,8 @@ export function SharedExecutionLadder({
             {pivotPrice != null ? `$${pivotPrice.toFixed(2)}` : "N/A"}
           </span>
         </div>
-        <div className="ladder-cell min-w-0 p-2.5 rounded-xl bg-[#070b13] border border-[#1b2639]">
-          <span className="cell-lbl text-[10px] text-slate-400 block uppercase font-bold">
+        <div className="ladder-cell min-w-0 p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)]">
+          <span className="cell-lbl text-[10px] text-[var(--text-2)] block uppercase font-bold">
             {labels.entry}
           </span>
           <span
@@ -142,7 +142,7 @@ export function SharedExecutionLadder({
             {kl.entryMin != null && kl.entryMax != null && kl.entryMin > 0 && kl.entryMax >= kl.entryMin ? (
               <span className="flex flex-wrap items-baseline gap-1">
                 <span className="tabular-nums whitespace-nowrap">${kl.entryMin.toFixed(2)}</span>
-                <span className="text-slate-400 font-normal text-[10px] sm:text-xs">to</span>
+                <span className="text-[var(--text-2)] font-normal text-[10px] sm:text-xs">to</span>
                 <span className="tabular-nums whitespace-nowrap">${kl.entryMax.toFixed(2)}</span>
               </span>
             ) : (
@@ -150,8 +150,8 @@ export function SharedExecutionLadder({
             )}
           </span>
         </div>
-        <div className="ladder-cell min-w-0 p-2.5 rounded-xl bg-[#070b13] border border-[#1b2639]">
-          <span className="cell-lbl text-[10px] text-slate-400 block uppercase font-bold">
+        <div className="ladder-cell min-w-0 p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)]">
+          <span className="cell-lbl text-[10px] text-[var(--text-2)] block uppercase font-bold">
             {labels.stop}
           </span>
           <span
@@ -168,7 +168,7 @@ export function SharedExecutionLadder({
                       (Inverted Stop ≥ Pivot)
                     </span>
                   ) : (
-                    <span className="text-rose-400/80 font-normal text-[10px] whitespace-nowrap">
+                    <span className="text-rose-400 font-normal text-[10px] whitespace-nowrap">
                       (-{(((pivotPrice - kl.stopLoss) / pivotPrice) * 100).toFixed(1)}% base)
                     </span>
                   )
@@ -181,8 +181,8 @@ export function SharedExecutionLadder({
             )}
           </span>
         </div>
-        <div className="ladder-cell min-w-0 p-2.5 rounded-xl bg-[#070b13] border border-[#1b2639]">
-          <span className="cell-lbl text-[10px] text-slate-400 block uppercase font-bold">
+        <div className="ladder-cell min-w-0 p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)]">
+          <span className="cell-lbl text-[10px] text-[var(--text-2)] block uppercase font-bold">
             {labels.target}
           </span>
           <span
@@ -215,12 +215,12 @@ export function SharedExecutionLadder({
       </div>
 
       {/* Position Sizing & Preflight Clearance Link */}
-      <div id="card-sizing-bar" className="sizing-bar border-t border-[#182335] pt-2 space-y-1.5 text-xs font-mono">
-        <div className="sizing-meta flex items-center justify-between text-slate-300">
+      <div id="card-sizing-bar" className="sizing-bar !block border-t border-[var(--border-subtle)] pt-2 space-y-1.5 text-xs font-mono">
+        <div className="sizing-meta flex items-center justify-between text-[var(--text-2)]">
           <span id="sizing-line-1">
             Position Size:{" "}
             {isStaleTape ? (
-              <span id="sizing-shares" className="text-slate-500 font-bold">
+              <span id="sizing-shares" className="text-[var(--text-muted)] font-bold">
                 Execution Prohibited (Stale Tape)
               </span>
             ) : onOpenSizer ? (
@@ -234,7 +234,7 @@ export function SharedExecutionLadder({
                 {labels.sizingButton}
               </button>
             ) : (
-              <span id="sizing-shares" className="text-slate-400 font-bold">
+              <span id="sizing-shares" className="text-[var(--text-2)] font-bold">
                 {isActionable ? "Configured" : "0 Shares (Pending)"}
               </span>
             )}
@@ -248,19 +248,19 @@ export function SharedExecutionLadder({
             <span>🛡️ Pre-Flight Clearance ↓</span>
           </a>
         </div>
-        <div className="sizing-matrix-grid grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-          <div className="sizing-cell p-2.5 rounded-lg bg-[#070b13] border border-[#1b2639] space-y-1">
-            <div className="flex items-center justify-between text-[10px] text-slate-400 uppercase font-bold">
+        <div className="sizing-matrix-grid grid !grid-cols-1 sm:!grid-cols-2 gap-2 text-[11px]">
+          <div className="sizing-cell p-2.5 rounded-lg bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-1">
+            <div className="flex items-center justify-between text-[10px] text-[var(--text-2)] uppercase font-bold">
               <span className="sizing-lbl">Stop Distance & Risk Basis</span>
               <span
                 className={`px-1 rounded text-[9px] font-mono ${
                   isStaleTape
-                    ? "bg-slate-800 text-slate-400 border border-slate-700"
+                    ? "bg-slate-800 text-[var(--text-2)] border border-slate-700"
                     : isExtended
                     ? "bg-amber-950/80 text-amber-300 border border-amber-800/80"
                     : isInBuyZone
                     ? "bg-emerald-950/80 text-emerald-300 border border-emerald-800/80"
-                    : "bg-[#141c2e] text-slate-400"
+                    : "bg-[var(--surface-2)] text-[var(--text-2)]"
                 }`}
               >
                 {isStaleTape
@@ -268,7 +268,7 @@ export function SharedExecutionLadder({
                   : isExtended
                   ? "Extended (High Risk)"
                   : isInBuyZone
-                  ? "In Buy Zone"
+                  ? "Analysis input in corridor"
                   : "Awaiting Setup"}
               </span>
             </div>
@@ -279,8 +279,8 @@ export function SharedExecutionLadder({
               {kl.stopLoss && hasValidPrice ? (
                 <>
                   <div className="flex items-baseline justify-between gap-1">
-                    <span className="text-[10px] text-slate-400 font-normal">
-                      From Current Spot (${(rawPrice as number).toFixed(2)}):
+                    <span className="text-[10px] text-[var(--text-2)] font-normal">
+                      From analysis input (${(rawPrice as number).toFixed(2)}):
                     </span>
                     <span className="tabular-nums">
                       -${Math.abs((rawPrice as number) - kl.stopLoss).toFixed(2)} (-
@@ -290,9 +290,9 @@ export function SharedExecutionLadder({
                   {pivotPrice != null &&
                     pivotPrice > 0 &&
                     Math.abs((rawPrice as number) - pivotPrice) > 0.05 && (
-                      <div className="flex items-baseline justify-between gap-1 text-[10px] text-slate-400 font-normal border-t border-[#182335] pt-0.5">
+                      <div className="flex items-baseline justify-between gap-1 text-[10px] text-[var(--text-2)] font-normal border-t border-[var(--border-subtle)] pt-0.5">
                         <span>Planned from Pivot (${pivotPrice.toFixed(2)}):</span>
-                        <span className="text-slate-300 font-mono tabular-nums">
+                        <span className="text-[var(--text-2)] font-mono tabular-nums">
                           -${Math.abs(pivotPrice - kl.stopLoss).toFixed(2)} (-
                           {Math.abs(((pivotPrice - kl.stopLoss) / pivotPrice) * 100).toFixed(2)}%)
                         </span>
@@ -304,14 +304,14 @@ export function SharedExecutionLadder({
               )}
             </div>
           </div>
-          <div className="sizing-cell p-2.5 rounded-lg bg-[#070b13] border border-[#1b2639] space-y-1">
-            <div className="flex items-center justify-between text-[10px] text-slate-400 uppercase font-bold">
+          <div className="sizing-cell p-2.5 rounded-lg bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-1">
+            <div className="flex items-center justify-between text-[10px] text-[var(--text-2)] uppercase font-bold">
               <span className="sizing-lbl">Position Sizing Basis</span>
               <span className="text-[9px] font-mono text-cyan-400">
                 {isStaleTape ? "Prohibited" : isActionable ? "Model Active" : "Suppressed"}
               </span>
             </div>
-            <span id="sizing-utilization" className="sizing-val mono font-bold text-slate-300 block text-xs">
+            <span id="sizing-utilization" className="sizing-val mono font-bold text-[var(--text-2)] block text-xs">
               {isStaleTape
                 ? "Execution Prohibited (Stale Tape)"
                 : !isActionable

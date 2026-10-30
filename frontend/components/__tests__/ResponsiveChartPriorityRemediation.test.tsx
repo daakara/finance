@@ -149,7 +149,7 @@ describe("Responsive Chart Priority Remediation Acceptance Suite", () => {
       />
     );
 
-    const grid = container.querySelector(".grid");
+    const grid = container.querySelector('[data-testid="primary-workspace-grid"]');
     const directChildren = Array.from(grid?.children || []);
 
     // Child 0: Left Column (Verdict) has order-1
