@@ -194,13 +194,15 @@ def _build_smart_money_confluence_inputs(sym: str) -> Dict[str, Any]:
     clean_sym = sym.upper().replace("-USD", "").strip()
     options_flow = smart_money_engine.get_options_flow(clean_sym) or []
     has_options_flow = any("CALL" in (o.get("type", "") or "").upper() for o in options_flow)
-    return {
-        "has_insider_buy": False,
-        "insider_value_usd": 0.0,
-        "insider_name": "",
-        "has_congress_buy": False,
-        "has_options_flow": has_options_flow,
-    }
+    if has_options_flow:
+        return {
+            "has_insider_buy": False,
+            "insider_value_usd": 0.0,
+            "insider_name": "",
+            "has_congress_buy": False,
+            "has_options_flow": True,
+        }
+    return None
 
 
 def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, Any]], is_stale: bool) -> Optional[Dict[str, Any]]:

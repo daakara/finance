@@ -677,14 +677,14 @@ def run_screener_get(
                 execution_status = "INSUFFICIENT_HISTORY"
                 status_label = "⏳ Insufficient History"
                 status_color = "cyan"
+            elif execution.get("execution_status") == "STOPPED_OUT" or (stop_loss is not None and current_price is not None and current_price < stop_loss):
+                execution_status = "STOPPED_OUT"
+                status_label = "🛑 Below Stop Loss"
+                status_color = "rose"
             elif execution.get("stage_phase") == "Stage 4 Markdown (Awaiting New Base)":
                 execution_status = "WAITING_PULLBACK"
                 status_label = "⏳ Awaiting Base Formation"
                 status_color = "cyan"
-            elif stop_loss is not None and current_price is not None and current_price < stop_loss:
-                execution_status = "STOPPED_OUT"
-                status_label = "🛑 Below Stop Loss"
-                status_color = "rose"
             elif execution.get("execution_status") == "APPROACHING_TARGET" or (tp1 is not None and current_price is not None and current_price >= tp1 * 0.96):
                 execution_status = "APPROACHING_TARGET"
                 status_label = "🚀 Session ORB Breakout" if is_day_trader else "🚀 Near TP Target"
@@ -759,6 +759,28 @@ def run_screener_get(
                     "has_options_flow": False,
                 } if (has_insider or has_congress) else None
     
+                # Authoritative factor snapshot from market database
+                factor_snap = market_db.get_factor_snapshot(sym)
+                q_score = factor_snap.get("quality_score") if (factor_snap and factor_snap.get("quality_score") is not None) else (float(r.get("quality_score")) if r.get("quality_score") is not None else None)
+                g_score = factor_snap.get("growth_score") if (factor_snap and factor_snap.get("growth_score") is not None) else (float(r.get("growth_score")) if r.get("growth_score") is not None else None)
+                v_score = factor_snap.get("valuation_score") if (factor_snap and factor_snap.get("valuation_score") is not None) else (float(r.get("valuation_score")) if r.get("valuation_score") is not None else None)
+                pio_f = factor_snap.get("piotroski_f") if (factor_snap and factor_snap.get("piotroski_f") is not None) else (int(r.get("piotroski_f")) if r.get("piotroski_f") is not None else None)
+                res_roic = factor_snap.get("roic") if (factor_snap and factor_snap.get("roic") is not None) else roic_val
+                res_peg = factor_snap.get("peg") if (factor_snap and factor_snap.get("peg") is not None) else (float(r.get("peg_ratio")) if r.get("peg_ratio") is not None else None)
+
+                fund_data = {
+                    "qualityScore": q_score,
+                    "growthScore": g_score,
+                    "valuationScore": v_score,
+                    "piotroski_f": pio_f,
+                    "roic": res_roic,
+                    "peg": res_peg,
+                } if any(v is not None for v in [q_score, g_score, v_score, pio_f, res_roic, res_peg]) else None
+
+                cat_report = market_db.get_catalyst(sym)
+                if not cat_report and days_to_earn is not None:
+                    cat_report = {"days_to_earnings": days_to_earn}
+
                 # Compute multi-factor confluence conviction score
                 confluence_res = confluence_engine.calculate_confluence(
                     symbol=sym,
@@ -766,23 +788,14 @@ def run_screener_get(
                         "executionStatus": execution_status,
                         "riskRewardRatio": rr_ratio,
                         "setup_pattern": setup_pat,
-                        "stage_phase": "Stage 2 Breakout" if execution_status == "IN_BUY_ZONE" else "Institutional Accumulation",
+                        "stage_phase": execution.get("stage_phase") or ("Stage 2 Breakout" if execution_status == "IN_BUY_ZONE" else "Institutional Accumulation"),
                         "rsi_14": execution.get("rsi_14"),
                         "stop_loss": stop_loss,
                         "current_price": current_price,
                     },
                     smart_money_data=smart_data,
-                    fundamental_data={
-                        "qualityScore": float(r.get("quality_score")) if r.get("quality_score") is not None else None,
-                        "growthScore": float(r.get("growth_score")) if r.get("growth_score") is not None else None,
-                        "valuationScore": float(r.get("valuation_score")) if r.get("valuation_score") is not None else None,
-                        "piotroski_f": int(r.get("piotroski_f")) if r.get("piotroski_f") is not None else None,
-                        "roic": roic_val,
-                        "peg": float(r.get("peg_ratio")) if r.get("peg_ratio") is not None else None,
-                    } if any(r.get(k) is not None for k in ["quality_score", "growth_score", "valuation_score", "piotroski_f", "roic_pct", "peg_ratio"]) else None,
-                    catalyst_data={
-                        "days_to_earnings": days_to_earn,
-                    } if days_to_earn is not None else None,
+                    fundamental_data=fund_data,
+                    catalyst_data=cat_report,
                     macro_data=shared_macro,
                 )
     
@@ -1005,6 +1018,14 @@ def run_screener_get(
             "unverifiedRecordCount": len(unverified_candidates),
         }
     
+        capabilities_dict = get_radar_capabilities(vcp_snapshot=vcp_snapshot, sm_snapshot=sm_snapshot)
+
+        # Zero-semantics resolution for category-filtered scans
+        is_pipeline_pending_filter = (
+            (filter_type == "vcp" and capabilities_dict.get("VCP", {}).get("status") == "PIPELINE_PENDING")
+            or (filter_type == "smart_money" and capabilities_dict.get("SMART_MONEY", {}).get("status") == "PIPELINE_PENDING")
+        )
+
         # Derive canonical dataset and scan status
         if len(partial_errors) == len(results) and len(results) > 0:
             status_val = "ERROR"
@@ -1014,12 +1035,12 @@ def run_screener_get(
         elif len(partial_errors) > 0:
             status_val = "PARTIAL"
             scan_state = "PARTIAL"
-            dataset_state = "CANDIDATES_AVAILABLE" if len(filtered) > 0 else "GENUINELY_EMPTY"
+            dataset_state = "PIPELINE_PENDING" if is_pipeline_pending_filter else ("CANDIDATES_AVAILABLE" if len(filtered) > 0 else "GENUINELY_EMPTY")
             overall_error = f"Partial evaluation error affecting {len(partial_errors)} assets"
         else:
             status_val = "SUCCESS"
             scan_state = "COMPLETED"
-            dataset_state = "CANDIDATES_AVAILABLE" if len(filtered) > 0 else "GENUINELY_EMPTY"
+            dataset_state = "PIPELINE_PENDING" if is_pipeline_pending_filter else ("CANDIDATES_AVAILABLE" if len(filtered) > 0 else "GENUINELY_EMPTY")
             overall_error = None
     
         return {
@@ -1032,7 +1053,7 @@ def run_screener_get(
             "gemsFound": len(filtered),
             "activeFilter": filter_type,
             "userRole": user_role,
-            "capabilities": get_radar_capabilities(vcp_snapshot=vcp_snapshot, sm_snapshot=sm_snapshot),
+            "capabilities": capabilities_dict,
             "macroContextId": shared_macro_context_id,
             "macroDifficulty": shared_macro,
             "population": population_model,
