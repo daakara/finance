@@ -1,159 +1,787 @@
 {
-  "release_candidate_commit": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
-  "base_anchor_commit": "6d4020ca3fef3ae07ac01204b03e0629b6a7cc79",
-  "total_files": 33,
+  "release_candidate_commit": "f1ed7171e9b7031c9233f1290655ec0d7fa095af",
+  "base_anchor_commit": "cdc47a2eee8a427aaa6cf3ab5d01cad7f35d71e1",
+  "total_files": 96,
+  "qualification_policy_version": "2.2.0-D074A4",
+  "directive": "ARX-036-D12A",
   "files": {
-    "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json": {
-      "sha256": "e357861680af1f8f5d81d0e60fe3a92489f36d62c60f642a656c8a8922dc58ec",
-      "size_bytes": 1517
+    ".github/workflows/ci.yml": {
+      "operation": "M",
+      "sha256": "5aa506f59721c40c75ca516630b1903f1908d736c598a7c97089775909271fe8",
+      "size_bytes": 7681,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
     },
-    "analyst_dashboard/analyzers/confluence_engine.py": {
-      "sha256": "9df887574c4efc128fceb7b1ff4191bff701bfb323e0b9453240646f1a29e9ec",
-      "size_bytes": 29080
+    "ARX_058A_MASTER_FINDING_REGISTER.json": {
+      "operation": "A",
+      "sha256": "6747cd7dd96dae49610af8491c9c98d0bd5826393b3d8557eaa31e4970b4c7a2",
+      "size_bytes": 113469,
+      "originating_pr_number": 127,
+      "originating_commit": "38d3028",
+      "governing_requirement": "Radar reliability, lifecycle state & test isolation"
     },
-    "docs/planning/ARX_058_BASELINE_AND_SOURCE_INVENTORY.md": {
-      "sha256": "9891a57bfbc65c9c0bfb2a9fe331e1ca37559f413886c46b5ee2d105439ac788",
-      "size_bytes": 10061
+    "ARX_058A_PRODUCTION_VERIFICATION_LEDGER.json": {
+      "operation": "A",
+      "sha256": "150a10757e044b53c4bbf7869cc2d9be81a4d5de82f0b806eaf2521f36b13f73",
+      "size_bytes": 13268,
+      "originating_pr_number": 127,
+      "originating_commit": "38d3028",
+      "governing_requirement": "Radar reliability, lifecycle state & test isolation"
     },
-    "docs/planning/ARX_058_CLOSURE_EVIDENCE_MANIFEST.json": {
-      "sha256": "a4a9063fa399b67460c1ffb113f43c16c0259e7594f2e3b55ed19895674acc75",
-      "size_bytes": 8630
+    "ARX_UX_OWNER_REVIEW_PACKAGE.md": {
+      "operation": "A",
+      "sha256": "a19e75953ff2c7f486cfc386375e1b9acfdff162c39a9e6cebce164241dde489",
+      "size_bytes": 9817,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
     },
-    "docs/planning/ARX_058_CROSS_AUDIT_OBLIGATION_REGISTER.csv": {
-      "sha256": "ad065120b450e04037e028266f99b2c7268fdf5c5ecc1fd46077553704f2b2a6",
-      "size_bytes": 32297
+    "README.md": {
+      "operation": "M",
+      "sha256": "fc7dd3a915801fcb47bd0bab0311c8a93b68616c25fc9457030c1b81de2d0b5f",
+      "size_bytes": 11722,
+      "originating_pr_number": 132,
+      "originating_commit": "3c66f09",
+      "governing_requirement": "Master documentation baseline reconciliation & SOT update"
     },
-    "docs/planning/ARX_058_DEPENDENCY_AND_PRODUCT_IMPACT.md": {
-      "sha256": "7ccc7c6bd4f003c1c82a0ec1a780d538aab8a3cecb710dd7fbf4051490c956df",
-      "size_bytes": 8459
+    "api/routes/screener.py": {
+      "operation": "M",
+      "sha256": "68d899dca860056708ac394ceee977e1374a616b2abdd52e5eef024f9454e415",
+      "size_bytes": 69675,
+      "originating_pr_number": 127,
+      "originating_commit": "38d3028",
+      "governing_requirement": "Radar reliability, lifecycle state & test isolation"
     },
-    "docs/planning/ARX_058_FINAL_PRE_SPRINT5_OWNER_GATE.md": {
-      "sha256": "ae81d23a294ab774b7db2f5960c1b9396f0025f5dccacc6604f80c6b650b6546",
-      "size_bytes": 9643
+    "audit-output/post-audit-ux/review-public/app-guided-AAPL-paper-390.jpg": {
+      "operation": "A",
+      "sha256": "d6aae300593a17dd7d9df825fa8fca09989c3bf98be3cd30403b5852461a7756",
+      "size_bytes": 453215,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
     },
-    "docs/planning/ARX_058_UNSCOPED_AND_PRE_SPRINT5_CLOSURE_PLAN.md": {
-      "sha256": "60280544610f1345cd11569b361fce95df5cbd904fd5dceead1db04626189951",
-      "size_bytes": 11413
+    "audit-output/post-audit-ux/review-public/candidate-paper-desktop.jpg": {
+      "operation": "A",
+      "sha256": "93454241e2eb9e7dd158421d346246d79184b008780f52d4a767bd1407d90206",
+      "size_bytes": 139925,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
     },
-    "docs/planning/ARX_058_VALIDATOR_AND_CI_EVIDENCE.md": {
-      "sha256": "20563dce04ce1c19502218e6c12079863e4da93b2a91dd8dc3d3da6c94986eaa",
-      "size_bytes": 12039
+    "audit-output/post-audit-ux/review-public/historical-qualification.json": {
+      "operation": "A",
+      "sha256": "fd164971c0c7c7d0c295f3742e202203d26770fc62afdcf0afa31186b9d72890",
+      "size_bytes": 3159,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
     },
-    "docs/planning/ARX_059_AUTHORIZATION_PROVENANCE_AUDIT.md": {
-      "sha256": "06912062edb72e03426518c67b4f6e7a5e4bdfaf6d1eb1b7c631d9485498084b",
-      "size_bytes": 8218
+    "audit-output/post-audit-ux/review-public/theme-files.json": {
+      "operation": "A",
+      "sha256": "10aebd673900606f25946cebec7198a5f65290fb3b0330de469814bd2060234c",
+      "size_bytes": 1307,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
     },
-    "docs/planning/ARX_059_CI_ENFORCEMENT_PLAN.md": {
-      "sha256": "34d165ac9df42ddd68b0dfa7bb7c2a79c1373a7e7fb154ff9b0079998805818a",
-      "size_bytes": 6278
+    "audit-output/post-audit-ux/review-public/upload-manifest.json": {
+      "operation": "A",
+      "sha256": "25dacf43e720f8c07c1f6b90e60ad2648d743ba30518c3eaf8659c94d66a2c7c",
+      "size_bytes": 675,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
     },
-    "docs/planning/ARX_059_DIRECTIVE058_RECONCILIATION.md": {
-      "sha256": "24704721dffa7fd6d376401c19bd92e0a344b675c2194604c9a05555dc3ca296",
-      "size_bytes": 7749
+    "docs/ARX_MASTER_PROJECT_STATUS_2026_10_29.md": {
+      "operation": "A",
+      "sha256": "4a8a2d84c79b7d9f9924a3a042c7b16980037e7b39204b462ed95011f477fd79",
+      "size_bytes": 7631,
+      "originating_pr_number": 132,
+      "originating_commit": "3c66f09",
+      "governing_requirement": "Master documentation baseline reconciliation & SOT update"
     },
-    "docs/planning/ARX_059_FINAL_VERIFICATION_MANIFEST.json": {
-      "sha256": "b5c3ca677b3b2afb0d14dbe2bcf9ea6cef210a7811ae91366d21341b89fa2476",
-      "size_bytes": 5146
+    "docs/SYSTEM_ARCHITECTURE_AND_IMPLEMENTATION.md": {
+      "operation": "M",
+      "sha256": "2b6ab304b95ae09e0bb604ddbbb9ae9db753023cec09f2d929ec011eb24e32b8",
+      "size_bytes": 18846,
+      "originating_pr_number": 132,
+      "originating_commit": "3c66f09",
+      "governing_requirement": "Master documentation baseline reconciliation & SOT update"
     },
-    "docs/planning/ARX_059_OWNER_DECISION_PACKAGE.md": {
-      "sha256": "e1734c6938d4f354122d54015b7d96045c33b365591aaa1a89f573d29fbcf303",
-      "size_bytes": 6297
+    "docs/architecture/ARX_ARCHITECTURE_AND_ENGINE_CONTRACT_RECONCILIATION.md": {
+      "operation": "A",
+      "sha256": "77f41051b4316df826d3d3a5427d2f9ef4a2e38f7e7f72d6fb1fbe7e2f1b22d2",
+      "size_bytes": 14562,
+      "originating_pr_number": 132,
+      "originating_commit": "3c66f09",
+      "governing_requirement": "Master documentation baseline reconciliation & SOT update"
     },
-    "docs/planning/ARX_059_VALIDATOR_HARDENING_REPORT.md": {
-      "sha256": "2536a573b79221b940ba615a7ff24e2b80ae228f82d95d9c18fa5ecde9f3ea69",
-      "size_bytes": 11631
+    "docs/architecture/ARX_CANONICAL_SECURITY_MASTER_DESIGN.md": {
+      "operation": "M",
+      "sha256": "08203f0fe479e886049ecc6e3f0b5497eb7ec1c53bd9b5f1969c9ea262050da0",
+      "size_bytes": 25497,
+      "originating_pr_number": 132,
+      "originating_commit": "3c66f09",
+      "governing_requirement": "Master documentation baseline reconciliation & SOT update"
     },
-    "docs/planning/ARX_060_FINAL_VERIFICATION_MANIFEST.json": {
-      "sha256": "a22a8e46a117d7c1804a5a67e1f92212ea57945f05c2ca3999c04e8c65259612",
-      "size_bytes": 5744
+    "docs/planning/ARX_058B_BATCH2_QUALIFICATION_PACKAGE.md": {
+      "operation": "A",
+      "sha256": "c2cc7fcf51a4de278083e7b87fcb0be245b1049289510a4f3cbc89c4872c6271",
+      "size_bytes": 16708,
+      "originating_pr_number": 127,
+      "originating_commit": "38d3028",
+      "governing_requirement": "Radar reliability, lifecycle state & test isolation"
     },
-    "docs/planning/ARX_060_GOVERNANCE_PR_PUBLICATION_RECORD.md": {
-      "sha256": "bee4150aa145cbd61f2b395d8fdf66227505aef77874079b9b635dc526e69216",
-      "size_bytes": 6568
+    "docs/planning/ARX_058B_CENSUS_RECONCILIATION.json": {
+      "operation": "A",
+      "sha256": "ee6307b416d30910117f41bea4f1ef19b6a67a09e62472b6c7044be610486e97",
+      "size_bytes": 4655,
+      "originating_pr_number": 127,
+      "originating_commit": "38d3028",
+      "governing_requirement": "Radar reliability, lifecycle state & test isolation"
     },
-    "docs/planning/ARX_060_HOSTED_CI_AND_VALIDATOR_EVIDENCE.md": {
-      "sha256": "3e7c39c83327918ba8e393f756b0725b3851fcfe64be4d99318b6a031c11d9f5",
-      "size_bytes": 6805
+    "docs/planning/ARX_058B_CHATGPT_UX_HANDOFF.md": {
+      "operation": "A",
+      "sha256": "1fc1d083a2fa1f5baccc3ffd25fa9da90ace53832904ed953163e50197d278c1",
+      "size_bytes": 7384,
+      "originating_pr_number": 127,
+      "originating_commit": "38d3028",
+      "governing_requirement": "Radar reliability, lifecycle state & test isolation"
     },
-    "docs/planning/ARX_060_INDEPENDENT_CLEANUP_RECONCILIATION.md": {
-      "sha256": "4d985bee078970a60b3fadd707ac937d31a0d4f6dde9e209fe356b9b3fcd83b5",
-      "size_bytes": 11132
+    "docs/planning/ARX_DOCUMENTATION_CONFLICT_AND_CORRECTION_LOG.md": {
+      "operation": "A",
+      "sha256": "ca3db9ce2f9b32fb0d2c5c9fc9892caba075a4db7e270a4149fc3781f4b77ccf",
+      "size_bytes": 7605,
+      "originating_pr_number": 132,
+      "originating_commit": "3c66f09",
+      "governing_requirement": "Master documentation baseline reconciliation & SOT update"
     },
-    "docs/planning/ARX_060_OWNER_MERGE_DECISION_PACKAGE.md": {
-      "sha256": "de14fb0f8478becdd56151349f8ecb5456518886da1b8f10a5f17fc2d5b34d65",
-      "size_bytes": 9512
+    "docs/planning/ARX_DOCUMENTATION_EVIDENCE_TRACEABILITY_MATRIX.csv": {
+      "operation": "A",
+      "sha256": "1b8959e582ff2b14e382f7453deb96c83f262cae5f9ebd2a4ae1123668d2ba45",
+      "size_bytes": 5639,
+      "originating_pr_number": 132,
+      "originating_commit": "3c66f09",
+      "governing_requirement": "Master documentation baseline reconciliation & SOT update"
     },
-    "docs/planning/ARX_060_REMAINING_OBLIGATION_REGISTER.csv": {
-      "sha256": "bac1e5ae4cf5d97339f14f637482e4847c67bf52217ffd99d6f3c1c922748bb1",
-      "size_bytes": 33782
+    "docs/planning/ARX_DOCUMENTATION_EVIDENCE_TRACEABILITY_MATRIX.md": {
+      "operation": "A",
+      "sha256": "f7895ecc16444191cc2e20d67bf4cd916b175df74c5f095aa9de6684807462a4",
+      "size_bytes": 7086,
+      "originating_pr_number": 132,
+      "originating_commit": "3c66f09",
+      "governing_requirement": "Master documentation baseline reconciliation & SOT update"
+    },
+    "docs/planning/ARX_DOCUMENTATION_MASTER_INVENTORY_2026_10_29.md": {
+      "operation": "A",
+      "sha256": "c9431e675c210dedf9c2ba5cec2069765931f8a7f5edd00581b7c0170cd9c79d",
+      "size_bytes": 11482,
+      "originating_pr_number": 132,
+      "originating_commit": "3c66f09",
+      "governing_requirement": "Master documentation baseline reconciliation & SOT update"
+    },
+    "docs/planning/ARX_DOCUMENTATION_OWNER_REVIEW_AND_PUBLICATION_HANDOFF.md": {
+      "operation": "A",
+      "sha256": "3077a2dbf2affd7ece9ebef313910aa0f26fcc801c07a8f1b4f404101c5a4ac7",
+      "size_bytes": 7175,
+      "originating_pr_number": 132,
+      "originating_commit": "3c66f09",
+      "governing_requirement": "Master documentation baseline reconciliation & SOT update"
+    },
+    "docs/planning/ARX_DOCUMENTATION_QA_REPORT.md": {
+      "operation": "A",
+      "sha256": "6c9ee620817a636baf3488cde0f929bcaa380af78d8df9ae2e325700a31d0e04",
+      "size_bytes": 5892,
+      "originating_pr_number": 132,
+      "originating_commit": "3c66f09",
+      "governing_requirement": "Master documentation baseline reconciliation & SOT update"
+    },
+    "docs/planning/ARX_PR_AND_INTEGRATION_STATUS_REGISTER.md": {
+      "operation": "A",
+      "sha256": "24298716ff5883e21523c60d4052e364162bbe12ad81a70a98b340052ff5714a",
+      "size_bytes": 7923,
+      "originating_pr_number": 132,
+      "originating_commit": "3c66f09",
+      "governing_requirement": "Master documentation baseline reconciliation & SOT update"
+    },
+    "docs/planning/ARX_SPRINT1_4_OBLIGATION_AND_HOLD_REGISTER.md": {
+      "operation": "A",
+      "sha256": "c9eae647fc0edb2295c27d2abdc1333187f1fac26e2d42485fba377a4381b217",
+      "size_bytes": 8496,
+      "originating_pr_number": 132,
+      "originating_commit": "3c66f09",
+      "governing_requirement": "Master documentation baseline reconciliation & SOT update"
     },
     "docs/planning/arx_canonical_backlog.json": {
-      "sha256": "8a8dc01cfd0f589bde969eeef2b9c3c154a78dcc2dc5ad57628e60feac82844c",
-      "size_bytes": 200699
+      "operation": "M",
+      "sha256": "af18ff407d8f7c41a506a50c1edb8104442be1d01a8e0c56776a5be3e1a4658a",
+      "size_bytes": 196222,
+      "originating_pr_number": 126,
+      "originating_commit": "29ead6e",
+      "governing_requirement": "Administrative backlog & historical test fixture reconciliation"
     },
-    "docs/planning/arx_canonical_backlog.schema.json": {
-      "sha256": "b416db0914a2c1ff5ed3b7250d1cfc71216129481f69e1f20d3d04139391a90e",
-      "size_bytes": 16271
+    "docs/releases/ARX_CI_RELEASE_AND_DEPLOYMENT_AUTHORITY_MATRIX.md": {
+      "operation": "A",
+      "sha256": "b8b79d0c92cc191030c9d63bd56abb50eb9f6c124ebbb0751d77b76d531edb5f",
+      "size_bytes": 7642,
+      "originating_pr_number": 132,
+      "originating_commit": "3c66f09",
+      "governing_requirement": "Master documentation baseline reconciliation & SOT update"
+    },
+    "docs/research/ARX_DOC_20261029_MARKET_WIDE_RESEARCH_CLOSURE_ADDENDUM.md": {
+      "operation": "A",
+      "sha256": "eb2ed0a397cd7ff08988816face5214d16f5e390c740b75537a7b516a3e1a597",
+      "size_bytes": 12335,
+      "originating_pr_number": 132,
+      "originating_commit": "3c66f09",
+      "governing_requirement": "Master documentation baseline reconciliation & SOT update"
+    },
+    "docs/research/ARX_MARKET_WIDE_RESEARCH_DECISION_AND_EVIDENCE_REGISTER.md": {
+      "operation": "A",
+      "sha256": "4dbd5097eee52cb26667998dc79c86c2bd2e4bc0ff7bc8618084945e854bfd7c",
+      "size_bytes": 9966,
+      "originating_pr_number": 132,
+      "originating_commit": "3c66f09",
+      "governing_requirement": "Master documentation baseline reconciliation & SOT update"
+    },
+    "docs/ux/ARX_UX_V3_APPROVAL_IMPLEMENTATION_AND_RELEASE_STATUS.md": {
+      "operation": "A",
+      "sha256": "273a68991fdb8eac37fce0a6581003425a07ebbef1f6b07b138b32acf3b72dda",
+      "size_bytes": 8071,
+      "originating_pr_number": 132,
+      "originating_commit": "3c66f09",
+      "governing_requirement": "Master documentation baseline reconciliation & SOT update"
+    },
+    "frontend/.env.production": {
+      "operation": "M",
+      "sha256": "943e3e13bd7afc3089758df335edcb451b42d0f67160de98e6b2aa20bbd280ea",
+      "size_bytes": 75,
+      "originating_pr_number": 130,
+      "originating_commit": "b413b03",
+      "governing_requirement": "Edge proxy routing & Render deprecation"
+    },
+    "frontend/app/globals.css": {
+      "operation": "M",
+      "sha256": "3b839c57e38a441d5f7be0ac8524e25eda3265f9ec24261e781635d374ff711e",
+      "size_bytes": 17190,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/app/layout.tsx": {
+      "operation": "M",
+      "sha256": "eeb5224e85c7461d84fb4f6ae3e992f621d0887c01f98cb4c59e213942ec7837",
+      "size_bytes": 8399,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/app/page.tsx": {
+      "operation": "M",
+      "sha256": "09580a38b04e3e50b15d06e0d58f8e37a44b004a8b3921c5dec7ee57307944ac",
+      "size_bytes": 42433,
+      "originating_pr_number": 133,
+      "originating_commit": "f1ed717",
+      "governing_requirement": "Radar fail-closed contract normalization & context continuity"
+    },
+    "frontend/app/portfolio/page.tsx": {
+      "operation": "M",
+      "sha256": "436ffcd8fcdc5d38cd90ad3f5db947d77fffa856ac94003af6b46fdf11a93e39",
+      "size_bytes": 77236,
+      "originating_pr_number": 129,
+      "originating_commit": "e10de3b",
+      "governing_requirement": "Portfolio verified equity provenance & sizing isolation"
+    },
+    "frontend/app/radar/page.tsx": {
+      "operation": "M",
+      "sha256": "0e4ceb2c704e72caa042d5bd314b319202c71901968f1d9cd4ec16e3d8d43f3d",
+      "size_bytes": 95715,
+      "originating_pr_number": 133,
+      "originating_commit": "f1ed717",
+      "governing_requirement": "Radar fail-closed contract normalization & context continuity"
+    },
+    "frontend/components/AdaptiveTerminal.tsx": {
+      "operation": "M",
+      "sha256": "a444ec72f71c49dff2fb88f0e9f9e862410571d266c946a9c64adc698dd6f3d1",
+      "size_bytes": 12450,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
+    },
+    "frontend/components/AlertTriggerModal.tsx": {
+      "operation": "M",
+      "sha256": "db6a700d4a50d90def39e82a0d1c5e23788b3866c62618960bccec32ac42c380",
+      "size_bytes": 13799,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/CommandPaletteModal.tsx": {
+      "operation": "M",
+      "sha256": "e4e7209f7d7e1ab0ac5e2d36608d235bf2965238a6f645aa4e1aafab2b07d6ef",
+      "size_bytes": 22878,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
+    },
+    "frontend/components/CompositeConvictionCard.tsx": {
+      "operation": "M",
+      "sha256": "ee645b9c79f6f05573ff8d0d05147ab1444ee27207e4b9e84ee2b2e40fd2a0a0",
+      "size_bytes": 14933,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
     },
     "frontend/components/DayTraderPositionSizer.tsx": {
-      "sha256": "4046752dd9da07dc7d42e3a2a2f90a77cd645a9885a9ca7244374f81947befc9",
-      "size_bytes": 21827
+      "operation": "M",
+      "sha256": "42da126c220577bcefe78a1e218998e988b390334c33f0e0c292f4a3723bb534",
+      "size_bytes": 22200,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/OptimalEntryExitCard.tsx": {
+      "operation": "M",
+      "sha256": "b2fc2994b5c3c7e93561a1d57ee3227d29cffea8479b83fb914e0261f55be68b",
+      "size_bytes": 46767,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
     },
     "frontend/components/PositionSizerModal.tsx": {
-      "sha256": "8d8dc6948a36e4aef624c08ed2c44a98d139b7372088a09886329efee64b99d6",
-      "size_bytes": 25456
+      "operation": "M",
+      "sha256": "356d5c6a8b50c5783a079f24ad41bcfa2012e245681af435232d224a0513462f",
+      "size_bytes": 26706,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/PreFlightChecklistModal.tsx": {
+      "operation": "M",
+      "sha256": "451a93358296ba94572ccde67968efe2a11acd07a25397c518681351ca10b2e2",
+      "size_bytes": 29414,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/PreFlightReadinessBar.tsx": {
+      "operation": "M",
+      "sha256": "225af307cbfcd811833b66db6d0556ae81061a89b5c6b3fdd7c54b8327cc79cf",
+      "size_bytes": 12429,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/PriceChart.tsx": {
+      "operation": "M",
+      "sha256": "861189d9fcbd677c31356212eb96531302e355ce03ccb65f22ab64657d633444",
+      "size_bytes": 46697,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/ThemeToggle.tsx": {
+      "operation": "M",
+      "sha256": "3a361c50c1190309b145b129664a3ae281d273f0db30151d36484357ffe0a640",
+      "size_bytes": 1071,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
+    },
+    "frontend/components/UxReviewNotice.tsx": {
+      "operation": "A",
+      "sha256": "b9cb8a1a0efdffbec7c3a9cc50137dc8a570ff55742674c579e7497ac2652291",
+      "size_bytes": 531,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/WeeklyConfluenceSpotlight.tsx": {
+      "operation": "M",
+      "sha256": "6f9256571ce0ebae194ec54a0d88d68bb039d57e1dc506f6225300d3eeff3ed4",
+      "size_bytes": 48663,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/WhyInspectModal.tsx": {
+      "operation": "M",
+      "sha256": "09a4c718a49d408ed7d372f44b8787a2dbe885e72666ad2154319df784b7f56f",
+      "size_bytes": 15303,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
+    },
+    "frontend/components/__tests__/AlertTriggerAccessibility.test.tsx": {
+      "operation": "A",
+      "sha256": "a287429a0c37c0aafe8ce083b6be235320cf38cfe03b61bab70d4218a2ba6996",
+      "size_bytes": 1951,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/__tests__/AnalysisRequestGeneration.test.tsx": {
+      "operation": "A",
+      "sha256": "d4f76107b66535637a1b9c3fa6b071d7405c918b9e413f4958afe75f5bf68090",
+      "size_bytes": 2484,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/__tests__/FullPageFidelityDisclosure.test.tsx": {
+      "operation": "A",
+      "sha256": "3ae2aabedb13ec3d7ae84a937322ced757e03b9b3f72982297e3636b0b53671d",
+      "size_bytes": 2585,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/__tests__/PositionSizerAuthority.test.tsx": {
+      "operation": "A",
+      "sha256": "7333bcba60d9fb36fe08fe0a7a436f089ae4d08086b9cca510236e63dd5e0dbe",
+      "size_bytes": 1911,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
+    },
+    "frontend/components/__tests__/PreviewRecordingFallback.test.tsx": {
+      "operation": "A",
+      "sha256": "3cbd47cc60a25719bc12b17ceb89bba50f18c4bc3f7c3fcc22cde385942360f3",
+      "size_bytes": 3384,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/__tests__/RadarIndependentFalsification.test.tsx": {
+      "operation": "A",
+      "sha256": "f2f3e0ef92b9c4986a609f55089ac63ee8afc74978d96473c8c3ba984792ddec",
+      "size_bytes": 19675,
+      "originating_pr_number": 133,
+      "originating_commit": "f1ed717",
+      "governing_requirement": "Radar fail-closed contract normalization & context continuity"
+    },
+    "frontend/components/__tests__/ResponsiveChartPriorityRemediation.test.tsx": {
+      "operation": "M",
+      "sha256": "eebef0583dbd9be7b3f59beefd764f10ae643681918d3e5ce334e19aa3a0f0a6",
+      "size_bytes": 14836,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/__tests__/ReviewRecordingBoundary.test.tsx": {
+      "operation": "A",
+      "sha256": "5c3e0a45831a5a00127c133ace2275f8e2a29e99bb0827d42aedb1686220c047",
+      "size_bytes": 4058,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/__tests__/Ux002AuthorityAcceptance.test.tsx": {
+      "operation": "A",
+      "sha256": "1fd3f68209d5a4c3f1b6781a1b8c5eee42b37b720ffb7078cc0c51636cc1a59d",
+      "size_bytes": 3548,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
+    },
+    "frontend/components/synthesis/SynthesisHeader.tsx": {
+      "operation": "M",
+      "sha256": "2cb7941c052a9ab6a477b14ac556f99caa3b72948f506ed6b23ed07cf5efea0f",
+      "size_bytes": 15747,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
+    },
+    "frontend/components/synthesis/SynthesisMobileDock.tsx": {
+      "operation": "M",
+      "sha256": "bd45cd71274431c429afbc3c092545cd552aadc8fcad382a7f1f718499f10b41",
+      "size_bytes": 4261,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/terminal/AdvancedTerminalView.tsx": {
+      "operation": "M",
+      "sha256": "ec10912015e1a10eedd8674bd72a0eaeb5654672db6d09baa1b12dc2a41fee97",
+      "size_bytes": 14973,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/terminal/GuidedTerminalView.tsx": {
+      "operation": "M",
+      "sha256": "c759120a9131c7a89b55bded44de5b372e92e33dc97a3784e1b95255d1a949fb",
+      "size_bytes": 16352,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/terminal/SharedAssetDeck.tsx": {
+      "operation": "M",
+      "sha256": "2234de67c616cefe6fd4d7f1ed884759b9ca5f2dacd40b1da428f04ca4ed6dbb",
+      "size_bytes": 6610,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/terminal/SharedExecutionLadder.tsx": {
+      "operation": "M",
+      "sha256": "aff01110a3698aab8aade1bf5e28b3717c17d726673cc78d931fe57ea491b37c",
+      "size_bytes": 13824,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/components/terminal/StandardTerminalView.tsx": {
+      "operation": "M",
+      "sha256": "b9c056dab1c535fddf65df58bb2d6f22c0a4218590433eb4c73c618e82ca5f70",
+      "size_bytes": 24389,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/hooks/__tests__/useTerminalTheme.test.tsx": {
+      "operation": "A",
+      "sha256": "0e05ef19df18b619008861f7d84199d069ff36534576c4c8ddfede2d20d60f9e",
+      "size_bytes": 4394,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
+    },
+    "frontend/hooks/useTerminalTheme.ts": {
+      "operation": "A",
+      "sha256": "80b8d87b82b5dc2db0f83389657473e3f9e68e9bd9b9b060deccd565348f98db",
+      "size_bytes": 914,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
+    },
+    "frontend/hooks/useUxReviewOnly.ts": {
+      "operation": "A",
+      "sha256": "152ff9bb920fe920d6d4be7ca8bbd7c1a71a3fe3810f14d4fb7bf860760b3e1c",
+      "size_bytes": 561,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/lib/__tests__/radarPartialPresentation.test.ts": {
+      "operation": "A",
+      "sha256": "138d04e02341da979e7dd2e8c1c80b84b0b2ffa19992919ccd79c1e35ad712fa",
+      "size_bytes": 1000,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/lib/__tests__/workstationThemeTokens.test.ts": {
+      "operation": "A",
+      "sha256": "2221883ab4e3747bf9a0307952b9b8ae04c99876f57831d531e650cbc656213e",
+      "size_bytes": 2079,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
+    },
+    "frontend/lib/api.ts": {
+      "operation": "M",
+      "sha256": "6419bd495aee9c5bf93614bbb3686b64a337b904b51722896c2ddd1173bf619f",
+      "size_bytes": 181770,
+      "originating_pr_number": 133,
+      "originating_commit": "f1ed717",
+      "governing_requirement": "Radar fail-closed contract normalization & context continuity"
+    },
+    "frontend/lib/decisionContext.ts": {
+      "operation": "A",
+      "sha256": "3d57e32657621c7112634201134c23ad2231a36516f637d38a2da294f105332f",
+      "size_bytes": 5053,
+      "originating_pr_number": 133,
+      "originating_commit": "f1ed717",
+      "governing_requirement": "Radar fail-closed contract normalization & context continuity"
+    },
+    "frontend/lib/institutionalFeeds.ts": {
+      "operation": "M",
+      "sha256": "aea0e8ad277351efc6e48fe7134dfb2aaf42c384d5babb51a26302f350c96799",
+      "size_bytes": 8273,
+      "originating_pr_number": 130,
+      "originating_commit": "b413b03",
+      "governing_requirement": "Edge proxy routing & Render deprecation"
+    },
+    "frontend/lib/portfolio.ts": {
+      "operation": "M",
+      "sha256": "6d7210d3e9d1022a836a0598e93c2c1afc80ec08662c4a0608d9e48649f1aaad",
+      "size_bytes": 29457,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
     },
     "frontend/lib/simulation/governorSizingEngine.ts": {
-      "sha256": "df43a56181b3d6b4ee1eabd7a787a84c0eb48d1f4e30c33e79d8ae73eaa452b1",
-      "size_bytes": 17845
+      "operation": "M",
+      "sha256": "1b278439df9c9c420aaf6f49cb164a7d24623b9e1c80ca17c0ab4e898101fba8",
+      "size_bytes": 17404,
+      "originating_pr_number": 129,
+      "originating_commit": "e10de3b",
+      "governing_requirement": "Portfolio verified equity provenance & sizing isolation"
+    },
+    "frontend/lib/simulation/unifiedCockpitStore.ts": {
+      "operation": "M",
+      "sha256": "9568952eb00b139886453d54de339141e40751bc1f0347ba75696597d51c58f0",
+      "size_bytes": 16966,
+      "originating_pr_number": 130,
+      "originating_commit": "b413b03",
+      "governing_requirement": "Edge proxy routing & Render deprecation"
+    },
+    "frontend/lib/terminalTheme.ts": {
+      "operation": "A",
+      "sha256": "cae498954a9aa0664997d9819fd2f7fbe852a9f5720d7f2374849ddaa4180856",
+      "size_bytes": 994,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
+    },
+    "frontend/lib/uxReviewBoundary.ts": {
+      "operation": "A",
+      "sha256": "fe13ac2721efc46bee75b24479565f860026b7380e8807f7f8d4f8ceb50a8ad0",
+      "size_bytes": 625,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/next.config.mjs": {
+      "operation": "M",
+      "sha256": "59e93143aa63c59e54161244cf45dad2020e0863f536b176b44b1fc828338e2f",
+      "size_bytes": 3337,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/reports/adversarial_gate_results.json": {
+      "operation": "M",
+      "sha256": "e345db6d4a69832043c4bdcee06ef4ed21e82d5cbaf051f0bc0448ae8ac324c4",
+      "size_bytes": 4019,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
+    },
+    "frontend/scripts/build-post-audit-ux-fixture.mjs": {
+      "operation": "A",
+      "sha256": "3f0150dbd5646ab64137d1c8fd3e28284ee9b3ab8ce2f8b5af437203af7f9845",
+      "size_bytes": 1118,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
+    },
+    "frontend/scripts/post-audit-ux-fixture.tsx": {
+      "operation": "A",
+      "sha256": "1afdd3354b9cafb4fb3a385bd2cb06b87d983fa0a4f7c0901603f876ab8709d0",
+      "size_bytes": 4252,
+      "originating_pr_number": 123,
+      "originating_commit": "3e0f8dc",
+      "governing_requirement": "Paper Light surfaces & unified theme persistence"
+    },
+    "frontend/tests/radarErrorAndZeroSemantics.test.ts": {
+      "operation": "M",
+      "sha256": "b5a342ccc90e94dbf246d20c6f1f29365d58eec8787f4ee1b1755b1529b4cf6e",
+      "size_bytes": 16628,
+      "originating_pr_number": 133,
+      "originating_commit": "f1ed717",
+      "governing_requirement": "Radar fail-closed contract normalization & context continuity"
+    },
+    "frontend/tests/uxReviewBuildContext.test.mjs": {
+      "operation": "A",
+      "sha256": "7084bb46fa9920a6a948fe4fb246a5761006e5825da3b358b5e7232991e82ef4",
+      "size_bytes": 810,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/tests/wp02_equity_provenance.test.ts": {
+      "operation": "A",
+      "sha256": "b6485ff7b9ad8d22d35d54ed9048b3b0f48eb0703e1687190e18f98d9938a58d",
+      "size_bytes": 16507,
+      "originating_pr_number": 129,
+      "originating_commit": "e10de3b",
+      "governing_requirement": "Portfolio verified equity provenance & sizing isolation"
+    },
+    "frontend/tests/wp03_client_api_routing.test.ts": {
+      "operation": "A",
+      "sha256": "9a6a3880007b7ac2bcf7d6750880ff52f1a79e909067d106ffaacb74e8c75a11",
+      "size_bytes": 8165,
+      "originating_pr_number": 130,
+      "originating_commit": "b413b03",
+      "governing_requirement": "Edge proxy routing & Render deprecation"
+    },
+    "frontend/types/react-dom-portal.d.ts": {
+      "operation": "A",
+      "sha256": "b5f0e7329e7ccd4522b399d38144d35a9a54d82041b9656419b2ee242b2dfcde",
+      "size_bytes": 191,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "frontend/vitest.config.ts": {
+      "operation": "M",
+      "sha256": "e31599835cc6adab2864b606864ba77288c331eb4e01a15b5bc1db1b44a73209",
+      "size_bytes": 543,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
+    },
+    "tests/test_adversarial_phase13_verification.py": {
+      "operation": "M",
+      "sha256": "66246bac452554661fde30f82ba098928f2c52555099dac9391385e8730605d0",
+      "size_bytes": 7422,
+      "originating_pr_number": 131,
+      "originating_commit": "882d424",
+      "governing_requirement": "Synthesis E V3 UX Parity & Controlled Mainline Integration"
     },
     "tests/test_backlog_integrity_validator.py": {
-      "sha256": "a9b58790956148f21c46dd4da666612de659a574c60a0be5231c55e9ba5966c7",
-      "size_bytes": 92433
+      "operation": "M",
+      "sha256": "84903a61f97aaef2648a621b91c9c48db72baaca73a2c97651ebbd649fb7a848",
+      "size_bytes": 97046,
+      "originating_pr_number": 126,
+      "originating_commit": "29ead6e",
+      "governing_requirement": "Administrative backlog & historical test fixture reconciliation"
     },
-    "tests/test_d061_adversarial_controls.py": {
-      "sha256": "ce02cb0b7b102f5c42857030702107dd4dde2694cf3da02bb00645d96ebc20b4",
-      "size_bytes": 9080
+    "tests/test_radar_candidate_truth_remediation.py": {
+      "operation": "M",
+      "sha256": "2ec100a231ab9dbf49be8ac94556bec78e571f5a92e88e292dc7e1d29492cc45",
+      "size_bytes": 7650,
+      "originating_pr_number": 127,
+      "originating_commit": "38d3028",
+      "governing_requirement": "Radar reliability, lifecycle state & test isolation"
     },
-    "tests/test_d062_adversarial_controls.py": {
-      "sha256": "2a597f62160c2669aa6e735e4d404c0e9677b78a5e97c5aba4d954a00da0ed98",
-      "size_bytes": 7828
+    "tests/test_radar_error_zero_semantics.py": {
+      "operation": "A",
+      "sha256": "f993afda695832ee7c25e88950615b6a82001f1ea87a9d51d290451d691bf2aa",
+      "size_bytes": 16883,
+      "originating_pr_number": 127,
+      "originating_commit": "38d3028",
+      "governing_requirement": "Radar reliability, lifecycle state & test isolation"
     },
-    "tests/test_directive_057_remediation.py": {
-      "sha256": "d14e7cd251752115c73dbc0282528e8a7de1ffe56d0555ce7ebf8fa71ed99298",
-      "size_bytes": 15439
-    },
-    "tests/test_f13a_epoch_compatibility.py": {
-      "sha256": "593e777b8acdd90cd901cd9928e09b3c889b936c96647ca45082ebb3a2f8683f",
-      "size_bytes": 16996
-    },
-    "tests/test_phase22_calibration.py": {
-      "sha256": "deffba52e22a23217c395306b61a44385e9dd484cf6e511a3647954a6e7aa178",
-      "size_bytes": 9258
+    "tools/governance/reconcile_82_to_77_census.py": {
+      "operation": "A",
+      "sha256": "6e5c561c892e837cf7ee1e9b22321aa40a371c809bf484058d29145f26a3bd20",
+      "size_bytes": 7445,
+      "originating_pr_number": 127,
+      "originating_commit": "38d3028",
+      "governing_requirement": "Radar reliability, lifecycle state & test isolation"
     },
     "tools/governance/validate_backlog_integrity.py": {
-      "sha256": "0101c3e460edf46ba186ed8997f63cde34672823995b697c016de1af6ddca826",
-      "size_bytes": 55187
+      "operation": "M",
+      "sha256": "bb8a65d95d4c53f1ff364a2eb5aaecd6843f0705ae301ec9a1f2e39ecba65dce",
+      "size_bytes": 57508,
+      "originating_pr_number": 125,
+      "originating_commit": "6b7a563",
+      "governing_requirement": "Governance validator hardening against ADV-04/05"
     }
   },
-  "manifest_version": "2.2.0-D074A4",
-  "directive_id": "ARX_RELEASE_QUALIFICATION_INTEGRITY_CLOSURE_074A4",
   "qualification_framework_files": {
-    ".github/workflows/release-qualification.yml": {
-      "sha256": "bfa53eb9a43ebf045d80e2edd22272097df00c7d086d2fb4d5ef8d02df9a2b9c",
-      "description": "GitHub Actions 12-Stage Release Qualification Workflow"
-    },
-    "frontend/tests/fourWayCompatibilityHarness.ts": {
-      "sha256": "e8030ac45a2eabaa876e8c681b51aa86ff0827f2ec4527b09de235d8e3d1a468",
-      "description": "TypeScript genuine four-way compatibility and adversarial test harness"
-    },
     "scripts/release/rq01_candidate_identity.py": {
       "sha256": "356f99aef7745641a03708b87ef4aacb761be2b56ec5a37356be0e527c865a8f",
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "bb7b81f3d7c1a9f0e40fb20de785d95c66b2b376b31ee005c50cf57c12053d90",
-      "description": "Release qualification module: rq02_diff_integrity.py"
+      "sha256": "86583b8a92943ad7e7401188a91f9d9dfa72a26a5021caca2aef16ec336de075",
+      "bytes": 24290
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "9778026dff4dd5967cfc180b28b4291649ad6bc4abf7862271158914f7b446d9",
@@ -195,10 +823,6 @@
       "sha256": "eb6fa07022544ad745584c94dfb21623a89abca8935fd8bb355d155e0c88082f",
       "description": "Release qualification module: rq12_qualification_summary.py"
     },
-    "scripts/release/rq_receipt_utils.py": {
-      "sha256": "2d2f15f7ba506fba4e914e412ec7a1142761d1716ee145e6b5c5f37860634c70",
-      "description": "Release qualification module: rq_receipt_utils.py"
-    },
     "scripts/release/run_release_ci_suite.py": {
       "sha256": "a32d607071d5123fd3d772793afdf540ba83f15e30778685fcbf630d791d3a38",
       "description": "Release qualification module: run_release_ci_suite.py"
@@ -208,8 +832,16 @@
       "description": "Release qualification module: test_release_ci_negative_cases.py"
     },
     "scripts/release/test_synthetic_merge_reproduction.py": {
-      "description": "Deterministic PR synthetic merge regression and verification harness",
-      "sha256": "f3adc96bc7cb72d7822d6eb78248db828790c4153d70c6e74b7204281b877246"
+      "sha256": "f3adc96bc7cb72d7822d6eb78248db828790c4153d70c6e74b7204281b877246",
+      "description": "Release qualification module: test_synthetic_merge_reproduction.py"
+    },
+    "scripts/release/test_rq02_adversarial_controls.py": {
+      "sha256": "12075bf8001810b97b9b6d4fc0a88351acd71d9933c089e15b49e6c23594d11a",
+      "bytes": 15449
+    },
+    "scripts/release/test_d12c_workflow_attacks.py": {
+      "sha256": "c87ceef5b97ce0d6bc937a9c99398a21c42e622e34c790bd48f7a65869f86f8a",
+      "bytes": 19881
     }
   }
 }
