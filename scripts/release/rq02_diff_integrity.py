@@ -491,6 +491,9 @@ def main():
                 print("FAIL: Gate H Workflow Attacks failed!")
                 sys.exit(1)
 
+            # Re-assert canonical RQ-02 pass receipt after adversarial runs
+            save_stage_receipt(receipt)
+
         print(f"PASS: All {len(diff_entries)} changed files strictly match approved release manifest (0 unapproved).")
         print("=== [RQ-02] RESULT: PASS ===")
         sys.exit(0)

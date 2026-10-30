@@ -10,11 +10,15 @@ import sys, os, subprocess, json, tempfile, shutil, time
 sys.stdout.reconfigure(encoding="utf-8")
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
+TEMP_RECEIPTS_DIR = None
+
 def run_rq02(args_list, env=None):
     cmd = [sys.executable, os.path.join(PROJECT_ROOT, "scripts", "release", "rq02_diff_integrity.py")] + args_list
     current_env = os.environ.copy()
     if env:
         current_env.update(env)
+    if TEMP_RECEIPTS_DIR and "ARX_RECEIPTS_DIR_OVERRIDE" not in current_env:
+        current_env["ARX_RECEIPTS_DIR_OVERRIDE"] = TEMP_RECEIPTS_DIR
     res = subprocess.run(cmd, cwd=PROJECT_ROOT, capture_output=True, text=True, env=current_env)
     return res.returncode, res.stdout, res.stderr
 
@@ -28,7 +32,10 @@ def main():
     with open(real_manifest_path, "r", encoding="utf-8") as f:
         canonical_manifest = json.load(f)
 
+    global TEMP_RECEIPTS_DIR
     temp_dir = tempfile.mkdtemp(prefix="arx_rq02_adversarial_")
+    TEMP_RECEIPTS_DIR = os.path.join(temp_dir, "receipts")
+    os.makedirs(TEMP_RECEIPTS_DIR, exist_ok=True)
 
     try:
         # Positive Control: Canonical manifest & HEAD against base anchor
@@ -266,7 +273,9 @@ def main():
     print("================================================================================")
 
     # Dump results JSON for artifact inclusion
-    res_path = os.path.join(PROJECT_ROOT, "scripts", "release", "receipts", "rq02_adversarial_results.json")
+    res_dir = os.path.join(PROJECT_ROOT, "scripts", "release", "receipts")
+    os.makedirs(res_dir, exist_ok=True)
+    res_path = os.path.join(res_dir, "rq02_adversarial_results.json")
     with open(res_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
     print(f"Results recorded to: {res_path}")

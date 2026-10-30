@@ -14,10 +14,14 @@ except Exception:
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
+TEMP_RECEIPTS_DIR = None
+
 def run_cmd(cmd_list, env=None, cwd=PROJECT_ROOT):
     current_env = os.environ.copy()
     if env:
         current_env.update(env)
+    if TEMP_RECEIPTS_DIR and "ARX_RECEIPTS_DIR_OVERRIDE" not in current_env:
+        current_env["ARX_RECEIPTS_DIR_OVERRIDE"] = TEMP_RECEIPTS_DIR
     res = subprocess.run(cmd_list, cwd=cwd, capture_output=True, text=True, env=current_env)
     return res.returncode, res.stdout, res.stderr
 
@@ -27,7 +31,10 @@ def main():
     print("================================================================================")
 
     results = []
+    global TEMP_RECEIPTS_DIR
     temp_dir = tempfile.mkdtemp(prefix="arx_gate_h_attacks_")
+    TEMP_RECEIPTS_DIR = os.path.join(temp_dir, "receipts")
+    os.makedirs(TEMP_RECEIPTS_DIR, exist_ok=True)
 
     canonical_manifest_path = os.path.join(PROJECT_ROOT, "scripts", "release", "release_manifest.json")
     with open(canonical_manifest_path, "r", encoding="utf-8") as f:
@@ -306,7 +313,9 @@ def main():
     print(f"SUMMARY: {sum(1 for r in results if r['passed'])}/{len(results)} SCENARIOS PASSED")
     print("================================================================================")
 
-    res_path = os.path.join(PROJECT_ROOT, "scripts", "release", "receipts", "d12c_workflow_attacks_results.json")
+    res_dir = os.path.join(PROJECT_ROOT, "scripts", "release", "receipts")
+    os.makedirs(res_dir, exist_ok=True)
+    res_path = os.path.join(res_dir, "d12c_workflow_attacks_results.json")
     with open(res_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
     print(f"Results recorded to: {res_path}")
