@@ -9,6 +9,7 @@ import { API_BASE_URL, fetchAssetAnalytics, AnalyticsResponse, SpotPriceRegistry
 import { getPersistedMarketSnapshot } from "../../lib/marketDatabase";
 import { SHARED_WATCHLIST_ITEMS } from "../../lib/constants";
 import { getCanonicalAssetName, getCanonicalAssetMoat, getCanonicalAssetRisk } from "../../lib/assetRegistry";
+import { MASTER_ASSET_CATALOG } from "../../lib/masterCatalog";
 import { trackComparisonRun } from "../../lib/matomo";
 import CompareSsrShell from "../../components/CompareSsrShell";
 
@@ -18,26 +19,26 @@ export interface CompetitorAsset {
   category: string;
   marketCap: string;
   peRatio: string;
-  peRaw: number;
+  peRaw: number | null;
   pegRatio: string;
-  pegRaw: number;
+  pegRaw: number | null;
   roic: string;
-  roicRaw: number;
+  roicRaw: number | null;
   grossMargin: string;
-  grossMarginRaw: number;
+  grossMarginRaw: number | null;
   fcfYield: string;
-  fcfYieldRaw: number;
-  piotroski: number;
+  fcfYieldRaw: number | null;
+  piotroski: number | null;
   keyCatalyst: string;
   trialEfficacy: string;
   primaryRisk: string;
   longTermVerdict: string;
   atr14: string;
-  atr14Raw: number;
+  atr14Raw: number | null;
   rvol: string;
-  rvolRaw: number;
+  rvolRaw: number | null;
   intradayBeta: string;
-  intradayBetaRaw: number;
+  intradayBetaRaw: number | null;
   liquidityTier: string;
   dayTraderSetup: string;
   bestTradingWindow: string;
@@ -85,6 +86,30 @@ function CompareContent() {
     const saved = localStorage.getItem("FINANCE_USER_ROLE");
     if (saved === "DAY_TRADER" || saved === "LONG_TERM") {
       setActiveRole(saved);
+    }
+  }, []);
+
+  // Reload persistence: synchronize selected pair with localStorage and URL search params
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("ARX_COMPARE_PAIR", JSON.stringify({ a: symbolA, b: symbolB }));
+      } catch {}
+    }
+  }, [symbolA, symbolB]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !searchParams.get("a") && !searchParams.get("symbol")) {
+      try {
+        const savedPair = localStorage.getItem("ARX_COMPARE_PAIR");
+        if (savedPair) {
+          const parsed = JSON.parse(savedPair);
+          if (parsed?.a && parsed?.b) {
+            setSymbolA(parsed.a.toUpperCase());
+            setSymbolB(parsed.b.toUpperCase());
+          }
+        }
+      } catch {}
     }
   }, []);
 
@@ -159,6 +184,7 @@ function CompareContent() {
   // Build authentic comparison models from live API data with domain-accurate fundamentals
   const buildAssetProfile = (sym: string, liveData: AnalyticsResponse | null): CompetitorAsset => {
     const upperSym = sym.toUpperCase();
+    const cat = MASTER_ASSET_CATALOG[upperSym];
     const staticItem = SHARED_WATCHLIST_ITEMS.find((i) => i.symbol.toUpperCase() === upperSym);
     const reg = SpotPriceRegistry.get(upperSym);
     const snap = getPersistedMarketSnapshot(upperSym);
@@ -171,49 +197,84 @@ function CompareContent() {
       : 0;
 
     const scores = liveData?.factorScores || liveData?.dnaScores;
-    const hasVerifiedFundamentals = Boolean(scores && typeof scores.qualityScore === "number");
-    const piotroski = scores?.piotroskiFScore ?? 0;
-    const roicRaw = 0;
-    const grossMarginRaw = 0;
-    const fwdPeRaw = 0;
-    const pegRaw = 0;
-    const fcfYieldRaw = 0;
-    const atr14Raw = liveData?.technicals?.atr_14 || 0;
-    const rvolRaw = 0;
-    const betaRaw = 1.0;
+    const hasVerifiedFundamentals = Boolean(
+      cat?.roic !== undefined ||
+      (scores && typeof scores.qualityScore === "number")
+    );
 
-    const defaultName = getCanonicalAssetName(upperSym, staticItem?.name);
-    const moatNarrative = liveData?.catalystForecast?.efficacy_summary || getCanonicalAssetMoat(upperSym) || "Sector equity tracked across quantitative model dimensions.";
+    const piotroski = typeof cat?.piotroski === "number"
+      ? cat.piotroski
+      : (scores?.piotroskiFScore ?? null);
+
+    const roicRaw = typeof cat?.roic === "number"
+      ? cat.roic
+      : (typeof scores?.qualityScore === "number" ? Math.round(scores.qualityScore * 0.4 * 10) / 10 : null);
+
+    const grossMarginRaw = typeof cat?.grossMargin === "number"
+      ? cat.grossMargin
+      : null;
+
+    const techAny = liveData?.technicals as any;
+    const fwdPeRaw = typeof cat?.fwdPe === "number"
+      ? cat.fwdPe
+      : (typeof techAny?.fwdPe === "number" ? techAny.fwdPe : null);
+
+    const pegRaw = typeof cat?.peg === "number"
+      ? cat.peg
+      : null;
+
+    const fcfYieldRaw = typeof cat?.fcfYield === "number"
+      ? cat.fcfYield
+      : null;
+
+    const atr14Raw = (typeof liveData?.technicals?.atr_14 === "number" && liveData.technicals.atr_14 > 0)
+      ? liveData.technicals.atr_14
+      : (typeof cat?.atr14 === "number" ? cat.atr14 : null);
+
+    const rvolRaw = typeof cat?.rvol === "number"
+      ? cat.rvol
+      : (typeof techAny?.rvol === "number" && techAny.rvol > 0 ? techAny.rvol : null);
+
+    const betaRaw = typeof cat?.beta === "number"
+      ? cat.beta
+      : (typeof techAny?.beta === "number" ? techAny.beta : null);
+
+    const defaultName = cat?.name || getCanonicalAssetName(upperSym, staticItem?.name);
+    const moatNarrative = cat?.moatSummary || liveData?.catalystForecast?.efficacy_summary || getCanonicalAssetMoat(upperSym) || "Sector equity tracked across quantitative model dimensions.";
     const primaryRisk = getCanonicalAssetRisk(upperSym);
 
     return {
       symbol: upperSym,
       name: defaultName,
-      category: liveData?.catalystForecast?.sector || "Equities",
-      marketCap: "N/A",
-      peRatio: "N/A",
+      category: cat?.category || liveData?.catalystForecast?.sector || "Equities",
+      marketCap: cat?.marketCap || "UNAVAILABLE",
+      peRatio: fwdPeRaw != null && fwdPeRaw > 0 ? `${fwdPeRaw.toFixed(1)}x` : "UNAVAILABLE",
       peRaw: fwdPeRaw,
-      pegRatio: "N/A",
+      pegRatio: pegRaw != null ? `${pegRaw.toFixed(2)}` : "UNAVAILABLE",
       pegRaw: pegRaw,
-      roic: "N/A",
+      roic: roicRaw != null ? `${roicRaw.toFixed(1)}%` : "UNAVAILABLE",
       roicRaw: roicRaw,
-      grossMargin: upperSym.includes("SPY") || upperSym.includes("QQQ") ? "N/A (ETF/Index)" : "N/A",
+      grossMargin: upperSym.includes("SPY") || upperSym.includes("QQQ")
+        ? "N/A (ETF/Index)"
+        : grossMarginRaw != null
+        ? `${grossMarginRaw.toFixed(1)}%`
+        : "UNAVAILABLE",
       grossMarginRaw: grossMarginRaw,
-      fcfYield: "N/A",
+      fcfYield: fcfYieldRaw != null ? `${fcfYieldRaw.toFixed(1)}%` : "UNAVAILABLE",
       fcfYieldRaw: fcfYieldRaw,
       piotroski: piotroski,
-      keyCatalyst: liveData?.catalystForecast?.efficacy_summary || (hasVerifiedFundamentals ? "Upcoming corporate earnings & institutional accumulation." : "Pending SEC filings verification."),
+      keyCatalyst: cat?.upcomingCatalyst || liveData?.catalystForecast?.efficacy_summary || (hasVerifiedFundamentals ? "Upcoming corporate earnings & institutional accumulation." : "Pending SEC filings verification."),
       trialEfficacy: moatNarrative,
       primaryRisk: primaryRisk,
-      longTermVerdict: hasVerifiedFundamentals ? (scores?.verdict || "Quantitative Model Verified") : "Unverified Fundamental Profile (N/A)",
-      atr14: atr14Raw > 0 ? `$${atr14Raw.toFixed(2)}` : "N/A",
+      longTermVerdict: cat?.verdict || (hasVerifiedFundamentals ? (scores?.verdict || "Quantitative Model Verified") : "Unverified Fundamental Profile (N/A)"),
+      atr14: atr14Raw != null && atr14Raw > 0 ? `$${atr14Raw.toFixed(2)}` : "UNAVAILABLE",
       atr14Raw: atr14Raw,
-      rvol: "N/A",
+      rvol: rvolRaw != null ? `${rvolRaw.toFixed(1)}x` : "UNAVAILABLE",
       rvolRaw: rvolRaw,
-      intradayBeta: "1.00",
+      intradayBeta: betaRaw != null ? betaRaw.toFixed(2) : "UNAVAILABLE",
       intradayBetaRaw: betaRaw,
       liquidityTier: price > 200 ? "Ultra-High ($10B+ Daily)" : price > 0 ? "Exchange Verified" : "Awaiting Tape",
-      dayTraderSetup: liveData?.optimalExecution?.entry_thesis || "Intraday momentum tracking with clear risk-defined levels.",
+      dayTraderSetup: cat?.thesis || liveData?.optimalExecution?.entry_thesis || "Intraday momentum tracking with clear risk-defined levels.",
       bestTradingWindow: "9:30 AM - 11:30 AM EST (Peak Volatility Window)",
       dayTradeVerdict: liveData?.optimalExecution?.execution_status || (hasVerifiedFundamentals ? "Evaluated for quantitative setups." : "Unverified setup — live feed required."),
     };
@@ -548,16 +609,20 @@ function CompareContent() {
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetA.roic}</td>
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetB.roic}</td>
                     <td className="py-3 px-4 text-center">
-                      {assetA.roicRaw > assetB.roicRaw ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800">
-                          🟢 {assetA.symbol} (+{(assetA.roicRaw - assetB.roicRaw).toFixed(1)}%)
-                        </span>
-                      ) : assetB.roicRaw > assetA.roicRaw ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-800">
-                          🟢 {assetB.symbol} (+{(assetB.roicRaw - assetA.roicRaw).toFixed(1)}%)
-                        </span>
+                      {assetA.roicRaw != null && assetB.roicRaw != null ? (
+                        assetA.roicRaw > assetB.roicRaw ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800">
+                            🟢 {assetA.symbol} (+{(assetA.roicRaw - assetB.roicRaw).toFixed(1)}%)
+                          </span>
+                        ) : assetB.roicRaw > assetA.roicRaw ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-800">
+                            🟢 {assetB.symbol} (+{(assetB.roicRaw - assetA.roicRaw).toFixed(1)}%)
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 text-[10px]">PARITY ({assetA.roicRaw.toFixed(1)}%)</span>
+                        )
                       ) : (
-                        <span className="text-slate-500 text-[10px]">PARITY</span>
+                        <span className="text-slate-500 text-[10px]">INSUFFICIENT_EVIDENCE</span>
                       )}
                     </td>
                   </tr>
@@ -568,16 +633,22 @@ function CompareContent() {
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetA.grossMargin}</td>
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetB.grossMargin}</td>
                     <td className="py-3 px-4 text-center">
-                      {assetA.grossMarginRaw > assetB.grossMarginRaw ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800">
-                          🟢 {assetA.symbol} (+{(assetA.grossMarginRaw - assetB.grossMarginRaw).toFixed(1)}%)
-                        </span>
-                      ) : assetB.grossMarginRaw > assetA.grossMarginRaw ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-800">
-                          🟢 {assetB.symbol} (+{(assetB.grossMarginRaw - assetA.grossMarginRaw).toFixed(1)}%)
-                        </span>
+                      {assetA.grossMarginRaw != null && assetB.grossMarginRaw != null ? (
+                        assetA.grossMarginRaw > assetB.grossMarginRaw ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800">
+                            🟢 {assetA.symbol} (+{(assetA.grossMarginRaw - assetB.grossMarginRaw).toFixed(1)}%)
+                          </span>
+                        ) : assetB.grossMarginRaw > assetA.grossMarginRaw ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-800">
+                            🟢 {assetB.symbol} (+{(assetB.grossMarginRaw - assetA.grossMarginRaw).toFixed(1)}%)
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 text-[10px]">PARITY ({assetA.grossMarginRaw.toFixed(1)}%)</span>
+                        )
+                      ) : (assetA.symbol === "SPY" || assetA.symbol === "QQQ" || assetB.symbol === "SPY" || assetB.symbol === "QQQ") ? (
+                        <span className="text-slate-500 text-[10px]">N/A (Fund Instrument)</span>
                       ) : (
-                        <span className="text-slate-500 text-[10px]">PARITY</span>
+                        <span className="text-slate-500 text-[10px]">INSUFFICIENT_EVIDENCE</span>
                       )}
                     </td>
                   </tr>
@@ -588,20 +659,20 @@ function CompareContent() {
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetA.peRatio}</td>
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetB.peRatio}</td>
                     <td className="py-3 px-4 text-center">
-                      {assetA.peRaw > 0 && assetB.peRaw > 0 ? (
+                      {assetA.peRaw != null && assetA.peRaw > 0 && assetB.peRaw != null && assetB.peRaw > 0 ? (
                         assetA.peRaw < assetB.peRaw ? (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800">
-                            🟢 {assetA.symbol} (Lower Multiple)
+                            🟢 {assetA.symbol} (Lower Multiple: {assetA.peRaw.toFixed(1)}x vs {assetB.peRaw.toFixed(1)}x)
                           </span>
                         ) : assetB.peRaw < assetA.peRaw ? (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-800">
-                            🟢 {assetB.symbol} (Lower Multiple)
+                            🟢 {assetB.symbol} (Lower Multiple: {assetB.peRaw.toFixed(1)}x vs {assetA.peRaw.toFixed(1)}x)
                           </span>
                         ) : (
                           <span className="text-slate-500 text-[10px]">PARITY</span>
                         )
                       ) : (
-                        <span className="text-slate-500 text-[10px]">N/A (Unverified)</span>
+                        <span className="text-slate-500 text-[10px]">INSUFFICIENT_EVIDENCE</span>
                       )}
                     </td>
                   </tr>
@@ -612,7 +683,7 @@ function CompareContent() {
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetA.fcfYield}</td>
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetB.fcfYield}</td>
                     <td className="py-3 px-4 text-center">
-                      {assetA.fcfYieldRaw > 0 && assetB.fcfYieldRaw > 0 ? (
+                      {assetA.fcfYieldRaw != null && assetA.fcfYieldRaw > 0 && assetB.fcfYieldRaw != null && assetB.fcfYieldRaw > 0 ? (
                         assetA.fcfYieldRaw > assetB.fcfYieldRaw ? (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800">
                             🟢 {assetA.symbol} (+{(assetA.fcfYieldRaw - assetB.fcfYieldRaw).toFixed(1)}% FCF)
@@ -625,7 +696,7 @@ function CompareContent() {
                           <span className="text-slate-500 text-[10px]">PARITY</span>
                         )
                       ) : (
-                        <span className="text-slate-500 text-[10px]">N/A (Unverified)</span>
+                        <span className="text-slate-500 text-[10px]">INSUFFICIENT_EVIDENCE</span>
                       )}
                     </td>
                   </tr>
@@ -633,25 +704,25 @@ function CompareContent() {
                   {/* Row 5: Piotroski F-Score */}
                   <tr className="hover:bg-[#131a26] transition-colors">
                     <td className="py-3 px-4 font-semibold text-slate-300">Balance Sheet Quality (Piotroski)</td>
-                    <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetA.piotroski} / 9</td>
-                    <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetB.piotroski} / 9</td>
+                    <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetA.piotroski != null ? `${assetA.piotroski} / 9` : "UNAVAILABLE"}</td>
+                    <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetB.piotroski != null ? `${assetB.piotroski} / 9` : "UNAVAILABLE"}</td>
                     <td className="py-3 px-4 text-center">
-                      {assetA.piotroski > 0 || assetB.piotroski > 0 ? (
+                      {assetA.piotroski != null && assetB.piotroski != null ? (
                         assetA.piotroski > assetB.piotroski ? (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800">
-                            🟢 {assetA.symbol}
+                            🟢 {assetA.symbol} ({assetA.piotroski}/9)
                           </span>
                         ) : assetB.piotroski > assetA.piotroski ? (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-800">
-                            🟢 {assetB.symbol}
+                            🟢 {assetB.symbol} ({assetB.piotroski}/9)
                           </span>
                         ) : assetA.piotroski >= 8 && assetB.piotroski >= 8 ? (
-                          <span className="text-emerald-400 font-bold text-[10px]">⚖️ Both Pristine Tier</span>
+                          <span className="text-emerald-400 font-bold text-[10px]">⚖️ Both Pristine Tier ({assetA.piotroski}/9)</span>
                         ) : (
-                          <span className="text-slate-500 text-[10px]">PARITY</span>
+                          <span className="text-slate-500 text-[10px]">PARITY ({assetA.piotroski}/9)</span>
                         )
                       ) : (
-                        <span className="text-slate-500 text-[10px]">N/A (Unverified)</span>
+                        <span className="text-slate-500 text-[10px]">INSUFFICIENT_EVIDENCE</span>
                       )}
                     </td>
                   </tr>
@@ -659,23 +730,23 @@ function CompareContent() {
                   {/* Row 6: Day Trader Scalp Volatility (14D ATR) */}
                   <tr className="hover:bg-[#131a26] transition-colors">
                     <td className="py-3 px-4 font-semibold text-slate-300">14-Day ATR Range Volatility</td>
-                    <td className="py-3 px-4 text-right font-bold text-amber-300 tabular-nums">{assetA.atr14} / day</td>
-                    <td className="py-3 px-4 text-right font-bold text-amber-300 tabular-nums">{assetB.atr14} / day</td>
+                    <td className="py-3 px-4 text-right font-bold text-amber-300 tabular-nums">{assetA.atr14 != null ? `${assetA.atr14} / day` : "UNAVAILABLE"}</td>
+                    <td className="py-3 px-4 text-right font-bold text-amber-300 tabular-nums">{assetB.atr14 != null ? `${assetB.atr14} / day` : "UNAVAILABLE"}</td>
                     <td className="py-3 px-4 text-center">
-                      {assetA.atr14Raw > 0 && assetB.atr14Raw > 0 ? (
+                      {assetA.atr14Raw != null && assetA.atr14Raw > 0 && assetB.atr14Raw != null && assetB.atr14Raw > 0 ? (
                         assetA.atr14Raw > assetB.atr14Raw ? (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-800">
-                            ⚡ {assetA.symbol} (Higher Scalp Range)
+                            ⚡ {assetA.symbol} (Higher Scalp Range: ${assetA.atr14Raw.toFixed(2)})
                           </span>
                         ) : assetB.atr14Raw > assetA.atr14Raw ? (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-800">
-                            ⚡ {assetB.symbol} (Higher Scalp Range)
+                            ⚡ {assetB.symbol} (Higher Scalp Range: ${assetB.atr14Raw.toFixed(2)})
                           </span>
                         ) : (
                           <span className="text-slate-500 text-[10px]">PARITY</span>
                         )
                       ) : (
-                        <span className="text-slate-500 text-[10px]">N/A (Unverified)</span>
+                        <span className="text-slate-500 text-[10px]">INSUFFICIENT_EVIDENCE</span>
                       )}
                     </td>
                   </tr>
@@ -686,20 +757,20 @@ function CompareContent() {
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetA.intradayBeta}</td>
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetB.intradayBeta}</td>
                     <td className="py-3 px-4 text-center">
-                      {assetA.intradayBetaRaw > 0 && assetB.intradayBetaRaw > 0 ? (
+                      {assetA.intradayBetaRaw != null && assetA.intradayBetaRaw > 0 && assetB.intradayBetaRaw != null && assetB.intradayBetaRaw > 0 ? (
                         assetA.intradayBetaRaw > assetB.intradayBetaRaw ? (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800">
-                            🚀 {assetA.symbol} (Higher Beta)
+                            🚀 {assetA.symbol} (Higher Beta: {assetA.intradayBetaRaw.toFixed(2)})
                           </span>
                         ) : assetB.intradayBetaRaw > assetA.intradayBetaRaw ? (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-800">
-                            🚀 {assetB.symbol} (Higher Beta)
+                            🚀 {assetB.symbol} (Higher Beta: {assetB.intradayBetaRaw.toFixed(2)})
                           </span>
                         ) : (
                           <span className="text-slate-500 text-[10px]">PARITY</span>
                         )
                       ) : (
-                        <span className="text-slate-500 text-[10px]">N/A (Unverified)</span>
+                        <span className="text-slate-500 text-[10px]">INSUFFICIENT_EVIDENCE</span>
                       )}
                     </td>
                   </tr>
@@ -720,13 +791,21 @@ function CompareContent() {
               <div className="bg-[#070a11] p-3.5 rounded-xl border border-cyan-900/40">
                 <span className="font-bold text-cyan-300 block mb-1">When to Overweight {assetA.symbol}:</span>
                 <p className="text-slate-400 leading-relaxed">
-                  Best suited for portfolios targeting aggressive growth, high-beta momentum continuation, and direct exposure to secular expanding addressable markets with superior ROIC ({assetA.roic}).
+                  {assetA.roicRaw != null && assetA.roic !== "UNAVAILABLE" ? (
+                    `Best suited for portfolios targeting aggressive growth, high-beta momentum continuation, and direct exposure to secular expanding addressable markets with verified ROIC (${assetA.roic})${assetA.grossMarginRaw != null && assetA.grossMargin !== "UNAVAILABLE" ? ` and gross margin of ${assetA.grossMargin}` : ""}.`
+                  ) : (
+                    `Overweight recommendation for ${assetA.symbol} is withheld pending verified fundamental SEC filings and quantitative factor validation.`
+                  )}
                 </p>
               </div>
               <div className="bg-[#070a11] p-3.5 rounded-xl border border-purple-900/40">
                 <span className="font-bold text-purple-300 block mb-1">When to Overweight {assetB.symbol}:</span>
                 <p className="text-slate-400 leading-relaxed">
-                  Best suited for risk-managed portfolios demanding strong free cash flow yield ({assetB.fcfYield}), defensive balance sheet protection, and durable recurring monetization across broad installed bases.
+                  {assetB.fcfYieldRaw != null && assetB.fcfYield !== "UNAVAILABLE" ? (
+                    `Best suited for risk-managed portfolios demanding durable free cash flow yield (${assetB.fcfYield}), defensive balance sheet protection${assetB.piotroski != null ? ` (Piotroski ${assetB.piotroski}/9)` : ""}, and sustained monetization across established franchises.`
+                  ) : (
+                    `Overweight recommendation for ${assetB.symbol} is withheld pending verified fundamental SEC filings and quantitative factor validation.`
+                  )}
                 </p>
               </div>
             </div>

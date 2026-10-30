@@ -646,6 +646,7 @@ export default function PortfolioPage() {
               type="button"
               onClick={() => refreshQuotes(positions)}
               disabled={isRefreshing}
+              aria-label="Refresh quotes"
               className={`px-3 py-2 bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border-subtle)] text-[var(--text-1)] rounded-xl text-xs font-mono font-bold shadow-sm flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer ${
                 isRefreshing ? "opacity-60 cursor-not-allowed" : ""
               }`}
@@ -657,6 +658,7 @@ export default function PortfolioPage() {
             <button
               type="button"
               onClick={handleExportCsv}
+              aria-label="Export portfolio CSV"
               className="px-3 py-2 bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border-subtle)] text-[var(--text-1)] rounded-xl text-xs font-mono font-bold shadow-sm flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
             >
               <span>📥</span>

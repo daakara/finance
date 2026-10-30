@@ -12,6 +12,9 @@ export interface SharedExecutionLadderProps {
   isInBuyZone: boolean;
   pivotPrice: number | null;
   onOpenSizer?: () => void;
+  isCleared?: boolean;
+  activeBlocker?: string | null;
+  passedCount?: number;
 }
 
 export function SharedExecutionLadder({
@@ -23,10 +26,18 @@ export function SharedExecutionLadder({
   isInBuyZone,
   pivotPrice,
   onOpenSizer,
+  isCleared,
+  activeBlocker,
+  passedCount,
 }: SharedExecutionLadderProps) {
   const kl = insight.standard?.keyLevels || (insight as any).keyLevels || {};
   const rawPrice = insight.price || kl.currentPrice;
   const hasValidPrice = typeof rawPrice === "number" && !isNaN(rawPrice) && rawPrice > 0;
+
+  // Prospective R:R calculated directly from live spot price
+  const spotRR = (hasValidPrice && kl.stopLoss && kl.target1 && (rawPrice as number) > kl.stopLoss)
+    ? ((kl.target1 - (rawPrice as number)) / ((rawPrice as number) - kl.stopLoss))
+    : null;
 
   // Mode-adaptive label configuration (Guided plain-language, Standard institutional, Quant mathematical)
   const labels = {
@@ -94,14 +105,20 @@ export function SharedExecutionLadder({
     sizingButton:
       mode === "GUIDED"
         ? isActionable
-          ? "Position Sizing Calculator"
+          ? isCleared === false
+            ? "Position Sizing Calculator (Pre-Flight Blocked)"
+            : "Position Sizing Calculator"
           : "0 Shares (Awaiting Trigger)"
         : mode === "QUANT"
         ? isActionable
-          ? "Model Sizing Authority"
+          ? isCleared === false
+            ? "Model Sizing Authority (Clearance Blocked)"
+            : "Model Sizing Authority"
           : "0 Shares (Condition Unmet)"
         : isActionable
-        ? "Configure Shares"
+        ? isCleared === false
+          ? "Configure Shares (Clearance Blocked)"
+          : "Configure Shares"
         : "0 Shares (Entry Unconfirmed)",
   };
 
@@ -110,7 +127,12 @@ export function SharedExecutionLadder({
       <div className="panel-head flex items-center justify-between text-[10px] font-bold text-[var(--text-2)] uppercase tracking-wider">
         <span id="middle-panel-title">{labels.title}</span>
         <span id="middle-panel-sub" className="mono text-cyan-300">
-          {labels.rr} {kl.profitRiskRatio ? `${kl.profitRiskRatio.toFixed(2)} : 1.0` : "N/A"}
+          {labels.rr} {kl.profitRiskRatio ? `${kl.profitRiskRatio.toFixed(2)} : 1.0 (Pivot)` : "N/A"}
+          {spotRR != null && spotRR > 0 && pivotPrice != null && Math.abs((rawPrice as number) - pivotPrice) > 0.05 ? (
+            <span className="text-[10px] text-slate-400 font-normal ml-1.5 whitespace-nowrap">
+              · Spot R:R: <span className="text-amber-300 font-bold">{spotRR.toFixed(2)}:1</span>
+            </span>
+          ) : null}
         </span>
       </div>
       <div
@@ -316,11 +338,40 @@ export function SharedExecutionLadder({
                 ? "Execution Prohibited (Stale Tape)"
                 : !isActionable
                 ? "0% (Awaiting Setup Trigger)"
+                : isCleared === false
+                ? "Informational Sizing (Pre-Flight Blocked)"
                 : "Informational Sizing (1% Risk Model)"}
             </span>
           </div>
         </div>
       </div>
+
+      {/* Prominent Pre-Flight Execution Blocker Banner */}
+      {isActionable && isCleared === false && (
+        <div
+          id="execution-clearance-blocker-banner"
+          data-testid="execution-clearance-blocker"
+          className="p-2.5 rounded-xl bg-amber-950/70 border border-amber-600/80 text-amber-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-base">⚠️</span>
+            <div>
+              <span className="font-bold uppercase tracking-wider block text-[10px] text-amber-400">
+                Setup Actionable — Execution Clearance Blocked
+              </span>
+              <span className="text-[11px] text-amber-200 font-sans">
+                Active Blocker: <span className="font-mono font-bold text-amber-100">{activeBlocker || "MANDATORY PRE-FLIGHT NOT CLEARED"}</span>
+              </span>
+            </div>
+          </div>
+          <a
+            href="#preflight-readiness-bar"
+            className="text-[11px] font-mono font-bold text-amber-300 underline hover:text-white shrink-0"
+          >
+            Inspect Clearance Checklist ({passedCount !== undefined ? `${passedCount}/4 Checks` : "Pre-Flight"}) →
+          </a>
+        </div>
+      )}
     </div>
   );
 }
