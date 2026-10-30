@@ -123,10 +123,14 @@ class DifferentialContractTests(unittest.TestCase):
                     mod.qualify(BASE, HEAD, PR)
 
     def test_wrong_ci_head_rejected(self):
+        repo = {"full_name": "daakara/finance"}
         event = {
             "number": PR,
+            "repository": repo,
             "pull_request": {
-                "head": {"sha": "c" * 40}, "base": {"sha": BASE}
+                "number": PR,
+                "head": {"sha": "c" * 40, "repo": repo},
+                "base": {"sha": BASE, "repo": repo},
             },
         }
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as stream:
@@ -136,9 +140,34 @@ class DifferentialContractTests(unittest.TestCase):
                 with patch.dict(os.environ, {
                     "GITHUB_ACTIONS": "true",
                     "GITHUB_EVENT_NAME": "pull_request",
+                    "GITHUB_REPOSITORY": "daakara/finance",
                     "GITHUB_EVENT_PATH": stream.name,
                 }, clear=True):
                     with self.assertRaisesRegex(mod.QualificationFailure, "CI_EVENT_IDENTITY_MISMATCH"):
+                        mod.qualify(BASE, HEAD, PR)
+
+    def test_forked_ci_repository_rejected(self):
+        repo = {"full_name": "daakara/finance"}
+        event = {
+            "number": PR,
+            "repository": repo,
+            "pull_request": {
+                "number": PR,
+                "head": {"sha": HEAD, "repo": {"full_name": "attacker/finance"}},
+                "base": {"sha": BASE, "repo": repo},
+            },
+        }
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as stream:
+            json.dump(event, stream)
+            stream.flush()
+            with patch.object(mod, "git", side_effect=self.mock_git):
+                with patch.dict(os.environ, {
+                    "GITHUB_ACTIONS": "true",
+                    "GITHUB_EVENT_NAME": "pull_request",
+                    "GITHUB_REPOSITORY": "daakara/finance",
+                    "GITHUB_EVENT_PATH": stream.name,
+                }, clear=True):
+                    with self.assertRaisesRegex(mod.QualificationFailure, "CI_REPOSITORY_IDENTITY_MISMATCH"):
                         mod.qualify(BASE, HEAD, PR)
 
     def test_invalid_head_sha_fails(self):
