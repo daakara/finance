@@ -780,8 +780,7 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "af531e1a1b00a0a80859635340a577e2c406ff2d92491049714cdbc12c95b149",
-      "description": "Release qualification module: rq02_diff_integrity.py (Hardened D12A)"
+      "sha256": "b056fde791fd7ca37bb9ff07da333f0819ecd86df3678549e538f988b908a316"
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "9778026dff4dd5967cfc180b28b4291649ad6bc4abf7862271158914f7b446d9",
@@ -836,8 +835,10 @@
       "description": "Release qualification module: test_synthetic_merge_reproduction.py"
     },
     "scripts/release/test_rq02_adversarial_controls.py": {
-      "sha256": "271781d4082b84a54f8a4737e98069d7c4bc55c931a002c6cc584ecfbcc213e1",
-      "description": "Adversarial negative controls suite: test_rq02_adversarial_controls.py (D12A)"
+      "sha256": "c0117b16e9922cca8a04936bafa5fa267cf6acbe89371067115f230fa73db513"
+    },
+    "scripts/release/test_d12c_workflow_attacks.py": {
+      "sha256": "5df18902a2a1adfda9c7b04ca336a6ef693a05ea80a8fb905768b3f8ccb15178"
     }
   }
 }

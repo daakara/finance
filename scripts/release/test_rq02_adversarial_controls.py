@@ -171,9 +171,18 @@ def main():
         # -------------------------------------------------------------------------
         # NC-07: A staged or dirty working-tree mismatch
         # -------------------------------------------------------------------------
-        # Running WITHOUT --allow-uncommitted when working tree is uncommitted
-        rc, out, err = run_rq02([])
-        passed = (rc == 1 and "DIRTY_WORKING_TREE_MISMATCH" in out)
+        # Running WITHOUT --allow-uncommitted when an approved candidate file is uncommitted
+        target_probe = os.path.join(PROJECT_ROOT, "README.md")
+        with open(target_probe, "rb") as f:
+            orig_probe_bytes = f.read()
+        try:
+            with open(target_probe, "wb") as f:
+                f.write(orig_probe_bytes + b"\n# dirty working tree probe for NC-07 validation\n")
+            rc, out, err = run_rq02([])
+            passed = (rc == 1 and "DIRTY_WORKING_TREE_MISMATCH" in out)
+        finally:
+            with open(target_probe, "wb") as f:
+                f.write(orig_probe_bytes)
         results.append({
             "control": "NC-07: Staged or dirty working-tree mismatch",
             "expected_rc": 1,

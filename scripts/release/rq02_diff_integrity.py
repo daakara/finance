@@ -276,10 +276,16 @@ def main():
             ).strip()
             dirty_candidate_files = []
             for line in status_out.splitlines():
-                if not line.strip():
+                line = line.strip()
+                if not line:
                     continue
-                code = line[:2]
-                fpath = line[3:].strip()
+                parts = line.split(maxsplit=1)
+                if len(parts) < 2:
+                    continue
+                code, fpath = parts[0], parts[1].strip()
+                if " -> " in fpath:
+                    fpath = fpath.split(" -> ")[1].strip()
+                fpath = fpath.replace("\\", "/")
                 # If an approved candidate file or manifest is dirty in working tree, fail closed
                 if fpath in approved_files or fpath in qualification_files or fpath == "scripts/release/release_manifest.json":
                     dirty_candidate_files.append((code, fpath))
@@ -462,6 +468,29 @@ def main():
     print(f"Receipt written to: {receipt_path}")
 
     if status == "PASS":
+        # 9. Hosted Adversarial Falsification Gate
+        # In canonical CI execution (clean run against default manifest), execute both adversarial falsification suites
+        is_canonical_run = (
+            not args.allow_uncommitted
+            and not args.skip_framework_check
+            and os.path.abspath(args.manifest) == os.path.abspath(os.path.join(os.path.dirname(__file__), "release_manifest.json"))
+            and os.environ.get("ARX_RQ02_SKIP_ADVERSARIAL_RECURSION") != "1"
+        )
+        if is_canonical_run:
+            sub_env = os.environ.copy()
+            sub_env["ARX_RQ02_SKIP_ADVERSARIAL_RECURSION"] = "1"
+            print("\n>>> [RQ-02-ADV] Executing RQ-02 Adversarial Controls...")
+            res_adv1 = subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), "test_rq02_adversarial_controls.py")], cwd=PROJECT_ROOT, env=sub_env)
+            if res_adv1.returncode != 0:
+                print("FAIL: RQ-02 Adversarial Controls failed!")
+                sys.exit(1)
+
+            print("\n>>> [Gate H] Executing Gate H 12-Scenario Workflow Attacks...")
+            res_adv2 = subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), "test_d12c_workflow_attacks.py")], cwd=PROJECT_ROOT, env=sub_env)
+            if res_adv2.returncode != 0:
+                print("FAIL: Gate H Workflow Attacks failed!")
+                sys.exit(1)
+
         print(f"PASS: All {len(diff_entries)} changed files strictly match approved release manifest (0 unapproved).")
         print("=== [RQ-02] RESULT: PASS ===")
         sys.exit(0)
