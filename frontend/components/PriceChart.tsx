@@ -1047,7 +1047,7 @@ export default function PriceChart({
       <div
         role="region"
         aria-label={`${symbol} interactive candlestick and trend chart`}
-        className="flex-1 w-full min-h-[320px] h-[320px] sm:h-[380px] xl:h-[430px] mt-2 relative rounded-lg overflow-hidden border border-[#1b2434]"
+        className="flex-1 w-full min-h-[320px] h-[320px] sm:h-[380px] xl:h-[380px] mt-2 relative rounded-lg overflow-hidden border border-[#1b2434]"
       >
         <div ref={chartContainerRef} className="w-full h-full" />
 

@@ -1,3 +1,4 @@
+import UxReviewNotice from "../components/UxReviewNotice";
 import "./globals.css";
 import type { Metadata } from "next";
 import { Suspense } from "react";
@@ -216,6 +217,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Suspense fallback={null}>
               <MatomoTracker />
             </Suspense>
+            <UxReviewNotice />
             {children}
             <FinancialDisclaimer />
           </DataSourceProvider>

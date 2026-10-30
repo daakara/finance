@@ -27,6 +27,7 @@ export default function SynthesisMobileDock({ activeSymbol }: SynthesisMobileDoc
     <nav
       className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[var(--surface-1)] border-t border-[var(--border-subtle)] backdrop-blur-lg px-2 py-1 shadow-2xl"
       aria-label="Mobile Navigation Dock"
+      data-synthesis-mobile-dock="true"
     >
       <div className="grid grid-cols-5 gap-1 items-center max-w-md mx-auto">
         <Link

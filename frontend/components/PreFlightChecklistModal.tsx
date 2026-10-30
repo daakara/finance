@@ -193,8 +193,8 @@ export default function PreFlightChecklistModal({
   const renderCheck2Detail = () => {
     if (isStage4) {
       return isPlain
-        ? `⚠️ Watchlist Only: Spot price ($${safePrice.toFixed(2)}) is in Stage 4 correction below 50-day average. Await base formation.`
-        : `Stage 4 correction structure: Spot ($${safePrice.toFixed(2)}) requires 50-day breakout pivot ${safePivot !== null ? `above $${safePivot.toFixed(2)}` : "(pivot uncalculated)"}.`;
+        ? `⚠️ Watchlist Only: Readiness input price ($${safePrice.toFixed(2)}) is in Stage 4 correction below 50-day average. Await base formation.`
+        : `Stage 4 correction structure: Readiness input ($${safePrice.toFixed(2)}) requires 50-day breakout pivot ${safePivot !== null ? `above $${safePivot.toFixed(2)}` : "(pivot uncalculated)"}.`;
     }
     if (safeEntryMin === null || safeEntryMax === null) {
       return "Optimal buy zone levels uncalculated. Awaiting technical structure.";
@@ -202,20 +202,20 @@ export default function PreFlightChecklistModal({
     if (isExtendedAboveZone) {
       return isPlain
         ? `⚠️ Extended: Price is above ideal buy zone ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}). Wait for pullback.`
-        : "Extended structure: Spot is above value area. Chasing creates negative R:R risk.";
+        : "Extended structure: Readiness input is above value area. Chasing creates negative R:R risk.";
     }
     if (isWithinTolerance) {
       return isPlain
-        ? `Spot price ($${safePrice.toFixed(2)}) is slightly above preferred buying range ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}), within allowable extension tolerance (+2%). Defending key support.`
-        : `Spot price ($${safePrice.toFixed(2)}) is above corridor ceiling ($${safeEntryMax.toFixed(2)}) within +2% extension tolerance. Defending key moving average support (20 EMA / 50 SMA).`;
+        ? `Readiness input price ($${safePrice.toFixed(2)}) is slightly above preferred buying range ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}), within allowable extension tolerance (+2%). Defending key support.`
+        : `Readiness input price ($${safePrice.toFixed(2)}) is above corridor ceiling ($${safeEntryMax.toFixed(2)}) within +2% extension tolerance. Defending key moving average support (20 EMA / 50 SMA).`;
     }
     if (isBelowCorridor) {
       return isPlain
-        ? `Spot price ($${safePrice.toFixed(2)}) is below preferred buying range ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}).`
-        : `Spot price ($${safePrice.toFixed(2)}) is below preferred accumulation corridor ($${safeEntryMin.toFixed(2)}–$${safeEntryMax.toFixed(2)}).`;
+        ? `Readiness input price ($${safePrice.toFixed(2)}) is below preferred buying range ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}).`
+        : `Readiness input price ($${safePrice.toFixed(2)}) is below preferred accumulation corridor ($${safeEntryMin.toFixed(2)}–$${safeEntryMax.toFixed(2)}).`;
     }
     return isPlain
-      ? `Spot price ($${safePrice.toFixed(2)}) is inside the verified buying range defending key support.`
+      ? `Readiness input price ($${safePrice.toFixed(2)}) is inside the verified buying range defending key support.`
       : "Defending key moving average support (20 EMA / 50 SMA).";
   };
 
@@ -276,7 +276,7 @@ export default function PreFlightChecklistModal({
     : `### 📋 ARX Institutional Execution Brief: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
 - **Asset**: ${symbol} | **Mode**: ${isDayTrader ? "Intraday Momentum Pullback" : "Swing / Compounder Accumulation"}
-- **Spot**: $${safePrice.toFixed(2)} | **Optimal Entry**: ${entryZoneStr}
+- **Readiness input**: $${safePrice.toFixed(2)} | **Optimal Entry**: ${entryZoneStr}
 - **Hard Stop / Invalidation**: ${stopLossStr}
 - **Target 1 (TP1)**: ${target1Str}
 - **Target 2 (TP2 Runner)**: ${target2Str}
@@ -369,7 +369,7 @@ export default function PreFlightChecklistModal({
           {!isPriceValid && (
             <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-800/60 text-xs font-mono text-rose-300 flex items-center gap-2">
               <span className="text-base">⚠️</span>
-              <span>Live spot price or execution levels are unverified for this asset. Trade execution is blocked until verified market data is received.</span>
+              <span>Readiness input price or execution levels are unverified for this asset. Trade execution is blocked until verified market data is received.</span>
             </div>
           )}
 

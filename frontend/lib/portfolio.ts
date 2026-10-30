@@ -1,4 +1,5 @@
 "use client";
+import { isUxReviewOnly, UX_REVIEW_LOCK_MESSAGE } from "./uxReviewBoundary";
 
 /**
  * Robust Zero-Login Portfolio Engine.
@@ -168,6 +169,7 @@ export function loadPortfolioPositions(): PortfolioPosition[] {
 }
 
 export function savePortfolioPositions(positions: PortfolioPosition[]): void {
+  if (isUxReviewOnly()) return;
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(positions));
@@ -192,6 +194,7 @@ export async function migrateLocalHoldingsToApi(holdings: PortfolioPosition[]): 
   status?: string;
   error?: string;
 }> {
+  if (isUxReviewOnly()) return { success: false, migratedCount: 0, totalSubmitted: 0, failedCount: holdings.length, error: UX_REVIEW_LOCK_MESSAGE };
   if (typeof window === "undefined" || holdings.length === 0) {
     return { success: true, migratedCount: 0, totalSubmitted: 0, failedCount: 0, status: "no_op" };
   }
@@ -337,6 +340,7 @@ export async function syncPortfolioFromApi(): Promise<PortfolioPosition[]> {
 }
 
 export async function persistHoldingToApi(holding: PortfolioPosition): Promise<{ success: boolean; error?: string }> {
+  if (isUxReviewOnly()) return { success: false, error: UX_REVIEW_LOCK_MESSAGE };
   if (typeof window === "undefined") return { success: false, error: "Window undefined" };
   try {
     const baseUrl = getApiBaseUrl();
@@ -370,6 +374,7 @@ export async function persistHoldingToApi(holding: PortfolioPosition): Promise<{
 }
 
 export async function removeHoldingFromApi(symbol: string): Promise<{ success: boolean; error?: string }> {
+  if (isUxReviewOnly()) return { success: false, error: UX_REVIEW_LOCK_MESSAGE };
   if (typeof window === "undefined") return { success: false, error: "Window undefined" };
   try {
     const baseUrl = getApiBaseUrl();
@@ -396,6 +401,7 @@ export async function exitManualHoldingViaApi(
   exitData: ManualHoldingExitRequest,
   anonymousUserId?: string
 ): Promise<{ success: boolean; data?: ManualHoldingExitResponse; error?: { code: string; message: string }; message?: string }> {
+  if (isUxReviewOnly()) return { success: false, error: { code: "UX_REVIEW_LOCKED", message: UX_REVIEW_LOCK_MESSAGE }, message: UX_REVIEW_LOCK_MESSAGE };
   try {
     const baseUrl = getApiBaseUrl();
     const anonId = anonymousUserId || getAnonymousUserId();
@@ -444,6 +450,7 @@ export async function addPortfolioPosition(pos: {
   stopLossPrice?: number;
   assetType?: "Stock" | "ETF" | "Crypto";
 }): Promise<{ success: boolean; isDuplicate: boolean; message: string }> {
+  if (isUxReviewOnly()) return { success: false, isDuplicate: false, message: UX_REVIEW_LOCK_MESSAGE };
   if (typeof window === "undefined") return { success: false, isDuplicate: false, message: "Window undefined" };
   try {
     const symUpper = (pos.symbol || "").toUpperCase().trim();
@@ -532,6 +539,7 @@ export async function updatePortfolioPosition(pos: {
   manualShares?: number;
   manualEntryPrice?: number;
 }): Promise<{ success: boolean; message: string }> {
+  if (isUxReviewOnly()) return { success: false, message: UX_REVIEW_LOCK_MESSAGE };
   if (typeof window === "undefined") return { success: false, message: "Window undefined" };
   try {
     const symUpper = (pos.symbol || "").toUpperCase().trim();
@@ -590,6 +598,7 @@ export async function updatePortfolioPosition(pos: {
 }
 
 export async function removePortfolioPosition(symbol: string): Promise<{ success: boolean; message: string }> {
+  if (isUxReviewOnly()) return { success: false, message: UX_REVIEW_LOCK_MESSAGE };
   if (typeof window === "undefined") return { success: false, message: "Window undefined" };
   try {
     const symUpper = (symbol || "").toUpperCase().trim();
