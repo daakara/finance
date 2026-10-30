@@ -92,7 +92,13 @@ def qualify(base: str, head: str, pr: int) -> dict:
             with open(event_path, encoding="utf-8") as stream:
                 event = json.load(stream, object_pairs_hook=unique_json)
             event_pr = event["pull_request"]
-            if (event["number"] != pr
+            repo = os.environ.get("GITHUB_REPOSITORY")
+            if (not repo or event["repository"]["full_name"] != repo
+                    or event_pr["base"]["repo"]["full_name"] != repo
+                    or event_pr["head"]["repo"]["full_name"] != repo):
+                raise QualificationFailure("CI_REPOSITORY_IDENTITY_MISMATCH")
+            if (type(event["number"]) is not int or event["number"] != pr
+                    or event_pr["number"] != pr
                     or event_pr["head"]["sha"] != head
                     or event_pr["base"]["sha"] != base):
                 raise QualificationFailure("CI_EVENT_IDENTITY_MISMATCH")
