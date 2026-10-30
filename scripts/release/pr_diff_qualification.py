@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -77,13 +78,26 @@ def qualify(base: str, head: str, pr: int) -> dict:
     except (ValueError, TypeError) as exc:
         raise QualificationFailure("INVALID_APPROVAL_JSON: " + str(exc)) from exc
     require_exact_fields(
-        approval, {"schema_version", "pr_number", "base_sha", "head_sha", "files"},
+        approval, {"schema_version", "pr_number", "files"},
         "APPROVAL",
     )
     if approval["schema_version"] != 1 or type(approval["pr_number"]) is not int or approval["pr_number"] != pr:
         raise QualificationFailure("APPROVAL_PR_OR_VERSION_MISMATCH")
-    if approval["base_sha"] != base or approval["head_sha"] != head:
-        raise QualificationFailure("STALE_OR_WRONG_APPROVAL_IDENTITY")
+    # Base-committed approvals pin content hashes, never future descendant SHAs.
+    event_path = os.environ.get("GITHUB_EVENT_PATH")
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        if not event_path or os.environ.get("GITHUB_EVENT_NAME") != "pull_request":
+            raise QualificationFailure("UNTRUSTED_CI_EVENT_CONTEXT")
+        try:
+            with open(event_path, encoding="utf-8") as stream:
+                event = json.load(stream, object_pairs_hook=unique_json)
+            event_pr = event["pull_request"]
+            if (event["number"] != pr
+                    or event_pr["head"]["sha"] != head
+                    or event_pr["base"]["sha"] != base):
+                raise QualificationFailure("CI_EVENT_IDENTITY_MISMATCH")
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            raise QualificationFailure("INVALID_CI_EVENT_IDENTITY") from exc
     files = approval["files"]
     if not isinstance(files, dict) or not files:
         raise QualificationFailure("EMPTY_OR_INVALID_APPROVED_FILE_INVENTORY")
