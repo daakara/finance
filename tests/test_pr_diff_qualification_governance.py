@@ -50,5 +50,5 @@ def test_pr_diff_real_git_negative_controls():
     suite = load_suite("test_pr_diff_git_integration.py")
     result = unittest.TestResult()
     suite.run(result)
-    assert result.testsRun >= 8, f"Unexpected Git integration census: {result.testsRun}"
+    assert result.testsRun >= 11, f"Unexpected Git integration census: {result.testsRun}"
     summarize(result)
