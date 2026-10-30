@@ -780,8 +780,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "c7558f403f26b5b664e99f470b66544071f1e1d2dfe493612c33f198fffe8510",
-      "bytes": 22319
+      "sha256": "86583b8a92943ad7e7401188a91f9d9dfa72a26a5021caca2aef16ec336de075",
+      "bytes": 24290
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "9778026dff4dd5967cfc180b28b4291649ad6bc4abf7862271158914f7b446d9",
@@ -836,12 +836,12 @@
       "description": "Release qualification module: test_synthetic_merge_reproduction.py"
     },
     "scripts/release/test_rq02_adversarial_controls.py": {
-      "sha256": "cec079385d98002d9e8d20dbb9ed559aff9f79f7e66b29b358916c0ad9b39c08",
-      "bytes": 14396
+      "sha256": "12075bf8001810b97b9b6d4fc0a88351acd71d9933c089e15b49e6c23594d11a",
+      "bytes": 15449
     },
     "scripts/release/test_d12c_workflow_attacks.py": {
-      "sha256": "b4e52379c8e9e116f473fa3f27947c0d7980dbcc183713d078820b147ff959aa",
-      "bytes": 17911
+      "sha256": "c87ceef5b97ce0d6bc937a9c99398a21c42e622e34c790bd48f7a65869f86f8a",
+      "bytes": 19881
     }
   }
 }

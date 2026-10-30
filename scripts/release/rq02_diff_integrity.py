@@ -117,6 +117,47 @@ def main():
     print(f"Qualification Mode: {args.mode}")
     print(f"Manifest Path: {args.manifest}")
 
+    # 0. Fail-Closed Enforcement: Reject Testing Bypass Flags in Governed Contexts
+    is_ci = (os.environ.get("GITHUB_ACTIONS") == "true" or os.environ.get("CI") == "true")
+    is_governed_run = (os.environ.get("ARX_GOVERNED_QUALIFICATION") == "1")
+    is_production_eval = (args.mode in ("auto", "cumulative") and (not args.base or "release/production" in str(args.base) or "cdc47a2" in str(args.base)))
+    is_governed_context = is_ci or is_governed_run or is_production_eval or (os.environ.get("ARX_ALLOW_TEST_BYPASS") != "1")
+
+    if args.allow_uncommitted or args.skip_framework_check:
+        forbidden = []
+        if args.allow_uncommitted:
+            forbidden.append("--allow-uncommitted")
+        if args.skip_framework_check:
+            forbidden.append("--skip-framework-check")
+
+        if is_governed_context:
+            bypass_err = (
+                f"FORBIDDEN_QUALIFICATION_BYPASS: Bypass flag(s) {forbidden} are strictly forbidden "
+                f"in governed CI and production release qualification environments."
+            )
+            print(f"FAIL: {bypass_err}", file=sys.stderr)
+            errors.append(bypass_err)
+            assertions.append({
+                "assertion": "Zero forbidden qualification bypass flags used in governed environment",
+                "passed": False,
+                "error": bypass_err
+            })
+            duration = time.time() - t0
+            receipt = create_stage_receipt(
+                control_id="RQ-02",
+                name="Release Diff Integrity",
+                status="FAIL",
+                start_time=start_time,
+                end_time=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                duration_sec=duration,
+                candidate_sha="UNKNOWN",
+                target_branch="release/production",
+                assertions=assertions,
+                errors=errors
+            )
+            save_stage_receipt(receipt)
+            sys.exit(1)
+
     # 1. Manifest file existence & parsing with duplicate-key detection
     if not os.path.exists(args.manifest):
         errors.append(f"Release manifest not found at {args.manifest}")
