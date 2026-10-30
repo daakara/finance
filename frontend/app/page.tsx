@@ -49,9 +49,21 @@ function TerminalContent() {
   const searchParams = useSearchParams();
   const urlSymbol = searchParams.get("symbol") || searchParams.get("ticker");
   const urlTab = searchParams.get("tab")?.toUpperCase();
+  const rawContextId = searchParams.get("contextId") || searchParams.get("decisionContextId");
+
+  // Gate G & H: Validate contextId against active symbol (prevents CONTEXT_INVALID cross-symbol leakage)
+  const validatedContextId = useMemo(() => {
+    if (!rawContextId || !urlSymbol) return null;
+    const parts = rawContextId.split("-");
+    if (parts.length >= 3 && parts[2].toUpperCase() !== urlSymbol.toUpperCase()) {
+      return null;
+    }
+    return rawContextId;
+  }, [rawContextId, urlSymbol]);
 
   const [hasExplicitSymbol, setHasExplicitSymbol] = useState<boolean>(!!urlSymbol);
   const [selectedSymbol, setSelectedSymbol] = useState<string>(urlSymbol ? urlSymbol.toUpperCase() : "AAPL");
+  const [discoveryContextId, setDiscoveryContextId] = useState<string | null>(validatedContextId);
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const analysisRequestIdRef = useRef(0);
   const [loading, setLoading] = useState<boolean>(true);
@@ -117,8 +129,9 @@ function TerminalContent() {
       if (urlSymbol.toUpperCase() !== selectedSymbol) {
         setSelectedSymbol(urlSymbol.toUpperCase());
       }
+      setDiscoveryContextId(validatedContextId);
     }
-  }, [urlSymbol]);
+  }, [urlSymbol, validatedContextId]);
 
   useEffect(() => {
     if (urlTab) {

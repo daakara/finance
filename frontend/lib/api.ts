@@ -1819,8 +1819,8 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
           screeningEligible: typeof r.screeningEligible === "boolean" ? r.screeningEligible : Boolean(r.executionStatus === "IN_BUY_ZONE"),
           rvol: typeof r.rvol === "string" ? r.rvol : null,
           riskRewardRatio: typeof r.riskRewardRatio === "number" ? r.riskRewardRatio : null,
-          decisionState: r.decisionState || "VALID_SETUP",
-          decisionStateLabel: r.decisionStateLabel || "Discovery Candidate — Analyze for Trigger",
+          decisionState: r.decisionState || "UNVERIFIED_SETUP",
+          decisionStateLabel: r.decisionStateLabel || (r.decisionState === "ACTIONABLE_SETUP" ? "Discovery Candidate — Analyze for Trigger" : "Unverified Setup"),
           // Invariant: Screener output is discovery-only. Canonical actionability strictly requires Single-Asset DecisionTrace.
           isActionable: false,
           canSizeTrade: false,
@@ -1832,17 +1832,37 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
         };
       });
 
+      // Tri-state classification logic enforcing Fail-Closed and Gate C Legacy compatibility
+      const isScanFailure =
+        data.datasetState === "SCAN_FAILED" ||
+        data.scanState === "FAILED" ||
+        data.status === "ERROR" ||
+        data.status === "TIMEOUT" ||
+        (Boolean(data.error) && data.status !== "PARTIAL");
+
+      const normalizedStatus: "SUCCESS" | "PARTIAL" | "ERROR" | "TIMEOUT" = isScanFailure
+        ? (data.status === "TIMEOUT" ? "TIMEOUT" : "ERROR")
+        : (data.status === "PARTIAL" || data.scanState === "PARTIAL")
+        ? "PARTIAL"
+        : "SUCCESS";
+
+      const normalizedError = typeof data.error === "string"
+        ? data.error
+        : isScanFailure
+        ? "Radar scan failed at dataset evaluation layer"
+        : null;
+
       return {
         total_candidates: candidates.length,
         gems_found: candidates.length,
         ...(capabilities ? { capabilities } : {}),
         population: (data as any)?.population || undefined,
         results: candidates,
-        status: data.status === "PARTIAL" ? "PARTIAL" : data.status === "ERROR" || data.status === "TIMEOUT" ? data.status : "SUCCESS",
+        status: normalizedStatus,
         scanState: typeof data.scanState === "string" ? data.scanState : undefined,
         datasetState: typeof data.datasetState === "string" ? data.datasetState : undefined,
         partialErrors: Array.isArray(data.partialErrors) ? data.partialErrors : undefined,
-        error: typeof data.error === "string" ? data.error : null,
+        error: normalizedError,
       };
     } else {
       console.warn(`Screener API HTTP error: ${res.status} ${res.statusText}`);
