@@ -1118,7 +1118,10 @@ export interface ScreenerResponse {
   population?: CandidatePopulationModel;
   results: GemCandidate[];
   error?: string | null;
-  status?: "SUCCESS" | "ERROR" | "TIMEOUT";
+  status?: "SUCCESS" | "PARTIAL" | "ERROR" | "TIMEOUT";
+  scanState?: string;
+  datasetState?: string;
+  partialErrors?: unknown[];
 }
 
 // 🧠 Global Spot Price & Metadata Registry (Enforces 100% price parity across all timeframes)
@@ -1835,8 +1838,11 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
         ...(capabilities ? { capabilities } : {}),
         population: (data as any)?.population || undefined,
         results: candidates,
-        status: "SUCCESS",
-        error: null,
+        status: data.status === "PARTIAL" ? "PARTIAL" : data.status === "ERROR" || data.status === "TIMEOUT" ? data.status : "SUCCESS",
+        scanState: typeof data.scanState === "string" ? data.scanState : undefined,
+        datasetState: typeof data.datasetState === "string" ? data.datasetState : undefined,
+        partialErrors: Array.isArray(data.partialErrors) ? data.partialErrors : undefined,
+        error: typeof data.error === "string" ? data.error : null,
       };
     } else {
       console.warn(`Screener API HTTP error: ${res.status} ${res.statusText}`);

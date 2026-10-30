@@ -168,7 +168,7 @@ export function SharedExecutionLadder({
                       (Inverted Stop ≥ Pivot)
                     </span>
                   ) : (
-                    <span className="text-rose-400/80 font-normal text-[10px] whitespace-nowrap">
+                    <span className="text-rose-400 font-normal text-[10px] whitespace-nowrap">
                       (-{(((pivotPrice - kl.stopLoss) / pivotPrice) * 100).toFixed(1)}% base)
                     </span>
                   )
@@ -215,7 +215,7 @@ export function SharedExecutionLadder({
       </div>
 
       {/* Position Sizing & Preflight Clearance Link */}
-      <div id="card-sizing-bar" className="sizing-bar border-t border-[var(--border-subtle)] pt-2 space-y-1.5 text-xs font-mono">
+      <div id="card-sizing-bar" className="sizing-bar !block border-t border-[var(--border-subtle)] pt-2 space-y-1.5 text-xs font-mono">
         <div className="sizing-meta flex items-center justify-between text-[var(--text-2)]">
           <span id="sizing-line-1">
             Position Size:{" "}
@@ -248,7 +248,7 @@ export function SharedExecutionLadder({
             <span>🛡️ Pre-Flight Clearance ↓</span>
           </a>
         </div>
-        <div className="sizing-matrix-grid grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+        <div className="sizing-matrix-grid grid !grid-cols-1 sm:!grid-cols-2 gap-2 text-[11px]">
           <div className="sizing-cell p-2.5 rounded-lg bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-1">
             <div className="flex items-center justify-between text-[10px] text-[var(--text-2)] uppercase font-bold">
               <span className="sizing-lbl">Stop Distance & Risk Basis</span>
@@ -268,7 +268,7 @@ export function SharedExecutionLadder({
                   : isExtended
                   ? "Extended (High Risk)"
                   : isInBuyZone
-                  ? "In Buy Zone"
+                  ? "Analysis input in corridor"
                   : "Awaiting Setup"}
               </span>
             </div>
@@ -280,7 +280,7 @@ export function SharedExecutionLadder({
                 <>
                   <div className="flex items-baseline justify-between gap-1">
                     <span className="text-[10px] text-[var(--text-2)] font-normal">
-                      From Current Spot (${(rawPrice as number).toFixed(2)}):
+                      From analysis input (${(rawPrice as number).toFixed(2)}):
                     </span>
                     <span className="tabular-nums">
                       -${Math.abs((rawPrice as number) - kl.stopLoss).toFixed(2)} (-

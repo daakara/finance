@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertManager, ExecutionAlertRule } from "../lib/alertManager";
 import { trackAlertSet } from "../lib/matomo";
 
@@ -34,6 +34,26 @@ export default function AlertTriggerModal({
   const [notifyStopLoss, setNotifyStopLoss] = useState<boolean>(true);
   const [notifyTakeProfit, setNotifyTakeProfit] = useState<boolean>(true);
   const [isSaved, setIsSaved] = useState<boolean>(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    if (!isOpen) return;
+    const trigger = document.activeElement as HTMLElement | null;
+    const controls = () => Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), a[href], [tabindex="0"]') || []);
+    controls()[0]?.focus();
+    const key = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeRef.current(); }
+      if (event.key !== "Tab") return;
+      const list = controls(), first = list[0], last = list[list.length - 1];
+      if (!first) { event.preventDefault(); dialogRef.current?.focus(); return; }
+      if (!dialogRef.current?.contains(document.activeElement) || (event.shiftKey ? document.activeElement === first : document.activeElement === last)) {
+        event.preventDefault(); (event.shiftKey ? last : first)?.focus();
+      }
+    };
+    document.addEventListener("keydown", key);
+    return () => { document.removeEventListener("keydown", key); if (trigger?.isConnected) trigger.focus(); };
+  }, [isOpen]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -113,28 +133,30 @@ export default function AlertTriggerModal({
 
   return (
     <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-mono">
-      <div className="bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden text-[var(--text-1)]">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="alert-title" aria-describedby="alert-description" tabIndex={-1} className="bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-2xl w-full max-w-md shadow-2xl overflow-y-auto max-h-[92dvh] text-[var(--text-1)]">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[var(--border-subtle)] bg-[var(--surface-2)]">
           <div className="flex items-center space-x-2">
             <span className="text-xl">🔔</span>
             <div>
-              <h2 className="text-base font-black text-white tracking-tight">
+              <h2 id="alert-title" className="text-base font-black text-white tracking-tight">
                 Execution Price & Invalidation Alerts
               </h2>
-              <p className="text-[11px] text-[var(--text-2)]">
+              <p id="alert-description" className="text-[11px] text-[var(--text-2)]">
                 Live monitoring for <span className="text-cyan-400 font-bold">{symbol || "Asset"}</span> @ ${safeCurrent.toFixed(2)}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
+            aria-label="Close Trigger Alert"
             className="text-[var(--text-2)] hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-all text-sm"
           >
             ✕
           </button>
         </div>
 
+        <span role="status" aria-live="polite" className="sr-only">{isSaved ? "Alert configuration saved" : "Configure price notifications; this does not place a trade."}</span>
         {/* Permission Status Banner */}
         <div className="p-5 space-y-4">
           {!hasValidLevels && (

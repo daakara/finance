@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { isUxReviewOnly } from "../lib/uxReviewBoundary";
+import { useUxReviewOnly } from "../hooks/useUxReviewOnly";
 import { OptimalExecutionPlan } from "../lib/api";
 import InsightProvenanceModal from "./InsightProvenanceModal";
 import PositionSizerModal from "./PositionSizerModal";
@@ -58,6 +60,7 @@ export default function OptimalEntryExitCard({
   catalystForecast,
   corporateEvent,
 }: OptimalEntryExitCardProps) {
+  const reviewOnly = useUxReviewOnly();
   const [isSizerOpen, setIsSizerOpen] = useState<boolean>(false);
   const [isAlertOpen, setIsAlertOpen] = useState<boolean>(false);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
@@ -139,7 +142,7 @@ export default function OptimalEntryExitCard({
         : (typeof current_price === "number" && Number.isFinite(current_price) && current_price > 0 ? current_price : null));
 
   // Resolved Live Freshness status
-  const resolvedLiveFreshness = liveFreshness || marketPriceState?.liveFreshness || executionPlan?.live_freshness || (canonicalLiveSpot ? "REALTIME" : "UNAVAILABLE");
+  const resolvedLiveFreshness = liveFreshness || marketPriceState?.liveFreshness || executionPlan?.live_freshness || "UNAVAILABLE";
 
   // Canonical Actionability Evaluation Price (mirrors backend OptimalExecutionEngine eval_price)
   const evalPrice = typeof executionPlan?.eval_price === "number" && Number.isFinite(executionPlan.eval_price) && executionPlan.eval_price > 0
@@ -329,6 +332,7 @@ export default function OptimalEntryExitCard({
   const derivedIsDistributionTrap = undefined;
 
   const handleLogToPortfolio = async () => {
+    if (isUxReviewOnly()) return;
     if (!displayMarketPrice || isNaN(displayMarketPrice) || displayMarketPrice <= 0 || risk_reward_ratio == null || risk_reward_ratio <= 0) {
       setLogStatus("❌ Cannot log position: trade plan or spot price is unverified.");
       setTimeout(() => setLogStatus(null), 3000);
@@ -606,31 +610,19 @@ export default function OptimalEntryExitCard({
             <span>IF CONFIRMATION OCCURS:</span>
           </div>
           <p className="text-[var(--text-2)] text-xs leading-relaxed">
-            This trade plan remains <strong>conditional</strong>. Current posture is to <strong>Wait</strong>. The entry corridor defines the spatial accumulation zone — price being inside the corridor alone does not constitute an actionable setup until confirmed by an active volume breakout or stabilization candle.
+            <strong>Wait for confirmation.</strong> Corridor membership alone does not grant actionability. Entry, stop, invalidation and targets are shown together in the price ladder below.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-mono text-xs">
-            <div className="p-2 rounded bg-[var(--surface-1)] border border-[var(--border-subtle)]">
-              <span className="text-[var(--text-muted)] block text-xs font-bold">1. Spatial Location (Price Corridor):</span>
-              <span className="text-cyan-300 font-bold text-xs">
-                ${Math.min(optimal_entry_min, optimal_entry_max).toFixed(2)} – ${Math.max(optimal_entry_min, optimal_entry_max).toFixed(2)}
-              </span>
-            </div>
-            <div className="p-2 rounded bg-[var(--surface-1)] border border-[var(--border-subtle)]">
-              <span className="text-[var(--text-muted)] block text-xs font-bold">2. Market Event Trigger:</span>
-              <span className="text-amber-300 font-bold text-xs">
-                Awaiting volume breakout / confirmation candle
-              </span>
-            </div>
-          </div>
+          <p className="text-xs text-[var(--text-2)]"><span>1. Spatial Location (Price Corridor):</span> <span>${Math.min(optimal_entry_min, optimal_entry_max).toFixed(2)} – ${Math.max(optimal_entry_min, optimal_entry_max).toFixed(2)}</span>. <span>2. Market Event Trigger:</span> <span>Awaiting volume breakout / confirmation candle</span>.</p>
         </div>
       )}
 
       {/* Interactive Execution Price Ladder */}
-      <div className="space-y-2 bg-[var(--surface-2)] p-3.5 rounded-xl border border-[var(--border-subtle)]">
+      <details data-testid="extended-plan-levels" className="space-y-2 bg-[var(--surface-2)] p-3.5 rounded-xl border border-[var(--border-subtle)]">
+        <summary className="min-h-[44px] cursor-pointer font-semibold text-xs focus-visible:outline focus-visible:outline-2">Extended plan levels · entry, stop and targets</summary>
         <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-wider flex items-center justify-between">
           <span>{isPlain ? "Recommended Price Ladder" : "Mathematical Execution Ladder"}</span>
           <span className="text-[var(--text-2)]">
-            {hasLiveSpot ? `Live Spot: $${displayMarketPrice.toFixed(2)}` : `Reference Close: $${displayMarketPrice.toFixed(2)}`}
+            {hasLiveSpot ? `Market observation (${resolvedLiveFreshness}): $${displayMarketPrice.toFixed(2)}` : `Reference Close: $${displayMarketPrice.toFixed(2)}`}
           </span>
         </div>
 
@@ -696,7 +688,7 @@ export default function OptimalEntryExitCard({
               }`}
             >
               {hasLiveSpot
-                ? (resolvedLiveFreshness === "REALTIME" ? "● LIVE SPOT" : "DELAYED SPOT")
+                ? (resolvedLiveFreshness === "REALTIME" ? "● LIVE SPOT" : resolvedLiveFreshness === "DELAYED" ? "DELAYED OBSERVATION" : resolvedLiveFreshness === "STALE" ? "STALE OBSERVATION" : "OBSERVATION FRESHNESS UNVERIFIED")
                 : "PRIOR CLOSE (REF)"}
             </span>
           </div>
@@ -795,14 +787,14 @@ export default function OptimalEntryExitCard({
             </span>
           </div>
         </div>
-      </div>
+      </details>
 
       {/* Quantitative Context Details */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-sans">
-        <div className="bg-[var(--surface-2)] p-3 rounded-lg border border-[var(--border-subtle)] space-y-1">
-          <span className="text-[10px] text-cyan-400 block uppercase font-bold font-mono">
+        <details className="bg-[var(--surface-2)] p-3 rounded-lg border border-[var(--border-subtle)] space-y-1">
+          <summary className="min-h-[44px] cursor-pointer text-xs text-cyan-400 uppercase font-bold font-mono focus-visible:outline focus-visible:outline-2">
             {isPlain ? "Chart Pattern & Setup Analysis" : "Setup Pattern & Stage Analysis"}
-          </span>
+          </summary>
           <div className="font-bold text-[var(--text-1)]">{setup_pattern}</div>
           <div className="text-[11px] text-[var(--text-2)]">{entry_thesis}</div>
           {isStage4 && (
@@ -811,7 +803,7 @@ export default function OptimalEntryExitCard({
               <strong className="font-mono text-amber-400 font-bold">${(executionPlan.breakout_pivot || current_price * 1.072).toFixed(2)}</strong>
             </div>
           )}
-        </div>
+        </details>
 
         <div className="bg-[var(--surface-2)] p-3 rounded-lg border border-[var(--border-subtle)] space-y-1">
           <span className="text-[10px] text-rose-400 block uppercase font-bold font-mono">
@@ -855,6 +847,8 @@ export default function OptimalEntryExitCard({
           <button
             type="button"
             onClick={handleLogToPortfolio}
+            disabled={reviewOnly}
+            title={reviewOnly ? "Owner review preview: paper recording is locked while financial authority is unresolved" : undefined}
             className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-indigo-600/20 hover:bg-indigo-500 hover:text-slate-950 border-indigo-500/50 text-indigo-300 flex items-center gap-1.5 shadow"
           >
             <span>💼</span>

@@ -4,8 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { QuantitativeInsight } from "../../types/insight";
 import FinancialDisclaimer from "../FinancialDisclaimer";
-import { deriveUnmetConditions } from "../../lib/decisionHierarchyUtils";
-import PreFlightReadinessBar from "../PreFlightReadinessBar";
+import PreFlightReadinessBar, { PreFlightReadinessBarProps } from "../PreFlightReadinessBar";
 import SharedAssetDeck from "./SharedAssetDeck";
 import SharedExecutionLadder from "./SharedExecutionLadder";
 
@@ -30,8 +29,8 @@ export default function StandardTerminalView({
   evidenceSlot,
   isDemo = false,
 }: StandardTerminalViewProps) {
+  const [blockerTarget, setBlockerTarget] = React.useState<HTMLDivElement | null>(null);
   const kl = insight.standard.keyLevels;
-  const unmetConditions = deriveUnmetConditions(insight);
 
   const isStaleTape = Boolean(
     insight.terminalState?.decisionState === "STALE_DATA" ||
@@ -66,8 +65,9 @@ export default function StandardTerminalView({
 
   return (
     <div className="space-y-4 font-sans text-[var(--text-1)] animate-fade-in">
+
       {/* 🎯 FIRST-VIEWPORT COMPOSITION: VERDICT (LEFT 5-COL) + CHART (RIGHT 7-COL) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-12 gap-4 items-start">
+      <div data-testid="primary-workspace-grid" className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-12 gap-4 items-start">
         {/* Left Column (lg:col-span-5 xl:col-span-5): Verdict Card & Preconditions */}
         <div className="lg:col-span-5 xl:col-span-5 space-y-2.5 sm:space-y-4 min-w-0 order-1 lg:order-1 xl:order-1">
           {/* 1. DECISION VERDICT (Dominant Visual Weight) & 2. DECISION REASON */}
@@ -194,6 +194,7 @@ export default function StandardTerminalView({
             </div>
 
             {/* Middle Panel: Risk & Execution Ladder */}
+            <div ref={setBlockerTarget} id="canonical-blocker-summary" data-testid="unmet-condition" aria-label="Canonical blocking reasons" />
             <SharedExecutionLadder
               insight={insight}
               mode="STANDARD"
@@ -207,64 +208,7 @@ export default function StandardTerminalView({
           </article>
 
           {/* 3. WHAT NEEDS TO CHANGE (Unmet Conditions & Preconditions) */}
-          <div
-            data-testid="unmet-condition"
-            className="bg-[var(--surface-2)] border border-cyan-900/50 rounded-2xl p-2.5 sm:p-5 shadow-lg space-y-2 sm:space-y-3"
-          >
-            <div
-              className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 border-b border-[var(--border-subtle)] pb-2 cursor-pointer sm:cursor-default"
-              onClick={() => setIsPreconditionsOpen((prev) => !prev)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setIsPreconditionsOpen((prev) => !prev);
-                }
-              }}
-              aria-expanded={isPreconditionsOpen}
-            >
-              <h3 className="text-xs sm:text-sm font-bold text-cyan-300 uppercase font-mono tracking-wide flex items-center gap-2">
-                <span>🎯</span>
-                <span>What Needs to Change (Setup Criteria)</span>
-              </h3>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] sm:text-xs text-[var(--text-2)] font-mono">
-                  {isActionable ? "Setup Criteria Met" : "Awaiting Setup Triggers"}
-                </span>
-                <span className="text-[var(--text-2)] text-xs" aria-hidden="true">
-                  {isPreconditionsOpen ? "▲" : "▼"}
-                </span>
-              </div>
-            </div>
 
-            <div className={`${isPreconditionsOpen ? "grid" : "hidden"} grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1 gap-1.5 sm:gap-2.5 text-xs`}>
-              {unmetConditions.map((cond) => (
-                <div
-                  key={cond.id}
-                  className="py-1.5 px-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-1"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-[var(--text-1)] text-xs truncate">{cond.title}</span>
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] sm:text-xs font-mono font-bold shrink-0 ${
-                        cond.status === "MET"
-                          ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
-                          : cond.status === "UNMET"
-                          ? "bg-rose-950 text-rose-400 border border-rose-800"
-                          : "bg-amber-950 text-amber-400 border border-amber-800"
-                      }`}
-                    >
-                      {cond.status}
-                    </span>
-                  </div>
-                  <p className="text-xs text-[var(--text-2)] leading-relaxed font-sans hidden sm:block">
-                    {cond.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Right Column (lg:col-span-7 xl:col-span-7): Price Chart & Mobile Preview */}
@@ -338,10 +282,15 @@ export default function StandardTerminalView({
           )}
 
           {/* 🎯 SYNTHESIS E V3: INLINE PRE-FLIGHT CLEARANCE PANEL */}
-          {preflightSlot !== undefined ? (
-            preflightSlot
+
+                    <section className="space-y-2" aria-label="Canonical preflight readiness">{preflightSlot !== undefined ? (
+            React.isValidElement(preflightSlot) && preflightSlot.type === PreFlightReadinessBar
+          ? React.cloneElement(preflightSlot as React.ReactElement<PreFlightReadinessBarProps>, { summaryTarget: blockerTarget })
+          : preflightSlot
           ) : (
-            <PreFlightReadinessBar
+            <PreFlightReadinessBar summaryTarget={blockerTarget}
+              isDrawerExpanded={isPreconditionsOpen}
+              onToggleDrawer={setIsPreconditionsOpen}
               symbol={insight.symbol}
               currentPrice={hasValidPrice ? (rawPrice as number) : 0}
               stopLoss={kl.stopLoss}
@@ -357,8 +306,10 @@ export default function StandardTerminalView({
               isHistorical={(insight as any).dataSource === 'historical' || (insight as any)._dataSource === 'historical'}
               isSynthetic={Boolean(isDemo || (insight as any).isSynthetic)}
             />
-          )}
+          )}</section>
         </div>
+
+
 
         {/* 5. CONDITIONAL TRADE PLAN */}
         {planSlot && (
@@ -366,7 +317,8 @@ export default function StandardTerminalView({
             {planSlot}
           </div>
         )}
-      </div>
+
+</div>
 
       {/* 6. SUPPORTING EVIDENCE (Score Subordinated & Confluence Breakdown) */}
       <div

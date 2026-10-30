@@ -1,8 +1,10 @@
-# 📈 Finance Terminal | Quantitative Intelligence & Execution Platform
+# 📈 ARX Terminal | Institutional Financial Intelligence & Research Platform
 
-A professional-grade, institutional financial intelligence platform featuring real-time Congressional STOCK Act tracking, Mark Minervini VCP algorithmic entry points, Linda Raschke 20 EMA pullbacks, and Cornish-Fisher Modified Value-at-Risk modeling.
+A professional-grade quantitative intelligence platform featuring real-time market surveillance, Mark Minervini Volatility Contraction Pattern (VCP) setup detection, dual-horizon candlestick geometry, multi-pillar Confluence scoring, and Cornish-Fisher Modified Value-at-Risk modeling.
 
-**Live Deployment**: [https://www.arxterminal.com/](https://www.arxterminal.com/)
+**Live Deployment**: [https://www.arxterminal.com/](https://www.arxterminal.com/)  
+**Mainline Anchor SHA**: `e10de3b2714e7c7cba49c51e0e7a4eb13a7033f6`  
+**Governance Baseline**: Sprint 4 Administratively Closed | Sprint 5 `NOT_AUTHORIZED` | `HOLD_EXEC_001` Active
 
 ![Next.js](https://img.shields.io/badge/next.js-14.2-black.svg)
 ![React](https://img.shields.io/badge/react-18-cyan.svg)
@@ -13,299 +15,146 @@ A professional-grade, institutional financial intelligence platform featuring re
 
 ---
 
-## 🚀 Key Modules & Capabilities
+## 🏛️ Authoritative Documentation & System Portal
 
-### 1. 📈 Interactive Dual-Horizon Candlestick Engine
-- **Lightweight Charts Canvas**: Sub-millisecond rendering with automatic viewport fitting (`fitContent()`) and dynamic canvas theming (Dark vs. Paper Light).
-- **⚡ Day Trader Scalp Sessions**: `1m`, `5m`, `15m`, `1h` timeframes with live **Volume-Weighted Average Price (VWAP)** indicator overlay and Unix epoch time scaling.
-- **🏛️ Long-Term Macro Horizons**: `1M`, `6M`, `1Y`, `3Y`, `5Y` timeframes with **20 Exponential Moving Average (20 EMA)** trend support overlay and ISO calendar date scaling.
-- **🎯 Metric Disambiguation**: Clear separation between the Watchlist **24H Daily Return** and the Chart Header **Active Horizon Return** with explicit date baseline tooltips.
-- **⚡ Production Reliability**: 2.5s network timeout with explicit error-retry states and strict zero-mock data integrity.
+The ARX Terminal documentation estate is consolidated into a canonical hierarchy. Refer to the master registers below for authoritative specifications, research decisions, and governance ledgers:
 
-### 2. 🏛️ Congressional STOCK Act, Legislative Alignment & Staleness Decay
-- **Public Law 112-105 Tracking**: Real-time disclosures from US House and Senate members (e.g. Nancy Pelosi LEAPS call purchases).
-- **⚖️ Legislative Alignment Index (0–100)**: Quantitative scoring of committee jurisdiction conflict overlap (+16 to +32 pts), transaction sizing tiers ($50k–$1M+), and verified historical alpha.
-- **⏱️ Staleness Time-Decay Engine**: Automatic conviction decay penalizing disclosures older than 15, 30, and 45 days, with explicit late-filer mean-reversion risk warnings for non-compliant filers.
-- **SEC EDGAR Form 4**: Open-market insider purchases (&ge; \$100k) by CEOs, CFOs, and Board Directors within 2 business days.
-
-### 3. 🎯 Minervini VCP & Algorithmic Execution Ladder
-- **Volatility Contraction Pattern (VCP)**: 3-stage contraction detection with volume dry-up confirmations.
-- **⚡ 4 Mathematical ATR States**: Real-time state tagging (`IN_BUY_ZONE`, `APPROACHING_TARGET`, `WAITING_PULLBACK`, `STOPPED_OUT`).
-- **Strict Execution Invariant**: `Stop Loss < Optimal Entry Min <= Optimal Entry Max <= Current Spot < Target 1 < Target 2`.
-- **Intraday Position Sizer**: 1-click execution calculation risking $1\%–2\%$ account equity with server-authoritative Behavioral Governor sizing clamps.
-
-### 4. 🛡️ Cornish-Fisher Modified VaR & Self-Healing Engine
-- **Non-Normal Fat-Tail VaR**: Polynomial Cornish-Fisher expansion adjusting for skewness and kurtosis with monotonic 99% $\le$ 95% safety floors.
-- **🤖 Self-Healing Forecast Auditor**: Continuous model calibration using Kupiec POF VaR exception tests, walk-forward RMSE tracking, and dynamic confidence bound expansion.
-- **FRED Macro Regimes**: Real-time 10Y-2Y Yield Curve spreads (`T10Y2Y`) and OAS Credit Spreads (`BAMLH0A0HYM2`) applying dynamic 0.5x–1.25x position risk multipliers.
+| Dimension | Canonical Documentation Portal | Primary Focus & Governance Scope |
+| :--- | :--- | :--- |
+| **Integrated Project Status** | [`ARX_MASTER_PROJECT_STATUS_2026_10_29.md`](docs/ARX_MASTER_PROJECT_STATUS_2026_10_29.md) | Single source of truth across research, UX, engines, engineering, and hosting status. |
+| **Documentation Master Inventory** | [`ARX_DOCUMENTATION_MASTER_INVENTORY_2026_10_29.md`](docs/planning/ARX_DOCUMENTATION_MASTER_INVENTORY_2026_10_29.md) | Comprehensive audit and 8-tier authority classification of all 1,478 repository documents. |
+| **Engine Architecture & Contracts** | [`ARX_ARCHITECTURE_AND_ENGINE_CONTRACT_RECONCILIATION.md`](docs/architecture/ARX_ARCHITECTURE_AND_ENGINE_CONTRACT_RECONCILIATION.md) | Full 12-engine contract reconciliation, input/output data boundaries, fallbacks, and sizing. |
+| **Market-Wide Discovery Research** | [`ARX_MARKET_WIDE_RESEARCH_DECISION_AND_EVIDENCE_REGISTER.md`](docs/research/ARX_MARKET_WIDE_RESEARCH_DECISION_AND_EVIDENCE_REGISTER.md) | MW-004 research reconciliation, Model E+ ratification, candidate freeze, and scoring repair. |
+| **Synthesis E V3 UX Architecture** | [`ARX_UX_V3_APPROVAL_IMPLEMENTATION_AND_RELEASE_STATUS.md`](docs/ux/ARX_UX_V3_APPROVAL_IMPLEMENTATION_AND_RELEASE_STATUS.md) | Three-mode terminal (Guided/Standard/Quant), Paper Light theme, accessibility, and PR #131. |
+| **Sprint 1–4 Obligations & Holds** | [`ARX_SPRINT1_4_OBLIGATION_AND_HOLD_REGISTER.md`](docs/planning/ARX_SPRINT1_4_OBLIGATION_AND_HOLD_REGISTER.md) | Deduplicated historical findings, 14 platform security holds, and administrative closure. |
+| **CI/CD & Deployment Authority** | [`ARX_CI_RELEASE_AND_DEPLOYMENT_AUTHORITY_MATRIX.md`](docs/releases/ARX_CI_RELEASE_AND_DEPLOYMENT_AUTHORITY_MATRIX.md) | Release Qualification Suite (RQ-01..12), GitHub rulesets `25187391` & `26024894`, hosting boundaries. |
+| **PR & Integration Register** | [`ARX_PR_AND_INTEGRATION_STATUS_REGISTER.md`](docs/planning/ARX_PR_AND_INTEGRATION_STATUS_REGISTER.md) | Exhaustive register of all open and merged PRs, commit SHAs, and combined candidate D4. |
+| **Conflict & Correction Log** | [`ARX_DOCUMENTATION_CONFLICT_AND_CORRECTION_LOG.md`](docs/planning/ARX_DOCUMENTATION_CONFLICT_AND_CORRECTION_LOG.md) | Authoritative resolutions for historical contradictions, stale SHAs, and superseded findings. |
+| **Evidence Traceability Matrix** | [`ARX_DOCUMENTATION_EVIDENCE_TRACEABILITY_MATRIX.csv`](docs/planning/ARX_DOCUMENTATION_EVIDENCE_TRACEABILITY_MATRIX.csv) | Machine-readable claim-to-source mapping covering core architectural facts. |
+| **Documentation QA Report** | [`ARX_DOCUMENTATION_QA_REPORT.md`](docs/planning/ARX_DOCUMENTATION_QA_REPORT.md) | 18-point documentation verification suite results (100% PASS, zero broken links). |
+| **Owner Review & Publication Handoff** | [`ARX_DOCUMENTATION_OWNER_REVIEW_AND_PUBLICATION_HANDOFF.md`](docs/planning/ARX_DOCUMENTATION_OWNER_REVIEW_AND_PUBLICATION_HANDOFF.md) | Final executive handoff package for Product/Research Owner formal review. |
 
 ---
 
-## 🏗️ Architecture
+## 🎯 Product & Capabilities
+
+### Target Audience & Core Purpose
+ARX Terminal is an institutional financial intelligence and discretionary trading workstation engineered for quantitative portfolio managers, research analysts, and risk officers. It synthesizes disparate technical, fundamental, setup, and macroeconomic data into a coherent, evidence-grounded research cockpit.
+
+### Core Operational Capabilities
+1. **Interactive Dual-Horizon Candlestick Engine:**
+   - *Intraday Scalp View:* 1m, 5m, 15m, 1h timeframes overlaid with Volume-Weighted Average Price (VWAP).
+   - *Macro Horizon View:* 1M, 6M, 1Y, 3Y, 5Y timeframes overlaid with 20 Exponential Moving Average (20 EMA).
+2. **Minervini Volatility Contraction Pattern (VCP) Detection:**
+   - Algorithmic stage detection (Stage 2 uptrend prerequisite, progressive contraction count, volume dry-up).
+3. **Multi-Pillar Confluence Scoring:**
+   - Synthesizes Technicals ($35\%$), Fundamentals ($30\%$), Setups/VCP ($20\%$), and Macro ($15\%$) into a calibrated 0–100 score.
+4. **Governed Position Sizing & Portfolio Provenance (PR #129):**
+   - Fail-closed sizing calculator enforcing verified account equity. LocalStorage overrides strictly quarantined.
+5. **Synthesis E V3 Three-Mode Terminal (PR #131):**
+   - Guided Mode (Executive Summary), Standard Mode (Active Swing Trading), and Quant Mode (Factor Sensitivities).
+
+### Experimental & Operationally Restricted Capabilities
+- **Market-Wide Discovery (Top 35):** Quarantined under `/poc-market-wide` (Model E+ candidate `f154032`). Research evaluation only.
+- **Smart Money (SEC Form 4):** Strictly held under `HOLD_SM1_001`. Background production ingestion is disabled; local replay only.
+- **Corporate Events:** Held under `HOLD_SEC_001`. Live SEC EDGAR network egress is blocked in production; mock fixtures only.
+- **Financial Execution:** Held under `HOLD_EXEC_001`. Zero live trade execution code exists in the production runtime; all orders are simulated.
+
+---
+
+## 🏗️ System Architecture & Technology Stack
 
 ```
-finance/
-├── frontend/                     # Next.js 14 App Router + TailwindCSS (Cloudflare Pages)
-│   ├── app/
-│   │   ├── page.tsx             # ARX Terminal: Single-Asset Workstation (Execution, Flow, Fundamentals, Risk)
-│   │   ├── radar/page.tsx       # Hub 1: Confluence Radar (Minervini VCP, Smart Money, Value/GARP)
-│   │   ├── setups/page.tsx      # Hub 2: Tactical Breakouts & Server-Governed Execution Tickets
-│   │   ├── portfolio/page.tsx   # Hub 3: Risk-First Capital Heat & Active Stop Floor Triggers
-│   │   ├── journal/page.tsx     # Hub 4: Operational Discipline & Empirical Brier Score
-│   │   └── performance/page.tsx # Hub 5: Counterfactual Proof of Edge & Attribution
-│   ├── components/
-│   │   ├── PriceChart.tsx       # Dual-Horizon TradingView Lightweight Charts
-│   │   ├── Navbar.tsx           # 5 Flagship Hub Navigation
-│   │   └── terminal/            # Shared Persistent TerminalShell & Sub-Header
-│   └── lib/
-│       ├── api.ts               # Analytics Engine & Authoritative REST Endpoints
-│       └── simulation/          # Invariant Ledger & Behavioral Governor Math
-├── api/                          # FastAPI Backend Services (Railway Container)
-│   ├── main.py                  # API Entrypoint, Lifespan Warmup & Invariant Gates
-│   └── routes/                  # Analytics, Regimes, Screener, Portfolio, Journal
-├── analyst_dashboard/            # Quantitative Analyzers, Database & Control Loops
-│   ├── analyzers/               # VaR, Minervini VCP, Factors & Optimal Execution
-│   └── data/                    # MarketDatabaseEngine & HistoryDatabaseEngine (SQLite WAL)
-└── requirements.txt
+┌────────────────────────────────────────────────────────────────────────┐
+│                        CLIENT / EDGE PRESENTATION                      │
+│  • Next.js 14.2 (App Router) + React 18 + Tailwind CSS                 │
+│  • Lightweight Charts Canvas (Dual-Horizon Rendering)                  │
+│  • Cloudflare Pages Hosting (Manual Rollouts, Auto-Deploy DISABLED)   │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ /api/backend/* (Proxy Gateway)
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                         BACKEND APPLICATION API                        │
+│  • FastAPI 0.110+ (Python 3.12) Async Application Engine               │
+│  • 12 Specialized Computational Engines (Technical, VCP, Risk, etc.)   │
+│  • Railway Production Container (Commit de5d246, Auto-Deploy DISABLED) │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ Strict Invariant Barriers
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                         PERSISTENCE & LINEAGE                          │
+│  • SQLite Production Scanner & State Store (.finance_scanner_store.db) │
+│  • Frozen Engine Manifest V2.5.1 + Point-in-Time Research Datasets     │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
-## 🔧 Installation
+---
+
+## 🔐 Governance & Fail-Closed Safety Invariants
+
+ARX Terminal operates under 28 strict architectural and mathematical invariants (`docs/governance/ARX_DOMAIN_INVARIANT_REGISTRY.md`). Key fail-closed boundaries include:
+
+- **INV-01 / INV-02 (`HOLD_EXEC_001`):** Absolute prohibition on live capital commitment. All order routing paths are simulated.
+- **INV-05 / INV-18 (`HOLD_SM1_001`):** Production background ingestion of SEC Form 4 records is permanently halted.
+- **INV-09 (Radar Integrity):** A failed scanner run (`status = ERROR`) must never report 100% complete market coverage.
+- **INV-14 (`HOLD_TUNE_001`):** Static model weights. Online learning and prospective parameter mutation are blocked.
+- **INV-22 (`HOLD_SEC_001`):** Corporate events live SEC EDGAR egress is blocked; static fixture replay only.
+- **INV-28 (Equity Provenance):** Position sizing requires `telemetry_verified` broker equity. Unverified equity forces 0 shares.
+- **Sprint 5 Invariant:** `sprint5_execution_authorized = false`. Sprint 4 remains closed administratively.
+
+---
+
+## 💻 Local Development Setup
 
 ### Prerequisites
-- Python 3.8 or higher
+- Node.js $\ge 18.17.0$
+- Python $\ge 3.11$ (Python 3.12 recommended)
 - Git
-- Node.js 18+
 
-### 🚨 Strict Zero-Mock Data Policy
-This platform enforces mathematical and empirical data integrity:
-- Missing market or macro indicators emit explicit `UNAVAILABLE` states.
-- Synthetic price fallbacks, hardcoded macro inputs, and fabricated trade histories are strictly forbidden.
-- Zero local mock state: all sizing, risk, and journal metrics are anchored in authoritative API feeds.
-
-### Quick Start
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd finance
-   ```
-
-2. **Backend Setup (FastAPI)**
-   ```bash
-   python -m venv venv
-   
-   # Windows
-   venv\Scripts\activate
-   # macOS/Linux
-   source venv/bin/activate
-
-   # Install dependencies
-   pip install -r requirements.txt
-
-   # Start FastAPI backend engine (port 8000)
-   uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
-   ```
-
-3. **Frontend Setup (Next.js 14 App Router)**
-   ```bash
-   cd frontend
-   npm install
-
-   # Start Next.js development server (port 3000)
-   npm run dev
-   ```
-
-   The application will open in your browser at `http://localhost:3000`, connecting to the backend at `http://localhost:8000`.
-
-4. **Run Verification & Test Suites**
-   ```bash
-   # Python Backend & Governance Test Suites (37+ tests)
-   python -m pytest tests/test_backlog_integrity_validator.py
-   python tools/governance/validate_backlog_integrity.py
-
-   # Frontend Architectural & Invariant Tests
-   cd frontend
-   npm test
-   ```
-
-## 🔑 API Keys (Optional)
-
-While the platform works with free data sources, you can enhance functionality with API keys:
-
-- **Alpha Vantage**: For enhanced stock data and news
-- **News API**: For financial news sentiment analysis
-- **Twitter API**: For social sentiment analysis
-
-Add these to your `.env` file:
-```
-ALPHA_VANTAGE_API_KEY=your_key_here
-NEWS_API_KEY=your_key_here
-TWITTER_BEARER_TOKEN=your_token_here
-```
-
-## 📊 Usage Guide
-
-### Market Overview
-- View real-time market indices and treasury rates
-- Monitor market sentiment indicators
-- Track major economic indicators
-
-### Stock Analysis
-1. Enter stock symbols in the sidebar
-2. Select analysis period (1 month to max history)
-3. View comprehensive stock metrics and charts
-4. Analyze fundamental ratios and quality scores
-
-### Technical Analysis
-1. Choose a symbol for technical analysis
-2. View interactive charts with multiple indicators
-3. Monitor automated trading signals
-4. Identify support and resistance levels
-
-### Portfolio Analysis
-1. Add multiple symbols to your portfolio
-2. Set custom weights for each asset
-3. Analyze portfolio performance and risk metrics
-4. View correlation matrices and optimization suggestions
-
-## 🔍 Core Components
-
-### Data Layer
-- **Fetchers**: Retrieve data from multiple sources (yfinance, ccxt, APIs)
-- **Processors**: Clean, validate, and transform raw data
-- **Cache**: Intelligent caching with TTL for performance
-
-### Analysis Engine
-- **Technical Analysis**: 15+ technical indicators with signal generation
-- **Fundamental Analysis**: Complete financial ratio calculations
-- **Portfolio Analytics**: Modern Portfolio Theory implementation
-
-### Visualization Engine
-- **Professional Charts**: Candlestick, line, bar, and specialized financial charts
-- **Interactive Dashboards**: Real-time updating interfaces
-- **Custom Themes**: Dark/light themes with financial color schemes
-
-## 🎯 Key Features
-
-### Performance
-- **Caching System**: Multi-level caching (memory + file) with TTL
-- **Modular Design**: Clean separation of concerns for maintainability
-- **Error Handling**: Comprehensive error handling and logging
-- **Input Validation**: Robust validation for all user inputs
-
-### Data Quality
-- **Data Validation**: OHLCV relationship validation and outlier detection
-- **Missing Data Handling**: Forward fill and interpolation strategies
-- **Timezone Awareness**: Global market timezone handling
-
-### User Experience
-- **Responsive Design**: Works on desktop and mobile devices
-- **Real-time Updates**: Live data refresh and caching
-- **Intuitive Interface**: Professional yet accessible design
-- **Export Capabilities**: Download analysis results and charts
-
-## 🧪 Code Quality
-
-### Best Practices
-- **Type Hints**: All functions include comprehensive type annotations
-- **Docstrings**: Detailed documentation with examples
-- **Modular Functions**: Maximum 50 lines per function
-- **Single Responsibility**: Each function has one clear purpose
-- **DRY Principle**: No code duplication
-
-### Testing
+### 1. Backend Setup
 ```bash
-# Run tests (when available)
-python -m pytest tests/
+# Clone the repository
+git clone https://github.com/daakara/finance.git
+cd finance
+
+# Create and activate Python virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run backend test suite
+pytest
 ```
 
-### Code Style
-- Follows PEP 8 guidelines
-- Black code formatting
-- Comprehensive error handling
-- Logging for debugging and monitoring
+### 2. Frontend Setup
+```bash
+cd frontend
 
-## 📈 Advanced Features
+# Install Node dependencies
+npm install
 
-### Portfolio Optimization
-- **Efficient Frontier**: Calculate optimal risk-return portfolios
-- **Risk Parity**: Equal risk contribution portfolios
-- **Kelly Criterion**: Optimal position sizing
-- **Rebalancing Alerts**: Automated rebalancing suggestions
+# Run frontend unit tests and type checks
+npm run type-check
+npm test
 
-### Risk Management
-- **Value at Risk (VaR)**: 5% and 1% confidence intervals
-- **Conditional VaR**: Expected shortfall calculations
-- **Maximum Drawdown**: Historical drawdown analysis
-- **Stress Testing**: Portfolio performance under various scenarios
+# Launch development server
+npm run dev
+```
 
-### Technical Indicators
-- **Trend Following**: Moving averages, MACD, ADX
-- **Momentum**: RSI, Stochastic, Williams %R
-- **Volatility**: Bollinger Bands, ATR, Keltner Channels
-- **Volume**: OBV, Volume Profile, Money Flow Index
+The frontend will start locally at `http://localhost:3000` and proxy API calls to the backend running at `http://localhost:8000`.
 
-## 🚀 Production Cloudflare & Railway Deployment
+---
 
-### 🌐 Cloudflare Pages (Frontend Edge)
-- **Live URL**: [https://www.arxterminal.com/](https://www.arxterminal.com/)
-- **Build Command**: `cd frontend && npm install && npm run build`
-- **Output Directory**: `frontend/out`
-- **SSG Target**: 149 Pre-rendered static pages with zero client-side latency.
-- **Environment Variables**:
-  - `NEXT_PUBLIC_API_URL`: `https://web-production-e370b.up.railway.app`
+## 🤝 Branching, PR & Release Conventions
 
-### ⚡ Railway Backend & Persistent Volume (API Engine)
-- **Live API**: `https://web-production-e370b.up.railway.app`
-- **Container**: `Dockerfile` (`python:3.11-slim` + FastAPI + Uvicorn)
-- **Persistent NVMe Volume**: `web-volume` mounted at `/root`
-- **Persistent Files**:
-  - `/root/.finance_market_store.db` (OHLCV candles & Factor Snapshots)
-  - `/root/.finance_platform_history.db` (Trade recommendation outcome ledger)
-- **Environment Variables**:
-  - `PORT`: `8000`
-  - `DATA_DIR`: `/root`
+- **Mainline Branch (`main`):** Protected by GitHub Ruleset `25187391`. All PRs require clean passing checks across frontend lint/test, backend pytest, and backlog integrity validation.
+- **Release Branch (`release/production`):** Protected by GitHub Ruleset `26024894`. Requires complete pass of `.github/workflows/release-qualification.yml` and formal Product Owner authorization.
+- **Deployment Decoupling:** Merging code into `main` **does not** deploy to Cloudflare Pages or Railway. Deployments require explicit manual triggers and preflight verification.
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+---
 
 ## 🚨 Disclaimer
 
-This software is for educational and informational purposes only. It should not be considered as financial advice. Always consult with qualified financial professionals before making investment decisions. Past performance does not guarantee future results.
-
-## 🆘 Support
-
-- **Documentation**: Check the inline documentation and docstrings
-- **Issues**: Report bugs via GitHub Issues
-- **Discussions**: Join discussions for feature requests and questions
-
-## 🔮 Roadmap
-
-### Upcoming Features
-- [ ] Machine Learning predictions
-- [ ] Cryptocurrency analysis expansion
-- [ ] Options analysis tools
-- [ ] Backtesting engine
-- [ ] Custom indicator builder
-- [ ] API for external integration
-- [ ] Mobile app companion
-- [ ] Real-time alerts system
-
-### Performance Improvements
-- [ ] Database integration for data persistence
-- [ ] Async data fetching
-- [ ] WebSocket real-time data streams
-- [ ] Advanced caching strategies
-
----
-
-**Built with ❤️ for the financial analysis community**
+*ARX Terminal is an institutional quantitative research and financial modeling environment. All signals, confluence scores, setup alerts, and valuations are generated for analytical evaluation only and do not constitute financial advice, investment recommendations, or an offer to buy or sell securities. Live trade execution is permanently disabled under platform security holds.*

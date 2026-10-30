@@ -117,6 +117,7 @@ function RadarContent() {
   const [population, setPopulation] = useState<CandidatePopulationModel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [hasPartialResults, setHasPartialResults] = useState(false);
   const [isOnDemandLoading, setIsOnDemandLoading] = useState(false);
   const [onDemandError, setOnDemandError] = useState<string | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
@@ -182,7 +183,8 @@ function RadarContent() {
     fetchScreenerGems("all")
       .then((res) => {
         if (!isMounted || reqId !== latestRequestIdRef.current) return;
-        if (res.status === "ERROR" || res.status === "TIMEOUT" || res.error) {
+        setHasPartialResults(res.status === "PARTIAL");
+        if (res.status === "ERROR" || res.status === "TIMEOUT" || (res.error && res.status !== "PARTIAL")) {
           setFetchError(res.error || "Unable to reach the Radar screening service");
           setCapabilities(DEFAULT_RADAR_CAPABILITIES);
           setPopulation(null);
@@ -581,6 +583,8 @@ function RadarContent() {
           </div>
         )}
 
+        {!isLoading && hasPartialResults && !fetchError && <aside role="status" data-testid="radar-partial-results" className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] p-4 text-sm text-[var(--text-2)]">Radar results are incomplete. Available candidates remain research-only; failed evaluations are not counted as successful or as zero candidates. <button type="button" onClick={() => setRefreshNonce(n => n + 1)} className="min-h-[44px] min-w-[44px] px-3 underline focus-visible:outline focus-visible:outline-2">Retry incomplete scan</button></aside>}
+
         {/* Explicit Connection Error State */}
         {!isLoading && fetchError && (
           <div className="p-12 rounded-2xl border border-rose-900/60 bg-rose-950/20 text-center space-y-4 font-mono text-xs text-[var(--text-2)]">
@@ -604,7 +608,7 @@ function RadarContent() {
         )}
 
         {/* Actionable Empty State */}
-        {!isLoading && !fetchError && allAssets.length === 0 && (
+        {!isLoading && !fetchError && !hasPartialResults && allAssets.length === 0 && (
           <div className="p-12 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] text-center space-y-4 font-mono text-xs text-[var(--text-2)]">
             <span className="text-3xl">📡</span>
             <div className="space-y-1">

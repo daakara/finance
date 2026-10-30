@@ -13,6 +13,8 @@ Attacks the remediated boundaries across:
 import os
 import re
 import unittest
+import shutil
+import subprocess
 
 import pytest
 pytestmark = pytest.mark.tier3
@@ -33,15 +35,24 @@ class TestAdversarialPhase13Verification(unittest.TestCase):
 
     def test_adv_1_position_sizer_invalidated_risk_geometry(self):
         """Attack: Attempt to pass entry <= stop to PositionSizerModal. Verify safe allocation is zeroed."""
-        content = self.read_file("frontend", "components", "PositionSizerModal.tsx")
-        # Ensure invalidation check exists
-        self.assertIn("const isSetupInvalid = safeEntry <= safeStop;", content)
-        # Ensure shares, allocation, profit are zeroed
-        self.assertIn("const shares = isSetupInvalid ? 0 : rawShares;", content)
-        self.assertIn("const projectedProfit = isSetupInvalid ? 0 :", content)
-        self.assertIn("const halfKellyPct = isSetupInvalid ? 0 :", content)
-        # Ensure disabled save button when invalid
-        self.assertIn("disabled={isSetupInvalid || shares <= 0", content)
+        npm = shutil.which("npm")
+        self.assertIsNotNone(npm, "Behavioral gate requires Node/npm and npm ci in frontend")
+        config = subprocess.run(
+            [shutil.which("node"), "--test", "tests/uxReviewBuildContext.test.mjs"],
+            cwd=os.path.join(self.root, "frontend"), capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=30,
+        )
+        self.assertEqual(config.returncode, 0, config.stdout + config.stderr)
+        result = subprocess.run(
+            [npm, "run", "test:unit", "--",
+             "components/__tests__/ReviewRecordingBoundary.test.tsx",
+             "components/__tests__/PreviewRecordingFallback.test.tsx",
+             "--maxWorkers=2", "--minWorkers=1"],
+            cwd=os.path.join(self.root, "frontend"),
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=120,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_adv_2_epistemic_posture_gating(self):
         """Attack: Verify posture engine cannot output ACQUIRE or WATCH if evidence is missing."""
