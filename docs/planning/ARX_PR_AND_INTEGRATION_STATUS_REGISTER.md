@@ -1,7 +1,7 @@
 # ARX TERMINAL — PULL REQUEST & INTEGRATION STATUS REGISTER
 ## Comprehensive Accounting of Merged, Open, Draft & Candidate Branches
 **Review Date:** 29 October 2026 (22:30 UTC+1)  
-**Mainline Anchor SHA:** `e10de3b2714e7c7cba49c51e0e7a4eb13a7033f6`  
+**Mainline Anchor SHA:** `09c2112e5e9f415b3dec5bea9cb2c85311fb22dd`  
 **Authentication & Verification:** GitHub App JWT via `scripts/scratch_query_prs.py`  
 **Document Authority:** `CANONICAL_ACTIVE / FAIL_CLOSED`  
 **Review Status:** `READY_FOR_OWNER_REVIEW`  
@@ -13,7 +13,12 @@
 As of 29 October 2026, the ARX Terminal GitHub repository (`daakara/finance`) contains 16 open pull requests and 113 merged pull requests. This register provides the authoritative status, base, head SHA, purpose, and integration dependencies for all active and historically significant PRs.
 
 ```
-[ Mainline origin/main (e10de3b) ]
+[ Mainline origin/main (09c2112) ]
+  ├── [MERGED] PR #134 (chore(release): cumulative release manifest reconciliation & RQ-02 hardening)
+  ├── [MERGED] PR #133 (fix(radar): fail-closed contract normalization & decision continuity)
+  ├── [MERGED] PR #127 (fix(radar): error-versus-zero semantics & candidate truth contracts)
+  ├── [MERGED] PR #131 (feat(ux): Synthesis E V3 completion - RC2 review containment)
+  ├── [MERGED] PR #130 (fix(api): client API standardization and edge gateway proxy routing)
   ├── [MERGED] PR #129 (fix(portfolio): verified equity provenance & sizing isolation)
   ├── [MERGED] PR #126 (chore(governance): administrative backlog reconciliation)
   ├── [MERGED] PR #125 (fix(governance): validator hardening against ADV-04/ADV-05)
@@ -21,10 +26,8 @@ As of 29 October 2026, the ARX Terminal GitHub repository (`daakara/finance`) co
   └── [MERGED] PR #121 (feat(ci): release qualification framework & hosted PR identity)
 
 [ Open Draft PR Queue — Pending Owner Review & Release Staging ]
-  ├── PR #131 (codex/ux-v3-final-completion-20261029) ──> Synthesis E V3 UX Completion (Hosted CI PASS)
-  ├── PR #130 (remediation/client-api-standardization) ──> Client API Standardization & Edge Routing
+  ├── PR #135 (chore/sprint4-closure-remediation) ───────> Sprint 4 Final Administrative Closure Remediation
   ├── PR #128 (poc/arx-market-wide-top35) ───────────────> Market-Wide Discovery POC (Reference Open)
-  ├── PR #127 (fix/d058b-radar-reliability) ─────────────> Radar Operational Truth & State Model
   └── PR #124 (ux-v3 intermediate) ─────────────────────> Superseded by PR #131
 ```
 
@@ -34,10 +37,11 @@ As of 29 October 2026, the ARX Terminal GitHub repository (`daakara/finance`) co
 
 | PR # | State | Title | Head Branch | Head Commit SHA | Base Lineage | Hosted CI Status | Integration Purpose & Next Action |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **#131** | `DRAFT OPEN` | `feat(ux): Synthesis E V3 terminal completion and responsive modes` | `codex/ux-v3-final-completion-20261029` | `c6ca21f0c133d57eec5ac97d160455a59730712e` | `29ead6e4df6c` | `PASSED` (`40419208311`) | Implements Guided/Standard/Quant modes, Paper Light theme, responsive layouts, accessibility. Ready for owner visual sign-off. |
-| **#130** | `DRAFT OPEN` | `fix(api): client API standardization and edge gateway proxy routing` | `remediation/client-api-standardization` | `d47e858d131917c401b2bca1280daa422fcacb1a` | `29ead6e4df6c` | `PASSED` | Introduces `getApiBaseUrl()` dynamic client resolution, `/api/backend/*` Cloudflare edge proxy, and error envelopes. |
+| **#131** | `MERGED` | `feat(ux): Synthesis E V3 completion — RC2 review containment` | `codex/ux-v3-final-completion-20261029` | `882d42495c5eb4b20d9e0cb75edf0a38f0695b1a` | `main` | `PASSED` | Merged into main 2026-10-30T03:33:43Z. Implements Guided/Standard/Quant modes, Paper Light theme, responsive layouts, accessibility. |
+| **#130** | `MERGED` | `feat(api): client API standardization and edge gateway proxy routing` | `remediation/client-api-standardization` | `d47e858d131917c401b2bca1280daa422fcacb1a` | `main` | `PASSED` | Merged into main 2026-10-30T00:54:19Z. Introduces `getApiBaseUrl()` dynamic client resolution, `/api/backend/*` Cloudflare edge proxy, and error envelopes. |
 | **#128** | `DRAFT OPEN` | `feat(poc): market-wide top 35 opportunity discovery engine` | `poc/arx-market-wide-top35` | `3fff68108593f304275cdf18b696c8697f5b8257` | `29ead6e4df6c` | `PASSED` | Retained as open, unmerged research reference branch. Final candidate `f154032` preserved in research worktree. |
-| **#127** | `DRAFT OPEN` | `fix(radar): radar operational truth, state modeling and provenance telemetry` | `fix/d058b-radar-reliability-and-provenance` | `fd9a13868a027e8e699ef3cad9ecffcac305ecd3` | `29ead6e4df6c` | `PASSED` | Resolves Radar pending/empty states, prevents false 100% complete coverage on error, and adds telemetry. |
+| **#127** | `MERGED` | `fix(radar): Directive 058B.1 Batch 2 — fail-closed error-versus-zero semantics, candidate truth contracts, and census reconciliation` | `fix/d058b-radar-reliability-and-provenance` | `1e1a1ace457a612e95f020148ab80eb5d80aa2f5` | `main (882d42495c5e)` | `PASSED` | Merged into main 2026-10-30T03:54:52Z (merge commit `38d3028608b8eaceed70f7437f1324774b9d60fa`). Resolves Radar pending/empty states and candidate truth contracts. |
+| **#135** | `DRAFT OPEN` | `chore(governance): Sprint 4 final administrative closure remediation` | `chore/sprint4-closure-remediation` | `6a6fcdd0aaeb6a19d0dfdb2c4b1e5ee2b4167fe6` | `main (09c2112e5e9f)` | `PASSED` | Bounded administrative closure remediation for Sprint 4. |
 | **#124** | `DRAFT OPEN` | `feat(ux): synthesis e v3 preliminary architecture` | `feature/synthesis-e-v3-prelim` | `f7da12755a3fcc02b5af68898b4027398e93851c` | `29ead6e4df6c` | `PASSED` | Superseded by PR #131. Retained as open reference pending formal owner closure. |
 | **#109** | `DRAFT OPEN` | `chore(deps): bump dependencies` | `dependabot/npm_and_yarn/all` | `0853fe6c41b8` | `8f141c1a6bda` | `PENDING` | Automated dependabot dependency bump. Gated under dependency audit. |
 | **#103** | `DRAFT OPEN` | `fix(engine): historical scanner telemetry` | `fix/scanner-telemetry-s4` | `482fa8d39c91` | `de5d2463cc4c` | `PASSED` | Historical patch superseded by PR #110 and PR #127. |
@@ -55,6 +59,11 @@ As of 29 October 2026, the ARX Terminal GitHub repository (`daakara/finance`) co
 
 ## 3. Recently Merged Mainline PRs (Sprint 4 Milestones)
 
+- **PR #134 (`09c2112e5e9f415b3dec5bea9cb2c85311fb22dd`):** Merged 2026-10-30T11:26:11Z. Reconciles cumulative release manifest, enforces fail-closed RQ-02 diff integrity, and integrates permanent hosted D12C attack regression suite.
+- **PR #133 (`f1ed7171e9b7031c9233f1290655ec0d7fa095af`):** Merged 2026-10-30T07:11:00Z. Finalizes Synthesis E V3 radar contracts and responsive mobile navigation drawer polish.
+- **PR #127 (`38d3028608b8eaceed70f7437f1324774b9d60fa`):** Merged 2026-10-30T03:54:52Z. Directive 058B.1 Batch 2 fail-closed error-versus-zero semantics, candidate truth contracts, and census reconciliation.
+- **PR #131 (`882d42495c5eb4b20d9e0cb75edf0a38f0695b1a`):** Merged 2026-10-30T03:33:43Z. Synthesis E V3 terminal completion, guided/standard/quant modes, and RC2 review containment.
+- **PR #130 (`b413b03d3572bb7a57aaa71f7b4bcc30d13f1573`):** Merged 2026-10-29T22:48:01Z. Client API standardization, dynamic base URL resolution, and Cloudflare Pages edge proxy routing.
 - **PR #129 (`e10de3b2714e7c7cba49c51e0e7a4eb13a7033f6`):** Merged 2026-10-29T21:07:55Z. Resolves RQ-05 / WP-02. Introduces `PortfolioSummary` provenance contract, quarantines untrusted localStorage equity injections, and enforces fail-closed zero-size position allocation when account provenance is unverified.
 - **PR #126 (`29ead6e4df6cbf4e1e611feb74d61f0370b80e53`):** Reconciles administrative backlog and isolates historical test fixtures.
 - **PR #125 (`6b7a563`):** Hardens validator against cross-baseline authority mutation (ADV-04) and task deletion (ADV-05).

@@ -199,8 +199,8 @@
     },
     "docs/planning/ARX_PR_AND_INTEGRATION_STATUS_REGISTER.md": {
       "operation": "A",
-      "sha256": "24298716ff5883e21523c60d4052e364162bbe12ad81a70a98b340052ff5714a",
-      "size_bytes": 7923,
+      "sha256": "d708c46d4de3b2cf8852d3afb4ab5adfdeda50d2af41c5556dc93b9f42ad21c3",
+      "size_bytes": 9587,
       "originating_pr_number": 132,
       "originating_commit": "3c66f09",
       "governing_requirement": "Master documentation baseline reconciliation & SOT update"
@@ -215,8 +215,8 @@
     },
     "docs/planning/arx_canonical_backlog.json": {
       "operation": "M",
-      "sha256": "af18ff407d8f7c41a506a50c1edb8104442be1d01a8e0c56776a5be3e1a4658a",
-      "size_bytes": 196222,
+      "sha256": "d28bab6b31b1c12482cd10889094c47fc0adc83d1f1d937602fe8366c4f3aa4f",
+      "size_bytes": 196716,
       "originating_pr_number": 126,
       "originating_commit": "29ead6e",
       "governing_requirement": "Administrative backlog & historical test fixture reconciliation"
@@ -844,4 +844,4 @@
       "bytes": 19881
     }
   }
-}
+}

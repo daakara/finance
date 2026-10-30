@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "backlog_name": "ARX Terminal Canonical Enterprise Backlog",
-  "last_reconciled": "2026-10-27T22:30:00Z",
+  "last_reconciled": "2026-10-30T13:30:00Z",
   "active_sprint": "SPRINT_4",
   "governance_framework": "ARX Closure Model v2 + Governance Efficiency v1.1",
   "immutable_holds": {
@@ -1917,12 +1917,12 @@
       "dimensions": {
         "requirements": "DONE",
         "implementation": "DONE",
-        "integration": "PARTIAL",
+        "integration": "DONE",
         "verification": "PASS",
-        "repository_publication": "DRAFT_PR",
+        "repository_publication": "PUBLISHED_MERGED",
         "deployment": "NOT_DEPLOYED",
         "operational_execution": "NOT_APPLICABLE",
-        "production_evidence": "VERIFIED",
+        "production_evidence": "INSUFFICIENT",
         "owner_authorization": "AUTHORIZED"
       },
       "acceptance_criteria": [
@@ -1934,6 +1934,7 @@
       ],
       "evidence_refs": [
         "https://github.com/daakara/finance/pull/98",
+        "https://github.com/daakara/finance/pull/131",
         "https://github.com/daakara/finance/pull/94",
         "https://github.com/daakara/finance/pull/96"
       ],
@@ -1943,15 +1944,17 @@
         63
       ],
       "github_prs": [
-        98
+        98,
+        131
       ],
       "authorization_boundary": "BOUNDED_ENGINEERING",
       "operational_state": "ENGINEERING_ACCEPTED_AWAITING_RELEASE",
-      "carryforward_reason": "Sprint 4 engineering acceptance complete (PR #98 candidate verified across 38 suites); release held awaiting Owner UX design acceptance and merge (not an engineering carryforward)",
+      "carryforward_reason": "Sprint 4 engineering acceptance complete across PR #98 (merge: 8b8eb58) and PR #131 (merge: 882d424); release held awaiting Product Owner production promotion under backend-first deployment sequence (not an engineering carryforward)",
       "reopening_trigger": null,
       "historical_aliases": [
         "SYNTHESIS_E_V3",
-        "PR-98"
+        "PR-98",
+        "PR-131"
       ],
       "superseded_by": null,
       "description": "Synthesis E V3 Application-Wide UX Parity & Decision Hierarchy. Managed under UX_WORKSTATION workstream for SPRINT_3."
@@ -3916,7 +3919,7 @@
       "disposition": "ENGINEERING_ACCEPTED_AWAITING_RELEASE",
       "implementation_state": "DONE",
       "verification_state": "PASS",
-      "repository_publication_state": "DRAFT_PR",
+      "repository_publication_state": "PUBLISHED_MERGED",
       "deployment_state": "NOT_DEPLOYED",
       "operational_state": "NOT_APPLICABLE",
       "governance_state": "AUTHORIZED",
@@ -3934,12 +3937,17 @@
         63
       ],
       "github_pr_refs": [
-        98
+        98,
+        131
       ],
-      "commit_refs": [],
+      "commit_refs": [
+        "8b8eb58296adbb6374be254cd9a00c36c59786c6",
+        "882d42495c5eb4b20d9e0cb75edf0a38f0695b1a"
+      ],
       "deployment_refs": [],
       "evidence_refs": [
         "https://github.com/daakara/finance/pull/98",
+        "https://github.com/daakara/finance/pull/131",
         "https://github.com/daakara/finance/pull/94",
         "https://github.com/daakara/finance/pull/96"
       ],
@@ -3947,7 +3955,10 @@
       "superseded_by": null,
       "closure_decision": null,
       "closure_timestamp": null,
-      "closure_authority": null
+      "closure_authority": null,
+      "engineering_remediation_state": "VERIFIED",
+      "mainline_integration_state": "MERGED_VERIFIED",
+      "production_acceptance_state": "RELEASE_HELD"
     },
     {
       "obligation_id": "OBL-ARX-S3-017",
