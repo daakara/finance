@@ -1,29 +1,98 @@
 {
-  "verified_0_ddl": true,
-  "base_anchor_sha": "6d4020ca3fef3ae07ac01204b03e0629b6a7cc79",
-  "candidate_sha": "4c9e8e2ecd27d765424bac35e384b8f7c6c9861f",
-  "cloudflare_anchor": {
+  "control_id": "RQ-11",
+  "status": "PASS",
+  "timestamp": "2026-10-30T15:25:39.644919+00:00",
+  "candidate_sha": "e410fae28e61b9ae01f3659cb61e40ec0737118b",
+  "production_base_anchor": "cdc47a2eee8a427aaa6cf3ab5d01cad7f35d71e1",
+  "ancestor_baseline_anchor": "6d4020ca3fef3ae07ac01204b03e0629b6a7cc79",
+  "railway_recovery_anchor": {
+    "platform": "Railway",
+    "project_name": "tranquil-radiance",
+    "project_id": "a339a92a-7236-4ac0-9a3a-d7ad440f9690",
+    "environment": "production",
+    "environment_id": "11cad5e1-358e-430e-84fc-189953cff48a",
+    "service": "web",
+    "service_id": "56e38249-b78c-4a60-80d7-303ce7451bd8",
+    "deployment_id": "6bba63de-3ba0-4c96-bb1a-e67d3cc47d08",
+    "created_at": "2026-10-28T16:38:55.603Z",
+    "status": "SUCCESS",
+    "source_commit": "cdc47a2eee8a427aaa6cf3ab5d01cad7f35d71e1",
+    "candidate_pr_commit": "2c900cd783af3ca135f1b9cfae30697253db078c",
+    "image_digest": "sha256:2af4f4d6c62df20ea026943d2c5b76a4c8821b0df6c8837372d3ccae2625c23b",
+    "recovery_eligibility": "ACTIVE_SERVING_CONTAINER",
+    "verified_in_registry": true
+  },
+  "railway_historical_baselines": [
+    {
+      "deployment_id": "d1f8cf37-7592-4ad5-b986-4bbc9b4ed042",
+      "status": "REMOVED",
+      "removed_at": "2026-10-27T13:47:59+01:00",
+      "note": "Pre-074B historical Gate C baseline. Retired; NOT an active recovery target."
+    }
+  ],
+  "cloudflare_recovery_anchor": {
     "platform": "Cloudflare Pages",
-    "project": "finance",
+    "project_name": "finance",
+    "account_id": "c50133a8b090743a7470d9fb19ea2e0e",
+    "environment": "production",
     "deployment_id": "32f8daa9-bb1f-4454-9aaa-2000bfd49038",
     "source_commit": "6d4020ca3fef3ae07ac01204b03e0629b6a7cc79",
-    "target_state": "IMMUTABLE_SERVING_BASELINE",
-    "rehearsal_type": "DEPLOYMENT_RECORD_VERIFIED"
+    "status": "SUCCESS",
+    "recovery_eligibility": "IMMUTABLE_SERVING_BASELINE",
+    "authoritative_record": "ARX_070_CLOUDFLARE_PRODUCTION_PRESERVATION",
+    "custom_domain": "https://www.arxterminal.com",
+    "verified_in_registry": true
   },
-  "railway_anchor": {
-    "platform": "Railway",
-    "service": "web",
-    "deployment_id": "d1f8cf37-7592-4ad5-b986-4bbc9b4ed042",
-    "source_commit": "d1f8cf37b8d4e7bf53fc57d9f78330ee0f4c94ea",
-    "target_state": "IMMUTABLE_CONTAINER_RETAINED",
-    "rehearsal_type": "ISOLATED_RUNTIME_VERIFIED"
+  "cloudflare_candidate_preview": {
+    "deployment_id": "c78ee65b-4997-4bf1-90ca-345989065d76",
+    "source_commit": "e410fae28e61b9ae01f3659cb61e40ec0737118b",
+    "status": "SUCCESS",
+    "check_run_id": 124077004975
   },
-  "platform_rehearsal_evidence": {
-    "cloudflare_rollback_target": "32f8daa9-bb1f-4454-9aaa-2000bfd49038",
-    "railway_rollback_target": "d1f8cf37-7592-4ad5-b986-4bbc9b4ed042",
-    "cf_api_available": false,
-    "rw_api_available": false,
-    "platform_live_rehearsal": "NOT_EXECUTED_IN_CI (Requires authorized owner session to prevent production flapping)",
-    "external_platform_gate": "UNVERIFIED_EXTERNAL_GATE"
-  }
+  "assertions": [
+    {
+      "assertion": "Repository Rollback Compatibility: Zero database schema migrations (0-DDL)",
+      "observed": {
+        "changed_migration_files": [],
+        "count": 0
+      },
+      "passed": true
+    },
+    {
+      "assertion": "Git Rollback Anchors Retention: Production base and ancestor commits exist in object database",
+      "observed": {
+        "production_base_anchor": "cdc47a2eee8a427aaa6cf3ab5d01cad7f35d71e1",
+        "production_base_retained": true,
+        "ancestor_baseline_anchor": "6d4020ca3fef3ae07ac01204b03e0629b6a7cc79",
+        "ancestor_baseline_retained": true
+      },
+      "passed": true
+    },
+    {
+      "assertion": "External Recovery Targets Availability & Eligibility Verified",
+      "observed": {
+        "railway_target_id": "6bba63de-3ba0-4c96-bb1a-e67d3cc47d08",
+        "railway_uuid_valid": true,
+        "railway_is_stale_removed": false,
+        "railway_target_eligible": true,
+        "cloudflare_target_id": "32f8daa9-bb1f-4454-9aaa-2000bfd49038",
+        "cloudflare_uuid_valid": true,
+        "cloudflare_target_eligible": true,
+        "authoritative_record": "ARX_070_CLOUDFLARE_PRODUCTION_PRESERVATION"
+      },
+      "passed": true
+    },
+    {
+      "assertion": "Live Rollback Rehearsal Policy: Dry-run recovery verified; live execution held pending owner emergency directive",
+      "observed": {
+        "governing_policy": "2.2.0-D074A4",
+        "rehearsal_policy": "DRY_RUN_RECOVERY_TARGETS_VALIDATED",
+        "live_production_rehearsal": "NOT_EXECUTED_PREFLIGHT_AWAITING_OWNER_AUTHORIZATION",
+        "rationale": "Live execution against production domain and running containers strictly prohibited during pre-flight qualification to prevent production flapping.",
+        "preflight_readiness": "ROLLBACK_PREFLIGHT_VERIFIED"
+      },
+      "passed": true
+    }
+  ],
+  "errors": []
 }

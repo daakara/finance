@@ -816,7 +816,7 @@
       "description": "Release qualification module: rq10_config_integrity.py"
     },
     "scripts/release/rq11_rollback_readiness.py": {
-      "sha256": "ac80de61200a73104d810faada234de9e58bfcf5bf581910c0bb7c8e4e9e74c8",
+      "sha256": "b2125cd6c71db2a2a4d66306207686d6c2c98d3ded3d5e2009da51617a34dc07",
       "description": "Release qualification module: rq11_rollback_readiness.py"
     },
     "scripts/release/rq12_qualification_summary.py": {
@@ -842,6 +842,10 @@
     "scripts/release/test_d12c_workflow_attacks.py": {
       "sha256": "c87ceef5b97ce0d6bc937a9c99398a21c42e622e34c790bd48f7a65869f86f8a",
       "bytes": 19881
+    },
+    "scripts/release/test_rq11_adversarial_controls.py": {
+      "sha256": "03f4ae2b552e029810a883e749ce66256333ead9d69571d9de8766e8a3b67291",
+      "bytes": 8684
     }
   }
-}
+}
