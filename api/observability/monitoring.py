@@ -76,7 +76,6 @@ def capture_exception(
 
     Fail-open: failures in telemetry reporting never raise exceptions into the caller.
     """
-    global _CAPTURED_EXCEPTION_IDS
     adapter = get_monitoring_adapter()
     if not adapter or not adapter.is_enabled():
         return None
