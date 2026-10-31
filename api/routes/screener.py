@@ -1,3 +1,5 @@
+import numpy as np
+import math
 import os
 from fastapi import APIRouter, Response, Header, HTTPException, status
 from pydantic import BaseModel
@@ -54,6 +56,34 @@ def verify_operator_token(candidate_token: Optional[str]) -> bool:
 
 import hmac
 
+
+
+def _sanitize_floats(obj: Any) -> Any:
+    """Recursively replaces NaN, Inf, and non-serializable pandas/numpy types with None/native types
+    to guarantee strict RFC 8259 JSON compliance across all response payloads."""
+    if obj is None:
+        return None
+    if obj is pd.NA or obj is pd.NaT:
+        return None
+    if isinstance(obj, bool):
+        return obj
+    if isinstance(obj, (float, np.floating)):
+        val = float(obj)
+        return val if math.isfinite(val) else None
+    if isinstance(obj, (int, np.integer)):
+        return int(obj)
+    if isinstance(obj, np.ndarray):
+        return [_sanitize_floats(x) for x in obj.tolist()]
+    if isinstance(obj, dict):
+        return {k: _sanitize_floats(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize_floats(item) for item in obj]
+    if isinstance(obj, tuple):
+        return tuple(_sanitize_floats(item) for item in obj)
+    return obj
+
+
+sanitize_floats = _sanitize_floats
 
 def is_vcp_natural_scheduler_enabled() -> bool:
     """Check if natural VCP scheduler trigger is enabled via environment variable (default: disabled)."""
@@ -492,11 +522,11 @@ def run_screener(request: ScreenerRequest = None, response: Response = None):
     tickers = (request.tickers if request and request.tickers else default_pool)
     results = screener.evaluate_candidates(tickers)
 
-    return {
+    return _sanitize_floats({
         "total_candidates": len(tickers),
         "gems_found": len(results),
         "results": results,
-    }
+    })
 
 
 run_screener_post = run_screener
@@ -616,15 +646,16 @@ def run_screener_get(
                         "liquidity_defense": None,
                     }
                 else:
-                    db_candles = market_db.get_daily_candles(sym, limit=60)
+                    db_candles = market_db.get_daily_candles(sym, limit=252)
                     if db_candles:
                         hist_df = pd.DataFrame([{
                             "Open": c["open"], "High": c["high"], "Low": c["low"], "Close": c["close"], "Volume": c["volume"]
                         } for c in db_candles], index=pd.to_datetime([c["time"] for c in db_candles]))
                     else:
                         hist_df = pd.DataFrame()
-        
-                    execution = optimal_engine.calculate_trade_levels(hist_df, current_price, user_role=user_role)
+                    from api.routes.analytics import compute_intraday_technicals
+                    technicals = compute_intraday_technicals(hist_df) if not hist_df.empty else None
+                    execution = optimal_engine.calculate_trade_levels(hist_df, current_price, user_role=user_role, technicals=technicals)
         
         
             except Exception as e:
@@ -690,8 +721,17 @@ def run_screener_get(
                 status_label = "🚀 Session ORB Breakout" if is_day_trader else "🚀 Near TP Target"
                 status_color = "amber"
             elif entry_min is not None and entry_max is not None and current_price is not None and (entry_min <= current_price <= entry_max * 1.008 or abs(current_price - entry_max) / max(0.01, current_price) <= 0.015):
-                execution_status = "IN_BUY_ZONE"
-                status_label = "🎯 Active VWAP Bounce" if is_day_trader else "🎯 Near Screening Buy Zone"
+                exec_from_plan = execution.get("execution_status")
+                if exec_from_plan in ("IN_BUY_ZONE", "IN_BUY_ZONE_AWAITING_TRIGGER", "READY_TO_BUY"):
+                    execution_status = exec_from_plan
+                else:
+                    execution_status = "IN_BUY_ZONE"
+                if execution_status == "IN_BUY_ZONE_AWAITING_TRIGGER":
+                    status_label = "🎯 In Buy Zone (Awaiting Trigger)"
+                elif execution_status == "READY_TO_BUY":
+                    status_label = "🎯 Ready to Buy"
+                else:
+                    status_label = "🎯 Active VWAP Bounce" if is_day_trader else "🎯 Near Screening Buy Zone"
                 status_color = "emerald"
             else:
                 execution_status = "WAITING_PULLBACK"
@@ -785,11 +825,13 @@ def run_screener_get(
                 confluence_res = confluence_engine.calculate_confluence(
                     symbol=sym,
                     technical_data={
+                        **(technicals or {}),
+                        **execution,
                         "executionStatus": execution_status,
                         "riskRewardRatio": rr_ratio,
                         "setup_pattern": setup_pat,
                         "stage_phase": execution.get("stage_phase") or ("Stage 2 Breakout" if execution_status == "IN_BUY_ZONE" else "Institutional Accumulation"),
-                        "rsi_14": execution.get("rsi_14"),
+                        "rsi_14": (technicals or {}).get("rsi_14") or execution.get("rsi_14"),
                         "stop_loss": stop_loss,
                         "current_price": current_price,
                     },
@@ -805,9 +847,9 @@ def run_screener_get(
                     if avg_vol > 0:
                         rvol_val = f"{round(recent_vol / avg_vol, 1)}x"
                     else:
-                        rvol_val = "1.0x"
+                        rvol_val = "N/A"
                 else:
-                    rvol_val = "1.0x"
+                    rvol_val = "N/A"
     
                 short_float_num = r.get("short_float_pct")
                 if short_float_num is not None:
@@ -1043,7 +1085,7 @@ def run_screener_get(
             dataset_state = "PIPELINE_PENDING" if is_pipeline_pending_filter else ("CANDIDATES_AVAILABLE" if len(filtered) > 0 else "GENUINELY_EMPTY")
             overall_error = None
     
-        return {
+        return _sanitize_floats({
             "status": status_val,
             "scanState": scan_state,
             "datasetState": dataset_state,
@@ -1060,11 +1102,11 @@ def run_screener_get(
             "candidates": filtered,
             "results": results,
             "evidence": radar_evidence.to_dict(),
-        }
+        })
     except Exception as e:
         radar_now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         ref_count = len(active_universe) if "active_universe" in locals() and active_universe else 0
-        return {
+        return _sanitize_floats({
             "status": "ERROR",
             "scanState": "FAILED",
             "datasetState": "SCAN_FAILED",
@@ -1092,7 +1134,7 @@ def run_screener_get(
                 "structuralQuality": "UNKNOWN",
                 "fallbackStatus": True,
             },
-        }
+        })
 
 
 @router.get("/vcp/snapshot")

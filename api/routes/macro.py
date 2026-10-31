@@ -11,6 +11,8 @@ from datetime import datetime, time, timezone
 from zoneinfo import ZoneInfo
 from typing import Optional, Dict, Any
 from fastapi import APIRouter, Response
+import numpy as np
+import pandas as pd
 import yfinance as yf
 import exchange_calendars as xcals
 from analyst_dashboard.analyzers.tactical_regime import TacticalRegimeEngine
@@ -160,9 +162,21 @@ def get_nyse_session_status(dt: Optional[datetime] = None) -> Dict[str, Any]:
 
 
 def _sanitize_floats(obj: Any) -> Any:
-    """Recursively replaces NaN and Inf float values with None to guarantee RFC 8259 JSON compliance."""
-    if isinstance(obj, float):
-        return obj if math.isfinite(obj) else None
+    """Recursively replaces NaN, Inf, and non-serializable pandas/numpy types with None/native types
+    to guarantee strict RFC 8259 JSON compliance across all response payloads."""
+    if obj is None:
+        return None
+    if obj is pd.NA or obj is pd.NaT:
+        return None
+    if isinstance(obj, bool):
+        return obj
+    if isinstance(obj, (float, np.floating)):
+        val = float(obj)
+        return val if math.isfinite(val) else None
+    if isinstance(obj, (int, np.integer)):
+        return int(obj)
+    if isinstance(obj, np.ndarray):
+        return [_sanitize_floats(x) for x in obj.tolist()]
     if isinstance(obj, dict):
         return {k: _sanitize_floats(v) for k, v in obj.items()}
     if isinstance(obj, list):
