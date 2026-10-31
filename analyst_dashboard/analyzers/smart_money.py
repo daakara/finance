@@ -2051,7 +2051,12 @@ class SmartMoneyEngine:
         return enriched_trades
 
     @staticmethod
-    def get_sec_insider_trades(symbol: str = None) -> List[Dict[str, Any]]:
+    def get_sec_insider_trades(symbol: str = None, include_curated: bool = False) -> List[Dict[str, Any]]:
+        """Fetch SEC Form 4 insider transactions. Requires verified live SEC EDGAR feed unless querying curated research archive."""
+        if not include_curated:
+            # Under Zero Fabricated Data Invariant, live insider trades require active SEC EDGAR ingestion.
+            # Without live provider connection, return empty list rather than static archive masquerading as live.
+            return []
         if symbol:
             sym_clean = symbol.upper().strip()
             return [s for s in SEC_FORM_4_TRADES if s['ticker'] == sym_clean]
