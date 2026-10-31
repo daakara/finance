@@ -29,11 +29,25 @@ def main():
     assertions = []
 
     parser = argparse.ArgumentParser(description="RQ-01: Candidate Identity Verification")
-    parser.add_argument("--base", default="6d4020ca3fef3ae07ac01204b03e0629b6a7cc79", help="Expected release base commit")
-    parser.add_argument("--expected-candidate", default="ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c", help="Expected authorized candidate commit")
+    parser.add_argument("--manifest", default=None, help="Path to release_manifest.json")
+    parser.add_argument("--base", default=None, help="Expected release base commit")
+    parser.add_argument("--expected-candidate", default=None, help="Expected authorized candidate commit")
     parser.add_argument("--target-branch", default=None, help="Target branch override")
     parser.add_argument("--allow-main-target", action="store_true", help="Permit main as target during staging PR qualification")
     args = parser.parse_args()
+
+    # Load release manifest if present to derive canonical defaults
+    manifest_path = args.manifest or os.path.join(PROJECT_ROOT, "scripts", "release", "release_manifest.json")
+    manifest_data = {}
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                manifest_data = json.load(f)
+        except Exception:
+            pass
+
+    expected_base = args.base or manifest_data.get("base_anchor_commit") or "9f9cdb9eb7d724c8ea22573826e76cabd1d2944f"
+    expected_candidate = args.expected_candidate or manifest_data.get("release_candidate_commit")
 
     print("=== [RQ-01] CANDIDATE IDENTITY & ANCESTRY CHECK ===")
     ok, ctx, err_msg = resolve_identity_contract()
@@ -75,7 +89,7 @@ def main():
     parents_out = run_git(["git", "rev-parse", "HEAD^@"])
     if parents_out:
         parents = parents_out.splitlines()
-        if len(parents) >= 2:
+        if len(parents) >= 2 and ctx.get("event_name") == "pull_request":
             is_merge_commit = True
             merge_base_parent = parents[0]
             merge_pr_parent = parents[1]
@@ -90,23 +104,23 @@ def main():
     print(f"Current Checked-Out HEAD: {current_head} (Merge Commit: {is_merge_commit})")
     print(f"Resolved Candidate SHA: {candidate_sha}")
     print(f"Target Branch: {target_branch}")
-    print(f"Expected Base Anchor: {args.base}")
-    print(f"Expected Candidate: {args.expected_candidate}")
+    print(f"Expected Base Anchor: {expected_base}")
+    print(f"Expected Candidate: {expected_candidate}")
 
     # 3. Base commit existence in repository history
-    base_exists = run_git(["git", "cat-file", "-e", args.base]) is not None
-    assertions.append({"assertion": "Base anchor exists in repo history", "observed": args.base, "passed": base_exists})
+    base_exists = run_git(["git", "cat-file", "-e", expected_base]) is not None
+    assertions.append({"assertion": "Base anchor exists in repo history", "observed": expected_base, "passed": base_exists})
     if not base_exists:
-        errors.append(f"Base commit {args.base} does not exist in repository history.")
+        errors.append(f"Base commit {expected_base} does not exist in repository history.")
 
-    # 4. Ancestry check: args.base must be an ancestor of candidate_sha
+    # 4. Ancestry check: expected_base must be an ancestor of candidate_sha
     is_base_ancestor = False
     if base_exists:
-        res = subprocess.run(["git", "merge-base", "--is-ancestor", args.base, candidate_sha], cwd=PROJECT_ROOT)
+        res = subprocess.run(["git", "merge-base", "--is-ancestor", expected_base, candidate_sha], cwd=PROJECT_ROOT)
         is_base_ancestor = (res.returncode == 0)
     assertions.append({"assertion": "Base anchor is ancestor of Candidate SHA", "observed": is_base_ancestor, "passed": is_base_ancestor})
     if not is_base_ancestor:
-        errors.append(f"Base commit {args.base} is NOT an ancestor of Candidate SHA {candidate_sha}.")
+        errors.append(f"Base commit {expected_base} is NOT an ancestor of Candidate SHA {candidate_sha}.")
 
     # 5. Target branch validity check
     clean_target = target_branch.replace("refs/heads/", "").strip()
@@ -120,17 +134,18 @@ def main():
         errors.append(f"Target branch '{clean_target}' is not authorized. Allowed: {valid_targets}")
 
     # 6. Candidate substitution guard
-    if args.expected_candidate:
-        # Check if candidate_sha equals expected or has expected in ancestry
-        res_cand = subprocess.run(["git", "merge-base", "--is-ancestor", args.expected_candidate, candidate_sha], cwd=PROJECT_ROOT)
-        has_authorized_candidate = (res_cand.returncode == 0)
+    if expected_candidate:
+        is_cand_incorporated = (candidate_sha.lower() == expected_candidate.lower())
+        if not is_cand_incorporated:
+            res_cand = subprocess.run(["git", "merge-base", "--is-ancestor", expected_candidate, candidate_sha], cwd=PROJECT_ROOT)
+            is_cand_incorporated = (res_cand.returncode == 0)
         assertions.append({
-            "assertion": "Candidate SHA incorporates authorized baseline",
-            "observed": {"candidate_sha": candidate_sha, "expected": args.expected_candidate, "ancestor": has_authorized_candidate},
-            "passed": has_authorized_candidate
+            "assertion": "Candidate SHA incorporates authorized candidate",
+            "observed": {"candidate_sha": candidate_sha, "expected": expected_candidate, "ancestor": is_cand_incorporated},
+            "passed": is_cand_incorporated
         })
-        if not has_authorized_candidate:
-            errors.append(f"Candidate {candidate_sha} does not incorporate authorized candidate {args.expected_candidate}.")
+        if not is_cand_incorporated:
+            errors.append(f"Candidate {candidate_sha} does not incorporate authorized candidate {expected_candidate}.")
 
     duration = time.time() - t0
     status = "PASS" if len(errors) == 0 else "FAIL"

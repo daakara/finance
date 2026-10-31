@@ -11,6 +11,8 @@ from datetime import datetime, time, timezone
 from zoneinfo import ZoneInfo
 from typing import Optional, Dict, Any
 from fastapi import APIRouter, Response
+import numpy as np
+import pandas as pd
 import yfinance as yf
 import exchange_calendars as xcals
 from analyst_dashboard.analyzers.tactical_regime import TacticalRegimeEngine
@@ -159,17 +161,7 @@ def get_nyse_session_status(dt: Optional[datetime] = None) -> Dict[str, Any]:
         }
 
 
-def _sanitize_floats(obj: Any) -> Any:
-    """Recursively replaces NaN and Inf float values with None to guarantee RFC 8259 JSON compliance."""
-    if isinstance(obj, float):
-        return obj if math.isfinite(obj) else None
-    if isinstance(obj, dict):
-        return {k: _sanitize_floats(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_sanitize_floats(item) for item in obj]
-    if isinstance(obj, tuple):
-        return tuple(_sanitize_floats(item) for item in obj)
-    return obj
+from api.serialization import sanitize_floats, _sanitize_floats
 
 
 def _fetch_isolated_bar(symbol: str, is_yield: bool = False) -> Dict[str, Any]:

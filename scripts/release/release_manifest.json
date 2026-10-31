@@ -1,180 +1,68 @@
 {
-  "release_candidate_commit": "8dbf142ac7400e0ccc2fcf9860217f0a2f1f683d",
-  "base_anchor_commit": "7c68d69d7b9aa7ed0d4f721dd0e9b542fdec0797",
-  "total_files": 20,
+  "release_candidate_commit": "2beb1b02513aad44abbec70d19d8f36e2677e7a1",
+  "base_anchor_commit": "9f9cdb9eb7d724c8ea22573826e76cabd1d2944f",
+  "total_files": 6,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-043D-CANDIDATE",
+  "directive": "ARX-044R4-CANDIDATE",
   "files": {
-    "analyst_dashboard/analyzers/smart_money.py": {
-      "operation": "M",
-      "sha256": "d7d71aaa83128fdcffef577c4ae78e5d14746570034745c30b85507644554510",
-      "size_bytes": 89713,
-      "originating_pr_number": 140,
-      "originating_commit": "8dbf142",
-      "governing_requirement": "fix(radar): adversarial cross-engine parity and smart money containment"
-    },
-    "analyst_dashboard/data/sec_edgar_fetcher.py": {
-      "operation": "M",
-      "sha256": "2896f242e57eb8ef3ce000eb9ff2b9a9d0f09df8d2dfe0b4e66876a6375a4b98",
-      "size_bytes": 23141,
-      "originating_pr_number": 140,
-      "originating_commit": "8dbf142",
-      "governing_requirement": "fix(radar): adversarial cross-engine parity and smart money containment"
-    },
     "api/routes/analytics.py": {
       "operation": "M",
-      "sha256": "9a288307af98b9c57636caf0edb525bd961317cabc1303851353b9956fe16cc6",
-      "size_bytes": 69793,
-      "originating_pr_number": 140,
-      "originating_commit": "8dbf142",
-      "governing_requirement": "fix(radar): adversarial cross-engine parity and smart money containment"
+      "sha256": "a9f7c87d62564a63c00bc98a3fe9725e4d61761964a687a9c8b931bd45bae119",
+      "size_bytes": 70153,
+      "originating_pr_number": 147,
+      "originating_commit": "2beb1b0",
+      "governing_requirement": "Directive 044R.2/044R.3: RFC 8259 serialization, crypto fallback suppression, 252-bar lookback"
     },
     "api/routes/macro.py": {
       "operation": "M",
-      "sha256": "175d2fff0628babb386b319cb5c8a4cabe691cd585702386dc097e828e0e6ecd",
-      "size_bytes": 15467,
-      "originating_pr_number": 140,
-      "originating_commit": "8dbf142",
-      "governing_requirement": "fix(radar): adversarial cross-engine parity and smart money containment"
+      "sha256": "a47110d9197bf1682bc3a1a042cfdf0f82d84a8d6735e2261366e4b412bb0c56",
+      "size_bytes": 15049,
+      "originating_pr_number": 147,
+      "originating_commit": "2beb1b0",
+      "governing_requirement": "Directive 044R.2/044R.3: RFC 8259 serialization consolidation"
     },
     "api/routes/screener.py": {
       "operation": "M",
-      "sha256": "466cd69f03777db4bcb466efcab993f48f579d360000b5a8547ac2fd77a7f2ed",
-      "size_bytes": 71341,
-      "originating_pr_number": 140,
-      "originating_commit": "8dbf142",
-      "governing_requirement": "fix(radar): adversarial cross-engine parity and smart money containment"
+      "sha256": "54d74607cec2ecfc085f0d8d0b2d9be8ff7beaa7e6fde5ede71151e24c02d789",
+      "size_bytes": 72358,
+      "originating_pr_number": 147,
+      "originating_commit": "2beb1b0",
+      "governing_requirement": "Directive 044R.2/044R.3: RFC 8259 serialization, 252-bar lookback, intraday execution guidance"
     },
-    "frontend/app/compare/page.tsx": {
-      "operation": "M",
-      "sha256": "6ed8b3d6a9cf97f720f4067955f635a536c95ed2723e849768a501cbd364ad28",
-      "size_bytes": 44323,
-      "originating_pr_number": 139,
-      "originating_commit": "095e62f",
-      "governing_requirement": "fix(ux): PROD-UX-01/02 execution clearance and comparison evidence integrity"
-    },
-    "frontend/app/globals.css": {
-      "operation": "M",
-      "sha256": "1afcffbe5701c5b9ecb3348c7ac28e59672c6fb53a45875016347f0d0120266d",
-      "size_bytes": 17593,
-      "originating_pr_number": 139,
-      "originating_commit": "095e62f",
-      "governing_requirement": "fix(ux): PROD-UX-01/02 execution clearance and comparison evidence integrity"
-    },
-    "frontend/app/page.tsx": {
-      "operation": "M",
-      "sha256": "c478deb364b9776b6fdbe4cefaef8ac21139d3c3b92bd7bcda6a6438f63afdb7",
-      "size_bytes": 43099,
-      "originating_pr_number": 139,
-      "originating_commit": "095e62f",
-      "governing_requirement": "fix(ux): PROD-UX-01/02 execution clearance and comparison evidence integrity"
-    },
-    "frontend/app/portfolio/page.tsx": {
-      "operation": "M",
-      "sha256": "fa9c9cefc9dcb07031ef29e36c3838cc029e0cbb1165d6cdeb5fa3ff912aa005",
-      "size_bytes": 77326,
-      "originating_pr_number": 139,
-      "originating_commit": "095e62f",
-      "governing_requirement": "fix(ux): PROD-UX-01/02 execution clearance and comparison evidence integrity"
-    },
-    "frontend/app/radar/page.tsx": {
-      "operation": "M",
-      "sha256": "29e947191527798e4e1df193c2840f2fcdc6962f7dc0217b71a04531dd389da3",
-      "size_bytes": 95867,
-      "originating_pr_number": 140,
-      "originating_commit": "8dbf142",
-      "governing_requirement": "fix(radar): adversarial cross-engine parity and smart money containment"
-    },
-    "frontend/components/AdaptiveTerminal.tsx": {
-      "operation": "M",
-      "sha256": "d9f140479012d7a95a333dfea7ebd25d83d35a3143a19c9cf580757907f54422",
-      "size_bytes": 12984,
-      "originating_pr_number": 139,
-      "originating_commit": "095e62f",
-      "governing_requirement": "fix(ux): PROD-UX-01/02 execution clearance and comparison evidence integrity"
-    },
-    "frontend/components/OptimalEntryExitCard.tsx": {
-      "operation": "M",
-      "sha256": "3df7869557584dca4f765d96a214a7d552bcebf6e3ca5db53aab0abefbb225b5",
-      "size_bytes": 47793,
-      "originating_pr_number": 139,
-      "originating_commit": "095e62f",
-      "governing_requirement": "fix(ux): PROD-UX-01/02 execution clearance and comparison evidence integrity"
-    },
-    "frontend/components/terminal/AdvancedTerminalView.tsx": {
-      "operation": "M",
-      "sha256": "59efa876710c6bc638dd3c12125f03ba80d88933f276c91c4cc2b3d9769d1026",
-      "size_bytes": 16215,
-      "originating_pr_number": 139,
-      "originating_commit": "095e62f",
-      "governing_requirement": "fix(ux): PROD-UX-01/02 execution clearance and comparison evidence integrity"
-    },
-    "frontend/components/terminal/GuidedTerminalView.tsx": {
-      "operation": "M",
-      "sha256": "a6f218e9d0c8cb6f72621bc5693bcc073bc700c15a615eeb9da9ebb35ffd4e2a",
-      "size_bytes": 17594,
-      "originating_pr_number": 139,
-      "originating_commit": "095e62f",
-      "governing_requirement": "fix(ux): PROD-UX-01/02 execution clearance and comparison evidence integrity"
-    },
-    "frontend/components/terminal/SharedExecutionLadder.tsx": {
-      "operation": "M",
-      "sha256": "128b402424b33420aeeeef7dd5761f5eab24817bd5800b398bdd51adb768dfaf",
-      "size_bytes": 16259,
-      "originating_pr_number": 139,
-      "originating_commit": "095e62f",
-      "governing_requirement": "fix(ux): PROD-UX-01/02 execution clearance and comparison evidence integrity"
-    },
-    "frontend/components/terminal/StandardTerminalView.tsx": {
-      "operation": "M",
-      "sha256": "2fc3219780b620590afdadf4aaabc37cd72579e193015efe3f4c9d5cf24e55b2",
-      "size_bytes": 25631,
-      "originating_pr_number": 139,
-      "originating_commit": "095e62f",
-      "governing_requirement": "fix(ux): PROD-UX-01/02 execution clearance and comparison evidence integrity"
-    },
-    "frontend/tests/executionGuidanceAndComparisonIntegrity.test.ts": {
+    "api/serialization.py": {
       "operation": "A",
-      "sha256": "677f6610c1d1a893e4eca5365d751faf74e6b19d22e9b1a38142f93f7d3246e0",
-      "size_bytes": 12281,
-      "originating_pr_number": 139,
-      "originating_commit": "095e62f",
-      "governing_requirement": "fix(ux): PROD-UX-01/02 execution clearance and comparison evidence integrity"
+      "sha256": "a5093fb97aafe7a55790e2380aa066b9172a3449ebb90a4197492d5fbe20daa8",
+      "size_bytes": 2198,
+      "originating_pr_number": 147,
+      "originating_commit": "2beb1b0",
+      "governing_requirement": "Directive 044R.2/044R.3: Centralized RFC 8259 JSON serialization"
     },
-    "scripts/release/test_arx004_adversarial_mutations.py": {
+    "tests/test_directive_044r2_data_integrity.py": {
       "operation": "A",
-      "sha256": "41bfec496fbdb9cf7245491220b8315e96c83fe0eedc8f58701553ab70ef80ce",
-      "size_bytes": 13283,
-      "originating_pr_number": 140,
-      "originating_commit": "8dbf142",
-      "governing_requirement": "fix(radar): adversarial cross-engine parity and smart money containment"
-    },
-    "tests/test_adversarial_phase13_verification.py": {
-      "operation": "M",
-      "sha256": "97b64a6e5dae695a83a15ef4a423b23fc771542be5b3f8cace44f47a59e9c5fe",
-      "size_bytes": 7896,
-      "originating_pr_number": 140,
-      "originating_commit": "8dbf142",
-      "governing_requirement": "fix(radar): adversarial cross-engine parity and smart money containment"
+      "sha256": "8010265722b7632be6b152552fff1b572dd0486078b991fcf9b2870a47933a4b",
+      "size_bytes": 8273,
+      "originating_pr_number": 147,
+      "originating_commit": "2beb1b0",
+      "governing_requirement": "Directive 044R.2/044R.3: Data integrity and serialization test suite"
     },
     "tests/test_radar_cross_engine_parity_003.py": {
-      "operation": "A",
-      "sha256": "60683913111b1622864c40e92ce97e59b8c5c97d685c58771a17102273302e4f",
-      "size_bytes": 15291,
-      "originating_pr_number": 140,
-      "originating_commit": "8dbf142",
-      "governing_requirement": "fix(radar): adversarial cross-engine parity and smart money containment"
+      "operation": "M",
+      "sha256": "1ae4bd89918e2bee0e1d088f6789147ececda68180a62104b841da13ae4a1615",
+      "size_bytes": 15928,
+      "originating_pr_number": 147,
+      "originating_commit": "2beb1b0",
+      "governing_requirement": "Directive 044R.2/044R.3: Cross-engine parity reference fixture tests"
     }
   },
   "qualification_framework_files": {
     "scripts/release/rq01_candidate_identity.py": {
-      "sha256": "356f99aef7745641a03708b87ef4aacb761be2b56ec5a37356be0e527c865a8f",
+      "sha256": "af311f7b4048cfe147d22840b85b157506bef73ea96de6fa30875459fec8154b",
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "e54e574e806cf77a9cb6df3590c1c3b9dcc75221b273840b93edc3b5a83ab7e8",
-      "bytes": 24290,
-      "size_bytes": 24315
+      "sha256": "3c412869b6050956ccdb5c85ee1c9fca0afdf379535266f8dc58ccd64b557779",
+      "bytes": 24320,
+      "size_bytes": 24320
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "9778026dff4dd5967cfc180b28b4291649ad6bc4abf7862271158914f7b446d9",
@@ -229,14 +117,14 @@
       "description": "Release qualification module: test_synthetic_merge_reproduction.py"
     },
     "scripts/release/test_rq02_adversarial_controls.py": {
-      "sha256": "f955183aa4f59294621a5a6c8a926fabdc049ade4e78dd4323fe4c45820ae34a",
-      "bytes": 15449,
-      "size_bytes": 15976
+      "sha256": "7b6f8da6614f915d2eb66b3d2d80e217733ba110096ae54937658350c9ffb86b",
+      "bytes": 16026,
+      "size_bytes": 16026
     },
     "scripts/release/test_d12c_workflow_attacks.py": {
-      "sha256": "2b280ce35060c688346b733e478b732096a06bfa265d738ac46cd0587f86d011",
-      "bytes": 19881,
-      "size_bytes": 19962
+      "sha256": "90054e28d133733f4c00c32ce384bc5047172010058898e5875f463ae71a4cc3",
+      "bytes": 20012,
+      "size_bytes": 20012
     },
     "scripts/release/test_rq11_adversarial_controls.py": {
       "sha256": "03f4ae2b552e029810a883e749ce66256333ead9d69571d9de8766e8a3b67291",

@@ -50,6 +50,7 @@ history_db = HistoryDatabaseEngine()
 alpaca_fetcher = AlpacaMarketFetcher()
 
 KNOWN_ETFS = {"SPY", "QQQ", "SMH", "XLK", "XLE", "XLI", "TLT", "UNG", "FXI", "ARKG", "IWM", "VTI", "VOO", "EEM", "GLD"}
+KNOWN_CRYPTO_SYMBOLS = {"BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX", "DOT", "LTC"}
 INFO_CACHE: dict[str, tuple[float, dict]] = {}
 CACHE_TTL_SECONDS = 3600.0
 
@@ -501,7 +502,7 @@ def get_tactical_setups(
     setups = []
     for sym in symbols:
         try:
-            db_candles = market_db.get_daily_candles(sym, limit=60)
+            db_candles = market_db.get_daily_candles(sym, limit=252)
             is_stale = _is_history_stale(db_candles)
 
             if not db_candles or len(db_candles) < 15 or is_stale:
@@ -509,7 +510,7 @@ def get_tactical_setups(
                     hist_fetch = yf.Ticker(sym).history(period="6mo", interval="1d", timeout=5)
                     if not hist_fetch.empty and len(hist_fetch) >= 15:
                         market_db.save_daily_candles(sym, hist_fetch)
-                        db_candles = market_db.get_daily_candles(sym, limit=60)
+                        db_candles = market_db.get_daily_candles(sym, limit=252)
                         is_stale = _is_history_stale(db_candles)
                 except Exception as fetch_err:
                     logger.debug(f"On-demand refresh failed for {sym}: {fetch_err}")
@@ -530,7 +531,7 @@ def get_tactical_setups(
         "setups": setups,
     }
     _store_cached_tactical_setups(cache_key, result_payload)
-    return result_payload
+    return _sanitize_floats(result_payload)
 
 
 @router.get("/setups/{symbol}", tags=["Setups"])
@@ -552,7 +553,7 @@ def get_tactical_setup_for_symbol(
     if clean_role not in VALID_ROLES:
         clean_role = "LONG_TERM"
 
-    db_candles = market_db.get_daily_candles(upper, limit=60)
+    db_candles = market_db.get_daily_candles(upper, limit=252)
     is_stale = _is_history_stale(db_candles)
 
     # Perform a single on-demand fetch if missing, insufficient, or stale
@@ -562,7 +563,7 @@ def get_tactical_setup_for_symbol(
             hist_fetch = ticker_obj.history(period="6mo", interval="1d", timeout=5)
         except Exception as e:
             if db_candles and len(db_candles) >= 15 and is_stale:
-                return _build_tactical_setup(upper, clean_role, db_candles, is_stale=True)
+                return _sanitize_floats(_build_tactical_setup(upper, clean_role, db_candles, is_stale=True))
             err_msg = str(e).lower()
             if "429" in err_msg or "too many requests" in err_msg or "rate limit" in err_msg:
                 raise HTTPException(
@@ -582,7 +583,7 @@ def get_tactical_setup_for_symbol(
 
         if hist_fetch is None or hist_fetch.empty:
             if db_candles and len(db_candles) >= 15 and is_stale:
-                return _build_tactical_setup(upper, clean_role, db_candles, is_stale=True)
+                return _sanitize_floats(_build_tactical_setup(upper, clean_role, db_candles, is_stale=True))
             raise HTTPException(
                 status_code=404,
                 detail=f"Asset {upper} is not recognized on exchange tape or has zero trade records.",
@@ -590,14 +591,14 @@ def get_tactical_setup_for_symbol(
 
         if len(hist_fetch) < 15:
             if db_candles and len(db_candles) >= 15 and is_stale:
-                return _build_tactical_setup(upper, clean_role, db_candles, is_stale=True)
+                return _sanitize_floats(_build_tactical_setup(upper, clean_role, db_candles, is_stale=True))
             raise HTTPException(
                 status_code=422,
                 detail=f"Asset {upper} has only {len(hist_fetch)} sessions on record. Minimum 15 daily sessions required for setup calculation.",
             )
 
         market_db.save_daily_candles(upper, hist_fetch)
-        db_candles = market_db.get_daily_candles(upper, limit=60)
+        db_candles = market_db.get_daily_candles(upper, limit=252)
         if not db_candles and not hist_fetch.empty:
             db_candles = [
                 {
@@ -619,7 +620,7 @@ def get_tactical_setup_for_symbol(
                 status_code=500,
                 detail=f"Calculation error occurred while computing trade levels or confluence for {upper}.",
             )
-        return setup
+        return _sanitize_floats(setup)
     except HTTPException:
         raise
     except Exception as calc_err:
@@ -836,17 +837,9 @@ def validate_and_prune_daily_history(
     return work_df, meta
 
 
-def _sanitize_floats(obj: Any) -> Any:
-    """Recursively replaces NaN and Inf float values with None to guarantee RFC 8259 JSON compliance."""
-    if isinstance(obj, float):
-        return obj if math.isfinite(obj) else None
-    if isinstance(obj, dict):
-        return {k: _sanitize_floats(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_sanitize_floats(item) for item in obj]
-    if isinstance(obj, tuple):
-        return tuple(_sanitize_floats(item) for item in obj)
-    return obj
+from api.serialization import sanitize_floats, _sanitize_floats
+
+
 
 
 @router.get("/{symbol}")
@@ -885,10 +878,17 @@ def get_asset_analytics(
 
     try:
 
-        # Handle crypto ticker format
-        fetch_sym = upper_sym
-        if upper_sym in ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX", "DOT", "LTC"]:
-            fetch_sym = f"{upper_sym}-USD"
+        # Instrument-aware provider resolution: classify genuine cryptocurrencies vs equities/ETFs
+        is_crypto_sym = bool(
+            "-" in upper_sym
+            or upper_sym.endswith("-USD")
+            or upper_sym in KNOWN_CRYPTO_SYMBOLS
+        )
+        fetch_sym = (
+            upper_sym
+            if ("-" in upper_sym or upper_sym.endswith("-USD") or not is_crypto_sym)
+            else f"{upper_sym}-USD"
+        )
 
         # If intraday interval selected, ensure period matches Yahoo Finance constraints
         if clean_interval in ["1m"]:
@@ -898,11 +898,13 @@ def get_asset_analytics(
         elif clean_interval in ["1h"]:
             clean_period = "1mo" if clean_period not in ["1d", "5d", "1mo"] else clean_period
 
-        provider_source = "yfinance"
+        provider_source = "yfinance_crypto" if is_crypto_sym else "yfinance"
         ticker_obj = yf.Ticker(fetch_sym)
-        hist = ticker_obj.history(period=clean_period, interval=clean_interval)
-
-        is_crypto_sym = ("-" in fetch_sym or fetch_sym.endswith("-USD") or upper_sym in ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX", "DOT", "LTC"])
+        try:
+            hist = ticker_obj.history(period=clean_period, interval=clean_interval)
+        except Exception as fetch_err:
+            logger.warning(f"Live market data fetch failed for {fetch_sym}: {fetch_err}")
+            hist = None
 
         if clean_interval == "1d":
             pruned_hist, prune_meta = validate_and_prune_daily_history(hist, is_crypto=is_crypto_sym)
@@ -911,14 +913,17 @@ def get_asset_analytics(
             else:
                 hist = None
 
-            # If invalid and not crypto, try crypto format if applicable
-            if hist is None and "-" not in fetch_sym and upper_sym not in KNOWN_ETFS:
+            # If invalid and confirmed crypto, try crypto format if applicable
+            if hist is None and is_crypto_sym and "-" not in fetch_sym:
                 ticker_obj = yf.Ticker(f"{upper_sym}-USD")
-                crypto_hist = ticker_obj.history(period=clean_period, interval=clean_interval)
-                c_pruned, c_meta = validate_and_prune_daily_history(crypto_hist, is_crypto=True)
-                if c_meta["valid"]:
-                    hist = c_pruned
-                    provider_source = "yfinance_crypto"
+                try:
+                    crypto_hist = ticker_obj.history(period=clean_period, interval=clean_interval)
+                    c_pruned, c_meta = validate_and_prune_daily_history(crypto_hist, is_crypto=True)
+                    if c_meta["valid"]:
+                        hist = c_pruned
+                        provider_source = "yfinance_crypto"
+                except Exception as fb_err:
+                    logger.debug(f"Crypto fallback fetch failed for {upper_sym}: {fb_err}")
 
             # If still invalid, try SQLite cache
             if hist is None:
@@ -964,12 +969,15 @@ def get_asset_analytics(
                 high_max = float(df["High"].max())
                 return (high_max - low_min) >= 0.01
 
-            if not is_valid_intraday(hist) and "-" not in fetch_sym and upper_sym not in KNOWN_ETFS:
+            if not is_valid_intraday(hist) and is_crypto_sym and "-" not in fetch_sym:
                 ticker_obj = yf.Ticker(f"{upper_sym}-USD")
-                crypto_hist = ticker_obj.history(period=clean_period, interval=clean_interval)
-                if is_valid_intraday(crypto_hist):
-                    hist = crypto_hist
-                    provider_source = "yfinance_crypto"
+                try:
+                    crypto_hist = ticker_obj.history(period=clean_period, interval=clean_interval)
+                    if is_valid_intraday(crypto_hist):
+                        hist = crypto_hist
+                        provider_source = "yfinance_crypto"
+                except Exception as fb_err:
+                    logger.debug(f"Crypto intraday fallback fetch failed for {upper_sym}: {fb_err}")
 
             if not is_valid_intraday(hist):
                 raise HTTPException(status_code=404, detail=f"No valid price action data found for symbol {symbol}")
