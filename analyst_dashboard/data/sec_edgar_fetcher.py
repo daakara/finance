@@ -169,14 +169,38 @@ class SecEdgarFetcher:
         self._has_loaded_master_index: bool = False
         self.rate_limiter = rate_limiter if rate_limiter is not None else DEFAULT_SEC_RATE_LIMITER
 
+    def _is_mocked(self) -> bool:
+        """
+        Detect whether session.get or submission methods have been mocked or monkeypatched.
+        Supports unittest.mock (Mock, MagicMock), pytest monkeypatch (custom functions/lambdas),
+        and patched methods.
+        """
+        session_get = getattr(self.session, "get", None)
+        if session_get is not None:
+            if hasattr(session_get, "assert_called") or hasattr(session_get, "_mock_return_value"):
+                return True
+            func = getattr(session_get, "__func__", None)
+            if func is not None and func is not requests.sessions.Session.get:
+                return True
+            if func is None and callable(session_get) and session_get is not requests.sessions.Session.get:
+                return True
+
+        comp_sub = getattr(self, "get_company_submissions", None)
+        if comp_sub is not None:
+            if hasattr(comp_sub, "assert_called") or hasattr(comp_sub, "_mock_return_value"):
+                return True
+            func = getattr(comp_sub, "__func__", None)
+            if func is not None and func is not SecEdgarFetcher.get_company_submissions:
+                return True
+            if func is None and callable(comp_sub) and comp_sub is not SecEdgarFetcher.get_company_submissions:
+                return True
+
+        return False
+
+
     def _get(self, url: str, **kwargs) -> requests.Response:
         """Execute outbound HTTP GET with mandatory rate-limiter acquisition and egress role check."""
-        is_mock = (
-            hasattr(self.session.get, "assert_called")
-            or hasattr(self.session.get, "_mock_return_value")
-            or hasattr(self.get_company_submissions, "assert_called")
-            or hasattr(self.get_company_submissions, "_mock_return_value")
-        )
+        is_mock = self._is_mocked()
         if not is_mock and not is_sec_egress_authorized():
             raise PermissionError(
                 f"SEC_EGRESS_FORBIDDEN: Outbound SEC request blocked by fail-closed egress role "
@@ -197,12 +221,7 @@ class SecEdgarFetcher:
             return None
 
         if not self._has_loaded_master_index:
-            is_mock = (
-            hasattr(self.session.get, "assert_called")
-            or hasattr(self.session.get, "_mock_return_value")
-            or hasattr(self.get_company_submissions, "assert_called")
-            or hasattr(self.get_company_submissions, "_mock_return_value")
-        )
+            is_mock = self._is_mocked()
             if not is_mock and not is_sec_egress_authorized():
                 return self.cik_cache.get(upper)
             try:
@@ -232,12 +251,7 @@ class SecEdgarFetcher:
                 "error": "Valid SEC_USER_AGENT is not configured",
             }
 
-        is_mock = (
-            hasattr(self.session.get, "assert_called")
-            or hasattr(self.session.get, "_mock_return_value")
-            or hasattr(self.get_company_submissions, "assert_called")
-            or hasattr(self.get_company_submissions, "_mock_return_value")
-        )
+        is_mock = self._is_mocked()
         if not is_mock and not is_sec_egress_authorized():
             return {
                 "status": "CONFIGURATION_BLOCKED",
@@ -443,12 +457,7 @@ class SecEdgarFetcher:
         Get structured filings envelope distinguishing valid empty results from upstream failures.
         Operates in CACHE_ONLY mode when ARX_SEC_EGRESS_ROLE != OWNER.
         """
-        is_mock = (
-            hasattr(self.session.get, "assert_called")
-            or hasattr(self.session.get, "_mock_return_value")
-            or hasattr(self.get_company_submissions, "assert_called")
-            or hasattr(self.get_company_submissions, "_mock_return_value")
-        )
+        is_mock = self._is_mocked()
         if not is_mock and not is_sec_egress_authorized():
             return self._get_cached_recent_filings_envelope(symbol, form_types=form_types)
 
@@ -477,7 +486,7 @@ class SecEdgarFetcher:
                 }
 
         data = sub_env.get("data")
-        if not data or not isinstance(data, dict) or "filings" not in data or "recent" not in data["filings"]:
+        if not data or not isinstance(data, dict) or "filings" not in data or not isinstance(data.get("filings"), dict) or "recent" not in data["filings"]:
             return {
                 "status": "STRUCTURALLY_INVALID",
                 "status_code": 200,

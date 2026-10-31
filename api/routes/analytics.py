@@ -32,6 +32,7 @@ from analyst_dashboard.governance.passive_capture import PassiveCaptureHook, EXE
 from analyst_dashboard.data.alpaca_fetcher import AlpacaMarketFetcher
 from analyst_dashboard.data.market_price_state import resolve_dual_price_state, MarketPriceState
 from analyst_dashboard.security_master import get_security_master_service
+from api.routes.screener import CONFIRMED_CORPORATE_ACTIONS
 
 router = APIRouter()
 risk_analyzer = AdvancedRiskAnalyzer()
@@ -194,18 +195,43 @@ def _build_smart_money_confluence_inputs(sym: str) -> Dict[str, Any]:
     clean_sym = sym.upper().replace("-USD", "").strip()
     options_flow = smart_money_engine.get_options_flow(clean_sym) or []
     has_options_flow = any("CALL" in (o.get("type", "") or "").upper() for o in options_flow)
-    return {
-        "has_insider_buy": False,
-        "insider_value_usd": 0.0,
-        "insider_name": "",
-        "has_congress_buy": False,
-        "has_options_flow": has_options_flow,
-    }
+    if has_options_flow:
+        return {
+            "has_insider_buy": False,
+            "insider_value_usd": 0.0,
+            "insider_name": "",
+            "has_congress_buy": False,
+            "has_options_flow": True,
+        }
+    return None
 
 
 def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, Any]], is_stale: bool) -> Optional[Dict[str, Any]]:
     """Build tactical trade setup from db_candles and staleness status."""
     obs_date = str(db_candles[-1].get("time") or db_candles[-1].get("date") or "")[:10] if db_candles else ""
+    corp_action = CONFIRMED_CORPORATE_ACTIONS.get(sym.upper().strip())
+    if corp_action:
+        return {
+            "symbol": sym,
+            "ticker": sym,
+            "userRole": clean_role,
+            "setupName": "Delisted Security / Corporate Action Completed",
+            "entryPivot": None,
+            "stopLoss": None,
+            "target1": None,
+            "target2": None,
+            "confluenceScore": 0.0,
+            "executionStatus": "DELISTED_SECURITY",
+            "decisionState": "INELIGIBLE_INACTIVE",
+            "isActionable": False,
+            "isSuppressed": True,
+            "entryThesis": corp_action.get("notes", "Security has been delisted or acquired."),
+            "invalidationCondition": "Corporate action completed.",
+            "stagePhase": "Delisted / Inactive",
+            "reasonSuppressed": corp_action.get("notes", "Security has been delisted."),
+            "observationDate": obs_date,
+            "corporateAction": corp_action,
+        }
     if is_stale:
         return {
             "symbol": sym,
@@ -258,6 +284,11 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
     stop_loss = plan.get("stop_loss")
     target1 = plan.get("take_profit_1")
     target2 = plan.get("take_profit_2")
+
+    if stop_loss is not None and cur_price < stop_loss:
+        exec_status = "STOPPED_OUT"
+    elif clean_role == "DAY_TRADER" and target1 is not None and cur_price >= target1 * 0.96:
+        exec_status = "APPROACHING_TARGET"
 
     smart_data = _build_smart_money_confluence_inputs(sym)
 
@@ -803,6 +834,19 @@ def validate_and_prune_daily_history(
     meta["quote_status"] = "COMPLETED_SESSION"
 
     return work_df, meta
+
+
+def _sanitize_floats(obj: Any) -> Any:
+    """Recursively replaces NaN and Inf float values with None to guarantee RFC 8259 JSON compliance."""
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
+    if isinstance(obj, dict):
+        return {k: _sanitize_floats(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize_floats(item) for item in obj]
+    if isinstance(obj, tuple):
+        return tuple(_sanitize_floats(item) for item in obj)
+    return obj
 
 
 @router.get("/{symbol}")
@@ -1387,7 +1431,7 @@ def get_asset_analytics(
             else current_price
         )
 
-        return {
+        response_payload = {
             "symbol": upper_sym,
             "instrument": instrument_envelope,
             "canonicalInstrument": instrument_envelope,
@@ -1447,6 +1491,7 @@ def get_asset_analytics(
             },
             "decisionTrace": decision_trace,
         }
+        return _sanitize_floats(response_payload)
 
     except HTTPException:
         raise
