@@ -669,7 +669,7 @@ function RadarContent() {
                   </div>
                   <div className="text-[var(--text-2)] text-[11px] mt-0.5 font-sans">
                     {isTickerQuery
-                      ? `Asset "${cleanQ}" is not in today's top 24 pre-screened confluence batch. You can evaluate it live across the exchange tape.`
+                      ? `Asset "${cleanQ}" is not in today's ${allAssets.length > 0 ? `${allAssets.length}-candidate` : "active"} pre-screened confluence batch. You can evaluate it live across the exchange tape.`
                       : `No radar candidates matched your keyword or catalyst filter.`}
                   </div>
                 </div>
@@ -957,7 +957,7 @@ function RadarContent() {
                   tabIndex={activeFilter === 'VALUE_GARP' ? 0 : -1}
                   onKeyDown={(e) => handleFilterKeyDown(e, 'VALUE_GARP')}
                   onClick={() => handleCategoryFilterSelect('VALUE_GARP', 'tab-radar-filter-value_garp')}
-                  title="16 Value / GARP matches identified from 35 curated reference catalog candidates evaluated. Whole-market automated screening is pending deployment."
+                  title={`${categoryMeta.VALUE_GARP.count ?? 0} Value / GARP matches identified from ${allAssets.length} candidates evaluated. Whole-market automated screening is pending deployment.`}
                   className={`focus-ring px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeFilter === 'VALUE_GARP'
                       ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
@@ -1408,7 +1408,7 @@ function RadarContent() {
                           <p className="text-xs text-[var(--text-2)] font-sans leading-relaxed">
                             {searchQuery
                               ? (isTickerQuery
-                                  ? `Asset "${cleanQ}" is not in today's top 24 pre-scanned confluence batch. You can scan it live across the exchange tape or review its tactical setup.`
+                                  ? `Asset "${cleanQ}" is not in today's ${allAssets.length > 0 ? `${allAssets.length}-candidate` : "active"} pre-scanned confluence batch. You can scan it live across the exchange tape or review its tactical setup.`
                                   : `No confluence candidates match this search. Try searching by symbol (e.g. NVDA, CPRX, ASML, TSLA) or reset the filter.`)
                               : ownershipFilter === 'MY_HOLDINGS'
                               ? (!isPortfolioVerified

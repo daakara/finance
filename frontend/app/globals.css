@@ -154,6 +154,22 @@ body {
   color: #0f172a !important;
 }
 
+[data-theme="paper"] thead th {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="paper"] thead th.text-cyan-300,
+[data-theme="paper"] thead th .text-cyan-300 {
+  color: #0369a1 !important;
+}
+
+[data-theme="paper"] thead th.text-purple-300,
+[data-theme="paper"] thead th .text-purple-300 {
+  color: #6b21a8 !important;
+}
+
 /* 3. Sub-elements, Inset Wells & Controls */
 [data-theme="paper"] [class*="bg-[#090d14]"],
 [data-theme="paper"] [class*="bg-[#080c14]"],

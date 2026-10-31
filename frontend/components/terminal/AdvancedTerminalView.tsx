@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { QuantitativeInsight } from "../../types/insight";
 import FinancialDisclaimer from "../FinancialDisclaimer";
+import { evaluatePreFlightChecks } from "../../lib/preflightEvaluator";
 import SharedAssetDeck from "./SharedAssetDeck";
 import SharedExecutionLadder from "./SharedExecutionLadder";
 import PreFlightReadinessBar, { PreFlightReadinessBarProps } from "../PreFlightReadinessBar";
@@ -17,6 +18,9 @@ interface AdvancedTerminalViewProps {
   preflightSlot?: React.ReactNode;
   evidenceSlot?: React.ReactNode;
   isDemo?: boolean;
+  isCleared?: boolean;
+  activeBlocker?: string | null;
+  passedCount?: number;
 }
 
 export default function AdvancedTerminalView({
@@ -28,8 +32,28 @@ export default function AdvancedTerminalView({
   preflightSlot,
   evidenceSlot,
   isDemo = false,
+  isCleared,
+  activeBlocker,
+  passedCount,
 }: AdvancedTerminalViewProps) {
   const [blockerTarget, setBlockerTarget] = React.useState<HTMLDivElement | null>(null);
+
+  const resolvedPreflight = React.useMemo(() => {
+    if (isCleared !== undefined) {
+      return { isCleared, activeBlocker: activeBlocker || null, passedCount: passedCount || 0 };
+    }
+    if (React.isValidElement(preflightSlot) && (preflightSlot.props as any)) {
+      const pProps = preflightSlot.props as any;
+      if (typeof pProps.isCleared === "boolean") {
+        return { isCleared: pProps.isCleared, activeBlocker: pProps.activeBlocker || null, passedCount: pProps.passedCount || 0 };
+      }
+      try {
+        const ev = evaluatePreFlightChecks(pProps);
+        return { isCleared: ev.isCleared, activeBlocker: ev.activeBlocker, passedCount: ev.passedCount };
+      } catch {}
+    }
+    return { isCleared: undefined, activeBlocker: null, passedCount: undefined };
+  }, [isCleared, activeBlocker, passedCount, preflightSlot]);
 
   const isStaleTape = Boolean(
     insight.terminalState?.decisionState === "STALE_DATA" ||
@@ -126,6 +150,9 @@ export default function AdvancedTerminalView({
               isInBuyZone={isInBuyZone}
               pivotPrice={pivotPrice}
               onOpenSizer={onOpenSizer}
+              isCleared={resolvedPreflight.isCleared}
+              activeBlocker={resolvedPreflight.activeBlocker}
+              passedCount={resolvedPreflight.passedCount}
             />
           </article>
 

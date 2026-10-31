@@ -29,6 +29,7 @@ import PageIntro from "../components/PageIntro";
 import AdaptiveTerminal from "../components/AdaptiveTerminal";
 import PreFlightReadinessBar from "../components/PreFlightReadinessBar";
 import PreFlightChecklistModal from "../components/PreFlightChecklistModal";
+import { evaluatePreFlightChecks } from "../lib/preflightEvaluator";
 import EtfCostOfOwnershipCard from "../components/EtfCostOfOwnershipCard";
 import EtfRiskProfileCard from "../components/EtfRiskProfileCard";
 import { fetchAssetAnalytics, AnalyticsResponse, SpotPriceRegistry } from "../lib/api";
@@ -347,6 +348,14 @@ function TerminalContent() {
     };
   }, [selectedSymbol, data, macroData, userRole]);
 
+  const preflightEvaluation = useMemo(() => {
+    try {
+      return evaluatePreFlightChecks(canonicalPreflightInputs);
+    } catch {
+      return { isCleared: false, activeBlocker: "EVALUATION_ERROR", passedCount: 0 };
+    }
+  }, [canonicalPreflightInputs]);
+
   return (
     <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] flex flex-col font-sans selection:bg-cyan-500 selection:text-black transition-colors duration-200">
       {/* Skip to Main Content Link for Keyboard Accessibility */}
@@ -444,6 +453,9 @@ function TerminalContent() {
               liveFreshness={data?.liveFreshness}
               analysisReferencePrice={data?.analysisReferencePrice}
               isDemo={!hasExplicitSymbol}
+              preflightCleared={preflightEvaluation.isCleared}
+              activeBlocker={preflightEvaluation.activeBlocker}
+              preflightChecksPassed={preflightEvaluation.passedCount}
               chartSlot={
                 <div id="market-workspace-chart" className="w-full min-h-[380px] sm:min-h-[420px]">
                   {data && (
@@ -570,6 +582,8 @@ function TerminalContent() {
                     decisionStateLabel={data?.decisionTrace?.stateLabel ?? (data?.canonicalDecision as any)?.decision_state_label}
                     catalystForecast={data?.catalystForecast}
                     corporateEvent={data?.corporateEvent}
+                    preflightCleared={preflightEvaluation.isCleared}
+                    activeBlocker={preflightEvaluation.activeBlocker}
                   />
                 ) : (
                   <div className="bg-[#111722] border border-[#243044] rounded-xl p-5 shadow-xl space-y-2 font-mono text-slate-300">

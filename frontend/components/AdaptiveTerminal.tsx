@@ -39,6 +39,9 @@ interface AdaptiveTerminalProps {
   preflightSlot?: React.ReactNode;
   evidenceSlot?: React.ReactNode;
   isDemo?: boolean;
+  preflightCleared?: boolean;
+  activeBlocker?: string | null;
+  preflightChecksPassed?: number;
 }
 
 export default function AdaptiveTerminal({
@@ -65,6 +68,9 @@ export default function AdaptiveTerminal({
   preflightSlot,
   evidenceSlot,
   isDemo = false,
+  preflightCleared,
+  activeBlocker,
+  preflightChecksPassed,
 }: AdaptiveTerminalProps) {
   const searchParams = useSearchParams();
   const fromGoal = searchParams.get("fromGoal");
@@ -211,6 +217,9 @@ export default function AdaptiveTerminal({
           preflightSlot={preflightSlot}
           evidenceSlot={evidenceSlot}
           isDemo={isDemo}
+          isCleared={preflightCleared}
+          activeBlocker={activeBlocker}
+          passedCount={preflightChecksPassed}
         />
       )}
 
@@ -224,6 +233,9 @@ export default function AdaptiveTerminal({
           preflightSlot={preflightSlot}
           evidenceSlot={evidenceSlot}
           isDemo={isDemo}
+          isCleared={preflightCleared}
+          activeBlocker={activeBlocker}
+          passedCount={preflightChecksPassed}
         />
       )}
 
@@ -237,6 +249,9 @@ export default function AdaptiveTerminal({
           preflightSlot={preflightSlot}
           evidenceSlot={evidenceSlot}
           isDemo={isDemo}
+          isCleared={preflightCleared}
+          activeBlocker={activeBlocker}
+          passedCount={preflightChecksPassed}
         />
       )}
 

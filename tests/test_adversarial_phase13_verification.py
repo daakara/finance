@@ -128,7 +128,14 @@ class TestAdversarialPhase13Verification(unittest.TestCase):
         self.assertNotIn('roic: "24.0%"', content)
         self.assertNotIn('grossMargin: "55.0%"', content)
         self.assertIn('hasVerifiedFundamentals', content)
-        self.assertIn('"N/A"', content)
+        # Missing accounting inputs must stay unavailable, rather than turning
+        # a model quality score into purported ROIC or a synthetic edge.
+        self.assertIn('const roicRaw = typeof cat?.roic === "number"', content)
+        self.assertIn('roic: roicRaw != null ?', content)
+        self.assertIn('grossMarginRaw != null', content)
+        self.assertIn('"UNAVAILABLE"', content)
+        self.assertNotIn('scores.qualityScore * 0.4', content)
+        self.assertNotIn('qualityScore * 0.4', content)
 
 
 if __name__ == "__main__":

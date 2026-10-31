@@ -6,6 +6,7 @@ and failure isolation.
 """
 
 import logging
+import math
 from datetime import datetime, time, timezone
 from zoneinfo import ZoneInfo
 from typing import Optional, Dict, Any
@@ -158,12 +159,51 @@ def get_nyse_session_status(dt: Optional[datetime] = None) -> Dict[str, Any]:
         }
 
 
+def _sanitize_floats(obj: Any) -> Any:
+    """Recursively replaces NaN and Inf float values with None to guarantee RFC 8259 JSON compliance."""
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
+    if isinstance(obj, dict):
+        return {k: _sanitize_floats(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize_floats(item) for item in obj]
+    if isinstance(obj, tuple):
+        return tuple(_sanitize_floats(item) for item in obj)
+    return obj
+
+
 def _fetch_isolated_bar(symbol: str, is_yield: bool = False) -> Dict[str, Any]:
     """Fetch daily bar for a single ticker with failure isolation and zero fabricated fallbacks."""
     try:
         ticker = yf.Ticker(symbol)
         hist = ticker.history(period="5d", interval="1d")
-        if hist.empty or len(hist) < 2:
+        if hist.empty or "Close" not in hist.columns:
+            return {
+                "symbol": symbol,
+                "available": False,
+                "status": "UNAVAILABLE",
+                "price": None,
+                "change": None,
+                "changePct": None,
+                "provider": "yfinance",
+                "observationTime": None,
+                "error": f"Insufficient historical bars returned for {symbol}",
+            }
+
+        # Drop rows where Close is missing or non-finite (e.g. unfinalized after-hours/weekend placeholder bars)
+        hist = hist[hist["Close"].notna()]
+        valid_indices = []
+        for idx, row in hist.iterrows():
+            val = row["Close"]
+            try:
+                f_val = float(val)
+                if math.isfinite(f_val) and f_val > 0:
+                    valid_indices.append(idx)
+            except (ValueError, TypeError):
+                continue
+        hist = hist.loc[valid_indices]
+
+        if len(hist) < 2:
             return {
                 "symbol": symbol,
                 "available": False,
@@ -178,6 +218,19 @@ def _fetch_isolated_bar(symbol: str, is_yield: bool = False) -> Dict[str, Any]:
 
         p = float(hist["Close"].iloc[-1])
         prev = float(hist["Close"].iloc[-2])
+        if not math.isfinite(p) or not math.isfinite(prev) or prev == 0:
+            return {
+                "symbol": symbol,
+                "available": False,
+                "status": "UNAVAILABLE",
+                "price": None,
+                "change": None,
+                "changePct": None,
+                "provider": "yfinance",
+                "observationTime": None,
+                "error": f"Non-finite close prices encountered for {symbol}",
+            }
+
         chg = p - prev
         chg_pct = (chg / prev) * 100 if prev != 0 else 0.0
 
@@ -330,6 +383,7 @@ def build_macro_ribbon_payload(force_fresh: bool = False) -> Dict[str, Any]:
         "updatedAt": generated_at,
         "evidence": macro_evidence.to_dict(),
     }
+    payload = _sanitize_floats(payload)
     _MACRO_RIBBON_CACHE = (now_ts, payload)
     return payload
 
