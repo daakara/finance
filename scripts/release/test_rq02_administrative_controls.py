@@ -26,6 +26,7 @@ def run_rq02_admin(args_list, env=None):
     ] + args_list
     current_env = os.environ.copy()
     current_env.setdefault("ARX_PR_BASE_SHA", "69422421a9c6af919c28ff940b121930799f58f3")
+    current_env.setdefault("ARX_PR_HEAD_SHA", "a969cc46789d419711c18a3787aadcb72acd53aa")
     current_env.setdefault("ARX_TARGET_BRANCH", "main")
     current_env.setdefault("ARX_RQ02_SKIP_ADVERSARIAL_RECURSION", "1")
     if env:
