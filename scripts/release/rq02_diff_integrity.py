@@ -403,12 +403,13 @@ def main():
                     framework_mismatches.append((qpath, expected_qhash, "FILE_MISSING"))
                     continue
                 act_qhash = compute_file_sha256(disk_path)
-                known_blobs = [
-                    compute_git_blob_sha256(r, qpath)
-                    for r in (head_sha, manifest_candidate, "69422421a9c6af919c28ff940b121930799f58f3", "3f3b6c4afda9624eb11cf08d34ddfaebc642b434")
-                    if r
-                ]
-                has_match = (act_qhash.lower() == expected_qhash.lower()) or any(b and b.lower() == expected_qhash.lower() for b in known_blobs)
+                candidate_hash = compute_git_blob_sha256(head_sha, qpath)
+                has_match = (
+                    isinstance(expected_qhash, str)
+                    and isinstance(candidate_hash, str)
+                    and candidate_hash.lower() == expected_qhash.lower()
+                    and act_qhash.lower() == expected_qhash.lower()
+                )
                 if not has_match:
                     framework_mismatches.append((qpath, expected_qhash, act_qhash))
 
@@ -625,7 +626,7 @@ def main():
     elif mode == "pr":
         source_sha = identity["source_sha"] if ok else get_git_commit("HEAD")
         head_sha = get_git_commit(args.head) if args.head else source_sha
-        pr_number = identity.get("pr_number") or 147
+        pr_number = identity.get("pr_number") if ok else None
 
         if args.base:
             base_sha = get_git_commit(args.base) or args.base
@@ -932,12 +933,13 @@ def main():
                     framework_mismatches.append((qpath, expected_qhash, "FILE_MISSING"))
                     continue
                 act_qhash = compute_file_sha256(disk_path)
-                known_blobs = [
-                    compute_git_blob_sha256(r, qpath)
-                    for r in (head_sha, manifest_candidate, "69422421a9c6af919c28ff940b121930799f58f3", "3f3b6c4afda9624eb11cf08d34ddfaebc642b434")
-                    if r
-                ]
-                has_match = (act_qhash.lower() == expected_qhash.lower()) or any(b and b.lower() == expected_qhash.lower() for b in known_blobs)
+                candidate_hash = compute_git_blob_sha256(head_sha, qpath)
+                has_match = (
+                    isinstance(expected_qhash, str)
+                    and isinstance(candidate_hash, str)
+                    and candidate_hash.lower() == expected_qhash.lower()
+                    and act_qhash.lower() == expected_qhash.lower()
+                )
                 if not has_match:
                     framework_mismatches.append((qpath, expected_qhash, act_qhash))
 
