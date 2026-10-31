@@ -1,6 +1,8 @@
 """
 ARX Production Observability Foundation Package.
 Subwave 1A: Correlation, Release Identity, and Structured JSON Logging.
+OBS-01: Observability hardening — release attribution, privacy, error taxonomy,
+        monitoring failure isolation.
 """
 
 from .context import (
@@ -10,7 +12,7 @@ from .context import (
     set_request_id,
     set_correlation_id,
 )
-from .release import get_backend_release_sha, get_environment
+from .release import get_backend_release_sha, get_release_for_sentry, get_environment
 from .middleware import CorrelationMiddleware
 from .logging import configure_structured_logging, get_structured_logger
 from .monitoring import (
@@ -22,6 +24,7 @@ from .monitoring import (
     set_monitoring_adapter,
     reset_monitoring_adapter,
 )
+from .error_taxonomy import ErrorCategory, build_error_context
 
 __all__ = [
     "validate_or_generate_uuidv4",
@@ -30,6 +33,7 @@ __all__ = [
     "set_request_id",
     "set_correlation_id",
     "get_backend_release_sha",
+    "get_release_for_sentry",
     "get_environment",
     "CorrelationMiddleware",
     "configure_structured_logging",
@@ -41,4 +45,6 @@ __all__ = [
     "get_monitoring_adapter",
     "set_monitoring_adapter",
     "reset_monitoring_adapter",
+    "ErrorCategory",
+    "build_error_context",
 ]
