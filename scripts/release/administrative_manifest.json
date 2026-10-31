@@ -1,0 +1,47 @@
+{
+  "pr_number": 145,
+  "target_branch": "main",
+  "base_anchor_commit": "69422421a9c6af919c28ff940b121930799f58f3",
+  "candidate_commit": "c0bdd8ba522e2e9263e6cea678ee6aa6ef1b304e",
+  "total_files": 5,
+  "qualification_policy_version": "2.2.0-D074A4",
+  "directive": "ARX-043E.1",
+  "pr_type": "ADMINISTRATIVE_GOVERNANCE",
+  "files": {
+    "docs/planning/arx_canonical_backlog.json": {
+      "operation": "M",
+      "sha256": "49dc01ebfe80c71b05309bb14dcfc2a205e8b863689c2cedfa691774952e8509",
+      "size_bytes": 197972,
+      "originating_pr_number": 145,
+      "governing_requirement": "Sprint 4 post-production administrative reconciliation"
+    },
+    "docs/planning/ARX_PR_AND_INTEGRATION_STATUS_REGISTER.md": {
+      "operation": "M",
+      "sha256": "76880ab1742e0042bb8a94c8326e177c7724030078711581717162b7739cae26",
+      "size_bytes": 11117,
+      "originating_pr_number": 145,
+      "governing_requirement": "Sprint 4 post-production administrative reconciliation"
+    },
+    "docs/planning/ARX_SPRINT4_POST_PRODUCTION_CLOSURE_RECONCILIATION.md": {
+      "operation": "A",
+      "sha256": "e38cf6fdbf87a4ad89dd25d84b05e78f0eb2462d9dea7a19ddac66437ccd51b8",
+      "size_bytes": 8901,
+      "originating_pr_number": 145,
+      "governing_requirement": "Sprint 4 post-production administrative reconciliation"
+    },
+    "scripts/release/rq02_diff_integrity.py": {
+      "operation": "M",
+      "sha256": "095019dd1f51028d710de849eb1103cbba57d8e2ff85c2feede70d1f75cf8d66",
+      "size_bytes": 43446,
+      "originating_pr_number": 145,
+      "governing_requirement": "Sprint 4 post-production qualification repair (Directive 043E.1)"
+    },
+    "scripts/release/test_rq02_administrative_controls.py": {
+      "operation": "A",
+      "sha256": "b21abd22ac879f97de3a8291f9507febc692b4c6cddcfa40c0a3c038552b2bad",
+      "size_bytes": 18755,
+      "originating_pr_number": 145,
+      "governing_requirement": "Sprint 4 post-production qualification repair (Directive 043E.1)"
+    }
+  }
+}
