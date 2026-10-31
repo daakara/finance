@@ -87,7 +87,8 @@ def main():
         # Attacker attributes file to an unauthorized/unapproved PR number (e.g. #999)
         # -------------------------------------------------------------------------
         m3 = json.loads(json.dumps(canonical_manifest))
-        m3["files"]["frontend/app/page.tsx"]["originating_pr_number"] = 999
+        target_file = next(iter(canonical_manifest["files"]))
+        m3["files"][target_file]["originating_pr_number"] = 999
         m3_path = os.path.join(temp_dir, "m3.json")
         with open(m3_path, "w", encoding="utf-8") as f:
             json.dump(m3, f, indent=2)

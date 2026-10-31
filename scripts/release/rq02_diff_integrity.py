@@ -22,7 +22,7 @@ from rq_receipt_utils import (
     is_git_ancestor, SHA40_REGEX
 )
 
-APPROVED_PRS = {123, 125, 126, 127, 129, 130, 131, 132, 133, 134, 135, 136, 139, 140}
+APPROVED_PRS = {123, 125, 126, 127, 129, 130, 131, 132, 133, 134, 135, 136, 139, 140, 147}
 
 def check_duplicate_keys_hook(pairs):
     """Custom JSON hook that rejects duplicate keys in manifest dictionaries."""

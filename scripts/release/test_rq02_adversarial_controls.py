@@ -257,7 +257,8 @@ def main():
         # -------------------------------------------------------------------------
         m10 = json.loads(json.dumps(canonical_manifest))
         # Attribute a file to an unauthorized/unrelated PR #999
-        m10["files"]["frontend/app/page.tsx"]["originating_pr_number"] = 999
+        target_file = next(iter(canonical_manifest["files"]))
+        m10["files"][target_file]["originating_pr_number"] = 999
         m10_path = os.path.join(temp_dir, "manifest_nc10.json")
         with open(m10_path, "w", encoding="utf-8") as f:
             json.dump(m10, f, indent=2)
