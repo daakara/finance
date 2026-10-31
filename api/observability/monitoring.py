@@ -9,7 +9,7 @@ Enforces:
 """
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Set
 
 from .sentry_adapter import BackendMonitoringAdapter, SentryBackendAdapter
 
@@ -17,6 +17,11 @@ logger = logging.getLogger("arx.observability.monitoring")
 
 # Active backend monitoring adapter singleton
 _MONITORING_ADAPTER: Optional[BackendMonitoringAdapter] = None
+
+# id()-based set for same-instance exception deduplication.
+# Tracks object identity (id) of captured exceptions to prevent double-reporting
+# from multi-layer except/re-raise chains. Reset on reset_monitoring_adapter().
+_CAPTURED_EXCEPTION_IDS: Set[int] = set()
 
 
 def get_monitoring_adapter() -> Optional[BackendMonitoringAdapter]:
@@ -32,8 +37,9 @@ def set_monitoring_adapter(adapter: Optional[BackendMonitoringAdapter]) -> None:
 
 def reset_monitoring_adapter() -> None:
     """Resets the active monitoring adapter to None."""
-    global _MONITORING_ADAPTER
+    global _MONITORING_ADAPTER, _CAPTURED_EXCEPTION_IDS
     _MONITORING_ADAPTER = None
+    _CAPTURED_EXCEPTION_IDS = set()
 
 
 def init_backend_monitoring(
@@ -63,11 +69,25 @@ def capture_exception(
 ) -> Optional[str]:
     """
     Captures an exception across the active monitoring adapter.
+
+    OBS-01B: Deduplicates same exception object — if the identical exception
+    instance has already been captured in this process, returns None silently.
+    This prevents double-reporting from multi-layer except/re-raise chains.
+
     Fail-open: failures in telemetry reporting never raise exceptions into the caller.
     """
+    global _CAPTURED_EXCEPTION_IDS
     adapter = get_monitoring_adapter()
     if not adapter or not adapter.is_enabled():
         return None
+
+    # Dedup: same exception object identity within the process lifetime.
+    # Uses id() instead of WeakSet because built-in exceptions (ValueError, etc.)
+    # do not support weak references in CPython.
+    exc_id = id(error)
+    if exc_id in _CAPTURED_EXCEPTION_IDS:
+        return None
+    _CAPTURED_EXCEPTION_IDS.add(exc_id)
 
     try:
         return adapter.capture_exception(error, context)
