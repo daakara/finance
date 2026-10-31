@@ -58,32 +58,9 @@ import hmac
 
 
 
-def _sanitize_floats(obj: Any) -> Any:
-    """Recursively replaces NaN, Inf, and non-serializable pandas/numpy types with None/native types
-    to guarantee strict RFC 8259 JSON compliance across all response payloads."""
-    if obj is None:
-        return None
-    if obj is pd.NA or obj is pd.NaT:
-        return None
-    if isinstance(obj, bool):
-        return obj
-    if isinstance(obj, (float, np.floating)):
-        val = float(obj)
-        return val if math.isfinite(val) else None
-    if isinstance(obj, (int, np.integer)):
-        return int(obj)
-    if isinstance(obj, np.ndarray):
-        return [_sanitize_floats(x) for x in obj.tolist()]
-    if isinstance(obj, dict):
-        return {k: _sanitize_floats(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_sanitize_floats(item) for item in obj]
-    if isinstance(obj, tuple):
-        return tuple(_sanitize_floats(item) for item in obj)
-    return obj
+from api.serialization import sanitize_floats, _sanitize_floats
 
 
-sanitize_floats = _sanitize_floats
 
 def is_vcp_natural_scheduler_enabled() -> bool:
     """Check if natural VCP scheduler trigger is enabled via environment variable (default: disabled)."""

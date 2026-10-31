@@ -18,12 +18,13 @@ from unittest.mock import MagicMock, patch
 from api.routes.analytics import _sanitize_floats as sanitize_analytics
 from api.routes.macro import _sanitize_floats as sanitize_macro
 from api.routes.screener import _sanitize_floats as sanitize_screener
+from api.serialization import sanitize_floats as sanitize_central
 
 
 class TestRFC8259Sanitization:
     """Test recursive sanitization of non-finite numbers and numpy/pandas data types."""
 
-    @pytest.mark.parametrize("sanitize_fn", [sanitize_analytics, sanitize_macro, sanitize_screener])
+    @pytest.mark.parametrize("sanitize_fn", [sanitize_analytics, sanitize_macro, sanitize_screener, sanitize_central])
     def test_sanitize_nested_payload(self, sanitize_fn):
         dirty_payload = {
             "symbol": "TEST",
