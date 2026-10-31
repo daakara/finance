@@ -169,7 +169,7 @@ def main():
                 check_source = identity["source_sha"] if ok else get_git_commit("HEAD")
                 check_head = get_git_commit(args.head) if args.head else check_source
                 check_base = get_git_commit(args.base) if args.base else (
-                    identity.get("base_sha") if (ok and identity.get("base_sha")) else (
+                    identity.get("base_sha") if (ok and identity.get("base_sha") and identity.get("event_name") == "pull_request") else (
                         run_git_merge_base("origin/main", check_head) or get_git_commit("origin/main") or "3f3b6c4afda9624eb11cf08d34ddfaebc642b434"
                     )
                 )
@@ -629,10 +629,17 @@ def main():
 
         if args.base:
             base_sha = get_git_commit(args.base) or args.base
-        elif ok and identity.get("base_sha"):
+        elif ok and identity.get("base_sha") and identity.get("event_name") == "pull_request":
             base_sha = identity["base_sha"]
         else:
-            base_sha = run_git_merge_base("origin/main", head_sha) or get_git_commit("origin/main") or "3f3b6c4afda9624eb11cf08d34ddfaebc642b434"
+            target_ref = f"origin/{clean_target}" if get_git_commit(f"origin/{clean_target}") else clean_target
+            target_sha = get_git_commit(target_ref) or get_git_commit(clean_target) or "3f3b6c4afda9624eb11cf08d34ddfaebc642b434"
+            base_sha = (
+                run_git_merge_base(target_sha, head_sha)
+                or run_git_merge_base("origin/main", head_sha)
+                or target_sha
+                or "3f3b6c4afda9624eb11cf08d34ddfaebc642b434"
+            )
 
         print(f"Diff range:         {base_sha[:7]}..{head_sha[:7]}")
         print(f"Candidate HEAD:     {head_sha}")
