@@ -836,6 +836,19 @@ def validate_and_prune_daily_history(
     return work_df, meta
 
 
+def _sanitize_floats(obj: Any) -> Any:
+    """Recursively replaces NaN and Inf float values with None to guarantee RFC 8259 JSON compliance."""
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
+    if isinstance(obj, dict):
+        return {k: _sanitize_floats(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize_floats(item) for item in obj]
+    if isinstance(obj, tuple):
+        return tuple(_sanitize_floats(item) for item in obj)
+    return obj
+
+
 @router.get("/{symbol}")
 def get_asset_analytics(
     symbol: str,
@@ -1418,7 +1431,7 @@ def get_asset_analytics(
             else current_price
         )
 
-        return {
+        response_payload = {
             "symbol": upper_sym,
             "instrument": instrument_envelope,
             "canonicalInstrument": instrument_envelope,
@@ -1478,6 +1491,7 @@ def get_asset_analytics(
             },
             "decisionTrace": decision_trace,
         }
+        return _sanitize_floats(response_payload)
 
     except HTTPException:
         raise
