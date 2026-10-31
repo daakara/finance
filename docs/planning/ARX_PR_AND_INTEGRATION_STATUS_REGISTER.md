@@ -37,6 +37,8 @@ As of 29 October 2026, the ARX Terminal GitHub repository (`daakara/finance`) co
 
 | PR # | State | Title | Head Branch | Head Commit SHA | Base Lineage | Hosted CI Status | Integration Purpose & Next Action |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **#142** | `DRAFT OPEN` | `docs(governance): RQ-02 independent review and manifest issuance enforcement proposal` | `gov/rq02-independent-review-enforcement-proposal-20261030` | `e3937c963768d76d1d512df17e3bdea332ed9d38` | `main` | `PASSED` | Explicitly deferred work / non-blocking governance improvement. Requires external reviewer/FIDO2 infrastructure (deferred risk accepted under interim solo-maintainer governance). |
+| **#141** | `DRAFT OPEN` | `gov(rq02): prototype base-anchored PR differential qualification and negative controls` | `gov/pr-scoped-rq02-qualification-20261030` | `3b786655dd0c6a33de4e1e5d7b0d5e8de1c53391` | `main` | `PASSED` | Superseded proposal. Exploratory differential qualification controls reconciled into mainline and Candidate 8dbf142 via PR #144. |
 | **#131** | `MERGED` | `feat(ux): Synthesis E V3 completion — RC2 review containment` | `codex/ux-v3-final-completion-20261029` | `882d42495c5eb4b20d9e0cb75edf0a38f0695b1a` | `main` | `PASSED` | Merged into main 2026-10-30T03:33:43Z. Implements Guided/Standard/Quant modes, Paper Light theme, responsive layouts, accessibility. |
 | **#130** | `MERGED` | `feat(api): client API standardization and edge gateway proxy routing` | `remediation/client-api-standardization` | `d47e858d131917c401b2bca1280daa422fcacb1a` | `main` | `PASSED` | Merged into main 2026-10-30T00:54:19Z. Introduces `getApiBaseUrl()` dynamic client resolution, `/api/backend/*` Cloudflare edge proxy, and error envelopes. |
 | **#128** | `DRAFT OPEN` | `feat(poc): market-wide top 35 opportunity discovery engine` | `poc/arx-market-wide-top35` | `3fff68108593f304275cdf18b696c8697f5b8257` | `29ead6e4df6c` | `PASSED` | Retained as open, unmerged research reference branch. Final candidate `f154032` preserved in research worktree. |
@@ -59,6 +61,10 @@ As of 29 October 2026, the ARX Terminal GitHub repository (`daakara/finance`) co
 
 ## 3. Recently Merged Mainline PRs (Sprint 4 Milestones)
 
+- **PR #144 (`69422421a9c6af919c28ff940b121930799f58f3`):** Merged 2026-10-31T09:12:12Z. Reconciles release candidate manifest and RQ-02 qualification framework for Candidate 8dbf142.
+- **PR #143 (`9f9cdb9eb7d724c8ea22573826e76cabd1d2944f`):** Merged into `release/production` 2026-10-31T09:13:48Z. Production release promotion of Candidate 8dbf142 (Cloudflare 810b1a73, Railway 6950deb1, 0 DDL migrations).
+- **PR #140 (`8dbf142ac7400e0ccc2fcf9860217f0a2f1f683d`):** Merged 2026-10-30T17:15:00Z. Radar / Smart Money remediation (cross-engine score parity, truthful disclosures).
+- **PR #139 (`379768fc009d0a790586e30b8c6a2e414c278c2e`):** Merged 2026-10-30T17:10:00Z. Approved UX redesign (execution ladder, Paper Light, responsive layouts).
 - **PR #134 (`09c2112e5e9f415b3dec5bea9cb2c85311fb22dd`):** Merged 2026-10-30T11:26:11Z. Reconciles cumulative release manifest, enforces fail-closed RQ-02 diff integrity, and integrates permanent hosted D12C attack regression suite.
 - **PR #133 (`f1ed7171e9b7031c9233f1290655ec0d7fa095af`):** Merged 2026-10-30T07:11:00Z. Finalizes Synthesis E V3 radar contracts and responsive mobile navigation drawer polish.
 - **PR #127 (`38d3028608b8eaceed70f7437f1324774b9d60fa`):** Merged 2026-10-30T03:54:52Z. Directive 058B.1 Batch 2 fail-closed error-versus-zero semantics, candidate truth contracts, and census reconciliation.
