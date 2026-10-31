@@ -54,14 +54,16 @@ def main():
         # NC-01: An unapproved added file
         # -------------------------------------------------------------------------
         m1 = json.loads(json.dumps(canonical_manifest))
-        # Remove an added file from approved manifest (e.g. ARX_UX_OWNER_REVIEW_PACKAGE.md)
-        del m1["files"]["ARX_UX_OWNER_REVIEW_PACKAGE.md"]
+        # Remove an added file from approved manifest (or first approved file)
+        added_files = [f for f, m in canonical_manifest["files"].items() if m.get("operation") == "A"]
+        target_add = added_files[0] if added_files else next(iter(canonical_manifest["files"]))
+        del m1["files"][target_add]
         m1_path = os.path.join(temp_dir, "manifest_nc01.json")
         with open(m1_path, "w", encoding="utf-8") as f:
             json.dump(m1, f, indent=2)
 
         rc, out, err = run_rq02(["--manifest", m1_path])
-        passed = (rc == 1 and "UNAPPROVED" in out and "ARX_UX_OWNER_REVIEW_PACKAGE.md" in out)
+        passed = (rc == 1 and "UNAPPROVED" in out and target_add in out)
         results.append({
             "control": "NC-01: Unapproved added file in diff",
             "expected_rc": 1,
@@ -123,14 +125,16 @@ def main():
         # NC-04: A changed approved file hash
         # -------------------------------------------------------------------------
         m4 = json.loads(json.dumps(canonical_manifest))
-        # Corrupt the hash of frontend/lib/api.ts
-        m4["files"]["frontend/lib/api.ts"]["sha256"] = "1" * 64
+        # Corrupt the hash of a modified candidate file
+        mod_files = [f for f, m in canonical_manifest["files"].items() if m.get("operation") == "M"]
+        target_mod = mod_files[0] if mod_files else next(iter(canonical_manifest["files"]))
+        m4["files"][target_mod]["sha256"] = "1" * 64
         m4_path = os.path.join(temp_dir, "manifest_nc04.json")
         with open(m4_path, "w", encoding="utf-8") as f:
             json.dump(m4, f, indent=2)
 
         rc, out, err = run_rq02(["--manifest", m4_path])
-        passed = (rc == 1 and "Hash mismatch in frontend/lib/api.ts" in out)
+        passed = (rc == 1 and f"Hash mismatch in {target_mod}" in out)
         results.append({
             "control": "NC-04: Changed approved file content hash",
             "expected_rc": 1,
@@ -179,7 +183,8 @@ def main():
         # NC-07: A staged or dirty working-tree mismatch
         # -------------------------------------------------------------------------
         # Running WITHOUT --allow-uncommitted when an approved candidate file is uncommitted
-        target_probe = os.path.join(PROJECT_ROOT, "README.md")
+        target_candidate_file = next(iter(canonical_manifest["files"]))
+        target_probe = os.path.join(PROJECT_ROOT, target_candidate_file)
         with open(target_probe, "rb") as f:
             orig_probe_bytes = f.read()
         try:
@@ -225,9 +230,12 @@ def main():
         # Raw text injection of duplicate key
         raw_json = json.dumps(canonical_manifest, indent=2)
         # Duplicate a key in the files dictionary
+        first_key = next(iter(canonical_manifest["files"]))
+        search_target = f'"{first_key}": {{'
         dup_json = raw_json.replace(
-            '"README.md": {',
-            '"README.md": { "sha256": "dup" },\n    "README.md": {'
+            search_target,
+            f'{search_target} "sha256": "dup" }},\n    {search_target}',
+            1
         )
         m9_path = os.path.join(temp_dir, "manifest_nc09.json")
         with open(m9_path, "w", encoding="utf-8") as f:

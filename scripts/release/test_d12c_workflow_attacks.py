@@ -130,11 +130,12 @@ def main():
 
         # -------------------------------------------------------------------------
         # Scenario 5: Old release approval is replayed against new source
-        # Replaying legacy PR #122 manifest against current candidate produces diff mismatch
+        # Replaying legacy manifest missing new changes against current candidate produces diff mismatch
         # -------------------------------------------------------------------------
         m5 = json.loads(json.dumps(canonical_manifest))
-        # Remove majority of newly added files to simulate old 33-file manifest
-        m5["files"] = {k: v for i, (k, v) in enumerate(canonical_manifest["files"].items()) if i < 33}
+        # Keep only half the files to simulate stale manifest missing new changes
+        cutoff = max(1, len(canonical_manifest["files"]) // 2)
+        m5["files"] = {k: v for i, (k, v) in enumerate(canonical_manifest["files"].items()) if i < cutoff}
         m5_path = os.path.join(temp_dir, "m5.json")
         with open(m5_path, "w", encoding="utf-8") as f:
             json.dump(m5, f, indent=2)
