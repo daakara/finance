@@ -26,7 +26,7 @@ from rq_receipt_utils import (
     is_git_ancestor, SHA40_REGEX
 )
 
-APPROVED_PRS = {123, 125, 126, 127, 129, 130, 131, 132, 133, 134, 135, 136, 139, 140, 145, 147}
+APPROVED_PRS = {123, 125, 126, 127, 129, 130, 131, 132, 133, 134, 135, 136, 139, 140, 145, 147, 149}
 
 FORBIDDEN_ADMIN_PREFIXES = (
     "api/",
