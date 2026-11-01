@@ -187,24 +187,26 @@ def _is_history_stale(db_candles: List[Dict[str, Any]]) -> bool:
             return True
 
 
-def _build_smart_money_confluence_inputs(sym: str) -> Dict[str, Any]:
+def _build_smart_money_confluence_inputs(
+    sym: str,
+    asset_class: str = "EQUITY",
+    security_type: str = "COMMON_STOCK",
+    include_curated: bool = False,
+) -> Dict[str, Any]:
     """
     Build authoritative smart money confluence inputs with strict epistemic honesty.
-    Curated historical SEC Form 4 and STOCK Act records are informational reference logs,
-    not real-time intraday buy triggers. Active options flow is checked for directional call sweeps.
+    Evaluates Options Flow, SEC Form 4 Insider Transactions, and Congressional STOCK Act Disclosures
+    via SmartMoneyEngine.assess_symbol.
+    If continuous live feeds are held under HOLD_SEC_001, reflects PIPELINE_HELD / UNAVAILABLE
+    and triggers safe pillar reweighting without score leakage.
     """
     clean_sym = sym.upper().replace("-USD", "").strip()
-    options_flow = smart_money_engine.get_options_flow(clean_sym) or []
-    has_options_flow = any("CALL" in (o.get("type", "") or "").upper() for o in options_flow)
-    if has_options_flow:
-        return {
-            "has_insider_buy": False,
-            "insider_value_usd": 0.0,
-            "insider_name": "",
-            "has_congress_buy": False,
-            "has_options_flow": True,
-        }
-    return None
+    return smart_money_engine.assess_symbol(
+        symbol=clean_sym,
+        asset_class=asset_class,
+        security_type=security_type,
+        include_curated=include_curated,
+    )
 
 
 def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, Any]], is_stale: bool) -> Optional[Dict[str, Any]]:
@@ -1293,32 +1295,6 @@ def get_asset_analytics(
         except Exception:
             pass
 
-        # Smart Money Feeds (Enforce Epistemic Honesty: Stale curated data does not trigger live buy signals)
-        options_flow = smart_money_engine.get_options_flow(upper_sym) or []
-        congress_trades = smart_money_engine.get_congressional_trades(upper_sym) or []
-        has_congress_buy = False
-        smart_data = _build_smart_money_confluence_inputs(upper_sym)
-
-        # Macro inputs: Strictly authentic FRED observations; never fabricated fallbacks
-        macro_inputs = normalize_macro_payload(macro_difficulty) if macro_difficulty else None
-
-        # Compute Canonical Multi-Factor Confluence (Single Source of Truth)
-        confluence_output = confluence_engine.calculate_confluence(
-            symbol=upper_sym,
-            technical_data={
-                **technicals,
-                **optimal_execution_plan,
-                "current_price": current_price,
-            },
-            smart_money_data=smart_data,
-            fundamental_data={
-                **factor_scores,
-                "piotroski_f": piotroski,
-            } if (has_fundamentals or upper_sym in KNOWN_ETFS) else {},
-            catalyst_data=catalyst_report,
-            macro_data=macro_inputs,
-        )
-
         # Authoritative canonical instrument classification envelope
         try:
             sec_master_service = get_security_master_service()
@@ -1352,6 +1328,34 @@ def get_asset_analytics(
                 "classification_authority": "ARX_SERVER_SECURITY_MASTER",
             }
 
+        # Smart Money Feeds (Enforce Epistemic Honesty: Stale curated data does not trigger live buy signals)
+        smart_data = _build_smart_money_confluence_inputs(
+            upper_sym,
+            asset_class=asset_class_val,
+            security_type=sec_type_val,
+            include_curated=False,
+        )
+
+        # Macro inputs: Strictly authentic FRED observations; never fabricated fallbacks
+        macro_inputs = normalize_macro_payload(macro_difficulty) if macro_difficulty else None
+
+        # Compute Canonical Multi-Factor Confluence (Single Source of Truth)
+        confluence_output = confluence_engine.calculate_confluence(
+            symbol=upper_sym,
+            technical_data={
+                **technicals,
+                **optimal_execution_plan,
+                "current_price": current_price,
+            },
+            smart_money_data=smart_data,
+            fundamental_data={
+                **factor_scores,
+                "piotroski_f": piotroski,
+            } if (has_fundamentals or upper_sym in KNOWN_ETFS) else {},
+            catalyst_data=catalyst_report,
+            macro_data=macro_inputs,
+        )
+
         # Canonical Decision Trace (Single source of truth for actionability & explainability)
         decision_trace = DecisionTraceEngine.build_decision_trace(
             symbol=upper_sym,
@@ -1368,11 +1372,7 @@ def get_asset_analytics(
             confluence=confluence_output,
             factor_scores=factor_scores,
             optimal_execution=optimal_execution_plan,
-            smart_money={
-                "has_congress_buy": has_congress_buy,
-                "has_insider_buy": False,
-                "optionsFlow": options_flow,
-            },
+            smart_money=smart_data,
             macro_difficulty=macro_difficulty,
             catalyst_report=catalyst_report,
             user_role=clean_role,
@@ -1519,9 +1519,18 @@ def get_asset_analytics(
             "catalystForecast": catalyst_report,
             "corporateEvent": corporate_event,
             "smartMoney": {
-                "status": "AVAILABLE" if (congress_trades or options_flow) else "PIPELINE_PENDING",
-                "congressTrades": congress_trades,
-                "optionsFlow": options_flow,
+                "overallStatus": smart_data.get("overall_status"),
+                "status": "AVAILABLE" if smart_data.get("pillar_eligibility") else "PIPELINE_PENDING",
+                "pillarEligibility": smart_data.get("pillar_eligibility"),
+                "pillarScore": smart_data.get("pillar_score"),
+                "reweighted": smart_data.get("reweight_required"),
+                "directionalBias": smart_data.get("directional_bias"),
+                "coverageSummary": smart_data.get("coverage_summary"),
+                "coverageWindowDays": smart_data.get("coverage_window_days"),
+                "subdomains": smart_data.get("subdomains"),
+                "congressTrades": smart_data.get("congress_trades", []),
+                "optionsFlow": smart_data.get("options_flow", []),
+                "secInsiderTrades": smart_data.get("sec_insider_trades", []),
             },
             "confluence": confluence_output,
             "analytics": risk_output,

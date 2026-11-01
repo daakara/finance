@@ -766,9 +766,18 @@ export interface AnalyticsResponse {
   liquidityDefense?: LiquidityDefenseData;
   confluence?: ConfluenceData;
   smartMoney?: {
-    status?: "AVAILABLE" | "VALID_EMPTY" | "PIPELINE_PENDING" | "SOURCE_UNAVAILABLE";
+    overallStatus?: string;
+    status?: "AVAILABLE" | "VALID_EMPTY" | "PIPELINE_PENDING" | "SOURCE_UNAVAILABLE" | string;
+    pillarEligibility?: boolean;
+    pillarScore?: number | null;
+    reweighted?: boolean;
+    directionalBias?: string;
+    coverageSummary?: string;
+    coverageWindowDays?: Record<string, number>;
+    subdomains?: Record<string, any>;
     congressTrades?: CongressTradeItem[];
     optionsFlow?: OptionsFlowItem[];
+    secInsiderTrades?: SecInsiderTradeItem[];
     notice?: string;
   };
   freshness?: FreshnessInfo;

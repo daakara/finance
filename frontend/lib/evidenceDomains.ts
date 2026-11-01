@@ -53,9 +53,19 @@ export interface EvidenceResolutionContext {
   optimalExecution?: OptimalExecutionPlan;
   smartMoney?: {
     status?: string;
+    overallStatus?: string;
+    pillarEligibility?: boolean;
+    congressStatus?: string;
+    secStatus?: string;
+    optionsStatus?: string;
     congressTrades?: any[];
     optionsFlow?: any[];
     secForm4Trades?: any[];
+    subdomains?: {
+      options_flow?: any;
+      sec_form_4?: any;
+      congressional_stock_act?: any;
+    };
     notice?: string;
   };
   macroData?: any;
@@ -303,7 +313,11 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
   // ── 5. Options Flow Sweeps & Unusual Activity ─────────────────────────────
   (() => {
     const sweeps = smartMoney?.optionsFlow || [];
-    const isPending = smartMoney?.status === "PIPELINE_PENDING";
+    const sub = smartMoney?.subdomains?.options_flow;
+    const subStatus = sub?.status || smartMoney?.optionsStatus;
+    const isPending = smartMoney?.status === "PIPELINE_PENDING" || subStatus === "PIPELINE_HELD" || smartMoney?.overallStatus === "PIPELINE_HELD";
+    const isUnavailable = subStatus === "UNAVAILABLE" || smartMoney?.status === "UNAVAILABLE";
+    const isVerifiedEmpty = subStatus === "VERIFIED_NO_ACTIVITY";
     const hasSweeps = sweeps.length > 0;
 
     let status: DomainStatus = "NO_OBSERVATIONS";
@@ -314,10 +328,18 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
       status = "VERIFIED";
       statusLabel = "Verified";
       explanation = `${sweeps.length} institutional options sweeps evaluated.`;
+    } else if (isVerifiedEmpty) {
+      status = "NO_OBSERVATIONS";
+      statusLabel = "No Observations";
+      explanation = "Verified complete scan: 0 unusual options sweeps detected in evaluation window.";
     } else if (isPending) {
       status = "UNAVAILABLE";
       statusLabel = "Pipeline Pending";
-      explanation = "Options sweep ingestion pipeline pending under governed deployment.";
+      explanation = sub?.disclosure || "Options sweep ingestion pipeline pending under governed deployment.";
+    } else if (isUnavailable) {
+      status = "UNAVAILABLE";
+      statusLabel = "Unavailable";
+      explanation = sub?.disclosure || "Live options tape unavailable (no active stream connection).";
     }
 
     domains.push({
@@ -330,7 +352,7 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
       statusLabel,
       impact: "NON_BLOCKING",
       observationTime: "Intraday Rolling Window",
-      provenance: "OPRA Consolidated Feed",
+      provenance: sub?.provenance || "OPRA Consolidated Feed",
       explanation,
     });
   })();
@@ -352,7 +374,11 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
       });
     } else {
       const trades = smartMoney?.secForm4Trades || [];
-      const isHeld = smartMoney?.status === "PIPELINE_PENDING";
+      const sub = smartMoney?.subdomains?.sec_form_4;
+      const subStatus = sub?.status || smartMoney?.secStatus;
+      const isHeld = smartMoney?.status === "PIPELINE_PENDING" || subStatus === "PIPELINE_HELD" || smartMoney?.overallStatus === "PIPELINE_HELD";
+      const isUnavailable = subStatus === "UNAVAILABLE" || smartMoney?.status === "UNAVAILABLE";
+      const isVerifiedEmpty = subStatus === "VERIFIED_NO_ACTIVITY";
       const hasTrades = trades.length > 0;
 
       let status: DomainStatus = "NO_OBSERVATIONS";
@@ -363,10 +389,18 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
         status = "VERIFIED";
         statusLabel = "Verified";
         explanation = `${trades.length} Form 4 insider transactions evaluated.`;
+      } else if (isVerifiedEmpty) {
+        status = "NO_OBSERVATIONS";
+        statusLabel = "No Observations";
+        explanation = "Verified complete search: 0 open-market Form 4 transactions filed in trailing 90 days.";
       } else if (isHeld) {
         status = "UNAVAILABLE";
         statusLabel = "Pipeline Pending";
-        explanation = "SEC Form 4 continuous ingestion paused under governed operational hold.";
+        explanation = sub?.disclosure || "SEC Form 4 continuous ingestion paused under governed operational hold.";
+      } else if (isUnavailable) {
+        status = "UNAVAILABLE";
+        statusLabel = "Unavailable";
+        explanation = sub?.disclosure || "SEC EDGAR Form 4 feed unavailable.";
       }
 
       domains.push({
@@ -379,7 +413,7 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
         statusLabel,
         impact: "NON_BLOCKING",
         observationTime: "Trailing 90 Days",
-        provenance: "SEC EDGAR Disclosures",
+        provenance: sub?.provenance || "SEC EDGAR Disclosures",
         explanation,
       });
     }
@@ -388,7 +422,34 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
   // ── 7. Congressional Disclosures (STOCK Act) ──────────────────────────────
   (() => {
     const trades = smartMoney?.congressTrades || [];
+    const sub = smartMoney?.subdomains?.congressional_stock_act;
+    const subStatus = sub?.status || smartMoney?.congressStatus;
+    const isHeld = subStatus === "PIPELINE_HELD" || smartMoney?.congressStatus === "PIPELINE_PENDING";
+    const isUnavailable = subStatus === "UNAVAILABLE" || smartMoney?.congressStatus === "UNAVAILABLE";
+    const isVerifiedEmpty = subStatus === "VERIFIED_NO_ACTIVITY";
     const hasTrades = trades.length > 0;
+
+    let status: DomainStatus = "NO_OBSERVATIONS";
+    let statusLabel = "No Observations";
+    let explanation = "0 congressional transactions reported in trailing window.";
+
+    if (hasTrades) {
+      status = "VERIFIED";
+      statusLabel = "Verified";
+      explanation = `${trades.length} congressional disclosures evaluated.`;
+    } else if (isVerifiedEmpty) {
+      status = "NO_OBSERVATIONS";
+      statusLabel = "No Observations";
+      explanation = "Verified complete search: 0 congressional disclosures filed in trailing window.";
+    } else if (isHeld) {
+      status = "UNAVAILABLE";
+      statusLabel = "Pipeline Pending";
+      explanation = sub?.disclosure || "Congressional STOCK Act continuous sync paused under governed operational hold.";
+    } else if (isUnavailable) {
+      status = "UNAVAILABLE";
+      statusLabel = "Unavailable";
+      explanation = sub?.disclosure || "Congressional STOCK Act sync feed disconnected.";
+    }
 
     domains.push({
       id: "congressional_disclosures",
@@ -396,14 +457,12 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
       category: "Public Sector Disclosures",
       authority: "STOCK Act Financial Disclosures",
       applicability: "OPTIONAL",
-      status: hasTrades ? "VERIFIED" : "NO_OBSERVATIONS",
-      statusLabel: hasTrades ? "Verified" : "No Observations",
+      status,
+      statusLabel,
       impact: "NON_BLOCKING",
       observationTime: "Trailing 180 Days",
-      provenance: "House & Senate Ethics Disclosures",
-      explanation: hasTrades
-        ? `${trades.length} congressional disclosures evaluated.`
-        : "0 congressional transactions reported in trailing window.",
+      provenance: sub?.provenance || "House & Senate Ethics Disclosures",
+      explanation,
     });
   })();
 

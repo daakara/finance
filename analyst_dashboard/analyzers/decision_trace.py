@@ -154,10 +154,17 @@ class DecisionTraceEngine:
                     "status": fund_pillar.get("status", "unavailable"),
                 },
                 "smartMoney": {
+                    "overallStatus": smart_money.get("overall_status") if smart_money else "UNAVAILABLE",
                     "hasCongressBuy": smart_money.get("has_congress_buy", False) if smart_money else False,
-                    "optionsFlow": smart_money.get("optionsFlow", []) if smart_money else [],
+                    "hasInsiderBuy": smart_money.get("has_insider_buy", False) if smart_money else False,
+                    "hasOptionsFlow": smart_money.get("has_options_flow", False) if smart_money else False,
+                    "optionsFlow": (smart_money.get("optionsFlow") or smart_money.get("options_flow") or []) if smart_money else [],
+                    "secInsiderTrades": (smart_money.get("secInsiderTrades") or smart_money.get("sec_insider_trades") or []) if smart_money else [],
+                    "congressTrades": (smart_money.get("congressTrades") or smart_money.get("congress_trades") or []) if smart_money else [],
+                    "subdomains": smart_money.get("subdomains", {}) if smart_money else {},
                     "score": smart_pillar.get("score"),
                     "status": smart_pillar.get("status", "unavailable"),
+                    "reweighted": smart_pillar.get("status") == "unavailable",
                 },
                 "macro": {
                     "yieldCurve": macro_difficulty.get("yield_curve_10y2y") if isinstance(macro_difficulty, dict) else None,
