@@ -11,6 +11,8 @@ import StandardTerminalView from "./terminal/StandardTerminalView";
 import AdvancedTerminalView from "./terminal/AdvancedTerminalView";
 import WhyInspectModal from "./WhyInspectModal";
 import PositionSizerModal from "./PositionSizerModal";
+import EvidenceDomainStatusCard from "./terminal/EvidenceDomainStatusCard";
+import { resolveNineEvidenceDomains } from "../lib/evidenceDomains";
 
 import { CandleData, ConfluenceData, OptimalExecutionPlan } from "../lib/api";
 import { resolveOverallEvidenceBadge } from "../lib/dataProvenance";
@@ -42,6 +44,10 @@ interface AdaptiveTerminalProps {
   preflightCleared?: boolean;
   activeBlocker?: string | null;
   preflightChecksPassed?: number;
+  macroData?: any;
+  smartMoney?: any;
+  assetClass?: string;
+  securityType?: string;
 }
 
 export default function AdaptiveTerminal({
@@ -71,6 +77,10 @@ export default function AdaptiveTerminal({
   preflightCleared,
   activeBlocker,
   preflightChecksPassed,
+  macroData,
+  smartMoney,
+  assetClass,
+  securityType,
 }: AdaptiveTerminalProps) {
   const searchParams = useSearchParams();
   const fromGoal = searchParams.get("fromGoal");
@@ -153,12 +163,52 @@ export default function AdaptiveTerminal({
     (insight.advanced as any).marketSession = marketSession;
   }
 
+  const isEtf =
+    assetClass?.toUpperCase() === "ETF" ||
+    securityType?.toUpperCase() === "ETF" ||
+    ["SPY", "QQQ", "IWM", "DIA", "XLK", "XLF", "XLE", "VTI", "VOO"].includes(symbol.toUpperCase());
+
+  const isCrypto =
+    symbol.toUpperCase().includes("-USD") ||
+    ["BTC", "ETH", "SOL", "DOGE"].includes(symbol.toUpperCase()) ||
+    assetClass?.toUpperCase() === "CRYPTO" ||
+    securityType?.toUpperCase() === "CRYPTO";
+
   const evidenceBadge = resolveOverallEvidenceBadge({
     hasLiveFeed: dataSource === "live",
     candleCount: candles?.length || 0,
-    hasSecFilings: Boolean(confluence?.pillars?.some((p) => p.pillar === "FUNDAMENTAL_SOLVENCY" && p.status === "positive")),
+    hasSecFilings: Boolean(
+      isEtf ||
+      isCrypto ||
+      confluence?.pillars?.some(
+        (p) =>
+          (p.pillar === "FUNDAMENTAL_SOLVENCY" ||
+            p.pillar.toLowerCase().includes("fund") ||
+            p.pillar.toLowerCase().includes("health")) &&
+          (p.status === "positive" || p.score > 0)
+      )
+    ),
     isCataloged: Boolean(confluence),
     price: currentPrice,
+  });
+
+  const nineDomains = resolveNineEvidenceDomains({
+    symbol,
+    assetClass,
+    securityType,
+    candles,
+    confluence,
+    optimalExecution,
+    smartMoney,
+    macroData,
+    preflightCleared,
+    activeBlocker,
+    preflightChecksPassed,
+    freshness,
+    dataSource,
+    decisionTrace,
+    isStage4,
+    currentPrice,
   });
 
   return (
@@ -205,6 +255,12 @@ export default function AdaptiveTerminal({
           </div>
         </div>
       )}
+
+      {/* 🛡️ Compact Expandable Evidence Domain Status (9 Domains) */}
+      <EvidenceDomainStatusCard
+        symbol={symbol}
+        domains={nineDomains}
+      />
 
       {/* 3 Presentation Lenses — Unblocked Initial Assessment */}
       {experienceMode === "GUIDED" && (
