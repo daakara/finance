@@ -2179,14 +2179,14 @@ class SmartMoneyEngine:
             sec_rows = []
             has_older_in_db = False
             try:
-                from analyst_dashboard.smart_money.form4_ingestion import DEFAULT_SMART_MONEY_DB, connect_smart_money_db
-                conn = connect_smart_money_db(DEFAULT_SMART_MONEY_DB)
+                from analyst_dashboard.smart_money.form4_ingestion import connect_smart_money_db
+                conn = connect_smart_money_db()
                 conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
                 cur.execute("""
                     SELECT record_key, accession_number, issuer_cik, issuer_symbol, reporting_owner_name,
                            officer_title, is_director, is_officer, is_ten_percent_owner, filing_date,
-                           transaction_date, shares, price_per_share, total_value_usd, acquired_disposed,
+                           transaction_date, transaction_code, signal_type, shares, price_per_share, total_value_usd, acquired_disposed,
                            is_positive_buying_conviction, is_open_market_purchase_evidence, acceptance_datetime
                     FROM form4_parsed_transactions
                     WHERE issuer_symbol = ? AND (filing_date >= ? OR transaction_date >= ?)
@@ -2214,13 +2214,38 @@ class SmartMoneyEngine:
 
             if sec_rows:
                 for r in sec_rows:
-                    is_buy = r["acquired_disposed"] == "A" or bool(r["is_positive_buying_conviction"])
+                    t_code = (r["transaction_code"] or "").upper().strip() if "transaction_code" in r.keys() else ""
+                    sig_type = (r["signal_type"] or "").upper().strip() if "signal_type" in r.keys() else ""
+                    is_pos_conviction = bool(r["is_positive_buying_conviction"]) or bool(r["is_open_market_purchase_evidence"])
+                    
+                    is_buy = is_pos_conviction or t_code == "P" or sig_type == "OPEN_MARKET_PURCHASE"
+                    is_sell = t_code == "S" or sig_type == "OPEN_MARKET_SALE" or (r["acquired_disposed"] == "D" and not is_buy)
+
+                    if is_buy:
+                        tx_type = "Purchase (Direct Open Market)"
+                    elif is_sell:
+                        tx_type = "Sale (Direct)"
+                    elif t_code == "M" or sig_type == "OPTION_EXERCISE":
+                        tx_type = "Option Exercise"
+                    elif t_code == "A" or sig_type == "EQUITY_GRANT":
+                        tx_type = "Equity Grant / Award"
+                    elif t_code == "G" or sig_type == "GIFT":
+                        tx_type = "Gift"
+                    elif t_code == "F" or sig_type == "TAX_WITHHOLDING":
+                        tx_type = "Tax Withholding"
+                    elif t_code == "D" or sig_type == "ISSUER_DISPOSITION":
+                        tx_type = "Disposition to Issuer"
+                    else:
+                        tx_type = f"Transaction ({t_code})" if t_code else "Other Insider Transaction"
+
                     sec_observations.append({
                         "id": r["accession_number"],
                         "insider_name": r["reporting_owner_name"],
                         "ticker": clean_sym,
                         "role": r["officer_title"] or ("Director" if r["is_director"] else "Officer"),
-                        "transaction_type": "Purchase (Direct Open Market)" if is_buy else "Sale (Direct)",
+                        "transaction_type": tx_type,
+                        "transaction_code": t_code,
+                        "signal_type": sig_type,
                         "shares_traded": r["shares"] or 0,
                         "price_per_share": r["price_per_share"] or 0.0,
                         "total_value_usd": r["total_value_usd"] or 0.0,
@@ -2229,12 +2254,13 @@ class SmartMoneyEngine:
                         "acceptance_datetime": r["acceptance_datetime"],
                         "ingestion_timestamp": r["acceptance_datetime"],
                         "acquired_disposed": r["acquired_disposed"],
-                        "is_positive_buying_conviction": bool(r["is_positive_buying_conviction"]),
+                        "is_positive_buying_conviction": is_pos_conviction,
+                        "is_open_market_purchase_evidence": is_pos_conviction,
                         "sec_url": f"https://www.sec.gov/Archives/edgar/data/{sec_cik}/{r['accession_number'].replace('-', '')}/{r['accession_number']}.txt" if sec_cik else "",
                     })
 
-                buys = [t for t in sec_observations if t["acquired_disposed"] == "A" or t["is_positive_buying_conviction"]]
-                sells = [t for t in sec_observations if t["acquired_disposed"] == "D"]
+                buys = [t for t in sec_observations if t.get("is_positive_buying_conviction") or t.get("transaction_code") == "P" or t.get("signal_type") == "OPEN_MARKET_PURCHASE"]
+                sells = [t for t in sec_observations if t.get("transaction_code") == "S" or t.get("signal_type") == "OPEN_MARKET_SALE"]
                 buy_val = sum(t["total_value_usd"] for t in buys)
                 sell_val = sum(t["total_value_usd"] for t in sells)
 

@@ -33,22 +33,42 @@ from analyst_dashboard.smart_money.form4_parser import Form4XmlParser
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SMART_MONEY_DB = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "data",
-    "smart_money_cache.db",
-)
+def get_smart_money_db_path() -> str:
+    """
+    Resolve authoritative Smart Money SQLite database path.
+    Honors:
+    1. Explicit override via ARX_SMART_MONEY_DB or SMART_MONEY_DB_PATH
+    2. Railway persistent volume mount via RAILWAY_VOLUME_MOUNT_PATH (/data/smart_money_cache.db)
+    3. Default local repository data path
+    """
+    env_override = os.environ.get("ARX_SMART_MONEY_DB") or os.environ.get("SMART_MONEY_DB_PATH")
+    if env_override:
+        return os.path.abspath(env_override)
+
+    railway_vol = os.environ.get("RAILWAY_VOLUME_MOUNT_PATH")
+    if railway_vol and os.path.isdir(railway_vol):
+        return os.path.abspath(os.path.join(railway_vol, "smart_money_cache.db"))
+
+    return os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "data",
+        "smart_money_cache.db",
+    )
 
 
-def connect_smart_money_db(db_path: str = DEFAULT_SMART_MONEY_DB) -> sqlite3.Connection:
+DEFAULT_SMART_MONEY_DB = get_smart_money_db_path()
+
+
+def connect_smart_money_db(db_path: Optional[str] = None) -> sqlite3.Connection:
     """
     Canonical SQLite connection factory for Smart Money subsystem (Gate B6 & Blocker C).
     Enforces WAL journal mode, 5000ms busy timeout, and NORMAL synchronous mode on all connections.
     """
-    db_dir = os.path.dirname(os.path.abspath(db_path))
+    effective_path = db_path if db_path is not None else get_smart_money_db_path()
+    db_dir = os.path.dirname(os.path.abspath(effective_path))
     if db_dir:
         os.makedirs(db_dir, exist_ok=True)
-    conn = sqlite3.connect(db_path, timeout=10.0)
+    conn = sqlite3.connect(effective_path, timeout=10.0)
     conn.execute("PRAGMA journal_mode = WAL;")
     conn.execute("PRAGMA busy_timeout = 5000;")
     conn.execute("PRAGMA synchronous = NORMAL;")
