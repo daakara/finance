@@ -767,10 +767,7 @@ export interface AnalyticsResponse {
   confluence?: ConfluenceData;
   smartMoney?: {
     overallStatus?: string;
-    status?: "AVAILABLE" | "VALID_EMPTY" | "PIPELINE_PENDING" | "SOURCE_UNAVAILABLE" | "INAPPLICABLE" | string;
-    overall_direction?: string;
-    overall_confidence?: string;
-    window_days?: number;
+    status?: "AVAILABLE" | "VALID_EMPTY" | "PIPELINE_PENDING" | "SOURCE_UNAVAILABLE" | string;
     pillarEligibility?: boolean;
     pillarScore?: number | null;
     reweighted?: boolean;
@@ -778,15 +775,9 @@ export interface AnalyticsResponse {
     coverageSummary?: string;
     coverageWindowDays?: Record<string, number>;
     subdomains?: Record<string, any>;
-    feeds?: {
-      options_flow?: any;
-      sec_form4?: any;
-      congressional_disclosures?: any;
-    };
     congressTrades?: CongressTradeItem[];
     optionsFlow?: OptionsFlowItem[];
     secInsiderTrades?: SecInsiderTradeItem[];
-    secForm4Trades?: SecInsiderTradeItem[];
     notice?: string;
   };
   freshness?: FreshnessInfo;

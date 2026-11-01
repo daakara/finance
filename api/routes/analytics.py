@@ -189,24 +189,53 @@ def _is_history_stale(db_candles: List[Dict[str, Any]]) -> bool:
 
 def _build_smart_money_confluence_inputs(
     sym: str,
-    asset_class: Optional[str] = None,
-    security_type: Optional[str] = None,
+    asset_class: str = "EQUITY",
+    security_type: str = "COMMON_STOCK",
+    include_curated: bool = False,
     evaluation_date: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Build authoritative smart money confluence inputs with strict epistemic honesty.
-    Evaluates independent feeds (Form 4, Options Flow, Congress) over a bounded 90-day window.
+    Evaluates Options Flow, SEC Form 4 Insider Transactions, and Congressional STOCK Act Disclosures.
+    When feeds are unobserved, held under HOLD_SEC_001, or ineligible for scoring,
+    returns None to trigger fail-closed dynamic pillar reweighting in the frozen ConfluenceEngine.
     """
     clean_sym = sym.upper().replace("-USD", "").strip() if sym else ""
-    eval_result = smart_money_engine.evaluate_smart_money_feeds(
+    if evaluation_date is not None:
+        eval_result = smart_money_engine.evaluate_smart_money_feeds(
+            symbol=clean_sym,
+            window_days=90,
+            include_curated=include_curated,
+            asset_class=asset_class,
+            security_type=security_type,
+            evaluation_date=evaluation_date,
+        )
+        return eval_result.get("confluence_inputs")
+
+    res = smart_money_engine.assess_symbol(
         symbol=clean_sym,
-        window_days=90,
-        include_curated=False,
         asset_class=asset_class,
         security_type=security_type,
-        evaluation_date=evaluation_date,
+        include_curated=include_curated,
     )
-    return eval_result.get("confluence_inputs")
+    if not res.get("pillar_eligibility") or res.get("reweight_required"):
+        return None
+
+    if res.get("overall_status") == "VERIFIED_NO_ACTIVITY":
+        return {"status": "neutral"}
+
+    # Verified signal inputs for frozen ConfluenceEngine
+    sec_records = res.get("sec_insider_trades", [])
+    return {
+        "has_insider_buy": res.get("has_insider_buy", False),
+        "has_insider_sell": res.get("has_insider_sell", False),
+        "insider_value_usd": res.get("insider_value_usd", 0.0),
+        "has_congress_buy": res.get("has_congress_buy", False),
+        "has_congress_sell": res.get("has_congress_sell", False),
+        "has_options_flow": res.get("has_options_flow", False),
+        "insider_buy_count_90d": sum(1 for t in sec_records if "PURCHASE" in (t.get("transaction_type") or "").upper() or t.get("transaction_code") == "P"),
+        "insider_sell_count_90d": sum(1 for t in sec_records if "SALE" in (t.get("transaction_type") or "").upper() or t.get("transaction_code") == "S"),
+    }
 
 
 def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, Any]], is_stale: bool) -> Optional[Dict[str, Any]]:
@@ -293,7 +322,7 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
     elif clean_role == "DAY_TRADER" and target1 is not None and cur_price >= target1 * 0.96:
         exec_status = "APPROACHING_TARGET"
 
-    smart_data = _build_smart_money_confluence_inputs(sym, evaluation_date=obs_date)
+    smart_data = _build_smart_money_confluence_inputs(sym)
 
     # Check fundamentals
     factor_snap = market_db.get_factor_snapshot(sym)
@@ -1301,13 +1330,11 @@ def get_asset_analytics(
             instrument_obj = sec_master_service.get_or_resolve_instrument(upper_sym)
             sec_type_val = instrument_obj.security_type
             asset_class_val = instrument_obj.asset_class
-            sec_type_str = instrument_obj.security_type.value if hasattr(instrument_obj.security_type, "value") else str(instrument_obj.security_type)
-            asset_class_str = instrument_obj.asset_class.value if hasattr(instrument_obj.asset_class, "value") else str(instrument_obj.asset_class)
             instrument_envelope = {
                 "symbol": instrument_obj.symbol,
                 "provider_symbol": instrument_obj.provider_symbol,
-                "asset_class": asset_class_str,
-                "security_type": sec_type_str,
+                "asset_class": instrument_obj.asset_class.value if hasattr(instrument_obj.asset_class, "value") else str(instrument_obj.asset_class),
+                "security_type": instrument_obj.security_type.value if hasattr(instrument_obj.security_type, "value") else str(instrument_obj.security_type),
                 "primary_exchange": instrument_obj.primary_exchange,
                 "listing_status": instrument_obj.listing_status.value if hasattr(instrument_obj.listing_status, "value") else str(instrument_obj.listing_status),
                 "classification_status": instrument_obj.classification_status.value if hasattr(instrument_obj.classification_status, "value") else str(instrument_obj.classification_status),
@@ -1318,8 +1345,6 @@ def get_asset_analytics(
             logger.warning(f"Security Master resolution failed for {upper_sym}: {e}")
             sec_type_val = "UNKNOWN"
             asset_class_val = "UNKNOWN"
-            sec_type_str = "UNKNOWN"
-            asset_class_str = "UNKNOWN"
             instrument_envelope = {
                 "symbol": upper_sym,
                 "provider_symbol": upper_sym,
@@ -1333,17 +1358,18 @@ def get_asset_analytics(
             }
 
         # Smart Money Feeds (Enforce Epistemic Honesty: Stale curated data does not trigger live buy signals)
-        eval_date_ref = last_trade_date_str if last_trade_date_str else None
-        sm_eval = smart_money_engine.evaluate_smart_money_feeds(
+        smart_data = smart_money_engine.assess_symbol(
             symbol=upper_sym,
-            window_days=90,
+            asset_class=asset_class_val,
+            security_type=sec_type_val,
             include_curated=False,
-            asset_class=asset_class_str,
-            security_type=sec_type_str,
-            evaluation_date=eval_date_ref,
         )
-        smart_data = sm_eval.get("confluence_inputs")
-        smart_money_payload = sm_eval.get("payload")
+        conf_smart_inputs = _build_smart_money_confluence_inputs(
+            upper_sym,
+            asset_class=asset_class_val,
+            security_type=sec_type_val,
+            include_curated=False,
+        )
 
         # Macro inputs: Strictly authentic FRED observations; never fabricated fallbacks
         macro_inputs = normalize_macro_payload(macro_difficulty) if macro_difficulty else None
@@ -1356,7 +1382,7 @@ def get_asset_analytics(
                 **optimal_execution_plan,
                 "current_price": current_price,
             },
-            smart_money_data=smart_data,
+            smart_money_data=conf_smart_inputs,
             fundamental_data={
                 **factor_scores,
                 "piotroski_f": piotroski,
@@ -1381,7 +1407,7 @@ def get_asset_analytics(
             confluence=confluence_output,
             factor_scores=factor_scores,
             optimal_execution=optimal_execution_plan,
-            smart_money=smart_money_payload,
+            smart_money=smart_data,
             macro_difficulty=macro_difficulty,
             catalyst_report=catalyst_report,
             user_role=clean_role,
@@ -1527,7 +1553,28 @@ def get_asset_analytics(
             "liquidityDefense": optimal_execution_plan.get("liquidity_defense"),
             "catalystForecast": catalyst_report,
             "corporateEvent": corporate_event,
-            "smartMoney": smart_money_payload,
+            "smartMoney": {
+                "overallStatus": smart_data.get("overall_status") if smart_data else "PIPELINE_PENDING",
+                "status": "AVAILABLE" if (smart_data and smart_data.get("pillar_eligibility")) else "PIPELINE_PENDING",
+                "overall_direction": smart_data.get("directional_bias") if smart_data else "NEUTRAL",
+                "pillarEligibility": smart_data.get("pillar_eligibility") if smart_data else False,
+                "pillarScore": smart_data.get("pillar_score") if smart_data else None,
+                "reweighted": smart_data.get("reweight_required") if smart_data else True,
+                "directionalBias": smart_data.get("directional_bias") if smart_data else "NEUTRAL",
+                "coverageSummary": smart_data.get("coverage_summary") if smart_data else None,
+                "coverageWindowDays": smart_data.get("coverage_window_days") if smart_data else 90,
+                "window_days": 90,
+                "subdomains": smart_data.get("subdomains") if smart_data else {},
+                "feeds": {
+                    "options_flow": (smart_data.get("subdomains", {}).get("options_flow") if smart_data else None) or {"status": "PIPELINE_PENDING"},
+                    "sec_form4": (smart_data.get("subdomains", {}).get("sec_form_4") if smart_data else None) or {"status": "PIPELINE_PENDING"},
+                    "congressional_disclosures": (smart_data.get("subdomains", {}).get("congressional_stock_act") if smart_data else None) or {"status": "PIPELINE_PENDING"},
+                },
+                "congressTrades": smart_data.get("congress_trades", []) if smart_data else [],
+                "optionsFlow": smart_data.get("options_flow", []) if smart_data else [],
+                "secInsiderTrades": smart_data.get("sec_insider_trades", []) if smart_data else [],
+                "secForm4Trades": smart_data.get("sec_insider_trades", []) if smart_data else [],
+            },
             "confluence": confluence_output,
             "analytics": risk_output,
             "observedAt": observed_at,
