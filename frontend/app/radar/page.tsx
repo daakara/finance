@@ -401,14 +401,24 @@ function RadarContent() {
         if (aDelisted !== bDelisted) {
           return aDelisted - bDelisted; // Delisted securities sink to bottom
         }
-        if (sortBy === 'SCORE') return (b.confluenceScore ?? -1) - (a.confluenceScore ?? -1);
+        if (sortBy === 'SCORE') {
+          const diff = (b.confluenceScore ?? -1) - (a.confluenceScore ?? -1);
+          if (diff !== 0) return diff;
+          return a.ticker.localeCompare(b.ticker); // Deterministic tie-breaker
+        }
         if (sortBy === 'RVOL') {
           const aRvol = a.rvol ? parseFloat(a.rvol.replace('x', '')) : 0;
           const bRvol = b.rvol ? parseFloat(b.rvol.replace('x', '')) : 0;
-          return bRvol - aRvol;
+          const diff = bRvol - aRvol;
+          if (diff !== 0) return diff;
+          return a.ticker.localeCompare(b.ticker); // Deterministic tie-breaker
         }
-        if (sortBy === 'PRICE') return (b.price ?? -1) - (a.price ?? -1);
-        return 0;
+        if (sortBy === 'PRICE') {
+          const diff = (b.price ?? -1) - (a.price ?? -1);
+          if (diff !== 0) return diff;
+          return a.ticker.localeCompare(b.ticker); // Deterministic tie-breaker
+        }
+        return a.ticker.localeCompare(b.ticker);
       });
   }, [allAssets, activeFilter, searchQuery, sortBy, ownershipFilter, getOwnershipState]);
 

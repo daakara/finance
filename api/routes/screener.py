@@ -1001,7 +1001,23 @@ def run_screener_get(
             filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and "SMART_MONEY" in c["categories"]]
         else:
             filtered = mapped_candidates
-    
+
+        # Canonical deterministic sorting per ARX Governance Contract & Directive 044R.8
+        # Sorting priority:
+        # 1. Delisted and unverified securities sink to bottom
+        # 2. confluenceScore descending (Discovery Score ranking)
+        # 3. gemScore descending (secondary factor tie-breaker)
+        # 4. symbol ascending (lexicographical deterministic tie-breaker)
+        def _radar_sort_key(c: dict):
+            status = c.get("executionStatus", "")
+            is_delisted_or_unverified = 1 if status in non_tradable else 0
+            confl = float(c.get("confluenceScore") or 0.0)
+            gem = float(c.get("gemScore") or 0.0)
+            sym = str(c.get("symbol") or "")
+            return (is_delisted_or_unverified, -confl, -gem, sym)
+
+        filtered.sort(key=_radar_sort_key)
+
         radar_now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         radar_evidence = MarketEvidence(
             provenance=MarketProvenance(
