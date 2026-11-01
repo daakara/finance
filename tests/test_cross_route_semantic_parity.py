@@ -66,6 +66,15 @@ def test_screener_to_terminal_cross_route_semantic_parity():
             sym = gem["symbol"]
             assert sym in screener_map, f"Gem {sym} not found in Screener candidates"
 
+            candidate_info = screener_map[sym]
+            if candidate_info.get("executionStatus") == "DELISTED_SECURITY":
+                # Delisted securities are suppressed from live terminal analytics (clean HTTP 404)
+                analytics_res = client.get(f"/api/v1/analytics/{sym}?period=1y&interval=1d")
+                assert analytics_res.status_code == 404, (
+                    f"Delisted Gem {sym} should be suppressed from live terminal analytics with HTTP 404"
+                )
+                continue
+
             analytics_res = client.get(f"/api/v1/analytics/{sym}?period=1y&interval=1d")
             assert analytics_res.status_code == 200
             terminal_data = analytics_res.json()
