@@ -192,15 +192,24 @@ def _build_smart_money_confluence_inputs(
     asset_class: str = "EQUITY",
     security_type: str = "COMMON_STOCK",
     include_curated: bool = False,
+    evaluation_date: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Build authoritative smart money confluence inputs with strict epistemic honesty.
-    Evaluates Options Flow, SEC Form 4 Insider Transactions, and Congressional STOCK Act Disclosures
-    via SmartMoneyEngine.assess_symbol.
-    If continuous live feeds are held under HOLD_SEC_001, reflects PIPELINE_HELD / UNAVAILABLE
-    and triggers safe pillar reweighting without score leakage.
+    Evaluates Options Flow, SEC Form 4 Insider Transactions, and Congressional STOCK Act Disclosures.
+    Supports both live/held assess_symbol evaluation and bounded evaluation across trailing 90-day window.
     """
-    clean_sym = sym.upper().replace("-USD", "").strip()
+    clean_sym = sym.upper().replace("-USD", "").strip() if sym else ""
+    if evaluation_date is not None:
+        eval_result = smart_money_engine.evaluate_smart_money_feeds(
+            symbol=clean_sym,
+            window_days=90,
+            include_curated=include_curated,
+            asset_class=asset_class,
+            security_type=security_type,
+            evaluation_date=evaluation_date,
+        )
+        return eval_result.get("confluence_inputs")
     return smart_money_engine.assess_symbol(
         symbol=clean_sym,
         asset_class=asset_class,
@@ -1521,16 +1530,24 @@ def get_asset_analytics(
             "smartMoney": {
                 "overallStatus": smart_data.get("overall_status"),
                 "status": "AVAILABLE" if smart_data.get("pillar_eligibility") else "PIPELINE_PENDING",
+                "overall_direction": smart_data.get("directional_bias"),
                 "pillarEligibility": smart_data.get("pillar_eligibility"),
                 "pillarScore": smart_data.get("pillar_score"),
                 "reweighted": smart_data.get("reweight_required"),
                 "directionalBias": smart_data.get("directional_bias"),
                 "coverageSummary": smart_data.get("coverage_summary"),
                 "coverageWindowDays": smart_data.get("coverage_window_days"),
+                "window_days": 90,
                 "subdomains": smart_data.get("subdomains"),
+                "feeds": {
+                    "options_flow": smart_data.get("subdomains", {}).get("options_flow") or {"status": "PIPELINE_PENDING"},
+                    "sec_form4": smart_data.get("subdomains", {}).get("sec_form_4") or {"status": "PIPELINE_PENDING"},
+                    "congressional_disclosures": smart_data.get("subdomains", {}).get("congressional_stock_act") or {"status": "PIPELINE_PENDING"},
+                },
                 "congressTrades": smart_data.get("congress_trades", []),
                 "optionsFlow": smart_data.get("options_flow", []),
                 "secInsiderTrades": smart_data.get("sec_insider_trades", []),
+                "secForm4Trades": smart_data.get("sec_insider_trades", []),
             },
             "confluence": confluence_output,
             "analytics": risk_output,
