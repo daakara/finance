@@ -143,14 +143,15 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
 
   const isTrendAvailable = trendDomain !== undefined && trendDomain.availability === "AVAILABLE" && trendDomain.status !== "UNAVAILABLE";
   const isHealthAvailable = healthDomain !== undefined && healthDomain.availability === "AVAILABLE" && healthDomain.status !== "UNAVAILABLE";
-  const isCoreEvidenceAvailable = isTrendAvailable && isHealthAvailable && unavailableRequired.length === 0;
 
   let overallEligibility: "ELIGIBLE" | "LIMITED" | "INELIGIBLE" = "ELIGIBLE";
   if (agreement.evaluated === 0) {
     overallEligibility = "INELIGIBLE";
-  } else if (unavailableRequired.length > 0 || !isCoreEvidenceAvailable) {
+  } else if (unavailableRequired.length > 0) {
     overallEligibility = "LIMITED";
   }
+
+  const isCoreEvidenceAvailable = isTrendAvailable && isHealthAvailable && overallEligibility === "ELIGIBLE";
 
   // 2. Derive Overall Evidence Assessment (Requires full core evidence for FAVORABLE)
   let assessment: Assessment = "MIXED";
