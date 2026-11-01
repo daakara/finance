@@ -187,24 +187,26 @@ def _is_history_stale(db_candles: List[Dict[str, Any]]) -> bool:
             return True
 
 
-def _build_smart_money_confluence_inputs(sym: str) -> Dict[str, Any]:
+def _build_smart_money_confluence_inputs(
+    sym: str,
+    asset_class: Optional[str] = None,
+    security_type: Optional[str] = None,
+    evaluation_date: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
     """
     Build authoritative smart money confluence inputs with strict epistemic honesty.
-    Curated historical SEC Form 4 and STOCK Act records are informational reference logs,
-    not real-time intraday buy triggers. Active options flow is checked for directional call sweeps.
+    Evaluates independent feeds (Form 4, Options Flow, Congress) over a bounded 90-day window.
     """
-    clean_sym = sym.upper().replace("-USD", "").strip()
-    options_flow = smart_money_engine.get_options_flow(clean_sym) or []
-    has_options_flow = any("CALL" in (o.get("type", "") or "").upper() for o in options_flow)
-    if has_options_flow:
-        return {
-            "has_insider_buy": False,
-            "insider_value_usd": 0.0,
-            "insider_name": "",
-            "has_congress_buy": False,
-            "has_options_flow": True,
-        }
-    return None
+    clean_sym = sym.upper().replace("-USD", "").strip() if sym else ""
+    eval_result = smart_money_engine.evaluate_smart_money_feeds(
+        symbol=clean_sym,
+        window_days=90,
+        include_curated=False,
+        asset_class=asset_class,
+        security_type=security_type,
+        evaluation_date=evaluation_date,
+    )
+    return eval_result.get("confluence_inputs")
 
 
 def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, Any]], is_stale: bool) -> Optional[Dict[str, Any]]:
@@ -291,7 +293,7 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
     elif clean_role == "DAY_TRADER" and target1 is not None and cur_price >= target1 * 0.96:
         exec_status = "APPROACHING_TARGET"
 
-    smart_data = _build_smart_money_confluence_inputs(sym)
+    smart_data = _build_smart_money_confluence_inputs(sym, evaluation_date=obs_date)
 
     # Check fundamentals
     factor_snap = market_db.get_factor_snapshot(sym)
@@ -1293,11 +1295,55 @@ def get_asset_analytics(
         except Exception:
             pass
 
+        # Authoritative canonical instrument classification envelope
+        try:
+            sec_master_service = get_security_master_service()
+            instrument_obj = sec_master_service.get_or_resolve_instrument(upper_sym)
+            sec_type_val = instrument_obj.security_type
+            asset_class_val = instrument_obj.asset_class
+            sec_type_str = instrument_obj.security_type.value if hasattr(instrument_obj.security_type, "value") else str(instrument_obj.security_type)
+            asset_class_str = instrument_obj.asset_class.value if hasattr(instrument_obj.asset_class, "value") else str(instrument_obj.asset_class)
+            instrument_envelope = {
+                "symbol": instrument_obj.symbol,
+                "provider_symbol": instrument_obj.provider_symbol,
+                "asset_class": asset_class_str,
+                "security_type": sec_type_str,
+                "primary_exchange": instrument_obj.primary_exchange,
+                "listing_status": instrument_obj.listing_status.value if hasattr(instrument_obj.listing_status, "value") else str(instrument_obj.listing_status),
+                "classification_status": instrument_obj.classification_status.value if hasattr(instrument_obj.classification_status, "value") else str(instrument_obj.classification_status),
+                "execution_eligibility": instrument_obj.execution_eligibility.value if hasattr(instrument_obj.execution_eligibility, "value") else str(instrument_obj.execution_eligibility),
+                "classification_authority": instrument_obj.classification_authority,
+            }
+        except Exception as e:
+            logger.warning(f"Security Master resolution failed for {upper_sym}: {e}")
+            sec_type_val = "UNKNOWN"
+            asset_class_val = "UNKNOWN"
+            sec_type_str = "UNKNOWN"
+            asset_class_str = "UNKNOWN"
+            instrument_envelope = {
+                "symbol": upper_sym,
+                "provider_symbol": upper_sym,
+                "asset_class": "UNKNOWN",
+                "security_type": "UNKNOWN",
+                "primary_exchange": "UNKNOWN",
+                "listing_status": "UNKNOWN",
+                "classification_status": "UNVERIFIED",
+                "execution_eligibility": "FAIL_CLOSED",
+                "classification_authority": "ARX_SERVER_SECURITY_MASTER",
+            }
+
         # Smart Money Feeds (Enforce Epistemic Honesty: Stale curated data does not trigger live buy signals)
-        options_flow = smart_money_engine.get_options_flow(upper_sym) or []
-        congress_trades = smart_money_engine.get_congressional_trades(upper_sym) or []
-        has_congress_buy = False
-        smart_data = _build_smart_money_confluence_inputs(upper_sym)
+        eval_date_ref = last_trade_date_str if last_trade_date_str else None
+        sm_eval = smart_money_engine.evaluate_smart_money_feeds(
+            symbol=upper_sym,
+            window_days=90,
+            include_curated=False,
+            asset_class=asset_class_str,
+            security_type=sec_type_str,
+            evaluation_date=eval_date_ref,
+        )
+        smart_data = sm_eval.get("confluence_inputs")
+        smart_money_payload = sm_eval.get("payload")
 
         # Macro inputs: Strictly authentic FRED observations; never fabricated fallbacks
         macro_inputs = normalize_macro_payload(macro_difficulty) if macro_difficulty else None
@@ -1319,39 +1365,6 @@ def get_asset_analytics(
             macro_data=macro_inputs,
         )
 
-        # Authoritative canonical instrument classification envelope
-        try:
-            sec_master_service = get_security_master_service()
-            instrument_obj = sec_master_service.get_or_resolve_instrument(upper_sym)
-            sec_type_val = instrument_obj.security_type
-            asset_class_val = instrument_obj.asset_class
-            instrument_envelope = {
-                "symbol": instrument_obj.symbol,
-                "provider_symbol": instrument_obj.provider_symbol,
-                "asset_class": instrument_obj.asset_class.value if hasattr(instrument_obj.asset_class, "value") else str(instrument_obj.asset_class),
-                "security_type": instrument_obj.security_type.value if hasattr(instrument_obj.security_type, "value") else str(instrument_obj.security_type),
-                "primary_exchange": instrument_obj.primary_exchange,
-                "listing_status": instrument_obj.listing_status.value if hasattr(instrument_obj.listing_status, "value") else str(instrument_obj.listing_status),
-                "classification_status": instrument_obj.classification_status.value if hasattr(instrument_obj.classification_status, "value") else str(instrument_obj.classification_status),
-                "execution_eligibility": instrument_obj.execution_eligibility.value if hasattr(instrument_obj.execution_eligibility, "value") else str(instrument_obj.execution_eligibility),
-                "classification_authority": instrument_obj.classification_authority,
-            }
-        except Exception as e:
-            logger.warning(f"Security Master resolution failed for {upper_sym}: {e}")
-            sec_type_val = "UNKNOWN"
-            asset_class_val = "UNKNOWN"
-            instrument_envelope = {
-                "symbol": upper_sym,
-                "provider_symbol": upper_sym,
-                "asset_class": "UNKNOWN",
-                "security_type": "UNKNOWN",
-                "primary_exchange": "UNKNOWN",
-                "listing_status": "UNKNOWN",
-                "classification_status": "UNVERIFIED",
-                "execution_eligibility": "FAIL_CLOSED",
-                "classification_authority": "ARX_SERVER_SECURITY_MASTER",
-            }
-
         # Canonical Decision Trace (Single source of truth for actionability & explainability)
         decision_trace = DecisionTraceEngine.build_decision_trace(
             symbol=upper_sym,
@@ -1368,11 +1381,7 @@ def get_asset_analytics(
             confluence=confluence_output,
             factor_scores=factor_scores,
             optimal_execution=optimal_execution_plan,
-            smart_money={
-                "has_congress_buy": has_congress_buy,
-                "has_insider_buy": False,
-                "optionsFlow": options_flow,
-            },
+            smart_money=smart_money_payload,
             macro_difficulty=macro_difficulty,
             catalyst_report=catalyst_report,
             user_role=clean_role,
@@ -1518,11 +1527,7 @@ def get_asset_analytics(
             "liquidityDefense": optimal_execution_plan.get("liquidity_defense"),
             "catalystForecast": catalyst_report,
             "corporateEvent": corporate_event,
-            "smartMoney": {
-                "status": "AVAILABLE" if (congress_trades or options_flow) else "PIPELINE_PENDING",
-                "congressTrades": congress_trades,
-                "optionsFlow": options_flow,
-            },
+            "smartMoney": smart_money_payload,
             "confluence": confluence_output,
             "analytics": risk_output,
             "observedAt": observed_at,

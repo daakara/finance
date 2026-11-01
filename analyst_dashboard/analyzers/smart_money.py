@@ -1,6 +1,12 @@
 """High-Density Institutional & Congressional Smart Money Feed Engine."""
 
-from typing import List, Dict, Any
+import os
+import sqlite3
+import logging
+from datetime import datetime, timezone, timedelta
+from typing import List, Dict, Any, Optional
+
+logger = logging.getLogger(__name__)
 
 CONGRESSIONAL_TRADES: List[Dict[str, Any]] = [
     # --- 7D RECENT (Aug 22 - Aug 28, 2026) ---
@@ -2017,6 +2023,388 @@ def compute_filing_staleness(days_to_filing: int, base_strength: int = 90) -> Di
 
 class SmartMoneyEngine:
     """Quantitative engine for tracking Capitol Hill disclosures, SEC Form 4 & institutional options flow."""
+
+    @staticmethod
+    def evaluate_smart_money_feeds(
+        symbol: str,
+        window_days: int = 90,
+        include_curated: bool = False,
+        asset_class: Optional[str] = None,
+        security_type: Optional[str] = None,
+        evaluation_date: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Comprehensive bounded analytical evaluation of Smart Money evidence across:
+        1. Options Flow Sweeps
+        2. SEC Form 4 Insider Transactions
+        3. Congressional STOCK Act Disclosures
+
+        Maintains independent feed states, distinct timestamps, truthful coverage representation,
+        and provides normalized Confluence Engine inputs without synthetic promotion.
+        """
+        clean_sym = symbol.upper().replace("-USD", "").strip() if symbol else ""
+        raw_sym = symbol.upper().strip() if symbol else ""
+
+        is_crypto = (
+            raw_sym.endswith("-USD")
+            or raw_sym in {"BTC", "ETH", "SOL", "DOGE"}
+            or (asset_class and asset_class.upper() == "CRYPTO")
+            or (security_type and security_type.upper() == "CRYPTO")
+        )
+
+        known_etfs = {
+            "SPY", "QQQ", "IWM", "DIA", "XLK", "XLF", "XLE", "XLV", "XLI", "XLP",
+            "XLU", "XLB", "XLRE", "XLC", "SMH", "VTI", "VOO", "VEA", "VWO", "ARKK",
+        }
+        is_etf = (
+            raw_sym in known_etfs
+            or (asset_class and asset_class.upper() == "ETF")
+            or (security_type and security_type.upper() == "ETF")
+        )
+
+        known_foreign_adrs = {
+            "DHLGY", "NVO", "ASML", "TSM", "BABA", "AZN", "BP", "SHEL", "SAP", "SNY",
+            "TM", "HMC", "VALE", "BTI", "RIO", "UL", "LVMUY", "TCEHY", "NPSNY", "ADDYY",
+            "BAYRY", "DDAIF", "VWAGY", "BMWYY", "RHHBY", "SAN", "BBVA", "ING", "BNPQY", "CRH",
+        }
+        is_foreign_adr = (
+            (len(clean_sym) == 5 and clean_sym.endswith(("Y", "F")))
+            or clean_sym in known_foreign_adrs
+        )
+
+        # Establish analytical evaluation window
+        try:
+            if evaluation_date:
+                eval_date = datetime.strptime(str(evaluation_date)[:10], "%Y-%m-%d").date()
+            else:
+                eval_date = datetime.now(timezone.utc).date()
+        except Exception:
+            eval_date = datetime.now(timezone.utc).date()
+
+        cutoff_date = eval_date - timedelta(days=window_days)
+        cutoff_str = cutoff_date.isoformat()
+
+        # ── FEED 1: SEC FORM 4 INSIDER TRANSACTIONS ───────────────────────────
+        sec_observations: List[Dict[str, Any]] = []
+        sec_distinct_dates = None
+        sec_cik = None
+
+        if is_crypto or is_etf:
+            sec_feed = {
+                "status": "INAPPLICABLE",
+                "status_label": "Exempt (Fund / Digital Asset)",
+                "coverage": "EXEMPT_ASSET",
+                "cik": None,
+                "observations": [],
+                "observation_count": 0,
+                "direction": "UNVERIFIED",
+                "confidence": "NONE",
+                "explanation": "Corporate insider transactions inapplicable to funds and digital assets.",
+                "provenance": "SEC EDGAR",
+                "distinct_dates": None,
+            }
+        elif is_foreign_adr:
+            sec_feed = {
+                "status": "INAPPLICABLE",
+                "status_label": "Exempt (Foreign Issuer)",
+                "coverage": "FOREIGN_FPI_EXEMPT",
+                "cik": None,
+                "observations": [],
+                "observation_count": 0,
+                "direction": "UNVERIFIED",
+                "confidence": "NONE",
+                "explanation": "Foreign Private Issuer (FPI) exempt from US SEC Form 4 filings; local regulatory disclosures apply.",
+                "provenance": "Home Country Regulatory Authorities",
+                "distinct_dates": None,
+            }
+        else:
+            sec_rows = []
+            has_older_in_db = False
+            try:
+                from analyst_dashboard.smart_money.form4_ingestion import DEFAULT_SMART_MONEY_DB, connect_smart_money_db
+                conn = connect_smart_money_db(DEFAULT_SMART_MONEY_DB)
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                cur.execute("""
+                    SELECT record_key, accession_number, issuer_cik, issuer_symbol, reporting_owner_name,
+                           officer_title, is_director, is_officer, is_ten_percent_owner, filing_date,
+                           transaction_date, shares, price_per_share, total_value_usd, acquired_disposed,
+                           is_positive_buying_conviction, is_open_market_purchase_evidence, acceptance_datetime
+                    FROM form4_parsed_transactions
+                    WHERE issuer_symbol = ? AND (filing_date >= ? OR transaction_date >= ?)
+                    ORDER BY filing_date DESC
+                """, (clean_sym, cutoff_str, cutoff_str))
+                sec_rows = cur.fetchall()
+
+                cur.execute("SELECT issuer_cik FROM form4_parsed_transactions WHERE issuer_symbol = ? LIMIT 1", (clean_sym,))
+                cik_row = cur.fetchone()
+                if cik_row:
+                    sec_cik = str(cik_row["issuer_cik"]).zfill(10)
+                    has_older_in_db = True
+                conn.close()
+            except Exception as e:
+                logger.debug(f"Smart money local DB query for {clean_sym} Form 4 failed: {e}")
+                sec_rows = []
+
+            if not sec_cik:
+                try:
+                    from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher
+                    sec_fetcher = SecEdgarFetcher()
+                    sec_cik = sec_fetcher.resolve_cik(clean_sym)
+                except Exception:
+                    sec_cik = None
+
+            if sec_rows:
+                for r in sec_rows:
+                    is_buy = r["acquired_disposed"] == "A" or bool(r["is_positive_buying_conviction"])
+                    sec_observations.append({
+                        "id": r["accession_number"],
+                        "insider_name": r["reporting_owner_name"],
+                        "ticker": clean_sym,
+                        "role": r["officer_title"] or ("Director" if r["is_director"] else "Officer"),
+                        "transaction_type": "Purchase (Direct Open Market)" if is_buy else "Sale (Direct)",
+                        "shares_traded": r["shares"] or 0,
+                        "price_per_share": r["price_per_share"] or 0.0,
+                        "total_value_usd": r["total_value_usd"] or 0.0,
+                        "filing_date": r["filing_date"],
+                        "transaction_date": r["transaction_date"] or r["filing_date"],
+                        "acceptance_datetime": r["acceptance_datetime"],
+                        "ingestion_timestamp": r["acceptance_datetime"],
+                        "acquired_disposed": r["acquired_disposed"],
+                        "is_positive_buying_conviction": bool(r["is_positive_buying_conviction"]),
+                        "sec_url": f"https://www.sec.gov/Archives/edgar/data/{sec_cik}/{r['accession_number'].replace('-', '')}/{r['accession_number']}.txt" if sec_cik else "",
+                    })
+
+                buys = [t for t in sec_observations if t["acquired_disposed"] == "A" or t["is_positive_buying_conviction"]]
+                sells = [t for t in sec_observations if t["acquired_disposed"] == "D"]
+                buy_val = sum(t["total_value_usd"] for t in buys)
+                sell_val = sum(t["total_value_usd"] for t in sells)
+
+                if buy_val > sell_val and buy_val > 0:
+                    dir_str = "BULLISH"
+                elif sell_val > buy_val and sell_val > 0:
+                    dir_str = "BEARISH"
+                else:
+                    dir_str = "NEUTRAL"
+
+                conf_str = "HIGH" if len(sec_observations) >= 2 or max(buy_val, sell_val) > 500_000 else "MEDIUM"
+                sec_distinct_dates = {
+                    "latest_transaction_date": sec_observations[0].get("transaction_date"),
+                    "latest_filing_date": sec_observations[0].get("filing_date"),
+                    "latest_ingestion_date": sec_observations[0].get("acceptance_datetime"),
+                }
+
+                sec_feed = {
+                    "status": "VERIFIED",
+                    "status_label": "Verified",
+                    "coverage": "SUPPORTED_SEC_ISSUER",
+                    "cik": sec_cik,
+                    "observations": sec_observations,
+                    "observation_count": len(sec_observations),
+                    "direction": dir_str,
+                    "confidence": conf_str,
+                    "explanation": f"{len(sec_observations)} Form 4 insider transactions evaluated in trailing {window_days}d (${(buy_val + sell_val):,.0f} volume).",
+                    "provenance": "SEC EDGAR Form 4 (Local Verified Store)",
+                    "distinct_dates": sec_distinct_dates,
+                }
+            elif has_older_in_db:
+                sec_feed = {
+                    "status": "NO_OBSERVATIONS",
+                    "status_label": "No Observations",
+                    "coverage": "SUPPORTED_SEC_ISSUER",
+                    "cik": sec_cik,
+                    "observations": [],
+                    "observation_count": 0,
+                    "direction": "NEUTRAL",
+                    "confidence": "MEDIUM",
+                    "explanation": f"0 insider transactions filed in trailing {window_days} days (routine corporate cadence).",
+                    "provenance": "SEC EDGAR Form 4 (Local Verified Store)",
+                    "distinct_dates": None,
+                }
+            else:
+                sec_feed = {
+                    "status": "PIPELINE_PENDING",
+                    "status_label": "Pipeline Pending",
+                    "coverage": "SUPPORTED_SEC_ISSUER" if sec_cik else "UNVERIFIED_ISSUER",
+                    "cik": sec_cik,
+                    "observations": [],
+                    "observation_count": 0,
+                    "direction": "UNVERIFIED",
+                    "confidence": "NONE",
+                    "explanation": "SEC Form 4 continuous ingestion paused under governed operational hold (HOLD_SEC_001).",
+                    "provenance": "SEC EDGAR",
+                    "distinct_dates": None,
+                }
+
+        # ── FEED 2: OPTIONS FLOW SWEEPS ───────────────────────────────────────
+        if is_crypto:
+            options_feed = {
+                "status": "INAPPLICABLE",
+                "status_label": "Exempt (Digital Asset)",
+                "coverage": "EXEMPT_ASSET",
+                "observations": [],
+                "observation_count": 0,
+                "direction": "UNVERIFIED",
+                "confidence": "NONE",
+                "explanation": "Equity options flow sweeps inapplicable to digital assets.",
+                "provenance": "OPRA Consolidated Tape",
+            }
+        else:
+            flow = SmartMoneyEngine.get_options_flow(clean_sym, include_curated=include_curated)
+            if flow and len(flow) > 0:
+                calls = [f for f in flow if "CALL" in (f.get("type") or "").upper()]
+                puts = [f for f in flow if "PUT" in (f.get("type") or "").upper()]
+                opt_dir = "BULLISH" if len(calls) > len(puts) else ("BEARISH" if len(puts) > len(calls) else "NEUTRAL")
+                options_feed = {
+                    "status": "VERIFIED" if not include_curated else "CURATED",
+                    "status_label": "Verified" if not include_curated else "Curated",
+                    "coverage": "SUPPORTED_OPTIONS_EQUITY",
+                    "observations": flow,
+                    "observation_count": len(flow),
+                    "direction": opt_dir,
+                    "confidence": "HIGH" if len(flow) >= 2 else "MEDIUM",
+                    "explanation": f"{len(flow)} institutional options sweeps evaluated.",
+                    "provenance": "OPRA Consolidated Tape" if not include_curated else "Curated Options Archive",
+                }
+            else:
+                options_feed = {
+                    "status": "PIPELINE_PENDING",
+                    "status_label": "Pipeline Pending",
+                    "coverage": "SUPPORTED_OPTIONS_EQUITY",
+                    "observations": [],
+                    "observation_count": 0,
+                    "direction": "UNVERIFIED",
+                    "confidence": "NONE",
+                    "explanation": "Options sweep ingestion pipeline pending under governed deployment.",
+                    "provenance": "OPRA Consolidated Tape",
+                }
+
+        # ── FEED 3: CONGRESSIONAL DISCLOSURES ─────────────────────────────────
+        if is_crypto or is_etf:
+            cong_feed = {
+                "status": "INAPPLICABLE",
+                "status_label": "Exempt",
+                "coverage": "EXEMPT_ASSET",
+                "observations": [],
+                "observation_count": 0,
+                "direction": "UNVERIFIED",
+                "confidence": "NONE",
+                "explanation": "STOCK Act congressional disclosures inapplicable to funds and digital assets.",
+                "provenance": "House & Senate Ethics Disclosures",
+                "distinct_dates": None,
+            }
+        else:
+            trades = SmartMoneyEngine.get_congressional_trades(clean_sym, include_curated=include_curated)
+            if trades and len(trades) > 0:
+                buys = [t for t in trades if "Purchase" in (t.get("transaction_type") or "")]
+                sells = [t for t in trades if "Sale" in (t.get("transaction_type") or "")]
+                cong_dir = "BULLISH" if len(buys) > len(sells) else ("BEARISH" if len(sells) > len(buys) else "NEUTRAL")
+                cong_dates = {
+                    "latest_transaction_date": trades[0].get("transaction_date"),
+                    "latest_filing_date": trades[0].get("filing_date"),
+                }
+                cong_feed = {
+                    "status": "VERIFIED" if not include_curated else "CURATED",
+                    "status_label": "Verified" if not include_curated else "Curated",
+                    "coverage": "SUPPORTED_PUBLIC_EQUITY",
+                    "observations": trades,
+                    "observation_count": len(trades),
+                    "direction": cong_dir,
+                    "confidence": "HIGH" if len(trades) >= 2 else "MEDIUM",
+                    "explanation": f"{len(trades)} congressional disclosures evaluated in trailing window.",
+                    "provenance": "STOCK Act Disclosures (House Clerk & Senate EFD)",
+                    "distinct_dates": cong_dates,
+                }
+            else:
+                cong_feed = {
+                    "status": "PIPELINE_PENDING",
+                    "status_label": "Pipeline Pending",
+                    "coverage": "SUPPORTED_PUBLIC_EQUITY",
+                    "observations": [],
+                    "observation_count": 0,
+                    "direction": "UNVERIFIED",
+                    "confidence": "NONE",
+                    "explanation": "Live Congressional disclosure sync feed disconnected; real-time legislative updates pending.",
+                    "provenance": "STOCK Act Disclosures",
+                    "distinct_dates": None,
+                }
+
+        # ── CONFLUENCE INPUTS SYNTHESIS ───────────────────────────────────────
+        has_any_verified = (
+            sec_feed["status"] == "VERIFIED"
+            or options_feed["status"] in ("VERIFIED", "CURATED")
+            or cong_feed["status"] in ("VERIFIED", "CURATED")
+        )
+
+        confluence_inputs = None
+        if has_any_verified:
+            insider_buys = len([t for t in sec_feed["observations"] if t.get("is_positive_buying_conviction") or t.get("is_open_market_purchase_evidence")])
+            insider_sells = len([t for t in sec_feed["observations"] if t.get("acquired_disposed") == "D"])
+            has_insider_buy = insider_buys > 0
+            insider_val = sum(t.get("total_value_usd", 0.0) for t in sec_feed["observations"] if t.get("is_positive_buying_conviction") or t.get("is_open_market_purchase_evidence"))
+            insider_name = next((t.get("insider_name") for t in sec_feed["observations"] if t.get("is_positive_buying_conviction") or t.get("is_open_market_purchase_evidence")), "")
+            has_congress_buy = any("Purchase" in (t.get("transaction_type") or "") for t in cong_feed["observations"])
+            has_options = any("CALL" in (f.get("type") or "").upper() for f in options_feed["observations"])
+
+            confluence_inputs = {
+                "has_insider_buy": has_insider_buy,
+                "insider_value_usd": insider_val,
+                "insider_name": insider_name,
+                "has_congress_buy": has_congress_buy,
+                "has_options_flow": has_options,
+                "net_institutional_flow_mil": 0.0,
+                "insider_buy_count_90d": insider_buys,
+                "insider_sell_count_90d": insider_sells,
+            }
+
+        if has_any_verified:
+            overall_status = "AVAILABLE"
+            directions = [f["direction"] for f in [sec_feed, options_feed, cong_feed] if f["direction"] != "UNVERIFIED"]
+            if "BULLISH" in directions and "BEARISH" not in directions:
+                overall_direction = "BULLISH"
+            elif "BEARISH" in directions and "BULLISH" not in directions:
+                overall_direction = "BEARISH"
+            elif "BULLISH" in directions and "BEARISH" in directions:
+                overall_direction = "MIXED"
+            else:
+                overall_direction = "NEUTRAL"
+            overall_confidence = "HIGH" if any(f["confidence"] == "HIGH" for f in [sec_feed, options_feed, cong_feed]) else "MEDIUM"
+        elif is_crypto or (is_etf and options_feed["status"] != "VERIFIED"):
+            overall_status = "INAPPLICABLE"
+            overall_direction = "UNVERIFIED"
+            overall_confidence = "NONE"
+        else:
+            overall_status = "PIPELINE_PENDING"
+            overall_direction = "UNVERIFIED"
+            overall_confidence = "NONE"
+
+        payload = {
+            "status": overall_status,
+            "window_days": window_days,
+            "overall_direction": overall_direction,
+            "overall_confidence": overall_confidence,
+            "feeds": {
+                "options_flow": options_feed,
+                "sec_form4": sec_feed,
+                "congressional_disclosures": cong_feed,
+            },
+            "congressTrades": cong_feed["observations"],
+            "optionsFlow": options_feed["observations"],
+            "secForm4Trades": sec_feed["observations"],
+        }
+
+        return {
+            "overall_status": overall_status,
+            "overall_direction": overall_direction,
+            "overall_confidence": overall_confidence,
+            "window_days": window_days,
+            "confluence_inputs": confluence_inputs,
+            "feeds": payload["feeds"],
+            "congressTrades": payload["congressTrades"],
+            "optionsFlow": payload["optionsFlow"],
+            "secForm4Trades": payload["secForm4Trades"],
+            "payload": payload,
+        }
 
     @staticmethod
     def enrich_trade(trade: Dict[str, Any]) -> Dict[str, Any]:

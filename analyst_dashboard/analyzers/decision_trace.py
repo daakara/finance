@@ -155,9 +155,20 @@ class DecisionTraceEngine:
                 },
                 "smartMoney": {
                     "hasCongressBuy": smart_money.get("has_congress_buy", False) if smart_money else False,
+                    "hasInsiderBuy": smart_money.get("has_insider_buy", False) if smart_money else False,
+                    "secForm4Count": len(smart_money.get("secForm4Trades", [])) if smart_money and isinstance(smart_money.get("secForm4Trades"), list) else (smart_money.get("sec_form4_count", 0) if smart_money else 0),
+                    "optionsFlowCount": len(smart_money.get("optionsFlow", [])) if smart_money and isinstance(smart_money.get("optionsFlow"), list) else 0,
+                    "congressTradesCount": len(smart_money.get("congressTrades", [])) if smart_money and isinstance(smart_money.get("congressTrades"), list) else 0,
                     "optionsFlow": smart_money.get("optionsFlow", []) if smart_money else [],
+                    "feedStatuses": {
+                        "optionsFlow": smart_money.get("feeds", {}).get("options_flow", {}).get("status", "UNAVAILABLE") if smart_money and "feeds" in smart_money else "UNAVAILABLE",
+                        "secForm4": smart_money.get("feeds", {}).get("sec_form4", {}).get("status", "UNAVAILABLE") if smart_money and "feeds" in smart_money else "UNAVAILABLE",
+                        "congressionalDisclosures": smart_money.get("feeds", {}).get("congressional_disclosures", {}).get("status", "UNAVAILABLE") if smart_money and "feeds" in smart_money else "UNAVAILABLE",
+                    } if smart_money and "feeds" in smart_money else None,
                     "score": smart_pillar.get("score"),
                     "status": smart_pillar.get("status", "unavailable"),
+                    "pointContribution": round(smart_pillar.get("score", 0.0) * 0.25, 2) if smart_pillar.get("score") is not None else 0.0,
+                    "weightPct": 25.0,
                 },
                 "macro": {
                     "yieldCurve": macro_difficulty.get("yield_curve_10y2y") if isinstance(macro_difficulty, dict) else None,
