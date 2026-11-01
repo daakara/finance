@@ -452,10 +452,12 @@ function TerminalContent() {
               liveSpotPrice={data?.liveSpotPrice}
               liveFreshness={data?.liveFreshness}
               analysisReferencePrice={data?.analysisReferencePrice}
-              isDemo={!hasExplicitSymbol}
+              isDemo={false}
               preflightCleared={preflightEvaluation.isCleared}
               activeBlocker={preflightEvaluation.activeBlocker}
               preflightChecksPassed={preflightEvaluation.passedCount}
+              macroData={macroData}
+              smartMoney={data?.smartMoney}
               chartSlot={
                 <div id="market-workspace-chart" className="w-full min-h-[380px] sm:min-h-[420px]">
                   {data && (
@@ -764,10 +766,10 @@ function TerminalContent() {
                 hubId="analysis"
                 title={hasExplicitSymbol ? `Analysis — ${selectedSymbol}` : "ARX Terminal · Quantitative Analysis"}
                 purpose="Evaluate whether an asset deserves capital based on confluence, technicals, and risk."
-                badge={hasExplicitSymbol ? "Active Target" : "Demonstration Mode"}
-                symbol={hasExplicitSymbol ? selectedSymbol : null}
-                isDemo={!hasExplicitSymbol}
-                demoNotice={!hasExplicitSymbol ? `Displaying ${selectedSymbol} as a demonstration asset. Search any ticker to analyze your target.` : undefined}
+                badge="Active Target"
+                symbol={selectedSymbol}
+                isDemo={false}
+                demoNotice={undefined}
                 primaryAction={{
                   label: `Prepare Trade Setup (${selectedSymbol}) →`,
                   href: `/setups?symbol=${selectedSymbol}`,
