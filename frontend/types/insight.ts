@@ -64,6 +64,7 @@ export interface DomainAssessment {
   modelRule: string;   // Model weighting rule
   evidence: EvidenceItem[];
   whatWouldChangeAssessment: string;
+  isOptional?: boolean;
 }
 
 // Backward-compatible factor item alias

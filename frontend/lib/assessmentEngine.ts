@@ -116,25 +116,47 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
   const agreement = calculateFactorAgreement(domains);
 
   // 1. Determine Overall Data Eligibility and Core Evidence Completeness
-  let overallEligibility: "ELIGIBLE" | "LIMITED" | "INELIGIBLE" = "ELIGIBLE";
-  if (agreement.evaluated === 0) {
-    overallEligibility = "INELIGIBLE";
-  } else if (agreement.unavailable > 0) {
-    overallEligibility = "LIMITED";
-  }
+  // Directive ARX-UX-EVIDENCE-001: Distinguish mandatory core evidence (blocking) from optional enrichment (non-blocking)
+  // Required core domains: 'trend' (Technical Trend), 'health' (Company Health / Fund Profile), 'macro' (Macro Regime)
+  // Optional enrichment domains: 'smart_money', 'options_flow', 'insider_trades', 'congress_trades'
+  const isDomainRequired = (d: DomainAssessment): boolean => {
+    if ((d as any).isOptional === true) return false;
+    if ((d as any).applicability === "OPTIONAL" || (d as any).applicability === "INAPPLICABLE") return false;
+    if (
+      d.domainId === "smart_money" ||
+      d.domainId === "options_flow" ||
+      d.domainId === "insider_trades" ||
+      d.domainId === "congress_trades"
+    ) {
+      return false;
+    }
+    return true;
+  };
+
+  const requiredDomains = domains.filter(isDomainRequired);
+  const unavailableRequired = requiredDomains.filter(
+    (d) => d.availability === "UNAVAILABLE" || d.status === "UNAVAILABLE"
+  );
 
   const trendDomain = domains.find((d) => d.domainId === "trend");
   const healthDomain = domains.find((d) => d.domainId === "health");
 
   const isTrendAvailable = trendDomain !== undefined && trendDomain.availability === "AVAILABLE" && trendDomain.status !== "UNAVAILABLE";
   const isHealthAvailable = healthDomain !== undefined && healthDomain.availability === "AVAILABLE" && healthDomain.status !== "UNAVAILABLE";
-  const isCoreEvidenceAvailable = isTrendAvailable && isHealthAvailable && overallEligibility === "ELIGIBLE";
+  const isCoreEvidenceAvailable = isTrendAvailable && isHealthAvailable && unavailableRequired.length === 0;
+
+  let overallEligibility: "ELIGIBLE" | "LIMITED" | "INELIGIBLE" = "ELIGIBLE";
+  if (agreement.evaluated === 0) {
+    overallEligibility = "INELIGIBLE";
+  } else if (unavailableRequired.length > 0 || !isCoreEvidenceAvailable) {
+    overallEligibility = "LIMITED";
+  }
 
   // 2. Derive Overall Evidence Assessment (Requires full core evidence for FAVORABLE)
   let assessment: Assessment = "MIXED";
   if (overallEligibility === "INELIGIBLE" || !isCoreEvidenceAvailable) {
     assessment = "INSUFFICIENT_EVIDENCE";
-  } else if (agreement.favorable >= 3 && agreement.unfavorable === 0) {
+  } else if ((agreement.favorable >= 3 || (agreement.favorable >= 2 && agreement.evaluated <= 2)) && agreement.unfavorable === 0) {
     assessment = "FAVORABLE";
   } else if (agreement.unfavorable >= 2) {
     assessment = "UNFAVORABLE";
@@ -189,7 +211,7 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
       ? "Technical trend evidence is unavailable (insufficient historical sessions). Active triggers cannot be confirmed."
       : !isHealthAvailable
       ? "Core fundamental financial evidence is unverified. In-depth due diligence required before evaluating setups."
-      : "One or more evidence domains are unavailable or unverified. In-depth due diligence required before evaluating setups.";
+      : "One or more required core evidence domains are unavailable or unverified. In-depth due diligence required before evaluating setups.";
   } else if (ownershipState === "OWNED") {
     if (assessment === "UNFAVORABLE") {
       posture = "TRIM";
