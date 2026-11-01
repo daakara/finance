@@ -162,6 +162,49 @@ class SentryBackendAdapter(BackendMonitoringAdapter):
     def _sanitize_event(self, event: Dict[str, Any], hint: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Sentry before_send hook enforcing strict ARX privacy invariants."""
         try:
+            # Filter expected provider lookup misses for invalid or delisted symbols
+            # while strictly preserving visibility for rate limits (429), timeouts, 5xx, and network failures.
+            logger_name = event.get("logger") or ""
+            if logger_name == "yfinance":
+                msg = ""
+                if "message" in event and isinstance(event["message"], str):
+                    msg = event["message"]
+                elif "logentry" in event and isinstance(event["logentry"], dict):
+                    msg = event["logentry"].get("formatted") or event["logentry"].get("message") or ""
+                if not msg and hint and isinstance(hint, dict) and "log_record" in hint:
+                    rec = hint["log_record"]
+                    if hasattr(rec, "getMessage"):
+                        msg = rec.getMessage()
+                    else:
+                        msg = str(getattr(rec, "msg", ""))
+
+                msg_lower = msg.lower()
+
+                # Preserve visibility for genuine provider infrastructure errors
+                is_genuine_upstream_failure = (
+                    "429" in msg_lower
+                    or "too many requests" in msg_lower
+                    or "rate limit" in msg_lower
+                    or "timeout" in msg_lower
+                    or "timed out" in msg_lower
+                    or any(f"http error 50{c}" in msg_lower for c in range(5))
+                    or "connection" in msg_lower
+                    or "network" in msg_lower
+                )
+
+                if not is_genuine_upstream_failure:
+                    # Check for expected lookup misses on unknown, non-existent, or delisted tickers
+                    is_expected_lookup_miss = (
+                        "http error 404" in msg_lower
+                        or "quote not found" in msg_lower
+                        or "no data found, symbol may be delisted" in msg_lower
+                        or "no price data found" in msg_lower
+                        or "symbol may be delisted" in msg_lower
+                        or "possibly delisted" in msg_lower
+                    )
+                    if is_expected_lookup_miss:
+                        return None
+
             # 1. Sanitize request headers and query strings
             if "request" in event and isinstance(event["request"], dict):
                 req = event["request"]
@@ -251,7 +294,13 @@ class SentryBackendAdapter(BackendMonitoringAdapter):
             )
 
             # Establish canonical global backend service attribution
-            sentry_sdk.get_global_scope().set_tag("service", "arx-api")
+            try:
+                if hasattr(sentry_sdk, "get_global_scope"):
+                    sentry_sdk.get_global_scope().set_tag("service", "arx-api")
+                elif hasattr(sentry_sdk, "Hub"):
+                    sentry_sdk.Hub.current.scope.set_tag("service", "arx-api")
+            except Exception:
+                pass
 
             self._sentry_sdk = sentry_sdk
             self._enabled = True

@@ -502,6 +502,15 @@ def get_tactical_setups(
     setups = []
     for sym in symbols:
         try:
+            corp_action = CONFIRMED_CORPORATE_ACTIONS.get(sym.upper().strip())
+            if corp_action and corp_action.get("status") == "DELISTED":
+                # Known delisted security: do NOT call external market data providers
+                db_candles = market_db.get_daily_candles(sym, limit=252)
+                setup = _build_tactical_setup(sym, clean_role, db_candles or [], is_stale=False)
+                if setup:
+                    setups.append(setup)
+                continue
+
             db_candles = market_db.get_daily_candles(sym, limit=252)
             is_stale = _is_history_stale(db_candles)
 
@@ -552,6 +561,14 @@ def get_tactical_setup_for_symbol(
     clean_role = user_role.upper().strip() if isinstance(user_role, str) else "LONG_TERM"
     if clean_role not in VALID_ROLES:
         clean_role = "LONG_TERM"
+
+    corp_action = CONFIRMED_CORPORATE_ACTIONS.get(upper)
+    if corp_action and corp_action.get("status") == "DELISTED":
+        # Known delisted security: do NOT call external market data providers
+        db_candles = market_db.get_daily_candles(upper, limit=252)
+        setup = _build_tactical_setup(upper, clean_role, db_candles or [], is_stale=False)
+        if setup is not None:
+            return _sanitize_floats(setup)
 
     db_candles = market_db.get_daily_candles(upper, limit=252)
     is_stale = _is_history_stale(db_candles)
@@ -875,6 +892,14 @@ def get_asset_analytics(
     clean_role = user_role.upper().strip() if isinstance(user_role, str) else "LONG_TERM"
     if clean_role not in VALID_ROLES:
         clean_role = "LONG_TERM"
+
+    # Early authoritative corporate action check: delisted securities ceased trading
+    corp_action = CONFIRMED_CORPORATE_ACTIONS.get(upper_sym)
+    if corp_action and corp_action.get("status") == "DELISTED":
+        raise HTTPException(
+            status_code=404,
+            detail=f"Security {upper_sym} is delisted pursuant to {corp_action.get('action_type', 'corporate action')}: {corp_action.get('notes', 'Ceased public trading.')}",
+        )
 
     try:
 

@@ -1,125 +1,137 @@
 {
-  "release_candidate_commit": "2beb1b02513aad44abbec70d19d8f36e2677e7a1",
-  "base_anchor_commit": "9f9cdb9eb7d724c8ea22573826e76cabd1d2944f",
-  "total_files": 6,
+  "release_candidate_commit": "cd1df01656c4063d9f9f5ca4d2e072e0c62ad254",
+  "base_anchor_commit": "a033ca07de62a2a286f8c1edf44be678816bda06",
+  "total_files": 4,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-044R4-CANDIDATE",
+  "directive": "ARX-044R7-PROD-PROMOTION",
   "files": {
+    "api/observability/sentry_adapter.py": {
+      "operation": "M",
+      "originating_pr_number": 149,
+      "originating_commit": "cd1df01",
+      "governing_requirement": "Directive 044R.7: Deduplicate yfinance Sentry errors & version-safe scope tagging",
+      "sha256": "fa0b0442f6e8f0bbaa53365825f6a8aced81af83f6d4bd5fba9e90086653058a",
+      "size_bytes": 14303
+    },
     "api/routes/analytics.py": {
       "operation": "M",
-      "sha256": "a9f7c87d62564a63c00bc98a3fe9725e4d61761964a687a9c8b931bd45bae119",
-      "size_bytes": 70153,
-      "originating_pr_number": 147,
-      "originating_commit": "2beb1b0",
-      "governing_requirement": "Directive 044R.2/044R.3: RFC 8259 serialization, crypto fallback suppression, 252-bar lookback"
+      "originating_pr_number": 149,
+      "originating_commit": "cd1df01",
+      "governing_requirement": "Directive 044R.7: Early corporate action evaluation bypassing provider fetches on delisted CPRX",
+      "sha256": "a6fb78137da690125c72a8db73bc7956ff5fd20b58f5bfd032784852eb04cdae",
+      "size_bytes": 71563
     },
-    "api/routes/macro.py": {
+    "tests/test_cross_route_semantic_parity.py": {
       "operation": "M",
-      "sha256": "a47110d9197bf1682bc3a1a042cfdf0f82d84a8d6735e2261366e4b412bb0c56",
-      "size_bytes": 15049,
-      "originating_pr_number": 147,
-      "originating_commit": "2beb1b0",
-      "governing_requirement": "Directive 044R.2/044R.3: RFC 8259 serialization consolidation"
+      "originating_pr_number": 149,
+      "originating_commit": "cd1df01",
+      "governing_requirement": "Directive 044R.7: Align cross-route semantic parity test with delisted CPRX 404 suppression",
+      "sha256": "a4ab065c8c49e4ba2a869d73fd87bb530ad8aa73c708dad7d8eb53dc10b26b9d",
+      "size_bytes": 5219
     },
-    "api/routes/screener.py": {
-      "operation": "M",
-      "sha256": "54d74607cec2ecfc085f0d8d0b2d9be8ff7beaa7e6fde5ede71151e24c02d789",
-      "size_bytes": 72358,
-      "originating_pr_number": 147,
-      "originating_commit": "2beb1b0",
-      "governing_requirement": "Directive 044R.2/044R.3: RFC 8259 serialization, 252-bar lookback, intraday execution guidance"
-    },
-    "api/serialization.py": {
+    "tests/test_directive_044r7_sentry_provider_remediation.py": {
       "operation": "A",
-      "sha256": "a5093fb97aafe7a55790e2380aa066b9172a3449ebb90a4197492d5fbe20daa8",
-      "size_bytes": 2198,
-      "originating_pr_number": 147,
-      "originating_commit": "2beb1b0",
-      "governing_requirement": "Directive 044R.2/044R.3: Centralized RFC 8259 JSON serialization"
-    },
-    "tests/test_directive_044r2_data_integrity.py": {
-      "operation": "A",
-      "sha256": "8010265722b7632be6b152552fff1b572dd0486078b991fcf9b2870a47933a4b",
-      "size_bytes": 8273,
-      "originating_pr_number": 147,
-      "originating_commit": "2beb1b0",
-      "governing_requirement": "Directive 044R.2/044R.3: Data integrity and serialization test suite"
-    },
-    "tests/test_radar_cross_engine_parity_003.py": {
-      "operation": "M",
-      "sha256": "1ae4bd89918e2bee0e1d088f6789147ececda68180a62104b841da13ae4a1615",
-      "size_bytes": 15928,
-      "originating_pr_number": 147,
-      "originating_commit": "2beb1b0",
-      "governing_requirement": "Directive 044R.2/044R.3: Cross-engine parity reference fixture tests"
+      "originating_pr_number": 149,
+      "originating_commit": "cd1df01",
+      "governing_requirement": "Directive 044R.7: 10-invariant adversarial verification suite for Sentry provider remediation",
+      "sha256": "d2b044557f4bc4dd8d49cd3830f9608ab421ea0fcdd27a352ed4d1bbf78d307a",
+      "size_bytes": 12177
     }
   },
   "qualification_framework_files": {
     "scripts/release/rq01_candidate_identity.py": {
+      "description": "Release qualification module: rq01_candidate_identity.py",
       "sha256": "af311f7b4048cfe147d22840b85b157506bef73ea96de6fa30875459fec8154b",
-      "description": "Release qualification module: rq01_candidate_identity.py"
+      "bytes": 8414,
+      "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "3c412869b6050956ccdb5c85ee1c9fca0afdf379535266f8dc58ccd64b557779",
-      "bytes": 24320,
-      "size_bytes": 24320
+      "sha256": "1c861cffa3c70f849721a6f2835521c7948a392c4a8cc060b5d2fd4a1f9ca432",
+      "bytes": 57651,
+      "size_bytes": 57651
     },
     "scripts/release/rq03_backend_regression.py": {
+      "description": "Release qualification module: rq03_backend_regression.py",
       "sha256": "9778026dff4dd5967cfc180b28b4291649ad6bc4abf7862271158914f7b446d9",
-      "description": "Release qualification module: rq03_backend_regression.py"
+      "bytes": 3269,
+      "size_bytes": 3269
     },
     "scripts/release/rq04_frontend_regression.py": {
+      "description": "Release qualification module: rq04_frontend_regression.py",
       "sha256": "0e46eff7498448b20491bb0b65cb5f3e85403cc5575642c6bd251b9a2e806a1e",
-      "description": "Release qualification module: rq04_frontend_regression.py"
+      "bytes": 4013,
+      "size_bytes": 4013
     },
     "scripts/release/rq05_cross_engine_invariants.py": {
+      "description": "Release qualification module: rq05_cross_engine_invariants.py",
       "sha256": "f3f1039896aa258834f24144d69c5b42552df7b5173a09f09833ff46b6e3be0a",
-      "description": "Release qualification module: rq05_cross_engine_invariants.py"
+      "bytes": 6936,
+      "size_bytes": 6936
     },
     "scripts/release/rq06_governance_invariants.py": {
+      "description": "Release qualification module: rq06_governance_invariants.py",
       "sha256": "4ef2f0c3c77df2fcf4b3036e3f8b55c97691675c14bced1b6c5313300a6cf496",
-      "description": "Release qualification module: rq06_governance_invariants.py"
+      "bytes": 3883,
+      "size_bytes": 3883
     },
     "scripts/release/rq07_deployment_safety.py": {
+      "description": "Release qualification module: rq07_deployment_safety.py",
       "sha256": "2f1f3a7ed08901e6c4f4fba111a441c297e9697220a62fd0556be587790974e0",
-      "description": "Release qualification module: rq07_deployment_safety.py"
+      "bytes": 6327,
+      "size_bytes": 6327
     },
     "scripts/release/rq08_artifact_provenance.py": {
+      "description": "Release qualification module: rq08_artifact_provenance.py",
       "sha256": "afbb648917e49ea9f7e474f563548aea6bce2ae57d7e96a56f93b15b9578f9b8",
-      "description": "Release qualification module: rq08_artifact_provenance.py"
+      "bytes": 4868,
+      "size_bytes": 4868
     },
     "scripts/release/rq09_compatibility_suite.py": {
+      "description": "Release qualification module: rq09_compatibility_suite.py",
       "sha256": "ffaca6ea222948ee9e4c83e57162d280e79c8cc3277d9706438544cfc6d1cedb",
-      "description": "Release qualification module: rq09_compatibility_suite.py"
+      "bytes": 12677,
+      "size_bytes": 12677
     },
     "scripts/release/rq10_config_integrity.py": {
+      "description": "Release qualification module: rq10_config_integrity.py",
       "sha256": "6ef2de812ab6e61fc66c8d225a8ae255735a850a72dbbfc08b9426293dee017a",
-      "description": "Release qualification module: rq10_config_integrity.py"
+      "bytes": 7459,
+      "size_bytes": 7459
     },
     "scripts/release/rq11_rollback_readiness.py": {
+      "description": "Release qualification module: rq11_rollback_readiness.py",
       "sha256": "b2125cd6c71db2a2a4d66306207686d6c2c98d3ded3d5e2009da51617a34dc07",
-      "description": "Release qualification module: rq11_rollback_readiness.py"
+      "bytes": 14692,
+      "size_bytes": 14692
     },
     "scripts/release/rq12_qualification_summary.py": {
+      "description": "Release qualification module: rq12_qualification_summary.py",
       "sha256": "eb6fa07022544ad745584c94dfb21623a89abca8935fd8bb355d155e0c88082f",
-      "description": "Release qualification module: rq12_qualification_summary.py"
+      "bytes": 15833,
+      "size_bytes": 15833
     },
     "scripts/release/run_release_ci_suite.py": {
+      "description": "Release qualification module: run_release_ci_suite.py",
       "sha256": "a32d607071d5123fd3d772793afdf540ba83f15e30778685fcbf630d791d3a38",
-      "description": "Release qualification module: run_release_ci_suite.py"
+      "bytes": 4173,
+      "size_bytes": 4173
     },
     "scripts/release/test_release_ci_negative_cases.py": {
+      "description": "Release qualification module: test_release_ci_negative_cases.py",
       "sha256": "d4f35186a78ea0610326cc6609cd54a721983a9443c077e62b0232693dc2f792",
-      "description": "Release qualification module: test_release_ci_negative_cases.py"
+      "bytes": 49519,
+      "size_bytes": 49519
     },
     "scripts/release/test_synthetic_merge_reproduction.py": {
+      "description": "Release qualification module: test_synthetic_merge_reproduction.py",
       "sha256": "f3adc96bc7cb72d7822d6eb78248db828790c4153d70c6e74b7204281b877246",
-      "description": "Release qualification module: test_synthetic_merge_reproduction.py"
+      "bytes": 10113,
+      "size_bytes": 10113
     },
     "scripts/release/test_rq02_adversarial_controls.py": {
-      "sha256": "7b6f8da6614f915d2eb66b3d2d80e217733ba110096ae54937658350c9ffb86b",
-      "bytes": 16026,
-      "size_bytes": 16026
+      "sha256": "222334cea903614bd9e6e832ebd3840afcc15e1b3352bbe9a5d94feabff1f2e6",
+      "bytes": 16488,
+      "size_bytes": 16488
     },
     "scripts/release/test_d12c_workflow_attacks.py": {
       "sha256": "90054e28d133733f4c00c32ce384bc5047172010058898e5875f463ae71a4cc3",
@@ -128,7 +140,8 @@
     },
     "scripts/release/test_rq11_adversarial_controls.py": {
       "sha256": "03f4ae2b552e029810a883e749ce66256333ead9d69571d9de8766e8a3b67291",
-      "bytes": 8684
+      "bytes": 8684,
+      "size_bytes": 8684
     }
   }
 }
