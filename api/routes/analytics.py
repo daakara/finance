@@ -193,11 +193,12 @@ def _build_smart_money_confluence_inputs(
     security_type: str = "COMMON_STOCK",
     include_curated: bool = False,
     evaluation_date: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> Optional[Dict[str, Any]]:
     """
     Build authoritative smart money confluence inputs with strict epistemic honesty.
     Evaluates Options Flow, SEC Form 4 Insider Transactions, and Congressional STOCK Act Disclosures.
-    Supports both live/held assess_symbol evaluation and bounded evaluation across trailing 90-day window.
+    When feeds are unobserved, held under HOLD_SEC_001, or ineligible for scoring,
+    returns None to trigger fail-closed dynamic pillar reweighting in the frozen ConfluenceEngine.
     """
     clean_sym = sym.upper().replace("-USD", "").strip() if sym else ""
     if evaluation_date is not None:
@@ -210,12 +211,31 @@ def _build_smart_money_confluence_inputs(
             evaluation_date=evaluation_date,
         )
         return eval_result.get("confluence_inputs")
-    return smart_money_engine.assess_symbol(
+
+    res = smart_money_engine.assess_symbol(
         symbol=clean_sym,
         asset_class=asset_class,
         security_type=security_type,
         include_curated=include_curated,
     )
+    if not res.get("pillar_eligibility") or res.get("reweight_required"):
+        return None
+
+    if res.get("overall_status") == "VERIFIED_NO_ACTIVITY":
+        return {"status": "neutral"}
+
+    # Verified signal inputs for frozen ConfluenceEngine
+    sec_records = res.get("sec_insider_trades", [])
+    return {
+        "has_insider_buy": res.get("has_insider_buy", False),
+        "has_insider_sell": res.get("has_insider_sell", False),
+        "insider_value_usd": res.get("insider_value_usd", 0.0),
+        "has_congress_buy": res.get("has_congress_buy", False),
+        "has_congress_sell": res.get("has_congress_sell", False),
+        "has_options_flow": res.get("has_options_flow", False),
+        "insider_buy_count_90d": sum(1 for t in sec_records if "PURCHASE" in (t.get("transaction_type") or "").upper() or t.get("transaction_code") == "P"),
+        "insider_sell_count_90d": sum(1 for t in sec_records if "SALE" in (t.get("transaction_type") or "").upper() or t.get("transaction_code") == "S"),
+    }
 
 
 def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, Any]], is_stale: bool) -> Optional[Dict[str, Any]]:
@@ -1338,7 +1358,13 @@ def get_asset_analytics(
             }
 
         # Smart Money Feeds (Enforce Epistemic Honesty: Stale curated data does not trigger live buy signals)
-        smart_data = _build_smart_money_confluence_inputs(
+        smart_data = smart_money_engine.assess_symbol(
+            symbol=upper_sym,
+            asset_class=asset_class_val,
+            security_type=sec_type_val,
+            include_curated=False,
+        )
+        conf_smart_inputs = _build_smart_money_confluence_inputs(
             upper_sym,
             asset_class=asset_class_val,
             security_type=sec_type_val,
@@ -1356,7 +1382,7 @@ def get_asset_analytics(
                 **optimal_execution_plan,
                 "current_price": current_price,
             },
-            smart_money_data=smart_data,
+            smart_money_data=conf_smart_inputs,
             fundamental_data={
                 **factor_scores,
                 "piotroski_f": piotroski,
@@ -1528,26 +1554,26 @@ def get_asset_analytics(
             "catalystForecast": catalyst_report,
             "corporateEvent": corporate_event,
             "smartMoney": {
-                "overallStatus": smart_data.get("overall_status"),
-                "status": "AVAILABLE" if smart_data.get("pillar_eligibility") else "PIPELINE_PENDING",
-                "overall_direction": smart_data.get("directional_bias"),
-                "pillarEligibility": smart_data.get("pillar_eligibility"),
-                "pillarScore": smart_data.get("pillar_score"),
-                "reweighted": smart_data.get("reweight_required"),
-                "directionalBias": smart_data.get("directional_bias"),
-                "coverageSummary": smart_data.get("coverage_summary"),
-                "coverageWindowDays": smart_data.get("coverage_window_days"),
+                "overallStatus": smart_data.get("overall_status") if smart_data else "PIPELINE_PENDING",
+                "status": "AVAILABLE" if (smart_data and smart_data.get("pillar_eligibility")) else "PIPELINE_PENDING",
+                "overall_direction": smart_data.get("directional_bias") if smart_data else "NEUTRAL",
+                "pillarEligibility": smart_data.get("pillar_eligibility") if smart_data else False,
+                "pillarScore": smart_data.get("pillar_score") if smart_data else None,
+                "reweighted": smart_data.get("reweight_required") if smart_data else True,
+                "directionalBias": smart_data.get("directional_bias") if smart_data else "NEUTRAL",
+                "coverageSummary": smart_data.get("coverage_summary") if smart_data else None,
+                "coverageWindowDays": smart_data.get("coverage_window_days") if smart_data else 90,
                 "window_days": 90,
-                "subdomains": smart_data.get("subdomains"),
+                "subdomains": smart_data.get("subdomains") if smart_data else {},
                 "feeds": {
-                    "options_flow": smart_data.get("subdomains", {}).get("options_flow") or {"status": "PIPELINE_PENDING"},
-                    "sec_form4": smart_data.get("subdomains", {}).get("sec_form_4") or {"status": "PIPELINE_PENDING"},
-                    "congressional_disclosures": smart_data.get("subdomains", {}).get("congressional_stock_act") or {"status": "PIPELINE_PENDING"},
+                    "options_flow": (smart_data.get("subdomains", {}).get("options_flow") if smart_data else None) or {"status": "PIPELINE_PENDING"},
+                    "sec_form4": (smart_data.get("subdomains", {}).get("sec_form_4") if smart_data else None) or {"status": "PIPELINE_PENDING"},
+                    "congressional_disclosures": (smart_data.get("subdomains", {}).get("congressional_stock_act") if smart_data else None) or {"status": "PIPELINE_PENDING"},
                 },
-                "congressTrades": smart_data.get("congress_trades", []),
-                "optionsFlow": smart_data.get("options_flow", []),
-                "secInsiderTrades": smart_data.get("sec_insider_trades", []),
-                "secForm4Trades": smart_data.get("sec_insider_trades", []),
+                "congressTrades": smart_data.get("congress_trades", []) if smart_data else [],
+                "optionsFlow": smart_data.get("options_flow", []) if smart_data else [],
+                "secInsiderTrades": smart_data.get("sec_insider_trades", []) if smart_data else [],
+                "secForm4Trades": smart_data.get("sec_insider_trades", []) if smart_data else [],
             },
             "confluence": confluence_output,
             "analytics": risk_output,
