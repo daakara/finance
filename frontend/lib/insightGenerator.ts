@@ -170,9 +170,16 @@ export function generateQuantitativeInsight(
     (decisionTrace as any)?.instrumentProfile?.securityType === "ETF" ||
     (decisionTrace as any)?.instrument?.security_type === "ETF";
 
+  const isCrypto =
+    symbol.toUpperCase().includes("-USD") ||
+    ["BTC", "ETH", "SOL", "DOGE"].includes(symbol.toUpperCase()) ||
+    catalogEntry?.type === "Crypto" ||
+    (decisionTrace as any)?.instrumentProfile?.securityType === "CRYPTO" ||
+    (decisionTrace as any)?.instrument?.security_type === "CRYPTO";
+
   // Build Normalized Domain Assessments (Unknown != Negative Invariant Enforced)
   const domains: DomainAssessment[] = [
-    // Domain 1: Company Health / Fund Profile
+    // Domain 1: Company Health / Fund Profile / Network Health
     isEtf
       ? {
           domainId: "health",
@@ -193,6 +200,27 @@ export function generateQuantitativeInsight(
             },
           ],
           whatWouldChangeAssessment: "Significant tracking error or liquidity deterioration would trigger an ETF profile review.",
+        }
+      : isCrypto
+      ? {
+          domainId: "health",
+          domainName: "Network Health",
+          availability: "AVAILABLE",
+          status: "FAVORABLE",
+          pointImpact: 0,
+          importanceLevel: "MEDIUM",
+          observation: "Digital Asset: Evaluated via 24/7 on-chain liquidity, network activity, and price momentum. Corporate 10-K financial filings are not applicable.",
+          modelRule: "Decentralized protocol evaluated via liquidity and network activity; statutory 10-K filings not applicable.",
+          evidence: [
+            {
+              metricName: "Asset Class Classification",
+              currentValue: "Digital Asset / Cryptographic Network",
+              benchmarkValue: "SEC Filing Exemption",
+              significance: "HIGH",
+              status: "POSITIVE",
+            },
+          ],
+          whatWouldChangeAssessment: "Severe network disruption or market liquidity dry-up would trigger a protocol review.",
         }
       : (isHealthAvailable
       ? {
@@ -302,7 +330,8 @@ export function generateQuantitativeInsight(
         availability: isAvailable ? "AVAILABLE" : "UNAVAILABLE",
         status: isAvailable ? (smartPillar?.status === "positive" ? "FAVORABLE" : smartPillar?.status === "warning" ? "UNFAVORABLE" : "MIXED") : "UNAVAILABLE",
         pointImpact: isAvailable ? Math.round((smartPillar?.score || 0) * 0.15) : 0,
-        importanceLevel: "MEDIUM" as const,
+        importanceLevel: "LOW" as const,
+        isOptional: true,
         observation: isAvailable
           ? (smartPillar?.plainDetail || "Institutional and insider flow signals evaluated.")
           : (smartPillar?.plainDetail || "SEC Form 13F institutional holdings flow unindexed for this security."),

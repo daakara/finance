@@ -77,14 +77,16 @@ def main():
         # NC-02: An unapproved modification
         # -------------------------------------------------------------------------
         m2 = json.loads(json.dumps(canonical_manifest))
-        # Remove a modified file from approved manifest (e.g. api/routes/screener.py)
-        del m2["files"]["api/routes/screener.py"]
+        # Remove a modified file from approved manifest
+        mod_files = [f for f, m in canonical_manifest["files"].items() if m.get("operation") == "M"]
+        target_mod = mod_files[0] if mod_files else next(iter(canonical_manifest["files"]))
+        del m2["files"][target_mod]
         m2_path = os.path.join(temp_dir, "manifest_nc02.json")
         with open(m2_path, "w", encoding="utf-8") as f:
             json.dump(m2, f, indent=2)
 
         rc, out, err = run_rq02(["--manifest", m2_path])
-        passed = (rc == 1 and "UNAPPROVED" in out and "api/routes/screener.py" in out)
+        passed = (rc == 1 and "UNAPPROVED" in out and target_mod in out)
         results.append({
             "control": "NC-02: Unapproved modification in diff",
             "expected_rc": 1,

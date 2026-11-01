@@ -177,7 +177,7 @@ export default function AdvancedTerminalView({
           stopLoss={kl.stopLoss} takeProfit1={kl.target1} riskRewardRatio={kl.profitRiskRatio}
           optimalEntryMin={kl.entryMin} optimalEntryMax={kl.entryMax}
           isActionable={isActionable} decisionState={insight.terminalState?.decisionState}
-          isSynthetic={isDemo} />
+          isSynthetic={Boolean((insight as any).isSynthetic || (insight as any).dataSource === 'synthetic')} />
       )}</section>
         </div>
 

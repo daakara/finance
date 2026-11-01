@@ -196,14 +196,14 @@ function runVerification() {
     'Radar does not describe candidates as high-probability; operates strictly as an attention/discovery layer.'
   );
 
-  // 5. Analysis Demo State & Decision Hierarchy (A3-AC4, A3-AC14)
+  // 5. Analysis Production Asset Authority & Decision Hierarchy (A3-AC4, A3-AC14, Directive ARX-UX-EVIDENCE-001)
   assert(
-    analysisSrc.includes('isDemo={!hasExplicitSymbol}') &&
-    analysisSrc.includes('Displaying') &&
-    analysisSrc.includes('demonstration asset'),
+    analysisSrc.includes('isDemo={false}') &&
+    !analysisSrc.includes('demonstration asset') &&
+    !analysisSrc.includes('Demonstration Mode'),
     'A3-AC4',
-    'Analysis Demo State Isolation',
-    'Analysis explicitly flags demonstration AAPL view and guides user to search their own target.'
+    'Analysis Production Asset Authority',
+    'Analysis initial load treats AAPL as an authentic production target with zero demo asset status.'
   );
 
   assert(
